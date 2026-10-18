@@ -154,11 +154,11 @@ export async function openLive(planId?: string, visitId?: string) {
     recap.readError=live.recapDraftError;showRecapSave();
     const dirtyScene=sceneEdited(),dirtyCharacter=characterEdited();
     data = live; sources = null;liveSourcesLoading=true;liveSourcesProblem='Vorbereitung wird geladen…';narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
-    characterDraft = dirtyCharacter&&characterDraft?.id===selected ? { ...originalCharacter()!, profile:characterDraft!.profile, profileRevision:characterDraft!.profileRevision } : originalCharacter() ? structuredClone(originalCharacter()!) : null;
+    characterDraft = dirtyCharacter&&characterDraft?.id===selected&&characterEdited() ? { ...originalCharacter()!, profile:characterDraft!.profile, profileRevision:characterDraft!.profileRevision } : originalCharacter() ? structuredClone(originalCharacter()!) : null;
     // Reopen an existing table without initializing a group or starting a new evening.
     resumed = !!live.scene;
     // A confirmed refresh must not replace an edited draft of the same owner.
-    sceneDraft = dirtyScene&&sceneDraft?.id===live.scene?.id ? { ...live.scene!, ...content(sceneDraft!), revision:sceneDraft!.revision } : live.scene ? structuredClone(live.scene) : null;
+    sceneDraft = dirtyScene&&sceneDraft?.id===live.scene?.id&&sceneEdited() ? { ...live.scene!, ...content(sceneDraft!), revision:sceneDraft!.revision } : live.scene ? structuredClone(live.scene) : null;
     render();
     if(changed()&&!timer&&!composing&&!blocked)timer=setTimeout(()=>{void flushLive();},700);
     const material=acceptLiveSources(owner,sourceRun,preparation);

@@ -468,6 +468,15 @@ test('a failed refresh retains edited prose through retry while clean profiles a
  x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('running-notes').value,text);assert.equal(x.el('character-name').value,'Neu bestätigtes Profil');
  assert.equal(typeof autosave,'function','retry resumes the existing autosave after its earlier timer expired');autosave();await settle();assert.equal(x.store.live(x.w.token).scene.notes,text);assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Neu bestätigtes Profil');
 });
+test('a refresh recognizes confirmed draft content and keeps later scene and profile edits writable',async t=>{
+ const x=await setup(t),scene=x.store.live(x.w.token).scene,character=x.store.live(x.w.token).roster[0];
+ x.el('running-notes').value='Bereits bestätigte Notiz';x.el('running-notes').oninput();x.el('character-name').value='Bestätigter Name';x.el('character-name').oninput();
+ x.store.executeLive(x.command({kind:'scene-content',sceneId:scene.id,expectedRevision:scene.revision,title:scene.title,notes:'Bereits bestätigte Notiz',readAloud:scene.readAloud,locationId:scene.locationId}));
+ x.store.executeLive(x.command({kind:'profile',characterId:character.id,expectedRevision:character.profileRevision,profile:{...character.profile,name:'Bestätigter Name'}}));
+ await x.ui.openLive();
+ x.el('running-notes').value='Nächste Notiz';x.el('running-notes').oninput();x.el('character-name').value='Nächster Name';x.el('character-name').oninput();
+ assert.equal(await x.ui.flushLive(),true);const current=x.store.live(x.w.token);assert.equal(current.scene.notes,'Nächste Notiz');assert.equal(current.roster[0].profile.name,'Nächster Name');
+});
 test('a current live load failure stays visible and can be explicitly retried',async t=>{
  const x=await setup(t),read=x.window.campaign.live;x.window.campaign.live=async()=>({ok:false,error:'Aktuelle Scene nicht verfügbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Aktuelle Scene nicht verfügbar'));x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);
 });
