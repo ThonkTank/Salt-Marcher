@@ -67,6 +67,8 @@ export class AtlasCanvas {
       maxWidth?: number | (() => number);
       pan?: (event: PointerEvent) => boolean;
       prepareCamera?: () => void;
+      /** Hosts with source/filter state rebuild the current confirmed frame on recovery. */
+      redraw?: () => void;
       locked?: () => boolean;
       changed?: (box: CanvasBox, reason: CameraReason) => void;
     },
@@ -110,7 +112,7 @@ export class AtlasCanvas {
     retry.type = "button";
     retry.textContent = "Karte erneut zeichnen";
     retry.onclick = () => {
-      if (!this.renderScene) return;
+      if (!this.renderScene&&!this.options.redraw) return;
       this.ctx = root.getContext("2d")!;
       if (!this.ctx) {
         this.fail(Error("Canvas2D ist nicht verfügbar."));
@@ -119,7 +121,7 @@ export class AtlasCanvas {
       this.lost = false;
       this.failed = false;
       this.clearImages();
-      this.render(this.renderScene, this.emptyText);
+      if(this.options.redraw)this.options.redraw();else if(this.renderScene)this.render(this.renderScene,this.emptyText);
     };
     this.panel.append(this.note, retry);
     root.after(this.panel);
@@ -132,7 +134,7 @@ export class AtlasCanvas {
     root.addEventListener("contextrestored", () => {
       this.lost = false;
       this.failed = false;
-      if (this.renderScene) this.render(this.renderScene, this.emptyText);
+      if(this.options.redraw)this.options.redraw();else if(this.renderScene)this.render(this.renderScene,this.emptyText);
     });
     root.addEventListener(
       "pointerdown",
@@ -477,6 +479,7 @@ export class AtlasCanvas {
   context(key: string, initial: CanvasBox, restore = true) {
     if (key === this.contextKey) return false;
     this.cancel();
+    this.renderScene=null;this.emptyText="";this.restored=false;
     this.root.title = "";
     this.generation++;
     this.pending = null;
@@ -487,9 +490,10 @@ export class AtlasCanvas {
     this.clearImages();
     this.ctx?.resetTransform();
     this.ctx?.clearRect(0, 0, this.root.width, this.root.height);
-    this.root.dataset.canvasState = "empty";
-    this.panel.hidden = true;
-    this.note.textContent = "";
+    this.failed=!this.ctx||this.lost;
+    this.root.dataset.canvasState = this.failed?"unavailable":"empty";
+    this.panel.hidden = !this.failed;
+    this.note.textContent = this.failed?"Zeichenfläche nicht verfügbar. Erneut versuchen.":"";
     if (this.contextKey) {
       this.views.delete(this.contextKey);
       this.views.set(this.contextKey, {

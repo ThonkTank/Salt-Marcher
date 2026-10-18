@@ -170,6 +170,7 @@ export class CampaignAtlasWorkbench {
     mountDungeonTravelConsole(get("atlas-local-console"));
     this.svg = this.root.querySelector("#campaign-map")!;
     this.camera = new AtlasCanvas(this.svg, {
+      redraw:()=>this.render(),
       relative: true,
       initial: { x: -15000, y: -10000, width: 30000, height: 20000 },
       minWidth: 0.1,

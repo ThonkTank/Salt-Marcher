@@ -788,6 +788,13 @@ und eine Auswahlumgehung:
   vollständig erhalten und über den Ladezustand gesperrt. Zeichnen interpretiert
   alte Geometrie nicht mehr unter neuen Geschoss-/Schnitt-/Dachfiltern.
   Atlasverlassen widerruft auch verspätete vollständige Bereichsantworten.
+  Ein Canvas-Kontextwechsel verwirft den gespeicherten Szenenaufbau der alten
+  Campaign. Wiederherstellung/Retry bitten die Atlasoberfläche um ihren aktuell
+  bestätigten Frame; sie spielen keinen alten Callback unter einer inzwischen
+  anderen Kamera oder einem neuen Sichtfilter ab. Bei noch laufendem Read
+  bleibt die Oberfläche bis zu dessen bestätigter Antwort gesperrt. Fehler der
+  vorherigen Szene sperren keine gesunde neue Quelle; bei tatsächlich fehlendem
+  Canvas-Kontext bleibt der sichtbare Wiederholungsweg erhalten.
 - Ein direkt getroffenes Zeichnungsglyph öffnet nicht mehr still sein Objekt.
   Die vorhandene Kandidatenabfrage vereinigt seine genaue Quellen-ID mit den
   übrigen geometrischen und Landschaftstreffern. Das erhält die Erreichbarkeit
