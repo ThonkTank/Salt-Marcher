@@ -13,6 +13,7 @@ Die vier Hauptrollen arbeiten unabhängig am vollständigen Produkt. Jede Rolle 
 | Practical Planner: Voraussicht und Tragfähigkeit | $practical-planner |
 | Restrained Realist: Einfachheit und dauerhafter Aufwand | $restrained-realist |
 | GM-UX-QA: tatsächliche Gebrauchstauglichkeit | $gm-ux-qa |
+| Zusätzliche Code-/Doku-Pflege: Entwicklerverständlichkeit und gezielte Lesewege | [code-and-docs-maintainer](skills/code-and-docs-maintainer/SKILL.md) |
 
 - Gemeinsame Ausführung: [HEARTBEAT-RULES.md](HEARTBEAT-RULES.md).
 - Lokale Betriebsangaben: PROJECT.json enthält Repositoryidentität, gemeinsamen Integrationszweig, eigene Rollenarbeitskopien und Checkpoints, Projektzuordnung sowie Launcher-/UI-Pfade. Der gemeinsame Repositorypfad ist keine Schreibfreigabe für fremde Arbeit.
@@ -23,7 +24,9 @@ Die vier Hauptrollen arbeiten unabhängig am vollständigen Produkt. Jede Rolle 
 
 ## Änderungen am Setup
 
-Die Bearbeitungsquellen liegen unter tools/agent-setup im vorhandenen Produktrepository: vier Skilldateien, diese drei Projektdokumente und select-focus.py. Die lokalen Skilldateien und Projekt-Markdown-Dateien sind installierte Fassungen; select-focus.py wird ausführbar als codex-dungeon-focus im lokalen bin-Verzeichnis installiert. Änderungen in einer eigenen synchronisierten Kopie bearbeiten, Skills mit dem vorhandenen skill-creator-Validator und relevante Änderungen gezielt prüfen, anschließend die betreffenden Dateien an ihre bestehenden lokalen Installationsorte kopieren und byteweise vergleichen. Heartbeat-Aufträge weiterhin über die App aktualisieren, falls ihre Verweise geändert werden.
+Die Bearbeitungsquellen liegen unter tools/agent-setup im vorhandenen Produktrepository: Rollen-Skills, diese drei Projektdokumente und select-focus.py. Die lokalen Skilldateien und Projekt-Markdown-Dateien sind installierte Fassungen; select-focus.py wird ausführbar als codex-dungeon-focus im lokalen bin-Verzeichnis installiert. Änderungen in einer eigenen synchronisierten Kopie bearbeiten, Skills mit dem vorhandenen skill-creator-Validator und relevante Änderungen gezielt prüfen, anschließend die betreffenden Dateien an ihre bestehenden lokalen Installationsorte kopieren und byteweise vergleichen. Heartbeat-Aufträge weiterhin über die App aktualisieren, falls ihre Verweise geändert werden.
+
+Die zusätzliche Pflege lädt nur ihre aktuelle Arbeitsanleitung: Aussagen aktuell halten → Doku bereinigen → Code auffindbarer → Code verständlicher → Wissenslücken schließen → Einstiege/Lesewege. Eine offene Aufgabe einschließlich Prüfung und Veröffentlichung zuerst abschließen. `roles.maintainer` in PROJECT.json benennt eigene Kopie und Checkpoint; der im Skill enthaltene Helfer verwaltet lokale Git-Durchsicht und zählt bei Bedarf Zeichen ohne Inhaltsausgabe. Das stillgelegte Studienledger bleibt unberührt.
 
 Der Zufallseinstieg verwendet ausschließlich source_requirements aus dem vorhandenen Quellenregister docs/scope-sources.json: die dort gebundenen Originalanforderungen mit ihren Titeln und unveränderlichen Quell-URLs. Neu angelegte Pläne verändern weder die Auswahl noch die Gewichtung. Eine zusätzliche Themenliste oder Ziehungshistorie wird nicht gepflegt.
 
