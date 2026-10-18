@@ -125,7 +125,7 @@ function addCreature(state: CombatState, creature: Creature, count: number, grou
   state.sourceSerials[creature.id]=serial;
 }
 function partyCombatant(character: ReturnType<typeof readLive>['roster'][number],progress: ReturnType<typeof readProgressCharacter>,status?: Pick<Combatant,'tempHp'|'conditions'|'concentrating'>): Combatant {
-  const id=randomUUID();return {id,groupId:id,characterId:character.id,name:character.profile.name,initiative:0,initiativeBonus:0,armorClass:character.profile.armorClass??10,maxHp:1,hp:0,tempHp:0,conditions:'',concentrating:false,healthKnown:progress.health!==null,...(progress.health??progress.combatStatus??status)};
+  const id=randomUUID();return {id,groupId:id,characterId:character.id,name:character.profile.name,initiative:0,initiativeBonus:0,armorClass:character.profile.armorClass??null,maxHp:1,hp:0,tempHp:0,conditions:'',concentrating:false,healthKnown:progress.health!==null,...(progress.health??progress.combatStatus??status)};
 }
 function priorPartyParticipant(db:any,cam:string,state:CombatState,characterId:string) {
   const fact=lastCombatPartyParticipant(db,cam,state,characterId);if(fact)return fact;
