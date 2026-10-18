@@ -784,6 +784,16 @@ Die Prüfung hat zusätzliche Lücken geschlossen:
   Ausgabekacheln und die Endkomposition benutzen diese Werte. Quellenwechsel
   werden weiterhin vor dem Schreiben abgewiesen; öffentliche Datenfreigabe
   und GM-Ausgabe bleiben getrennt.
+- Landschaftsreads berücksichtigen den Zeichenüberhang von Ortsnamen, Markern
+  und Mindeststrichen auch über Ausschnitts-/Ausgabekachelgrenzen. Eine temporäre
+  Namensgrenze wird nur nach Orts-/Ortsnamenänderungen neu ermittelt; Kamera-Reads
+  verwenden sie weiter. Exakte Treffer, Autorenkoordinaten und Quellenkennung
+  bleiben unverändert. Rastercaches invalidieren auch ihre gepufferten
+  Zeichenbereiche. `desktop-landscape-paint-bounds.test.mjs` prüft Rtree/Scan,
+  kanonische Namensänderung, exakte Treffer und benachbarte Cacheinvalidierung;
+  `tools/test-desktop-region-export.mjs` prüft den nativen Ablauf vom Anlegen
+  dreier Orte und Verläufe über Messung/Korrektur/Undo bis PNG und Neustart.
+  Die Beschriftungsprüfung umfasst horizontale und vertikale 512-Pixel-Grenzen.
 - Der Writer baut keinen unbenötigten Landschaftsindex beim Appstart. Im
   Bereichsworker werden schmale, sortierte Schlüssel in vollständigen Seiten
   zu 128 Datensätzen nachgelesen und in expliziter Schlüsselreihenfolge gestreamt;
