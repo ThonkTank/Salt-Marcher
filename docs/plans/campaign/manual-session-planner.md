@@ -167,8 +167,9 @@ Die nächsten konkreten Prüfungen und Korrekturen:
    schließen → frischer Prozess sowie Tastatur, 200%-Ansicht und Undo/Redo
    im nativen Produkt prüfen.
 
-Für Entwürfe und Belohnungen gilt der bestehende
-[Daten- und Recoveryanschluss](../runtime/combat-and-narrative-recovery.md).
+Für [Kampfentwürfe](../runtime/combat-recovery.md) und
+[narrative Belohnungen](../runtime/narrative-recovery.md) gelten die jeweiligen
+Daten- und Recoveryregeln.
 Eine zweite Timelinearchitektur oder generische Historyabstraktion ist nicht nötig.
 
 ## Besuchsübergabe und Recovery
