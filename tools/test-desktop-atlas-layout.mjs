@@ -101,7 +101,7 @@ try{
   map=await page.locator('#campaign-map').boundingBox();await page.mouse.move(map.x+map.width*.65,map.y+map.height*.65);await page.mouse.down();await page.mouse.move(map.x+map.width*.8,map.y+map.height*.8,{steps:5});await page.mouse.up();
   await page.waitForFunction(()=>document.querySelector('#atlas-selection-title').textContent==='Archiv');await atlasCanvasReady(page);await frame('new-room');
   await page.locator('[data-tool-select="drawing-tool"][data-tool-value="object"]').click();assert(await page.locator('#drawing-object').isVisible());assert(await page.locator('#drawing-element-size').isVisible());
-  await page.locator('#atlas-secondary-close').click();map=await page.locator('#campaign-map').boundingBox();await page.mouse.click(map.x+map.width*.5,map.y+map.height*.5);await page.locator('#campaign-map').press('Enter');await atlasCanvasReady(page);
+  await page.locator('#atlas-secondary-close').click();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await atlasCanvasReady(page);map=await page.locator('#campaign-map').boundingBox();await page.mouse.click(map.x+map.width*.5,map.y+map.height*.5);await page.waitForFunction(()=>!document.querySelector('#drawing-finish').hidden&&!document.querySelector('#drawing-finish').disabled);await page.locator('#campaign-map').press('Enter');await atlasCanvasReady(page);
   await page.locator('#drawing-element-name').waitFor({state:'visible'});await page.locator('#drawing-element-name').fill('Lesepult');await page.locator('#drawing-element-form button[type="submit"]').click();await atlasCanvasReady(page);result.objectEdited=true;
 
   await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/atlas.png');
