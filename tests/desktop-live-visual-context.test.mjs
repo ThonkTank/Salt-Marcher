@@ -24,7 +24,7 @@ function liveDOM(){
 
 
 for (const field of ['character-name', 'running-notes', 'running-read-aloud']) {
-  test(`leaving live view saves ${field} input made during a delayed acknowledgement`, async () => {
+  test(`refreshing and leaving live view saves ${field} input made before and during a delayed acknowledgement`, async () => {
     const root = mkdtempSync(path.join(tmpdir(), 'live-dom-'));
     const { CampaignStore } = require('../.build/planner-player-visual-contract/live-store.cjs');
     const store = new CampaignStore(path.join(root, 'store.sqlite'));
@@ -56,6 +56,9 @@ for (const field of ['character-name', 'running-notes', 'running-read-aloud']) {
       assert.ok(!document.getElementById('live-world-summary').textContent.startsWith('Weltanzeige:'));
       const input = document.getElementById(field);
       const enter = text => { input.value = text; input.oninput(); };
+      enter('Noch offene Eingabe vor der Aktualisierung');
+      assert.equal(await ui.openLive(), true);
+      assert.equal(input.value, 'Noch offene Eingabe vor der Aktualisierung');
       enter('Erste Eingabe'); deferNext = true;
       const leaving = ui.flushLive(); await tick(); assert.equal(typeof release, 'function');
       enter('Weitere Eingabe während Speicherung'); release();

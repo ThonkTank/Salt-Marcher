@@ -116,3 +116,71 @@ test('Dungeon route rendering retains its last checkpoint and hides ended or unr
  const {dungeonTravelRoute}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs'),route=[{x:1},{x:2},{x:3}],j={request:{sceneId:'scene'},route,nextIndex:2,status:'active'};
  assert.deepEqual(dungeonTravelRoute(j,null,'scene'),route.slice(1));j.status='decision';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),route.slice(1));j.status='ended';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),[]);j.status='arrived';assert.deepEqual(dungeonTravelRoute(j,null,'scene'),[]);j.status='active';assert.deepEqual(dungeonTravelRoute(j,null,'other'),[]);assert.deepEqual(dungeonTravelRoute(null,{request:{sceneId:'other'},route},'scene'),[]);
 });
+
+async function lostDungeonRound(t,applied=true){
+ const x=await panel(t),{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs'),host=document.createElement('section');document.body.append(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();
+ x.get('dungeon-round-seconds').value='60';x.get('dungeon-pace-save').click();await x.ui.flushDungeon();
+ x.get('dungeon-duration').value='6000';x.get('dungeon-plan').click();await x.until(()=>!x.get('dungeon-confirm').disabled);x.get('dungeon-confirm').click();await x.ui.flushDungeon();
+ const write=x.window.campaign.executeDungeon,queries=[];let lost;
+ x.window.campaign.executeDungeon=async c=>{if(c.action.kind==='round'&&!lost){lost=structuredClone(c);if(applied)await write(c);throw Error('Verlorene Rundenantwort');}return write(c);};
+ x.window.campaign.dungeonCommandState=async c=>{queries.push(structuredClone(c));return{ok:true,value:x.store.dungeonCommandState(c)};};
+ x.get('dungeon-round-step').click();await x.until(()=>x.statuses.some(s=>s.includes('Verlorene Rundenantwort')));await x.tick();
+ return{...x,queries,lost:()=>lost};
+}
+test('a lost Dungeon round blocks subsequent writes and leaving until its original receipt is checked without replay',async t=>{
+ const x=await lostDungeonRound(t),saved=x.store.db.serialize(),writes=x.sent.length;assert.equal(x.view().instantMs,'60000');assert.equal(await x.ui.flushDungeon(),false);assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-reconcile').hidden,false);
+ x.get('dungeon-round-step').click();x.get('dungeon-place').click();await x.tick();assert.equal(x.sent.length,writes);assert.deepEqual(x.store.db.serialize(),saved);
+ x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);assert.deepEqual(x.queries,[x.lost()]);assert.equal(x.sent.length,writes);assert.deepEqual(x.store.db.serialize(),saved);assert.match(x.get('dungeon-context').textContent,/bestätigte Zeit 1 min/);assert.equal(x.ui.atlasDungeonState().data.journey.segmentElapsedSeconds,60);assert.equal(await x.ui.flushDungeon(),true);
+});
+
+test('an unsent Dungeon round is identified read-only and requires a new explicit action',async t=>{
+ const x=await lostDungeonRound(t,false),before=x.store.db.serialize();assert.equal(x.view().instantMs,'0');x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);assert.deepEqual(x.store.db.serialize(),before);assert.match(x.statuses.at(-1),/nicht gespeichert/);assert.equal(x.queries.length,1);assert.equal(x.sent.filter(c=>c.action.kind==='round').length,0);
+ x.get('dungeon-round-step').click();await x.until(()=>x.view().instantMs==='60000');await x.ui.flushDungeon();assert.equal(x.sent.filter(c=>c.action.kind==='round').length,1);assert.notEqual(x.sent.at(-1).commandId,x.lost().commandId);
+});
+test('failed status reads retain the original Dungeon command and never retry or unblock on their own',async t=>{
+ const x=await lostDungeonRound(t),read=x.window.campaign.dungeonCommandState,saved=x.store.db.serialize(),writes=x.sent.length;let queries=0;
+ x.window.campaign.dungeonCommandState=async()=>{queries++;throw Error('Status offline');};x.get('dungeon-reconcile').click();await x.until(()=>x.statuses.at(-1)?.includes('Status offline'));await x.tick();assert.equal(x.get('dungeon-reconcile').hidden,false);assert.equal(await x.ui.flushDungeon(),false);assert.equal(queries,1);assert.equal(x.sent.length,writes);assert.deepEqual(x.store.db.serialize(),saved);
+ x.window.campaign.dungeonCommandState=read;x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);assert.deepEqual(x.queries,[x.lost()]);assert.equal(x.sent.length,writes);
+});
+test('a confirmed receipt survives a failed view read and later refresh preserves newer pace input',async t=>{
+ const x=await lostDungeonRound(t),read=x.window.campaign.dungeon,writes=x.sent.length,saved=x.store.db.serialize();x.get('dungeon-group-speed').value='12';x.get('dungeon-group-speed').oninput();
+ x.window.campaign.dungeon=async()=>({ok:false,error:'Lesestand vorübergehend nicht verfügbar'});x.get('dungeon-reconcile').click();await x.until(()=>x.statuses.at(-1)?.includes('Speicherung bestätigt'));assert.equal(x.queries.length,1);assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(x.get('dungeon-travel-controls').inert,true);
+ x.window.campaign.dungeon=read;x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);assert.equal(x.queries.length,1,'known outcome needs only the failed view read again');assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(await x.ui.flushDungeon(),false,'newer settings remain an explicit draft');assert.equal(x.sent.length,writes);assert.deepEqual(x.store.db.serialize(),saved);
+});
+test('a conflicting Dungeon receipt remains blocked, and a late answer cannot repaint another campaign',async t=>{
+ const x=await lostDungeonRound(t),saved=x.store.db.serialize();x.window.campaign.dungeonCommandState=async()=>({ok:true,value:{outcome:'conflict'}});x.get('dungeon-reconcile').click();await x.until(()=>x.statuses.at(-1)?.includes('anderem Inhalt'));assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-reconcile').hidden,false);assert.deepEqual(x.store.db.serialize(),saved);
+ let release;x.window.campaign.dungeonCommandState=()=>new Promise(r=>release=r);x.get('dungeon-reconcile').click();await x.until(()=>!!release);x.ui.activateDungeon({...x.w,token:'other-campaign'});release({ok:true,value:{outcome:'applied'}});await x.tick();assert.equal(x.ui.atlasDungeonState().data,null);assert.equal(x.get('dungeon-reconcile').hidden,true);assert.deepEqual(x.store.db.serialize(),saved);
+});
+test('Dungeon command outcome uses the original receipt fingerprint without parsing the travel world or writing data',t=>{
+ const x=fixture(t),view=x.view(),c=x.command({kind:'place',sceneId:x.scene.id,expectedPositionRevision:view.positionRevision,pose:view.position}),before=x.store.db.serialize();
+ assert.deepEqual(x.store.dungeonCommandState(c),{outcome:'not-applied'});assert.deepEqual(x.store.db.serialize(),before);x.store.executeDungeon(c);const saved=x.store.db.serialize();assert.deepEqual(x.store.dungeonCommandState(c),{outcome:'applied'});assert.deepEqual(x.store.dungeonCommandState({...c,action:{...c.action,pose:null}}),{outcome:'conflict'});assert.deepEqual(x.store.db.serialize(),saved);
+ assert.throws(()=>x.store.dungeonCommandState({...c,token:'stale'}));assert.deepEqual(x.store.db.serialize(),saved);
+ x.store.db.prepare('INSERT INTO dungeon_trace VALUES(?,?,?,?,?,?,?,?,?,?)').run(x.cam.id,'bad-trace',null,null,'local','ground','epoch','0','{}','broken');const damaged=x.store.db.serialize();assert.throws(()=>x.view());assert.deepEqual(x.store.dungeonCommandState(c),{outcome:'applied'});assert.deepEqual(x.store.db.serialize(),damaged);
+});
+
+for(const intervening of [false,true])test('lost pace acknowledgement preserves newer input '+(intervening?'without adopting a later foreign revision':'on its own confirmed revision'),async t=>{
+ const x=await panel(t),write=x.window.campaign.executeDungeon;let lost,release;
+ x.window.campaign.executeDungeon=async c=>{lost=structuredClone(c);await write(c);await new Promise(r=>release=r);throw Error('Tempoantwort verloren');};
+ x.window.campaign.dungeonCommandState=async c=>({ok:true,value:x.store.dungeonCommandState(c)});
+ x.get('dungeon-group-speed').value='12';x.get('dungeon-pace-save').click();await x.until(()=>!!release);x.get('dungeon-group-speed').value='18';release();await x.until(()=>x.statuses.at(-1)?.includes('Tempoantwort verloren'));await x.tick();
+ if(intervening)x.save({groupMetersPerMinute:24});const saved=x.store.db.serialize();
+ x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);assert.equal(x.get('dungeon-group-speed').value,'18');assert.equal(await x.ui.flushDungeon(),false);assert.deepEqual(x.store.db.serialize(),saved);
+ x.window.campaign.executeDungeon=async c=>{try{return await write(c);}catch(e){return{ok:false,error:e.message};}};x.get('dungeon-pace-save').click();await x.tick();await x.tick();
+ if(intervening){assert.deepEqual(x.store.db.serialize(),saved);assert.equal(x.view().travelPace.settings.groupMetersPerMinute,24);assert.equal(x.get('dungeon-group-speed').value,'18');}
+ else{assert.equal(x.view().travelPace.settings.groupMetersPerMinute,18);assert.equal(x.view().travelPace.settings.revision,lost.action.settings.revision+2);assert.equal(await x.ui.flushDungeon(),true);}
+});
+
+function focusDungeonRearGroup(x){
+ const v=x.store.live(x.w.token),scene=x.store.liveScene(x.w.token,x.scene.id),next=x.store.executeLive(x.command({kind:'move',sceneId:scene.id,expectedRosterRevision:v.rosterRevision,expectedFocusRevision:v.focusRevision,expectedClockRevision:scene.clock.revision,expectedSceneMembershipRevision:scene.membershipRevision,memberIds:[x.ids[1]],target:{kind:'new',title:'Nachhut',expectedContentRevision:scene.revision}})).session.createdScene;
+ x.store.executeLive(x.command({kind:'focus',sceneId:next.id,expectedRevision:x.store.live(x.w.token).focusRevision}));return next;
+}
+test('reconciliation after a focus change retains old-group drafts and requires explicit discard before new-group writes',async t=>{
+ const x=await lostDungeonRound(t);x.get('dungeon-group-speed').value='12';const next=focusDungeonRearGroup(x),saved=x.store.db.serialize();
+ x.ui.syncDungeonLiveContext(x.w.token,next.id);x.get('dungeon-reconcile').click();await x.until(()=>x.get('dungeon-reconcile').hidden);await x.tick();assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(await x.ui.flushDungeon(),false);assert.deepEqual(x.store.db.serialize(),saved);
+ x.get('dungeon-input-discard').click();await x.until(()=>x.get('dungeon-travel-controls').inert===false);assert.equal(x.ui.atlasDungeonState().data.sceneId,next.id);assert.equal(x.get('dungeon-group-speed').value,'');assert.deepEqual(x.store.db.serialize(),saved);
+});
+test('a successful command reply for a changed focus cannot leave old-group commands enabled',async t=>{
+ const x=await panel(t),write=x.window.campaign.executeDungeon,{mountDungeonTravelConsole}=createRequire(import.meta.url)('../.build/dungeon-console-ui.cjs'),host=document.createElement('section');document.body.append(host);mountDungeonTravelConsole(host);await x.ui.openDungeon();let next;
+ x.window.campaign.executeDungeon=async c=>{await write(c);next=focusDungeonRearGroup(x);return{ok:true,value:x.view()};};
+ x.get('dungeon-group-speed').value='12';x.get('dungeon-pace-save').click();await x.until(()=>!!next);await x.tick();assert.equal(x.get('dungeon-travel-controls').inert,true);assert.equal(x.get('dungeon-group-speed').value,'12');assert.equal(x.ui.atlasDungeonState().data.sceneId,x.scene.id);
+});

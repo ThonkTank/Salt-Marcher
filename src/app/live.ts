@@ -109,7 +109,9 @@ let sessionCloseOpeningBasis:SessionCloseOpeningBasis|null=null;
 let tell: (text: string, error?: boolean) => void, openLocation: (id: string) => Promise<void>,openKnowledgeNote:(id:string,stillCurrent?:()=>boolean)=>Promise<void>,openLocationNotebook:(id:string,current?:()=>boolean)=>Promise<void>,openPreparedReward:(planId:string,visitId:string,current?:()=>boolean)=>Promise<void>,openMomentDeadline:(seed:{title:string;summary:string;location:{id:string;title:string}|null},current?:()=>boolean)=>Promise<void>,openMomentVisit:(planId:string|null,seed:{title:string;notes:string;locationId:string|null;beforeVisitId?:string|null;readAloud?:string;noteIds?:string[];newPlan?:boolean},current?:()=>boolean,openPacket?:boolean)=>Promise<boolean>;
 const originalCharacter = () => data?.roster.find(c => c.id === selected);
 const content = (scene: LiveScene) => ({ title: scene.title, notes: scene.notes, readAloud:scene.readAloud??'', locationId: scene.locationId });
-const changed = () => !!(characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile) || sceneDraft && data?.scene && !equal(content(sceneDraft), content(data.scene)));
+const characterEdited = () => !!characterDraft && (!originalCharacter() || !equal(characterDraft.profile, originalCharacter()!.profile));
+const sceneEdited = () => !!sceneDraft && (!data?.scene || !equal(content(sceneDraft), content(data.scene)));
+const changed = () => characterEdited() || sceneEdited();
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:sceneDraft?.id===data.scene?.id?sceneDraft?.locationId??null:data.scene?.locationId??null}:null;
 export function activateLive(workspace: WorkspaceGeometry) {
   liveReadRequest++;liveSourcesRequest++;liveSourcesLoading=false;liveSourcesProblem='';
@@ -150,17 +152,20 @@ export async function openLive(planId?: string, visitId?: string) {
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     recap.readError=live.recapDraftError;showRecapSave();
+    const dirtyScene=sceneEdited(),dirtyCharacter=characterEdited();
     data = live; sources = null;liveSourcesLoading=true;liveSourcesProblem='Vorbereitung wird geladen…';narrativeGeneration++;narrativeCache.clear();narrativeProblems.clear();narrativeLoading.clear(); selected = live.roster.some(c => c.id === selected) ? selected : live.roster[0]?.id ?? null;
-    characterDraft = originalCharacter() ? structuredClone(originalCharacter()!) : null;
+    characterDraft = dirtyCharacter&&characterDraft?.id===selected&&characterEdited() ? { ...originalCharacter()!, profile:characterDraft!.profile, profileRevision:characterDraft!.profileRevision } : originalCharacter() ? structuredClone(originalCharacter()!) : null;
     // Reopen an existing table without initializing a group or starting a new evening.
     resumed = !!live.scene;
-    sceneDraft = live.scene ? structuredClone(live.scene) : null;
+    // A confirmed refresh must not replace an edited draft of the same owner.
+    sceneDraft = dirtyScene&&sceneDraft?.id===live.scene?.id&&sceneEdited() ? { ...live.scene!, ...content(sceneDraft!), revision:sceneDraft!.revision } : live.scene ? structuredClone(live.scene) : null;
     render();
+    if(changed()&&!timer&&!composing&&!blocked)timer=setTimeout(()=>{void flushLive();},700);
     const material=acceptLiveSources(owner,sourceRun,preparation);
     if(planId&&(!await material||!current()))return false;
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
     return true;
-  } catch (error) { if(!current())return;data = null; sceneDraft = null; characterDraft = null;get('live-sources-state').hidden=true; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true);return false; }
+  } catch (error) { if(!current())return;const keepScene=sceneEdited(),keepCharacter=characterEdited();data = null;if(!keepScene)sceneDraft = null;if(!keepCharacter)characterDraft = null;get('live-sources-state').hidden=true; get('live-workspace').hidden = true; get('live-focus-bar').hidden=true; get('live-empty').hidden = false; tell((error as Error).message, true);return false; }
 }
 // Material is campaign-wide and may arrive after a scene write/focus change.
 // Its own generation revokes only replaced reads and campaign activations.

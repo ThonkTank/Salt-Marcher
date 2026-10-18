@@ -449,6 +449,34 @@ test('reactivating the same workspace invalidates its previous live failure',asy
 for(const saveFirst of [false,true])test(`a live read cannot overwrite ${saveFirst?'a confirmed save':'newer unsaved scene text'}`,async t=>{
  const x=await setup(t),read=x.window.campaign.live,oldView=await read(x.w.token);let release;const held=new Promise(r=>release=r);x.releases.push(()=>release(oldView));x.window.campaign.live=()=>held;const text='  Neuere Sceneprosa\r\n';const edit=()=>{x.el('running-notes').value=text;x.el('running-notes').oninput();};if(saveFirst)edit();const loading=x.ui.openLive();await settle();if(saveFirst)assert.equal(await x.ui.flushLive(),true);else edit();release(oldView);await loading;await settle();assert.equal(x.el('running-notes').value,text);assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,text);const fresh=new x.CampaignStore(path.join(x.root,'store.sqlite'));try{assert.equal(fresh.live(fresh.activate(x.w.campaign.id).token).scene.notes,text);}finally{fresh.close();}
 });
+test('a refresh retains same-scene prose and its original revision instead of overwriting concurrent content',async t=>{
+ const x=await setup(t),local='Eigene noch offene Szenennotiz',other='Anderswo bestätigte Szenennotiz';
+ x.el('running-notes').value=local;x.el('running-notes').oninput();
+ const scene=x.store.live(x.w.token).scene;
+ x.store.executeLive(x.command({kind:'scene-content',sceneId:scene.id,expectedRevision:scene.revision,title:scene.title,notes:other,readAloud:scene.readAloud,locationId:scene.locationId}));
+ await x.ui.openLive();assert.equal(x.el('running-notes').value,local);
+ assert.equal(await x.ui.flushLive(),false,'the original revision must still protect concurrent server content');
+ assert.equal(x.store.live(x.w.token).scene.notes,other);assert.equal(x.el('running-notes').value,local);assert.equal(x.el('live-reconcile').hidden,false);
+});
+test('a failed refresh retains edited prose through retry while clean profiles adopt the confirmed update',async t=>{
+ const x=await setup(t),read=x.window.campaign.live,text='Offene Notiz über einen Leseausfall hinweg';
+ let autosave;globalThis.setTimeout=(run,ms)=>{if(ms===700)autosave=run;return 1;};
+ x.el('running-notes').value=text;x.el('running-notes').oninput();
+ x.window.campaign.live=async()=>({ok:false,error:'Szenenstand vorübergehend nicht lesbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);
+ const character=x.store.live(x.w.token).roster[0];x.store.executeLive(x.command({kind:'profile',characterId:character.id,expectedRevision:character.profileRevision,profile:{...character.profile,name:'Neu bestätigtes Profil'}}));
+ assert.equal(await x.ui.flushLive(),true);autosave=null;
+ x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('running-notes').value,text);assert.equal(x.el('character-name').value,'Neu bestätigtes Profil');
+ assert.equal(typeof autosave,'function','retry resumes the existing autosave after its earlier timer expired');autosave();await settle();assert.equal(x.store.live(x.w.token).scene.notes,text);assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Neu bestätigtes Profil');
+});
+test('a refresh recognizes confirmed draft content and keeps later scene and profile edits writable',async t=>{
+ const x=await setup(t),scene=x.store.live(x.w.token).scene,character=x.store.live(x.w.token).roster[0];
+ x.el('running-notes').value='Bereits bestätigte Notiz';x.el('running-notes').oninput();x.el('character-name').value='Bestätigter Name';x.el('character-name').oninput();
+ x.store.executeLive(x.command({kind:'scene-content',sceneId:scene.id,expectedRevision:scene.revision,title:scene.title,notes:'Bereits bestätigte Notiz',readAloud:scene.readAloud,locationId:scene.locationId}));
+ x.store.executeLive(x.command({kind:'profile',characterId:character.id,expectedRevision:character.profileRevision,profile:{...character.profile,name:'Bestätigter Name'}}));
+ await x.ui.openLive();
+ x.el('running-notes').value='Nächste Notiz';x.el('running-notes').oninput();x.el('character-name').value='Nächster Name';x.el('character-name').oninput();
+ assert.equal(await x.ui.flushLive(),true);const current=x.store.live(x.w.token);assert.equal(current.scene.notes,'Nächste Notiz');assert.equal(current.roster[0].profile.name,'Nächster Name');
+});
 test('a current live load failure stays visible and can be explicitly retried',async t=>{
  const x=await setup(t),read=x.window.campaign.live;x.window.campaign.live=async()=>({ok:false,error:'Aktuelle Scene nicht verfügbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Aktuelle Scene nicht verfügbar'));x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);
 });

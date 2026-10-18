@@ -164,6 +164,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   importAudioLibrary:(token:string)=>ipcRenderer.invoke('music:import',token),
   cancelAudioTransfer:()=>ipcRenderer.invoke('music:cancel'),
   onAudioTransfer:(callback:(p:import('../src/app/music-contracts').AudioTransferProgress)=>void)=>ipcRenderer.on('music:progress',(_event,p)=>callback(p)),
+  dungeonCommandState:(command:import('../src/app/dungeon-contracts').DungeonCommand)=>ipcRenderer.invoke('dungeon:command-state',command),
   dungeonAuthoring:(token:string)=>ipcRenderer.invoke('dungeon:authoring',token),
   dungeon:(token:string)=>ipcRenderer.invoke('dungeon:view',token),
   previewDungeon:(token:string,r:import('../src/app/dungeon-contracts').DungeonRequest)=>ipcRenderer.invoke('dungeon:preview',token,r),
