@@ -55,7 +55,7 @@ export class AtlasCanvas {
     text: string;
   } | null = null;
   private draining = false;
-  private ctx: CanvasRenderingContext2D;
+  private ctx: CanvasRenderingContext2D | null = null;
   private lost = false;
   private restored = false;
   constructor(
@@ -73,7 +73,6 @@ export class AtlasCanvas {
       changed?: (box: CanvasBox, reason: CameraReason) => void;
     },
   ) {
-    this.ctx = root.getContext("2d")!;
     this.box = { ...options.initial };
     this.initial = { ...options.initial };
     this.apply();
@@ -111,31 +110,16 @@ export class AtlasCanvas {
     const retry = doc.createElement("button");
     retry.type = "button";
     retry.textContent = "Karte erneut zeichnen";
-    retry.onclick = () => {
-      if (!this.renderScene&&!this.options.redraw) return;
-      this.ctx = root.getContext("2d")!;
-      if (!this.ctx) {
-        this.fail(Error("Canvas2D ist nicht verfügbar."));
-        return;
-      }
-      this.lost = false;
-      this.failed = false;
-      this.clearImages();
-      if(this.options.redraw)this.options.redraw();else if(this.renderScene)this.render(this.renderScene,this.emptyText);
-    };
+    retry.onclick = () => this.recover();
     this.panel.append(this.note, retry);
     root.after(this.panel);
     root.style.touchAction = "none";
-    root.addEventListener("contextlost", (e) => {
-      e.preventDefault();
+    root.addEventListener("contextlost", () => {
+      // Unlike WebGL, canceling Canvas2D contextlost aborts browser restoration.
       this.lost = true;
       this.fail(Error("Zeichenfläche verloren."));
     });
-    root.addEventListener("contextrestored", () => {
-      this.lost = false;
-      this.failed = false;
-      if(this.options.redraw)this.options.redraw();else if(this.renderScene)this.render(this.renderScene,this.emptyText);
-    });
+    root.addEventListener("contextrestored", () => this.recover());
     root.addEventListener(
       "pointerdown",
       (e) => {
@@ -268,7 +252,7 @@ export class AtlasCanvas {
             !this.options.locked?.()
           ) {
             const p = this.point(this.tooltipPoint);
-            title = this.compiled!.tooltip(this.ctx, {
+            title = this.compiled!.tooltip(this.ctx!, {
               x: p.x - this.sceneOrigin.x,
               y: p.y - this.sceneOrigin.y,
             });
@@ -280,7 +264,26 @@ export class AtlasCanvas {
       this.tooltipPoint = null;
       root.title = "";
     });
-    if (!this.ctx) this.fail(Error("Canvas2D ist nicht verfügbar."));
+    this.acquireContext();
+  }
+  private acquireContext() {
+    try {
+      const ctx = this.root.getContext("2d");
+      if (!ctx) throw Error("Canvas2D ist nicht verfügbar.");
+      if (ctx.isContextLost?.()) throw Error("Zeichenfläche noch nicht verfügbar. Kurz warten und erneut versuchen.");
+      this.ctx = ctx;
+      this.lost = false;
+      this.failed = false;
+      return true;
+    } catch (error) {
+      this.fail(error);
+      return false;
+    }
+  }
+  private recover() {
+    if (!this.acquireContext()) return;
+    this.clearImages();
+    if(this.options.redraw)this.options.redraw();else if(this.renderScene)this.render(this.renderScene,this.emptyText);
   }
   private screenStart(drag: NonNullable<AtlasCanvas["drag"]>) {
     return drag.start.matrixTransform(drag.inverse.inverse());
@@ -288,6 +291,7 @@ export class AtlasCanvas {
   get ready() {
     return (
       !!this.compiled &&
+      !!this.ctx && !this.ctx.isContextLost?.() &&
       !this.failed &&
       !this.lost &&
       this.publishedGeneration === this.generation &&
@@ -381,6 +385,8 @@ export class AtlasCanvas {
   }
   private paint() {
     if (!this.compiled || this.failed || this.lost) return;
+    const ctx=this.ctx;
+    if (!ctx || ctx.isContextLost?.()) throw Error("Zeichenfläche ist verloren.");
     const rect = {
       width: this.root.clientWidth,
       height: this.root.clientHeight,
@@ -397,7 +403,6 @@ export class AtlasCanvas {
       h = Math.max(1, Math.round(rect.height * ratio));
     if(this.root.width!==w)this.root.width=w;
     if(this.root.height!==h)this.root.height=h;
-    const ctx=this.ctx;
     ctx.resetTransform();
     ctx.clearRect(0, 0, w, h);
     const scale = Math.min(w / this.box.width, h / this.box.height),
@@ -415,6 +420,7 @@ export class AtlasCanvas {
       x: this.box.x - this.sceneOrigin.x,
       y: this.box.y - this.sceneOrigin.y,
     });
+    if (ctx.isContextLost?.()) throw Error("Zeichenfläche beim Zeichnen verloren.");
     // Drawing is synchronous inside this animation frame. Authorize hits only after it completes.
     this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };
     this.root.dataset.paintCommands = String(this.compiled.commands.length);
@@ -490,7 +496,7 @@ export class AtlasCanvas {
     this.clearImages();
     this.ctx?.resetTransform();
     this.ctx?.clearRect(0, 0, this.root.width, this.root.height);
-    this.failed=!this.ctx||this.lost;
+    this.failed=!this.ctx||this.lost||!!this.ctx.isContextLost?.();
     this.root.dataset.canvasState = this.failed?"unavailable":"empty";
     this.panel.hidden = !this.failed;
     this.note.textContent = this.failed?"Zeichenfläche nicht verfügbar. Erneut versuchen.":"";
@@ -513,7 +519,6 @@ export class AtlasCanvas {
     this.past = saved?.past.map((b) => ({ ...b })) ?? [];
     this.future = saved?.future.map((b) => ({ ...b })) ?? [];
     this.wheelAt = 0;
-    this.failed = false;
     this.apply();
     this.refreshControls();
     return true;
@@ -695,7 +700,7 @@ export class AtlasCanvas {
     if (!this.ready || !this.compiled) return null;
     const p = this.point(e);
     return this.compiled.hit(
-      this.ctx,
+      this.ctx!,
       { x: p.x - this.sceneOrigin.x, y: p.y - this.sceneOrigin.y },
       keys,
     );

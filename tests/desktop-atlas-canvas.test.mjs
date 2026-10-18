@@ -143,11 +143,13 @@ function fixture(t, { available = true } = {}) {
     maxDecodes = 0;
   const releases = new Map();
   const ctx = new Proxy(
-    { canvas: root, isPointInPath: () => true, isPointInStroke: () => false },
+    { canvas: root, isContextLost: () => false, isPointInPath: () => true, isPointInStroke: () => false },
     { get: (o, k) => (k in o ? o[k] : (...args) => calls.push([k, ...args])) },
   );
-  window.HTMLCanvasElement.prototype.getContext = () =>
-    contextAvailable ? ctx : null;
+  window.HTMLCanvasElement.prototype.getContext = () => {
+    if(contextAvailable==='throw')throw Error('Context acquisition failed');
+    return contextAvailable ? ctx : null;
+  };
   Object.defineProperties(root, {
     clientWidth: { get: () => width },
     clientHeight: { get: () => height },
@@ -616,4 +618,31 @@ test('output range commits on release, preserves author data, supports two corne
  const confirmed=ui.exportBox;ui.exportChoosing=true;ui.down(event(100,100));await ui.up(event(100,100));assert.deepEqual(ui.exportCorner,{x:100,y:100});
  ui.cancel();assert.equal(ui.exportBox,confirmed);assert.equal(ui.exportChoosing,false);assert.deepEqual(ui.draft,[{x:99,y:88}]);
  ui.exportChoosing=true;ui.down(event(0,0));await ui.up(event(0,0));ui.down(event(4,2));await ui.up(event(4,2));assert.deepEqual(ui.exportBox,{x:0,y:0,width:4,height:2});assert.equal(ui.exportCorner,null);assert(draws>0);
+});
+
+test('Canvas2D context loss must allow browser restoration and retry cannot authorize a still-lost context',async t=>{
+ const f=fixture(t);let lost=false;f.ctx.isContextLost=()=>lost;
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();const before=f.canvas.view;
+ lost=true;const loss=new f.window.Event('contextlost',{cancelable:true});f.root.dispatchEvent(loss);
+ assert.equal(loss.defaultPrevented,false,'canceling Canvas2D loss aborts browser restoration');
+ f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,false);assert.equal(f.root.dataset.canvasState,'unavailable');assert.deepEqual(f.canvas.view,before);
+ lost=false;f.root.dispatchEvent(new f.window.Event('contextrestored'));await settle();assert.equal(f.canvas.ready,true);assert.deepEqual(f.canvas.view,before);
+});
+test('a context lost before its event is delivered cannot publish pixels or authorize hits',async t=>{
+ const f=fixture(t);let lost=false;f.ctx.isContextLost=()=>lost;
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();lost=true;
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ f.canvas.pan(1,0);f.flush();assert.equal(f.root.dataset.canvasState,'unavailable');
+});
+
+for(const initial of [true,false])test('context acquisition exceptions remain locally recoverable '+(initial?'at startup':'during retry/restoration'),async t=>{
+ const f=fixture(t,{available:initial?'throw':true});
+ if(!initial){f.canvas.render(root=>root.append(rect('room')));await settle();f.available('throw');f.root.dispatchEvent(new f.window.Event('contextlost',{cancelable:true}));assert.doesNotThrow(()=>f.document.querySelector('.map-canvas-state button').click());assert.doesNotThrow(()=>f.root.dispatchEvent(new f.window.Event('contextrestored')));}
+ f.canvas.render(root=>root.append(rect('new')));assert.equal(f.canvas.ready,false);assert.equal(f.root.dataset.canvasState,'unavailable');f.available(true);f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'new');
+});
+
+test('loss during a draw cannot publish a successful frame before the loss event arrives',async t=>{
+ const f=fixture(t);let lost=false;f.ctx.isContextLost=()=>lost;f.ctx.fill=()=>{lost=true;};
+ f.canvas.render(root=>root.append(rect('room')));await settle();assert.equal(f.canvas.ready,false);assert.equal(f.root.dataset.canvasState,'unavailable');assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ lost=false;f.ctx.fill=()=>{};f.root.dispatchEvent(new f.window.Event('contextrestored'));await settle();assert.equal(f.canvas.ready,true);
 });
