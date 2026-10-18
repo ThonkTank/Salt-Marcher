@@ -269,6 +269,10 @@ function draw(value: DayView) {
   el("day-timeline-card").hidden = mode !== "progress";
 }
 async function refresh() {
+  // An immediate read (opening or choosing the party) consumes queued edits.
+  // Otherwise their old timer repeats this read, including after a failure.
+  if (timer) clearTimeout(timer);
+  timer = null;
   const owner = workspace,
     request = ++generation;
   if (!owner) return;

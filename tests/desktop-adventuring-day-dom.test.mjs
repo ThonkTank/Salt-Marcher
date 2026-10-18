@@ -285,3 +285,27 @@ test('progress answer comes before rest thresholds and scrolling number fields p
  const wheel=new window.Event('wheel',{bubbles:true,cancelable:true});field.dispatchEvent(wheel);
  assert.equal(blurred,1);assert.equal(field.value,'300');assert.equal(wheel.defaultPrevented,false,'native scrolling remains available');
 });
+
+test('an immediate party refresh consumes queued editing work instead of reading the same basis twice',async t=>{
+ const x=fixture(t);await x.open();
+ x.input(x.get('rows').querySelector('input'),'4');
+ const before=x.calls.length;
+ x.get('active').onclick();await tick();
+ assert.equal(x.calls.length,before+1,'explicit refresh reads immediately');
+ await settled();
+ assert.equal(x.calls.length,before+1,'the superseded editing timer must not launch another read');
+ assert.equal(x.calls.at(-1).source,'active');
+ x.get('custom').onclick();await settled();
+ assert.equal(x.get('rows').querySelector('input').value,'4','the custom draft survives the active-party comparison');
+});
+
+test('reopening consumes a queued recalculation without retrying a failed fresh read in the background',async t=>{
+ const x=fixture(t);await x.open();
+ x.input(x.get('rows').querySelector('input'),'3');
+ x.get('close').onclick();
+ let reads=0;window.campaign.adventuringDay=async()=>{reads++;return{ok:false,error:'Gezielter Lesefehler'};};
+ x.get('trigger').onclick();await tick();assert.equal(reads,1);
+ await settled();assert.equal(reads,1,'an explicit failed refresh must stay failed until a new user action');
+ assert.match(x.get('status').textContent,/Gezielter Lesefehler/);
+ assert.equal(x.get('rows').querySelector('input').value,'3');
+});
