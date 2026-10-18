@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -616,4 +616,16 @@ test('output range commits on release, preserves author data, supports two corne
  const confirmed=ui.exportBox;ui.exportChoosing=true;ui.down(event(100,100));await ui.up(event(100,100));assert.deepEqual(ui.exportCorner,{x:100,y:100});
  ui.cancel();assert.equal(ui.exportBox,confirmed);assert.equal(ui.exportChoosing,false);assert.deepEqual(ui.draft,[{x:99,y:88}]);
  ui.exportChoosing=true;ui.down(event(0,0));await ui.up(event(0,0));ui.down(event(4,2));await ui.up(event(4,2));assert.deepEqual(ui.exportBox,{x:0,y:0,width:4,height:2});assert.equal(ui.exportCorner,null);assert(draws>0);
+});
+
+test('export scale uses world meters and is drawn once after streamed tiles without clearing their pixels',async t=>{
+ const f=fixture(t),events=[],create=f.document.createElement.bind(f.document);
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
+ f.ctx.drawImage=()=>events.push('tile');f.ctx.clearRect=()=>events.push('clear');f.ctx.fillText=text=>events.push(text);
+ const box={x:-15000,y:-9000,width:30000,height:18000},overlay=atlasExportScale(box,1024,614);
+ const bar=overlay.children.find(n=>n.kind==='polyline');assert.equal(bar.geometry.points[2].x-bar.geometry.points[1].x,5000,'a five-kilometer bar occupies exactly five thousand world meters');
+ const read=async(part,width,height)=>({ok:true,value:{campaignId:'c',revision:1,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'green'}})}});
+ await atlasImage(atlasExportTiles(box,1024,614,'c',1,read,()=>true),1024,614,box,'png',()=>true,overlay);
+ assert.equal(events.filter(e=>e==='5.00 km · 3.107 Meilen').length,1);assert.equal(events.at(-1),'5.00 km · 3.107 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
+ assert.equal(atlasExportScale(box,8192,50),undefined,'an extremely shallow output has no space for a legible scale');
 });
