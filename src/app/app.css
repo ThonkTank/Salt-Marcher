@@ -637,7 +637,7 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #atlas-tool-fields[data-family="terrain"] #atlas-create-tools,#atlas-tool-fields[data-family="terrain"] #atlas-room-draw,#atlas-tool-fields[data-family="terrain"]>label:has(#atlas-floor),#atlas-tool-fields[data-family="terrain"]>label:has(#atlas-roofs),#atlas-tool-fields[data-family="terrain"]>label:has(#atlas-slice-enabled),#atlas-tool-fields[data-family="terrain"]>label:has(#atlas-slice){display:none}
 
 #catalog-plan-open{max-width:100%;height:auto!important;text-align:left;overflow-wrap:anywhere}#catalog-plan-roster{max-height:8rem;overflow:auto;white-space:pre-line;overflow-wrap:anywhere;font-size:.8rem;margin:.4rem 0;padding:.5rem;border-left:3px solid var(--blue);background:#edf3fa}
-#combat-area-effect{margin:auto;width:min(880px,calc(100vw - 2rem));max-width:calc(100vw - 2rem);max-height:calc(100dvh - 2rem);padding:1.2rem;overflow:auto}#combat-area-effect::backdrop{background:#172b405c}.combat-area-tools{display:grid;grid-template-columns:9rem minmax(12rem,1fr) auto;gap:.7rem;align-items:end}.combat-area-tools>button{margin-bottom:0}.combat-area-row{display:grid;grid-template-columns:minmax(12rem,1fr) minmax(9rem,11rem) minmax(9rem,11rem);align-items:center;gap:.4rem .7rem;margin:0;padding:.45rem .1rem;border-bottom:1px solid var(--line)}.combat-area-row .check-label{margin:0}.combat-area-row select{width:100%;min-width:0}.combat-area-preview{grid-column:1/-1;margin:0;font-size:.85rem;color:#314b63;overflow-wrap:anywhere}.combat-area-head{font-size:.8rem;font-weight:700;color:#314b63}#combat-area-effect>.toolbar{display:flex;gap:.5rem;flex-wrap:wrap}@media(max-width:680px){.combat-area-tools{grid-template-columns:1fr 1fr}.combat-area-tools>button{grid-column:1/-1}.combat-area-row{grid-template-columns:1fr 1fr}.combat-area-row>label{grid-column:1/-1}.combat-area-head{display:none}}
+#combat-area-effect{margin:auto;width:min(880px,calc(100vw - 2rem));max-width:calc(100vw - 2rem);max-height:calc(100dvh - 2rem);padding:1.2rem;overflow:auto}#combat-area-effect::backdrop{background:#172b405c}.combat-area-tools{display:grid;grid-template-columns:9rem minmax(12rem,1fr) auto;gap:.7rem;align-items:end}.combat-area-tools>button{margin-bottom:0}.combat-area-row{display:grid;grid-template-columns:minmax(12rem,1fr) minmax(9rem,11rem) minmax(9rem,11rem);align-items:center;gap:.4rem .7rem;margin:0;padding:.45rem .1rem;border-bottom:1px solid var(--line)}.combat-area-row .check-label{margin:0}.combat-area-row select{width:100%;min-width:0}.combat-area-preview{display:block;margin:0;font-size:.85rem;color:#314b63;overflow-wrap:anywhere}.combat-area-head{font-size:.8rem;font-weight:700;color:#314b63}#combat-area-effect>.toolbar{display:flex;gap:.5rem;flex-wrap:wrap}@media(max-width:680px){.combat-area-tools{grid-template-columns:1fr 1fr}.combat-area-tools>button{grid-column:1/-1}.combat-area-row{grid-template-columns:1fr 1fr}.combat-area-row>label{grid-column:1/-1}.combat-area-head{display:none}}
 
 #combat-area-effect h2{margin:0 0 .8rem}#combat-area-effect .combat-area-head>span{grid-column:auto}
 
@@ -807,3 +807,13 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #combat-panel #combat-history-details{margin:0;position:relative}
 #combat-history-details>summary{cursor:pointer;padding:.6rem}
 #combat-history-details[open]>.toolbar{position:absolute;right:0;top:100%;z-index:6;background:var(--white);border:1px solid var(--line);padding:.75rem;box-shadow:0 5px 15px #24344924;min-width:min(32rem,70vw)}
+
+/* Only selected area targets need save and defense controls. */
+.combat-area:not(.show-defenses) .combat-area-row{grid-template-columns:minmax(12rem,1fr) minmax(9rem,11rem)}
+.combat-area-footer{position:sticky;bottom:-1.2rem;background:#eef4f8;padding:.65rem 0;border-top:1px solid var(--line);z-index:1}
+.combat-area-footer>p{margin:0 0 .5rem;font-size:.85rem;min-height:3.2em}
+.combat-area-footer>.toolbar{gap:.5rem;flex-wrap:wrap}
+#combat-area-overrides{width:auto}
+@media(max-width:680px){.combat-area:not(.show-defenses) .combat-area-row{grid-template-columns:1fr 1fr}}
+
+#combat-area-targets>.combat-area-row{min-height:3.6rem}
