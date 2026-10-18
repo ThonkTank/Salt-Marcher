@@ -145,7 +145,7 @@ export async function openCityReference(id:string,unitId?:string,targeted=false,
   if(!owned(w.token,g))return;if(unitId){const current=view as CityEditorView|null;if(current?.header.id!==id||!current.units.some(u=>u.id===unitId)){if(!allowMissing)throw new Error('Dieses Stadtelement ist nicht mehr verfügbar.');unitId=undefined;selected=null;showPanel('draw');}else selected=unitId;}
  }
  if(!owned(w.token,g))return;
- if(unitId){el<HTMLSelectElement>('city-tool').value='select';if(Number(value('city-zoom'))<2)el<HTMLInputElement>('city-zoom').value='2';render();const panel=document.getElementById('atlas-panel');if(panel?.contains(el('city-inspector')))panel.scrollTop=el<HTMLElement>('city-inspector').offsetTop-panel.offsetTop;else el('city-inspector').scrollIntoView({block:'start'});focusCityHouse();showPanel('selection');el('city-unit-name').focus();}
+ if(unitId){el<HTMLSelectElement>('city-tool').value='select';if(Number(value('city-zoom'))<2)el<HTMLInputElement>('city-zoom').value='2';showPanel('selection');render();const panel=document.getElementById('atlas-panel');if(panel?.contains(el('city-inspector')))panel.scrollTop=el<HTMLElement>('city-inspector').offsetTop-panel.offsetTop;else el('city-inspector').scrollIntoView({block:'start'});focusCityHouse();el('city-unit-name').focus();}
 }
 export async function prepareCityPersonBinding(assignment:import('./npc-places-contracts').NpcBuildingAssignment){
  const w=workspace,g=epoch;if(!w||!await flushCity())throw new Error('Offene Stadteingaben zuerst abschließen.');const {npcId,cityId,unitId,role,recordName}=assignment;

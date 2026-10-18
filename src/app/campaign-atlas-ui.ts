@@ -1877,7 +1877,9 @@ export class CampaignAtlasWorkbench {
     get("atlas-local-console").hidden = this.family !== "travel";
     get("atlas-create-tools").hidden = this.family !== "navigation";
     get("atlas-create-place").hidden=this.family!=="navigation";
-    get("atlas-new-name").closest<HTMLElement>("label")!.hidden=this.family!=='navigation';
+    const creationName=get("atlas-new-name").closest<HTMLElement>("label")!;
+    creationName.hidden=this.family!=='navigation';
+    creationName.firstChild!.textContent="Name für Stadt oder Dungeon";
     get("atlas-drawing-tools").hidden=this.groupView||!this.scopeId||!['interior','decoration'].includes(this.family);
     get("atlas-floor-field").hidden = this.groupView || !this.scopeId;
 

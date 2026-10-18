@@ -39,3 +39,45 @@ Nach Integration von Main `e67fe1b72` wurden Breitenkonflikt und Formkorrektur e
 Die UI nutzt kanonischen Electron-/SQLite-Code mit isolierter Loopback-Brücke. Sie ist keine Qualifikation eines installierten nativen Pakets. Exact-SHA-CI, native Paketprüfung, ganzer regionaler Reise-/Spielerablauf und ausdrückliche Nutzerabnahme bleiben getrennte Aussagen. Keine Main-Promotion aus diesem Bericht.
 
 Screenshots, PNGs, Vorher-Bundle, vollständige Logs, Datenbanksicherung und Inhaltsvergleich liegen im übernommenen Chat-Arbeitsbereich unter `evidence/saltmarcher-existing-roads-20261018/`. Verwandte Abläufe: [neue Gassen](city-road-clearance-20261018.md), [Straßensuche](city-street-search-20261018.md) und [Straßenanschlüsse](city-street-junction-20261017.md).
+
+
+## Nachprüfung am einfachsten brauchbaren Ablauf
+
+Die Aufgabe bleibt: eine benannte Lagerhausgasse wiederfinden, ihre Breite und
+bei Bedarf ihren Verlauf zwischen vorhandenen Häusern korrigieren und ein
+benutzbares Kartenbild ausgeben. Der Idealpfad besteht aus Suche, Breite oder
+Kartengriffen und Ausgabe. Eine unzulässige Überschneidung muss vor dem
+Speichern erkennbar sein; eine bewusst gewünschte Querung braucht eine
+ausdrückliche Entscheidung.
+
+Die tatsächliche Ausgangsansicht zeigte zusätzlich das allgemeine Feld
+„Name – Neue Stadt“ beim Bearbeiten einer vorhandenen Straße und sieben
+Zeilen numerische Eckpunkte. Das zweite Namensfeld gehörte zu keiner Handlung
+dieser Aufgabe. Die inaktive Landschaftsleiste hatte die zuvor korrekt
+ausgeblendete gemeinsame Namenseingabe erneut eingeblendet. Die
+Sichtbarkeitssteuerung bleibt jetzt bei der aktiven Werkzeugfamilie. Exakte
+Koordinaten bleiben unter „Eckpunkte genau eingeben“ erreichbar; für sichtbare
+Verlaufskorrekturen sind die Kartengriffe die unmittelbare Handlung.
+Beim Öffnen eines Suchtreffers wird zuerst der Auswahlbereich sichtbar gemacht,
+dann der Inspektor in den sichtbaren Ausschnitt gerückt. Zuvor wurde die
+Scrollposition noch am ausgeblendeten Bereich berechnet; der gesuchte
+Bearbeitungsschritt lag deshalb weiter unten als die sachfremden Optionen.
+
+Dungeon Scrawl wurde mit derselben Haus-/Zugangskarte erneut tatsächlich
+bedient: freie Seite verbreitert, rückgängig gemacht und PNG ausgegeben. Dort
+bleiben bei der geometrischen Korrektur zusätzlich Voreinstellungen links,
+Ebenen und Stilparameter rechts sichtbar. Diese größere Auswahl begründet
+keine entsprechende Belastung in SaltMarcher. Scrawl besitzt in dieser Probe
+keine semantische Straßenbreite oder Hausabstandsprüfung; der Vergleich
+bezieht sich auf Geometriekorrektur und ein verwendbares Kartenbild.
+
+Verbleibende Abweichungen vom Idealpfad sind unterschiedlich begründet:
+Suche identifiziert eine Straße unter vielen; der Wechsel zur Formbearbeitung
+verhindert versehentliches Verziehen bei gewöhnlicher Auswahl; Undo schützt
+bestehende Arbeit; Ausgabeparameter sind erst bei der Ausgabe nötig.
+Werkzeugfamilien, Stadtaufgaben und der gesonderte Formabschluss bleiben
+zusätzliche Bedienarbeit. Diese Probe begründet keine allgemeine optimale
+Navigation und keine menschliche Nutzerakzeptanz. Bearbeitbares Scrawl-Speichern
+und frisches Wiederöffnen bleiben für die aktuelle Vergleichskarte ungeprüft:
+„Speichern unter“ führte in einen durch die verfügbare Browsersteuerung nicht
+bedienbaren nativen Dateidialog. Der PNG-Export funktioniert.

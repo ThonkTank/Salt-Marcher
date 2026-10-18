@@ -376,11 +376,10 @@ export class LandscapeWorkbench {
     ] as const)
       html(id).closest("label")!.hidden = !visible;
     const name = document.getElementById("atlas-new-name")?.closest("label");
-    if (name) {
-      name.hidden = this.active && !["place", "river", "road"].includes(this.tool);
-      name.firstChild!.textContent = this.active
-        ? this.tool === "place" ? "Name für neuen Ort" : "Name für neuen Verlauf"
-        : "Name";
+    if (name && this.active) {
+      name.hidden = !["place", "river", "road"].includes(this.tool);
+      name.firstChild!.textContent = this.tool === "place"
+        ? "Name für neuen Ort" : "Name für neuen Verlauf";
     }
   }
   setActive(active: boolean) {
