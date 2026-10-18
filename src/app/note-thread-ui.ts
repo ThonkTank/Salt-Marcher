@@ -35,6 +35,10 @@ export interface NoteThreadTarget {
   title: string;
   planName: string;
 }
+export interface PreparedNoteThread {
+  planId: string;
+  visitId: string;
+}
 export interface NoteThreadSource {
   token: string;
   id: string;
@@ -56,7 +60,8 @@ export interface NoteThreadSource {
     target: NoteThreadTarget,
     selection: NoteThreadSelection,
     current: () => boolean,
-  ) => Promise<boolean>;
+  ) => Promise<PreparedNoteThread | false>;
+  openPrepared: (target: PreparedNoteThread, current: () => boolean) => Promise<boolean>;
 }
 interface Options {
   prepare: () => Promise<NoteThreadSource | null>;
@@ -360,6 +365,7 @@ export class NoteThreadDialog {
   }
   private placeTarget(preparing: boolean) {
     this.preparing = preparing;
+    this.use.textContent = preparing ? "Auswahl verwenden und Mappe öffnen" : "Auswahl für den Spielabend verwenden";
     if (preparing) this.reading.prepend(this.target, this.status);
     else this.reading.append(this.target, this.status);
     this.sourceChoices.hidden = !preparing;
@@ -1145,7 +1151,9 @@ export class NoteThreadDialog {
       );
       if (!this.current(epoch)) return;
       if (!checked.ok) throw Error(checked.error);
-      if (!(await this.owner.use(target, selection, () => this.current(epoch))))
+      const owner = this.owner,
+        prepared = await owner.use(target, selection, () => this.current(epoch));
+      if (!prepared)
         throw Error(
           "Vorbereitung noch nicht bestätigt. Speicherstatus prüfen; keine automatische Wiederholung.",
         );
@@ -1153,7 +1161,18 @@ export class NoteThreadDialog {
         this.options.tell(
           "Ausgewählte Originalnotizen sind mit dem Besuch verknüpft.",
         );
+        const open = this.preparing;
         this.reset();
+        if (open) {
+          const closedEpoch = this.epoch,
+            current = () => closedEpoch === this.epoch && owner.current();
+          try {
+            if (current() && !await owner.openPrepared(prepared, current) && current())
+              this.options.tell("Originalnotizen sind verknüpft. Die Spielabendmappe konnte nicht geöffnet werden; im Spielabend erneut öffnen.", true);
+          } catch (error) {
+            if (current()) this.options.tell("Originalnotizen sind verknüpft. " + (error as Error).message, true);
+          }
+        }
       }
     } catch (error) {
       if (this.current(epoch)) {

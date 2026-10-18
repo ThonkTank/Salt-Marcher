@@ -1,5 +1,5 @@
 import {NoteMergeUI} from './note-merge-ui';
-import {registerPreparationPacketEditor,packetNoteFeedback} from './session-packet-ui';
+import {registerPreparationPacketEditor,packetNoteFeedback,openPreparationSessionPacket} from './session-packet-ui';
 import {NoteThreadDialog} from './note-thread-ui';
 import {detachNoteSource,restoreNoteSource} from './note-thread-edit';
 import {hasPendingCommit} from './commit-confirmation';
@@ -547,7 +547,18 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       renderRelations();schedule();
       return await flushPreparation()&&valid();
      },
-     use:async(target,selection,live)=>{const valid=()=>current()&&live();if(!valid())return false;if(target.planId&&target.visitId){await openPreparedVisit(target.planId,target.visitId,valid);if(!valid())return false;return linkVisitNoteThread(owner.token,target.planId,target.visitId,selection,valid);}const ids=[...selection.entries.map(e=>e.id),...(selection.includeRoot?[selection.rootId]:[])];const made=await prepareNextVisit(target.planId,{title:target.title,notes:'',locationId:null,noteIds:ids,newPlan:!target.planId,newPlanName:target.planName,noteThread:selection},valid);return !!made;}
+     use:async(target,selection,live)=>{
+      const valid=()=>current()&&live();if(!valid())return false;
+      if(target.planId&&target.visitId){
+       await openPreparedVisit(target.planId,target.visitId,valid);if(!valid())return false;
+       const linked=await linkVisitNoteThread(owner.token,target.planId,target.visitId,selection,valid);
+       return linked&&valid()?{planId:target.planId,visitId:target.visitId}:false;
+      }
+      const ids=[...selection.entries.map(e=>e.id),...(selection.includeRoot?[selection.rootId]:[])];
+      const made=await prepareNextVisit(target.planId,{title:target.title,notes:'',locationId:null,noteIds:ids,newPlan:!target.planId,newPlanName:target.planName,noteThread:selection},valid);
+      return made&&valid()?made:false;
+     },
+     openPrepared:async(target,live)=>{if(!current()||!live()||selectedPlan!==target.planId||selectedScene!==target.visitId)return false;return openPreparationSessionPacket(target.visitId,()=>current()&&live());}
     };}
   });
   const threadButton=document.createElement('button');threadButton.id='note-thread-open';threadButton.type='button';threadButton.textContent='Notizmappe öffnen…';get('note-text-tools').after(threadButton);threadButton.onclick=()=>void noteThread!.open().catch(error=>tell(error.message,true));
