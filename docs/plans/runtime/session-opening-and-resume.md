@@ -31,8 +31,11 @@ Auch Party-Profilantworten werden nur hier übernommen. Die frühere zweite
 Live-Profileingabe. Der Writeraufruf hält deshalb die abgesendete Profilfassung;
 eine neue Eingabe besitzt bereits ein neues Profilobjekt und bleibt einschließlich
 eines bewussten Rückwechsels zum alten Wortlaut erhalten. Ohne spätere Eingabe
-gilt die bestätigte Profilfassung. Recovery ohne diese Aufrufbasis behält den
-bestehenden konservativen Entwurfserhalt; keine automatische Wiederholung.
+gilt die bestätigte Profilfassung. Derselbe offene Auftrag hält diese lokale
+Aufrufbasis bis zur Receiptklärung. Eine bestätigte verlorene Antwort wird somit
+identisch übernommen und kann nicht beim nächsten Flush durch den alten
+unberührten Formulartext zurückgeschrieben werden. Eine verworfene Recovery
+verliert ihre Wirkung; keine automatische Wiederholung oder zweite Schreibroute.
 
 Notwendige Unterschiede: Die Initialisierungsantwort enthält noch nicht die
 vollständige Gruppen-/Fokusprojektion; danach bleibt ein gezieltes Wiederlesen

@@ -80,7 +80,7 @@ async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
 let readAloudOwner: string | null = null;
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
-let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: LiveCommand | null = null;
+let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: {command:LiveCommand;submittedProfile?:CharacterProfile} | null = null;
 let requestIsTextSave = false;
 type MomentWork={w:WorkspaceGeometry;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
 const momentWorks=new Map<string,MomentWork>();let momentOwner:MomentWork|null=null;
@@ -251,7 +251,7 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
       mergeAck(ack, action, submittedProfile);if(liveActionUpdatesRecap(action)||action.kind==='scene-content'&&ack.scene?.locationId!==previousLocationId)void refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
       if (context?.token !== token) return null;
-      failed = command; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
+      failed = {command,submittedProfile}; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
       tell((error as Error).message + ' Entwurf bleibt offen. Zuerst den Speicherstatus prüfen.', true); return null;
     } finally { request = null; requestIsTextSave = false; busy(false, structural); renderGroups(); }
   })();
@@ -883,15 +883,15 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   get('adoption-confirm-packet').onclick=()=>confirmAdoption(true);
   get('live-apply').onclick = () => { void flushLive(); };
   get('live-reconcile').onclick = () => { void (async () => {
-    const command = failed, token = context?.token; if (!command || !token) return;
+    const pending = failed, command = pending?.command, token = context?.token; if (!pending || !command || !token) return;
     try {
       const result = unwrap(await window.campaign.liveStatus(command, token));
-      if (context?.token !== token) return;
+      if (context?.token !== token || failed !== pending) return;
       if (result.targetChanged) {
         tell(result.receipt ? 'Speicherung bestätigt, inzwischen liegt ein neuerer Zielstand vor. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.' : 'Konflikt bestätigt. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.', true);
         return;
       }
-      if (result.receipt) mergeAck({ ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}), ...(result.currentCharacter ? { character: result.currentCharacter } : {}) }, command.action);
+      if (result.receipt) mergeAck({ ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}), ...(result.currentCharacter ? { character: result.currentCharacter } : {}) }, command.action, pending.submittedProfile);
       blocked = false; failed = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
       tell(result.outcome === 'applied' ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.' : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
     } catch (error) { tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
@@ -983,7 +983,7 @@ async function openLivePacket(){const source=livePacketSource();if(!source){tell
 export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string},expectedSceneId?:string){if(!await ensureLiveRuntime())return;if(expectedSceneId&&data?.scene?.id!==expectedSceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await timeNavigator.open(target);}
 export async function openTravelRest(sceneId:string){if(!await ensureLiveRuntime()||!await flushLive())return;if(data?.scene?.id!==sceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await openPartyRest(sceneId);}
 
-async function recoverTimeWrite(){const command=failed,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==command)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
+async function recoverTimeWrite(){const pending=failed,command=pending?.command,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==pending)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
 
 async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>{try{return await window.campaign.chronicle(token);}catch(error){return{ok:false,error:(error as Error).message};}}
 

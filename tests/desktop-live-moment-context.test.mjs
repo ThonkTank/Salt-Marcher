@@ -638,3 +638,20 @@ for(const newer of [null,'Neuere eigene Fassung','Ada'])test(`a Party profile ac
  release();await saving;await settle();assert.equal(x.el('character-name').value,newer??'Party-Profil');
  assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,newer??'Party-Profil');assert.equal(x.commands.filter(c=>c.action.kind==='profile').length,newer===null?1:2);
 });
+
+for(const newer of [null,'Entwurf nach Antwortverlust','Ada'])test(`Party profile receipt recovery uses the same submitted draft basis: ${newer??'no later input'}`,async t=>{
+ const x=await setup(t),old=x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id),writer=x.window.campaign.executeLive;let lost=false;
+ x.window.campaign.executeLive=async command=>{const result=await writer(command);if(command.action.kind==='profile'&&!lost){lost=true;throw Error('Profilantwort verloren');}return result;};
+ x.window.campaign.liveStatus=async(command,token)=>({ok:true,value:x.store.liveStatus(command,token)});
+ await assert.rejects(x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Party-Profil'}}));
+ if(newer!==null){x.el('character-name').value=newer;x.el('character-name').oninput();}
+ x.el('live-reconcile').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);assert.equal(x.el('character-name').value,newer??'Party-Profil');
+ assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,newer??'Party-Profil');assert.equal(x.commands.filter(c=>c.action.kind==='profile').length,newer===null?1:2);
+});
+
+test('discarding a profile recovery revokes its pending receipt answer',async t=>{
+ const x=await setup(t),old=x.store.live(x.w.token).roster.find(c=>c.id===x.heroes[0].id),writer=x.window.campaign.executeLive;
+ x.window.campaign.executeLive=async command=>{await writer(command);throw Error('Profilantwort verloren');};await assert.rejects(x.ui.runPartyLive(x.w.token,{kind:'profile',characterId:old.id,expectedRevision:old.profileRevision,profile:{...old.profile,name:'Gespeichertes Profil'}}));x.window.campaign.executeLive=writer;
+ let release;x.window.campaign.liveStatus=(command,token)=>new Promise(resolve=>{release=()=>resolve({ok:true,value:x.store.liveStatus(command,token)});});x.releases.push(()=>release?.());x.el('live-reconcile').click();await settle();x.el('live-refresh').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);
+ x.el('character-name').value='Neuer Entwurf nach Reload';x.el('character-name').oninput();x.messages.length=0;release();await settle();assert.deepEqual(x.messages,[]);assert.equal(x.el('character-name').value,'Neuer Entwurf nach Reload');assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).roster.find(c=>c.id===old.id).profile.name,'Neuer Entwurf nach Reload');
+});
