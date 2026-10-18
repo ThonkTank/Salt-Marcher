@@ -139,10 +139,12 @@ export function activateLive(workspace: WorkspaceGeometry) {
 export async function openLive(planId?: string, visitId?: string) {
   if (!context) { tell('Bitte zuerst eine Kampagne öffnen.', true); return false; }
   const owner=context,token=owner.token,n=++liveReadRequest,current=()=>context===owner&&n===liveReadRequest;
-  const sourceRun=++liveSourcesRequest,preparation=readLiveSources(owner);
-  sessionChronicle=null;sessionChronicleError='Chronik wird geladen.';void refreshLiveSession();
+  const sourceRun=++liveSourcesRequest;
   try {
-    const liveResult=await window.campaign.live(token);
+    // Main serializes bridge reads: dispatch the required scene first.
+    const liveRead=window.campaign.live(token),preparation=readLiveSources(owner);
+    sessionChronicle=null;sessionChronicleError='Chronik wird geladen.';void refreshLiveSession();
+    const liveResult=await liveRead;
     if (!current()||!context) return false;
     const live=unwrap(liveResult);
     let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}

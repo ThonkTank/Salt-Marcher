@@ -57,7 +57,9 @@ keine vollständige Last-, Plattform- oder Produktabnahme aus diesen Teilbelegen
 ## Scene zuerst, ergänzende Vorbereitung unabhängig
 
 Scene, Party und ihre Revisionen kommen aus `LiveView`. `Preparation` liefert
-Orte, Wissen und auswählbare Pläne. Beide Reads starten parallel; eine langsame
+Orte, Wissen und auswählbare Pläne. Der maßgebliche Scene-Read wird vor den
+optionalen Material-/Chronikreads an die gemeinsame Main-Bridge geschickt. Beide
+Ergebnisse werden unabhängig übernommen; eine langsame
 oder unlesbare Vorbereitung verhindert weder Sceneöffnung noch Texteingabe und
 Speicherung. Fehlende Vorbereitung ist ausdrücklich unbekannt, kein leerer
 Inhaltsbestand. Nur ihre Auswahlcontrols sind gesperrt; bestehende Orts- und
@@ -86,8 +88,10 @@ Live-Read, unveränderte Ortsbindung und Prosa, späte Antworten nach Textwrite,
 Kampagnenwechsel, überholtem Retry und widerrufener Planabsicht. Die native
 Live-/Reiseprobe ergänzt eine fehlerhafte echte Preparation-IPC-Antwort und einen
 verzögerten Retry über Textautosave hinweg, anschließend normalen Close/Fresh bei
-100%/200%. Große Quellbestände, weitere Plattformen und vollständige Produktabnahme
-bleiben offen.
+100%/200%. Große Quellbestände einschließlich synchroner Arbeit im gemeinsamen
+Main-Prozess gesondert messen; die unabhängige Rendererübernahme ist keine
+Garantie gegen dortige Blockaden. Weitere Plattformen und vollständige
+Produktabnahme bleiben offen.
 
 ## Vorhandener Ablauf
 

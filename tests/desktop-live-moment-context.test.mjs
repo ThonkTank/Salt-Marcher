@@ -700,3 +700,7 @@ test('a committed moment and the next moment remain usable while material refres
  x.fields('Gesicherte Quest','Spur');x.el('live-moment-follow-up').value='quest';x.submit();await settle();assert.equal(x.el('live-moment-title').value,'');assert.match(x.el('live-moment-result').textContent,/gespeichert/);assert.match(x.el('live-sources-status').textContent,/geladen/);
  x.fields('Nächster Moment','Weiterleiten');x.submit();await settle();assert.equal(x.commands.filter(c=>c.action.kind==='live-moment').length,2);assert.equal(x.el('live-moment-title').value,'');release();await settle();assert.equal(x.el('live-sources-state').hidden,true);assert.match(x.el('live-moment-result').textContent,/Kampagnenchronik gespeichert/);
 });
+test('the authoritative scene request is dispatched before optional material on the shared bridge',async t=>{
+ const x=await setup(t),calls=[],live=x.window.campaign.live,prep=x.window.campaign.preparation;
+ x.window.campaign.live=(...args)=>{calls.push('scene');return live(...args);};x.window.campaign.preparation=(...args)=>{calls.push('material');return prep(...args);};await x.ui.openLive();await settle();assert.deepEqual(calls.slice(0,2),['scene','material']);
+});
