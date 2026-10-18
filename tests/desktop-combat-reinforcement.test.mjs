@@ -126,7 +126,7 @@ test('HP cells reuse the target editor and Enter applies one damage command to t
  const cells=[...x.el('combat-rows').querySelectorAll('.combat-health')];
  assert.equal(cells.length,3);assert.match(cells[1].getAttribute('aria-label'),/Goblin B.*7 \/ 7/);
  cells[1].onclick();await until(()=>focused);assert.equal(x.writes.length,0);
- assert.equal(x.el('combat-selected-name').textContent,target.name);assert.deepEqual(scrolls,['center']);
+ assert.equal(x.el('combat-selected-name').textContent,target.name);assert.deepEqual(scrolls,['nearest']);
  amount.value='3';
  const enter=(repeat=false)=>{const e=new window.Event('keydown',{cancelable:true});e.key='Enter';e.repeat=repeat;amount.dispatchEvent(e);};
  enter();enter();await until(()=>x.writes.length===1&&!x.el('fighter-damage').disabled);
@@ -142,7 +142,7 @@ test('roster condition entry opens the individual shortcuts without a write and 
  const x=await uiFixture(t),target=x.combat.participants[1],root=x.el('fighter-condition-shortcuts'),scrolls=[];
  root.scrollIntoView=options=>scrolls.push(options.block);
  const entry=x.el('combat-rows').querySelectorAll('.combat-conditions')[1];assert.ok(entry,'condition entry available in each roster row');
- entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['center']);
+ entry.onclick();await until(()=>scrolls.length===1);assert.equal(x.el('combat-selected-name').textContent,target.name);assert.equal(x.writes.length,0);assert.deepEqual(scrolls,['nearest']);
  const oldEvent=globalThis.Event;globalThis.Event=window.Event;t.after(()=>{globalThis.Event=oldEvent;});
  const form=x.el('combat-participant-form');form.requestSubmit=()=>form.onsubmit({preventDefault(){}});
  [...root.querySelectorAll('button')].find(b=>b.textContent==='Festgesetzt').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);
