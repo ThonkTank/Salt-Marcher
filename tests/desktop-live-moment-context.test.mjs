@@ -460,11 +460,13 @@ test('a refresh retains same-scene prose and its original revision instead of ov
 });
 test('a failed refresh retains edited prose through retry while clean profiles adopt the confirmed update',async t=>{
  const x=await setup(t),read=x.window.campaign.live,text='Offene Notiz über einen Leseausfall hinweg';
+ let autosave;globalThis.setTimeout=(run,ms)=>{if(ms===700)autosave=run;return 1;};
  x.el('running-notes').value=text;x.el('running-notes').oninput();
  x.window.campaign.live=async()=>({ok:false,error:'Szenenstand vorübergehend nicht lesbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);
  const character=x.store.live(x.w.token).roster[0];x.store.executeLive(x.command({kind:'profile',characterId:character.id,expectedRevision:character.profileRevision,profile:{...character.profile,name:'Neu bestätigtes Profil'}}));
+ assert.equal(await x.ui.flushLive(),true);autosave=null;
  x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('running-notes').value,text);assert.equal(x.el('character-name').value,'Neu bestätigtes Profil');
- assert.equal(await x.ui.flushLive(),true);assert.equal(x.store.live(x.w.token).scene.notes,text);assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Neu bestätigtes Profil');
+ assert.equal(typeof autosave,'function','retry resumes the existing autosave after its earlier timer expired');autosave();await settle();assert.equal(x.store.live(x.w.token).scene.notes,text);assert.equal(x.store.live(x.w.token).roster[0].profile.name,'Neu bestätigtes Profil');
 });
 test('a current live load failure stays visible and can be explicitly retried',async t=>{
  const x=await setup(t),read=x.window.campaign.live;x.window.campaign.live=async()=>({ok:false,error:'Aktuelle Scene nicht verfügbar'});await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Aktuelle Scene nicht verfügbar'));x.window.campaign.live=read;await x.ui.openLive();assert.equal(x.el('live-workspace').hidden,false);assert.equal(x.el('scene-focus').value,x.scene.id);

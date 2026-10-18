@@ -160,6 +160,7 @@ export async function openLive(planId?: string, visitId?: string) {
     // A confirmed refresh must not replace an edited draft of the same owner.
     sceneDraft = dirtyScene&&sceneDraft?.id===live.scene?.id ? { ...live.scene!, ...content(sceneDraft!), revision:sceneDraft!.revision } : live.scene ? structuredClone(live.scene) : null;
     render();
+    if(changed()&&!timer&&!composing&&!blocked)timer=setTimeout(()=>{void flushLive();},700);
     const material=acceptLiveSources(owner,sourceRun,preparation);
     if(planId&&(!await material||!current()))return false;
     if (planId) { get<HTMLDetailsElement>('adoption-picker').open = true; get<HTMLSelectElement>('adoption-plan').value = planId; renderVisits(); if (visitId) get<HTMLSelectElement>('adoption-visit').value = visitId; }
