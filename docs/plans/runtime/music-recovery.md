@@ -35,6 +35,19 @@ Die [Soundboardprüfung](../../../tests/desktop-soundboard-context.test.mjs)
 verbindet den echten Controller mit dem Store; der Audioport ist kontrolliert.
 Das beweist keine hörbare native Ausgabe.
 
+Der Einstieg aus dem Atlas verwendet dieselbe Arbeitsbereichsnavigation wie
+die übrige Anwendung. Ein offener Atlaszug blockiert weiterhin den Wechsel;
+nach Abschließen oder Verwerfen sind Musik und Live-Spiel ohne Rückweg über
+die Kampagnenliste erreichbar. Navigation wird als bestehender DOM-Knoten
+umgestellt; ihre Handler, Save-Grenzen und Kampagnenidentität bleiben erhalten.
+`desktop-workspace-navigation.test.mjs` prüft Eigentum und Wiederherstellung.
+`tools/test-desktop-scene-music-navigation.mjs` prüft nativ mit 100 % und 200 %:
+Atlaszug verwerfen, zwei Szenen mit verschiedener Musikintensität speichern,
+manuelle Auswahl bei aktivierter Automatik über Fokuswechsel erhalten, Stop,
+Atlas-Rückkehr, stillen Neustart und ausdrückliches Play mit nativer Dekodierung.
+Szenenprosa und Medienmetadaten bleiben dabei unverändert. Dieser Teilbeleg
+ersetzt weder hörbare Hardwareprüfung noch Wetter-/Ambience- und Race-Abnahmen.
+
 ## Nachweise und nächste Arbeit
 
 [Runtime-Prüfungen](../../../tests/desktop-audio-layer-recovery.test.mjs) prüfen

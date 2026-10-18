@@ -128,6 +128,8 @@ export class AtlasWorkspaceLayout {
   if(this.active===active)return;this.active=active;document.body.classList.toggle('atlas-workspace',active);
   if(active){
    for(const id of ['campaign-header-name','rename-campaign','new-campaign','campaign-manager','application-settings','help'])this.move(el(id),this.menu,this.shellNodes);
+   this.move(el('workspace-navigation'),this.menu,this.shellNodes);
+   el<HTMLDetailsElement>('workspace-nav-menu').open=true;
    this.move(el('import'),this.importMenu,this.shellNodes);
    for(const id of ['status','commit-pending','error-actions','backup-status','world-write-recovery','graph-preview-banner','atlas-save-status'])this.move(el(id),this.notices,this.shellNodes);
    const party=el('party-popover');if(party.matches(':popover-open'))party.hidePopover();
