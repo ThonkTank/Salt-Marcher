@@ -11,6 +11,7 @@ Pfade: `src/app/`; Prüfungen: `tests/`.
 
 | Änderung | Zuständige Quelle | Regression |
 | --- | --- | --- |
+| Spontane Katalogübernahme | `combat-contracts.ts`, `combat.ts`, `storage/combat.ts` | `desktop-combat-reinforcement.test.mjs`, `tools/test-desktop-catalog-combat.mjs` |
 | Teilnehmer-/Notizentwurf | `combat-draft-contracts.ts`, `combat-draft-cache.ts`, `storage/combat-drafts.ts` | `desktop-combat-drafts.test.mjs` |
 | Szenen-/Mehrgruppenauswahl | `storage/scene-encounter-selection.ts`, `combat-selection-ui.ts`, `storage/combat.ts` | `desktop-scene-encounter-selection.test.mjs` |
 | Gemeinsame PC-Gesundheit | `storage/mask-health.ts` | `desktop-combat-hit.test.mjs` |
@@ -32,6 +33,29 @@ Die Auswahl liest Fokus, Szenenparty und vorbereitete Gruppen transaktional;
 unbeteiligte Progressions-/Beuteleser sind keine Voraussetzung. Der Kampfwriter
 prüft Party-/Fokus- und Gruppenbasis vor Übernahme erneut. Verstärkung verwendet
 denselben Gruppenprüfweg; verworfene oder fremde Gruppen erzeugen keine Runtime.
+
+## Spontane Katalogübernahme ohne Teilkampf
+
+Die erste Katalogkreatur gehört zur atomaren Kampfanlage. `CombatAction.create`
+bindet optional `catalogCreature` (ID, Anzahl, Gruppenmodus); derselbe
+`addCreature`-Pfad wie bei Verstärkung löst sie vor dem ersten Kampfrecord auf.
+Plan, Generator und Szenengruppenauswahl sind getrennte Anlagequellen und dürfen
+nicht gleichzeitig gebunden werden. Bei fehlendem/abgeschlossenem Kampf sendet
+der Renderer einen Anlageauftrag, bei offenem Kampf einen `add-creature`-Auftrag.
+Die ausdrückliche spontane Katalogübernahme und die Szenengruppenauswahl bleiben
+erreichbar; es entsteht keine zweite veränderliche Planungskopie.
+
+Ungültige Daten, veraltete Membershipbasis und spätere Receiptfehler rollen die
+gesamte Anlage zurück, einschließlich der ersten Gegner. Replay und bestehende
+`commitStatus`-Klärung bestätigen denselben vollständigen Kampf. Bestehende
+Receiptformate und Kampfdaten bleiben ohne Schemawechsel erhalten.
+
+Die gezielten Store-/Controllerprüfungen decken Party/Mob, Fresh/Replay,
+Quellenkonflikte, Rollback und verlorene Antwort ab. Die native Probe führt bei
+100/200 % Katalogauswahl, kontrollierte Ablehnung/Replyverlust, Spieler-/Gruppeninitiative,
+individuelle HP, Zugwechsel/Undo, XP-Abschluss und Neustart gemeinsam aus.
+Das ersetzt keine großen Kampf-/History-, Mehrplattform- oder physischen
+Eingabeabnahmen. Anlage-/Gegnerrohentwürfe und andere Anlagewege bleiben offen.
 
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 

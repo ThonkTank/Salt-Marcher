@@ -36,7 +36,7 @@ export interface CombatView {
 }
 export type CombatAction =
   | {kind:'confirm-npc-losses';losses:CombatLossBasis[]}
-  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; sceneSelection?:import('./scene-encounter-selection').SceneEncounterBasis; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
+  | { kind: 'create'; sceneId: string; title: string; includeParty: boolean; expectedMembershipRevision: number; catalogCreature?:{creatureId:string;count:number;grouped:boolean}; sceneSelection?:import('./scene-encounter-selection').SceneEncounterBasis; generation?:{runId:string;index:number;expectedRegistryRevision:number;expectedFocusRevision:number|null;locationId:string|null}; planId?: string; expectedPlanRevision?: number;preparedGroupId?:string;expectedPreparedRevision?:number;worldActorIds?:string[] }
   | {kind:'add-prepared-group';preparedGroupId:string;expectedPreparedRevision:number;expectedRosterBasis:string;worldActorIds:string[];initiative:number}
   | {kind:'add-world-actor';actorId:string;expectedActorRevision:number;expectedRecordRevision:number}
   | {kind:'add-party';characterId:string;expectedMembershipRevision:number;expectedProgressRevision:number;initiative?:number}

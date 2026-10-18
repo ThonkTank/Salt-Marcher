@@ -183,6 +183,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
     }
     let state: CombatState;
     if (a.kind === 'create') {
+      if(a.catalogCreature!==undefined&&(a.planId!==undefined||a.preparedGroupId!==undefined||a.generation!==undefined||a.sceneSelection!==undefined||a.worldActorIds!==undefined))throw new Error('Katalogauswahl benötigt eine eindeutige Kampfquelle.');
       const scene = readLiveScene(db, cam, a.sceneId);
       if (scene.retired || scene.membershipRevision !== a.expectedMembershipRevision) throw new Error('Gruppe geändert. Bitte aktualisieren.');
       const party = a.includeParty ? readLive(db, cam).roster.filter(c => c.active && c.sceneId === scene.id) : [];
@@ -222,6 +223,11 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
         state.title=a.title||groups.map(g=>g.title).join(' + ').slice(0,1000);
         state.notes=groups.map(g=>g.title+'\n'+g.notes).join('\n\n');
         for(const [i,group] of groups.entries())reinforcePreparedGroup(db,cam,state,{kind:'add-prepared-group',preparedGroupId:group.id,expectedPreparedRevision:group.revision,expectedRosterBasis:groupCombatBasis(group),worldActorIds:sceneGroupMembers(chosen[i]!).map(a=>a.id),initiative:0});
+      }
+      if(a.catalogCreature!==undefined){
+        const first=a.catalogCreature;
+        if(!first||typeof first.creatureId!=='string'||!first.creatureId||typeof first.grouped!=='boolean')throw new Error('Ungültige Katalogauswahl.');
+        addCreature(state,readCreature(first.creatureId),first.count,first.grouped);
       }
       checkedCombat(state);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),0)+1 n FROM combat WHERE campaign_id=?').get(cam).n;
