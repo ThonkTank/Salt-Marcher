@@ -1,6 +1,6 @@
 # Adventuring Day: Partyvorschau und bestätigte Rastfakten
 
-Stand: 16.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
+Stand: 18.10.2026. Ergänzt den [Party-/Scenevertrag](smr03-live-scene-contract.md#party--roster--und-adventuring-day-projektion)
 und den [Gesamtumfang](../../SCOPE.md). Der Rechner ist ein Party-/Live-Werkzeug;
 der Atlas ist weder sein Owner noch eine Voraussetzung.
 
@@ -160,6 +160,18 @@ Ergebnisse werden neu gelesen und berechnet; eine Quelländerung benötigt weite
 „Vorlagen aktualisieren“. Der Entwurf gehört nicht zum Kampagnenexport. Speicherfehler
 werden angezeigt, beschädigte Entwürfe bleiben bis zum ausdrücklichen Zurücksetzen
 erhalten. DOM-Regressionen prüfen Wiederaufnahme, Kampagnenwechsel und Fehlerpfade.
+
+Eine sofortige Aktualisierung beim Öffnen oder beim Wechsel zur aktiven Party
+übernimmt auch eine bereits vorgemerkte Neuberechnung. Deren alter 120-ms-Timer
+darf keinen zweiten Read oder unbeabsichtigten Wiederholungsversuch nach einem
+Lesefehler auslösen. Die gemeinsame Main-/SQLite-Transaktion bleibt erforderlich,
+damit Party, Raststände und Vorlagen aus derselben Lesebasis stammen. Eingaben
+bleiben unabhängig vom Read gesichert; Fehler räumen Ergebnisse ab, nicht den
+Entwurf. `tools/test-desktop-day-refresh.mjs` prüft diesen Weg über echte IPC und
+SQLite bei 100/200 Prozent, Fehler und erneutes Öffnen sowie App-Neustart. Für den
+gezielten Timingfall werden die DOM-Aktionen innerhalb eines Renderer-Tasks
+ausgelöst; das ist keine Messung menschlicher Klickgeschwindigkeit oder eine
+vollständige Leistungsabnahme.
 
 Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter
 Vorlagenparty, Wiederholungen, Rundung, eigener Sechserparty, unveränderten
