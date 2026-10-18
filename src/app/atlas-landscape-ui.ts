@@ -33,8 +33,7 @@ type Tool =
   | "river"
   | "road"
   | "place"
-  | "measure"
-  | "export";
+  | "measure";
 function strokePolygon(points: Point[], radius: number): Polygon[] {
   const rings: Polygon[] = points.map((p) => ({
     outer: Array.from({ length: 20 }, (_, i) => ({
@@ -75,7 +74,6 @@ export class LandscapeWorkbench {
   private assetFence='';
   records: LandscapeRecord[] = [];
   private raster: import("./landscape-raster").LandscapeRaster[] | undefined;
-  exportBox: LandscapeBox | null = null;
   private token = "";
   private key = "";
   private publishedLayer: import("./atlas-region-contracts").AtlasLandscapeLayer|undefined;
@@ -118,7 +116,7 @@ export class LandscapeWorkbench {
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option><option value="export">Ausgabebereich wählen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
+    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
     html("atlas-tool-fields").after(this.panel);
     html<HTMLSelectElement>("land-tool").onchange = () => {
       if (this.hasDraft()) {
@@ -358,7 +356,6 @@ export class LandscapeWorkbench {
   cancel() {
     this.points = [];
     this.brushStrokes = [];
-    this.exportBox=null;
     this.measurement=[];
     this.dirty = false;
     this.pointer = null;
@@ -417,7 +414,6 @@ export class LandscapeWorkbench {
     this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
     this.request++;
-    this.exportBox = null;
   }
   async openLocation(id: string, sectionId?: string) {
     const token = this.token,
@@ -577,13 +573,8 @@ export class LandscapeWorkbench {
         landscapeNode("circle", {x: o.x + w * Math.cos(a) - h * Math.sin(a) - box.x, y: o.y + w * Math.sin(a) + h * Math.cos(a) - box.y, radius: mpp * 7, style: {fill: "#e1984b"}, data: {landVertex: String(-1), editorOnly: String("true")}}),
       );
     }
-    if (this.exportBox) {
-      const b = this.exportBox;
-      root.append(
-        landscapeNode("rect", {x: b.x - box.x, y: b.y - box.y, width: b.width, height: b.height, style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2, lineDash:[mpp*8,mpp*5]}, data: {editorOnly: String("true")}}),
-      );
-    }
   }
+
   private sayIfIdle(s: string) {
     if (!this.hasDraft() && !this.selected) this.say(s);
   }
@@ -672,23 +663,6 @@ export class LandscapeWorkbench {
       this.say(formatDistance(distance(this.points)));
       this.measurement = this.points;
       this.points = [];
-      this.host.redraw();
-      return;
-    }
-    if (this.tool === "export") {
-      if (this.points.length !== 2)
-        throw new Error("Zwei gegenüberliegende Ecken wählen.");
-      const [a, b] = this.points as [Point, Point];
-      this.exportBox = {
-        x: Math.min(a.x, b.x),
-        y: Math.min(a.y, b.y),
-        width: Math.abs(a.x - b.x),
-        height: Math.abs(a.y - b.y),
-      };
-      if (!this.exportBox.width || !this.exportBox.height)
-        throw new Error("Ausgabebereich braucht Fläche.");
-      this.points = [];
-      this.say("Ausgabebereich gewählt. Unten „Atlas ausgeben“ öffnen.");
       this.host.redraw();
       return;
     }
