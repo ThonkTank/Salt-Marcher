@@ -151,3 +151,29 @@ test('rest-stop action splits a repeated row, persists the plan and rejects stal
  assert.ok(x.store.db.serialize().equals(before));
  const closed=x.el('day-plan-result').querySelectorAll('.day-rest-stops')[1].querySelector('button');x.el('day-close').onclick();closed.onclick();assert.equal(x.el('day-plan-selected').children.length,2);
 });
+
+
+test('every active figure remains reachable in paged current facts and XP projections without extra reads or writes',async t=>{
+ const x=await uiFixture(t);for(let i=2;i<=45;i++)x.add('Figur '+String(i).padStart(2,'0'),i===45?299:300);
+ x.el('day-mode-progress').onclick();x.input('day-total-xp','1');await new Promise(r=>setTimeout(r,160));await until(()=>x.el('day-progress-summary'));
+ const before=x.store.db.serialize();let reads=x.requests.length;const current=x.el('day-current'),summary=x.el('day-summary');
+ assert.equal(current.querySelectorAll('td').length,40*4);
+ let factsMore=[...current.querySelectorAll('button')].find(b=>b.textContent.includes('Weitere'));
+ let xpMore=[...summary.querySelectorAll('button')].find(b=>b.textContent.includes('Weitere'));
+ assert.ok(factsMore,'current facts must expose the remaining active figures');assert.ok(xpMore,'XP projections must expose the remaining active figures');
+ x.input('day-total-xp','2');factsMore.onclick();xpMore.onclick();
+ assert.equal(current.querySelectorAll('td').length,40*4,'pending facts must not expand');
+ assert.equal([...summary.querySelectorAll('table')].at(-1).querySelectorAll('td').length,40*4,'pending projections must not expand');
+ await new Promise(r=>setTimeout(r,160));await until(()=>x.requests.length>reads);reads=x.requests.length;
+ factsMore=[...current.querySelectorAll('button')].find(b=>b.textContent.includes('Weitere'));xpMore=[...summary.querySelectorAll('button')].find(b=>b.textContent.includes('Weitere'));
+ factsMore.onclick();xpMore.onclick();
+ assert.match(current.textContent,/Figur 45/);assert.match(summary.textContent,/Figur 45/);
+ assert.match([...summary.querySelectorAll('table')].at(-1).textContent,/299 → 300.*1 → 2/);
+ assert.equal(current.querySelectorAll('td').length,45*4);assert.equal(factsMore.hidden,true);assert.equal(xpMore.hidden,true);
+ assert.equal(x.requests.length,reads,'paging consumes only the already confirmed calculation');assert.ok(x.store.db.serialize().equals(before));
+ // New input revokes handlers while the previous result remains visibly pending.
+ x.input('day-total-xp','2');factsMore.onclick();xpMore.onclick();assert.equal(x.requests.length,reads);
+ await new Promise(r=>setTimeout(r,160));await until(()=>x.requests.length>reads);
+ assert.equal(current.querySelectorAll('td').length,40*4);assert.equal(factsMore.isConnected,false);
+ factsMore.onclick();assert.equal(current.querySelectorAll('td').length,40*4,'revoked page controls cannot change the new answer');
+});
