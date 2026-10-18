@@ -97,7 +97,7 @@ function rectangleGesture(t){
  for(const id of ['atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement('button');n.id=id;f.document.body.append(n);}
  Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
  f.ui.reference={active:false};f.ui.camera.stopZoom=()=>{};f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
- const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false});
+ const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false,preventDefault(){}});
  return{...f,writes,selected,captures,event};
 }
 for(const reverse of [false,true])test(`room rectangle drag previews and commits once in a rotated frame (${reverse?'reverse':'forward'})`,async t=>{
@@ -179,4 +179,25 @@ test('distinct crossing walls require a room choice instead of silently binding 
 
 test('direct door mode has no inactive corner or wall grips competing with placement',t=>{
  const f=fixture(t);f.document.getElementById('drawing-tool').innerHTML='<option value="door" selected>Tür</option>';const scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined||n.data.atlasVertex!==undefined).length,0);
+});
+
+function pathGesture(t){
+ const f=rectangleGesture(t),path={id:'path',kind:'path',scopeId:'local',floorId:'ground',revision:9,roomId:'room',name:'Zugang',notes:'Wachposten am Tor',points:[{x:0,y:0},{x:10,y:0}],width:2,color:'#765432'};
+ f.ui.frame=()=>({x:0,y:0,angle:0});global.atlasAuthorDraft.element=path;f.ui.owner={token:'own',campaign:{id:'campaign'}};f.ui.selection={kind:'element',id:'path'};f.ui.family='interior';f.ui.root.dataset.roomDraw='false';f.document.querySelector('#drawing-tool').value='select';f.ui.svg.focus=()=>{};f.ui.camera.hitAt=(e,types)=>types.includes('atlasPathInsert')?{data:{id:'path',atlasPathInsert:'0'}}:null;f.ui.pointToolActive=()=>false;
+ return{...f,path};
+}
+test('path midpoint drag inserts one editable bend, preserves metadata and never transforms the building',async t=>{
+ const f=pathGesture(t),before=structuredClone(f.original),source=structuredClone(f.path);
+ f.ui.down(f.event(5,0));f.ui.move(f.event(5,8));assert.equal(f.writes.length,0);assert.deepEqual(f.ui.pathPreview(f.path).points,[{x:0,y:0},{x:5,y:8},{x:10,y:0}]);
+ await f.ui.up(f.event(5,8));assert.equal(f.writes.length,1);const action=f.writes[0].command.action;assert.equal(action.kind,'element');assert.equal(action.expectedRevision,9);assert.deepEqual(action.element,{...source,points:[{x:0,y:0},{x:5,y:8},{x:10,y:0}]});assert.deepEqual(f.original,before);assert.deepEqual(f.path,source);assert.equal(f.ui.pathDrag,null);assert.equal(f.ui.ignoreClick,true);
+});
+for(const mode of ['stationary','cancel','stale','floor','owner'])test('path gesture cannot commit after '+mode,async t=>{
+ const f=pathGesture(t);f.ui.down(f.event(5,0));if(mode!=='stationary')f.ui.move(f.event(5,8));
+ if(mode==='cancel')f.ui.cancel();if(mode==='stale')f.current(false);if(mode==='floor')f.ui.floorId='upper';if(mode==='owner')f.ui.owner={token:'another'};
+ await f.ui.up(f.event(5,8));assert.equal(f.writes.length,0);assert.equal(f.ui.pathDrag,null);
+});
+test('selected path exposes constant-size vertices and insertion grips on the author layer only',t=>{
+ const f=fixture(t);f.ui.selection={kind:'element',id:'path'};f.document.querySelector('#drawing-tool').value='select';global.atlasAuthorDraft.element={id:'path',kind:'path',scopeId:'local',floorId:'ground',points:[{x:1,y:2},{x:9,y:2}]};
+ const scene=f.render(),handles=all(scene).filter(n=>n.data.atlasPathVertex!==undefined||n.data.atlasPathInsert!==undefined);assert.equal(handles.length,3);assert(handles.every(n=>n.geometry.radius===1));const author=scene.children.find(n=>n.data.editorOnly==='true');assert(author.children.indexOf(global.atlasDraftNode)<author.children.indexOf(handles[0]),'Opaque selected-element paint must precede its grips');assert.equal(all(scene).filter(n=>n.data.atlasVertex!==undefined).length,0);
+ f.document.querySelector('#atlas-perception').checked=true;assert.equal(all(f.render()).filter(n=>n.data.atlasPathVertex!==undefined).length,0);
 });

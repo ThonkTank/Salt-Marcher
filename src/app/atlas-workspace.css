@@ -119,3 +119,4 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #atlas-navigation-popup .navigation-brand{display:none}
 #atlas-navigation-popup #workspace-nav-menu>summary{display:block;cursor:pointer;padding:.55rem .35rem;font-weight:600}
 #atlas-navigation-popup .navigation-groups{position:static;display:block;max-height:none;padding:0;box-shadow:none;background:transparent}
+#campaign-atlas[data-element-selected=true] #atlas-workspace-selection :is(#key-open,#empty,#editor,details:has(#drawing-dx),details:has(#drawing-floor-name)){display:none}
