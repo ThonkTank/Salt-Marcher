@@ -253,6 +253,7 @@ export class AtlasCanvasScene {
     ctx.lineCap = s.lineCap ?? "butt";
     ctx.lineJoin = s.lineJoin ?? "miter";
     ctx.setLineDash(s.lineDash ?? []);
+    ctx.lineDashOffset = s.lineDashOffset ?? 0;
   }
   private commandAt(
     ctx: CanvasRenderingContext2D,
