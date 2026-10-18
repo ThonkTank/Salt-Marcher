@@ -210,7 +210,12 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
   if (!editableCombat(view?.combat??null)) {
     if(!await execute({kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision})||!owner.current())return;
   }
-  if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current())get('combat-panel').scrollIntoView({block:'start'});
+  if(await execute({kind:'add-creature',creatureId,count,grouped})&&owner.current()){
+    get<HTMLDetailsElement>('combat-add-details').open=false;
+    // The live focus bar has just appeared after leaving the catalog. Measure
+    // its sticky offset before positioning the encounter heading beneath it.
+    window.requestAnimationFrame(()=>{if(owner.current())get('combat-panel').scrollIntoView({block:'start'});});
+  }
 }
 export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
 const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
@@ -362,6 +367,7 @@ function render() {
   get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.sceneGroups ? ' · Szenengruppen: '+combat.sceneGroups.map(g=>g.name).join(', ') : combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
   const additions=get<HTMLDetailsElement>('combat-add-details');additions.querySelector('summary')!.textContent=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
   if(additions.dataset.combatId!==combat?.id){additions.dataset.combatId=combat?.id??'';additions.open=!!startIssue;}
+  if(additions.dataset.phase!==combat?.phase){additions.dataset.phase=combat?.phase??'';if(combat?.phase==='running')additions.open=false;}
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
   const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});
@@ -371,6 +377,7 @@ function render() {
   get('combat-controls').hidden = !combat || terminal;
   get('combat-start').hidden = combat?.phase !== 'preparing';
   get('combat-next').hidden = combat?.phase !== 'running';
+  get('combat-initiative-open').textContent=combat?.phase==='running'?'Initiative ändern…':'Initiative eintragen…';
   get('combat-finish').hidden = !combat || terminal;
   get('combat-finish').textContent = combat?.phase === 'preparing' ? 'Vorbereitung beenden…' : 'Kampf abschließen…';
   get('combat-add-details').hidden = !combat || terminal;
@@ -499,7 +506,6 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
    void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)get<HTMLDetailsElement>('combat-add-details').open=false;});
   };
   get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }); };
-  get('combat-roll').onclick = () => void execute({ kind: 'roll', mode: value('combat-roll-mode') as 'normal' | 'advantage' | 'disadvantage' });
   get('combat-start').onclick = () => void execute({ kind: 'start' });
   get('combat-next').onclick = () => void execute({ kind: 'next' });
   get('combat-undo').onclick = () => void execute({ kind: 'undo' });

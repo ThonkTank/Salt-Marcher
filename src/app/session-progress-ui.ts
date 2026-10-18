@@ -34,16 +34,24 @@ function renderOutcome(){
  updateOutcomeActions();
 }
 export function sessionNavigatorContext(w:WorkspaceGeometry|null,l:LiveView|null,p:Preparation|null,active:boolean){
- if(w?.token!==workspace?.token)drafts.clear();workspace=w;live=l;sources=p;
+ if(w?.token!==workspace?.token){drafts.clear();planId='';}workspace=w;live=l;
  const next=JSON.stringify([w?.token,l?.focusId,l?.scene?.adoption?.id]);const changed=next!==key;key=next;
- const picker=el<HTMLSelectElement>('live-session-plan');picker.replaceChildren();for(const p of sources?.plans??[]){const o=document.createElement('option');o.value=p.id;o.textContent=p.name||'Unbenannter Plan';picker.append(o);}
  if(changed)planId=l?.scene?.adoption?.planId??planId;
- if(!sources?.plans.some(p=>p.id===planId))planId=sources?.plans[0]?.id??'';
- picker.value=planId;el('live-session-navigator').hidden=!active||!sources?.plans.length&&!live?.scene?.adoption;renderOutcome();
- if(active&&w&&l?.scene)void refresh();else{request++;view=null;el('live-session-visits').replaceChildren();}
+ renderOutcome();sessionNavigatorPreparation(p,active);
 }
+// Late material must not rewrite the independent visit-outcome editor.
+export function sessionNavigatorPreparation(p:Preparation|null,active:boolean){
+ sources=p;const picker=el<HTMLSelectElement>('live-session-plan');picker.replaceChildren();
+ for(const plan of sources?.plans??[]){const o=document.createElement('option');o.value=plan.id;o.textContent=plan.name||'Unbenannter Plan';picker.append(o);}
+ if(sources&&!sources.plans.some(p=>p.id===planId))planId=sources.plans[0]?.id??'';
+ if(!sources&&planId){const o=document.createElement('option');o.value=planId;o.textContent='Gewählter Plan · Vorbereitung nicht verfügbar';picker.append(o);}
+ picker.disabled=locked||!sources;picker.value=planId;
+ el('live-session-navigator').hidden=!active||!sources?.plans.length&&!live?.scene?.adoption;
+ if(active&&workspace&&live?.scene)void refresh();else{request++;view=null;el('live-session-visits').replaceChildren();}
+}
+
 async function refresh(){
- const token=workspace?.token,sceneId=live?.scene?.id,chosen=planId,n=++request;view=null;el('live-session-visits').replaceChildren();updateOutcomeActions();if(!token||!sceneId||!chosen){el('live-session-progress-summary').textContent='Noch kein Spielabendplan.';return;}
+ const token=workspace?.token,sceneId=live?.scene?.id,chosen=planId,n=++request;view=null;el('live-session-visits').replaceChildren();updateOutcomeActions();if(!token||!sceneId||!chosen){el('live-session-progress-summary').textContent=sources?'Noch kein Spielabendplan.':'Vorbereitungspläne nicht verfügbar.';return;}
  el('live-session-progress-summary').textContent='Besuchsstand wird geladen…';
  try{const result=await window.campaign.sessionProgress(token,chosen,sceneId);if(request!==n||workspace?.token!==token||live?.scene?.id!==sceneId||planId!==chosen)return;if(!result.ok)throw new Error(result.error);if(result.value.planId!==chosen||result.value.visits.some(v=>v.focused&&v.focused.sceneId!==sceneId))throw new Error('Besuchsstand gehört zu einer anderen Planung oder Gruppe.');view=result.value;draw();}
  catch(e){if(request===n)el('live-session-progress-summary').textContent=(e as Error).message;}
@@ -59,4 +67,4 @@ function draw(){
  updateOutcomeActions();
 }
 
-export function sessionNavigatorBusy(on:boolean){locked=on;for(const control of el('live-session-navigator').querySelectorAll<HTMLButtonElement|HTMLSelectElement>('button,select'))control.disabled=on;updateOutcomeActions();}
+export function sessionNavigatorBusy(on:boolean){locked=on;for(const control of el('live-session-navigator').querySelectorAll<HTMLButtonElement|HTMLSelectElement>('button,select'))control.disabled=on;el<HTMLSelectElement>('live-session-plan').disabled=on||!sources;updateOutcomeActions();}

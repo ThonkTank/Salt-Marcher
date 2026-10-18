@@ -73,3 +73,9 @@ test('visit outcomes are replayable, guarded and retained through Fresh and inde
  assert.notEqual(copiedScene.id,second.id);assert.notEqual(copiedScene.adoption.id,second.adoption.id);const copied=store.sessionProgress(cw.token,copiedScene.adoption.planId,copiedScene.id);assert.equal(copied.visits[0].count,2);assert.equal(copied.visits[0].occurrences[1].outcome.text,text);assert.notEqual(copied.visits[0].occurrences[1].adoptionId,first.adoption.id);
  assert.ok(store.sessionPacket(cw.token,copiedScene.adoption.planId).visits[0].blocks.some(b=>b.text.includes(text)));
 });
+
+test('missing material keeps adopted progress readable and a late source does not rewrite outcome input',async t=>{
+ const x=navigator(t);x.context();await tick();const field=x.el('live-visit-outcome-text');field.value='Eigener Ausgang';field.oninput();let assignments=0,stored=field.value;Object.defineProperty(field,'value',{get:()=>stored,set:v=>{assignments++;stored=v;},configurable:true});
+ x.ui.sessionNavigatorPreparation(null,true);await tick();assert.equal(x.el('live-visit-outcome').hidden,false);assert.equal(x.el('live-session-plan').disabled,true);assert.match(x.el('live-session-progress-summary').textContent,/1 Besuchen/);assert.equal(x.el('live-visit-outcome-confirm').disabled,false);
+ x.ui.sessionNavigatorPreparation({plans:[{id:'plan',name:'First'}]},true);await tick();assert.equal(assignments,0);assert.equal(field.value,'Eigener Ausgang');assert.equal(x.el('live-session-plan').disabled,false);
+});
