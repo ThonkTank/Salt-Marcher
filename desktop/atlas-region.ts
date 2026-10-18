@@ -3,27 +3,27 @@ import {join} from 'node:path';
 import type {AtlasRegionSource,AtlasRegionQuery,AtlasRegionGeometry,AtlasObjectFocus,AtlasHitPage} from '../src/app/atlas-region-contracts';
 import {REGION_CACHE_BYTES} from '../src/app/atlas-region-contracts';
 type Queued={source:AtlasRegionSource;job:object;resolve:(value:any)=>void;reject:(error:Error)=>void};
-/** One readonly worker, one active request and one replaceable successor. Camera motion never destroys its index. */
+/** One readonly worker/index; bounded successors for selection and camera, with selection first. */
 export class AtlasRegionService {
  private worker:Worker|null=null;private identity='';private exit:Promise<unknown>=Promise.resolve();private pending:{resolve:(v:any)=>void;reject:(e:Error)=>void}|null=null;
- private generation=0;private closed=false;private source:AtlasRegionSource|null=null;private queued:Queued|null=null;private draining=false;private starts=0;
+ private generation=0;private closed=false;private source:AtlasRegionSource|null=null;private queued=new Map<"selection"|"camera",Queued>();private draining=false;private starts=0;
  private cache=new Map<string,{json:string;bytes:number}>();private cacheBytes=0;
  constructor(private workerFile=join(__dirname,'atlas-region-worker.cjs'),private cacheLimit=REGION_CACHE_BYTES){}
  get cursor(){return this.source?{epoch:this.source.epoch,sequence:this.source.sequence,...(this.source.shadow?{shadow:{epoch:this.source.shadow.epoch,sequence:this.source.shadow.sequence}}:{})}:undefined;}
- get diagnostics(){return{workerStarts:this.starts,active:!!this.pending,queued:!!this.queued,cacheBytes:this.cacheBytes};}
+ get diagnostics(){return{workerStarts:this.starts,active:!!this.pending,queued:this.queued.size>0,cacheBytes:this.cacheBytes};}
  private sourceIdentity(s:AtlasRegionSource){return JSON.stringify([s.filename,s.campaignId,s.token,s.epoch,s.shadow?.filename,s.shadow?.scopeId,s.shadow?.epoch]);}
- cancel(){this.generation++;const worker=this.worker;this.worker=null;this.identity='';this.source=null;this.pending?.reject(new Error('Kartenausschnitt abgebrochen.'));this.pending=null;this.queued?.reject(new Error('Kartenausschnitt abgebrochen.'));this.queued=null;if(worker)void worker.terminate();}
+ cancel(){this.generation++;const worker=this.worker;this.worker=null;this.identity='';this.source=null;this.pending?.reject(new Error('Kartenausschnitt abgebrochen.'));this.pending=null;for(const q of this.queued.values())q.reject(new Error('Kartenausschnitt abgebrochen.'));this.queued.clear();if(worker)void worker.terminate();}
  async cancelAndWait(){this.cancel();await this.exit;}
  async close(){this.closed=true;await this.cancelAndWait();this.cache.clear();this.cacheBytes=0;}
- private enqueue(source:AtlasRegionSource,job:object){
+ private enqueue(source:AtlasRegionSource,job:object,lane:"selection"|"camera"="selection"){
   if(this.closed)return Promise.reject(new Error('Kartenausschnitt abgebrochen.'));
   if(this.worker&&this.sourceIdentity(source)!==this.identity)this.cancel();
-  this.queued?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
-  const promise=new Promise<any>((resolve,reject)=>{this.queued={source,job,resolve,reject};});void this.drain();return promise;
+  this.queued.get(lane)?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
+  const promise=new Promise<any>((resolve,reject)=>{this.queued.set(lane,{source,job,resolve,reject});});void this.drain();return promise;
  }
  private async drain(){
   if(this.draining)return;this.draining=true;
-  try{while(this.queued&&!this.closed){const request=this.queued;this.queued=null;try{request.resolve(await this.run(request.source,request.job));}catch(e){request.reject(e as Error);}}}
+  try{while(this.queued.size&&!this.closed){const lane=this.queued.has("selection")?"selection":"camera",request=this.queued.get(lane)!;this.queued.delete(lane);try{request.resolve(await this.run(request.source,request.job));}catch(e){request.reject(e as Error);}}}
   finally{this.draining=false;}
  }
  private async run(source:AtlasRegionSource,job:object){
@@ -47,7 +47,7 @@ export class AtlasRegionService {
   if(this.closed)throw new Error('Kartenausschnitt abgebrochen.');
   const key=JSON.stringify([source.filename,source.token,source.fence,query]);
   const hit=this.cache.get(key);if(hit){this.cache.delete(key);this.cache.set(key,hit);return JSON.parse(hit.json);}
-  const value=await this.enqueue(source,{kind:'region',query}) as AtlasRegionGeometry,json=JSON.stringify(value),size=(json.length+key.length)*2;
+  const value=await this.enqueue(source,{kind:'region',query},'camera') as AtlasRegionGeometry,json=JSON.stringify(value),size=(json.length+key.length)*2;
   while(this.cacheBytes+size>this.cacheLimit&&this.cache.size){const [old,c]=this.cache.entries().next().value!;this.cache.delete(old);this.cacheBytes-=c.bytes;}
   if(size<=this.cacheLimit){this.cache.set(key,{json,bytes:size});this.cacheBytes+=size;}return value;
  }

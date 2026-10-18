@@ -72,6 +72,6 @@ test('detail preview replaces only its face slot and preserves object painter or
   const room={kind:'group',geometry:{},style:{},data:{authorRoomFace:'room'},children:[],append(...n){this.children.push(...n);}};
   root.append(room,{kind:'rect',geometry:{x:1,y:2,width:1,height:1},style:{},data:{id:'glyph'},children:[]});
  };
- const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true').children[0],first=all(base).find(n=>n.kind==='path'&&n.data.id==='room');assert(first);assert(all(base).indexOf(first)<all(base).findIndex(n=>n.data.id==='glyph'),'objects must stay above the selected fill');
- f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};const changed=f.render().children.find(n=>n.data.atlasBase==='true').children[0];assert.equal(changed.children[1],base.children[1]);assert.notEqual(all(changed).find(n=>n.kind==='path').geometry.path,first.geometry.path);assert.equal(f.original.polygons[0].outer[1].x,9);
+ const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true').children[0],first=all(base).find(n=>n.kind==='polygons'&&n.data.id==='room');assert(first);assert(all(base).indexOf(first)<all(base).findIndex(n=>n.data.id==='glyph'),'objects must stay above the selected fill');
+ f.ui.vertexDrag={room:structuredClone(f.original),polygon:0,vertex:1,point:{x:12,y:4}};const changed=f.render().children.find(n=>n.data.atlasBase==='true').children[0];assert.equal(changed.children[1],base.children[1]);assert.notEqual(all(changed).find(n=>n.kind==='polygons').geometry.polygons,first.geometry.polygons);assert.equal(f.original.polygons[0].outer[1].x,9);
 });

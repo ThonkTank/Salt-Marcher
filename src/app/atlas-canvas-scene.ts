@@ -1,5 +1,18 @@
+import type { Polygon } from "./contracts";
 import { AtlasPaint, type PaintStyle } from "./atlas-paint";
 export { AtlasPaint, atlasPaint } from "./atlas-paint";
+function polygonPath(polygons: Polygon[]) {
+  const path = new Path2D();
+  for (const polygon of polygons) {
+    for (const ring of [polygon.outer, ...polygon.holes]) {
+      if (!ring.length) continue;
+      path.moveTo(ring[0]!.x, ring[0]!.y);
+      for (let i = 1; i < ring.length; i++) path.lineTo(ring[i]!.x, ring[i]!.y);
+      path.closePath();
+    }
+  }
+  return path;
+}
 export interface PaintHit {
   data: Record<string, string>;
 }
@@ -17,13 +30,13 @@ type Command = {
   cuts?: { path: Path2D; alpha: number }[];
 };
 function pathFor(n: AtlasPaint) {
-  const g = n.geometry,
-    p = new Path2D(),
+  const g = n.geometry;
+  if (n.kind === "polygons") return polygonPath(g.polygons ?? []);
+  if (n.kind === "path") return new Path2D(g.path ?? "");
+  const p = new Path2D(),
     x = g.x ?? 0,
     y = g.y ?? 0;
   switch (n.kind) {
-    case "path":
-      return new Path2D(g.path ?? "");
     case "rect":
       if (g.radiusX) p.roundRect(x, y, g.width ?? 0, g.height ?? 0, g.radiusX);
       else p.rect(x, y, g.width ?? 0, g.height ?? 0);
@@ -93,7 +106,7 @@ export class AtlasCanvasScene {
         let compiled=retained?cache.get(node):undefined;
         if(compiled){if(compiled.path)this.pathReuses++;}
         else{
-          compiled={path:pathFor(node),cuts:g.maskCuts?.map(c=>({path:new Path2D(c.path),alpha:c.alpha}))};
+          compiled={path:pathFor(node),cuts:g.maskCuts?.map(c=>({path:polygonPath(c.polygons),alpha:c.alpha}))};
           if(compiled.path)this.pathBuilds++;
           if(retained)cache.set(node,compiled);
         }
@@ -107,6 +120,7 @@ export class AtlasCanvasScene {
           hud,
           title,
           ancestry,
+
         });
         if (node.kind === "image" && g.source) {this.images.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
       }

@@ -111,7 +111,7 @@ class Path {
   lineTo(...a) {
     this.commands.push(["line", ...a]);
   }
-  closePath() {}
+  closePath() { this.commands.push(["close"]); }
 }
 const settle = () => new Promise((r) => setImmediate(r));
 function fixture(t, { available = true } = {}) {
@@ -553,8 +553,22 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
 
 
 test('explicitly retained local paths survive rebase; dynamic paths and context caches remain independent',t=>{
- fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('path',{path:'M0 0L10 0L10 10Z'}),dynamic=atlasPaint('path',{path:'M1 1L2 2'}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
- const first=new AtlasCanvasScene(wrap,cache);base.geometry.matrix=[1,0,0,1,20,-10];dynamic.geometry.path='M3 3L4 4';const next=new AtlasCanvasScene(wrap,cache);
+ fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:10,y:0},{x:10,y:10}],holes:[]}]}),dynamic=atlasPaint('polyline',{points:[{x:1,y:1},{x:2,y:2}]}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
+ const first=new AtlasCanvasScene(wrap,cache);base.geometry.matrix=[1,0,0,1,20,-10];dynamic.geometry.points=[{x:3,y:3},{x:4,y:4}];const next=new AtlasCanvasScene(wrap,cache);
  assert.equal(next.commands[0].path,first.commands[0].path);assert.equal(next.commands[0].matrix.e,20);assert.equal(next.commands[0].matrix.f,-10);assert.notEqual(next.commands[1].path,first.commands[1].path);assert.equal(next.pathReuses,1);assert.equal(next.pathBuilds,1);
  assert.notEqual(new AtlasCanvasScene(wrap,new WeakMap()).commands[0].path,first.commands[0].path,'a different presentation context owns a different path cache');
+});
+
+test('numeric contours and mask holes compile once into reusable native paths without path text',t=>{
+ const f=fixture(t),NativePath=global.Path2D;
+ global.Path2D=class extends NativePath{constructor(value){assert.equal(value,undefined,'Generated geometry must never serialize SVG path text');super();}};
+ const outer=[{x:0,y:0},{x:10,y:0},{x:10,y:10},{x:0,y:10}],hole=[{x:2,y:2},{x:8,y:2},{x:8,y:8},{x:2,y:8}],polygons=[{outer,holes:[hole]}];
+ const root=atlasPaint('group'),room=atlasPaint('polygons',{polygons,matrix:[1,0,0,1,20,30],style:{fill:'red',fillRule:'evenodd'},data:{atlasObject:'true',id:'room'}});
+ root.append(room,atlasPaint('rect',{width:20,height:20,pointer:false,maskCuts:[{polygons,alpha:1}],style:{fill:'black'}}));
+ const scene=new AtlasCanvasScene(root),expected=[['move',0,0],['line',10,0],['line',10,10],['line',0,10],['close'],['move',2,2],['line',8,2],['line',8,8],['line',2,8],['close']];
+ assert.deepEqual(scene.commands[0].path.commands,expected);assert.deepEqual(scene.commands[1].cuts[0].path.commands,expected);
+ const path=scene.commands[0].path,queries=[];f.ctx.isPointInPath=(p,x,y,rule)=>{queries.push({p,x,y,rule});return true;};
+ scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});
+ assert.equal(scene.hit(f.ctx,{x:21,y:31},['atlasObject']).data.id,'room');assert.deepEqual(queries,[{p:path,x:1,y:1,rule:'evenodd'}]);assert.equal(scene.commands[0].path,path,'Drawing and hit testing retain the same compiled path');scene.dispose();
+
 });

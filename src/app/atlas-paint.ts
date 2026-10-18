@@ -1,3 +1,4 @@
+import type { Polygon } from "./contracts";
 /** Local drawing data shared by the Canvas screen and raster exports. */
 export type Affine = [number, number, number, number, number, number];
 export type PaintKind =
@@ -7,6 +8,7 @@ export type PaintKind =
   | "circle"
   | "ellipse"
   | "line"
+  | "polygons"
   | "polygon"
   | "polyline"
   | "text"
@@ -39,7 +41,9 @@ export interface PaintOptions {
   radius?: number;
   radiusX?: number;
   radiusY?: number;
+  /** Authored symbol path literals; generated contours stay numeric. */
   path?: string;
+  polygons?: Polygon[];
   points?: { x: number; y: number }[];
   source?: string;
   optionalImage?: boolean;
@@ -48,7 +52,7 @@ export interface PaintOptions {
   pointer?: boolean;
   hidden?: boolean;
   hud?: boolean;
-  maskCuts?: { path: string; alpha: number }[];
+  maskCuts?: { polygons: Polygon[]; alpha: number }[];
   size?: { width: number; height: number };
   style?: PaintStyle;
   data?: Record<string, string>;

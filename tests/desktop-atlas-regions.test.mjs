@@ -206,3 +206,17 @@ test('exact glyph union preserves overlapping hits, paging, source fence and flo
  f.store.executeDrawing({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'element',element:{...element,archived:true},expectedRevision:0}});await f.read(q);
  assert.equal(f.reader.candidatesAt(f.source,q,{x:1,y:1},0,'all',element.id).total,45,'an archived/stale glyph cannot return');
 });
+
+test('camera successors cannot replace queued object selection; both lanes remain bounded and cancellable',async t=>{
+ const f=fixture(t,5),source=f.store.atlasRegionSource(f.shell.token);
+ for(const kind of ['focus','hit','candidates']){
+  const service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+  const first=service.read(source,query()),selection=kind==='focus'?service.focus(source,'room','r0'):kind==='hit'?service.hit(source,query(),{x:1,y:1}):service.candidates(source,query(),{x:1,y:1});
+  const cameras=Array.from({length:20},(_,i)=>service.read(source,query({x:i/10,y:-2,width:30,height:10})));
+  const [initial,selected,...frames]=await Promise.allSettled([first,selection,...cameras]);
+  assert.equal(initial.status,'fulfilled');assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
+  assert.equal(kind==='candidates'?selected.value.items[0].id:selected.value.id,'r0');assert.equal(frames.at(-1).status,'fulfilled');assert.equal(frames.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
+  const pending=Promise.allSettled([service.read(source,query({x:50,y:50,width:30,height:10})),service.focus(source,'room','r0'),service.read(source,query({x:60,y:50,width:30,height:10}))]);await service.cancelAndWait();assert((await pending).every(r=>r.status==='rejected'&&/abgebrochen/.test(r.reason.message)));await service.close();
+ }
+
+});
