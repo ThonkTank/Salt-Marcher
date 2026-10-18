@@ -375,10 +375,10 @@ test('health feedback stays visible inside the desk and a rejected write preserv
 });
 
 
-test('new live participant joins the explicitly shown group and opens the same health editor',async t=>{
+test('new live participant joins without an optional health interruption and keeps the same editor available',async t=>{
  const x=await setup(t);x.window.campaign.executeProgress=async cmd=>{try{return{ok:true,value:x.store.executeProgress(cmd)};}catch(error){return{ok:false,error:error.message};}};x.el('live-party-new').click();assert.equal(x.el('character-dialog').open,true);assert.match(x.el('character-create-target').textContent,/Heute dabei/);x.el('new-character-name').value='Cora';
  x.el('character-form').onsubmit({preventDefault(){},submitter:x.el('character-create-active')});await settle();await x.ui.flushLive();await settle();
- const live=x.store.live(x.w.token),c=live.roster.find(c=>c.profile.name==='Cora');assert.ok(c.active);assert.equal(c.sceneId,x.scene.id);assert.equal(live.roster.length,3);assert.equal(x.el('character-dialog').open,false);assert.equal(x.el('live-health-dialog').open,true);assert.match(x.el('live-health-title').textContent,/Cora/);assert.equal(x.el('character-health').parentElement.id,'live-health-slot');assert.equal(x.el('health-controls').open,true);assert.deepEqual(x.commands.filter(c=>['create-character','membership'].includes(c.action.kind)).map(c=>c.action.kind),['create-character','membership']);
+ const live=x.store.live(x.w.token),c=live.roster.find(c=>c.profile.name==='Cora');assert.ok(c.active);assert.equal(c.sceneId,x.scene.id);assert.equal(live.roster.length,3);assert.equal(x.el('character-dialog').open,false);assert.equal(!!x.el('live-health-dialog').open,false);assert.match(x.messages.at(-1).text,/Cora ist heute dabei/);[...x.el('live-party-reference').querySelectorAll('button')].find(b=>b.textContent.startsWith('Cora')).click();await settle();assert.equal(x.el('live-health-dialog').open,true);assert.match(x.el('live-health-title').textContent,/Cora/);assert.equal(x.el('character-health').parentElement.id,'live-health-slot');assert.equal(x.el('health-controls').open,true);assert.deepEqual(x.commands.filter(c=>['create-character','membership'].includes(c.action.kind)).map(c=>c.action.kind),['create-character','membership']);
  x.el('health-current').value='7';x.el('health-maximum').value='9';x.el('health-current').dispatchEvent(new x.window.Event('input'));x.el('health-form').onsubmit({preventDefault(){}});await settle();await x.ui.flushLive();assert.equal(x.store.progress(x.w.token).characters.find(p=>p.characterId===c.id).health.hp,7);
 });
 test('roster-only creation stays inactive and reveals its next action without adding a live participant',async t=>{
@@ -591,4 +591,22 @@ test('a confirmed scene switch returns the viewport to the new group context',as
 test('switching a group from the visible combat keeps the matching combat in view',async t=>{
  const x=await setup(t),other=await x.focusOther();let shown=null;Object.defineProperty(x.window,'innerHeight',{value:900,configurable:true});x.el('combat-panel').hidden=false;x.el('combat-panel').getBoundingClientRect=()=>({top:100,bottom:1100});x.el('combat-panel').scrollIntoView=()=>{shown=x.el('scene-focus').value;};x.el('live-workspace').scrollIntoView=()=>assert.fail('must not send a combat task back to scene notes');
  x.el('scene-focus').value=x.scene.id;x.el('scene-focus').onchange();await settle();assert.equal(shown,x.scene.id);assert.notEqual(shown,other);
+});
+
+
+test('scene notes stay directly editable while empty read-aloud and historical groups follow the writing area',async t=>{
+ const x=await setup(t),notes=x.el('running-notes'),prose=x.el('running-read-aloud-details');
+ assert.equal(notes.closest('details'),null);assert.equal(prose.open,false);assert.equal(x.el('live-play-heading').hidden,true);assert.equal(x.el('live-session-navigator').hidden,true);
+ const writing=[...notes.parentElement.children];assert(writing.indexOf(notes)<writing.indexOf(prose));assert(writing.indexOf(prose)<writing.indexOf(x.el('live-archives')));
+ notes.value='Ada wartet am Tor';notes.oninput();await x.ui.flushLive();await x.ui.openLive();assert.equal(notes.value,'Ada wartet am Tor');assert.equal(prose.open,false);
+});
+
+test('read-aloud follows the focused scene without changing either group text or overriding a local fold',async t=>{
+ const x=await setup(t),prose=x.el('running-read-aloud-details'),read=x.el('running-read-aloud');
+ prose.open=true;read.value='  Drei blaue Blitze.\r\nDer Riegel knarrt.';read.oninput();await x.ui.flushLive();
+ prose.open=false;await x.ui.openLive();assert.equal(prose.open,false);
+ const other=await x.focusOther();assert.equal(read.value,'');assert.equal(prose.open,false);
+ x.el('running-notes').value='Borin wartet auf das Zeichen';x.el('running-notes').oninput();x.el('group-list').querySelector('button').click();await settle();
+ assert.equal(prose.open,true);assert.equal(read.value,'  Drei blaue Blitze.\r\nDer Riegel knarrt.');assert.equal(x.store.liveScene(x.w.token,other).notes,'Borin wartet auf das Zeichen');
+ prose.open=false;await x.ui.openLive();assert.equal(prose.open,false);assert.equal(x.store.liveScene(x.w.token,x.scene.id).readAloud,read.value);
 });
