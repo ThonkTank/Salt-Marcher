@@ -1,4 +1,4 @@
-import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
+import {AtlasPaint,atlasPaint} from './atlas-paint';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
 import polygonClipping from "polygon-clipping";
 import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
@@ -70,6 +70,8 @@ function strokePolygon(points: Point[], radius: number): Polygon[] {
 export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   readonly assets = new Map<string, string>();
+  private unavailableAssets=new Set<string>();
+  private assetFence='';
   records: LandscapeRecord[] = [];
   private raster: import("./landscape-raster").LandscapeRaster | import("./landscape-raster").LandscapeRaster[] | undefined;
   exportBox: LandscapeBox | null = null;
@@ -100,7 +102,7 @@ export class LandscapeWorkbench {
     private svg: HTMLCanvasElement,
     private host: {
       box: () => LandscapeBox;
-      hit?:(e:MouseEvent,selector:string)=>{dataset:Record<string,string>}|null;
+      hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
       point?:(e:MouseEvent)=>Point;
       refresh?:()=>Promise<unknown>;
       choose?: (point:Point)=>Promise<void>;
@@ -163,17 +165,17 @@ export class LandscapeWorkbench {
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
-          !this.hit(e, "[data-landscape-id],[data-land-vertex]")
+          !this.hit(e, ["landscapeId","landVertex"])
         )
           return;
         e.stopImmediatePropagation();
         e.preventDefault();
         this.lastPoint = this.point(e);
-        const handle = this.hit(e, "[data-land-vertex]");
+        const handle = this.hit(e, ["landVertex"]);
         if (handle && this.selected) {
           if (this.selected.kind === "reference" && this.selected.locked)
             return;
-          this.vertex = Number(handle.dataset.landVertex);
+          this.vertex = Number(handle.data.landVertex);
           this.dragging = true;
           this.pointer = e.pointerId;
           svg.setPointerCapture(e.pointerId);
@@ -184,8 +186,8 @@ export class LandscapeWorkbench {
           const r = this.records.find(
             (r) =>
               r.id ===
-              this.hit(e, "[data-landscape-id]")
-                ?.dataset.landscapeId,
+              this.hit(e, ["landscapeId"])
+                ?.data.landscapeId,
           );
           if (r) void this.select(r);
           return;
@@ -265,7 +267,7 @@ export class LandscapeWorkbench {
         if (!this.active || this.saving || e.altKey) return;
         if (this.tool === "select") {
           if (
-            this.hit(e, "[data-landscape-id],[data-land-vertex]")
+            this.hit(e, ["landscapeId","landVertex"])
           )
             e.stopImmediatePropagation();
           return;
@@ -311,7 +313,7 @@ export class LandscapeWorkbench {
       }
     });
   }
-  private hit(e:MouseEvent,selector:string){return this.host.hit?this.host.hit(e,selector):(e.target as Element).closest<SVGElement>(selector);}
+  private hit(e:MouseEvent,keys:string[]){return this.host.hit(e,keys);}
   private point(e: MouseEvent) {
     if(this.host.point)return this.host.point(e);
     const b = this.host.box(),
@@ -373,7 +375,7 @@ export class LandscapeWorkbench {
     this.cancel();
     this.records = [];
     this.raster = undefined;this.minimumRevision=0;
-    this.assets.clear();
+    this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
     this.request++;
     this.exportBox = null;
@@ -405,6 +407,11 @@ export class LandscapeWorkbench {
     const layer=data.region?.landscape;
     if(layer){
       const frameKey=JSON.stringify([token,data.region!.fence]);
+      if(this.assetFence!==data.region!.fence){
+        const calibration=this.calibration?.record.assetId,preview=calibration?this.assets.get(calibration):undefined;
+        this.assets.clear();this.unavailableAssets.clear();if(calibration&&preview)this.assets.set(calibration,preview);
+        this.assetFence=data.region!.fence;
+      }
       if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
       this.request++;const generation=this.request;
       this.records=layer.records;this.raster=layer.tiles;html('land-reload').hidden=layer.state==='ready';
@@ -412,10 +419,12 @@ export class LandscapeWorkbench {
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
       for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
+      for(const id of this.unavailableAssets)if(!visibleAssets.has(id))this.unavailableAssets.delete(id);
       for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
-        const result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);
+        let result:import('./contracts').Result<string>;
+        try{result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);}catch(error){result={ok:false,error:(error as Error).message};}
         if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
-        if(result.ok)this.rememberAsset(r.assetId,result.value);else {html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
+        if(result.ok){this.unavailableAssets.delete(r.assetId);this.rememberAsset(r.assetId,result.value);}else {this.unavailableAssets.add(r.assetId);html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
         this.host.redraw();
       }
       return;
@@ -495,12 +504,12 @@ export class LandscapeWorkbench {
     if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
     if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
   }
-  draw(root: PaintTarget, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
-    const landscapeNode=paintFactory(root);
+  draw(root: AtlasPaint, box: LandscapeBox, mpp: number,locationMarkers?:ReadonlySet<string>) {
+    const landscapeNode=atlasPaint;
     const records = this.selected
       ? [...this.records.filter(r=>r.id!==this.selected!.id),this.selected]
       : this.records;
-    drawLandscape(root, locationMarkers?records.filter(r=>r.kind!=='place'||!r.locationId||!locationMarkers.has(r.locationId)):records, box, mpp, this.assets,true,this.raster);
+    drawLandscape(root, locationMarkers?records.filter(r=>r.kind!=='place'||!r.locationId||!locationMarkers.has(r.locationId)):records, box, mpp, this.assets,true,this.raster,this.unavailableAssets);
     const auto = html<HTMLInputElement>("land-auto-level").checked,
       level = auto
         ? Math.max(
@@ -516,7 +525,7 @@ export class LandscapeWorkbench {
         : Number(html<HTMLSelectElement>("atlas-hex-level").value);
     if (html<HTMLInputElement>("land-grid").checked)
       drawLandscapeGrid(root, box, level, mpp);
-    const hud=landscapeNode("g",{"data-canvas-hud":"true"});drawScale(hud,box,mpp);root.append(hud);
+    const hud=landscapeNode("group", {hud:true});drawScale(hud,box,mpp);root.append(hud);
     if (auto && !this.hasDraft())
       html<HTMLSelectElement>("atlas-hex-level").value = String(level);
     if (this.active && auto)
@@ -528,28 +537,13 @@ export class LandscapeWorkbench {
       (this.points.length ? this.points : this.measurement);
     if (pts.length) {
       root.append(
-        landscapeNode("polyline", {
-          points: pts.map((p) => `${p.x - box.x},${p.y - box.y}`).join(" "),
-          fill: "none",
-          stroke: "#d46e38",
-          "stroke-width": ["paint", "reset"].includes(this.tool)
+        landscapeNode("polyline", {points: pts.map(p=>({x:p.x-box.x,y:p.y-box.y})), opacity: 0.6, style: {fill: null, stroke: "#d46e38", lineWidth: ["paint", "reset"].includes(this.tool)
             ? Number(html<HTMLInputElement>("land-radius").value) * 2
-            : mpp * 3,
-          "stroke-linecap": "round",
-          "stroke-linejoin": "round",
-          opacity: 0.6,
-          "data-editor-only": "true",
-        }),
+            : mpp * 3, lineCap: "round", lineJoin: "round"}, data: {editorOnly: String("true")}}),
       );
       for (const p of pts)
         root.append(
-          landscapeNode("circle", {
-            cx: p.x - box.x,
-            cy: p.y - box.y,
-            r: mpp * 4,
-            fill: "#d46e38",
-            "data-editor-only": "true",
-          }),
+          landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#d46e38"}, data: {editorOnly: String("true")}}),
         );
       if (this.tool === "measure") this.say(formatDistance(distance(pts)));
     }
@@ -558,16 +552,7 @@ export class LandscapeWorkbench {
     if (this.selected && this.active && this.tool === "select")
       this.selected.points.forEach((p, i) =>
         root.append(
-          landscapeNode("circle", {
-            cx: p.x - box.x,
-            cy: p.y - box.y,
-            r: mpp * 6,
-            fill: i === this.vertex ? "#e1984b" : "#fff",
-            stroke: "#a55d35",
-            "stroke-width": mpp * 2,
-            "data-land-vertex": i,
-            "data-editor-only": "true",
-          }),
+          landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 6, style: {fill: i === this.vertex ? "#e1984b" : "#fff", stroke: "#a55d35", lineWidth: mpp * 2}, data: {landVertex: String(i), editorOnly: String("true")}}),
         ),
       );
     if (
@@ -581,30 +566,13 @@ export class LandscapeWorkbench {
         h = (w * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1),
         a = r.angle ?? 0;
       root.append(
-        landscapeNode("circle", {
-          cx: o.x + w * Math.cos(a) - h * Math.sin(a) - box.x,
-          cy: o.y + w * Math.sin(a) + h * Math.cos(a) - box.y,
-          r: mpp * 7,
-          fill: "#e1984b",
-          "data-land-vertex": -1,
-          "data-editor-only": "true",
-        }),
+        landscapeNode("circle", {x: o.x + w * Math.cos(a) - h * Math.sin(a) - box.x, y: o.y + w * Math.sin(a) + h * Math.cos(a) - box.y, radius: mpp * 7, style: {fill: "#e1984b"}, data: {landVertex: String(-1), editorOnly: String("true")}}),
       );
     }
     if (this.exportBox) {
       const b = this.exportBox;
       root.append(
-        landscapeNode("rect", {
-          x: b.x - box.x,
-          y: b.y - box.y,
-          width: b.width,
-          height: b.height,
-          fill: "none",
-          stroke: "#b05d32",
-          "stroke-width": mpp * 2,
-          "stroke-dasharray": `${mpp * 8} ${mpp * 5}`,
-          "data-editor-only": "true",
-        }),
+        landscapeNode("rect", {x: b.x - box.x, y: b.y - box.y, width: b.width, height: b.height, style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2, lineDash:[mpp*8,mpp*5]}, data: {editorOnly: String("true")}}),
       );
     }
   }

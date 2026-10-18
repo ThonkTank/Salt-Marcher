@@ -10,11 +10,12 @@ const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,
 export class AtlasLandscapeReader {
  private statements=new Map<string,any>();
  private cache=new Map<string,{box:LandscapeBox;json:string;bytes:number}>();private bytes=0;private identity='';
- private indexed=true;
+ private indexed=true;private sampleMath=true;
  constructor(private db:any,private cacheLimit=8*1024*1024){
-  db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL)');
+  try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
+  db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);
-   CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
+   CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds WHEN new.kind IS NOT 'patch' BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
    CREATE TEMP TRIGGER landscape_bound_delete AFTER DELETE ON landscape_shape_bounds BEGIN DELETE FROM landscape_region_index WHERE id=old.source_row;END;`))();}catch{this.indexed=false;}
  }
  private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(text);this.statements.set(text,s);}return s;}
@@ -22,29 +23,49 @@ export class AtlasLandscapeReader {
   const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch]);
   if(this.identity!==identity||source.reset){
    this.cache.clear();this.bytes=0;this.db.exec('DELETE FROM temp.landscape_shape_bounds');
-   this.sql('INSERT INTO temp.landscape_shape_bounds SELECT id,rowid,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=?').run(source.campaignId);
+   this.sql(`INSERT INTO temp.landscape_shape_bounds SELECT id,rowid,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=?`).run(source.campaignId);
   }else for(const c of source.changes){
    if(c.table==='location'){this.cache.clear();this.bytes=0;continue;}
    if(c.table!=='atlas_landscape')continue;
    const old=this.sql('SELECT min_x x,min_y y,max_x-min_x width,max_y-min_y height FROM temp.landscape_shape_bounds WHERE id=?').get(c.id);
-   const row=this.sql('SELECT rowid source_row,id,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=? AND id=?').get(source.campaignId,c.id);
+   const row=this.sql(`SELECT rowid source_row,id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END kind,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=? AND id=?`).get(source.campaignId,c.id);
    const current=row?{x:row.min_x,y:row.min_y,width:row.max_x-row.min_x,height:row.max_y-row.min_y}:null;
    for(const [key,v]of this.cache)if(old&&overlap(v.box,old)||current&&overlap(v.box,current)){this.bytes-=v.bytes;this.cache.delete(key);}
    this.sql('DELETE FROM temp.landscape_shape_bounds WHERE id=?').run(c.id);
-   if(row)this.sql('INSERT INTO temp.landscape_shape_bounds VALUES(?,?,?,?,?,?)').run(row.id,row.source_row,row.min_x,row.max_x,row.min_y,row.max_y);
+   if(row)this.sql('INSERT INTO temp.landscape_shape_bounds VALUES(?,?,?,?,?,?,?)').run(row.id,row.source_row,row.kind,row.min_x,row.max_x,row.min_y,row.max_y);
   }
   this.identity=identity;
  }
 
- private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean){
-  const sql=`SELECT a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM ${this.indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND ${this.indexed?'i':'a'}.max_x>=? AND ${this.indexed?'i':'a'}.min_x<=? AND ${this.indexed?'i':'a'}.max_y>=? AND ${this.indexed?'i':'a'}.min_y<=? ${patches?"AND json_extract(a.payload,'$.kind')='patch' AND json_extract(a.payload,'$.values.terrain') IS NOT NULL":"AND json_extract(a.payload,'$.kind')!='patch'"} ORDER BY ${patches?"CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid":"CASE json_extract(a.payload,'$.kind') WHEN 'reference' THEN 0 ELSE 1 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid"}`;
-  for(const row of this.sql(sql).iterate(source.campaignId,box.x,box.x+box.width,box.y,box.y+box.height)){
-   if(row.trashed)continue;const record=JSON.parse(row.payload) as LandscapeRecord;
-   if(row.location_name!==null)record.name=row.location_name;
-   if(row.max_x<box.x||row.min_x>box.x+box.width||row.max_y<box.y||row.min_y>box.y+box.height)continue;
-   if(record.kind==='reference'&&record.visible===false)continue;
-   yield record;
+ private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels=0){
+  // Terrain already has canonical bounded columns. Index only sparse objects:
+  // building another 100k-row Rtree before the first view costs more than its scans.
+  const indexed=this.indexed&&!patches;
+  // A patch whose bounds contain no supersample center cannot change this tile.
+  // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
+  const sampling=patches&&pixels>0&&this.sampleMath;
+  const sampleClause=sampling?` AND ceil((max(a.min_x,?)-?)/?*?-.5000001)<=floor((min(a.max_x,?)-?)/?*?-.4999999) AND ceil((max(a.min_y,?)-?)/?*?-.5000001)<=floor((min(a.max_y,?)-?)/?*?-.4999999)`:'';
+  const sql=`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? ${sampleClause} ${patches?"AND json_extract(a.payload,'$.kind')='patch' AND json_extract(a.payload,'$.values.terrain') IS NOT NULL":"AND json_extract(a.payload,'$.kind')!='patch'"} ORDER BY ${patches?"CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid":"CASE json_extract(a.payload,'$.kind') WHEN 'reference' THEN 0 ELSE 1 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid"}`;
+  // Sort narrow keys, then read complete bounded pages. Sorting full payloads
+  // spills authors' large contours/prose into SQLite temporary files.
+  const page=this.sql(`SELECT CAST(a.rowid AS TEXT) source_row,a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? ORDER BY CAST(ids.key AS INTEGER)`);
+  const readPage=function*(ids:string[]){
+   // SQLite bounds its temporary sort with the existing file/cache budget.
+   // Stream the page so 128 unusually large author payloads never accumulate in JS.
+   for(const row of page.iterate(JSON.stringify(ids),source.campaignId)){if(row.trashed)continue;const record=JSON.parse(row.payload) as LandscapeRecord;
+    if(row.location_name!==null)record.name=row.location_name;
+    if(row.max_x<box.x||row.min_x>box.x+box.width||row.max_y<box.y||row.min_y>box.y+box.height)continue;
+    if(record.kind==='reference'&&record.visible===false)continue;
+    yield record;
+   }
+  };
+  let ids:string[]=[];
+  const args:any[]=[source.campaignId,box.x,box.x+box.width,box.y,box.y+box.height];
+  if(sampling)for(const [origin,length]of [[box.x,box.width],[box.y,box.height]] as const)args.push(origin,origin,length,pixels*2,origin+length,origin,length,pixels*2);
+  for(const row of this.sql(sql).iterate(...args)){
+   ids.push(row.source_row);if(ids.length===128){yield*readPage(ids);ids=[];}
   }
+  if(ids.length)yield*readPage(ids);
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number):AtlasLandscapeLayer{
   const layer:AtlasLandscapeLayer={state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
@@ -69,7 +90,7 @@ export class AtlasLandscapeReader {
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
-     const image=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true))image.paint(r);
+     const image=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true,pixels))image.paint(r);
      if(dense)for(const r of this.rows(source,box,false)){
       if(r.kind==='road'||r.kind==='river')image.paintLine(r.points,Math.max(r.width,q.box.width/q.width*2),r.kind==='river'?'#629ebc':'#a37e51');
       else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');

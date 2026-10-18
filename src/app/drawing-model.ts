@@ -1,4 +1,5 @@
-import {atlasPaint,paintMarkup} from "./atlas-paint";
+import {atlasPaint,rotation} from './atlas-paint';
+import {paintMarkup} from './atlas-paint-svg';
 import {roomWallPath} from './drawing-wall-path';
 import {visibility} from '../compute';
 import clipping,{type MultiPolygon} from 'polygon-clipping';
@@ -14,25 +15,25 @@ export function newElement(kind:DrawingElement['kind'],scopeId:string,floorId:st
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 export function roomPath(p:Polygon[]){return p.flatMap(p=>[p.outer,...p.holes]).map(r=>'M'+r.map(p=>p.x+','+p.y).join('L')+'Z').join(' ');}
 export function drawingSegments(rooms:RoomGeometry[],elements:DrawingElementGeometry[]){const doors=elements.filter(e=>e.kind==='door'&&!e.archived&&(e.state==='open'||!e.blocksSight)),segments:{a:Point;b:Point}[]=[];const append=(a:Point,b:Point)=>{const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);if(length<1e-8)return;const gaps:{from:number;to:number}[]=[];for(const door of doors){const p=anchored(door,rooms),center=p.length>1?{x:(p[0]!.x+p[1]!.x)/2,y:(p[0]!.y+p[1]!.y)/2}:p[0]!;const t=((center.x-a.x)*dx+(center.y-a.y)*dy)/(length*length),distance=Math.abs((center.x-a.x)*dy-(center.y-a.y)*dx)/length;if(t>=0&&t<=1&&distance<.05)gaps.push({from:Math.max(0,t-door.width/2/length),to:Math.min(1,t+door.width/2/length)});}gaps.sort((a,b)=>a.from-b.from);let start=0;for(const gap of [...gaps,{from:1,to:1}]){if(gap.from>start)segments.push({a:{x:a.x+dx*start,y:a.y+dy*start},b:{x:a.x+dx*gap.from,y:a.y+dy*gap.from}});start=Math.max(start,gap.to);}};for(const room of rooms)for(const ring of room.polygons.flatMap(p=>[p.outer,...p.holes]))for(let i=0;i<ring.length;i++)append(ring[i]!,ring[(i+1)%ring.length]!);for(const e of elements.filter(e=>e.kind==='wall'&&e.blocksSight&&!e.archived))for(let i=1;i<e.points.length;i++)append(e.points[i-1]!,e.points[i]!);return segments;}
-/** One geometry source for Canvas commands, legacy SVG hosts and vector exports. */
+/** One geometry source for Canvas display and raster export; legacy hosts use an adapter. */
 export function elementPaint(e:DrawingElementGeometry,rooms:RoomGeometry[],elements:DrawingElementGeometry[]=[]){
- const p=anchored(e,rooms),at=p[0]??{x:0,y:0},pts=p.map(p=>p.x+','+p.y).join(' '),g=atlasPaint('g',{'data-drawing-id':e.id});
- g.append(atlasPaint('title',{},e.name||e.kind));
+ const p=anchored(e,rooms),at=p[0]??{x:0,y:0},pts=p,g=atlasPaint("group", {data: {drawingId: String(e.id)}});
+ g.title=e.name||e.kind;
  if(['wall','path','door','stairs'].includes(e.kind)){
-  const line=atlasPaint('polyline',{points:pts,fill:'none',stroke:e.kind==='door'&&e.state==='open'?'#9da684':e.color,'stroke-width':e.kind==='door'?.22:e.width,'stroke-linecap':'round'});
-  if(e.kind==='stairs')line.setAttribute('stroke-dasharray','0.3 0.25');g.append(line);
-  if(e.kind==='door'){const middle=p.length>1?{x:(p[0]!.x+p[1]!.x)/2,y:(p[0]!.y+p[1]!.y)/2}:at;g.append(atlasPaint('circle',{cx:middle.x,cy:middle.y,r:.15,fill:e.state==='locked'?'#c35848':e.color}));}
- }else if(['terrain','water','roof'].includes(e.kind))g.append(atlasPaint('polygon',{points:pts,fill:e.color,opacity:.55,stroke:e.color,'stroke-width':.06}));
+  const line=atlasPaint("polyline", {points: pts, style: {fill: null, stroke: e.kind==='door'&&e.state==='open'?'#9da684':e.color, lineWidth: e.kind==='door'?.22:e.width, lineCap: 'round'}});
+  if(e.kind==='stairs')line.style.lineDash=[.3,.25];g.append(line);
+  if(e.kind==='door'){const middle=p.length>1?{x:(p[0]!.x+p[1]!.x)/2,y:(p[0]!.y+p[1]!.y)/2}:at;g.append(atlasPaint("circle", {x: middle.x, y: middle.y, radius: .15, style: {fill: e.state==='locked'?'#c35848':e.color}}));}
+ }else if(['terrain','water','roof'].includes(e.kind))g.append(atlasPaint("polygon", {points: pts, opacity: .55, style: {fill: e.color, stroke: e.color, lineWidth: .06}}));
  else if(e.kind==='light'){
   const area=visibility({id:e.id,floorId:e.floorId,kind:'light',x:at.x,y:at.y,radius:e.width,intensity:1,color:0,shadows:true},drawingSegments(rooms,elements));
-  g.append(atlasPaint('polygon',{points:area.map(p=>p.x+','+p.y).join(' '),fill:e.color,opacity:.22}),atlasPaint('circle',{cx:at.x,cy:at.y,r:.18,fill:e.color}));
- }else if(e.kind==='text')g.append(atlasPaint('text',{x:at.x,y:at.y,'font-size':e.height,fill:e.color,transform:`rotate(${e.angle} ${at.x} ${at.y})`},e.name));
- else if(e.kind==='feature')g.append(atlasPaint('circle',{cx:at.x,cy:at.y,r:e.triggerRadius,fill:'none',stroke:e.color,'stroke-width':.06,'stroke-dasharray':'0.2 0.15'}),atlasPaint('path',{d:`M${at.x},${at.y-.4} L${at.x+.4},${at.y+.3} L${at.x-.4},${at.y+.3} Z`,fill:e.color}));
- else if(e.variant==='barrel'||e.variant==='pillar')g.append(atlasPaint('ellipse',{cx:at.x,cy:at.y,rx:e.width/2,ry:e.height/2,fill:e.color,stroke:'#362f28','stroke-width':.06}));
+  g.append(atlasPaint("polygon", {points: area, opacity: .22, style: {fill: e.color}}),atlasPaint("circle", {x: at.x, y: at.y, radius: .18, style: {fill: e.color}}));
+ }else if(e.kind==='text')g.append(atlasPaint("text", {x: at.x, y: at.y, matrix: rotation(e.angle*Math.PI/180,at.x,at.y), style: {fontSize: e.height, fill: e.color}}, e.name));
+ else if(e.kind==='feature')g.append(atlasPaint("circle", {x: at.x, y: at.y, radius: e.triggerRadius, style: {fill: null, stroke: e.color, lineWidth: .06, lineDash: [.2,.15]}}),atlasPaint("path", {path: `M${at.x},${at.y-.4} L${at.x+.4},${at.y+.3} L${at.x-.4},${at.y+.3} Z`, style: {fill: e.color}}));
+ else if(e.variant==='barrel'||e.variant==='pillar')g.append(atlasPaint("ellipse", {x: at.x, y: at.y, radiusX: e.width/2, radiusY: e.height/2, style: {fill: e.color, stroke: '#362f28', lineWidth: .06}}));
  else{
-  const x=at.x-e.width/2,y=at.y-e.height/2,body=atlasPaint('g',{transform:`rotate(${e.angle} ${at.x} ${at.y})`});
-  body.append(atlasPaint('rect',{x,y,width:e.width,height:e.height,rx:.08,fill:e.color,stroke:'#362f28','stroke-width':.06}),atlasPaint('path',{d:`M${x},${at.y} H${x+e.width}`,stroke:'#362f28','stroke-width':.05}));
-  if(e.variant==='bed')body.append(atlasPaint('rect',{x:x+.1,y:y+.1,width:Math.max(.1,e.width-.2),height:Math.max(.1,e.height*.2),fill:'#ded1b1'}));g.append(body);
+  const x=at.x-e.width/2,y=at.y-e.height/2,body=atlasPaint("group", {matrix: rotation(e.angle*Math.PI/180,at.x,at.y)});
+  body.append(atlasPaint("rect", {x: x, y: y, width: e.width, height: e.height, radiusX: .08, style: {fill: e.color, stroke: '#362f28', lineWidth: .06}}),atlasPaint("path", {path: `M${x},${at.y} H${x+e.width}`, style: {stroke: '#362f28', lineWidth: .05}}));
+  if(e.variant==='bed')body.append(atlasPaint("rect", {x: x+.1, y: y+.1, width: Math.max(.1,e.width-.2), height: Math.max(.1,e.height*.2), style: {fill: '#ded1b1'}}));g.append(body);
  }
  return g;
 }

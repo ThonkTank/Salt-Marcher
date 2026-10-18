@@ -202,3 +202,16 @@ test('dense reference bounds remain selectable; hidden references and export omi
 });
 
 test('dense roads do not demote a bounded image template to an outline',async t=>{const f=fixture(t,1);f.store.db.transaction(()=>{for(let i=0;i<501;i++)landscape(f,road('road'+i));landscape(f,{...road('template'),kind:'reference',assetId:'asset',imageWidth:10,imageHeight:10,points:[{x:0,y:0}],width:10});})();const r=await f.read(query({x:-2,y:-2,width:15,height:15}));assert.equal(r.landscape.coverage.mode,'raster');assert.equal(r.landscape.records.length,1);assert.equal(r.landscape.records[0].id,'template');assert.equal(r.landscape.records[0].assetId,'asset');assert(r.landscape.tiles.length>0);});
+
+test('unavailable landscape reads and index builds never turn intact Room hits into an empty world',async t=>{
+ const f=fixture(t,1),q=query(),p={x:1,y:.1};landscape(f,road('bad'));f.store.db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run('{broken','bad');let r=await f.read(q);assert.equal(r.landscape.state,'error');let hits=f.reader.candidatesAt(f.source,q,p,0,'all');assert(hits.items.some(h=>h.id==='r0'));assert.deepEqual(hits.unavailable,['landscape']);
+ const valid=road('bad');f.store.db.prepare('UPDATE atlas_landscape SET payload=?,min_x=10,max_x=-10 WHERE id=?').run(JSON.stringify(valid),'bad');r=await f.read(q);assert.equal(r.landscape.state,'error');assert(r.rooms.some(r=>r.id==='r0'));hits=f.reader.candidatesAt(f.source,q,p,0,'all');assert(hits.items.some(h=>h.id==='r0'));assert.deepEqual(hits.unavailable,['landscape']);
+ f.store.db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run(JSON.stringify({...valid,kind:'patch'}),'bad');r=await f.read(q);assert.equal(r.landscape.state,'error','Terrain bounds remain validated when patches use canonical Btrees.');
+ r=await f.read(q);assert.equal(r.landscape.state,'error','A failed projection cannot lose the bad change by advancing its source cursor.');f.store.db.prepare('UPDATE atlas_landscape SET min_x=-20,max_x=20 WHERE id=?').run('bad');r=await f.read(q);assert.equal(r.landscape.state,'ready');assert.equal(f.reader.candidatesAt(f.source,q,p,0,'all').unavailable,undefined);
+});
+
+test('sample-grid rejection is pixel-identical to the full source stream across pages, negative coordinates and holes',async t=>{
+ const f=fixture(t,1);let seed=534723;const rand=()=>((seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296);
+ f.store.db.transaction(()=>{for(let i=0;i<2000;i++){const x=rand()*64-32,y=rand()*64-32,size=i%3===0?.01:rand()*2+.001;landscape(f,{id:'sample'+i,revision:0,kind:'patch',name:'sample',points:[],polygons:[{outer:[{x,y},{x:x+size,y},{x:x+size,y:y+size},{x,y:y+size}],holes:i%5===0?[[{x:x+size*.2,y:y+size*.2},{x:x+size*.8,y:y+size*.2},{x:x+size*.8,y:y+size*.8},{x:x+size*.2,y:y+size*.8}]]:[]}],resolution:i%3+1,width:0,values:{terrain:i%2?'water':'forest'}});}})();
+ const q=query({x:-17,y:-11,width:32,height:24}),r=await f.read(q),db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const unfiltered=new AtlasRegionReader(db);unfiltered.landscape.sampleMath=false;await unfiltered.sync(f.source);const expected=unfiltered.read(f.source,q);assert.deepEqual(r.landscape.tiles,expected.landscape.tiles);assert.deepEqual(r.landscape.coverage,expected.landscape.coverage);
+});

@@ -1,5 +1,5 @@
-import {AtlasPaint,paintFactory,type PaintTarget} from './atlas-canvas-scene';
-import {paintElement} from './atlas-paint';
+import {AtlasPaint,atlasPaint} from './atlas-paint';
+import {appendPaint,paintElement,type PaintTarget} from './atlas-paint-svg';
 import {drawingGeometryOnly} from './atlas-render-view';
 import {renderRoomPaths} from './path-ui';
 import {roomWallPath} from './drawing-wall-path';
@@ -52,17 +52,17 @@ export function roomDrawingStyle(id:string){return data?.styles.find(s=>s.id===i
 let inspectedRoom:string|null=null;
 export function syncDrawingControls(){if(!data||!context())return;syncToolControls();if(selectedRoom()?.id!==inspectedRoom){inspectedRoom=selectedRoom()?.id??null;renderInspector();}el('drawing-path-status').textContent=path.length?'Vorschau: '+path.length+' Punkte · Enter/Zug übernehmen bestätigt · Escape verwirft':value('drawing-tool')==='select'?'Auswahlwerkzeug aktiv.':'Klicken zeichnet Punkte; Pinsel und Streuen folgen gedrückter Maustaste. Alle Maße in Metern.';drawSection();}
 export function drawingOverlay(svg:PaintTarget,draftsOnly=false){if(!data||!context())return;syncDrawingControls();
- const f=floor(),w=context()!,shape=paintFactory(svg);
+ const f=floor(),w=context()!,shape=atlasPaint;
  for(const e of (draftsOnly?(element?[element]:[]):data.elements).filter(e=>e.scopeId===f.scopeId&&e.floorId===f.floorId&&!e.archived)){
   const node=elementPaint(e,w.rooms,data.elements.filter(x=>x.scopeId===f.scopeId&&x.floorId===f.floorId&&!x.archived));
   if(svg instanceof AtlasPaint){
-   node.dataset.atlasObject='true';node.dataset.kind='element';node.dataset.id=e.id;svg.append(node);
+   node.data.atlasObject='true';node.data.kind='element';node.data.id=e.id;svg.append(node);
   }else{
    const g=paintElement(node,svg.ownerDocument);g.addEventListener('click',event=>{if(value('drawing-tool')!=='select')return;event.stopPropagation();run(async()=>{if(!(await flushDrawing()))return;await selectElement(e.id);});});svg.append(g);
   }
  }
- if(preview)svg.append(shape('path',{d:roomPath(preview),fill:'#4f9da2','fill-opacity':.35,stroke:'#236871','stroke-width':.1}));
- if(path.length&&!preview)svg.append(shape('polyline',{points:path.map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:'#236871','stroke-width':.1}));
+ if(preview)appendPaint(svg,shape("path", {path: roomPath(preview), style: {fill: '#4f9da2', fillOpacity: .35, stroke: '#236871', lineWidth: .1}}));
+ if(path.length&&!preview)appendPaint(svg,shape("polyline", {points: path, style: {fill: null, stroke: '#236871', lineWidth: .1}}));
 }
 function drawSection(){const canvas=el<SVGSVGElement>('drawing-section');canvas.replaceChildren();if(!field('drawing-show-section').checked||!context()||!data){canvas.toggleAttribute('hidden',true);return;}canvas.toggleAttribute('hidden',false);const f=floor(),y=Number(value('drawing-slice-y')),base=context()!.floors.find(x=>x.scopeId===f.scopeId&&x.id===f.floorId)?.sourceElevation??0,ns='http://www.w3.org/2000/svg';let min=Infinity,max=-Infinity,top=base+3.048;for(const r of context()!.rooms.filter(r=>r.scopeId===f.scopeId&&r.floorId===f.floorId)){const cuts:number[]=[];for(const ring of r.polygons.flatMap(p=>[p.outer,...p.holes]))for(let i=0;i<ring.length;i++){const a=ring[i]!,b=ring[(i+1)%ring.length]!;if((a.y>y)!==(b.y>y))cuts.push(a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y));}cuts.sort((a,b)=>a-b);const height=data.styles.find(s=>s.id===r.id)?.ceilingMeters??3.048;for(let i=0;i<cuts.length-1;i+=2){const x=cuts[i]!,end=cuts[i+1]!;min=Math.min(min,x);max=Math.max(max,end);top=Math.max(top,base+height);const rect=document.createElementNS(ns,'rect');rect.setAttribute('x',String(x));rect.setAttribute('y',String(-base-height));rect.setAttribute('width',String(end-x));rect.setAttribute('height',String(height));rect.setAttribute('fill','#bcb59e');rect.setAttribute('stroke','#514a3b');rect.setAttribute('stroke-width','.08');canvas.append(rect);}}if(!Number.isFinite(min)){min=0;max=10;}canvas.setAttribute('viewBox',`${min-1} ${-top-1} ${Math.max(2,max-min+2)} ${top-base+2}`);}
 function point(event:PointerEvent){const svg=el<SVGSVGElement>('map'),p=new DOMPoint(event.clientX,event.clientY).matrixTransform(svg.getScreenCTM()!.inverse()),grid=value('drawing-tool')!=='door'&&field('drawing-snap').checked?Number(value('drawing-grid')):0;return{x:grid>0?Math.round(p.x/grid)*grid:Math.round(p.x*1000)/1000,y:grid>0?Math.round(p.y/grid)*grid:Math.round(p.y*1000)/1000};}

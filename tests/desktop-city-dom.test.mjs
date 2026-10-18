@@ -9,7 +9,7 @@ import {createRequire} from 'node:module';
 import {buildSync,build} from 'esbuild';
 import {parseHTML,DOMParser} from 'linkedom';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/city-dom-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-await build({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG,publicAtlasPaint} from './src/app/campaign-atlas-export'; export {paintMarkup} from './src/app/atlas-paint'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controller-paint-fixture',setup(b){b.onResolve({filter:/^\.\/atlas-canvas$/},()=>({path:path.resolve('tests/atlas-controller-canvas-fixture.ts')}));}}]});
+await build({stdin:{contents:"export * from './src/app/city-ui'; export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export {publicAtlasSVG,publicAtlasPaint} from './src/app/campaign-atlas-export'; export {paintMarkup} from './src/app/atlas-paint-svg'; export {atlasRegionSVG} from './src/app/atlas-region-export'; export {initDrawing,activateDrawing,flushDrawing,atlasDrawingPoint,atlasDrawingDraft} from './src/app/drawing-ui';",resolveDir:process.cwd()},outfile:'.build/city-dom-ui.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'controller-paint-fixture',setup(b){b.onResolve({filter:/^\.\/atlas-canvas$/},()=>({path:path.resolve('tests/atlas-controller-canvas-fixture.ts')}));}}]});
 for(const [name,entry] of [['service','desktop/room-directory.ts'],['worker','desktop/room-directory-worker.ts']])buildSync({entryPoints:[entry],outfile:'.build/city-dom-directory-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 buildSync({entryPoints:['src/app/landscape-raster.ts'],outfile:'.build/city-dom-raster.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/city-dom-store.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -35,6 +35,8 @@ async function setup(){
   }
  }
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ // Keep failed DOM identity assertions readable instead of formatting the entire cyclic document.
+ Object.defineProperty(window.Element.prototype,Symbol.for('nodejs.util.inspect.custom'),{configurable:true,value(){return this.outerHTML.slice(0,800);}});
  document.getElementById('city-inspector').scrollIntoView=()=>{};
  // Native option.value falls back to text when no value attribute is supplied.
  for(const option of document.querySelectorAll('#city-use option'))if(!option.hasAttribute('value'))option.value=option.textContent;
@@ -686,7 +688,7 @@ test('group-view room labels come from live public perception rather than GM roo
   player({kind:'settings',settings:{blank:true,mode:'follow',imageId:null,title:'',labels:false,light:'daylight',displayId:null,fullscreen:false}});await s.atlas.refresh();assert.equal(s.svg.querySelector('[data-atlas-public-view]').textContent,'');
   const read=x.window.campaign.atlasRegion,stable=x.store.db.serialize();x.window.campaign.atlasRegion=async()=>({ok:false,error:'Context unavailable'});await s.atlas.refresh();assert.match(x.document.getElementById('atlas-view-status').textContent,/nicht verfügbar/);assert.equal(x.document.getElementById('atlas-view-refresh').hidden,false);assert.equal(s.svg.querySelector('[data-atlas-public-view]').querySelectorAll('circle,path').length,0);assert.doesNotMatch(s.svg.textContent,/GM:|Public taproom/);
   x.window.campaign.atlasRegion=read;x.click('atlas-view-refresh');await until(()=>s.atlas.travelReadState==='ready');assert.ok(s.svg.querySelector('[data-atlas-public-view]').querySelector('circle'));assert.ok(x.store.db.serialize().equals(stable));
-  toggle.checked=false;toggle.onchange();await until(()=>!s.svg.querySelector('[data-atlas-public-view]'));const gm=s.svg.querySelector('[data-atlas-room-labels="'+first.scopeId+'"]');assert.match(gm.textContent,/GM: Taproom contact/);assert.match(gm.textContent,/GM: Hidden vault/);assert.equal(gm.querySelectorAll('[data-room-number]').length,2);
+  toggle.checked=false;toggle.onchange();await until(()=>!s.svg.querySelector('[data-atlas-public-view]'));s.atlas.camera.zoom(.5);await s.atlas.refresh();const gm=s.svg.querySelector('[data-atlas-room-labels="'+first.scopeId+'"]');assert.match(gm.textContent,/GM: Taproom contact/);assert.match(gm.textContent,/GM: Hidden vault/);assert.equal(gm.querySelectorAll('[data-room-number]').length,2);
  }finally{await s.close();}
 });
 
@@ -1113,4 +1115,31 @@ test('returning from GM to a city retains its exact unit and current task panel'
   }
   assert.ok(x.store.db.serialize().equals(before));
  }finally{await s.close();}
+});
+
+test('named city-unit search stays bounded, keeps exact identity and fences paginated results',async()=>{
+ const x=await setup();try{
+  const token=x.current().token,read=id=>x.store.city(token,id),one=read(x.cityIds.one),road=one.units.find(u=>u.kind==='road');
+  x.store.executeCity({commandId:randomUUID(),token,campaignId:x.current().campaign.id,cityId:one.header.id,expectedRevision:one.header.revision,action:{kind:'change',upsert:[{...road,name:'Verbindungsgasse'}],remove:[],label:'Name street'}});
+  const two=read(x.cityIds.two),other=two.units.find(u=>u.kind==='road');x.store.executeCity({commandId:randomUUID(),token,campaignId:x.current().campaign.id,cityId:two.header.id,expectedRevision:two.header.revision,action:{kind:'change',upsert:[{...other,name:'Verbindungsgasse'}],remove:[],label:'Same name in another city'}});
+  const before=x.store.db.serialize(),q={kind:'city-unit',text:'VERBINDUNGSGASSE',limit:1},a=x.store.atlasObjects(token,q);assert.equal(a.items.length,1);assert.ok(a.next);assert.equal(a.items[0].unitKind,'road');assert.equal(a.items[0].startX,0);assert.equal(a.items[0].startY,125);assert.equal('units' in a.items[0],false);assert.equal('payload' in a.items[0],false);
+  const b=x.store.atlasObjects(token,{...q,cursor:a.next});assert.equal(b.items.length,1);assert.equal(b.next,null);assert.notEqual(a.items[0].cityId,b.items[0].cityId);assert.notEqual(a.items[0].cityTitle,b.items[0].cityTitle);assert.deepEqual(new Set([a.items[0].id,b.items[0].id]),new Set([road.id,other.id]));
+  assert.throws(()=>x.store.atlasObjects(token,{...q,text:'other',cursor:a.next}),/inzwischen/);assert.ok(x.store.db.serialize().equals(before));
+  const current=read(one.header.id);x.store.executeCity({commandId:randomUUID(),token,campaignId:x.current().campaign.id,cityId:one.header.id,expectedRevision:current.header.revision,action:{kind:'change',upsert:[{...road,name:'Renamed street'}],remove:[],label:'Rename'}});assert.throws(()=>x.store.atlasObjects(token,{...q,cursor:a.next}),/inzwischen/);
+  assert.equal(x.store.atlasObjects(token,{kind:'city-unit',text:'Renamed',limit:40}).items[0].id,road.id);
+ }finally{await x.cleanup();}
+});
+
+test('global street search ignores a late query and opens the exact bounded street without a full city read',async()=>{
+ const x=await setup(),s=await placeSurface(x),get=id=>x.document.getElementById(id);let release;
+ try{
+  const w=x.current(),city=x.store.city(w.token,x.cityIds.one),road=city.units.find(u=>u.kind==='road');
+  x.store.executeAtlasCommit({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'bind',binding:{id:randomUUID(),kind:'city',ownerId:city.header.id,parent:'world',parentId:null,x:1000,y:2000,angle:0,revision:0},expectedRevision:null}});
+  x.store.executeCity({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,cityId:city.header.id,expectedRevision:city.header.revision,action:{kind:'change',upsert:[{...road,name:'Verbindungsgasse'}],remove:[],label:'Prepare street'}});
+  const query=x.window.campaign.atlasObjects;let hold=true,fullReads=0;x.window.campaign.city=async()=>{fullReads++;throw new Error('Search must not fetch a complete city');};
+  x.window.campaign.atlasObjects=async(t,q)=>{const r=await query(t,q);if(q.kind==='city-unit'&&hold){hold=false;return new Promise(resolve=>{release=()=>resolve(r);});}return r;};
+  x.enter('atlas-search','Verbindungsgasse');await until(()=>!!release);x.enter('atlas-search','not-present');await settle();release();await settle();assert.equal(get('atlas-search-results').textContent.includes('Verbindungsgasse'),false);
+  x.enter('atlas-search','Verbindungsgasse');await until(()=>get('atlas-search-results').textContent.includes('Straße: Verbindungsgasse'));const button=[...get('atlas-search-results').querySelectorAll('button')].find(b=>b.textContent.includes('Straße: Verbindungsgasse'));assert.match(button.textContent,/Alpha one/);button.click();
+  await until(()=>s.atlas.selection?.id===road.id);await settle();assert.equal(get('city-unit-name').value,'Verbindungsgasse');assert.equal(s.atlas.selection.cityId,city.header.id);assert.equal(x.ui.atlasCityState().partial,true);assert.equal(fullReads,0);
+ }finally{release?.();await s.close();}
 });

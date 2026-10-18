@@ -6,7 +6,7 @@ import { parseHTML } from "linkedom";
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';",
+      "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-canvas-test.cjs",
@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportTiles, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -230,35 +230,30 @@ function fixture(t, { available = true } = {}) {
   };
 }
 const rect = (id) => {
-  const n = atlasPaint("rect", { width: 10, height: 10, fill: "red" });
-  n.dataset.atlasObject = "true";
-  n.dataset.id = id;
+  const n = atlasPaint("rect", {width: 10, height: 10, style: {fill: "red"}});
+  n.data.atlasObject = "true";
+  n.data.id = id;
   return n;
 };
 test("retained commands inherit style and transforms, preserve painter order and explicit semantic ancestry", (t) => {
   fixture(t);
-  const root = atlasPaint("g", {
-      transform: "translate(20 30) rotate(90)",
-      stroke: "red",
-      "stroke-width": 3,
-      "stroke-linecap": "round",
-    }),
+  const root = atlasPaint("group", {matrix:[0,1,-1,0,20,30], style: {stroke: "red", lineWidth: 3, lineCap: "round"}}),
     a = rect("first"),
     b = rect("second");
   root.append(a, b);
   const scene = new AtlasCanvasScene(root);
   assert.deepEqual(
-    scene.commands.map((c) => c.node.dataset.id),
+    scene.commands.map((c) => c.node.data.id),
     ["first", "second"],
   );
   const c = scene.commands[0],
     p = new Point(1, 2).matrixTransform(c.matrix);
   assert(Math.abs(p.x - 18) < 1e-8);
   assert.equal(p.y, 31);
-  assert.equal(c.stroke, "red");
-  assert.equal(c.width, 3);
-  assert.equal(c.cap, "round");
-  assert.equal(b.closest("[data-atlas-object]").dataset.id, "second");
+  assert.equal(c.style.stroke, "red");
+  assert.equal(c.style.lineWidth, 3);
+  assert.equal(c.style.lineCap, "round");
+  assert.equal(scene.hit({save(){},restore(){},resetTransform(){},setLineDash(){},isPointInPath(){return true;}},{x:20,y:30},["atlasObject"]).data.id,"second");
 });
 test("Canvas publication has no per-object DOM and panning reuses paths and image buffers", async (t) => {
   const f = fixture(t);
@@ -272,7 +267,7 @@ test("Canvas publication has no per-object DOM and panning reuses paths and imag
   assert.equal(f.root.children.length, 0);
   assert.equal(f.root.dataset.renderer, "canvas2d");
   assert.equal(f.root.dataset.canvasState, "loaded");
-  assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }).dataset.id, "room");
+  assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }).data.id, "room");
   f.pointer("pointerdown", 100, 100);
   f.pointer("pointermove", 120, 130);
   f.pointer("pointerup", 120, 130);
@@ -301,7 +296,7 @@ test("world conversion includes CSS border and independent backing resolution; z
 test("one decoder and one replaceable successor discard superseded image frames and stale hits", async (t) => {
   const f = fixture(t),
     draw = (src) => (root) =>
-      root.append(atlasPaint("image", { href: src, width: 10, height: 10 }));
+      root.append(atlasPaint("image", {source: src, width: 10, height: 10}));
   f.canvas.render((root) => root.append(rect("old")));
   await settle();
   f.canvas.render(draw("wait:a"));
@@ -327,7 +322,7 @@ test("decoding failure revokes hits and retry keeps the same surface, camera and
   const draw = (root) => {
     root.append(rect("room"));
     if (bad)
-      root.append(atlasPaint("image", { href: "bad", width: 2, height: 2 }));
+      root.append(atlasPaint("image", {source: "bad", width: 2, height: 2}));
   };
   f.canvas.render(draw);
   await settle();
@@ -357,7 +352,7 @@ test("unavailable context shows recoverable initialization state instead of fail
 test("lost/restored context releases bitmaps and reuses the canonical scene builder", async (t) => {
   const f = fixture(t);
   f.canvas.render((root) =>
-    root.append(atlasPaint("image", { href: "image", width: 5, height: 5 })),
+    root.append(atlasPaint("image", {source: "image", width: 5, height: 5})),
   );
   await settle();
   f.root.dispatchEvent(new f.window.Event("contextlost", { cancelable: true }));
@@ -387,7 +382,7 @@ test("switching map context revokes old commands and decoded media before new so
   f.canvas.render((root) =>
     root.append(
       rect("room"),
-      atlasPaint("image", { href: "a", width: 2, height: 2 }),
+      atlasPaint("image", {source: "a", width: 2, height: 2}),
     ),
   );
   await settle();
@@ -397,12 +392,14 @@ test("switching map context revokes old commands and decoded media before new so
   assert.equal(f.canvas.hitAt({ clientX: 15, clientY: 25 }), null);
   assert(f.closed.includes("a"));
   assert.equal(f.root.dataset.canvasState, "empty");
+  assert.equal(f.root.dataset.decodedBytes, "0");
+  assert.equal(f.root.dataset.imageErrors, "0");
 });
 
 test("marker titles survive outside semantic selection and the surface clears hover on a new gesture", async (t) => {
   const f = fixture(t),
-    marker = atlasPaint("circle", { r: 3, fill: "red" });
-  marker.append(atlasPaint("title", {}, "Isobel · bekannt und sichtbar"));
+    marker = atlasPaint("circle", {radius: 3, style: {fill: "red"}});
+  marker.title="Isobel · bekannt und sichtbar";
   f.canvas.render((root) => root.append(marker));
   await settle();
   assert.equal(
@@ -424,25 +421,18 @@ test("marker titles survive outside semantic selection and the surface clears ho
 
 
 test('visible-cell clips constrain painted output, semantic hits and tooltips through transformed groups',t=>{
- const f=fixture(t),root=atlasPaint('g'),defs=atlasPaint('defs'),clip=atlasPaint('clipPath',{id:'visible-landscape'});
- clip.append(atlasPaint('rect',{x:0,y:0,width:10,height:10}));defs.append(clip);root.append(defs);
- const visible=atlasPaint('g',{'clip-path':'url(#visible-landscape)',transform:'translate(100 200)'}),paint=atlasPaint('rect',{x:0,y:0,width:20,height:20,fill:'green'});
- paint.dataset.atlasObject='true';paint.dataset.id='current-landscape';paint.append(atlasPaint('title',{},'Current terrain'));visible.append(paint);root.append(visible);
- const scene=new AtlasCanvasScene(root),cut=scene.commands[0].clips[0];
- assert.equal(scene.commands.length,1);assert.equal(cut.path.commands[0][1].commands[0][0],'rect');
- assert.equal(cut.matrix.e,100);assert.equal(cut.matrix.f,200);
+ const f=fixture(t),root=atlasPaint('group'),visible=atlasPaint('group',{matrix:[1,0,0,1,100,200],clip:{path:'M0 0 L10 0 L10 10 L0 10 Z'}}),paint=atlasPaint('rect',{width:20,height:20,style:{fill:'green'},data:{atlasObject:'true',id:'current-landscape'},title:'Current terrain'});
+ visible.append(paint);root.append(visible);const scene=new AtlasCanvasScene(root),cut=scene.commands[0].clips[0];
+ assert.equal(scene.commands.length,1);assert.equal(cut.matrix.e,100);assert.equal(cut.matrix.f,200);
  f.ctx.isPointInPath=(path,x,y)=>path!==cut.path||x>=0&&x<10&&y>=0&&y<10;
- assert.equal(scene.hit(f.ctx,{x:105,y:205},'[data-atlas-object]'),paint);
- assert.equal(scene.hit(f.ctx,{x:115,y:205},'[data-atlas-object]'),null);
+ assert.equal(scene.hit(f.ctx,{x:105,y:205},['atlasObject']),paint);
+ assert.equal(scene.hit(f.ctx,{x:115,y:205},['atlasObject']),null);
  assert.equal(scene.tooltip(f.ctx,{x:115,y:205}),'');
- scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});
- assert.ok(f.calls.some(([name,path,rule])=>name==='clip'&&path===cut.path&&rule==='nonzero'));
- const missing=atlasPaint('g',{'clip-path':'url(#missing)'});missing.append(paint);
- assert.throws(()=>new AtlasCanvasScene(missing),/Sichtausschnitt fehlt/);
+ scene.draw(f.ctx,new Matrix(),new Map(),{x:0,y:0});assert.ok(f.calls.some(([name,path,rule])=>name==='clip'&&path===cut.path&&rule==='nonzero'));
 });
 
 test("camera changes revoke hits and hover until the matching bitmap is actually painted", async t => {
-  const f=fixture(t),marker=rect("room");marker.append(atlasPaint("title",{},"Room"));
+  const f=fixture(t),marker=rect("room");marker.title="Room";
   f.canvas.render(root=>root.append(marker));await settle();f.flush();
   f.pointer("pointermove",15,25,0);f.flush();assert.equal(f.root.title,"Room");
   const scene=f.canvas.compiled;
@@ -451,7 +441,7 @@ test("camera changes revoke hits and hover until the matching bitmap is actually
   assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
   assert.equal(f.root.title,"");assert.equal(f.root.dataset.canvasState,"loading");
   f.flush();assert.equal(f.canvas.ready,true);assert.equal(f.canvas.compiled,scene);
-  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"room");
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,"room");
   f.canvas.zoom(.5);assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
   f.canvas.previous();assert.equal(f.canvas.ready,false);f.flush();assert.equal(f.canvas.ready,true);
 });
@@ -466,7 +456,7 @@ test("a scene compiled while hidden is not ready after showing until that scene 
   assert.equal(f.canvas.ready,false);f.size(320,180);
   assert.equal(f.canvas.ready,false,"the previous bitmap may match the size, but belongs to an older scene");
   f.canvas.set(f.canvas.view);f.flush();assert.equal(f.canvas.ready,true);
-  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).dataset.id,"new");
+  assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,"new");
 });
 
 test("a pending frame is not interpreted as empty space for left-drag navigation", async t => {
@@ -476,4 +466,99 @@ test("a pending frame is not interpreted as empty space for left-drag navigation
   assert.equal(f.canvas.panning,false,"absence of a current hit does not prove empty space while a frame is pending");
   f.pointer("pointerdown",15,25,1);assert.equal(f.canvas.panning,true,"explicit middle-button navigation remains available");
   f.pointer("pointerup",15,25,1);f.flush();assert.equal(f.canvas.ready,true);
+});
+
+test('an unreadable optional reference stays local while required terrain and exact hits remain usable',async t=>{
+ const f=fixture(t);let broken=true;
+ const draw=root=>root.append(rect('room'),atlasPaint('image',{source:broken?'bad':'reference-ok',width:2,height:2,optionalImage:true}),atlasPaint('image',{source:'terrain',width:10,height:10}));
+ f.canvas.render(draw);await settle();assert.equal(f.canvas.ready,true);assert.equal(f.root.dataset.canvasState,'loaded');assert.equal(f.root.dataset.imageErrors,'1');assert.equal(f.canvas.hitAt({clientX:12,clientY:22})?.data.id,'room');assert.equal(f.document.querySelector('.map-canvas-state').hidden,false);assert.equal(f.document.querySelector('.map-canvas-state button').hidden,false);assert.match(f.document.querySelector('.map-canvas-state').textContent,/Bildvorlage/);
+ const view=f.canvas.view;broken=false;f.document.querySelector('.map-canvas-state button').click();await settle();assert.equal(f.canvas.ready,true);assert.equal(f.root.dataset.imageErrors,'0');assert.deepEqual(f.canvas.view,view);assert.equal(f.document.querySelector('.map-canvas-state').hidden,true);
+});
+
+test('hits resolve the nearest semantic owner without a DOM or selector parser',t=>{
+ const f=fixture(t),root=atlasPaint('group',{data:{atlasObject:'true',id:'outer'}}),inner=atlasPaint('group',{data:{atlasObject:'true',id:'inner'}});
+ inner.append(atlasPaint('rect',{width:5,height:5,style:{fill:'red'}}));root.append(inner);
+ const scene=new AtlasCanvasScene(root);
+ assert.equal(scene.hit(f.canvas.ctx,{x:1,y:1},['atlasObject']).data.id,'inner');
+ assert.equal(scene.hit(f.canvas.ctx,{x:1,y:1},['landVertex']),null);
+ assert.equal(root.attrs,undefined);assert.equal(root.closest,undefined);
+});
+
+test('PNG and JPEG exports execute native commands without SVG serialization, and release the surface',async t=>{
+ const f=fixture(t),created=[],create=f.document.createElement.bind(f.document);
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=(done,type)=>done(new Blob([type]));}return n;};
+ f.document.createElementNS=()=>{throw Error('SVG must never be created for raster export');};
+ const box={x:100,y:200,width:20,height:10},scene=atlasPaint('group');scene.append(atlasPaint('rect',{width:20,height:10,style:{fill:'#123456'}}));
+ for(const format of ['png','jpeg']){
+  assert.equal(Buffer.from(await atlasImage(scene,200,100,box,format)).toString(),'image/'+format);
+  assert(f.calls.some(([name,m])=>name==='setTransform'&&m.a===10&&m.d===10));
+  assert.equal(created.at(-1).width,0);assert.equal(created.at(-1).height,0);
+ }
+ await assert.rejects(atlasImage(scene,8193,100,box),/Bildgröße/);
+ const bad=atlasPaint('image',{source:'bad',width:2,height:2});
+ const Original=global.Image;global.Image=class{async decode(){throw Error('decode failed');}};t.after(()=>global.Image=Original);
+ await assert.rejects(atlasImage(bad,100,100,box),/decode failed/);
+ assert.equal(created.at(-1).width,0);
+});
+
+test('drawing failure clears incomplete pixels and revokes hits before retry',async t=>{
+ const f=fixture(t),fill=f.ctx.fill;f.ctx.fill=()=>{throw Error('drawing failed');};
+ f.canvas.render(root=>root.append(rect('room')));await settle();
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ assert.equal(f.root.dataset.canvasState,'unavailable');assert(f.calls.some(c=>c[0]==='clearRect'));
+ f.ctx.fill=fill;f.document.querySelector('.map-canvas-state button').click();await settle();
+ assert.equal(f.canvas.ready,true);assert.equal(f.canvas.hitAt({clientX:15,clientY:25}).data.id,'room');
+});
+
+
+test('tiled export reuses one tile canvas, composites exact pixel rectangles and encodes only the result',async t=>{
+ const f=fixture(t),created=[],copies=[],encoded=[],create=f.document.createElement.bind(f.document);
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=(done,type)=>{encoded.push({canvas:n,type});done(new Blob([type]));};}return n;};
+ f.ctx.drawImage=(image,x,y)=>copies.push({image,x,y,width:image.width,height:image.height});
+ global.Image=class{constructor(){throw Error('Renderer tiles must never be encoded and decoded as images');}};
+ const box={x:20,y:-40,width:2050,height:1026},calls=[];
+ const read=async(part,width,height)=>{calls.push(part);return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'red'}})}};};
+ for(const format of ['png','jpeg']){
+  copies.length=0;encoded.length=0;created.length=0;
+  const bytes=await atlasImage(atlasExportTiles(box,1025,513,'c',7,read,()=>true),1025,513,box,format);
+  assert(bytes instanceof Uint8Array);assert.equal(Buffer.from(bytes).toString(),'image/'+format);assert.equal(created.length,2);assert.equal(encoded.length,1);assert.equal(encoded[0].canvas,created[0]);
+  assert.deepEqual(copies.map(c=>[c.x,c.y,c.width,c.height]),[[0,0,512,512],[512,0,512,512],[1024,0,1,512],[0,512,512,1],[512,512,512,1],[1024,512,1,1]]);
+  assert(copies.every(c=>c.image===created[1]));assert(created.every(c=>c.width===0&&c.height===0));
+ }
+});
+
+test('export cancellation during image decode or encoding discards pixels, releases surfaces and reads no successor',async t=>{
+ const f=fixture(t),created=[],create=f.document.createElement.bind(f.document);let encodes=0,running=true,reads=0;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){created.push(n);n.toBlob=done=>{encodes++;running=false;done(new Blob(['png']));};}return n;};
+ const box={x:0,y:0,width:1024,height:512};
+ const read=async(part,width,height)=>{reads++;return{ok:true,value:{campaignId:'c',revision:7,box:part,width,height,scene:atlasPaint('image',{width:part.width,height:part.height,source:'wait:cancel'})}};};
+ const pending=atlasImage(atlasExportTiles(box,1024,512,'c',7,read,()=>running),1024,512,box,'png',()=>running);
+ await settle();running=false;f.releases.get('wait:cancel')();await assert.rejects(pending,/abgebrochen/);assert.equal(reads,1);assert.equal(encodes,0);assert(created.every(c=>c.width===0&&c.height===0));
+ running=true;await assert.rejects(atlasImage(atlasPaint('rect',{width:1,height:1}),1,1,box,'png',()=>running),/abgebrochen/);assert.equal(encodes,1);assert(created.every(c=>c.width===0&&c.height===0));
+});
+
+test('oversized encoded output is rejected before reading or sending bytes',async t=>{
+ const f=fixture(t),create=f.document.createElement.bind(f.document);let expanded=false;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done({size:64*1024*1024+1,arrayBuffer(){expanded=true;throw Error('Must not expand oversized output');}});return n;};
+ await assert.rejects(atlasImage(atlasPaint('rect',{width:1,height:1}),1,1,{x:0,y:0,width:1,height:1}),/64 MiB/);assert.equal(expanded,false);
+});
+
+
+test('one GM export freezes floor, grid, scale, reference, box, size and format before asynchronous reads',async t=>{
+ const f=fixture(t),controls=f.document.createElement('div');
+ controls.innerHTML='<input id="atlas-export-size" value="1025"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p>';
+ f.document.body.append(controls);f.document.querySelector('#atlas-export-grid').checked=true;f.document.querySelector('#atlas-export-reference').checked=false;
+ const box={x:0,y:0,width:1025,height:2},created=[],copies=[],queries=[],errors=[],encodings=[],create=f.document.createElement.bind(f.document);let strokes=0,saved=0;
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){
+  created.push(n);const ctx=new Proxy({canvas:n,stroke(){strokes++;},drawImage(){copies.push(strokes);strokes=0;}},{get(o,k){return k in o?o[k]:()=>{};}});
+  n.getContext=()=>ctx;n.toBlob=(done,type)=>{encodings.push({width:n.width,height:n.height,type});done(new Blob(['png']));};
+ }return n;};
+ const frame=q=>({campaignId:'c',revision:7,region:{box:q.box,fence:'f',scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:{},owner:{token:'t'},exporting:false,floorId:'ground',landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ f.window.campaign={atlasRegion:async(token,q)=>{
+  queries.push(q);
+  if(queries.length===1){f.document.querySelector('#atlas-export-grid').checked=false;f.document.querySelector('#atlas-hex-level').value='10';f.document.querySelector('#atlas-export-reference').checked=true;f.document.querySelector('#atlas-export-size').value='2048';f.document.querySelector('#atlas-export-format').value='jpeg';ui.floorId='upper';box.x=20000;}
+  return{ok:true,value:frame(q)};
+ },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert(bytes instanceof Uint8Array);assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
+ await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,4);assert(queries.slice(1).every(q=>q.references===false));assert.deepEqual(encodings,[{width:1025,height:2,type:'image/png'}]);assert.equal(copies.length,3);assert(copies.every(n=>n>0),'All tiles use the originally selected grid/level');assert(queries.every(q=>q.floorId==='ground'));assert.deepEqual(queries.slice(1).map(q=>q.box.x),[0,512,1024]);assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');assert(created.every(c=>c.width===0&&c.height===0));
 });

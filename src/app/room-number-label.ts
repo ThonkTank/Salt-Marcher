@@ -1,17 +1,10 @@
-import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
-import type {RoomGeometry,Point} from './contracts';
+import {atlasPaint} from './atlas-paint';
+import {appendPaint,type PaintTarget} from './atlas-paint-svg';
+import type {RoomGeometry} from './contracts';
 import {centerInRoom} from './dungeon-model';
-
 /** A passive key to the room list, readable at every camera scale. */
-export function appendRoomNumber(scene:PaintTarget,room:RoomGeometry,unitsPerPixel:number,project:(point:Point)=>Point=point=>point){
-  if(!Number.isFinite(unitsPerPixel)||unitsPerPixel<=0)return;
-  let at;
-  try{at=project(centerInRoom(room));}catch{return;} // A missing label must never hide the map.
-  const label=paintFactory(scene)('text');
-  const attributes={x:String(at.x),y:String(at.y),'text-anchor':'middle','dominant-baseline':'central',
-    'font-size':String(13*unitsPerPixel),'font-weight':'600',fill:'#203648',stroke:'#fff',
-    'stroke-width':String(3*unitsPerPixel),'stroke-linejoin':'round','paint-order':'stroke',
-    'pointer-events':'none','aria-hidden':'true','data-room-number':room.id};
-  for(const [key,value] of Object.entries(attributes))label.setAttribute(key,value);
-  label.textContent=room.number;scene.append(label);
+export function appendRoomNumber(scene:PaintTarget,room:RoomGeometry,unitsPerPixel:number,project:(p:{x:number;y:number})=>{x:number;y:number}=p=>p){
+ if(!Number.isFinite(unitsPerPixel)||unitsPerPixel<=0)return;
+ let at;try{at=project(centerInRoom(room));}catch{return;}
+ appendPaint(scene,atlasPaint('text',{x:at.x,y:at.y,pointer:false,data:{roomNumber:room.id},style:{textAlign:'center',textBaseline:'middle',fontSize:13*unitsPerPixel,fontWeight:600,fill:'#203648',stroke:'#fff',lineWidth:3*unitsPerPixel,lineJoin:'round'}},room.number));
 }

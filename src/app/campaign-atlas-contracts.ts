@@ -94,12 +94,12 @@ export interface AtlasOverview {
   landscapeBounds: import('./atlas-landscape').LandscapeBox | null;
 }
 export interface AtlasObjectQuery {
-  kind: 'room' | 'city' | 'landscape' | 'scope'; text: string; limit: number;
-  cursor?: {token: string; fence: number; revision: number; after: string; kind: 'room' | 'city' | 'landscape' | 'scope'; text: string};
+  kind: 'room' | 'city' | 'landscape' | 'scope' | 'city-unit'; text: string; limit: number;
+  cursor?: {token: string; fence: number; revision: number; after: string; kind: 'room' | 'city' | 'landscape' | 'scope' | 'city-unit'; text: string};
 }
 export interface AtlasObjectPage {
   campaignId: string; token: string; revision: number;
-  items: {id: string; name: string; revision: number; locationId?:string; scopeId?: string; floorId?: string; number?: string}[];
+  items: {id: string; name: string; revision: number; locationId?:string; scopeId?: string; floorId?: string; number?: string;cityId?:string;cityTitle?:string;unitKind?:string;startX?:number;startY?:number}[];
   next: AtlasObjectQuery['cursor'] | null;
 }
 export interface AtlasCommitAck {
@@ -137,7 +137,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   referenceAssetPreview(token:string,id:string,size:number):Promise<Result<string>>;
   exportAtlasPNG(
     token: string,
-    bytes: number[],
+    bytes: Uint8Array,
     audience: "gm" | "public",
     format?: "png" | "jpeg",
     sourceFence?:string,

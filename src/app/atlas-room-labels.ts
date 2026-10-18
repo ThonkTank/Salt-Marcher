@@ -1,4 +1,5 @@
-import {paintFactory,type PaintTarget} from './atlas-canvas-scene';
+import {atlasPaint} from './atlas-paint';
+import {appendPaint,type PaintTarget} from './atlas-paint-svg';
 import type {Point,RoomGeometry} from './contracts';
 import {appendRoomNumber} from './room-number-label';
 import {centerInRoom} from './dungeon-model';
@@ -11,8 +12,5 @@ export function appendAtlasRoomLabels(root:PaintTarget,room:RoomGeometry,mpp:num
  const points=vertices.map(project);
  if((Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x)))/mpp<=60)return;
  let at;try{at=project(centerInRoom(room));}catch{return;}
- const label=paintFactory(root)('text');
- const attrs={x:at.x,y:at.y-8*mpp,'font-size':12*mpp,'text-anchor':'middle','paint-order':'stroke',stroke:'#f2eee3','stroke-width':3*mpp,fill:'#283d3b','pointer-events':'none','data-room-name':room.id};
- for(const [key,value] of Object.entries(attrs))label.setAttribute(key,String(value));
- label.textContent=room.name.slice(0,40);root.append(label);
+ appendPaint(root,atlasPaint('text',{x:at.x,y:at.y-8*mpp,pointer:false,data:{roomName:room.id},style:{fontSize:12*mpp,textAlign:'center',stroke:'#f2eee3',lineWidth:3*mpp,fill:'#283d3b'}},room.name.slice(0,40)));
 }

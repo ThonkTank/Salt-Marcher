@@ -1,4 +1,4 @@
-import type {PaintTarget} from './atlas-canvas-scene';
+import type {PaintTarget} from './atlas-paint-svg';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {CityPlacement} from './city-placement';

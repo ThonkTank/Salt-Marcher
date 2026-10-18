@@ -1,48 +1,40 @@
-import {AtlasPaint,atlasPaint,paintFactory,type PaintTarget} from "./atlas-canvas-scene";
-import {drawLandscape} from "./atlas-landscape-view";
-import {hexPolygon,type LandscapeRecord} from "./atlas-landscape";
+import { AtlasPaint, atlasPaint } from "./atlas-paint";
+import {drawLandscape} from './atlas-landscape-view';
+import {hexPolygon,type LandscapeRecord} from './atlas-landscape';
+import {paintElement} from './atlas-paint-svg';
+import { AtlasCanvasScene } from "./atlas-canvas-scene";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { CanvasBox } from "./passive-map-canvas";
-import {atlasPartyPoint} from "./atlas-runtime-model";
 import type { PlayerFrame } from "./player-contracts";
 import {
   atlasFrame,
+  frameMatrix,
   atlasHexPoint,
   localToAtlas,
 } from "./campaign-atlas-model";
+import {atlasPartyPoint} from './atlas-runtime-model';
 import { roomPath } from "./drawing-model";
 import { terrainColors } from "./world-model";
-const ns = "http://www.w3.org/2000/svg";
-/** Public output is built from the existing public projection, never by hiding GM nodes. */
-type PublicAtlasArgs=[a:AtlasRenderView,box:CanvasBox,frame?:PlayerFrame,landscape?:LandscapeRecord[],unitsPerPixel?:number,rasters?:import('./landscape-raster').LandscapeRaster[]];
-export function publicAtlasSVG(...args:PublicAtlasArgs):SVGSVGElement{return publicAtlasProjection(false,...args) as SVGSVGElement;}
-export function publicAtlasPaint(...args:PublicAtlasArgs):AtlasPaint{return publicAtlasProjection(true,...args) as AtlasPaint;}
-function publicAtlasProjection(
-  retained:boolean,
+/** Public output uses only the public projection, never hidden GM nodes. */
+export function publicAtlasPaint(
   a: AtlasRenderView,
   box: CanvasBox,
   frame?: PlayerFrame,
   landscape:LandscapeRecord[]=[],
-  unitsPerPixel = box.width / 1000,
-  rasters:import("./landscape-raster").LandscapeRaster[] = [],
-): PaintTarget {
-  const mpp=Number.isFinite(unitsPerPixel)&&unitsPerPixel>0?unitsPerPixel:box.width/1000;
-  const svg=retained?atlasPaint("svg"):document.createElementNS(ns,"svg"),make=paintFactory(svg);
-  svg.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
-  svg.setAttribute("xmlns", ns);
-  svg.setAttribute("font-family", "Noto Sans, sans-serif");
-  const add = (
-    tag: string,
-    attrs: Record<string, string | number>,
-    text?: string,
-  ) => {
-    const n = make(tag);
-    for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
-    if (text) n.textContent = text;
-    svg.append(n);
-    return n;
+  mpp=box.width/1000,
+  rasters:import("./landscape-raster").LandscapeRaster[]=[],
+) {
+  const scene = atlasPaint("group",{size:{width:box.width,height:box.height}});
+  const add = (...args: Parameters<typeof atlasPaint>) => {
+    const node = atlasPaint(...args);
+    scene.append(node);
+    return node;
   };
-  add("rect", { width: box.width, height: box.height, fill: "#20282a" });
+  add("rect", {
+    width: box.width,
+    height: box.height,
+    style: { fill: "#20282a" },
+  });
   if (a.geometry.position && a.perception) {
     const pose = a.geometry.position,
       b = a.bindings.find(
@@ -54,27 +46,28 @@ function publicAtlasProjection(
         const n = localToAtlas(p, f);
         return { x: n.x - box.x, y: n.y - box.y };
       },
-      transform = `translate(${f.x - box.x} ${f.y - box.y}) rotate(${(f.angle * 180) / Math.PI})`;
+      matrix = frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y });
     for (const [polys, fill] of [
       [a.perception.known, "#7c7e74"],
       [a.perception.visible, "#ded7bd"],
     ] as const)
       if (polys.length)
         add("path", {
-          d: roomPath(polys),
-          transform,
-          fill,
-          "fill-rule": "evenodd",
+          path: roomPath(polys),
+          matrix: matrix,
+          style: { fill: fill, fillRule: "evenodd" },
         });
     for (const label of a.perception.labels) {
       const p = at(label.point);
       add(
         "text",
         {
-          x:p.x,y:p.y-12*mpp,
-          "font-size": 12*mpp,
-          "text-anchor": "middle",
-          fill: "#203532",
+          ...p,
+          style: {
+            fontSize: box.width / 100,
+            textAlign: "center",
+            fill: "#203532",
+          },
         },
         label.text,
       );
@@ -82,20 +75,18 @@ function publicAtlasProjection(
     for (const m of a.perception.markers) {
       const p = at(m.point);
       add("circle", {
-        cx: p.x,
-        cy: p.y,
-        r: 5*mpp,
-        fill: m.kind === "npc" ? "#8964a5" : "#39766a",
+        x: p.x,
+        y: p.y,
+        radius: box.width / 250,
+        style: { fill: m.kind === "npc" ? "#8964a5" : "#39766a" },
       });
     }
     const p = at(pose);
     add("circle", {
-      cx: p.x,
-      cy: p.y,
-      r: 7*mpp,
-      fill: "#244f87",
-      stroke: "white",
-      "stroke-width": 2*mpp,
+      x: p.x,
+      y: p.y,
+      radius: box.width / 180,
+      style: { fill: "#244f87", stroke: "white", lineWidth: box.width / 900 },
     });
   } else if (frame?.mode === "map" && frame.map) {
     const map = frame.map;
@@ -104,100 +95,171 @@ function publicAtlasProjection(
         r = map.hexMeters / Math.sqrt(3),
         points = Array.from({ length: 6 }, (_, i) => {
           const angle = ((30 + i * 60) * Math.PI) / 180;
-          return `${p.x - box.x + Math.cos(angle) * r},${p.y - box.y + Math.sin(angle) * r}`;
-        }).join(" ");
+          return {
+            x: p.x - box.x + Math.cos(angle) * r,
+            y: p.y - box.y + Math.sin(angle) * r,
+          };
+        });
       add("polygon", {
-        points,
-        fill:
-          terrainColors[cell.terrain as keyof typeof terrainColors] ??
-          "#b8c896",
+        points: points,
         opacity: cell.visible ? 1 : 0.55,
+        style: {
+          fill:
+            terrainColors[cell.terrain as keyof typeof terrainColors] ??
+            "#b8c896",
+        },
       });
-    }
-    const visibleCells=map.cells.filter(cell=>cell.visible);
-    if((landscape.length||rasters.length)&&visibleCells.length){
-      const defs=make('defs'),clip=make('clipPath',{id:'visible-landscape'});
-      // Known but unseen cells retain their remembered facts. Current GM geometry
-      // is only a raster layer over the publicly visible cells.
-      for(const cell of visibleCells){
-        const polygon=hexPolygon(cell.q,cell.r,map.hexMeters);
-        clip.append(make('path',{d:roomPath([{outer:polygon.outer.map(p=>({x:p.x-box.x,y:p.y-box.y})),holes:[]}])}));
-      }
-      defs.append(clip);svg.append(defs);
-      const visible=make('g',{'clip-path':'url(#visible-landscape)'});
-      drawLandscape(visible,landscape.filter(r=>r.kind==='patch'||r.kind==='river'||r.kind==='road'),box,mpp,new Map(),false,rasters.length?rasters:undefined);
-      svg.append(visible);
-    }
-    // Public names stay above the landscape layer.
-    for(const cell of map.cells){
-      const p=atlasHexPoint(cell.q,cell.r,map.hexMeters);
-      if (cell.label && map.hexMeters/mpp>45)
+      if (cell.label)
         add(
           "text",
           {
             x: p.x - box.x,
-            y: p.y - box.y-12*mpp,
-            "font-size": 12*mpp,
-            fill: "#203532",
-            "text-anchor": "middle",
+            y: p.y - box.y,
+            style: {
+              fontSize: map.hexMeters / 15,
+              fill: "#203532",
+              textAlign: "center",
+            },
           },
           cell.label,
         );
     }
-    const markerRows=new Map<string,number>();
-    for(const marker of map.markers??[]){
-      const at=atlasHexPoint(marker.q,marker.r,map.hexMeters),key=marker.q+','+marker.r,row=markerRows.get(key)??0;
-      if(row===0)add('circle',{cx:at.x-box.x,cy:at.y-box.y,r:7*mpp,fill:'#f7f2df',stroke:'#305e88','stroke-width':2*mpp,opacity:marker.visible?1:.6});
-      if(marker.label){add('text',{x:at.x-box.x,y:at.y-box.y+(24+row*16)*mpp,'font-size':12*mpp,'text-anchor':'middle',fill:'#203532'},marker.label);markerRows.set(key,row+1);}
+    const visible=map.cells.filter(c=>c.visible);
+    if(visible.length&&(landscape.length||rasters.length)){
+      const paths=visible.map(c=>{const poly=hexPolygon(c.q,c.r,map.hexMeters).outer;return poly.map((p,i)=>(i?'L':'M')+(p.x-box.x)+' '+(p.y-box.y)).join(' ')+' Z';});
+      const current=atlasPaint('group',{clip:{path:paths.join(' '),id:'visible-landscape'}});
+      drawLandscape(current,landscape.filter(r=>r.kind!=='reference'&&r.kind!=='place').map(r=>({...r,name:''})),box,mpp,new Map(),false,rasters);
+      scene.append(current);
     }
-    const p = atlasPartyPoint(a)??atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
+    // Remembered cells deliberately keep their public snapshot. Current GM
+    // contours must not replace unseen terrain, even inside a known hex.
+    for(const marker of map.markers){
+      const p=atlasHexPoint(marker.q,marker.r,map.hexMeters);
+      add('circle',{x:p.x-box.x,y:p.y-box.y,radius:map.hexMeters/70,opacity:marker.visible?1:.55,style:{fill:'#39766a'}});
+      if(marker.label)add('text',{x:p.x-box.x,y:p.y-box.y-map.hexMeters/40,style:{fontSize:map.hexMeters/15,textAlign:'center',fill:'#203532'}},marker.label);
+    }
+    const p = atlasPartyPoint(a) ?? atlasHexPoint(map.position.q, map.position.r, map.hexMeters);
     add("circle", {
-      cx: p.x - box.x,
-      cy: p.y - box.y,
-      r: 7*mpp,
-      fill: "#244f87",
+      x: p.x - box.x,
+      y: p.y - box.y,
+      radius: box.width / 180,
+      style: { fill: "#244f87" },
     });
   } else
     throw new Error(
       "Für den aktuellen Gruppenkontext ist keine öffentliche Kartenprojektion verfügbar.",
     );
-  return svg;
+  return scene;
 }
-export async function atlasPNG(
-  svg: SVGSVGElement,
+/** Legacy vector output adapter; the screen and raster writer use Paint directly. */
+export function publicAtlasSVG(...args:Parameters<typeof publicAtlasPaint>){const p=publicAtlasPaint(...args);p.geometry.size={width:args[1].width,height:args[1].height};return paintElement(p,document) as SVGSVGElement;}
+/** A scene is drawn directly; GM scenes stream through one reusable tile surface. */
+export async function atlasImage(
+  source:
+    | AtlasPaint
+    | AsyncIterable<import("./atlas-landscape-export").AtlasExportTile>,
   width: number,
   height: number,
-  format:"png"|"jpeg"="png",
-): Promise<number[]> {
-  const clone = svg.cloneNode(true) as SVGSVGElement;
-  clone.setAttribute("xmlns", ns);
-  clone.setAttribute("width", String(width));
-  clone.setAttribute("height", String(height));
-  const url = URL.createObjectURL(
-    new Blob([new XMLSerializer().serializeToString(clone)], {
-      type: "image/svg+xml",
-    }),
-  );
+  box: CanvasBox,
+  format: "png" | "jpeg" = "png",
+  current: () => boolean = () => true,
+): Promise<Uint8Array> {
+  if (
+    !Number.isInteger(width) ||
+    !Number.isInteger(height) ||
+    width < 1 ||
+    height < 1 ||
+    width > 8192 ||
+    height > 8192 ||
+    !Number.isFinite(box.width) ||
+    !Number.isFinite(box.height) ||
+    box.width <= 0 ||
+    box.height <= 0
+  )
+    throw Error("Ungültige Bildgröße.");
+  const checkCurrent = () => {
+    if (!current()) throw Error("Atlas-Ausgabe abgebrochen.");
+  };
+  checkCurrent();
+  const canvas = document.createElement("canvas");
+  let tileCanvas: HTMLCanvasElement | undefined;
   try {
-    const image = new Image();
-    image.src = url;
-    await image.decode();
-    const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    canvas.getContext("2d")!.drawImage(image, 0, 0, width, height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
+    if (source instanceof AtlasPaint)
+      await drawScene(canvas, source, box, checkCurrent);
+    else {
+      tileCanvas = document.createElement("canvas");
+      for await (const tile of source) {
+        checkCurrent();
+        tileCanvas.width = tile.width;
+        tileCanvas.height = tile.height;
+        await drawScene(tileCanvas, tile.scene, tile.box, checkCurrent);
+        checkCurrent();
+        ctx.drawImage(tileCanvas, tile.x, tile.y);
+      }
+    }
+    checkCurrent();
     const blob = await new Promise<Blob>((resolve, reject) =>
       canvas.toBlob(
         (b) =>
-          b
-            ? resolve(b)
-            : reject(new Error("PNG konnte nicht erzeugt werden.")),
-        "image/"+format,
-        .94,
+          b ? resolve(b) : reject(Error("Bild konnte nicht erzeugt werden.")),
+        "image/" + format,
+        0.94,
       ),
     );
-    return [...new Uint8Array(await blob.arrayBuffer())];
+    checkCurrent();
+    // Match the IPC/file limit before reading the encoded bytes.
+    if (blob.size > 64 * 1024 * 1024)
+      throw Error(
+        "Atlas-Bild ist größer als 64 MiB. Kleinere Ausgabegröße wählen.",
+      );
+    return new Uint8Array(await blob.arrayBuffer());
   } finally {
-    URL.revokeObjectURL(url);
+    canvas.width = canvas.height = 0;
+    if (tileCanvas) tileCanvas.width = tileCanvas.height = 0;
+  }
+}
+
+async function drawScene(
+  canvas: HTMLCanvasElement,
+  scene: AtlasPaint,
+  box: CanvasBox,
+  checkCurrent: () => void,
+) {
+  const compiled = new AtlasCanvasScene(scene),
+    images = new Map<string, CanvasImageSource>();
+  try {
+    for (const source of compiled.images) {
+      checkCurrent();
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      checkCurrent();
+      images.set(source, image);
+    }
+    checkCurrent();
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
+    ctx.resetTransform();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    compiled.draw(
+      ctx,
+      new DOMMatrix([
+        canvas.width / box.width,
+        0,
+        0,
+        canvas.height / box.height,
+        0,
+        0,
+      ]),
+      images,
+      { x: 0, y: 0 },
+    );
+  } finally {
+    compiled.dispose();
+    images.clear();
   }
 }

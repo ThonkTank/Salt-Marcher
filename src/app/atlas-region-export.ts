@@ -1,16 +1,14 @@
+import {paintElement} from './atlas-paint-svg';
 import {appendAtlasRoomLabels} from './atlas-room-labels';
-import {regionValue} from './atlas-region-contracts';
+import { atlasPaint as landscapeNode } from "./atlas-paint";
+import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
-import {
-  drawLandscape,
-  drawLandscapeGrid,
-  landscapeNode,
-} from "./atlas-landscape-view";
-import { atlasFrame, frameTransform, localToAtlas } from "./campaign-atlas-model";
-import { citySvg } from "./city-model";
-import { roomPath, elementSvg } from "./drawing-model";
-export function atlasRegionSVG(
+import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
+import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
+import { cityPaint } from "./city-model";
+import { roomPath, elementPaint } from "./drawing-model";
+export function atlasRegionPaint(
   data: AtlasRenderView,
   records: LandscapeRecord[],
   box: LandscapeBox,
@@ -22,96 +20,131 @@ export function atlasRegionSVG(
     references: boolean;
     floorId: string;
     roofs: boolean;
-    scopeId?:string|null; labelUnitsPerPixel?:number;
-    rasters?: import("./landscape-raster").LandscapeRaster[];geometryOnly?:boolean;geometryTiles?:import("./landscape-raster").LandscapeRaster[];
+    scopeId?:string|null;
+    labelUnitsPerPixel?:number;
+    rasters?: import("./landscape-raster").LandscapeRaster[];
   },
 ) {
-  const svg = landscapeNode("svg", {
-      xmlns: "http://www.w3.org/2000/svg",
-      "font-family":"Noto Sans, sans-serif",
-      viewBox: `0 0 ${box.width} ${box.height}`,
-    }) as SVGSVGElement,
-    mpp = box.width / width,
-    labelMpp=options.labelUnitsPerPixel&&Number.isFinite(options.labelUnitsPerPixel)&&options.labelUnitsPerPixel>0?options.labelUnitsPerPixel:mpp;
-  if(!options.geometryOnly)svg.append(
+  const scene = landscapeNode("group", {}),
+    mpp = box.width / width,scope=options.scopeId!==undefined?options.scopeId:data.region?.scopeId,labelMpp=options.labelUnitsPerPixel??mpp;
+  scene.append(
     landscapeNode("rect", {
       width: box.width,
       height: box.height,
-      fill: "#b8c896",
+      style: { fill: "#b8c896" },
     }),
   );
-  if(!options.geometryOnly)drawLandscape(svg, records, box, mpp, assets, options.references,options.rasters);
-  if (options.grid&&!options.geometryOnly) drawLandscapeGrid(svg, box, options.level, mpp);
-  if(options.geometryTiles){for(const tile of options.geometryTiles)svg.append(landscapeNode('image',{x:tile.box.x-box.x,y:tile.box.y-box.y,width:tile.box.width,height:tile.box.height,href:tile.data,preserveAspectRatio:'none'}));return svg;}
-  if(data.region?.raster){const tile=data.region.raster;svg.append(landscapeNode('image',{x:tile.box.x-box.x,y:tile.box.y-box.y,width:tile.box.width,height:tile.box.height,href:tile.data,preserveAspectRatio:'none'}));return svg;}
+  drawLandscape(
+    scene,
+    records,
+    box,
+    mpp,
+    assets,
+    options.references,
+    options.rasters,
+  );
+  if (options.grid) drawLandscapeGrid(scene, box, options.level, mpp);
+  if (data.region?.raster) {
+    const tile = data.region.raster;
+    scene.append(
+      landscapeNode("image", {
+        x: tile.box.x - box.x,
+        y: tile.box.y - box.y,
+        width: tile.box.width,
+        height: tile.box.height,
+        source: tile.data,
+      }),
+    );
+    return scene;
+  }
+  const interiorOf=(id:string)=>regionValue(data.region?.interiors,id)??data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===id)?.ownerId;
   for (const city of data.cities) {
     const binding = data.bindings.find(
       (b) => b.kind === "city" && b.ownerId === city.header.id,
     );
     if (!binding) continue;
     const f = atlasFrame(data, binding),
-      g = landscapeNode("g", {
-        transform: frameTransform({ ...f, x: f.x - box.x, y: f.y - box.y }),
+      g = landscapeNode("group", {
+        matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
     if (city.header.width / mpp < 20) {
       g.append(
         landscapeNode("circle", {
-          cx: city.header.width / 2,
-          cy: city.header.height / 2,
-          r: mpp * 3,
-          fill: "#5b4338",
+          x: city.header.width / 2,
+          y: city.header.height / 2,
+          radius: mpp * 3,
+          style: { fill: "#5b4338" },
         }),
       );
     } else {
-      const doc = new DOMParser().parseFromString(
-        citySvg(city),
-        "image/svg+xml",
-      );
-      for(const child of Array.from(doc.documentElement.children)){
-        const unitId=child.getAttribute('data-city-unit'),scope=unitId?regionValue(data.region?.interiors,unitId):undefined,interior=data.bindings.find(b=>b.kind==='dungeon'&&b.parent==='building'&&b.parentId===unitId)??(scope?{ownerId:scope}:null);
-        if(interior&&(!options.roofs||interior.ownerId===options.scopeId))for(const polygon of child.querySelectorAll('polygon'))polygon.setAttribute('fill','none');
-        if(interior?.ownerId===options.scopeId)for(const text of child.querySelectorAll('text'))text.remove();
-        if(child.tagName==='rect'){child.setAttribute('width',String(city.header.width));child.setAttribute('height',String(city.header.height));}
-        for(const text of [child,...Array.from(child.querySelectorAll('text'))].filter(n=>n.tagName==='text'))text.setAttribute('font-size',String(Math.min(Number(text.getAttribute('font-size'))||6,12*labelMpp)));
-        g.append(document.importNode(child,true));
+      const cityScene = cityPaint(city);
+      for (const element of cityScene.children) {
+        const id = element.data.cityUnit,
+          interior = id && interiorOf(id);
+        if (
+          interior &&
+          (!options.roofs || interior === scope)
+        )
+          for (const polygon of element.children.filter(
+            (n) => n.kind === "polygon",
+          )) {
+            polygon.style.fill = null;
+            if (
+              interior === scope &&
+              options.floorId !== "ground"
+            )
+              polygon.geometry.hidden = true;
+          }
       }
+      for(const element of cityScene.children){if(element.data.cityUnit&&interiorOf(element.data.cityUnit)===scope&&scope)element.children.splice(0,element.children.length,...element.children.filter(n=>n.kind!=='text'));for(const label of [element,...element.children].filter(n=>n.kind==='text'))label.style.fontSize=Math.min(label.style.fontSize??6,12*labelMpp);}
+      g.append(cityScene);
     }
-    svg.append(g);
+    scene.append(g);
   }
   for (const b of data.bindings.filter((b) => b.kind === "dungeon")) {
-    if (b.parent === "building" && options.roofs && b.ownerId!==options.scopeId) continue;
-    const floor=data.region?b.ownerId===data.region.scopeId?data.region.floorId:'ground':options.floorId;
+    if (
+      b.parent === "building" &&
+      options.roofs &&
+      b.ownerId !== scope
+    )
+      continue;
+    const floor = data.region
+      ? b.ownerId === data.region.scopeId
+        ? data.region.floorId
+        : "ground"
+      : options.floorId;
     const f = atlasFrame(data, b),
-      g = landscapeNode("g", {
-        transform: frameTransform({ ...f, x: f.x - box.x, y: f.y - box.y }),
+      g = landscapeNode("group", {
+        matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
-    const labels=landscapeNode('g',{'data-atlas-room-labels':b.ownerId});
+    const labels=landscapeNode('group',{data:{atlasRoomLabels:b.ownerId}});scene.append(labels);
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
       g.append(
         landscapeNode("path", {
-          d: roomPath(room.polygons),
-          fill: "#ded7bd",
-          stroke: "#3f5146",
-          "stroke-width": Math.max(0.12, mpp * 0.7),
-          "fill-rule": "evenodd",
+          path: roomPath(room.polygons),
+          style: {
+            fill: "#ded7bd",
+            stroke: "#3f5146",
+            lineWidth: Math.max(0.12, mpp * 0.7),
+            fillRule: "evenodd",
+          },
         }),
       );
-      appendAtlasRoomLabels(labels,room,labelMpp,point=>{const at=localToAtlas(point,f);return {x:at.x-box.x,y:at.y-box.y};});
+      appendAtlasRoomLabels(labels,room,labelMpp,p=>{const c=Math.cos(f.angle),s=Math.sin(f.angle);return{x:f.x+p.x*c-p.y*s-box.x,y:f.y+p.x*s+p.y*c-box.y};});
     }
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor,
     )) {
-      const container = landscapeNode("g");
-      container.innerHTML = elementSvg(
-        e,
-        data.workspace.rooms,
-        data.geometry.drawing.elements,
+      g.append(
+        elementPaint(e, data.workspace.rooms, data.geometry.drawing.elements),
       );
-      g.append(container);
     }
-    svg.append(g,labels);
+    scene.append(g);
   }
-  return svg;
+  return scene;
 }
+
+/** Explicit vector adapter for historical document interfaces, never used by Canvas painting. */
+export function atlasRegionSVG(...args:Parameters<typeof atlasRegionPaint>){const p=atlasRegionPaint(...args);p.geometry.size={width:args[2].width,height:args[2].height};return paintElement(p,document) as SVGSVGElement;}

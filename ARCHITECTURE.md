@@ -50,8 +50,8 @@ einfachere behalten; fehlende Nachweise als offen führen.
 
 | ID | Arbeitsrichtung | Weiter betrachtete Alternative / Wechselnachweis |
 | --- | --- | --- |
-| B01 | Atlas: Canvas2D mit wiederverwendbaren Path2D-Kommandos und Raster-/Bildlayern | Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. SVG bleibt Ausgabeformat und vorläufiger Host der älteren Einzelansichten. Native2D erst bei belegtem Plattformhindernis. |
-| B02 | SQLite-Rtree als Kandidatenindex | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
+| B01 | Atlas: Canvas2D mit wiederverwendbaren Path2D-Kommandos und Raster-/Bildlayern | Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. Atlas-Anzeige und PNG/JPEG-Ausgabe verwenden dieselben numerischen Zeichenbefehle direkt auf Canvas2D. Originalauswahl und offene Innenraumzüge liegen unabhängig vom Detail-/Rasterhintergrund darüber; Raster darf Autorenwerkzeuge nicht abschalten. Präsentationslatenz und physische16GiB bleiben getrennt von lokalen CPU-/Funktionstests zu qualifizieren. SVG-Adapter bleiben ausschließlich für historische Einzelansichten und deren bestehende Schnittstellen. Native2D erst bei belegtem Plattformhindernis. |
+| B02 | SQLite-Rtree für Raum-/Stadtgeometrie und Landschaftsobjekte; kanonische Bounds-Btrees für Terrain | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
 | B03 | Exakte 1000-m-Bereichsadresse plus lokaler Offset, versionierter Codec | Andere Bereichsgröße/lokales Festkomma nur mit Präzisions- und Transfernachweis; kein vorzeitiges globales Double. |
 | B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
 | B05 | Austauschbare feste Ladeeinheiten und getrennte Bytecaches | Adaptive Bereiche/statisch-dynamische Indizes nach Dichtemessung. Cachevergleich 64/128/256 MiB je Klasse; kleinste geeignete Variante wählen. |
@@ -68,9 +68,24 @@ Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
 auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
 Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
 begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
-expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist nun in denselben quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden die bestehenden Canvas-Zeichenkommandos innerhalb einer geladenen Abdeckung; eine Workerqueue erhält den TEMP-Index. Kalte Projektionskosten und tatsächlicher App-/GPU-Speicher bleiben Mess- und Umstellungsaufgaben; daraus folgt noch keine Entscheidung gegen persistente
-abgeleitete Geometrie, GPU-Komposition oder einen anderen Cacheumfang. Details und
-Abnahmegrenzen hält der oben verlinkte Runtimeplan.
+expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist in denselben
+quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht
+und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden vorhandene
+Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
+den TEMP-Index. Kameraaufträge halten zusammenhängende Radfolgen auf der alten
+transformierten Szene und lesen erst nach 120 ms Ruhezeit den nötigen neuen Frame.
+Veraltete Autorenhits bleiben bis dahin gesperrt.
+
+Der lokale native Vergleich senkt Landschaftsöffnung mit 100000 Flächen plus
+1200 Objekten bei 100/200% von etwa 3,62–3,69 s auf 1,45–1,52 s einschließlich
+sichtbarem Ausschnitt. Input-CPU für Zoom sinkt auf etwa 3–6 ms p95; das ist
+keine Compositor-/GPUzeit. B02 nutzt schmale 128er-Payloadseiten und verwirft
+nur nachweislich wirkungslose Raster-Samples. Ein 8/16/32-MiB-Cacheexperiment
+begründet keine Budgeterhöhung. Je 20 geschlossene Zoomzyklen auf vier Beständen
+halten lokale JS-/Prozess-/Bildspeicher stabil; längere Autorensitzungen und
+physische 16-GiB-Qualifikation bleiben offen. Daraus folgt noch keine Entscheidung
+gegen persistente abgeleitete Geometrie, GPU-Komposition oder einen anderen
+Cacheumfang. Details und Abnahmegrenzen hält der oben verlinkte Runtimeplan.
 
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
 Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
@@ -291,7 +306,7 @@ Ein Kamera-/Auswahl-/Werkzeugzustand führt alle Atlasdetails. Zoom ändert
 Darstellung und Abfragetiefe, keine Autorenwerte und keinen Pflichtmodus.
 Räumliche Abfragen liefern nur sichtbare/betroffene Records und abgeleitete
 Geometrie; Render/Hit/Export konsumieren denselben bestätigten Stand und
-dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument.
+dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument. Numerische Geometrie und affine Matrizen gehen direkt an Canvas2D/Path2D; Atlas-Bildexporte zeichnen dieselben Kommandos zu PNG/JPEG ohne SVG-Zwischenbild. GM-Ausgaben lesen eine bestätigte Szenenkachel nach der anderen, zeichnen sie über eine wiederverwendbare Kachelfläche direkt ins Zielbild und kodieren nur dieses einmal; keine PNG-/Base64-Zwischenbilder oder Sammlung aller Kacheln im Renderer. Kodierte Bildbytes gehen als Uint8Array über die vorhandene IPC-Grenze zum Datei-Writer. Die Anzeige zeichnet direkt auf ihre begrenzte Canvasfläche; eine Hilfsfläche wird nur für die notwendige Sichtmasken-Komposition angelegt.
 Keine JSONvollparses oder Traversierung aller Dungeons je Kamerabild.
 
 Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas

@@ -52,3 +52,5 @@ export function atlasHexAt(p: Point, size: number) {
   else z = -x - y;
   return { q: x, r: z };
 }
+
+export const frameMatrix=(f:AtlasFrame):import("./atlas-paint").Affine=>[Math.cos(f.angle),Math.sin(f.angle),-Math.sin(f.angle),Math.cos(f.angle),f.x,f.y];

@@ -1,4 +1,5 @@
-import {AtlasPaint,paintFactory,type PaintTarget} from './atlas-canvas-scene';
+import {AtlasPaint,atlasPaint} from './atlas-paint';
+import {paintElement,type PaintTarget} from './atlas-paint-svg';
 import type {CityPoint,CityUnit,CityCommand} from './city-contracts';
 import {roadPoints} from './city-model';
 
@@ -54,10 +55,10 @@ export function cityShapeHandles(root:PaintTarget,editor:CityShape,mpp:number){
  for(let i=0;i<s.points.length;i++){
   const p=s.points[i]!;
   const handle=(point:CityPoint,label:string,midpoint:boolean)=>{
-   const c=paintFactory(root)('circle');
-   c.setAttribute('cx',String(point.x));c.setAttribute('cy',String(point.y));c.setAttribute('r',String(mpp*(midpoint?4:7)));c.setAttribute('fill',midpoint?'#fff':s.chosen===i?'#c65d28':'#176c74');c.setAttribute('stroke','#fff');c.setAttribute('stroke-width',String(mpp*1.5));c.setAttribute('role','button');c.setAttribute('aria-label',label);c.setAttribute('tabindex',editor.locked?'-1':'0');if(!(root instanceof AtlasPaint))c.style.cursor=midpoint?'copy':'move';c.dataset.cityShapeHandle=String(i);if(midpoint)c.dataset.cityShapeInsert='true';
+   const node=atlasPaint('circle',{x:point.x,y:point.y,radius:mpp*(midpoint?4:7),title:label,data:{cityShapeHandle:String(i),...(midpoint?{cityShapeInsert:'true'}:{})},style:{fill:midpoint?'#fff':s.chosen===i?'#c65d28':'#176c74',stroke:'#fff',lineWidth:mpp*1.5}});
+   if(root instanceof AtlasPaint){root.append(node);return;}
+   const c=paintElement(node,root.ownerDocument);c.setAttribute('role','button');c.setAttribute('aria-label',label);c.setAttribute('tabindex',editor.locked?'-1':'0');c.style.cursor=midpoint?'copy':'move';
    const choose=()=>midpoint?editor.insert(i):editor.choose(i);
-   if(root instanceof AtlasPaint){root.append(c);return;}
    c.addEventListener('click',(e:MouseEvent)=>{e.stopPropagation();choose();});
    c.addEventListener('keydown',(e:KeyboardEvent)=>{const k=e as KeyboardEvent;if(k.key==='Enter'||k.key===' '){k.preventDefault();k.stopPropagation();choose();}});
    c.addEventListener('pointerdown',(e:PointerEvent)=>{

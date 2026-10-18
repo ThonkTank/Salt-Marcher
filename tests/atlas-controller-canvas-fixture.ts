@@ -4,7 +4,8 @@
  * pretending linkedom implements Canvas2D or native pointer hit-testing.
  */
 import {PassiveMapCanvas} from '../src/app/passive-map-canvas';
-import {AtlasPaint} from '../src/app/atlas-canvas-scene';
+import {AtlasPaint} from '../src/app/atlas-paint';
+import {paintElement} from '../src/app/atlas-paint-svg';
 export class AtlasCanvas {
  private camera:PassiveMapCanvas;
  constructor(readonly root:SVGSVGElement,options:ConstructorParameters<typeof PassiveMapCanvas>[1]){this.camera=new PassiveMapCanvas(root,options);}
@@ -16,16 +17,11 @@ export class AtlasCanvas {
 
  get ready(){return this.root.dataset.canvasState!=='unavailable';}
  point(e:MouseEvent){const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(this.root.getScreenCTM()!.inverse());return{x:p.x+this.view.x,y:p.y+this.view.y};}
- hitAt(e:MouseEvent,selector:string){return (e.target as Element)?.closest?.(selector)??null;}
+ hitAt(e:MouseEvent,keys:string[]){const node=(e.target as Element)?.closest?.(keys.map(k=>'[data-'+k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())+']').join(','));return node?{data:{...(node as SVGElement).dataset}}:null;}
  render(draw:(scene:AtlasPaint)=>void,empty=''){
   this.camera.render(root=>{
-   const paint=new AtlasPaint('g');draw(paint);
-   const element=(p:AtlasPaint):SVGElement=>{
-    const n=root.ownerDocument.createElementNS('http://www.w3.org/2000/svg',p.tagName);
-    for(const [k,v]of Object.entries(p.attrs))n.setAttribute(k,v);
-    for(const [k,v]of Object.entries(p.dataset))n.dataset[k]=v;
-    n.textContent=p.textContent;for(const child of p.children)n.append(element(child));return n;
-   };
+   const paint=new AtlasPaint('group');draw(paint);
+   const element=(p:AtlasPaint)=>paintElement(p,root.ownerDocument);
    for(const p of paint.children)root.append(element(p));
   },empty);
  }

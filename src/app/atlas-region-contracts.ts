@@ -19,7 +19,7 @@ export interface AtlasLandscapeLayer {
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
 }
 export interface AtlasHit extends Omit<AtlasObjectFocus,'kind'> {kind:AtlasObjectFocus['kind']|'landscape';name:string;landscapeKind?:LandscapeRecord['kind']}
-export interface AtlasHitPage {items:AtlasHit[];next:number|null;fence:string;total:number}
+export interface AtlasHitPage {items:AtlasHit[];next:number|null;fence:string;total:number;unavailable?:('geometry'|'landscape')[]}
 export interface AtlasRegionGeometry {
  campaignId:string;token:string;revision:number;fence:string;box:LandscapeBox;slice:number|null;scopeId:string|null;floorId:string;
  rooms:RoomGeometry[];floors:WorkspaceGeometry['floors'];drawing:DrawingMapView;

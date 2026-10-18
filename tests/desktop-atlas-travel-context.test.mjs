@@ -189,7 +189,7 @@ test('a delayed click after a geometry drag stays suppressed until the next actu
 });
 
 test('a visible drawing glyph selects its exact source ID even beyond the canonical point-pick radius',async()=>{
- const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({dataset:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async()=>chosen.push('point-radius')});
+ const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async()=>chosen.push('point-radius')});
  await ui.click({button:0,altKey:false});assert.deepEqual(chosen,['glyph'],'visual glyph hit must keep the existing exact-ID navigation/read path');
 });
 
@@ -197,4 +197,22 @@ test('a press rejected during saving cannot become a selection after saving comp
  const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{busy:true,family:'navigation',root:{dataset:{}},entranceDraft:null,camera:{ready:true,hitAt:()=>null},geometryCurrent:()=>true,point:()=>({x:0,y:0}),chooseAt:async()=>chosen.push('unexpected')});
  ui.down({button:0,altKey:false});ui.busy=false;await ui.click({button:0,altKey:false});
  assert.deepEqual(chosen,[],'release belongs to the rejected press, even if its write has finished');
+});
+
+
+test('wheel bursts retain their scene between separated input events and read only the settled view',async t=>{
+ const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));let now=0,id=0;const jobs=new Map(),reads=[];
+ global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
+ const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
+ ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[],'A normal gap within a wheel burst must not rebuild the scene.');ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);advance(40);assert.deepEqual(reads,[true]);assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
+});
+
+test('camera refresh preserves a checked local route only after the identical source is confirmed',async t=>{
+ const x=fixture(t);x.ui.data.region.fence='confirmed-source';await x.ui.travelControl('preview');const preview=x.ui.localPreview;assert(preview);
+ let release;window.campaign.atlasRegion=()=>new Promise(r=>release=r);const pending=x.ui.refresh(true);assert.equal(x.get('start').disabled,true);assert.equal(x.ui.localPreview,null);
+ release({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'confirmed-source',coverage:{mode:'detail',unreadable:0}}}});await pending;
+ assert.equal(x.ui.localPreview,preview);assert.equal(x.get('start').disabled,false);
+ window.campaign.atlasRegion=async()=>({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'new-source',coverage:{mode:'detail',unreadable:0}}}});await x.ui.refresh(true);
+ assert.equal(x.ui.localPreview,null);assert.equal(x.get('start').disabled,true,'A source change must revoke the old checked route');assert.equal(x.sent.length,0);
 });

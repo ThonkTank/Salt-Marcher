@@ -33,6 +33,7 @@ const pause=()=>new Promise<void>(resolve=>setImmediate(resolve));
 export class AtlasRegionReader {
  private statements=new Map<string,any>();
  private landscape:AtlasLandscapeReader;
+ private landscapeFailure=false;
  private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(text);this.statements.set(text,s);}return s;}
  private readFaults=0;private countFaults=true;private ready=false;private indexed=true;private campaign='';private count=0;
  constructor(private db:any,shadow?:{filename:string;scopeId:string}){
@@ -92,7 +93,9 @@ export class AtlasRegionReader {
   if(++this.count%128===0)await pause();
  }
  async sync(source:AtlasRegionSource){
-  this.campaign=source.campaignId;this.landscape.sync(source);
+  this.campaign=source.campaignId;
+  try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();this.landscapeFailure=false;}
+  catch{this.landscapeFailure=true;}
   if(source.reset||!this.ready){
    this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem;');
    for(const table of ['city_document','room','city_unit','drawing_element']){
@@ -208,7 +211,7 @@ export class AtlasRegionReader {
    result.raster={box:{...q.box},width,height,data:'data:image/png;base64,'+data};
   }
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
-  try{result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
+  try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
   if(bytes(result)>REGION_REPLY_BYTES)throw new Error('Ausschnitt überschreitet das Darstellungsbudget. Weiter hineinzoomen.');
   return result;
  }
@@ -233,18 +236,19 @@ export class AtlasRegionReader {
  candidatesAt(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0,layer:'geometry'|'landscape'|'all'='geometry'):AtlasHitPage{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box)||!Number.isSafeInteger(offset)||offset<0)throw new Error('Kartenauswahl prüfen.');
   if(q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert.');
-  if(layer==='landscape')return this.landscape.hits(source,q,p,offset);
+  const landscapeHits=(offset:number):AtlasHitPage=>{try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');return this.landscape.hits(source,q,p,offset);}catch{return{items:[],total:0,next:null,fence:source.fence,unavailable:['landscape']};}};
+  if(layer==='landscape')return landscapeHits(offset);
   if(layer==='all'){
-   const geometry=this.candidatesAt(source,q,p,offset,'geometry'),landscape=this.landscape.hits(source,q,p,Math.max(0,offset-geometry.total)),items=[...geometry.items,...landscape.items].slice(0,40),total=geometry.total+landscape.total;
-   return{items,total,next:offset+items.length<total?offset+items.length:null,fence:source.fence};
+   const geometry=this.candidatesAt(source,q,p,offset,'geometry'),landscape=landscapeHits(Math.max(0,offset-geometry.total)),items=[...geometry.items,...landscape.items].slice(0,40),total=geometry.total+landscape.total;
+   return{items,total,next:offset+items.length<total?offset+items.length:null,fence:source.fence,...(geometry.unavailable||landscape.unavailable?{unavailable:[...(geometry.unavailable??[]),...(landscape.unavailable??[])]}:{})};
   }
-  const items:AtlasHit[]=[];let matched=0,more=false;const radius=q.box.width/q.width*8;
+  const items:AtlasHit[]=[];let matched=0,more=false;const radius=q.box.width/q.width*8;this.readFaults=0;this.countFaults=true;
   this.visit(q,(s,f,kind,b)=>{
    if(kind==='city-paper')return;const local=inverse(p,f),touch=s.polygons?inside(local,s.polygons):s.points?.some((v,i,a)=>i?distance(local,a[i-1]!,v)<=Math.max((s.stroke??0)/2,q.box.width/q.width*3):a.length===1&&Math.hypot(local.x-v.x,local.y-v.y)<=radius);
    if(!touch||matched++<offset)return;if(items.length>=40){more=true;return;}
    const focus=kind==='city-marker'?this.focus(source,'city',b.ownerId):kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
    items.push({...focus,name:(kind==='room'?s.value.number+'. ':'')+(s.value.name||({room:'Raum',element:'Objekt','city-marker':'Stadt','scope-marker':'Dungeon',unit:'Stadtelement'}[kind]??'Objekt'))});
-  },undefined,{x:p.x-radius,y:p.y-radius,width:radius*2,height:radius*2});return{items,next:more?offset+items.length:null,fence:source.fence,total:matched};
+  },undefined,{x:p.x-radius,y:p.y-radius,width:radius*2,height:radius*2});return{items,next:more?offset+items.length:null,fence:source.fence,total:matched,...(this.readFaults||this.sql('SELECT 1 FROM temp.region_problem LIMIT 1').get()?{unavailable:['geometry'] as ('geometry')[]}: {})};
  }
  hit(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point):AtlasObjectFocus|null{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box))throw new Error('Kartenauswahl prüfen.');
