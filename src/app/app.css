@@ -841,3 +841,16 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #campaign-atlas:is([data-family="interior"],[data-family="decoration"]) #atlas-hint[data-idle="true"]{display:none}
 
 #campaign-atlas[data-drawing-tool="door"] #atlas-tool-fields>label:has(#atlas-new-name),#campaign-atlas[data-drawing-tool="door"] #atlas-room-draw{display:none}
+/* Keep the desktop map anchored while only its inspector scrolls. The live
+   dock owns its own layout; narrow screens retain the stacked layout above. */
+@media(min-width:751px){
+ body.has-workspace:has(>#campaign-atlas:not([hidden])){height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+ body:has(>#campaign-atlas:not([hidden]))>header,body:has(>#campaign-atlas:not([hidden]))>#status,body:has(>#campaign-atlas:not([hidden]))>#backup-status,body:has(>#campaign-atlas:not([hidden]))>#graph-preview-banner{flex:none}
+ body>#campaign-atlas{display:flex;flex-direction:column;flex:1;min-height:0;height:auto;overflow:hidden}
+ body>#campaign-atlas>.atlas-command-bar{flex:none}
+ body>#campaign-atlas>#atlas-search-results{flex:none;max-height:20vh;overflow:auto}
+ body>#campaign-atlas>.atlas-layout{flex:1;min-height:0;height:auto;align-items:stretch;overflow:hidden}
+ body>#campaign-atlas .atlas-stage{position:static;min-height:0;height:auto}
+ body>#campaign-atlas #campaign-map{flex:1 1 0;height:0;min-height:0}
+ body>#campaign-atlas #atlas-panel{min-height:0;height:auto}
+}
