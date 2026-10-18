@@ -113,3 +113,9 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #atlas-tool-palette>.atlas-tool-buttons{order:1;margin-bottom:4px}
 #campaign-atlas #atlas-tool-palette>button{order:2;margin:2px 0;text-align:left;min-height:32px}
 #campaign-atlas #atlas-tool-palette>:is(#atlas-create-city,#atlas-create-dungeon){order:0}
+
+/* One navigation owner: the editor menu exposes the original workspace routes. */
+#atlas-navigation-popup #workspace-navigation{position:static;width:auto;padding:0;border:0;background:transparent;overflow:visible}
+#atlas-navigation-popup .navigation-brand{display:none}
+#atlas-navigation-popup #workspace-nav-menu>summary{display:block;cursor:pointer;padding:.55rem .35rem;font-weight:600}
+#atlas-navigation-popup .navigation-groups{position:static;display:block;max-height:none;padding:0;box-shadow:none;background:transparent}

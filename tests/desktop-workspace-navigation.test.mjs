@@ -5,7 +5,7 @@ import {parseHTML} from 'linkedom';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({entryPoints:['src/app/workspace-navigation.ts'],outfile:'.build/workspace-navigation.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/workspace-navigation';export {AtlasWorkspaceLayout} from './src/app/atlas-workspace-layout';",resolveDir:process.cwd()},outfile:'.build/workspace-navigation.cjs',bundle:true,platform:'node',format:'cjs'});
 const ui=require('../.build/workspace-navigation.cjs');
 function setup(t,narrow=false){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),saved={window:globalThis.window,document:globalThis.document,ResizeObserver:globalThis.ResizeObserver};
@@ -36,4 +36,17 @@ test('one existing group selector stays outside profile details and measured sti
  x.heights.header=110;x.heights.focus=100;x.media.matches=true;x.media.change();assert.equal(style.getPropertyValue('--workspace-header-height'),'110px');assert.equal(style.getPropertyValue('--workspace-nav-height'),'44px');assert.equal(style.getPropertyValue('--live-focus-height'),'100px');
  assert.equal(style.getPropertyValue('--workspace-footer-height'),'58px');x.heights.footer=110;x.measure();assert.equal(style.getPropertyValue('--workspace-footer-height'),'110px');
  x.heights.focus=0;x.measure();assert.equal(style.getPropertyValue('--live-focus-height'),'0px');
+});
+
+test('Atlas exposes the original workspace navigation and restores its handlers and nodes on leaving',t=>{
+ const x=setup(t),previousEvent=global.Event;t.after(()=>global.Event=previousEvent);global.Event=x.window.Event;
+ const root=x.document.createElement('section'),menu=x.document.createElement('div'),notices=x.document.createElement('div'),imports=x.document.createElement('div');x.document.body.append(root,menu,notices,imports);const bar=x.document.createElement('div');bar.className='atlas-command-bar';bar.getBoundingClientRect=()=>({height:48});root.append(bar);
+ for(const id of ['campaign-header-name','rename-campaign','new-campaign','campaign-manager','application-settings','help','import','status','commit-pending','error-actions','backup-status','world-write-recovery','graph-preview-banner','atlas-save-status','party-popover'])if(!x.el(id)){const n=x.document.createElement('div');n.id=id;x.document.body.append(n);}
+ const nav=x.el('workspace-navigation'),parent=nav.parentNode,next=nav.nextSibling,buttons=[...nav.querySelectorAll('button')];let switches=0;x.el('music-tab').onclick=()=>switches++;
+ x.el('party-popover').matches=()=>false;
+ const layout=Object.assign(Object.create(ui.AtlasWorkspaceLayout.prototype),{root,menu,notices,importMenu:imports,secondary:x.document.createElement('aside'),shellNodes:[],slots:new Map(),popups:[],active:false,width:240,detailWidth:340,contextVisible:false});
+ for(let i=0;i<2;i++){
+  layout.setActive(true);assert.equal(nav.parentNode,menu);assert.equal(x.el('workspace-nav-menu').open,true);assert.deepEqual([...menu.querySelectorAll('#workspace-navigation button')],buttons);assert.equal(x.document.querySelectorAll('#music-tab').length,1);
+  x.el('music-tab').click();assert.equal(switches,i+1);layout.setActive(false);assert.equal(nav.parentNode,parent);assert.equal(nav.nextSibling,next);assert.deepEqual([...nav.querySelectorAll('button')],buttons);assert.equal(x.document.body.classList.contains('atlas-workspace'),false);
+ }
 });
