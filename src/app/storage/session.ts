@@ -158,7 +158,11 @@ export function validateSessionRuns(db:any){
 }
 // Normalize omitted defaults; preserve ordered bindings to scenes.
 function normalizedSessionRequest(request:SessionGenerationRequest):SessionGenerationRequest {
- const r=structuredClone(request);r.count??=null;r.compensateLoot=r.compensateLoot===true;r.compensateMagic=r.compensateMagic===true;r.worldSourcesByLocation=r.worldSourcesByLocation===true;
+ const r=structuredClone(request);
+ // Table selection is a set; visit/note and required-NPC order still controls scene bindings.
+ // Sort copies on both sides so historical origins remain reusable without rewriting them.
+ r.encounter.tableIds.sort();
+ r.count??=null;r.compensateLoot=r.compensateLoot===true;r.compensateMagic=r.compensateMagic===true;r.worldSourcesByLocation=r.worldSourcesByLocation===true;
  r.encounter.npcOnly=r.encounter.npcOnly===true;r.encounter.includeNpcs=r.encounter.includeNpcs===true;
  for(const key of ['factionIds','requiredNpcIds','excludedNpcIds'] as const)r.encounter[key]??=[];if(r.encounter.filters.text===''){const {text,...filters}=r.encounter.filters;r.encounter.filters=filters;}
  r.magicPool?.sort((a,b)=>a.definitionId.localeCompare(b.definitionId));return r;
