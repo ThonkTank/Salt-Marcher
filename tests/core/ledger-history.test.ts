@@ -4,7 +4,7 @@ import test from 'node:test';
 import Database from 'better-sqlite3';
 import {ledgerStacksMatch,type LedgerItem} from '../../src/app/progression';
 import {installItemDefinitions} from '../../src/app/storage/item-definitions';
-import {readLedgerInventory} from '../../src/app/storage/progression';
+import {readLedgerInventory,saveLedger} from '../../src/app/storage/progression';
 
 const hash=(value:string)=>createHash('sha256').update(value).digest('hex');
 const definition=(id:string,revision:number,name:string,unitCopper:string,trashed=false)=>({id,revision,name,category:'equipment' as const,magic:false,rarity:'',attunement:'no' as const,unitCopper,weightText:'',properties:[],description:'',source:{kind:'authored' as const,label:'Test',license:null,url:null},trashed});
@@ -38,4 +38,39 @@ test('stack matching preserves reward credits and original treasure portions',()
  const original=ledger({origin:'award',rewardCreditId:'credit-a',sourceTreasureId:'treasure-a',sourceTreasureItemId:'portion-a'});
  for(const change of [{rewardCreditId:'credit-b'},{sourceTreasureId:'treasure-b'},{sourceTreasureItemId:'portion-b'}])assert.equal(ledgerStacksMatch(original,{...original,...change}),false);
  assert.equal(ledgerStacksMatch(original,{...original,id:'another-ledger',quantity:3}),true);
+});
+
+test('inventory pages count sellable items and explicit problems instead of spent history',()=>{
+ const db=new Database(':memory:');
+ try{
+  db.exec("CREATE TABLE authored_item(id TEXT PRIMARY KEY,revision INTEGER,name TEXT,category TEXT,unit_copper TEXT) STRICT; CREATE TABLE roster_member(campaign_id TEXT,id TEXT,PRIMARY KEY(campaign_id,id)) STRICT; CREATE TABLE character_ledger(campaign_id TEXT,id TEXT,character_id TEXT,revision INTEGER,payload TEXT,checksum TEXT,PRIMARY KEY(campaign_id,id)) STRICT;");
+  installItemDefinitions(db);
+  const d=definition('shared',1,'Seil','50'),payload=JSON.stringify(d);
+  db.prepare('INSERT INTO authored_item VALUES(?,?,?,?,?)').run(d.id,d.revision,d.name,d.category,d.unitCopper);
+  db.prepare('INSERT INTO item_definition VALUES(?,?,?,?)').run(d.id,d.revision,payload,hash(payload));
+  db.prepare('INSERT INTO item_definition_version VALUES(?,?,?,?)').run(d.id,d.revision,payload,hash(payload));
+  db.prepare('INSERT INTO roster_member VALUES(?,?)').run('campaign','hero');
+  const expected:string[]=[],bad:string[]=[];
+  for(let i=0;i<51;i++){
+   const item=ledger({id:'current-'+i,name:d.name,unitCopper:d.unitCopper,reference:{kind:'authored',definitionId:d.id,revision:d.revision}});
+   saveLedger(db,'campaign',item);expected.unshift(item.id);
+   for(const status of ['received','sold','given'] as const)saveLedger(db,'campaign',{...item,id:status+'-'+i,status,quantity:status==='received'?0:2,actualSaleCopper:status==='sold'?'1':null});
+   if(i%20===0){const broken={...item,id:'broken-'+i,status:'sold',quantity:0},body=JSON.stringify(broken);db.prepare('INSERT INTO character_ledger VALUES(?,?,?,?,?,?)').run('campaign',broken.id,'hero',1,body,'bad-checksum');bad.unshift(broken.id);}
+  }
+  const original=db.prepare('SELECT * FROM character_ledger ORDER BY rowid').all();
+  const pages=[];let after:string|null=null;
+  do{const page=readLedgerInventory(db,'campaign',{characterId:'hero',after});pages.push(page);after=page.next;assert(pages.length<10);}while(after);
+  assert.deepEqual(pages.map(p=>p.items.length+p.problems.length),[50,4]);
+  assert.deepEqual(pages.flatMap(p=>p.items.map(i=>i.id)),expected);
+  assert.deepEqual(pages.flatMap(p=>p.problems.map(p=>p.id)),bad);
+  assert.equal(pages.reduce((n,p)=>n+p.visited,0),original.length);
+  assert.deepEqual(db.prepare('SELECT * FROM character_ledger ORDER BY rowid').all(),original);
+  for(let i=0;i<4;i++)db.prepare('DELETE FROM character_ledger WHERE id=?').run('current-'+i);
+  const exact=readLedgerInventory(db,'campaign',{characterId:'hero',after:null});
+  assert.equal(exact.items.length+exact.problems.length,50);assert.equal(exact.next,null);
+  for(const id of [...expected,...bad])db.prepare('DELETE FROM character_ledger WHERE id=?').run(id);
+  assert.deepEqual(readLedgerInventory(db,'campaign',{characterId:'hero',after:null}),{items:[],problems:[],visited:153,next:null});
+  assert.throws(()=>readLedgerInventory(db,'other-campaign',{characterId:'hero',after:null}),/Kampagne/);
+  assert.throws(()=>readLedgerInventory(db,'campaign',{characterId:'hero',after:'invalid'}));
+ }finally{db.close();}
 });
