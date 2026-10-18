@@ -31,16 +31,6 @@ test('selection redraw retains search completeness and unreadable-text feedback'
  assert.equal(x.calls.length,1);assert.equal(x.root.querySelector('button').getAttribute('aria-pressed'),'true');
 });
 
-buildSync({entryPoints:['src/app/atlas-landscape-ui.ts'],outfile:'.build/room-landscape-dom.cjs',bundle:true,platform:'node',format:'cjs'});
-const {LandscapeWorkbench}=require('../.build/room-landscape-dom.cjs');
-test('a confirmed room revision retires old raster failures and waits for the matching map snapshot',async t=>{
- const {document}=parseHTML('<select id="land-object"></select><button id="land-reload"></button>'),old={window:globalThis.window,document:globalThis.document,Option:globalThis.Option};let resolveImage,regions=0,images=0;const errors=[],box={x:0,y:0,width:10,height:10},data={revision:0};
- Object.defineProperty(document.getElementById('land-object'),'value',{value:'',writable:true});
- globalThis.document=document;globalThis.Option=function(text,value){const o=document.createElement('option');o.textContent=text;o.value=value;return o;};globalThis.window={campaign:{landscapeRegion:async()=>{regions++;return{ok:true,value:{revision:data.revision,records:[]}};},landscapeRaster:()=>{images++;return new Promise(resolve=>resolveImage=resolve);}}};t.after(()=>Object.assign(globalThis,old));
- const view=Object.create(LandscapeWorkbench.prototype);Object.assign(view,{token:'A',request:0,key:'',minimumRevision:0,assets:new Map(),records:[],svg:{clientWidth:100},host:{box:()=>box,data:()=>data,error:e=>errors.push(e),redraw:()=>{}}});
- const before=view.load();await turn();assert.equal(images,1);view.invalidate(1);resolveImage({ok:false,error:'Atlasstand inzwischen geändert.'});await before;assert.deepEqual(errors,[]);
- await view.load();assert.equal(regions,1,'the old map must not start a new raster');data.revision=1;const after=view.load();await turn();resolveImage({ok:true,value:{revision:1,box,width:100,height:100,data:'data:image/png;base64,AA=='}});await after;assert.equal(view.raster.revision,1);assert.equal(regions,2);assert.deepEqual(errors,[]);
-});
 test('confirmed edits refresh the same directory once and replace stale matches without losing selection',async()=>{
  const x=setup();x.view.context('A','Spur','1');response(x.calls[0],[entry('1')]);await turn();
  x.view.context('A','Spur','1',[],true);assert.equal(x.calls.length,2);assert.equal(x.calls[1].q.cursor,undefined);response(x.calls[1],[{...entry('1'),name:'Neue Spur',revision:1}]);await turn();

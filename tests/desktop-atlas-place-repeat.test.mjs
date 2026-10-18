@@ -12,13 +12,13 @@ buildSync({entryPoints:['src/app/atlas-landscape-ui.ts'],outfile:'.build/place-r
 const {CampaignStore}=require('../.build/place-repeat-store.cjs'),{LandscapeWorkbench}=require('../.build/place-repeat-ui.cjs');
 function setup(t){
  const dir=mkdtempSync(tmpdir()+'/place-repeat-'),store=new CampaignStore(dir+'/campaign.sqlite'),cam=store.create('Waldpass'),w=store.activate(cam.id);
- const {window,document}=parseHTML('<div id="atlas-tool-fields"></div><input id="atlas-new-name"><select id="atlas-hex-level"><option value="0">0</option></select><svg id="map"></svg>');
+ const {window,document}=parseHTML('<div id="atlas-tool-fields"></div><input id="atlas-new-name"><select id="atlas-hex-level"><option value="0">0</option></select><canvas id="map"></canvas>');
  const previous={window:globalThis.window,document:globalThis.document,DOMPoint:globalThis.DOMPoint};Object.assign(globalThis,{window,document,DOMPoint:class{constructor(x,y){this.x=x;this.y=y;}matrixTransform(){return this;}}});
  window.campaign={deskContent:async(token,ref)=>({ok:true,value:store.deskContent(token,ref)})};
- const svg=document.getElementById('map');svg.getScreenCTM=()=>({inverse:()=>({})});
+ const svg=document.getElementById('map');
  const box={x:0,y:0,width:30000,height:20000},commands=[];
  const write=action=>{commands.push(structuredClone(action));return Promise.resolve(store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:cam.id,action}));};
- const view=new LandscapeWorkbench(svg,{box:()=>box,redraw:()=>{},write,error:e=>{throw e;},data:()=>store.campaignAtlas(w.token)});
+ const view=new LandscapeWorkbench(svg,{point:e=>({x:e.clientX,y:e.clientY}),box:()=>box,redraw:()=>{},write,error:e=>{throw e;},data:()=>store.campaignAtlas(w.token)});
  view.active=true;view.token=w.token;
  // The projection port reads the real stored records; raster/viewport loading is unrelated to a click's authoring target.
  view.load=async()=>{view.records=store.landscapeRegion(w.token,box).records;};
