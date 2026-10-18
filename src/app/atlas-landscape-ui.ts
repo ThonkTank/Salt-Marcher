@@ -90,6 +90,7 @@ export class LandscapeWorkbench {
   private selected: LandscapeRecord | null = null;
   private vertex = 0;
   private dragging = false;
+  private lineDragChanged = false;
   private dirty = false;
   private saving = false;
   private measurement: Point[] = [];
@@ -179,6 +180,7 @@ export class LandscapeWorkbench {
             return;
           this.vertex = Number(handle.data.landVertex);
           this.dragging = true;
+          this.lineDragChanged = false;
           this.pointer = e.pointerId;
           svg.setPointerCapture(e.pointerId);
           return;
@@ -232,7 +234,11 @@ export class LandscapeWorkbench {
             html<HTMLInputElement>("land-angle").value = String(
               (this.selected.angle * 180) / Math.PI,
             );
-          } else this.selected.points[this.vertex] = p;
+          } else {
+            const before = this.selected.points[this.vertex];
+            this.lineDragChanged ||= !!before && (before.x !== p.x || before.y !== p.y);
+            this.selected.points[this.vertex] = p;
+          }
           if (this.vertex === 0) {
             html<HTMLInputElement>("land-x").value = String(p.x);
             html<HTMLInputElement>("land-y").value = String(p.y);
@@ -259,8 +265,12 @@ export class LandscapeWorkbench {
         if (this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
+        const commitLine = this.dragging && this.lineDragChanged &&
+          (this.selected?.kind === "road" || this.selected?.kind === "river");
         this.pointer = null;
         this.dragging = false;
+        this.lineDragChanged = false;
+        if (commitLine) void this.finish().catch(e => this.host.error(e));
         if (["paint", "hex", "reset"].includes(this.tool))
           this.say(`${this.brushStrokes.length + 1} Strich(e) im Entwurf. Abschließen oder verwerfen.`);
         if (svg.hasPointerCapture(e.pointerId))
@@ -943,7 +953,7 @@ export class LandscapeWorkbench {
           expectedRevision: r.revision,
         }).catch((e) => this.host.error(e)),
     );
-    this.say("Punkte ziehen; Änderungen anschließend speichern.");
+    this.say(r.kind === "road" || r.kind === "river" ? "Punkte ziehen; beim Loslassen wird gespeichert. Rückgängig ist im Atlas verfügbar." : "Punkte ziehen; Änderungen anschließend speichern.");
   }
   private readInspector() {
     const r = this.selected;
