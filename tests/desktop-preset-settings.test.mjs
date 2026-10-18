@@ -116,3 +116,9 @@ test('pending campaign-context reads keep the visible campaign and effective ass
  x.el('preset-context').value=other.id;x.el('preset-context').onchange();await settle();assert.equal(x.el('preset-context').value,x.campaign.id);assert.equal(x.el('preset-context').disabled,true);assert.match(x.el('preset-effective').textContent,/Wald/);assert.match(x.el('preset-status').textContent,/geladen/);assert.equal(x.el('preset-name').value,'Offener Entwurf');assert.equal(x.calls.length,2);
  release();await settle();assert.equal(x.el('preset-context').value,other.id);assert.equal(x.el('preset-context').disabled,false);assert.match(x.el('preset-effective').textContent,/Systempreset/);assert.equal(x.el('preset-name').value,'Offener Entwurf');assert.equal(x.calls.length,2);
 });
+
+test('opening a pending registry hides all previously confirmed preset values immediately',async t=>{
+ const x=await fixture(t),other=x.store.create('Hafen');await x.open(x.campaign.id);x.el('preset-copy').onclick();x.edit('preset-name','Nur Wald');await x.save();x.el('preset-assign').onclick();await settle();x.el('preset-close').onclick();
+ let release;x.window.campaign.presetRegistry=id=>new Promise(resolve=>release=()=>resolve({ok:true,value:x.store.presetRegistry(id)}));const opening=x.ui.openPresetSettings(other.id);await settle();assert.equal(x.el('preset-form').hidden,true);assert.equal(x.el('preset-selection').children.length,0);assert.match(x.el('preset-effective').textContent,/geladen/);assert.doesNotMatch(x.el('preset-effective').textContent,/Nur Wald/);assert.equal(x.el('preset-assign').disabled,true);
+ release();await opening;await settle();assert.equal(x.el('preset-context').value,other.id);assert.equal(x.el('preset-form').hidden,false);assert.match(x.el('preset-effective').textContent,/Systempreset/);assert.equal(x.calls.length,2);
+});

@@ -131,11 +131,13 @@ Offizielle Produktreferenzen für die Mindestabnahme:
   Registry, Campaign nur Zuweisung; produktive Schreib-/Recoveryautorität mit
   Campaign/Data ([Campaign-Datenvertrag](ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)) bestätigen, keine zweite Campaignregistry.
   Kampagnenkennung und gelesene Registry bilden einen gemeinsamen bestätigten
-  Kontext. Während des Reads bleibt diese Kombination sichtbar; der angeforderte
-  Wechsel ist als ladend markiert. Ein fehlgeschlagener Kontextwechsel erhält die bisherige Auswahl und
+  Kontext. Beim Wechsel bleibt bis zum erfolgreichen Read die bisherige Kombination
+  sichtbar; der angeforderte Wechsel ist als ladend markiert. Ein fehlgeschlagener
+  Kontextwechsel erhält die bisherige Auswahl und
   den offenen Vorgabenentwurf; er zeigt keine alte Zuweisung für die neue Campaign.
-  Beim fehlgeschlagenen Öffnen bleibt die Quelle ausdrücklich nicht verfügbar,
-  ohne frühere Formularwerte als gültige Vorgaben anzubieten. Speichern/Zuweisen
+  Beim Öffnen beginnen Kopfwerte und Formular dagegen ohne früheren Quellstand:
+  zuerst ladend, bei Readfehler ausdrücklich nicht verfügbar. Frühere Formularwerte
+  werden nicht als gültige Vorgaben angeboten. Speichern/Zuweisen
   bleiben getrennte Befehle mit unveränderten Revisionen und Receipts. Gezielte
   Store-/DOM- und native Fehler-/Retry-/Neustartproben prüfen diesen Übergang;
   vollständige Generator-, Leistungs- und Plattformabnahme bleiben eigenständig.
