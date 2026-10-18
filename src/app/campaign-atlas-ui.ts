@@ -42,7 +42,7 @@ import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
 import { cityPaint, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
-import { elementPaint } from "./drawing-model";
+import { elementPaint, nearestAnchor } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
@@ -1058,6 +1058,38 @@ export class CampaignAtlasWorkbench {
       const cancel=document.createElement('button');cancel.textContent='Abbrechen';cancel.onclick=()=>this.hitDialog.close();this.hitDialog.append(cancel);if(!this.hitDialog.open)this.hitDialog.showModal();
     };await page(0);
   }
+  private async doorRoomAt(p:Point) {
+    const owner=this.owner,query=this.loadedRegionQuery,fence=this.data?.region?.fence,scope=this.scopeId,floor=this.floorId;
+    const valid=()=>this.owner===owner&&this.data?.region?.fence===fence&&this.scopeId===scope&&this.floorId===floor&&this.geometryCurrent();
+    if(!owner||!query||!fence||!scope||!valid())throw new Error('Karte zuerst laden.');
+    const response=await window.campaign.atlasRegionCandidates(owner.token,query,p,fence,0,'geometry');
+    if(!valid())throw new Error('Kartenausschnitt inzwischen geändert. Tür erneut platzieren.');
+    if(!response.ok)throw new Error(response.error);
+    if(response.value.unavailable?.includes('geometry'))throw new Error('Raumgeometrie nicht verfügbar. Ansicht erneut laden.');
+    const hits=response.value.items.filter(h=>h.kind==='room'&&h.scopeId===scope&&h.floorId===floor);
+    const selected=this.opts.roomDraft(),preferred=hits.find(h=>h.id===selected?.id);
+    if(hits.length>2&&!preferred)throw new Error('Mehrere überlagerte Räume. Gewünschten Raum zuerst auswählen.');
+    const ids=preferred?[preferred.id]:hits.length?hits.map(h=>h.id):selected?.scopeId===scope&&selected.floorId===floor?[selected.id]:[];
+    const local=atlasToLocal(p,this.frame(scope)),maxDistance=this.camera.view.width/Math.max(1,this.svg.clientWidth)*8;
+    const candidates=[];
+    for(const id of ids){
+      const r=await window.campaign.atlasRoom(owner.token,id);
+      if(!valid())throw new Error('Kartenausschnitt inzwischen geändert. Tür erneut platzieren.');
+      if(!r.ok)throw new Error(r.error);
+      const anchor=nearestAnchor(local,r.value);
+      if(anchor&&anchor.distance<=maxDistance)candidates.push({room:r.value,anchor});
+    }
+    candidates.sort((a,b)=>a.anchor.distance-b.anchor.distance);
+    const target=candidates[0];if(!target)throw new Error('Tür an einer Raumwand platzieren.');
+    // A shared boundary may bind to either room. Distinct overlapping walls require a GM choice.
+    const other=candidates[1];
+    if(other&&Math.abs(other.anchor.distance-target.anchor.distance)<1e-6){
+      const segment=(c:typeof target)=>{const ring=c.room.polygons[c.anchor.polygon]!.outer,a=ring[c.anchor.edge]!,b=ring[(c.anchor.edge+1)%ring.length]!,dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy),center={x:a.x+dx*c.anchor.t,y:a.y+dy*c.anchor.t};return[{x:center.x-dx/length,y:center.y-dy/length},{x:center.x+dx/length,y:center.y+dy/length}];};
+      const a=segment(target),b=segment(other),same=(p:Point,q:Point)=>Math.hypot(p.x-q.x,p.y-q.y)<1e-6;
+      if(!((same(a[0]!,b[0]!)&&same(a[1]!,b[1]!))||(same(a[0]!,b[1]!)&&same(a[1]!,b[0]!))))throw new Error('Mehrere Wände an dieser Stelle. Gewünschten Raum zuerst auswählen.');
+    }
+    return{room:target.room,maxDistance};
+  }
   private pointToolActive(){
     return this.root.dataset.roomDraw==='true'||this.entranceDraft!=null||
       (this.family==='interior'||this.family==='decoration')&&get<HTMLSelectElement>('drawing-tool').value!=='select'||
@@ -1157,7 +1189,10 @@ export class CampaignAtlasWorkbench {
         this.scopeId &&
         get<HTMLSelectElement>("drawing-tool").value !== "select"
       ) {
-        await atlasDrawingPoint(atlasToLocal(p, this.frame(this.scopeId)));
+        const door=get<HTMLSelectElement>('drawing-tool').value==='door';
+        const task=atlasDrawingPoint(atlasToLocal(p,this.frame(this.scopeId)),door?this.brushQueue:undefined,()=>this.doorRoomAt(p));
+        if(door){const committed=task.then(async()=>{await this.refresh();});this.brushQueue=committed.catch(()=>{});await committed;}
+        else await task;
         this.render();
         return;
       }
@@ -1769,7 +1804,7 @@ export class CampaignAtlasWorkbench {
     }
   }
   private renderPanel(data:AtlasRenderView){
-    const key=[data,this.owner?.token,this.family,this.selection?.kind,this.selection?.id,this.scopeId,this.floorId,this.busy,this.pendingTravel,pendingAtlasWrite(this.owner?.token??''),this.bindingDirty,get('atlas-placement').contains(document.activeElement),this.opts.roomDraft()?.name];
+    const key=[data,this.owner?.token,this.family,this.selection?.kind,this.selection?.id,this.scopeId,this.floorId,this.busy,this.pendingTravel,pendingAtlasWrite(this.owner?.token??''),this.bindingDirty,get('atlas-placement').contains(document.activeElement),this.opts.roomDraft()?.name,get<HTMLSelectElement>('drawing-tool').value];
     if(this.panelKey?.length===key.length&&this.panelKey.every((v,i)=>v===key[i]))return;
     this.panelKey=key;
     get("atlas-recover").hidden =
@@ -1795,7 +1830,7 @@ export class CampaignAtlasWorkbench {
     get<HTMLButtonElement>("atlas-undo").disabled = this.busy || !data.canUndo;
     get<HTMLButtonElement>("atlas-redo").disabled = this.busy || !data.canRedo;
     get("atlas-connect-entrance").hidden =
-      this.selection?.kind !== "room" || this.family !== "interior";
+      this.selection?.kind !== "room" || this.family !== "interior" || get<HTMLSelectElement>("drawing-tool").value === "door";
     get("atlas-local-console").hidden = this.family !== "travel";
     get("atlas-create-tools").hidden = this.family !== "navigation";
     const nameLabel = get("atlas-name-label");
@@ -1824,7 +1859,7 @@ export class CampaignAtlasWorkbench {
             ? data.cities.find((c) => c.header.id === this.selection!.id)
                 ?.header.name
             : null;
-    get("atlas-selection-title").textContent = title || "Deine Kampagnenwelt";
+    get("atlas-selection-title").textContent = get<HTMLSelectElement>("drawing-tool").value === "door" && ["interior","decoration"].includes(this.family) ? "Türen setzen" : title || "Deine Kampagnenwelt";
     const floor = get<HTMLSelectElement>("atlas-floor"),
       floors = data.workspace.floors.filter((f) => f.scopeId === this.scopeId),
       old = floor.value;
@@ -2329,7 +2364,7 @@ export class CampaignAtlasWorkbench {
         style: {fill: null, stroke: '#b85525', lineWidth: Math.max(.07, mpp * 2)},
       }));
       // Stale backgrounds may stay visible; their author handles must not remain actionable.
-      if (this.geometryCurrent()) {
+      if (this.geometryCurrent() && get<HTMLSelectElement>('drawing-tool').value !== 'door') {
         const cover = data.region?.box ?? this.camera.view, cells = new Set<string>();
         // A detailed original must not turn into thousands of overlapping handles.
         // Each retained handle still addresses its exact original polygon/vertex.
