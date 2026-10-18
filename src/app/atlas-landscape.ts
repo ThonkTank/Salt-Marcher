@@ -92,13 +92,17 @@ export function hexPolygon(q: number, r: number, size: number): Polygon {
 }
 /** One bounded axial footprint shared by the draft and the authored patch. */
 export function hexStrokePolygons(points: Point[], size: number): Polygon[] {
+  return hexStrokesPolygons([points], size);
+}
+/** Separate gestures share one bounded draft without painting between them. */
+export function hexStrokesPolygons(strokes: Point[][], size: number): Polygon[] {
   if (
     !Number.isFinite(size) || size <= 0 ||
-    points.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y))
+    strokes.some(points => points.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y)))
   )
     throw new Error("Hexmaßstab und Strichpunkte prüfen.");
   const cells = new Map<string, Polygon>();
-  for (let i = 0; i < points.length; i++) {
+  for (const points of strokes) for (let i = 0; i < points.length; i++) {
     const from = atlasHexAt(points[Math.max(0, i - 1)]!, size),
       to = atlasHexAt(points[i]!, size),
       count = (Math.abs(to.q - from.q) + Math.abs(to.r - from.r) +

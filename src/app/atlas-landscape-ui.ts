@@ -6,7 +6,7 @@ import type { Point, Polygon } from "./contracts";
 import {
   emptyRecord,
   hexSize,
-  hexStrokePolygons,
+  hexStrokesPolygons,
   distance,
   formatDistance,
   type LandscapeBox,
@@ -85,6 +85,7 @@ export class LandscapeWorkbench {
   private active = false;
   private tool: Tool = "select";
   private points: Point[] = [];
+  private brushStrokes: Point[][] = [];
   private pointer: number | null = null;
   private selected: LandscapeRecord | null = null;
   private vertex = 0;
@@ -116,7 +117,7 @@ export class LandscapeWorkbench {
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<h3>Region vorbereiten</h3><label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option><option value="export">Ausgabebereich wählen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
+    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option><option value="export">Ausgabebereich wählen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
     html("atlas-tool-fields").after(this.panel);
     html<HTMLSelectElement>("land-tool").onchange = () => {
       if (this.hasDraft()) {
@@ -194,7 +195,12 @@ export class LandscapeWorkbench {
           return;
         }
         if (["paint", "hex", "reset"].includes(this.tool)) {
+          if (this.brushPointCount() >= 1000) {
+            this.say("Entwurf voll. Zuerst abschließen oder verwerfen.");
+            return;
+          }
           this.pointer = e.pointerId;
+          if (this.points.length) this.brushStrokes.push(this.points);
           this.points = [this.lastPoint];
           svg.setPointerCapture(e.pointerId);
           this.host.redraw();
@@ -238,7 +244,10 @@ export class LandscapeWorkbench {
           const changed = !previous || (this.tool === "hex"
             ? a!.q !== b.q || a!.r !== b.r
             : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(1, Number(html<HTMLInputElement>("land-radius").value) / 3));
-          if (changed && this.points.length < 1000) this.points.push(p);
+          if (changed) {
+            if (this.brushPointCount() < 1000) this.points.push(p);
+            else this.say("Entwurf voll. Zuerst abschließen oder verwerfen.");
+          }
         }
         this.host.redraw();
       },
@@ -252,6 +261,8 @@ export class LandscapeWorkbench {
         e.preventDefault();
         this.pointer = null;
         this.dragging = false;
+        if (["paint", "hex", "reset"].includes(this.tool))
+          this.say(`${this.brushStrokes.length + 1} Strich(e) im Entwurf. Abschließen oder verwerfen.`);
         if (svg.hasPointerCapture(e.pointerId))
           svg.releasePointerCapture(e.pointerId);
         this.host.redraw();
@@ -327,6 +338,9 @@ export class LandscapeWorkbench {
   private say(s: string) {
     html("land-status").textContent = s;
   }
+  private brushPointCount() {
+    return this.points.length + this.brushStrokes.reduce((count, points) => count + points.length, 0);
+  }
   hasDraft() {
     return (
       this.points.length > 0 ||
@@ -338,6 +352,7 @@ export class LandscapeWorkbench {
   }
   cancel() {
     this.points = [];
+    this.brushStrokes = [];
     this.exportBox=null;
     this.measurement=[];
     this.dirty = false;
@@ -365,11 +380,24 @@ export class LandscapeWorkbench {
       ["land-object", this.tool === "select"],
     ] as const)
       html(id).closest("label")!.hidden = !visible;
+    const name = document.getElementById("atlas-new-name")?.closest("label");
+    if (name) {
+      name.hidden = this.active && !["place", "river", "road"].includes(this.tool);
+      name.firstChild!.textContent = this.active
+        ? this.tool === "place" ? "Name für neuen Ort" : "Name für neuen Verlauf"
+        : "Name";
+    }
   }
   setActive(active: boolean) {
     this.active = active;
     this.panel.hidden = !active;
-    if (active) this.toolFields();
+    const palette = ["atlas-terrain", "atlas-hex-level"].flatMap(id => {
+      const label = document.getElementById(id)?.closest("label");
+      return label ? [label] : [];
+    });
+    if (active) html("land-tool").closest("label")!.after(...palette);
+    else html("atlas-tool-fields").prepend(...palette);
+    this.toolFields();
   }
   context(token: string) {
     if (this.token === token) return;
@@ -551,19 +579,21 @@ export class LandscapeWorkbench {
       (this.points.length ? this.points : this.measurement);
     if (pts.length && this.tool === "hex") {
       try {
-        const polygons = hexStrokePolygons(pts, hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value)));
+        const polygons = hexStrokesPolygons([...this.brushStrokes, pts], hexSize(Number(html<HTMLSelectElement>("atlas-hex-level").value)));
         root.append(landscapeNode("polygons", {polygons: polygons.map(p => ({outer: p.outer.map(v => ({x:v.x-box.x,y:v.y-box.y})), holes: []})), pointer:false, opacity:0.6, style:{fill:"#d46e38",stroke:"#d46e38",lineWidth:mpp}, data:{editorOnly:"true",landHexDraft:"true"}}));
       } catch (error) { this.say((error as Error).message); }
     } else if (pts.length) {
+      for (const path of (["paint", "reset"].includes(this.tool) ? [...this.brushStrokes, pts] : [pts])) {
       root.append(
-        landscapeNode("polyline", {points: pts.map(p=>({x:p.x-box.x,y:p.y-box.y})), opacity: 0.6, style: {fill: null, stroke: "#d46e38", lineWidth: ["paint", "reset"].includes(this.tool)
+        landscapeNode("polyline", {points: path.map(p=>({x:p.x-box.x,y:p.y-box.y})), opacity: 0.6, style: {fill: null, stroke: "#d46e38", lineWidth: ["paint", "reset"].includes(this.tool)
             ? Number(html<HTMLInputElement>("land-radius").value) * 2
             : mpp * 3, lineCap: "round", lineJoin: "round"}, data: {editorOnly: String("true")}}),
       );
-      for (const p of pts)
+      for (const p of path)
         root.append(
           landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#d46e38"}, data: {editorOnly: String("true")}}),
         );
+      }
       if (this.tool === "measure") this.say(formatDistance(distance(pts)));
     }
     if (this.calibration)
@@ -620,6 +650,7 @@ export class LandscapeWorkbench {
       if (!r)
         throw new Error("Änderung nicht bestätigt. Entwurf bleibt erhalten.");
       this.points = [];
+      this.brushStrokes = [];
       this.dirty = false;
       this.calibration = null;
       this.selected = null;
@@ -709,12 +740,12 @@ export class LandscapeWorkbench {
     if (["paint", "hex", "reset"].includes(this.tool)) {
       let polygons: Polygon[];
       if (this.tool === "hex") {
-        polygons = hexStrokePolygons(this.points, res);
+        polygons = hexStrokesPolygons([...this.brushStrokes, this.points], res);
       } else {
         const radius = Number(html<HTMLInputElement>("land-radius").value);
         if (!Number.isFinite(radius) || radius <= 0)
           throw new Error("Pinselradius prüfen.");
-        polygons = strokePolygon(this.points, radius);
+        polygons = [...this.brushStrokes, this.points].flatMap(points => strokePolygon(points, radius));
       }
       const field = html<HTMLSelectElement>("land-field")
         .value as LandscapeField;
@@ -825,7 +856,7 @@ export class LandscapeWorkbench {
       root.append(l);
       return input;
     };
-    label("Name", "land-name", r.name);
+    label("Name des ausgewählten Objekts", "land-name", r.name);
     label("X in m", "land-x", String(r.points[0]!?.x ?? 0), "number");
     label("Y in m", "land-y", String(r.points[0]!?.y ?? 0), "number");
     const button = (name: string, run: () => void) => {

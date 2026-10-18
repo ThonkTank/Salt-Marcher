@@ -49,9 +49,12 @@ test('Hex fill previews and commits every cell between sparse pointer samples, w
  const palette=f.document.createElement('select');palette.id='atlas-terrain';palette.append(new Option('Wald','forest'));f.document.body.append(palette);
  f.document.querySelector('#land-radius').value='1000000';f.document.querySelector('#land-auto-level').checked=false;
  pointer('pointerdown',-4*HEX_METERS);pointer('pointermove',4*HEX_METERS);pointer('pointermove',0);pointer('pointerup',0);
+ pointer('pointerdown',10*HEX_METERS);pointer('pointermove',11*HEX_METERS);pointer('pointerup',11*HEX_METERS);
+ pointer('pointerdown',10*HEX_METERS);pointer('pointerup',10*HEX_METERS);
  f.ui.draw(f.scene,{x:-5*HEX_METERS,y:-HEX_METERS,width:10*HEX_METERS,height:2*HEX_METERS},10);
  assert.equal(writes.length,0);const preview=f.scene.children.find(n=>n.data.landHexDraft==='true');
- await f.ui.finish();assert.equal(writes.length,1);const patch=writes[0].record;assert.equal(patch.polygons.length,9,'Fast motion and retracing must produce nine unique adjacent cells');
+ await f.ui.finish();assert.equal(writes.length,1);const patch=writes[0].record;assert.equal(patch.polygons.length,11,'Keep disjoint gestures and deduplicate retracing without connecting them');
+ for(const q of [10,11])assert(contains({x:q*HEX_METERS,y:0},patch.polygons));
  assert.equal(patch.values.terrain,'forest');for(let q=-4;q<=4;q++)assert(contains({x:q*HEX_METERS,y:0},patch.polygons),'Missing intermediate hex '+q);
  assert(!contains({x:5*HEX_METERS,y:0},patch.polygons));
  assert(preview,'Show the actual hex footprint, not a thin pointer path');
