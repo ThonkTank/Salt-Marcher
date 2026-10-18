@@ -79,13 +79,14 @@ test('late catalog results cannot populate another encounter or enable a fabrica
  x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===2);x.queries[1].reject(new Error('Offline'));await until(()=>x.el('combat-creature-status').textContent.includes('Offline'));
  assert.equal(x.el('combat-creature-add').disabled,true);assert.equal(x.writes.length,0);
 });
-test('a failed search leaves known statblocks usable and a new search can recover',async t=>{
+test('a failed catalog search never offers an old troop as a result and can recover',async t=>{
  const x=await uiFixture(t);x.el('combat-creature-search').value='Dragon';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
  x.queries[0].reject(new Error('Offline'));await until(()=>x.el('combat-creature-status').textContent.includes('Offline'));
- assert.match(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-add').disabled,false);assert.equal(x.writes.length,0);
+ assert.doesNotMatch(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-add').disabled,true);assert.equal(x.writes.length,0);
  x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===2);
  x.queries[1].resolve({ok:true,value:{rows:[{id:'dragon',name:'Dragon',challengeRating:'9'}],total:1}});await until(()=>x.el('combat-creature-select').textContent.includes('Dragon'));
- assert.equal(x.el('combat-creature-add').disabled,false);assert.match(x.el('combat-creature-select').textContent,/Goblin/);
+ assert.equal(x.el('combat-creature-add').disabled,false);assert.doesNotMatch(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-select').value,'creature:dragon');
+ x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();assert.match(x.el('combat-creature-select').textContent,/Goblin/);assert.equal(x.el('combat-creature-initiative-field').hidden,true);assert.equal(x.el('combat-creature-grouped-field').hidden,true);assert.equal(x.el('combat-creature-search-form').hidden,true);
 });
 
 test('condition shortcuts wait for the selected working draft and stay blocked on a read failure',async t=>{
@@ -246,4 +247,36 @@ test('expanded troop keeps individual controls without repeating the front membe
  assert.equal(x.writes.length,0);assert.deepEqual(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat,before);
  card().querySelector('.combat-mob-toggle').onclick();assert.ok(card().querySelector('.combat-mob-health'));
  assert.ok([...x.el('combat-rows').querySelectorAll('tr[data-participant-id]')].every(row=>row.hidden));
+});
+
+
+test('reinforcement dialog separates troop additions from catalog results and closes on context change',async t=>{
+ const x=await uiFixture(t),dialog=x.el('combat-add-dialog');
+ const roster=x.el('combat-rows').innerHTML;
+ x.el('combat-creature-source').value='catalog'; // automatic empty-preparation fallback was not a GM choice
+ x.el('combat-add-open').onclick();assert.equal(dialog.hasAttribute('open'),true);
+ assert.match(x.el('combat-add-context').textContent,/Runde 1.*Zug bleibt erhalten/);
+ assert.equal(x.el('combat-rows').innerHTML,roster);assert.equal(x.writes.length,0);
+ assert.equal(x.el('combat-creature-source').value,'group');
+ assert.equal(x.el('combat-creature-initiative-field').hidden,true);
+ x.el('combat-creature-source').value='catalog';x.el('combat-creature-source').onchange();
+ assert.equal(x.el('combat-creature-search-form').hidden,false);assert.equal(x.el('combat-creature-initiative-field').hidden,false);
+ assert.doesNotMatch(x.el('combat-creature-select').textContent,/vorhandene Initiative/);
+ assert.equal(x.el('combat-creature-grouped-field').hidden,true);
+ x.el('combat-creature-count').value='2';x.el('combat-creature-count').oninput();assert.equal(x.el('combat-creature-grouped-field').hidden,false);x.el('combat-creature-grouped').checked=true;
+ x.el('combat-creature-count').value='1';x.el('combat-creature-count').oninput();assert.equal(x.el('combat-creature-grouped-field').hidden,true);assert.equal(x.el('combat-creature-grouped').checked,false);
+ x.el('combat-add-close').onclick();x.el('combat-add-open').onclick();assert.equal(x.el('combat-creature-source').value,'catalog');assert.equal(x.el('combat-creature-grouped-field').hidden,true);
+ x.el('combat-creature-search').value='Hobgoblin';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
+ assert.equal(x.el('combat-creature-add').disabled,true);
+ x.queries[0].resolve({ok:true,value:searchCreatures({text:'Hobgoblin',offset:0,limit:25,sort:'name',direction:'asc'})});
+ await until(()=>x.el('combat-creature-select').textContent.includes('Hobgoblin'));
+ assert.equal(x.el('combat-creature-select').options.length,1);assert.doesNotMatch(x.el('combat-creature-select').textContent,/vorhandene Initiative/);
+ const hob=searchCreatures({text:'Hobgoblin',offset:0,limit:25,sort:'name',direction:'asc'}).rows[0];
+ assert.equal(x.el('combat-creature-select').value,'creature:'+hob.id);
+ x.el('combat-creature-initiative').value='12';x.el('combat-creature-form').onsubmit({preventDefault(){}});
+ await until(()=>x.writes.length===1&&!dialog.hasAttribute('open'));
+ assert.equal(x.writes[0].action.creatureId,hob.id);assert.equal(x.writes[0].action.initiative,12);
+ const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
+ assert.equal(saved.turnId,x.combat.turnId);assert.equal(saved.participants.at(-1).hp,11);
+ x.el('combat-add-open').onclick();x.ui.combatContext(null,null);assert.equal(dialog.hasAttribute('open'),false);
 });

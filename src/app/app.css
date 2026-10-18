@@ -821,3 +821,11 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 /* Keep map composition beside its output controls, without authoring actions. */
 #campaign-atlas[data-output=true] #atlas-output-open,#campaign-atlas[data-output=true] #atlas-overview,#campaign-atlas[data-output=true] #atlas-to-party,#campaign-atlas[data-output=true] .atlas-command-bar label,#campaign-atlas[data-output=true] #atlas-undo,#campaign-atlas[data-output=true] #atlas-redo{display:none}
+
+#combat-add-dialog{width:min(42rem,calc(100vw - 3rem));max-height:calc(100dvh - 4rem);overflow:auto}
+#combat-add-dialog>.toolbar{justify-content:space-between;align-items:center}#combat-add-title{margin:0}
+#combat-add-dialog #combat-creature-source{margin-bottom:1rem}
+#combat-add-dialog #combat-creature-search-form .toolbar{flex-wrap:nowrap}
+#combat-add-dialog details{margin-top:1rem}
+
+#combat-add-open{width:100%;text-align:left;margin-bottom:.75rem}
