@@ -310,7 +310,7 @@ dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument. Numer
 Ausschnitt und Objektauswahl teilen einen readonly Worker/Index, halten aber je einen begrenzten Nachfolger. Eine neue Kameraanfrage darf nur die ältere Kameraanfrage ersetzen; wartende Auswahl wird zuerst bearbeitet.
 Keine JSONvollparses oder Traversierung aller Dungeons je Kamerabild.
 
-Landschaft und Raum-/Stadtgeometrie kommen aus demselben quellengebundenen Bereichsframe. Der frühere unabhängige Landschaftslader samt Rasterworker und IPC entfällt. Begrenzte Rasterübersichten werden weiterhin im lesenden Datenbankworker erzeugt und als kompakte PNG-Layer übertragen; exakte Auswahl und Bearbeitung lesen die Originalgeometrie. Der Renderer verwendet ausschließlich die gemeinsame Canvas-Kamera für Eingabekoordinaten.
+Landschaft und Raum-/Stadtgeometrie kommen aus demselben quellengebundenen Bereichsframe. Der frühere unabhängige Landschaftslader samt Rasterworker und IPC entfällt. Begrenzte Rasterübersichten werden weiterhin im lesenden Datenbankworker erzeugt und als kompakte PNG-Layer übertragen; exakte Auswahl und Bearbeitung lesen die Originalgeometrie. Der Renderer verwendet ausschließlich die gemeinsame Canvas-Kamera für Eingabekoordinaten und begrenzte Vorschauen für Bildvorlagen; Originalbytes bleiben im Store und in Kampagnenkopien erhalten.
 
 Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas
 hat eine passende zugängliche Objektliste mit denselben Aktionen; Tastatur,

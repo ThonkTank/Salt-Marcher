@@ -447,7 +447,7 @@ export class LandscapeWorkbench {
       for(const id of this.unavailableAssets)if(!visibleAssets.has(id))this.unavailableAssets.delete(id);
       for(const r of this.records)if(r.assetId&&r.visible!==false&&!this.assets.has(r.assetId)){
         let result:import('./contracts').Result<string>;
-        try{result=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,r.assetId,1024):await window.campaign.referenceAsset(token,r.assetId);}catch(error){result={ok:false,error:(error as Error).message};}
+        try{result=await window.campaign.referenceAssetPreview(token,r.assetId,1024);}catch(error){result={ok:false,error:(error as Error).message};}
         if(token!==this.token||generation!==this.request||this.host.data()?.region?.fence!==data.region?.fence)return;
         if(result.ok){this.unavailableAssets.delete(r.assetId);this.rememberAsset(r.assetId,result.value);}else {this.unavailableAssets.add(r.assetId);html('land-reload').hidden=false;this.say('Eine Bildvorlage ist nicht verfügbar. Erneut laden; übrige Karte bleibt nutzbar.');}
         this.host.redraw();
@@ -776,7 +776,7 @@ export class LandscapeWorkbench {
       this.docRevision = r.value.revision;
     }
     if(record.assetId&&!this.assets.has(record.assetId)){
-      const image=window.campaign.referenceAssetPreview?await window.campaign.referenceAssetPreview(token,record.assetId,1024):await window.campaign.referenceAsset(token,record.assetId);
+      const image=await window.campaign.referenceAssetPreview(token,record.assetId,1024);
       if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else {html('land-reload').hidden=false;this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');}
     }
     this.inspector();
