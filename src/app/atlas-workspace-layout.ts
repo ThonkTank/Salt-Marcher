@@ -17,6 +17,8 @@ export class AtlasWorkspaceLayout {
  private auxiliary:string|null=null;
  private selectionKey:string|null=null;
  private contextVisible=false;
+ private toolSettingsVisible=false;
+ private toolSettings=document.createElement('aside');
  private width=240;
  private detailWidth=340;
  private popups:ReturnType<typeof bindAnchoredPopup>[]=[];
@@ -44,15 +46,20 @@ export class AtlasWorkspaceLayout {
   this.selection.hidden=true;this.secondaryContent.append(this.selection);
   this.secondary.append(heading,this.secondaryContent);this.root.querySelector('.atlas-layout')!.append(this.secondary);
   const families=el('atlas-families');
+  const rail=document.createElement('nav');rail.id='atlas-tool-rail';rail.setAttribute('aria-label','Werkzeugleiste');
+  for(const node of families.querySelectorAll<HTMLButtonElement>('button'))this.railButton(node,({terrain:'◒',city:'⌂',interior:'▭'} as Record<string,string>)[node.dataset.family!]??'◇',node.textContent!);
   const main=document.createElement('div');main.className='atlas-dock-body';
+  const toolHeading=document.createElement('div');toolHeading.className='atlas-tool-heading';
   const activeTool=document.createElement('strong');activeTool.id='atlas-active-tool';activeTool.setAttribute('aria-live','polite');
-  main.append(activeTool,this.tools,el('atlas-edit-panel'));
-  const dock=el('atlas-panel');this.palette.id='atlas-tool-palette';dock.append(families,this.palette,main);
+  const closeTools=button('atlas-tool-settings-close','×');closeTools.title='Werkzeugeinstellungen schließen';closeTools.setAttribute('aria-label',closeTools.title);closeTools.onclick=()=>this.showToolSettings(false);
+  toolHeading.append(activeTool,closeTools);main.append(this.tools,el('atlas-edit-panel'));
+  this.toolSettings.id='atlas-tool-settings';this.toolSettings.setAttribute('aria-label','Werkzeugeinstellungen');this.toolSettings.append(toolHeading,main);
+  const dock=el('atlas-panel');this.palette.id='atlas-tool-palette';rail.append(families,this.palette);dock.append(rail,this.toolSettings);
   this.tools.append(el('atlas-tool-fields'));
   this.selection.append(el('atlas-selection-title'));
   el('atlas-hint').classList.add('atlas-editor-hint');main.append(el('atlas-hint'));
-  try{const p=JSON.parse(localStorage.getItem('atlas-editor-layout-v2')??'null');if(p){this.width=Math.max(200,Math.min(300,Number(p.width)||240));this.detailWidth=Math.max(280,Math.min(480,Number(p.detailWidth)||340));this.root.dataset.collapsed=String(p.collapsed===true);}}catch{/* optional preference */}
-  this.resizer(dock,'atlas-panel-width','Werkzeugleiste verbreitern',false);
+  try{const p=JSON.parse(localStorage.getItem('atlas-editor-layout-v3')??'null');if(p){this.width=Math.max(200,Math.min(300,Number(p.width)||240));this.detailWidth=Math.max(280,Math.min(480,Number(p.detailWidth)||340));this.root.dataset.collapsed=String(p.collapsed===true);this.toolSettingsVisible=p.toolsOpen===true;}}catch{/* optional preference */}
+  this.resizer(this.toolSettings,'atlas-panel-width','Werkzeugeinstellungen verbreitern',false);
   this.resizer(this.secondary,'atlas-details-width','Kontextleiste verbreitern',true);
   this.createHeader();
   document.addEventListener('keydown',this.keyHandler,true);
@@ -72,7 +79,7 @@ export class AtlasWorkspaceLayout {
   target.append(node);if(!list.includes(node))list.push(node);
  }
  private restore(nodes:HTMLElement[]){for(const node of [...nodes].reverse()){const slot=this.slots.get(node);if(slot?.parentNode){slot.replaceWith(node);this.slots.delete(node);}}nodes.length=0;}
- private saveLayout(){try{localStorage.setItem('atlas-editor-layout-v2',JSON.stringify({width:this.width,detailWidth:this.detailWidth,collapsed:this.root.dataset.collapsed==='true'}));}catch{/* optional preference */}}
+ private saveLayout(){try{localStorage.setItem('atlas-editor-layout-v3',JSON.stringify({width:this.width,detailWidth:this.detailWidth,toolsOpen:this.toolSettingsVisible,collapsed:this.root.dataset.collapsed==='true'}));}catch{/* optional preference */}}
  private resizer(parent:HTMLElement,id:string,label:string,right:boolean){
   const handle=document.createElement('div');handle.id=id;handle.className='atlas-resizer';handle.tabIndex=0;handle.role='separator';handle.setAttribute('aria-label',label);handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-valuemin',String(right?280:200));handle.setAttribute('aria-valuemax',String(right?480:300));parent.append(handle);
   const change=(value:number)=>{if(right)this.detailWidth=Math.max(280,Math.min(480,value));else this.width=Math.max(200,Math.min(300,value));this.applyWidth();this.saveLayout();};
@@ -82,6 +89,12 @@ export class AtlasWorkspaceLayout {
   handle.onpointermove=e=>{if(drag?.id===e.pointerId)change(drag.width+(e.clientX-drag.x)*(right?-1:1));};
   const end=()=>{drag=null;};handle.onpointerup=end;handle.onpointercancel=end;handle.onlostpointercapture=end;
  }
+ private railButton(node:HTMLElement,symbol:string,label:string){
+  const icon=document.createElement('span');icon.className='atlas-tool-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbol;
+  const caption=document.createElement('span');caption.className='atlas-tool-label';caption.textContent=label;
+  node.replaceChildren(icon,caption);node.title=node.getAttribute('aria-label')??label;node.setAttribute('aria-label',node.title);node.classList.add('atlas-rail-button');
+ }
+ private showToolSettings(open:boolean){this.toolSettingsVisible=open;if(open)this.root.dataset.collapsed='false';this.applyWidth();this.saveLayout();}
  private symbol(node:HTMLElement,text:string,label:string){node.textContent=text;node.title=label;node.setAttribute('aria-label',label);node.classList.add('atlas-icon-button');return node;}
  private popup(node:HTMLElement,id:string,trigger:HTMLButtonElement,width:number){node.id=id;node.setAttribute('popover','auto');node.className='atlas-popup';document.body.append(node);const api=bindAnchoredPopup(trigger,node,width);trigger.onclick=()=>api.toggle();this.popups.push(api);return api;}
  private createHeader(){
@@ -138,7 +151,8 @@ export class AtlasWorkspaceLayout {
  }
  private applyWidth(){
   this.root.style.setProperty('--atlas-dock-width',this.width+'px');this.root.style.setProperty('--atlas-details-width',this.detailWidth+'px');
-  const left=this.root.dataset.collapsed==='true'?0:this.width;this.root.style.setProperty('--atlas-left-space',left+'px');
+  this.root.dataset.toolsOpen=String(this.toolSettingsVisible);this.toolSettings.hidden=!this.toolSettingsVisible;
+  const left=this.root.dataset.collapsed==='true'?0:76+(this.toolSettingsVisible?this.width:0);this.root.style.setProperty('--atlas-left-space',left+'px');
   this.root.dataset.secondary=String(this.contextVisible);
   this.root.dataset.overlay=String(this.root.clientWidth-left-this.detailWidth<560);
   this.secondary.hidden=!this.contextVisible;
@@ -162,7 +176,7 @@ export class AtlasWorkspaceLayout {
  comparison(open:boolean){this.root.dataset.comparing=String(open);if(open){this.releaseDescription();this.openContext('comparison','Größe vergleichen',[el('atlas-reference-panel')]);}else if(this.auxiliary==='comparison')this.clearContext();}
  output(open:boolean){if(open){this.releaseDescription();this.openContext('output','Bild exportieren',[el('atlas-output')]);}else if(this.auxiliary==='output')this.clearContext();}
  // Compatibility for domain callers: selection never replaces the tool panel.
- showPane(pane:'tool'|'selection'){if(pane==='selection')this.openSelection();}
+ showPane(pane:'tool'|'selection'){if(pane==='selection')this.openSelection();else this.showToolSettings(true);}
  private openSelection(){this.openContext('selection','Eigenschaften',[this.selection]);}
  selectionChanged(key:string|null,explicit=false){if(key===this.selectionKey&&!explicit)return;this.selectionKey=key;if(key)this.openSelection();else if(this.auxiliary==='selection')this.clearContext();}
  beforeTool(){if(this.auxiliary&&this.auxiliary!=='key'&&this.auxiliary!=='selection')this.clearContext();}
@@ -177,26 +191,26 @@ export class AtlasWorkspaceLayout {
   add(el('atlas-placement'),this.selection);add(el('atlas-building-interior'),this.selection);
   if(section==='terrain'){
    add(el('atlas-landscape-tools'));add(el('land-selection'),this.selection);
-   const template=button('atlas-template-open','▧ Vorlage');template.onclick=()=>void this.requestContext('reference-image','Nachzeichenvorlage',[el('land-reference').closest('details')!]);template.dataset.familyAction='true';this.palette.append(template);
+   const template=button('atlas-template-open','');this.railButton(template,'▧','Vorlage');template.onclick=()=>void this.requestContext('reference-image','Nachzeichenvorlage',[el('land-reference').closest('details')!]);template.dataset.familyAction='true';this.palette.append(template);
    el('land-reference').closest('details')!.classList.add('atlas-extra-only');
    this.toolButtons('land-tool');
   }
   if(section==='city'){
-   add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-path-hint'));add(el('city-finish').parentElement);
-   const generation=button('atlas-generation-open','▧ Viertel bebauen');generation.dataset.familyAction='true';generation.onclick=()=>void this.openGeneration();this.palette.append(generation);
+   this.railButton(el('atlas-create-city'),'⊕','Stadt anlegen');add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-path-hint'));add(el('city-finish').parentElement);
+   const generation=button('atlas-generation-open','');this.railButton(generation,'▧','Bebauen');generation.dataset.familyAction='true';generation.onclick=()=>void this.openGeneration();this.palette.append(generation);
    add(el('city-inspector'),this.selection);add(el('city-empty'));add(el('city-count'),this.selection);add(el('city-demographics'),this.selection);add(el('city-factions'),this.selection);
    const extra=document.createElement('details');extra.dataset.familyAction='true';extra.innerHTML='<summary>Stadtdarstellung und Ausgabe</summary>';this.selection.append(extra);
    for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);this.toolButtons('city-tool');
   }
   if(section==='interior'){
-   add(el('atlas-floor-field'));add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);
+   add(el('atlas-floor-field'));this.railButton(el('atlas-create-dungeon'),'⊕','Dungeon anlegen');add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);
    for(const id of ['drawing-element-size-field','drawing-light-radius-field','drawing-text-field'])add(el(id),el('drawing-toolbar'));
    el('drawing-tool-options').classList.add('atlas-extra-only');
    el('key-open').textContent='Beschreibung bearbeiten…';add(el('key-open'),this.selection);add(el('empty'),this.selection);add(el('editor'),this.selection);
    for(const node of [...el('inspector').querySelector('.drawing-tools')!.children] as HTMLElement[])add(node,this.selection);
    const analysis=document.createElement('section');analysis.id='atlas-room-analysis';analysis.dataset.familyAction='true';this.tools.append(analysis);analysis.className='atlas-extra-only';
    for(const id of ['search','rooms','add-room','dungeon-binder-open','graph-open','volume-open','trigger-fields-open','dungeon-content-open','path-open','drawing-show-section','drawing-slice-y','drawing-section'])add(el(id).matches('input')&&id.startsWith('drawing-')?el(id).closest('label'):el(id),analysis);
-   const open=button('atlas-analysis-open','▤ Räume und Analyse');open.dataset.familyAction='true';open.onclick=()=>void this.requestContext('analysis','Räume und Analyse',[analysis]);this.palette.append(open);this.toolButtons('drawing-tool');
+   const open=button('atlas-analysis-open','');this.railButton(open,'▤','Analyse');open.dataset.familyAction='true';open.onclick=()=>void this.requestContext('analysis','Räume und Analyse',[analysis]);this.palette.append(open);this.toolButtons('drawing-tool');
   }
   this.sync();
  }
@@ -204,7 +218,7 @@ export class AtlasWorkspaceLayout {
   const select=el<HTMLSelectElement>(id);if(!this.root.contains(select))return;
   let group=this.root.querySelector<HTMLElement>('[data-tool-buttons="'+id+'"]');
   if(!group){group=document.createElement('div');group.className='atlas-tool-buttons';group.dataset.toolButtons=id;group.setAttribute('aria-label','Werkzeuge');
-   for(const option of select.options){const [symbol,label]=toolNames[option.value]??['◇',option.textContent??option.value];const b=button('','');const caption=document.createElement('span');caption.className='atlas-tool-label';caption.textContent=label;b.append(caption);const icon=document.createElement('span');icon.className='atlas-tool-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbol;b.prepend(icon);b.title=option.textContent??label;b.setAttribute('aria-label',b.title);b.dataset.toolSelect=id;b.dataset.toolValue=option.value;b.onclick=()=>void this.host.tool(id==='land-tool'?'terrain':id==='city-tool'?'city':'interior',id,option.value).then(()=>this.sync()).catch(this.host.error);group.append(b);}
+   for(const option of select.options){const [symbol,label]=toolNames[option.value]??['◇',option.textContent??option.value];const b=button('','');b.setAttribute('aria-label',option.textContent??label);this.railButton(b,symbol,label);b.dataset.toolSelect=id;b.dataset.toolValue=option.value;b.onclick=()=>void this.host.tool(id==='land-tool'?'terrain':id==='city-tool'?'city':'interior',id,option.value).then(accepted=>{if(accepted)this.showToolSettings(true);this.sync();}).catch(this.host.error);group.append(b);}
    select.closest('label')!.classList.add('atlas-native-tool-select');select.addEventListener('change',()=>this.sync());
   }
   group.hidden=false;this.palette.prepend(group);
@@ -212,6 +226,7 @@ export class AtlasWorkspaceLayout {
  private async openGeneration(){const nodes:HTMLElement[]=[];for(const id of ['city-district','city-seed','city-density','city-size','city-reach','city-use'])nodes.push(el(id).closest('label')!);for(const id of ['city-generate','city-cancel-preview','city-preview-summary','city-preview-actions'])nodes.push(el(id));await this.requestContext('generation','Viertel bebauen',nodes);}
  sync(){
   if(!this.active)return;
+  el('atlas-floor-field').hidden=this.family!=='interior';
   const name=el('atlas-new-name').closest('label')!;
   if(this.family!=='terrain')name.hidden=(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||(this.family==='interior'&&!this.root.dataset.placing);
   if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
@@ -219,7 +234,7 @@ export class AtlasWorkspaceLayout {
   const navigating=this.root.dataset.family==='navigation';
   const selectId=this.family==='terrain'?'land-tool':this.family==='city'?'city-tool':'drawing-tool';
   const tool=el<HTMLSelectElement>(selectId);
-  el('atlas-active-tool').textContent=navigating?(this.root.dataset.panMode==='true'?'Hand':'Auswahl'):(toolNames[tool.value]?.[1]??tool.selectedOptions[0]?.textContent??'Werkzeug');
+  el('atlas-active-tool').textContent=this.root.dataset.placing?(this.family==='city'?'Stadt anlegen':'Dungeon anlegen'):navigating?(this.root.dataset.panMode==='true'?'Hand':'Auswahl'):(toolNames[tool.value]?.[1]??tool.selectedOptions[0]?.textContent??'Werkzeug');
   for(const id of ['land-tool','city-tool','drawing-tool']){const select=el<HTMLSelectElement>(id);for(const b of this.root.querySelectorAll<HTMLButtonElement>('[data-tool-select="'+id+'"]')){b.setAttribute('aria-pressed',String(!navigating&&b.dataset.toolValue===select.value));b.disabled=select.disabled;}}
   el('atlas-select').setAttribute('aria-pressed',String(navigating&&this.root.dataset.panMode!=='true'));el('atlas-pan').setAttribute('aria-pressed',String(this.root.dataset.panMode==='true'));
  }

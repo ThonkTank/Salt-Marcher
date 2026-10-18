@@ -18,20 +18,20 @@ body.atlas-workspace #campaign-atlas[hidden]{display:none!important}
 #campaign-atlas .map-canvas-controls{display:flex;gap:3px;padding:0;margin:0;border:0;background:transparent}
 #campaign-atlas .map-canvas-controls>span,body.atlas-workspace .atlas-reset-control{display:none}
 body.atlas-workspace #atlas-to-party,body.atlas-workspace #atlas-context-fields{display:none!important}
-#campaign-atlas .atlas-layout{position:relative;display:grid;grid-row:2;grid-template-columns:var(--atlas-dock-width,240px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:auto;min-height:0;gap:0;align-items:stretch}
-#campaign-atlas[data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:var(--atlas-dock-width,240px) minmax(0,1fr) var(--atlas-details-width,340px)}
+#campaign-atlas .atlas-layout{position:relative;display:grid;grid-row:2;grid-template-columns:var(--atlas-left-space,76px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:auto;min-height:0;gap:0;align-items:stretch}
+#campaign-atlas[data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:var(--atlas-left-space,76px) minmax(0,1fr) var(--atlas-details-width,340px)}
 #campaign-atlas[data-collapsed=true] .atlas-layout{grid-template-columns:0 minmax(0,1fr)}
 #campaign-atlas[data-collapsed=true][data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:0 minmax(0,1fr) var(--atlas-details-width,340px)}
 body.atlas-workspace #campaign-atlas .atlas-stage{grid-column:2;grid-row:1;position:relative;top:auto;display:flex;height:100%;min-height:0;min-width:0;overflow:hidden}
 #campaign-atlas #campaign-map{width:100%;height:100%;min-height:0;min-width:0;flex:1;display:block;border:0;border-radius:0;background:#b8c896}
-#campaign-atlas #atlas-panel{grid-column:1;grid-row:1;position:relative;display:flex;flex-direction:column;min-height:0;height:auto;padding:0;overflow:visible;border:0;border-right:1px solid #d7dde2;border-radius:0;background:#f8f9fa}
+#campaign-atlas #atlas-panel{grid-column:1;grid-row:1;position:relative;display:grid;grid-template-columns:76px minmax(0,1fr);min-height:0;height:auto;padding:0;overflow:visible;border:0;border-right:1px solid #d7dde2;border-radius:0;background:#f8f9fa}
 #campaign-atlas[data-collapsed=true] #atlas-panel{visibility:hidden;overflow:hidden}
-#campaign-atlas #atlas-families{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:4px;gap:2px;border-bottom:1px solid #d7dde2;background:#f1f4f6;flex-shrink:0}
-#campaign-atlas #atlas-families button{min-width:0;min-height:30px;padding:3px 2px;font-size:12px;border:0;border-radius:4px;background:transparent}
+#campaign-atlas #atlas-families{display:grid;grid-template-columns:1fr;padding:4px;gap:2px;border-bottom:1px solid #d7dde2;background:#f1f4f6;flex-shrink:0}
+#campaign-atlas #atlas-families button{min-width:0;min-height:40px;padding:3px 2px;font-size:10px;border:0;border-radius:4px;background:transparent}
 #campaign-atlas #atlas-families button[aria-pressed=true]{background:#dce9ed;color:#214e60;font-weight:600}
 #campaign-atlas .atlas-dock-body{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:8px}
-#campaign-atlas .atlas-tool-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:0}
-#campaign-atlas .atlas-tool-buttons button{text-align:left;min-width:0;min-height:32px;padding:4px;font-size:12px;line-height:1.3;border:1px solid transparent;background:transparent;border-radius:4px}
+#campaign-atlas .atlas-tool-buttons{display:grid;grid-template-columns:1fr;gap:2px;margin:0}
+#campaign-atlas .atlas-tool-buttons button{text-align:center;min-width:0;min-height:44px;padding:4px 1px;font-size:10px;line-height:1.3;border:1px solid transparent;background:transparent;border-radius:4px}
 #campaign-atlas .atlas-tool-buttons button:hover{background:#e9eef1;border-color:#cbd4da}
 #campaign-atlas .atlas-tool-buttons button[aria-pressed=true]{background:#dce9ed;border-color:#9fb9c2;color:#214e60;font-weight:600}
 #campaign-atlas .atlas-native-tool-select{display:none!important}
@@ -104,18 +104,18 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 @media(max-width:700px){#campaign-atlas .atlas-header-search{min-width:80px}#campaign-atlas .atlas-command-bar button{padding:5px 4px;font-size:11px}#campaign-atlas #atlas-status{width:32px;min-width:32px;font-size:0}#campaign-atlas #atlas-status::before{content:'✓';font-size:16px}#campaign-atlas #atlas-status[data-error=true]::before{content:'!'}#campaign-atlas #atlas-reference-open{font-size:0;width:30px}#campaign-atlas #atlas-reference-open::before{content:'▱';font-size:20px}}
 
 
-#campaign-atlas .atlas-tool-buttons button{display:flex;align-items:center;justify-content:center;gap:0}
+#campaign-atlas .atlas-tool-buttons button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
 #campaign-atlas .atlas-tool-icon{flex:0 0 22px;text-align:center;font-size:20px;line-height:1}
 #campaign-atlas #atlas-landscape-tools>.toolbar:has(#land-finish:not([hidden])){position:sticky;bottom:0;background:#f8f9fa;padding:6px 0;z-index:2}
 
-#campaign-atlas #atlas-tool-palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px;flex-shrink:0;max-height:50%;overflow:auto;padding:6px 8px;border-bottom:1px solid #d7dde2;overscroll-behavior:contain}
+#campaign-atlas #atlas-tool-palette{box-sizing:border-box;width:100%;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow:auto;padding:4px;border-bottom:1px solid #d7dde2;overscroll-behavior:contain}
 #campaign-atlas #atlas-tool-palette>.atlas-tool-buttons{order:1;grid-column:1/-1;margin-bottom:3px}
-#campaign-atlas #atlas-tool-palette>button{order:2;grid-column:1/-1;margin:0;padding:4px;font-size:11px;text-align:left;min-height:28px;min-width:0}
+#campaign-atlas #atlas-tool-palette>button{order:2;margin:0;padding:4px 1px;font-size:10px;text-align:center;min-height:44px;min-width:0;flex-shrink:0}
 #campaign-atlas #atlas-tool-palette>:is(#atlas-create-city,#atlas-create-dungeon){order:0;grid-column:1/-1}
 
-/* Compact icon palette with the current tool named beside its settings. */
-#campaign-atlas .atlas-tool-label{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-#campaign-atlas #atlas-active-tool{display:block;font-size:13px;line-height:1.4;margin:0 0 7px;color:#34444f}
+/* A narrow named tool rail opens its settings in a separate left drawer. */
+#campaign-atlas .atlas-tool-label{display:block;max-width:100%;font-size:10px;line-height:1.15;overflow-wrap:anywhere;white-space:normal}
+#campaign-atlas #atlas-active-tool{display:block;font-size:13px;line-height:1.4;margin:0;color:#34444f}
 #campaign-atlas #atlas-panel label{margin:5px 0;font-size:11px;line-height:1.3}
 #campaign-atlas #atlas-panel label:has(> :is(select,input:not([type=checkbox]):not([type=range]))){display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.2fr);align-items:center;gap:6px}
 #campaign-atlas #atlas-panel :is(input:not([type=checkbox]):not([type=range]):not([type=color]),select){padding:4px;font-size:12px;min-height:28px}
@@ -127,3 +127,11 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #atlas-navigation-popup #workspace-nav-menu>summary{display:block;cursor:pointer;padding:.55rem .35rem;font-weight:600}
 #atlas-navigation-popup .navigation-groups{position:static;display:block;max-height:none;padding:0;box-shadow:none;background:transparent}
 #campaign-atlas[data-element-selected=true] #atlas-workspace-selection :is(#key-open,#empty,#editor,details:has(#drawing-dx),details:has(#drawing-floor-name)){display:none}
+
+#campaign-atlas #atlas-tool-rail{display:flex;flex-direction:column;flex-wrap:nowrap;gap:0;padding:0;margin:0;border-bottom:0;min-height:0;height:100%;width:76px;border-right:1px solid #d7dde2;box-sizing:border-box;background:#f1f4f6}
+#campaign-atlas .atlas-rail-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;border:1px solid transparent;border-radius:4px;background:transparent;color:#34444f}
+#campaign-atlas .atlas-rail-button:hover{background:#e3eaf0;border-color:#cbd4da}
+#campaign-atlas #atlas-tool-rail .atlas-tool-icon{flex:none;width:24px;height:22px;font-size:20px;line-height:22px}
+#campaign-atlas #atlas-tool-settings{position:relative;padding:0;margin:0;border:0;border-radius:0;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:visible;background:#f8f9fa}
+#campaign-atlas .atlas-tool-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;min-height:40px;padding:6px 8px;border-bottom:1px solid #d7dde2;box-sizing:border-box}
+#campaign-atlas #atlas-tool-settings-close{width:26px;min-height:26px;padding:0;border:0;background:transparent;font-size:20px}
