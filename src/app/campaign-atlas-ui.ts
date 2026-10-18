@@ -49,6 +49,8 @@ import { elementPaint, roomFacePaint, nearestAnchor } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, atlasCityUndoPoint, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
+  atlasDrawingRectangle,
+  atlasDrawingSnapPoint,
   atlasDrawingDraft,
   atlasDrawingUndoPoint,
   drawingOverlay,
@@ -428,10 +430,11 @@ export class CampaignAtlasWorkbench {
     get("atlas-building-interior").onclick = () => void this.createInterior();
     get("atlas-room-draw").onclick = () => {
       if(this.draft.length||this.roomDrag){this.opts.status("Raumzug zuerst abschließen oder abbrechen.",true);return;}
+      this.creation = null;delete this.root.dataset.placing;
       this.draft = [];
       this.root.dataset.roomDraw = "true";
       get("atlas-hint").dataset.idle = "false";
-      const name = get<HTMLInputElement>("atlas-new-name");
+      const name = get<HTMLInputElement>("drawing-room-name");
       get("atlas-hint").textContent =
         "Rechteck im Atlas ziehen oder zwei gegenüberliegende Ecken anklicken. Escape verwirft.";
       this.render();name.focus();name.select();
@@ -1185,7 +1188,7 @@ export class CampaignAtlasWorkbench {
           throw new Error(
             "Zuerst einen Dungeon oder ein Gebäude mit Innenraumhülle wählen.",
           );
-        const local = atlasToLocal(p, this.frame(this.scopeId));
+        const local = atlasDrawingSnapPoint(atlasToLocal(p, this.frame(this.scopeId)));
         this.draft.push(local);
         get("atlas-draft-cancel").hidden = false;
         if (this.draft.length === 2) await this.createRoomRectangle();
@@ -1292,14 +1295,11 @@ export class CampaignAtlasWorkbench {
       this.draft = [a];
       throw new Error("Raum benötigt eine Fläche. Zweite Ecke erneut wählen.");
     }
-    const result = await this.write({
-      kind: "room-create", scopeId: this.scopeId!, floorId: this.floorId,
-      name: get<HTMLInputElement>("atlas-new-name").value || "Neuer Raum",
-      polygons: [{outer: [a, {x:b.x,y:a.y}, b, {x:a.x,y:b.y}], holes: []}],
-    }, true);
+    let result;
+    try{result = await atlasDrawingRectangle(a,b);}catch(error){this.draft=[a];throw error;}
     if (result) {
       this.cancel();
-      const id = (result.result as {id:string}).id;
+      const id = result.workspace.selectedId!;
       get<HTMLSelectElement>("drawing-tool").value="select";
       await this.opts.selectRoom(id);
       this.selection = {kind:"room",id};
@@ -1440,7 +1440,7 @@ export class CampaignAtlasWorkbench {
       this.suppressClick();
       if (drag.scopeId !== this.scopeId || drag.floorId !== this.floorId || this.root.dataset.roomDraw !== "true") return;
       const f = this.frame(drag.scopeId);
-      this.draft = [atlasToLocal(drag.start,f),atlasToLocal(this.point(e),f)];
+      this.draft = [atlasDrawingSnapPoint(atlasToLocal(drag.start,f)),atlasDrawingSnapPoint(atlasToLocal(this.point(e),f))];
       try { await this.createRoomRectangle(); } catch(e) { this.error(e); }
       this.render();
       return;
@@ -2089,7 +2089,7 @@ export class CampaignAtlasWorkbench {
       const retained=shape('group',{matrix:[1,0,0,1,base.origin.x-box.x,base.origin.y-box.y],data:{atlasBase:'true'}});
       retained.append(base.authorSlot?this.withAuthorFace(base.node,base.authorSlot,mpp):base.node);root.append(retained);
       if (this.roomDrag?.moved) {
-        const f=this.frame(this.roomDrag.scopeId),a=atlasToLocal(this.roomDrag.start,f),b=atlasToLocal(this.roomDrag.last,f);
+        const f=this.frame(this.roomDrag.scopeId),a=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.start,f)),b=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.last,f));
         root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true"}}));
       }
       if (this.draft.length && this.scopeId) {

@@ -8,6 +8,7 @@ import {parseHTML} from 'linkedom';
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
 export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
+export const atlasDrawingSnapPoint=p=>p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
 export const selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},atlasDrawingUndoPoint=()=>{},reloadDrawing=()=>{};`}));}}]});
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
@@ -92,9 +93,8 @@ test('an object-only interior paints its geometry instead of reducing it to an e
 });
 
 function rectangleGesture(t){
- const f=fixture(t),writes=[],selected=[],captures=[];
- for(const id of ['atlas-new-name','atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement(id==='atlas-new-name'?'input':'button');n.id=id;f.document.body.append(n);}
- f.document.getElementById('atlas-new-name').value='Zollhaus';
+ const f=fixture(t),writes=[],selected=[],captures=[];const previous=global.atlasRectangleWrites;global.atlasRectangleWrites=writes;t.after(()=>global.atlasRectangleWrites=previous);
+ for(const id of ['atlas-draft-cancel','drawing-cancel']){const n=f.document.createElement('button');n.id=id;f.document.body.append(n);}
  Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
  f.ui.reference={active:false};f.ui.camera.stopZoom=()=>{};f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
  const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false});
@@ -103,8 +103,7 @@ function rectangleGesture(t){
 for(const reverse of [false,true])test(`room rectangle drag previews and commits once in a rotated frame (${reverse?'reverse':'forward'})`,async t=>{
  const f=rectangleGesture(t),a=f.event(-100,50),b=f.event(-106,62),[start,end]=reverse?[b,a]:[a,b];
  f.ui.down(start);f.ui.move(end);assert.equal(f.writes.length,0);assert(f.ui.roomDrag.moved);assert.deepEqual(f.captures,[3]);
- await f.ui.up(end);assert.equal(f.writes.length,1);const action=f.writes[0];assert.equal(action.kind,'room-create');assert.equal(action.scopeId,'local');assert.equal(action.floorId,'ground');assert.equal(action.name,'Zollhaus');
- const points=action.polygons[0].outer;assert(Math.abs(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))-12)<1e-9);assert(Math.abs(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y))-6)<1e-9);
+ await f.ui.up(end);assert.equal(f.writes.length,1);const points=f.writes[0];assert(Math.abs(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))-12)<1e-9);assert(Math.abs(Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y))-6)<1e-9);
  assert.deepEqual(f.selected,['created','refreshed'],'next editing commands must use the frame published after room selection');assert.equal(f.ui.roomDrag,null);assert.equal(f.ui.root.dataset.roomDraw,'false');assert.equal(f.ui.ignoreClick,true);await f.ui.click(end);assert.equal(f.writes.length,1,'the synthetic release click cannot draw a second room');
 });
 test('stationary room presses keep two-click authoring and an invalid second corner remains correctable',async t=>{

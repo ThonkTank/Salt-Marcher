@@ -196,7 +196,7 @@ export class AtlasWorkspaceLayout {
  }
  sync(){
   if(!this.active)return;
-  const nameField=el('atlas-new-name').closest('label')!;if(this.family!=='terrain')nameField.hidden=this.family==='travel'||(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||((this.family==='interior'||this.family==='decoration')&&this.root.dataset.roomDraw!=='true');
+  const nameField=el('atlas-new-name').closest('label')!;if(this.family!=='terrain')nameField.hidden=this.family==='travel'||(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||((this.family==='interior'||this.family==='decoration')&&!this.root.dataset.placing);
   if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
   const name=el('atlas-selection-title').textContent??'';this.context.title=name;
   for(const id of ['land-tool','city-tool','drawing-tool']){const select=el<HTMLSelectElement>(id);for(const b of this.root.querySelectorAll<HTMLButtonElement>('[data-tool-select="'+id+'"]')){b.setAttribute('aria-pressed',String(b.dataset.toolValue===select.value));b.disabled=select.disabled;const decoration=['light','object','scatter','text','feature'].includes(b.dataset.toolValue??'');b.hidden=id==='drawing-tool'&&b.dataset.toolValue!=='select'&&(this.family==='decoration'?!decoration:decoration);}}

@@ -291,6 +291,20 @@ Unklare überlagerte Treffer sind ausdrücklich wählbar, keine unsichtbare
 global feste City-vor-Dungeon-Priorität. Fehler bewahrt die offene Eingabe und
 die ursprüngliche Zielbindung. Ein stale Generatorresultat wird nie angewandt.
 
+Atlas-Rechtecke benutzen denselben Zeichenbefehl wie freie Raumkonturen:
+`drawing-ui.ts` besitzt Name, Rasterfang, Ergänzen einer Auswahl und die
+bestätigte Rückgabe. Der Atlas übersetzt nur Weltkoordinaten und die Zieh-/
+Zwei-Klick-Geste. Es gibt dafür ein Raum-Namensfeld; das Platzierungsfeld für
+Dungeon-/Stadtnamen ist kein zweiter Raumautor. Vorschau und Commit rasten
+an denselben lokalen Punkten ein. Die Geste bleibt ein gesonderter Adapter,
+weil sie Weltkoordinaten und Pointercapture besitzt; sie schreibt keine eigene
+Raumgeometrie mehr. Verspätete Vorbereitung nach Kontextwechsel schreibt nicht.
+`desktop-drawing-draft-lifecycle.test.mjs` prüft diesen Anschluss samt Ergänzen
+und Abbruch. `tools/test-desktop-dungeon-groundplan.mjs` prüft den nativen
+Ablauf aus drei benannten Räumen, zwei Türen, Wandvergrößerung, Undo/Redo,
+PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung. Physische
+Eingabe- und vollständige 3D-Produktabnahme bleiben davon getrennt.
+
 Dungeonreisen verwenden die vorhandenen transaktionalen `dungeon_receipt`-
 Belege auch nach verlorener IPC-Antwort: Die UI hält den ursprünglichen Auftrag
 mit Kennung und Inhalt fest, stoppt Wiedergabe und sperrt weitere Dungeonwrites
