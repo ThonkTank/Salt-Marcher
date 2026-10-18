@@ -382,3 +382,28 @@ eine geplante lange Rast kann wie bisher einen hypothetischen bekannten Zustand
 schaffen. Pausen gelten weiterhin für alle Rechnerfiguren. Am Ende der letzten
 Zeile ist keine weitere Begegnung aufzuteilen. Teilnehmerrasten, Dauer und
 Übernahme in einen gespeicherten Sessionablauf bleiben offen.
+
+
+## Vollständige Figurenansicht im Rechner (18.10.2026)
+
+Die aktuellen Figurenfacts und die XP-/Levelvorschau zeigen zunächst höchstens
+40 Figuren. „Weitere Figuren“ erweitert dieselbe bestätigte Tabelle in Schritten
+von 40; ein Zähler nennt die sichtbare und gesamte Anzahl. Bisher waren weitere
+aktuelle Facts nur als ausgelassen gemeldet und weitere XP-Projektionen still
+abgeschnitten. Summen und Berechnung verwenden weiterhin die gesamte Party.
+
+`adventuring-day-ui.ts` paginiert ausschließlich die bereits empfangenen Werte.
+Keine neue IPC, keine zusätzlichen Reads, keine Datenmigration oder Partywrites.
+Die Ergebnisgeneration, der Workspace-Token, der offene Popover und die Verbindung
+zum aktuellen Dokument entziehen alten Seitenaktionen ihre Wirkung, sobald neue
+Eingaben oder ein neuer Kontext die Antwort ablösen. Nach bestätigtem Refresh
+beginnt die neue Tabelle wieder mit den ersten 40 Figuren.
+
+Gezielter Store-/DOMgegenbeleg: 45 aktive Figuren, letzte Figur mit 299 XP;
+aufgerundeter Gruppenverdienst von 1 XP erreicht auch bei ihr 300 XP / Level 2.
+Beide Tabellen müssen diese Figur erreichbar machen. Seitenaktionen dürfen bei
+laufender Neuberechnung keine alten Werte ergänzen oder neue Reads starten;
+Roster-, Fortschritts- und Scenefacts bleiben unverändert. Native Probe:
+`python3 tools/ui-session.py node tools/test-desktop-day-party.mjs`, bei 100 und
+200 Prozent einschließlich erneutem Öffnen und normalem Prozessende. Dieser
+begrenzte Ablauf ersetzt keine vollständige Party-/Produktabnahme.

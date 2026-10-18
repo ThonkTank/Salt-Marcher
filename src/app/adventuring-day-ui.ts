@@ -96,7 +96,7 @@ function renderRows() {
     root.append(line);
   }
 }
-function table(root: HTMLElement, headings: string[], values: string[][]) {
+function table(root: HTMLElement, headings: string[], values: string[][], current?: () => boolean) {
   const t = document.createElement("table"),
     head = document.createElement("tr");
   for (const title of headings) {
@@ -105,16 +105,37 @@ function table(root: HTMLElement, headings: string[], values: string[][]) {
     head.append(th);
   }
   t.append(head);
-  for (const cells of values) {
-    const tr = document.createElement("tr");
-    for (const text of cells) {
-      const td = document.createElement("td");
-      td.textContent = text;
-      tr.append(td);
+  let shown = 0;
+  const append = () => {
+    if (current && !current()) return;
+    const end = current ? Math.min(shown + 40, values.length) : values.length;
+    for (const cells of values.slice(shown, end)) {
+      const tr = document.createElement("tr");
+      for (const text of cells) {
+        const td = document.createElement("td");
+        td.textContent = text;
+        tr.append(td);
+      }
+      t.append(tr);
     }
-    t.append(tr);
-  }
+    shown = end;
+  };
+  append();
   root.append(t);
+  if (current && values.length > 40) {
+    const count = document.createElement("p"), more = document.createElement("button");
+    more.type = "button";
+    const status = () => {
+      count.textContent = shown + " von " + values.length + " Figuren angezeigt; Summen berücksichtigen alle Figuren.";
+      more.textContent = "Weitere " + Math.min(40, values.length - shown) + " Figuren";
+      more.hidden = shown === values.length;
+    };
+    more.onclick = () => {
+      if (!more.isConnected || !current()) return;
+      append();status();
+    };
+    status();root.append(count, more);
+  }
 }
 function draw(value: DayView) {
   el('day-popover').setAttribute('aria-busy','false');
@@ -160,7 +181,6 @@ function draw(value: DayView) {
       party,
       ["Aktuelle Figur", "Level", "SR / LR verbraucht", "Bis nächste Marke / LR"],
       snapshot.members
-        .slice(0, 40)
         .map((c) => [
           c.name,
           c.level === null ? "offen" : String(c.level),
@@ -171,13 +191,8 @@ function draw(value: DayView) {
             ? "offen"
             : number(c.nextShort) + " / " + number(c.remainingLong!),
         ]),
+      current,
     );
-    if (snapshot.members.length > 40) {
-      const p = document.createElement("p");
-      p.textContent =
-        "Erste 40 Figuren angezeigt; Summen berücksichtigen die gesamte aktive Party.";
-      party.append(p);
-    }
   }
   renderDayLevels(el('day-levels'),value.advancement,{progress:mode==='progress',itinerary:!!value.itinerary,current,choose:pool=>{
    if(!current()||dayItineraryRequest()!==undefined)return;
@@ -236,13 +251,13 @@ function draw(value: DayView) {
         "Level vorher → danach",
       ],
       c.projections
-        .slice(0, 40)
         .map((p) => [
           p.name,
           String(p.count),
           number(p.beforeXp) + " → " + number(p.afterXp),
           p.beforeLevel + " → " + p.afterLevel,
         ]),
+      current,
     );
     for (const event of c.timeline) {
       const li = document.createElement("li");
