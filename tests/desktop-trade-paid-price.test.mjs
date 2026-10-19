@@ -95,3 +95,15 @@ test('legacy shop receipts replay without adding history fields or rewriting the
  const payload=JSON.stringify(old);x.store.db.prepare('UPDATE shop_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,createHash('sha256').update(payload).digest('hex'),purchase.command.commandId);
  const before=x.store.db.serialize();assert.deepEqual(x.store.executeItemShop(purchase.command),old);assert.deepEqual(x.store.db.serialize(),before);assert.equal(x.store.shop(x.w.token,x.shop.id).historyNext,null);
 });
+test('independent campaign copies remap continuation identities inside immutable shop receipts',async t=>{
+ const x=setup(t);x.buy(3,'1.01');for(let i=0;i<55;i++){const s=x.store.shop(x.w.token,x.shop.id).shop;x.store.executeItemShop(x.command({kind:'restock',shopId:s.id,expectedRevision:s.revision,entryId:s.stock[0].id,mode:'add',quantity:1,reason:'Markttag '+i}));}
+ const snapshot=path.join(path.dirname(x.file),'history-snapshot.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const source=x.store.db.serialize(),copy=new CampaignStore(path.join(path.dirname(x.file),'copy.sqlite'));
+ try{
+  const campaign=copy.acceptCampaignSnapshot(snapshot,'Kopie',{}),w=copy.activate(campaign.id),shop=copy.shops(w.token,false)[0],current=copy.shop(w.token,shop.id);
+  const receipt=JSON.parse(copy.db.prepare("SELECT payload FROM shop_receipt WHERE campaign_id=? AND json_extract(payload,'$.shop.shop.revision')=?").get(campaign.id,current.shop.revision).payload).shop;
+  assert.notEqual(receipt.historyNext,x.store.shop(x.w.token,x.shop.id).historyNext);assert.equal(receipt.historyNext,receipt.history.at(-1).id);
+  const older=copy.shopHistory(w.token,shop.id,receipt.historyNext);assert(older.entries.length>0);assert.equal(older.next,null);
+  assert.equal(new Set([...current.history,...copy.shopHistory(w.token,shop.id,current.historyNext).entries].map(h=>h.id)).size,57);
+  assert.deepEqual(x.store.db.serialize(),source);
+ }finally{copy.close();}
+});

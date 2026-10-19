@@ -62,21 +62,21 @@ function readRestockEvent(db:any,cam:string,id:string){
  const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id),e=checkedCalendarEvent(decoded(row),true);
  if(e.id!==row.id||e.revision!==row.revision)throw new Error('Lieferereignis widerspricht seiner Identität.');return e;
 }
+function historyPage(db:any,cam:string,id:string,after:string|null):ShopHistoryPage{
+ const cursor=after===null?null:db.prepare('SELECT rowid AS cursor FROM shop_event WHERE campaign_id=? AND shop_id=? AND id=?').get(cam,id,after);
+ if(after!==null&&!cursor)throw Error('Seitenmarke gehört nicht zu diesem Shopverlauf.');
+ const rows=cursor
+  ?db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51').all(cam,id,cursor.cursor)
+  :db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 51').all(cam,id);
+ const entries=rows.slice(0,50).map((r:any)=>({...decoded<any>(r),id:r.id}));
+ return {shopId:id,entries,next:rows.length>50?entries.at(-1)!.id:null};
+}
 export function readShopHistory(db:any,cam:string,id:string,after:string|null):ShopHistoryPage{
  if(typeof id!=='string'||!id||id.length>1000||after!==null&&(typeof after!=='string'||!after||after.length>1000))throw Error('Shopverlauf und Seitenmarke prüfen.');
- return db.transaction(()=>{
-  shopRecord(db,cam,id);
-  const cursor=after===null?null:db.prepare('SELECT rowid AS cursor FROM shop_event WHERE campaign_id=? AND shop_id=? AND id=?').get(cam,id,after);
-  if(after!==null&&!cursor)throw Error('Seitenmarke gehört nicht zu diesem Shopverlauf.');
-  const rows=cursor
-   ?db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51').all(cam,id,cursor.cursor)
-   :db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 51').all(cam,id);
-  const entries=rows.slice(0,50).map((r:any)=>({...decoded<any>(r),id:r.id}));
-  return {shopId:id,entries,next:rows.length>50?entries.at(-1)!.id:null};
- })();
+ return db.transaction(()=>{shopRecord(db,cam,id);return historyPage(db,cam,id,after);})();
 }
 export function readShop(db:any,cam:string,id:string):ShopView{
- const s=shopRecord(db,cam,id),o=owner(db,cam,s),history=readShopHistory(db,cam,id,null);
+ const s=shopRecord(db,cam,id),o=owner(db,cam,s),history=historyPage(db,cam,id,null);
  return{shop:s,ownerName:o.name,unavailable:o.unavailable||s.trashed,timeNotice:restockTimeNotice(db,cam,id),restockEvents:restockEvents(db,cam),items:[...new Set(s.stock.map(e=>e.reference.definitionId))].map(id=>readItemDefinition(db,id)),history:history.entries,historyNext:history.next};
 }
 function listShops(db:any,cam:string,includeTrashed:boolean,accept?:(s:Shop)=>boolean):ShopSummary[]{

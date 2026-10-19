@@ -42,7 +42,9 @@ Kampagne und Shop und liest ausschließlich vorhandene `shop_event`-Zeilen.
 Ein Index auf Kampagne/Shop unterstützt diese Lesegrenze. Es gibt keinen neuen
 Verlaufsbestand und keine Umschreibung alter Belege. `ShopView.historyNext`
 bleibt wegen bestehender gespeicherter Receipts optional; deren volle erste
-Seite kann über dieselbe letzte Belegkennung weitergelesen werden.
+Seite kann über dieselbe letzte Belegkennung weitergelesen werden. Unabhängige
+Kampagnenkopien remappen auch diese Fortsetzung innerhalb gespeicherter
+Shopreceipts; Quellbelege und ihre Payloads bleiben in der Quelle unverändert.
 
 Der Renderer erhält bei Ladefehlern sichtbare Einträge und offene Handelsfelder.
 Shopwechsel, neue Shopstände und Kampagnenaktivierung entwerten frühere Antworten;
