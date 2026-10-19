@@ -25,7 +25,7 @@ async function start(){
 }
 const tool=async value=>{await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled);await page.locator(`[data-tool-select="land-tool"][data-tool-value="${value}"]`).click();await page.waitForFunction(value=>document.querySelector('#land-tool').value===value,value);await atlasCanvasReady(page);};
 const camera=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.dataset.atlasView),left:n.getBoundingClientRect().left,top:n.getBoundingClientRect().top,width:n.getBoundingClientRect().width,height:n.getBoundingClientRect().height}));
-async function at(x,y){const c=await camera();return{x:c.left+(x-c.view.x)/c.view.width*c.width,y:c.top+(y-c.view.y)/c.view.height*c.height};}
+async function at(x,y){await atlasCanvasReady(page);await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));const c=await camera();return{x:c.left+(x-c.view.x)/c.view.width*c.width,y:c.top+(y-c.view.y)/c.view.height*c.height};}
 async function clickWorld(x,y,button='left'){const p=await at(x,y);await page.mouse.click(p.x,p.y,{button});}
 async function waitRecord(predicate){for(let i=0;i<100;i++){if(records().some(predicate)){await atlasCanvasReady(page);return;}await page.waitForTimeout(100);}throw Error('Expected persisted record not found: '+JSON.stringify(records()));}
 async function capture(name){await page.screenshot({path:out+'/'+name+'.png'});}

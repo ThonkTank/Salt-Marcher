@@ -596,7 +596,7 @@ export class LandscapeWorkbench {
     if(this.active&&this.selectionRecords.size>1)for(const r of this.selectionRecords.values())root.append(landscapeNode('polyline',{points:linePoints(r).map(p=>({x:p.x-box.x,y:p.y-box.y})),pointer:false,style:{fill:null,stroke:'#d46e38',lineWidth:mpp*2,lineDash:[mpp*4,mpp*3]},data:{editorOnly:'true'}}));
     if (this.calibration)
       drawLandscape(root, [this.calibration.record], box, mpp, this.assets);
-    if (this.selected && this.active && this.tool === "select" && this.selectionRecords.size<=1)
+    if (this.selected && !['road','river'].includes(this.selected.kind) && this.active && this.tool === "select" && this.selectionRecords.size<=1)
       this.selected.points.forEach((p, i) =>
         root.append(
           landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 6, style: {fill: i === this.vertex ? "#e1984b" : "#fff", stroke: "#a55d35", lineWidth: mpp * 2}, data: {landVertex: String(i), editorOnly: String("true")}}),
@@ -627,7 +627,9 @@ export class LandscapeWorkbench {
       const r=this.draftLine([...this.points,...(this.hovering?[this.snapLine(this.lastPoint)]:[])]),preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});
       drawLandscape(preview,[r],box,mpp,this.assets,true,undefined,undefined,new Set([r.id]),'lines');root.append(preview);
     }
-    if(this.selected&&this.active&&this.tool==='select'&&['road','river'].includes(this.selected.kind))for(const r of this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])r.points.forEach((p,i)=>root.append(atlasPaint('circle',{x:p.x-box.x,y:p.y-box.y,radius:mpp*6,style:{fill:i===this.vertex?'#e1984b':'#fff',stroke:'#a55d35',lineWidth:mpp*2},data:{landVertex:String(i),editorOnly:'true'}})));
+  }
+  drawLineHandles(root:AtlasPaint,box:LandscapeBox,mpp:number){
+    if(this.selected&&this.active&&this.tool==='select'&&this.selectionRecords.size<=1&&['road','river'].includes(this.selected.kind))this.selected.points.forEach((p,i)=>root.append(atlasPaint('circle',{x:p.x-box.x,y:p.y-box.y,radius:mpp*6,style:{fill:i===this.vertex?'#e1984b':'#fff',stroke:'#a55d35',lineWidth:mpp*2},data:{landVertex:String(i),editorOnly:'true'}})));
   }
   private draftLine(points:Point[]):LandscapeRecord {
     const kind=this.tool==='river'?'river':'road',r=emptyRecord(kind);r.points=points;r.width=Number(html<HTMLInputElement>('land-width').value);r.line=this.settings.line(kind,this.draftSeed);return r;

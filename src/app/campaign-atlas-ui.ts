@@ -2236,6 +2236,7 @@ export class CampaignAtlasWorkbench {
               .map(p=>({x:p.x-box.x,y:p.y-box.y})), style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2}}),
         );
       this.drawParty(root, mpp);
+      if(!this.exportOpen)this.landscape.drawLineHandles(root,box,mpp);
     });
   }
   private async exportPNG() {
