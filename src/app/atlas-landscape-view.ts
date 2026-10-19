@@ -1,5 +1,5 @@
 import {LandscapeRasterizer} from './landscape-raster';
-import {colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
+import {orderedColors,colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
 import { lineParts } from "./landscape-line";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
@@ -19,7 +19,7 @@ export function drawLandscape(
   if(!raster&&records.some(r=>r.mask||r.paint?.version===2)&&typeof document!=='undefined'){
     const w=Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),h=Math.min(1024,Math.max(1,Math.ceil(b.height/mpp))),image=new LandscapeRasterizer(b,w,h);
     for(const r of [...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))image.paint(r);
-    for(const r of [...records].filter(r=>r.paint).sort((a,b)=>(a.order??0)-(b.order??0)))image.paintColor(r);
+    for(const r of orderedColors(records))image.paintColor(r);
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d')!;ctx.putImageData(new ImageData(new Uint8ClampedArray(image.finish()),w,h),0,0);
     raster=[{campaignId:'',revision:0,box:b,width:w,height:h,data:canvas.toDataURL()}];
   }
