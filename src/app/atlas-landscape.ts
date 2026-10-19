@@ -47,6 +47,7 @@ export interface LandscapeRecord {
   paint?: import("./landscape-brush").LandscapeColor;
   mask?: import("./land-mask").LandMask;
   maskManaged?: boolean;
+  propertyOnly?: boolean;
   sourceCell?: {mapId:string;q:number;r:number;level:number};
   surface?: "land" | "sea" | "freshwater";
   locationId?: string;
@@ -59,6 +60,9 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:"landscape-land-stroke"; stroke:import("./land-mask").MaskStroke}
+  | {kind:"landscape-color-stroke"; record:LandscapeRecord}
+
   | {kind:"landscape-brush"; record:LandscapeRecord; mode:Exclude<import("./landscape-brush").BrushMode,"terrain">; radius:number; roughness:number; seed:number; fill:boolean; samples?:import("./land-mask").MaskSample[]}
   | {
       kind: "landscape-batch";
@@ -80,6 +84,7 @@ export type LandscapeAction =
     }
   | {
       kind: "landscape-reset";
+      propertyOnly?: boolean;
       polygons: Polygon[];
       field: LandscapeField;
       resolution: number;
@@ -175,11 +180,15 @@ export function effectiveLandscape(
     .sort(
       (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
     ))
-    if (!record.mask && contains(p, record.polygons)) Object.assign(out, record.values);
+    if (!record.mask && contains(p, record.polygons)) {
+      if(record.propertyOnly){const {terrain,...values}=record.values;Object.assign(out,values);}
+      else Object.assign(out, record.values);
+    }
   let occupancy:number|undefined;
   for(const r of records.filter(r=>r.mask).sort((a,b)=>b.resolution-a.resolution)) {const value=maskAt(r.mask!,p);if(value!==undefined)occupancy=value;}
   if(occupancy!==undefined)out.terrain=occupancy>=MASK_SEA_LEVEL?(out.terrain&&out.terrain!=='water'?out.terrain:'plains'):'water';
   else if(records.some(r=>r.maskManaged))out.terrain='water';
+  if(out.terrain!=='water')for(const r of records.filter(r=>r.propertyOnly).sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))if(r.values.terrain&&contains(p,r.polygons))out.terrain=r.values.terrain;
   // Freshwater remains an independently erasable surface.
   for(const r of records)if(r.surface==='freshwater'&&contains(p,r.polygons))out.terrain='water';
   // Rivers are water surfaces. Roads never turn water into a crossing.

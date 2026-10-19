@@ -40,6 +40,8 @@ Bei verzögerter Originaldarstellung kann `rfb.mjs --settle-ms 1800` die Pause v
 
 Für Klicks kann `--click-ms 500` die Dauer zwischen Drücken und Loslassen festlegen (100–2.000 ms; Standard 100 ms). Der Framebeleg hält sie als `actions[].pressMs` fest. Vor und nach einer Kamera- oder Werkzeugaktion bleibt die tatsächlich sichtbare Wirkung maßgeblich. Ein verlängerter synthetischer Klick ersetzt keine physische Eingabeabnahme.
 
+Bewegte Pinsel: `--stroke-file /ABSOLUTER-PFAD/zug.json` sendet einen zusammenhängenden Linkszug aus 2–1000 Punkten `{ "x": 300, "y": 520, "t": 0 }`. `t` sind aufsteigende Millisekunden ab Drücken, höchstens 60000; der letzte Punkt beendet den Zug. Keine anderen Eingaben im selben Aufruf. Die Aufnahme protokolliert Sollzeit, tatsächliche Sendezeit und jeden gesendeten Punkt. Das misst den RFB-Sender, nicht die interne Verarbeitung des Originals. Gerade, Kurve und Umkehr benötigen jeweils eigene beobachtete Vorher-/Nachher-Bilder; schnelle und langsame Züge müssen dieselbe Geometrie und Ausgangsfläche verwenden.
+
 Paketverzeichnis und Katalog prüfen:
 
 ```sh

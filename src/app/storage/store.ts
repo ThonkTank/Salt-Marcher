@@ -165,7 +165,7 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 47) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 48) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
@@ -237,7 +237,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=47');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=48');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -430,11 +430,11 @@ export class CampaignStore {
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
-      if(a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
+      if(a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
         const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
         const wasPhysical=(id: string)=>physical(this.db.prepare("SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?").get(cam,id)?.kind);
-        landscapeEnvironment=a.kind==='landscape-brush'||a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?(a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id))||(a.remove??[]).some(x=>wasPhysical(x.id))):physical(a.record.kind)||wasPhysical(a.record.id));
+        landscapeEnvironment=a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?(a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id))||(a.remove??[]).some(x=>wasPhysical(x.id))):physical(a.record.kind)||wasPhysical(a.record.id));
         executeLandscape(this.db,cam,a);
         if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.record.points[0]!,m.hexMeters)}});}
 
@@ -1158,7 +1158,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
@@ -1189,7 +1189,7 @@ export class CampaignStore {
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
       if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
 
-      if(c.schema===45||c.schema===46){source.transaction(()=>{installLandscape(source);source.pragma('user_version=47');})();}
+      if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}

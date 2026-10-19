@@ -408,7 +408,7 @@ function checkPositions(db: any, cam: string) {
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
   'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
-  'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
+  'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
 export function executeAtlasWrite(
   db: any,
@@ -519,7 +519,7 @@ export function validateCampaignAtlases(db: any) {
         .get(table)
     )
       throw new Error("Atlasstore unvollständig: " + table);
-  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL").iterate()){
+  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL").iterate()){
     const record=JSON.parse(row.payload);validateLine(record);validateColor(record);validateMask(record);
   }
   for (const root of db.prepare("SELECT * FROM campaign_atlas").iterate()) {
