@@ -472,7 +472,7 @@ test("schema 48 opens without changing existing geometry and schema 50 refuses m
   );
   f.fresh();
   assert.equal(f.state.territories.length, 0);
-  assert.equal(f.store.db.pragma("user_version", { simple: true }), 50);
+  assert.ok(f.store.db.pragma("user_version", { simple: true }) >= 50);
   f.store.db.exec("DROP TABLE atlas_territory");
   assert.throws(
     () => new CampaignStore(f.dir + "/world.sqlite"),

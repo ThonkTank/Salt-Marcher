@@ -30,7 +30,7 @@ import {initNpcs,activateNpcs,openNpcs,openNpcProfile,createNpcAtLocation,prepar
 import {initGroups,activateGroups,openGroups,prepareGroupLocation,createGroupAtLocation,flushGroups} from './groups-ui';
 import {refreshProgress} from './progression-ui';
 import {initTreasury,activateTreasury,openTreasury,flushTreasury} from './treasury-ui';
-import {openExistingCombat,setCombatNpcNavigation,setCombatCatalogNavigation} from './combat';
+import {openExistingCombat,setCombatNpcNavigation} from './combat';
 import {initTriggers,activateTriggers,flushTriggers} from './trigger-ui';
 import {initExtensions} from './extensions-ui';
 import {initDungeonContent,activateDungeonContent,flushDungeonContent} from './dungeon-content-ui';
@@ -55,7 +55,7 @@ import { activatePreparation, ensurePreparation, initPreparation, flushPreparati
 import {setNoteRoomNavigation} from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openLiveCharacterLoot,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
 import { initTutorial } from './tutorial';
-import { initCatalog, activateCatalog, openCatalog, openCreatureCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
+import { initCatalog, activateCatalog, openCatalog, openCatalogReference, flushCatalog } from './catalog-ui';
 import {suspendChronicle,initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const api = window.campaign;
@@ -132,7 +132,6 @@ initQuickReference(status,leaveWorkspace,async action=>{
  if(action.kind==='encounter'&&action.content.encounter)await prepareLiveEncounter(action.content.encounter);
  if(action.kind==='creature'&&action.content.creature)await addLiveCreature(action.content.creature.id,action.count!,action.grouped!);
 });
-setCombatCatalogNavigation(async current=>{if(!await leaveWorkspace()||!current())return;showTab('catalog');await openCreatureCatalog(current);});
 async function fromCatalogToLive(action:()=>Promise<void>){
  const token=workspace?.token;
  if(!token||!await leaveWorkspace()||workspace?.token!==token)return;

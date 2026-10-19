@@ -50,7 +50,14 @@ test('one fire wave separates saves from defenses and preserves all targets thro
  const x=fixture(t),targets=mixedTargets(x),before=structuredClone(x.combat),command=x.command(fireWave(targets)),result=x.store.executeCombat(command);x.combat=result.combat;
  assert.deepEqual(x.combat.participants.slice(-3).map(p=>p.hp),[102,60,2]);assert.deepEqual(x.combat.participants.slice(0,-3),before.participants.slice(0,-3));assert.equal(x.combat.turnId,before.turnId);
  assert.deepEqual(x.store.executeCombat(command),result);const id=x.combat.id;x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.campaign.id);x.combat=x.store.combat(x.w.token,x.scene.id,id).combat;assert.deepEqual(x.combat.participants.slice(-3).map(p=>p.hp),[102,60,2]);
- x.act({kind:'undo'});assert.deepEqual(x.combat.participants,before.participants);
+ x.act({kind:'undo'});
+ const changed=new Set(targets.slice(1).map(p=>p.id)); // Fire immunity made no health write; the other targets took damage and undo.
+ assert.deepEqual(x.combat.participants,before.participants.map(p=>changed.has(p.id)?{...p,worldActorRevision:p.worldActorRevision+2}:p));
+ const canonical=new Map(x.store.scenePreparation(x.w.token,x.scene.id).groups.flatMap(g=>g.actors).map(p=>[p.id,p]));
+ for(const p of x.combat.participants.filter(p=>p.worldActorId)){
+  const actor=canonical.get(p.worldActorId);assert.ok(actor);assert.equal(p.worldActorRevision,actor.revision);
+  for(const field of ['hp','maxHp','tempHp','conditions','concentrating'])assert.equal(p[field],actor[field]);
+ }
 });
 test('late conditional defenses and invalid typed choices roll back the entire wave, history and receipt',t=>{
  const x=fixture(t),targets=mixedTargets(x),before=x.store.db.serialize();
