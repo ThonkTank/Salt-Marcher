@@ -129,3 +129,13 @@ test('an inactive trader can sell but cannot buy from a live stock button',async
   x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'sell');assert.equal(x.store.ledgerItem(x.w.token,x.items[1].id).quantity,3);
  }finally{await x.cleanup();}
 });
+
+
+test('a failed shared roster read stays visible and retryable in the shop area',async()=>{
+ const x=await fixture();try{
+  const original=window.campaign.live;window.campaign.live=async()=>({ok:false,error:'Roster vorübergehend nicht lesbar'});await x.ui.openItems(x.shops[0].id);
+  const visibleInItems=node=>{for(let n=node;n&&n.id!=='items';n=n.parentElement)if(n.hidden)return false;return true;};
+  assert.equal(x.el('items-shops').hidden,false);assert.equal(x.el('items-catalog').hidden,true);assert.match(x.el('item-context-status').textContent,/Roster vorübergehend/);assert.equal(visibleInItems(x.el('item-context-status')),true);assert.equal(visibleInItems(x.el('item-context-retry')),true);assert.equal(x.el('shop-fields').disabled,true);
+  window.campaign.live=original;x.el('item-context-retry').onclick();await until(()=>x.el('item-context-status').hidden&&!x.el('shop-fields').disabled);assert.equal(x.el('items-shops').hidden,false);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
