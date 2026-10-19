@@ -1,3 +1,4 @@
+import {validateMask} from '../land-mask';
 import {validateLine} from '../landscape-line';
 import {validateColor} from '../landscape-brush';
 import { dungeonGeometry } from "./dungeon-play";
@@ -518,8 +519,8 @@ export function validateCampaignAtlases(db: any) {
         .get(table)
     )
       throw new Error("Atlasstore unvollständig: " + table);
-  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL").iterate()){
-    const record=JSON.parse(row.payload);validateLine(record);validateColor(record);
+  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL").iterate()){
+    const record=JSON.parse(row.payload);validateLine(record);validateColor(record);validateMask(record);
   }
   for (const root of db.prepare("SELECT * FROM campaign_atlas").iterate()) {
     const maps = db

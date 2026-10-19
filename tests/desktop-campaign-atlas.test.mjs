@@ -333,6 +333,7 @@ test("city walking and explicit entrances use the same group clock and survive r
     point: { x: 1000, y: 2000 },
     expectedPositionRevision: x.read().scene.position.revision,
   });
+  x.store.executeAtlasCommit({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,action:{kind:'landscape-put',record:{id:randomUUID(),revision:0,kind:'patch',name:'Testland',points:[],polygons:[{outer:[{x:900,y:1900},{x:1200,y:1900},{x:1200,y:2300},{x:900,y:2300}],holes:[]}],resolution:1,width:0,values:{terrain:'plains'}},expectedRevision:null}});
   const start = x.read(),
     preview = x.store.previewAtlasTravel(x.w.token, target);
   assert.ok(preview.distanceMeters > 60);

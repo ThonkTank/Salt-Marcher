@@ -1,3 +1,4 @@
+import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import type { Point, Polygon } from "./contracts";
 import type { AtlasCell, Terrain } from "./world-contracts";
 import { atlasHexAt, atlasHexPoint } from "./campaign-atlas-model";
@@ -44,6 +45,9 @@ export interface LandscapeRecord {
   style?: "path" | "road" | "stream" | "river";
   line?: import("./landscape-line").LandscapeLine;
   paint?: import("./landscape-brush").LandscapeColor;
+  mask?: import("./land-mask").LandMask;
+  maskManaged?: boolean;
+  sourceCell?: {mapId:string;q:number;r:number;level:number};
   surface?: "land" | "sea" | "freshwater";
   locationId?: string;
   assetId?: string;
@@ -55,7 +59,7 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
-  | {kind:"landscape-brush"; record:LandscapeRecord; mode:Exclude<import("./landscape-brush").BrushMode,"terrain">; radius:number; roughness:number; seed:number; fill:boolean}
+  | {kind:"landscape-brush"; record:LandscapeRecord; mode:Exclude<import("./landscape-brush").BrushMode,"terrain">; radius:number; roughness:number; seed:number; fill:boolean; samples?:import("./land-mask").MaskSample[]}
   | {
       kind: "landscape-batch";
       remove?: {id:string;expectedRevision:number}[];
@@ -165,13 +169,19 @@ export function effectiveLandscape(
   p: Point,
   base: Partial<AtlasCell> = {},
 ) {
-  const out = { ...base };
+  const out:Partial<AtlasCell> = { terrain:"water", ...base };
   for (const record of records
     .filter((r) => r.kind === "patch")
     .sort(
       (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
     ))
-    if (contains(p, record.polygons)) Object.assign(out, record.values);
+    if (!record.mask && contains(p, record.polygons)) Object.assign(out, record.values);
+  let occupancy:number|undefined;
+  for(const r of records.filter(r=>r.mask).sort((a,b)=>b.resolution-a.resolution)) {const value=maskAt(r.mask!,p);if(value!==undefined)occupancy=value;}
+  if(occupancy!==undefined)out.terrain=occupancy>=MASK_SEA_LEVEL?(out.terrain&&out.terrain!=='water'?out.terrain:'plains'):'water';
+  else if(records.some(r=>r.maskManaged))out.terrain='water';
+  // Freshwater remains an independently erasable surface.
+  for(const r of records)if(r.surface==='freshwater'&&contains(p,r.polygons))out.terrain='water';
   // Rivers are water surfaces. Roads never turn water into a crossing.
   for (const r of records)
     if (

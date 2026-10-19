@@ -170,7 +170,7 @@ test('unpainted map is distinguishable from an explicitly authored plain after r
   const tile=()=>x.document.querySelector('#world-map polygon[data-q="0"][data-r="0"]');
   assert.equal(tile().dataset.authored,'false');assert.match(x.document.getElementById('hex-authored-status').textContent,/ungezeichnet/);
   Object.defineProperty(x.document.getElementById('world-map'),'clientHeight',{value:320,configurable:true});
-  x.enter('hex-label','Moorfähre');assert.equal(await x.ui.flushWorld(),true);await x.ui.openWorld();
+  x.enter('hex-terrain','plains');x.enter('hex-label','Moorfähre');assert.equal(await x.ui.flushWorld(),true);await x.ui.openWorld();
   assert.equal(Number(x.document.querySelector('#world-map text').getAttribute('font-size'))*320/1360,14);
   const camera=x.document.getElementById('world-map').getAttribute('viewBox');Object.defineProperty(x.document.getElementById('world-map'),'clientHeight',{value:480});x.window.dispatchEvent(new x.window.Event('resize'));
   assert.equal(Number(x.document.querySelector('#world-map text').getAttribute('font-size'))*480/1360,14);assert.equal(x.document.getElementById('world-map').getAttribute('viewBox'),camera);
