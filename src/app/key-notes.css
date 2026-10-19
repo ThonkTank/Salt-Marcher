@@ -67,3 +67,6 @@
 #packet-note-status{flex:1;min-width:12rem;white-space:pre-wrap}
 #packet-note-status[data-error=true]{color:var(--error,#9a2838)}
 #packet-note-editor #note-gm,#packet-note-editor #note-read-aloud{box-sizing:border-box;width:100%}
+
+/* The map editor has a handoff for its complete reviewed source selection. */
+#note-thread-editor #note-thread-prepare{display:none}

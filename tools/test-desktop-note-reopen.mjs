@@ -19,8 +19,10 @@ const npc = make('Nera die Quartiermeisterin', 'npc', 'Nera verwahrt den Schlüs
 const clue = make('Die wiedergefundenen Fässer', 'rumor', 'Die Lieferung galt als geklärt.\r\n');
 const other = make('Das blaue Siegel', 'rumor', 'Unabhängige offene Frage.\r\n');
 const overview = {...make('Die Aufzug-Verschwörung', 'quest', 'Die Übergabe beobachten.\r\n'), relations: [npc, clue, other].map(n => ({targetId: n.id, label: 'Quelle'}))};
+const previousPlan = {version:1,id:randomUUID(),revision:1,name:'Abend 8 · Nachtwache',scenes:[{id:randomUUID(),title:'Die erste Lieferung',notes:'Historischer Plan bleibt erhalten.\r\n',locationId:null}]};
 const plan = {version: 1, id: randomUUID(), revision: 1, name: 'Abend 9 · Die Rückkehr', scenes: [{id: randomUUID(), title: 'Die Wache erneut befragen', notes: '  Bisherige Planung\r\n', locationId: null}]};
 for (const note of [npc, clue, other, overview]) store.changePreparation({...cmd(null), change: {kind: 'note', expectedRevision: null, note}});
+store.changePreparation({...cmd(null), change: {kind: 'plan', expectedRevision: null, plan:previousPlan}});
 store.changePreparation({...cmd(null), change: {kind: 'plan', expectedRevision: null, plan}});
 const visit = store.session(w.token, plan.id).visits[0];
 store.executeSession(cmd({kind: 'visit', planId: plan.id, expectedRevision: visit.revision, detail: {...visit, noteIds: [other.id]}}));
@@ -29,7 +31,7 @@ store.executeProgress(cmd({kind: 'narrative-state', state: {...narrative.state, 
 store.tutorial('skipped'); store.close();
 const source = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
 const dirty = !!execFileSync('git', ['status', '--porcelain'], {encoding: 'utf8'}).trim(), hashes = {};
-for (const rel of ['main.cjs', 'preload.cjs', 'ui/renderer.js']) hashes[rel] = createHash('sha256').update(await readFile(root + '/.build/desktop/' + rel)).digest('hex');
+for (const rel of ['main.cjs', 'preload.cjs', 'ui/renderer.js','ui/index.html','ui/app.css']) hashes[rel] = createHash('sha256').update(await readFile(root + '/.build/desktop/' + rel)).digest('hex');
 const bus = profile + '/bus', proxy = spawn('xdg-dbus-proxy', [process.env.DBUS_SESSION_BUS_ADDRESS, bus, '--filter', '--talk=org.freedesktop.portal.Desktop', '--talk=org.freedesktop.Notifications'], {stdio: 'ignore'});
 for (let i = 0; i < 100 && !await stat(bus).catch(() => null); i++) await new Promise(r => setTimeout(r, 20));
 let app, page, stage = 'launch'; const launches = [], errors = [], results = [];
@@ -84,9 +86,17 @@ try {
     await page.waitForFunction(() => document.getElementById('status').textContent === 'Quest-/Gerüchtstatus und Belohnung gespeichert.');
     await back(); await card(clue.id).getByText('Gerücht · Offen', {exact: true}).waitFor();
     await card(clue.id).locator('input[type=checkbox]').check();
+    await page.locator('#note-thread-plan').selectOption(plan.id); await page.locator('#note-thread-visit').selectOption(plan.scenes[0].id);
     await edit(npc.id);
+    assert.equal(await page.locator('#note-thread-prepare').isVisible(),false);
     const npcText = 'Nera verwahrt den Schlüssel.\nGespräch ' + scale + ': Sie erwartet die zweite Lieferung.';
-    await page.locator('#note-gm').fill(npcText); await back();
+    await page.locator('#note-gm').fill(npcText);
+    if(scale===1){await page.locator('#note-gm').dispatchEvent('compositionstart');await page.locator('#note-thread-prepare-map').click();await page.waitForFunction(()=>!document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-return').disabled);assert.equal(await page.locator('#note-title').inputValue(),npc.title);await page.locator('#note-gm').dispatchEvent('compositionend');}
+    await page.screenshot({path:out+'/editor-'+scale+'.png'});
+    await page.getByRole('button',{name:'Mit dieser Mappe zum Spielabend…',exact:true}).click();
+    await page.waitForFunction(()=>document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-use').disabled);
+    assert.equal(await page.locator('#note-thread-heading').innerText(),'Notizmappe: '+overview.title);assert.equal(await page.locator('#note-thread-plan').inputValue(),plan.id);assert.equal(await page.locator('#note-thread-visit').inputValue(),plan.scenes[0].id);assert.equal(await page.locator('#note-thread-parent').isVisible(),false);
+    await page.screenshot({path:out+'/handoff-'+scale+'.png'});
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
     assert(!await card(other.id).locator('input[type=checkbox]').isChecked());
     await page.locator('#note-thread-active').check();
@@ -108,7 +118,7 @@ try {
     const check = new CampaignStore(file);
     try {
       const a = check.activate(campaign.id), prep = check.preparation(a.token), original = prep.notes.find(r => r.note.id === clue.id).note;
-      assert.equal(prep.notes.length, 4); assert.equal(prep.plans.length, 1); assert.deepEqual(prep.plans[0], plan);
+      assert.equal(prep.notes.length, 4); assert.equal(prep.plans.length, 2); assert.deepEqual(prep.plans.find(p=>p.id===plan.id),plan);assert.deepEqual(prep.plans.find(p=>p.id===previousPlan.id),previousPlan);
       assert.equal(original.gmNotes.replaceAll('\r\n', '\n'), clueText + '\nFür den nächsten Abend bestätigt.'); assert.equal(original.readAloud, clue.readAloud);
       const dossier = prep.notes.find(r => r.note.id === npc.id).note;
       assert.equal(dossier.gmNotes.replaceAll('\r\n', '\n'), npcText); assert.equal(dossier.readAloud, npc.readAloud);
@@ -116,7 +126,7 @@ try {
       assert.equal(check.narrative(a.token, clue.id).state.status, 'open');
       assert.deepEqual(new Set(check.session(a.token, plan.id).visits[0].noteIds), new Set([other.id, overview.id, npc.id, clue.id]));
     } finally { check.close(); }
-    results.push({scale, reopenedOriginal: true, existingPlanUpdated: true, freshEdit: true});
+    results.push({scale, reopenedOriginal: true, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, freshEdit: true});
   }
   assert.deepEqual(errors, []);
   for (const {pid} of launches) assert.throws(() => process.kill(pid, 0), {code: 'ESRCH'});

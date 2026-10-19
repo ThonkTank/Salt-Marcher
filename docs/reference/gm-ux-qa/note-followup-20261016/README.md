@@ -65,3 +65,48 @@ Der weitere gemeinsame Stand **6e5d6285** trennt freie Dungeon-Platzierung von R
 Die inzwischen terminale [CI 38820907006](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38820907006) auf **fea06154** hatte 2976 Tests: 2974 bestanden, einer fehlgeschlagen, einer übersprungen. Der einzelne Fehler war die Wartebedingung des verzögerten Batch-Quelllesetests. Der unveränderte Test bestand lokal; seine 100 unmittelbaren Eventloop-Durchläufe wurden durch eine begrenzte reale Deadline ersetzt. Vor dem Bestätigen prüft er zusätzlich die tatsächlich offene und bedienbare Auswahl. Die Assertions auf genau zwei übernommene alte Besuche, leeren neuen Plan, leere neue Vorschau und fehlende falsche Erfolgsmeldung bleiben erhalten. [64 Session-/Recoverytests](placement-integration/batch-recovery-tests.txt) bestehen. Der alte CI-Auftrag wurde beobachtet und bis zum regulären Ende belassen; keine Wiederholung dieses alten Kopfes wurde gestartet.
 
 Der aktuelle Konkurrenz- und Zugangsstand ist oben dokumentiert. Der ausgeführte nb-Ablauf ersetzt den fehlenden neuen TiddlyWiki-/HedgeDoc-Schreibversuch als Gegenprobe für diesen konkreten Fall; eine grafische Schreibabnahme dieser Produkte wird weiterhin nicht behauptet.
+
+## Abgeschlossene Spur wieder aufnehmen und denselben Abend weiterverwenden
+
+Am 19.10.2026 wurde diese vollständige Folgeaufgabe auf Basis
+`94e57937c` erneut im nativen Desktop ausgeführt: Fass-Spur wieder öffnen und
+Hinweis ergänzen, Neras Original aktualisieren, dieselbe Dossierauswahl zum
+vorhandenen Abend 9 übernehmen, dessen Mappe lesen, normal schließen, frisch
+wiederfinden und die Spur weiter bearbeiten. Der frühere Abend 8 bleibt erhalten.
+[Versionen, Bundlehashes, Ergebnisse und Prozessenden](reopen-handoff-results.json).
+
+[Vorher](reopen-before-source-only.png) öffnet „Für Spielabend verwenden…“
+innerhalb der Quellenbearbeitung eine eigene Mappe nur für diese Quelle.
+Die ursprüngliche Dossierauswahl liegt dann eine Ebene zurück. Der bereits
+erfolgreiche Weg über „Zur Notizmappe“ bleibt erhalten. Wer stattdessen die
+sichtbare Spielabendaktion benutzt, wechselt den Gegenstand und muss zurück.
+Der vollständige Ausgangsablauf wurde bei beiden Skalierungen benutzt.
+
+[Im Quelleneditor](reopen-editor-200.png) ersetzt jetzt „Mit dieser Mappe zum
+Spielabend…“ den konkurrierenden Einzelquellen-Übergang. Der Button nutzt den
+vorhandenen Flush und Rückweg und [öffnet die Dossierauswahl am gewählten Besuch](reopen-handoff-200.png).
+„Notizmappe öffnen…“ bleibt der ausdrücklich getrennte Weg zur eigenen Mappe der
+Quelle. Es gibt keinen neuen Writer oder automatischen Besuchsauftrag.
+
+Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft beide Skalierungen,
+eine bewusst abgewählte Quelle, den gewählten Abend trotz eines weiteren Plans,
+kontrolliert ausgelöste IME-Sperre und ausdrückliche Fortsetzung, aktuelle Texte
+in der Spielabendmappe sowie Fresh/Weiterbearbeitung. Canonical Store-Reads prüfen
+unveränderte Übersichts-/Siegelnotizen, frühere Planung, vorhandene Besuchsprosa,
+Vorlesetexte und Verweis-IDs. Vier reguläre Exits 0 und abwesende PIDs sind gebunden. Der unabhängige native
+Unterstrang-Ablauf besteht zusätzlich bei 200 % Zoom: eigene Quellenmappe öffnen,
+Original bearbeiten, übergeordnete Auswahl und Besuch wiederherstellen, den
+Unterstrang vorbereiten und nach regulärem Neustart lesen (zwei weitere Exits 0).
+
+[Obsidian nach Neustart und weiterer Quellenbearbeitung](reopen-obsidian-fresh.png)
+verwendet einen eigenen Vault: Dossier mit Originaleinbettungen öffnen, erledigten
+Task im Original wieder öffnen, Fass- und Nera-Original ergänzen, denselben Abend
+mit den Originalen verknüpfen, normal schließen, frisch öffnen und die Spur weiter
+bearbeiten. Der Status wird dort als gewöhnliche Checkbox geführt. Die Aufgabe
+lief mit den installierten Obsidian-1.14.4-App-Dateien unter Test-Electron 44.7.0;
+das qualifiziert nicht den Flatpak-Launcher. Früherer Abend, Dossier und Siegeltext
+bleiben unverändert; es entstanden keine zusätzlichen Notizdateien.
+
+Belegt ist der entfallene Wechsel zu einer Einzelquellen-Mappe. Es wird weder eine
+allgemeine menschliche Präferenz noch eine Paketinstallation oder vollständige
+SMR-AC-03-Abnahme behauptet.

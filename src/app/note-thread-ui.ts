@@ -131,6 +131,7 @@ export class NoteThreadDialog {
   private editorContent = node("div");
   private editorStatus = node("p");
   private returnButton = node("button", "Zur Notizmappe");
+  private prepareMap = node("button", "Mit dieser Mappe zum Spielabend…");
   private chooseSource = node("button", "Diese Quelle vormerken");
   private inspection: { id: string; searchRequest: number } | null = null;
   private editRoot = node("button", "Übersichtsnotiz bearbeiten…");
@@ -174,7 +175,10 @@ export class NoteThreadDialog {
     this.editorStatus.setAttribute("role", "status");
     const editHead = node("div");
     editHead.className = "note-thread-edit-head";
-    editHead.append(this.returnButton, this.chooseSource, this.editorStatus);
+    this.prepareMap.id = "note-thread-prepare-map";
+    this.prepareMap.type = "button";
+    this.prepareMap.onclick = () => void this.prepareCurrentMap();
+    editHead.append(this.returnButton, this.prepareMap, this.chooseSource, this.editorStatus);
     this.editor.append(editHead, this.editorContent);
     this.returnButton.onclick = () => void this.finishEditing();
     this.editRoot.onclick = () => {
@@ -471,6 +475,8 @@ export class NoteThreadDialog {
     this.close.disabled = this.busy;
     this.refresh.disabled = this.busy || this.loading || this.editing !== null;
     this.returnButton.disabled = this.busy;
+    this.prepareMap.hidden = !!this.inspection;
+    this.prepareMap.disabled = this.busy || this.loading || this.editorContent.hidden;
     this.chooseSource.hidden = !this.inspection;
     this.chooseSource.disabled = blocked || !this.inspection || this.editorContent.hidden;
     this.editRoot.disabled = blocked || this.editing !== null;
@@ -958,6 +964,11 @@ export class NoteThreadDialog {
       if (epoch === this.epoch) { this.busy = false; this.controls(); }
     }
     if (saved && current()) await this.finishEditing();
+  }
+  // Editing a member does not change which dossier the GM is preparing.
+  private async prepareCurrentMap() {
+    const epoch = this.epoch;
+    if (await this.finishEditing() && this.current(epoch)) this.placeTarget(true);
   }
   private async finishEditing(refresh = true): Promise<boolean> {
     if (this.busy || !this.editing || !this.owner?.current()) return false;

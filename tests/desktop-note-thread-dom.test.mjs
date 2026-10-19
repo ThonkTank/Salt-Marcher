@@ -188,3 +188,14 @@ for(const destination of [{planId:'missing',visitId:'foreign'},{planId:'P',visit
 test('passive completed checklist items are not rewritten as map source choices',async t=>{
  const x=fixture(t);x.setDetail(async(_token,ref)=>ok({ref,revision:2,note:{...note(ref.id),gmNotes:'- [x] Zeichen erkannt\n- [ ] Liste prüfen'}}));await x.ui.open();await until(()=>x.el('note-thread-sources').querySelector('.markdown-task input'));const box=x.el('note-thread-sources').querySelector('.markdown-task input');assert.equal(box.checked,true);assert.equal(box.disabled,true);x.el('note-thread-include-root').checked=false;x.el('note-thread-include-root').onchange();assert.equal(box.checked,true);assert.equal(box.disabled,true);
 });
+
+
+test('handoff from a source editor retains the whole dossier, deliberate choices and the chosen existing visit',async t=>{
+ const x=fixture(t);x.owner.plans.push({id:'SECOND',name:'Anderer Abend',scenes:[{id:'LATER',title:'Später'}]});await x.ui.open();
+ const excluded=x.el('note-thread-sources').querySelectorAll('input')[1];excluded.checked=false;excluded.onchange();x.select('note-thread-plan','SECOND');x.select('note-thread-visit','LATER');
+ x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);x.el('note-gm').value='Neue Gesprächsnotiz';
+ x.el('note-thread-prepare-map').click();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-use').disabled);
+ assert.equal(x.el('note-thread-heading').textContent,'Notizmappe: Mappe');assert.equal(x.el('note-thread-parent').hidden,true);assert.equal(x.el('note-thread-plan').value,'SECOND');assert.equal(x.el('note-thread-visit').value,'LATER');assert.equal(x.el('note-thread-reading').firstElementChild.className,'note-thread-target');assert.equal(x.used.length,0);
+ assert.equal(x.el('note-thread-sources').querySelectorAll('input')[1].checked,false);x.el('note-thread-use').click();await until(()=>x.used.length===1);
+ assert.equal(x.used[0].selection.rootId,'Mappe');assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),['Nera']);assert.equal(x.used[0].target.visitId,'LATER');
+});

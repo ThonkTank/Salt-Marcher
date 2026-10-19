@@ -55,6 +55,10 @@ Geschlossene Spuren lassen sich nach Abschalten von „Geschlossene Spuren
 ausblenden“ im Originaleditor wieder öffnen und ergänzen. Die Notizmappe hält
 eine revisionsgebundene Auswahl; Checkboxen, Anzahl und Besuchsauftrag werden
 daraus abgeleitet. Geänderte ungeprüfte Quellen sind nicht vorausgewählt.
+Im eingeblendeten Quelleneditor führt „Mit dieser Mappe zum Spielabend…“ über
+den vorhandenen Flush zur bereits geprüften Dossierauswahl und ihrem Ziel.
+Die eigene Mappe einer Quelle bleibt separat über „Notizmappe öffnen…“ erreichbar.
+[Native Wiederaufnahme und Obsidian-Gegenprobe](../../reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
 Close/Fresh bei 100 und 200 %. Das ist keine vollständige SMR-AC-03-Abnahme.

@@ -366,11 +366,12 @@ test('direct evening handoff reviews sources before prose and writes only the ap
  await x.ui.openPreparedNote(x.ids.borin);x.el('note-thread-open').click();await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-source-choices').hidden,true);assert.notEqual(x.el('note-thread-reading').firstElementChild,target);
 });
 
-test('direct handoff cannot bypass composition or open a different nested source on failure',async t=>{
- const x=await fixture(t);await nestedThread(x);const field=x.el('note-gm');field.dispatchEvent(new x.window.Event('compositionstart',{bubbles:true}));field.value='Noch nicht fertig';field.dispatchEvent(new x.window.Event('input'));x.el('note-thread-prepare').click();await settle();
+test('map handoff preserves the dossier after editing its source and cannot bypass composition',async t=>{
+ const x=await fixture(t);await nestedThread(x);const field=x.el('note-gm');field.dispatchEvent(new x.window.Event('compositionstart',{bubbles:true}));field.value='Noch nicht fertig';field.dispatchEvent(new x.window.Event('input'));x.el('note-thread-prepare-map').click();await settle();
  assert.equal(x.el('note-thread-heading').textContent,'Notizmappe: Borin');assert.equal(x.el('note-thread-editor').hidden,false);assert.equal(x.writes.length,0);
- field.dispatchEvent(new x.window.Event('compositionend',{bubbles:true}));x.el('note-thread-prepare').click();await until(()=>x.el('note-thread-heading').textContent==='Notizmappe: Ada'&&!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-reading').firstElementChild.className,'note-thread-target');assert.equal(x.el('note-title').value,'Ada');assert.equal(x.writes.length,1);
- x.el('note-thread-parent').click();await until(()=>x.el('note-thread-heading').textContent==='Notizmappe: Borin'&&!x.el('note-thread-parent').disabled);assert.equal(x.el('note-thread-source-choices').hidden,true);
+ field.dispatchEvent(new x.window.Event('compositionend',{bubbles:true}));x.el('note-thread-prepare-map').click();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-use').disabled);
+ assert.equal(x.el('note-thread-heading').textContent,'Notizmappe: Borin');assert.equal(x.el('note-thread-reading').firstElementChild.className,'note-thread-target');assert.equal(x.el('note-title').value,'Borin');assert.equal(x.writes.length,1);assert.equal(x.el('note-thread-parent').hidden,true);
+ assert.equal(x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.ada).note.gmNotes,'Noch nicht fertig');
 });
 test('thread preparation uses the selected new plan name and stores references without copying source prose',async t=>{
  const x=await fixture(t),selection=threadSelection(x);await x.activate();await x.ui.prepareNextVisit(null,{title:'Offene Spur verfolgen',notes:'',locationId:null,newPlan:true,newPlanName:'Abend 9 · Nachtwache',noteIds:[x.ids.borin,x.ids.ada],noteThread:selection});
