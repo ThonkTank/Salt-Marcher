@@ -330,6 +330,7 @@ export class TerritoryWorkbench {
         this.host.redraw();
       }
     }
+    this.host.redraw();
   }
   private layerControls() {
     const select = this.input<HTMLSelectElement>("territory-layer"),
