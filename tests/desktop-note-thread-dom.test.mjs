@@ -54,6 +54,30 @@ test('wrong identity or mismatched note revision blocks preparation without eras
 test('failed additional page preserves old sources and explicit refresh recovers',async t=>{
  const x=fixture(t);x.setRead(async(_t,_id,offset)=>offset?{ok:false,error:'Seite offline'}:ok({root:x.root,entries:[x.all[0]],total:3,next:40}));await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-status').textContent==='Seite offline');assert.match(x.el('note-thread-sources').textContent,/Nera/);assert.equal(x.el('note-thread-use').disabled,true);x.setRead(async()=>ok({root:x.root,entries:x.all,total:3,next:null}));x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,3);
 });
+test('returning from a later source restores loaded pages, reviewed selection and the existing destination',async t=>{
+ const x=fixture(t),later=entry('Späte Spur','open');x.all.push(later);
+ x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:40}));
+ await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);
+ const source=()=>[...x.el('note-thread-sources').querySelectorAll('article')].find(c=>c.dataset.noteId===later.id);
+ const box=source().querySelector('input');box.checked=true;box.onchange();
+ [...source().querySelectorAll('button')].find(b=>b.textContent==='Notiz bearbeiten…').onclick();await until(()=>!x.el('note-thread-return').disabled);
+ x.setBack(async current=>{later.stamp='reviewed'.padEnd(64,'b');return current();});
+ x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-use').disabled);
+ assert(source(),'the reviewed source must remain visible after returning');assert.equal(source().querySelector('input').checked,true);
+ assert.deepEqual(x.calls.map(c=>c[2]),[0,40,0,40]);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ x.el('note-thread-use').onclick();await until(()=>x.used.length===1);assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),['Nera','Offene Spur',later.id]);assert.equal(x.used[0].selection.entries.at(-1).stamp,later.stamp);
+});
+test('a pending restored page blocks handoff and cannot populate a newly opened map',async t=>{
+ const x=fixture(t),later=entry('Späte Spur','open'),wait=deferred();let restoring=false;
+ x.setRead(async(_t,_id,offset)=>offset?(restoring?wait.promise:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:40}));
+ await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);
+ x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);restoring=true;
+ x.el('note-thread-return').onclick();await until(()=>x.calls.length===4);assert.equal(x.el('note-thread-use').disabled,true);
+ let checks=0;x.setCheck(async()=>{checks++;return ok();});x.el('note-thread-use').onclick();await tick();assert.equal(checks,0);assert.equal(x.used.length,0);
+ x.ui.reset();x.setRead(async()=>ok({root:x.root,entries:[x.all[0]],total:1,next:null}));await x.ui.open();
+ wait.resolve(ok({root:x.root,entries:[later],total:2,next:null}));await tick();await tick();
+ assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);assert.doesNotMatch(x.el('note-thread-sources').textContent,/Späte Spur/);assert.equal(x.el('note-thread-use').disabled,false);assert.equal(x.used.length,0);
+});
 test('a root revision change between pages cannot silently combine two different collections',async t=>{
  const x=fixture(t);x.setRead(async(_t,_id,offset)=>ok({root:{...x.root,revision:offset?3:2},entries:[x.all[offset?1:0]],total:3,next:offset?null:40}));await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-status').textContent.includes('Übersichtsnotiz geändert'));assert.equal(x.el('note-thread-use').disabled,true);assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);
 });
