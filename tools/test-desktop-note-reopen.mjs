@@ -82,10 +82,16 @@ async function back() {
 }
 try {
   for (const scale of [1, 2]) {
+    // Each scale must really reopen a closed source, including after the prior fresh edit.
+    const reset = new CampaignStore(file);
+    try {
+      const current = reset.activate(campaign.id), narrative = reset.narrative(current.token, clue.id);
+      if (narrative.state.status !== 'closed') reset.executeProgress({commandId:randomUUID(),campaignId:campaign.id,token:current.token,action:{kind:'narrative-state',state:{...narrative.state,status:'closed'},expectedRevision:narrative.state.revision,expectedNoteRevision:narrative.noteRevision}});
+    } finally { reset.close(); }
     stage = 'reopen and update originals at ' + scale; await launch(scale);
     await page.locator('#note-thread-active').uncheck(); await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
     await page.getByRole('button',{name:'Quellenauswahl leeren',exact:true}).click();await allSources();await card(clue.id).waitFor();
-    if (scale === 1) assert.match(await card(clue.id).innerText(), /Geschlossen/);
+    assert.match(await card(clue.id).innerText(), /Geschlossen/);
     // Explicitly exclude an unrelated source. Its existing visit link must survive.
     await card(npc.id).locator('input[type=checkbox]').check();
     assert.deepEqual(await page.locator('#note-thread-sources input[type=checkbox]').evaluateAll(ns=>ns.filter(n=>n.checked).map(n=>n.value)),[npc.id]);assert(await page.locator('#note-thread-include-root').isChecked());
