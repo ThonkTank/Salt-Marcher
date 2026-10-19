@@ -620,6 +620,8 @@ test('a cropped room keeps its complete key centered, independently of polygon w
 
 test('output range commits on release, preserves author data, supports two corners and cancels only its unfinished selection',async t=>{
  const f=fixture(t),area=f.document.createElement('p');area.id='atlas-output-area';f.document.body.append(area);
+ // This range probe bypasses the constructor; provide its export-mode controls.
+ f.document.body.insertAdjacentHTML('beforeend','<select id="atlas-export-kind"><option value="image" selected>Bild</option><option value="campaign">Bearbeitbare Kampagne</option></select><section id="atlas-output-editable"></section><div id="atlas-output-image"></div><button id="atlas-output-save-campaign"></button>');
  const initial={x:-2,y:-3,width:30,height:20};let draws=0;
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true,stopZoom(){}},reference:{active:false},exportOpen:true,exportChoosing:true,exporting:false,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
  const event=(x,y)=>({button:0,pointerId:7,clientX:x,clientY:y});
