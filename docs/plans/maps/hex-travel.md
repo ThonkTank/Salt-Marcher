@@ -72,6 +72,8 @@ Ablaufbeleg und keine vollständige Provider-/Großrouten-/Plattformabnahme.
 `world-ui.ts` besitzt die bestehende Karten-/Reisekonsole. Geordnete Wegpunkte
 führen über `world-model.findRoute` zu benachbarten Hexschritten; die Vorschau
 zeigt Strecke, Dauer und Wetterabschnitte. Der GM nimmt sie ausdrücklich an.
+Die Konsole erlaubt bis zu 20 Wegpunkte plus Reiseziel; offene Routeneingaben
+bleiben lokale Entwürfe.
 `storage/world.ts` bindet Map-/Clock-/Position-/Membershiprevision, zugewiesene
 Figuren, Wetter-/Kalenderstand und bei Gruppentempo die Bewegungswerte.
 `travel-pace.ts` verwendet die langsamste aktive zugewiesene Figur; fehlende
