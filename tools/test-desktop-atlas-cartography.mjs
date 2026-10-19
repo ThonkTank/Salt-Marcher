@@ -161,8 +161,16 @@ const ready = async (page) => {
 };
 try {
   app = await _electron.launch({
-    executablePath: path.join(root, "node_modules/electron/dist/electron"),
-    args: [path.join(root, ".build/desktop/main.cjs"), "--data-dir", profile],
+    executablePath: process.env.ATLAS_PACKAGE
+      ? path.join(process.env.ATLAS_PACKAGE, "electron")
+      : path.join(root, "node_modules/electron/dist/electron"),
+    args: [
+      ...(process.env.ATLAS_PACKAGE
+        ? []
+        : [path.join(root, ".build/desktop/main.cjs")]),
+      "--data-dir",
+      profile,
+    ],
     timeout: 30000,
   });
   const page = await app.firstWindow();
