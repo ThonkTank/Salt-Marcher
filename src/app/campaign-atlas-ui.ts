@@ -869,7 +869,7 @@ export class CampaignAtlasWorkbench {
     this.baseGeometry=null;this.render();
     if(open&&this.exportDungeon){const b=this.dungeonOutputBox();if(b)this.frameOutput(b);}
     this.exportAreaStatus();
-    get(open?'atlas-output-choose':'atlas-output-open').focus();
+    get(open?'atlas-export-kind':'atlas-output-open').focus();
   }
   private async saveEditableCampaign(){
     if(this.campaignSaving||this.exporting||!this.owner)return;
