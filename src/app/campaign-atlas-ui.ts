@@ -113,7 +113,7 @@ export class CampaignAtlasWorkbench {
   private pendingTravel:
     | import("./atlas-travel-contracts").AtlasTravelCommand
     | null = null;
-  private family: Family = "terrain";
+  private family: Family = "navigation";
   private selection: Selection = null;
   private cityId: string | null = null;
   private scopeId: string | null = null;
@@ -476,11 +476,14 @@ export class CampaignAtlasWorkbench {
       prepare:async()=>await this.flush()&&await this.opts.flush(),
       error:e=>this.error(e),
       navigation:async pan=>{if(!await this.flush()||!await this.opts.flush())return;await this.setFamily('navigation',false);this.root.dataset.panMode=String(pan);this.layout.sync();},
-      tool:async(family,id,value)=>{
+      tool:async(family,id,value,settings)=>{
         if(!await this.flush()||!await this.opts.flush())return false;
         if(this.exportOpen)await this.setOutput(false);
         await this.setFamily(family,false);if(this.family!==family)return false;
-        const input=get<HTMLSelectElement>(id);input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}));
+        const input=get<HTMLSelectElement>(id);
+        for(const [key,setting]of Object.entries(settings??{}))get<HTMLSelectElement>(key).value=setting;
+        input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}));
+        for(const key of Object.keys(settings??{}))get(key).dispatchEvent(new Event('change',{bubbles:true}));
         if(id==='drawing-tool'&&value==='room-rectangle'&&!get('atlas-room-draw').hidden)get('atlas-room-draw').click();
         this.render();return input.value===value;
       }
