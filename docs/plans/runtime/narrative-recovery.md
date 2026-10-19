@@ -79,6 +79,13 @@ Diese Basisbindung benötigt weder Schemawechsel noch automatisches Legacyrewrit
 
 ## Reichweite der vorhandenen Belege
 
+Die [native Bedienprobe](../../../tools/test-desktop-narrative-recovery.mjs)
+prüft fehlgeschlagenes Lesen ohne falsche Abschlussaktion, rohe Entwürfe über
+Neustart sowie deren Korrektur und einmaligen Questabschluss: Mitwirkende im
+gemeinsamen Dialog ausdrücklich ändern, XP aufrunden und den unverteilten Schatz
+nach erneutem Neustart wiederfinden. Fehler-/Rohwertprüfung läuft bei 100%,
+Wiederaufnahme, Abschluss und Schatzsuche bei 200%.
+
 Die genannten Store-/DOMtests belegen Teilverträge für Integrität, Basen,
 Rohwerterhalt, Replay und Kopie. Vollständige XP-/Loot-/History- sowie native
 Abschluss-/Recoveryabnahme bleiben offen.
