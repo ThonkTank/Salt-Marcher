@@ -95,8 +95,11 @@ Gegenstände. Danach werden Katalogsuche, ausgewählter Shop am Rückweg und
 erneutes Öffnen der Verwaltungsfelder ohne Datenänderung tatsächlich bedient. Vier normale App-Ausgänge in den abschließenden Zoomläufen.
 `tools/test-desktop-shop-switch.mjs` besteht weiterhin die verzögerten Wechsel,
 Lesefehler/Wiederholen, korrigierbaren Entwürfe, geschützte CRLF-Notizen und
-101-Kupfer-Rundung mit Teilverkauf/Neustart. 55 gezielte Store-/DOMtests bestanden;
-die 17 Shopfälle wurden nach der letzten Beschriftungsänderung erneut bestanden.
+101-Kupfer-Rundung mit Teilverkauf/Neustart. 56 gezielte Store-/DOMtests bestanden, darunter 18 Shopfälle.
+Gemeinsame Ladefehler und Wiederholen stehen außerhalb beider Teilbereiche:
+Der eigene IPC-Fehler wird auch in der Shopansicht bei
+[200 % sichtbar und wiederholbar](2026-10-19-shop-trader-context-error-200.png)
+geprüft; anschließend läuft dieselbe vollständige Handelsaufgabe weiter.
 
 Die gleiche GM-Aufgabe wurde tatsächlich in der öffentlichen
 [Foundry-PF2e-Demo](https://demo.foundryvtt.com/) unter Foundry 14 Build 365 mit
