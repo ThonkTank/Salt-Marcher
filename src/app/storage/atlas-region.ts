@@ -171,19 +171,16 @@ export class AtlasRegionReader {
    const local=bounds(corners(searchBox??q.box).map(p=>inverse(p,f)));
    if(b.kind==='city'){
     let h:CityHeader;try{h=readCityHeader(this.db,this.campaign,b.ownerId);}catch{continue;}
-    if(!overlap(bounds(corners({x:0,y:0,width:h.width,height:h.height}).map(p=>at(p,f))),q.box))continue;
+
     metadata?.(b,f,h);
-    if(mpp>h.width/25){emit({value:{id:h.id,name:h.name},points:[{x:h.width/2,y:h.height/2}],stroke:mpp*12},f,'city-marker',b,h);continue;}
-    emit({value:{id:h.id},polygons:[{outer:corners({x:0,y:0,width:h.width,height:h.height}),holes:[]}]},f,'city-paper',b,h);
     for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=JSON.parse(r.payload);emit(s,f,'unit',b,h);}
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
     const extent=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,floor)??{x:null};
-    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);if(b.parent==='world'&&overlap({x:f.x,y:f.y,width:0,height:0},q.box)){metadata?.(b,f);emit({value:{id:b.ownerId},points:[{x:0,y:0}],stroke:mpp*12},f,'scope-marker',b);}continue;}
+    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
     if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
     metadata?.(b,f);
-    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
     for(const r of this.candidates('room','',b.ownerId,floor,local))try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch{if(this.countFaults)this.readFaults++;}
     for(const r of this.candidates('element','',b.ownerId,floor,local))emit(JSON.parse(r.payload),f,'element',b);
    }

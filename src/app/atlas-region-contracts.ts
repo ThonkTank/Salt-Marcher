@@ -15,6 +15,7 @@ export interface AtlasRegionQuery {
  slice:number|null;roofs:boolean;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
+ territories?:LandscapeRecord[]; regionLayers?:import('./atlas-territory').AtlasRegionLayer[];
  state:'ready'|'error'; records:LandscapeRecord[]; tiles:import('./landscape-raster').LandscapeRaster[];
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
 }

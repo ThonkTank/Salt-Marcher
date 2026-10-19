@@ -1,3 +1,4 @@
+import {readRegionLayers,executeTerritory} from './atlas-territory';
 import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
@@ -300,19 +301,19 @@ export class CampaignStore {
     const cam=this.guard(token);
     return this.db.transaction(()=>{
       const root=atlasRoot(this.db,cam), b=this.db.prepare('SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=?').get(cam);
-      return {campaignId:cam,token,revision:root.revision,...atlasHistoryState(this.db,cam),
+      return {regionLayers:readRegionLayers(this.db,cam),campaignId:cam,token,revision:root.revision,...atlasHistoryState(this.db,cam),
         counts:{rooms:this.db.prepare("SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)").get(cam).n,cities:this.db.prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?').get(cam).n,landscape:this.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(cam).n},
         landscapeBounds:b.x===null?null:{x:b.x,y:b.y,width:b.xmax-b.x,height:b.ymax-b.y}};
     })();
   }
   atlasObjects(token:string,q:import('../campaign-atlas-contracts').AtlasObjectQuery):import('../campaign-atlas-contracts').AtlasObjectPage {
     const cam=this.guard(token);
-    if(!q||!['room','city','landscape','scope'].includes(q.kind)||typeof q.text!=='string'||q.text.length>200||!Number.isSafeInteger(q.limit)||q.limit<1||q.limit>200)throw new Error('Atlassuche prüfen.');
+    if(!q||!['room','city','landscape','scope','territory'].includes(q.kind)||typeof q.text!=='string'||q.text.length>200||!Number.isSafeInteger(q.limit)||q.limit<1||q.limit>200)throw new Error('Atlassuche prüfen.');
     return this.db.transaction(()=>{
       const revision=atlasRoot(this.db,cam).revision,c=q.cursor,fence=this.db.prepare('SELECT total_changes() changes').get().changes; // includes metadata edits outside Atlas commands
       if(c&&(c.token!==token||c.fence!==fence||!Number.isSafeInteger(c.revision)||c.revision!==revision||c.kind!==q.kind||c.text!==q.text||typeof c.after!=='string'))throw new Error('Atlassuche inzwischen geändert. Suche erneut beginnen.');
       const text=q.text.normalize('NFC').toLocaleLowerCase('de'), room=q.kind==='room';
-      const sql=q.kind==='scope'?`SELECT id,name,0 revision FROM scope WHERE campaign_id=? AND id>? AND instr(atlas_lower(name),?)>0 ORDER BY id LIMIT ?`:q.kind==='landscape'?`SELECT a.id,a.revision,coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name')) name FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id>? AND json_extract(a.payload,'$.kind')!='patch' AND coalesce(l.trashed,0)=0 AND instr(atlas_lower(coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name'))),?)>0 ORDER BY a.id LIMIT ?`:room?`SELECT r.id,r.name,r.number,r.revision,r.scope_id scopeId,r.floor_id floorId FROM room r WHERE r.campaign_id=? AND r.id>? AND instr(atlas_lower(r.name||' '||r.number),?)>0 AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY r.id LIMIT ?`:`SELECT id,json_extract(payload,'$.name') name,revision FROM city_document WHERE campaign_id=? AND id>? AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`;
+      const sql=q.kind==='territory'?`SELECT id,revision,json_extract(payload,'$.name') name,json_extract(payload,'$.territory.parentId') parentId,json_extract(payload,'$.territory.layerId') layerId FROM atlas_landscape WHERE campaign_id=? AND id>? AND json_extract(payload,'$.kind')='territory' AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`:q.kind==='scope'?`SELECT id,name,0 revision FROM scope WHERE campaign_id=? AND id NOT IN ('atlas-geometry-dungeon') AND id>? AND instr(atlas_lower(name),?)>0 ORDER BY id LIMIT ?`:q.kind==='landscape'?`SELECT a.id,a.revision,coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name')) name FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id>? AND json_extract(a.payload,'$.kind') NOT IN ('patch','region-layer','place') AND coalesce(l.trashed,0)=0 AND instr(atlas_lower(coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name'))),?)>0 ORDER BY a.id LIMIT ?`:room?`SELECT r.id,r.name,r.number,r.revision,r.scope_id scopeId,r.floor_id floorId FROM room r WHERE r.campaign_id=? AND r.id>? AND instr(atlas_lower(r.name||' '||r.number),?)>0 AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY r.id LIMIT ?`:`SELECT id,json_extract(payload,'$.name') name,revision FROM city_document WHERE campaign_id=? AND id NOT IN ('atlas-geometry-city') AND id>? AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`;
       const items=this.db.prepare(sql).all(cam,c?.after??'',text,q.limit+1),more=items.length>q.limit;items.length=Math.min(q.limit,items.length);
       return{campaignId:cam,token,revision,items,next:more?{token,fence,revision,after:items.at(-1)!.id,kind:q.kind,text:q.text}:null};
     })();
@@ -423,6 +424,7 @@ export class CampaignStore {
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
+      if(a.kind==='landscape-territory'||a.kind==='landscape-region-layer'||a.kind==='landscape-territory-delete'){executeTerritory(this.db,cam,a);return;}
       if(a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
         const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
@@ -479,6 +481,21 @@ export class CampaignStore {
       }
       if(a.kind==='entrance'){putAtlasEntrance(this.db,this.campaignAtlas(c.token),a.entrance);return;}
       if(a.kind==='bind'){bindAtlas(this.db,cam,a.binding,a.expectedRevision);return;}
+      if(a.kind==='geometry-context'){
+        if(!['city','dungeon'].includes(a.geometry))throw Error('Geometrieart prüfen.');
+        const id='atlas-geometry-'+a.geometry;
+        if(a.geometry==='city'){
+          if(!this.db.prepare('SELECT 1 FROM city_document WHERE campaign_id=? AND id=?').get(cam,id)){
+            const locationId='atlas-geometry-location';
+            if(!this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=?').get(cam,locationId))this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,'Atlas','poi',[randomUUID(),randomUUID()]),expectedRevision:null}});
+            this.executeCity({commandId:c.commandId+':geometry',token:c.token,campaignId:cam,cityId:id,expectedRevision:0,action:{kind:'create',header:{id,locationId,revision:1,name:'Atlasgeometrie',width:10000,height:10000,paper:'#e9dfc8',roof:'#9c604c'}}});
+          }
+        }else if(!this.db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(cam,id)){
+          this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam,id,'Atlasräume');this.db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(cam,id,'ground','Erdgeschoss',0);
+        }
+        if(!atlasBindings(this.db,cam).some(b=>b.kind===a.geometry&&b.ownerId===id))bindAtlas(this.db,cam,{id:'atlas-frame-'+a.geometry,kind:a.geometry,ownerId:id,parent:'world',parentId:null,x:0,y:0,angle:0,revision:0},null);
+        return{id};
+      }
       if(a.kind==='city-create'){
         const id=randomUUID(),locationId=randomUUID();this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'city',[randomUUID(),randomUUID()]),expectedRevision:null}});
         this.executeCity({commandId:c.commandId+':city',token:c.token,campaignId:cam,cityId:id,expectedRevision:0,action:{kind:'create',header:{id,locationId,revision:1,name:a.name,width:a.width,height:a.height,paper:'#e9dfc8',roof:'#9c604c'}}});

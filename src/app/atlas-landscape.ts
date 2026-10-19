@@ -32,7 +32,9 @@ export type LandscapeField =
 export interface LandscapeRecord {
   id: string;
   revision: number;
-  kind: "patch" | "river" | "road" | "reference" | "place";
+  kind: "patch" | "river" | "road" | "reference" | "place" | "territory" | "region-layer";
+  territory?: import("./atlas-territory").AtlasTerritory;
+  regionLayer?: import("./atlas-territory").AtlasRegionLayer;
   name: string;
   points: Point[];
   polygons: Polygon[];
@@ -51,6 +53,10 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:"landscape-territory";record:LandscapeRecord;expectedRevision:number|null}
+  | {kind:"landscape-region-layer";record:LandscapeRecord;expectedRevision:number|null}
+  | {kind:"landscape-territory-delete";id:string;expectedRevision:number}
+
   | {
       kind: "landscape-batch";
       records: {

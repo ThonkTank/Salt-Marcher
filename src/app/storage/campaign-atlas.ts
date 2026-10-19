@@ -403,9 +403,9 @@ function checkPositions(db: any, cam: string) {
   }
 }
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
-  'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
+  'geometry-context':true,'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
   'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
-  'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
+  'landscape-territory':true,'landscape-region-layer':true,'landscape-territory-delete':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
 export function executeAtlasWrite(
   db: any,

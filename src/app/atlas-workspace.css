@@ -140,3 +140,10 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #key-dialog.has-key-reference .key-main-editor{display:none}
 #campaign-atlas #key-dialog.has-key-reference #key-save-status{position:static}
 #campaign-atlas #key-reference-panel .key-reference-head{position:sticky;top:0;z-index:4;background:#fafbfc}
+/* Regions share the Atlas tool dock and keep names editable at every zoom level. */
+#territory-layers>div{display:grid;grid-template-columns:20px minmax(0,1fr) 30px;gap:4px;align-items:center;margin:4px 0}
+#territory-layers input{min-width:0;width:100%}
+#territory-list{max-height:180px;overflow:auto;display:grid;gap:2px}
+#territory-list button{text-align:left;white-space:normal;overflow-wrap:anywhere}
+#atlas-territory-tools textarea{width:100%;box-sizing:border-box}
+#campaign-atlas[data-editor-section=regions] #atlas-tool-fields{display:none}
