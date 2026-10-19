@@ -57,7 +57,7 @@ try{
   assert(await page.locator('#atlas-terrain').isHidden());assert(await page.locator('#atlas-hex-level').isHidden());
 
   await page.locator('#campaign-map').focus();await page.keyboard.press('Alt+p');assert.equal(await page.locator('#party-popover').evaluate(n=>n.matches(':popover-open')),false);
-  const camera=()=>page.locator('#campaign-map').evaluate(n=>{const b=JSON.parse(n.dataset.atlasView),r=n.getBoundingClientRect();return{cx:b.x+b.width/2,cy:b.y+b.height/2,mpp:b.width/r.width};});
+  const camera=async()=>{await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));return page.locator('#campaign-map').evaluate(n=>{const b=JSON.parse(n.dataset.atlasView),r=n.getBoundingClientRect();return{cx:b.x+b.width/2,cy:b.y+b.height/2,mpp:b.width/r.width};});};
   const beforeTools=await camera();
   await page.locator('#atlas-select').click();await atlasCanvasReady(page);
   assert(await page.locator('#atlas-tool-settings').isVisible());
@@ -91,7 +91,7 @@ try{
   await chooseSection('terrain');
   // A real landscape gesture and shared history through the new direct route.
   if(await page.locator('#atlas-secondary').isVisible())await page.locator('#atlas-secondary-close').click();
-  await chooseTool('land','land-add');await page.locator('#land-radius').fill('2');
+  await chooseTool('land','land-add');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-add');await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-erase');await page.locator('#land-radius').fill('2');
   const paintBox=await page.locator('#campaign-map').boundingBox();
   await page.mouse.move(paintBox.x+paintBox.width*.2,paintBox.y+paintBox.height*.3);await page.mouse.down();await page.mouse.move(paintBox.x+paintBox.width*.3,paintBox.y+paintBox.height*.35,{steps:5});await page.mouse.up();
   await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);
@@ -154,7 +154,7 @@ try{
   assert(!await page.evaluate(()=>document.body.classList.contains('atlas-workspace')));await page.locator('body').click({position:{x:10,y:10}});await page.keyboard.press('Alt+p');assert(await page.locator('#party-popover').evaluate(n=>n.matches(':popover-open')));await page.keyboard.press('Alt+p');
   await page.locator('#live-tab').click();await page.locator('#live').waitFor({state:'visible'});assert(await page.locator('#party-shortcut').isVisible());result.runtimeOutsideEditor=true;
   await page.locator('#atlas-tab').click();await atlasCanvasReady(page);await frame('returned');
-  for(const [w,h,z]of [[1280,880,1],[1600,900,1],[1920,1080,1],[640,480,1],[1280,880,2]]){const f=await frame('viewport-'+w+'-'+z,w,h,z);assert(!f.viewport.scroll);assert(await page.locator('#atlas-group-tools,.atlas-dock-body,#atlas-tool-groups').evaluateAll(nodes=>nodes.every(n=>n.scrollWidth<=n.clientWidth)),'left controls fit');if(z===1&&w>=1200)assert(f.ratio>=.55);
+  for(const [w,h,z]of [[1280,880,1],[1600,900,1],[1920,1080,1],[640,480,1],[1280,880,2]]){const f=await frame('viewport-'+w+'-'+z,w,h,z);assert(!f.viewport.scroll);assert(await page.locator('#atlas-group-tools,.atlas-dock-body,#atlas-tool-groups').evaluateAll(nodes=>nodes.every(n=>n.scrollWidth<=n.clientWidth)),JSON.stringify(await page.locator('#atlas-group-tools,.atlas-dock-body,#atlas-tool-groups').evaluateAll(nodes=>nodes.map(n=>({id:n.id||n.className,w:n.clientWidth,scroll:n.scrollWidth,wide:[...n.querySelectorAll('*')].filter(c=>c.checkVisibility()&&c.getBoundingClientRect().right>n.getBoundingClientRect().right).map(c=>({id:c.id,tag:c.tagName,w:c.getBoundingClientRect().width,right:c.getBoundingClientRect().right}))})))));if(z===1&&w>=1200)assert(f.ratio>=.55);
    await page.locator('#atlas-reference-open').click();await page.locator('#atlas-reference-search').fill('Deutschland');await page.locator('#atlas-reference-results button').filter({hasText:/^Deutschland ·/}).first().click();await atlasCanvasReady(page);assert(await page.locator('#atlas-secondary-content').evaluate(n=>n.scrollWidth<=n.clientWidth),'right controls fit');assert(await page.locator('#atlas-create-city').isHidden());
    if(w/z<1324){assert.equal(await page.locator('#campaign-atlas').getAttribute('data-overlay'),'true');assert.deepEqual(await page.locator('#campaign-map').boundingBox(),f.box);}
    await page.locator('#atlas-secondary-close').click();await page.locator('#campaign-map').focus();await page.keyboard.press('Escape');await atlasCanvasReady(page);}
