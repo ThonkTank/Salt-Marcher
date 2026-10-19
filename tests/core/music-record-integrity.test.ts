@@ -1,12 +1,18 @@
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
-import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
+import {mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import type {MusicCommand} from '../../src/app/music-contracts';
+
+function addAudio(f:ReturnType<typeof fixture>,name:string){
+ const bytes=Buffer.from(name),sha256=checksum(name);mkdirSync(join(f.root,'audio'),{recursive:true});
+ writeFileSync(join(f.root,'audio',sha256+'.wav'),bytes);
+ return f.store.ingestAudio(f.token,{sha256,extension:'.wav',bytes:bytes.length,mime:'audio/wav',originalName:name+'.wav'});
+}
 
 const checksum=(payload:string)=>createHash('sha256').update(payload).digest('hex');
 function fixture(){
@@ -73,5 +79,41 @@ test('music backup rejects an invalid persisted playback position',async()=>{
  try{
   f.db.prepare('INSERT INTO music_position VALUES(?,?,?)').run(f.campaignId,'stale-playback',-1);
   await assert.rejects(f.store.backup(join(f.root,'invalid-position.sqlite')),/Musikwiedergabeposition/);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('audio pages isolate damaged rows without moving the cursor and recheck media for export',()=>{
+ const f=fixture();
+ try{
+  const assets=Array.from({length:53},(_,i)=>addAudio(f,'Titel '+i)),query={search:'',kind:'' as const,includeTrashed:false,after:null as string|null};
+  const saved=f.db.prepare('SELECT * FROM audio_asset WHERE id=?'),corrupt=saved.get(assets[10]!.id),wrong=saved.get(assets[20]!.id);
+  f.db.prepare('UPDATE audio_asset SET checksum=? WHERE id=?').run('damaged',corrupt.id);
+  const payload=JSON.stringify({...JSON.parse(wrong.payload),id:'foreign-asset'});
+  f.db.prepare('UPDATE audio_asset SET payload=?,checksum=? WHERE id=?').run(payload,checksum(payload),wrong.id);
+  const missing=assets[30]!,file=join(f.root,'audio',missing.media.sha256+'.wav');rmSync(file);
+  const first=f.store.audioAssets(query),second=f.store.audioAssets({...query,after:first.next});
+  assert.deepEqual(first.items.map(a=>a.id),assets.slice(0,50).filter((_,i)=>i!==10&&i!==20).map(a=>a.id));
+  assert.equal(first.problems.length,2);assert.ok(first.problems.some(p=>p.startsWith(corrupt.id+':')));assert.ok(first.problems.some(p=>p.startsWith(wrong.id+':')));
+  assert.equal(first.items.find(a=>a.id===missing.id)!.available,false);
+  assert.deepEqual(second.items.map(a=>a.id),assets.slice(50).map(a=>a.id));assert.equal(second.next,null);
+  assert.throws(()=>f.store.audioLibrary(f.token),/beschädigt/);
+  for(const row of [corrupt,wrong])f.db.prepare('UPDATE audio_asset SET payload=?,checksum=? WHERE id=?').run(row.payload,row.checksum,row.id);
+  let library=f.store.audioLibrary(f.token);assert.deepEqual(library.assets,assets.map(a=>f.store.audioAsset(a.id)));assert.equal(library.assets[30]!.available,false);
+  writeFileSync(file,Buffer.from(missing.name));assert.equal(f.store.audioAssets(query).items.find(a=>a.id===missing.id)!.available,true);
+  writeFileSync(file,'changed size');library=f.store.audioLibrary(f.token);assert.equal(library.assets[30]!.available,false);
+ }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('automatic song and ambience scans skip invalid, failed and missing media rows',()=>{
+ const f=fixture();
+ try{
+  const song=addAudio(f,'Song'),rain=addAudio(f,'Nacht'),brokenSong=addAudio(f,'Defekter Song'),brokenLayer=addAudio(f,'Defekte Nacht'),missing=addAudio(f,'Fehlender Song'),failed=addAudio(f,'Fehlgeschlagener Song');
+  for(const asset of [rain,brokenLayer])f.store.executeMusic({commandId:randomUUID(),campaignId:f.campaignId,token:f.token,action:{kind:'asset',asset:{...asset,kind:'ambience',vibes:['Nacht']},expectedRevision:asset.revision}});
+  f.store.executeMusic({commandId:randomUUID(),campaignId:f.campaignId,token:f.token,action:{kind:'asset',asset:{...failed,problem:'Decoderfehler'},expectedRevision:failed.revision}});
+  f.db.prepare('UPDATE audio_asset SET checksum=? WHERE id IN (?,?)').run('damaged',brokenSong.id,brokenLayer.id);
+  rmSync(join(f.root,'audio',missing.media.sha256+'.wav'));
+  const view=f.store.executeMusic({commandId:randomUUID(),campaignId:f.campaignId,token:f.token,action:{kind:'settings',expectedRevision:f.store.music(f.token).state.revision,autoplay:true,autoAmbience:true,volume:.7,ambienceVolume:.3,fadeSeconds:2,loop:'none'}});
+  assert.equal(view.state.current?.assetId,song.id);assert.deepEqual(view.state.queue,[]);
+  assert.deepEqual(view.layers.map(l=>l.assetId),[rain.id]);assert.deepEqual(view.state.automaticAmbience,[rain.id]);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });

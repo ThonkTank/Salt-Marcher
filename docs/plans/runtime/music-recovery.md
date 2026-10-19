@@ -79,3 +79,11 @@ Decoder, hörbare Ausgabe oder freigegebenen nativen RAM.
    lokale Metadaten und historische Auswahlbindungen erhalten.
 4. Große Bibliotheken, Queues und häufige Schichtwechsel messen. Nur benötigte
    Asset-/Kontextdaten lesen; keine zweite Queue oder Musikpersistenz einführen.
+
+Bibliothekssuche, automatische Song-/Ambienceauswahl und Bibliotheksexport
+verwenden die bereits gelesenen Assetzeilen direkt. Derselbe Zeilenleser wie
+bei einer Einzelauswahl prüft Identität, Revision, Prüfsumme und aktuelle
+Dateigröße; es gibt keinen Mediencache. Beschädigte Treffer werden in der Suche
+gemeldet und in der Automatik ausgelassen; beim Export bricht die Prüfung ab.
+`music-record-integrity.test.ts` prüft außerdem Seitengrenzen trotz beschädigter
+Treffer sowie entfernte, wiederhergestellte und veränderte Mediendateien.
