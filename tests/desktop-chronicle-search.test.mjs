@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);
 buildSync({entryPoints:[process.env.CHRONICLE_UI_SOURCE??'src/app/chronicle-ui.ts'],outfile:'.build/chronicle-dom.cjs',bundle:true,platform:'node',format:'cjs'});

@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
+import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';
 const require=createRequire(import.meta.url);buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/session-targets-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({entryPoints:['src/app/generation/session-targets.ts'],outfile:'.build/session-targets.cjs',bundle:true,platform:'node',format:'cjs'});const {CampaignStore}=require('../.build/session-targets-store.cjs'),{sessionTargets}=require('../.build/session-targets.cjs');
 const party=[{id:'a',name:'Gruppe A',level:3,count:2},{id:'b',name:'Gruppe B',level:4,count:2}];
 test('original Golden allocation is exact and automatic count uses the original seeded policy',()=>{

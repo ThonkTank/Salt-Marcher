@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts','src/app/note-thread-edit.ts'],outdir:'.build/note-source-recovery-test',bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/note-source-recovery-test/storage/store.cjs'),{detachNoteSource,restoreNoteSource}=require('../.build/note-source-recovery-test/note-thread-edit.cjs');
 function fixture(t){

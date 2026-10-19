@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdirSync,readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 const base='.build/planner-journal-context',require=createRequire(import.meta.url);
 mkdirSync(base,{recursive:true});
 buildSync({stdin:{contents:"export * from './src/app/narrative-ui';export * from './src/app/narrative-journal-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});

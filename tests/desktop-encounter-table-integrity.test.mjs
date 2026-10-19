@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createHash,randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/encounter-table-integrity-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/encounter-table-integrity-store.cjs');

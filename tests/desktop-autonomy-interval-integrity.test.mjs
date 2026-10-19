@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/autonomy-interval-integrity.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/autonomy-interval-integrity.cjs'),hash=s=>createHash('sha256').update(s).digest('hex');
 function fixture(t,confirm=true){

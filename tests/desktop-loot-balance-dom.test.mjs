@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
+import {readFileSync} from 'node:fs';import path from 'node:path';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/progression-ui.ts'],outfile:'.build/loot-balance-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let n=0;n<300&&!check();n++)await tick();assert.ok(check());}

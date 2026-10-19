@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdirSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 const base='.build/planner-session-review',require=createRequire(import.meta.url);
 mkdirSync(base,{recursive:true});
 buildSync({entryPoints:['src/app/session-review-ui.ts'],outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});

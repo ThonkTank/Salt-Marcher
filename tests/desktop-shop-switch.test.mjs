@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
+import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);for(const[entry,name]of [['src/app/storage/store.ts','shop-switch-store'],['src/app/items-ui.ts','shop-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};async function until(fn){for(let i=0;i<250;i++){if(fn())return;await tick();}assert(fn(),'Expected shop state');}
 async function fixture(){

@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/session-proposal-editor';export {SessionReview} from './src/app/session-review-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/session-proposal-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};}

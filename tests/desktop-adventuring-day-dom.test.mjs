@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { buildSync } from "esbuild";
-import { parseHTML } from "linkedom";
+import { parseHTML } from './helpers/dom.mjs';
 
 buildSync({
   stdin: {

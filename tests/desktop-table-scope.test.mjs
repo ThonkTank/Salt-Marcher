@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {mkdtempSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
+import {mkdtempSync,rmSync,mkdirSync,copyFileSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/table-scope-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=createRequire(import.meta.url)('../.build/table-scope-store.cjs');
 function fixture(t){
  const root=mkdtempSync(path.join(tmpdir(),'table-scope-')),file=path.join(root,'world.sqlite'),store=new CampaignStore(file),campaigns=['A','B'].map(name=>store.create(name));let w=store.activate(campaigns[0].id),index=0;

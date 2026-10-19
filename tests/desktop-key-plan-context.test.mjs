@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/key-plan-context.ts'],outfile:'.build/key-plan-context.cjs',bundle:true,platform:'node',format:'cjs'});
 const {KeyPlanContext}=createRequire(import.meta.url)('../.build/key-plan-context.cjs');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};

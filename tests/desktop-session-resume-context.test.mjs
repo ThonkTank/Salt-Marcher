@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import path from 'node:path';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url),source=readFileSync('src/app/live.ts','utf8');
 const hooks=`\nconst originalStart=startLiveSession;export const __resumeProbe={initHandoff:initHandoffVisitDialog,readSessionResumePrep,renderSessionResume,openSessionResume,packetSource(){resumed=true;return livePacketSource();},setState(w,v,p){context=w;data=v;sources=p;sceneDraft=structuredClone(v.scene);sessionChronicle={entries:[]};tell=(text,error)=>globalThis.__resumeMessages.push({text,error});},history(entries){sessionChronicle={entries};},ports(p){if(p.visit)openMomentVisit=p.visit;if(p.start===false)startLiveSession=originalStart;if(p.execute)execute=p.execute;if(p.start)startLiveSession=p.start;if(p.flush)flushLive=p.flush;if(p.packet)openLivePacket=p.packet;},draft(){return sceneDraft;}};`;
 buildSync({stdin:{contents:source+hooks,sourcefile:'live-resume-probe.ts',loader:'ts',resolveDir:path.resolve('src/app')},outfile:'.build/planner-resume-probe.cjs',bundle:true,platform:'node',format:'cjs'});

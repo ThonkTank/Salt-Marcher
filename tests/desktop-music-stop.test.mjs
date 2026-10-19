@@ -5,8 +5,8 @@ import path from 'node:path';
 import {tmpdir} from 'node:os';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 for(const [source,name] of [['src/app/storage/store.ts','music-stop-store'],['src/app/music-ui.ts','music-stop-ui']])buildSync({entryPoints:[source],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 async function until(check){for(let i=0;i<70;i++){if(check())return;await tick();}assert.ok(check(),'Expected music choice did not arrive');}

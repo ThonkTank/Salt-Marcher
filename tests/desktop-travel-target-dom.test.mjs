@@ -1,3 +1,4 @@
+import {fixtureStore} from './helpers/store.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -5,8 +6,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
-import { buildSync } from 'esbuild';
-import { parseHTML } from 'linkedom';
+import { buildSync } from './helpers/build.mjs';
+import { parseHTML } from './helpers/dom.mjs';
 const require = createRequire(import.meta.url);
 buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/world-dom-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
 buildSync({ entryPoints: ['src/app/world-ui.ts'], outfile: '.build/world-dom.cjs', bundle: true, platform: 'node', format: 'cjs' });
@@ -16,7 +17,7 @@ async function until(check) { for (let i = 0; i < 50; i++) { if (check()) return
 async function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'world-dom-')), filename = path.join(root, 'store.sqlite');
   const { CampaignStore } = require('../.build/world-dom-store.cjs');
-  const store = new CampaignStore(filename), campaign = store.create('Welteditor'), w = store.activate(campaign.id);
+  const store = fixtureStore(CampaignStore, filename), campaign = store.create('Welteditor'), w = store.activate(campaign.id);
   const command = action => ({ commandId: randomUUID(), campaignId: campaign.id, token: w.token, action });
   const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: store.live(w.token).rosterRevision })).scene;
   const baseMap = store.world(w.token).maps[0];
@@ -25,7 +26,7 @@ async function fixture() {
   const phenomenon = { id: randomUUID(), revision: 0, mapId: map.id, name: 'Nebel', kind: 'fog', intensity: .5, center: { q: 0, r: 0 }, radiusHexes: 3, movement: { q: 0, r: 0 }, startMs: '0', durationMs: '86400000', state: 'active', pausedAtMs: null, temperatureC: null, travelFactor: null, notes: 'Vorher' };
   for (const action of [{ kind: 'map', map, expectedRevision: baseMap.revision }, { kind: 'calendar-event', event, expectedRevision: null }, { kind: 'phenomenon', phenomenon, expectedRevision: null }]) store.executeWorld(command(action));
   const saved = { window: globalThis.window, document: globalThis.document, Event: globalThis.Event, CustomEvent: globalThis.CustomEvent };
-  const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+  const { window, document } = parseHTML(readFileSync('src/app/index.html','utf8'));
   Object.assign(globalThis, { window, document, Event: window.Event, CustomEvent: window.CustomEvent });
   let hold = false, release, beforeHold = false, releaseBefore, writes = 0;
   const sent = [], statuses = [], camps = [], atlasReplies = new Map();

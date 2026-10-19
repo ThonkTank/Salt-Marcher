@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/session-origin-ui.ts'],outfile:'.build/session-origin-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const {renderSessionOrigin}=createRequire(import.meta.url)('../.build/session-origin-ui.cjs');

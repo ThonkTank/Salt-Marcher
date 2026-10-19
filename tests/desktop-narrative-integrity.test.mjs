@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
-import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';
+import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/narrative-integrity.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/narrative-integrity.cjs'),hash=s=>createHash('sha256').update(s).digest('hex');
 function fixture(t){const root=mkdtempSync(path.join(tmpdir(),'narrative-integrity-')),store=new CampaignStore(path.join(root,'source.sqlite')),cam=store.create('Questquelle'),w=store.activate(cam.id),id=randomUUID(),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});store.changePreparation({...command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'quest',title:'Quest '+id,readAloud:'Original',gmNotes:'Privat',relations:[],creatureId:null,deleted:false}}});let n=store.narrative(w.token,id);store.executeProgress(command({kind:'narrative-state',expectedRevision:0,expectedNoteRevision:n.noteRevision,state:n.state}));t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});return{store,root,cam,w,id,command};}

@@ -4,8 +4,8 @@ import {readFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 
 buildSync({stdin:{contents:"export {openPresetSettings} from './src/app/preset-settings-ui'; export {initCampaignScreen} from './src/app/campaign-screen-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/preset-settings-ui-test.cjs',bundle:true,platform:'node',format:'cjs'});
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/preset-settings-store-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});

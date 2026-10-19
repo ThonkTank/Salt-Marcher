@@ -6,7 +6,7 @@ import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/session-ui.ts'],outfile:'.build/session-review-owner.cjs',bundle:true,platform:'node',format:'cjs'});
 mkdirSync('.build/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/srd-5.1.generated.json');
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {validateItemInput,checkedItem} from './src/app/storage/progression';",resolveDir:process.cwd(),sourcefile:'proposal-store.ts'},outfile:'.build/session-proposal-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});

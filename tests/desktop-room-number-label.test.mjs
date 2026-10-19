@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/room-number-label.ts','src/app/drawing-model.ts'],outdir:'.build/room-number-label',bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'}});
 const require=createRequire(import.meta.url),{appendRoomNumber}=require('../.build/room-number-label/room-number-label.cjs'),{inside}=require('../.build/room-number-label/drawing-model.cjs');

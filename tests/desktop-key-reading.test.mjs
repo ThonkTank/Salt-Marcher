@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 for(const [name,entry]of [['model','key-reading-model'],['ui','key-document-ui']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/key-reading-'+name+'.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{keyDocumentParts,keyDocumentSources,editTextareaText}=require('../.build/key-reading-model.cjs'),{KeyDocumentReader}=require('../.build/key-reading-ui.cjs');
 const source=(text,id='source',target=true)=>({id,text,label:'Vorhandener Raumkey',visibility:'gm',target:target?{kind:'legacy',sectionId:'section',expectedText:text}:null});
