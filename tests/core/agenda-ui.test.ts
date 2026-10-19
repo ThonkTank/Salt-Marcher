@@ -154,3 +154,34 @@ test('a moment deadline opens raw author text as a draft and cannot replace an e
  await x.agenda.openMomentDraft({name:'Späterer Moment',notes:'Nicht überschreiben'});assert.equal(x.el('agenda-name').value,'Verstärkung');
  assert.deepEqual(x.store.world(x.workspace.token).events,before);assert.deepEqual(x.store.live(x.workspace.token).scene!.clock,clock);
 });
+
+test('a saved deadline stays selected beyond the old horizon and the first forty rows',async t=>{
+ const x=await fixture(t),before=x.store.live(x.workspace.token).scene!.clock;
+ for(let i=0;i<41;i++)x.store.executeWorld(x.command({kind:'calendar-event',event:{...x.event,id:'near-'+i,name:'Andere Frist '+i,startMs:String(1000+i),revision:0},expectedRevision:null}));
+ const originals=structuredClone(x.store.world(x.workspace.token).events),queries:any[]=[],read=window.campaign.agenda;
+ window.campaign.agenda=async(token,q)=>{queries.push(q);return read(token,q);};
+ x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Ferne Frist';x.el('agenda-offset').value='6';x.el('agenda-offset-unit').value='day';x.el('agenda-notes').value='Unverändertes Original';
+ x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.el('agenda-status').textContent?.includes('Ereignis gespeichert.')===true);
+ const event=x.store.world(x.workspace.token).events.find(e=>e.name==='Ferne Frist')!;assert.ok(event);
+ assert.equal(x.el('agenda-list').querySelectorAll('[data-event-id]').length,1);assert.equal(x.el('agenda-list').querySelector('[aria-pressed=true]')?.getAttribute('data-event-id'),event.id);
+ assert.match(x.el('agenda-document').textContent!,/Ferne Frist/);assert.match(x.dialog.textContent!,/Einzelansicht/);
+ assert.equal(queries.at(-1).eventId,event.id);assert.equal(queries.at(-1).horizonDays,null);assert.equal(queries.at(-1).search,'');
+ assert.deepEqual(x.store.live(x.workspace.token).scene!.clock,before);assert.deepEqual(x.store.world(x.workspace.token).events.filter(e=>e.id!==event.id),originals);
+ x.click('Ereignis bearbeiten');assert.equal(x.el('agenda-notes').value,event.notes);x.click('Eingaben verwerfen');
+ x.click('Zeit und Agenda aktualisieren');await until(()=>x.el('agenda-list').querySelectorAll('[data-event-id]').length===40);
+ assert.equal(queries.at(-1).eventId,undefined);assert.doesNotMatch(x.dialog.textContent!,/Einzelansicht/);
+});
+
+test('saving an event moved outside its location and search keeps the same identity through trash and restore',async t=>{
+ const x=await fixture(t),current=x.store.world(x.workspace.token).events[0]!;
+ x.store.executeWorld(x.command({kind:'calendar-event',event:{...current,locationId:x.location.id},expectedRevision:current.revision}));
+ x.agenda.reset();await x.agenda.openForLocation(x.location.id,'Nordtor',x.event.id);x.click('Ereignis bearbeiten');
+ x.el('agenda-location').value='';x.el('agenda-name').value='Umbenannter Termin';x.el('agenda-notes').value='Neue Ortsentscheidung';
+ x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.el('agenda-status').textContent?.includes('Ereignis gespeichert.')===true);
+ assert.equal(x.el('agenda-list').querySelector('[aria-pressed=true]')?.getAttribute('data-event-id'),x.event.id);assert.match(x.el('agenda-document').textContent!,/Umbenannter Termin/);assert.equal(x.el('agenda-location-filter').value,'all');
+ x.click('Ereignis bearbeiten');x.click('Ereignis in den Papierkorb');await until(()=>x.store.world(x.workspace.token).events[0]!.trashed);
+ await until(()=>x.el('agenda-status').textContent?.includes('Ereignis gespeichert.')===true);assert.equal(x.el('agenda-trash').checked,true);assert.match(x.el('agenda-document').textContent!,/Umbenannter Termin/);
+ x.click('Ereignis bearbeiten');x.click('Ereignis wiederherstellen');await until(()=>!x.store.world(x.workspace.token).events[0]!.trashed);
+ await until(()=>x.el('agenda-status').textContent?.includes('Ereignis gespeichert.')===true);assert.equal(x.el('agenda-trash').checked,false);
+ const saved=x.store.world(x.workspace.token).events[0]!;assert.equal(saved.id,x.event.id);assert.equal(saved.locationId,null);assert.equal(saved.startMs,x.event.startMs);assert.equal(saved.notes,'Neue Ortsentscheidung');
+});

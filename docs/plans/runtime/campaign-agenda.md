@@ -53,6 +53,7 @@ exakte Zeitpunkte/Notizen, Ortswahl, Papierkorb und Wiederherstellung. Der
 frühere zweite Editor im Weltbereich entfällt; dort öffnet derselbe Agendaeinstieg.
 Offene Entwürfe blockieren erneutes Öffnen. Refresh entfernt die alten Controls;
 verzögerte Bestätigungen gehören ausschließlich zu ihrem ursprünglichen Entwurf.
+Nach bestätigtem Speichern ohne spätere Eingaben öffnet die Agenda gezielt dieselbe Ereignis-ID. Suche, Zeit- und Ortsfilter werden sichtbar auf einen einschließenden Bereich gesetzt; auch ein ferner, verschobener oder archivierter Termin bleibt so direkt bearbeitbar. Die beschriftete Einzelansicht verwendet den vorhandenen ID-Read statt einer Suche über weitere Listenseiten. „Zeit und Agenda aktualisieren“ löst die Einzelbindung und zeigt die Liste wieder.
 Bei verlorener Antwort prüft die Agenda denselben Worldreceipt schreibfrei;
 spätere Rohfelder bleiben erhalten und die Frist wird nicht erneut angelegt.
 Die Änderungsprüfung vergleicht Ereignisdaten mit dem bestätigten Stand:
