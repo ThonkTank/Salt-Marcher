@@ -60,9 +60,9 @@ function city(x) {
   });
   return r.atlas.cities[0];
 }
-function building(x, c) {
+function building(x, c, id = randomUUID()) {
   const u = {
-    id: randomUUID(),
+    id,
     kind: "building",
     name: "Taverne",
     protected: true,
@@ -96,6 +96,10 @@ function building(x, c) {
   });
   // These geometry fixtures deliberately replace the generated contents with
   // exact hand-drawn rooms; production creation is covered separately below.
+  // Generated furniture must not obstruct the replacement room's authored entrance.
+  for(const element of x.read().geometry.drawing.elements.filter(e=>e.scopeId===u.id&&!e.archived)){
+    const commandId=randomUUID();x.store.executeAtlas({commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'drawing',command:{commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'element-hide',id:element.id,expectedRevision:element.revision,archived:true}}}});
+  }
   x.store.db.prepare("DELETE FROM atlas_entrance WHERE campaign_id=? AND json_extract(payload,'$.scopeId')=?").run(x.cam.id,u.id);
   for(const room of x.read().workspace.rooms.filter(r=>r.scopeId===u.id)){
     const commandId=randomUUID();x.store.executeAtlas({commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'drawing',command:{commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'room-hide',roomId:room.id,hidden:true}}}});
@@ -238,7 +242,8 @@ test("replay does not duplicate spatial owners and later incompatible edits bloc
 test("city walking and explicit entrances use the same group clock and survive restart", (t) => {
   const x = fixture(t),
     c = city(x),
-    u = building(x, c),
+    // This seed leaves a wardrobe at the authored entrance unless the fixture clears furniture.
+    u = building(x, c, "19a6961f-b7f4-4ce7-806d-72a570377296"),
     scope = u.id;
   x.write({
     kind: "room-create",
