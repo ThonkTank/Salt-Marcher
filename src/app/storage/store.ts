@@ -1,3 +1,4 @@
+import {readSharedRoad,roadSnapshot,reconcileRoads,moveCityRoads,cityRoadFrame,legacyCityRoads} from './shared-roads';
 import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
@@ -313,7 +314,7 @@ export class CampaignStore {
       if(c&&(c.token!==token||c.fence!==fence||!Number.isSafeInteger(c.revision)||c.revision!==revision||c.kind!==q.kind||c.text!==q.text||typeof c.after!=='string'))throw new Error('Atlassuche inzwischen geändert. Suche erneut beginnen.');
       const text=q.text.normalize('NFC').toLocaleLowerCase('de'), room=q.kind==='room';
       const sql=q.kind==='scope'?`SELECT id,name,0 revision FROM scope WHERE campaign_id=? AND id>? AND instr(atlas_lower(name),?)>0 ORDER BY id LIMIT ?`:q.kind==='landscape'?`SELECT a.id,a.revision,coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name')) name FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id>? AND json_extract(a.payload,'$.kind')!='patch' AND coalesce(l.trashed,0)=0 AND instr(atlas_lower(coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name'))),?)>0 ORDER BY a.id LIMIT ?`:room?`SELECT r.id,r.name,r.number,r.revision,r.scope_id scopeId,r.floor_id floorId FROM room r WHERE r.campaign_id=? AND r.id>? AND instr(atlas_lower(r.name||' '||r.number),?)>0 AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY r.id LIMIT ?`:`SELECT id,json_extract(payload,'$.name') name,revision FROM city_document WHERE campaign_id=? AND id>? AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`;
-      const items=this.db.prepare(sql).all(cam,c?.after??'',text,q.limit+1),more=items.length>q.limit;items.length=Math.min(q.limit,items.length);
+      const items=this.db.prepare(sql).all(cam,c?.after??'',text,q.limit+1);if(q.kind==='landscape')for(const r of legacyCityRoads(this.db,cam))if(r.id>(c?.after??'')&&r.name.toLocaleLowerCase().includes(text))items.push({id:r.id,name:r.name,revision:r.revision});items.sort((a:any,b:any)=>a.id<b.id?-1:a.id>b.id?1:0);const more=items.length>q.limit;items.length=Math.min(q.limit,items.length);
       return{campaignId:cam,token,revision,items,next:more?{token,fence,revision,after:items.at(-1)!.id,kind:q.kind,text:q.text}:null};
     })();
   }
@@ -321,6 +322,7 @@ export class CampaignStore {
     const cam=this.guard(token);
     if(typeof id!=='string'||!id)throw new Error('Landschaftskennung prüfen.');
     const row=this.db.prepare("SELECT a.payload,l.payload location,l.trashed FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id=?").get(cam,id);
+    if(!row){const road=readSharedRoad(this.db,cam,id);if(road)return road;}
     if(!row||row.trashed)throw new Error('Landschaftsobjekt nicht gefunden.');
     const record=JSON.parse(row.payload);if(row.location)record.name=JSON.parse(row.location).name;
     return record;
@@ -419,10 +421,12 @@ export class CampaignStore {
     this.guard(c.token,c.campaignId);
     if(c.sourceFence!==undefined&&(typeof c.sourceFence!=='string'||!this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)&&this.atlasRegionSource(c.token).fence!==c.sourceFence))throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
     let landscapeEnvironment=false;
+    const sharedBefore=['city','bind','landscape-put','landscape-batch','landscape-remove'].includes(c.action.kind)?roadSnapshot(this.db,c.campaignId):null;
     const landscapeOnly=typeof c.action?.kind==='string'&&c.action.kind.startsWith('landscape-');
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
+
       if(a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
         const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
@@ -478,7 +482,7 @@ export class CampaignStore {
         }return result;
       }
       if(a.kind==='entrance'){putAtlasEntrance(this.db,this.campaignAtlas(c.token),a.entrance);return;}
-      if(a.kind==='bind'){bindAtlas(this.db,cam,a.binding,a.expectedRevision);return;}
+      if(a.kind==='bind'){const prior=a.binding.kind==='city'?cityRoadFrame(this.db,cam,a.binding.ownerId):null;bindAtlas(this.db,cam,a.binding,a.expectedRevision);if(prior)moveCityRoads(this.db,cam,a.binding.ownerId,prior,a.binding);return;}
       if(a.kind==='city-create'){
         const id=randomUUID(),locationId=randomUUID();this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'city',[randomUUID(),randomUUID()]),expectedRevision:null}});
         this.executeCity({commandId:c.commandId+':city',token:c.token,campaignId:cam,cityId:id,expectedRevision:0,action:{kind:'create',header:{id,locationId,revision:1,name:a.name,width:a.width,height:a.height,paper:'#e9dfc8',roof:'#9c604c'}}});
@@ -500,6 +504,7 @@ export class CampaignStore {
         const room:Room={id:randomUUID(),scopeId:a.scopeId,floorId:a.floorId,name:a.name,number:String(this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(cam).n+1),revision:0,polygons:a.polygons,sections:[{id:randomUUID(),kind:'markdown',markdown:''}]};validateRoom(room);this.insertRoom(cam,room);return{id:room.id};
       }
     },()=>{
+      if(sharedBefore)reconcileRoads(this.db,c.campaignId,sharedBefore);
       if(!landscapeOnly){this.reconcileAtlasGeometry(c.token);return;}
       if(!landscapeEnvironment)return;
       // Terrain cannot move an indoor actor or change a room boundary. It can

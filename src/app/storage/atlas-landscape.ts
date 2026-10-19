@@ -1,3 +1,4 @@
+import {readSharedRoad,roadReference,removeSharedRoad,legacyCityRoads} from './shared-roads';
 import {executeBrush} from "./landscape-brush-edit";
 import { validateLine } from "../landscape-line";
 import { validateColor } from "../landscape-brush";
@@ -29,6 +30,7 @@ const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>
 export function installLandscape(db: any) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_landscape(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
+ CREATE INDEX IF NOT EXISTS landscape_kind ON atlas_landscape(campaign_id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END);
  CREATE INDEX IF NOT EXISTS landscape_area ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y);
  CREATE TABLE IF NOT EXISTS atlas_reference_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,mime TEXT NOT NULL,bytes BLOB NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS atlas_landscape_migration(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id)) STRICT;
@@ -202,6 +204,7 @@ export function landscapeRegion(
     if(!includePatches){used+=Buffer.byteLength(JSON.stringify(record))+1;if(used>REGION_REPLY_BYTES)throw new Error('Landschaftsobjekte überschreiten das Darstellungsbudget. Weiter hineinzoomen.');}
     records.push(record);
   }
+  records.push(...legacyCityRoads(db,cam,box));
   return records;
 }
 export function putLandscape(
@@ -280,7 +283,8 @@ export function putLandscape(
       "SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?",
     )
     .get(cam, r.id);
-  if ((old?.revision ?? null) !== expected)
+  const legacy=!old&&r.kind==='road'?readSharedRoad(db,cam,r.id):null;
+  if ((old?.revision ?? legacy?.revision ?? null) !== expected)
     throw new Error("Landschaft inzwischen geändert. Neu laden.");
   const b = bounds(r),
     next = {
@@ -306,6 +310,7 @@ export function putLandscape(
     b.y + b.height,
     JSON.stringify(next),
   );
+  if(r.kind==='road')roadReference(db,cam,next);
 }
 export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
   if(a.kind==="landscape-brush")return executeBrush(db,cam,a);
@@ -318,6 +323,8 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
   if (a.kind === "landscape-put" || a.kind === "landscape-place")
     return putLandscape(db, cam, a.record, a.expectedRevision);
   if (a.kind === "landscape-remove") {
+    const road=readSharedRoad(db,cam,a.id);if(road){if(road.revision!==a.expectedRevision)throw Error('Straße inzwischen geändert.');removeSharedRoad(db,cam,a.id);return;}
+
     if (
       db
         .prepare(

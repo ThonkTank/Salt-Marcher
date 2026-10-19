@@ -196,7 +196,7 @@ export class AtlasWorkspaceLayout {
    this.toolButtons('land-tool');
   }
   if(section==='city'){
-   this.railButton(el('atlas-create-city'),'⊕','Stadt anlegen');add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-path-hint'));add(el('city-finish').parentElement);
+   this.railButton(el('atlas-create-city'),'⊕','Stadt anlegen');add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-line-options'));add(el('city-path-hint'));add(el('city-finish').parentElement);
    const generation=button('atlas-generation-open','');this.railButton(generation,'▧','Bebauen');generation.dataset.familyAction='true';generation.onclick=()=>void this.openGeneration();this.palette.append(generation);
    add(el('city-inspector'),this.selection);add(el('city-empty'));add(el('city-count'),this.selection);add(el('city-demographics'),this.selection);add(el('city-factions'),this.selection);
    const extra=document.createElement('details');extra.dataset.familyAction='true';extra.innerHTML='<summary>Stadtdarstellung und Ausgabe</summary>';this.selection.append(extra);
@@ -229,7 +229,7 @@ export class AtlasWorkspaceLayout {
   el('atlas-floor-field').hidden=this.family!=='interior';
   const name=el('atlas-new-name').closest('label')!;
   if(this.family!=='terrain')name.hidden=(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||(this.family==='interior'&&!this.root.dataset.placing);
-  if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
+  if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-line-options').hidden=tool!=='road';el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
   if(this.family!=='terrain'){el('atlas-terrain').closest('label')!.hidden=true;if(this.auxiliary!=='grid')el('atlas-hex-level').closest('label')!.hidden=true;}
   const navigating=this.root.dataset.family==='navigation';
   const selectId=this.family==='terrain'?'land-tool':this.family==='city'?'city-tool':'drawing-tool';

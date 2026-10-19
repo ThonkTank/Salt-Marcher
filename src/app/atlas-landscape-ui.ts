@@ -1,6 +1,6 @@
 import {LandscapeToolSettings,lineControls,readLineControls} from "./landscape-tool-settings";
 import {brushFootprint,type BrushMode} from "./landscape-brush";
-import {newLine,linePoints,translateLine,splitLine} from "./landscape-line";
+import {legacyLine,linePoints,translateLine,splitLine} from "./landscape-line";
 import { automaticGrid, gridMeters, travelHexSizes } from "./atlas-navigation-scale";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
@@ -83,6 +83,7 @@ export class LandscapeWorkbench {
   private background:{key:unknown[];node:AtlasPaint;box:LandscapeBox;selectedSlot:number}|null=null;
   private assetFence='';
   records: LandscapeRecord[] = [];
+  private lineRaster: import("./landscape-raster").LandscapeRaster[] | undefined;
   private raster: import("./landscape-raster").LandscapeRaster[] | undefined;
   private token = "";
   private key = "";
@@ -130,7 +131,7 @@ export class LandscapeWorkbench {
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Verlaufbreite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
+    this.panel.innerHTML = `<label>Werkzeug<select id="land-tool"><option value="select">Auswählen / Verlauf korrigieren</option><option value="paint">Gelände / Küste malen</option><option value="hex">Hexfläche füllen</option><option value="reset">Eigenschaft zur Vorgabe zurücksetzen</option><option value="river">Fluss zeichnen</option><option value="road">Weg zeichnen</option><option value="place">Ort platzieren</option><option value="measure">Strecke messen</option></select></label><label>Eigenschaft<select id="land-field"><option value="terrain">Gelände</option><option value="elevationM">Höhe</option><option value="climate">Klima</option></select></label><label id="land-value-field">Wert<input id="land-value" placeholder="Höhe in Metern" value="0"></label><label>Pinselradius in m<input id="land-radius" type="number" min="1" value="500"></label><label>Verlaufstil<select id="land-line-style"><option value="path">Pfad / Bach</option><option value="road">Straße / Fluss</option></select></label><label>Reale Breite in m<input id="land-width" type="number" min="0.1" step="any" value="30"></label><p id="land-status" role="status">3 Meilen von Kante zu Kante. Orts-/Verlaufpunkte anklicken, dann abschließen.</p><div class="toolbar"><button id="land-finish">Zug abschließen</button><button id="land-cancel">Verwerfen</button><button id="land-reload" hidden>Ansicht erneut laden</button></div><label><input id="land-auto-level" type="checkbox" checked> Hexstufe automatisch anzeigen</label><label><input id="land-grid" type="checkbox" checked> Hexraster anzeigen</label><label>Objekt auswählen<select id="land-object"><option value="">Auf der Karte auswählen</option></select></label><div id="land-selection"></div><details><summary>Nachzeichenvorlage</summary><button id="land-reference">Bild laden und kalibrieren</button><label>Abstand der Bildpunkte in m<input id="land-calibration-distance" type="number" min="0.1" value="10000"></label><p>Nach dem Laden zwei Punkte im Bild anklicken. Anschließend Lage und Drehung bearbeiten.</p></details>`;
     this.inspectorRoot=this.panel.querySelector<HTMLElement>('#land-selection')!;
     html("atlas-tool-fields").after(this.panel);
     this.settings=new LandscapeToolSettings(this.panel,()=>{this.toolFields();this.host.redraw();});
@@ -364,7 +365,7 @@ export class LandscapeWorkbench {
               this.calibration.points.length +
               " von 2. Danach abschließen.",
           );
-        } else {this.points.push(this.tool==='river'?this.snapRiver(p):p);this.say(this.points.length+" Punkte · Enter oder Zug abschließen übernimmt. Backspace entfernt den letzten Punkt.");}
+        } else {this.points.push(this.snapLine(p));this.say(this.points.length+" Punkte · Enter oder Zug abschließen übernimmt. Backspace entfernt den letzten Punkt.");}
         if (this.tool === "place")
           this.say('Ortspunkt gesetzt. Mit „Zug abschließen“ anlegen.');
         this.host.redraw();
@@ -469,7 +470,7 @@ export class LandscapeWorkbench {
     this.autoGrid=null;this.gridFade=null;
     this.cancel();
     this.records = [];this.background=null;
-    this.raster = undefined;this.minimumRevision=0;
+    this.raster = undefined;this.lineRaster=undefined;this.minimumRevision=0;
     this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
     this.request++;
@@ -508,7 +509,7 @@ export class LandscapeWorkbench {
       }
       if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
       this.request++;const generation=this.request;
-      this.records=layer.records;this.raster=layer.tiles;html('land-reload').hidden=layer.state==='ready';
+      this.records=layer.records;this.raster=layer.tiles;this.lineRaster=layer.lineTiles;html('land-reload').hidden=layer.state==='ready';
       this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
@@ -526,7 +527,7 @@ export class LandscapeWorkbench {
     // The shared Atlas frame owns loading, cancellation and source identity.
     // Never reconstruct a second landscape view from independent reads.
     this.request++;
-    this.records=[];this.raster=undefined;this.background=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
+    this.records=[];this.raster=undefined;this.lineRaster=undefined;this.background=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
     html("land-reload").hidden=false;
     this.say("Landschaftsframe nicht verfügbar. Ansicht erneut laden.");
     this.host.redraw();
@@ -555,14 +556,14 @@ export class LandscapeWorkbench {
     let background=this.background;
     if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
       const node=atlasPaint('group',{retainGeometry:true});
-      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets,undefined,'base');
       this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
     }
     const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
     let node=background.node;
     if(this.selected&&background.selectedSlot>=0&&this.selectionRecords.size<=1){
       // Keep the original painter slot, especially for references below terrain.
-      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets,undefined,'base');
       node=atlasPaint('group',{retainGeometry:true});node.append(...background.node.children);
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
@@ -576,8 +577,7 @@ export class LandscapeWorkbench {
         root.append(landscapeNode("polygons", {polygons: polygons.map(p => ({outer: p.outer.map(v => ({x:v.x-box.x,y:v.y-box.y})), holes: []})), pointer:false, opacity:0.6, style:{fill:"#d46e38",stroke:"#d46e38",lineWidth:mpp}, data:{editorOnly:"true",landHexDraft:"true"}}));
       } catch (error) { this.say((error as Error).message); }
     } else if(pts.length&&['river','road'].includes(this.tool)){
-      const r=this.draftLine([...pts,...(this.hovering?[this.tool==='river'?this.snapRiver(this.lastPoint):this.lastPoint]:[])]);
-      const preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});drawLandscape(preview,[r],box,mpp,this.assets);root.append(preview);
+      // Line drafts are drawn above city surfaces by drawLines.
     } else if (pts.length) {
       for (const path of (["paint", "reset"].includes(this.tool) ? [...this.brushStrokes, pts] : [pts])) {
       root.append(
@@ -618,8 +618,24 @@ export class LandscapeWorkbench {
     }
   }
 
+  drawLines(root:AtlasPaint,box:LandscapeBox,mpp:number,cityRoad?:LandscapeRecord){
+    const selected=new Set([...(this.selected?[this.selected.id]:[]),...this.selectionRecords.keys()]);
+    if(cityRoad)selected.add(cityRoad.id);
+    const records=[...this.records.filter(r=>!selected.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:this.selected?[this.selected]:[]),...(cityRoad?[cityRoad]:[])];
+    drawLandscape(root,records,box,mpp,this.assets,true,this.lineRaster,undefined,selected,'lines');
+    if(this.points.length&&['road','river'].includes(this.tool)){
+      const r=this.draftLine([...this.points,...(this.hovering?[this.snapLine(this.lastPoint)]:[])]),preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});
+      drawLandscape(preview,[r],box,mpp,this.assets,true,undefined,undefined,new Set([r.id]),'lines');root.append(preview);
+    }
+    if(this.selected&&this.active&&this.tool==='select'&&['road','river'].includes(this.selected.kind))for(const r of this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])r.points.forEach((p,i)=>root.append(atlasPaint('circle',{x:p.x-box.x,y:p.y-box.y,radius:mpp*6,style:{fill:i===this.vertex?'#e1984b':'#fff',stroke:'#a55d35',lineWidth:mpp*2},data:{landVertex:String(i),editorOnly:'true'}})));
+  }
   private draftLine(points:Point[]):LandscapeRecord {
     const kind=this.tool==='river'?'river':'road',r=emptyRecord(kind);r.points=points;r.width=Number(html<HTMLInputElement>('land-width').value);r.line=this.settings.line(kind,this.draftSeed);return r;
+  }
+  private snapLine(p:Point):Point{
+    const tolerance=this.host.box().width/Math.max(1,document.getElementById('campaign-map')?.getBoundingClientRect().width??1000)*8;
+    let nearest:Point|null=null,best=tolerance;for(const r of this.records.filter(r=>r.kind===this.tool))for(const q of r.points){const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<best){best=d;nearest=q;}}
+    return nearest?{...nearest}:this.tool==='river'?this.snapRiver(p):p;
   }
   private snapRiver(p:Point):Point{
     const tolerance=this.host.box().width/Math.max(1,document.getElementById('campaign-map')?.getBoundingClientRect().width??1000)*8;
@@ -836,18 +852,13 @@ export class LandscapeWorkbench {
       const r = this.draftLine(this.points);
       r.width = Number(html<HTMLInputElement>("land-width").value);
       r.name = html<HTMLInputElement>("atlas-new-name").value;
-      r.style = (
-        this.tool === "river"
-          ? html<HTMLSelectElement>("land-line-style").value === "path"
-            ? "stream"
-            : "river"
-          : html<HTMLSelectElement>("land-line-style").value
-      ) as LandscapeRecord["style"];
-      return this.commit({
-        kind: "landscape-put",
-        record: r,
-        expectedRevision: null,
-      });
+      const linked=new Map<string,LandscapeRecord>();r.junctions=[];
+      for(const index of [0,r.points.length-1])for(const candidate of this.records.filter(x=>x.kind===r.kind)){
+        const i=candidate.points.findIndex(p=>Math.hypot(p.x-r.points[index]!.x,p.y-r.points[index]!.y)<1e-7);if(i<0)continue;
+        const other=linked.get(candidate.id)??structuredClone(candidate),id=other.junctions?.find(j=>j.index===i)?.id??crypto.randomUUID();
+        other.junctions=[...(other.junctions??[]).filter(j=>j.index!==i),{index:i,id}];r.junctions.push({index,id});linked.set(other.id,other);break;
+      }
+      return this.commit({kind:'landscape-batch',records:[...[...linked.values()].map(record=>({record,expectedRevision:record.revision})),{record:r,expectedRevision:null}]});
     }
     if (this.tool === "place") {
       const r = emptyRecord("place");
@@ -929,13 +940,13 @@ export class LandscapeWorkbench {
       root.append(b);
     };
     if (r.kind === "river" || r.kind === "road") {
-      label("Breite in m", "land-record-width", String(r.width), "number");
+      label("Reale Breite in m", "land-record-width", String(r.width), "number");
       const settings=document.createElement('div');settings.id='land-selected-line';root.append(settings);
-      const legacy={...newLine(r.kind),curve:'linear' as const,roughness:0,meander:0,fadeIn:false,style:r.style==='path'?'dashed' as const:'solid' as const};
+      const legacy=legacyLine(r.kind,r.style);
       lineControls(settings,'land-edit',r.line??legacy,r.kind==='river',()=>{r.line=readLineControls(settings,'land-edit',r.line??legacy);this.dirty=true;this.background=null;this.host.redraw();});
       if(this.selectionRecords.size>1){
         const note=document.createElement('p');note.textContent=this.selectionRecords.size+' Verläufe ausgewählt. Ziehen verschiebt alle gemeinsam.';root.append(note);
-        button('Breite und Stil auf Auswahl anwenden',()=>{this.readInspector();for(const other of this.selectionRecords.values()){other.width=r.width;other.line={...(r.line??legacy),seed:other.line?.seed??this.draftSeed,continuity:other.line?.continuity};}this.dirty=true;this.background=null;this.host.redraw();});
+        button('Breite und Typ auf Auswahl anwenden',()=>{this.readInspector();for(const other of this.selectionRecords.values()){other.width=r.width;other.line={...(r.line??legacy),seed:other.line?.seed??this.draftSeed,continuity:other.line?.continuity};}this.dirty=true;this.background=null;this.host.redraw();});
       }
       button('Weitere Verläufe mit Umschalt-Klick auswählen',()=>this.say('Umschalt gedrückt halten und weitere Straßen oder Flüsse anklicken. Erneuter Umschalt-Klick entfernt sie aus der Auswahl.'));
       button("Punkt nach markiertem Punkt einfügen", () => {
@@ -946,12 +957,14 @@ export class LandscapeWorkbench {
           x: (a.x + b.x) / 2,
           y: (a.y + b.y) / 2,
         });
+        r.junctions=r.junctions?.map(j=>({...j,index:j.index>this.vertex?j.index+1:j.index}));r.cityAnchors=r.cityAnchors?.map(j=>({...j,index:j.index>this.vertex?j.index+1:j.index}));
         this.dirty = true;
         this.host.redraw();
       });
       button("Markierten Punkt entfernen", () => {
         if (r.points.length <= 2) return;
         r.points.splice(this.vertex, 1);
+        r.junctions=r.junctions?.filter(j=>j.index!==this.vertex).map(j=>({...j,index:j.index>this.vertex?j.index-1:j.index}));r.cityAnchors=r.cityAnchors?.filter(j=>j.index!==this.vertex).map(j=>({...j,index:j.index>this.vertex?j.index-1:j.index}));
         this.vertex = 0;
         this.dirty = true;
         this.host.redraw();
@@ -973,7 +986,7 @@ export class LandscapeWorkbench {
       });
     }
     if (r.kind === "reference") {
-      label("Breite in m", "land-record-width", String(r.width), "number");
+      label("Reale Breite in m", "land-record-width", String(r.width), "number");
       label(
         "Drehung in Grad",
         "land-angle",

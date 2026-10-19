@@ -6,7 +6,8 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/landscape-brush';export * from './src/app/landscape-raster';export * from './src/app/atlas-landscape-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/landscape-tools-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,splitLine,translateLine,newLine,linePoints,lineParts,lineContains,bounds,effectiveLandscape,brushFootprint,LandscapeRasterizer,drawLandscape,atlasPaint}=require('../.build/landscape-tools-test.cjs');
+const {CampaignStore,splitLine,translateLine,newLine:typedLine,linePoints,lineParts,lineContains,bounds,effectiveLandscape,brushFootprint,LandscapeRasterizer,drawLandscape,atlasPaint}=require('../.build/landscape-tools-test.cjs');
+const newLine=(kind,seed)=>{const {type,catalogVersion,...r}=typedLine(kind,seed);return {...r,version:1,color:kind==='river'?'#7fa8bd':'#a37e51',style:'blended'};};
 const line=(kind='road')=>({id:randomUUID(),revision:0,kind,name:'Originalname',points:[{x:-300,y:0},{x:0,y:180},{x:400,y:0}],polygons:[],width:20,resolution:1,values:{},line:newLine(kind,37498)});
 const square=(x,y,w)=>[{outer:[{x,y},{x:x+w,y},{x:x+w,y:y+w},{x,y:y+w}],holes:[]}];
 const patch=(terrain='forest')=>({id:randomUUID(),revision:0,kind:'patch',name:'Originalfläche',points:[],polygons:square(-500,-500,1000),width:0,resolution:1,values:{terrain}});
@@ -31,7 +32,7 @@ test('curve edit, group move, undo and fresh reopen preserve geometry and origin
 });
 test('invalid options and a stale second batch member roll back the whole write',t=>{
  const f=fixture(t),a=line(),b=line();f.write({kind:'landscape-batch',records:[a,b].map(record=>({record,expectedRevision:null}))});const before=f.records();
- assert.throws(()=>f.write({kind:'landscape-batch',records:[{record:{...before[0],width:100},expectedRevision:1},{record:before[1],expectedRevision:0}]}),/inzwischen/);assert.deepEqual(f.records(),before);
+ assert.throws(()=>f.write({kind:'landscape-batch',records:[{record:{...before[0],width:100},expectedRevision:before[0].revision},{record:before[1],expectedRevision:0}]}),/inzwischen/);assert.deepEqual(f.records(),before);
  for(const invalid of [{version:2},{color:'url(bad)'},{roughness:Infinity},{seed:-1},{meander:2}])assert.throws(()=>f.write({kind:'landscape-put',record:{...a,id:randomUUID(),line:{...a.line,...invalid}},expectedRevision:null}),/prüfen/);
 });
 function brush(mode,points=[{x:0,y:0}]){const r=patch('plains');r.points=points;r.polygons=brushFootprint(points,100,.6,42);if(mode.includes('color')&&mode!=='color-erase'){r.values={};r.paint={version:1,target:mode==='water-color'?'water':'ground',color:'#e51c23',opacity:.5,flow:1,tip:'soft',radius:100,seed:42,fill:false};}return {kind:'landscape-brush',record:r,mode,radius:100,roughness:.6,seed:42,fill:false};}
@@ -67,7 +68,7 @@ test('splitting retains every curve sample, source taper, dash phase and move co
 });
 test('group deletion is atomic on conflict and one reversible history entry',t=>{
  const f=fixture(t),a=line(),b=line();f.write({kind:'landscape-batch',records:[a,b].map(record=>({record,expectedRevision:null}))});const before=f.records();
- assert.throws(()=>f.write({kind:'landscape-batch',records:[],remove:[{id:a.id,expectedRevision:1},{id:b.id,expectedRevision:0}]}),/inzwischen/);assert.deepEqual(f.records(),before);
+ assert.throws(()=>f.write({kind:'landscape-batch',records:[],remove:[{id:a.id,expectedRevision:before[0].revision},{id:b.id,expectedRevision:0}]}),/inzwischen/);assert.deepEqual(f.records(),before);
  f.write({kind:'landscape-batch',records:[],remove:before.map(r=>({id:r.id,expectedRevision:r.revision}))});assert.equal(f.records().length,0);f.write({kind:'undo'});assert.equal(f.records().length,2);
 });
 test('legacy stacking is unchanged and explicit over-symbol lines have a separate layer',()=>{

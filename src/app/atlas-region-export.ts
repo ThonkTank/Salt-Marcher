@@ -19,6 +19,7 @@ export function atlasRegionPaint(
     references: boolean;
     floorId: string;
     roofs: boolean;
+    lineRasters?: import("./landscape-raster").LandscapeRaster[];
     rasters?: import("./landscape-raster").LandscapeRaster[];
   },
 ) {
@@ -38,8 +39,11 @@ export function atlasRegionPaint(
     mpp,
     assets,
     options.references,
-    options.rasters,
+    options.rasters,undefined,undefined,'base',
   );
+  if(data.region?.rasterUnderlay){const r=data.region.rasterUnderlay;scene.append(landscapeNode('image',{x:r.box.x-box.x,y:r.box.y-box.y,width:r.box.width,height:r.box.height,source:r.data}));}
+  else for(const city of data.cities){const b=data.bindings.find(b=>b.kind==='city'&&b.ownerId===city.header.id);if(!b||city.header.width/mpp<20)continue;const f=atlasFrame(data,b),g=landscapeNode('group',{matrix:frameMatrix({...f,x:f.x-box.x,y:f.y-box.y})});g.append(cityPaint(city,mpp,'surfaces'));scene.append(g);}
+  drawLandscape(scene,records,box,mpp,assets,options.references,options.lineRasters,undefined,undefined,'lines');
   if (options.grid) drawLandscapeGrid(scene, box, options.level, mpp);
   if (data.region?.raster) {
     const tile = data.region.raster;
@@ -73,7 +77,7 @@ export function atlasRegionPaint(
         }),
       );
     } else {
-      const cityScene = cityPaint(city);
+      const cityScene = cityPaint({...city,units:city.units.filter(u=>u.kind!=='road')},mpp,'objects');
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);

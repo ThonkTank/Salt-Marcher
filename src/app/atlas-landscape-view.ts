@@ -14,7 +14,10 @@ export function drawLandscape(
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster[],
   unavailableAssets?: ReadonlySet<string>,
+  selectedIds?: ReadonlySet<string>,
+  phase:"all"|"base"|"lines"="all",
 ) {
+  records=records.filter(r=>phase==='all'||(['road','river','place'].includes(r.kind)?phase==='lines':phase==='base'));
   const landscapeNode=atlasPaint;
   let rasterDrawn=false,colorsDrawn=false;
   const ordered=[...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0));
@@ -63,15 +66,9 @@ export function drawLandscape(
               })),
              pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
         );
-    } else if ((r.kind === "road" || r.kind === "river") && r.line) {
-      for(const p of lineParts(r))g.append(p.polygons ? landscapeNode("polygons",{polygons:p.polygons.map(poly=>({outer:poly.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:[]})),opacity:p.opacity,style:{fill:p.color}}) : landscapeNode("polyline",{points:p.points.map(v=>({x:v.x-b.x,y:v.y-b.y})),opacity:p.opacity,style:{stroke:p.color,fill:null,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:"round",lineCap:"round"}}));
-    } else if (r.kind === "road" || r.kind === "river")
-      g.append(
-        landscapeNode("polyline", {points: r.points.map(p=>({x:p.x-b.x,y:p.y-b.y})), style: {fill: null, stroke: r.kind === "river" ? "#629ebc" : "#a37e51", lineWidth: Math.max(r.width, mpp * 2), lineJoin: "round", lineCap: "round", lineDash: r.kind === "road" && r.style === "path"
-              ? [mpp*5,mpp*3]
-              : []}}),
-      );
-    else if (r.kind === "place") {
+    } else if ((r.kind === "road" || r.kind === "river") ) {
+      for(const p of lineParts(r,mpp,selectedIds?.has(r.id)))g.append(p.polygons ? landscapeNode("polygons",{polygons:p.polygons.map(poly=>({outer:poly.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:[]})),opacity:p.opacity,style:{fill:p.color}}) : landscapeNode("polyline",{points:p.points.map(v=>({x:v.x-b.x,y:v.y-b.y})),opacity:p.opacity,style:{stroke:p.color,fill:null,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:"round",lineCap:"round"}}));
+    }     else if (r.kind === "place") {
       const p = r.points[0]!;
       g.append(
         landscapeNode("circle", {x: p.x - b.x, y: p.y - b.y, radius: mpp * 5, style: {fill: "#5b4338", stroke: "#f5efdb", lineWidth: mpp * 1.5}}),

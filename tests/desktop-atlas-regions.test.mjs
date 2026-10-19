@@ -40,7 +40,7 @@ test('rotated city with 5000 buildings: resolved roads, targeted author details 
   for(const [id,point]of [['n1',{x:5,y:5}],['n2',{x:900,y:900}]])put(f.store,'city_unit',cam,id,{id,kind:'node',name:'',protected:true,point},city);
   put(f.store,'city_unit',cam,'road',{id:'road',kind:'road',name:'Lange Straße',protected:true,nodeIds:['n1','n2'],via:[],width:3},city);
  })();
- const r=await f.read(query({x:9960,y:20000,width:40,height:40}));assert.equal(r.cities.length,1);assert(r.cities[0].units.length<30);assert(!JSON.stringify(r).includes('PRIVATE-HOUSE'));const road=r.cities[0].units.find(u=>u.id==='road');assert.equal(road.outline.length,2);assert(!('nodeIds' in road));
+ const r=await f.read(query({x:9960,y:20000,width:40,height:40}));assert.equal(r.cities.length,1);assert(r.cities[0].units.length<30);assert(!JSON.stringify(r).includes('PRIVATE-HOUSE'));const road=r.landscape.records.find(u=>u.id==='road');assert.equal(road.points.length,2);assert.deepEqual(road.points[0],{x:9995,y:20005});assert(!r.cities[0].units.some(u=>u.id==='road'));assert(!('nodeIds' in road));
  const focus=f.reader.focus(f.source,'building','b4999');assert.equal(focus.cityId,city);const site=f.store.atlasCitySite(token,city,'b4999');assert(site.unit.notes.startsWith('PRIVATE-HOUSE'));assert.equal(site.related.length,0);
  const made=f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,action:{kind:'dungeon-create',name:'Keller',x:0,y:0,buildingId:'b4999'}});assert(made.result.id);
  const around=await f.read({...query({x:focus.point.x-10,y:focus.point.y-10,width:20,height:20}),scopeId:made.result.id});const binding=around.bindings.find(b=>b.ownerId===made.result.id);

@@ -1,11 +1,12 @@
-import { lineContains } from "../landscape-line";
+import {legacyCityRoads} from './shared-roads';
+import { lineHit, lineDisplay } from "../landscape-line";
 import {PNG} from 'pngjs';
 import type {Point} from '../contracts';
 import {bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox} from '../atlas-landscape';
 import {LandscapeRasterizer,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
-const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,values:{}};};
+const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,routeId,routeLength,junctions,cityAnchors}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,routeId,routeLength,junctions,cityAnchors,values:{}};};
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  private statements=new Map<string,any>();
@@ -28,7 +29,7 @@ export class AtlasLandscapeReader {
    this.cache.clear();this.bytes=0;this.db.exec('DELETE FROM temp.landscape_shape_bounds');
    this.sql(`INSERT INTO temp.landscape_shape_bounds SELECT id,rowid,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=?`).run(source.campaignId);
   }else for(const c of source.changes){
-   if(c.table==='location'){this.cache.clear();this.bytes=0;labelsChanged=true;continue;}
+   if(['location','city_unit','city_document','atlas_binding'].includes(c.table)){this.cache.clear();this.bytes=0;labelsChanged=true;continue;}
    if(c.table!=='atlas_landscape')continue;
    const old=this.sql('SELECT kind,min_x x,min_y y,max_x-min_x width,max_y-min_y height FROM temp.landscape_shape_bounds WHERE id=?').get(c.id);
    const row=this.sql(`SELECT rowid source_row,id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END kind,min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=? AND id=?`).get(source.campaignId,c.id);
@@ -75,12 +76,13 @@ export class AtlasLandscapeReader {
    ids.push(row.source_row);if(ids.length===128){yield*readPage(ids);ids=[];}
   }
   if(ids.length)yield*readPage(ids);
+  if(!patches)yield*legacyCityRoads(this.db,source.campaignId,search);
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number):AtlasLandscapeLayer{
   const layer:AtlasLandscapeLayer={state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
   let used=0,dense=false,referenceBytes=0;const references:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
-   if(q.references===false&&r.kind==='reference')continue;
+   if(q.references===false&&r.kind==='reference'||['road','river'].includes(r.kind)&&lineDisplay(r,q.box.width/q.width).opacity<=0)continue;
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
    const record=visual(r),size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(layer.coverage.objects>500||layer.coverage.references>16||used+size>Math.min(512*1024,budget/3)){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
@@ -93,24 +95,24 @@ export class AtlasLandscapeReader {
   const boxes=()=>{const rows:LandscapeBox[]=[];for(let y=Math.floor(q.box.y/edge);y<=Math.floor((q.box.y+q.box.height-Number.EPSILON)/edge);y++)for(let x=Math.floor(q.box.x/edge);x<=Math.floor((q.box.x+q.box.width-Number.EPSILON)/edge);x++)rows.push({x:x*edge,y:y*edge,width:edge,height:edge});return rows;};
   let regions=boxes();while(regions.length>4){edge*=2;regions=boxes();}
   for(let pixels=256;pixels>=16;pixels/=2){
-   layer.tiles=[];
+   layer.tiles=[];layer.lineTiles=[];
    for(const box of regions){
     const key=JSON.stringify([source.campaignId,box,pixels,dense,dense?q.box.width/q.width:0,q.references!==false,exactReferences]),hit=this.cache.get(key);
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
-     const image=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true,pixels))image.paint(r);
+     const image=new LandscapeRasterizer(box,pixels,pixels),lines=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true,pixels))image.paint(r);
      for(const r of this.rows(source,box,true,pixels))if(r.paint)image.paintColor(r);
-     if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
-      if(r.kind==='road'||r.kind==='river')image.paintRecordLine(r,q.box.width/q.width);
-      else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
-      else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
+     if(dense)for(const pass of [0,1,2])for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
+      if((r.kind==='road'||r.kind==='river')&&pass===(r.line?.overSymbols?2:0))lines.paintRecordLine(r,q.box.width/q.width);
+      else if(r.kind==='place'&&pass===1)lines.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
+      else if(pass===0&&r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
      const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');
-     json=JSON.stringify({campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
+     json=JSON.stringify({campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data,...(dense?{lineData:'data:image/png;base64,'+PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(lines.finish())} as PNG).toString('base64')}:{})});
      const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(box,Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
     }
-    const tile=JSON.parse(json) as LandscapeRaster;tile.revision=source.revision;layer.tiles.push(tile);
+    const tile=JSON.parse(json) as LandscapeRaster&{lineData?:string};tile.revision=source.revision;if(tile.lineData){layer.lineTiles!.push({...tile,data:tile.lineData,lineData:undefined} as LandscapeRaster);delete tile.lineData;}layer.tiles.push(tile);
    }
    if(Buffer.byteLength(JSON.stringify(layer))<=budget)return layer;
   }
@@ -119,7 +121,7 @@ export class AtlasLandscapeReader {
  hits(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0):AtlasHitPage{
   const mpp=q.box.width/q.width,tolerance=mpp*6,box={x:p.x-tolerance,y:p.y-tolerance,width:tolerance*2,height:tolerance*2},items:AtlasHit[]=[];let skipped=0,more=false;
   for(const r of this.rows(source,box,false)){
-   const touch=r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:lineContains(r,p,tolerance);
+   const touch=r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:lineHit(r,p,mpp,tolerance);
    if(!touch)continue;if(skipped++<offset)continue;if(items.length===40){more=true;continue;}
    const b=bounds(r);items.push({kind:'landscape',id:r.id,name:r.name||({road:'Weg',river:'Fluss',place:'Ort',reference:'Bildvorlage',patch:'Gelände'}[r.kind]),landscapeKind:r.kind,point:{x:b.x+b.width/2,y:b.y+b.height/2},box:b,revision:r.revision});
   }

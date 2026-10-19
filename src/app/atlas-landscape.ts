@@ -15,7 +15,7 @@ export interface LandscapeBox {
 export const LANDSCAPE_PLACE_FONT_PX = 13;
 /** Conservative paint reach; canonical geometry and exact hits keep their own bounds. */
 export function landscapePaintBox(box:LandscapeBox,mpp:number,labelUnits?:number):LandscapeBox {
-  const dx=mpp*(labelUnits===undefined?1:Math.max(6,LANDSCAPE_PLACE_FONT_PX*(labelUnits+1))),dy=mpp*(labelUnits===undefined?1:26);
+  const dx=mpp*(labelUnits===undefined?4:Math.max(6,LANDSCAPE_PLACE_FONT_PX*(labelUnits+1))),dy=mpp*(labelUnits===undefined?4:26);
   const result={x:box.x-dx,y:box.y-dy,width:box.width+2*dx,height:box.height+2*dy};
   if(![result.x,result.y,result.width,result.height,result.x+result.width,result.y+result.height].every(Number.isFinite))throw Error('Landschaftsausschnitt nicht präzise darstellbar.');
   return result;
@@ -42,6 +42,10 @@ export interface LandscapeRecord {
   values: Partial<Omit<AtlasCell, "q" | "r" | "level">>;
   order?: number;
   style?: "path" | "road" | "stream" | "river";
+  routeId?: string;
+  routeLength?: number;
+  junctions?: {index:number;id:string}[];
+  cityAnchors?: {index:number;cityId:string}[];
   line?: import("./landscape-line").LandscapeLine;
   paint?: import("./landscape-brush").LandscapeColor;
   surface?: "land" | "sea" | "freshwater";
