@@ -1,0 +1,45 @@
+name: Linux release draft
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  checks: read
+  actions: read
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      checks: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Require exact green main commit and unused release version
+        run: node tools/verify-release-source.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: npm ci
+      - run: npm run package:desktop -- .build/release-package
+      - name: Sign release package
+        run: node tools/release-desktop.mjs .build/release-package .build/release-assets
+        env:
+          SALTMARCHER_UPDATE_PRIVATE_KEY: ${{ secrets.SALTMARCHER_UPDATE_PRIVATE_KEY }}
+      - name: Install native test prerequisites
+        run: npx playwright-core install-deps chromium
+      - name: Test real packaged update and restart
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package
+      - name: Create draft without publishing
+        run: gh release create "$GITHUB_REF_NAME" .build/release-assets/* --draft --verify-tag --title "SaltMarcher $GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

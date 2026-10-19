@@ -34,7 +34,7 @@ await cp('node_modules/better-sqlite3/package.json', path.join(nativeDir, 'packa
 await cp('node_modules/better-sqlite3/LICENSE', path.join(nativeDir, 'LICENSE'));
 await cp('NOTICE.md', path.join(target, 'NOTICE.md'));
 await rm(path.join(target, 'resources/default_app.asar'), { force: true });
-await writeFile(path.join(target, 'Starten.sh'), '#!/bin/sh\napp_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\nexec "$app_root/electron" "$@"\n'); await chmod(path.join(target, 'Starten.sh'), 0o755);
+await writeFile(path.join(target, 'Starten.sh'), '#!/bin/sh\napp_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)\nexec env ELECTRON_RUN_AS_NODE=1 "$app_root/electron" "$app_root/resources/app/update-helper.cjs" --launch "$@"\n'); await chmod(path.join(target, 'Starten.sh'), 0o755);
 await writeFile(path.join(target, 'LIESMICH.txt'), `SaltMarcher ${applicationVersion} – Linux x64
 
 Start
@@ -77,3 +77,7 @@ Status
 Lizenzen und Attribution stehen in NOTICE.md.
 `);
 console.log(`Linux desktop package: ${path.resolve(target)} (Electron ${JSON.parse(await readFile('node_modules/electron/package.json')).version}; SQLite dependency ${require('better-sqlite3/package.json').version})`);
+
+await writeFile(path.join(target,'Installieren.sh'),'#!/bin/sh\napp_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)\nexec env ELECTRON_RUN_AS_NODE=1 "$app_root/electron" "$app_root/resources/app/update-helper.cjs" --bootstrap "$@"\n');await chmod(path.join(target,'Installieren.sh'),0o755);
+
+await mkdir(path.join(target,'licenses'),{recursive:true});await cp('node_modules/yauzl/LICENSE',path.join(target,'licenses/yauzl.txt'));await cp('node_modules/pend/LICENSE',path.join(target,'licenses/pend.txt'));

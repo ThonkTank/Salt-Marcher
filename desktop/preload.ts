@@ -1,6 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopAPI } from '../src/app/contracts';
 contextBridge.exposeInMainWorld('campaign', Object.freeze({
+  updateStatus:()=>ipcRenderer.invoke('update:status'),
+  updateCheck:()=>ipcRenderer.invoke('update:check'),
+  updateAutomatic:(enabled:boolean)=>ipcRenderer.invoke('update:automatic',enabled),
+  updateDownload:()=>ipcRenderer.invoke('update:download'),
+  updateCancel:()=>ipcRenderer.invoke('update:cancel'),
+  updateInstall:()=>ipcRenderer.invoke('update:install'),
+  updateRuntimeReady:()=>ipcRenderer.invoke('update:runtime-ready'),
+  onUpdate:(callback:(s:import('../src/app/update-contracts').UpdateStatus)=>void)=>{const listener=(_event:Electron.IpcRendererEvent,status:import('../src/app/update-contracts').UpdateStatus)=>callback(status);ipcRenderer.on('update:status',listener);return()=>ipcRenderer.removeListener('update:status',listener);},
   extensionPreview:()=>ipcRenderer.invoke('extensions:preview'),
   extensions:(after:string|null)=>ipcRenderer.invoke('extensions:list',after),
   executeExtension:(command:import('../src/app/extension-contracts').ExtensionCommand)=>ipcRenderer.invoke('extensions:execute',command),

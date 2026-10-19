@@ -1,3 +1,4 @@
+import {initUpdateUI} from './update-ui';
 import {editTextareaText} from './key-reading-model';
 import {initNumberInputScroll} from './number-input-scroll';
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
@@ -673,7 +674,8 @@ for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async ()
 })().catch(error => status(error.message, true)); };
 initWorkspaceNavigation();
 initCampaignScreen({currentCampaign:()=>workspace?.campaign.id??null,before:async()=>!workspace||activationFailed||await flushAll(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
-void openCampaignScreen(true);
+initUpdateUI(async()=>{await activationJob;rememberView();return leaveWorkspace();});
+void openCampaignScreen(true).then(()=>api.updateRuntimeReady?.()).catch(error=>status('Start konnte nicht abgeschlossen werden: '+error.message,true));
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
   catch { el('backup-status').hidden = false; el('backup-status').textContent = 'Status der Wiederherstellungskopie nicht verfügbar.'; }

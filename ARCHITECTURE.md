@@ -458,3 +458,15 @@ bleiben dort benannte Liefernachweise, keine behaupteten Ergebnisse dieser
 Planungsarbeit. Frühere Architektur-/Codemessungen sind im Gitstand
 `116c16af48b6a073216685c8d8e2cc74fada82c3:ARCHITECTURE.md` historisch verfügbar;
 sie besitzen keinen eigenständigen normativen Vorrang.
+
+## Signierte Linux-Updates (19.10.2026)
+
+Der [Updatepfad](docs/project/delivery/github-updates.md) verwendet den bestehenden
+Linux-Ordnerbuild, unveränderliche Versionsordner und einen atomaren `current`-Link.
+Main besitzt den GitHub-Zugriff; der gebündelte Helfer besitzt Installation,
+Profilsicherung und Recovery unter Kernel-Sperren. Ed25519 bindet Produktlinie,
+Releaseversion, Commit, Plattform, Archiv und Dateiverzeichnis. Datenmigrationen
+werden vor Aktivierung mit dem neuen Store auf einer vollständigen Profilkopie
+geprüft. Der neue Prozess bleibt bis zur dauerhaften Erststartfreigabe unsichtbar;
+nach dieser Freigabe gibt es kein automatisches Datenrollback. Der bisherige
+Kampagnenarchivvertrag und der Datenordner CampaignWorkbench bleiben bestehen.
