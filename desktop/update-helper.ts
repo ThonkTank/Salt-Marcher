@@ -3,7 +3,7 @@ import {mkdir,readFile,writeFile,realpath,open,rm} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
-import {acquireLock,alive,atomicJSON,exists,readJSON,rejectLegacyRunningProfile,requireSpace,treeSize} from './update-files';
+import {acquireLock,alive,atomicJSON,exists,readJSON,rejectLegacyRunningProfile,requireSpace,treeSize,copyProfile} from './update-files';
 import {checkedJournal,copyApplication,installationRoot,installLock,installUpdate,journalFile,pointCurrent,profileLock,rollback,verifyStaged,type UpdateJournal} from './update-install';
 import {manifestName,releaseAssetURL,updateProduct,type UpdateManifest} from './update-manifest';
 import {githubFetch} from './update-service';
@@ -30,12 +30,12 @@ async function startCandidate(j:UpdateJournal){
       if(child.exitCode!==null||child.signalCode!==null)throw new Error('Neue Version konnte nicht gestartet werden.');
       await sleep(200);
     }throw new Error('Neue Version hat den erfolgreichen Start nicht bestätigt.');
-  }catch(e){if(child?.pid&&alive(child.pid)){child.kill('SIGKILL');await new Promise(r=>child!.once('exit',r));}throw e;}
+  }catch(e){if(child?.pid&&child.exitCode===null&&child.signalCode===null){child.kill('SIGKILL');await new Promise(r=>child!.once('exit',r));}throw e;}
 }
 async function releaseManifest(source:string){
   if(await exists(path.join(source,manifestName))&&await exists(path.join(source,manifestName+'.sig')))return;
   const info=await readJSON<{applicationVersion:string}>(path.join(source,'resources/app/build-info.json'));
-  for(const name of [manifestName,manifestName+'.sig']){const r=await githubFetch(releaseAssetURL(info.applicationVersion,name),{signal:AbortSignal.timeout(30000)});const data=Buffer.from(await r.arrayBuffer());if(data.length>65536)throw new Error('Releasemanifest zu groß.');await writeFile(path.join(source,name),data,{flag:'wx'});}
+  for(const name of [manifestName,manifestName+'.sig']){if(await exists(path.join(source,name)))continue;const r=await githubFetch(releaseAssetURL(info.applicationVersion,name),{signal:AbortSignal.timeout(30000)});const data=Buffer.from(await r.arrayBuffer());if(data.length>65536)throw new Error('Releasemanifest zu groß.');await writeFile(path.join(source,name),data,{flag:'wx'});}
 }
 async function recover(root:string){
   const j=await readJSON<UpdateJournal>(journalFile(root)).catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(!j)return;
@@ -59,6 +59,7 @@ async function install(request:InstallRequest){
 async function bootstrap(args:string[]){
   const root=path.resolve(args[0]??path.join(homedir(),'.local/opt/saltmarcher'));
   const profile=path.resolve(args[1]??path.join(process.env.XDG_CONFIG_HOME??path.join(homedir(),'.config'),'CampaignWorkbench'));
+  if(root===appDir||root.startsWith(appDir+path.sep)||profile===root||profile.startsWith(root+path.sep)||root.startsWith(profile+path.sep))throw new Error('Anwendungspaket, Installation und Datenprofil müssen getrennte Ordner sein.');
   await releaseManifest(appDir);const manifest=await verifyStaged(appDir,await publicKey());
   await mkdir(root,{recursive:true,mode:0o700});await mkdir(profile,{recursive:true,mode:0o700});
   const token=randomUUID(),release=await acquireLock(installLock(root),token);let profileRelease:(()=>Promise<void>)|null=null;
@@ -68,7 +69,7 @@ async function bootstrap(args:string[]){
     await requireSpace(root,manifest.unpackedBytes+3*await treeSize(profile));
     const staged=path.join(root,'.updates','bootstrap-'+randomUUID());await copyApplication(appDir,staged);
     if(await exists(path.join(root,'current'))){const previous=await realpath(path.join(root,'current'));await installUpdate({root,profile,previous,staged,publicKey:await publicKey(),token},{probe:runProbe,start:startCandidate});}
-    else{const next=path.join(root,manifest.version+'-'+manifest.commit.slice(0,12));if(await exists(next))throw new Error('Versionsordner existiert bereits.');await import('node:fs/promises').then(fs=>fs.rename(staged,next));await pointCurrent(root,next);}
+    else{if(await exists(path.join(profile,'workbench.sqlite'))){const backup=path.join(root,'.bootstrap-backups',randomUUID());await copyProfile(profile,path.join(backup,'profile'));await copyProfile(path.join(backup,'profile'),path.join(backup,'trial'));await runProbe(staged,path.join(backup,'trial'),manifest);}const next=path.join(root,manifest.version+'-'+manifest.commit.slice(0,12));if(await exists(next))throw new Error('Versionsordner existiert bereits.');await import('node:fs/promises').then(fs=>fs.rename(staged,next));await pointCurrent(root,next);}
     await atomicJSON(path.join(root,'.saltmarcher-installation.json'),{format:1,product:updateProduct,root});
     const applications=path.join(process.env.XDG_DATA_HOME??path.join(homedir(),'.local/share'),'applications');await mkdir(applications,{recursive:true});
     const quote=(v:string)=>'"'+v.replace(/[\\"`$]/g,'\\$&').replace(/%/g,'%%')+'"';

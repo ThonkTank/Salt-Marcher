@@ -37,6 +37,11 @@ jobs:
           SALTMARCHER_UPDATE_PRIVATE_KEY: ${{ secrets.SALTMARCHER_UPDATE_PRIVATE_KEY }}
       - name: Install native test prerequisites
         run: npx playwright-core install-deps chromium
+      - name: Allow the Electron sandbox in the ephemeral runner
+        run: |
+          if test -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
       - name: Test real packaged update and restart
         run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package
       - name: Create draft without publishing

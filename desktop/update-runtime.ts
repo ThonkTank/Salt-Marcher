@@ -7,7 +7,7 @@ import {acquireLock,alive,atomicJSON,exists,readJSON,type Lease} from './update-
 import {checkedJournal,installationRoot,installLock,journalFile,profileLock,type UpdateJournal} from './update-install';
 import type {DownloadedUpdate} from './update-service';
 export async function openUpdateRuntime(executable:string,profile:string){
-  const root=await installationRoot(executable),token=process.env.SALTMARCHER_UPDATE_TOKEN;
+  const root=process.platform==='linux'&&process.arch==='x64'?await installationRoot(executable):null,token=process.env.SALTMARCHER_UPDATE_TOKEN;
   let release:(()=>Promise<void>)|null=null;let transaction:UpdateJournal|null=null;
   if(root&&await exists(installLock(root))){
     const lock=await readJSON<Lease>(installLock(root));
@@ -17,7 +17,7 @@ export async function openUpdateRuntime(executable:string,profile:string){
     }else throw new Error('Installation läuft oder wurde unterbrochen. SaltMarcher über Starten.sh erneut öffnen.');
   }
   if(root&&!transaction){const journal=await readJSON<UpdateJournal>(journalFile(root)).catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(journal&&!['committed','rolled-back'].includes(checkedJournal(journal,root).phase))throw new Error('Unterbrochenes Update. SaltMarcher über Starten.sh wiederherstellen.');}
-  if(!transaction)release=await acquireLock(profileLock(profile));
+  if(!transaction&&process.platform==='linux')release=await acquireLock(profileLock(profile));
   return{
     root,transaction,
     async ready(){

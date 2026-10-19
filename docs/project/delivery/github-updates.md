@@ -74,9 +74,9 @@ auf. Bei unlesbarem Journal bleiben die Originale erhalten und der Start stoppt.
 
 ## Prüfwege und Grenzen
 
-- `node --test tests/desktop-updates.test.mjs`: Versions-/Signatur-/Archivprüfung,
+- `node --test tests/desktop-updates.test.mjs tests/desktop-update-ui.test.mjs`: Versions-/Signatur-/Archivprüfung,
   Releaseauswahl, Netzwerkfehler, getrennte Aktionen, Locks, Sicherung und
-  Fehler an den Aktivierungsgrenzen.
+  Fehler sowie echte Prozessabbrüche an den Aktivierungsgrenzen.
 - `npm run package:desktop -- .build/update-native-base` und
   `node tools/test-desktop-updates.mjs .build/update-native-base`: zwei echte
   Linuxpakete, Bootstrap, UI-Download, Installation, Erststart und Erhalt von
