@@ -162,11 +162,11 @@ test('a saved deadline stays selected beyond the old horizon and the first forty
  window.campaign.agenda=async(token,q)=>{queries.push(q);return read(token,q);};
  x.click('Neue Frist / Ereignis');x.el('agenda-name').value='Ferne Frist';x.el('agenda-offset').value='6';x.el('agenda-offset-unit').value='day';x.el('agenda-notes').value='Unverändertes Original';
  x.el('agenda-event-form').dispatchEvent(new Event('submit',{cancelable:true}));await until(()=>x.el('agenda-status').textContent?.includes('Ereignis gespeichert.')===true);
- const event=x.store.world(x.workspace.token).events.find(e=>e.name==='Ferne Frist')!;assert.ok(event);
+ const event=x.store.world(x.workspace.token).events.find((e:CalendarEvent)=>e.name==='Ferne Frist')!;assert.ok(event);
  assert.equal(x.el('agenda-list').querySelectorAll('[data-event-id]').length,1);assert.equal(x.el('agenda-list').querySelector('[aria-pressed=true]')?.getAttribute('data-event-id'),event.id);
  assert.match(x.el('agenda-document').textContent!,/Ferne Frist/);assert.match(x.dialog.textContent!,/Einzelansicht/);
  assert.equal(queries.at(-1).eventId,event.id);assert.equal(queries.at(-1).horizonDays,null);assert.equal(queries.at(-1).search,'');
- assert.deepEqual(x.store.live(x.workspace.token).scene!.clock,before);assert.deepEqual(x.store.world(x.workspace.token).events.filter(e=>e.id!==event.id),originals);
+ assert.deepEqual(x.store.live(x.workspace.token).scene!.clock,before);assert.deepEqual(x.store.world(x.workspace.token).events.filter((e:CalendarEvent)=>e.id!==event.id),originals);
  x.click('Ereignis bearbeiten');assert.equal(x.el('agenda-notes').value,event.notes);x.click('Eingaben verwerfen');
  x.click('Zeit und Agenda aktualisieren');await until(()=>x.el('agenda-list').querySelectorAll('[data-event-id]').length===40);
  assert.equal(queries.at(-1).eventId,undefined);assert.doesNotMatch(x.dialog.textContent!,/Einzelansicht/);
