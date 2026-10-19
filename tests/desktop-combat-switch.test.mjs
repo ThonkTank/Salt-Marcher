@@ -1,3 +1,4 @@
+import {setTimeout as delay} from 'node:timers/promises';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
@@ -10,8 +11,10 @@ import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);
 for(const [entry,out]of [['src/app/storage/store.ts','combat-switch-store'],['src/app/combat.ts','combat-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
-async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert(check(),'Expected encounter state');}
-export async function fixture(options=true){
+// Real WebCrypto work completes on the worker pool, not after a fixed number
+// of event-loop turns. Yield until the requested UI state, with a bounded deadline.
+async function until(check){const deadline=performance.now()+5000;while(!check()&&performance.now()<deadline)await delay(1);assert(check(),'Expected encounter state');}
+async function fixture(options=true){
  const {withCombats=true,empty=false,finished=false}=typeof options==='boolean'?{withCombats:options}:options;
  const root=mkdtempSync(path.join(tmpdir(),'combat-switch-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('Zwei Begegnungen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene,combats=[];
@@ -28,7 +31,9 @@ export async function fixture(options=true){
  const choose=id=>{el('combat-history').value=id;el('combat-history').onchange();},input=(id,text)=>{el(id).value=text;el(id).dispatchEvent(new window.Event('input'));},fighter=async()=>{el('combat-rows').querySelector('button').onclick();await until(()=>!el('combat-participant').hidden&&!el('fighter-hp').disabled);};
  return{store,w,ui,a,b,el,choose,input,fighter,reads,writes,messages,waiting,hold:()=>{hold=true;},fail:()=>{fail=true;},release:()=>waiting.shift()(),cleanup(){ui.combatContext(null,null);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
 }
-test('selecting another encounter blocks old writes and preserves its incomplete notes',async()=>{
+test('selecting another encounter blocks old writes and preserves its incomplete notes',async t=>{
+ // Keep a real worker-pool boundary even on a fast CI host.
+ const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await delay(20);return digest(...args);});
  const x=await fixture();try{x.choose(x.a.id);await until(()=>x.el('combat-title').textContent==='Torwache'&&!x.el('combat-notes').disabled);await x.fighter();x.input('combat-edit-title','');x.input('combat-notes','Unfertig\r\n');assert(await x.ui.flushCombat());x.hold();x.choose(x.b.id);await until(()=>x.waiting.length===1);assert.equal(x.el('fighter-damage').disabled,true);x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await tick();assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.a.sceneId,x.a.id).combat.participants[0].hp,10);
  x.release();await until(()=>x.el('combat-title').textContent==='Keller'&&!x.el('combat-notes').disabled);await x.fighter();x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);assert.equal(x.writes[0].combatId,x.b.id);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,7);
  const d=x.store.combatDraft(x.w.token,x.a.id,'notes',x.a.id);assert.equal(d.values.title,'');assert.equal(d.values.notes,'Unfertig\r\n');
