@@ -212,6 +212,12 @@ export function validateTerritory(t: AtlasTerritory, state: TerritoryState) {
     throw Error(
       "Regionsgrenze zu umfangreich. In kleineren Abschnitten bearbeiten.",
     );
+  const normalized = unionPolygons(t.polygons, t.polygons);
+  if (
+    Math.abs(polygonArea(normalized) - polygonArea(t.polygons)) > 1e-5 ||
+    t.polygons.some((p) => polygonArea([p]) <= 1e-8)
+  )
+    throw Error("Regionsgrenze kreuzt sich oder umschließt keine Fläche.");
   let parent = t.parentId;
   const seen = new Set([t.id]);
   while (parent !== null) {
@@ -316,6 +322,13 @@ export function territoryVertex(
     throw Error("Neuen Punkt auf eine vorhandene Grenze setzen.");
   const target = edit.insert ? edit.point! : source,
     changes: AtlasTerritory[] = [];
+  const nodes = edit.insert
+    ? []
+    : state.territories
+        .filter((t) => t.layerId === old.layerId && t.parentId === old.parentId)
+        .flatMap((t) =>
+          t.polygons.flatMap((p) => [p.outer, ...p.holes].flat()),
+        );
   for (const t of state.territories) {
     if (t.layerId !== old.layerId || t.parentId !== old.parentId) continue;
     const polygons = structuredClone(t.polygons);
@@ -324,6 +337,36 @@ export function territoryVertex(
       for (const r of [p.outer, ...p.holes]) {
         if (r.length > 3 && r[0]!.x === r.at(-1)!.x && r[0]!.y === r.at(-1)!.y)
           r.pop();
+        if (!edit.insert) {
+          // A straight owner edge may omit the junction between two neighbours.
+          // Node the incident edges before moving their common endpoint.
+          const noded: Point[] = [];
+          for (let i = 0; i < r.length; i++) {
+            const a = r[i]!,
+              b = r[(i + 1) % r.length]!;
+            noded.push(a);
+            if (!onSegment(source, a, b, epsilon)) continue;
+            const inside = nodes
+              .filter(
+                (v) =>
+                  Math.hypot(v.x - a.x, v.y - a.y) > epsilon &&
+                  Math.hypot(v.x - b.x, v.y - b.y) > epsilon &&
+                  onSegment(v, a, b, epsilon),
+              )
+              .sort(
+                (v, w) =>
+                  Math.hypot(v.x - a.x, v.y - a.y) -
+                  Math.hypot(w.x - a.x, w.y - a.y),
+              );
+            for (const v of inside)
+              if (
+                Math.hypot(noded.at(-1)!.x - v.x, noded.at(-1)!.y - v.y) >
+                epsilon
+              )
+                noded.push({ ...v });
+          }
+          r.splice(0, r.length, ...noded);
+        }
         let index = r.findIndex(
           (q) => Math.hypot(q.x - target.x, q.y - target.y) <= epsilon,
         );

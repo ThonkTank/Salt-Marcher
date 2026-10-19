@@ -658,7 +658,73 @@ test("city label corrections follow the city frame and private labels stay out o
   assert.equal(publicView.landscape.labels.length, 0);
 });
 
+test("a long road can be named in a viewport far from its original midpoint", () => {
+  const box = { x: 9000, y: 0, width: 1000, height: 1000 },
+    labels = lineLabels(
+      "road",
+      "Küstenstraße",
+      "road",
+      [
+        { x: 0, y: 500 },
+        { x: 20000, y: 500 },
+      ],
+      3,
+      box,
+    ),
+    placed = new MapLabelLayout().layout(
+      labels,
+      box,
+      1,
+      (s, n) => s.length * n * 0.6,
+    );
+  assert.equal(placed.length, 1);
+  assert(placed[0].point.x > 9000 && placed[0].point.x < 10000);
+});
 
-test('a long road can be named in a viewport far from its original midpoint',()=>{
- const box={x:9000,y:0,width:1000,height:1000},labels=lineLabels('road','Küstenstraße','road',[{x:0,y:500},{x:20000,y:500}],3,box),placed=new MapLabelLayout().layout(labels,box,1,(s,n)=>s.length*n*.6);assert.equal(placed.length,1);assert(placed[0].point.x>9000&&placed[0].point.x<10000);
+test("canonical creation rejects a self-crossing region before writing", (t) => {
+  const f = fixture(t);
+  assert.throws(
+    () =>
+      f.put(
+        territory("cross", [
+          {
+            outer: [
+              { x: 0, y: 0 },
+              { x: 100, y: 100 },
+              { x: 0, y: 100 },
+              { x: 100, y: 0 },
+            ],
+            holes: [],
+          },
+        ]),
+      ),
+    /kreuzt|Fläche/,
+  );
+  assert.equal(f.state.territories.length, 0);
+});
+
+test("moving an end of a partly shared edge retains the intermediate neighbour junction", (t) => {
+  const f = fixture(t);
+  f.put(territory("west", square(0, 0, 100, 200)));
+  f.put(territory("north", square(100, 0, 100)));
+  f.put(territory("south", square(100, 100, 100)));
+  f.write({
+    kind: "territory-vertex",
+    id: "west",
+    expectedRevision: 1,
+    polygon: 0,
+    ring: 0,
+    vertex: 1,
+    point: { x: 80, y: 0 },
+  });
+  const rows = f.state.territories;
+  assert.equal(rows.find((t) => t.id === "south").revision, 1);
+  assert(
+    Math.abs(rows.reduce((s, t) => s + polygonArea(t.polygons), 0) - 40000) <
+      1e-5,
+  );
+  for (const a of rows)
+    for (const b of rows)
+      if (a !== b)
+        assert(polygonArea(intersectPolygons(a.polygons, b.polygons)) < 1e-5);
 });
