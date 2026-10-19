@@ -38,6 +38,15 @@ benötigt keine weitere Abfrage und verändert keine historischen Payloads.
 regulärer Neustart mit Bestand und beiden Beträgen am selben Shop; die
 gezielten Storeprüfungen erhalten Rundungs-, Replay- und Rollbackregeln.
 
+Der Handelsbereich verwendet eine gemeinsame ausdrücklich gewählte Figur für
+Kauf und Verkauf. Inaktive Figuren bleiben als Verkäufer verfügbar; Kaufbuttons
+sind für sie gesperrt. Überschrift, Buchungsschaltflächen und Verlauf nennen die
+Figur auch beim Scrollen. Katalog und Shops besitzen direkte Bereichsschalter;
+Shopdaten, Zeitbasis und Warenlieferungen sind gesammelt aufklappbar. Neue Shops
+und die geführte Ortszuordnung öffnen diese Verwaltung. Der Gesamtweg bis zum
+Teilrückverkauf und Neustart steht in `tools/test-desktop-shop-trade.mjs`;
+[beobachteter Vergleich und Grenzen](../../reference/gm-ux-qa/2026-10-14-shop-switch.md#kauf-und-teilrückverkauf-unter-einer-figurenwahl--19102026).
+
 `restockDue` schreibt mit bestätigter Scenezeit/Weltfolgen atomar. Nur eine
 fällige automatische Regel benötigt den Shopowner: fehlende Owner manueller
 oder erst später fälliger Shops blockieren keine unabhängige Zeit. Shopstruktur

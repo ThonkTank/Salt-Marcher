@@ -12,8 +12,8 @@ async function fixture(){
  const previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});const local=new Map();window.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}},writes=[],messages=[];window.campaign={};for(const key of ['preparation','progress','live','itemDefinitions','itemDefinition','shops','shop','ledgerInventory','commitStatus'])window.campaign[key]=async(...args)=>response(()=>store[key](...args));window.campaign.executeItemShop=async c=>{writes.push(c);return response(()=>store.executeItemShop(c));};
  delete require.cache[require.resolve('../.build/shop-switch-ui.cjs')];const ui=require('../.build/shop-switch-ui.cjs');ui.initItems(text=>messages.push(text),async()=>{});const el=id=>document.getElementById(id);for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.id==='item-sort'?'name':select.id==='item-direction'?'asc':'',writable:true});ui.activateItems(w);await ui.openItems();
- const choose=id=>[...el('shops-list').querySelectorAll('button')].find(b=>b.textContent.startsWith(shops.find(s=>s.id===id).name+' ·')).onclick();choose(shops[0].id);await until(()=>el('shop-name').value===shops[0].name&&!el('shop-fields').disabled);el('shop-buyer').value=heroes[0].id;el('shop-seller').value=heroes[0].id;el('shop-seller').onchange();await until(()=>el('shop-sale-item').options.length===1&&!el('shop-sale-fields').disabled);el('shop-sale-item').value=items[0].id;
- const buy=()=>[...el('shop-stock').querySelectorAll('button')].find(b=>b.textContent==='Für Figur kaufen').onclick(),sell=()=>{el('shop-sale-quantity').value='1';el('shop-sale-price').value='3';el('shop-sale-form').onsubmit({preventDefault(){}});},settle=async()=>{await tick();await ui.flushItems();await tick();};
+ const choose=id=>[...el('shops-list').querySelectorAll('button')].find(b=>b.textContent.startsWith(shops.find(s=>s.id===id).name+' ·')).onclick();choose(shops[0].id);await until(()=>el('shop-name').value===shops[0].name&&!el('shop-fields').disabled);el('shop-seller').value=heroes[0].id;el('shop-seller').onchange();await until(()=>el('shop-sale-item').options.length===1&&!el('shop-sale-fields').disabled);el('shop-sale-item').value=items[0].id;
+ const buy=()=>[...el('shop-stock').querySelectorAll('button')].find(b=>b.hasAttribute('data-purchase-available')).onclick(),sell=()=>{el('shop-sale-quantity').value='1';el('shop-sale-price').value='3';el('shop-sale-form').onsubmit({preventDefault(){}});},settle=async()=>{await tick();await ui.flushItems();await tick();};
  return{store,w,cam,heroes,items,shops,ui,el,choose,buy,sell,settle,writes,messages,async cleanup(){await settle();ui.activateItems(w);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
 }
 test('shop context and trades use the live roster without an unrelated progress read',async()=>{
@@ -27,7 +27,7 @@ test('shop context and trades use the live roster without an unrelated progress 
  }finally{window.campaign.progress=original;await x.cleanup();}
 });
 test('shop selection blocks detached old purchases and commits an explicit purchase only in the requested shop',async()=>{
- const x=await fixture();try{const original=window.campaign.shop,pause=held(),oldBuy=[...x.el('shop-stock').querySelectorAll('button')].find(b=>b.textContent==='Für Figur kaufen').onclick;window.campaign.shop=async(t,id)=>id===x.shops[1].id?pause.promise:original(t,id);x.choose(x.shops[1].id);await until(()=>!x.el('shop-load-status').hidden);assert.equal(x.el('shop-fields').disabled,true);oldBuy();x.el('shop-form').onsubmit({preventDefault(){}});await tick();assert.equal(x.writes.length,0);pause.resolve(await original(x.w.token,x.shops[1].id));await until(()=>!x.el('shop-fields').disabled);oldBuy();await tick();assert.equal(x.writes.length,0);x.buy();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.shopId,x.shops[1].id);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.stock[0].quantity,5);assert.equal(x.store.shop(x.w.token,x.shops[1].id).shop.stock[0].quantity,6);}finally{await x.cleanup();}
+ const x=await fixture();try{const original=window.campaign.shop,pause=held(),oldBuy=[...x.el('shop-stock').querySelectorAll('button')].find(b=>b.hasAttribute('data-purchase-available')).onclick;window.campaign.shop=async(t,id)=>id===x.shops[1].id?pause.promise:original(t,id);x.choose(x.shops[1].id);await until(()=>!x.el('shop-load-status').hidden);assert.equal(x.el('shop-fields').disabled,true);oldBuy();x.el('shop-form').onsubmit({preventDefault(){}});await tick();assert.equal(x.writes.length,0);pause.resolve(await original(x.w.token,x.shops[1].id));await until(()=>!x.el('shop-fields').disabled);oldBuy();await tick();assert.equal(x.writes.length,0);x.buy();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.shopId,x.shops[1].id);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.stock[0].quantity,5);assert.equal(x.store.shop(x.w.token,x.shops[1].id).shop.stock[0].quantity,6);}finally{await x.cleanup();}
 });
 test('seller selection clears old options and cannot sell the previous character inventory',async()=>{
  const x=await fixture();try{const original=window.campaign.ledgerInventory,pause=held(),initial=x.store.db.prepare('SELECT payload,checksum FROM character_ledger WHERE id=?').get(x.items[0].id);window.campaign.ledgerInventory=async(t,q)=>q.characterId===x.heroes[1].id?pause.promise:original(t,q);x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();assert.equal(x.el('shop-sale-item').options.length,0);assert.equal(x.el('shop-sale-fields').disabled,true);x.sell();await tick();assert.equal(x.writes.length,0);pause.resolve(await original(x.w.token,{characterId:x.heroes[1].id,after:null}));await until(()=>!x.el('shop-sale-fields').disabled);x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.ledgerId,x.items[1].id);assert.equal(x.store.ledgerItem(x.w.token,x.items[1].id).quantity,3);assert.deepEqual(x.store.db.prepare('SELECT payload,checksum FROM character_ledger WHERE id=?').get(x.items[0].id),initial);}finally{await x.cleanup();}
@@ -98,10 +98,34 @@ test('old and unreadable historical amounts stay explicit instead of using curre
  const x=await fixture();try{
   const original=window.campaign.shop;window.campaign.shop=async(...args)=>{const r=await original(...args);return{...r,value:{...r.value,history:[
    {id:'legacy',time:'Damals',description:'Historischer Einkauf'},
-   ...[undefined,'0','99999999999999999','1.5'].map((paidCopper,i)=>({id:String(i),time:'Damals',description:'Kauf '+i,facts:{entry:{origin:'purchase',status:'received',paidCopper}}})),
+   ...[undefined,'0','99999999999999999','1.5'].map((paidCopper,i)=>({id:String(i),time:'Damals',description:'Kauf '+i,facts:{entry:{characterId:'former-hero',origin:'purchase',status:'received',paidCopper}}})),
    {id:'sale',time:'Damals',description:'Alter Verkauf',facts:{entry:{status:'sold',actualSaleCopper:null}}},
   ]}};};
   x.choose(x.shops[0].id);await tick();await until(()=>!x.el('shop-fields').disabled);const history=x.el('shop-history').textContent;
   assert.match(history,/Historischer Einkauf/);assert.match(history,/Kauf 0 · Gezahlt: nicht aufgezeichnet/);assert.match(history,/Kauf 1 · Gezahlt: 0,00 GM/);assert.match(history,/Kauf 2 · Gezahlt: 999999999999999,99 GM/);assert.match(history,/Kauf 3 · Gezahlt: nicht lesbar/);assert.match(history,/Alter Verkauf · Erlös: nicht aufgezeichnet/);
+ }finally{await x.cleanup();}
+});
+
+
+test('one deliberately chosen trader buys and returns a portion without switching to another character',async()=>{
+ const x=await fixture();try{
+  x.el('items-show-shops').onclick();await x.settle();assert.equal(x.el('items-catalog').hidden,true);assert.equal(x.el('items-shops').hidden,false);
+  x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();await until(()=>!x.el('shop-sale-fields').disabled);
+  const quantity=x.el('shop-stock').querySelector('input[data-trade-key$="|Kaufmenge"]');quantity.value='3';quantity.oninput();x.buy();await x.settle();
+  const purchase=x.writes.find(w=>w.action.kind==='purchase');assert.equal(purchase.action.characterId,x.heroes[1].id);assert.equal(purchase.action.actualGold,'6.00');
+  const bought=x.store.ledgerInventory(x.w.token,{characterId:x.heroes[1].id,after:null}).items.find(l=>l.origin==='purchase');assert.equal(bought.quantity,3);
+  assert.equal(x.el('shop-seller').value,x.heroes[1].id);x.el('shop-sale-item').value=bought.id;x.el('shop-sale-quantity').value='1';x.el('shop-sale-quantity').oninput();x.el('shop-sale-form').onsubmit({preventDefault(){}});await x.settle();
+  assert.equal(x.store.ledgerItem(x.w.token,bought.id).quantity,2);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.stock[0].quantity,3);
+  const sold=x.store.ledger(x.w.token,{characterId:x.heroes[1].id,after:null,search:'',status:'sold'}).items;assert.equal(sold.length,1);assert.equal(sold[0].actualSaleCopper,'100');
+  assert.equal(x.store.ledgerItem(x.w.token,x.items[0].id).quantity,4);assert.match(x.el('shop-history').textContent,/Figur: Borin/);assert.match(x.el('shop-history').textContent,/Gezahlt: 6,00 GM/);assert.match(x.el('shop-history').textContent,/Erlös: 1,00 GM/);
+ }finally{await x.cleanup();}
+});
+
+test('an inactive trader can sell but cannot buy from a live stock button',async()=>{
+ const x=await fixture();try{
+  const live=x.store.live(x.w.token),member=live.roster.find(c=>c.id===x.heroes[1].id);x.store.executeLive({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action:{kind:'membership',characterId:member.id,expectedRevision:member.membershipRevision,expectedRosterRevision:live.rosterRevision,active:false,targetSceneId:null,expectedFocusRevision:live.focusRevision}});
+  await x.ui.openItems(x.shops[0].id);x.el('shop-seller').value=member.id;x.el('shop-seller').onchange();await until(()=>!x.el('shop-sale-fields').disabled);
+  const buy=x.el('shop-stock').querySelector('button[data-purchase-available]');assert.equal(buy.disabled,true);assert.equal(x.el('shop-trader-note').hidden,false);buy.onclick();await x.settle();assert.equal(x.writes.length,0);
+  x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'sell');assert.equal(x.store.ledgerItem(x.w.token,x.items[1].id).quantity,3);
  }finally{await x.cleanup();}
 });

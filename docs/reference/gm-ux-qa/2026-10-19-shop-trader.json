@@ -1,0 +1,1465 @@
+{
+  "task": "Ausrüstung bei einem Händler für eine Figur kaufen → eine Teilmenge zurückverkaufen → Bestand, gezahlten Preis und Erlös nach Neustart nachvollziehen",
+  "date": "2026-10-19",
+  "before": {
+    "fixture": {
+      "checkout": "6e53670d2267cf541b6b80e2774f40b93befffeb",
+      "hashes": {
+        "main.cjs": "8497b1142d088effbbfbd6b1312c53f2dd8d5d4feb95949f642dea7f739e326c",
+        "ui/renderer.js": "295af4b1344c1f1416b6ca2ccdaa3c0e64135aa683911e397243b3b239cd8091"
+      },
+      "profile": "/tmp/gm-shop-switch-gH7DAu",
+      "file": "/tmp/gm-shop-switch-gH7DAu/workbench.sqlite",
+      "campaign": {
+        "id": "81cb9174-7e82-421e-9420-e0f19accc734",
+        "name": "Markttag mit zwei Händlern",
+        "revision": 0
+      },
+      "heroes": [
+        {
+          "id": "b8755bbb-f504-4412-9abc-d28a8b157fed",
+          "ordinal": 0,
+          "profile": {
+            "name": "Ada"
+          },
+          "profileRevision": 1,
+          "archived": false,
+          "active": false,
+          "membershipRevision": 0,
+          "sceneId": null
+        },
+        {
+          "id": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+          "ordinal": 1,
+          "profile": {
+            "name": "Borin"
+          },
+          "profileRevision": 1,
+          "archived": false,
+          "active": false,
+          "membershipRevision": 0,
+          "sceneId": null
+        }
+      ],
+      "shops": [
+        {
+          "id": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+          "revision": 1,
+          "name": "Hafenladen",
+          "owner": {
+            "kind": "npc",
+            "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+          },
+          "notes": "  Preisliste\r\n- Markttag",
+          "trashed": false,
+          "stock": [
+            {
+              "id": "0d21b78f-5261-459b-a162-e9990943e09b",
+              "reference": {
+                "kind": "authored",
+                "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                "revision": 1
+              },
+              "quantity": 5,
+              "unique": false,
+              "instanceId": null,
+              "buyCopper": "200",
+              "sellCopper": "100",
+              "notes": "",
+              "restock": null
+            }
+          ]
+        },
+        {
+          "id": "322d1033-b9ff-4a6a-9b36-1b1fd4224d8e",
+          "revision": 1,
+          "name": "Bergladen",
+          "owner": {
+            "kind": "npc",
+            "id": "1a960f46-c3a5-437f-aea9-592753185e30"
+          },
+          "notes": "  Preisliste\r\n- Markttag",
+          "trashed": false,
+          "stock": [
+            {
+              "id": "e316d375-864b-4d0e-9177-8a0fa00e2ae8",
+              "reference": {
+                "kind": "authored",
+                "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                "revision": 1
+              },
+              "quantity": 7,
+              "unique": false,
+              "instanceId": null,
+              "buyCopper": "500",
+              "sellCopper": "100",
+              "notes": "",
+              "restock": null
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "id": "f2c97f93-24f9-491e-a1e5-743695005828",
+          "characterId": "b8755bbb-f504-4412-9abc-d28a8b157fed",
+          "revision": 1,
+          "reference": {
+            "kind": "authored",
+            "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+            "revision": 1
+          },
+          "name": "Seil",
+          "category": "equipment",
+          "quantity": 4,
+          "unitCopper": "200",
+          "origin": "manual",
+          "status": "received",
+          "actualSaleCopper": null,
+          "counterparty": "  Fund\r\n- Reise",
+          "treasureId": null,
+          "combatId": null,
+          "sceneId": null,
+          "locationId": null,
+          "instantMs": null,
+          "recordedAt": "2026-10-19T08:19:13.722Z",
+          "parentId": null
+        },
+        {
+          "id": "3a837df6-c28c-44e8-9c71-d664389bb96e",
+          "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+          "revision": 1,
+          "reference": {
+            "kind": "authored",
+            "definitionId": "49e6e518-139e-4980-935a-d473e48d271b",
+            "revision": 1
+          },
+          "name": "Heiltrank",
+          "category": "equipment",
+          "quantity": 2,
+          "unitCopper": "500",
+          "origin": "manual",
+          "status": "received",
+          "actualSaleCopper": null,
+          "counterparty": "  Fund\r\n- Reise",
+          "treasureId": null,
+          "combatId": null,
+          "sceneId": null,
+          "locationId": null,
+          "instantMs": null,
+          "recordedAt": "2026-10-19T08:19:13.742Z",
+          "parentId": null
+        }
+      ]
+    },
+    "canonical": {
+      "inventory": [
+        {
+          "id": "561fb43e-5b96-4947-b67f-61b25718caa2",
+          "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+          "revision": 2,
+          "reference": {
+            "kind": "authored",
+            "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+            "revision": 1
+          },
+          "name": "Seil",
+          "category": "equipment",
+          "quantity": 2,
+          "unitCopper": "200",
+          "origin": "purchase",
+          "status": "received",
+          "actualSaleCopper": null,
+          "paidCopper": "400",
+          "counterparty": "Hafenladen · Besitzer Hafenladen",
+          "counterpartyReference": {
+            "shopId": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+            "owner": {
+              "kind": "npc",
+              "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+            }
+          },
+          "instanceId": null,
+          "treasureId": null,
+          "combatId": null,
+          "sceneId": "cb284702-c3f9-462b-9a9a-bae8768e553e",
+          "locationId": null,
+          "instantMs": "0",
+          "recordedAt": "2026-10-19T08:20:13.016Z",
+          "parentId": null,
+          "currentName": "Seil",
+          "currentUnitCopper": "200"
+        },
+        {
+          "id": "3a837df6-c28c-44e8-9c71-d664389bb96e",
+          "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+          "revision": 1,
+          "reference": {
+            "kind": "authored",
+            "definitionId": "49e6e518-139e-4980-935a-d473e48d271b",
+            "revision": 1
+          },
+          "name": "Heiltrank",
+          "category": "equipment",
+          "quantity": 2,
+          "unitCopper": "500",
+          "origin": "manual",
+          "status": "received",
+          "actualSaleCopper": null,
+          "counterparty": "  Fund\r\n- Reise",
+          "treasureId": null,
+          "combatId": null,
+          "sceneId": null,
+          "locationId": null,
+          "instantMs": null,
+          "recordedAt": "2026-10-19T08:19:13.742Z",
+          "parentId": null,
+          "currentName": "Heiltrank",
+          "currentUnitCopper": "500"
+        }
+      ],
+      "sold": [
+        {
+          "id": "54b570be-9c3f-42d4-ba91-639dc5d9596c",
+          "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+          "revision": 1,
+          "reference": {
+            "kind": "authored",
+            "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+            "revision": 1
+          },
+          "name": "Seil",
+          "category": "equipment",
+          "quantity": 1,
+          "unitCopper": "200",
+          "origin": "purchase",
+          "status": "sold",
+          "actualSaleCopper": "100",
+          "paidCopper": "200",
+          "counterparty": "Hafenladen · Besitzer Hafenladen",
+          "counterpartyReference": {
+            "shopId": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+            "owner": {
+              "kind": "npc",
+              "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+            }
+          },
+          "instanceId": null,
+          "treasureId": null,
+          "combatId": null,
+          "sceneId": "cb284702-c3f9-462b-9a9a-bae8768e553e",
+          "locationId": null,
+          "instantMs": "0",
+          "recordedAt": "2026-10-19T08:20:25.853Z",
+          "parentId": "561fb43e-5b96-4947-b67f-61b25718caa2",
+          "currentName": "Seil",
+          "currentUnitCopper": "200"
+        }
+      ],
+      "shop": {
+        "shop": {
+          "id": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+          "revision": 3,
+          "name": "Hafenladen",
+          "owner": {
+            "kind": "npc",
+            "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+          },
+          "notes": "  Preisliste\r\n- Markttag",
+          "trashed": false,
+          "stock": [
+            {
+              "id": "0d21b78f-5261-459b-a162-e9990943e09b",
+              "reference": {
+                "kind": "authored",
+                "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                "revision": 1
+              },
+              "quantity": 3,
+              "unique": false,
+              "instanceId": null,
+              "buyCopper": "200",
+              "sellCopper": "100",
+              "notes": "",
+              "restock": null
+            }
+          ]
+        },
+        "ownerName": "Besitzer Hafenladen",
+        "unavailable": false,
+        "timeNotice": null,
+        "restockEvents": [],
+        "items": [
+          {
+            "id": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+            "revision": 1,
+            "name": "Seil",
+            "category": "equipment",
+            "magic": false,
+            "rarity": "",
+            "attunement": "no",
+            "unitCopper": "200",
+            "weightText": "",
+            "properties": [],
+            "description": "  Handarbeit\r\n- Markt",
+            "source": {
+              "kind": "authored",
+              "label": "GM",
+              "license": null,
+              "url": null
+            },
+            "trashed": false
+          }
+        ],
+        "history": [
+          {
+            "id": "f989d4a3-fba6-4a8b-9200-df8f21ae401d",
+            "time": "2026-10-19T08:20:25.855Z",
+            "description": "Verkauf an Shop: 1 × Seil",
+            "facts": {
+              "entry": {
+                "id": "54b570be-9c3f-42d4-ba91-639dc5d9596c",
+                "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+                "revision": 1,
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                  "revision": 1
+                },
+                "name": "Seil",
+                "category": "equipment",
+                "quantity": 1,
+                "unitCopper": "200",
+                "origin": "purchase",
+                "status": "sold",
+                "actualSaleCopper": "100",
+                "paidCopper": "200",
+                "counterparty": "Hafenladen · Besitzer Hafenladen",
+                "counterpartyReference": {
+                  "shopId": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+                  "owner": {
+                    "kind": "npc",
+                    "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+                  }
+                },
+                "instanceId": null,
+                "treasureId": null,
+                "combatId": null,
+                "sceneId": "cb284702-c3f9-462b-9a9a-bae8768e553e",
+                "locationId": null,
+                "instantMs": "0",
+                "recordedAt": "2026-10-19T08:20:25.853Z",
+                "parentId": "561fb43e-5b96-4947-b67f-61b25718caa2"
+              }
+            }
+          },
+          {
+            "id": "1caa8dda-d3ed-4acc-b2b4-9d8138a0f426",
+            "time": "2026-10-19T08:20:13.018Z",
+            "description": "Kauf: 3 × Seil",
+            "facts": {
+              "entry": {
+                "id": "561fb43e-5b96-4947-b67f-61b25718caa2",
+                "characterId": "e0da826e-f5e2-4722-bbd8-1b9d40a03307",
+                "revision": 1,
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                  "revision": 1
+                },
+                "name": "Seil",
+                "category": "equipment",
+                "quantity": 3,
+                "unitCopper": "200",
+                "origin": "purchase",
+                "status": "received",
+                "actualSaleCopper": null,
+                "paidCopper": "600",
+                "counterparty": "Hafenladen · Besitzer Hafenladen",
+                "counterpartyReference": {
+                  "shopId": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+                  "owner": {
+                    "kind": "npc",
+                    "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+                  }
+                },
+                "instanceId": null,
+                "treasureId": null,
+                "combatId": null,
+                "sceneId": "cb284702-c3f9-462b-9a9a-bae8768e553e",
+                "locationId": null,
+                "instantMs": "0",
+                "recordedAt": "2026-10-19T08:20:13.016Z",
+                "parentId": null
+              }
+            }
+          },
+          {
+            "id": "e4eef8e7-f629-4d50-aca5-f6955a0817e4",
+            "time": "2026-10-19T08:19:13.774Z",
+            "description": "Shop angelegt",
+            "facts": {
+              "shop": {
+                "id": "c50b1ea5-1cdd-45f6-9cc9-e07b6c434f01",
+                "revision": 1,
+                "name": "Hafenladen",
+                "owner": {
+                  "kind": "npc",
+                  "id": "a0a578d0-c508-4f5e-a0f8-6903f1ce7489"
+                },
+                "notes": "  Preisliste\r\n- Markttag",
+                "trashed": false,
+                "stock": [
+                  {
+                    "id": "0d21b78f-5261-459b-a162-e9990943e09b",
+                    "reference": {
+                      "kind": "authored",
+                      "definitionId": "396cc1a6-79d7-47fb-8ac6-9ce642660ed9",
+                      "revision": 1
+                    },
+                    "quantity": 5,
+                    "unique": false,
+                    "instanceId": null,
+                    "buyCopper": "200",
+                    "sellCopper": "100",
+                    "notes": "",
+                    "restock": null
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "processes": {
+      "launches": [
+        {
+          "pid": 2177762,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        },
+        {
+          "pid": 2178672,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        }
+      ],
+      "errors": [],
+      "normalClose": true
+    },
+    "complete": true,
+    "observation": "Purchase for Borin left the independent seller on Ada until explicitly corrected."
+  },
+  "after": [
+    {
+      "checkout": "6e53670d2267cf541b6b80e2774f40b93befffeb",
+      "dirty": true,
+      "hashes": {
+        "main.cjs": "8497b1142d088effbbfbd6b1312c53f2dd8d5d4feb95949f642dea7f739e326c",
+        "ui/renderer.js": "b1e0fb2a1d6798b069ba32aa9d950911b07109b6f4a0d507fd190ec83b2d606f"
+      },
+      "profile": "/tmp/gm-shop-switch-u1ndu2",
+      "zoom": 1,
+      "fixture": {
+        "campaign": {
+          "id": "b53615b4-22a7-4583-adce-151579cde540",
+          "name": "Markttag mit zwei Händlern",
+          "revision": 0
+        },
+        "heroes": [
+          {
+            "id": "d4e5d7a1-1a61-45af-a80a-b89c977b59da",
+            "ordinal": 0,
+            "profile": {
+              "name": "Ada"
+            },
+            "profileRevision": 1,
+            "archived": false,
+            "active": false,
+            "membershipRevision": 0,
+            "sceneId": null
+          },
+          {
+            "id": "93b3d028-86ea-4727-9980-074f024a1a40",
+            "ordinal": 1,
+            "profile": {
+              "name": "Borin"
+            },
+            "profileRevision": 1,
+            "archived": false,
+            "active": false,
+            "membershipRevision": 0,
+            "sceneId": null
+          }
+        ],
+        "shops": [
+          {
+            "id": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+            "revision": 1,
+            "name": "Hafenladen",
+            "owner": {
+              "kind": "npc",
+              "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "50b162a0-dd95-453f-a094-49c2f1208186",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                  "revision": 1
+                },
+                "quantity": 5,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "200",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          },
+          {
+            "id": "368fa550-6a26-4f3e-b138-abf4e30a7a9d",
+            "revision": 1,
+            "name": "Bergladen",
+            "owner": {
+              "kind": "npc",
+              "id": "251d7cd2-85e1-44a8-b182-dfde61e77c09"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "f2ced70f-0308-4798-8029-641be26eb1af",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                  "revision": 1
+                },
+                "quantity": 7,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "500",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          }
+        ],
+        "items": [
+          {
+            "id": "f0779f91-5004-4286-898c-2689345873e9",
+            "characterId": "d4e5d7a1-1a61-45af-a80a-b89c977b59da",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 4,
+            "unitCopper": "200",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.456Z",
+            "parentId": null
+          },
+          {
+            "id": "f62499fe-993a-4fa8-aa07-fd487db6a658",
+            "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "064fdb8f-c0e4-4d04-879f-075bfe1a726a",
+              "revision": 1
+            },
+            "name": "Heiltrank",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "500",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.465Z",
+            "parentId": null
+          }
+        ]
+      },
+      "canonical": {
+        "inventory": [
+          {
+            "id": "07d51e85-1701-48ba-b59b-7706de434238",
+            "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+            "revision": 2,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "200",
+            "origin": "purchase",
+            "status": "received",
+            "actualSaleCopper": null,
+            "paidCopper": "400",
+            "counterparty": "Hafenladen · Besitzer Hafenladen",
+            "counterpartyReference": {
+              "shopId": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+              "owner": {
+                "kind": "npc",
+                "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+              }
+            },
+            "instanceId": null,
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": "3a745213-f3d9-4f24-90b7-3e943f521fe5",
+            "locationId": null,
+            "instantMs": "0",
+            "recordedAt": "2026-10-19T08:51:15.908Z",
+            "parentId": null,
+            "currentName": "Seil",
+            "currentUnitCopper": "200"
+          },
+          {
+            "id": "f62499fe-993a-4fa8-aa07-fd487db6a658",
+            "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "064fdb8f-c0e4-4d04-879f-075bfe1a726a",
+              "revision": 1
+            },
+            "name": "Heiltrank",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "500",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.465Z",
+            "parentId": null,
+            "currentName": "Heiltrank",
+            "currentUnitCopper": "500"
+          }
+        ],
+        "sold": [
+          {
+            "id": "dabbe94a-79cc-4b4a-b369-3e923b84b0c7",
+            "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 1,
+            "unitCopper": "200",
+            "origin": "purchase",
+            "status": "sold",
+            "actualSaleCopper": "100",
+            "paidCopper": "200",
+            "counterparty": "Hafenladen · Besitzer Hafenladen",
+            "counterpartyReference": {
+              "shopId": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+              "owner": {
+                "kind": "npc",
+                "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+              }
+            },
+            "instanceId": null,
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": "3a745213-f3d9-4f24-90b7-3e943f521fe5",
+            "locationId": null,
+            "instantMs": "0",
+            "recordedAt": "2026-10-19T08:51:16.172Z",
+            "parentId": "07d51e85-1701-48ba-b59b-7706de434238",
+            "currentName": "Seil",
+            "currentUnitCopper": "200"
+          }
+        ],
+        "shop": {
+          "shop": {
+            "id": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+            "revision": 3,
+            "name": "Hafenladen",
+            "owner": {
+              "kind": "npc",
+              "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "50b162a0-dd95-453f-a094-49c2f1208186",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                  "revision": 1
+                },
+                "quantity": 3,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "200",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          },
+          "ownerName": "Besitzer Hafenladen",
+          "unavailable": false,
+          "timeNotice": null,
+          "restockEvents": [],
+          "items": [
+            {
+              "id": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+              "revision": 1,
+              "name": "Seil",
+              "category": "equipment",
+              "magic": false,
+              "rarity": "",
+              "attunement": "no",
+              "unitCopper": "200",
+              "weightText": "",
+              "properties": [],
+              "description": "  Handarbeit\r\n- Markt",
+              "source": {
+                "kind": "authored",
+                "label": "GM",
+                "license": null,
+                "url": null
+              },
+              "trashed": false
+            }
+          ],
+          "history": [
+            {
+              "id": "7af24d85-9bbb-4bb5-96f8-54648842d99b",
+              "time": "2026-10-19T08:51:16.173Z",
+              "description": "Verkauf an Shop: 1 × Seil",
+              "facts": {
+                "entry": {
+                  "id": "dabbe94a-79cc-4b4a-b369-3e923b84b0c7",
+                  "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+                  "revision": 1,
+                  "reference": {
+                    "kind": "authored",
+                    "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                    "revision": 1
+                  },
+                  "name": "Seil",
+                  "category": "equipment",
+                  "quantity": 1,
+                  "unitCopper": "200",
+                  "origin": "purchase",
+                  "status": "sold",
+                  "actualSaleCopper": "100",
+                  "paidCopper": "200",
+                  "counterparty": "Hafenladen · Besitzer Hafenladen",
+                  "counterpartyReference": {
+                    "shopId": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+                    "owner": {
+                      "kind": "npc",
+                      "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+                    }
+                  },
+                  "instanceId": null,
+                  "treasureId": null,
+                  "combatId": null,
+                  "sceneId": "3a745213-f3d9-4f24-90b7-3e943f521fe5",
+                  "locationId": null,
+                  "instantMs": "0",
+                  "recordedAt": "2026-10-19T08:51:16.172Z",
+                  "parentId": "07d51e85-1701-48ba-b59b-7706de434238"
+                }
+              }
+            },
+            {
+              "id": "6c87ac76-ba0c-46d2-a556-96fbffa77447",
+              "time": "2026-10-19T08:51:15.909Z",
+              "description": "Kauf: 3 × Seil",
+              "facts": {
+                "entry": {
+                  "id": "07d51e85-1701-48ba-b59b-7706de434238",
+                  "characterId": "93b3d028-86ea-4727-9980-074f024a1a40",
+                  "revision": 1,
+                  "reference": {
+                    "kind": "authored",
+                    "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                    "revision": 1
+                  },
+                  "name": "Seil",
+                  "category": "equipment",
+                  "quantity": 3,
+                  "unitCopper": "200",
+                  "origin": "purchase",
+                  "status": "received",
+                  "actualSaleCopper": null,
+                  "paidCopper": "600",
+                  "counterparty": "Hafenladen · Besitzer Hafenladen",
+                  "counterpartyReference": {
+                    "shopId": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+                    "owner": {
+                      "kind": "npc",
+                      "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+                    }
+                  },
+                  "instanceId": null,
+                  "treasureId": null,
+                  "combatId": null,
+                  "sceneId": "3a745213-f3d9-4f24-90b7-3e943f521fe5",
+                  "locationId": null,
+                  "instantMs": "0",
+                  "recordedAt": "2026-10-19T08:51:15.908Z",
+                  "parentId": null
+                }
+              }
+            },
+            {
+              "id": "92ebea4d-b900-4521-bafa-02a4635d1873",
+              "time": "2026-10-19T08:51:12.477Z",
+              "description": "Shop angelegt",
+              "facts": {
+                "shop": {
+                  "id": "f58a2d9e-dd40-41f7-87ad-860c23133306",
+                  "revision": 1,
+                  "name": "Hafenladen",
+                  "owner": {
+                    "kind": "npc",
+                    "id": "5e28ffcb-641b-4274-885e-0f1d6af3a38b"
+                  },
+                  "notes": "  Preisliste\r\n- Markttag",
+                  "trashed": false,
+                  "stock": [
+                    {
+                      "id": "50b162a0-dd95-453f-a094-49c2f1208186",
+                      "reference": {
+                        "kind": "authored",
+                        "definitionId": "6b4b8361-82b3-4cf0-a271-295b0db8b6e0",
+                        "revision": 1
+                      },
+                      "quantity": 5,
+                      "unique": false,
+                      "instanceId": null,
+                      "buyCopper": "200",
+                      "sellCopper": "100",
+                      "notes": "",
+                      "restock": null
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "history": "2026-10-19T08:51:16.173Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T08:51:15.909Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T08:51:12.477Z · Shop angelegt",
+      "launches": [
+        {
+          "pid": 2223211,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        },
+        {
+          "pid": 2223449,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        }
+      ],
+      "errors": [],
+      "complete": true,
+      "catalogReturnVerified": true
+    },
+    {
+      "checkout": "6e53670d2267cf541b6b80e2774f40b93befffeb",
+      "dirty": true,
+      "hashes": {
+        "main.cjs": "8497b1142d088effbbfbd6b1312c53f2dd8d5d4feb95949f642dea7f739e326c",
+        "ui/renderer.js": "b1e0fb2a1d6798b069ba32aa9d950911b07109b6f4a0d507fd190ec83b2d606f"
+      },
+      "profile": "/tmp/gm-shop-switch-yzclZR",
+      "zoom": 2,
+      "fixture": {
+        "campaign": {
+          "id": "8d12298e-b889-4f9e-9c1d-deb7bd5a3423",
+          "name": "Markttag mit zwei Händlern",
+          "revision": 0
+        },
+        "heroes": [
+          {
+            "id": "03e12dde-5f99-4ff1-bc6b-bd8d85367295",
+            "ordinal": 0,
+            "profile": {
+              "name": "Ada"
+            },
+            "profileRevision": 1,
+            "archived": false,
+            "active": false,
+            "membershipRevision": 0,
+            "sceneId": null
+          },
+          {
+            "id": "53af11a1-f28e-44a5-94e5-565b753462a4",
+            "ordinal": 1,
+            "profile": {
+              "name": "Borin"
+            },
+            "profileRevision": 1,
+            "archived": false,
+            "active": false,
+            "membershipRevision": 0,
+            "sceneId": null
+          }
+        ],
+        "shops": [
+          {
+            "id": "9d062609-a37f-4622-af3e-b880b3d63cee",
+            "revision": 1,
+            "name": "Hafenladen",
+            "owner": {
+              "kind": "npc",
+              "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "c596c778-1b70-466a-ae7c-0aac6c1d039c",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                  "revision": 1
+                },
+                "quantity": 5,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "200",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          },
+          {
+            "id": "8749f13d-0d53-44bb-8e7d-83f9972c805c",
+            "revision": 1,
+            "name": "Bergladen",
+            "owner": {
+              "kind": "npc",
+              "id": "a58c0846-6510-44e6-b751-883ba5b6281c"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "903ad651-56a7-4e76-9cff-e0bb41ae6836",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                  "revision": 1
+                },
+                "quantity": 7,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "500",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          }
+        ],
+        "items": [
+          {
+            "id": "d3c14cc5-0ad2-474a-aefb-a3b82e88b025",
+            "characterId": "03e12dde-5f99-4ff1-bc6b-bd8d85367295",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 4,
+            "unitCopper": "200",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.389Z",
+            "parentId": null
+          },
+          {
+            "id": "f718287d-977a-4122-ae15-e2b8e522b370",
+            "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "5fa9fa69-b1b2-4d9c-8493-1ad266b74743",
+              "revision": 1
+            },
+            "name": "Heiltrank",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "500",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.397Z",
+            "parentId": null
+          }
+        ]
+      },
+      "canonical": {
+        "inventory": [
+          {
+            "id": "5eed631c-fcd3-40dd-a27c-2606dbe894cb",
+            "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+            "revision": 2,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "200",
+            "origin": "purchase",
+            "status": "received",
+            "actualSaleCopper": null,
+            "paidCopper": "400",
+            "counterparty": "Hafenladen · Besitzer Hafenladen",
+            "counterpartyReference": {
+              "shopId": "9d062609-a37f-4622-af3e-b880b3d63cee",
+              "owner": {
+                "kind": "npc",
+                "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+              }
+            },
+            "instanceId": null,
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": "26183043-49ad-4019-9007-594e39501431",
+            "locationId": null,
+            "instantMs": "0",
+            "recordedAt": "2026-10-19T08:51:15.966Z",
+            "parentId": null,
+            "currentName": "Seil",
+            "currentUnitCopper": "200"
+          },
+          {
+            "id": "f718287d-977a-4122-ae15-e2b8e522b370",
+            "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "5fa9fa69-b1b2-4d9c-8493-1ad266b74743",
+              "revision": 1
+            },
+            "name": "Heiltrank",
+            "category": "equipment",
+            "quantity": 2,
+            "unitCopper": "500",
+            "origin": "manual",
+            "status": "received",
+            "actualSaleCopper": null,
+            "counterparty": "  Fund\r\n- Reise",
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": null,
+            "locationId": null,
+            "instantMs": null,
+            "recordedAt": "2026-10-19T08:51:12.397Z",
+            "parentId": null,
+            "currentName": "Heiltrank",
+            "currentUnitCopper": "500"
+          }
+        ],
+        "sold": [
+          {
+            "id": "f2a60ddd-badf-42e6-93a3-15a6bca94184",
+            "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+            "revision": 1,
+            "reference": {
+              "kind": "authored",
+              "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+              "revision": 1
+            },
+            "name": "Seil",
+            "category": "equipment",
+            "quantity": 1,
+            "unitCopper": "200",
+            "origin": "purchase",
+            "status": "sold",
+            "actualSaleCopper": "100",
+            "paidCopper": "200",
+            "counterparty": "Hafenladen · Besitzer Hafenladen",
+            "counterpartyReference": {
+              "shopId": "9d062609-a37f-4622-af3e-b880b3d63cee",
+              "owner": {
+                "kind": "npc",
+                "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+              }
+            },
+            "instanceId": null,
+            "treasureId": null,
+            "combatId": null,
+            "sceneId": "26183043-49ad-4019-9007-594e39501431",
+            "locationId": null,
+            "instantMs": "0",
+            "recordedAt": "2026-10-19T08:51:16.231Z",
+            "parentId": "5eed631c-fcd3-40dd-a27c-2606dbe894cb",
+            "currentName": "Seil",
+            "currentUnitCopper": "200"
+          }
+        ],
+        "shop": {
+          "shop": {
+            "id": "9d062609-a37f-4622-af3e-b880b3d63cee",
+            "revision": 3,
+            "name": "Hafenladen",
+            "owner": {
+              "kind": "npc",
+              "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+            },
+            "notes": "  Preisliste\r\n- Markttag",
+            "trashed": false,
+            "stock": [
+              {
+                "id": "c596c778-1b70-466a-ae7c-0aac6c1d039c",
+                "reference": {
+                  "kind": "authored",
+                  "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                  "revision": 1
+                },
+                "quantity": 3,
+                "unique": false,
+                "instanceId": null,
+                "buyCopper": "200",
+                "sellCopper": "100",
+                "notes": "",
+                "restock": null
+              }
+            ]
+          },
+          "ownerName": "Besitzer Hafenladen",
+          "unavailable": false,
+          "timeNotice": null,
+          "restockEvents": [],
+          "items": [
+            {
+              "id": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+              "revision": 1,
+              "name": "Seil",
+              "category": "equipment",
+              "magic": false,
+              "rarity": "",
+              "attunement": "no",
+              "unitCopper": "200",
+              "weightText": "",
+              "properties": [],
+              "description": "  Handarbeit\r\n- Markt",
+              "source": {
+                "kind": "authored",
+                "label": "GM",
+                "license": null,
+                "url": null
+              },
+              "trashed": false
+            }
+          ],
+          "history": [
+            {
+              "id": "3996851d-d176-42b5-b70c-234906a248b0",
+              "time": "2026-10-19T08:51:16.232Z",
+              "description": "Verkauf an Shop: 1 × Seil",
+              "facts": {
+                "entry": {
+                  "id": "f2a60ddd-badf-42e6-93a3-15a6bca94184",
+                  "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+                  "revision": 1,
+                  "reference": {
+                    "kind": "authored",
+                    "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                    "revision": 1
+                  },
+                  "name": "Seil",
+                  "category": "equipment",
+                  "quantity": 1,
+                  "unitCopper": "200",
+                  "origin": "purchase",
+                  "status": "sold",
+                  "actualSaleCopper": "100",
+                  "paidCopper": "200",
+                  "counterparty": "Hafenladen · Besitzer Hafenladen",
+                  "counterpartyReference": {
+                    "shopId": "9d062609-a37f-4622-af3e-b880b3d63cee",
+                    "owner": {
+                      "kind": "npc",
+                      "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+                    }
+                  },
+                  "instanceId": null,
+                  "treasureId": null,
+                  "combatId": null,
+                  "sceneId": "26183043-49ad-4019-9007-594e39501431",
+                  "locationId": null,
+                  "instantMs": "0",
+                  "recordedAt": "2026-10-19T08:51:16.231Z",
+                  "parentId": "5eed631c-fcd3-40dd-a27c-2606dbe894cb"
+                }
+              }
+            },
+            {
+              "id": "c0221c3c-d8c9-45ee-b7e3-ab15bfb08539",
+              "time": "2026-10-19T08:51:15.968Z",
+              "description": "Kauf: 3 × Seil",
+              "facts": {
+                "entry": {
+                  "id": "5eed631c-fcd3-40dd-a27c-2606dbe894cb",
+                  "characterId": "53af11a1-f28e-44a5-94e5-565b753462a4",
+                  "revision": 1,
+                  "reference": {
+                    "kind": "authored",
+                    "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                    "revision": 1
+                  },
+                  "name": "Seil",
+                  "category": "equipment",
+                  "quantity": 3,
+                  "unitCopper": "200",
+                  "origin": "purchase",
+                  "status": "received",
+                  "actualSaleCopper": null,
+                  "paidCopper": "600",
+                  "counterparty": "Hafenladen · Besitzer Hafenladen",
+                  "counterpartyReference": {
+                    "shopId": "9d062609-a37f-4622-af3e-b880b3d63cee",
+                    "owner": {
+                      "kind": "npc",
+                      "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+                    }
+                  },
+                  "instanceId": null,
+                  "treasureId": null,
+                  "combatId": null,
+                  "sceneId": "26183043-49ad-4019-9007-594e39501431",
+                  "locationId": null,
+                  "instantMs": "0",
+                  "recordedAt": "2026-10-19T08:51:15.966Z",
+                  "parentId": null
+                }
+              }
+            },
+            {
+              "id": "5255f504-1573-42e6-82d7-20248e034c50",
+              "time": "2026-10-19T08:51:12.413Z",
+              "description": "Shop angelegt",
+              "facts": {
+                "shop": {
+                  "id": "9d062609-a37f-4622-af3e-b880b3d63cee",
+                  "revision": 1,
+                  "name": "Hafenladen",
+                  "owner": {
+                    "kind": "npc",
+                    "id": "4b795423-af28-49b7-a17d-cd1a3f092899"
+                  },
+                  "notes": "  Preisliste\r\n- Markttag",
+                  "trashed": false,
+                  "stock": [
+                    {
+                      "id": "c596c778-1b70-466a-ae7c-0aac6c1d039c",
+                      "reference": {
+                        "kind": "authored",
+                        "definitionId": "fb8b3337-56cc-430c-86ec-7c84a152d1bc",
+                        "revision": 1
+                      },
+                      "quantity": 5,
+                      "unique": false,
+                      "instanceId": null,
+                      "buyCopper": "200",
+                      "sellCopper": "100",
+                      "notes": "",
+                      "restock": null
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "history": "2026-10-19T08:51:16.232Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T08:51:15.968Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T08:51:12.413Z · Shop angelegt",
+      "launches": [
+        {
+          "pid": 2223206,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        },
+        {
+          "pid": 2223450,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true
+        }
+      ],
+      "errors": [],
+      "complete": true,
+      "catalogReturnVerified": true
+    }
+  ],
+  "existingNativeRegression": {
+    "checkout": "6e53670d2267cf541b6b80e2774f40b93befffeb",
+    "dirty": true,
+    "hashes": {
+      "main.cjs": "8497b1142d088effbbfbd6b1312c53f2dd8d5d4feb95949f642dea7f739e326c",
+      "ui/renderer.js": "679cdc1d54d4e20c4291dbdbf5247f7f012d3d3777e9f4a1b7ab1117db2bf82a"
+    },
+    "scale": 1,
+    "priceBaseline": false,
+    "results": {
+      "shopSwitch": {
+        "name": "Hafenladen",
+        "oldBuyEnabled": false
+      },
+      "sellerSwitch": {
+        "oldItem": "",
+        "saleEnabled": false
+      },
+      "shopRetry": true,
+      "sellerRetry": true,
+      "incompleteShopDraftRepairable": true,
+      "final": {
+        "a": 4,
+        "b": 1,
+        "shopA": 5,
+        "shopB": 6
+      },
+      "correctBuyerAndSaleProceeds": true,
+      "unchangedSourceBytes": true,
+      "shopNotesPreserved": true,
+      "nativeRestart": true,
+      "partialTrade": {
+        "paidCopper": "101",
+        "remainingPaidCopper": "68",
+        "soldPaidCopper": "33",
+        "actualSaleCopper": "7",
+        "history": "2026-10-19T08:45:36.812Z · Verkauf an Shop: 1 × Seil · Erlös: 0,07 GM · Figur: Ada\n\n2026-10-19T08:45:36.667Z · Kauf: 3 × Seil · Gezahlt: 1,01 GM · Figur: Ada\n\n2026-10-19T08:45:32.009Z · Verkauf an Shop: 1 × Heiltrank · Erlös: 3,00 GM · Figur: Borin\n\n2026-10-19T08:45:31.729Z · Kauf: 1 × Seil · Gezahlt: 5,00 GM · Figur: Ada\n\n2026-10-19T08:45:27.816Z · Shop angelegt",
+        "reopenedIdentical": true
+      }
+    },
+    "launches": [
+      {
+        "pid": 2210562,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        }
+      },
+      {
+        "pid": 2210896,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        }
+      },
+      {
+        "pid": 2211018,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        }
+      }
+    ],
+    "normalClose": true
+  },
+  "counterpart": {
+    "url": "https://demo.foundryvtt.com/game",
+    "foundry": "14 Build 365",
+    "system": "Pathfinder Second Edition; exact system version not recorded",
+    "route": "Manual GM inventory bookkeeping and item-description transaction journal; automatic merchant transfer was not completed.",
+    "purchase": "- banner:\n  - heading \"GM UX QA Hafenladen · 20261019Copy Document UUID\" [level=4]:\n    - text: GM UX QA Hafenladen · 20261019\n    - generic \"Copy Document UUID\"\n  - generic: Close\n- img \"GM UX QA Hafenladen · 20261019\"\n- heading \"GM UX QA Hafenladen · 20261019\" [level=1]:\n  - textbox \"Name\":\n    - /placeholder: Loot\n    - text: GM UX QA Hafenladen · 20261019\n- combobox:\n  - option \"Loot\"\n  - option \"Merchant\" [selected]\n- listitem: Currency\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- button\n- button\n- generic: Total Currency 0.00 gp\n- generic: Total Wealth 4.00 gp\n- text: \n- searchbox \"Search Inventory\"\n- heading \"Weapons & Shields\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Armor\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Equipment\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list:\n  - img \"Seil\"\n  - heading \"Seil\" [level=4]\n  - generic: 2 gp\n  - generic \"[Click] Decrease by 1 [Shift-Click] Decrease by 5 [Control-Click] Decrease by 10\": –\n  - generic: \"2\"\n  - generic \"[Click] Increase by 1 [Shift-Click] Increase by 5 [Control-Click] Increase by 10\": +\n  - generic: L\n- heading \"Consumables\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Ammunition\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Treasure\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Containers\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- generic: \"Total Bulk: 2L\"",
+    "sale": "- banner:\n  - heading \"GM UX QA Hafenladen · 20261019Copy Document UUID\" [level=4]:\n    - text: GM UX QA Hafenladen · 20261019\n    - generic \"Copy Document UUID\"\n  - generic: Close\n- img \"GM UX QA Hafenladen · 20261019\"\n- heading \"GM UX QA Hafenladen · 20261019\" [level=1]:\n  - textbox \"Name\":\n    - /placeholder: Loot\n    - text: GM UX QA Hafenladen · 20261019\n- combobox:\n  - option \"Loot\"\n  - option \"Merchant\" [selected]\n- listitem: Currency\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- button\n- button\n- generic: Total Currency 0.00 gp\n- generic: Total Wealth 6.00 gp\n- text: \n- searchbox \"Search Inventory\"\n- heading \"Weapons & Shields\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Armor\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Equipment\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list:\n  - img \"Seil\"\n  - heading \"Seil\" [level=4]\n  - generic: 2 gp\n  - generic \"[Click] Decrease by 1 [Shift-Click] Decrease by 5 [Control-Click] Decrease by 10\": –\n  - generic: \"3\"\n  - generic \"[Click] Increase by 1 [Shift-Click] Increase by 5 [Control-Click] Increase by 10\": +\n  - generic: L\n- heading \"Consumables\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Ammunition\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Treasure\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Containers\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- generic: \"Total Bulk: 3L\"",
+    "freshShop": "- banner:\n  - heading \"GM UX QA Hafenladen · 20261019Copy Document UUID\" [level=4]:\n    - text: GM UX QA Hafenladen · 20261019\n    - generic \"Copy Document UUID\"\n  - generic: Close\n- img \"GM UX QA Hafenladen · 20261019\"\n- heading \"GM UX QA Hafenladen · 20261019\" [level=1]:\n  - textbox \"Name\":\n    - /placeholder: Loot\n    - text: GM UX QA Hafenladen · 20261019\n- combobox:\n  - option \"Loot\"\n  - option \"Merchant\" [selected]\n- listitem: Currency\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- generic: \"0\"\n- button\n- button\n- generic: Total Currency 0.00 gp\n- generic: Total Wealth 6.00 gp\n- text: \n- searchbox \"Search Inventory\"\n- heading \"Weapons & Shields\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Armor\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Equipment\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list:\n  - img \"Seil\"\n  - heading \"Seil\" [level=4]\n  - generic: 2 gp\n  - generic \"[Click] Decrease by 1 [Shift-Click] Decrease by 5 [Control-Click] Decrease by 10\": –\n  - generic: \"3\"\n  - generic \"[Click] Increase by 1 [Shift-Click] Increase by 5 [Control-Click] Increase by 10\": +\n  - generic: L\n- heading \"Consumables\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Ammunition\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Treasure\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- heading \"Containers\" [level=3]\n- generic: Price\n- generic: Quantity\n- generic: Unit Bulk\n- list\n- generic: \"Total Bulk: 3L\"",
+    "freshCharacter": "- banner:\n  - heading \"GM UX QA Borin · 20261019Copy Document UUID\" [level=4]:\n    - text: GM UX QA Borin · 20261019\n    - generic \"Copy Document UUID\"\n  - generic: Configure\n  - generic: Close\n- complementary:\n  - heading \"Hit Points\" [level=2]\n  - button \"Modifiers\"\n  - text: Temp HP\n  - textbox \"Temp HP\":\n    - /placeholder: \"0\"\n    - text: \"0\"\n  - generic: Current HP\n  - textbox \"Current HP\":\n    - /placeholder: \"10\"\n    - text: \"0\"\n  - text: Max HP\n  - heading \"0\" [level=2]\n  - generic: Dying\n  - generic: Wounded\n  - heading \"Armor Class\" [level=2]\n  - button \"Modifiers\"\n  - heading \"10\" [level=2]\n  - generic: AC\n  - textbox \"Shield HP\" [disabled]: —\n  - generic: Shield HP\n  - generic: Shield Max HP\n  - generic: —\n  - generic: Broken\n  - heading \"Perception\" [level=2]\n  - generic: \"+0\"\n  - generic: Untrained\n  - heading \"Initiative\" [level=2]\n  - generic: \"+0\"\n  - combobox:\n    - option \"Acrobatics\"\n    - option \"Arcana\"\n    - option \"Athletics\"\n    - option \"Crafting\"\n    - option \"Deception\"\n    - option \"Diplomacy\"\n    - option \"Intimidation\"\n    - option \"Medicine\"\n    - option \"Nature\"\n    - option \"Occultism\"\n    - option \"Perception\" [selected]\n    - option \"Performance\"\n    - option \"Religion\"\n    - option \"Society\"\n    - option \"Stealth\"\n    - option \"Survival\"\n    - option \"Thievery\"\n  - heading \"Saves\" [level=2]\n  - list:\n    - heading \"Fortitude\" [level=2]\n    - generic: Untrained\n    - generic: \"+0\"\n    - heading \"Reflex\" [level=2]\n    - generic: Untrained\n    - generic: \"+0\"\n    - heading \"Will\" [level=2]\n    - generic: Untrained\n    - generic: \"+0\"\n  - heading \"Immunities\" [level=2]\n  - button \"Edit\": Edit\n  - list\n  - heading \"Weaknesses\" [level=2]\n  - button \"Edit\": Edit\n  - list\n  - heading \"Resistances\" [level=2]\n  - button \"Edit\": Edit\n  - list\n- heading \"GM UX QA Borin · 20261019\" [level=1]:\n  - textbox \"Character Name\": GM UX QA Borin · 20261019\n- generic: Hero Points\n- generic: Level\n- spinbutton: \"1\"\n- textbox \"0\"\n- text: /\n- textbox \"1000\"\n- progressbar\n- tablist:\n  - generic: Inventory\n  - tab \"Character\"\n  - tab \"Actions\":\n    - generic: \"1\"\n  - tab \"Inventory\" [selected]\n  - tab \"Spellcasting\"\n  - tab \"Crafting\"\n  - tab \"Proficiencies\"\n  - tab \"Feats\"\n  - tab \"Effects\"\n  - tab \"Biography\"\n  - tab \"Pathfinder Society\":\n  - generic \"Manage Tabs\"\n- listitem: Currency\n- generic: \"0\"\n- generic: \"20\"\n- generic: \"0\"\n- generic: \"0\"\n- button\n- button\n- button\n- generic: Total Currency 20.00 gp\n- generic: Total Wealth 24.00 gp\n- text: \n- searchbox \"Search Inventory\"\n- heading \"Weapons & Shields\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list\n- heading \"Armor\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list\n- heading \"Equipment\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list:\n  - img \"Seil\"\n  - heading \"Seil\" [level=4]\n  - generic \"[Click] Decrease by 1 [Shift-Click] Decrease by 5 [Control-Click] Decrease by 10\": –\n  - generic: \"2\"\n  - generic \"[Click] Increase by 1 [Shift-Click] Increase by 5 [Control-Click] Increase by 10\": +\n  - generic: 2L\n  - generic: Item 0\n  - generic: \"Price: 2 gp\"\n  - paragraph: \"Kauf beim Hafenladen: 3 × Seil; bezahlt 6 GM (2 GM pro Stück).\"\n  - paragraph: \"Teilverkauf an Hafenladen: 1 × Seil; Erlös 1 GM. Verbleibend bei Borin: 2 × Seil.\"\n- heading \"Consumables\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list\n- heading \"Ammunition\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list\n- heading \"Treasure\" [level=3]\n- generic: Value\n- generic: Quantity\n- generic: Bulk\n- list:\n  - img \"Gold Pieces\"\n  - heading \"Gold Pieces\" [level=4]\n  - generic: 20 gp\n  - generic \"[Click] Decrease by 1 [Shift-Click] Decrease by 5 [Control-Click] Decrease by 10\": –\n  - generic: \"20\"\n  - generic \"[Click] Increase by 1 [Shift-Click] Increase by 5 [Control-Click] Increase by 10\": +\n  - generic: —\n- heading \"Containers\" [level=3]\n- generic: Quantity\n- generic: Bulk\n- list\n- img \"Encumbrance\"\n- generic: \"Bulk: 2L / Encumbered: 5\"\n- generic: \"Max Bulk: 10\"\n- generic: Invested 0 / 10",
+    "completeManualWorkflow": true,
+    "automaticMerchantTransferQualified": false,
+    "cleanup": "Original empty Player 01 character assignment restored; logged out and temporary viewport reset."
+  },
+  "limits": [
+    "Native source-build interaction; no package installation or human GM acceptance.",
+    "Foundry VTT public PF2e demo: own test actors; manual inventory and transaction prose, not qualified automatic merchant transfer or coin accounting.",
+    "Public demo login was interrupted and reopened; no controlled normal server restart claim.",
+    "A pre-launch shared temporary Store bundle collision was fixed with per-process bundle paths; final zoom runs both completed normally."
+  ]
+}
