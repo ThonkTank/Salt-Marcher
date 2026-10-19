@@ -18,18 +18,19 @@ export function readSceneRules(db:any,cam:string,sceneId:string):SceneRules{
  const revision=db.prepare('SELECT revision FROM scene_rule_state WHERE campaign_id=? AND scene_id=?').get(cam,sceneId)?.revision??0;
  if(!Number.isSafeInteger(revision)||revision<0)throw new Error('Regelreferenz-Revision ist ungültig.');
  // Missing or damaged current sources must not remove their frozen pins.
- const rows=db.prepare(`SELECT p.*,n.payload AS source_payload,n.checksum AS source_checksum,n.trashed AS source_trashed
+ const pins:SceneRulePin[]=[];
+ // Do not collect a second array containing all current source texts.
+ for(const row of db.prepare(`SELECT p.*,n.payload AS source_payload,n.checksum AS source_checksum,n.trashed AS source_trashed
   FROM scene_rule_pin p LEFT JOIN world_note n ON n.campaign_id=p.campaign_id AND n.id=p.note_id
-  WHERE p.campaign_id=? AND p.scene_id=? ORDER BY p.ordinal,p.note_id`).all(cam,sceneId);
- const pins:SceneRulePin[]=rows.map((row:any)=>{
+  WHERE p.campaign_id=? AND p.scene_id=? ORDER BY p.ordinal,p.note_id`).iterate(cam,sceneId)){
   const pin=stored(row);
   let currentRevision:number|null=null,unavailable=true;
   if(row.source_payload!==null&&!row.source_trashed&&hash(row.source_payload)===row.source_checksum){
    const note=worldNoteDocument(JSON.parse(row.source_payload));
    if(note.kind==='rule'){currentRevision=note.revision;unavailable=false;}
   }
-  return {...pin,currentRevision,unavailable,stale:unavailable||currentRevision!==pin.sourceRevision};
- });
+  pins.push({...pin,currentRevision,unavailable,stale:unavailable||currentRevision!==pin.sourceRevision});
+ }
  return {sceneId,revision,pins};
 }
 export function executeSceneRule(db:any,command:SceneRuleCommand,guard:()=>void):SceneRules{return db.transaction(()=>{const a=command?.action;if(!command||![command.commandId,command.campaignId,command.token,command.sceneId].every(value=>typeof value==='string'&&!!value&&value.length<=1000)||!Number.isSafeInteger(command.expectedRevision)||command.expectedRevision<0||!a||!['pin','refresh','unpin'].includes(a.kind)||typeof a.noteId!=='string'||!a.noteId||a.noteId.length>1000||a.kind!=='unpin'&&a.expectedSourceRevision!==undefined&&(!Number.isSafeInteger(a.expectedSourceRevision)||a.expectedSourceRevision<1))throw new Error('Ungültiger Regelreferenz-Auftrag.');guard();const fp=fingerprint(command),prior=db.prepare('SELECT * FROM scene_rule_receipt WHERE command_id=?').get(command.commandId);if(prior){if(prior.campaign_id!==command.campaignId||prior.fingerprint!==fp||hash(prior.payload)!==prior.checksum)throw new Error('Regelreferenz-Auftrag ist nicht verlässlich wiederholbar.');return JSON.parse(prior.payload);}const current=readSceneRules(db,command.campaignId,command.sceneId);if(current.revision!==command.expectedRevision)throw new Error('Regelreferenzen dieser Scene wurden geändert.');db.prepare('INSERT OR IGNORE INTO scene_rule_state VALUES(?,?,0)').run(command.campaignId,command.sceneId);const existing=current.pins.find(p=>p.noteId===a.noteId);if(a.kind==='unpin'){if(!existing)throw new Error('Regelreferenz ist nicht angeheftet.');db.prepare('DELETE FROM scene_rule_pin WHERE campaign_id=? AND scene_id=? AND note_id=?').run(command.campaignId,command.sceneId,a.noteId);}else{const pin=snapshot(source(db,command.campaignId,a.noteId));if(a.expectedSourceRevision!==undefined&&pin.sourceRevision!==a.expectedSourceRevision)throw new Error('Regelquelle geändert. Erneut lesen und ausdrücklich anheften.');if(a.kind==='pin'&&existing)throw new Error('Regelreferenz ist bereits angeheftet.');if(a.kind==='refresh'&&!existing)throw new Error('Regelreferenz ist nicht angeheftet.');const payload=json(pin),ordinal=existing?db.prepare('SELECT ordinal FROM scene_rule_pin WHERE campaign_id=? AND scene_id=? AND note_id=?').get(command.campaignId,command.sceneId,a.noteId).ordinal:(db.prepare('SELECT coalesce(max(ordinal),-1)+1 n FROM scene_rule_pin WHERE campaign_id=? AND scene_id=?').get(command.campaignId,command.sceneId).n);if(!existing&&current.pins.length>=50)throw new Error('Eine Scene kann höchstens 50 Regelreferenzen anheften.');db.prepare('INSERT INTO scene_rule_pin VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,scene_id,note_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(command.campaignId,command.sceneId,a.noteId,ordinal,payload,hash(payload));}db.prepare('UPDATE scene_rule_state SET revision=revision+1 WHERE campaign_id=? AND scene_id=?').run(command.campaignId,command.sceneId);const result=readSceneRules(db,command.campaignId,command.sceneId),payload=json(result);db.prepare('INSERT INTO scene_rule_receipt VALUES(?,?,?,?,?)').run(command.commandId,command.campaignId,fp,payload,hash(payload));return result;}).immediate();}

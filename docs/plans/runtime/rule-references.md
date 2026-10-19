@@ -76,8 +76,9 @@ noch die andere Gruppe ersetzen. „Aktualisieren“ fragt beide erneut ab.
 
 Der Speicher liest angeheftete Regeln samt heutigen Quellen mit einem gemeinsamen
 `LEFT JOIN`, statt je Pin erneut zu lesen. Campaign und Notiz-ID binden die
-Quelle; die gespeicherte Pinreihenfolge bleibt erhalten. Fehlende, archivierte,
-beschädigte oder andersartige Quellen lassen den eingefrorenen Text lesbar.
+Quelle; die gespeicherte Pinreihenfolge bleibt erhalten. Fehlende oder archivierte
+Quellen, ungültige Quellprüfsummen und andere Notizarten lassen den eingefrorenen
+Text lesbar.
 Quellenprüfung und Probenhistorie bleiben getrennt. Es gibt
 keine Schemaänderung oder Migration. Die Authoritygegenproben halten beide
 Reader einzeln zurück, liefern Fehler und fremde Sceneantworten und prüfen
