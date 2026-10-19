@@ -114,6 +114,21 @@ und Anzahl. Gleiche Kreatur, Initiative und Menge dürfen die Mitgliedsidentitä
 nicht verdecken. Der Command bindet weiterhin die gespeicherte Trupp-ID; die
 Vorschau führt keine eigene Identität oder persistierten Namen ein.
 
+## Verstärkung bei kurzer Ansicht
+
+Trupp/Katalogziel und Anzahl stehen nebeneinander; bei neuer Kreatur stehen
+Initiative und Bestätigung gemeinsam darunter. Die laufende Runde und der
+aktive Teilnehmer bleiben im Dialog sichtbar. Freie Einträge und vorbereitete
+Szenengruppen bleiben ausdrücklich erreichbar. Bei geringer Fensterhöhe
+scrollt die große Anwendungskopfzeile normal mit; die Bereichsnavigation bleibt
+oben. Kampfroster und Tabelle erzwingen dort keine eigenen vertikalen
+Scrollflächen. Musiktransport bleibt unmittelbar verfügbar.
+
+Die [native Wiederholung und DM-Screen-Gegenprobe](../../reference/gm-ux-qa/2026-10-15-encounter-comparison.md#verstärkung-bei-kurzer-ansicht)
+belegen den begrenzten Gegnerablauf mit unveränderten HP/Zuständen/Zug,
+Neustart und Abschluss bei 100/200 %. Keine vollständige Party-, Reward-,
+Mehrplattform- oder menschliche Bedienabnahme.
+
 ## Nachbereitung und bestehende Schätze
 
 Ein Snapshot liest Outcome-/XP-Buchung und vorhandene Kampf-/Scene-/Ortsschätze

@@ -578,3 +578,52 @@ Nach demselben Ausgangslauf wurde dieselbe Aufgabe tatsächlich in DM Screen2014
 Der gesamte native Ablauf wurde auf der Änderung aus einer unabhängigen Sicherung erneut bedient und nach normalem Prozessneustart wiedergefunden: WolfA27/37,B/C37/37, alle Initiative12; einmalig150XP pro PC. End-XP14734/8936/8936/8602, Tageslast800/800/800/4301. Vorher/Nachher haben dieselben XP-/Rastdaten und unveränderte Vorlagen, World-Figuren, Beute und Ledger. Alle14 verglichenen Tabellen bleiben beim Nachtest-Neustart identisch. Vier Produktabschlüsse Exit0, beide Bedienhilfen NORMAL_JOB_EXIT, keine Produktnachkommen. Nachtest-Buildidentität ist Main`b56d46d65` mit den drei lokalen Quelldateiänderungen, als`+dirty` gebaut; Paket, Installation und Ownerabnahme sind nicht geprüft.
 
 [Vorher](encounter-comparison-20261015/spontaneous-before.png) · [Direkt spielbereit](encounter-comparison-20261015/spontaneous-after.png) · [Abschluss nach Neustart](encounter-comparison-20261015/spontaneous-reopened.png) · [DM-Nachkampfbericht](encounter-comparison-20261015/spontaneous-dm-report.jpg) · [Ergebnisse und Prüfstand](encounter-comparison-20261015/spontaneous-evidence.json).
+
+
+## Verstärkung bei kurzer Ansicht
+
+19.10.2026. Erneute tatsächliche Aufgabe ab laufendem Gegnerroster: Goblin A/B teilen
+Initiative 12, A hat 4/7 HP und „Liegend“ und ist am Zug. Einen Goblin demselben
+Trupp hinzufügen; neuen Hobgoblin mit Initiative 10 hinzufügen; fortsetzen und
+mit Ergebnis „Die Verstärkung ergibt sich.“ ausdrücklich ohne XP abschließen.
+Der native Startzustand wurde isoliert über den Store vorbereitet, alle
+folgenden Änderungen über die echte Oberfläche ausgeführt.
+
+Die vorherige Anordnung schob bei 200 % schon die Truppbestätigung unter den
+Dialogrand. Katalogwahl und Initiative waren von der Bestätigung getrennt.
+Die haftende große Anwendungskopfzeile und verschachtelte Rosterscrollflächen
+verdrängten anschließend die Kampfwerte. Jetzt stehen Ziel/Anzahl und
+Initiative/Bestätigung zusammen; doppelte Zugerklärungen entfallen. Bei kurzer
+Ansicht scrollt die Kopfzeile weg, die Bereichsnavigation bleibt oben und das
+Roster verwendet den normalen Seitenlauf. Musiktransport bleibt erhalten.
+
+[Trupp vorher](encounter-comparison-20261015/reinforcement-layout-before-200.png),
+[Trupp nachher](encounter-comparison-20261015/reinforcement-layout-troop-200.png),
+[Katalog vorher](encounter-comparison-20261015/reinforcement-layout-catalog-before-200.png),
+[Katalog nachher](encounter-comparison-20261015/reinforcement-layout-catalog-200.png),
+[Kampfwerte vorher](encounter-comparison-20261015/reinforcement-layout-roster-before-200.png),
+[Kampfwerte nachher](encounter-comparison-20261015/reinforcement-layout-health-200.png).
+
+Die native Aufgabe bestand bei Zoom 1/2 einschließlich gleichzeitiger,
+unverdeckter Sichtbarkeit der entscheidenden Felder, erhaltenen Teilnehmer-IDs,
+HP/Zuständen/aktivem Zug, frischem laufendem Kampf, Zugwechsel, Abschluss und
+frisch geöffnetem Ergebnis. Sechs normale Exits. Die bestehende native
+Musik-/Navigationsprobe prüft zusätzlich Szenenbezug, Stopp, stillen Neustart und
+explizites Abspielen; ihr aktualisierter Hauptzweigstand wird mitgeprüft.
+
+Dieselbe Aufgabe wurde im aktuellen [DM Screen](https://dmscreen.app/),
+2014-Regeln, ohne sichtbare Buildnummer ausgeführt: Goblin suchen → Share slot
+with → Goblin A wählen → Add; Hobgoblin suchen → Initiative 10 → Add. Tatsächlicher
+Reload erhielt A mit 4/7 HP, Prone und aktivem Zug sowie alle vier Gegner. End
+Turn setzte zum hinzugefügten Goblin fort. End Encounter und dessen zweite
+Bestätigung beendeten diesen eigenen Testkampf; danach erschien der leere
+Builder. Ein gespeicherter Ergebnisbericht oder eine XP-Buchung wurde für
+diesen Gegnerlauf nicht beobachtet. Bestehende Partydefinitionen blieben
+unverändert. [Erhaltener Vergleichskampf](encounter-comparison-20261015/reinforcement-layout-dm-fresh.jpg),
+[beendeter Vergleichskampf](encounter-comparison-20261015/reinforcement-layout-dm-ended.jpg).
+
+[Quelldateihashes, Prozesse und Zustandswerte](encounter-comparison-20261015/reinforcement-layout-20261019.json).
+Wiederholen nach Testasset-/Desktopbuild mit
+`GM_QA_ZOOM=2 python3 tools/ui-session.py node tools/test-desktop-reinforcement-layout.mjs --assert-layout`.
+Keine Gesamtparität, Party-/Rewardqualifikation, Paketinstallation oder
+menschliche Owner-Abnahme.

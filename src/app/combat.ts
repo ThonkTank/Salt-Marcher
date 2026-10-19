@@ -305,7 +305,7 @@ function renderReinforcements(){
  get('combat-creature-search-form').hidden=grouped;get('combat-creature-status').hidden=grouped;
  get('combat-creature-initiative-field').hidden=grouped;get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
  get('combat-creature-select-label').textContent=grouped?'Vorhandener Trupp':'Katalogkreatur';
- get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps. Vorhandene HP und Zustände sowie der laufende Zug bleiben erhalten.':'Statblock, HP, RK und XP werden übernommen. Der laufende Zug bleibt erhalten.';
+ get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps.':'HP, RK und XP werden aus dem Statblock übernommen.';
  select.replaceChildren();
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
  if(grouped)for(const members of groups){
