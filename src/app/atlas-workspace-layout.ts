@@ -261,6 +261,7 @@ export class AtlasWorkspaceLayout {
   try{
    if(!await this.host.tool(section,tool.control,tool.value,tool.settings))return;
    if(group){this.groupMemory.set(section,group);this.toolMemory.set(section+':'+group,tool.id);}
+   if(section==='interior'&&tool.id==='room-rectangle'&&this.auxiliary==='selection')this.hideContext();
    this.renderGroups();this.showToolSettings(true);
    if(tool.panel==='library')await this.requestContext('library','Objekte wählen',[el('drawing-tool-options')]);
    if(tool.panel==='generation')await this.openGeneration();

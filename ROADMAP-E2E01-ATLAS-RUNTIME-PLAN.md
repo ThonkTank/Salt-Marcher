@@ -299,6 +299,7 @@ Dungeon-/Stadtnamen ist kein zweiter Raumautor. Vorschau und Commit rasten
 an denselben lokalen Punkten ein. Nach einem neu gezeichneten Rechteck bleibt
 sein Werkzeug aktiv; der Name ist für den nächsten Raum ausgewählt. Die
 Raumauswahl öffnet währenddessen keine verdeckende Eigenschaftenleiste;
+auch beim Wechsel zum Rechteckwerkzeug weichen bereits offene Eigenschaften.
 ausdrückliche Auswahl und Details bleiben erreichbar. Anhängen
 an einen bestehenden Raum beendet den einzelnen Formschritt weiterhin.
 Die Geste bleibt ein gesonderter Adapter,

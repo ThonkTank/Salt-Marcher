@@ -85,3 +85,12 @@ test('a room created while drawing records its selection without opening an obst
  assert.deepEqual(opened,['room:Wachstube'],'explicit Details/selection still opens the same room');
  layout.selectionChanged('room:Archiv');assert.deepEqual(opened,['room:Wachstube','room:Archiv']);
 });
+
+
+test('entering rectangle drawing hides existing properties only after the tool switch succeeds',async t=>{
+ const {layout,allow}=fixture(t),tool=atlasToolGroups.interior.find(g=>g.id==='rooms').tools[0];
+ layout.auxiliary='selection';layout.contextVisible=true;layout.applyWidth=()=>{};
+ allow(false);await layout.activateTool('interior','rooms',tool);assert.equal(layout.contextVisible,true);
+ allow(true);await layout.activateTool('interior','rooms',tool);assert.equal(layout.contextVisible,false);
+ assert.equal(layout.auxiliary,'selection','Details can restore the existing properties');
+});
