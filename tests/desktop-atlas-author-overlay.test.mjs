@@ -148,6 +148,21 @@ test('wall handles use local edge normals and preserve nonadjacent vertices; no 
  Object.assign(f.ui,{brushId:null,suppressClick(){},write:async a=>writes.push(a),render(){}});
  f.ui.vertexDrag.point={x:2,y:2};await f.ui.up({pointerId:3});assert.equal(writes.length,0);
 });
+test('successive room previews share untouched contours and holes without moving the original or accumulating deltas',t=>{
+ const f=fixture(t),source=f.original;
+ source.polygons[0].holes=[[{x:3,y:3},{x:4,y:3},{x:4,y:4}]];
+ source.polygons.push({outer:[{x:20,y:20},{x:24,y:20},{x:24,y:24}],holes:[]});
+ const before=structuredClone(source);
+ f.ui.vertexDrag={room:source,polygon:0,vertex:1,edge:true,start:{x:9,y:5},point:{x:12,y:6}};
+ const first=f.ui.roomPreview(source);f.ui.vertexDrag.point={x:13,y:5};const second=f.ui.roomPreview(source);
+ assert.deepEqual(first.polygons[0].outer,[{x:1,y:2},{x:12,y:2},{x:12,y:8},{x:1,y:8}]);
+ assert.deepEqual(second.polygons[0].outer,[{x:1,y:2},{x:13,y:2},{x:13,y:8},{x:1,y:8}]);
+ for(const preview of [first,second]){assert.equal(preview.polygons[1],source.polygons[1]);assert.equal(preview.polygons[0].holes,source.polygons[0].holes);assert.equal(preview.polygons[0].outer[0],source.polygons[0].outer[0]);}
+ f.ui.vertexDrag.point={x:9,y:5};assert.equal(f.ui.roomPreview(source),source);
+ f.ui.vertexDrag.edge=false;f.ui.vertexDrag.point={x:9,y:2};assert.equal(f.ui.roomPreview(source),source);
+ f.ui.vertexDrag.point={x:11,y:1};const vertex=f.ui.roomPreview(source);assert.deepEqual(vertex.polygons[0].outer[1],{x:11,y:1});assert.equal(vertex.polygons[0].outer[2],source.polygons[0].outer[2]);
+ assert.deepEqual(source,before);
+});
 test('wall handles are available on room edges but absent in stale, slice or public contexts',t=>{
  const f=fixture(t);let scene=f.render(),edges=all(scene).filter(n=>n.data.atlasEdge!==undefined);assert.equal(edges.length,4);
  assert.deepEqual(edges.map(n=>({x:n.geometry.x,y:n.geometry.y})),[{x:5,y:2},{x:9,y:5},{x:5,y:8},{x:1,y:5}]);
