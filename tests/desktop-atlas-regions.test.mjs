@@ -259,3 +259,24 @@ test('authored room colors follow their target identity through selected reads, 
  f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'undo'}});assert.deepEqual((await f.read()).drawing.styles,[]);
  f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'redo'}});const restored=await f.read();assert.equal(restored.drawing.styles[0].fill,style.fill);assert.equal(restored.drawing.styles[0].wall,style.wall);
 });
+
+
+test('an overlapping empty Dungeon caption yields to active room keys without losing its target',async t=>{
+ const f=fixture(t,0),token=f.shell.token,campaignId=f.campaign.id;
+ const write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId,action});
+ const scopeId=write({kind:'dungeon-create',name:'Abendgrundriss',x:0,y:0}).result.id;
+ write({kind:'dungeon-create',name:'Leerer Nachbar',x:40,y:0});
+ const polygons=[{outer:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],holes:[]}];
+ const id=write({kind:'room-create',scopeId,floorId:'ground',name:'Wachstube',polygons}).result.id;
+ const q={...query({x:-10,y:-10,width:60,height:20}),scopeId};
+ let region=await f.read(q);
+ assert(region.labels.some(l=>l.text.includes('Wachstube')));
+ assert(!region.labels.some(l=>l.id==='scope:local'),'an empty drawing inside the room cannot replace its name');
+ assert(region.labels.some(l=>l.text==='Leerer Nachbar'),'separate empty Dungeons remain visible');
+ assert(f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
+ assert.equal(f.reader.focus(f.source,'scope','local').id,'local');
+ // A hole no longer covers the marker. Rebuild after the geometry write.
+ let room=f.store.atlasRoom(token,id);
+ f.store.atlasRoomCommit({commandId:randomUUID(),token,campaignId,roomId:id,expectedRevision:room.revision,name:room.name,polygons:[{...polygons[0],holes:[[{x:-1,y:-1},{x:1,y:-1},{x:1,y:1},{x:-1,y:1}]]}],sections:room.sections});
+ region=await f.read(q);assert(region.labels.some(l=>l.id==='scope:local'),'the room hole leaves the other location visible');
+});
