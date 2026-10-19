@@ -169,7 +169,7 @@ async function open(id) {
 async function note(title) {
  if (!await page.locator('#preparation-tab').isVisible()) {
   if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();
-  else await page.locator('#workspace-nav-summary').click();
+  if(!await page.locator('#preparation-tab').isVisible())await page.locator('#workspace-nav-summary').click();
  }
  await page.locator('#preparation-tab').click(); await page.locator('#preparation-knowledge').click();
  await page.locator('#world-search').fill(title); await page.locator('#world-list button').filter({hasText:title}).click();
@@ -177,7 +177,7 @@ async function note(title) {
 }
 const observations={},launches=[],artifactHashes={};
 for(const rel of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css']) artifactHashes[rel]=createHash('sha256').update(await readFile(root+'/.build/desktop/'+rel)).digest('hex');
-async function shot(name){await page.screenshot({path:out+'/'+name+'.png'});await writeFile(out+'/'+name+'.txt',await page.locator('body').ariaSnapshot());}
+async function shot(name){await writeFile(out+'/'+name+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64')),'base64'));await writeFile(out+'/'+name+'.txt',await page.locator('body').ariaSnapshot());}
 async function map(){await page.locator('#note-room-uses-list button').filter({hasText:'Torhalle'}).click();await page.locator('#key-dialog').waitFor({state:'visible'});}
 try {
  await launch(); launches.push(app.process().pid); await shot('startup'); await open(original.id);
@@ -191,6 +191,7 @@ try {
  if(process.argv.includes('--before'))await page.locator('#campaign-import-package').click();else{await page.locator('#campaign-manager-close').click();if(!await page.locator('#campaign-header-name').isVisible())await page.locator('#atlas-navigation').click();await page.locator('#campaign-header-name').click();await page.locator('#campaign-screen-import').click();}
  await page.locator('#campaign-transfer-dialog').waitFor({state:'visible'}); await shot('preview');
  observations.preview=await page.locator('#campaign-transfer-dialog').innerText();
+ const layout=await page.locator('#campaign-transfer-dialog').evaluate(e=>({right:e.getBoundingClientRect().right,viewport:innerWidth,scroll:e.scrollWidth,width:e.clientWidth}));assert(layout.right<=layout.viewport+1);assert(layout.scroll<=layout.width+1);observations.previewFitsWidth=layout;
  if(!process.argv.includes('--before')){assert.match(await page.locator('#campaign-transfer-summary').innerText(),/1 Dungeonzeichnung.*1 Raum.*2 Wissenseinträge/);assert.equal(await page.locator('#campaign-manager-dialog').isVisible(),false);assert.equal(await page.locator('#campaign-transfer-origin').innerText(),'Quelle: Nebelmark Original');}
  await page.locator('#campaign-transfer-name').fill('Nebelmark Import');
  await page.locator('#campaign-transfer-accept').scrollIntoViewIfNeeded();assert(await page.locator('#campaign-transfer-accept').evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})); await page.locator('#campaign-transfer-accept').click();
