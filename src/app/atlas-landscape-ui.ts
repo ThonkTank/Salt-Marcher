@@ -98,6 +98,7 @@ export class LandscapeWorkbench {
   private brushStrokes: Point[][] = [];
   private pointer: number | null = null;
   private selected: LandscapeRecord | null = null;
+  private lineBackground:{key:unknown[];node:AtlasPaint;box:LandscapeBox}|null=null;
   get selectionId(){return this.selected&&this.inspectorRoot.dataset.selectionId===this.selected.id?this.selected.id:null;}
   private vertex = 0;
   private dragging = false;
@@ -469,7 +470,7 @@ export class LandscapeWorkbench {
     this.token = token;
     this.autoGrid=null;this.gridFade=null;
     this.cancel();
-    this.records = [];this.background=null;
+    this.records = [];this.background=null;this.lineBackground=null;
     this.raster = undefined;this.lineRaster=undefined;this.minimumRevision=0;
     this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
@@ -527,7 +528,7 @@ export class LandscapeWorkbench {
     // The shared Atlas frame owns loading, cancellation and source identity.
     // Never reconstruct a second landscape view from independent reads.
     this.request++;
-    this.records=[];this.raster=undefined;this.lineRaster=undefined;this.background=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
+    this.records=[];this.raster=undefined;this.lineRaster=undefined;this.background=null;this.lineBackground=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
     html("land-reload").hidden=false;
     this.say("Landschaftsframe nicht verfügbar. Ansicht erneut laden.");
     this.host.redraw();
@@ -619,10 +620,16 @@ export class LandscapeWorkbench {
   }
 
   drawLines(root:AtlasPaint,box:LandscapeBox,mpp:number,cityRoad?:LandscapeRecord){
-    const selected=new Set([...(this.selected?[this.selected.id]:[]),...this.selectionRecords.keys()]);
-    if(cityRoad)selected.add(cityRoad.id);
-    const records=[...this.records.filter(r=>!selected.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:this.selected?[this.selected]:[]),...(cityRoad?[cityRoad]:[])];
-    drawLandscape(root,records,box,mpp,this.assets,true,this.lineRaster,undefined,selected,'lines');
+    const edits=[...new Map([...(this.active?(this.selectionRecords.size?[...this.selectionRecords.values()]:this.selected?[this.selected]:[]):[]),...(cityRoad?[cityRoad]:[])].filter(r=>['road','river','place'].includes(r.kind)).map(r=>[r.id,r])).values()];
+    const selected=new Set(edits.map(r=>r.id));
+    const key=[this.records,this.lineRaster,mpp,JSON.stringify(edits.map(r=>[r.id,r.points,r.width,r.line,r.name,r.order,r.resolution,r.routeLength]))];
+    let cached=this.lineBackground;
+    if(!cached||key.some((v,i)=>v!==cached!.key[i])){
+      const node=atlasPaint('group',{retainGeometry:true}),records=[...this.records.filter(r=>!selected.has(r.id)),...edits];
+      drawLandscape(node,records,box,mpp,this.assets,true,this.lineRaster,undefined,selected,'lines');
+      this.lineBackground=cached={key,node,box:{...box}};
+    }
+    const retained=atlasPaint('group',{matrix:[1,0,0,1,cached.box.x-box.x,cached.box.y-box.y],data:{atlasLandscapeLines:'true'}});retained.append(cached.node);root.append(retained);
     if(this.points.length&&['road','river'].includes(this.tool)){
       const r=this.draftLine([...this.points,...(this.hovering?[this.snapLine(this.lastPoint)]:[])]),preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});
       drawLandscape(preview,[r],box,mpp,this.assets,true,undefined,undefined,new Set([r.id]),'lines');root.append(preview);

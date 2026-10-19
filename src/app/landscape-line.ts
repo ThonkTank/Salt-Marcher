@@ -134,7 +134,8 @@ export function lineDisplay(r:LandscapeRecord,mpp:number,selected=false){
 }
 export function lineParts(r:LandscapeRecord,mpp=0,selected=false):LinePart[]{
   const d=lineDisplay(r,mpp,selected);if(d.opacity<=0)return [];
-  const points=linePoints(r),t=lineType(r.line?.type),w=d.width;
+  const plainLegacy=r.kind==='road'&&r.line?.version===1&&r.line.curve==='linear'&&!r.line.roughness&&!r.line.meander&&r.line.style==='solid';
+  const points=plainLegacy?r.points:linePoints(r),t=lineType(r.line?.type),w=d.width;
   if(!r.line)return [{points,width:w,color:r.kind==='river'?'#629ebc':'#a37e51',opacity:1,...(r.kind==='road'&&r.style==='path'&&mpp?{dash:[mpp*5,mpp*3]}:{})}];
   if(!t||r.line?.version!==2)return legacyParts(r,points,w).map(p=>({...p,opacity:p.opacity*d.opacity}));
   const part=(width=w,color:string=t.color,pts=points):LinePart=>({points:pts,width,color,opacity:d.opacity});

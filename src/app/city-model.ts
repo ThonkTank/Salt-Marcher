@@ -40,7 +40,7 @@ export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,mpp=
  if(phase!=='objects')for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))root.append(atlasPaint("polygon", {points: pts(u.outline??[]), style: {fill: u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9', stroke: '#a69071', lineWidth: .7}}),atlasPaint("text", {x: u.outline?.[0]?.x??0, y: u.outline?.[0]?.y??0, style: {fontSize: 8, fill: '#52452e'}}, u.name));
  if(phase!=='surfaces')for(const u of v.units.filter(u=>u.kind==='road'||u.kind==='wall')){
   if(u.kind==='wall'){root.append(atlasPaint('polyline',{points:roadPoints(u,v.units),style:{fill:null,stroke:'#625e52',lineWidth:u.width??6,lineJoin:'round',lineCap:'round'}}));continue;}
-  for(const p of lineParts(cityRoadRecord(u,v.units),mpp))root.append(atlasPaint(p.polygons?'polygons':'polyline',{points:p.points,polygons:p.polygons,opacity:p.opacity,style:{fill:p.polygons?p.color:null,stroke:p.polygons?null:p.color,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:'round',lineCap:'round'}}));
+  for(const p of lineParts(cityRoadRecord(u,v.units),mpp))root.append(atlasPaint(p.polygons?'polygons':'polyline',{points:p.points,polygons:p.polygons,opacity:p.opacity===1?undefined:p.opacity,style:{fill:p.polygons?p.color:null,stroke:p.polygons?null:p.color,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:'round',lineCap:'round'}}));
  }
  if(phase!=='surfaces') for(const u of v.units.filter(u=>u.kind==='building')){
   const group=atlasPaint("group", {data: {cityUnit: String(u.id)}});group.append(atlasPaint("polygon", {points: pts(posed(u)), style: {fill: h.roof, stroke: '#624337', lineWidth: .8}}));
