@@ -213,5 +213,20 @@
     "passed": 69,
     "failed": 0
   },
-  "acceptance": "SMR-AC-03 and SMR-AC-04 remain open; no package installation or human usability acceptance."
+  "acceptance": "SMR-AC-03 and SMR-AC-04 remain open; no package installation or human usability acceptance.",
+  "liveFixtureCorrection": {
+    "firstCandidate": "https://github.com/ThonkTank/Salt-Marcher/actions/runs/39199584716",
+    "source": "20d3f325d13ca6967cfc23aeb64aa117c92ed5a3",
+    "tests": 4043,
+    "passed": 4038,
+    "failed": 4,
+    "skipped": 1,
+    "cause": "Live moment fixture missing searchDesk after switching rule lookup to bounded note search.",
+    "correction": "Delegate searchDesk and deskContent to the real store; unchanged product sources, original assertions retained.",
+    "focusedAfter": {
+      "tests": 4,
+      "passed": 4,
+      "failed": 0
+    }
+  }
 }

@@ -97,3 +97,13 @@ Protokollierung. Eine allgemeine menschliche Präferenz folgt daraus nicht.
 Probe ist `tools/test-desktop-rule-reading.mjs` (`GM_QA_ZOOM=2` für 200 %).
 Paketinstallation, menschliche Bedienabnahme und vollständige SMR-AC-03/-04-Abnahme
 bleiben offen.
+
+
+Die erste [Candidate-CI auf 20d3f325](https://github.com/ThonkTank/Salt-Marcher/actions/runs/39199584716)
+endete mit 4038 bestandenen, vier fehlgeschlagenen und einem übersprungenen Test.
+Alle vier Live-Moment-Fälle meldeten den fehlenden `searchDesk`-Port ihres
+Testdoppels. Dessen bestehende Storedelegation enthält jetzt auch Suche und
+Detailreader; Assertions auf Originalprosa, Gruppenbindung und ausbleibende
+Übernahme/Zeitwirkung bleiben erhalten. Der unveränderte Vorher-Test reproduziert
+dieselben vier Fehler, die vier gezielten Gegenfälle bestehen mit dem ergänzten
+Port. Produktquellen und die nativ geprüften Bundlebytes sind unverändert.
