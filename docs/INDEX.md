@@ -19,7 +19,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Campaign und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Campaign/Data](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md) |
 | Spielabendmappe und Markdownausgabe | [Quellenstand, Suche und nächste Abnahmen](plans/campaign/session-packet.md) |
 | Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md), [Spielabendstart und Wiederaufnahme](plans/runtime/session-opening-and-resume.md) |
-| Kampfentwürfe, Szenenauswahl und Nachbereitung | [Codeeinstiege, Datenregeln und offene Abnahmen](plans/runtime/combat-recovery.md) |
+| Kampfentwürfe, Szenenauswahl und Nachbereitung | [Codeeinstiege, Datenregeln und offene Abnahmen](plans/runtime/combat-recovery.md), [spontane Katalogübernahme](plans/runtime/combat-recovery.md#spontane-katalogübernahme-ohne-teilkampf) |
 | Quest-/Gerüchtabschluss und verlorene Antworten | [Narrative Entwürfe, Award und Recovery](plans/runtime/narrative-recovery.md) |
 | Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
 | Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
@@ -27,7 +27,8 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Beutewertung und Vergleich | [Gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md), [gemeinsame Schatzverteilung](plans/runtime/treasure-distribution.md) |
 | Shopbesitzer, Wiederherstellung und Restock | [Aktueller Zeitweg und nächste vollständige Lieferungen](plans/runtime/shops-and-restock.md) |
 | Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |
-| Katalog und Encounter | [Fachanforderungen](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), [Item-Quellenkorpus](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider) |
+| Katalogsuche, Filter und Inhaltswechsel | [Suchvertrag](plans/runtime/catalog-browsing.md#aktueller-suchvertrag), [Inhaltswechsel und Wiederaufnahme](plans/runtime/catalog-browsing.md#inhaltswechsel-und-wiederaufnahme) |
+| Katalog- und Encounteranforderungen | [Fachanforderungen](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), [Item-Quellenkorpus](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider) |
 | Tutorials und Tastaturkontext | [Aktuelle Lektionen, Kontextschutz und nächste Abnahmen](plans/runtime/tutorial-and-shortcuts.md) |
 | Erweiterungsinstallation und Wiederaufnahme | [Rechte, defekte Vermerke und nächste Unitlieferung](plans/extensions/installation-recovery.md) |
 | Plattform und Architektur | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md), [Prototypen](../ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md), [Architektur](../ARCHITECTURE.md) |
