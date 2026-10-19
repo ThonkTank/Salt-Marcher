@@ -380,15 +380,24 @@ export class MapLabelLayout {
           out.push(x + "," + y);
       return out;
     };
+    const important = (c: MapLabelCandidate) =>
+      selected !== undefined && (c.id === selected || c.objectId === selected);
+    const kindPriority: Record<MapLabelKind, number> = {
+      city: 5,
+      place: 4,
+      area: 3,
+      river: 2,
+      road: 1,
+      building: 1,
+      room: 0,
+    };
     for (const c of [...candidates].sort(
       (a, b) =>
-        Number(b.id === selected || b.objectId === selected) -
-          Number(a.id === selected || a.objectId === selected) ||
+        Number(important(b)) - Number(important(a)) ||
         b.rank - a.rank ||
         Number(this.previous.has(b.id)) - Number(this.previous.has(a.id)) ||
-        (b.kind === "road" || b.kind === "river"
-          ? (b.available ?? 0) - (a.available ?? 0)
-          : 0) ||
+        kindPriority[b.kind] - kindPriority[a.kind] ||
+        (b.available ?? 0) - (a.available ?? 0) ||
         a.id.localeCompare(b.id),
     )) {
       if (
@@ -397,19 +406,19 @@ export class MapLabelLayout {
       )
         continue;
       const was = this.previous.has(c.id),
-        important = c.id === selected || c.objectId === selected,
+        isSelected = important(c),
         font = c.kind === "area" ? 14 + c.rank : 12 + (c.rank >= 4 ? 2 : 0);
-      if (!important && mpp > labelScaleLimits[c.rank]! * (was ? 1.15 : 1))
+      if (!isSelected && mpp > labelScaleLimits[c.rank]! * (was ? 1.15 : 1))
         continue;
       const width = measure(c.text, font) + 8,
         height = font + 6;
       if (
-        !important &&
+        !isSelected &&
         c.available !== undefined &&
         c.available / mpp < width * (was ? 0.9 : 1.1)
       )
         continue;
-      if (!important && c.height !== undefined && c.height / mpp < height)
+      if (!isSelected && c.height !== undefined && c.height / mpp < height)
         continue;
       const options =
         c.kind === "place" || c.kind === "city"

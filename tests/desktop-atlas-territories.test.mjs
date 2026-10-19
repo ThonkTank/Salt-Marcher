@@ -728,3 +728,31 @@ test("moving an end of a partly shared edge retains the intermediate neighbour j
       if (a !== b)
         assert(polygonArea(intersectPolygons(a.polygons, b.polygons)) < 1e-5);
 });
+
+test("unselected detail names obey zoom and footprint limits in navigation and export", () => {
+  const box = { x: 0, y: 0, width: 10000, height: 10000 },
+    label = {
+      id: "house",
+      text: "Taverne",
+      kind: "building",
+      rank: 0,
+      point: { x: 5000, y: 5000 },
+      available: 10,
+      height: 10,
+    },
+    measure = (s, n) => s.length * n * 0.6;
+  assert.equal(
+    new MapLabelLayout().layout([label], box, 10, measure).length,
+    0,
+  );
+  assert.equal(
+    new MapLabelLayout().layout([label], box, 10, measure, "house").length,
+    1,
+  );
+  const a = { ...label, id: "a", kind: "area", rank: 5 },
+    b = { ...label, id: "b", kind: "road", rank: 5, available: 10000 };
+  assert.deepEqual(
+    new MapLabelLayout().layout([a, b], box, 1, measure),
+    new MapLabelLayout().layout([b, a], box, 1, measure),
+  );
+});
