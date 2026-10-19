@@ -1,3 +1,4 @@
+import {transformLabel} from "./atlas-cartography";
 import {landscapeRasterBounds} from './landscape-raster';
 import {isLandMode,strokeBox,type MaskStroke} from './land-mask';
 import {LandscapeToolSettings,lineControls,readLineControls} from "./landscape-tool-settings";
@@ -623,18 +624,20 @@ export class LandscapeWorkbench {
   }
   draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
     const landscapeNode=atlasPaint;
+    const layer=this.host.data()?.region?.landscape;
+    if(layer?.coverage.mode==='raster')root.append(atlasPaint('group',{mapLabels:(layer.labels??[]).filter(l=>l.id!=='landscape:'+this.selected?.id).map(l=>transformLabel(l,p=>({x:p.x-box.x,y:p.y-box.y})))}));
     const key=[this.records,this.raster,this.selectionRecords.size,this.selected?.id,this.selected?.resolution,this.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
     let background=this.background;
     if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
       const node=atlasPaint('group',{retainGeometry:true});
-      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets,new Set(this.selected?[this.selected.id,...this.selectionRecords.keys()]:[]));
       this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
     }
     const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
     let node=background.node;
     if(this.selected&&background.selectedSlot>=0&&this.selectionRecords.size<=1){
       // Keep the original painter slot, especially for references below terrain.
-      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets,new Set(this.selected?[this.selected.id,...this.selectionRecords.keys()]:[]));
       node=atlasPaint('group',{retainGeometry:true});node.append(...background.node.children);
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
@@ -651,7 +654,7 @@ export class LandscapeWorkbench {
       } catch (error) { this.say((error as Error).message); }
     } else if(pts.length&&['river','road'].includes(this.tool)){
       const r=this.draftLine([...pts,...(this.hovering?[this.tool==='river'?this.snapRiver(this.lastPoint):this.lastPoint]:[])]);
-      const preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});drawLandscape(preview,[r],box,mpp,this.assets);root.append(preview);
+      const preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});drawLandscape(preview,[r],box,mpp,this.assets,true,undefined,undefined,new Set([r.id]));root.append(preview);
     } else if (pts.length) {
       for (const path of (["paint", "color", "property", "freshwater", "reset"].includes(this.tool) ? [...this.brushStrokes, pts] : [pts])) {
       root.append(

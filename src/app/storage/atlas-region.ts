@@ -1,3 +1,5 @@
+import {MapLabelPool,transformLabel,buildingOpacity,linePresentation} from "../atlas-cartography";
+import {cityUnitLabel} from "../atlas-label-sources";
 import {AtlasLandscapeReader} from './atlas-landscape-region';
 import {roomMapStyle} from './drawing';
 import {readDungeonVolume} from './volume';
@@ -173,9 +175,10 @@ export class AtlasRegionReader {
     let h:CityHeader;try{h=readCityHeader(this.db,this.campaign,b.ownerId);}catch{continue;}
     if(!overlap(bounds(corners({x:0,y:0,width:h.width,height:h.height}).map(p=>at(p,f))),q.box))continue;
     metadata?.(b,f,h);
-    if(mpp>h.width/25){emit({value:{id:h.id,name:h.name},points:[{x:h.width/2,y:h.height/2}],stroke:mpp*12},f,'city-marker',b,h);continue;}
+    const pinned=!!q.selectedIds?.length&&!!this.sql('SELECT 1 FROM city_unit WHERE campaign_id=? AND city_id=? AND id IN(SELECT value FROM json_each(?)) LIMIT 1').get(this.campaign,b.ownerId,JSON.stringify(q.selectedIds));
+    if(mpp>h.width/25&&!pinned){emit({value:{id:h.id,name:h.name},points:[{x:h.width/2,y:h.height/2}],stroke:mpp*12},f,'city-marker',b,h);continue;}
     emit({value:{id:h.id},polygons:[{outer:corners({x:0,y:0,width:h.width,height:h.height}),holes:[]}]},f,'city-paper',b,h);
-    for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=JSON.parse(r.payload);emit(s,f,'unit',b,h);}
+    for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=JSON.parse(r.payload),selected=q.selectedIds?.includes(s.value.id);if(s.value.kind==='building'&&!buildingOpacity(s.polygons?.[0]?.outer??[],mpp,selected))continue;if(['road','wall'].includes(s.value.kind)&&!linePresentation(s.value.kind,s.stroke??6,mpp,selected).opacity)continue;emit(s,f,'unit',b,h);}
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
@@ -192,8 +195,11 @@ export class AtlasRegionReader {
  read(source:AtlasRegionSource,q:AtlasRegionQuery):AtlasRegionGeometry{
   this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   const result:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box:{...q.box},slice:q.slice,scopeId:q.scopeId,floorId:q.floorId,rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
-  let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
+  const labels=new MapLabelPool();
+  const selectedUnits:{value:any;b:AtlasBinding;f:Frame}[]=[];
+  let used=bytes(result)+192*1024,dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
   const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{
+   if(h)labels.add(transformLabel({id:'city:'+h.id,text:h.name,kind:'place',point:{x:h.width/2,y:h.height/2},priority:85,minMpp:h.width/3000},p=>at(p,f)));
    if(dense||Object.hasOwn(result.frames,b.id))return;
    const scope=b.kind==='dungeon'?this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId):null,
     floors=scope?this.sql('SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind=\'floor\' AND h.hidden=1)').all(this.campaign,b.ownerId):[];
@@ -202,6 +208,8 @@ export class AtlasRegionReader {
    if(h){const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
   };
   this.visit(q,(s,_f,kind,b)=>{
+   if(kind==='unit'){if(q.selectedIds?.includes(s.value.id))selectedUnits.push({value:s.value,b,f:_f});const label=cityUnitLabel(s.value,s.points??s.polygons?.[0]?.outer??[],q.box.width/q.width);if(label)labels.add(transformLabel({...label,selected:q.selectedIds?.includes(s.value.id)},p=>at(p,_f)));}
+   if(kind==='room'&&(s.value.number||s.value.name))labels.add(transformLabel({id:'room:'+s.value.id,text:[s.value.number,s.value.name].filter(Boolean).join(' · '),kind:'room',polygons:s.polygons,priority:40,maxMpp:2,selected:q.selectedIds?.includes(s.value.id)},p=>at(p,_f)));
    if(kind==='city-paper')return;result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense=true;
    if(dense)return;
    const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-32768){dense=true;return;}used+=cost;
@@ -221,12 +229,15 @@ export class AtlasRegionReader {
     const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
     let color=kind==='city-paper'?h!.paper:kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
     if(kind==='room')color=s.style?.fill??color;
-    if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
-    else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:s.stroke??q.box.width/q.width*2,color);}
+    const opacity=kind==='unit'?(s.value.kind==='building'?buildingOpacity(s.polygons?.[0]?.outer??[],q.box.width/q.width,q.selectedIds?.includes(s.value.id)):['road','wall'].includes(s.value.kind)?linePresentation(s.value.kind,s.stroke??6,q.box.width/q.width,q.selectedIds?.includes(s.value.id)).opacity:1):1;
+    if(polygons){image.paintPolygons(polygons,color,opacity);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color,opacity);}}
+    else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:kind==='unit'?linePresentation(s.value.kind,s.stroke??6,q.box.width/q.width,q.selectedIds?.includes(s.value.id)).width:s.stroke??q.box.width/q.width*2,color,opacity);}
    });
    const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
    result.raster={box:{...q.box},width,height,data:'data:image/png;base64,'+data};
   }
+  if(result.coverage.mode==='raster')for(const item of selectedUnits){let city=result.cities.find(c=>c.header.id===item.b.ownerId);if(!city){const header=readCityHeader(this.db,this.campaign,item.b.ownerId);city={header,units:[]};result.cities.push(city);result.bindings.push(item.b);result.frames[item.b.id]=item.f;}city.units.push(item.value);}
+  result.labels=labels.values();
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
   try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
   if(bytes(result)>REGION_REPLY_BYTES)throw new Error('Ausschnitt überschreitet das Darstellungsbudget. Weiter hineinzoomen.');

@@ -1,3 +1,4 @@
+import {transformLabel} from "./atlas-cartography";
 import { atlasPaint as landscapeNode } from "./atlas-paint";
 import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
@@ -5,7 +6,6 @@ import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
 import { cityPaint } from "./city-model";
-import { centerInRoom } from "./dungeon-model";
 import { elementPaint, roomFacePaint } from "./drawing-model";
 export function atlasRegionPaint(
   data: AtlasRenderView,
@@ -40,6 +40,7 @@ export function atlasRegionPaint(
     options.references,
     options.rasters,
   );
+  if(data.region?.landscape?.coverage.mode==='raster')scene.append(landscapeNode('group',{mapLabels:(data.region.landscape.labels??[]).map(l=>transformLabel(l,p=>({x:p.x-box.x,y:p.y-box.y})))}));
   if (options.grid) drawLandscapeGrid(scene, box, options.level, mpp);
   if (data.region?.raster) {
     const tile = data.region.raster;
@@ -52,6 +53,7 @@ export function atlasRegionPaint(
         source: tile.data,
       }),
     );
+    scene.append(landscapeNode('group',{mapLabels:(data.region.labels??[]).map(l=>transformLabel({...l,selected:false},p=>({x:p.x-box.x,y:p.y-box.y})))}));
     return scene;
   }
   for (const city of data.cities) {
@@ -63,7 +65,8 @@ export function atlasRegionPaint(
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
-    if (city.header.width / mpp < 20) {
+    g.geometry.mapLabels=[{id:"city:"+city.header.id,text:city.header.name,kind:"place",point:{x:city.header.width/2,y:city.header.height/2},priority:85,minMpp:city.header.width/3000}];
+    if (city.header.width / mpp < 25) {
       g.append(
         landscapeNode("circle", {
           x: city.header.width / 2,
@@ -73,7 +76,7 @@ export function atlasRegionPaint(
         }),
       );
     } else {
-      const cityScene = cityPaint(city);
+      const cityScene = cityPaint(city,{mpp});
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);
@@ -117,20 +120,7 @@ export function atlasRegionPaint(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
       g.append(roomFacePaint(room,mpp,data.geometry.drawing.styles?.find(s=>s.id===room.id)));
-      if (room.polygons[0]?.outer[0]) {
-        const p = centerInRoom(room);
-        g.append(
-          landscapeNode(
-            "text",
-            {
-              x: p.x,
-              y: p.y,
-              style: { fontSize: Math.max(0.3, mpp * 16), textAlign:"center", textBaseline:"middle", fill: "#203648", stroke:"white", lineWidth:3*mpp, lineJoin:"round" },
-            },
-            [room.number, room.name].filter(Boolean).join(" · "),
-          ),
-        );
-      }
+      g.append(landscapeNode('group',{mapLabels:[{id:'room:'+room.id,text:[room.number,room.name].filter(Boolean).join(' · '),kind:'room',polygons:room.polygons,priority:40,maxMpp:2}]}));
     }
     for (const e of data.geometry.drawing.elements.filter(
       (e) => e.scopeId === b.ownerId && e.floorId === floor,

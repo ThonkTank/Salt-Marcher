@@ -1,3 +1,5 @@
+import {buildingOpacity,linePresentation} from "./atlas-cartography";
+import {cityUnitLabel} from "./atlas-label-sources";
 import {atlasPaint} from "./atlas-paint";
 import {paintMarkup} from "./atlas-paint-svg";
 import type {CityPoint as P,CityUnit,CityView,CityRecipe,CityPreview} from './city-contracts';
@@ -31,7 +33,21 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  }
  return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,replaceIds,attempts};
 }
-export function cityPaint(v:import("./atlas-region-contracts").CityGeometry){
+export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,options?:{mpp:number;selectedId?:string}){
+ if(!options)return cityDocumentPaint(v);
+ const h=v.header,root=atlasPaint("group", {size:{width:h.width,height:h.height}}),mpp=options?.mpp??0;
+ root.title=h.name;root.append(atlasPaint("rect", {width:h.width,height:h.height,style:{fill:h.paper}}));
+ for(const u of v.units.filter(u=>u.kind!=='node').sort((a,b)=>Number(a.kind==='building')*2+Number(a.kind==='road'||a.kind==='wall')-Number(b.kind==='building')*2-Number(b.kind==='road'||b.kind==='wall'))){
+  const selected=u.id===options?.selectedId,line=u.kind==='road'||u.kind==='wall',points=u.kind==='building'?posed(u):line?roadPoints(u,v.units):u.outline??[];
+  const display=line?linePresentation(u.kind,u.width??6,mpp,selected):null,opacity=u.kind==='building'?buildingOpacity(points,mpp,selected):display?.opacity??1;
+  if(!opacity)continue;
+  const group=atlasPaint('group',{opacity,data:{cityUnit:u.id}});
+  group.append(atlasPaint(line?'polyline':'polygon',{points,style:{fill:line?null:u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':u.kind==='building'?h.roof:'#e0d2b9',stroke:line?u.kind==='wall'?'#625e52':'#c1ae8b':u.kind==='building'?'#624337':'#a69071',lineWidth:display?.width??Math.max(.7,mpp*.7),lineJoin:'round',lineCap:'round'}}));
+  const label=cityUnitLabel(u,points,mpp);if(label)group.geometry.mapLabels=[{...label,selected}];root.append(group);
+ }
+ return root;
+}
+function cityDocumentPaint(v:import("./atlas-region-contracts").CityGeometry){
  const pts=(p:P[])=>p,h=v.header,root=atlasPaint("group", {size:{width:h.width,height:h.height}});
  root.title=h.name;root.append(atlasPaint("rect", {width: h.width, height: h.height, style: {fill: h.paper}}));
  for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))root.append(atlasPaint("polygon", {points: pts(u.outline??[]), style: {fill: u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9', stroke: '#a69071', lineWidth: .7}}),atlasPaint("text", {x: u.outline?.[0]?.x??0, y: u.outline?.[0]?.y??0, style: {fontSize: 8, fill: '#52452e'}}, u.name));
