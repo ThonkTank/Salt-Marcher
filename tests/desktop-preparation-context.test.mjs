@@ -797,3 +797,7 @@ test('room navigation from a relationship target identifies the displayed note i
  assert.equal(x.el('note-editor').parentElement,panel);x.el('note-room-uses-list').querySelector('button').click();await until(()=>source);
  assert.deepEqual(source,{id:x.ids.ada,label:'Ada'});
 });
+
+test('extracting from knowledge does not advertise the automatically loaded first plan as an intentional destination',async t=>{
+ const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Historischer Abend',scenes:[{id:randomUUID(),title:'Vergangener Besuch',notes:'Unverändert',locationId:null}]};x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);x.el('note-thread-prepare').click();await until(()=>x.el('note-thread-dialog').open&&!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-plan').value,'');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await settle();assert.equal(x.writes.length,0);assert.deepEqual(x.store.preparation(x.workspace.token).plans.find(p=>p.id===plan.id),plan);
+});

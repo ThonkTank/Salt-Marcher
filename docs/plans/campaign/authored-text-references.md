@@ -73,6 +73,13 @@ Die nativen Prüfungen `tools/test-desktop-note-excerpts.mjs` und
 Spielabendverwendung, normales Prozessende, frisches Wiederfinden und
 Weiterbearbeitung. `GM_QA_ZOOM=2` prüft denselben Ablauf vergrößert.
 
+Bei der Übergabe einer Notizmappe zählt nur ein tatsächlich geöffneter
+Planungskontext als Ziel. Ein im Hintergrund geladener erster Abend ist keine
+Nutzerauswahl. Ohne bekannten Kontext werden neue Ziele ausdrücklich benannt
+oder vorhandener Abend und Besuch gewählt; ein Abendwechsel wählt keinen Besuch
+vor. `tools/test-desktop-protocol-visit.mjs` prüft diesen Weg bis zur erneuten
+Originalbearbeitung nach Neustart. [Vergleich und native Belege](../../reference/gm-ux-qa/protocol-note-selection-20261018/README.md#vorhandenen-abend-bewusst-wählen--19102026).
+
 ## Beziehungspaare beim Kampagnentransfer
 
 Paarhistory und offene Paaraufträge verwenden `sourceId` als lokale World-Notiz.

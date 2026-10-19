@@ -16,7 +16,7 @@ function fixture(t){
  let valid=true,blocked=false,read=async(_t,_id,_offset,active)=>ok({root,entries:active?all.filter(e=>e.status!=='closed'):all,total:all.length,next:null}),detail=async(_t,r)=>ok({ref:r,revision:2,note:note(r.id)}),search=async()=>ok({entries:[],next:null}),check=async()=>ok(undefined),use=async(target,selection)=>{used.push({target,selection});return true;},add=async(r,ids)=>{adds.push({root:r,ids});return false;};
  let detach=async()=>false;
  let edit=async(id,current)=>{el('note-title').value=id;el('note-gm').value='Original '+id;return current();},back=async current=>{el('note-title').value='Mappe';return current();};
- const owner={token:'A',id:root.id,plans:[{id:'P',name:'Abend',scenes:[{id:'V',title:'Ermitteln'}]}],current:()=>valid,blocked:()=>blocked,edit:(...a)=>edit(...a),returnToRoot:(...a)=>back(...a),room:async(id,current,restore)=>{rooms.push({id,current,restore});return true;},add:(...a)=>add(...a),detach:(...a)=>detach(...a),use:(...a)=>use(...a)};
+ const owner={token:'A',id:root.id,destination:{planId:'P',visitId:'V'},plans:[{id:'P',name:'Abend',scenes:[{id:'V',title:'Ermitteln'}]}],current:()=>valid,blocked:()=>blocked,edit:(...a)=>edit(...a),returnToRoot:(...a)=>back(...a),room:async(id,current,restore)=>{rooms.push({id,current,restore});return true;},add:(...a)=>add(...a),detach:(...a)=>detach(...a),use:(...a)=>use(...a)};
  const ui=new NoteThreadDialog({prepare:async()=>owner,api:{noteThread:(...a)=>{calls.push(a);return read(...a);},checkNoteThread:(...a)=>check(...a),deskContent:(...a)=>detail(...a),searchDesk:(...a)=>search(...a),noteRoomUses:async()=>ok({entries:[{id:'Archiv',title:'Archiv',number:'2',unavailable:false}],next:null})},tell:(...a)=>messages.push(a)});
  const el=id=>document.getElementById(id),click=name=>[...el('note-thread-dialog').querySelectorAll('button')].find(b=>b.textContent===name).onclick(),select=(id,value)=>{el(id).value=value;el(id).onchange();};
  t.after(()=>{ui.reset();globalThis.document=prior;});return{ui,el,click,select,root,all,calls,adds,used,rooms,messages,owner,setDetach:f=>detach=f,setEdit:f=>edit=f,setBack:f=>back=f,setRead:f=>read=f,setDetail:f=>detail=f,setSearch:f=>search=f,setCheck:f=>check=f,setUse:f=>use=f,setAdd:f=>add=f,retire:()=>valid=false,block:()=>blocked=true};
@@ -178,11 +178,11 @@ test('a failed root reread preserves its error and cannot mark a reviewed candid
 
 test('an opened map starts at the selected planning visit and retains an explicit different destination across source rereads',async t=>{
  const x=fixture(t);x.owner.plans.push({id:'Q',name:'Aktueller Abend',scenes:[{id:'earlier',title:'Früher'},{id:'selected',title:'Aktueller Besuch'}]});x.owner.destination={planId:'Q',visitId:'selected'};await x.ui.open();assert.equal(x.el('note-thread-plan').value,'Q');assert.equal(x.el('note-thread-visit').value,'selected');
- x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'V');x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'');x.select('note-thread-visit','V');x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
  x.ui.reset();await x.ui.open();assert.equal(x.el('note-thread-plan').value,'Q');assert.equal(x.el('note-thread-visit').value,'selected');
 });
 for(const destination of [{planId:'missing',visitId:'foreign'},{planId:'P',visitId:'foreign'}])test(`an unavailable or cross-plan destination cannot select the foreign visit (${destination.planId})`,async t=>{
- const x=fixture(t);x.owner.plans.push({id:'Q',name:'Anderer Abend',scenes:[{id:'foreign',title:'Anderer Besuch'}]});x.owner.destination=destination;await x.ui.open();assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ const x=fixture(t);x.owner.plans.push({id:'Q',name:'Anderer Abend',scenes:[{id:'foreign',title:'Anderer Besuch'}]});x.owner.destination=destination;await x.ui.open();assert.equal(x.el('note-thread-plan').value,destination.planId==='P'?'P':'');assert.equal(x.el('note-thread-visit').value,'');
 });
 
 test('passive completed checklist items are not rewritten as map source choices',async t=>{
@@ -198,4 +198,8 @@ test('handoff from a source editor retains the whole dossier, deliberate choices
  assert.equal(x.el('note-thread-heading').textContent,'Notizmappe: Mappe');assert.equal(x.el('note-thread-parent').hidden,true);assert.equal(x.el('note-thread-plan').value,'SECOND');assert.equal(x.el('note-thread-visit').value,'LATER');assert.equal(x.el('note-thread-reading').firstElementChild.className,'note-thread-target');assert.equal(x.used.length,0);
  assert.equal(x.el('note-thread-sources').querySelectorAll('input')[1].checked,false);x.el('note-thread-use').click();await until(()=>x.used.length===1);
  assert.equal(x.used[0].selection.rootId,'Mappe');assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),['Nera']);assert.equal(x.used[0].target.visitId,'LATER');
+});
+
+test('a source without a planning destination cannot silently use the first historical visit',async t=>{
+ const x=fixture(t);delete x.owner.destination;await x.ui.open(true);assert.equal(x.el('note-thread-plan').value,'');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-visit','V');x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.equal(x.used[0].target.visitId,'V');
 });

@@ -391,7 +391,7 @@ export class NoteThreadDialog {
       const o = node("option", p.name || "Unbenannter Spielabend"); o.value = p.id; this.plan.append(o);
     }
     const destination = owner.plans.find(p => p.id === owner.destination?.planId);
-    this.plan.value = frame ? frame.planId : destination?.id ?? owner.plans[0]?.id ?? "";
+    this.plan.value = frame ? frame.planId : destination?.id ?? "";
     this.drawVisits(frame ? frame.visitId : destination ? owner.destination?.visitId : undefined);
     if (frame) { this.planName.value = frame.planName; this.visitTitle.value = frame.visitTitle; }
     const epoch = this.epoch;
@@ -449,7 +449,7 @@ export class NoteThreadDialog {
       o.value = s.id;
       this.visit.append(o);
     }
-    this.visit.value = plan?.scenes.find(s => s.id === preferred)?.id ?? plan?.scenes[0]?.id ?? "";
+    this.visit.value = plan?.scenes.find(s => s.id === preferred)?.id ?? "";
     this.controls();
   }
   private isPicked(id: string) {
@@ -560,8 +560,10 @@ export class NoteThreadDialog {
         );
         this.drawRecoveryLoader();
         if (initial) {
-          this.visitTitle.value = this.root.title;
-          this.planName.value = "Fortsetzung: " + this.root.title;
+          this.visitTitle.value = "";
+          this.planName.value = "";
+          this.visitTitle.placeholder = this.root.title;
+          this.planName.placeholder = "Fortsetzung: " + this.root.title;
         }
       }
       for (const e of r.value.entries) {
