@@ -8,7 +8,7 @@ import path from 'node:path';
 const source=process.cwd(),output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/rule-reading-evidence');
 const gitRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();
 const group=await currentProcessGroup();await mkdir(output,{recursive:true});
-const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/rule-context-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/rule-context-store.cjs');
+const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/rule-context-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/rule-context-store.cjs'),Database=require('better-sqlite3');
 const profile=await mkdtemp('/tmp/gm-rule-context-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Reise nach der Ortswahl'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(w.token).rosterRevision}));
 const hero=store.executeLive(command({kind:'create-character',profile:{name:'Iri'}})).character;
@@ -40,6 +40,20 @@ try{
  await page.locator('#live-rule-results summary').click();await page.waitForFunction(()=>document.querySelector('#live-rule-results .rule-candidate-text:last-of-type')?.textContent.includes('ohne Ankerpunkt gilt dieser Vorteil nicht.'));assert.equal(await page.locator('#live-rule-pins article').count(),0);await shot(page,'read-before-pin-'+zoom);results.fullRuleBeforePin=true;
  await page.locator('#live-rule-results').getByRole('button',{name:'Anheften',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#live-rule-pins').textContent.includes('Sicherung am Seil'));
  results.latest=await roll(page,'Auf dem schlüpfrigen Steg balancieren',notes[24].id);
+ // A damaged current definition cannot hide the independently stored group rule.
+ const db=new Database(file),original=db.prepare('SELECT payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(campaign.id,notes[24].id),damaged=JSON.stringify({...JSON.parse(original.payload),gmNotes:42}),checksum=createHash('sha256').update(damaged).digest('hex');
+ try{
+  db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(damaged,checksum,campaign.id,notes[24].id);
+  const frozen=async()=>{await page.waitForFunction(()=>document.querySelector('#live-rule-pins').textContent.includes('Quelle nicht mehr verfügbar'));assert.equal(await page.locator('#live-rule-pins article').count(),1);assert.equal(await page.locator('#live-check-rule').inputValue(),notes[24].id);assert.equal(await page.locator('#live-check-latest').innerText(),results.latest);};
+  await page.locator('#live-rules-refresh').click();await frozen();await page.locator('#live-rule-pins summary').click();await shot(page,'unavailable-source-'+zoom);
+  await page.locator('#scene-focus').selectOption(sceneB);await page.waitForFunction(()=>document.querySelector('#live-rule-pins').textContent.includes('Noch keine Regel'));
+  await page.locator('#scene-focus').selectOption(sceneA);await page.waitForFunction(()=>document.querySelector('#live-check-latest').textContent.includes('balancieren'));await page.locator('#live-check-rule').selectOption(notes[24].id);await frozen();
+  await close();page=await launch();await page.waitForFunction(()=>document.querySelector('#live-check-latest').textContent.includes('balancieren'));await page.locator('#live-check-rule').selectOption(notes[24].id);await frozen();
+  await page.locator('#live-rule-pins summary').click();assert((await page.locator('#live-rule-pins').innerText()).includes('ohne Ankerpunkt'));await shot(page,'unavailable-source-fresh-'+zoom);
+  assert.deepEqual(db.prepare('SELECT payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(campaign.id,notes[24].id),{payload:damaged,checksum});results.invalidSourcePreservesFrozenRule=true;results.invalidSourceFresh=true;
+ }finally{db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(original.payload,original.checksum,campaign.id,notes[24].id);db.close();}
+ await page.locator('#live-rules-refresh').click();await page.waitForFunction(()=>document.querySelector('#live-rule-pins').textContent.includes('Quelle Revision 1'));
+
  // Release an old A response only after B has become the active group.
  await app.evaluate(({ipcMain},id)=>{const original=ipcMain._invokeHandlers.get('campaign:scene-rules');let hold=true;globalThis.qaRuleReadHeld=false;ipcMain.removeHandler('campaign:scene-rules');ipcMain.handle('campaign:scene-rules',async(e,...args)=>{const result=await original(e,...args);if(hold&&args[1]===id){hold=false;globalThis.qaRuleReadHeld=true;return new Promise(resolve=>{globalThis.qaReleaseRuleRead=()=>resolve(result);});}return result;});},sceneA);
  await page.locator('#live-rules-refresh').click();

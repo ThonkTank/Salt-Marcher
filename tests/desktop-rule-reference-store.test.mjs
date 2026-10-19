@@ -5,15 +5,20 @@ test('unknown rule action cannot pin a source or create a receipt',t=>{const x=f
 test('invalid scene rule revision is rejected by reader and backup rather than exported',async t=>{const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));x.store.db.prepare('UPDATE scene_rule_state SET revision=-1 WHERE campaign_id=?').run(x.cam.id);assert.throws(()=>x.store.sceneRules(x.w.token,x.scene.id),/Regel|Revision/i);await assert.rejects(x.store.backup(path.join(x.root,'bad.sqlite')),/Regel|Revision/i);});
 test('a legitimate pin is replayable after fresh and independent transfer preserves its text and ownership',async t=>{const x=fixture(t),command=x.rule('pin'),pinned=x.store.executeSceneRule(command);assert.equal(pinned.revision,1);assert.deepEqual(x.store.executeSceneRule(command),pinned);x.store.changePreparation({...x.command(null),change:{kind:'note',note:{...x.note,revision:2,title:'Neue Quelle'},expectedRevision:1}});const stale=x.store.sceneRules(x.w.token,x.scene.id);assert.equal(stale.pins[0].title,'Hausregel');assert.equal(stale.pins[0].stale,true);const fresh=new CampaignStore(x.filename);try{const w=fresh.activate(x.cam.id);assert.deepEqual(fresh.executeSceneRule({...command,token:w.token}),pinned);}finally{fresh.close();}const filename=path.join(x.root,'rules.sqlite');await x.store.campaignSnapshot(x.w.token,filename);const bytes=readFileSync(filename),copy=x.store.acceptCampaignSnapshot(filename,'Kopie',{}),sceneId=x.store.db.prepare('SELECT scene_id FROM scene_rule_state WHERE campaign_id=?').get(copy.id).scene_id,cw=x.store.activate(copy.id),copied=x.store.sceneRules(cw.token,sceneId);assert.notEqual(copied.sceneId,x.scene.id);assert.notEqual(copied.pins[0].noteId,x.note.id);assert.equal(copied.pins[0].readAloud,x.note.readAloud);assert.equal(copied.pins[0].title,'Hausregel');assert.equal(copied.pins[0].stale,true);assert.deepEqual(readFileSync(filename),bytes);});
 
-for(const unavailable of ['trash','checksum','kind','missing'])test(`frozen rule stays readable when its current source is ${unavailable}`,t=>{
+for(const unavailable of ['trash','checksum','kind','missing','json','shape','identity','revision'])test(`frozen rule stays readable when its current source is ${unavailable}`,t=>{
  const x=fixture(t),pin=x.store.executeSceneRule(x.rule('pin')).pins[0];
  if(unavailable==='trash')x.store.db.prepare('UPDATE world_note SET trashed=1 WHERE campaign_id=? AND id=?').run(x.cam.id,x.note.id);
  if(unavailable==='checksum')x.store.db.prepare("UPDATE world_note SET checksum='broken' WHERE campaign_id=? AND id=?").run(x.cam.id,x.note.id);
  if(unavailable==='kind'){const payload=JSON.stringify({...x.note,kind:'note'});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,x.note.id);}
+ if(['json','shape','identity','revision'].includes(unavailable)){
+  const payload=unavailable==='json'?'{':JSON.stringify({...x.note,...(unavailable==='shape'?{gmNotes:42}:unavailable==='identity'?{id:randomUUID()}:{revision:2})});
+  x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,x.note.id);
+ }
  if(unavailable==='missing'){x.store.db.pragma('foreign_keys=OFF');x.store.db.prepare('DELETE FROM world_note WHERE campaign_id=? AND id=?').run(x.cam.id,x.note.id);}
  const bytes=x.store.db.serialize(),view=x.store.sceneRules(x.w.token,x.scene.id);
  assert.deepEqual(view.pins,[{...pin,currentRevision:null,unavailable:true,stale:true}]);
  assert.deepEqual(x.store.db.serialize(),bytes);
+ assert.throws(()=>x.store.executeSceneRule(x.rule('refresh',1)));assert.deepEqual(x.store.db.serialize(),bytes);
 });
 test('rule source lookup stays in its campaign and preserves pin order',t=>{
  const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));
@@ -49,4 +54,28 @@ test('formula rolls create one durable result and invalid formulas do not change
 
 test('reviewed source revision is atomic and rejection preserves state, receipts and authored bytes',t=>{
  const x=fixture(t),c=x.rule('pin');c.action.expectedSourceRevision=1;x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:1,note:{...x.note,revision:2,gmNotes:'Neue Einschränkung'}}});const before=x.store.db.serialize();assert.throws(()=>x.store.executeSceneRule(c),/Regelquelle geändert/);assert.deepEqual(x.store.db.serialize(),before);c.action.expectedSourceRevision=2;const confirmed=x.store.executeSceneRule(c);assert.equal(confirmed.pins[0].gmNotes,'Neue Einschränkung');assert.deepEqual(x.store.executeSceneRule(c),confirmed);for(const value of [0,-1,1.5,'2'])assert.throws(()=>x.store.executeSceneRule({...x.rule('refresh',1),action:{kind:'refresh',noteId:x.note.id,expectedSourceRevision:value}}),/Auftrag/);
+});
+
+for(const field of ['id','revision'])test('a contradictory source '+field+' cannot create an initial pin or a receipt',t=>{
+ const x=fixture(t),payload=JSON.stringify({...x.note,[field]:field==='id'?randomUUID():2});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,x.note.id);
+ const bytes=x.store.db.serialize();assert.throws(()=>x.store.executeSceneRule(x.rule('pin')),/Identität|Revision/);assert.deepEqual(x.store.db.serialize(),bytes);
+});
+
+test('one invalid current source preserves other pins, rule-bound checks and source bytes across fresh reads',t=>{
+ const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));const second={...x.note,id:randomUUID(),title:'Zweite Regel'};
+ x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:null,note:second}});x.store.executeSceneRule({...x.rule('pin',1),action:{kind:'pin',noteId:second.id}});
+ const prior=x.store.executeSceneCheck(checkCommand(x)),payload=JSON.stringify({...x.note,gmNotes:42});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,x.note.id);
+ const rules=x.store.sceneRules(x.w.token,x.scene.id);assert.equal(rules.pins[0].unavailable,true);assert.equal(rules.pins[1].unavailable,false);assert.equal(rules.pins[0].gmNotes,x.note.gmNotes);
+ const next=x.store.executeSceneCheck(checkCommand(x,'disadvantage',1));assert.equal(next.checks[0].ruleSourceRevision,1);assert.deepEqual(next.checks[1],prior.checks[0]);
+ const sourceBytes=x.store.db.prepare('SELECT payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(x.cam.id,x.note.id),fresh=new CampaignStore(x.filename);try{const w=fresh.activate(x.cam.id),bytes=fresh.db.serialize();assert.deepEqual(fresh.sceneRules(w.token,x.scene.id),rules);assert.deepEqual(fresh.sceneChecks(w.token,x.scene.id),next);assert.deepEqual(fresh.db.serialize(),bytes);}finally{fresh.close();}assert.deepEqual(x.store.db.prepare('SELECT payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(x.cam.id,x.note.id),sourceBytes);
+});
+
+test('invalid frozen rule data is still rejected instead of being treated as a missing current source',t=>{
+ const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));x.store.db.prepare("UPDATE scene_rule_pin SET checksum='broken' WHERE campaign_id=?").run(x.cam.id);const bytes=x.store.db.serialize();assert.throws(()=>x.store.sceneRules(x.w.token,x.scene.id),/beschädigt/);assert.deepEqual(x.store.db.serialize(),bytes);
+});
+
+test('readable frozen text does not qualify a damaged current source for backup',async t=>{
+ const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));const file=path.join(x.root,'safe-source.sqlite');await x.store.backup(file);const before=readFileSync(file),payload=JSON.stringify({...x.note,gmNotes:42});
+ x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.cam.id,x.note.id);
+ assert.equal(x.store.sceneRules(x.w.token,x.scene.id).pins[0].gmNotes,x.note.gmNotes);await assert.rejects(x.store.backup(file));assert.deepEqual(readFileSync(file),before);
 });
