@@ -55,8 +55,7 @@ export function readNarrative(db:any,cam:string,noteId:string,retained=false):Na
  const paid=db.prepare('SELECT * FROM narrative_award WHERE campaign_id=? AND note_id=? LIMIT 2').all(cam,noteId);if(paid.length>1||paid.length!==Number(state.awardId!==null)||paid.length===1&&paid[0].id!==state.awardId)throw new Error('Narrativer Belohnungsbeleg ist falsch zugeordnet.');
   if(row&&(row.note_id!==state.noteId||row.revision!==state.revision||state.revision<1))throw new Error('Narrativer Status widerspricht seinem Datensatz.');
  if(row)validateNarrativeState(db,cam,state,true);
- let award:NarrativeAward|null=null;
- if(state.awardId){const awardRow=db.prepare('SELECT * FROM narrative_award WHERE campaign_id=? AND id=?').get(cam,state.awardId);award=checkedAward(db,cam,awardRow);if(awardRow.id!==award.id||awardRow.note_id!==award.noteId||award.noteId!==noteId)throw new Error('Narrativer Belohnungsbeleg ist falsch zugeordnet.');}
+ const award=paid.length?checkedAward(db,cam,paid[0]):null;
  return{state,award,noteRevision:note.revision,draft:readNarrativeDraft(db,cam,noteId)};
 }
 
