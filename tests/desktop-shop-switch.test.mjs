@@ -1,11 +1,14 @@
-import {setTimeout as delay} from 'node:timers/promises';
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {setTimeout as pause} from 'node:timers/promises';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);for(const[entry,name]of [['src/app/storage/store.ts','shop-switch-store'],['src/app/items-ui.ts','shop-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
-// WebCrypto may still be running after many event-loop turns. Wait for the
-// actual UI state, bounded by elapsed time rather than machine speed.
-async function until(fn){const deadline=performance.now()+5000;while(!fn()&&performance.now()<deadline)await delay(1);assert(fn(),'Expected shop state');}
+async function until(fn){
+ // Fast DOM lookups can exhaust immediate ticks before the async commit fingerprint resolves.
+ const deadline=performance.now()+5000;
+ while(!fn()&&performance.now()<deadline)await pause(5);
+ assert(fn(),'Expected shop state');
+}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'shop-switch-')),{CampaignStore}=require('../.build/shop-switch-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
@@ -49,7 +52,7 @@ test('seller read failure offers same-owner retry without retaining the previous
  const x=await fixture();try{const original=window.campaign.ledgerInventory;let fail=true;window.campaign.ledgerInventory=async(t,q)=>q.characterId===x.heroes[1].id&&fail?(fail=false,{ok:false,error:'Inventar nicht lesbar'}):original(t,q);x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();await until(()=>x.el('shop-seller-status').getAttribute('role')==='alert');assert.equal(x.el('shop-sale-item').options.length,0);x.el('shop-seller-retry').onclick();await until(()=>!x.el('shop-sale-fields').disabled);x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes[0].action.ledgerId,x.items[1].id);assert.equal(x.el('shop-seller-status').hidden,true);assert(!x.messages.includes('Inventar nicht lesbar'));}finally{await x.cleanup();}
 });
 test('an incomplete shop draft blocks the switch while keeping the previous editor repairable',async t=>{
- const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await delay(40);return digest(...args);});
+ const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
  const x=await fixture();try{x.el('shop-name').value='';x.el('shop-form').oninput();x.choose(x.shops[1].id);await until(()=>x.messages.length>0&&!x.el('shop-fields').disabled);assert.equal(x.el('shop-name').value,'');assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen');x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen korrigiert');}finally{await x.cleanup();}
 });
 test('seller changes during a definition read invalidate the pending sale',async()=>{

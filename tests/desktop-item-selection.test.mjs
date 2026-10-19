@@ -1,10 +1,14 @@
-import {setTimeout as delay} from 'node:timers/promises';
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {setTimeout as pause} from 'node:timers/promises';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);for(const[entry,name]of [['src/app/storage/store.ts','item-selection-store'],['src/app/items-ui.ts','item-selection-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});return{promise,resolve,reject};};
-// Real digest work is independent of the number of event-loop turns.
-async function until(fn){const deadline=performance.now()+5000;while(!fn()&&performance.now()<deadline)await delay(1);assert(fn(),'Expected shop state');}
+async function until(fn){
+ // Fast DOM lookups can exhaust immediate ticks before the async commit fingerprint resolves.
+ const deadline=performance.now()+5000;
+ while(!fn()&&performance.now()<deadline)await pause(5);
+ assert(fn(),'Expected shop state');
+}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'shop-switch-')),{CampaignStore}=require('../.build/item-selection-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
@@ -39,7 +43,7 @@ test('campaign reactivation invalidates outstanding definition replies',async()=
  const x=await fixture();try{const original=window.campaign.itemDefinition,pause=held();window.campaign.itemDefinition=()=>pause.promise;await x.choose(x.defs[1].id);await until(()=>!x.el('item-load-status').hidden);x.ui.activateItems(x.w);pause.resolve(await original(x.defs[1].id));await tick();assert.equal(x.el('item-editor').hidden,true);assert.equal(x.el('item-load-status').hidden,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
 });
 test('an incomplete definition keeps its editor repairable when switching is rejected',async t=>{
- const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await delay(40);return digest(...args);});
+ const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
  const x=await fixture();try{x.el('item-name').value='';x.el('item-description').value='Unfertiger Entwurf';x.el('item-form').oninput();await x.choose(x.defs[1].id);await until(()=>x.messages.length>0&&!x.el('item-name').disabled);assert.equal(x.el('item-name').value,'');assert.equal(x.el('item-description').value,'Unfertiger Entwurf');x.el('item-name').value='Seil korrigiert';x.el('item-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.itemDefinition(x.defs[0].id).description,'Unfertiger Entwurf');}finally{await x.cleanup();}
 });
 test('valid edits save before switching and preserve untouched normalized CRLF prose',async()=>{
