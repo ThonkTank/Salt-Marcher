@@ -1,9 +1,9 @@
 /* A persistent command bar and independently owned tool/detail panels. */
 body.atlas-workspace{padding:0;overflow:hidden}
 body.atlas-workspace>header,body.atlas-workspace>#workspace-navigation,body.atlas-workspace #music-mini{display:none!important}
-body.atlas-workspace #campaign-atlas{position:fixed;inset:0;z-index:21;width:auto;height:100dvh;max-width:none;margin:0;padding:0;display:grid;grid-template-rows:48px minmax(0,1fr);overflow:hidden;background:#f8f9fa}
+body.atlas-workspace #campaign-atlas{position:fixed;inset:0;z-index:21;width:auto;height:100dvh;max-width:none;margin:0;padding:0;display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden;background:#f8f9fa}
 body.atlas-workspace #campaign-atlas[hidden]{display:none!important}
-#campaign-atlas .atlas-command-bar{display:flex;align-items:center;gap:12px;margin:0;padding:6px 10px;min-height:0;flex-wrap:nowrap;border-bottom:1px solid #d7dde2;background:#fafbfc}
+#campaign-atlas .atlas-command-bar{display:flex;align-items:center;gap:12px;margin:0;padding:6px 10px;min-height:48px;box-sizing:border-box;flex-wrap:nowrap;border-bottom:1px solid #d7dde2;background:#fafbfc}
 #campaign-atlas .atlas-header-management,#campaign-atlas .atlas-header-navigation{display:flex;align-items:center;gap:4px;min-width:0}
 #campaign-atlas .atlas-header-management{flex:1}
 #campaign-atlas .atlas-header-navigation{flex:none;padding-left:8px;border-left:1px solid #d7dde2}
@@ -18,19 +18,19 @@ body.atlas-workspace #campaign-atlas[hidden]{display:none!important}
 #campaign-atlas .map-canvas-controls{display:flex;gap:3px;padding:0;margin:0;border:0;background:transparent}
 #campaign-atlas .map-canvas-controls>span,body.atlas-workspace .atlas-reset-control{display:none}
 body.atlas-workspace #atlas-to-party,body.atlas-workspace #atlas-context-fields{display:none!important}
-#campaign-atlas .atlas-layout{position:relative;display:grid;grid-row:2;grid-template-columns:var(--atlas-left-space,76px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:auto;min-height:0;gap:0;align-items:stretch}
-#campaign-atlas[data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:var(--atlas-left-space,76px) minmax(0,1fr) var(--atlas-details-width,340px)}
+#campaign-atlas .atlas-layout{position:relative;display:grid;grid-row:2;grid-template-columns:var(--atlas-left-space,424px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:auto;min-height:0;gap:0;align-items:stretch}
+#campaign-atlas[data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:var(--atlas-left-space,424px) minmax(0,1fr) var(--atlas-details-width,340px)}
 #campaign-atlas[data-collapsed=true] .atlas-layout{grid-template-columns:0 minmax(0,1fr)}
 #campaign-atlas[data-collapsed=true][data-secondary=true][data-overlay=false] .atlas-layout{grid-template-columns:0 minmax(0,1fr) var(--atlas-details-width,340px)}
 body.atlas-workspace #campaign-atlas .atlas-stage{grid-column:2;grid-row:1;position:relative;top:auto;display:flex;height:100%;min-height:0;min-width:0;overflow:hidden}
 #campaign-atlas #campaign-map{width:100%;height:100%;min-height:0;min-width:0;flex:1;display:block;border:0;border-radius:0;background:#b8c896}
-#campaign-atlas #atlas-panel{grid-column:1;grid-row:1;position:relative;display:grid;grid-template-columns:76px minmax(0,1fr);min-height:0;height:auto;padding:0;overflow:visible;border:0;border-right:1px solid #d7dde2;border-radius:0;background:#f8f9fa}
+#campaign-atlas #atlas-panel{grid-column:1;grid-row:1;position:relative;display:grid;grid-template-columns:144px minmax(0,1fr);min-height:0;height:auto;padding:0;overflow:visible;border:0;border-right:1px solid #d7dde2;border-radius:0;background:#f8f9fa}
 #campaign-atlas[data-collapsed=true] #atlas-panel{visibility:hidden;overflow:hidden}
 #campaign-atlas #atlas-families{display:grid;grid-template-columns:1fr;padding:4px;gap:2px;border-bottom:1px solid #d7dde2;background:#f1f4f6;flex-shrink:0}
 #campaign-atlas #atlas-families button{min-width:0;min-height:40px;padding:3px 2px;font-size:10px;border:0;border-radius:4px;background:transparent}
 #campaign-atlas #atlas-families button[aria-pressed=true]{background:#dce9ed;color:#214e60;font-weight:600}
 #campaign-atlas .atlas-dock-body{min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:8px}
-#campaign-atlas .atlas-tool-buttons{display:grid;grid-template-columns:1fr;gap:2px;margin:0}
+#campaign-atlas .atlas-tool-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:0;padding:8px;flex-shrink:0;max-height:42%;overflow:auto;overscroll-behavior:contain;border-bottom:1px solid #d7dde2}
 #campaign-atlas .atlas-tool-buttons button{text-align:center;min-width:0;min-height:44px;padding:4px 1px;font-size:10px;line-height:1.3;border:1px solid transparent;background:transparent;border-radius:4px}
 #campaign-atlas .atlas-tool-buttons button:hover{background:#e9eef1;border-color:#cbd4da}
 #campaign-atlas .atlas-tool-buttons button[aria-pressed=true]{background:#dce9ed;border-color:#9fb9c2;color:#214e60;font-weight:600}
@@ -100,7 +100,7 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas[data-live-surface=true] .atlas-layout{display:block;height:100%}
 #campaign-atlas[data-live-surface=true] #atlas-secondary{display:none!important}
 #campaign-atlas[data-live-surface=true] .atlas-stage{height:100%}
-@media(max-width:1199px){body.atlas-workspace #campaign-atlas{grid-template-rows:88px minmax(0,1fr)}#campaign-atlas .atlas-command-bar{flex-direction:column;align-items:stretch;gap:4px;padding:5px 8px}#campaign-atlas .atlas-header-navigation{border:0;padding:0;justify-content:center}#campaign-atlas .atlas-header-management{flex:none}#campaign-atlas .atlas-search-popup{top:88px}}
+@media(max-width:1199px){body.atlas-workspace #campaign-atlas{grid-template-rows:auto minmax(0,1fr)}#campaign-atlas .atlas-command-bar{flex-direction:column;align-items:stretch;gap:4px;padding:5px 8px}#campaign-atlas .atlas-header-navigation{border:0;padding:0;justify-content:center}#campaign-atlas .atlas-header-management{flex:none}#campaign-atlas .atlas-search-popup{top:88px}}
 @media(max-width:700px){#campaign-atlas .atlas-header-search{min-width:80px}#campaign-atlas .atlas-command-bar button{padding:5px 4px;font-size:11px}#campaign-atlas #atlas-status{width:32px;min-width:32px;font-size:0}#campaign-atlas #atlas-status::before{content:'✓';font-size:16px}#campaign-atlas #atlas-status[data-error=true]::before{content:'!'}#campaign-atlas #atlas-reference-open{font-size:0;width:30px}#campaign-atlas #atlas-reference-open::before{content:'▱';font-size:20px}}
 
 
@@ -108,13 +108,15 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas .atlas-tool-icon{flex:0 0 22px;text-align:center;font-size:20px;line-height:1}
 #campaign-atlas #atlas-landscape-tools>.toolbar:has(#land-finish:not([hidden])){position:sticky;bottom:0;background:#f8f9fa;padding:6px 0;z-index:2}
 
-#campaign-atlas #atlas-tool-palette{box-sizing:border-box;width:100%;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;flex:1;min-height:0;overflow:auto;padding:4px;border-bottom:1px solid #d7dde2;overscroll-behavior:contain}
-#campaign-atlas #atlas-tool-palette>.atlas-tool-buttons{order:1;grid-column:1/-1;margin-bottom:3px}
-#campaign-atlas #atlas-tool-palette>button{order:2;margin:0;padding:4px 1px;font-size:10px;text-align:center;min-height:44px;min-width:0;flex-shrink:0}
-#campaign-atlas #atlas-tool-palette>:is(#atlas-create-city,#atlas-create-dungeon){order:0;grid-column:1/-1}
+#campaign-atlas #atlas-tool-groups{display:flex;flex-direction:column;gap:4px;padding:6px;min-height:0;overflow:auto;overscroll-behavior:contain}
+#campaign-atlas #atlas-tool-groups button{flex-shrink:0;min-height:54px;padding:7px 4px}
+#campaign-atlas #atlas-tool-palette{box-sizing:border-box;width:100%;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;margin-top:auto;padding:6px;border-top:1px solid #d7dde2;overscroll-behavior:contain}
+#campaign-atlas #atlas-tool-palette>button{margin:0;padding:6px 3px;text-align:center;min-height:48px;min-width:0;flex-shrink:0}
+#campaign-atlas #atlas-tool-rail .atlas-section-field{display:block;margin:0;padding:10px 6px;border-bottom:1px solid #d7dde2;font-size:12px}
+#campaign-atlas #atlas-tool-rail #atlas-section{display:block;width:100%;margin-top:5px;font-size:13px;padding:5px 2px;min-height:32px}
 
-/* A narrow named tool rail opens its settings in a separate left drawer. */
-#campaign-atlas .atlas-tool-label{display:block;max-width:100%;font-size:10px;line-height:1.15;overflow-wrap:anywhere;white-space:normal}
+/* Area, groups, tools and their options stay visible independently of selection. */
+#campaign-atlas .atlas-tool-label{display:block;max-width:100%;font-size:12px;line-height:1.3;overflow-wrap:anywhere;white-space:normal}
 #campaign-atlas #atlas-active-tool{display:block;font-size:13px;line-height:1.4;margin:0;color:#34444f}
 #campaign-atlas #atlas-panel label{margin:5px 0;font-size:11px;line-height:1.3}
 #campaign-atlas #atlas-panel label:has(> :is(select,input:not([type=checkbox]):not([type=range]))){display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.2fr);align-items:center;gap:6px}
@@ -128,13 +130,13 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #atlas-navigation-popup .navigation-groups{position:static;display:block;max-height:none;padding:0;box-shadow:none;background:transparent}
 #campaign-atlas[data-element-selected=true] #atlas-workspace-selection :is(#key-open,#empty,#editor,details:has(#drawing-dx),details:has(#drawing-floor-name)){display:none}
 
-#campaign-atlas #atlas-tool-rail{display:flex;flex-direction:column;flex-wrap:nowrap;gap:0;padding:0;margin:0;border-bottom:0;min-height:0;height:100%;width:76px;border-right:1px solid #d7dde2;box-sizing:border-box;background:#f1f4f6}
+#campaign-atlas #atlas-tool-rail{display:flex;flex-direction:column;flex-wrap:nowrap;gap:0;padding:0;margin:0;border-bottom:0;min-height:0;height:100%;width:144px;border-right:1px solid #d7dde2;box-sizing:border-box;background:#f1f4f6}
 #campaign-atlas .atlas-rail-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:100%;border:1px solid transparent;border-radius:4px;background:transparent;color:#34444f}
 #campaign-atlas .atlas-rail-button:hover{background:#e3eaf0;border-color:#cbd4da}
 #campaign-atlas #atlas-tool-rail .atlas-tool-icon{flex:none;width:24px;height:22px;font-size:20px;line-height:22px}
 #campaign-atlas #atlas-tool-settings{position:relative;padding:0;margin:0;border:0;border-radius:0;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:visible;background:#f8f9fa}
 #campaign-atlas .atlas-tool-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;min-height:40px;padding:6px 8px;border-bottom:1px solid #d7dde2;box-sizing:border-box}
-#campaign-atlas #atlas-tool-settings-close{width:26px;min-height:26px;padding:0;border:0;background:transparent;font-size:20px}
+#campaign-atlas #atlas-more-options{margin:8px 0}
 
 /* A borrowed note owns the detail panel until returning to the room text. */
 #campaign-atlas #key-dialog.has-key-reference .key-main-editor{display:none}
@@ -145,3 +147,7 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas :is(#land-line-options,#land-selected-line,#land-brush-options) input[type=checkbox]{width:auto;flex:none;margin:0}
 #campaign-atlas #land-palette button{font-size:22px;line-height:1;padding:2px 5px;min-width:28px}
 #campaign-atlas :is(#land-line-options,#land-selected-line)>strong{display:block;margin-top:8px;font-size:12px;color:#45604b}
+
+/* Keep the header reachable at 200% scale, without horizontal page scrolling. */
+@media(max-width:850px){#campaign-atlas .atlas-header-management{flex-wrap:wrap}#campaign-atlas .atlas-header-search{max-width:none}#campaign-atlas .atlas-search-popup{top:100px}}
+#campaign-atlas :is(#atlas-panel,#atlas-secondary) button{white-space:normal;overflow-wrap:anywhere}
