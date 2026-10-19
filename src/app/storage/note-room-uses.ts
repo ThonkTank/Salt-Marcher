@@ -11,9 +11,11 @@ function install(db:any){
  const cache=new Map<string,{value:string;bytes:number}>();let bytes=0;
  db.function('gm_room_key_refs',{deterministic:true},(payload:string,checksum:string,id:string,scope:string,kind:string,revision:number)=>{
   try{
-   if(createHash('sha256').update(payload).digest('hex')!==checksum)throw new Error('Prüfsumme');
    const identity=JSON.stringify([checksum,id,scope,kind,revision]),hit=cache.get(identity);
-   if(hit){cache.delete(identity);cache.set(identity,hit);return hit.value;}
+   if(hit){
+    if(createHash('sha256').update(payload).digest('hex')!==checksum)throw new Error('Prüfsumme');
+    cache.delete(identity);cache.set(identity,hit);return hit.value;
+   }
    const key=checkedKeyRow({payload,checksum,id,scope_id:scope,kind,revision});
    const value=JSON.stringify({refs:key.kind==='room'?key.references.map(r=>({kind:r.kind,id:r.id})):[],scope:key.scopeId,
     excerpt:key.blocks.filter(b=>b.kind==='text').map(b=>b.text).join(' ').replace(/\s+/g,' ').trim().slice(0,200)}),size=Buffer.byteLength(value);
@@ -32,11 +34,17 @@ export function readNoteRoomUses(db:any,cam:string,note:{id:string;kind:string},
  ), matches AS (
   SELECT k.id,json_extract(k.doc,'$.scope') scope,json_extract(k.doc,'$.excerpt') excerpt FROM keys k
   WHERE EXISTS(SELECT 1 FROM json_each(k.doc,'$.refs') r WHERE json_extract(r.value,'$.id')=@id AND json_extract(r.value,'$.kind')=@kind)
- ) SELECT m.id,m.scope,m.excerpt,NULL problems FROM matches m LEFT JOIN room r ON r.campaign_id=@cam AND r.id=m.id
- ORDER BY r.name COLLATE NOCASE,m.id LIMIT 41 OFFSET @offset`).all({cam,id:note.id,kind:note.kind,offset});
- const bad=db.prepare(`SELECT count(*) count FROM dungeon_key_content WHERE campaign_id=? AND json_extract(gm_room_key_refs(payload,checksum,id,scope_id,kind,revision),'$.problem')=1`).get(cam).count;
- let problems=bad;const entries:NoteRoomUsesPage['entries']=[];
- for(const row of rows.slice(0,40)){
+ ), page AS (
+  SELECT m.*,r.name FROM matches m LEFT JOIN room r ON r.campaign_id=@cam AND r.id=m.id
+  ORDER BY r.name COLLATE NOCASE,m.id LIMIT 41 OFFSET @offset
+ ), problems AS (
+  SELECT count(*) count FROM keys WHERE json_extract(doc,'$.problem')=1
+ ) SELECT p.id,p.scope,p.excerpt,b.count problems FROM problems b LEFT JOIN page p ON 1
+ ORDER BY p.name COLLATE NOCASE,p.id`).all({cam,id:note.id,kind:note.kind,offset});
+ // The left join retains the problem count even for an empty or exhausted page.
+ const matches=rows.filter((row:any)=>row.id!==null);
+ let problems=rows[0].problems;const entries:NoteRoomUsesPage['entries']=[];
+ for(const row of matches.slice(0,40)){
   try{
    const room=drawingRoom(db,cam,row.id),stored=db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,row.id);
    validateRoom(room);
@@ -46,5 +54,5 @@ export function readNoteRoomUses(db:any,cam:string,note:{id:string;kind:string},
    entries.push({id:room.id,title:room.name,number:room.number,place:scope.name+' · '+floor.name,excerpt:row.excerpt,unavailable:false});
   }catch{problems++;entries.push({id:row.id,title:'Raum nicht verfügbar',number:'',place:'Quelle fehlt oder ist beschädigt',excerpt:'',unavailable:true});}
  }
- return{entries,next:rows.length>40?offset+40:null,...(problems?{notice:`Raumverweise unvollständig: ${problems} Quellen konnten nicht gelesen oder zugeordnet werden.`}:{})};
+ return{entries,next:matches.length>40?offset+40:null,...(problems?{notice:`Raumverweise unvollständig: ${problems} Quellen konnten nicht gelesen oder zugeordnet werden.`}:{})};
 }

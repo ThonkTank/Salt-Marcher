@@ -50,6 +50,15 @@ der vorhandene Notizeditor die Detailfläche; „Zum Raumtext“ bleibt beim Scr
 sichtbar und gibt die Raumfelder wieder frei. Aus der Wissensansicht begonnene
 Raumverwendungen behalten deren bisherigen Rückweg.
 
+„Verwendet in Räumen“ leitet Treffer und Hinweise auf beschädigte Quellen aus
+derselben geprüften Key-Projektion ab. Auch leere und vollständig abgefragte
+Seiten behalten diese Hinweise. Die Metadatenprüfung prüft die Originalbytes
+jedes Keys einmal; ein warmer, begrenzter Projektionscache spart das erneute
+Parsen, aber niemals die Prüfsumme. Raumidentität und Ort werden weiterhin aus
+dem aktuellen Kampagnenstand geprüft. Gezielte Store-/DOMprüfungen stehen in
+`tests/desktop-note-room-uses*.test.mjs`; die native Gesamtaufgabe prüft
+`tools/test-desktop-room-rule-reuse.mjs`.
+
 ## Markierte Texte als Weltwissen übernehmen
 
 Eine nichtleere Auswahl im GM- oder Vorlesetext zeigt die Übernahmeaktion direkt

@@ -49,3 +49,15 @@ test('another campaign, stale token, forged target identity and invalid paginati
  const row=x.store.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(x.campaign.id,x.note.id),payload=JSON.stringify({...x.note,id:randomUUID()});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.campaign.id,x.note.id);assert.throws(()=>x.read(),/zugeordnet/);
  const other=x.store.create('Andere Kampagne'),active=x.store.activate(other.id);assert.throws(()=>x.read());assert.throws(()=>x.store.noteRoomUses(active.token,x.note.id),/nicht verfügbar/);
 });
+
+test('empty and exhausted pages retain campaign-wide damage notices without producing placeholder rooms',t=>{
+ const x=fixture(t,2);
+ assert.deepEqual(x.read(40),{entries:[],next:null});
+ damageKey(x,k=>{k.id='forged';});
+ assert.deepEqual(x.read(40),{entries:[],next:null,notice:'Raumverweise unvollständig: 1 Quellen konnten nicht gelesen oder zugeordnet werden.'});
+ const key=x.store.db.prepare('SELECT * FROM dungeon_key_content WHERE campaign_id=? AND id=?').get(x.campaign.id,x.rooms[1].id),value=JSON.parse(key.payload);value.references=[];
+ const payload=JSON.stringify(value);x.store.db.prepare('UPDATE dungeon_key_content SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.campaign.id,key.id);
+ assert.deepEqual(x.read(),{entries:[],next:null,notice:'Raumverweise unvollständig: 1 Quellen konnten nicht gelesen oder zugeordnet werden.'});
+ x.store.db.prepare('DELETE FROM dungeon_key_content WHERE campaign_id=?').run(x.campaign.id);
+ assert.deepEqual(x.read(),{entries:[],next:null});
+});
