@@ -174,7 +174,7 @@ export class AtlasWorkspaceLayout {
  private releaseDescription(){if(this.auxiliary==='key')el<HTMLDialogElement>('key-dialog').close();}
  private async requestContext(kind:string,title:string,nodes:HTMLElement[]){try{if(await this.host.prepare()){this.releaseDescription();this.openContext(kind,title,nodes);}}catch(e){this.host.error(e);}}
  comparison(open:boolean){this.root.dataset.comparing=String(open);if(open){this.releaseDescription();this.openContext('comparison','Größe vergleichen',[el('atlas-reference-panel')]);}else if(this.auxiliary==='comparison')this.clearContext();}
- output(open:boolean){if(open){this.releaseDescription();this.openContext('output','Bild exportieren',[el('atlas-output')]);}else if(this.auxiliary==='output')this.clearContext();}
+ output(open:boolean){if(open){this.releaseDescription();this.openContext('output','Exportieren',[el('atlas-output')]);}else if(this.auxiliary==='output')this.clearContext();}
  // Compatibility for domain callers: selection never replaces the tool panel.
  showPane(pane:'tool'|'selection'){if(pane==='selection')this.openSelection();else this.showToolSettings(true);}
  private openSelection(){this.openContext('selection','Eigenschaften',[this.selection]);}

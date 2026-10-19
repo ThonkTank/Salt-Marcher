@@ -1,0 +1,54 @@
+{
+  "source": "d818403a459aa058864f93827ecdd5560eec0f15",
+  "dirty": true,
+  "launches": [
+    {
+      "scale": 1,
+      "pid": 2609397,
+      "normalExit": true
+    },
+    {
+      "scale": 1,
+      "pid": 2609913,
+      "normalExit": true
+    },
+    {
+      "scale": 2,
+      "pid": 2610042,
+      "normalExit": true
+    },
+    {
+      "scale": 2,
+      "pid": 2610366,
+      "normalExit": true
+    }
+  ],
+  "results": [
+    {
+      "scale": 1,
+      "profile": "/tmp/region-export-F4V4gV",
+      "measurement": "9.05 km · 5.621 Meilen",
+      "measurementReadonly": true,
+      "dragUndoRedo": true,
+      "exportReadonly": true,
+      "width": 1635,
+      "height": 2048,
+      "acrossX": 42,
+      "acrossY": 149,
+      "reopened": true
+    },
+    {
+      "scale": 2,
+      "profile": "/tmp/region-export-0EeMCw",
+      "measurement": "7.39 km · 4.590 Meilen",
+      "measurementReadonly": true,
+      "dragUndoRedo": true,
+      "exportReadonly": true,
+      "width": 2048,
+      "height": 1234,
+      "acrossX": 42,
+      "acrossY": 155,
+      "reopened": true
+    }
+  ]
+}
