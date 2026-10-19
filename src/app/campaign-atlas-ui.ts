@@ -1485,7 +1485,8 @@ export class CampaignAtlasWorkbench {
     if(this.pathDrag?.id===e.pointerId){
       const drag=this.pathDrag,element=this.pathPreview(drag.element);this.pathDrag=null;this.suppressClick();
       if(drag.token!==this.owner?.token||element.scopeId!==this.scopeId||element.floorId!==this.floorId||this.selection?.id!==element.id){this.render();return;}
-      if(!drag.moved||JSON.stringify(element.points)===JSON.stringify(drag.element.points)){this.render();return;}
+      const prior=drag.element.points[drag.index];
+      if(!drag.moved||!drag.insert&&prior?.x===drag.point.x&&prior?.y===drag.point.y){this.render();return;}
       if(this.owner){const result=await this.write({kind:'drawing',command:{commandId:crypto.randomUUID(),campaignId:this.owner.campaign.id,token:this.owner.token,action:{kind:'element',element,expectedRevision:drag.element.revision}}},true);if(result)await selectElement(element.id);}
       this.render();return;
     }
@@ -2429,7 +2430,8 @@ export class CampaignAtlasWorkbench {
   /** Exact author data and open drafts outlive the background's detail/raster choice. */
   private pathPreview(original:import('./drawing-contracts').DrawingElement){
     const drag=this.pathDrag;if(!drag||drag.element.id!==original.id)return original;
-    const points=structuredClone(drag.element.points);
+    // The snapshot stays read-only; only the edited point needs a new object.
+    const points=drag.element.points.slice();
     if(drag.insert)points.splice(drag.index+1,0,{...drag.point});else points[drag.index]={...drag.point};
     return {...original,points};
   }

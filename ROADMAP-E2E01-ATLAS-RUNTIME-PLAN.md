@@ -307,6 +307,14 @@ PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung.
 zusätzlich ihre neuen PNG-Pixel sowie die leere alte Position. Der frühere
 Grundlauf vergrößerte eine andere Wand und bemerkte verlorene Türbindungen nicht.
 
+Ausgewählte Zeichnungspfade haben Punkt- und Segmentgriffe für einzelne
+Korrekturen. Die Geste bindet einen unveränderten Ausgangssnapshot; ihre
+Vorschau kopiert nur die Punktliste und ersetzt beziehungsweise ergänzt den
+betroffenen Punkt. Ein zurückgezogener Punkt erzeugt keinen Historyeintrag.
+`tools/test-desktop-access-path.mjs` prüft den kreuzenden Zugangsweg bei 100/200 %
+über Korrektur, Undo/Redo, editierbare Dungeondaten, tatsächliche PNG-Pixel und
+Neustart. Gebäudeinhalt, Pfadidentität und Metadaten bleiben dabei erhalten.
+
 Kanten-/Eckpunktzüge senden `shape.preserveBoundaryAnchors`: Die unveränderte
 Polygon-/Kantenreihenfolge erklärt die Zuordnung. Beginn und Bewegung der
 Griffe verwenden den vorhandenen Zeichenrasterfang statt eines eigenen

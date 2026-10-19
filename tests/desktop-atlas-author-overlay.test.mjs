@@ -191,6 +191,11 @@ test('path midpoint drag inserts one editable bend, preserves metadata and never
  f.ui.down(f.event(5,0));f.ui.move(f.event(5,8));assert.equal(f.writes.length,0);assert.deepEqual(f.ui.pathPreview(f.path).points,[{x:0,y:0},{x:5,y:8},{x:10,y:0}]);
  await f.ui.up(f.event(5,8));assert.equal(f.writes.length,1);const action=f.writes[0].command.action;assert.equal(action.kind,'element');assert.equal(action.expectedRevision,9);assert.deepEqual(action.element,{...source,points:[{x:0,y:0},{x:5,y:8},{x:10,y:0}]});assert.deepEqual(f.original,before);assert.deepEqual(f.path,source);assert.equal(f.ui.pathDrag,null);assert.equal(f.ui.ignoreClick,true);
 });
+test('returning a dragged path vertex to its original position creates no history entry',async t=>{
+ const f=pathGesture(t),source=structuredClone(f.path);f.ui.camera.hitAt=()=>({data:{id:'path',atlasPathVertex:'0'}});
+ f.ui.down(f.event(0,0));f.ui.move(f.event(0,8));f.ui.move(f.event(0,0));await f.ui.up(f.event(0,0));
+ assert.equal(f.writes.length,0);assert.deepEqual(f.path,source);assert.equal(f.ui.pathDrag,null);
+});
 for(const mode of ['stationary','cancel','stale','floor','owner'])test('path gesture cannot commit after '+mode,async t=>{
  const f=pathGesture(t);f.ui.down(f.event(5,0));if(mode!=='stationary')f.ui.move(f.event(5,8));
  if(mode==='cancel')f.ui.cancel();if(mode==='stale')f.current(false);if(mode==='floor')f.ui.floorId='upper';if(mode==='owner')f.ui.owner={token:'another'};
