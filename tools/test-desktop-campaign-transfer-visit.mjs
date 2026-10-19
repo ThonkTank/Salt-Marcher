@@ -167,7 +167,10 @@ async function open(id) {
   );
 }
 async function note(title) {
- if (!await page.locator('#preparation-tab').isVisible()) await page.locator('#atlas-navigation').click();
+ if (!await page.locator('#preparation-tab').isVisible()) {
+  if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();
+  else await page.locator('#workspace-nav-summary').click();
+ }
  await page.locator('#preparation-tab').click(); await page.locator('#preparation-knowledge').click();
  await page.locator('#world-search').fill(title); await page.locator('#world-list button').filter({hasText:title}).click();
  await page.locator('#note-editor').waitFor({state:'visible'});
