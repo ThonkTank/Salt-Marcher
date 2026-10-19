@@ -13,6 +13,18 @@
   `docs/scope-sources.json`. Implemented behavior, automated evidence, native
   qualification, and owner acceptance remain separate claims.
 
+## Capability catalog and test files
+
+- When checking a user workflow, update its actual test-file links in the shared
+  `codex-dungeon-capability` catalog and record the check with `--geprueft`.
+  Attach newly created test files with `--ablauf "…" --tests tests/example.test.mjs`;
+  carry links through renames and explicitly remove obsolete links with
+  `--entferne-tests`. Use repository-relative source paths, not build outputs.
+- Map files from their test content, not just their names. A file may support
+  several workflows; neither a passing suite nor a link proves complete coverage.
+  Unmapped tests remain open for review and are not automatically redundant.
+  `--testuebersicht --repo PATH` shows the inverse mapping without another ledger.
+
 ## Delivery
 
 - `origin` is `ThonkTank/Salt-Marcher`; the shared integration branch is `main`.

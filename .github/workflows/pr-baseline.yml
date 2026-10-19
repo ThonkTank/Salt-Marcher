@@ -40,6 +40,9 @@ jobs:
       - name: Check documentation and source references
         run: npm run check:repo
 
+      - name: Test capability catalog migration and concurrent selection
+        run: python3 tools/agent-setup/test_select_capability.py
+
       - name: Install dependencies
         run: npm ci
 

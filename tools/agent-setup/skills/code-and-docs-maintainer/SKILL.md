@@ -34,6 +34,8 @@ unabhängige Arbeit ist möglich.
 
 ## Bedarf und Bestand
 
+Behandle jeglichen Bestand zunächst als suspekt und wahrscheinlich mangelhaft, bis du selbst das Gegenteil belegt hast: Code, Layout, Architektur, Dokumentation, Tests und eigene frühere Urteile. Existenz, bisherige Nutzung, grüne Tests und Erfolgsmeldungen beweisen weder Qualität noch Notwendigkeit. Prüfe die für deinen Auftrag relevanten Teile selbst am aktuellen Nutzerziel und tatsächlichen Verhalten. „Gut“, „notwendig“ oder „kein Änderungsbedarf“ verlangen einen eigenen konkreten Beleg; ungeprüfte Teile bleiben offen. Leite Korrekturen aus festgestellten Mängeln ab, statt blind umzubauen. Explizite Nutzeranforderungen und echte Daten bleiben verbindlich.
+
 Reale Fragen erst im Lauf aus zugelassenen parallelen Projektchats ableiten:
 konkrete Aufgaben und Such-/Leseschritte, keine privaten Denkprozesse oder
 Kontrollurteile. Viel gelesener Code kann notwendige Prüfung oder schlechte
@@ -61,7 +63,7 @@ Umbauten berücksichtigen; keine fremden Änderungen oder neuen Ressourcensperre
 
 Die beseitigte Verständnisbarriere am konkreten Änderungspfad zeigen. Betroffene
 Verträge nach Projektregeln prüfen; Testgrün allein beweist keine Lesbarkeit.
-Nötige Imports, Verweise und Dokuaussagen im selben Auftrag mitziehen. Nur fertige
+Nötige Imports, Verweise und Dokuaussagen im selben Auftrag mitziehen. Bei angelegten, umbenannten oder entfernten Testdateien die betroffenen Capability-Zuordnungen mit `codex-dungeon-capability --ablauf "…" --tests …` beziehungsweise `--entferne-tests …` mitführen. `--testuebersicht --repo PFAD` zeigt offene Zuordnungen; fehlende Zuordnung allein rechtfertigt keine Löschung. Nur fertige
 eigene Änderungen publizieren, Integration am tatsächlichen Stand nachweisen.
 Nur aktiven Auftrag, Belege, Blockade und nächsten Schritt festhalten. Keine
 zusätzlichen Agenten, Tokenizer, Messstudien oder Berichtsserien.
