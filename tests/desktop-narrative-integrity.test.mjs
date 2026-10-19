@@ -24,6 +24,16 @@ test('per-note award lookup uses its campaign and note index',t=>{
  assert.ok(plan.some(row=>row.detail.includes('narrative_award_note')));
 });
 
+test('two individually valid awards for one note reject without replacing its safe backup',async t=>{
+ const x=fixture(t),n=x.store.narrative(x.w.token,x.id);
+ x.store.executeProgress(x.command({kind:'narrative-award',noteId:x.id,expectedRevision:n.state.revision,expectedNoteRevision:n.noteRevision,sceneId:null,poolXp:0,noXp:true,recipients:[],items:[],outcome:'Einmal bestätigt'}));
+ const safe=path.join(x.root,'one-award.sqlite');await x.store.backup(safe);const original=readFileSync(safe);
+ const row=x.store.db.prepare('SELECT * FROM narrative_award').get(),award={...JSON.parse(row.payload),id:randomUUID()},payload=JSON.stringify(award);
+ x.store.db.prepare('INSERT INTO narrative_award VALUES(?,?,?,?,?)').run(x.cam.id,award.id,x.id,payload,hash(payload));
+ const before=x.store.db.serialize();assert.throws(()=>x.store.narrative(x.w.token,x.id),/Belohnungsbeleg/);await assert.rejects(x.store.backup(safe));
+ assert(x.store.db.serialize().equals(before));assert(readFileSync(safe).equals(original));
+});
+
 function draftFor(x){return {noteId:x.id,writeId:randomUUID(),revision:x.store.narrative(x.w.token,x.id).state.revision,status:'open',locationId:null,contributors:[],poolXp:'-',items:[{name:'Unfertig '+x.id,category:'equipment',quantity:'1,5',valueGold:'-'}]};}
 for(const fault of ['note identity','raw field type'])test(`narrative draft read and backup reject valid-checksum ${fault} damage`,async t=>{
  const x=fixture(t),d=draftFor(x);x.store.keepNarrativeDraft(x.w.token,d,null);
