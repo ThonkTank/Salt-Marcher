@@ -210,7 +210,7 @@ async function readCurrentParty(){
 async function currentParty(){
  const w=workspace,source=plan,g=generation,request=++partyRequest;if(!w||!source)return;const party=JSON.stringify(source.party);
  try{const next=await readCurrentParty();if(!next||!owned(w.token,g)||plan!==source||request!==partyRequest)return;if(JSON.stringify(source.party)!==party){tell('Neue Partyeingabe bleibt offen. Aktuelle Party bei Bedarf erneut übernehmen.',true);return;}
-  source.party=next;renderPlan();schedule();if(source.party.length)get<HTMLDetailsElement>('encounter-party-details').open=false;
+  source.party=next;renderPlan();schedule();
  }catch(error){if(owned(w.token,g)&&plan===source&&request===partyRequest)tell((error as Error).message,true);}
 }
 

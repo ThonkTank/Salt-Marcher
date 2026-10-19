@@ -199,7 +199,12 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
  ensureLootUI();
  get('encounter-generate').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-actions').scrollIntoView({block:'center'});get<HTMLFormElement>('generation-form').querySelector<HTMLButtonElement>('button[type=submit]')!.focus({preventScroll:true});};
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
- get('generation-plan-open').onclick=()=>{get('generation-feedback').textContent='';get('encounter-builder').scrollIntoView({block:'start'});const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');target.focus({preventScroll:true});};
+ get('generation-plan-open').onclick=()=>{
+  get('generation-feedback').textContent='';
+  if(!get('encounter-editor').hidden)get<HTMLDetailsElement>('encounter-party-details').open=true;
+  const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');
+  target.scrollIntoView({block:'center'});target.focus({preventScroll:true});
+ };
  get('catalog-tables').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};
  initWorldSourceUI(command,()=>{previewDirty=true;sourceLabel();renderPreview();},close=>{discard=close;get<HTMLDialogElement>('generation-discard').showModal();},accept=>report(()=>openTable(undefined,accept)));
  get('encounter-table-use').onclick=()=>{

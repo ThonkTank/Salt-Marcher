@@ -364,6 +364,15 @@ Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
    dürfen keine neuen Listenreads starten. Providerintegration ersetzt weder die
    vollständige SRDquellenlieferung noch deren unabhängige Abnahme.
 
+## Planungsparty zwischen Vorlage und Generator bearbeiten
+
+„Aktuelle Party übernehmen“ ersetzt ausdrücklich den Planungssnapshot und lässt
+den geöffneten Partyeditor sichtbar. „Zur Planungsparty“ öffnet den Partybereich
+vor dem Fokus auf das erste Eingabefeld; bei leerer Party führt der Fokus zur
+Zeilenanlage, ohne geöffnete Vorlage zur Vorlagenanlage. Der Generatorzugang
+bleibt nach der Partyübernahme erreichbar. Diese Navigation ändert weder
+Szenenmitgliedschaft noch den unabhängigen Planungssnapshot beim Kampfstart.
+
 ## Bestehende Encounter-Vorlage auffüllen (0.149)
 
 Die [Originalanforderung Encounter Generation](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter-generation.md)
