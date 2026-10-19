@@ -34,6 +34,9 @@ const executable = process.env.ATLAS_PACKAGE
     ? path.join(process.env.ATLAS_PACKAGE, "electron")
     : root + "/node_modules/electron/dist/electron",
   prefix = process.env.ATLAS_PACKAGE ? [] : [root + "/.build/desktop/main.cjs"];
+const builtRoot = process.env.ATLAS_PACKAGE
+  ? path.join(process.env.ATLAS_PACKAGE, "resources/app")
+  : root + "/.build/desktop";
 const result = {
   profile,
   source: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -43,28 +46,20 @@ const result = {
     encoding: "utf8",
   }).trim(),
   build: JSON.parse(
-    await readFile(
-      path.join(
-        process.env.ATLAS_PACKAGE
-          ? path.join(process.env.ATLAS_PACKAGE, "resources/app")
-          : root + "/.build/desktop",
-        "build-info.json",
+    await readFile(path.join(builtRoot, "build-info.json"), "utf8"),
+  ),
+  artifacts: Object.fromEntries(
+    await Promise.all(
+      ["main.cjs", "atlas-region-worker.cjs", "ui/renderer.js"].map(
+        async (file) => [
+          file,
+          createHash("sha256")
+            .update(await readFile(path.join(builtRoot, file)))
+            .digest("hex"),
+        ],
       ),
-      "utf8",
     ),
   ),
-  mainSha256: createHash("sha256")
-    .update(
-      await readFile(
-        path.join(
-          process.env.ATLAS_PACKAGE
-            ? path.join(process.env.ATLAS_PACKAGE, "resources/app")
-            : root + "/.build/desktop",
-          "main.cjs",
-        ),
-      ),
-    )
-    .digest("hex"),
   errors: [],
   checks: [],
 };
@@ -283,6 +278,17 @@ try {
     dbread((db) => db.prepare("SELECT count(*) n FROM atlas_place").get().n),
     0,
   );
+  for (const id of [
+    "city-demographics",
+    "city-factions",
+    "city-paper",
+    "city-export-svg",
+    "city-export-json",
+  ])
+    assert(
+      await page.locator("#" + id).isHidden(),
+      id + " must not expose a separate city administration",
+    );
   result.checks.push("direct-building");
   await page.locator('[data-family="interior"]').click();
   await atlasCanvasReady(page);
