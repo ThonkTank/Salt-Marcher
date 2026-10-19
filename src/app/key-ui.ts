@@ -267,9 +267,9 @@ export async function openRoomKey(id:string,current=()=>true,returned?:()=>void,
 }
 /** A room opened from a borrowed note returns to that note beside its original room.
  * The preparation route remains the fallback for notes opened in that workspace. */
-export async function openNoteRoomKey(id:string,current:()=>boolean,returned:()=>void):Promise<boolean>{
- const source=noteContext?.source,origin=roomId,o=owner();
- if(!source||!origin)return openRoomKey(id,current,returned);
+export async function openNoteRoomKey(id:string,current:()=>boolean,returned:()=>void,source?:{id:string;label:string}):Promise<boolean>{
+ const origin=roomId,o=owner();
+ if(!noteContext?.ownsEditor||!source||!origin)return openRoomKey(id,current,returned);
  const previousReturn=keyReturn,previousLeave=keyLeave,closeLabel=el('key-close').textContent??'Schließen';
  const valid=()=>owns(o)&&current();
  return openRoomKey(id,valid,()=>{void(async()=>{

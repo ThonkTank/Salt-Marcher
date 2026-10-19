@@ -113,7 +113,7 @@ let locationNotebookOpen:(id:string)=>Promise<void>=async()=>{};
 let roomUses:NoteRoomUses|null=null;
 let noteThread:NoteThreadDialog|null=null;
 let noteMerge:NoteMergeUI|null=null;
-let roomKeyOpen:(id:string,current:()=>boolean,restore:()=>void)=>Promise<boolean>=async()=>false;
+let roomKeyOpen:(id:string,current:()=>boolean,restore:()=>void,source?:{id:string;label:string})=>Promise<boolean>=async()=>false;
 export function setNoteRoomNavigation(open:typeof roomKeyOpen){roomKeyOpen=open;}
 export function setLocationNotebookNavigation(open:(id:string)=>Promise<void>){locationNotebookOpen=open;}
 const originalNote = () => noteRow(selectedNote)?.note;
@@ -511,7 +511,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       if(owner.current())revealNote(id);
     }
   });
-  const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>roomKeyOpen(id,current,()=>{showPreparationArea(false);showLocations(false);restore(true);if(selectedNote)revealNote(selectedNote);}));
+  const uses=get('note-room-uses');if(uses)roomUses=new NoteRoomUses(uses,(token,id,offset)=>window.campaign.noteRoomUses(token,id,offset),(id,current,restore)=>{const source=originalNote();return roomKeyOpen(id,current,()=>{showPreparationArea(false);showLocations(false);restore(true);if(selectedNote)revealNote(selectedNote);},source?{id:source.id,label:noteDraft?.title??source.title}:undefined);});
   tell = (text,error)=>{status(text,error);noteThread?.feedback(text,error);packetNoteFeedback(text,error);};
   for(const [id,plan] of [['preparation-knowledge',false],['preparation-planning',true]] as const)get(id).onclick=()=>{void(async()=>{const owner=context;if(!await leavePreparation()||context!==owner)return;if(plan)await ensurePlanningView();if(context===owner)showPreparationArea(plan);})().catch(error=>tell(error.message,true));};
   if(!get<HTMLSelectElement>('world-kind').querySelector('option[value="rule"]')){const option=document.createElement('option');option.value='rule';option.textContent='Regelreferenz';get<HTMLSelectElement>('world-kind').append(option);}

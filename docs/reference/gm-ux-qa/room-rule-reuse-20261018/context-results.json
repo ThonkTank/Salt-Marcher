@@ -2,17 +2,17 @@
   "date": "2026-10-19",
   "saltmarcher": {
     "complete": true,
-    "source": "0e8f351d18ee56d0155bd3dc5bcba8df198f8686",
+    "source": "fa8d75f6867832c39dd07ee1288cfadd4250b32a",
     "hashes": {
       "main.cjs": "a4f93a7e3c45a8ccafd6f438880e152afaf6c89bdae42ed45ac5cc679f27429b",
       "preload.cjs": "c505f3d6e86ef59e2e36619e06f840848da7793585cad49318458246ee56914e",
-      "ui/renderer.js": "4fb4a0b727455c536984cc770df3a2c7b5ab51aab11b15079cfecaf6c60a5a47",
+      "ui/renderer.js": "d5bfbb72d4e65f2a5c665ec714a3dab7e021b05fd5120bbf45b0f3d676bb3d9b",
       "ui/index.html": "047eb1a795cd8fd885eeae4f5ba310e46c513daf92c50963b36ef463494047dd",
       "ui/app.css": "e4f1b39a61390e982cf774013f012a4a189c65d31670d0f12a156a73cffade10"
     },
     "launches": [
       {
-        "pid": 1664773,
+        "pid": 1678148,
         "exit": {
           "code": 0,
           "signal": null
@@ -20,7 +20,7 @@
         "pidAbsent": true
       },
       {
-        "pid": 1664939,
+        "pid": 1678726,
         "exit": {
           "code": 0,
           "signal": null
@@ -29,12 +29,12 @@
       }
     ],
     "errors": [],
-    "profile": "/tmp/gm-room-rule-zzc3kI",
-    "file": "/tmp/gm-room-rule-zzc3kI/workbench.sqlite",
+    "profile": "/tmp/gm-room-rule-zPi84a",
+    "file": "/tmp/gm-room-rule-zPi84a/workbench.sqlite",
     "content": {
       "rule": {
         "version": 1,
-        "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+        "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
         "revision": 2,
         "kind": "note",
         "title": "Druckplatten – Abwicklung",
@@ -46,7 +46,7 @@
       },
       "keys": [
         {
-          "id": "bc9ce979-c48d-44cf-be98-029798b06b95",
+          "id": "5967df53-0754-4b69-baa9-e84df7628d99",
           "revision": 1,
           "scopeId": "local",
           "kind": "room",
@@ -57,7 +57,7 @@
           "attributes": {},
           "blocks": [
             {
-              "id": "2d678533-5526-497b-84a6-12d1ec4e58d9",
+              "id": "cb93789e-fb90-4ca3-95f5-5e3da52ce2c1",
               "kind": "text",
               "visibility": "gm",
               "text": "Kupfernadeln hinter der Tür. Die Platte wird mit dem Rad im Nebenraum zurückgestellt.",
@@ -69,7 +69,7 @@
               "revealedText": ""
             },
             {
-              "id": "6b94993c-6e63-426b-a28e-deb81d08467f",
+              "id": "eca79d2f-ccac-4de8-9143-3f018a3d4c32",
               "kind": "legacy",
               "visibility": "gm",
               "text": "",
@@ -81,7 +81,7 @@
               "revealedText": ""
             },
             {
-              "id": "3c53b3b3-0ac7-4b82-b5c0-8ffe8147dae1",
+              "id": "42b377cd-fff1-472b-bdcc-9abd8b9a425b",
               "kind": "geometry",
               "visibility": "public",
               "text": "",
@@ -93,7 +93,7 @@
               "revealedText": ""
             },
             {
-              "id": "fc749c6c-094f-4750-ba24-d9bb6f6654c9",
+              "id": "8bda570a-916d-41dd-89ab-e3a8bec7866a",
               "kind": "attributes",
               "visibility": "public",
               "text": "",
@@ -105,7 +105,7 @@
               "revealedText": ""
             },
             {
-              "id": "1d471bcc-3ee5-49b9-9dd7-528942a599ca",
+              "id": "018ab025-e0f8-4487-8c3b-c02694c8476c",
               "kind": "exits",
               "visibility": "public",
               "text": "",
@@ -123,13 +123,13 @@
           "references": [
             {
               "kind": "note",
-              "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+              "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
               "label": "Druckplatten – Abwicklung"
             }
           ]
         },
         {
-          "id": "5f77e824-5ff7-447b-a970-06c557247fe8",
+          "id": "5deb341e-93aa-404c-9adb-940797769d3b",
           "revision": 2,
           "scopeId": "local",
           "kind": "room",
@@ -140,7 +140,7 @@
           "attributes": {},
           "blocks": [
             {
-              "id": "cfa3215b-c3f0-47c7-a752-105a94a601e4",
+              "id": "814e5879-5b06-4388-9f63-1304ae206513",
               "kind": "text",
               "visibility": "gm",
               "text": "Zwei bronzene Speere hinter dem Relief. Die Platte wird mit dem Hebel hinter dem Relief zurückgestellt. Nach der Entschärfung bleibt der Hebel mit rotem Band markiert.",
@@ -152,7 +152,7 @@
               "revealedText": ""
             },
             {
-              "id": "2917d818-1af3-44a0-9143-ea159103f5c8",
+              "id": "7dd16b43-06b4-4495-91bf-bfe939d3c8fd",
               "kind": "legacy",
               "visibility": "gm",
               "text": "",
@@ -164,7 +164,7 @@
               "revealedText": ""
             },
             {
-              "id": "2b5b18b8-475e-498a-8633-73681c13eb43",
+              "id": "e103523b-8f8c-4aff-8e33-ecd3672ffc30",
               "kind": "geometry",
               "visibility": "public",
               "text": "",
@@ -176,7 +176,7 @@
               "revealedText": ""
             },
             {
-              "id": "e428433e-cdfc-431d-8dd4-5caf7fa0cc34",
+              "id": "a57296e6-b059-4bf2-815f-ea478b341541",
               "kind": "attributes",
               "visibility": "public",
               "text": "",
@@ -188,7 +188,7 @@
               "revealedText": ""
             },
             {
-              "id": "d156ba35-f673-4022-a1d5-d4f75c7500ff",
+              "id": "8072e76e-99a2-4741-8a8d-5936f51aab31",
               "kind": "exits",
               "visibility": "public",
               "text": "",
@@ -206,7 +206,7 @@
           "references": [
             {
               "kind": "note",
-              "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+              "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
               "label": "Druckplatten – Abwicklung"
             }
           ]

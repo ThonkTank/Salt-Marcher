@@ -20,10 +20,10 @@ function fixture(t){
 
 test('context reuses the existing note controls and returns them intact after close',async t=>{
  const x=fixture(t);let events=0;x.el('note-gm').addEventListener('input',()=>events++);x.el('note-gm').value='Offene Notizeingabe';
- await x.panel.open('nera','Nera',()=>true);assert.deepEqual(x.panel.source,{id:'nera',label:'Nera'});for(const [i,id]of x.ids.entries()){assert.equal(x.el(id),x.original[i]);assert(x.el('key-reference-panel').contains(x.el(id)));}
+ await x.panel.open('nera','Nera',()=>true);assert.equal(x.panel.ownsEditor,true);for(const [i,id]of x.ids.entries()){assert.equal(x.el(id),x.original[i]);assert(x.el('key-reference-panel').contains(x.el(id)));}
  assert.equal(x.el('note-back').hidden,true);x.el('note-gm').value='Ergänztes Motiv';x.el('note-gm').dispatchEvent(new (x.el('note-gm').ownerDocument.defaultView.Event)('input'));
  x.el('key-reference-return').onclick();await until(()=>!x.panel.active);
- assert.equal(x.closed(),1);assert.equal(x.panel.source,null);assert.equal(x.focused(),'key-gm-notes');assert.equal(x.el('note-gm').value,'Ergänztes Motiv');assert.equal(events,1);assert.equal(x.el('note-back').hidden,false);
+ assert.equal(x.closed(),1);assert.equal(x.panel.ownsEditor,false);assert.equal(x.focused(),'key-gm-notes');assert.equal(x.el('note-gm').value,'Ergänztes Motiv');assert.equal(events,1);assert.equal(x.el('note-back').hidden,false);
  for(const [i,id]of x.ids.entries()){assert.equal(x.el(id),x.original[i]);assert(x.home.contains(x.el(id)));}
 });
 
@@ -35,9 +35,9 @@ test('a failed or composing note flush keeps the panel and editor available',asy
 
 test('late open completion cannot expose the editor or focus over a newer target',async t=>{
  const x=fixture(t),a=deferred(),b=deferred();x.setOpen(id=>id==='a'?a.promise:b.promise);
- const old=x.panel.open('a','Alte Notiz',()=>true);assert.equal(x.panel.source,null);x.panel.reset();const current=x.panel.open('b','Neue Notiz',()=>true);
+ const old=x.panel.open('a','Alte Notiz',()=>true);assert.equal(x.panel.ownsEditor,false);x.panel.reset();const current=x.panel.open('b','Neue Notiz',()=>true);
  a.resolve(true);await old;assert.equal(x.el('key-reference-heading').textContent,'Neue Notiz');assert.equal(x.el('note-editor').parentElement.hidden,true);assert.equal(x.focused(),null);
- b.resolve(true);await current;assert.deepEqual(x.panel.source,{id:'b',label:'Neue Notiz'});assert.equal(x.el('note-editor').parentElement.hidden,false);assert.equal(x.focused(),'note-editor');
+ b.resolve(true);await current;assert.equal(x.panel.ownsEditor,true);assert.equal(x.el('note-editor').parentElement.hidden,false);assert.equal(x.focused(),'note-editor');
 });
 
 test('a retired close cannot dismiss a reopened context',async t=>{
@@ -47,7 +47,7 @@ test('a retired close cannot dismiss a reopened context',async t=>{
 
 test('an unavailable target does not display the previous note as its contents',async t=>{
  const x=fixture(t);x.el('note-gm').value='Vorige Notiz';x.setOpen(async()=>false);await x.panel.open('missing','Fehlender Verweis',()=>true);
- assert.equal(x.panel.source,null);assert.equal(x.el('note-editor').parentElement.hidden,true);assert.match(x.el('key-reference-status').textContent,/Verknüpfung bleibt erhalten/);assert.equal(x.el('key-reference-status').dataset.error,'true');
+ assert.equal(x.panel.ownsEditor,false);assert.equal(x.el('note-editor').parentElement.hidden,true);assert.match(x.el('key-reference-status').textContent,/Verknüpfung bleibt erhalten/);assert.equal(x.el('key-reference-status').dataset.error,'true');
 });
 
 test('closing the outer dialog restores Preparation controls and invalidates pending reads',async t=>{
@@ -63,4 +63,12 @@ test('a delayed return refresh cannot steal focus from a newly opened note',asyn
 test('an old flush waiting for a read cannot flush the replacement context',async t=>{
  const x=fixture(t),read=deferred();let writes=0;x.setFlush(async()=>{writes++;return true;});x.setOpen(()=>read.promise);const opening=x.panel.open('a','Alt',()=>true),flushing=x.panel.flush();x.panel.reset();x.setOpen(async()=>true);await x.panel.open('b','Neu',()=>true);read.resolve(true);await opening;
  assert.equal(await flushing,false);assert.equal(writes,0);assert.equal(x.panel.active,true);
+});
+
+// A nested notebook can borrow the same editor without retiring the room panel.
+// Its navigation must use its own return route rather than the panel's origin.
+test('a room panel cannot claim an editor currently borrowed by another host',async t=>{
+ const x=fixture(t);await x.panel.open('nera','Nera',()=>true);assert.equal(x.panel.ownsEditor,true);
+ const notebook=document.createElement('section');document.body.append(notebook);notebook.append(x.el('note-editor'));
+ assert.equal(x.panel.active,true);assert.equal(x.panel.ownsEditor,false);
 });

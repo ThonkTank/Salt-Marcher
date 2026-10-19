@@ -735,7 +735,7 @@ test('scene text search scans loaded visit identities once and blank queries ski
 test('a room return restores its source knowledge view after visiting a linked plan',async t=>{
  const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Nachtwache',scenes:[]};x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));
  x.window.campaign.noteRoomUses=async()=>({ok:true,value:{entries:[{id:'room',title:'Wachstube',number:'2',place:'Tor',excerpt:'Nera',unavailable:false}],next:null}});
- let returned,current;x.ui.setNoteRoomNavigation(async(id,valid,restore)=>{current=valid;returned=restore;return true;});await x.activate();await x.ui.openPreparedNote(x.ids.borin);await until(()=>x.el('note-room-uses-list').querySelector('button'));x.el('note-room-uses-list').querySelector('button').click();await until(()=>returned);
+ let returned,current,source;x.ui.setNoteRoomNavigation(async(id,valid,restore,origin)=>{current=valid;returned=restore;source=origin;return true;});await x.activate();await x.ui.openPreparedNote(x.ids.borin);await until(()=>x.el('note-room-uses-list').querySelector('button'));x.el('note-room-uses-list').querySelector('button').click();await until(()=>returned);assert.deepEqual(source,{id:x.ids.borin,label:'Borin'});
  await x.ui.openPreparedNote(x.ids.borin);await x.ui.openPreparedPlan(plan.id);assert.equal(x.el('preparation-planning-workspace').hidden,false);assert.equal(current(),true);let revealed=0;x.el('note-editor').scrollIntoView=()=>revealed++;x.window.campaign.noteRoomUses=async()=>({ok:true,value:{entries:[],next:null}});returned();await settle();assert.equal(x.el('preparation-knowledge-workspace').hidden,false);assert.equal(x.el('note-title').value,'Borin');assert.equal(revealed,1);
 });
 
@@ -785,4 +785,14 @@ test('writing a private update keeps optional public text discoverable and prese
  details.open=true;publicArea.value='  Zum Vorlesen\r\n';publicArea.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
  await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedNote(x.ids.borin);assert.equal(details.open,true);assert.equal(publicArea.value,'  Zum Vorlesen\r\n');assert.equal(privateArea.value,'Neue Spur bleibt privat');
  const saved=x.store.preparation(x.workspace.token).notes.find(r=>r.note.id===x.ids.borin).note;assert.equal(saved.readAloud,'  Zum Vorlesen\r\n');assert.equal(saved.gmNotes,'Neue Spur bleibt privat');
+});
+
+test('room navigation from a relationship target identifies the displayed note in a borrowed editor',async t=>{
+ const x=await sourceReader(t),panel=document.createElement('section');document.body.append(panel);panel.append(x.el('note-editor'));
+ x.window.campaign.noteRoomUses=async()=>({ok:true,value:{entries:[{id:'room',title:'Wachstube',number:'2',place:'Tor',excerpt:'Ada',unavailable:false}],next:null}});
+ let source;x.ui.setNoteRoomNavigation(async(id,current,restore,origin)=>{source=origin;return true;});
+ [...x.el('note-relations').querySelectorAll('button')].find(b=>b.textContent==='Quelle: Ada').click();
+ await until(()=>x.el('note-title').value==='Ada'&&x.el('note-room-uses-list').querySelector('button'));
+ assert.equal(x.el('note-editor').parentElement,panel);x.el('note-room-uses-list').querySelector('button').click();await until(()=>source);
+ assert.deepEqual(source,{id:x.ids.ada,label:'Ada'});
 });

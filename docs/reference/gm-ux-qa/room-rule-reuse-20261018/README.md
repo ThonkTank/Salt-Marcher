@@ -29,15 +29,17 @@ Keine Paketinstallation oder menschliche Produktabnahme ist daraus ableitbar.
 
 ## Rückkehr im Atlas am 19.10.2026
 
-Erneute vollständige Aufgabe auf `0e8f351d18ee56d0155bd3dc5bcba8df198f8686`
+Erneute vollständige Aufgabe auf Basis `fa8d75f6867832c39dd07ee1288cfadd4250b32a`
 plus dem in [context-results.json](context-results.json) durch Bundlehashes
-gebundenen Rückweg-Fix. [Vorher](context-return-before.png) führt „Zurück zur
+gebundenen Rückweg- und Quellenbindungsänderungen. [Vorher](context-return-before.png) führt „Zurück zur
 Notiz“ aus dem Atlas in die allgemeine Wissensansicht. [Nachher](context-return-after.png)
 öffnet dieselbe Aktion die Quelle wieder bei der ursprünglichen Sakristei.
 Die beiden Raumverwendungen bleiben unmittelbar von dort erreichbar.
 [Bei 200 %](context-return-200.png) bleibt die Quellüberschrift mit „Zum Raumtext“
 über der gescrollten Verwendungsliste bedienbar; die Raumformulare erscheinen erst
-bei dieser Rückkehr wieder. Es gibt weiterhin nur einen Notizeditor und Writer.
+bei dieser Rückkehr wieder. Es gibt weiterhin nur einen Notizeditor und Writer. Der Rückweg bindet die tatsächlich
+angezeigte Notiz, auch nach Beziehungsnavigation. Ein anderweitig eingebundener
+Editor erhält dadurch keinen fremden Raumrückweg.
 
 Der aktualisierte native Ablauf `tools/test-desktop-room-rule-reuse.mjs` beginnt
 an der sichtbaren Atlassuche. Er verknüpft beide Räume, korrigiert die Quelle,
