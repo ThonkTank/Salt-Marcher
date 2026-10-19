@@ -35,7 +35,28 @@ test('rule source lookup stays in its campaign and preserves pin order',t=>{
  assert.deepEqual(x.store.db.serialize(),bytes);
 });
 
-const checkCommand=(x,mode='normal',revision=0)=>({...x.command({kind:'roll',label:'Wahrnehmung '+x.scene.id,ruleNoteId:x.note.id,mode,modifier:3,dc:12}),sceneId:x.scene.id,expectedRevision:revision});
+const checkCommand=(x,mode='normal',revision=0)=>({...x.command({kind:'roll',label:'Wahrnehmung '+x.scene.id,ruleNoteId:x.note.id,expectedRuleSourceRevision:1,mode,modifier:3,dc:12}),sceneId:x.scene.id,expectedRevision:revision});
+test('a changed pin rejects a stale rule-bound roll without changing history or receipts',t=>{
+ const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));const first=checkCommand(x),old=x.store.executeSceneCheck(first).checks[0];
+ x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:1,note:{...x.note,revision:2,title:'Neue Regel',gmNotes:'Neue Einschränkung'}}});
+ // An unrefreshed pin still deliberately uses its frozen definition.
+ const frozen=x.store.executeSceneCheck(checkCommand(x,'advantage',1));assert.equal(frozen.checks[0].ruleSourceRevision,1);
+ x.store.executeSceneRule({...x.rule('refresh',1),action:{kind:'refresh',noteId:x.note.id,expectedSourceRevision:2}});
+ const before=x.store.db.serialize();for(const basis of [undefined,1,0,-1,1.5,NaN]){
+  const c=checkCommand(x,'normal',2);if(basis===undefined)delete c.action.expectedRuleSourceRevision;else c.action.expectedRuleSourceRevision=basis;
+  assert.throws(()=>x.store.executeSceneCheck(c),/Regelstand|Regelrevision/);assert.ok(x.store.db.serialize().equals(before));
+ }
+ const reviewed=checkCommand(x,'normal',2);reviewed.action.expectedRuleSourceRevision=2;const accepted=x.store.executeSceneCheck(reviewed);assert.equal(accepted.checks[0].ruleSourceRevision,2);assert.equal(accepted.checks[0].ruleTitle,'Neue Regel');assert.deepEqual(accepted.checks.at(-1),old);
+ const bytes=x.store.db.serialize();assert.deepEqual(x.store.executeSceneCheck(first),accepted);assert.ok(x.store.db.serialize().equals(bytes));
+});
+test('legacy receipts without a rule basis replay while new unbound rule rolls are rejected',t=>{
+ const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));const c=checkCommand(x),accepted=x.store.executeSceneCheck(c);delete c.action.expectedRuleSourceRevision;
+ // Existing receipt fingerprints were made from the old command shape.
+ const fp=createHash('sha256').update(JSON.stringify({...c,token:undefined})).digest('hex');x.store.db.prepare('UPDATE scene_check_receipt SET fingerprint=? WHERE command_id=?').run(fp,c.commandId);
+ const bytes=x.store.db.serialize();assert.deepEqual(x.store.executeSceneCheck(c),accepted);assert.ok(x.store.db.serialize().equals(bytes));
+ assert.throws(()=>x.store.executeSceneCheck({...c,commandId:randomUUID(),expectedRevision:1}),/Regelstand|Regelrevision/);assert.ok(x.store.db.serialize().equals(bytes));
+ const free={...c,commandId:randomUUID(),expectedRevision:1,action:{...c.action,ruleNoteId:null}};assert.equal(x.store.executeSceneCheck(free).checks[0].ruleSourceRevision,null);
+});
 test('reading an empty check history leaves storage untouched',t=>{const x=fixture(t),bytes=x.store.db.serialize();assert.deepEqual(x.store.sceneChecks(x.w.token,x.scene.id),{sceneId:x.scene.id,revision:0,checks:[],truncated:false});assert.ok(x.store.db.serialize().equals(bytes));});
 test('scene rolls use the frozen rule, replay without rerolling and survive fresh and independent copy',async t=>{
  const x=fixture(t);x.store.executeSceneRule(x.rule('pin'));const commands=[];for(const mode of ['normal','advantage','disadvantage']){const c=checkCommand(x,mode,commands.length),result=x.store.executeSceneCheck(c),roll=result.checks[0];commands.push(c);assert.equal(result.revision,commands.length);assert.equal(roll.rolls.length,mode==='normal'?1:2);assert.ok(roll.rolls.every(v=>v>=1&&v<=20));const kept=mode==='advantage'?Math.max(...roll.rolls):mode==='disadvantage'?Math.min(...roll.rolls):roll.rolls[0];assert.equal(roll.total,kept+3);assert.equal(roll.outcome,roll.total>=12?'success':'failure');assert.equal(roll.ruleTitle,x.note.title);assert.deepEqual(x.store.executeSceneCheck(c),result);}

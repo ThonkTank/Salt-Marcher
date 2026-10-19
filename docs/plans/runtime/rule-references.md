@@ -1,6 +1,6 @@
 # GM-Referenzsuche und Regeln am Spieltisch
 
-Stand: 15.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
+Stand: 19.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
 [Live-Scenes](smr03-live-scene-contract.md), [Katalogsuche und Filterlieferung](catalog-browsing.md)
 und [Gesamtumfang](../../SCOPE.md).
 
@@ -28,6 +28,21 @@ laufendes/künftiges Spiel und erhaltene historische Fakten. Quellenhash im Regi
   optionalem SG und Regelbezug besitzen einen gruppengebundenen Verlauf. Receipts
   bewahren das bestätigte Ergebnis einschließlich der damaligen Würfel/Regelbasis.
 
+Regelbezogene Würfe binden die angezeigte eingefrorene Quellenrevision des Pins.
+Hat ein anderer Aufruf diesen Pin inzwischen aktualisiert, weist Main die Probe
+vor dem Würfeln und ohne Verlauf-/Receiptänderung ab. Bezeichnung, Wurfart,
+Modifikator und SG bleiben zur erneuten Prüfung erhalten; erst nach ausdrücklich
+aktualisierter Ansicht kann der GM den neuen Stand verwenden. Eine geänderte
+Definition allein entwertet den noch unveränderten eingefrorenen Pin nicht.
+Auch „Aus Quelle aktualisieren“ bindet die zuletzt gelesene aktuelle
+Quellenrevision. Freie und Statblockwürfe benötigen weiterhin keine Regelbasis.
+Bereits bestätigte alte Commands ohne diese zusätzliche Bindung werden über
+ihren vorhandenen Receipt wiederholt; neue regelbezogene Commands benötigen
+sie. Proben-, Receipt- und Archivformate bleiben ohne Migration erhalten.
+Store-/Controllergegenproben sowie der native Lauf prüfen parallele
+Pinaktualisierung, Ablehnung, erneute Prüfung und Neustart mit beiden historischen
+Regelrevisionen. Installationsweite Definitionen bleiben eine getrennte Lieferung.
+
 ## Nachgewiesenes Verhalten und Grenzen
 
 [Schnellsuche](../../../tests/desktop-quick-reference.test.mjs) prüft mit echtem
@@ -39,10 +54,12 @@ Campaign-/Scenewechsel, Revisionsschutz, erste State-Anlage, Proben, Replay, Fre
 und unabhängige Kopien. Reads und readonly Snapshotprüfung schreiben keinen State.
 Ungültige Aktionen/Revisionen werden abgewiesen; vorhandene Prosa bleibt erhalten.
 
-Das belegt lokale Controller-/Storepfade. Native Close-/Replyverlust-, Restart-,
-Tastatur- und Skalierungsabnahme bleiben offen. Installationsweite Regeldefinitionen,
-deren Konfliktimport und die Trennung aktueller Definitionen von historischen
-Fakten sind noch nicht vollständig umgesetzt.
+Das belegt lokale Controller-/Storepfade. Der unten beschriebene native Ablauf
+ergänzt reguläres Schließen, Neustart und 100/200 % für die konkret geprüfte
+Gruppenaufgabe. Native Replyverlust- und vollständige Tastaturabnahme bleiben
+offen. Installationsweite Regeldefinitionen, deren Konfliktimport und die
+Trennung aktueller Definitionen von historischen Fakten sind noch nicht
+vollständig umgesetzt.
 
 
 ## Fehlerisolation der vorhandenen Sessionleser
