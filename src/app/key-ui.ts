@@ -262,8 +262,21 @@ export async function openRoomKey(id:string,current=()=>true,returned?:()=>void,
  if(target)focusPassage(target,false);
  keyLeave=left??null;keyReturn=returned?()=>{if(owns(o)&&current())returned();}:null;
  el('key-close').textContent=returned?returnLabel:'Schließen';
- const dialog=el<HTMLDialogElement>('key-dialog');if(!dialog.open)dialog.showModal();
+ showKeyDialog();
  if(target)focusPassage(target);else{field('key-gm-notes').focus({preventScroll:true});field('key-gm-notes').scrollIntoView({block:'center'});}return true;
+}
+/** A room opened from a borrowed note returns to that note beside its original room.
+ * The preparation route remains the fallback for notes opened in that workspace. */
+export async function openNoteRoomKey(id:string,current:()=>boolean,returned:()=>void):Promise<boolean>{
+ const source=noteContext?.source,origin=roomId,o=owner();
+ if(!source||!origin)return openRoomKey(id,current,returned);
+ const previousReturn=keyReturn,previousLeave=keyLeave,closeLabel=el('key-close').textContent??'Schließen';
+ const valid=()=>owns(o)&&current();
+ return openRoomKey(id,valid,()=>{void(async()=>{
+  if(!valid()||!await openRoomKey(origin,valid,previousReturn??undefined,undefined,closeLabel,previousLeave??undefined)||!valid())return;
+  const restored=transition;
+  await noteContext!.open(source.id,source.label,()=>valid()&&transition===restored&&roomId===origin);
+ })().catch(error=>{if(valid())reportFailure(error);});});
 }
 function focusPassage(target:KeyPassageTarget,focus=true){
  let area:HTMLTextAreaElement|undefined;

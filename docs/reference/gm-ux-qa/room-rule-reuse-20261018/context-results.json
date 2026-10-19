@@ -1,0 +1,268 @@
+{
+  "date": "2026-10-19",
+  "saltmarcher": {
+    "complete": true,
+    "source": "0e8f351d18ee56d0155bd3dc5bcba8df198f8686",
+    "hashes": {
+      "main.cjs": "a4f93a7e3c45a8ccafd6f438880e152afaf6c89bdae42ed45ac5cc679f27429b",
+      "preload.cjs": "c505f3d6e86ef59e2e36619e06f840848da7793585cad49318458246ee56914e",
+      "ui/renderer.js": "4fb4a0b727455c536984cc770df3a2c7b5ab51aab11b15079cfecaf6c60a5a47",
+      "ui/index.html": "047eb1a795cd8fd885eeae4f5ba310e46c513daf92c50963b36ef463494047dd",
+      "ui/app.css": "e4f1b39a61390e982cf774013f012a4a189c65d31670d0f12a156a73cffade10"
+    },
+    "launches": [
+      {
+        "pid": 1664773,
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      },
+      {
+        "pid": 1664939,
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "profile": "/tmp/gm-room-rule-zzc3kI",
+    "file": "/tmp/gm-room-rule-zzc3kI/workbench.sqlite",
+    "content": {
+      "rule": {
+        "version": 1,
+        "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+        "revision": 2,
+        "kind": "note",
+        "title": "Druckplatten – Abwicklung",
+        "readAloud": "",
+        "gmNotes": "Eine Last von mindestens 20 Pfund löst aus. Geschicklichkeitsrettungswurf SG 14; bei Fehlschlag 1W6 Stichschaden. Der Mechanismus braucht eine Minute zum Rückstellen. Sichtbare Fugen verraten die Druckplatte.",
+        "creatureId": null,
+        "relations": [],
+        "deleted": false
+      },
+      "keys": [
+        {
+          "id": "bc9ce979-c48d-44cf-be98-029798b06b95",
+          "revision": 1,
+          "scopeId": "local",
+          "kind": "room",
+          "name": "Sakristei",
+          "levelId": null,
+          "groupId": null,
+          "zSteps": [],
+          "attributes": {},
+          "blocks": [
+            {
+              "id": "2d678533-5526-497b-84a6-12d1ec4e58d9",
+              "kind": "text",
+              "visibility": "gm",
+              "text": "Kupfernadeln hinter der Tür. Die Platte wird mit dem Rad im Nebenraum zurückgestellt.",
+              "templateId": null,
+              "suppressed": [],
+              "dc": null,
+              "searchMethod": "",
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "6b94993c-6e63-426b-a28e-deb81d08467f",
+              "kind": "legacy",
+              "visibility": "gm",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "3c53b3b3-0ac7-4b82-b5c0-8ffe8147dae1",
+              "kind": "geometry",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "fc749c6c-094f-4750-ba24-d9bb6f6654c9",
+              "kind": "attributes",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "1d471bcc-3ee5-49b9-9dd7-528942a599ca",
+              "kind": "exits",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            }
+          ],
+          "tags": [],
+          "secret": false,
+          "status": "",
+          "references": [
+            {
+              "kind": "note",
+              "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+              "label": "Druckplatten – Abwicklung"
+            }
+          ]
+        },
+        {
+          "id": "5f77e824-5ff7-447b-a970-06c557247fe8",
+          "revision": 2,
+          "scopeId": "local",
+          "kind": "room",
+          "name": "Torhalle",
+          "levelId": null,
+          "groupId": null,
+          "zSteps": [],
+          "attributes": {},
+          "blocks": [
+            {
+              "id": "cfa3215b-c3f0-47c7-a752-105a94a601e4",
+              "kind": "text",
+              "visibility": "gm",
+              "text": "Zwei bronzene Speere hinter dem Relief. Die Platte wird mit dem Hebel hinter dem Relief zurückgestellt. Nach der Entschärfung bleibt der Hebel mit rotem Band markiert.",
+              "templateId": null,
+              "suppressed": [],
+              "dc": null,
+              "searchMethod": "",
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "2917d818-1af3-44a0-9143-ea159103f5c8",
+              "kind": "legacy",
+              "visibility": "gm",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "2b5b18b8-475e-498a-8633-73681c13eb43",
+              "kind": "geometry",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "e428433e-cdfc-431d-8dd4-5caf7fa0cc34",
+              "kind": "attributes",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            },
+            {
+              "id": "d156ba35-f673-4022-a1d5-d4f75c7500ff",
+              "kind": "exits",
+              "visibility": "public",
+              "text": "",
+              "templateId": null,
+              "suppressed": [],
+              "searchMethod": "",
+              "dc": null,
+              "discoveryNotes": "",
+              "revealedText": ""
+            }
+          ],
+          "tags": [],
+          "secret": false,
+          "status": "",
+          "references": [
+            {
+              "kind": "note",
+              "id": "e6339af4-6a56-4ed5-913f-08e7af72f8cc",
+              "label": "Druckplatten – Abwicklung"
+            }
+          ]
+        }
+      ],
+      "legacySectionsExact": true,
+      "otherNotesRetained": true
+    },
+    "normalAnd200": true,
+    "contextualAtlasReturn": true,
+    "preparationReturn": true,
+    "task": "Shared trap source in two room keys; query retained and direct keyboard linking; central correction, two uses, local edit, normal Fresh fulltext refind and both current room sources",
+    "humanAcceptance": false,
+    "packageInstallation": false
+  },
+  "obsidian": {
+    "folder": "/tmp/gm-ux-trap-obsidian-wknQdV",
+    "vault": "/tmp/gm-ux-trap-obsidian-wknQdV/vault",
+    "profile": "/tmp/gm-ux-trap-obsidian-wknQdV/profile",
+    "launches": [
+      {
+        "pid": 1655760,
+        "exit": {
+          "code": 0,
+          "signal": null
+        }
+      },
+      {
+        "pid": 1658051,
+        "exit": {
+          "code": 0,
+          "signal": null
+        }
+      }
+    ],
+    "complete": true,
+    "application": "Installed Obsidian 1.14.4 app.asar, launched with test Electron 44.7.0; not a Flatpak-launch qualification",
+    "notes": [
+      {
+        "title": "Torhalle",
+        "text": "Zwei bronzene Speere hinter dem Relief. Die Platte wird mit dem Hebel hinter dem Relief zurückgestellt.\n\nGemeinsame Abwicklung: [[Druckplatten – Abwicklung]]\nNach der Entschärfung bleibt der Hebel mit rotem Band markiert."
+      },
+      {
+        "title": "Sakristei",
+        "text": "Kupfernadeln hinter der Tür. Die Platte wird mit dem Rad im Nebenraum zurückgestellt.\n\nGemeinsame Abwicklung: [[Druckplatten – Abwicklung]]"
+      },
+      {
+        "title": "Druckplatten – Abwicklung",
+        "text": "Eine Last von mindestens 20 Pfund löst aus. Geschicklichkeitsrettungswurf SG 14; bei Fehlschlag 1W6 Stichschaden. Der Mechanismus braucht eine Minute zum Rückstellen. Sichtbare Fugen verraten die Druckplatte."
+      }
+    ],
+    "task": "Same shared source in two room notes, central SG14 correction, both backlinks, local Torhalle change, visible history return and fresh process verification",
+    "artifactHashes": {
+      "/var/lib/flatpak/app/md.obsidian.Obsidian/current/active/files/resources/app.asar": "2b50b52ddab21f81ca113e6b6f3ce83b0274aa6fa3a7e09f99d779c159fe4492",
+      "/var/lib/flatpak/app/md.obsidian.Obsidian/current/active/files/resources/obsidian.asar": "146ef8470d8cbb4a6db209bdc19bf2bad13350444186c0fd93c31087b142b92f",
+      "node_modules/electron/dist/electron": "10a14d05c6ff4f94075cfb3eeb6ed6571be33ebcc08cbd675b5ce9ff84706564"
+    }
+  }
+}
