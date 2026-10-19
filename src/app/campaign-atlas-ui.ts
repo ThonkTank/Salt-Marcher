@@ -104,6 +104,7 @@ export class CampaignAtlasWorkbench {
   private exporting = false;
   private exportCancelled = false;
   private exportOpen = false;
+  private campaignSaving = false;
   private exportChoosing = false;
   private exportBox: CanvasBox | null = null;
   private exportDungeon = false;
@@ -187,7 +188,7 @@ export class CampaignAtlasWorkbench {
       .map(([id, title]) => `<option value="${id}">${title}</option>`)
       .join(
         "",
-      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${travelHexSizes.map(p => `<option value="${p.id}">${p.label} · ${p.miles.toLocaleString("de-DE")} Meilen Kante zu Kante</option>`).join("")}</select></label><label><span id="atlas-name-label">Name</span><input id="atlas-new-name" placeholder="Name"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><section id="atlas-drawing-tools" hidden></section><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><details id="atlas-room-view"><summary>Kartenansicht</summary><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label></details><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><button id="atlas-local-refresh" hidden>Reisekontext erneut laden</button><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details></div><section id="atlas-output" hidden><button id="atlas-output-back">← Karte bearbeiten</button><h2>Bild ausgeben</h2><p id="atlas-output-area" role="status">Aktuelle Ansicht</p><div class="toolbar"><button id="atlas-output-choose">Bereich aufziehen</button><button id="atlas-output-view">Aktuelle Ansicht</button><button id="atlas-output-dungeon" title="Alle nicht ausgeblendeten Räume und Zeichnungen des aktuellen Geschosses einrahmen" hidden>Dungeon-Grundriss</button></div><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><button id="atlas-export-png">Bild speichern…</button><button id="atlas-export-cancel" hidden>Ausgabe abbrechen</button><details><summary>Bildoptionen</summary><label>Format<select id="atlas-export-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label>Längste Bildkante in Pixel<input id="atlas-export-size" type="number" min="256" max="8192" value="2048"></label><label><input id="atlas-export-grid" type="checkbox"> Hexraster ausgeben</label><label><input id="atlas-export-scale" type="checkbox" checked> Maßstab ausgeben</label><label><input id="atlas-export-reference" type="checkbox"> Vorlage im GM-Bild ausgeben</label></details></section></aside></div>`;
+      )}</select></label><label>Hexstufe<select id="atlas-hex-level">${travelHexSizes.map(p => `<option value="${p.id}">${p.label} · ${p.miles.toLocaleString("de-DE")} Meilen Kante zu Kante</option>`).join("")}</select></label><label><span id="atlas-name-label">Name</span><input id="atlas-new-name" placeholder="Name"></label><button id="atlas-room-draw">Raumrechteck zeichnen</button><section id="atlas-drawing-tools" hidden></section><div id="atlas-create-tools"><button id="atlas-create-city">Stadt hier anlegen</button><button id="atlas-create-dungeon">Dungeon hier anlegen</button></div><button id="atlas-building-interior" hidden>Innenraumhülle anlegen</button><label id="atlas-floor-field">Geschoss<select id="atlas-floor"></select></label><details id="atlas-room-view"><summary>Kartenansicht</summary><label><input id="atlas-roofs" type="checkbox" checked> Dächer anzeigen</label><label><input id="atlas-slice-enabled" type="checkbox"> Höhenschnitt</label><label>Höhe in m<input id="atlas-slice" type="number" step="any" value="0"></label></details><button id="atlas-draft-cancel" hidden>Zug verwerfen</button></section><section id="atlas-context-fields"><label><input id="atlas-perception" type="checkbox"> Wissen und Sicht der Gruppe</label><button id="atlas-connect-entrance" hidden>Eingang verbinden</button><div id="atlas-local-console" hidden><h3>Reise der Fokusgruppe</h3><p id="atlas-local-status" role="status"></p><button id="atlas-local-refresh" hidden>Reisekontext erneut laden</button><div class="toolbar"><button id="atlas-local-preview">Weg prüfen</button><button id="atlas-local-start" disabled>Reise starten</button><button id="atlas-local-step">Ein Schritt</button><button id="atlas-local-round">Eine Runde</button><button id="atlas-local-play">Wiedergabe starten</button><button id="atlas-local-pause">Pause</button><button id="atlas-local-end">Beenden</button></div><label id="atlas-entrance-field" hidden>Eingang<select id="atlas-entrance-choice"></select></label><button id="atlas-local-entrance" hidden>Durch Eingang</button><details><summary>Gruppe platzieren</summary><p>Versetzt die Fokusgruppe ohne Reisezeit an den zuletzt gewählten Punkt.</p><button id="atlas-local-place">Hier platzieren</button></details></div></section><details id="atlas-placement" hidden><summary>Räumliche Einordnung</summary><label>X in m<input id="atlas-binding-x" type="number" step="any"></label><label>Y in m<input id="atlas-binding-y" type="number" step="any"></label><label>Drehung in Grad<input id="atlas-binding-angle" type="number" step="any"></label><button id="atlas-binding-save">Einordnung übernehmen</button></details></div><section id="atlas-output" hidden><button id="atlas-output-back">← Karte bearbeiten</button><h2>Karte exportieren</h2><p id="atlas-output-area" role="status">Aktuelle Ansicht</p><div class="toolbar"><button id="atlas-output-choose">Bereich aufziehen</button><button id="atlas-output-view">Aktuelle Ansicht</button><button id="atlas-output-dungeon" title="Alle nicht ausgeblendeten Räume und Zeichnungen des aktuellen Geschosses einrahmen" hidden>Dungeon-Grundriss</button></div><label>Inhalt<select id="atlas-export-audience"><option value="gm">GM-Ansicht</option><option value="public">Wissen der Fokusgruppe</option></select></label><button id="atlas-export-png">Bild speichern…</button><button id="atlas-export-cancel" hidden>Ausgabe abbrechen</button><details><summary>Bildoptionen</summary><label>Format<select id="atlas-export-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select></label><label>Längste Bildkante in Pixel<input id="atlas-export-size" type="number" min="256" max="8192" value="2048"></label><label><input id="atlas-export-grid" type="checkbox"> Hexraster ausgeben</label><label><input id="atlas-export-scale" type="checkbox" checked> Maßstab ausgeben</label><label><input id="atlas-export-reference" type="checkbox"> Vorlage im GM-Bild ausgeben</label></details></section></aside></div>`;
     document.getElementById("workspace-navigation")!.after(this.root);
     mountDungeonTravelConsole(get("atlas-local-console"));
     this.svg = this.root.querySelector("#campaign-map")!;
@@ -223,6 +224,22 @@ export class CampaignAtlasWorkbench {
     });
     this.root.querySelector(".map-canvas-controls")!.append(get("atlas-output-open"));
     get("atlas-output-open").onclick=()=>void this.setOutput(true);
+    const output=get('atlas-output'),heading=output.querySelector('h2')!;
+    const image=document.createElement('div');image.id='atlas-output-image';
+    while(heading.nextSibling)image.append(heading.nextSibling);
+    const kind=document.createElement('label');kind.textContent='Ausgabe';
+    const choice=document.createElement('select');choice.id='atlas-export-kind';
+    for(const [value,text] of [['image','Bild'],['campaign','Bearbeitbare Kampagne']] as const){
+      const option=document.createElement('option');option.value=value;option.textContent=text;choice.append(option);
+    }
+    choice.onchange=()=>this.exportAreaStatus();kind.append(choice);
+    const editable=document.createElement('section');
+    editable.id='atlas-output-editable';editable.hidden=true;
+    const save=document.createElement('button');save.id='atlas-output-save-campaign';save.textContent='Kampagne sichern…';
+    save.onclick=()=>void this.saveEditableCampaign().catch(e=>this.error(e));
+    const hint=document.createElement('p');hint.className='caption';hint.textContent='Vollständige Kampagne mit GM-Inhalten und Medien (.kwcampaign).';
+    const receipt=document.createElement('p');receipt.id='atlas-output-save-status';receipt.setAttribute('role','status');
+    editable.append(hint,save,receipt);heading.replaceWith(kind,editable,image);
     get("atlas-output-back").onclick=()=>void this.setOutput(false);
     get("atlas-output-choose").onclick=()=>{if(this.exporting)return;this.exportDungeon=false;this.exportChoosing=true;this.exportCorner=null;this.exportAreaStatus();this.svg.focus();};
     get("atlas-output-view").onclick=()=>{if(this.exporting)return;this.exportDungeon=false;this.exportBox=null;this.exportChoosing=false;this.exportCorner=null;this.exportAreaStatus();this.render();};
@@ -854,6 +871,23 @@ export class CampaignAtlasWorkbench {
     this.exportAreaStatus();
     get(open?'atlas-output-choose':'atlas-output-open').focus();
   }
+  private async saveEditableCampaign(){
+    if(this.campaignSaving||this.exporting||!this.owner)return;
+    const owner=this.owner;
+    this.campaignSaving=true;this.exportAreaStatus();
+    try{
+      if(!(await this.flush())||!(await this.opts.flush())||this.owner?.token!==owner.token)return;
+      get('atlas-output-save-status').textContent='Kampagne wird gesichert…';
+      const response=await window.campaign.exportCampaign(owner.token);
+      if(this.owner?.token!==owner.token)return;
+      if(!response.ok)throw new Error(response.error);
+      const message=response.value.cancelled?'Kampagnensicherung abgebrochen.':'Bearbeitbare Kampagne gesichert.';
+      get('atlas-output-save-status').textContent=message;
+      get('atlas-save-status').textContent=message;get('atlas-save-status').dataset.error='false';
+      this.opts.status(message);
+    }catch(e){if(this.owner?.token===owner.token)get('atlas-output-save-status').textContent='Sicherung fehlgeschlagen: '+(e as Error).message;throw e;
+    }finally{this.campaignSaving=false;this.exportAreaStatus();}
+  }
   private dungeonOutputBox(){
     const size=Number(get<HTMLInputElement>('atlas-export-size')?.value),scale=get<HTMLInputElement>('atlas-export-scale')?.checked??false;
     return this.data?dungeonExportBox(this.data,this.scopeId,this.floorId,scale,Number.isFinite(size)?size:2048):null;
@@ -866,6 +900,10 @@ export class CampaignAtlasWorkbench {
   }
   private outputBox(){return this.exportDungeon?this.dungeonOutputBox():this.exportBox??this.camera.view;}
   private exportAreaStatus(){
+    const campaign=get<HTMLSelectElement>('atlas-export-kind').value==='campaign';
+    get('atlas-output-editable').hidden=!campaign||!this.owner;
+    get('atlas-output-image').hidden=campaign;
+    get<HTMLButtonElement>('atlas-output-save-campaign').disabled=this.campaignSaving||this.exporting;
     const button=get<HTMLButtonElement>('atlas-output-dungeon');
     if(button){button.hidden=!this.scopeId||!['interior','decoration'].includes(this.family);button.disabled=this.exporting||!this.geometryCurrent()||!this.dungeonOutputBox();button.setAttribute('aria-pressed',String(this.exportDungeon));}
     const b=this.outputBox(),floor=this.data?.workspace.floors.find(f=>f.scopeId===this.scopeId&&f.id===this.floorId)?.name??this.floorId;
