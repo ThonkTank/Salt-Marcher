@@ -183,7 +183,7 @@ try {
     db = new Database(profile + "/workbench.sqlite", { readonly: true });
     const readPath = () =>
         JSON.parse(db.prepare("SELECT payload FROM drawing_element WHERE id=?").get(path.id).payload),
-      readRoom = () => db.prepare("SELECT payload,checksum FROM room WHERE id=?").get(room.id),
+      readRoom = () => db.prepare("SELECT * FROM room WHERE id=?").get(room.id),
       originalPath = readPath(),
       originalRoom = readRoom();
     async function until(check) {
@@ -196,6 +196,8 @@ try {
       if (!(await page.locator("#atlas-export-size").isVisible()))
         await page.locator("#atlas-output details summary").click();
       await page.locator("#atlas-export-size").fill("1536");
+      await page.locator("#atlas-export-format").selectOption("png");
+      await page.locator("#atlas-export-audience").selectOption("gm");
       await page.locator("#atlas-export-grid").uncheck();
       const box = JSON.parse(await page.locator("#campaign-map").getAttribute("data-atlas-view")),
         file = out + "/" + scale + "-" + label + ".png";
@@ -280,7 +282,7 @@ try {
     );
     assert.deepEqual(
       document.rooms.find((r) => r.id === room.id),
-      JSON.parse(originalRoom.payload),
+      room,
     );
     await page.screenshot({ path: out + "/" + scale + "-edited.png" });
     const savedPath = readPath();
