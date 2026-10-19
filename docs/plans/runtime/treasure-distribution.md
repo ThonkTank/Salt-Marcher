@@ -41,8 +41,9 @@ Definition oder ein Ledgerfehler lässt keine frühere Teilzuweisung und kein
 Receipt zurück. Keine zweite allgemeine Verteilungsarchitektur.
 
 Ein bestätigtes Receipt entscheidet das Buchungsergebnis. Scheitert danach das
-Neuladen von Liste, Schatz, Verlauf oder abhängigen Ansichten, schließt die
-bereits gebuchte Verteilung. Der Kampagnenstatus nennt sowohl den gespeicherten
+Neuladen von Liste, Schatz, Verlauf oder abhängigen Ansichten, wechselt die
+bereits gebuchte Verteilung zur schreibgeschützten Bestätigung. Der
+Kampagnenstatus nennt sowohl den gespeicherten
 Auftrag als auch den Anzeigefehler; eine zweite Erfolgsmeldung verdeckt ihn nicht.
 Ein abgelehnter oder ungeklärter Write hält die Eingaben weiterhin offen.
 
