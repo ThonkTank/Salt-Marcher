@@ -75,7 +75,6 @@ function building(x, c) {
       { x: -5, y: 4 },
     ],
     notes: "Original\r\nText",
-    rooms: [],
     interior: false,
   };
   const commandId = randomUUID();
@@ -95,6 +94,12 @@ function building(x, c) {
       },
     },
   });
+  // These geometry fixtures deliberately replace the generated contents with
+  // exact hand-drawn rooms; production creation is covered separately below.
+  x.store.db.prepare("DELETE FROM atlas_entrance WHERE campaign_id=? AND json_extract(payload,'$.scopeId')=?").run(x.cam.id,u.id);
+  for(const room of x.read().workspace.rooms.filter(r=>r.scopeId===u.id)){
+    const commandId=randomUUID();x.store.executeAtlas({commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'drawing',command:{commandId,token:x.w.token,campaignId:x.cam.id,action:{kind:'room-hide',roomId:room.id,hidden:true}}}});
+  }
   return u;
 }
 test("one world joins terrain, city, building and metric room with one durable undo sequence", (t) => {
@@ -102,14 +107,7 @@ test("one world joins terrain, city, building and metric room with one durable u
   assert.equal(x.store.world(x.w.token).maps.length, 1);
   const c = city(x),
     u = building(x, c);
-  const r = x.write({
-    kind: "dungeon-create",
-    buildingId: u.id,
-    name: "Taverne innen",
-    x: 0,
-    y: 0,
-  });
-  const scope = r.result.id;
+  const scope = u.id;
   x.write({
     kind: "room-create",
     scopeId: scope,
@@ -136,10 +134,8 @@ test("one world joins terrain, city, building and metric room with one durable u
   assert.equal(x.read().workspace.rooms[0].name, "Schankraum");
   assert.equal(x.read().bindings.length, 3);
   x.write({ kind: "undo" });
-  x.write({ kind: "undo" });
-  assert.equal(x.read().bindings.length, 2);
-  assert.equal(x.read().cities[0].units[0].interior, false);
-  x.write({ kind: "redo" });
+  assert.equal(x.read().bindings.length, 3);
+  assert.equal(x.read().cities[0].units[0].groupId, scope);
   x.write({ kind: "redo" });
   assert.equal(x.read().workspace.rooms.length, 1);
 });
@@ -147,13 +143,7 @@ test("building scaling updates canonical interiors without changing IDs, text or
   const x = fixture(t),
     c = city(x),
     u = building(x, c),
-    scope = x.write({
-      kind: "dungeon-create",
-      buildingId: u.id,
-      name: "Innen",
-      x: 0,
-      y: 0,
-    }).result.id;
+    scope = u.id;
   x.write({
     kind: "room-create",
     scopeId: scope,
@@ -249,13 +239,7 @@ test("city walking and explicit entrances use the same group clock and survive r
   const x = fixture(t),
     c = city(x),
     u = building(x, c),
-    scope = x.write({
-      kind: "dungeon-create",
-      buildingId: u.id,
-      name: "Innen",
-      x: 0,
-      y: 0,
-    }).result.id;
+    scope = u.id;
   x.write({
     kind: "room-create",
     scopeId: scope,
@@ -273,7 +257,7 @@ test("city walking and explicit entrances use the same group clock and survive r
       },
     ],
   });
-  const room = x.read().workspace.rooms[0],
+  const room = x.read().workspace.rooms.find(r=>r.name==="Schankraum"),
     entry = {
       id: randomUUID(),
       scopeId: scope,
@@ -388,13 +372,7 @@ test("independent campaign copy keeps the single world and spatial links with ne
   const x = fixture(t),
     c = city(x),
     u = building(x, c),
-    scope = x.write({
-      kind: "dungeon-create",
-      buildingId: u.id,
-      name: "Innen",
-      x: 0,
-      y: 0,
-    }).result.id;
+    scope = u.id;
   x.write({
     kind: "room-create",
     scopeId: scope,
@@ -518,13 +496,7 @@ test("shared ground wall vertices move adjacent rooms and the building shell in 
   const x = fixture(t),
     c = city(x),
     u = building(x, c),
-    scope = x.write({
-      kind: "dungeon-create",
-      buildingId: u.id,
-      name: "Innen",
-      x: 0,
-      y: 0,
-    }).result.id;
+    scope = u.id;
   const make = (name, points) =>
     x.write({
       kind: "room-create",

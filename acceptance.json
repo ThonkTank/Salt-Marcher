@@ -820,10 +820,10 @@
           "CITY-02",
           "HEX-05"
         ],
-        "deliverable": "Gebäude mit Orts-Key und vorhandener Dungeonkarte verbinden; Stadt und Innenräume in einem durchgehenden Editor bearbeiten.",
+        "deliverable": "Gebäude und Dungeons als gemeinsame Raumgruppen mit automatisch eingerichteten Räumen und abgeleiteter Außenkontur; Räume, Geschosse und Keys im selben Editor bearbeiten.",
         "test": "Region → Stadt → Haus → Raum nur zoomen; Straßen-, Haus-, Raum- und Key-Änderung mit gemeinsamer Undo-Folge und frischer Öffnung.",
         "state": "planned",
-        "evidence": []
+        "evidence": ["docs/plans/maps/room-groups.md", "tests/desktop-room-groups.test.mjs", "tools/test-desktop-room-groups.mjs", "tools/measure-room-groups.mjs"]
       },
       {
         "id": "CITY-04",

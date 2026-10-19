@@ -465,14 +465,14 @@ test("archives preserve default/custom layers, their types and parent references
   );
   assert.equal(guild.typeId, "guild");
 });
-test("schema 48 opens without changing existing geometry and schema 49 refuses missing storage", (t) => {
+test("schema 48 opens without changing existing geometry and schema 50 refuses missing storage", (t) => {
   const f = fixture(t);
   f.store.db.exec(
     "DROP TABLE atlas_territory;DROP TABLE atlas_territory_layer;PRAGMA user_version=48;",
   );
   f.fresh();
   assert.equal(f.state.territories.length, 0);
-  assert.equal(f.store.db.pragma("user_version", { simple: true }), 49);
+  assert.equal(f.store.db.pragma("user_version", { simple: true }), 50);
   f.store.db.exec("DROP TABLE atlas_territory");
   assert.throws(
     () => new CampaignStore(f.dir + "/world.sqlite"),

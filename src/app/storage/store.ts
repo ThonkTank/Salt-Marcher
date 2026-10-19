@@ -1,3 +1,5 @@
+import {nearestAnchor} from '../drawing-model';
+import {splitGroupRoom,scaleRoomGroup,installRoomGroups,storeGroupDraft,groupRecipeForHouse,refreshChangedGroupHulls,refreshGroupHull,removeGeneratedGroup,validateRoomGroups} from './room-groups';
 import {installTerritories,readTerritories,executeTerritory} from './atlas-territories';
 import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
@@ -166,7 +168,9 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 49) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if(schema>0&&schema<50&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='city_unit'").get()&&this.db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get()){this.db.close();throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');}
+    if(schema>=50&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='room_group'").get()){this.db.close();throw Error('Raumgruppenspeicher fehlt. Originaldaten bleiben erhalten.');}
+    if (schema > 50) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
@@ -239,13 +243,15 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);this.db.pragma('user_version=49');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=50');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
   }
   private reconcileAtlasGeometry(token:string){
-    const cam=this.guard(token),root=atlasRoot(this.db,cam),geometry=dungeonGeometry(this.db,cam);
+    const cam=this.guard(token);
+    if(!this.db.prepare("SELECT 1 FROM scene_position WHERE campaign_id=? AND (json_type(payload,'$.dungeon')='object' OR json_type(payload,'$.city')='object') LIMIT 1").get(cam)&&!['world_journey','dungeon_journey','atlas_local_journey'].some(table=>this.db.prepare("SELECT 1 FROM "+table+" WHERE campaign_id=? AND json_extract(payload,'$.status')='active' LIMIT 1").get(cam)))return;
+    const root=atlasRoot(this.db,cam),geometry=dungeonGeometry(this.db,cam);
     // Reconcile spatial facts only; descriptions, perceptions and traces are consumers.
     const a={terrain:JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id))};
     for(const row of this.db.prepare('SELECT * FROM scene_position WHERE campaign_id=?').all(cam)){
@@ -261,22 +267,22 @@ export class CampaignStore {
     }
   }
   private coupleAtlasWall(c:AtlasCommand,before:Room,elements:import('../drawing-contracts').DrawingElement[]){
-    const binding=atlasBindings(this.db,c.campaignId).find(b=>b.kind==='dungeon'&&b.ownerId===before.scopeId&&b.parent==='building');if(!binding)return;
+    const binding=atlasBindings(this.db,c.campaignId).find(b=>b.kind==='dungeon'&&b.ownerId===before.scopeId);if(!binding)return;
     const after=this.workspace().rooms.find(r=>r.id===before.id);if(!after)return;
     const pairs:{before:import('../contracts').Point;after:import('../contracts').Point}[]=[];
     before.polygons.forEach((p,pi)=>{const n=after.polygons[pi];if(p.outer.length===n?.outer.length)p.outer.forEach((v,i)=>{const next=n.outer[i]!;if(v.x!==next.x||v.y!==next.y)pairs.push({before:v,after:next});});});if(!pairs.length)return;
     const move=(p:import('../contracts').Point)=>{const match=pairs.find(v=>Math.hypot(v.before.x-p.x,v.before.y-p.y)<1e-7);return match?{...match.after}:p;};
+    const ring=(points:import('../contracts').Point[])=>points.flatMap((a,i)=>{const b=points[(i+1)%points.length]!,dx=b.x-a.x,dy=b.y-a.y,l=dx*dx+dy*dy;return [a,...pairs.map(p=>p.before).filter(p=>{const t=((p.x-a.x)*dx+(p.y-a.y)*dy)/(l||1);return t>1e-7&&t<1-1e-7&&Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)<1e-7;}).sort((p,q)=>((p.x-q.x)*dx+(p.y-q.y)*dy))].map(move);});
+    const changedRooms=new Map<string,{before:Room;after:Room}>([[before.id,{before,after}]]);
     for(const r of this.workspace().rooms.filter(r=>r.scopeId===before.scopeId&&r.floorId===before.floorId&&r.id!==before.id)){
-      const polygons=r.polygons.map(p=>({outer:p.outer.map(move),holes:p.holes.map(h=>h.map(move))}));if(JSON.stringify(polygons)!==JSON.stringify(r.polygons))this.edit({commandId:c.commandId+':shared-wall:'+r.id,token:c.token,campaignId:c.campaignId,roomId:r.id,expectedRevision:r.revision,name:r.name,sections:r.sections,polygons});
+      const polygons=r.polygons.map(p=>({outer:ring(p.outer),holes:p.holes.map(ring)}));if(JSON.stringify(polygons)!==JSON.stringify(r.polygons)){changedRooms.set(r.id,{before:r,after:{...r,polygons}});this.edit({commandId:c.commandId+':shared-wall:'+r.id,token:c.token,campaignId:c.campaignId,roomId:r.id,expectedRevision:r.revision,name:r.name,sections:r.sections,polygons});}
     }
-    const cityId=this.db.prepare('SELECT city_id FROM city_unit WHERE campaign_id=? AND id=?').get(c.campaignId,binding.parentId)?.city_id;
-    if(cityId){const city=this.city(c.token,cityId),unit=city.units.find(u=>u.id===binding.parentId)!;if(before.floorId==='ground'){
-      const outline=unit.outline?.map(move);if(JSON.stringify(outline)!==JSON.stringify(unit.outline))this.executeCity({commandId:c.commandId+':shell',token:c.token,campaignId:c.campaignId,cityId,expectedRevision:city.header.revision,action:{kind:'change',upsert:[{...unit,outline,protected:true}],remove:[],label:'Gemeinsame Außenwand'}});
-    }}
-    for(const original of elements.filter(e=>e.anchor?.roomId===before.id&&!e.archived)){
-      const p=after.polygons[original.anchor!.polygon]?.outer;if(!p?.length)continue;const i=original.anchor!.edge,a=p[i],b=p[(i+1)%p.length];if(!a||!b)continue;
+    for(const original of elements.filter(e=>e.anchor&&changedRooms.has(e.anchor.roomId)&&!e.archived)){
+      const changed=changedRooms.get(original.anchor!.roomId)!,oldRing=changed.before.polygons[original.anchor!.polygon]?.outer;if(!oldRing)continue;
+      const start=oldRing[original.anchor!.edge],end=oldRing[(original.anchor!.edge+1)%oldRing.length];if(!start||!end)continue;
+      const a=move(start),b=move(end),point={x:a.x+(b.x-a.x)*original.anchor!.t,y:a.y+(b.y-a.y)*original.anchor!.t},anchor=nearestAnchor(point,changed.after);if(!anchor)continue;
       const current=this.drawing(c.token).elements.find(e=>e.id===original.id);if(!current)continue;
-      this.executeDrawing({commandId:c.commandId+':anchor:'+original.id,token:c.token,campaignId:c.campaignId,action:{kind:'element',expectedRevision:current.revision,element:{...current,roomId:before.id,anchor:original.anchor,points:[{x:a.x+(b.x-a.x)*original.anchor!.t,y:a.y+(b.y-a.y)*original.anchor!.t}]}}});
+      this.executeDrawing({commandId:c.commandId+':anchor:'+original.id,token:c.token,campaignId:c.campaignId,action:{kind:'element',expectedRevision:current.revision,element:{...current,roomId:changed.after.id,anchor:{roomId:anchor.roomId,polygon:anchor.polygon,edge:anchor.edge,t:anchor.t},points:[point]}}});
     }
   }
   private travelAtlas(token:string){const a=this.campaignAtlas(token),p=atlasPartyPoint(a)??{x:0,y:0};a.terrain.landscape=landscapeRegion(this.db,a.campaignId,{x:p.x-6000,y:p.y-6000,width:12000,height:12000});return a;}
@@ -467,26 +473,27 @@ export class CampaignStore {
       if(a.kind==='drawing'){nested(a.command);const action=a.command.action,before=action.kind==='shape'?this.workspace().rooms.find(r=>r.id===action.roomId):null,elements=before?this.drawing(c.token).elements:[];const result=this.executeDrawing(a.command);if(before)this.coupleAtlasWall(c,before,elements);return result;}
       if(a.kind==='room-edit'){nested(a.edit);const before=this.atlasRoom(c.token,a.edit.roomId),elements=before?this.drawing(c.token).elements:[];const result=this.edit(a.edit);if(before)this.coupleAtlasWall(c,before,elements);return result;}
       if(a.kind==='city'){nested(a.command);const before=a.command.action.kind==='change'?this.city(c.token,a.command.cityId):null;
+        if(a.command.action.kind==='change')for(const id of a.command.action.remove)removeGeneratedGroup(this.db,cam,id,a.command.action.removeGroups===true);
         const result=this.executeCity(a.command);
+        if(a.command.action.kind==='change')for(const u of a.command.action.upsert)if(u.kind==='building'&&!this.db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(cam,u.id)){
+          storeGroupDraft(this.db,cam,u.id,u.name||u.use||'Gebäude',groupRecipeForHouse(u));
+          const locationId=this.db.prepare('SELECT location_id FROM city_document WHERE campaign_id=? AND id=?').get(cam,a.command.cityId).location_id;
+          this.db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam,u.id,locationId);
+          bindAtlas(this.db,cam,{id:randomUUID(),kind:'dungeon',ownerId:u.id,parent:'building',parentId:u.id,x:0,y:0,angle:0,revision:0},null);
+          refreshGroupHull(this.db,cam,u.id,u.protected);
+        }
         // Building pose is inherited by its interiors. Scale their local geometry
         // in the very same command, retaining heights and room IDs/text.
-        if(before&&a.command.action.kind==='change')for(const u of a.command.action.upsert){const old=before.units.find(x=>x.id===u.id),binding=atlasBindings(this.db,cam).find(b=>b.parent==='building'&&b.parentId===u.id);if(!old?.outline||!u.outline||!binding)continue;
+        const oldUnits=new Map(before?.units.map(u=>[u.id,u])??[]),houseBindings=new Map(atlasBindings(this.db,cam).filter(b=>b.parent==='building').map(b=>[b.parentId,b]));
+        if(before&&a.command.action.kind==='change')for(const u of a.command.action.upsert){const old=oldUnits.get(u.id),binding=houseBindings.get(u.id);if(!old?.outline||!u.outline||!binding)continue;
           const bounds=(p:{x:number;y:number}[])=>({x:Math.max(...p.map(p=>p.x))-Math.min(...p.map(p=>p.x)),y:Math.max(...p.map(p=>p.y))-Math.min(...p.map(p=>p.y))}),o=bounds(old.outline),n=bounds(u.outline),sx=n.x/o.x,sy=n.y/o.y;
           if(!Number.isFinite(sx+sy)||sx<=0||sy<=0)throw new Error('Ungültige Gebäudeskalierung.');
-          if(sx!==1||sy!==1)for(const r of this.workspace().rooms.filter(r=>r.scopeId===binding.ownerId)){
-            if(this.db.prepare('SELECT 1 FROM dungeon_volume WHERE campaign_id=? AND room_id=?').get(cam,r.id))throw new Error('Rasterdungeon nicht als Gebäudefläche skalieren.');
-            const polygons=r.polygons.map(p=>({outer:p.outer.map(p=>({x:p.x*sx,y:p.y*sy})),holes:p.holes.map(h=>h.map(p=>({x:p.x*sx,y:p.y*sy})))}));
-            this.edit({commandId:c.commandId+':scale:'+r.id,token:c.token,campaignId:cam,roomId:r.id,expectedRevision:r.revision,name:r.name,polygons,sections:r.sections});
-          }
-          if(sx!==1||sy!==1){
-            const scaled=(p:any)=>({...p,x:p.x*sx,y:p.y*sy});
-            for(const e of atlasEntrances(this.db,cam).filter(e=>e.scopeId===binding.ownerId))putAtlasEntrance(this.db,this.campaignAtlas(c.token),{...e,inside:scaled(e.inside),outside:scaled(e.outside)});
-            for(const table of ['scene_position','npc_dungeon_position'])for(const row of this.db.prepare('SELECT * FROM '+table+' WHERE campaign_id=?').all(cam)){
-              const body=JSON.parse(row.payload),pose=table==='scene_position'?body.dungeon:body;if(pose?.scopeId!==binding.ownerId)continue;const next=table==='scene_position'?{...body,dungeon:scaled(pose),revision:body.revision+1}:scaled(pose),payload=json(next);
-              this.db.prepare('UPDATE '+table+' SET '+(table==='scene_position'?'revision=?,':'')+'payload=?,checksum=? WHERE campaign_id=? AND '+(table==='scene_position'?'scene_id':'actor_id')+'=?').run(...(table==='scene_position'?[next.revision]:[]),payload,hash(payload),cam,table==='scene_position'?row.scene_id:row.actor_id);if(table==='npc_dungeon_position')this.db.prepare('UPDATE npc_position SET revision=revision+1 WHERE campaign_id=? AND actor_id=?').run(cam,row.actor_id);
-            }
-          }
-        }return result;
+          if(u.outline.length!==old.outline.length||u.outline.some((p,i)=>Math.abs(p.x-old.outline![i]!.x*sx)>1e-6||Math.abs(p.y-old.outline![i]!.y*sy)>1e-6))throw Error('Gebäudeform an den gemeinsamen Räumen bearbeiten.');
+          if(Math.abs(sx-sy)>1e-7)throw Error('Die gesamte Raumgruppe proportional skalieren.');
+          if(Math.abs(sx-1)>1e-7)scaleRoomGroup(this.db,cam,binding.ownerId,sx);
+        }
+        if(a.command.action.kind==='change')for(const u of a.command.action.upsert)if(u.kind==='building'){this.db.prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?').run(u.name||u.use||'Gebäude',cam,u.id);refreshGroupHull(this.db,cam,u.id,u.protected);}
+        return result;
       }
       if(a.kind==='entrance'){putAtlasEntrance(this.db,this.campaignAtlas(c.token),a.entrance);return;}
       if(a.kind==='bind'){bindAtlas(this.db,cam,a.binding,a.expectedRevision);return;}
@@ -495,23 +502,30 @@ export class CampaignStore {
         this.executeCity({commandId:c.commandId+':city',token:c.token,campaignId:cam,cityId:id,expectedRevision:0,action:{kind:'create',header:{id,locationId,revision:1,name:a.name,width:a.width,height:a.height,paper:'#e9dfc8',roof:'#9c604c'}}});
         bindAtlas(this.db,cam,{id:randomUUID(),kind:'city',ownerId:id,parent:'world',parentId:null,x:a.x,y:a.y,angle:0,revision:0},null);const root=this.campaignAtlas(c.token);this.executeWorld({commandId:c.commandId+':anchor',token:c.token,campaignId:cam,action:{kind:'place',locationId,mapId:root.terrain.id,expectedRevision:null,hex:atlasHexAt({x:a.x,y:a.y},root.terrain.hexMeters)}});return{id};
       }
+      if(a.kind==='group-room-split')return splitGroupRoom(this.db,cam,a.roomId,a.expectedRevision,a.axis,a.ratio);
+      if(a.kind==='group-scale'){scaleRoomGroup(this.db,cam,a.scopeId,a.factor);return;}
+      if(a.kind==='group-generate'){
+        if(typeof a.name!=='string'||!a.name.trim())throw Error('Name benötigt.');
+        const id=randomUUID(),locationId=randomUUID();
+        storeGroupDraft(this.db,cam,id,a.name,a.recipe);
+        this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'poi',[randomUUID(),randomUUID()]),expectedRevision:null}});
+        this.db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam,id,locationId);
+        bindAtlas(this.db,cam,{id:randomUUID(),kind:'dungeon',ownerId:id,parent:'world',parentId:null,x:a.x,y:a.y,angle:0,revision:0},null);return{id};
+      }
       if(a.kind==='dungeon-create'){
         const id=randomUUID();if(!a.name.trim())throw new Error('Name benötigt.');
         this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam,id,a.name);this.db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(cam,id,'ground','Erdgeschoss',0);
-        let locationId:string;
-        if(a.buildingId){const building=this.db.prepare("SELECT city_id,payload FROM city_unit WHERE campaign_id=? AND id=? AND kind='building'").get(cam,a.buildingId);if(!building)throw new Error('Gebäude fehlt.');
-          if(atlasBindings(this.db,cam).some(b=>b.parentId===a.buildingId))throw new Error('Gebäude besitzt bereits Innenräume.');locationId=this.city(c.token,building.city_id).header.locationId;
-          const u=JSON.parse(building.payload);u.interior=true;u.protected=true;const city=this.city(c.token,building.city_id);this.executeCity({commandId:c.commandId+':hull',token:c.token,campaignId:cam,cityId:city.header.id,expectedRevision:city.header.revision,action:{kind:'change',upsert:[u],remove:[],label:'Innenraumhülle anlegen'}});
-        }else{locationId=randomUUID();this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'poi',[randomUUID(),randomUUID()]),expectedRevision:null}});}
+        if('buildingId' in a)throw Error('Gebäude besitzen bereits dieselbe Raumgruppe. Direkt Räume bearbeiten.');
+        const locationId=randomUUID();this.commitPreparation({commandId:c.commandId+':location',token:c.token,campaignId:cam,change:{kind:'location',document:newLocation(locationId,a.name,'poi',[randomUUID(),randomUUID()]),expectedRevision:null}});
         this.db.prepare('INSERT INTO location_map VALUES(?,?,?)').run(cam,id,locationId);
-        bindAtlas(this.db,cam,{id:randomUUID(),kind:'dungeon',ownerId:id,parent:a.buildingId?'building':'world',parentId:a.buildingId??null,x:a.x,y:a.y,angle:0,revision:0},null);return{id};
+        bindAtlas(this.db,cam,{id:randomUUID(),kind:'dungeon',ownerId:id,parent:'world',parentId:null,x:a.x,y:a.y,angle:0,revision:0},null);return{id};
       }
       if(a.kind==='room-create'){
         if(!this.db.prepare('SELECT 1 FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(cam,a.scopeId,a.floorId))throw new Error('Geschoss fehlt.');
         const room:Room={id:randomUUID(),scopeId:a.scopeId,floorId:a.floorId,name:a.name,number:String(this.db.prepare('SELECT count(*) n FROM room WHERE campaign_id=?').get(cam).n+1),revision:0,polygons:a.polygons,sections:[{id:randomUUID(),kind:'markdown',markdown:''}]};validateRoom(room);this.insertRoom(cam,room);return{id:room.id};
       }
     },()=>{
-      if(!landscapeOnly){this.reconcileAtlasGeometry(c.token);return;}
+      if(!landscapeOnly){refreshChangedGroupHulls(this.db,c.campaignId,!['city','group-generate','dungeon-create','drawing-import'].includes(c.action.kind));this.reconcileAtlasGeometry(c.token);return;}
       if(!landscapeEnvironment)return;
       // Terrain cannot move an indoor actor or change a room boundary. It can
       // invalidate outdoor routes; pause them atomically without loading rooms.
@@ -856,6 +870,7 @@ export class CampaignStore {
       const db = new Database(candidate, { readonly: true, fileMustExist: true });
       try {
         this.validateDatabase(db);
+        if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);
       } finally { db.close(); }
       const fd = openSync(candidate, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       if(epoch!==this.backupEpoch)throw new Error('Wiederherstellungskopie durch Löschung überholt.');
@@ -1162,9 +1177,11 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
+    if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
     this.validateDatabase(db);
+    if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
     validateCampaignSnapshotSettings(db,c.id);
@@ -1195,7 +1212,7 @@ export class CampaignStore {
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installRoomGroups(source);source.pragma('user_version=50');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }

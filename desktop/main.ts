@@ -415,7 +415,7 @@ else {
     handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')return afterRoomReaders(()=>store.executeAtlas(c));return store.executeAtlas(c);});
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
-    handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>store.executeCity(c));
+    handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:{kind:'city',command:c}});return store.city(c.token,c.cityId);});
     handle('city:export',async(token:string,id:string,format:'svg'|'json')=>{if(!['svg','json'].includes(format))throw new Error('Ausgabeformat unbekannt.');const city=store.city(token,id),destination=await dialog.showSaveDialog(win,{defaultPath:city.header.name+'.'+format,filters:[{name:'Stadtplan',extensions:[format]}]});if(destination.canceled||!destination.filePath)return{cancelled:true};const text=format==='svg'?citySvg(city):JSON.stringify({format:'Kampagnenwerkstatt City',version:1,...city},null,2);await writeFile(destination.filePath,text);return{cancelled:false};});
     handle('world:time-preview',(token:string,request:import('../src/app/time-plan-contracts').TimeRequest)=>store.previewTime(token,request));
     handle('world:agenda',(token:string,query:import('../src/app/agenda-contracts').AgendaQuery)=>store.agenda(token,query));

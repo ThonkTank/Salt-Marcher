@@ -130,6 +130,7 @@ const tracked = [
   "atlas_territory_layer", "atlas_territory",
   "atlas_import_source",
   "scope",
+  "room_group",
   "room",
   "drawing_floor",
   "drawing_hidden",
@@ -355,6 +356,13 @@ function history(db: any, cam: string, direction: "undo" | "redo") {
 }
 function checkPositions(db: any, cam: string) {
   const geometry = dungeonGeometry(db, cam);
+  // Check each position against its own room group. A generated town can have
+  // thousands of entrances; scanning all furnishing for each is quadratic.
+  const groups=new Map<string,typeof geometry>();
+  for(const room of geometry.rooms){let g=groups.get(room.scopeId);if(!g){g={rooms:[],floors:[],drawing:{...geometry.drawing,elements:[],styles:[],volumes:[],paths:[],passages:[]}};groups.set(room.scopeId,g);}g.rooms.push(room);}
+  for(const floor of geometry.floors)groups.get(floor.scopeId)?.floors.push(floor);
+  for(const kind of ['elements','styles','volumes','paths','passages'] as const)for(const item of geometry.drawing[kind]??[])(groups.get(item.scopeId)?.drawing[kind] as any[])?.push(item);
+
   const rooms = new Map<string, any>(
     db
       .prepare("SELECT * FROM room WHERE campaign_id=?")
@@ -370,7 +378,7 @@ function checkPositions(db: any, cam: string) {
       r.floor_id !== p.floorId ||
       !inside(p, JSON.parse(r.payload).polygons) ||
       !poseSpace(
-        geometry,
+        groups.get(p.scopeId)??geometry,
         {
           ...p,
           z:
@@ -410,7 +418,7 @@ function checkPositions(db: any, cam: string) {
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'territory-layer':true,'territory-put':true,'territory-remove':true,'territory-stroke':true,'territory-vertex':true,
   'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
-  'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
+  'group-room-split':true,'group-scale':true,'group-generate':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
 export function executeAtlasWrite(
