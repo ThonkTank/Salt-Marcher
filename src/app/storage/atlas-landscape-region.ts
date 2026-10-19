@@ -94,7 +94,10 @@ export class AtlasLandscapeReader {
   if(!Number.isFinite(edge)||edge<=0||q.box.x+q.box.width===q.box.x||q.box.y+q.box.height===q.box.y)throw new Error('Ausschnitt nicht präzise darstellbar.');
   const boxes=()=>{const rows:LandscapeBox[]=[];for(let y=Math.floor(q.box.y/edge);y<=Math.floor((q.box.y+q.box.height-Number.EPSILON)/edge);y++)for(let x=Math.floor(q.box.x/edge);x<=Math.floor((q.box.x+q.box.width-Number.EPSILON)/edge);x++)rows.push({x:x*edge,y:y*edge,width:edge,height:edge});return rows;};
   let regions=boxes();while(regions.length>4){edge*=2;regions=boxes();}
-  for(let pixels=1024;pixels>=16;pixels/=2){
+  // Fine mask edges need more samples; sparse/dense object-only maps keep
+  // their existing bounded raster cost instead of paying sixteen times more.
+  const maskDetail=this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? AND json_extract(payload,'$.mask') IS NOT NULL LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height);
+  for(let pixels=maskDetail?1024:256;pixels>=16;pixels/=2){
    layer.tiles=[];layer.lineTiles=[];
    for(const box of regions){
     const key=JSON.stringify([source.campaignId,box,pixels,dense,dense?q.box.width/q.width:0,q.references!==false,exactReferences]),hit=this.cache.get(key);
