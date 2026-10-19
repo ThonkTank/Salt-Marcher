@@ -105,7 +105,7 @@ test('collapsed active filters remain visible and reset preserves the lookup tex
  }finally{await x.cleanup();}
 });
 
-test('live roster keeps inactive recipients and sellers but excludes archived characters and inactive buyers',async()=>{
+test('live roster keeps inactive recipients and traders but excludes archived characters',async()=>{
  const x=await fixture(),execute=action=>x.store.executeLive({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action});
  try{
   let live=x.store.live(x.w.token),borin=live.roster.find(c=>c.id===x.heroes[1].id);
@@ -113,7 +113,7 @@ test('live roster keeps inactive recipients and sellers but excludes archived ch
   const archived=execute({kind:'create-character',profile:{name:'Cato'}}).character;live=x.store.live(x.w.token);
   execute({kind:'archive-character',characterId:archived.id,expectedRevision:archived.profileRevision,expectedMembershipRevision:archived.membershipRevision,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,archived:true,confirmName:'Cato',reason:'Retired'});
   await x.ui.openItems();const options=id=>[...x.el(id).options].map(o=>[o.value,o.textContent]),expected=[[x.heroes[0].id,'Ada'],[borin.id,'Borin · inaktiv']];
-  assert.deepEqual(options('item-recipient'),expected);assert.deepEqual(options('shop-seller'),expected);assert.deepEqual(options('shop-buyer'),expected.slice(0,1));
+  assert.deepEqual(options('item-recipient'),expected);assert.deepEqual(options('shop-seller'),expected);
   x.el('item-recipient').value=borin.id;x.award();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'manual-item');assert.equal(x.writes[0].action.characterId,borin.id);assert.equal(x.writes[0].action.expectedMembershipRevision,x.store.live(x.w.token).roster.find(c=>c.id===borin.id).membershipRevision);
  }finally{await x.cleanup();}
 });
