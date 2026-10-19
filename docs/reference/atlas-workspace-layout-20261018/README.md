@@ -71,8 +71,8 @@ menschliche GM-Vorlieben, installierte Pakete oder Owner-Abnahme.
 
 ## Zugangsweg und bearbeitbare Sicherung, 19.10.2026
 
-Eine eigene native Prüfung auf `d818403a459aa058864f93827ecdd5560eec0f15`
-mit den Exportänderungen dieser Arbeitskopie erhält das Zollhaus, zieht einen
+Eine eigene native Prüfung auf Mainbasis `96a9fe72d2338457b437447fd10765e1174a3627`
+mit den Exportänderungen dieser Branch erhält das Zollhaus, zieht einen
 kreuzenden Weg am mittleren Griff nach außen und prüft Undo/Redo sowie die
 wirkliche PNG. Raumgeometrie, Raumtext und Wegmetadaten bleiben erhalten.
 Der [Lauf mit Build-Prüfsummen](access-path-20261019.json) erfasst normale und
