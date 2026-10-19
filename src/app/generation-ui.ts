@@ -201,8 +201,9 @@ tell=status;bridge=callbacks;requiredPick=requiredNpcPicker('generation-required
  get('generation-clear-catalog').onclick=()=>{get('catalog-reset').click();};
  get('generation-plan-open').onclick=()=>{
   get('generation-feedback').textContent='';
-  if(!get('encounter-editor').hidden)get<HTMLDetailsElement>('encounter-party-details').open=true;
-  const target=get('encounter-editor').hidden?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');
+  const withoutPlan=get('encounter-editor').hidden;
+  get<HTMLDetailsElement>(withoutPlan?'encounter-library':'encounter-party-details').open=true;
+  const target=withoutPlan?get('encounter-new'):get('encounter-party').querySelector<HTMLElement>('input')??get('encounter-party-add');
   target.scrollIntoView({block:'center'});target.focus({preventScroll:true});
  };
  get('catalog-tables').onclick=()=>{get<HTMLDetailsElement>('generation-tools').open=true;get('generation-workspace').scrollIntoView({block:'start'});get('encounter-table-new').focus({preventScroll:true});};

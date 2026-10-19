@@ -369,7 +369,8 @@ Die nächsten Anschlüsse aus derselben Quelle bleiben ausdrücklich offen:
 „Aktuelle Party übernehmen“ ersetzt ausdrücklich den Planungssnapshot und lässt
 den geöffneten Partyeditor sichtbar. „Zur Planungsparty“ öffnet den Partybereich
 vor dem Fokus auf das erste Eingabefeld; bei leerer Party führt der Fokus zur
-Zeilenanlage, ohne geöffnete Vorlage zur Vorlagenanlage. Der Generatorzugang
+Zeilenanlage. Ohne geöffnete Vorlage öffnet der Rücksprung die Vorlagenliste
+und fokussiert die Vorlagenanlage. Das Ziel wird direkt sichtbar gescrollt. Der Generatorzugang
 bleibt nach der Partyübernahme erreichbar. Diese Navigation ändert weder
 Szenenmitgliedschaft noch den unabhängigen Planungssnapshot beim Kampfstart.
 
