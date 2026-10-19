@@ -51,6 +51,13 @@ Wetter-/Umgebungsbasis und weitere Revisionen; Annahme und Fortschritt prüfen
 sie erneut. `syncSceneWorld` hält sichtbare Wetterhinweise nach dem aktuellen
 Scenestand nach; bestätigte Zeitfolgen benutzen den gemeinsamen Storewriter.
 
+Scene-, Positions- und Wetterreader verwenden innerhalb desselben Aufrufs die
+bereits validierte Scene. Der Weltreader benötigt damit einen vollständigen
+Sceneread statt vier; auch Atlasposition, Reisevorschau und laufende Reisebasis
+lesen ihre vorhandene Scene nicht nochmals. Der öffentliche Positionsreader
+validiert seine Scene weiterhin selbst. Nach Änderungen wird die neue Basis
+neu gelesen; es gibt keinen aufrufübergreifenden Cache oder eine neue Datenform.
+
 Der Overridewriter prüfte nur vier numerische Wirkungswerte. Unbekannte Arten,
 negativer oder nichtnumerischer Wind sowie falsch geformte Ambience-/Textfelder
 konnten gespeichert werden. Korrekt gehashte beschädigte Overrides passierten
@@ -121,6 +128,14 @@ Sceneorte, Kalenderänderung, pausierte/wandernde Phänomene, vollständige hist
 Wetter-/Receiptbasis, Playerperception/Musikübergang, native Bedienung und
 Crash/Cancel besitzen weiterhin eigene Fachabnahmen. Der Wetterentwurf und seine
 unklare Editorbestätigung liegen derzeit nur im Speicher.
+
+`tools/test-desktop-weather-override.mjs` prüft den vollständigen nativen Ablauf
+bei 100 und 200 Prozent: zwei Gruppen an verschiedenen Hexpositionen und Zeiten,
+manueller Nebel für eine Gruppe, bestätigte drei Tage, Neustart, Fokuswechsel und
+ausdrückliche Freigabe zur Automatik. Die andere Gruppe bleibt unverändert;
+Overridebytes überstehen Zeit und Fresh, und genau zwei Wetteränderungen stehen
+im Verlauf. Die Probe erfasst Buildprüfsummen, sichtbare Wetterbilder und normale
+Prozessenden. Dies ersetzt keine Plattform-, Crash- oder vollständige Wetterabnahme.
 
 ## Nächste ausführbare Abschlüsse
 
