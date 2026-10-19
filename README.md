@@ -13,7 +13,9 @@ SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwer
 
 ## Hier anfangen
 
-- [Produktziele](docs/PRODUCT.md) und [Lieferfolge](docs/ROADMAP.md): vollständiger Funktionsumfang.
+- [Produktziele](docs/PRODUCT.md#für-wen-und-wozu): Zweck und Nutzungsergebnisse.
+- [Umfang und Quellenvorrang](docs/SCOPE.md#quellen-und-vorrang): Anforderungen und ihre verbindlichen Quellen.
+- [Lieferfolge](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts): Abnahmefolge und fachliche Abhängigkeiten.
 - [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
 - [Architektur](ARCHITECTURE.md): technische Zielstruktur und Grenzen.
@@ -68,8 +70,7 @@ Historische Laufstände und Einzelpläne bleiben im Git-Verlauf zugänglich. Que
 
 ## Noch zu prüfen und umzusetzen
 
-Der Pflichtumfang steht in [SCOPE](docs/SCOPE.md), die Priorität in der
-[Lieferfolge](docs/ROADMAP.md). Es gilt **Make it Work → Make it Efficient →
+Es gilt **Make it Work → Make it Efficient →
 Make it Beautiful**, mit KISS und YAGNI. Neue Oberfläche oder grüne Tests
 schließen fehlende Fachfunktionen nicht ab.
 
