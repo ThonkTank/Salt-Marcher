@@ -113,6 +113,14 @@ async function launch() {
   await atlasCanvasReady(page);
 }
 async function draw(x, y, dx) {
+  await atlasCanvasReady(page);
+  // Form changes schedule a new canvas frame; let that frame publish before input.
+  await page.evaluate(
+    () =>
+      new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      ),
+  );
   const p = await atlasCanvasPoint(page, { x, y }, false),
     q = await atlasCanvasPoint(page, { x: x + dx, y }, false);
   assert.equal(p.target, "campaign-map");
@@ -347,6 +355,9 @@ try {
     } catch {}
   throw error;
 } finally {
-  if (app) await app.close();
   await writeFile(out + "/result.json", JSON.stringify(result, null, 2) + "\n");
+  if (app) {
+    if (result.passed) await app.close();
+    else await app.evaluate(({ app }) => app.exit(1)).catch(() => {});
+  }
 }
