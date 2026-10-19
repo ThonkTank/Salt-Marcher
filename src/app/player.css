@@ -23,3 +23,11 @@ html:has(body.player-window),body.player-window{margin:0;width:100%;height:100%;
 #player-preview .player-combatant h2,#player-preview .player-chase-lane h2,#player-preview .player-chase-list strong{font-size:20px}
 #player-preview .player-combatant p,#player-preview .player-chase-list span{font-size:16px}
 @media(max-width:750px){.player-controls{grid-template-columns:minmax(0,1fr)}}
+
+/* Freigabe und tatsächliche Ausgabe bleiben zusammen sichtbar; Einrichtung ist optional. */
+#player-dialog h3{margin:8px 0 12px}.player-display-actions{position:sticky;top:0;background:var(--surface,#fff);z-index:2;padding:8px 0;border-bottom:1px solid #ccd2d8}
+#player-map-picker{min-height:120px;max-height:300px;background:#e8edf0;border:1px solid #b3c4d0;border-radius:6px;padding:8px;box-sizing:border-box;overflow:hidden}
+#player-map-picker svg{display:block;width:100%;height:260px}#player-map-picker [role=button]{cursor:pointer}#player-map-picker [role=button]:focus{outline:none}#player-map-picker [role=button]:focus polygon{stroke:#0b3c80;stroke-width:5}
+.player-map-matches{display:flex;flex-wrap:wrap;gap:4px;max-height:150px;overflow:auto}.player-map-matches:empty{display:none}
+#player-copy-label{font-size:.9em}#player-feedback{padding:8px;border:1px solid #96adbd;border-radius:4px}
+@media(min-width:751px){.player-controls>section:last-child{position:sticky;top:66px;align-self:start}}

@@ -1,9 +1,10 @@
 import {checkedMemory,rememberAtlasHex,validateAtlasMemory,addMemory,unionMemory,type RememberedHex} from './atlas-knowledge';
 import {dungeonDisplay} from './dungeon-play';
 import {createHash,randomUUID} from 'node:crypto';
-import type {PlayerSettings,PlayerObserver,PlayerAsset,PlayerView,PlayerFrame,PlayerCommand,PlayerAction} from '../player-contracts';
+import {contains} from '../atlas-landscape';
+import type {PlayerMapQuery,PlayerMapCell,PlayerSettings,PlayerObserver,PlayerAsset,PlayerView,PlayerFrame,PlayerCommand,PlayerAction} from '../player-contracts';
 import type {Hex,SceneWorld} from '../world-contracts';
-import {readLive} from './live';import {readSceneWorld,readWorld} from './world';import {cellAt,hexDistance} from '../world-model';
+import {readLive} from './live';import {position as scenePosition,readSceneWorld,readWorld} from './world';import {authoredCellAt,cellAt,hexDistance,hexPoint,pointHex} from '../world-model';
 const hash=(p:string)=>createHash('sha256').update(p).digest('hex');
 export function installPlayerSchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS player_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;
 CREATE TABLE IF NOT EXISTS player_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,kind TEXT NOT NULL,subject_id TEXT,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
@@ -120,7 +121,28 @@ export function projectPlayer(db:any,cam:string):PlayerFrame{return db.transacti
  }
  return{mode:'map',title:s.title||'Reisekarte',map:{hexMeters:map.hexMeters,position:{q:position.q,r:position.r},cells,markers}} as PlayerFrame;
 })();}
-export function playerView(db:any,cam:string):PlayerView{const {live,list}=playerObservers(db,cam),world=readWorld(db,cam);return{settings:playerSettings(db,cam),focusId:live.focusId,focusRevision:live.focusRevision,focusMembershipRevision:live.scene?.membershipRevision??null,focusLocationId:live.scene?.locationId??null,focusTitle:live.scene?.title??null,observers:list,assets:playerAssets(db,cam),maps:world.maps.map(m=>({id:m.id,name:m.name})),locations:db.prepare('SELECT id,payload FROM location WHERE campaign_id=? AND trashed=0').all(cam).map((r:any)=>({id:r.id,name:JSON.parse(r.payload).name})),npcs:db.prepare("SELECT id,payload FROM world_note WHERE campaign_id=? AND trashed=0").all(cam).filter((r:any)=>JSON.parse(r.payload).kind==='npc').map((r:any)=>({id:r.id,name:JSON.parse(r.payload).title})),frame:projectPlayer(db,cam)};}
+export function playerView(db:any,cam:string,query?:PlayerMapQuery):PlayerView{const {live,list}=playerObservers(db,cam),world=readWorld(db,cam);
+ const masks=new Map<string,Extract<PlayerAction,{kind:'mask'}>>(db.prepare("SELECT * FROM player_record WHERE campaign_id=? AND kind='mask'").all(cam).map((row:any)=>{const m=checkedPlayerRecord(db,row);return[m.mapId+':'+m.q+','+m.r,m] as const;})),known=new Set<string>();
+ const knowledge=db.prepare('SELECT map_id,q,r FROM atlas_knowledge WHERE campaign_id=? AND character_id=?');
+ for(const observer of list)for(const h of knowledge.all(cam,observer.characterId))known.add(h.map_id+':'+h.q+','+h.r);
+ if(query&&(!world.maps.some(m=>m.id===query.mapId)||![query.q,query.r].every(n=>Number.isSafeInteger(n)&&Math.abs(n)<=1e9)||typeof query.search!=='string'||query.search.length>1000))throw new Error('Kartenausschnitt oder Suche prüfen.');
+ const position=live.scene?scenePosition(db,cam,live.scene.id):null;
+ const maps=world.maps.map(m=>{
+  const center=query?.mapId===m.id?{q:query.q,r:query.r}:position?.mapId===m.id?{q:position.q,r:position.r}:{q:0,r:0},cells=new Map<string,PlayerMapCell>();
+  const add=(h:Hex,name='')=>{if(![h.q,h.r].every(n=>Number.isSafeInteger(n)&&Math.abs(n)<=1e9))return;const key=m.id+':'+h.q+','+h.r,mask=masks.get(key),c=cellAt(m,h);cells.set(h.q+','+h.r,{q:h.q,r:h.r,terrain:c.terrain,name:name||c.label,publicLabel:mask?.publicLabel??'',hidden:mask?.hidden??false,blocksSight:mask?.blocksSight??false,known:known.has(key)});};
+  for(let dq=-4;dq<=4;dq++)for(let dr=-4;dr<=4;dr++){const h={q:center.q+dq,r:center.r+dr},p=hexPoint(h,m.hexMeters),key=m.id+':'+h.q+','+h.r;
+   if(hexDistance(h,center)<=4&&(authoredCellAt(m,h)||known.has(key)||masks.has(key)||(m.landscape??[]).some(l=>l.kind==='patch'&&contains(p,l.polygons))&&(cellAt(m,h).label||cellAt(m,h).terrain!=='water')))add(h);
+  }
+  const term=query?.mapId===m.id?query.search.trim().toLocaleLowerCase():'';
+  if(term){let matches=0;const candidate=(h:Hex,name:string)=>{if(matches>=20||!name.toLocaleLowerCase().includes(term))return;add(h,name);matches++;};
+   for(const c of m.cells)if(c.level===0)candidate(c,c.label);
+   for(const l of m.landscape??[]){const name=l.values.label||(l.kind==='place'?l.name:'');if(!name||!name.toLocaleLowerCase().includes(term))continue;const ring=l.polygons[0]?.outer,p=l.points[0]??(ring?.length?{x:ring.reduce((n,p)=>n+p.x,0)/ring.length,y:ring.reduce((n,p)=>n+p.y,0)/ring.length}:null);if(p)candidate(pointHex(p.x,p.y,m.hexMeters),name);}
+   for(const p of world.places)if(p.mapId===m.id&&!p.trashed)candidate(p,p.name);
+   const coordinate=term.match(/^(-?\d+)\s*,\s*(-?\d+)$/);if(coordinate)add({q:Number(coordinate[1]),r:Number(coordinate[2])});
+  }
+  return{id:m.id,name:m.name,center,cells:[...cells.values()]};
+ });
+ return{settings:playerSettings(db,cam),focusId:live.focusId,focusRevision:live.focusRevision,focusMembershipRevision:live.scene?.membershipRevision??null,focusLocationId:live.scene?.locationId??null,focusTitle:live.scene?.title??null,observers:list,assets:playerAssets(db,cam),maps,locations:db.prepare('SELECT id,payload FROM location WHERE campaign_id=? AND trashed=0').all(cam).map((r:any)=>({id:r.id,name:JSON.parse(r.payload).name})),npcs:db.prepare("SELECT id,payload FROM world_note WHERE campaign_id=? AND trashed=0").all(cam).filter((r:any)=>JSON.parse(r.payload).kind==='npc').map((r:any)=>({id:r.id,name:JSON.parse(r.payload).title})),frame:projectPlayer(db,cam)};}
 function validatePlayerAsset(a:PlayerAsset){if(!a.id||!['location','npc','custom'].includes(a.kind)||!/^[a-f0-9]{64}$/.test(a.sha256)||a.extension!=='.png'||!Number.isSafeInteger(a.bytes)||a.bytes<1||typeof a.title!=='string'||a.title.length>1000)throw new Error('Bildbeschreibung prüfen.');}
 function checkedPlayerAsset(row:any){const a=parsed<PlayerAsset>(row);validatePlayerAsset(a);if(a.id!==row.id||a.kind!==row.kind||a.subjectId!==row.subject_id)throw new Error('Spielerbildidentität widersprüchlich.');return a;}
 function checkImageOwner(db:any,cam:string,a:PlayerAsset,active=false){
@@ -150,6 +172,11 @@ export function executePlayer(db:any,c:PlayerCommand,guard:()=>void){return db.t
     if(place&&(place.mapId!==a.mapId||place.q!==a.q||place.r!==a.r))throw new Error('Ortsposition geändert oder passt nicht zum bestätigten Hex.');
     discoveredPayload=JSON.stringify({publicLabel:a.publicLabel,position:place?{mapId:place.mapId,q:place.q,r:place.r,revision:place.revision}:null,confirmationRevision:s.revision+1});
    }
+  }
+  if(a.kind==='discover'&&!a.locationId){
+   const old=db.prepare("SELECT * FROM player_record WHERE campaign_id=? AND kind='mask' AND json_extract(payload,'$.mapId')=? AND json_extract(payload,'$.q')=? AND json_extract(payload,'$.r')=?").get(c.campaignId,a.mapId,a.q,a.r);
+   const mask=old?checkedPlayerRecord(db,old):{kind:'mask',mapId:a.mapId,q:a.q,r:a.r,hidden:false,blocksSight:false};
+   saveRecord(db,c.campaignId,'mask',old?.id??randomUUID(),{...mask,publicLabel:a.publicLabel});
   }
   const oldDiscovery=db.prepare("SELECT * FROM player_discovery WHERE campaign_id=? AND character_id=? AND kind='location' AND subject_id=?");
   for(const id of a.characterIds){

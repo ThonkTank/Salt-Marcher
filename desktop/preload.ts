@@ -189,7 +189,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   autonomyDecision:(token:string,actorId:string)=>ipcRenderer.invoke('autonomy:decision',token,actorId),
   autonomy:(token:string)=>ipcRenderer.invoke('autonomy:view',token),
   executeAutonomy:(c:import('../src/app/autonomy-contracts').AutonomyCommand)=>ipcRenderer.invoke('autonomy:execute',c),
-  playerView:(token:string)=>ipcRenderer.invoke('player:view',token),
+  playerView:(token:string,query?:import('../src/app/player-contracts').PlayerMapQuery)=>ipcRenderer.invoke('player:view',token,query),
   executePlayer:(c:import('../src/app/player-contracts').PlayerCommand)=>ipcRenderer.invoke('player:execute',c),
   pickPlayerArt:(token:string,kind:string,subjectId:string|null,title:string)=>ipcRenderer.invoke('player:art',token,kind,subjectId,title),
   playerWindow:(token:string,open:boolean)=>ipcRenderer.invoke('player:window',token,open),

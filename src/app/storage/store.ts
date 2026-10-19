@@ -1092,7 +1092,7 @@ export class CampaignStore {
   autonomyDecision(token:string,actorId:string){return autonomyDecision(this.db,this.guard(token),actorId);}
   autonomy(token:string){return autonomyView(this.db,this.guard(token));}
   executeAutonomy(c:AutonomyCommand){return executeAutonomy(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
-  playerView(token:string){return playerView(this.db,this.guard(token));}
+  playerView(token:string,query?:import('../player-contracts').PlayerMapQuery){return playerView(this.db,this.guard(token),query);}
   executePlayer(c:PlayerCommand){return executePlayer(this.db,c,()=>{this.guard(c.token,c.campaignId);});}
   registerPlayerAsset(token:string,a:PlayerAsset){const cam=this.guard(token);savePlayerAsset(this.db,cam,a);return playerView(this.db,cam);}
   playerWindowOpen(token:string,open:boolean){this.db.transaction(()=>setPlayerWindow(this.db,this.guard(token),open)).immediate();}

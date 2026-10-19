@@ -53,6 +53,21 @@ GMreader und gehören nicht ins Fensterpaket. Der Renderer akzeptiert ebenfalls
 nur die visuellen Varianten, bevor er eine Überschrift erzeugt. Ein alter
 Scene-/Combat-/Chaseframe darf daher weder Inhalt noch Kopfzeile zeichnen.
 
+Die GM-Steuerung ist direkt im Atlas und im Arbeitsflächenkopf erreichbar.
+Sie stellt die Hexfreigabe neben die tatsächliche Ausgabe: eine private GM-Karte
+zeigt höchstens 61 ausgearbeitete Nachbarhexe; Namens-/Koordinatensuche führt
+auch zu entfernten Hexen. Auswahl allein veröffentlicht nichts. GM-Namen werden
+nur durch ausdrückliches Übernehmen zu öffentlichen Beschriftungen. Eine
+Hexentdeckung ohne Ortsbindung speichert den bestätigten Namen atomar mit der
+Charakterkenntnis und erhält vorhandene Hidden-/Sichtblockerflags. Ortsgebundene
+Entdeckungen behalten ihre eigene bestätigte Ortsbeschriftung. Ausblenden löscht
+keine Kenntnis; die Wiederaufnahme erfolgt ausdrücklich über Anzeigen.
+`PlayerView.maps[].cells` ist ausschließlich GM-Auswahldaten; `PlayerFrame`
+und der passive Preload erhalten diese Daten nicht. Die Hexauswahl und ihr
+Schreibweg liegen in `player-map-controls.ts`, `player-ui.ts` und
+`storage/player.ts`. `tools/test-desktop-player-map-reveal.mjs` prüft den
+vollständigen Kartenablauf mit nativer Ausgabe, Ausblenden und Neustart.
+
 ## Alte Einstellungen und neue Bedienung
 
 Gespeicherte `mode: "scene"`-Einstellungen bleiben gültige historische Daten.

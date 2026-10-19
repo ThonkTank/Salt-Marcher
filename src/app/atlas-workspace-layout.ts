@@ -136,7 +136,8 @@ export class AtlasWorkspaceLayout {
   const reference=button('atlas-import-reference','Nachzeichenvorlage…');reference.onclick=()=>{this.popups.forEach(p=>p.close());void this.requestContext('reference-image','Nachzeichenvorlage',[el('land-reference').closest('details')!]);};this.importMenu.append(reference);
   status.setAttribute('aria-live','polite');status.setAttribute('aria-label','Speicherstatus und Meldungen');this.notices.append(el('atlas-recover'),el('atlas-region-retry'));
   el('atlas-output-open').textContent='Export';
-  manage.append(nav,search,el('atlas-reference-open'),view,imports,el('atlas-output-open'),status,toggle);
+  const players=button('atlas-player-open-controls','Spieleranzeige');players.onclick=()=>el('player-open-controls').click();
+  manage.append(nav,search,players,el('atlas-reference-open'),view,imports,el('atlas-output-open'),status,toggle);
   controls.replaceChildren(camera[2]!,camera[3]!,camera[0]!,camera[1]!,camera[4]!);navigate.append(el('atlas-undo'),el('atlas-redo'),pick,pan,measure,controls,el('atlas-overview'));
   header.append(manage,navigate);
   // The shell keeps runtime controls. They never enter an editor popup.

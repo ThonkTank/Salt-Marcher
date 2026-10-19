@@ -350,7 +350,7 @@ else {
     handle('autonomy:decision',(token:string,actorId:string)=>store.autonomyDecision(token,actorId));
     handle('autonomy:view',(token:string)=>store.autonomy(token));
     handle('autonomy:execute',(c:import('../src/app/autonomy-contracts').AutonomyCommand)=>store.executeAutonomy(c));
-    handle('player:view',(token:string)=>store.playerView(token));
+    handle('player:view',(token:string,query?:import('../src/app/player-contracts').PlayerMapQuery)=>store.playerView(token,query));
     handle('player:execute',(command:import('../src/app/player-contracts').PlayerCommand)=>store.executePlayer(command));
     handle('player:screens',()=>screen.getAllDisplays().map(d=>({id:d.id,name:d.label||'Bildschirm '+d.id+' · '+d.size.width+' × '+d.size.height})));
     handle('player:window',(token:string,open:boolean)=>{if(typeof open!=='boolean')throw new Error('Fensteraktion prüfen.');store.playerWindowOpen(token,open);});
