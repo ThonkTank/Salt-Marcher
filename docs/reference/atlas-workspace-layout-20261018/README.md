@@ -94,7 +94,7 @@ ist keine qualifizierte wiederherstellbare Sicherung.
 [Export bei doppelter Skalierung](access-path-export-200.png),
 [tatsächliche PNG](access-path-corrected.png).
 
-Der Gegenvergleich bleibt teilweise offen. In der echten Excalidraw-Weboberfläche
+Die zuerst geprüften Gegenprodukte blieben teilweise offen. In der echten Excalidraw-Weboberfläche
 wurden Rechteck, Beschriftung und unabhängige Linie gezeichnet, am mittleren
 Punkt korrigiert, rückgängig gemacht und wiederholt. Nach Neuladen blieb die
 Zeichnung bearbeitbar. Der lokale Dateidialog war über die verfügbare
@@ -104,8 +104,30 @@ alte Pfad radiert und der neue um das Haus geführt. Zweimal Undo/Redo stellte
 die jeweiligen Verläufe wieder her. Der [wirkliche PNG-Download](access-path-scrawl.png)
 zeigt den erhaltenen Grundriss. Seine bearbeitbare Speicherdatei und deren
 Wiederöffnung blieben ebenfalls am Dateidialog offen. Beide Webprodukte wurden
-am 19.10.2026 ohne sichtbare Buildnummer benutzt. Es wurde kein vollständiger
-Gegenvergleich im Capability-Katalog eingetragen.
+am 19.10.2026 ohne sichtbare Buildnummer benutzt. Diese beiden Versuche gelten nicht als vollständige Gegenvergleiche.
+
+Ein nachfolgender vollständiger Vergleich gelang in **diagrams.net/draw.io Web**
+(`https://app.diagrams.net/`, 19.10.2026, keine sichtbare Buildnummer).
+Ein Rechteck mit Beschriftung Zollhaus und eine unabhängige kreuzende Linie
+bildeten denselben Kartenfall. Rechtsklick auf die Linie → Wegpunkt einfügen,
+mittleren Punkt nach außen ziehen, Linienbreite ändern, zweimal Undo/Redo.
+**Speichern unter → Browser** erhielt die bearbeitbare Zeichnung. Nach Schließen
+des Tabs und Öffnen der gespeicherten Datei war der Weg wieder am Griff änderbar;
+diese zusätzliche Änderung wurde rückgängig gemacht. **Speichern unter →
+Editierbares Bitmap-Bild (.png) → Herunterladen** erzeugte eine echte PNG.
+Das erste transparente Bild war auf dunklem Viewergrund schlecht lesbar;
+ein ausdrücklich weißer Diagrammhintergrund lieferte die brauchbare Ausgabe.
+Auch die bearbeitbare XML-Datei wurde über Herunterladen gesichert. Ihr Inhalt
+enthält weiterhin das eigene 190 × 190 große Zollhaus und eine getrennte Linie
+mit drei Wegpunkten. Keine Anmeldung, Cloudablage oder externen Bedingungen.
+
+[Wiedergeöffnete Oberfläche](access-path-drawio-ui.jpg),
+[ausgegebene PNG](access-path-drawio.png),
+[heruntergeladene bearbeitbare Datei](access-path-drawio.drawio).
+Dieser vollständige Kartenvergleich ist im Capability-Katalog eingetragen;
+er qualifiziert keine allgemeine Gleichwertigkeit der Kampagnendatenmodelle.
+Die native Probe zoomt für Pixel-Gegenproben drei Stufen heraus; daraus folgt
+keine Notwendigkeit genau dieser drei Schritte im GM-Ablauf.
 
 Auch `tools/test-desktop-region-export.mjs` bestand mit vier normalen
 Prozessexits bei einfacher und doppelter Skalierung: Wege korrigieren,
