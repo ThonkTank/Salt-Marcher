@@ -35,6 +35,16 @@ Die [Soundboardprüfung](../../../tests/desktop-soundboard-context.test.mjs)
 verbindet den echten Controller mit dem Store; der Audioport ist kontrolliert.
 Das beweist keine hörbare native Ausgabe.
 
+„Zurück“ entnimmt den letzten Titel aus der gespeicherten Historie. Dieser
+Rückweg legt den verlassenen Titel nicht erneut hinein: A → B → C und zweimal
+„Zurück“ ergibt B → A. Neue Auswahl und Vorwärtsschritte führen die begrenzte
+Historie weiterhin fort. Queue, Autoplayentscheidung und Medienbeschreibungen
+bleiben dabei erhalten. Derselbe Command wird bei verlorener Antwort über
+seinen vorhandenen Receipt erkannt und verbraucht keinen weiteren Rückschritt.
+`desktop-music-history.test.mjs` prüft dies einschließlich Close/Fresh und dem
+erneuten Vorwärtsweg nach einem Rückschritt. Gespeicherte ältere Historien
+werden erhalten; es gibt keine neue Historientabelle oder Schemaänderung.
+
 Der Einstieg aus dem Atlas verwendet dieselbe Arbeitsbereichsnavigation wie
 die übrige Anwendung. Ein offener Atlaszug blockiert weiterhin den Wechsel;
 nach Abschließen oder Verwerfen sind Musik und Live-Spiel ohne Rückweg über
