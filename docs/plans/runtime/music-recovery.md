@@ -11,6 +11,15 @@ Der GM verwendet lokale Songs mit Mood-/Intensitäts-/Vibe-/Genre-Metadaten und
 Ambience der fokussierten Running Scene. Manuelle Auswahl, Queue, Stop, Skip,
 Back, Loop und deaktiviertes Autoplay haben Vorrang vor Automatik.
 
+„Stopp“ in Konsole, Miniplayer und Soundboard benötigt keine vorherige
+Speicherung offener Beschreibungen und keinen Positions-Checkpoint. Der
+bestehende Writer setzt Status, manuellen Vorrang und Position null gemeinsam;
+ungültige Eingaben bleiben zur Korrektur offen. Eine verspätete
+Metadatenantwort darf die Ausgabe nicht erneut starten. Beim anschließenden
+Bearbeiten bleiben unveränderte Notizen einschließlich ihrer Zeilenenden
+erhalten. `desktop-music-stop.test.mjs` und die native Szenenprüfung decken
+diesen Weg auch bei ausgefallener Positionsspeicherung ab.
+
 - `storage/music.ts` besitzt Bibliothek, Asset-/Scene-/Subjectmetadaten,
   Wiedergabestand, Positionen und Receipts. Kontext verwendet die fokussierte
   Scenezeit, ihren Ort und ihre Wetter-/Umweltmerkmale. Fehlende Umweltinputs
