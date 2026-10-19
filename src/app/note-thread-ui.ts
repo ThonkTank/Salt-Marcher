@@ -10,7 +10,6 @@ import type {
 } from "./note-thread-contracts";
 import type { SceneDeskAPI } from "./scene-desk-contracts";
 import type { PreparationAPI } from "./preparation-contracts";
-import { documentReferences } from "./text-references";
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;
@@ -125,7 +124,6 @@ export class NoteThreadDialog {
   private next: number | null = null;
   private total = 0;
   private entries = new Map<string, NoteThreadEntry>();
-  private picked = new Set<string>();
   private choices = new Map<string, { stamp: string; selected: boolean }>();
   private additions = new Set<string>();
   private reading = node("div");
@@ -332,7 +330,6 @@ export class NoteThreadDialog {
     this.busy = false;
     this.loading = false;
     this.entries.clear();
-    this.picked.clear();
     this.choices.clear();
     this.sourceLinks.clear();
     this.additions.clear();
@@ -369,7 +366,7 @@ export class NoteThreadDialog {
   private async showMap(owner: NoteThreadSource, frame?: NoteMapFrame, preparing = false) {
     this.owner = owner;
     this.root = frame?.root ?? null;
-    this.entries.clear(); this.picked.clear(); this.sourceLinks.clear();
+    this.entries.clear(); this.sourceLinks.clear();
     this.choices = new Map(frame?.choices);
     this.additions.clear();
     this.active.checked = frame?.active ?? true;
@@ -451,7 +448,15 @@ export class NoteThreadDialog {
     this.visit.value = plan?.scenes.find(s => s.id === preferred)?.id ?? plan?.scenes[0]?.id ?? "";
     this.controls();
   }
+  private isPicked(id: string) {
+    const entry = this.entries.get(id), choice = this.choices.get(id);
+    return !!entry && !entry.unavailable && !!choice && choice.selected && choice.stamp === entry.stamp;
+  }
+  private selectedEntries() {
+    return [...this.choices.keys()].filter(id => this.isPicked(id)).map(id => this.entries.get(id)!);
+  }
   private controls() {
+    const picked = new Set(this.selectedEntries().map(e => e.id));
     const blocked =
       this.busy ||
       this.loading ||
@@ -477,18 +482,18 @@ export class NoteThreadDialog {
     this.visit.parentElement!.hidden = this.preparing && this.visit.options.length === 1;
     this.add.disabled = blocked || !this.additions.size;
     this.use.disabled =
-      blocked || !this.root || (!this.picked.size && !this.includeRoot.checked);
+      blocked || !this.root || (!picked.size && !this.includeRoot.checked);
     for (const box of this.reading.querySelectorAll<HTMLInputElement>(
       "input[data-thread-source]",
     )) {
       const e = this.entries.get(box.value);
       box.disabled = blocked || !e || e.unavailable;
-      box.checked = this.picked.has(box.value);
+      box.checked = picked.has(box.value);
     }
     for (const box of this.candidates.querySelectorAll<HTMLInputElement>("input[type=checkbox]"))
       box.checked = this.additions.has(box.value);
     this.choice.textContent =
-      this.picked.size +
+      picked.size +
       Number(this.includeRoot.checked) +
       " Originalnotizen ausgewählt. Vorhandene Besuchsnotizen bleiben erhalten.";
   }
@@ -534,7 +539,6 @@ export class NoteThreadDialog {
       this.heading.textContent = "Notizmappe: " + this.root.title;
       if (!append) {
         this.entries.clear();
-        this.picked.clear();
         this.sources.replaceChildren();
         this.sourceChoices.replaceChildren();
         this.rootChoice.replaceChildren(this.includeRoot, node("span", "Übersicht: " + this.root.title));
@@ -566,8 +570,8 @@ export class NoteThreadDialog {
             : previous
               ? previous.stamp === e.stamp && previous.selected
               : !append && e.status !== "closed" && e.status !== "unknown");
-        if (selected) this.picked.add(e.id);
-        else this.picked.delete(e.id);
+        // Reading a page restores source order; later explicit selections append in choice order.
+        this.choices.delete(e.id);
         this.choices.set(e.id, { stamp: e.stamp, selected });
         this.drawSource(e, epoch);
       }
@@ -601,7 +605,7 @@ export class NoteThreadDialog {
     box.type = "checkbox";
     box.dataset.threadSource = "true";
     box.value = e.id;
-    box.checked = this.picked.has(e.id);
+    box.checked = this.isPicked(e.id);
     box.setAttribute("aria-label", "Für Spielabend auswählen: " + e.title);
     header.className = "toolbar";
     header.append(
@@ -624,8 +628,7 @@ export class NoteThreadDialog {
     if (e.notice) card.append(node("p", e.notice));
     box.onchange = () => {
       if (this.current(epoch) && card.isConnected && !box.disabled) {
-        if (box.checked) this.picked.add(e.id);
-        else this.picked.delete(e.id);
+        this.choices.delete(e.id);
         this.choices.set(e.id, { stamp: e.stamp, selected: box.checked });
         this.controls();
       }
@@ -960,7 +963,7 @@ export class NoteThreadDialog {
     if (this.busy || !this.editing || !this.owner?.current()) return false;
     const epoch = this.epoch,
       id = this.editing,
-      selected = this.picked.has(id);
+      selected = this.isPicked(id);
     this.busy = true;
     this.controls();
     try {
@@ -1010,14 +1013,7 @@ export class NoteThreadDialog {
     this.reset();
   }
   private memberIds() {
-    const ids = new Set<string>(
-      this.root?.relations.map((r) => r.targetId) ?? [],
-    );
-    if (this.root)
-      for (const r of documentReferences(this.root, Number.MAX_SAFE_INTEGER))
-        if (r.ref.kind === "note") ids.add(r.ref.id);
-    ids.add(this.owner!.id);
-    return ids;
+    return new Set([this.owner!.id, ...this.sourceLinks.keys()]);
   }
   private async search(retain: ReadonlySet<string> = new Set()) {
     if (this.busy || !this.owner?.current()) return;
@@ -1115,9 +1111,9 @@ export class NoteThreadDialog {
         rootId: this.root.id,
         rootRevision: this.root.revision,
         includeRoot: this.includeRoot.checked,
-        entries: [...this.picked].map((id) => ({
+        entries: this.selectedEntries().map(({id, stamp}) => ({
           id,
-          stamp: this.entries.get(id)!.stamp,
+          stamp,
         })),
       },
       target: NoteThreadTarget = {

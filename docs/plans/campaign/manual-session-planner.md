@@ -51,6 +51,14 @@ Alternativen entfallen. **Notizmappe öffnen…** bleibt der Einstieg zum Lesen
 und Bearbeiten der Quellen. Beide Wege verwenden dieselben Originalnotizen und
 die bestehenden geprüften Besuchsverknüpfungen.
 
+Geschlossene Spuren lassen sich nach Abschalten von „Geschlossene Spuren
+ausblenden“ im Originaleditor wieder öffnen und ergänzen. Die Notizmappe hält
+eine revisionsgebundene Auswahl; Checkboxen, Anzahl und Besuchsauftrag werden
+daraus abgeleitet. Geänderte ungeprüfte Quellen sind nicht vorausgewählt.
+Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
+denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
+Close/Fresh bei 100 und 200 %. Das ist keine vollständige SMR-AC-03-Abnahme.
+
 Gespeicherte Begegnungen werden erst ab zwei Suchzeichen über den vorhandenen
 Katalogzugang gelesen. SQL begrenzt auf neun Metadatensätze: acht auswählbare
 Treffer plus Überlaufhinweis. Neue Eingaben, Besuchs-/Planwechsel und neuere

@@ -67,6 +67,28 @@ test('filtering and refresh retain deliberate source choices and custom destinat
  const x=fixture(t);await x.ui.open();const box=x.el('note-thread-sources').querySelector('input');box.checked=false;box.onchange();x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Mein nächster Abend';x.el('note-thread-visit-title').value='Meine offene Frage';x.el('note-thread-active').checked=false;x.el('note-thread-active').onchange();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein nächster Abend');assert.equal(x.el('note-thread-visit-title').value,'Meine offene Frage');const open=x.all[1];open.stamp='changed'.padEnd(64,'a');x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-sources').querySelectorAll('input')[1].checked,false);assert.equal(x.el('note-thread-plan-name').value,'Mein nächster Abend');
 });
 
+test('editing the overview refreshes text-only membership before collecting further sources',async t=>{
+ const x=fixture(t);await x.ui.open();x.setBack(async current=>{
+  x.root.gmNotes='[Neu](dungeon-ref:note/Neu)\r\n`[Beispiel](dungeon-ref:note/Beispiel)`';x.root.revision++;
+  return current();
+ });
+ x.click('Übersichtsnotiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);
+ x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-use').disabled);
+ x.setSearch(async()=>ok({entries:['Neu','Beispiel'].map(id=>({ref:{kind:'note',id},title:id}))}));
+ x.el('note-thread-find').onclick();await until(()=>x.el('note-thread-candidates').querySelector('input'));
+ assert.deepEqual([...x.el('note-thread-candidates').querySelectorAll('input')].map(e=>e.value),['Beispiel']);
+});
+
+test('explicit reselection retains attachment order while the next read restores source order',async t=>{
+ const x=fixture(t);x.setUse(async(target,selection)=>{x.used.push({target,selection});return false;});await x.ui.open();
+ const box=x.el('note-thread-sources').querySelector('input');box.checked=false;box.onchange();box.checked=true;box.onchange();
+ x.el('note-thread-use').onclick();await until(()=>x.used.length===1&&!x.el('note-thread-use').disabled);
+ assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),['Offene Spur','Nera']);
+ x.click('Aktualisieren');await until(()=>!x.el('note-thread-use').disabled);
+ x.el('note-thread-use').onclick();await until(()=>x.used.length===2);
+ assert.deepEqual(x.used[1].selection.entries.map(e=>e.id),['Nera','Offene Spur']);
+});
+
 test('source editing mounts the identical author controls and returns with choices and destination names intact',async t=>{
  const x=fixture(t);await x.ui.open();const editor=x.el('note-editor'),field=x.el('note-gm');x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Meine Fortsetzung';x.el('note-thread-visit-title').value='Meine Frage';field.disabled=true;
  x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);assert(x.el('note-thread-editor').contains(editor));assert.equal(x.el('note-gm'),field);assert.equal(field.disabled,true);assert.equal(x.el('note-back').hidden,true);assert(x.ui.ownsNote('Nera'));assert(x.ui.ownsNote('Mappe'));
