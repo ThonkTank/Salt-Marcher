@@ -124,7 +124,9 @@ export class AtlasRegionReader {
     for(;;){
      const batch=this.sql(`SELECT rowid sourceOrder,*${fields} FROM ${table} WHERE campaign_id=? AND rowid>? ORDER BY rowid LIMIT 128`).all(this.campaign,cursor);
      if(!batch.length)break;
-     for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}
+     // Furnished towns have many more shapes than roof-only maps. Commit one
+     // bounded TEMP batch, retaining the cancellation yield between batches.
+     this.db.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
      await pause();
     }
    }
