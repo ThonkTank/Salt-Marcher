@@ -2,7 +2,7 @@ import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
 import type {Point} from '../contracts';
 import {bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox} from '../atlas-landscape';
-import {LandscapeRasterizer,type LandscapeRaster} from '../landscape-raster';
+import {LandscapeRasterizer,LANDSCAPE_RASTER_PAD,landscapeRasterBounds,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
 const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,values:{}};};
@@ -99,8 +99,8 @@ export class AtlasLandscapeReader {
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
-     const image=new LandscapeRasterizer(box,pixels,pixels);for(const r of this.rows(source,box,true,pixels))image.paint(r);
-     for(const r of this.rows(source,box,true,pixels))if(r.paint)image.paintColor(r);
+     const image=new LandscapeRasterizer(box,pixels,pixels),samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;for(const r of this.rows(source,image.sampleBox,true,samplePixels))image.paint(r);
+     for(const r of this.rows(source,image.sampleBox,true,samplePixels))if(r.paint)image.paintColor(r);
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
       if(r.kind==='road'||r.kind==='river')image.paintRecordLine(r,q.box.width/q.width);
       else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
@@ -108,7 +108,7 @@ export class AtlasLandscapeReader {
      }
      const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');
      json=JSON.stringify({campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
-     const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(box,Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
+     const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(landscapeRasterBounds(box,pixels,pixels),Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
     }
     const tile=JSON.parse(json) as LandscapeRaster;tile.revision=source.revision;layer.tiles.push(tile);
    }
