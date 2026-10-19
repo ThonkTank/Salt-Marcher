@@ -20,13 +20,13 @@ let app;const launches=[],errors=[],results=[];
 async function launch(scale){
  app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[root+'/.build/desktop/main.cjs','--ozone-platform=x11','--force-device-scale-factor='+scale,'--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus}});launches.push({scale,pid:app.process().pid});
  const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.stack));page.setDefaultTimeout(15000);
- await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
+ await page.waitForURL(/\/index\.html$/);await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
- await page.waitForFunction(id=>document.getElementById('campaigns').value===id&&!document.getElementById('workspace-navigation').inert,campaign.id);
+ await page.waitForFunction(id=>document.getElementById('campaigns').value===id&&!document.querySelector('main').inert,campaign.id);
  const liveTab=page.getByRole('button',{name:'Party und Leiten',exact:true});
  if(!await liveTab.isVisible()){
   if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();
-  else await page.locator('#workspace-nav-summary').click();
+  if(!await liveTab.isVisible())await page.locator('#workspace-nav-summary').click();
  }
  await liveTab.click();await page.locator('#combat-panel').waitFor();
  await page.waitForFunction(()=>document.getElementById('combat-panel').getAttribute('aria-busy')==='false');return page;
@@ -36,8 +36,9 @@ async function close(){
  try{const exit=await Promise.race([exited,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);assert.deepEqual(exit,{code:0,signal:null});launches.at(-1).exit=exit;app=null;}finally{clearTimeout(timer);}
 }
 async function catalog(page){
- if(!await page.locator('#combat-catalog-open').isVisible())await page.getByText('Weitere Begegnung vorbereiten',{exact:true}).click();await page.locator('#combat-catalog-open').click();await page.locator('#catalog-search').fill('Goblin');await page.getByRole('button',{name:'Suchen',exact:true}).click();await page.getByRole('button',{name:'Goblin',exact:true}).click();await page.locator('#catalog-quantity').fill('2');await page.locator('#catalog-grouped').check();await page.locator('#catalog-live-add:enabled').waitFor();await page.locator('#catalog-live-add').click();
+ await page.locator('#catalog-tab').click();await page.locator('#catalog-search').fill('Goblin');await page.getByRole('button',{name:'Suchen',exact:true}).click();await page.getByRole('button',{name:'Goblin',exact:true}).click();await page.locator('#catalog-quantity').fill('2');await page.locator('#catalog-grouped').check();await page.locator('#catalog-live-add:enabled').waitFor();await page.locator('#catalog-live-add').click();
 }
+const participantFacts=participants=>participants.map(({worldActorRevision,...facts})=>facts); // Canonical HP revisions advance on damage and undo.
 function currentCombat(){
  const db=new Database(file,{readonly:true});
  try{return JSON.parse(db.prepare('SELECT payload FROM combat WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1').get(campaign.id,scene.id).payload);}finally{db.close();}
@@ -79,12 +80,11 @@ async function staleCatalogHandoff(scale,kind){
  });
  if(kind==='creature')await catalog(page);
  else{
-  if(!await page.locator('#combat-catalog-open').isVisible())await page.getByText('Weitere Begegnung vorbereiten',{exact:true}).click();
-  await page.locator('#combat-catalog-open').click();await page.locator('#catalog-plan-open').click();await page.locator('#encounter-list').selectOption(savedPlan.id);await page.waitForFunction(name=>document.getElementById('encounter-name').value===name,savedPlan.name);await page.locator('#encounter-prepare').click();
+  await page.locator('#catalog-tab').click();await page.locator('#catalog-plan-open').click();await page.locator('#encounter-list').selectOption(savedPlan.id);await page.waitForFunction(name=>document.getElementById('encounter-name').value===name,savedPlan.name);await page.locator('#encounter-prepare').click();
  }
  const deadline=Date.now()+10000;while(!await app.evaluate(()=>globalThis.qaHandoffHeld)&&Date.now()<deadline)await new Promise(r=>setTimeout(r,20));assert(await app.evaluate(()=>globalThis.qaHandoffHeld));
  await page.locator('#application-trigger').click();await page.locator('#campaign-screen-open').click();await page.locator('.campaign-card[data-campaign-id="'+other.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
- await page.waitForFunction(id=>document.getElementById('campaigns').value===id&&!document.getElementById('workspace-navigation').inert,other.id);
+ await page.waitForFunction(id=>document.getElementById('campaigns').value===id&&!document.querySelector('main').inert,other.id);
  await app.evaluate(()=>globalThis.qaHandoffRelease());await new Promise(r=>setTimeout(r,1500));
  const writes=await app.evaluate(()=>globalThis.qaHandoffWrites);assert.deepEqual(writes,[],'a stale '+kind+' handoff must not create or change a combat in the newly opened campaign');await close();
  const fresh=new CampaignStore(file);try{assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(other.id).n,0);const active=fresh.activate(campaign.id);assert.deepEqual(fresh.encounterPlan(active.token,savedPlan.id),savedPlan);}finally{fresh.close();}
@@ -116,18 +116,18 @@ try{
   await page.getByRole('button',{name:'Goblin A',exact:true}).click();await page.locator('#fighter-amount').fill('3');await page.locator('#fighter-damage').click();await page.waitForFunction(()=>document.getElementById('fighter-hp').value==='4');
   await page.locator('#combat-next').click();await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin A'));
   await page.locator('#combat-undo').click();await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Mira'));await page.locator('#combat-next').click();await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin A'));
-  await page.getByRole('button',{name:'Goblin A',exact:true}).click();await page.locator('#fighter-condition-panel').evaluate(el=>el.open=true);await page.locator('#fighter-condition-shortcuts').getByRole('button',{name:'Liegend',exact:true}).click();await page.waitForFunction(()=>document.getElementById('fighter-conditions').value==='Liegend');
+  await page.getByRole('button',{name:'Goblin A',exact:true}).click();if(!await page.locator('#fighter-condition-panel').getAttribute('open'))await page.locator('#fighter-condition-panel summary').click();await page.locator('#fighter-condition-shortcuts').getByRole('button',{name:'Liegend',exact:true}).click();await page.waitForFunction(()=>document.getElementById('fighter-conditions').value==='Liegend');
   await page.locator('#combat-add-open').click();await page.locator('#combat-creature-source').selectOption('group');await page.locator('#combat-creature-count').fill('1');await page.locator('#combat-creature-add').click();await page.locator('#combat-add-dialog').waitFor({state:'hidden'});
   await page.locator('#combat-add-open').click();await page.locator('#combat-creature-source').selectOption('catalog');await page.locator('#combat-creature-search').fill('Hobgoblin');await page.locator('#combat-creature-search-form').getByRole('button',{name:'Monster suchen',exact:true}).click();await page.locator('#combat-creature-select option[value="creature:hobgoblin"]').waitFor({state:'attached'});await page.locator('#combat-creature-select').selectOption('creature:hobgoblin');await page.locator('#combat-creature-initiative').fill('10');await page.locator('#combat-creature-add').click();await page.locator('#combat-add-dialog').waitFor({state:'hidden'});
   const beforeArea=currentCombat(),expectedArea=beforeArea.participants.map(p=>p.name==='Goblin A'?{...p,hp:p.hp-3}:p.name==='Goblin B'?{...p,hp:p.hp-1}:p);
-  await fireWave(page,scale,true);let area=currentCombat();assert.deepEqual(area.participants,expectedArea);assert.equal(area.turnId,beforeArea.turnId);assert.equal(area.round,beforeArea.round);
-  await page.locator('#combat-undo').click();await page.waitForFunction(()=>document.getElementById('combat-panel').getAttribute('aria-busy')==='false');assert.deepEqual(currentCombat().participants,beforeArea.participants);
-  await fireWave(page,scale);area=currentCombat();assert.deepEqual(area.participants,expectedArea);assert.equal(area.turnId,beforeArea.turnId);assert.equal(area.round,beforeArea.round);
+  await fireWave(page,scale,true);let area=currentCombat();assert.deepEqual(participantFacts(area.participants),participantFacts(expectedArea));assert.equal(area.turnId,beforeArea.turnId);assert.equal(area.round,beforeArea.round);
+  await page.locator('#combat-undo').click();await page.waitForFunction(()=>document.getElementById('combat-panel').getAttribute('aria-busy')==='false');assert.deepEqual(participantFacts(currentCombat().participants),participantFacts(beforeArea.participants));
+  await fireWave(page,scale);area=currentCombat();assert.deepEqual(participantFacts(area.participants),participantFacts(expectedArea));assert.equal(area.turnId,beforeArea.turnId);assert.equal(area.round,beforeArea.round);
   const areaCommands=(await app.evaluate(()=>globalThis.qaCatalogCommands)).filter(c=>c.action.kind==='area-damage');assert.equal(areaCommands.length,2);for(const c of areaCommands){assert.equal(c.action.amount,3);assert.equal(c.action.damageType,'fire');assert.deepEqual(c.action.targets.map(t=>t.scale),['full','half']);}assert.equal(areaCommands[0].expectedRevision,beforeArea.revision);
   assert.match(await page.locator('#combat-status').innerText(),/Runde 1.*Am Zug: Goblin A/);await page.screenshot({path:output+'/reinforced-'+scale+'.png'});const beforeRestartCommands=await app.evaluate(()=>globalThis.qaCatalogCommands);assert.deepEqual(beforeRestartCommands.filter(c=>c.action.kind==='add-creature').map(c=>[c.action.creatureId,c.action.count]),[['goblin',1],['hobgoblin',1]]);await close();
   const runningStore=new CampaignStore(file);let running;
   try{const active=runningStore.activate(campaign.id);running=runningStore.combat(active.token,scene.id).combat;assert.equal(running.phase,'running');assert.equal(running.round,1);assert.equal(running.participants.find(p=>p.id===running.turnId).name,'Goblin A');const goblins=running.participants.filter(p=>p.sourceId==='goblin');assert.deepEqual(goblins.map(p=>p.hp),[1,6,7]);assert.deepEqual(goblins.map(p=>p.conditions),['Liegend','','']);assert.equal(new Set(goblins.map(p=>p.groupId)).size,1);assert(goblins.every(p=>p.initiative===12));const hobgoblin=running.participants.find(p=>p.sourceId==='hobgoblin');assert.equal(hobgoblin.hp,11);assert.equal(hobgoblin.initiative,10);}finally{runningStore.close();}
-  page=await launch(scale);await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin A'));await page.locator('#combat-add-open').click();assert.match(await page.locator('#combat-creature-select').innerText(),/Goblin.*vorhandene Initiative 12 \(3\)/);await page.locator('#combat-add-close').click();await page.locator('#combat-next').click();await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin B'));
+  page=await launch(scale);await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin A'));await page.locator('#combat-add-open').click();await page.locator('#combat-creature-source').selectOption('group');assert.match(await page.locator('#combat-creature-select').innerText(),/Goblin.*vorhandene Initiative 12 \(3\)/);await page.locator('#combat-add-close').click();await page.locator('#combat-next').click();await page.waitForFunction(()=>document.getElementById('combat-status').textContent.includes('Am Zug: Goblin B'));
   await page.locator('#combat-finish').click();await page.locator('#combat-outcome').fill('Goblins ergeben sich · Prüfung '+scale);await page.locator('#finish-no-xp').uncheck();await page.locator('#finish-xp').fill('100');await page.getByRole('button',{name:'Ergebnis speichern und abschließen',exact:true}).click();await page.locator('#combat-finish-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>document.getElementById('combat-resolution-summary').textContent.includes('100 XP gebucht'));
   await page.locator('#combat-resolution-summary').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/completed-'+scale+'.png'});const commands=beforeRestartCommands;await close();
   const fresh=new CampaignStore(file);let combat;

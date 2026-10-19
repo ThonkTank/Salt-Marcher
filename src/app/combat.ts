@@ -37,14 +37,12 @@ let resolution:CombatResolutionPanel|null=null;
 let selectionPanel:CombatSelectionPanel|null=null;
 let openNpcProfile:((id:string,current:()=>boolean)=>Promise<void>)|undefined;
 export function setCombatNpcNavigation(open:NonNullable<typeof openNpcProfile>){openNpcProfile=open;}
-let openCreatureCatalog:((current:()=>boolean)=>Promise<void>)|undefined;
-export function setCombatCatalogNavigation(open:NonNullable<typeof openCreatureCatalog>){openCreatureCatalog=open;}
 let hitPanel:CombatHitPanel|null=null;
 let areaPanel:CombatAreaPanel|null=null;
 let initiativePanel:CombatInitiativePanel|null=null;
 let reinforcementRequest=0,reinforcementBusy=false,reinforcementSourceChosen=false;
 // null uses the combat's sources; an empty search must remain empty, even on failure.
-let reinforcementResults:{id:string;name:string;challengeRating:string}[]|null=null;
+let reinforcementResults:{id:string;name:string;challengeRating:string;hp?:number;ac?:number}[]|null=null;
 let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
 type PendingLegendary={participantId:string;actionId:string;cost:number};
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string;appliedTargets?:string[]};
@@ -114,6 +112,7 @@ export function combatContext(next: WorkspaceGeometry | null, current: LiveScene
   const changed = next?.token !== workspace?.token || current?.id !== scene?.id;
   const basis=JSON.stringify([next?.token,current?.id,current?.membershipRevision,rosterRevision]),partyChanged=basis!==partyContext;partyContext=basis;
   const preparationBasis=JSON.stringify([basis,current?.locationId??null,current?.adoption?.id??null]),preparationChanged=preparationBasis!==preparationContext;preparationContext=preparationBasis;
+  if(changed){closeReinforcements();reinforcementRequest++;reinforcementResults=null;reinforcementBusy=false;reinforcementSourceChosen=false;}
   if(changed&&workspace)draftCache.release(workspace.campaign.id);
   workspace = next; scene = current;
   if(changed||preparationChanged){selectionPanel?.reset();if(next&&current&&get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}
@@ -286,7 +285,8 @@ function closeReinforcements(){
  if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
 }
 function openReinforcements(){
- if(blocked()||!editableCombat(view?.combat??null))return;
+ if(blocked()||!workspace||!scene)return;
+ get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  renderReinforcements();lock();
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
@@ -297,15 +297,17 @@ function renderReinforcements(){
  const source=get<HTMLSelectElement>('combat-creature-source');
  const groups=combat?initiativeGroups(combat).filter(members=>{
   const actor=members[0]!;
-  return actor.sourceId&&!actor.worldActorId&&(members.length>1||actor.partitionKind==='mob');
+  return actor.sourceId&&(!actor.worldActorId||actor.sourceOrdinal!==undefined)&&(members.length>1||actor.partitionKind==='mob');
  }):[];
  if(!reinforcementSourceChosen||!source.value||source.value==='group'&&!groups.length)source.value=groups.length?'group':'catalog';
  source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled=!groups.length;
+ source.hidden=!groups.length;get('combat-reinforcement').querySelector<HTMLLabelElement>('label[for="combat-creature-source"]')!.hidden=!groups.length;
  const grouped=source.value==='group';
  get('combat-creature-search-form').hidden=grouped;get('combat-creature-status').hidden=grouped;
- get('combat-creature-initiative-field').hidden=grouped;get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
+ get('combat-creature-initiative-field').hidden=grouped||!editableCombat(combat??null);get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
  get('combat-creature-select-label').textContent=grouped?'Vorhandener Trupp':'Katalogkreatur';
- get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps.':'HP, RK und XP werden aus dem Statblock übernommen.';
+ get('combat-creature-add').textContent=editableCombat(combat??null)?'Gegner hinzufügen':'Für aktuelle Gruppe vorbereiten';
+ get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps.':'Die Gegner bleiben als Szenenfiguren mit ihren HP und Zuständen erhalten.';
  select.replaceChildren();
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
  if(grouped)for(const members of groups){
@@ -314,13 +316,13 @@ function renderReinforcements(){
   add('group:'+actor.groupId,(actor.groupName?actor.groupName+' · ':'')+names+' · vorhandene Initiative '+actor.initiative+' ('+members.length+')');
  }
  // A completed catalog search must never silently retain an unrelated troop.
- else for(const c of reinforcementResults??combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating);
+ else for(const c of reinforcementResults??combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating+(typeof c.hp==='number'?' · '+c.hp+' HP':'')+(typeof c.ac==='number'?' · RK '+c.ac:''));
  if(!select.options.length)add('',reinforcementBusy?'Monster werden gesucht…':'Keine Katalogkreatur ausgewählt. Monster suchen.');
  select.value=[...select.options].some(o=>o.value===previous)?previous:select.options[0]?.value??'';
 }
 async function searchReinforcements(){
- const w=workspace,combat=view?.combat;if(!w||!combat||blocked()||reinforcementBusy)return;
- const g=generation,id=combat.id,load=loadNumber,request=++reinforcementRequest;
+ const w=workspace,combat=view?.combat;if(!w||!scene||blocked()||reinforcementBusy)return;
+ const g=generation,id=combat?.id,load=loadNumber,request=++reinforcementRequest;
  get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  reinforcementBusy=true;reinforcementResults=[];get('combat-creature-status').textContent='Monster werden gesucht…';renderReinforcements();lock();
  try{
@@ -389,10 +391,10 @@ function render() {
   get('combat-title').textContent = combat?.title ?? 'Begegnung führen';
   const startIssue=combat?.phase==='preparing'?combatStartIssue(combat):null;
   get('combat-assessment').textContent = startIssue??(view?.assessment ? view.assessment.baseXp + ' Basis-XP · ' + view.assessment.adjustedXp + ' angepasste XP · ' + (view.assessment.difficulty ?? 'Schwierigkeit unbekannt: XP oder Party-Level fehlen') + (combat?.sceneGroups ? ' · Szenengruppen: '+combat.sceneGroups.map(g=>g.name).join(', ') : combat?.planOrigin ? ' · Vorlage: ' + combat.planOrigin.name : '') : '');
-  const additionLabel=combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
+  const additionLabel=!editableCombat(combat??null)||combat?.phase==='preparing'?'Gegner vorbereiten':'Verstärkung hinzufügen';
   get('combat-add-open').textContent=additionLabel+'…';get('combat-add-title').textContent=additionLabel;
   const additions=get<HTMLDialogElement>('combat-add-dialog');
-  if(additions.dataset.combatId!==combat?.id||!editableCombat(combat??null))closeReinforcements();
+  if(additions.dataset.combatId!==(combat?.id??''))closeReinforcements();
   additions.dataset.combatId=combat?.id??'';
   get('combat-add-context').textContent=combat?.phase==='running'?'Runde '+combat.round+' · Am Zug: '+(combat.participants.find(p=>p.id===combat.turnId)?.name??'—')+' · Zug bleibt erhalten.':'Gegner mit Statblock, HP und XP übernehmen.';
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
@@ -503,8 +505,9 @@ async function recoveredCombat(event:CommitResolution){
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   tell = status;afterSaved=refresh;
-  const catalogButton=document.createElement('button');catalogButton.type='button';catalogButton.id='combat-catalog-open';catalogButton.textContent='Spontane Gegner im Katalog auswählen…';
-  catalogButton.onclick=()=>void(async()=>{const owner=preparationOwner();if(!owner||editableCombat(view?.combat??null)||blocked()||!openCreatureCatalog||!await flushCombat()||!owner.current())return;await openCreatureCatalog(owner.current);})().catch(error=>tell(error.message,true));
+  const catalogButton=document.createElement('button');catalogButton.type='button';catalogButton.id='combat-catalog-open';catalogButton.textContent='Spontane Gegner wählen…';
+  catalogButton.onclick=()=>{if(!editableCombat(view?.combat??null))openReinforcements();};
+  get('combat-panel').append(get('combat-add-dialog')); // Usable before the first initiative mask exists.
   const selectionRoot=document.createElement('section');get('combat-creation').querySelector('summary')!.after(catalogButton,selectionRoot);
   selectionPanel=new CombatSelectionPanel(selectionRoot,()=>{const owner=preparationOwner();return owner&&workspace&&scene?{workspace,scene,current:owner.current}:null;},(action,current)=>execute(action,undefined,current),blocked);
   get('combat-creation').addEventListener('toggle',()=>{if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();});
@@ -532,8 +535,9 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-creature-form').onsubmit=event=>{
    event.preventDefault();if(blocked()||reinforcementBusy)return;
    const choice=value('combat-creature-select'),groupId=choice.startsWith('group:')?choice.slice(6):undefined;
-   const creatureId=groupId?view?.combat?.participants.find(p=>p.groupId===groupId&&!p.worldActorId)?.sourceId:choice.startsWith('creature:')?choice.slice(9):null;
+   const creatureId=groupId?view?.combat?.participants.find(p=>p.groupId===groupId)?.sourceId:choice.startsWith('creature:')?choice.slice(9):null;
    if(!creatureId)return;
+   if(!editableCombat(view?.combat??null)){void addCatalogCreature(creatureId,Number(value('combat-creature-count')),get<HTMLInputElement>('combat-creature-grouped').checked);return;}
    const initiative=value('combat-creature-initiative').trim();
    void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)closeReinforcements();});
   };

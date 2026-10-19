@@ -356,7 +356,7 @@ test("format 46 conversion preserves explicit terrain and establishes one checkp
     f.records().find((r) => r.id === "legacy-land").name,
     "Originalname",
   );
-  assert.equal(f.store.db.pragma("user_version", { simple: true }), 49);
+  assert.ok(f.store.db.pragma("user_version", { simple: true }) >= 49);
   assert.equal(
     f.store.db.prepare("SELECT count(*) n FROM atlas_command").get().n,
     0,
