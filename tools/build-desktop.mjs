@@ -1,5 +1,9 @@
+import {execFileSync} from 'node:child_process';
 import { build } from 'esbuild';
 import { mkdir, copyFile, rm, readFile, writeFile } from 'node:fs/promises';
+const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
+const schema=Number((await readFile('src/app/storage/store.ts','utf8')).match(/if \(schema > (\d+)\)/)?.[1]);
+if(!Number.isSafeInteger(schema))throw new Error('Store-Datenformatgrenze nicht gefunden.');
 const applicationVersion = JSON.parse(await readFile('package.json', 'utf8')).version;
 if (typeof applicationVersion !== 'string' || !applicationVersion.trim()) throw new Error('Releaseversion fehlt.');
 await rm('.build/desktop', { recursive: true, force: true });
@@ -8,6 +12,8 @@ await mkdir('.build/desktop/catalog', { recursive: true });
 await copyFile('src/features/catalog/data/srd-5.1.generated.json','.build/desktop/catalog/srd-5.1.generated.json');
 await copyFile('src/features/catalog/SRD-5.1-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ATTRIBUTION.md');
 await copyFile('src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md');
+await copyFile('resources/update-public-key.pem','.build/desktop/update-public-key.pem');
+for(const name of ['update-helper','update-probe'])await build({entryPoints:['desktop/'+name+'.ts'],outfile:'.build/desktop/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['electron','better-sqlite3']});
 await build({entryPoints:['desktop/atlas-region-worker.ts'],outfile:'.build/desktop/atlas-region-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({entryPoints:['desktop/room-directory-worker.ts'],outfile:'.build/desktop/room-directory-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({ entryPoints: ['desktop/main.ts'], outfile: '.build/desktop/main.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron', 'better-sqlite3'], define: { __APP_VERSION__: JSON.stringify(applicationVersion) } });
@@ -20,5 +26,5 @@ await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/deskt
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');
 for (const file of ['index.html', 'app.css','player-display.html','player.css']) await copyFile(`src/app/${file}`, `.build/desktop/ui/${file}`);
 await writeFile('.build/desktop/ui/app.css', (await readFile('src/app/app.css','utf8'))+'\n'+(await readFile('src/app/key-notes.css','utf8'))+'\n'+(await readFile('src/app/markdown-view.css','utf8'))+'\n'+(await readFile('src/app/atlas-workspace.css','utf8')));
-await writeFile('.build/desktop/build-info.json', JSON.stringify({ applicationVersion }) + '\n');
+await writeFile('.build/desktop/build-info.json', JSON.stringify({ applicationVersion,commit,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',schema:{min:0,max:schema,target:schema} }) + '\n');
 console.log('Desktop build ready: .build/desktop/main.cjs');

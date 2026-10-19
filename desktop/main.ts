@@ -1,3 +1,5 @@
+import {openUpdateRuntime} from './update-runtime';
+import {UpdateService} from './update-service';
 import {AtlasRegionService} from './atlas-region';
 import {validateRegion} from '../src/app/atlas-region-contracts';
 import {RoomDirectoryService} from './room-directory';
@@ -52,6 +54,11 @@ else {
   let store: CampaignStore;
   const playerOrigin='campaign://player/player-display.html';
   let closeAllowed = false;
+  let stopping=false,storeClosed=false;
+  let timer:ReturnType<typeof setInterval>|undefined;
+  let backupTask:Promise<void>|null=null;
+  const activeOperations=new Set<Promise<unknown>>();
+  let updateRuntime:Awaited<ReturnType<typeof openUpdateRuntime>>|null=null;
   let backupRunning = false;
   let backupError: string | null = null;
   async function finishCampaignFiles(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});store.finishCampaignErasure(id);}
@@ -60,6 +67,9 @@ else {
   const origin = 'campaign://app/index.html';
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
   app.whenReady().then(async () => {
+    updateRuntime=await openUpdateRuntime(process.execPath,dataDir);
+    const updates=new UpdateService({version:__APP_VERSION__,root:updateRuntime.root,settings:path.join(dataDir,'update-settings.json'),publicKey:updateRuntime.root?await updateRuntime.publicKey():'',emit:status=>{if(win&&!win.isDestroyed())win.webContents.send('update:status',status);}});
+    await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
     for(const id of store.pendingCampaignErasures())await finishCampaignFiles(id);
     protocol.handle('campaign', request => {
@@ -71,7 +81,7 @@ else {
       if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
-    win = new BrowserWindow({ width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'SaltMarcher', backgroundColor: '#edf1f6',
+    win = new BrowserWindow({ show:!updateRuntime.transaction, width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'SaltMarcher', backgroundColor: '#edf1f6',
       webPreferences: { preload: path.join(__dirname, 'preload.cjs'), nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
     win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     win.webContents.on('will-navigate', event => event.preventDefault());
@@ -97,8 +107,11 @@ else {
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
-        try { const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','atlas:drawing-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
+        if(stopping&&!name.startsWith('update:'))return {ok:false,error:'SaltMarcher wird für das Update oder Schließen angehalten.'};
+        const task=Promise.resolve().then(()=>operation(...args));if(!name.startsWith('update:'))activeOperations.add(task);
+        try { const value=await task;if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','atlas:drawing-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
+        finally{activeOperations.delete(task);}
       });
     }
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
@@ -474,19 +487,39 @@ else {
     });
     handle('campaign:backup-status', () => backupError);
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
-    ipcMain.on('campaign:close-ready', event => { if (event.sender === win.webContents && event.senderFrame === win.webContents.mainFrame && event.senderFrame.url === origin) { void Promise.all([roomDirectory.close(),atlasRoomDirectory.close(),atlasRegions.close(),atlasExportRegions.close()]).then(()=>{if(win.isDestroyed())return;closeAllowed = true;win.close();}); } });
-    win.on('close', event => { if (!closeAllowed) { event.preventDefault(); win.webContents.send('campaign:close'); } });
-    const timer = setInterval(async () => {
-      if (backupRunning) return;
-      backupRunning = true;
-      try { await store.backup(path.join(dataDir, 'recovery.sqlite')); backupError = null; }
-      catch { backupError = 'Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.'; }
-      finally { backupRunning = false; }
-    }, 30000);
-    win.on('closed', () => { roomDirectory.close();atlasRoomDirectory.close();void atlasRegions.close();void atlasExportRegions.close();clearInterval(timer);playerDisplay.shutdown(); });
+    async function finishClose(updateRequest?:string){
+      if(stopping)return;stopping=true;clearInterval(timer);
+      await Promise.allSettled([...activeOperations]);await backupTask;
+      await Promise.all([roomDirectory.close(),atlasRoomDirectory.close(),atlasRegions.close(),atlasExportRegions.close()]);
+      playerDisplay.shutdown();store.close();storeClosed=true;
+      if(updateRequest)await updateRuntime!.handoff(updateRequest);
+      await updateRuntime!.close();closeAllowed=true;app.quit();
+    }
+    handle('update:status',()=>updates.status());
+    handle('update:automatic',(enabled:boolean)=>updates.automatic(enabled));
+    handle('update:check',()=>updates.check());
+    handle('update:download',()=>updates.download());
+    handle('update:cancel',()=>updates.cancel());
+    handle('update:runtime-ready',async()=>{await updateRuntime!.ready();if(updateRuntime!.transaction)win.show();});
+    handle('update:install',async()=>{
+      if(stopping)throw new Error('Die Anwendung wird bereits geschlossen.');
+      const request=await updateRuntime!.prepare(updates.installation());updates.installing();
+      try{await finishClose(request);}catch(e){updates.installationFailed(e);if(storeClosed){dialog.showErrorBox('Update konnte nicht gestartet werden',String(e));await updateRuntime!.close();closeAllowed=true;app.quit();}else stopping=false;throw e;}
+    });
+    ipcMain.on('campaign:close-ready',event=>{
+      if(event.sender===win.webContents&&event.senderFrame===win.webContents.mainFrame&&event.senderFrame.url===origin)void finishClose().catch(error=>{dialog.showErrorBox('Schließen fehlgeschlagen',String(error));});
+    });
+    win.on('close',event=>{if(!closeAllowed){event.preventDefault();if(!stopping)win.webContents.send('campaign:close');}});
+    timer=setInterval(()=>{
+      if(backupRunning||stopping)return;
+      backupRunning=true;
+      backupTask=store.backup(path.join(dataDir,'recovery.sqlite')).then(()=>{backupError=null;},()=>{backupError='Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.';}).finally(()=>{backupRunning=false;});
+    },30000);
+    win.on('closed',()=>{clearInterval(timer);playerDisplay.shutdown();});
+    const updateTimer=setTimeout(()=>{if(!stopping)void updates.autoCheck();},15000);updateTimer.unref();
     await win.loadURL(origin);
     app.on('before-quit', event => { if (!closeAllowed && win && !win.isDestroyed()) { event.preventDefault(); win.close(); } });
   }).catch(error => { console.error(error);dialog.showErrorBox('SaltMarcher kann nicht starten', String(error)); app.exit(1); });
   app.on('window-all-closed', () => app.quit());
-  app.on('will-quit', () => { if (!backupRunning) store?.close(); });
+  app.on('will-quit', () => { if (!backupRunning&&!storeClosed) store?.close(); });
 }

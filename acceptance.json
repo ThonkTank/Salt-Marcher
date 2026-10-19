@@ -1,4 +1,18 @@
 {
+  "desktopGithubUpdates": {
+    "id": "SMR-LINUX-UPDATE-01",
+    "state": "implemented_native_qualified",
+    "scope": "Linux x64: bewusst veröffentlichte stabile GitHub Releases, getrennte Download-/Installationsaktionen, CampaignWorkbench-Datenlinie.",
+    "tests": [
+      "tests/desktop-updates.test.mjs",
+      "tests/desktop-update-ui.test.mjs",
+      "tests/desktop-preset-settings.test.mjs",
+      "tools/test-desktop-updates.mjs"
+    ],
+    "verified": "25 gezielte Tests einschließlich echter Prozessabbrüche an den dauerhaften Journalphasen; native Paketprobe mit zwei Versionen, Erstinstallation, UI-Download, Installation, Neustart, eigenem Datenordner und Erhalt von Kampagnen und Medien.",
+    "delivery": "docs/project/delivery/github-updates.md",
+    "notClaimed": "Windows/macOS, Migration der früheren SaltMarcher-Datenbanken, allgemeine Produktabnahme. Veröffentlichung erfolgt ausdrücklich aus dem Releaseentwurf."
+  },
   "e2e01DungeonContribution": {
     "id": "E2E01-DUNGEON-I01",
     "state": "implementation_candidate_pending_independent_review",

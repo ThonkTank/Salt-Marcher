@@ -57,6 +57,9 @@ Ein lokales Linux-x64-Paket entsteht mit:
 npm run package:desktop -- /tmp/saltmarcher-linux-x64
 ```
 
+Der Linux-Updatepfad mit Erstinstallation und bewusster Releasefreigabe steht unter
+[GitHub-Updates](docs/project/delivery/github-updates.md).
+
 Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen gilt das [gemeinsame Atlasmodell](docs/ATLAS.md); alte Testbestände ohne Atlaswurzel werden nicht als mehrere Karten migriert.
 
 ## Repositorykarte

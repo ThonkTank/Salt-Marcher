@@ -21,7 +21,7 @@ export function completeOutput(output:Output){const done=finished(output,{cleanu
 export async function closeOutput(output:Output,done:Promise<void>){output.destroy();await done.catch(()=>{});}
 function pendingDrain(output:Output,drains:Promise<void>[]){const pending=waitForDrain(output);void pending.catch(()=>{});drains.push(pending);}
 
-export async function writeArchive(destination:string,manifest:unknown,entries:(ArchiveFile&{filename:string})[],h:ArchiveHooks){
+export async function writeArchive(destination:string,manifest:unknown,entries:(ArchiveFile&{filename:string;mode?:number})[],h:ArchiveHooks){
  h.check();
  const names=new Set<string>();for(const entry of entries){if(names.has(entry.name)||entry.name==='manifest.json')throw new Error('Doppelter Archiveintrag.');names.add(entry.name);}
  const dir=await mkdtemp(destination+'.partial-'),temp=path.join(dir,'archive');
@@ -32,7 +32,7 @@ export async function writeArchive(destination:string,manifest:unknown,entries:(
  try{
   const meta=new ZipPassThrough('manifest.json');zip.add(meta);meta.push(Buffer.from(JSON.stringify(manifest)),true);await drain();
   for(const entry of entries){
-   h.check();const file=new ZipPassThrough(entry.name),digest=createHash('sha256');let count=0;zip.add(file);
+   h.check();const file=new ZipPassThrough(entry.name),digest=createHash('sha256');if(entry.mode!==undefined){file.os=3;file.attrs=(0o100000|entry.mode)<<16;}let count=0;zip.add(file);
    for await(const chunk of createReadStream(entry.filename)){h.check();digest.update(chunk);count+=chunk.length;file.push(chunk);await drain();}
    if(digest.digest('hex')!==entry.sha256)throw new Error('Dateibytes geändert: '+entry.name);
    if(count!==entry.bytes)throw new Error('Dateigröße stimmt nicht: '+entry.name);
