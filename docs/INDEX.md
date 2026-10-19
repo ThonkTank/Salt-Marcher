@@ -28,6 +28,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Shopbesitzer, Wiederherstellung und Restock | [Aktueller Zeitweg und nächste vollständige Lieferungen](plans/runtime/shops-and-restock.md) |
 | Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |
 | Katalogsuche, Filter und Inhaltswechsel | [Suchvertrag](plans/runtime/catalog-browsing.md#aktueller-suchvertrag), [Inhaltswechsel und Wiederaufnahme](plans/runtime/catalog-browsing.md#inhaltswechsel-und-wiederaufnahme) |
+| Encounter-Vorlagen, Tabellen und Generierung | [Codeeinstiege, Save-/Recoverygrenzen und offene Lieferungen](plans/runtime/encounter-planning.md) |
 | Katalog- und Encounteranforderungen | [Fachanforderungen](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), [Item-Quellenkorpus](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider) |
 | Tutorials und Tastaturkontext | [Aktuelle Lektionen, Kontextschutz und nächste Abnahmen](plans/runtime/tutorial-and-shortcuts.md) |
 | Erweiterungsinstallation und Wiederaufnahme | [Rechte, defekte Vermerke und nächste Unitlieferung](plans/extensions/installation-recovery.md) |
