@@ -132,7 +132,13 @@ initQuickReference(status,leaveWorkspace,async action=>{
  if(action.kind==='creature'&&action.content.creature)await addLiveCreature(action.content.creature.id,action.count!,action.grouped!);
 });
 setCombatCatalogNavigation(async current=>{if(!await leaveWorkspace()||!current())return;showTab('catalog');await openCreatureCatalog(current);});
-initCatalog(status, async plan=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await prepareLiveEncounter(plan);}, async(id,count,grouped)=>{if(!(await leaveWorkspace()))return;showTab('live');await openLive();await addLiveCreature(id,count,grouped);});
+async function fromCatalogToLive(action:()=>Promise<void>){
+ const token=workspace?.token;
+ if(!token||!await leaveWorkspace()||workspace?.token!==token)return;
+ showTab('live');
+ if(await openLive()&&workspace?.token===token)await action();
+}
+initCatalog(status, plan=>fromCatalogToLive(()=>prepareLiveEncounter(plan)), (id,count,grouped)=>fromCatalogToLive(()=>addLiveCreature(id,count,grouped)));
 el('catalog-day-plan').onclick=()=>{void(async()=>{if(!await leaveWorkspace())return;await reopenView('preparation');showDayPreparation();})().catch(error=>status(error.message,true));};
 initNpcs(status,refreshScenePreparation,async id=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await addLiveNpc(id);});
 setCombatNpcNavigation(async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openNpcProfile(id,undefined,current);});

@@ -56,6 +56,11 @@ atomar. Der frühere direkte `roll`-Schreibweg entfällt. Bereits bestätigte
 historische Receipts werden weiterhin als gespeichertes Ergebnis wiederholt,
 ohne neu zu würfeln.
 
+Kreatur- und Vorlagenübergabe aus dem Katalog verwenden denselben Einstieg in
+die Liveansicht. Er bindet das Kampagnentoken vor dem Flush und prüft es nach
+Flush und Live-Read erneut. Ein verworfener oder fehlgeschlagener Read beendet
+die Übergabe; eine neu geöffnete Kampagne erhält keinen alten Anlageauftrag.
+
 Die gezielten Store-/Controllerprüfungen decken Party/Mob, Fresh/Replay,
 Quellenkonflikte, Rollback und verlorene Antwort ab. Die native Probe führt bei
 100/200 % Katalogauswahl, kontrollierte Ablehnung/Replyverlust, Spieler-/Gruppeninitiative,
