@@ -112,7 +112,7 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #atlas-tool-groups button{flex-shrink:0;min-height:54px;padding:7px 4px}
 #campaign-atlas #atlas-tool-palette{box-sizing:border-box;width:100%;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;margin-top:auto;padding:6px;border-top:1px solid #d7dde2;overscroll-behavior:contain}
 #campaign-atlas #atlas-tool-palette>button{margin:0;padding:6px 3px;text-align:center;min-height:48px;min-width:0;flex-shrink:0}
-#campaign-atlas #atlas-tool-rail .atlas-section-field{display:block;margin:0;padding:10px 6px;border-bottom:1px solid #d7dde2;font-size:12px}
+#campaign-atlas #atlas-panel #atlas-tool-rail .atlas-section-field{display:block;margin:0;padding:10px 6px;border-bottom:1px solid #d7dde2;font-size:12px}
 #campaign-atlas #atlas-tool-rail #atlas-section{display:block;width:100%;margin-top:5px;font-size:13px;padding:5px 2px;min-height:32px}
 
 /* Area, groups, tools and their options stay visible independently of selection. */
