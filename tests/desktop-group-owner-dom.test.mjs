@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/groups-ui';export {initCommitControls} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'group-owner.ts'},outfile:'.build/group-owner.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));async function until(check){for(let i=0;i<80;i++){if(check())return;await tick();}assert.ok(check(),'expected group editor state');}function deferred(){let resolve;const promise=new Promise(r=>resolve=r);return{resolve,promise};}
 async function fixture(t){

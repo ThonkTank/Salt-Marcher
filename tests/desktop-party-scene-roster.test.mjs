@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import { buildSync } from "esbuild";
-import { parseHTML } from "linkedom";
+import { parseHTML } from './helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:

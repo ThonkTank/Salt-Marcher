@@ -42,10 +42,13 @@ test("D-section: original six-page XML identity/license and full heading oracle"
   assert.equal(inventory.complete, false);
 });
 
+test("captured item transcript and inventory satisfy their complete JSON schemas", () => {
+  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
+});
+
 for (const item of D_SECTION) {
   test(`${item.name}: full source identity/header/prose/table/statblock/page/schema golden`, () => {
     assert.equal(validateDSectionSlice(transcript, inventory).records, 15);
-    assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
     const { occurrence, record } = rows.find(row => row.record.name === item.name);
     assert.equal(record.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
     assert.equal(occurrence.mergeIntoId, null);

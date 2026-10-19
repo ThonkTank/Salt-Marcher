@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 for(const [name,entry] of [['store','storage/store'],['ui','key-ui'],['graph-ui','graph-ui'],['camera','room-camera'],['key-model','key-model'],['key-contracts','key-contracts']])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/room-authoring-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/room-authoring-store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));

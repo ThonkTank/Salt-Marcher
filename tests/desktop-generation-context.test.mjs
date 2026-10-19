@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/generation-ui'; export {initCatalog,activateCatalog,openCatalogReference} from './src/app/catalog-ui';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/generation-context-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
 async function fixture(t){

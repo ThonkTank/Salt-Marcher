@@ -6,7 +6,7 @@ import path from 'node:path';
 import { randomUUID,createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
-import { parseHTML } from 'linkedom';
+import { parseHTML } from './helpers/dom.mjs';
 
 const require = createRequire(import.meta.url);
 buildSync({ stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newLocation} from './src/features/location/location-schema';",resolveDir:process.cwd(),loader:'ts'}, outfile: '.build/planner-player-visual-contract/live-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });

@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/room-directory-ui.ts'],outfile:'.build/room-directory-dom.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{RoomDirectoryView}=require('../.build/room-directory-dom.cjs');
 const turn=()=>new Promise(resolve=>setImmediate(resolve));

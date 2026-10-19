@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 import {createRequire} from 'node:module';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/section-edit-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=createRequire(import.meta.url)('../.build/section-edit-store.cjs');
 function fixture(t){

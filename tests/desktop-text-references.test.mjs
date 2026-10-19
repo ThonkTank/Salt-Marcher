@@ -4,7 +4,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/text-references'; export * from './src/app/text-reference-picker';export {LocationNotebook} from './src/app/location-notebook-ui';",resolveDir:process.cwd(),sourcefile:'reference-review.ts',loader:'ts'},outfile:'.build/text-reference-review.cjs',bundle:true,platform:'node',format:'cjs'});
 const api=createRequire(import.meta.url)('../.build/text-reference-review.cjs');
 const link='[Wache](dungeon-ref:note/old)',ref={kind:'note',id:'old'};

@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {parseHTML} from 'linkedom';import {buildSync} from 'esbuild';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {parseHTML} from './helpers/dom.mjs';import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/passive-map-canvas.ts'],outfile:'.build/passive-map-canvas.cjs',bundle:true,platform:'node',format:'cjs'});const {PassiveMapCanvas}=createRequire(import.meta.url)('../.build/passive-map-canvas.cjs');
 class Matrix{constructor(a=1,d=1,e=0,f=0){Object.assign(this,{a,d,e,f});}inverse(){return new Matrix(1/this.a,1/this.d,-this.e/this.a,-this.f/this.d);}}
 class Point{constructor(x,y){Object.assign(this,{x,y});}matrixTransform(m){return new Point(this.x*m.a+m.e,this.y*m.d+m.f);}}

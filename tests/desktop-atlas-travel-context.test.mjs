@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSync } from 'esbuild';
+import { buildSync } from './helpers/build.mjs';
 import { createRequire } from 'node:module';
 import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { parseHTML } from 'linkedom';
+import { parseHTML } from './helpers/dom.mjs';
 buildSync({ stdin: {contents: "export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui'; export * from './src/app/world-ui';",resolveDir:process.cwd()}, outfile: '.build/atlas-context-ui.cjs', bundle: true, platform: 'node', format: 'cjs' });
 buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/atlas-context-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
 const require = createRequire(import.meta.url), worldUI = require('../.build/atlas-context-ui.cjs'), { CampaignAtlasWorkbench } = worldUI, { CampaignStore } = require('../.build/atlas-context-store.cjs');

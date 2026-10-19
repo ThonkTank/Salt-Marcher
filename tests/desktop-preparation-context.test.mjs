@@ -1,3 +1,4 @@
+import {fixtureStore} from './helpers/store.mjs';
 import {test} from 'node:test';
 import {setTimeout as delay} from 'node:timers/promises';
 import assert from 'node:assert/strict';
@@ -6,8 +7,8 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 
 test('the shared note writer honors composition while its editor is shown outside Preparation',async t=>{
  const x=await fixture(t);await x.activate();await x.ui.openPreparedNote(x.ids.borin);
@@ -106,7 +107,7 @@ const nativeTimeout=globalThis.setTimeout;
 const settle=async()=>{for(let i=0;i<15;i++)await new Promise(r=>setImmediate(r));};
 const until=async check=>{const deadline=Date.now()+5000;while(Date.now()<deadline){if(check())return;await delay(10);}assert.ok(check(),'expected preparation state');};
 async function fixture(t,inspect=false,kind='npc'){
- const root=mkdtempSync(path.join(tmpdir(),'preparation-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'db.sqlite')),campaign=store.create('Quellen'),workspace=store.activate(campaign.id);
+ const root=mkdtempSync(path.join(tmpdir(),'preparation-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=fixtureStore(CampaignStore,path.join(root,'db.sqlite')),campaign=store.create('Quellen'),workspace=store.activate(campaign.id);
  const command=change=>({commandId:randomUUID(),campaignId:campaign.id,token:workspace.token,change}),ids={ada:randomUUID(),borin:randomUUID()};
  for(const [id,title]of [[ids.ada,'Ada'],[ids.borin,'Borin']])store.changePreparation(command({kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind,title,readAloud:'  Original\r\n',gmNotes:'GM privat',relations:[],creatureId:null,deleted:false}}));
  const original=store.preparation(workspace.token).notes.find(row=>row.note.id===ids.borin).note;

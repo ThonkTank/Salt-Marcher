@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildSync } from "esbuild";
 import { createRequire } from "node:module";
-import { parseHTML } from "linkedom";
+import { parseHTML } from './helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:

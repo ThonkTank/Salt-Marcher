@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/drawing-ui';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';export {AtlasPaint} from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/drawing-draft-lifecycle.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),file=require.resolve('../.build/drawing-draft-lifecycle.cjs');
 async function fixture(t){

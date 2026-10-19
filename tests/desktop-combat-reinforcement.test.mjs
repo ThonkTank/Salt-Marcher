@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 
 mkdirSync('.build/reinforcement/catalog',{recursive:true});
 copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/reinforcement/catalog/srd-5.1.generated.json');

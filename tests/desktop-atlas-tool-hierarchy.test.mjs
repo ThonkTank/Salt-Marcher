@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);

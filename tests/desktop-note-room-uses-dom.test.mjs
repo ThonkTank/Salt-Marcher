@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/note-room-uses.ts'],outfile:'.build/note-room-uses-dom.cjs',bundle:true,platform:'node',format:'cjs'});

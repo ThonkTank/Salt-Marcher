@@ -5,16 +5,17 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);
 for(const [entry,out]of [['src/app/storage/store.ts','combat-switch-store'],['src/app/combat.ts','combat-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<100;i++){if(check())return;await tick();}assert(check(),'Expected encounter state');}
-async function fixture(withCombats=true){
+export async function fixture(options=true){
+ const {withCombats=true,empty=false,finished=false}=typeof options==='boolean'?{withCombats:options}:options;
  const root=mkdtempSync(path.join(tmpdir(),'combat-switch-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite'),campaign=store.create('Zwei Begegnungen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene,combats=[];
- for(const [title,name,hp]of (withCombats?[['Torwache','Wache',10],['Keller','Wolf',8]]:[])){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
+ for(const [index,[title,name,hp]]of (withCombats?[['Torwache','Wache',10],['Keller','Wolf',8]]:[]).entries()){let c=store.executeCombat({...command({kind:'create',sceneId:scene.id,title,includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;if(!empty||index===0)c=store.executeCombat({...command({kind:'add',name,count:1,grouped:false,maxHp:hp,armorClass:10,initiativeBonus:0}),combatId:c.id,expectedRevision:c.revision}).combat;if(finished&&index===0)c=store.executeCombat({...command({kind:'finish',outcome:'Überstanden'}),combatId:c.id,expectedRevision:c.revision}).combat;combats.push(c);}
  const [a,b]=combats,previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});
  const storage=new Map();window.localStorage={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)};
  for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});
@@ -33,22 +34,31 @@ test('selecting another encounter blocks old writes and preserves its incomplete
  const d=x.store.combatDraft(x.w.token,x.a.id,'notes',x.a.id);assert.equal(d.values.title,'');assert.equal(d.values.notes,'Unfertig\r\n');
  }finally{x.cleanup();}
 });
-test('a failed selection clears old actions and retries the requested encounter',async()=>{
- const x=await fixture();try{await x.fighter();x.fail();x.choose(x.a.id);await until(()=>x.messages.some(m=>m.includes('nicht lesbar')));assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('combat-creation').hidden,true);assert.equal(x.el('combat-status').hidden,true);assert.equal(x.el('combat-history').value,x.a.id);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-refresh').disabled,false);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache'&&!x.el('combat-notes').disabled);assert.equal(x.reads.at(-1),x.a.id);assert.equal(x.el('combat-load-status').hidden,true);
+test('visiting a finished encounter preserves the open encounter draft and blocks stale writes',async()=>{
+ const x=await fixture({finished:true});try{await x.fighter();x.input('combat-edit-title','');x.input('combat-notes','Unfertig\r\n');assert(await x.ui.flushCombat());x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);assert.equal(x.el('fighter-damage').disabled,true);x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await tick();assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,8);
+ x.release();await until(()=>x.el('combat-title').textContent==='Torwache');x.choose(x.b.id);await until(()=>x.el('combat-title').textContent==='Keller'&&!x.el('combat-notes').disabled);await x.fighter();x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);assert.equal(x.writes[0].combatId,x.b.id);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,7);
+ const d=x.store.combatDraft(x.w.token,x.b.id,'notes',x.b.id);assert.equal(d.values.title,'');assert.equal(d.values.notes,'Unfertig\r\n');
  }finally{x.cleanup();}
 });
-test('a superseded failure cannot clear or announce an error over a newer selection',async()=>{
- const x=await fixture();try{x.fail();x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);x.choose(x.b.id);await tick();await tick();x.release();await tick();assert.equal(x.el('combat-title').textContent,'Keller');assert.deepEqual(x.messages,[]);assert.equal(x.el('combat-load-status').hidden,true);
+for(const finished of [false,true]){
+test(`a failed selection clears old actions and retries the requested encounter (${finished?'finished':'open'} target)`,async()=>{
+ const x=await fixture({finished});try{await x.fighter();x.fail();x.choose(x.a.id);await until(()=>x.messages.some(m=>m.includes('nicht lesbar')));assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('combat-creation').hidden,true);assert.equal(x.el('combat-status').hidden,true);assert.equal(x.el('combat-history').value,x.a.id);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-refresh').disabled,false);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache'&&!x.el('combat-notes').disabled);assert.equal(x.reads.at(-1),x.a.id);assert.equal(x.el('combat-load-status').hidden,true);
  }finally{x.cleanup();}
 });
-test('late reads cannot populate a different scene or restore its encounter picker',async()=>{
- const x=await fixture();try{x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);x.ui.combatContext(null,null);x.release();await tick();assert.equal(x.el('combat-panel').hidden,true);assert.equal(x.el('combat-history').children.length,0);assert.deepEqual(x.messages,[]);
+test(`a superseded failure cannot clear or announce an error over a newer selection (${finished?'finished':'open'} target)`,async()=>{
+ const x=await fixture({finished});try{x.fail();x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);x.choose(x.b.id);await tick();await tick();x.release();await tick();assert.equal(x.el('combat-title').textContent,'Keller');assert.deepEqual(x.messages,[]);assert.equal(x.el('combat-load-status').hidden,true);
  }finally{x.cleanup();}
 });
-test('a reply for a different encounter never becomes the editable selected encounter',async()=>{
- const x=await fixture();try{window.campaign.combat=async()=>({ok:true,value:x.store.combat(x.w.token,x.a.sceneId,x.a.id)});x.choose(x.b.id);await tick();await tick();assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');assert.equal(x.writes.length,0);
+test(`late reads cannot populate a different scene or restore its encounter picker (${finished?'finished':'open'} target)`,async()=>{
+ const x=await fixture({finished});try{x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);x.ui.combatContext(null,null);x.release();await tick();assert.equal(x.el('combat-panel').hidden,true);assert.equal(x.el('combat-history').children.length,0);assert.deepEqual(x.messages,[]);
  }finally{x.cleanup();}
 });
+test(`a reply for a different encounter never becomes the editable selected encounter (${finished?'finished':'open'} target)`,async()=>{
+ const x=await fixture({finished});try{window.campaign.combat=async()=>({ok:true,value:x.store.combat(x.w.token,x.a.sceneId,x.a.id)});x.choose(x.b.id);await tick();await tick();assert.equal(x.el('combat-workspace').hidden,true);assert.equal(x.el('fighter-damage').disabled,true);assert.equal(x.el('combat-load-status').getAttribute('role'),'alert');assert.equal(x.writes.length,0);
+ }finally{x.cleanup();}
+});
+}
+
 
 test('history search remains available after a selected combat cannot be read',async()=>{const x=await fixture();try{x.fail();x.choose(x.a.id);await until(()=>x.el('combat-load-status').getAttribute('role')==='alert');let reads=0;Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;this.dispatchEvent(new window.Event('close'));};window.campaign.maskHistory=async(_token,sceneId,query)=>{reads++;return{ok:true,value:{campaignId:x.w.campaign.id,sceneId,query,items:[],total:0,next:null}};};assert.equal(x.el('combat-history-open').disabled,false);x.el('combat-history-open').onclick();await tick();await tick();assert.equal(reads,1);}finally{x.cleanup();}});
 
@@ -111,4 +121,27 @@ test('a revoked scene cannot open the catalog after its draft flush',async()=>{
 });
 test('the spontaneous entry cannot append to an already editable encounter',async()=>{
  const x=await fixture();try{let opened=0;x.ui.setCombatCatalogNavigation(async()=>{opened++;});assert.equal(x.el('combat-catalog-open').hidden,true);x.el('combat-catalog-open').click();await tick();assert.equal(opened,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}
+});
+
+test('quick picker displays stable combat numbers for otherwise identical titles',async()=>{const x=await fixture({finished:true});try{const c=x.store.combat(x.w.token,x.a.sceneId,x.b.id).combat;x.store.executeCombat({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,combatId:c.id,expectedRevision:c.revision,action:{kind:'notes',title:'Torwache',notes:''}});x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache');const options=[...x.el('combat-history').children];assert.equal(options.length,2);assert(options.every(o=>/Torwache · Nr. [0-9]+/.test(o.textContent)));assert.equal(new Set(options.map(o=>o.textContent.match(/Nr. [0-9]+/)[0])).size,2);}finally{x.cleanup();}});
+
+
+test('the next encounter stays ahead of completed resolution and empty preparation explains the missing roster',async()=>{
+ const x=await fixture({empty:true,finished:true});try{
+  assert.equal(x.el('combat-start').disabled,true);assert.match(x.el('combat-assessment').textContent,/Füge Teilnehmer/);assert.equal(x.el('combat-add-open').textContent,'Gegner vorbereiten…');assert.equal(x.el('combat-add-open').hidden,false);assert.equal(x.writes.length,0);
+  x.choose(x.a.id);await until(()=>x.el('combat-title').textContent==='Torwache');const children=[...x.el('combat-panel').children];assert.ok(children.indexOf(x.el('combat-creation'))<children.indexOf(x.el('combat-resolution')),'next preparation must be reachable before a potentially long result/loot list');assert.equal(x.el('combat-creation').hidden,false);
+ }finally{x.cleanup();}
+});
+
+test('a party-only preparation cannot start through either start command; rejection preserves initiative and HP',()=>{
+ const root=mkdtempSync(path.join(tmpdir(),'combat-readiness-')),{CampaignStore}=require('../.build/combat-switch-store.cjs'),store=new CampaignStore(root+'/workbench.sqlite');try{
+  const cam=store.create('Ada am Zollhaus'),w=store.activate(cam.id),cmd=action=>({commandId:randomUUID(),token:w.token,campaignId:cam.id,action});let scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;
+  const c=store.executeLive(cmd({kind:'create-character',profile:{name:'Ada'}})).character,live=store.live(w.token);
+  scene=store.executeLive(cmd({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision})).scene;
+  let combat=store.executeCombat({...cmd({kind:'create',sceneId:scene.id,title:'Hinterhalt',includeParty:true,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;
+  assert.equal(combat.participants.length,1);const before=store.db.serialize(),act=action=>store.executeCombat({...cmd(action),combatId:combat.id,expectedRevision:combat.revision});
+  assert.throws(()=>act({kind:'start'}),/keine kampffähigen Gegner/);
+  assert.throws(()=>act({kind:'initiative',values:[{participantId:combat.participants[0].id,initiative:19}],start:true}),/keine kampffähigen Gegner/);assert.ok(store.db.serialize().equals(before));
+  combat=act({kind:'add',name:'Späher',count:1,grouped:false,maxHp:7,armorClass:15,initiativeBonus:2}).combat;combat=act({kind:'start'}).combat;assert.equal(combat.phase,'running');assert.equal(combat.participants.length,2);
+ }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });

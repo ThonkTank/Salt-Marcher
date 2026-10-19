@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:{store:'src/app/storage/store.ts',chronicle:'src/app/storage/chronicle.ts'},outdir:'.build/chronicle-window',outExtension:{'.js':'.cjs'},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/chronicle-window/store.cjs'),{readChronicle,chronicleMarkdown}=require('../.build/chronicle-window/chronicle.cjs');
 const hash=value=>createHash('sha256').update(value).digest('hex');

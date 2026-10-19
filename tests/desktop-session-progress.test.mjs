@@ -5,8 +5,8 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 
 const base='.build/realist-session-progress',require=createRequire(import.meta.url);
 buildSync({entryPoints:['src/app/session-progress-ui.ts'],outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});

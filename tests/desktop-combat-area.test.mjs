@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 mkdirSync('.build/combat-area/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/combat-area/catalog/srd-5.1.generated.json');
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {creatureActionForRolls,isLegendaryAction} from './src/app/dice-formula';export {CombatAreaPanel} from './src/app/combat-area-ui';export {renderCombatActions} from './src/app/combat-actions-ui';",resolveDir:process.cwd()},outfile:'.build/combat-area/test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,creatureActionForRolls,isLegendaryAction,CombatAreaPanel,renderCombatActions}=createRequire(import.meta.url)('../.build/combat-area/test.cjs');
