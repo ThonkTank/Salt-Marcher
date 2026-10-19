@@ -65,14 +65,26 @@ Die Oberfläche beantwortet in dieser Reihenfolge: **Wo bin ich? Was will ich tu
 
 | Fester Bereich | Inhalt und Verhalten |
 | --- | --- |
-| Obere Leiste | Feste Befehlsleiste mit Atlasmenü, Undo/Redo, Auswahl/Hand, Ansichtsverlauf, Zoom/Weltübersicht, Suche, Größenvergleich, Ansicht, Import/Export und Speicherstatus. Ab 1200 CSS-Pixeln einzeilig, darunter zweizeilig. |
-| Hauptseitenleiste | Schmale Symbolleiste links (76 Pixel), jedes Werkzeug mit kurzem Namen unter dem Symbol. Landschaft, Stadt und Dungeon wählen die Gruppe. Ein Werkzeug öffnet direkt daneben seine eigene Einstellungsleiste; diese kann unabhängig geschlossen werden. Einstellungen: Standardbreite 240 Pixel, verstellbar zwischen 200 und 300 Pixeln. Umfangreiche Bibliotheken bleiben rechts. |
+| Obere Leiste | Feste Befehlsleiste mit Atlasmenü, Undo/Redo, Auswahl/Hand/Messen, Ansichtsverlauf, Zoom/Weltübersicht, Suche, Größenvergleich, Ansicht, Import/Export und Speicherstatus. Ab 1200 CSS-Pixeln einzeilig; darunter umbrechend, auch bei 200 % Skalierung. |
+| Hauptseitenleiste | Bereichswahl Landschaft/Stadt/Dungeon oben links, darunter Werkzeuggruppen mit Symbol und Namen (144 Pixel). Daneben stehen die Werkzeuge der gewählten Gruppe mehrzeilig über ihren dauerhaft sichtbaren Optionen. Optionsspalte: Standardbreite 280 Pixel, verstellbar zwischen 240 und 360 Pixeln. Die gemeinsame linke Leiste lässt sich über Ansicht ausblenden; umfangreiche Bibliotheken bleiben rechts. |
 | Karte | Füllt den verbleibenden Fensterraum. Die feste Maßstabsleiste zeigt die Entfernung; eine zusätzliche Anzeige der sichtbaren Ausdehnung entfällt. Seitenleistenänderungen erhalten Mittelpunkt und Meter pro Bildschirmpixel ohne Ansichtsverlauf oder Autorenänderung. |
 | Zusatzbereich | Rechts Eigenschaften, Bibliothek, Raumbeschreibung, Bebauung, Analyse, Vergleich, Kalibrierung oder Export. Standardbreite 340 Pixel, verstellbar zwischen 280 und 480 Pixeln. Bei weniger als 560 Pixeln verbleibender Kartenbreite überlagert die Leiste die Karte. Manuelles Schließen bleibt beim Zoomen/Nachladen bestehen; Eingaben bleiben geschützt. |
 | Rückmeldung | Normale Meldungen und Speicherzustand erscheinen kompakt im Kopf. Fehler und unklare Schreibvorgänge behalten ihre sichtbaren Klärungszugänge; keine pauschale Unterdrückung von Recoverymeldungen. |
 | Aufgabenbezogene Erweiterungen | Vorhandene Stadt-, Raum- und Analyseaktionen bleiben gezielt erreichbar. Party, Reisen, Spielzeit, Musik und Spieleranzeige bleiben ausschließlich in den Spielleitungsbereichen. Die gemeinsame Kamera, Schreibautorität und Historie bleiben erhalten. |
 
 Work liefert diese Ordnung zuerst mit den bereits nutzbaren Aktionen; ungebaute Funktionen werden nicht als scheinbar fertige Schaltflächen angeboten. Eine konkret fehlende Voraussetzung wird am betroffenen Zugang erklärt. In Efficient kommen die benötigten Optionen hinzu; Beautiful vereinheitlicht Gestaltung und Rückmeldungen. Die Regeln für Entwurf, Textfokus, Werkzeugwechsel und Speicherung stehen ausschließlich bei der [gemeinsamen Bedienung](#gemeinsame-bedienung).
+
+### Werkzeuggruppen der Atlassteuerung
+
+| Bereich | Gruppen |
+| --- | --- |
+| Landschaft | Land · Wasser · Wege & Flächen · Objekte |
+| Stadt | Flächen · Straßen & Plätze · Gebäude · Objekte |
+| Dungeon | Räume & Höhlen · Wände & Übergänge · Boden & Wasser · Objekte |
+
+Nur vorhandene Werkzeuge erscheinen; leere Gruppen bleiben ausgeblendet. Landform, Landfarbe, Süßwasser und Wasserfarbe besitzen direkte Werkzeugzugänge einschließlich ihrer Radierer. Geländedaten, Hexfüllung und Zurücksetzen gehören zu Land. Flüsse gehören zu Wasser, Straßen zu Wege & Flächen und Orte zu Objekte. Stadtbefestigungen und assistierte Bebauung gehören zu Gebäude; Dungeon-Dächer und grafische Pfade zu Boden & Wasser. Licht, Text und Fallen/Features gehören zu Dungeon-Objekte. Noch fehlende Gebiets- oder Symbolwerkzeuge werden dadurch nicht als implementiert behauptet.
+
+Beim ersten Öffnen sind Landschaft/Land und die globale Auswahl aktiv. Gruppen merken sich ihr zuletzt verwendetes Werkzeug, Bereiche ihre letzte Gruppe. Beim ersten Gruppenbesuch wird das erste verfügbare Werkzeug gewählt. Alle Wechsel durchlaufen denselben Entwurfsschutz. Werkzeugwerte bleiben während der Sitzung erhalten. Objekte öffnen ihre Bibliothek rechts, bewusste Auswahl öffnet Eigenschaften. Manuelles Schließen bleibt bis zur nächsten passenden Benutzeraktion erhalten; Nachladen und Zoom öffnen das Panel nicht erneut. „Mehr Optionen“ öffnet die vorhandenen zusätzlichen Einstellungen. Stadt/Dungeon anlegen, Raumverzeichnis und Analyse bleiben benannte Zugänge.
 
 ### Lieferpakete und Codeanschlüsse
 
@@ -224,7 +236,7 @@ Der Atlas soll sich wie ein Zeicheneditor anfühlen: Werkzeug wählen, Wirkung a
 
 ### Gemeinsame Bedienung
 
-Die feste Befehlsleiste enthält Navigation und Verwaltung. Links gruppiert die Werkzeugleiste **Landschaft, Stadt und Dungeon**. Diese Gruppen wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Objektauswahl ersetzt die Werkzeugliste nicht; Eigenschaften und erweiterte Optionen erscheinen im rechten Kontextbereich. Die Karte bleibt beim Bearbeiten sichtbar.
+Die feste Befehlsleiste enthält Navigation und Verwaltung. Links folgt die Werkzeugleiste **Bereich → Gruppe → Werkzeug → Optionen**. Die Bereiche **Landschaft, Stadt und Dungeon** wechseln keinen Editor oder Kartenmodus. Zoom verändert weder Werkzeug noch dessen Einstellungen. Objektauswahl ersetzt die Werkzeugliste nicht; Eigenschaften und erweiterte Optionen erscheinen im rechten Kontextbereich. Die Karte bleibt beim Bearbeiten sichtbar.
 
 **Ein einfacher Standardweg:** Zum Korrigieren „Auswahl“ wählen und das Objekt anklicken; zum Anlegen das Fachwerkzeug wählen. Ein neuer Raum beginnt als Rechteck im gewählten Geschoss, ein Fluss/eine Straße als Punktzug, ein Asset als Einzelplatzierung und eine Siedlung mit vorgegebener Fläche/Straße. Weitere Formen und bereits verfügbare Fähigkeiten bleiben erreichbar. Im Panel stehen zuerst die für diese Aktion nötigen Felder; zusätzliche vorhandene Einstellungen werden über „Mehr Optionen“ erreichbar, ohne neue Kartenmodi. Ein Normalfall verlangt weder Graphentwurf noch Vorlage oder Generatorparameterstudium.
 
