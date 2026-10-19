@@ -72,7 +72,13 @@ Wiederholung von Schreibaufträgen.
 Regel- und Probencommands invalidieren jeweils nur ihre eigenen ausstehenden
 Reads. Token, Campaign, Scene und Aktivierungsgeneration begrenzen beide Reader;
 eine alte Antwort oder ein alter Fehler darf weder einen neu bestätigten Stand
-noch die andere Gruppe ersetzen. „Aktualisieren“ fragt beide erneut ab. Es gibt
+noch die andere Gruppe ersetzen. „Aktualisieren“ fragt beide erneut ab.
+
+Der Speicher liest angeheftete Regeln samt heutigen Quellen mit einem gemeinsamen
+`LEFT JOIN`, statt je Pin erneut zu lesen. Campaign und Notiz-ID binden die
+Quelle; die gespeicherte Pinreihenfolge bleibt erhalten. Fehlende, archivierte,
+beschädigte oder andersartige Quellen lassen den eingefrorenen Text lesbar.
+Quellenprüfung und Probenhistorie bleiben getrennt. Es gibt
 keine Schemaänderung oder Migration. Die Authoritygegenproben halten beide
 Reader einzeln zurück, liefern Fehler und fremde Sceneantworten und prüfen
 anschließende Commands/Revisionsbasen. Das ist DOM-/Controllernachweis, keine
