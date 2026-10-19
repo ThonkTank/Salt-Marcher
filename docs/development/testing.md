@@ -1,7 +1,8 @@
 # Automatisierte Tests
 
 `npm test` bereitet die Testartefakte neu vor und führt alle aktiven Node-Tests
-mit höchstens zwei getrennten Testprozessen aus. Ziel: weniger als 300 Sekunden
+mit höchstens vier getrennten Testprozessen aus, begrenzt durch die verfügbaren
+CPU-Kapazitäten. Ziel: weniger als 300 Sekunden
 einschließlich Vorbereitung auf einem unbelasteten Entwicklungsrechner und im
 Candidate-Job. Installation, Typprüfungen, Produktbuilds und native UI-Proben
 haben eigene Zeiten. `npm test -- --serial` dient der Diagnose von Isolation
