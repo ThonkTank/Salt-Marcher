@@ -31,14 +31,14 @@ const categories:{[k:string]:string}={coins:'Münzen',equipment:'Ausrüstung','t
 function option(s:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;s.append(o);}
 function button(label:string,action:()=>Promise<unknown>|void,ownerShop?:string){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{if(ownerShop&&(!shopReady()||shop?.shop.id!==ownerShop))return;if(b.closest('#shop-editor')&&!shopReady())return;run(action);};return b;}
 function run(action:()=>Promise<unknown>|void){const token=workspace?.token,g=epoch;void Promise.resolve().then(()=>{if(owned(token,g))return action();}).catch(error=>{if(owned(token,g))tell(error.message,true);});}
-async function command(action:ItemShopAction):Promise<ItemShopAck>{
+async function command(action:ItemShopAction,snapshot:Shop|null=null):Promise<ItemShopAck>{
  const owner=workspace,g=epoch;if(!owner)throw new Error('Öffne eine Kampagne.');
  if(action.kind!=='definition'&&action.kind!=='definition-trash'&&(!contextReady||contextLoading))throw new Error('Vergabe- und Shopkontext zuerst laden.');
  if(['purchase','sell','restock','random-restock'].includes(action.kind)&&!shopReady())throw new Error('Ausgewählten Shop zuerst laden.');
  if(action.kind==='sell'&&!sellerReady())throw new Error('Inventar der ausgewählten Figur zuerst laden.');
  if(action.kind==='shop'&&(action.shop.stock.some(e=>e.restock?.nextDueMs==='0')||(action.shop.restockTables??[]).some(t=>t.schedule?.nextDueMs==='0')))action={...action,scheduleClock:shopClock?{sceneId:shopClock.sceneId,expectedRevision:shopClock.expectedRevision}:undefined};
  const request={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token:owner.token,action:structuredClone(action)};
- const meta={owner:'items',token:owner.token,epoch:g,action:request.action,fields:action.kind==='definition'?definitionFields():shopFields(),snapshot:shop?structuredClone(shop.shop):null};
+ const meta={owner:'items',token:owner.token,epoch:g,action:request.action,fields:action.kind==='definition'?definitionFields():shopFields(),snapshot};
  const result=await writeConfirmed<ItemShopAck>('items',request,()=>window.campaign.executeItemShop(request),()=>owned(owner.token,g),meta);
  if(!owned(owner.token,g))throw new Error('Änderung in der früheren Kampagne bestätigt. Den Stand dort erneut öffnen.');
  if(['purchase','sell','restock','random-restock'].includes(action.kind))tradeConfirmed=true;return result;
@@ -84,7 +84,7 @@ function flushDrafts():Promise<boolean>{
    }
    while(dirtyShop&&shop&&owned(w.token,g)){
     collectShop();const id=shop.shop.id,fields=shopFields(),snapshot=structuredClone(shop.shop);
-    const result=await command({kind:'shop',shop:snapshot,expectedRevision:snapshot.revision||null});if(!owned(w.token,g)||shop?.shop.id!==id)return false;
+    const result=await command({kind:'shop',shop:snapshot,expectedRevision:snapshot.revision||null},snapshot);if(!owned(w.token,g)||shop?.shop.id!==id)return false;
     if(!result.shop)throw new Error('Gespeicherter Shop fehlt.');dirtyShop=fields!==shopFields();mergeShop(result.shop,snapshot);if(!dirtyShop)renderShop();
    }
   }
@@ -234,16 +234,16 @@ function renderShop(force=false){el('shop-editor').hidden=!shop;if(!shop){el<HTM
    input('Intervall in Tagen zu je 24 Stunden',(Number(e.restock.intervalMs)/86400000).toString(),'number',v=>{const days=Number(v);if(!Number.isSafeInteger(days)||days<1)throw new Error('Intervall benötigt positive ganze 24-Stunden-Tage.');e.restock!.intervalMs=(BigInt(days)*86400000n).toString();e.restock!.nextDueMs='0';});
   }
   const quantity=input('Manuell hinzufügen','1','number',()=>{},false,config);
-  config.append(shopButton('Auffüllen',()=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id,added=Number(quantity.value);if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const snapshot=structuredClone(shop.shop);const result=await command({kind:'restock',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,mode:'add',quantity:added,reason:'Manuell im Shop aufgefüllt'});if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);})));
+  config.append(shopButton('Auffüllen',()=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id,added=Number(quantity.value);if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const snapshot=structuredClone(shop.shop);const result=await command({kind:'restock',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,mode:'add',quantity:added,reason:'Manuell im Shop aufgefüllt'},snapshot);if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);})));
  }
  const q=input('Kaufmenge','1','number',()=>{},false),paid=input('Tatsächlich gezahlt (GM gesamt)',amount(e.buyCopper),'text',()=>{},false);q.oninput=()=>{if(/^[0-9]+$/.test(q.value))paid.value=amount(BigInt(e.buyCopper)*BigInt(q.value)+'');};const buy=shopButton('Für '+(roster.find(c=>c.id===value('shop-seller'))?.profile.name??'Figur')+' kaufen',()=>performTrade(async()=>{
  const w=workspace,g=epoch,id=shop?.shop.id,buyer=roster.find(c=>c.id===value('shop-seller')),quantity=Number(q.value),actualGold=paid.value,definitionFieldsAtClick=dirtyDefinition&&definition?.id===d?.id?definitionFields():null;if(!w||!id||!buyer?.active||!d)return;
  if(!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;
  const expectedDefinitionRevision=definitionFieldsAtClick!==null&&lastDefinitionSave?.id===d.id&&lastDefinitionSave.fields===definitionFieldsAtClick?lastDefinitionSave.revision:d.revision;
- const snapshot=structuredClone(shop.shop);const result=await command({kind:'purchase',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,expectedDefinitionRevision,quantity,characterId:buyer.id,expectedMembershipRevision:buyer.membershipRevision,actualGold});
+ const snapshot=structuredClone(shop.shop);const result=await command({kind:'purchase',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,expectedDefinitionRevision,quantity,characterId:buyer.id,expectedMembershipRevision:buyer.membershipRevision,actualGold},snapshot);
  if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);await loadSeller();if(!owned(w.token,g))return;await refreshProgress();if(owned(w.token,g))tell('Kauf gebucht.');
 }));buy.dataset.purchaseAvailable=String(!shop.unavailable&&!!e.quantity&&!d?.trashed);buy.disabled=buy.dataset.purchaseAvailable!=='true'||!roster.some(c=>c.id===value('shop-seller')&&c.active);card.append(buy);config.append(shopButton('Bestandszeile entfernen',()=>{collectShop();shop!.shop.stock=shop!.shop.stock.filter(s=>s.id!==e.id);dirtyShop=true;renderShop(true);}));root.append(card);}
- const restock=el('shop-restock');restock.replaceChildren();renderShopRestockTables(restock,shop,{changed:()=>{dirtyShop=true;},rebuild:()=>renderStockKeepingText(),button:shopButton,roll:tableId=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id;if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const table=shop.shop.restockTables?.find(t=>t.id===tableId);if(!table)return;const snapshot=structuredClone(shop.shop),result=await command({kind:'random-restock',shopId:id,expectedRevision:shop.shop.revision,tableId,expectedTableRevision:table.revision});if(owned(w.token,g)&&shop?.shop.id===id)applyTradeShop(result.shop!,snapshot);}).then(()=>{})});
+ const restock=el('shop-restock');restock.replaceChildren();renderShopRestockTables(restock,shop,{changed:()=>{dirtyShop=true;},rebuild:()=>renderStockKeepingText(),button:shopButton,roll:tableId=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id;if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const table=shop.shop.restockTables?.find(t=>t.id===tableId);if(!table)return;const snapshot=structuredClone(shop.shop),result=await command({kind:'random-restock',shopId:id,expectedRevision:shop.shop.revision,tableId,expectedTableRevision:table.revision},snapshot);if(owned(w.token,g)&&shop?.shop.id===id)applyTradeShop(result.shop!,snapshot);}).then(()=>{})});
  renderShopHistory(shop.history);}
 function renderShopHistory(history:ShopView['history']){
  const root=el('shop-history');root.replaceChildren();
@@ -349,7 +349,7 @@ export function initItems(status:typeof tell,open:typeof enter){tell=status;ente
  const w=workspace,g=epoch,id=shop?.shop.id,l=ledger.find(l=>l.id===value('shop-sale-item')),quantity=Number(value('shop-sale-quantity')),actualGold=value('shop-sale-price'),notes=value('shop-sale-note'),newStockPrices=value('shop-new-buy-price')||value('shop-new-sell-price')?{buyGold:value('shop-new-buy-price'),sellGold:value('shop-new-sell-price')}:undefined;
  if(!w||!id||!l||l.characterId!==value('shop-seller'))return;const seller=value('shop-seller');if(!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;
  const response=await window.campaign.itemDefinition(l.reference.definitionId);if(!owned(w.token,g)||shop?.shop.id!==id)return;const d=unwrap(response);if(!sellerReady()||value('shop-seller')!==seller)return;
- const snapshot=structuredClone(shop.shop);const result=await command({kind:'sell',shopId:id,expectedRevision:shop.shop.revision,ledgerId:l.id,expectedLedgerRevision:l.revision,expectedDefinitionRevision:d.revision,quantity,actualGold,notes,...(newStockPrices?{newStockPrices}:{})});
+ const snapshot=structuredClone(shop.shop);const result=await command({kind:'sell',shopId:id,expectedRevision:shop.shop.revision,ledgerId:l.id,expectedLedgerRevision:l.revision,expectedDefinitionRevision:d.revision,quantity,actualGold,notes,...(newStockPrices?{newStockPrices}:{})},snapshot);
  if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);await loadSeller();if(!owned(w.token,g))return;await refreshProgress();if(owned(w.token,g))tell('Verkauf gebucht.');
  }));};
 }

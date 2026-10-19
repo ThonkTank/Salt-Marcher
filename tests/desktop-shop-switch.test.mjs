@@ -139,3 +139,19 @@ test('a failed shared roster read stays visible and retryable in the shop area',
   window.campaign.live=original;x.el('item-context-retry').onclick();await until(()=>x.el('item-context-status').hidden&&!x.el('shop-fields').disabled);assert.equal(x.el('items-shops').hidden,false);assert.equal(x.writes.length,0);
  }finally{await x.cleanup();}
 });
+
+for(const lostReply of [false,true])test(`a ${lostReply?'recovered':'confirmed'} purchase preserves a newer shop draft and applies stock once`,async()=>{
+ const x=await fixture(),send=window.campaign.executeItemShop,status=window.campaign.commitStatus,pause=held();let accepted=false,canRecover=false;
+ try{
+  window.campaign.executeItemShop=async c=>{const result=await send(c);if(c.action.kind!=='purchase')return result;accepted=true;await pause.promise;if(lostReply)throw new Error('Lost purchase reply');return result;};
+  window.campaign.commitStatus=async(...args)=>canRecover?status(...args):{ok:false,error:'Receipt temporarily unavailable'};
+  x.buy();await until(()=>accepted);
+  x.el('shop-name').value='Hafenladen ergänzt';x.el('shop-form').oninput();pause.resolve();
+  await until(()=>x.messages.some(m=>m.includes(lostReply?'Buchungsantwort fehlt':'Kauf gebucht.')));
+  if(lostReply){assert.equal(x.el('shop-fields').disabled,true);canRecover=true;x.el('commit-check').onclick();await until(()=>x.messages.includes('Buchung anhand ihres Belegs bestätigt.'));}
+  assert.equal(x.el('shop-name').value,'Hafenladen ergänzt');
+  assert.equal(x.writes.filter(c=>c.action.kind==='purchase').length,1);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen');
+  assert(await x.ui.flushItems());const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.name,'Hafenladen ergänzt');assert.equal(saved.stock[0].quantity,4);
+  assert.equal(x.store.ledgerInventory(x.w.token,{characterId:x.heroes[0].id,after:null}).items.filter(l=>l.origin==='purchase').length,1);
+ }finally{pause.resolve();canRecover=true;await x.cleanup();}
+});
