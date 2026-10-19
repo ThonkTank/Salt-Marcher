@@ -1,7 +1,14 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
+import {setTimeout as pause} from 'node:timers/promises';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);for(const[entry,name]of [['src/app/storage/store.ts','item-selection-store'],['src/app/items-ui.ts','item-selection-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});return{promise,resolve,reject};};async function until(fn){for(let i=0;i<250;i++){if(fn())return;await tick();}assert(fn(),'Expected shop state');}
+const tick=()=>new Promise(r=>setImmediate(r)),held=()=>{let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j;});return{promise,resolve,reject};};
+async function until(fn){
+ // Fast DOM lookups can exhaust immediate ticks before the async commit fingerprint resolves.
+ const deadline=performance.now()+5000;
+ while(!fn()&&performance.now()<deadline)await pause(5);
+ assert(fn(),'Expected shop state');
+}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'shop-switch-')),{CampaignStore}=require('../.build/item-selection-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
