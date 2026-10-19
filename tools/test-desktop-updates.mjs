@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 import {mkdtemp,mkdir,cp,readFile,writeFile,realpath} from 'node:fs/promises';
-import {generateKeyPairSync,sign} from 'node:crypto';
+import {generateKeyPairSync,sign,randomUUID} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {createServer} from 'node:net';
@@ -14,8 +14,8 @@ const temp=await mkdtemp(path.join(fixtureBase,'run-')),root=path.join(temp,'ins
 const {privateKey,publicKey}=generateKeyPairSync('ed25519'),publicPem=publicKey.export({type:'spki',format:'pem'}),commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
 await build({entryPoints:['desktop/update-package.ts'],outfile:'.build/native-update-package.cjs',bundle:true,platform:'node',format:'cjs'});
-await build({entryPoints:['src/app/storage/store.ts'],outfile:'.build/native-update-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {packUpdate,unpackUpdate}=require(path.resolve('.build/native-update-package.cjs')),{CampaignStore}=require(path.resolve('.build/native-update-store.cjs'));
+await build({entryPoints:['src/app/storage/store.ts'],outfile:'.build/desktop/native-update-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {packUpdate,unpackUpdate}=require(path.resolve('.build/native-update-package.cjs')),{CampaignStore}=require(path.resolve('.build/desktop/native-update-store.cjs'));
 async function version(v,debug=false){
  const dir=path.join(temp,'source-'+v);await cp(base,dir,{recursive:true});
  await build({entryPoints:['desktop/main.ts'],outfile:path.join(dir,'resources/app/main.cjs'),bundle:true,platform:'node',format:'cjs',external:['electron','better-sqlite3'],define:{__APP_VERSION__:JSON.stringify(v)},...(debug?{banner:{js:`require('electron').app.commandLine.appendSwitch('remote-debugging-port', '${port}');`}}:{})});
@@ -32,7 +32,7 @@ try{
  const extracted=await unpackUpdate(old.archive,path.join(temp,'unpacked'),old.manifest);
  await writeFile(path.join(extracted,'saltmarcher-update.json'),old.signed);await writeFile(path.join(extracted,'saltmarcher-update.json.sig'),old.signature);
  // Seed a genuine database plus opaque local files and media before bootstrap.
- await mkdir(profile);let store=new CampaignStore(path.join(profile,'workbench.sqlite'),'90.0.0');const campaign=store.create('Update-Abend'),other=store.create('Inaktive Kampagne');store.close();
+ await mkdir(profile);let store=new CampaignStore(path.join(profile,'workbench.sqlite'),'90.0.0');const campaign=store.create('Update-Abend'),other=store.create('Inaktive Kampagne');const workspace=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:workspace.token,campaignId:campaign.id,action});const groupId=store.executeProgress(command({kind:'group-create',title:'Hafenwache',encounterId:null,expectedEncounterRevision:null})).groupId;const draft={writeId:randomUUID(),groupId,revision:1,title:'',notes:'Unfertige Notiz\r\nbleibt vollständig',locationId:null,actors:[]};store.keepGroupDraft(workspace.token,draft,null);const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:store.live(workspace.token).rosterRevision})).scene;const liveBefore=store.live(workspace.token);store.close();
  await mkdir(path.join(profile,'audio'));await writeFile(path.join(profile,'audio/retained.ogg'),'unchanged media');await writeFile(path.join(profile,'unfinished-notes.txt'),'Unfertiger Entwurf – unverändert');
  const env={...process.env,XDG_DATA_HOME:path.join(temp,'desktop-data')};
  execFileSync(path.join(extracted,'Installieren.sh'),[root,profile],{env,timeout:120000});
@@ -71,9 +71,9 @@ try{
  // Close through the normal UI guard, not a force kill, then inspect SQLite.
  await restarted.evaluate(()=>{document.querySelector('#updates-close').click();window.campaign.closeReady();});
  for(let n=0;n<100;n++){try{process.kill(childPid,0);}catch{break;}await new Promise(r=>setTimeout(r,100));}
- store=new CampaignStore(path.join(profile,'workbench.sqlite'),'90.0.1');try{assert.deepEqual(store.list().campaigns.map(c=>c.id).sort(),[campaign.id,other.id].sort());}finally{store.close();}
+ store=new CampaignStore(path.join(profile,'workbench.sqlite'),'90.0.1');try{assert.deepEqual(store.list().campaigns.map(c=>c.id).sort(),[campaign.id,other.id].sort());const reopened=store.activate(campaign.id);assert.deepEqual(store.groupDraft(reopened.token,groupId),draft);assert.deepEqual(store.live(reopened.token),liveBefore);assert(scene.id);}finally{store.close();}
  const journal=JSON.parse(await readFile(path.join(root,'.update-journal.json'),'utf8'));assert.equal(journal.phase,'committed');assert.equal(await readFile(path.join(journal.backup,'audio/retained.ogg'),'utf8'),'unchanged media');assert.deepEqual(errors,[]);
- await writeFile(evidence,JSON.stringify({passed:true,from:'90.0.0',to:'90.0.1',profile,root,bootstrap:true,manualDownload:true,manualInstall:true,normalRestart:true,customProfile:true,mediaAndCampaignsPreserved:true,backup:journal.backup},null,2));console.log('Native packaged update passed: '+evidence);
+ await writeFile(evidence,JSON.stringify({passed:true,from:'90.0.0',to:'90.0.1',profile,root,bootstrap:true,manualDownload:true,manualInstall:true,normalRestart:true,customProfile:true,mediaAndCampaignsPreserved:true,unfinishedDraftAndLiveStatePreserved:true,backup:journal.backup},null,2));console.log('Native packaged update passed: '+evidence);
 }finally{
  await browser?.close().catch(()=>{});await app?.close().catch(()=>{});
  if(childPid){try{const cmd=await readFile('/proc/'+childPid+'/cmdline','utf8');if(cmd.includes(profile))process.kill(childPid,'SIGKILL');}catch{}}
