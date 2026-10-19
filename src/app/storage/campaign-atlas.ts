@@ -1,3 +1,4 @@
+import {validateTerritories} from './atlas-territories';
 import {validateMask} from '../land-mask';
 import {validateLine} from '../landscape-line';
 import {validateColor} from '../landscape-brush';
@@ -126,6 +127,7 @@ export function bindAtlas(
 // Capture only canonical rows written by the existing domain commands. Their own
 // old receipts/histories remain immutable; the Atlas exposes one chronological history.
 const tracked = [
+  "atlas_territory_layer", "atlas_territory",
   "atlas_import_source",
   "scope",
   "room",
@@ -406,6 +408,7 @@ function checkPositions(db: any, cam: string) {
   }
 }
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
+  'territory-layer':true,'territory-put':true,'territory-remove':true,'territory-stroke':true,'territory-vertex':true,
   'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
   'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
@@ -500,6 +503,7 @@ export function executeAtlasWrite(
 
 /** Atlas invariants also apply to snapshots before they are published. */
 export function validateCampaignAtlases(db: any) {
+  validateTerritories(db);
   const schema = db.pragma("user_version", { simple: true });
   if (schema < 45) return;
   for (const table of [

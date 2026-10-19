@@ -1,3 +1,4 @@
+import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {LandscapeRasterizer} from './landscape-raster';
 import {orderedColors,colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
 import { lineParts } from "./landscape-line";
@@ -15,6 +16,7 @@ export function drawLandscape(
   references = true,
   raster?: import("./landscape-raster").LandscapeRaster[],
   unavailableAssets?: ReadonlySet<string>,
+  automaticLabels=false,
 ) {
   if(!raster&&records.some(r=>r.mask||r.paint?.version===2)&&typeof document!=='undefined'){
     const w=Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),h=Math.min(1024,Math.max(1,Math.ceil(b.height/mpp))),image=new LandscapeRasterizer(b,w,h);
@@ -47,6 +49,7 @@ export function drawLandscape(
       (a.order ?? 0) - (b.order ?? 0),
   )) {
     if(r.kind!=="reference")drawRaster();
+    if(!mapRecordVisible(r,mpp))continue;
     if(r.kind!=="reference"&&r.kind!=="patch")drawColors();
     const g = landscapeNode("group", {data: {landscapeId: String(r.id)}});
     root.append(g);
@@ -72,10 +75,10 @@ export function drawLandscape(
              pointer: false, style: {fill: terrainColors[r.values.terrain]!, fillRule: "evenodd"}}),
         );
     } else if ((r.kind === "road" || r.kind === "river") && r.line) {
-      for(const p of lineParts(r))g.append(p.polygons ? landscapeNode("polygons",{polygons:p.polygons.map(poly=>({outer:poly.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:[]})),opacity:p.opacity,style:{fill:p.color}}) : landscapeNode("polyline",{points:p.points.map(v=>({x:v.x-b.x,y:v.y-b.y})),opacity:p.opacity,style:{stroke:p.color,fill:null,lineWidth:p.width,lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:"round",lineCap:"round"}}));
+      for(const p of lineParts(r))g.append(p.polygons ? landscapeNode("polygons",{polygons:p.polygons.map(poly=>({outer:poly.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:[]})),opacity:p.opacity,style:{fill:p.color}}) : landscapeNode("polyline",{points:p.points.map(v=>({x:v.x-b.x,y:v.y-b.y})),opacity:p.opacity,style:{stroke:p.color,fill:null,lineWidth:mapLineWidth(p.width,mpp),lineDash:p.dash,lineDashOffset:p.dashOffset,lineJoin:"round",lineCap:"round"}}));
     } else if (r.kind === "road" || r.kind === "river")
       g.append(
-        landscapeNode("polyline", {points: r.points.map(p=>({x:p.x-b.x,y:p.y-b.y})), style: {fill: null, stroke: r.kind === "river" ? "#629ebc" : "#a37e51", lineWidth: Math.max(r.width, mpp * 2), lineJoin: "round", lineCap: "round", lineDash: r.kind === "road" && r.style === "path"
+        landscapeNode("polyline", {points: r.points.map(p=>({x:p.x-b.x,y:p.y-b.y})), style: {fill: null, stroke: r.kind === "river" ? "#629ebc" : "#a37e51", lineWidth: mapLineWidth(r.width,mpp), lineJoin: "round", lineCap: "round", lineDash: r.kind === "road" && r.style === "path"
               ? [mpp*5,mpp*3]
               : []}}),
       );
@@ -84,7 +87,7 @@ export function drawLandscape(
       g.append(
         landscapeNode("circle", {x: p.x - b.x, y: p.y - b.y, radius: mpp * 5, style: {fill: "#5b4338", stroke: "#f5efdb", lineWidth: mpp * 1.5}}),
       );
-      g.append(
+      if(!automaticLabels)g.append(
         landscapeNode("text", {x: p.x - b.x, y: p.y - b.y - mpp * 10, style: {fontSize: mpp * LANDSCAPE_PLACE_FONT_PX, textAlign: 'center', stroke: "#f4efdf", lineWidth: mpp * 3, fill: "#263e32"}}, r.name),
       );
     }

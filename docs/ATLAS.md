@@ -94,3 +94,8 @@ Die automatische Hexgröße richtet sich nach der sichtbaren Größe der Felder;
 benachbarte Reisestufen werden kurz überblendet. Manuelle Auswahl fixiert die
 Größe. Während eines Zeichenentwurfs bleibt die Hexgröße gesperrt. Bildausgaben
 verwenden genau die ausgewählte Größe ohne Übergangsüberblendung.
+
+
+## Regionen malen und Karten beschriften
+
+Unter **Landschaft → Regionen** werden Regionen primär mit dem Pinsel bearbeitet; Punkte dienen anschließend der Grenzkorrektur. Geografische, politische und eigene Ebenen besitzen Typen, Bedeutung und optionale Oberregionen. Straßen-, Gewässer-, Regions- und Gebäudenamen verwenden eine gemeinsame zoomabhängige Anordnung. Bedienung, Speicherung und Prüfgrenzen stehen im [Fachvertrag zur Kartenbeschriftung](plans/maps/atlas-cartography.md).

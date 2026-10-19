@@ -1,3 +1,4 @@
+import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
 import {colorParts} from "./landscape-brush";
@@ -140,9 +141,10 @@ export class LandscapeRasterizer {
     }
   }
   paintRecordLine(record:LandscapeRecord,mpp=0){
+    if(!mapRecordVisible(record,mpp))return;
     this.applyCoast();
-    if(!record.line){this.paintLine(record.points,Math.max(record.width,mpp*2),record.kind==="river"?"#629ebc":"#a37e51");return;}
-    for(const part of lineParts(record)){if(part.polygons)this.paintPolygons(part.polygons,part.color,part.opacity);else this.paintStyledLine(part.points,part.width,part.color,part.opacity,part.dash,part.dashOffset);}
+    if(!record.line){this.paintLine(record.points,mapLineWidth(record.width,mpp),record.kind==="river"?"#629ebc":"#a37e51");return;}
+    for(const part of lineParts(record)){if(part.polygons)this.paintPolygons(part.polygons,part.color,part.opacity);else this.paintStyledLine(part.points,mapLineWidth(part.width,mpp),part.color,part.opacity,part.dash,part.dashOffset);}
   }
   private paintStyledLine(points:{x:number;y:number}[],width:number,color:string,opacity:number,dash?:number[],dashOffset=0){
     // Rasterize the bounded visible sample lattice, not one object per dash across the world.

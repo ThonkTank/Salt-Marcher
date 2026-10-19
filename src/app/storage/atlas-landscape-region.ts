@@ -1,3 +1,5 @@
+import {mapRecordVisible} from '../atlas-scale-policy';
+import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {orderedColors} from '../landscape-brush';
 import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
@@ -6,7 +8,7 @@ import {bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox} from '.
 import {LandscapeRasterizer,LANDSCAPE_RASTER_PAD,landscapeRasterBounds,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
-const visual=(r:LandscapeRecord):LandscapeRecord=>{const {id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line}=r;return{id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,values:{}};};
+const visual=(r:LandscapeRecord):LandscapeRecord=>{const {label,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line}=r;return{label,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,values:{}};};
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  private statements=new Map<string,any>();
@@ -79,13 +81,16 @@ export class AtlasLandscapeReader {
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number):AtlasLandscapeLayer{
   const layer:AtlasLandscapeLayer={state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
+  let labelCandidates:MapLabelCandidate[]=[];
   let used=0,dense=false,referenceBytes=0;const references:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    if(q.references===false&&r.kind==='reference')continue;
+   if(!q.perception&&mapRecordVisible(r,q.box.width/q.width))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
    const record=visual(r),size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(layer.coverage.objects>500||layer.coverage.references>16||used+size>Math.min(512*1024,budget/3)){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
   }
+  layer.labels=boundedLabels(labelCandidates,q.box);
   layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=exactReferences?references:[];
   if(!dense&&!this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch' AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height))return layer;
   // At most four world-aligned tiles; a smaller detail level is explicit display aggregation.
@@ -104,7 +109,7 @@ export class AtlasLandscapeReader {
      for(const r of orderedColors([...this.rows(source,image.sampleBox,true,samplePixels)]))image.paintColor(r);
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
       if(r.kind==='road'||r.kind==='river')image.paintRecordLine(r,q.box.width/q.width);
-      else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
+      else if(r.kind==='place'&&mapRecordVisible(r,q.box.width/q.width))image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
       else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
      const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');

@@ -1,3 +1,4 @@
+import {validateMapLabelStyle} from '../map-label-style';
 import {applyMaskArea,validateMask} from '../land-mask';
 import {executeBrush} from "./landscape-brush-edit";
 import { validateLine } from "../landscape-line";
@@ -231,6 +232,7 @@ export function putLandscape(
     !r.values
   )
     throw new Error("Landschaftsdaten prüfen.");
+  validateMapLabelStyle(r.label);
   validateMask(r);
   validateLine(r);
   validateColor(r);
