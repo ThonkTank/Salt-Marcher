@@ -11,6 +11,7 @@ buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/atlas-co
 const require = createRequire(import.meta.url), worldUI = require('../.build/atlas-context-ui.cjs'), { CampaignAtlasWorkbench } = worldUI, { CampaignStore } = require('../.build/atlas-context-store.cjs');
 function fixture(t) {
     const dir = mkdtempSync(tmpdir() + '/atlas-context-'), store = new CampaignStore(dir + '/world.sqlite'), campaign = store.create('Reise'), w = store.activate(campaign.id), command = action => ({ commandId: randomUUID(), campaignId: campaign.id, token: w.token, action });
+    store.executeAtlasCommit(command({kind:'landscape-put',record:{id:randomUUID(),revision:0,kind:'patch',name:'Testland',points:[],polygons:[{outer:[{x:-100,y:-100},{x:100,y:-100},{x:100,y:100},{x:-100,y:100}],holes:[]}],resolution:1,width:0,values:{terrain:'plains'}},expectedRevision:null}));
     const a = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: store.live(w.token).rosterRevision })).scene;
     const character = store.executeLive(command({ kind: 'create-character', profile: { name: 'Ada', speedFeet: 30 } })).character, live = store.live(w.token);
     store.executeLive(command({ kind: 'membership', characterId: character.id, expectedRevision: character.membershipRevision, expectedRosterRevision: live.rosterRevision, active: true, targetSceneId: a.id, expectedFocusRevision: live.focusRevision }));

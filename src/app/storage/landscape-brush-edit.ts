@@ -1,11 +1,19 @@
+import {applyMaskStroke,isLandMode,strokeBox,maskLandSpans} from '../land-mask';
 import {randomUUID} from 'node:crypto';
 import {bounds, contains, type LandscapeRecord, type LandscapeAction} from '../atlas-landscape';
-import {brushFootprint,intersectPolygons,subtractPolygons,unionPolygons,validateColor,colorParts} from '../landscape-brush';
+import {intersectPolygons,subtractPolygons,unionPolygons,validateColor,colorParts} from '../landscape-brush';
 import type {Polygon} from '../contracts';
-import {landscapeRegion,putLandscape} from './atlas-landscape';
+import {landscapeRegion,putLandscape,landMaskRegion} from './atlas-landscape';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
 export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'landscape-brush'}>){
+  if(isLandMode(a.mode)){
+    const stroke={mode:a.mode,radius:a.radius,roughness:a.roughness,seed:a.seed,samples:a.samples??[]};
+    if(!stroke.samples.length)throw Error('Zeitstempel des Landpinsels fehlen.');
+    const records=landMaskRegion(db,cam,strokeBox(stroke));
+    for(const tile of applyMaskStroke(records,stroke))putLandscape(db,cam,tile,tile.revision||null);
+    return;
+  }
   const r=structuredClone(a.record);
   if(r.kind!=='patch'||!r.polygons.length||!Number.isFinite(a.radius)||a.radius<=0||!Number.isFinite(a.roughness)||a.roughness<0||a.roughness>2||
     !['land','land-erase','raise','lower','freshwater','freshwater-erase','ground-color','water-color','color-erase'].includes(a.mode))throw Error('Landschaftspinsel prüfen.');
@@ -19,12 +27,18 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
     records=landscapeRegion(db,cam);
     const p=r.points[0];if(!p)throw Error('Füllpunkt fehlt.');
     const ordered=records.filter(x=>x.kind==='patch'&&x.values.terrain).sort((x,y)=>y.resolution-x.resolution||(x.order??0)-(y.order??0));
-    const selected=ordered.filter(x=>contains(p,x.polygons)).at(-1);
-    if(!selected)throw Error('Zum Füllen eine angelegte Land- oder Wasserfläche anklicken.');
-    let area:Polygon[]=[];const water=selected.values.terrain==='water';
-    for(const x of ordered)area=(x.values.terrain==='water')===water?unionPolygons(area,x.polygons):subtractPolygons(area,x.polygons);
-    r.polygons=area.filter(poly=>contains(p,[poly]));
-    if(!r.polygons.length)throw Error('Keine zusammenhängende Fläche am Füllpunkt.');
+    let land:Polygon[]=[];
+    const masks=records.filter(x=>x.mask).sort((a,b)=>b.resolution-a.resolution);
+    if(masks.length){for(const tile of masks)land=unionPolygons(subtractPolygons(land,tile.polygons),maskLandSpans(tile.mask!));}
+    else for(const x of ordered)land=x.values.terrain==='water'?subtractPolygons(land,x.polygons):unionPolygons(land,x.polygons);
+    for(const surface of records.filter(x=>x.surface==='freshwater'))land=subtractPolygons(land,surface.polygons);
+    const water=r.paint?.target==='water';
+    if(water){
+      // Only enclosed lakes can be filled on an unbounded ocean.
+      const lakes=land.flatMap(poly=>poly.holes.map(outer=>({outer,holes:[]})));
+      r.polygons=lakes.filter(poly=>contains(p,[poly]));
+    }else r.polygons=land.filter(poly=>contains(p,[poly]));
+    if(!r.polygons.length)throw Error('Zum Füllen eine zusammenhängende Landfläche oder einen geschlossenen See anklicken.');
     box=bounds(r);
   }else{
     const pad=a.radius*2;
@@ -45,22 +59,6 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
     colorParts(r);putLandscape(db,cam,r,null);return;
   }
   if(r.paint)throw Error('Landpinsel darf keine Farbmaske enthalten.');
-  if(a.mode==='raise'||a.mode==='lower'){
-    const pad=a.radius*2,b={x:box.x-pad,y:box.y-pad,width:box.width+pad*2,height:box.height+pad*2};
-    const extent:Polygon[]=[{outer:[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}],holes:[]}];
-    let land=extent;
-    for(const old of records.filter(x=>x.kind==='patch'&&x.values.terrain).sort((x,y)=>y.resolution-x.resolution||(x.order??0)-(y.order??0))){
-      const patch=intersectPolygons(old.polygons,extent);
-      land=old.values.terrain==='water'?subtractPolygons(land,patch):unionPolygons(land,patch);
-    }
-    let edge:Polygon[]=[];
-    for(const poly of land)for(const ring of [poly.outer,...poly.holes]){
-      if(ring.length>1900)throw Error('Küste zu komplex für diesen Zug. Kleineren Pinsel verwenden.');
-      edge=unionPolygons(edge,brushFootprint([...ring,ring[0]!],a.radius*.25,a.roughness,a.seed));
-    }
-    r.polygons=intersectPolygons(r.polygons,a.mode==='raise'?subtractPolygons(edge,land):intersectPolygons(edge,land));
-    if(!r.polygons.length)return;
-  }
   const water=['land-erase','lower','freshwater'].includes(a.mode);
   r.surface=a.mode==='freshwater'?'freshwater':water?'sea':'land';
   r.values={terrain:water?'water':r.values.terrain&&r.values.terrain!=='water'?r.values.terrain:'plains'};

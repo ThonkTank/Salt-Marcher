@@ -2314,7 +2314,7 @@ export class CampaignAtlasWorkbench {
     t.text = text;
     root.append(t);
   }
-  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#b8c896"}}));}
+  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#7fa8bd"}}));}
   private drawInterior(
     root: AtlasPaint,
     b: AtlasBinding,

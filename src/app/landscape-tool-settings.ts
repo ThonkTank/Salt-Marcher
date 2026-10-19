@@ -26,19 +26,32 @@ export function readLineControls(root:ParentNode,prefix:string,base:LandscapeLin
 }
 export class LandscapeToolSettings{
   readonly lineRoot=document.createElement('div');readonly brushRoot=document.createElement('div');
+  private brushMode:BrushMode='land';
+  private sizes:Record<string,number>={land:500,'land-erase':500,fractal:500};
   private last='';private lines={road:newLine('road'),river:newLine('river')};
   eyedropper=false;
-  constructor(panel:HTMLElement,private changed:()=>void){
+  constructor(panel:HTMLElement,private changed:()=>void,private canChange:()=>boolean=()=>true){
     this.lineRoot.id='land-line-options';this.brushRoot.id='land-brush-options';
     panel.querySelector('#land-width')!.closest('label')!.after(this.lineRoot);
     panel.querySelector('#land-radius')!.closest('label')!.before(this.brushRoot);
-    this.brushRoot.innerHTML=`<label>Pinselwirkung<select id="land-brush-mode"><option value="terrain">Geländeart / Eigenschaft</option><option value="land">Land hinzufügen</option><option value="land-erase">Land radieren</option><option value="raise">Küste anheben</option><option value="lower">Küste absenken</option><option value="freshwater">Süßwasser malen</option><option value="freshwater-erase">Süßwasser radieren</option><option value="ground-color">Geländefarbe</option><option value="water-color">Wasserfarbe</option><option value="color-erase">Farbe radieren</option></select></label><label id="land-coast-roughness-label">Küstenrauheit<input id="land-coast-roughness" type="range" min="0" max="2" step="0.1" value="0.6"></label><div id="land-color-options"><label>Pinselspitze<select id="land-tip"><option value="round">Rund</option><option value="soft">Weich</option><option value="textured">Strukturiert</option></select></label><label>Farbe<input id="land-paint-color" type="color" value="#739355"></label><div id="land-palette" class="toolbar"></div><button id="land-palette-add" type="button">Farbe merken</button><button id="land-pipette" type="button">Farbe aufnehmen</button><label>Deckkraft<input id="land-paint-opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftragsstärke<input id="land-paint-flow" type="range" min="0.1" max="1" step="0.05" value="1"></label><label><input id="land-fill" type="checkbox"> Zusammenhängende Fläche füllen</label></div>`;
-    this.brushRoot.oninput=this.brushRoot.onchange=()=>{this.show(this.last);this.changed();};
+    this.brushRoot.innerHTML=`<label>Pinselwirkung<select id="land-brush-mode"><option value="terrain">Geländeart / Eigenschaft</option><option value="land">Land hinzufügen</option><option value="land-erase">Land radieren</option><option value="raise">Fraktal erhöhen</option><option value="lower">Fraktal absenken</option><option value="freshwater">Süßwasser malen</option><option value="freshwater-erase">Süßwasser radieren</option><option value="ground-color">Geländefarbe</option><option value="water-color">Wasserfarbe</option><option value="color-erase">Farbe radieren</option></select></label><label id="land-coast-roughness-label">Rauheit<input id="land-coast-roughness" type="range" min="0.1" max="2" step="0.1" value="1"></label><div id="land-color-options"><label>Pinselspitze<select id="land-tip"><option value="round">Rund</option><option value="soft">Weich</option><option value="textured">Strukturiert</option></select></label><label>Farbe<input id="land-paint-color" type="color" value="#739355"></label><div id="land-palette" class="toolbar"></div><button id="land-palette-add" type="button">Farbe merken</button><button id="land-pipette" type="button">Farbe aufnehmen</button><label>Deckkraft<input id="land-paint-opacity" type="range" min="0.1" max="1" step="0.05" value="1"></label><label>Auftragsstärke<input id="land-paint-flow" type="range" min="0.1" max="1" step="0.05" value="1"></label><label><input id="land-fill" type="checkbox"> Zusammenhängende Fläche füllen</label></div>`;
+    const selector=field(this.brushRoot,'land-brush-mode');selector.value='land';
+    const buttons=document.createElement('div');buttons.className='toolbar';buttons.setAttribute('aria-label','Land bearbeiten');
+    for(const [mode,label]of [['land','Land zeichnen'],['land-erase','Land radieren'],['raise','Fraktal erhöhen'],['lower','Fraktal absenken']]){const button=document.createElement('button');button.type='button';button.textContent=label!;button.dataset.landMode=mode;button.onclick=()=>{selector.value=mode!;this.changeMode(panel);};buttons.append(button);}this.brushRoot.prepend(buttons);
+    this.brushRoot.oninput=this.brushRoot.onchange=()=>{this.changeMode(panel);};
     const palette=this.brushRoot.querySelector('#land-palette')!,add=(color:string)=>{if(palette.querySelector(`[data-color="${color}"]`))return;const b=document.createElement('button');b.type='button';b.dataset.color=color;b.title=color;b.setAttribute('aria-label','Farbe '+color);b.textContent='●';b.style.color=color;b.onclick=()=>{field(this.brushRoot,'land-paint-color').value=color;this.changed();};palette.append(b);};
     ['#739355','#d8c397','#aa8170','#629ebc','#f1ead8'].forEach(add);
     try{const saved=JSON.parse(localStorage.getItem('atlas-color-palette-v1')??'[]');if(Array.isArray(saved))saved.slice(0,48).filter(c=>typeof c==='string'&&/^#[a-f0-9]{6}$/i.test(c)).forEach(add);}catch{/* A palette is optional; authored color remains in the campaign. */}
     this.brushRoot.querySelector<HTMLButtonElement>('#land-palette-add')!.onclick=()=>{add(field(this.brushRoot,'land-paint-color').value);try{localStorage.setItem('atlas-color-palette-v1',JSON.stringify([...palette.querySelectorAll<HTMLElement>('[data-color]')].map(b=>b.dataset.color).slice(-48)));}catch{/* Current-session palette remains available. */}};
     this.brushRoot.querySelector<HTMLButtonElement>('#land-pipette')!.onclick=()=>{this.eyedropper=true;this.changed();};
+  }
+  private changeMode(root:ParentNode){
+    const selector=field(this.brushRoot,'land-brush-mode'),next=selector.value as BrushMode;
+    if(next!==this.brushMode){
+      if(!this.canChange()){selector.value=this.brushMode;return;}
+      const key=(m:string)=>m==='raise'||m==='lower'?'fractal':m,radius=field(root,'land-radius');this.sizes[key(this.brushMode)]=Number(radius.value);radius.value=String(this.sizes[key(next)]??500);this.brushMode=next;
+    }
+    this.show(this.last);this.changed();
   }
   mode():BrushMode{return field(this.brushRoot,'land-brush-mode').value as BrushMode;}
   roughness(){return Number(field(this.brushRoot,'land-coast-roughness').value);}
@@ -53,8 +66,9 @@ export class LandscapeToolSettings{
       this.last=tool;
       if(tool==='road'||tool==='river')lineControls(this.lineRoot,'land-new',this.lines[tool],tool==='river',this.changed);
     }
+    for(const b of this.brushRoot.querySelectorAll<HTMLButtonElement>('[data-land-mode]'))b.setAttribute('aria-pressed',String(b.dataset.landMode===this.mode()));
     this.lineRoot.hidden=!['river','road'].includes(tool);this.brushRoot.hidden=tool!=='paint';
     this.brushRoot.querySelector<HTMLElement>('#land-color-options')!.hidden=!['ground-color','water-color'].includes(this.mode());
-    this.brushRoot.querySelector<HTMLElement>('#land-coast-roughness-label')!.hidden=!['land','land-erase','raise','lower','freshwater','freshwater-erase'].includes(this.mode());
+    this.brushRoot.querySelector<HTMLElement>('#land-coast-roughness-label')!.hidden=!['raise','lower'].includes(this.mode());
   }
 }
