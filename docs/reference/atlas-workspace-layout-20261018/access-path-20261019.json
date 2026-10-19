@@ -1,15 +1,15 @@
 {
-  "source": "575cf8bc59344570d29ded2e31eae7d45fa3904a",
+  "source": "46a6c263d4f9ae34e3d91a023d6bba449a14c8fc",
   "dirty": true,
   "buildHashes": {
     "main.cjs": "00a68decf57c94d3c1b0e5b9108186159717244abe972d15db5a4125f93bb64d",
-    "ui/renderer.js": "29ca15d2cf99c3d54d4145b6155da1a18774b34bd989ea7eef81b1f4ad313aad",
+    "ui/renderer.js": "74bd7c9da5595a6d8b8e399cc6381b9bbdeefe544937fd6d0425aae7b0e1525e",
     "ui/app.css": "061b931426f6a0974f69d87b3e3fac4b29c2ed56c109eceb46015c41e936094c"
   },
   "launches": [
     {
       "scale": 1,
-      "pid": 2730684,
+      "pid": 2748371,
       "exit": {
         "code": 0,
         "signal": null
@@ -17,7 +17,7 @@
     },
     {
       "scale": 1,
-      "pid": 2731008,
+      "pid": 2748887,
       "exit": {
         "code": 0,
         "signal": null
@@ -25,7 +25,7 @@
     },
     {
       "scale": 2,
-      "pid": 2731167,
+      "pid": 2749104,
       "exit": {
         "code": 0,
         "signal": null
@@ -33,7 +33,7 @@
     },
     {
       "scale": 2,
-      "pid": 2731540,
+      "pid": 2749650,
       "exit": {
         "code": 0,
         "signal": null
@@ -43,14 +43,14 @@
   "results": [
     {
       "scale": 1,
-      "profile": "/tmp/access-path-sBUsma",
+      "profile": "/tmp/access-path-z3TxFp",
       "before": {
-        "old": 49,
+        "old": 42,
         "bend": 0
       },
       "after": {
         "old": 0,
-        "bend": 49
+        "bend": 45
       },
       "points": [
         {
@@ -72,6 +72,7 @@
       "editableExport": true,
       "packageRestoredAndEdited": true,
       "exportPreviewUncovered": true,
+      "exportFocusOnReopen": true,
       "editingLayoutPreferenceRetained": true,
       "backupIndependentOfPublicSettings": true,
       "cancelledBackupReadonly": true,
@@ -79,7 +80,7 @@
     },
     {
       "scale": 2,
-      "profile": "/tmp/access-path-cqFSzi",
+      "profile": "/tmp/access-path-YOwEQG",
       "before": {
         "old": 42,
         "bend": 0
@@ -108,6 +109,7 @@
       "editableExport": true,
       "packageRestoredAndEdited": true,
       "exportPreviewUncovered": true,
+      "exportFocusOnReopen": true,
       "editingLayoutPreferenceRetained": true,
       "backupIndependentOfPublicSettings": true,
       "cancelledBackupReadonly": true,

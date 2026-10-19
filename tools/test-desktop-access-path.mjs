@@ -281,6 +281,9 @@ try {
     await page.waitForFunction(() => document.getElementById('atlas-output-save-status').textContent === 'Kampagnensicherung abgebrochen.');
     assert.deepEqual(readRoom(), originalRoom);
     assert.deepEqual(readPath(), beforeBackup);
+    await page.locator('#atlas-output-back').click();
+    await page.locator('#atlas-output-open').click();
+    assert.equal(await page.evaluate(() => document.getElementById('atlas-output').contains(document.activeElement)), true, 'reopening campaign output puts keyboard focus in its visible controls');
     const editable = out + "/" + scale + "-editable.kwcampaign";
     await app.evaluate(({ dialog }, file) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
@@ -365,6 +368,7 @@ try {
       editableExport: true,
       packageRestoredAndEdited: true,
       exportPreviewUncovered: true,
+      exportFocusOnReopen: true,
       editingLayoutPreferenceRetained: true,
       backupIndependentOfPublicSettings: true,
       cancelledBackupReadonly: true,

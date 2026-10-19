@@ -87,7 +87,8 @@ Während das Exportpanel offen ist, macht die Zeichenleiste der Vorschau Platz.
 Bei Rückkehr bleiben ihre vorherige Sichtbarkeit und die gespeicherte
 Bearbeitungsanordnung erhalten. Auch bei doppelter Skalierung bleibt das
 Zollhaus tatsächlich auf der unverdeckten Kartenfläche. [Zuvor verdeckt](access-path-obscured-200.png).
-Abbrechen ändert die geprüften Autoreninhalte nicht. Öffentliche Bild- oder
+Beim Wiederöffnen der Sicherungsansicht erhält die sichtbare Formatauswahl den
+Tastaturfokus. Abbrechen ändert die geprüften Autoreninhalte nicht. Öffentliche Bild- oder
 Archivoptionen redigieren die Sicherung nicht; die Oberfläche nennt ausdrücklich
 GM-Inhalte. Das tatsächlich erzeugte Paket wurde über **Pakete und Kopien**
 als unabhängige Kampagne importiert. Dort ließ sich der Weg erneut ziehen,
