@@ -13,6 +13,8 @@ Liveübergabe: [Kampf-Recovery](combat-recovery.md).
 | Vorlagen und Planungsparty | [catalog-ui.ts](../../../src/app/catalog-ui.ts), [generation-ui.ts](../../../src/app/generation-ui.ts); [Generierungskontext](../../../tests/desktop-generation-context.test.mjs) |
 | Tabellen, Loot, Presets und Weltquellen | [generation-ui.ts](../../../src/app/generation-ui.ts), [world-source-ui.ts](../../../src/app/world-source-ui.ts), [storage/generation.ts](../../../src/app/storage/generation.ts); [Gewichte/Save](../../../tests/desktop-table-weights.test.mjs), [Scope](../../../tests/desktop-table-scope.test.mjs), [Weltquellen-UI](../../../tests/desktop-world-source-ui.test.mjs) |
 | Bestehende Vorlage auffüllen | [GenerationRequest/Run](../../../src/app/generation-contracts.ts), [Selector](../../../src/app/generation/selector.ts) und bestehender Vorlagenwriter; [Füll-/Transferfälle](../../../tests/desktop-generation-fill.test.mjs) |
+| Verknüpfte Beute reproduzieren und buchen | `previewLoot` in [storage/generation.ts](../../../src/app/storage/generation.ts) berechnet Sessionvorschau und gebuchten Wurf; [Seeds, Gruppierung und Receipts](../../../tests/desktop-generation-loot.test.mjs) |
+| Generierung bis zum Folgeabend durchspielen | [Native Bedienprobe](../../../tools/test-desktop-generation-preparation.mjs): gemischte Level, thematische Tabelle, verknüpfte Beute, angepasste Vorlage, Appneustart, veränderte aktuelle Party, Kampfabschluss und erneutes Öffnen; Vorbereitung bei 100%, Wiederaufnahme und Kampf bei 200% |
 
 Vorhandene Store-/DOM- und native Einzelläufe qualifizieren ihre geprüften Fälle,
 keine vollständige Encounter-, 200%-, Plattform- oder unbekannte-Write-Abnahme.
