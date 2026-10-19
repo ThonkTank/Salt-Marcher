@@ -34,6 +34,27 @@ Ledger-Snapshot des Belegs. Spätere Preis-, Definitions- und Mengenänderungen
 ändern diese Anzeige nicht. Fehlende historische Beträge bleiben ausdrücklich
 unbekannt; heutige Richt- oder Shoppreise werden nicht eingesetzt. Die Anzeige
 benötigt keine weitere Abfrage und verändert keine historischen Payloads.
+
+Der Verlauf startet mit den neuesten 50 Belegen. „Ältere Einträge laden“ liest
+weitere Seiten über die letzte angezeigte Belegkennung; spätere Buchungen
+verschieben diese Fortsetzung nicht. `shopHistory` bindet die Kennung an
+Kampagne und Shop und liest ausschließlich vorhandene `shop_event`-Zeilen.
+Ein Index auf Kampagne/Shop unterstützt diese Lesegrenze. Es gibt keinen neuen
+Verlaufsbestand und keine Umschreibung alter Belege. `ShopView.historyNext`
+bleibt wegen bestehender gespeicherter Receipts optional; deren volle erste
+Seite kann über dieselbe letzte Belegkennung weitergelesen werden.
+
+Der Renderer erhält bei Ladefehlern sichtbare Einträge und offene Handelsfelder.
+Shopwechsel, neue Shopstände und Kampagnenaktivierung entwerten frühere Antworten;
+der nächste Versuch bleibt ausdrücklich. Nach der letzten Seite erhält die
+Statuszeile den Fokus, wenn zuvor der nun verborgene Ladeknopf fokussiert war.
+Die seitenweise Verlaufsanzeige ist
+kein Lastbeleg für das gesamte Shoplesen: Der vorhandene Auffüllzeithinweis
+prüft weiterhin den gespeicherten Gesamtverlauf, um spätere bestätigte
+Auffüllungen gegenüber einer zurückliegenden Gruppenzeit kenntlich zu machen.
+Eine spätere Beschleunigung dieses Fachreads benötigt denselben belegten
+Zeitstand und eigene Last-/Integritätsprüfung.
+
 `tools/test-desktop-shop-switch.mjs` prüft zusätzlich Kauf → Teilverkauf →
 regulärer Neustart mit Bestand und beiden Beträgen am selben Shop; die
 gezielten Storeprüfungen erhalten Rundungs-, Replay- und Rollbackregeln.
@@ -45,8 +66,13 @@ Figur auch beim Scrollen. Katalog und Shops besitzen direkte Bereichsschalter;
 Shopdaten, Zeitbasis und Warenlieferungen sind gesammelt aufklappbar.
 Gemeinsame Ladefehler und deren Wiederholen bleiben in beiden Bereichen sichtbar. Neue Shops
 und die geführte Ortszuordnung öffnen diese Verwaltung. Der Gesamtweg bis zum
-Teilrückverkauf und Neustart steht in `tools/test-desktop-shop-trade.mjs`;
-[beobachteter Vergleich und Grenzen](../../reference/gm-ux-qa/2026-10-14-shop-switch.md#kauf-und-teilrückverkauf-unter-einer-figurenwahl--19102026).
+Teilrückverkauf und Neustart steht in `tools/test-desktop-shop-trade.mjs`.
+Der native Ablauf prüft tatsächlich abweichende Preise (5,01 GM Kauf / 0,77 GM
+Erlös), 55 spätere Auffüllungen, geänderte heutige Shoppreise und erneutes
+Lesen der alten Beträge nach einem kontrollierten Seitenfehler. Regulärer
+Close/Fresh und 100/200 Prozent bleiben getrennte Laufbelege; vollständige
+SMR-AC-10- und Plattform-/Owner-Abnahme bleiben offen.
+[Beobachteter Vergleich und Grenzen](../../reference/gm-ux-qa/2026-10-14-shop-switch.md#kauf-und-teilrückverkauf-unter-einer-figurenwahl--19102026).
 
 `restockDue` schreibt mit bestätigter Scenezeit/Weltfolgen atomar. Nur eine
 fällige automatische Regel benötigt den Shopowner: fehlende Owner manueller

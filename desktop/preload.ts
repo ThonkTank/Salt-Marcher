@@ -230,6 +230,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   itemDefinition:(id:string,revision?:number)=>ipcRenderer.invoke('items:definition',id,revision),
   shops:(token:string,trashed:boolean)=>ipcRenderer.invoke('items:shops',token,trashed),
   shop:(token:string,id:string)=>ipcRenderer.invoke('items:shop',token,id),
+  shopHistory:(token:string,id:string,after:string|null)=>ipcRenderer.invoke('items:shop-history',token,id,after),
   sceneShops:(token:string,id:string)=>ipcRenderer.invoke('items:scene-shops',token,id),
   executeItemShop:(command:import('../src/app/items-contracts').ItemShopCommand)=>ipcRenderer.invoke('items:execute',command),
   commitStatus:(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>ipcRenderer.invoke('campaign:commit-status',ref,token),

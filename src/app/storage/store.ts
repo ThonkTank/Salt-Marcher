@@ -101,7 +101,7 @@ import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFav
 import type {MusicView,AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup,travelEnvironmentBasis} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
-import {installItemsSchema,readShop,readShops,sceneShops,executeItemShop,restockDue,validateItemsBackup} from './items';
+import {installItemsSchema,readShop,readShopHistory,readShops,sceneShops,executeItemShop,restockDue,validateItemsBackup} from './items';
 import {readItemDefinition,readItemDefinitions} from './item-definitions';
 import type {ItemQuery,ItemShopCommand} from '../items-contracts';
 import { createHash, randomUUID } from 'node:crypto';
@@ -1268,6 +1268,7 @@ export class CampaignStore {
   itemDefinition(id:string,revision?:number){return readItemDefinition(this.db,id,revision);}
   shops(token:string,includeTrashed:boolean){return readShops(this.db,this.guard(token),includeTrashed);}
   shop(token:string,id:string){return readShop(this.db,this.guard(token),id);}
+  shopHistory(token:string,id:string,after:string|null){return readShopHistory(this.db,this.guard(token),id,after);}
   sceneShops(token:string,id:string){return sceneShops(this.db,this.guard(token),id);}
   executeItemShop(command:ItemShopCommand){return executeItemShop(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
   combatResolution(token:string,sceneId:string,id:string,after:string|null){return readCombatResolution(this.db,this.guard(token),sceneId,id,after);}

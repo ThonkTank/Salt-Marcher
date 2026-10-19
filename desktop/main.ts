@@ -428,6 +428,7 @@ else {
     handle('items:definition',(id:string,revision?:number)=>store.itemDefinition(id,revision));
     handle('items:shops',(token:string,trashed:boolean)=>store.shops(token,trashed));
     handle('items:shop',(token:string,id:string)=>store.shop(token,id));
+    handle('items:shop-history',(token:string,id:string,after:string|null)=>store.shopHistory(token,id,after));
     handle('items:scene-shops',(token:string,id:string)=>store.sceneShops(token,id));
     const commits=new CommitTracker((ref,token)=>store.commitStatus(ref,token));
     handle('campaign:commit-status',(ref:import('../src/app/commit-receipt').CommitReference,token:string)=>commits.status(ref,token));

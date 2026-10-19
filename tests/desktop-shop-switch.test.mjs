@@ -17,7 +17,7 @@ async function fixture(){
  for(const c of heroes){const ack=store.executeProgress(command({kind:'manual-item',characterId:c.id,expectedMembershipRevision:store.live(w.token).roster.find(m=>m.id===c.id).membershipRevision,origin:'manual',item:{name:'Seil',quantity:4,valueGold:'2',category:'equipment',reference:{kind:'authored',definitionId:definition.id,revision:definition.revision}},note:'  Reise\r\n- Fund'}));items.push(store.ledgerItem(w.token,ack.ledgerIds[0]));}
  const shops=[];for(const[name,quantity]of [['Hafenladen',5],['Bergladen',7]]){const id=randomUUID();store.executeNpc({commandId:randomUUID(),campaignId:cam.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Besitzer '+name,creatureId:null,readAloud:'',gmNotes:'',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:null}});shops.push(store.executeItemShop(command({kind:'shop',expectedRevision:null,shop:{id:randomUUID(),revision:0,name,owner:{kind:'npc',id},notes:'  Markttag\r\n- Feste Preise',trashed:false,stock:[{id:randomUUID(),reference:{kind:'authored',definitionId:definition.id,revision:definition.revision},quantity,unique:false,instanceId:null,buyCopper:'200',sellCopper:'100',notes:'',restock:null}]}})).shop.shop);}
  const previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});const local=new Map();window.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
- const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}},writes=[],messages=[];window.campaign={};for(const key of ['preparation','progress','live','itemDefinitions','itemDefinition','shops','shop','ledgerInventory','commitStatus'])window.campaign[key]=async(...args)=>response(()=>store[key](...args));window.campaign.executeItemShop=async c=>{writes.push(c);return response(()=>store.executeItemShop(c));};
+ const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}},writes=[],messages=[];window.campaign={};for(const key of ['preparation','progress','live','itemDefinitions','itemDefinition','shops','shop','ledgerInventory','commitStatus','shopHistory'])window.campaign[key]=async(...args)=>response(()=>store[key](...args));window.campaign.executeItemShop=async c=>{writes.push(c);return response(()=>store.executeItemShop(c));};
  delete require.cache[require.resolve('../.build/shop-switch-ui.cjs')];const ui=require('../.build/shop-switch-ui.cjs');ui.initItems(text=>messages.push(text),async()=>{});const el=id=>document.getElementById(id);for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.id==='item-sort'?'name':select.id==='item-direction'?'asc':'',writable:true});ui.activateItems(w);await ui.openItems();
  const choose=id=>[...el('shops-list').querySelectorAll('button')].find(b=>b.textContent.startsWith(shops.find(s=>s.id===id).name+' ·')).onclick();choose(shops[0].id);await until(()=>el('shop-name').value===shops[0].name&&!el('shop-fields').disabled);el('shop-seller').value=heroes[0].id;el('shop-seller').onchange();await until(()=>el('shop-sale-item').options.length===1&&!el('shop-sale-fields').disabled);el('shop-sale-item').value=items[0].id;
  const buy=()=>[...el('shop-stock').querySelectorAll('button')].find(b=>b.hasAttribute('data-purchase-available')).onclick(),sell=()=>{el('shop-sale-quantity').value='1';el('shop-sale-price').value='3';el('shop-sale-form').onsubmit({preventDefault(){}});},settle=async()=>{await tick();await ui.flushItems();await tick();};
@@ -162,4 +162,46 @@ for(const lostReply of [false,true])test(`a ${lostReply?'recovered':'confirmed'}
   assert(await x.ui.flushItems());const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.name,'Hafenladen ergänzt');assert.equal(saved.stock[0].quantity,4);
   assert.equal(x.store.ledgerInventory(x.w.token,{characterId:x.heroes[0].id,after:null}).items.filter(l=>l.origin==='purchase').length,1);
  }finally{pause.resolve();canRecover=true;await x.cleanup();}
+});
+
+async function fillHistory(x){
+ for(let i=0;i<55;i++){const shop=x.store.shop(x.w.token,x.shops[0].id).shop;x.store.executeItemShop({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action:{kind:'restock',shopId:shop.id,expectedRevision:shop.revision,entryId:shop.stock[0].id,mode:'add',quantity:1,reason:'Markttag'}});}
+ await x.ui.openItems(x.shops[0].id);
+}
+test('older history preserves visible entries on failure and retries without writing or clearing raw trade input',async()=>{
+ const x=await fixture();try{
+  await fillHistory(x);const more=x.el('shop-history-more'),initial=x.el('shop-history').textContent,before=x.store.db.serialize();
+  x.el('shop-sale-price').value='0.77';const original=window.campaign.shopHistory;let calls=0;
+  window.campaign.shopHistory=async()=>{calls++;return{ok:false,error:'Ältere Belege gerade nicht lesbar'};};more.click();
+  await until(()=>x.el('shop-history-status').getAttribute('role')==='alert');assert.equal(x.el('shop-history').textContent,initial);assert.equal(x.el('shop-sale-price').value,'0.77');assert.equal(calls,1);
+  window.campaign.shopHistory=original;more.click();await until(()=>more.hidden);assert.equal(x.el('shop-history').querySelectorAll('p').length,56);assert.equal(x.el('shop-sale-price').value,'0.77');assert.deepEqual(x.store.db.serialize(),before);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+test('a delayed history page cannot populate another shop or a reopened campaign',async()=>{
+ const x=await fixture();try{
+  await fillHistory(x);const original=window.campaign.shopHistory,gate=held();let calls=0;
+  window.campaign.shopHistory=async(...args)=>{calls++;const result=await original(...args);await gate.promise;return result;};
+  const more=x.el('shop-history-more');more.onclick();more.onclick();await until(()=>calls===1);
+  x.choose(x.shops[1].id);await until(()=>x.el('shop-name').value===x.shops[1].name&&!x.el('shop-fields').disabled);const current=x.el('shop-history').textContent;
+  gate.resolve();await tick();await tick();assert.equal(x.el('shop-history').textContent,current);assert.equal(x.el('shop-history-more').hidden,true);assert.equal(x.writes.length,0);
+  await x.ui.openItems(x.shops[0].id);const second=held();window.campaign.shopHistory=async(...args)=>{const result=await original(...args);await second.promise;return result;};
+  x.el('shop-history-more').click();await tick();x.ui.activateItems(x.w);await x.ui.openItems(x.shops[0].id);const fresh=x.el('shop-history').textContent;
+  second.resolve();await tick();await tick();assert.equal(x.el('shop-history').textContent,fresh);assert.equal(x.el('shop-history').querySelectorAll('p').length,50);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+test('a legacy full history snapshot without a continuation field can still reach older receipts',async()=>{
+ const x=await fixture();try{
+  await fillHistory(x);const original=window.campaign.shop;window.campaign.shop=async(...args)=>{const result=await original(...args);if(result.ok)delete result.value.historyNext;return result;};
+  await x.ui.openItems(x.shops[0].id);assert.equal(x.el('shop-history-more').hidden,false);x.el('shop-history-more').click();
+  await until(()=>x.el('shop-history-more').hidden);assert.equal(x.el('shop-history').querySelectorAll('p').length,56);assert.match(x.el('shop-history').textContent,/Shop angelegt/);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+test('a newly confirmed trade retires an older history read for the same shop',async()=>{
+ const x=await fixture();try{
+  await fillHistory(x);const original=window.campaign.shopHistory,gate=held();let started=false;
+  window.campaign.shopHistory=async(...args)=>{const result=await original(...args);started=true;await gate.promise;return result;};
+  x.el('shop-history-more').click();await until(()=>started);x.buy();await x.settle();
+  const current=x.el('shop-history').textContent;assert.match(current,/Kauf: 1 × Seil/);assert.equal(x.el('shop-history').querySelectorAll('p').length,50);
+  gate.resolve();await tick();await tick();assert.equal(x.el('shop-history').textContent,current);assert.equal(x.el('shop-history').querySelectorAll('p').length,50);assert.equal(x.writes.length,1);
+ }finally{await x.cleanup();}
 });

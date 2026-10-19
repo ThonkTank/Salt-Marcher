@@ -65,3 +65,33 @@ test('trade rollback and status recovery preserve one price allocation and recei
  x.store.db.exec("CREATE TRIGGER controlled_trade_price_fault BEFORE UPDATE ON shop BEGIN SELECT RAISE(ABORT, 'controlled trade price fault'); END");const before=rows();assert.throws(()=>x.store.executeItemShop(command),/controlled trade price fault/);assert.deepEqual(rows(),before);assert.equal(x.store.commitStatus(ref,x.w.token).outcome,'not-applied');
  x.store.db.exec('DROP TRIGGER controlled_trade_price_fault');const ack=x.store.executeItemShop(command);x.reopen();const snapshot=rows();assert.deepEqual(x.store.commitStatus(ref,x.w.token),{outcome:'applied',value:ack});assert.deepEqual(rows(),snapshot);assert.equal(paid(x.entries()),101n);assert.deepEqual(x.store.executeItemShop({...command,token:x.w.token}),ack);assert.deepEqual(rows(),snapshot);
 });
+
+test('older shop history stays reachable read-only across a new arrival between pages',t=>{
+ const x=setup(t),purchase=x.buy(3,'1.01');x.sell(purchase.id,1,'0.07');
+ const add=()=>{const s=x.store.shop(x.w.token,x.shop.id).shop;return x.store.executeItemShop(x.command({kind:'restock',shopId:s.id,expectedRevision:s.revision,entryId:s.stock[0].id,mode:'add',quantity:1,reason:'Späterer Markttag'}));};
+ for(let i=0;i<55;i++)add();const original=x.store.db.prepare('SELECT id,payload,checksum FROM shop_event ORDER BY rowid DESC').all();
+ const first=x.store.shop(x.w.token,x.shop.id);assert.equal(first.history.length,50);assert.equal(first.historyNext,first.history.at(-1).id);
+ add();const before=x.store.db.serialize(),older=x.store.shopHistory(x.w.token,x.shop.id,first.historyNext);
+ assert.equal(older.shopId,x.shop.id);assert.equal(older.next,null);assert.deepEqual([...first.history,...older.entries].map(h=>h.id),original.map(h=>h.id));
+ assert.equal(older.entries.find(h=>h.description.startsWith('Kauf:')).facts.entry.paidCopper,'101');assert.equal(older.entries.find(h=>h.description.startsWith('Verkauf')).facts.entry.actualSaleCopper,'7');
+ assert.deepEqual(x.store.db.serialize(),before);x.reopen();assert.deepEqual(x.store.shopHistory(x.w.token,x.shop.id,first.historyNext),older);
+});
+test('history cursors are confined to the selected shop and current campaign',t=>{
+ const x=setup(t),other={...x.shop,id:randomUUID(),revision:0,name:'Anderer Laden'};x.store.executeItemShop(x.command({kind:'shop',shop:other,expectedRevision:null}));
+ assert.equal(x.store.shopHistory(x.w.token,x.shop.id,null).shopId,x.shop.id);
+ const cursor=x.store.shop(x.w.token,other.id).history[0].id,before=x.store.db.serialize();
+ for(const after of ['',1,{},'missing',cursor])assert.throws(()=>x.store.shopHistory(x.w.token,x.shop.id,after));
+ assert.deepEqual(x.store.db.serialize(),before);const campaign=x.store.create('Andere Kampagne'),active=x.store.activate(campaign.id);
+ assert.throws(()=>x.store.shopHistory(x.w.token,x.shop.id,null));assert.throws(()=>x.store.shopHistory(active.token,x.shop.id,null));
+});
+test('a damaged older page fails without changing current history, prices or ledger',t=>{
+ const x=setup(t);for(let i=0;i<55;i++){const s=x.store.shop(x.w.token,x.shop.id).shop;x.store.executeItemShop(x.command({kind:'restock',shopId:s.id,expectedRevision:s.revision,entryId:s.stock[0].id,mode:'add',quantity:1,reason:'Markttag'}));}
+ const view=x.store.shop(x.w.token,x.shop.id),oldest=x.store.db.prepare('SELECT id FROM shop_event ORDER BY rowid LIMIT 1').get().id;
+ x.store.db.prepare('UPDATE shop_event SET payload=? WHERE id=?').run('{}',oldest);const before=x.store.db.serialize();
+ assert.equal(view.history.length,50);assert.throws(()=>x.store.shopHistory(x.w.token,x.shop.id,view.historyNext),/beschädigt/);assert.deepEqual(x.store.db.serialize(),before);
+});
+test('legacy shop receipts replay without adding history fields or rewriting their bytes',t=>{
+ const x=setup(t),purchase=x.buy(3,'1.01'),old=structuredClone(purchase.ack);delete old.shop.historyNext;
+ const payload=JSON.stringify(old);x.store.db.prepare('UPDATE shop_receipt SET payload=?,checksum=? WHERE command_id=?').run(payload,createHash('sha256').update(payload).digest('hex'),purchase.command.commandId);
+ const before=x.store.db.serialize();assert.deepEqual(x.store.executeItemShop(purchase.command),old);assert.deepEqual(x.store.db.serialize(),before);assert.equal(x.store.shop(x.w.token,x.shop.id).historyNext,null);
+});

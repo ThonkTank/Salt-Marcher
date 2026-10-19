@@ -3,7 +3,7 @@ import {drawCatalogRestock} from './catalog-restock';
 import {checkedCalendarEvent} from '../world-model';
 import {validateRestockTables,prepareRestockTables,drawRestockTable} from './shop-restock';
 import {createHash,randomUUID} from 'node:crypto';
-import type {Shop,ShopView,ShopSummary,ItemShopCommand,ItemShopAck} from '../items-contracts';
+import type {Shop,ShopView,ShopHistoryPage,ShopSummary,ItemShopCommand,ItemShopAck} from '../items-contracts';
 import {copper,partitionLedgerPaidPrice,type LedgerItem} from '../progression';
 import {saveLedger,event,readLedgerItem} from './progression';
 import {readItemDefinition,saveItemDefinition,installItemDefinitions,validateItemDefinitionVersions,checkedDefinition} from './item-definitions';
@@ -14,6 +14,7 @@ const json=(v:unknown)=>JSON.stringify(v),hash=(s:string)=>createHash('sha256').
 function decoded<T>(row:any):T{if(!row||hash(row.payload)!==row.checksum)throw new Error('Shopdaten fehlen oder sind beschädigt.');return JSON.parse(row.payload);}
 export function installItemsSchema(db:any){installItemDefinitions(db);db.exec(`CREATE TABLE IF NOT EXISTS shop(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS shop_event(campaign_id TEXT NOT NULL,shop_id TEXT NOT NULL,id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,shop_id) REFERENCES shop(campaign_id,id)) STRICT;
+ CREATE INDEX IF NOT EXISTS shop_event_by_shop ON shop_event(campaign_id,shop_id);
  CREATE TABLE IF NOT EXISTS shop_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);}
 function owner(db:any,cam:string,s:Shop){if(!['npc','location'].includes(s.owner.kind))throw new Error('Shop benötigt einen NPC oder Ort als Besitzer.');const row=db.prepare(`SELECT * FROM ${s.owner.kind==='npc'?'world_note':'location'} WHERE campaign_id=? AND id=?`).get(cam,s.owner.id);if(!row)throw new Error('Shopbesitzer fehlt.');const d=decoded<any>(row);if(s.owner.kind==='npc'&&d.kind!=='npc')throw new Error('Shopbesitzer muss ein NPC sein.');const name=d.title??d.name;if(d.id!==s.owner.id||s.owner.kind==='location'&&d.kind!=='location'||typeof name!=='string'||!name.trim()||name.length>1000)throw new Error('Shopbesitzer hat keine gültige Identität oder Bezeichnung.');return{name,unavailable:!!row.trashed};}
 function saveShop(db:any,cam:string,s:Shop){validateShopShape(s);const payload=json(s);db.prepare('INSERT INTO shop VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,s.id,s.revision,payload,hash(payload));}
@@ -61,9 +62,22 @@ function readRestockEvent(db:any,cam:string,id:string){
  const row=db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id),e=checkedCalendarEvent(decoded(row),true);
  if(e.id!==row.id||e.revision!==row.revision)throw new Error('Lieferereignis widerspricht seiner Identität.');return e;
 }
+export function readShopHistory(db:any,cam:string,id:string,after:string|null):ShopHistoryPage{
+ if(typeof id!=='string'||!id||id.length>1000||after!==null&&(typeof after!=='string'||!after||after.length>1000))throw Error('Shopverlauf und Seitenmarke prüfen.');
+ return db.transaction(()=>{
+  shopRecord(db,cam,id);
+  const cursor=after===null?null:db.prepare('SELECT rowid AS cursor FROM shop_event WHERE campaign_id=? AND shop_id=? AND id=?').get(cam,id,after);
+  if(after!==null&&!cursor)throw Error('Seitenmarke gehört nicht zu diesem Shopverlauf.');
+  const rows=cursor
+   ?db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? AND rowid<? ORDER BY rowid DESC LIMIT 51').all(cam,id,cursor.cursor)
+   :db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 51').all(cam,id);
+  const entries=rows.slice(0,50).map((r:any)=>({...decoded<any>(r),id:r.id}));
+  return {shopId:id,entries,next:rows.length>50?entries.at(-1)!.id:null};
+ })();
+}
 export function readShop(db:any,cam:string,id:string):ShopView{
- const s=shopRecord(db,cam,id),o=owner(db,cam,s);
- return{shop:s,ownerName:o.name,unavailable:o.unavailable||s.trashed,timeNotice:restockTimeNotice(db,cam,id),restockEvents:restockEvents(db,cam),items:[...new Set(s.stock.map(e=>e.reference.definitionId))].map(id=>readItemDefinition(db,id)),history:db.prepare('SELECT * FROM shop_event WHERE campaign_id=? AND shop_id=? ORDER BY rowid DESC LIMIT 50').all(cam,id).map((r:any)=>({id:r.id,...decoded<any>(r)}))};
+ const s=shopRecord(db,cam,id),o=owner(db,cam,s),history=readShopHistory(db,cam,id,null);
+ return{shop:s,ownerName:o.name,unavailable:o.unavailable||s.trashed,timeNotice:restockTimeNotice(db,cam,id),restockEvents:restockEvents(db,cam),items:[...new Set(s.stock.map(e=>e.reference.definitionId))].map(id=>readItemDefinition(db,id)),history:history.entries,historyNext:history.next};
 }
 function listShops(db:any,cam:string,includeTrashed:boolean,accept?:(s:Shop)=>boolean):ShopSummary[]{
  const list:ShopSummary[]=[];

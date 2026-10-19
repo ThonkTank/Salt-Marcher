@@ -10,7 +10,9 @@ export interface ShopRestockCatalog {filter:ItemCatalogFilter;minimum:number;max
 export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];catalog?:ShopRestockCatalog|null;schedule:ShopRestockSchedule|null}
 export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
-export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:{id:string;time:string;description:string;facts?:{entry?:LedgerItem}}[]}
+export interface ShopHistoryEntry {id:string;time:string;description:string;facts?:{entry?:LedgerItem}}
+export interface ShopHistoryPage {shopId:string;entries:ShopHistoryEntry[];next:string|null}
+export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:ShopHistoryEntry[];historyNext?:string|null}
 export type ItemShopAction=
  |{kind:'definition';definition:ItemDefinition;expectedRevision:number|null}
  |{kind:'definition-trash';id:string;expectedRevision:number;trashed:boolean}
@@ -27,6 +29,7 @@ export interface ItemsAPI {
  itemDefinition(id:string,revision?:number):Promise<Result<ItemDefinition>>;
  shops(token:string,includeTrashed:boolean):Promise<Result<ShopSummary[]>>;
  shop(token:string,id:string):Promise<Result<ShopView>>;
+ shopHistory(token:string,id:string,after:string|null):Promise<Result<ShopHistoryPage>>;
  executeItemShop(command:ItemShopCommand):Promise<Result<ItemShopAck>>;
  sceneShops(token:string,sceneId:string):Promise<Result<ShopSummary[]>>;
 }
