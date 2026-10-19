@@ -237,7 +237,21 @@ function renderShop(force=false){el('shop-editor').hidden=!shop;if(!shop||dirtyS
  if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);await loadSeller();if(!owned(w.token,g))return;await refreshProgress();if(owned(w.token,g))tell('Kauf gebucht.');
 }));buy.disabled=shop.unavailable||!e.quantity||!!d?.trashed;card.append(buy);config.append(shopButton('Bestandszeile entfernen',()=>{collectShop();shop!.shop.stock=shop!.shop.stock.filter(s=>s.id!==e.id);dirtyShop=true;renderShop(true);}));root.append(card);}
  renderShopRestockTables(root,shop,{changed:()=>{dirtyShop=true;},rebuild:()=>renderStockKeepingText(),button:shopButton,roll:tableId=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id;if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const table=shop.shop.restockTables?.find(t=>t.id===tableId);if(!table)return;const snapshot=structuredClone(shop.shop),result=await command({kind:'random-restock',shopId:id,expectedRevision:shop.shop.revision,tableId,expectedTableRevision:table.revision});if(owned(w.token,g)&&shop?.shop.id===id)applyTradeShop(result.shop!,snapshot);}).then(()=>{})});
- const history=el('shop-history');history.replaceChildren();for(const h of shop.history){const p=document.createElement('p');p.textContent=h.time+' · '+h.description;history.append(p);}}
+ renderShopHistory(shop.history);}
+function renderShopHistory(history:ShopView['history']){
+ const root=el('shop-history');root.replaceChildren();
+ for(const h of history){
+  const entry=h.facts?.entry,price=entry?.status==='sold'
+   ?{label:'Erlös',copper:entry.actualSaleCopper}
+   :entry?.origin==='purchase'&&entry.status==='received'?{label:'Gezahlt',copper:entry.paidCopper}:null;
+  const p=document.createElement('p');p.textContent=h.time+' · '+h.description;
+  if(price){
+   const raw=price.copper,text=typeof raw==='string'&&/^[0-9]+$/.test(raw)?gold(raw):raw==null?'nicht aufgezeichnet':'nicht lesbar';
+   p.append(' · '+price.label+': '+text);
+  }
+  root.append(p);
+ }
+}
 let stockIntent:{token:string;epoch:number;shopId:string;definitionId:string;revision:number}|null=null;
 async function addShopItem(prices?:{buy:string;sell:string}){
  const token=workspace?.token,g=epoch,id=shop?.shop.id,definitionId=definition?.id;if(!token||!id||!definitionId||!shopReady()||!definitionReady())throw new Error('Gegenstand und Shop auswählen.');

@@ -67,3 +67,31 @@ test('manual stock addition works without configuring an automatic restock rule'
   const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.stock[0].quantity,8);assert.equal(saved.stock[0].restock,null);assert.equal(x.store.shop(x.w.token,x.shops[1].id).shop.stock[0].quantity,7);assert.equal(x.writes.filter(c=>c.action.kind==='shop').length,0,'manual addition must not create or save an automatic rule');
  }finally{await x.cleanup();}
 });
+
+test('shop history shows the original negotiated purchase and partial sale after prices change',async()=>{
+ const x=await fixture();try{
+  const input=label=>[...x.el('shop-stock').querySelectorAll('label')].find(l=>l.firstChild.textContent===label).querySelector('input');
+  input('Kaufmenge').value='3';input('Tatsächlich gezahlt (GM gesamt)').value='1.01';x.buy();await x.settle();
+  const purchase=x.store.ledgerInventory(x.w.token,{characterId:x.heroes[0].id,after:null}).items.find(l=>l.origin==='purchase');
+  x.el('shop-sale-item').value=purchase.id;x.el('shop-sale-quantity').value='1';x.el('shop-sale-price').value='0.07';x.el('shop-sale-form').onsubmit({preventDefault(){}});await x.settle();
+  const history=x.el('shop-history').textContent;assert.match(history,/Kauf: 3 × Seil · Gezahlt: 1,01 GM/);assert.match(history,/Verkauf an Shop: 1 × Seil · Erlös: 0,07 GM/);
+  assert.equal(x.store.ledgerItem(x.w.token,purchase.id).paidCopper,'68');
+  const original=x.store.db.prepare('SELECT * FROM shop_event ORDER BY rowid').all(),command=action=>({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action});
+  const definition=x.store.shop(x.w.token,x.shops[0].id).items[0];x.store.executeItemShop(command({kind:'definition',expectedRevision:definition.revision,definition:{...definition,unitCopper:'99999'}}));
+  const shop=x.store.shop(x.w.token,x.shops[0].id).shop;shop.stock[0].buyCopper='77777';shop.stock[0].sellCopper='88888';x.store.executeItemShop(command({kind:'shop',expectedRevision:shop.revision,shop}));
+  x.choose(shop.id);await tick();await until(()=>!x.el('shop-fields').disabled);assert.match(x.el('shop-history').textContent,/Gezahlt: 1,01 GM/);assert.match(x.el('shop-history').textContent,/Erlös: 0,07 GM/);
+  for(const row of original)assert.deepEqual(x.store.db.prepare('SELECT * FROM shop_event WHERE id=?').get(row.id),row);
+ }finally{await x.cleanup();}
+});
+
+test('old and unreadable historical amounts stay explicit instead of using current shop prices',async()=>{
+ const x=await fixture();try{
+  const original=window.campaign.shop;window.campaign.shop=async(...args)=>{const r=await original(...args);return{...r,value:{...r.value,history:[
+   {id:'legacy',time:'Damals',description:'Historischer Einkauf'},
+   ...[undefined,'0','99999999999999999','1.5'].map((paidCopper,i)=>({id:String(i),time:'Damals',description:'Kauf '+i,facts:{entry:{origin:'purchase',status:'received',paidCopper}}})),
+   {id:'sale',time:'Damals',description:'Alter Verkauf',facts:{entry:{status:'sold',actualSaleCopper:null}}},
+  ]}};};
+  x.choose(x.shops[0].id);await tick();await until(()=>!x.el('shop-fields').disabled);const history=x.el('shop-history').textContent;
+  assert.match(history,/Historischer Einkauf/);assert.match(history,/Kauf 0 · Gezahlt: nicht aufgezeichnet/);assert.match(history,/Kauf 1 · Gezahlt: 0,00 GM/);assert.match(history,/Kauf 2 · Gezahlt: 999999999999999,99 GM/);assert.match(history,/Kauf 3 · Gezahlt: nicht lesbar/);assert.match(history,/Alter Verkauf · Erlös: nicht aufgezeichnet/);
+ }finally{await x.cleanup();}
+});

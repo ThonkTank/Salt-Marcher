@@ -1,5 +1,5 @@
 import type {Result} from './contracts';
-import type {ItemCategory, ItemReference} from './progression';
+import type {ItemCategory, ItemReference, LedgerItem} from './progression';
 export interface ItemDefinition {id:string;revision:number;name:string;category:ItemCategory;magic:boolean;rarity:string;attunement:'no'|'yes'|'unspecified';unitCopper:string|null;weightText:string;properties:string[];description:string;source:{kind:'authored'|'srd51';label:string;license:string|null;url:string|null};trashed:boolean;sourceHash?:string}
 export interface ItemCatalogFilter {search:string;category:string;magic:''|'yes'|'no';rarity:string;attunement:string;source?:''|'authored'|'srd51'}
 export interface ItemQuery extends ItemCatalogFilter {sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
@@ -10,7 +10,7 @@ export interface ShopRestockCatalog {filter:ItemCatalogFilter;minimum:number;max
 export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];catalog?:ShopRestockCatalog|null;schedule:ShopRestockSchedule|null}
 export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
-export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:{id:string;time:string;description:string}[]}
+export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:{id:string;time:string;description:string;facts?:{entry?:LedgerItem}}[]}
 export type ItemShopAction=
  |{kind:'definition';definition:ItemDefinition;expectedRevision:number|null}
  |{kind:'definition-trash';id:string;expectedRevision:number;trashed:boolean}

@@ -21,6 +21,16 @@ keine zusätzliche Figurengruppe, damit sein Shop direkt im Livebereich erschein
 Lesen verändert weder Position, Bestand noch Ledger; Owner-/Shoptrash und
 Handelsregeln bleiben beim vorhandenen Shopreader/-writer.
 
+Der Handelsverlauf zeigt bei Käufen den tatsächlich gezahlten Gesamtpreis und
+bei Verkäufen den tatsächlichen Erlös aus dem bereits gespeicherten
+Ledger-Snapshot des Belegs. Spätere Preis-, Definitions- und Mengenänderungen
+ändern diese Anzeige nicht. Fehlende historische Beträge bleiben ausdrücklich
+unbekannt; heutige Richt- oder Shoppreise werden nicht eingesetzt. Die Anzeige
+benötigt keine weitere Abfrage und verändert keine historischen Payloads.
+`tools/test-desktop-shop-switch.mjs` prüft zusätzlich Kauf → Teilverkauf →
+regulärer Neustart mit Bestand und beiden Beträgen am selben Shop; die
+gezielten Storeprüfungen erhalten Rundungs-, Replay- und Rollbackregeln.
+
 `restockDue` schreibt mit bestätigter Scenezeit/Weltfolgen atomar. Nur eine
 fällige automatische Regel benötigt den Shopowner: fehlende Owner manueller
 oder erst später fälliger Shops blockieren keine unabhängige Zeit. Shopstruktur
