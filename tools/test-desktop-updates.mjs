@@ -8,6 +8,7 @@ import {createServer} from 'node:net';
 import path from 'node:path';
 const require=createRequire(import.meta.url),{_electron,chromium}=require('playwright-core');
 const base=path.resolve(process.argv[2]??'.build/update-native-base');
+const {schema}=JSON.parse(await readFile(path.join(base,'resources/app/build-info.json'),'utf8'));
 const fixtureBase=path.resolve('.build/native-update-fixtures');await mkdir(fixtureBase,{recursive:true});
 const temp=await mkdtemp(path.join(fixtureBase,'run-')),root=path.join(temp,'installation'),profile=path.join(temp,'custom-profile'),evidence=path.resolve('.build/update-native-evidence.json');
 const {privateKey,publicKey}=generateKeyPairSync('ed25519'),publicPem=publicKey.export({type:'spki',format:'pem'}),commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
@@ -19,9 +20,9 @@ async function version(v,debug=false){
  const dir=path.join(temp,'source-'+v);await cp(base,dir,{recursive:true});
  await build({entryPoints:['desktop/main.ts'],outfile:path.join(dir,'resources/app/main.cjs'),bundle:true,platform:'node',format:'cjs',external:['electron','better-sqlite3'],define:{__APP_VERSION__:JSON.stringify(v)},...(debug?{banner:{js:`require('electron').app.commandLine.appendSwitch('remote-debugging-port', '${port}');`}}:{})});
  await writeFile(path.join(dir,'resources/app/update-public-key.pem'),publicPem);
- await writeFile(path.join(dir,'resources/app/build-info.json'),JSON.stringify({applicationVersion:v,commit,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',schema:{min:0,max:48,target:48}}));
+ await writeFile(path.join(dir,'resources/app/build-info.json'),JSON.stringify({applicationVersion:v,commit,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',schema}));
  const archive=path.join(temp,`SaltMarcher-${v}-linux-x64.zip`),hashes=await packUpdate(dir,archive,v,commit);
- const manifest={format:1,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',version:v,commit,platform:'linux-x64',archive:path.basename(archive),...hashes,schema:{min:0,max:48,target:48}};
+ const manifest={format:1,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',version:v,commit,platform:'linux-x64',archive:path.basename(archive),...hashes,schema};
  const signed=Buffer.from(JSON.stringify(manifest)),signature=sign(null,signed,privateKey);
  return{dir,archive,manifest,signed,signature};
 }

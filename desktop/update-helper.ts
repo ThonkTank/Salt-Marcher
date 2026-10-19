@@ -1,5 +1,5 @@
 import {spawn,type ChildProcess} from 'node:child_process';
-import {mkdir,readFile,writeFile,realpath,open} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,realpath,open,rm} from 'node:fs/promises';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
@@ -53,6 +53,7 @@ async function install(request:InstallRequest){
     if(alive(parentPid))throw new Error('Vorherige Anwendung läuft noch.');
     releaseProfile=await acquireLock(profileLock(profile),token);await rejectLegacyRunningProfile(profile);
     await installUpdate({root,profile,previous,staged,publicKey:await publicKey(),token},{probe:runProbe,start:startCandidate});
+    await rm(path.join(root,'.update-error.json'),{force:true});
   }finally{await releaseProfile?.();await releaseInstall();}
 }
 async function bootstrap(args:string[]){
@@ -80,7 +81,7 @@ async function main(){
   if(mode==='--bootstrap'){await bootstrap(args);return;}
   if(mode==='--install'){
     const request=await readJSON<InstallRequest>(args[0]!);
-    try{await install(request);}catch(e){await atomicJSON(path.join(request.root,'.update-error.json'),{message:(e as Error).message});const child=spawn(path.join(request.previous,'Starten.sh'),['--data-dir',request.profile],{env:env(),detached:true,stdio:'ignore'});child.unref();throw e;}return;
+    try{await install(request);}catch(e){await atomicJSON(path.join(request.root,'.update-error.json'),{message:(e as Error).message});const journal=await readJSON<UpdateJournal>(journalFile(request.root)).catch(()=>null);if(!journal||journal.phase==='rolled-back'){const child=spawn(path.join(request.previous,'Starten.sh'),['--data-dir',request.profile],{env:env(),detached:true,stdio:'ignore'});child.unref();}throw e;}return;
   }
   if(mode==='--launch'){
     const root=await installationRoot(path.join(appDir,'electron'));

@@ -16,6 +16,7 @@ export async function openUpdateRuntime(executable:string,profile:string){
       if(transaction.phase!=='starting'||transaction.token!==token||transaction.profile!==profile||transaction.next!==path.dirname(executable))throw new Error('Update-Erststart gehört nicht zu dieser Installation.');
     }else throw new Error('Installation läuft oder wurde unterbrochen. SaltMarcher über Starten.sh erneut öffnen.');
   }
+  if(root&&!transaction){const journal=await readJSON<UpdateJournal>(journalFile(root)).catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(journal&&!['committed','rolled-back'].includes(checkedJournal(journal,root).phase))throw new Error('Unterbrochenes Update. SaltMarcher über Starten.sh wiederherstellen.');}
   if(!transaction)release=await acquireLock(profileLock(profile));
   return{
     root,transaction,
