@@ -85,6 +85,17 @@ Reader einzeln zurück, liefern Fehler und fremde Sceneantworten und prüfen
 anschließende Commands/Revisionsbasen. Das ist DOM-/Controllernachweis, keine
 native Fehler-/Fokus-/Recoveryqualifikation.
 
+Auch syntaktisch oder fachlich beschädigte aktuelle Quellen bleiben von den
+gültigen eingefrorenen Pins getrennt. Identität und Revision müssen zur
+Quellzeile passen, bevor eine Quelle als aktuell gilt oder angeheftet bzw.
+aktualisiert werden darf. Eine ungültige Quelle erscheint beim betroffenen
+Pin als nicht verfügbar; dessen Text, andere Pins und regelbezogene Proben
+bleiben nutzbar. Beschädigte Pins selbst werden weiterhin abgewiesen.
+`desktop-rule-reference-store.test.mjs` prüft diese Grenze und unveränderte
+Quellbytes; die native Regelprüfung verfolgt sie über Gruppenwechsel und
+Neustart bei 100/200 % Zoom. Das ist keine Reparatur oder Exportfreigabe der
+beschädigten Quelle.
+
 Die Enter-Gegenfälle in `desktop-quick-reference.test.mjs` halten einen
 Nebenindex offen, prüfen frühe Detailöffnung und genau einen Request je Quelle,
 binden schon sichtbare Teiltreffer ein und verwerfen verspätete Öffnungsabsichten

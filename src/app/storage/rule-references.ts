@@ -10,7 +10,8 @@ type StoredPin=Pick<SceneRulePin,'noteId'|'sourceRevision'|'title'|'readAloud'|'
 export function installRuleReferenceSchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS scene_rule_state(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,revision INTEGER NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id));
  CREATE TABLE IF NOT EXISTS scene_rule_pin(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,note_id TEXT NOT NULL,ordinal INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id,note_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id),FOREIGN KEY(campaign_id,note_id) REFERENCES world_note(campaign_id,id));
  CREATE TABLE IF NOT EXISTS scene_rule_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL);`);}
-function source(db:any,cam:string,id:string):WorldNoteV1{const row=db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(!row||row.trashed||hash(row.payload)!==row.checksum)throw new Error('Regelreferenz fehlt oder liegt im Papierkorb.');const note=worldNoteDocument(JSON.parse(row.payload));if(note.kind!=='rule')throw new Error('Nur Regelreferenzen können an eine Scene geheftet werden.');return note;}
+function checkedSource(row:any,id:string):WorldNoteV1{if(!row||row.trashed||hash(row.payload)!==row.checksum)throw new Error('Regelreferenz fehlt oder liegt im Papierkorb.');const note=worldNoteDocument(JSON.parse(row.payload));if(note.id!==id||note.revision!==row.revision)throw new Error('Regelquelle hat eine widersprüchliche Identität oder Revision.');if(note.kind!=='rule')throw new Error('Nur Regelreferenzen können an eine Scene geheftet werden.');return note;}
+function source(db:any,cam:string,id:string):WorldNoteV1{return checkedSource(db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id),id);}
 function stored(row:any):StoredPin{if(!row||hash(row.payload)!==row.checksum)throw new Error('Angeheftete Regelreferenz ist beschädigt.');const pin=JSON.parse(row.payload);if(!pin||pin.noteId!==row.note_id||!Number.isSafeInteger(pin.sourceRevision)||pin.sourceRevision<1||![pin.title,pin.readAloud,pin.gmNotes].every((v:unknown)=>typeof v==='string'))throw new Error('Angeheftete Regelreferenz hat ein unbekanntes Format.');return pin;}
 function snapshot(note:WorldNoteV1):StoredPin{return{noteId:note.id,sourceRevision:note.revision,title:note.title,readAloud:note.readAloud,gmNotes:note.gmNotes};}
 export function readSceneRules(db:any,cam:string,sceneId:string):SceneRules{
@@ -20,15 +21,15 @@ export function readSceneRules(db:any,cam:string,sceneId:string):SceneRules{
  // Missing or damaged current sources must not remove their frozen pins.
  const pins:SceneRulePin[]=[];
  // Do not collect a second array containing all current source texts.
- for(const row of db.prepare(`SELECT p.*,n.payload AS source_payload,n.checksum AS source_checksum,n.trashed AS source_trashed
+ for(const row of db.prepare(`SELECT p.*,n.payload AS source_payload,n.checksum AS source_checksum,n.trashed AS source_trashed,n.revision AS source_revision
   FROM scene_rule_pin p LEFT JOIN world_note n ON n.campaign_id=p.campaign_id AND n.id=p.note_id
   WHERE p.campaign_id=? AND p.scene_id=? ORDER BY p.ordinal,p.note_id`).iterate(cam,sceneId)){
   const pin=stored(row);
   let currentRevision:number|null=null,unavailable=true;
-  if(row.source_payload!==null&&!row.source_trashed&&hash(row.source_payload)===row.source_checksum){
-   const note=worldNoteDocument(JSON.parse(row.source_payload));
-   if(note.kind==='rule'){currentRevision=note.revision;unavailable=false;}
-  }
+  try{
+   const note=checkedSource({payload:row.source_payload,checksum:row.source_checksum,trashed:row.source_trashed,revision:row.source_revision},pin.noteId);
+   currentRevision=note.revision;unavailable=false;
+  }catch{/* An invalid current source cannot invalidate the separately checked frozen pin. */}
   pins.push({...pin,currentRevision,unavailable,stale:unavailable||currentRevision!==pin.sourceRevision});
  }
  return {sceneId,revision,pins};
