@@ -16,6 +16,16 @@ async function fixture(){
  const buy=()=>[...el('shop-stock').querySelectorAll('button')].find(b=>b.textContent==='Für Figur kaufen').onclick(),sell=()=>{el('shop-sale-quantity').value='1';el('shop-sale-price').value='3';el('shop-sale-form').onsubmit({preventDefault(){}});},settle=async()=>{await tick();await ui.flushItems();await tick();};
  return{store,w,cam,heroes,items,shops,ui,el,choose,buy,sell,settle,writes,messages,async cleanup(){await settle();ui.activateItems(w);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
 }
+test('shop context and trades use the live roster without an unrelated progress read',async()=>{
+ const x=await fixture(),original=window.campaign.progress;let reads=0;
+ try{
+  window.campaign.progress=async()=>{reads++;return{ok:false,error:'Unrelated XP read unavailable'};};
+  await x.ui.openItems(x.shops[0].id);assert.equal(x.el('item-context-status').hidden,true);assert.equal(x.el('shop-fields').disabled,false);
+  x.buy();await x.settle();assert.equal(x.writes[0].action.kind,'purchase');assert.equal(x.writes[0].action.characterId,x.heroes[0].id);
+  x.sell();await x.settle();assert.deepEqual(x.writes.map(c=>c.action.kind),['purchase','sell']);assert.equal(x.store.ledgerItem(x.w.token,x.items[0].id).quantity,3);
+  assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.stock[0].quantity,5);assert.equal(reads,0);assert.deepEqual(x.messages,['Kauf gebucht.','Verkauf gebucht.']);
+ }finally{window.campaign.progress=original;await x.cleanup();}
+});
 test('shop selection blocks detached old purchases and commits an explicit purchase only in the requested shop',async()=>{
  const x=await fixture();try{const original=window.campaign.shop,pause=held(),oldBuy=[...x.el('shop-stock').querySelectorAll('button')].find(b=>b.textContent==='Für Figur kaufen').onclick;window.campaign.shop=async(t,id)=>id===x.shops[1].id?pause.promise:original(t,id);x.choose(x.shops[1].id);await until(()=>!x.el('shop-load-status').hidden);assert.equal(x.el('shop-fields').disabled,true);oldBuy();x.el('shop-form').onsubmit({preventDefault(){}});await tick();assert.equal(x.writes.length,0);pause.resolve(await original(x.w.token,x.shops[1].id));await until(()=>!x.el('shop-fields').disabled);oldBuy();await tick();assert.equal(x.writes.length,0);x.buy();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.shopId,x.shops[1].id);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.stock[0].quantity,5);assert.equal(x.store.shop(x.w.token,x.shops[1].id).shop.stock[0].quantity,6);}finally{await x.cleanup();}
 });

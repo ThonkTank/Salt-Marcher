@@ -8,6 +8,13 @@ manuelles, fixes und gewichtetes Auffüllen. Kaufpreis-/Ledgerregeln stehen im
 
 ## Vorhandener Ablauf und Grenzen
 
+Gegenstandsvergabe und Handel verwenden das ohnehin geladene Live-Roster für
+Figurennamen, Aktivstatus und Mitgliedschaftsrevisionen. Ein zusätzlicher
+Fortschrittsread mit XP-, Rast- und Kampfdaten ist dafür keine Voraussetzung.
+Käufer sind aktive, Verkäufer und Beuteempfänger auch inaktive Rosterfiguren;
+archivierte Figuren bleiben ausgeschlossen. Die Writer prüfen ihre jeweiligen
+Revisions- und Bestandsbasen weiterhin selbst.
+
 `items.ts.owner` prüft die Zuordnung; `ShopView.unavailable` berücksichtigt
 Shop- und Ownertrash. Ownerrestore erhält die Beziehung, hebt ausdrücklichen
 Shoptrash nicht auf. Shopreads zeigen defekte Records einzeln. Der Shopeditor

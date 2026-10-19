@@ -105,7 +105,19 @@ test('collapsed active filters remain visible and reset preserves the lookup tex
  }finally{await x.cleanup();}
 });
 
-for(const source of ['preparation','progress','live'])test(`item reference stays readable while ${source} is pending and dependent actions stay locked`,async()=>{
+test('live roster keeps inactive recipients and sellers but excludes archived characters and inactive buyers',async()=>{
+ const x=await fixture(),execute=action=>x.store.executeLive({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action});
+ try{
+  let live=x.store.live(x.w.token),borin=live.roster.find(c=>c.id===x.heroes[1].id);
+  execute({kind:'membership',characterId:borin.id,expectedRevision:borin.membershipRevision,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,active:false,targetSceneId:null});
+  const archived=execute({kind:'create-character',profile:{name:'Cato'}}).character;live=x.store.live(x.w.token);
+  execute({kind:'archive-character',characterId:archived.id,expectedRevision:archived.profileRevision,expectedMembershipRevision:archived.membershipRevision,expectedRosterRevision:live.rosterRevision,expectedFocusRevision:live.focusRevision,archived:true,confirmName:'Cato',reason:'Retired'});
+  await x.ui.openItems();const options=id=>[...x.el(id).options].map(o=>[o.value,o.textContent]),expected=[[x.heroes[0].id,'Ada'],[borin.id,'Borin · inaktiv']];
+  assert.deepEqual(options('item-recipient'),expected);assert.deepEqual(options('shop-seller'),expected);assert.deepEqual(options('shop-buyer'),expected.slice(0,1));
+  x.el('item-recipient').value=borin.id;x.award();await x.settle();assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'manual-item');assert.equal(x.writes[0].action.characterId,borin.id);assert.equal(x.writes[0].action.expectedMembershipRevision,x.store.live(x.w.token).roster.find(c=>c.id===borin.id).membershipRevision);
+ }finally{await x.cleanup();}
+});
+for(const source of ['preparation','live'])test(`item reference stays readable while ${source} is pending and dependent actions stay locked`,async()=>{
  const x=await fixture(),pause=held(),original=window.campaign[source];let opening;
  try{
   window.campaign[source]=()=>pause.promise;x.ui.activateItems(x.w);opening=x.ui.openItems();
@@ -152,11 +164,11 @@ test('a cancelled external item handoff cannot replace the detail after its read
 });
 
 test('a known usage-context failure is shown even if another source never finishes',async()=>{
- const x=await fixture(),progress=window.campaign.progress,live=window.campaign.live,pause=held();let opening;
+ const x=await fixture(),preparation=window.campaign.preparation,live=window.campaign.live,pause=held();let opening;
  try{
-  window.campaign.progress=async()=>({ok:false,error:'Progress unavailable'});window.campaign.live=()=>pause.promise;opening=x.ui.openItems();
-  await until(()=>x.el('item-context-status').getAttribute('role')==='alert');assert.match(x.el('item-context-status').textContent,/Progress unavailable/);assert.equal(x.el('item-context-retry').hidden,false);assert.equal(x.el('item-award').disabled,true);assert.equal(x.writes.length,0);
- }finally{pause.resolve(await live(x.w.token));if(opening)await opening;window.campaign.progress=progress;window.campaign.live=live;await x.cleanup();}
+  window.campaign.preparation=async()=>({ok:false,error:'Preparation unavailable'});window.campaign.live=()=>pause.promise;opening=x.ui.openItems();
+  await until(()=>x.el('item-context-status').getAttribute('role')==='alert');assert.match(x.el('item-context-status').textContent,/Preparation unavailable/);assert.equal(x.el('item-context-retry').hidden,false);assert.equal(x.el('item-award').disabled,true);assert.equal(x.writes.length,0);
+ }finally{pause.resolve(await live(x.w.token));if(opening)await opening;window.campaign.preparation=preparation;window.campaign.live=live;await x.cleanup();}
 });
 
 function searchClock(){const previous={setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout},timers=new Map();let id=0;globalThis.setTimeout=(fn,delay)=>{timers.set(++id,{fn,delay});return id;};globalThis.clearTimeout=id=>timers.delete(id);return{async advance(){for(const [id,t]of [...timers])if(t.delay===200){timers.delete(id);t.fn();}await tick();await tick();},restore(){Object.assign(globalThis,previous);}};}
