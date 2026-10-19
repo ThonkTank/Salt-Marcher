@@ -54,6 +54,13 @@ try{
   assert(await page.locator('#atlas-tool-settings').isVisible());
   assert(await page.locator('#atlas-group-tools button').evaluateAll(nodes=>nodes.every(n=>{const a=n.querySelector('.atlas-tool-icon').getBoundingClientRect(),b=n.querySelector('.atlas-tool-label').getBoundingClientRect();return b.top>=a.bottom&&b.height>0;})),'every tool has a visible caption below its icon');
   assert.equal(await page.locator('#atlas-scale').count(),0);
+  await chooseTool('rooms','room-rectangle');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'true');
+  await chooseTool('walls','wall');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'false','idle rectangle mode must not hijack the next tool');
+  await chooseTool('rooms','room-rectangle');const draftBox=await page.locator('#campaign-map').boundingBox();await page.mouse.click(draftBox.x+draftBox.width*.2,draftBox.y+draftBox.height*.2);
+  await page.locator('[data-tool-group=walls]').click();await page.waitForFunction(()=>!document.querySelector('#atlas-section').disabled);assert.equal(await page.locator('#atlas-group-tools').getAttribute('data-group'),'rooms');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'true');await page.locator('#campaign-map').press('Escape');result.roomDraftSwitchBlocked=true;
+
+  await chooseTool('rooms','room-rectangle');await page.locator('#atlas-select').click();await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.family==='navigation');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'false');result.idlePreviewSwitch=true;
+
   assert(await page.locator('#atlas-terrain').isHidden());assert(await page.locator('#atlas-hex-level').isHidden());
 
   await page.locator('#campaign-map').focus();await page.keyboard.press('Alt+p');assert.equal(await page.locator('#party-popover').evaluate(n=>n.matches(':popover-open')),false);

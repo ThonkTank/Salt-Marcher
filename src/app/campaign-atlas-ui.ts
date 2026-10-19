@@ -881,6 +881,8 @@ export class CampaignAtlasWorkbench {
     if (flush && !(await this.opts.flush())) return;
     if (this.root.dataset.roomDraw === "true" && (this.draft.length || this.roomDrag)) { this.opts.status("Raumzug zuerst abschließen oder abbrechen.",true); return; }
     if (this.landscape.hasDraft()) { this.opts.status("Landschaftszug zuerst abschließen oder abbrechen.",true); return; }
+    // An idle rectangle cursor is not a draft and must not capture the next tool's clicks.
+    this.root.dataset.roomDraw="false";
     this.creation=null;delete this.root.dataset.placing;this.root.dataset.panMode="false";
     this.layout?.beforeTool();
     this.family = f;

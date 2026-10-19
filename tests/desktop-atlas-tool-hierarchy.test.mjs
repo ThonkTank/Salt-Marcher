@@ -5,8 +5,8 @@ import {parseHTML} from 'linkedom';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/atlas-tool-catalog';export {AtlasWorkspaceLayout} from './src/app/atlas-workspace-layout';",resolveDir:process.cwd()},outfile:'.build/atlas-tool-hierarchy.cjs',bundle:true,platform:'node',format:'cjs'});
-const {atlasToolGroups,availableAtlasGroups,atlasToolMatches,AtlasWorkspaceLayout}=require('../.build/atlas-tool-hierarchy.cjs');
+buildSync({stdin:{contents:"export * from './src/app/atlas-tool-catalog';export {AtlasWorkspaceLayout} from './src/app/atlas-workspace-layout';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",resolveDir:process.cwd()},outfile:'.build/atlas-tool-hierarchy.cjs',bundle:true,platform:'node',format:'cjs'});
+const {atlasToolGroups,availableAtlasGroups,atlasToolMatches,AtlasWorkspaceLayout,CampaignAtlasWorkbench}=require('../.build/atlas-tool-hierarchy.cjs');
 function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
  const original={document:global.document,Event:global.Event};global.document=document;global.Event=window.Event;t.after(()=>Object.assign(global,original));
@@ -56,4 +56,14 @@ test('only an accepted explicit tool action opens a library; repeated render doe
 });
 test('a second click cannot race a pending section change',async t=>{
  const x=fixture(t);x.defer();const pending=x.layout.chooseSection('city');await x.layout.chooseSection('interior');assert.equal(x.calls.length,1);x.release();await pending;assert.equal(x.layout.family,'city');assert.equal(x.layout.changingTool,false);
+});
+
+test('the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush',async t=>{
+ const {document,root}=fixture(t);for(const id of ['atlas-families','atlas-tool-fields']){const node=document.createElement('div');node.id=id;root.append(node);}
+ const statuses=[],events=[];let allow=true;
+ const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root,family:'interior',draft:[],roomDrag:null,camera:{stopZoom(){}},reference:{active:false},opts:{flush:async()=>allow,status:message=>statuses.push(message)},landscape:{hasDraft:()=>false,setActive:value=>events.push(value)},layout:{beforeTool(){},setFamily(){}},dockDrawingTools(){},render(){},scheduleRegion(){}});
+ root.dataset.roomDraw='true';await editor.setFamily('navigation');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'navigation');
+ root.dataset.roomDraw='true';editor.draft=[{x:1,y:2}];await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');assert.deepEqual(editor.draft,[{x:1,y:2}]);assert.equal(statuses.length,1);
+ editor.draft=[];allow=false;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');
+ allow=true;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'city');assert.equal(events.length,2);
 });
