@@ -58,6 +58,7 @@ function attributes(n: AtlasPaint) {
     fillRule: "fill-rule",
     lineCap: "stroke-linecap",
     lineJoin: "stroke-linejoin",
+    lineDashOffset: "stroke-dashoffset",
     fontSize: "font-size",
     fontFamily: "font-family",
     fontWeight: "font-weight",

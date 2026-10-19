@@ -46,7 +46,7 @@ import { terrainNames } from "./world-model";
 import { cityPaint, posed, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { elementPaint, roomFacePaint, nearestAnchor } from "./drawing-model";
-import { atlasCityPoint, atlasCityState, atlasCityUndoPoint, openCityReference } from "./city-ui";
+import { atlasCityPoint, atlasCityState, atlasCitySelectedRoad, atlasCityUndoPoint, openCityReference } from "./city-ui";
 import {
   atlasDrawingPoint,
   atlasDrawingRectangle,
@@ -1130,7 +1130,12 @@ export class CampaignAtlasWorkbench {
     const valid=()=>this.owner===owner&&this.data?.region?.fence===fence&&this.hitVersion===version&&this.geometryCurrent();
     const choose=async(hit:import('./atlas-region-contracts').AtlasHit)=>{
       if(!valid())return;this.hitDialog.close();
-      if(hit.kind==='landscape'){await this.setFamily('terrain');if(this.owner===owner&&this.data?.region?.fence===fence)await this.landscape.selectId(hit.id);}
+      if(hit.kind==='landscape'&&hit.landscapeKind==='road'&&this.family==='city'&&this.cityId){
+        this.selection={kind:'city-unit',id:hit.id,cityId:this.cityId};
+        await openCityReference(this.cityId,hit.id,true);
+        if(this.owner===owner){this.render();this.layout?.selectionChanged('city-unit:'+hit.id,true);}
+      }
+      else if(hit.kind==='landscape'){await this.setFamily('terrain');if(this.owner===owner&&this.data?.region?.fence===fence)await this.landscape.selectId(hit.id);}
       else if(hit.kind==='element')await this.navigateElement(hit.id,false);
       else if(hit.kind==='scope')await this.navigateScope(hit.id);
       else await this.navigate(hit.kind==='room'?'room':'city',hit.cityId??hit.id,hit.cityId?hit.id:undefined);
@@ -1966,7 +1971,7 @@ export class CampaignAtlasWorkbench {
                 (c) =>
                   c.header.id === (this.selection as { cityId: string }).cityId,
               )
-              ?.units.find((u) => u.id === this.selection!.id)?.name
+              ?.units.find((u) => u.id === this.selection!.id)?.name ?? (atlasCitySelectedRoad()?.record.id===this.selection.id?atlasCitySelectedRoad()?.record.name:null)
           : this.selection?.kind === "city"
             ? data.cities.find((c) => c.header.id === this.selection!.id)
                 ?.header.name
@@ -2003,6 +2008,13 @@ export class CampaignAtlasWorkbench {
     this.camera.render((root) => {
       this.drawTerrain(root, box, mpp);
       this.landscape.draw(root,box,mpp);
+      if(data.region?.rasterUnderlay){const r=data.region.rasterUnderlay;root.append(shape('image',{x:r.box.x-box.x,y:r.box.y-box.y,width:r.box.width,height:r.box.height,source:r.data,pointer:false}));}
+      else for(const city of data.cities){const binding=data.bindings.find(b=>b.kind==='city'&&b.ownerId===city.header.id);if(!binding||city.header.width/mpp<20)continue;const f=atlasFrame(data,binding),g=shape('group',{matrix:frameMatrix(this.relative(f)),pointer:false});g.append(cityPaint(city,mpp,'surfaces'));root.append(g);}
+      const cityRoad=this.family==='city'&&this.selection?.kind==='city-unit'?atlasCitySelectedRoad():null;
+      const cityBinding=cityRoad&&data.bindings.find(b=>b.kind==='city'&&b.ownerId===cityRoad.cityId);
+      const forcedRoad=cityRoad&&cityBinding&&cityRoad.record.id===this.selection?.id?structuredClone(cityRoad.record):undefined;
+      if(forcedRoad&&cityBinding){const frame=atlasFrame(data,cityBinding);forcedRoad.points=forcedRoad.points.map(p=>localToAtlas(p,frame));if(forcedRoad.line?.continuity)for(const key of ['before','after'] as const){const p=forcedRoad.line.continuity[key];if(p)forcedRoad.line.continuity[key]=localToAtlas(p,frame);}}
+      this.landscape.drawLines(root,box,mpp,forcedRoad);
       const draft=this.opts.roomDraft(),cacheable=!this.drag&&!atlasCityState()&&!atlasDungeonState().preview&&!get<HTMLInputElement>('atlas-perception').checked;
       const key=[data,this.scopeId,this.floorId,this.family,this.selection?.kind,this.selection?.id,get<HTMLInputElement>('atlas-roofs').checked,get<HTMLInputElement>('atlas-slice-enabled').checked,get<HTMLInputElement>('atlas-slice').value,get<HTMLInputElement>('atlas-perception').checked,mpp,draft?.id,draft?.name,draft?.number,draft?.polygons];
       let base=this.baseGeometry;
@@ -2107,7 +2119,7 @@ export class CampaignAtlasWorkbench {
             Math.min(...pts.map((p) => p.y)) <= ymax
           );
         });
-        const cityScene = cityPaint({ ...shownCity, units: visibleUnits });
+        const cityScene = cityPaint({ ...shownCity, units: visibleUnits.filter(u=>u.kind!=='road') },mpp,'objects');
         for (const c of cityScene.children) {
           const uid = c.data.cityUnit,
             interior = data.bindings.find(
@@ -2224,6 +2236,7 @@ export class CampaignAtlasWorkbench {
               .map(p=>({x:p.x-box.x,y:p.y-box.y})), style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2}}),
         );
       this.drawParty(root, mpp);
+      if(!this.exportOpen)this.landscape.drawLineHandles(root,box,mpp);
     });
   }
   private async exportPNG() {
@@ -2265,7 +2278,7 @@ export class CampaignAtlasWorkbench {
           if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw new Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
+          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,lineRasters:layer.lineTiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
           return{ok:true,value:{campaignId:tile.campaignId,revision:tile.revision,box:tile.region.box,width:w,height:h,scene}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{status(`Atlas wird ausgegeben: ${done}/${total}`);});
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')status('Dichte Landschaft als Übersicht; Vorlagen als Umrisse.');
@@ -2314,7 +2327,7 @@ export class CampaignAtlasWorkbench {
     t.text = text;
     root.append(t);
   }
-  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#b8c896"}}));}
+  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#7fa8bd"}}));}
   private drawInterior(
     root: AtlasPaint,
     b: AtlasBinding,

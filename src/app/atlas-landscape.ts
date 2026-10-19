@@ -1,6 +1,8 @@
+import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import type { Point, Polygon } from "./contracts";
 import type { AtlasCell, Terrain } from "./world-contracts";
 import { atlasHexAt, atlasHexPoint } from "./campaign-atlas-model";
+import { linePoints, lineContains } from "./landscape-line";
 export const HEX_METERS = 4828.032;
 export const EARTH_WIDTH = 40000000,
   EARTH_HEIGHT = 20000000;
@@ -14,7 +16,7 @@ export interface LandscapeBox {
 export const LANDSCAPE_PLACE_FONT_PX = 13;
 /** Conservative paint reach; canonical geometry and exact hits keep their own bounds. */
 export function landscapePaintBox(box:LandscapeBox,mpp:number,labelUnits?:number):LandscapeBox {
-  const dx=mpp*(labelUnits===undefined?1:Math.max(6,LANDSCAPE_PLACE_FONT_PX*(labelUnits+1))),dy=mpp*(labelUnits===undefined?1:26);
+  const dx=mpp*(labelUnits===undefined?4:Math.max(6,LANDSCAPE_PLACE_FONT_PX*(labelUnits+1))),dy=mpp*(labelUnits===undefined?4:26);
   const result={x:box.x-dx,y:box.y-dy,width:box.width+2*dx,height:box.height+2*dy};
   if(![result.x,result.y,result.width,result.height,result.x+result.width,result.y+result.height].every(Number.isFinite))throw Error('Landschaftsausschnitt nicht präzise darstellbar.');
   return result;
@@ -41,6 +43,16 @@ export interface LandscapeRecord {
   values: Partial<Omit<AtlasCell, "q" | "r" | "level">>;
   order?: number;
   style?: "path" | "road" | "stream" | "river";
+  routeId?: string;
+  routeLength?: number;
+  junctions?: {index:number;id:string}[];
+  cityAnchors?: {index:number;cityId:string}[];
+  line?: import("./landscape-line").LandscapeLine;
+  paint?: import("./landscape-brush").LandscapeColor;
+  mask?: import("./land-mask").LandMask;
+  maskManaged?: boolean;
+  sourceCell?: {mapId:string;q:number;r:number;level:number};
+  surface?: "land" | "sea" | "freshwater";
   locationId?: string;
   assetId?: string;
   imageWidth?: number;
@@ -51,8 +63,10 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:"landscape-brush"; record:LandscapeRecord; mode:Exclude<import("./landscape-brush").BrushMode,"terrain">; radius:number; roughness:number; seed:number; fill:boolean; samples?:import("./land-mask").MaskSample[]}
   | {
       kind: "landscape-batch";
+      remove?: {id:string;expectedRevision:number}[];
       records: {
         record: LandscapeRecord;
         expectedRevision: number | null;
@@ -159,21 +173,24 @@ export function effectiveLandscape(
   p: Point,
   base: Partial<AtlasCell> = {},
 ) {
-  const out = { ...base };
+  const out:Partial<AtlasCell> = { terrain:"water", ...base };
   for (const record of records
     .filter((r) => r.kind === "patch")
     .sort(
       (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
     ))
-    if (contains(p, record.polygons)) Object.assign(out, record.values);
+    if (!record.mask && contains(p, record.polygons)) Object.assign(out, record.values);
+  let occupancy:number|undefined;
+  for(const r of records.filter(r=>r.mask).sort((a,b)=>b.resolution-a.resolution)) {const value=maskAt(r.mask!,p);if(value!==undefined)occupancy=value;}
+  if(occupancy!==undefined)out.terrain=occupancy>=MASK_SEA_LEVEL?(out.terrain&&out.terrain!=='water'?out.terrain:'plains'):'water';
+  else if(records.some(r=>r.maskManaged))out.terrain='water';
+  // Freshwater remains an independently erasable surface.
+  for(const r of records)if(r.surface==='freshwater'&&contains(p,r.polygons))out.terrain='water';
   // Rivers are water surfaces. Roads never turn water into a crossing.
   for (const r of records)
     if (
       r.kind === "river" &&
-      r.points.some(
-        (v, i) =>
-          i > 0 && segmentDistance(p, r.points[i - 1]!, v) <= r.width / 2,
-      )
+      lineContains(r,p)
     ) {
       out.terrain = "water";
       out.river = true;
@@ -182,10 +199,7 @@ export function effectiveLandscape(
     if (
       r.kind === "road" &&
       out.terrain !== "water" &&
-      r.points.some(
-        (v, i) =>
-          i > 0 && segmentDistance(p, r.points[i - 1]!, v) <= r.width / 2,
-      )
+      lineContains(r,p)
     )
       out.road = true;
   return out;
@@ -193,7 +207,7 @@ export function effectiveLandscape(
 export function bounds(record: LandscapeRecord): LandscapeBox {
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const include=(p:Point)=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);};
-  for(const p of record.points)include(p);
+  for(const p of record.line ? linePoints(record) : record.points)include(p);
   for(const polygon of record.polygons)for(const p of polygon.outer)include(p);
   if(minX===Infinity)throw new Error("Geometrie fehlt.");
   if(record.kind==='reference'){
@@ -201,7 +215,7 @@ export function bounds(record: LandscapeRecord): LandscapeBox {
     for(const v of [{x:w,y:0},{x:w,y:h},{x:0,y:h}])include({x:p.x+v.x*Math.cos(a)-v.y*Math.sin(a),y:p.y+v.x*Math.sin(a)+v.y*Math.cos(a)});
   }
   const pad =
-      record.kind === "river" || record.kind === "road" ? record.width / 2 : 0,
+      record.kind === "river" || record.kind === "road" ? record.width * (record.line ? 1 : .5) : 0,
     x = minX - pad,
     y = minY - pad;
   return {

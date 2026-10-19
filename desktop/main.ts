@@ -365,6 +365,7 @@ else {
     handle('atlas:import',(c:{commandId:string;token:string;campaignId:string;ticket:string;x:number;y:number})=>{const pending=imports.get(c.ticket);if(!pending)throw new Error('Importvorschau abgelaufen. Datei erneut wählen.');const result=store.executeAtlas({...c,action:{kind:'drawing-import',name:pending.name,rooms:pending.rooms,source:pending.bytes.toString('utf8'),x:c.x,y:c.y}});return{atlas:result.atlas,roomId:(result.result as {roomId:string|null}|null)?.roomId??null};});
     handle('atlas:overview',(token:string)=>store.atlasOverview(token));
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
+    handle('atlas:mask-region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox)=>store.atlasMaskRegion(token,box));
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
     handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));

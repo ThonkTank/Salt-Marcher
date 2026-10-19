@@ -83,7 +83,7 @@ export class AtlasRegionReader {
    const value:RoomGeometry={id:row.id,scopeId:row.scope_id,floorId:row.floor_id,number:row.number,name:row.name,revision:row.revision,polygons};
    this.store('room','',row.scope_id,row.floor_id,row.id,{value,polygons},row.sourceOrder);
   }else if(table==='city_unit'){
-   const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node')return;
+   const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node'||u.kind==='road')return;
    const {id,kind,name,protected:protectedValue,point,position,angle,width,interior}=u;
    let outline=u.outline,points:Point[]|undefined;
    if(['road','wall'].includes(kind)){
@@ -216,16 +216,18 @@ export class AtlasRegionReader {
    result.rooms=[];result.cities=[];result.bindings=[];result.frames=Object.create(null);result.scopeBounds=Object.create(null);result.interiors=Object.create(null);result.scopes=[];result.floors=[];result.drawing=emptyDrawing();result.coverage.mode='raster';
    // Keep the chosen author frame even when contours are represented by pixels.
    if(q.scopeId){const row=this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='dungeon' AND owner_id=?").get(this.campaign,q.scopeId);if(row){dense=false;metadata(this.binding(row),this.frame(this.binding(row)));dense=true;}}
-   const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),image=new LandscapeRasterizer(q.box,width,height);
+   const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),foreground=new LandscapeRasterizer(q.box,width,height),underlay=new LandscapeRasterizer(q.box,width,height);
    this.visit(q,(s,f,kind,_b,h)=>{
+    const image=kind==='city-paper'||kind==='unit'&&['water','plaza','district'].includes(s.value.kind)?underlay:foreground;
     const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
     let color=kind==='city-paper'?h!.paper:kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
     if(kind==='room')color=s.style?.fill??color;
     if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
     else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:s.stroke??q.box.width/q.width*2,color);}
    });
-   const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
+   const data=PNG.sync.write({width,height,data:Buffer.from(foreground.finish())} as PNG).toString('base64');
    result.raster={box:{...q.box},width,height,data:'data:image/png;base64,'+data};
+   result.rasterUnderlay={box:{...q.box},width,height,data:'data:image/png;base64,'+PNG.sync.write({width,height,data:Buffer.from(underlay.finish())} as PNG).toString('base64')};
   }
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
   try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}

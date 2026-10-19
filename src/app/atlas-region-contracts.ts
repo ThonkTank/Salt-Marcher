@@ -8,14 +8,14 @@ export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
 export const REGION_CACHE_BYTES=64*1024*1024;
 /** Geometry is display-only. In particular it is never a CityCommand upsert. */
-export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point'|'outline'|'position'|'angle'|'width'|'interior'>;
+export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point'|'outline'|'position'|'angle'|'width'|'interior'|'line'|'roadRef'|'routeId'|'routeLength'>;
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
  slice:number|null;roofs:boolean;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
- state:'ready'|'error'; records:LandscapeRecord[]; tiles:import('./landscape-raster').LandscapeRaster[];
+ state:'ready'|'error'; records:LandscapeRecord[]; lineTiles?:import('./landscape-raster').LandscapeRaster[]; tiles:import('./landscape-raster').LandscapeRaster[];
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
 }
 export interface AtlasHit extends Omit<AtlasObjectFocus,'kind'> {kind:AtlasObjectFocus['kind']|'landscape';name:string;landscapeKind?:LandscapeRecord['kind']}
@@ -27,6 +27,7 @@ export interface AtlasRegionGeometry {
  frames:Record<string,{x:number;y:number;angle:number}>;scopeBounds:Record<string,LandscapeBox>;interiors:Record<string,string>;
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;unreadable:number;index:'rtree'|'scan'};
  landscape?:AtlasLandscapeLayer;
+ rasterUnderlay?:{box:LandscapeBox;width:number;height:number;data:string};
  raster?:{box:LandscapeBox;width:number;height:number;data:string};
 }
 export interface AtlasRegionView extends AtlasRenderView {

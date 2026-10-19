@@ -19,7 +19,7 @@ test('revisiting the initial hex and repeated waypoints counts each actual entry
  const x=fixture(t),p=x.preview({waypoints:[{q:1,r:0},{q:0,r:0},{q:1,r:0}],destination:{q:1,r:0}});assert.deepEqual(p.route,[0,1,0,1].map(q=>({q,r:0})));assert.equal(p.terrainCost,4.9);
 });
 test('cost includes all route stages beyond the forty-row itinerary window',t=>{
- const x=fixture(t),map={...x.map,cells:[]};x.world({kind:'map',map,expectedRevision:x.map.revision});const p=x.preview({waypoints:[],destination:{q:45,r:0}});assert.equal(p.stages.length,40);assert.equal(p.route.length-1,45);assert.equal(p.terrainCost,45);
+ const x=fixture(t),map={...x.map,cells:Array.from({length:46},(_,q)=>({...x.map.cells[0],q,terrain:'plains'}))};x.world({kind:'map',map,expectedRevision:x.map.revision});const p=x.preview({waypoints:[],destination:{q:45,r:0}});assert.equal(p.stages.length,40);assert.equal(p.route.length-1,45);assert.equal(p.terrainCost,45);
 });
 test('checkpoint continuation evaluates only the remaining route and forged cost cannot start a journey',t=>{
  const x=fixture(t),preview=x.preview({finalSeconds:9}),before=x.store.db.serialize();assert.throws(()=>x.world({kind:'journey',preview:{...preview,terrainCost:99}}),/Reisebasis/);assert.ok(x.store.db.serialize().equals(before));const journey=x.world({kind:'journey',preview}).scene.journey,step=x.world({kind:'journey-step',id:journey.id,expectedRevision:journey.revision,maxSteps:1}).scene;const p=x.preview({waypoints:[],continuation:{journeyId:step.journey.id,expectedRevision:step.journey.revision}});assert.equal(p.terrainCost,3);assert.equal(p.route.length-1,2);assert.equal(step.scene.clock.instantMs,String(preview.segmentSeconds[0]*1000));

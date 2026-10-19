@@ -364,7 +364,7 @@ export class AtlasCanvas {
       });
   }
   private unavailableImages=new Set<string>();
-  private async image(source: string) {
+  private async image(source: string, maxEdge = 512) {
     let image = this.decoded.get(source);
     if (image) return image;
     let task = this.decoding.get(source);
@@ -375,7 +375,7 @@ export class AtlasCanvas {
         await img.decode();
         const scale = Math.min(
           1,
-          512 / Math.max(img.naturalWidth, img.naturalHeight),
+          maxEdge / Math.max(img.naturalWidth, img.naturalHeight),
         );
         return createImageBitmap(img, {
           resizeWidth: Math.max(1, Math.round(img.naturalWidth * scale)),
@@ -695,7 +695,7 @@ export class AtlasCanvas {
           let imageErrors=0;
           for (const source of frame.compiled.images) {
             const optional=!frame.compiled.requiredImages.has(source);
-            try{if(optional&&this.unavailableImages.has(source))imageErrors++;else await this.image(source);}
+            try{if(optional&&this.unavailableImages.has(source))imageErrors++;else await this.image(source,frame.compiled.landscapeImages.has(source)?1024:512);}
             catch(error){if(!optional)throw error;this.unavailableImages.add(source);imageErrors++;}
             if (frame.generation !== this.generation) break;
           }

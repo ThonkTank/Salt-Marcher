@@ -1,3 +1,8 @@
+import {readSharedRoad,roadReference,removeSharedRoad,legacyCityRoads} from './shared-roads';
+import {applyMaskArea,validateMask} from '../land-mask';
+import {executeBrush} from "./landscape-brush-edit";
+import { validateLine } from "../landscape-line";
+import { validateColor } from "../landscape-brush";
 import {REGION_REPLY_BYTES} from '../atlas-region-contracts';
 import { createHash, randomUUID } from "node:crypto";
 import polygonClipping from "polygon-clipping";
@@ -26,6 +31,7 @@ const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>
 export function installLandscape(db: any) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_landscape(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
+ CREATE INDEX IF NOT EXISTS landscape_kind ON atlas_landscape(campaign_id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END);
  CREATE INDEX IF NOT EXISTS landscape_area ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y);
  CREATE TABLE IF NOT EXISTS atlas_reference_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,mime TEXT NOT NULL,bytes BLOB NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS atlas_landscape_migration(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id)) STRICT;
@@ -134,6 +140,11 @@ export function installLandscape(db: any) {
       root.campaign_id,
     );
   }
+  const legacy=db.pragma('user_version',{simple:true})>=47?[]:db.prepare("SELECT campaign_id,payload FROM atlas_landscape WHERE json_extract(payload,'$.kind')='patch' AND json_extract(payload,'$.values.terrain') IS NOT NULL AND json_extract(payload,'$.maskManaged') IS NOT 1 AND json_extract(payload,'$.surface') IS NOT 'freshwater' ORDER BY CAST(json_extract(payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(payload,'$.order'),0),rowid").all();
+  for(const row of legacy){const r=JSON.parse(row.payload);writeTerrainMask(db,row.campaign_id,r);r.maskManaged=true;db.prepare('UPDATE atlas_landscape SET payload=? WHERE campaign_id=? AND id=?').run(JSON.stringify(r),row.campaign_id,r.id);}
+  // Polygon-era deltas cannot restore the new canonical raster. Establish a checkpoint.
+  for(const cam of new Set(legacy.map((r:any)=>r.campaign_id))){db.prepare('DELETE FROM atlas_command WHERE campaign_id=?').run(cam);db.prepare('UPDATE campaign_atlas SET cursor=0,revision=revision+1 WHERE campaign_id=?').run(cam);}
+
 }
 const attemptedIndexes=new WeakSet<object>();
 /** Rebuildable connection-local index; never exported or captured in author history. */
@@ -199,6 +210,7 @@ export function landscapeRegion(
     if(!includePatches){used+=Buffer.byteLength(JSON.stringify(record))+1;if(used>REGION_REPLY_BYTES)throw new Error('Landschaftsobjekte überschreiten das Darstellungsbudget. Weiter hineinzoomen.');}
     records.push(record);
   }
+  records.push(...legacyCityRoads(db,cam,box));
   return records;
 }
 export function putLandscape(
@@ -222,6 +234,9 @@ export function putLandscape(
     !r.values
   )
     throw new Error("Landschaftsdaten prüfen.");
+  validateMask(r);
+  validateLine(r);
+  validateColor(r);
   const pts = [
     ...r.points,
     ...r.polygons.flatMap((p) => [...p.outer, ...p.holes.flat()]),
@@ -272,14 +287,16 @@ export function putLandscape(
     throw new Error("Bildkalibrierung prüfen.");
   const old = db
     .prepare(
-      "SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?",
+      "SELECT revision,payload FROM atlas_landscape WHERE campaign_id=? AND id=?",
     )
     .get(cam, r.id);
-  if ((old?.revision ?? null) !== expected)
+  const legacy=!old&&r.kind==='road'?readSharedRoad(db,cam,r.id):null;
+  if ((old?.revision ?? legacy?.revision ?? null) !== expected)
     throw new Error("Landschaft inzwischen geändert. Neu laden.");
   const b = bounds(r),
     next = {
       ...r,
+      ...(r.kind==='patch'&&r.values.terrain&&!r.mask&&r.surface!=='freshwater'?{maskManaged:true}:{}),
       order:
         r.order ??
         db
@@ -301,9 +318,24 @@ export function putLandscape(
     b.y + b.height,
     JSON.stringify(next),
   );
+  if(r.kind==='road')roadReference(db,cam,next);
+  if(r.kind==='patch'&&r.values.terrain&&!r.mask&&r.surface!=='freshwater'){
+    const prior=old?JSON.parse(old.payload):null,moved=prior&&JSON.stringify(prior.polygons)!==JSON.stringify(r.polygons);
+    if(moved&&prior.values.terrain)writeTerrainMask(db,cam,{...prior,values:{terrain:'water'}});
+    if(!prior||moved||prior.values.terrain!==r.values.terrain)writeTerrainMask(db,cam,r);
+  }
+}
+export function landMaskRegion(db:any,cam:string,box:LandscapeBox):LandscapeRecord[]{
+  return db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? AND json_extract(payload,'$.mask') IS NOT NULL").all(cam,box.x,box.x+box.width,box.y,box.y+box.height).map((r:{payload:string})=>JSON.parse(r.payload));
+}
+function writeTerrainMask(db:any,cam:string,r:LandscapeRecord){
+  const records=landMaskRegion(db,cam,bounds(r));
+  for(const tile of applyMaskArea(records,r))putLandscape(db,cam,tile,tile.revision||null);
 }
 export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
+  if(a.kind==="landscape-brush")return executeBrush(db,cam,a);
   if (a.kind === "landscape-batch") {
+    for(const r of a.remove??[])executeLandscape(db,cam,{kind:"landscape-remove",...r});
     for (const r of a.records)
       putLandscape(db, cam, r.record, r.expectedRevision);
     return;
@@ -311,6 +343,10 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
   if (a.kind === "landscape-put" || a.kind === "landscape-place")
     return putLandscape(db, cam, a.record, a.expectedRevision);
   if (a.kind === "landscape-remove") {
+    const road=readSharedRoad(db,cam,a.id);if(road){if(road.revision!==a.expectedRevision)throw Error('Straße inzwischen geändert.');removeSharedRoad(db,cam,a.id);return;}
+    const row=db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? AND id=? AND revision=?').get(cam,a.id,a.expectedRevision);
+    if(row){const r=JSON.parse(row.payload);if(r.mask)throw Error('Landmaske mit dem Pinsel bearbeiten.');if(r.kind==='patch'&&r.values.terrain&&r.surface!=='freshwater')writeTerrainMask(db,cam,{...r,values:{terrain:'water'}});}
+
     if (
       db
         .prepare(
@@ -347,6 +383,7 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
       width: 0,
     } as any),
   );
+  if(a.field==='terrain')writeTerrainMask(db,cam,{id:'reset',revision:0,name:'',kind:'patch',width:0,resolution:a.resolution,points:[],polygons:a.polygons,values:{terrain:'water'}});
   for (const r of records) {
     if (
       r.kind !== "patch" ||

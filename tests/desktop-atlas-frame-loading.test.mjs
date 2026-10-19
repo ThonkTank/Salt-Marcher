@@ -37,8 +37,9 @@ test('landscape background reuses geometry across draft paints and buffered pan,
 
 test('a selected reference keeps its original slot below terrain and updates without rebuilding other paths',async t=>{
  const f=fixture(t),reference=ref('a'),road={...ref('road'),kind:'road',points:[{x:0,y:0},{x:10,y:10}],assetId:undefined};f.set([reference,road]);f.window.campaign={referenceAssetPreview:async()=>({ok:true,value:'image:a'})};await f.ui.load();f.ui.selected=structuredClone(reference);
- const draw=()=>{const r=new AtlasPaint('group');f.ui.draw(r,{x:0,y:0,width:10,height:10},.1);return r.children.find(n=>n.data.atlasLandscapeBase==='true').children[0];};
- const first=draw();f.ui.selected.width=2;const next=draw();assert.equal(first.children[1],next.children[1]);assert.equal(next.children[0].data.landscapeId,'a');assert.equal(next.children[1].data.landscapeId,'road');assert.equal(next.children[0].children[0].geometry.width,2);
+ const draw=()=>{const r=new AtlasPaint('group'),box={x:0,y:0,width:10,height:10};f.ui.draw(r,box,.1);f.ui.drawLines(r,box,.1);return{root:r,base:r.children.find(n=>n.data.atlasLandscapeBase==='true').children[0],lines:r.children.find(n=>n.data.atlasLandscapeLines==='true').children[0]};};
+ const first=draw();f.ui.selected.width=2;const next=draw();assert.equal(first.lines,next.lines,'reference editing retains the independent road scene');assert.equal(next.base.children[0].data.landscapeId,'a');assert.equal(next.lines.children[0].data.landscapeId,'road');assert.equal(next.base.children[0].children[0].geometry.width,2);assert(next.root.children.findIndex(n=>n.data.atlasLandscapeBase==='true')<next.root.children.findIndex(n=>n.data.atlasLandscapeLines==='true'));
+
 });
 
 test('Hex fill previews every crossed cell and commits each released stroke exactly once',async t=>{
@@ -167,4 +168,12 @@ test('a docked location inspector retains its own text reads, focus and write lo
  await f.ui.selectId(record.id);assert.equal(f.ui.panel.contains(root),false);f.document.querySelector('#land-name').value='Neue Furt';root.querySelector('[data-section-title="prose"]').value='Zum Vorlesen';root.querySelector('[data-section-body="prose"]').value='  Überarbeitet\r\nWortlaut bleibt.\r\n';
  let release,sent;f.host.write=async a=>{sent=structuredClone(a);await new Promise(r=>release=r);return true;};const saving=f.ui.finish();await new Promise(r=>setImmediate(r));assert.equal(sent.kind,'landscape-place');assert.equal(sent.expectedLocationRevision,4);assert.equal(sent.document.sections[0].markdown,'  Überarbeitet\r\nWortlaut bleibt.\r\n');assert.equal(sent.document.sections[1].markdown,'Unverändert.');assert.equal(sent.document.name,'Neue Furt');assert([...root.querySelectorAll('input,textarea,button')].every(n=>n.disabled));await f.ui.finish();release();await saving;
  let focused;const proto=f.window.HTMLTextAreaElement.prototype,oldFocus=proto.focus,oldScroll=proto.scrollIntoView;proto.focus=function(){focused=this;};proto.scrollIntoView=()=>{};t.after(()=>{proto.focus=oldFocus;proto.scrollIntoView=oldScroll;});await f.ui.openLocation('location','note');assert.equal(focused.dataset.sectionBody,'note');assert.equal(focused.value,'Unverändert.');assert.equal(f.errors.length,0);
+});
+
+test('shared line scene drops inactive landscape overrides and paints a city selection only once',async t=>{
+ const f=fixture(t),road={...ref('shared'),kind:'road',assetId:undefined,points:[{x:0,y:0},{x:10,y:0}],width:1};f.set([road]);await f.ui.load();f.ui.selected={...structuredClone(road),width:9};
+ const draw=(cityRoad,x=0)=>{const root=new AtlasPaint('group');f.ui.drawLines(root,{x,y:0,width:10,height:10},.1,cityRoad);return root.children.find(n=>n.data.atlasLandscapeLines==='true');};
+ const inactive=draw();assert.equal(inactive.children[0].children[0].children[0].style.lineWidth,1);
+ f.ui.setActive(true);assert.equal(draw().children[0].children[0].children[0].style.lineWidth,9);
+ const city={...road,width:4},first=draw(city),panned=draw(city,2);assert.equal(first.children[0],panned.children[0]);assert.deepEqual(panned.geometry.matrix,[1,0,0,1,-2,0]);assert.equal(first.children[0].children.filter(n=>n.data.landscapeId==='shared').length,1);assert.equal(first.children[0].children[0].children[0].style.lineWidth,4);
 });

@@ -110,6 +110,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   atlasRenderView(token:string):Promise<Result<AtlasRenderView>>;
   atlasOverview(token: string): Promise<Result<AtlasOverview>>;
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
+  atlasMaskRegion(token:string,box:import("./atlas-landscape").LandscapeBox):Promise<Result<{revision:number;records:import("./atlas-landscape").LandscapeRecord[]}>>;
   atlasLandscapeObject(token: string, id: string): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
   atlasRoom(token: string, id: string): Promise<Result<import('./contracts').Room>>;
   executeAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitAck>>;
