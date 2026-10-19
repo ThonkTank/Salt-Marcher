@@ -11,7 +11,7 @@ const profile=await mkdtemp('/tmp/saltmarcher-atlas-navigation-'),file=profile+'
 const seed=new CampaignStore(file),campaign=seed.create('Atlasnavigation prüfen'),w=seed.activate(campaign.id);
 const original={id:randomUUID(),revision:0,kind:'patch',name:'Geschützter alter Wald',points:[],polygons:[{outer:[{x:1000,y:1000},{x:6000,y:1000},{x:6000,y:6000},{x:1000,y:6000}],holes:[]}],resolution:14484.096,width:0,values:{terrain:'forest'}};
 seed.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action:{kind:'landscape-put',record:original,expectedRevision:null}});
-seed.tutorial('skipped');const before=seed.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(original.id);seed.close();
+seed.tutorial('skipped');const before=seed.db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all();seed.close();
 const executable=process.env.ATLAS_PACKAGE?path.join(process.env.ATLAS_PACKAGE,'electron'):path.join(root,'node_modules/electron/dist/electron');
 const prefix=process.env.ATLAS_PACKAGE?[]:[path.join(root,'.build/desktop/main.cjs')];
 const errors=[],results={profile,executable};let app,closed=true;
@@ -68,8 +68,8 @@ try{
  await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:30000});
  const png=require('pngjs').PNG.sync.read(await readFile(output+'/day-grid-export.png'));assert.equal(Math.max(png.width,png.height),1024);assert(Math.min(png.width,png.height)>100);results.dayGridExport=true;
  await close();
- const fresh=new CampaignStore(file);assert.deepEqual(fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get(original.id),before);
- const rows=fresh.db.prepare('SELECT payload FROM atlas_landscape WHERE id<>?').all(original.id).map(r=>JSON.parse(r.payload));assert.equal(rows.length,1);assert.equal(rows[0].resolution,38624.256);const pts=rows[0].polygons[0].outer;assert(Math.abs(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x))-38624.256)<.001);fresh.close();results.legacyPreservedAndDayHexSaved=true;
+ const fresh=new CampaignStore(file),after=fresh.db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all(),existing=new Set(before.map(r=>r.id));assert.deepEqual(after.filter(r=>existing.has(r.id)),before);
+ const rows=after.filter(r=>!existing.has(r.id)).map(r=>JSON.parse(r.payload));assert.equal(rows.length,1);assert.equal(rows[0].resolution,38624.256);const pts=rows[0].polygons[0].outer;assert(Math.abs(Math.max(...pts.map(p=>p.x))-Math.min(...pts.map(p=>p.x))-38624.256)<.001);fresh.close();results.legacyPreservedAndDayHexSaved=true;
  page=await launch();await page.screenshot({path:output+'/restart.png'});await close();assert.deepEqual(errors,[]);results.restart=true;
  await writeFile(output+'/result.json',JSON.stringify({complete:true,results,errors},null,2));console.log(JSON.stringify({complete:true,output,results}));
 }catch(error){if(app&&!closed){await(await app.firstWindow()).screenshot({path:output+'/failure.png'}).catch(()=>{});}throw error;}
