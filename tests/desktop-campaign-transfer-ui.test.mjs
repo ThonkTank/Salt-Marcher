@@ -8,7 +8,7 @@ import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/campaign-manager-ui.ts'],outfile:'.build/campaign-transfer-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url);
 const tick=async()=>{for(let i=0;i<10;i++)await new Promise(resolve=>setImmediate(resolve));};
-function fixture(t,{unreadable=false}={}){
+function fixture(t,{unreadable=false,active=true}={}){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:globalThis.window,document:globalThis.document},memory=new Map(),messages=[],changes=[],calls=[];
  Object.assign(globalThis,{window,document});t.after(()=>Object.assign(globalThis,previous));
  for(const dialog of document.querySelectorAll('dialog')){dialog.showModal=()=>{dialog.open=true;};dialog.close=()=>{dialog.open=false;};}
@@ -16,8 +16,8 @@ function fixture(t,{unreadable=false}={}){
  const preview={ticket:'copy-ticket',name:'Original',copy:true,bytes:100,applicationVersion:'test',audioFiles:0,counts:[],conflicts:[],problems:[]};
  window.campaign={campaignOverview:async()=>{throw Error('Katalog nicht lesbar');},prepareCampaignCopy:async token=>{calls.push(['copy',token]);return{ok:true,value:preview};},cancelCampaignTransfer:async ticket=>{calls.push(['cancel',ticket]);return{ok:true};},onCampaignTransfer:()=>{}};
  delete require.cache[require.resolve('../.build/campaign-transfer-ui.cjs')];const ui=require('../.build/campaign-transfer-ui.cjs');
- ui.initCampaignManager((...a)=>messages.push(a),()=>({token:'source-token'}),async()=>true,async id=>changes.push(id));
- return{window,document,memory,messages,changes,calls,readable:()=>{unreadable=false;},reads:()=>reads,get:id=>document.getElementById(id)};
+ ui.initCampaignManager((...a)=>messages.push(a),()=>active?({token:'source-token',campaign:{id:'source',name:'Original'}}):null,async()=>true,async id=>changes.push(id));
+ return{window,document,memory,messages,changes,calls,preview,readable:()=>{unreadable=false;},reads:()=>reads,get:id=>document.getElementById(id)};
 }
 test('transfer opens and cancels its own copy preview even when the campaign catalog is unavailable',async t=>{
  const x=fixture(t);x.get('campaign-manager').onclick();await tick();assert.equal(x.get('campaign-manager-dialog').open,true);assert.deepEqual(x.messages,[]);
@@ -57,4 +57,26 @@ test('an unbooked transfer keeps its ticket and new transfers locked until clean
  const x=fixture(t);x.memory.set('campaign-pending-transfer','unbooked');x.window.localStorage.removeItem=()=>{throw Error('Cleanup blocked');};
  x.window.campaign.campaignTransferStatus=async()=>({ok:true,value:{state:'not-applied'}});x.get('campaign-manager').onclick();await tick();x.get('campaign-transfer-check').onclick();await tick();
  assert.deepEqual(x.calls,[]);assert.deepEqual(x.changes,[]);assert.equal(x.memory.get('campaign-pending-transfer'),'unbooked');assert.equal(x.get('campaign-copy').disabled,true);assert.doesNotMatch(x.messages.at(-1)[0],/Du kannst die Übernahme erneut starten/);
+});
+
+test('campaign start imports directly without an active campaign or an intermediate manager',async t=>{
+ const x=fixture(t,{active:false});let imports=0;x.window.campaign.prepareCampaignImport=async()=>{imports++;return{ok:true,value:{...x.preview,copy:false,counts:[{table:'scope',records:1},{table:'room',records:1},{table:'world_note',records:2}]}};};
+ x.get('campaign-screen-import').onclick();await tick();assert.equal(imports,1);assert.notEqual(x.get('campaign-manager-dialog').open,true);assert.equal(x.get('campaign-transfer-dialog').open,true);
+ assert.equal(x.get('campaign-transfer-heading').textContent,'Kampagnenpaket importieren');assert.equal(x.get('campaign-transfer-origin').textContent,'Quelle: Original');assert.equal(x.get('campaign-transfer-summary').textContent,'1 Dungeonzeichnung · 1 Raum · 2 Wissenseinträge · 0 Mediendateien');assert.equal(x.get('campaign-transfer-accept').textContent,'Importieren und öffnen');
+ assert.equal(x.get('campaign-export').disabled,true);assert.equal(x.get('campaign-copy').disabled,true);assert.deepEqual(x.changes,[]);
+ x.get('campaign-transfer-cancel').onclick();await tick();assert.equal(x.get('campaign-transfer-dialog').open,false);assert.deepEqual(x.calls,[['cancel','copy-ticket']]);assert.deepEqual(x.changes,[]);
+});
+test('direct import reconciles a retained ticket instead of preparing another import',async t=>{
+ const x=fixture(t);x.memory.set('campaign-pending-transfer','retained-ticket');let imports=0;x.window.campaign.prepareCampaignImport=async()=>{imports++;throw Error('Must not start');};
+ x.get('campaign-screen-import').onclick();await tick();assert.equal(imports,0);assert.equal(x.get('campaign-manager-dialog').open,true);assert.equal(x.get('campaign-transfer-check').hidden,false);assert.equal(x.get('campaign-import-package').disabled,true);assert.equal(x.memory.get('campaign-pending-transfer'),'retained-ticket');
+ let reads=0;x.window.campaign.campaignTransferStatus=async ticket=>{assert.equal(ticket,'retained-ticket');reads++;return{ok:true,value:{state:'not-applied'}};};x.get('campaign-transfer-check').onclick();await tick();assert.equal(reads,1);assert.equal(imports,0);assert.equal(x.memory.size,0);
+});
+test('transfer source is named and the copy confirmation describes opening the independent result',async t=>{
+ const x=fixture(t);x.get('campaign-manager').onclick();await tick();assert.equal(x.get('campaign-transfer-source').textContent,'Geöffnete Kampagne: Original');
+ x.get('campaign-copy').onclick();await tick();assert.equal(x.get('campaign-transfer-heading').textContent,'Kampagnenkopie erstellen');assert.equal(x.get('campaign-transfer-accept').textContent,'Kopie erstellen und öffnen');assert.equal(x.get('campaign-transfer-origin').textContent,'Quelle: Original');
+});
+
+test('direct import keeps an unreadable journal intact and does not start a new transfer',async t=>{
+ const x=fixture(t,{unreadable:true});x.memory.set('campaign-pending-transfer','retained-ticket');let imports=0;x.window.campaign.prepareCampaignImport=async()=>{imports++;throw Error('Must not start');};
+ x.get('campaign-screen-import').onclick();await tick();assert.equal(imports,0);assert.equal(x.memory.get('campaign-pending-transfer'),'retained-ticket');assert.notEqual(x.get('campaign-transfer-dialog').open,true);assert.match(x.messages.at(-1)[0],/Auftragsvermerk nicht lesbar/);
 });

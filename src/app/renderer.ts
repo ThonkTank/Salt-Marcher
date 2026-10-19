@@ -220,7 +220,7 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 async function refreshCampaignShell(){const list=await refreshCampaigns();if(!list)return null;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;confirmedRoom=null;roomLoad++;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();activateDayCalculator(null);activatePartyTopbar(null);campaignAtlas?.hide();document.querySelector('main')!.inert=true;}else if(workspace){const current=list.campaigns.find(c=>c.id===workspace!.campaign.id);if(current)workspace.campaign=current;}
  el('campaign-header-name').textContent=workspace?.campaign.name??'Kampagnen';return list;}
-initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed){await reopenView('live');hideCampaignScreen();}}});
+initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed)hideCampaignScreen();}});
 void initTutorial();
 async function flushAll() { return await flushNpcs() && await flushGroups() && await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
 async function leaveWorkspace() {
