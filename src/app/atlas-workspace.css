@@ -108,7 +108,7 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas .atlas-tool-icon{flex:0 0 22px;text-align:center;font-size:20px;line-height:1}
 #campaign-atlas #atlas-landscape-tools>.toolbar:has(#land-finish:not([hidden])){position:sticky;bottom:0;background:#f8f9fa;padding:6px 0;z-index:2}
 
-#campaign-atlas #atlas-tool-groups{display:flex;flex-direction:column;gap:4px;padding:6px;min-height:0;overflow:auto;overscroll-behavior:contain}
+#campaign-atlas #atlas-tool-groups{display:flex;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:4px;padding:6px;min-height:0;overflow:auto;overscroll-behavior:contain}
 #campaign-atlas #atlas-tool-groups button{flex-shrink:0;min-height:54px;padding:7px 4px}
 #campaign-atlas #atlas-tool-palette{box-sizing:border-box;width:100%;display:flex;flex-direction:column;gap:4px;min-height:0;overflow:auto;margin-top:auto;padding:6px;border-top:1px solid #d7dde2;overscroll-behavior:contain}
 #campaign-atlas #atlas-tool-palette>button{margin:0;padding:6px 3px;text-align:center;min-height:48px;min-width:0;flex-shrink:0}

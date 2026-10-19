@@ -249,6 +249,8 @@ export class AtlasWorkspaceLayout {
  }
  private async activateTool(section:Section,group:string|null,tool:AtlasTool){
   if(this.changingTool)return;
+  const focus=this.root.ownerDocument.activeElement as HTMLElement|null;
+  const focusKind=focus===this.sectionSelect?'section':focus?.dataset.toolGroup?'group':focus?.dataset.atlasTool?'tool':null;
   this.changingTool=true;this.sync();
   try{
    if(!await this.host.tool(section,tool.control,tool.value,tool.settings))return;
@@ -256,7 +258,15 @@ export class AtlasWorkspaceLayout {
    this.renderGroups();this.showToolSettings(true);
    if(tool.panel==='library')await this.requestContext('library','Objekte wählen',[el('drawing-tool-options')]);
    if(tool.panel==='generation')await this.openGeneration();
-  }catch(error){this.host.error(error);}finally{this.changingTool=false;this.sync();}
+  }catch(error){this.host.error(error);}finally{
+   this.changingTool=false;this.sync();
+   // Rebuilt buttons must not strand keyboard focus, but a domain tool may deliberately focus its name field.
+   const active=this.root.ownerDocument.activeElement;
+   if(focusKind&&(!active||active===this.root.ownerDocument.body||active===focus)){
+    const target=focusKind==='section'?this.sectionSelect:focusKind==='group'?this.groups.querySelector<HTMLElement>('button[aria-pressed=true]'):this.toolList.querySelector<HTMLElement>('button[aria-pressed=true]');
+    target?.focus({preventScroll:true});
+   }
+  }
  }
  private async openGeneration(){const nodes:HTMLElement[]=[];for(const id of ['city-district','city-seed','city-density','city-size','city-reach','city-use'])nodes.push(el(id).closest('label')!);for(const id of ['city-generate','city-cancel-preview','city-preview-summary','city-preview-actions'])nodes.push(el(id));await this.requestContext('generation','Viertel bebauen',nodes);}
  sync(){
