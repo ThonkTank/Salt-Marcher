@@ -33,6 +33,15 @@
  #session-packet-dialog:not(.packet-docked)>.packet-heading button{padding:.25rem .5rem;font-size:.85rem}
  #session-packet-dialog:not(.packet-docked)>#session-packet-summary{margin:.3rem 0;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
  #session-packet-dialog:not(.packet-docked)>.session-packet-columns{grid-template-rows:minmax(0,auto) minmax(0,1fr);gap:.35rem}
- #session-packet-dialog:not(.packet-docked) .packet-index{max-height:5rem}
+ #session-packet-dialog:not(.packet-docked) .packet-index[open]{max-height:min(40vh,20rem)}
  #session-packet-dialog:not(.packet-docked) .packet-runway{position:static}
 }
+
+/* One source card keeps public cues distinct from the GM's other material. */
+.packet-part{padding:.65rem 0}
+.packet-part+.packet-part{margin-top:.65rem;border-top:1px solid var(--line)}
+.packet-part.packet-read-aloud{padding:.75rem}
+.packet-part h5{margin:0 0 .5rem;font-size:1em}
+
+.packet-index>summary{font-weight:700;cursor:pointer;margin-bottom:.5rem}
+.session-packet-columns:has(.packet-index:not([open])){grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);gap:.35rem}

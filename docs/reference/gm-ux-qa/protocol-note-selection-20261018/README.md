@@ -75,3 +75,46 @@ Entscheidungen. Der Vergleich belegt diese ausgeführte Aufgabe, keine allgemein
 und Prozessenden stehen in [visit-target-results.json](visit-target-results.json).
 Die vollständige Aufgabe ist als native Quellbuild-Bedienprobe geprüft;
 Paketinstallation und Owner-Abnahme bleiben gesondert offen.
+
+## Originalnotizen als Lesekarten · 19.10.2026
+
+Erneute Prüfung auf Mainbasis `e8551da0fec727cd7e445ce3594a136116962df7`
+mit den durch Bundlehashes bezeichneten Änderungen. Dieselbe Protokollaufgabe
+lief vor und nach der Änderung vollständig: vorhandene Siv ergänzen, Varo und
+Quest übernehmen, die drei Originale beim ausdrücklich gewählten zweiten Besuch
+lesen, normal schließen, frisch öffnen und das Original weiterbearbeiten.
+
+[Vorher](source-cards-before.png) zerfiel Siv wegen Vorlese- und GM-Text in zwei
+Karten und zwei Originalzugänge. Der Besuch hatte fünf Karten und vier
+Original-Buttons. [Nachher bei 100 %](source-cards-after-100.png) hat er vier
+Karten, drei Originalzugänge und genau eine Siv-Karte mit getrennten Textbereichen.
+Bei [200 %](source-cards-after-200.png) gibt der zunächst geschlossene Index
+**Besuche und Suche** mehr Fläche für diesen bekannten Besuch frei. Die Probe
+öffnet ihn ausdrücklich, sucht nach dem Questinhalt, leert die Suche und klappt
+zum Lesen wieder zu. Der Quellzugang aus Sivs Karte öffnet die richtige
+Originalidentität mit beiden Textfeldern. Das Rohprotokoll, alte NSC-Texte,
+Vorlesetext, beide Pläne und die anderen Besuchsbindungen bleiben erhalten.
+
+TiddlyWiki 5.4.1 lief als eigener lokaler Node.js-Server nach der offiziellen
+[Serveranleitung](https://tiddlywiki.com/static/WebServer.html). Die tatsächliche
+Browseraufgabe ergänzte dieselbe Siv, legte Varo und die Quest mit Quelllinks an
+und blendete die drei Originale in einen Abend mit zwei Besuchsüberschriften ein.
+Der Siv-Absatz wurde per Auswahl und Zwischenablage übernommen; die anderen
+Absätze und die Herkunfts-/Einblendungssyntax wurden im Editor eingegeben.
+Nach Schließen des Tabs und neuem Öffnen des gespeicherten Abends wurde Varo
+über seinen Link weiterbearbeitet. Die [aktualisierte Einblendung](tiddlywiki-originals-fresh.png)
+und der Rückweg zum vollständigen Rohprotokoll wurden sichtbar geprüft.
+Die gespeicherten Tiddler bestätigen zusätzlich den unveränderten Rohtext,
+Sivs alten Textanfang, drei Quelllinks und drei Einblendungen. Die selbst
+gewählte Wikitextformatierung ist kein Nachweis einer allgemeinen Layoutüberlegenheit.
+Keine Anmeldung, externen Kampagnendaten oder zusätzlichen Erweiterungen.
+
+Die beiden abschließenden nativen Kernläufe haben vier normale Prozessexits.
+Zusätzlich bestanden Neuanlage von vier Notizarten sowie Ergänzungen aus einem
+zweiten Protokoll mit jeweils Close/Fresh und vier weiteren normalen Exits.
+Die wiederverwendeten Prüfhelfer navigieren über das heutige Atlas-Menü; veraltete
+fest eingetragene Vergleichsbehauptungen wurden aus ihrem Ergebnis entfernt.
+[Inhalte, Prüfsummen, Zählungen und Prozessenden](source-cards-results.json).
+Die gezielten DOM-/Storetests prüfen zusätzlich den ausschließlich öffentlichen
+Vorleseauftrag, getrennte Chronikmomente und widerrufene Aktionen nach Kontextwechsel.
+Paketinstallation, OS-übergreifende und menschliche Owner-Abnahme bleiben offen.

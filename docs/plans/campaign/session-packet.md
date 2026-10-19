@@ -44,6 +44,18 @@ Private GM-Inhalte gelangen darüber nicht in die Spieleranzeige.
 - Die vollständige Mappe als Markdown ausgeben. Autorenwortlaut, CRLF und
   führende Leerzeichen bleiben erhalten; erzeugte Überschriften sind einzeilig.
 
+Zusammenhängende Abschnitte derselben Originalnotiz erscheinen als eine
+Quellkarte mit einem Originalzugang. Vorlesetext und GM-Teile behalten eigene
+Beschriftungen und ihre jeweiligen Live-Aktionen. Der Vorlesebefehl verwendet
+nur den öffentlichen Originaltext. Die kanonischen Blöcke, Suche und Markdown-
+ausgabe behalten ihre bisherigen Inhalte und Reihenfolge.
+
+**Besuche und Suche** klappt den Index auf oder zu. Beim Öffnen auf höchstens
+750 CSS-Pixel breiter Fläche beginnt er geschlossen, sodass der gewählte Besuch
+Platz zum Lesen hat. Auf größerer Fläche bleibt er zunächst offen. Aktualisieren
+und Rückkehr aus dem Originaleditor erhalten die aktuelle Aufklappentscheidung.
+[Native Protokollaufgabe und TiddlyWiki-Vergleich](../../reference/gm-ux-qa/protocol-note-selection-20261018/README.md#originalnotizen-als-lesekarten--19102026).
+
 ## Verbindliche Daten- und Bedienregeln
 
 1. Der Store liest benötigte Quellen in einer SQLite-Lesetransaktion.
