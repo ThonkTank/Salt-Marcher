@@ -605,15 +605,15 @@ test('changing source with no Canvas context preserves a visible working retry',
 });
 
 
-test('a cropped room keeps its complete key centered, independently of polygon winding and export tile boundaries',()=>{
+test('cropped rooms retain full label candidates and uncut contours across export tiles and winding',()=>{
  const outer=[{x:12,y:6},{x:0,y:6},{x:0,y:0},{x:12,y:0}],options={grid:false,level:0,references:false,floorId:'ground',roofs:false};
  for(const points of [outer,[...outer].reverse()]){
   const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[{id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:points,holes:[]}]}]},geometry:{drawing:{elements:[]}}};
   for(const box of [{x:-1,y:-1,width:14,height:8},{x:5,y:-1,width:7,height:8}]){
-   const scene=atlasRegionPaint(data,[],box,512,new Map(),options),labels=scene.children.flatMap(n=>n.children).filter(n=>n.kind==='text');
+   const scene=atlasRegionPaint(data,[],box,512,new Map(),options),labels=scene.children.flatMap(n=>n.children).flatMap(n=>n.geometry.mapLabels??[]);
    assert.equal(labels.length,1);assert.equal(labels[0].text,'1 · Zollhaus');
-   assert.deepEqual({x:labels[0].geometry.x,y:labels[0].geometry.y},{x:6,y:3});
-   assert.equal(labels[0].style.textAlign,'center');assert.equal(labels[0].style.textBaseline,'middle');assert(labels[0].style.fontSize>=16*box.width/512);
+   assert.deepEqual(labels[0].polygons,[{outer:points,holes:[]}]);assert.equal(labels[0].id,'room:r');
+   assert.equal(scene.children.flatMap(n=>n.children).filter(n=>n.kind==='text').length,0,'the final output owns placement across tile boundaries');
   }
  }
 });

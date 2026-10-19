@@ -1,3 +1,4 @@
+import {MapLabelLayout,mapTextMeasurer} from "./atlas-map-labels";
 import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
 /** Atlas presentation only. One Canvas2D surface, retained paths and bounded decoded images. */
@@ -12,6 +13,8 @@ type SavedView = {
 const same = (a: CanvasBox, b: CanvasBox) =>
   a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 export class AtlasCanvas {
+  private readonly mapLabelLayout = new MapLabelLayout();
+  private mapTextMeasure?: ReturnType<typeof mapTextMeasurer>;
   private box: CanvasBox;
   private initial: CanvasBox;
   private contextKey = "";
@@ -284,6 +287,7 @@ export class AtlasCanvas {
       if (!ctx) throw Error("Canvas2D ist nicht verfügbar.");
       if (ctx.isContextLost?.()) throw Error("Zeichenfläche noch nicht verfügbar. Kurz warten und erneut versuchen.");
       this.ctx = ctx;
+      this.mapTextMeasure = mapTextMeasurer(ctx);
       this.lost = false;
       this.failed = false;
       return true;
@@ -435,7 +439,7 @@ export class AtlasCanvas {
     this.compiled.draw(ctx, matrix, this.decoded, {
       x: this.box.x - this.sceneOrigin.x,
       y: this.box.y - this.sceneOrigin.y,
-    });
+    }, {ratio,layout:this.mapLabelLayout,measure:this.mapTextMeasure});
     if (this.options.overlay) {
       const overlay = new AtlasPaint("group");
       const mpp = Math.max(this.box.width / rect.width, this.box.height / rect.height);
@@ -543,6 +547,7 @@ export class AtlasCanvas {
     while (this.views.size > 32)
       this.views.delete(this.views.keys().next().value!);
     const saved = restore ? this.views.get(key) : undefined;
+    this.mapLabelLayout.clear();
     this.contextKey = key;
     this.restored = !!saved;
     this.initial = { ...(saved?.initial ?? initial) };

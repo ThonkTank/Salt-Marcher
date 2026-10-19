@@ -1,3 +1,4 @@
+import {linePresentation,simplifyMapPath} from "./atlas-cartography";
 import type { Point, Polygon } from './contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 
@@ -139,4 +140,11 @@ export function splitLine(r:LandscapeRecord,index:number,id:string):[LandscapeRe
     second.line!.continuity={...c,before:r.points[index-1],segmentOffset:c.segmentOffset+index,distanceOffset:c.distanceOffset+length};
   }
   return [first,second];
+}
+
+/** Display styles never alter linePoints, stored widths or exact editing geometry. */
+export function mapLineParts(r:LandscapeRecord,mpp:number,selected=false):LinePart[]{
+ const display=linePresentation(r.kind,r.width,mpp,selected);if(!display.opacity)return [];
+ if(display.simplified){return[{points:simplifyMapPath(linePoints(r),mpp*.65),width:display.width,color:r.line?.color??(r.kind==='river'?'#629ebc':'#a37e51'),opacity:display.opacity,...(r.style==='path'?{dash:[mpp*5,mpp*3]}:{})}];}
+ return lineParts(r).map(p=>({...p,opacity:p.opacity*display.opacity}));
 }
