@@ -11,6 +11,7 @@ for (const [name, file] of [
   ["reader", "src/app/storage/atlas-region.ts"],
   ["view", "src/app/atlas-territory-view.ts"],
   ["paint", "src/app/atlas-paint.ts"],
+  ["ui", "src/app/atlas-territory-ui.ts"],
 ])
   buildSync({
     entryPoints: [file],
@@ -25,6 +26,7 @@ const M = require("../.build/territory-model.cjs"),
   { AtlasRegionReader } = require("../.build/territory-reader.cjs"),
   { drawTerritories } = require("../.build/territory-view.cjs"),
   { atlasPaint } = require("../.build/territory-paint.cjs"),
+  { TerritoryWorkbench } = require("../.build/territory-ui.cjs"),
   Database = require("better-sqlite3");
 const rect = (x, y, w, h) => ({
   outer: [
@@ -494,4 +496,65 @@ test("a write fault on the second affected region rolls back every boundary and 
     f.store.db.prepare("SELECT count(*) n FROM atlas_command").get().n,
     history,
   );
+});
+test("delayed region selections cannot overwrite a newer selection or an edited draft", async (t) => {
+  const previous = globalThis.window;
+  t.after(() => {
+    globalThis.window = previous;
+  });
+  const pending = new Map();
+  globalThis.window = {
+    campaign: {
+      atlasLandscapeObject: (_token, id) =>
+        new Promise((resolve) => pending.set(id, resolve)),
+    },
+  };
+  const ui = Object.assign(Object.create(TerritoryWorkbench.prototype), {
+    host: { token: () => "campaign", redraw() {} },
+    generation: 0,
+    dirty: false,
+    drag: null,
+    form() {},
+    input: () => ({ value: "" }),
+  });
+  const first = ui.select("A"),
+    second = ui.select("B");
+  pending.get("B")({ ok: true, value: territory("B") });
+  await second;
+  pending.get("A")({ ok: true, value: territory("A") });
+  await first;
+  assert.equal(ui.selected.id, "B");
+  const third = ui.select("C");
+  ui.selected.name = "Unfinished wording";
+  ui.dirty = true;
+  pending.get("C")({ ok: true, value: territory("C") });
+  await third;
+  assert.equal(ui.selected.name, "Unfinished wording");
+  assert(ui.hasDraft());
+});
+test("a pending region save locks its form and a failed save restores the editable draft", async () => {
+  let reject;
+  const ui = Object.assign(Object.create(TerritoryWorkbench.prototype), {
+    host: {
+      token: () => "campaign",
+      write: () =>
+        new Promise((_resolve, fail) => {
+          reject = fail;
+        }),
+    },
+    panel: { inert: false },
+    selected: territory("Draft"),
+    busy: false,
+    dirty: true,
+    readForm() {},
+    status() {},
+  });
+  const save = ui.commit();
+  assert.equal(ui.panel.inert, true);
+  reject(Error("injected failure"));
+  await assert.rejects(save, /injected/);
+  assert.equal(ui.panel.inert, false);
+  assert.equal(ui.busy, false);
+  assert.equal(ui.selected.id, "Draft");
+  assert(ui.hasDraft());
 });

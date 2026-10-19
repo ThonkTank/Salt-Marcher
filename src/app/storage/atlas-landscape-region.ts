@@ -8,6 +8,8 @@ import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
 const distance=(p:Point,a:Point,b:Point)=>{const x=b.x-a.x,y=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*x+(p.y-a.y)*y)/(x*x+y*y||1)));return Math.hypot(p.x-a.x-t*x,p.y-a.y-t*y);};
 const visual=(r:LandscapeRecord):LandscapeRecord=>{const {territory,regionLayer,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked}=r;return{territory:territory?{...territory,notes:""}:undefined,regionLayer,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,values:{}};};
+// Region names can rotate. Their conservative reach applies on both axes.
+const labelPaintBox=(box:LandscapeBox,mpp:number,units:number)=>{const b=landscapePaintBox(box,mpp,units),reach=Math.max(box.x-b.x,box.y-b.y);return{...b,y:box.y-reach,height:box.height+2*reach};};
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  private statements=new Map<string,any>();
@@ -47,7 +49,7 @@ export class AtlasLandscapeReader {
  }
 
  private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels=0,mpp=0){
-  const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
+  const search=labelPaintBox(box,mpp,this.placeLabelUnits);
   // Terrain already has canonical bounded columns. Index only sparse objects:
   // building another 100k-row Rtree before the first view costs more than its scans.
   const indexed=this.indexed&&!patches;
@@ -64,7 +66,7 @@ export class AtlasLandscapeReader {
    // Stream the page so 128 unusually large author payloads never accumulate in JS.
    for(const row of page.iterate(JSON.stringify(ids),source.campaignId)){if(row.trashed)continue;const record=JSON.parse(row.payload) as LandscapeRecord;
     if(row.location_name!==null)record.name=row.location_name;
-    const paint=landscapePaintBox(box,mpp,record.kind==='territory'?record.name.length*Math.max(1,record.territory!.label.size/13):record.kind==='place'?record.name.length:undefined);
+    const paint=record.kind==='territory'?labelPaintBox(box,mpp,record.name.length*Math.max(1,record.territory!.label.size/13)):landscapePaintBox(box,mpp,record.kind==='place'?record.name.length:undefined);
     if(row.max_x<paint.x||row.min_x>paint.x+paint.width||row.max_y<paint.y||row.min_y>paint.y+paint.height)continue;
     if(record.kind==='place'||record.kind==='region-layer'||record.kind==='reference'&&record.visible===false)continue;
     yield record;

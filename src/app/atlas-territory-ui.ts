@@ -60,6 +60,7 @@ export class TerritoryWorkbench {
     this.on("territory-new", () => {
       if (this.hasDraft())
         throw Error("Änderungen zuerst speichern oder verwerfen.");
+      this.generation++;
       this.selected = newTerritory(
         crypto.randomUUID(),
         this.value("territory-layer"),
@@ -319,6 +320,7 @@ export class TerritoryWorkbench {
         this.selected.id,
       );
       if (generation !== this.generation || token !== this.host.token()) return;
+      if (this.dirty || this.drag) return;
       if (r.ok) {
         this.selected = r.value;
         this.form();
@@ -443,9 +445,15 @@ export class TerritoryWorkbench {
   async select(id: string, focus = false) {
     if (this.hasDraft())
       throw Error("Änderungen zuerst speichern oder verwerfen.");
-    const token = this.host.token()!,
+    const generation = ++this.generation,
+      token = this.host.token()!,
       r = await window.campaign.atlasLandscapeObject(token, id);
-    if (token !== this.host.token()) return;
+    if (
+      generation !== this.generation ||
+      token !== this.host.token() ||
+      this.hasDraft()
+    )
+      return;
     if (!r.ok) throw Error(r.error);
     if (r.value.kind !== "territory") return;
     this.selected = r.value;
@@ -586,6 +594,7 @@ export class TerritoryWorkbench {
     const record = structuredClone(this.selected),
       token = this.host.token();
     this.busy = true;
+    this.panel.inert = true;
     this.status("Region wird gespeichert …");
     let confirmed = false;
     try {
@@ -612,6 +621,7 @@ export class TerritoryWorkbench {
       throw error;
     } finally {
       this.busy = false;
+      this.panel.inert = false;
     }
   }
   draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
