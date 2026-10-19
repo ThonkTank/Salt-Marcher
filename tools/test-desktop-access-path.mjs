@@ -30,7 +30,7 @@ const { CampaignStore, newElement } = require(root + `/.build/access-path-store-
   dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
   buildHashes = Object.fromEntries(
     await Promise.all(
-      ["main.cjs", "ui/renderer.js"].map(async (f) => [
+      ["main.cjs", "ui/renderer.js", "ui/app.css"].map(async (f) => [
         f,
         createHash("sha256")
           .update(await readFile(root + "/.build/desktop/" + f))
@@ -139,6 +139,7 @@ try {
       await page.mouse.click(p.x, p.y);
       await page.waitForFunction(() => document.getElementById("campaign-atlas").dataset.elementSelected === "true" && document.getElementById("drawing-element-name").value === "Zugangsweg");
       await atlasCanvasReady(page);
+      if (await page.locator('#atlas-secondary').isVisible()) await page.locator('#atlas-secondary-close').click();
     };
     async function launch() {
       app = await _electron.launch({
@@ -174,7 +175,7 @@ try {
         if (!(await page.locator("#atlas-tab").isVisible())) await page.locator("#workspace-nav-summary").click();
         await page.locator("#atlas-tab").click();
       }
-      await page.locator('button[data-family="interior"]').click();
+      await page.locator('#atlas-section').selectOption('interior');
       await atlasCanvasReady(page);
       await choose();
     }
@@ -194,7 +195,12 @@ try {
       assert(check(), "Expected confirmed source state");
     }
     async function png(label) {
+      const toolsVisible = await page.locator('#atlas-panel').isVisible(),
+        layout = await page.evaluate(() => localStorage.getItem('atlas-editor-layout-v4'));
       await page.locator("#atlas-output-open").click();
+      await atlasCanvasReady(page);
+      assert.equal(await page.locator('#atlas-panel').isVisible(), false);
+      assert.equal((await atlasCanvasPoint(page, {x:6.096,y:6.096}, false)).target, 'campaign-map', 'the building preview stays uncovered');
       if (!(await page.locator("#atlas-export-size").isVisible()))
         await page.locator("#atlas-output details summary").click();
       await page.locator("#atlas-export-size").fill("1536");
@@ -234,6 +240,8 @@ try {
         };
       const pixels = { old: red({ x: 6.096, y: 6.096 }), bend: red({ x: 6.096, y: -9.144 }) };
       await page.locator("#atlas-output-back").click();
+      assert.equal(await page.locator('#atlas-panel').isVisible(), toolsVisible);
+      assert.equal(await page.evaluate(() => localStorage.getItem('atlas-editor-layout-v4')), layout, 'export does not overwrite the preferred editing layout');
       return pixels;
     }
     const before = await png("crossing");
@@ -326,7 +334,7 @@ try {
     assert.equal(restoredPath().notes, savedPath.notes);
     if (!(await page.locator('#atlas-tab').isVisible())) await page.locator('#workspace-nav-summary').click();
     await page.locator('#atlas-tab').click();
-    await page.locator('button[data-family="interior"]').click();
+    await page.locator('#atlas-section').selectOption('interior');
     await choose();
     for (let i=0;i<2;i++) await page.getByRole('button',{name:'Verkleinern',exact:true}).click();
     await atlasCanvasReady(page);
@@ -356,6 +364,8 @@ try {
       undoRedo: true,
       editableExport: true,
       packageRestoredAndEdited: true,
+      exportPreviewUncovered: true,
+      editingLayoutPreferenceRetained: true,
       backupIndependentOfPublicSettings: true,
       cancelledBackupReadonly: true,
       fresh: true,

@@ -165,7 +165,8 @@ export class AtlasWorkspaceLayout {
  private applyWidth(){
   this.root.style.setProperty('--atlas-dock-width',this.width+'px');this.root.style.setProperty('--atlas-details-width',this.detailWidth+'px');
   this.root.dataset.toolsOpen=String(this.toolSettingsVisible);this.toolSettings.hidden=!this.toolSettingsVisible;
-  const left=this.root.dataset.collapsed==='true'?0:144+(this.toolSettingsVisible?this.width:0);this.root.style.setProperty('--atlas-left-space',left+'px');
+  const output=this.auxiliary==='output'&&this.contextVisible;
+  const left=output||this.root.dataset.collapsed==='true'?0:144+(this.toolSettingsVisible?this.width:0);this.root.style.setProperty('--atlas-left-space',left+'px');
   this.root.dataset.secondary=String(this.contextVisible);
   this.root.dataset.overlay=String(this.root.clientWidth-left-this.detailWidth<560);
   this.secondary.hidden=!this.contextVisible;
