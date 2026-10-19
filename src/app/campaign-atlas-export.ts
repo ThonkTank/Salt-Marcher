@@ -1,3 +1,5 @@
+import {MapLabelPool,transformLabel} from "./atlas-cartography";
+import {MapLabelLayout,mapTextMeasurer,paintMapLabels} from "./atlas-map-labels";
 import { AtlasPaint, atlasPaint } from "./atlas-paint";
 import { AtlasCanvasScene } from "./atlas-canvas-scene";
 import {drawScale} from "./atlas-landscape-view";
@@ -66,18 +68,7 @@ export function publicAtlasPaint(
         });
     for (const label of a.perception.labels) {
       const p = at(label.point);
-      add(
-        "text",
-        {
-          ...p,
-          style: {
-            fontSize: box.width / 100,
-            textAlign: "center",
-            fill: "#203532",
-          },
-        },
-        label.text,
-      );
+      add('group',{mapLabels:[{id:'public-room:'+label.text+':'+label.point.x+':'+label.point.y,text:label.text,kind:'room',point:p,priority:60}]});
     }
     for (const m of a.perception.markers) {
       const p = at(m.point);
@@ -116,20 +107,7 @@ export function publicAtlasPaint(
             "#7fa8bd",
         },
       });
-      if (cell.label)
-        add(
-          "text",
-          {
-            x: p.x - box.x,
-            y: p.y - box.y,
-            style: {
-              fontSize: map.hexMeters / 15,
-              fill: "#203532",
-              textAlign: "center",
-            },
-          },
-          cell.label,
-        );
+      if (cell.label)add('group',{mapLabels:[{id:'public-cell:'+cell.q+':'+cell.r,text:cell.label,kind:'place',point:{x:p.x-box.x,y:p.y-box.y},priority:80}]});
     }
     // Remembered cells deliberately keep their public snapshot. Current GM
     // contours must not replace unseen terrain, even inside a known hex.
@@ -193,14 +171,16 @@ export async function atlasImage(
       await drawScene(canvas, source, box, checkCurrent);
     else {
       tileCanvas = document.createElement("canvas");
+      const labels=new MapLabelPool(4096,2*1024*1024);
       for await (const tile of source) {
         checkCurrent();
         tileCanvas.width = tile.width;
         tileCanvas.height = tile.height;
-        await drawScene(tileCanvas, tile.scene, tile.box, checkCurrent);
+        await drawScene(tileCanvas, tile.scene, tile.box, checkCurrent,true,(scene,matrix)=>{for(const label of scene.projectMapLabels(matrix))labels.add(transformLabel(label,p=>({x:p.x+tile.x,y:p.y+tile.y})));});
         checkCurrent();
         ctx.drawImage(tileCanvas, tile.x, tile.y);
       }
+      paintMapLabels(ctx,new MapLabelLayout().layout(labels.values(),{width,height},box.width/width,mapTextMeasurer(ctx)));
     }
     checkCurrent();
     if(overlay)await drawScene(canvas,overlay,box,checkCurrent,false);
@@ -231,6 +211,7 @@ async function drawScene(
   box: CanvasBox,
   checkCurrent: () => void,
   clear = true,
+  collectLabels?:(scene:AtlasCanvasScene,matrix:DOMMatrix)=>void,
 ) {
   const compiled = new AtlasCanvasScene(scene),
     images = new Map<string, CanvasImageSource>();
@@ -248,19 +229,16 @@ async function drawScene(
     if (!ctx) throw Error("Bildausgabe nicht verfügbar.");
     ctx.resetTransform();
     if(clear)ctx.clearRect(0, 0, canvas.width, canvas.height);
-    compiled.draw(
-      ctx,
-      new DOMMatrix([
+    const matrix=new DOMMatrix([
         canvas.width / box.width,
         0,
         0,
         canvas.height / box.height,
         0,
         0,
-      ]),
-      images,
-      { x: 0, y: 0 },
-    );
+      ]);
+    collectLabels?.(compiled,matrix);
+    compiled.draw(ctx,matrix,images,{x:0,y:0},{skip:!!collectLabels});
   } finally {
     compiled.dispose();
     images.clear();

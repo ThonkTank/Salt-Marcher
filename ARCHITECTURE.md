@@ -349,6 +349,10 @@ keine Mechanik/GMprosa. Statischer Spielerexport verwendet ein ausdrücklich
 gewähltes Veröffentlichungsprofil und ist kein Live-Knowledgesnapshot.
 Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
 
+### Maßstabsabhängige Kartografie
+
+Die Desktop-Zeichenprojektion trägt `MapLabel`-Kandidaten getrennt von Geometrie und Autorenwerten. Bereichsreader liefern begrenzte Kandidaten auch bei Rasterübersichten; `selectedIds` erhält die ausgewählte Stadtgeometrie. Canvas legt Namen nach der Geometrie in CSS-Pixeln aus, mit gemessenen Kollisionsflächen und kameraeigenem Platzierungszustand. Export sammelt Kandidaten über Kacheln hinweg und zeichnet sie einmal auf dem Zielbild. Öffentliche Exporte lesen ausschließlich Namen der vorhandenen freigegebenen Spielerprojektion. Datenverträge, Grenzen und Prüfwege stehen im [Kartografieplan](docs/plans/maps/atlas-cartography.md).
+
 ### Atlasoberfläche ändern
 
 | Änderung | Zuständiger Einstieg |

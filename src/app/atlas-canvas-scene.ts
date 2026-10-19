@@ -1,3 +1,5 @@
+import {transformLabel, MapLabelPool, type MapLabel} from "./atlas-cartography";
+import {MapLabelLayout, mapTextMeasurer, paintMapLabels} from "./atlas-map-labels";
 import type { Polygon } from "./contracts";
 import { AtlasPaint, type PaintStyle } from "./atlas-paint";
 export { AtlasPaint, atlasPaint } from "./atlas-paint";
@@ -74,6 +76,8 @@ function pathFor(n: AtlasPaint) {
 }
 export type AtlasPathCache = WeakMap<AtlasPaint, {path?:Path2D;cuts?:Command["cuts"]}>;
 export class AtlasCanvasScene {
+  readonly mapLabels: {label:MapLabel;matrix:DOMMatrix}[] = [];
+  private labelLayout = new MapLabelLayout();
   pathBuilds=0;
   pathReuses=0;
   private maskSurface: HTMLCanvasElement | null = null;
@@ -97,6 +101,7 @@ export class AtlasCanvasScene {
       retained=retained||!!g.retainGeometry;
       if (g.hidden) return;
       matrix = g.matrix ? matrix.multiply(new DOMMatrix(g.matrix)) : matrix;
+      if(g.mapLabels)for(const label of g.mapLabels)this.mapLabels.push({label,matrix});
       style = { ...style, ...node.style };
       alpha *= g.opacity ?? 1;
       pointer = pointer && g.pointer !== false;
@@ -149,6 +154,7 @@ export class AtlasCanvasScene {
     view: DOMMatrix,
     images: Map<string, CanvasImageSource>,
     hudOffset: { x: number; y: number },
+    labelOptions?: {ratio?:number;layout?:MapLabelLayout;measure?:ReturnType<typeof mapTextMeasurer>;skip?:boolean},
   ) {
     for (const c of this.commands) {
       const n = c.node,
@@ -232,6 +238,12 @@ export class AtlasCanvasScene {
         ctx.restore();
       }
     }
+    if(this.mapLabels.length&&!labelOptions?.skip){
+      const ratio=labelOptions?.ratio??1,labels=this.projectMapLabels(view,ratio);
+      const mpp=ratio/Math.hypot(view.a,view.b);
+      const placed=(labelOptions?.layout??this.labelLayout).layout(labels,{width:ctx.canvas.width/ratio,height:ctx.canvas.height/ratio},mpp,labelOptions?.measure??mapTextMeasurer(ctx));
+      paintMapLabels(ctx,placed,ratio);
+    }
   }
   hit(
     ctx: CanvasRenderingContext2D,
@@ -247,6 +259,12 @@ export class AtlasCanvasScene {
   }
   tooltip(ctx: CanvasRenderingContext2D, p: { x: number; y: number }) {
     return this.commandAt(ctx, p, () => true)?.title ?? "";
+
+  }
+  projectMapLabels(view:DOMMatrix,ratio=1):MapLabel[]{
+    const pool=new MapLabelPool();
+    for(const {label,matrix}of this.mapLabels){const m=view.multiply(matrix);pool.add(transformLabel(label,p=>({x:(m.a*p.x+m.c*p.y+m.e)/ratio,y:(m.b*p.x+m.d*p.y+m.f)/ratio})));}
+    return pool.values();
   }
   private strokeStyle(ctx: CanvasRenderingContext2D, c: Command) {
     const s = c.style;

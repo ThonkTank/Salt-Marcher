@@ -1,5 +1,5 @@
+import {mapLineParts} from "./landscape-line";
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
-import {lineParts} from "./landscape-line";
 import {colorParts} from "./landscape-brush";
 import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
 import type { Polygon } from './contracts';
@@ -141,8 +141,7 @@ export class LandscapeRasterizer {
   }
   paintRecordLine(record:LandscapeRecord,mpp=0){
     this.applyCoast();
-    if(!record.line){this.paintLine(record.points,Math.max(record.width,mpp*2),record.kind==="river"?"#629ebc":"#a37e51");return;}
-    for(const part of lineParts(record)){if(part.polygons)this.paintPolygons(part.polygons,part.color,part.opacity);else this.paintStyledLine(part.points,part.width,part.color,part.opacity,part.dash,part.dashOffset);}
+    for(const part of mapLineParts(record,mpp)){if(part.polygons)this.paintPolygons(part.polygons,part.color,part.opacity);else this.paintStyledLine(part.points,part.width,part.color,part.opacity,part.dash,part.dashOffset);}
   }
   private paintStyledLine(points:{x:number;y:number}[],width:number,color:string,opacity:number,dash?:number[],dashOffset=0){
     // Rasterize the bounded visible sample lattice, not one object per dash across the world.

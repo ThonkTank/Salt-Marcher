@@ -33,6 +33,8 @@ export interface PaintStyle {
 export interface PaintOptions {
   /** Immutable local geometry: share compiled paths across scene publications. */
   retainGeometry?: boolean;
+  /** Frame-local label candidates, laid out after every geometry layer. */
+  mapLabels?: import("./atlas-cartography").MapLabel[];
   x?: number;
   y?: number;
   x2?: number;
