@@ -14,6 +14,7 @@ await build({ entryPoints: ['desktop/main.ts'], outfile: '.build/desktop/main.cj
 await build({entryPoints:['desktop/player-preload.ts'],outfile:'.build/desktop/player-preload.cjs',bundle:true,platform:'node',format:'cjs',external:['electron']});
 await build({entryPoints:['src/app/player-display.ts'],outfile:'.build/desktop/ui/player-display.js',bundle:true,platform:'browser',format:'iife'});
 await build({ entryPoints: ['desktop/preload.ts'], outfile: '.build/desktop/preload.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron'] });
+await build({entryPoints:['src/app/atlas-brush-worker.ts'],outfile:'.build/desktop/ui/atlas-brush-worker.js',bundle:true,platform:'browser',format:'iife'});
 await build({ entryPoints: ['src/app/renderer.ts'], outfile: '.build/desktop/ui/renderer.js', bundle: true, platform: 'browser', format: 'iife',plugins:[{name:'lazy-generator-settings',setup(build){build.onResolve({filter:/^\.\/preset-settings-ui$/},()=>({path:'./preset-settings.js',external:true}));}}] });
 await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/desktop/ui/preset-settings.js',bundle:true,platform:'browser',format:'esm'});
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');

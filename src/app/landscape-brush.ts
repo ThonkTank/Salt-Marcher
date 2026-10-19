@@ -3,7 +3,7 @@ import type { Point, Polygon } from './contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 export type BrushMode = 'terrain'|'land'|'land-erase'|'raise'|'lower'|'freshwater'|'freshwater-erase'|'ground-color'|'water-color'|'color-erase';
 export interface LandscapeColor {
-  version:1; target:'ground'|'water'; color:string; opacity:number; flow:number;
+  version:1|2; operation?:'paint'|'erase'; fillScope?:'connected'|'all'; target:'ground'|'water'; color:string; opacity:number; flow:number;
   tip:'round'|'soft'|'textured'; radius:number; seed:number; fill:boolean;
   strokes?:Point[][];
 }
@@ -30,10 +30,12 @@ export function brushFootprint(points:Point[],radius:number,roughness=0,seed=1):
   return out;
 }
 export function validateColor(r:LandscapeRecord){
+  if(r.propertyOnly!==undefined&&(r.propertyOnly!==true||r.kind!=='patch'||r.paint||r.mask||r.surface||r.maskManaged))throw Error('Eigenschaftsfläche prüfen.');
   if(r.surface&&!['land','sea','freshwater'].includes(r.surface))throw Error('Wasser-/Landfläche prüfen.');
   const p=r.paint;if(!p)return;
+  if(p.version===2&&(!['paint','erase'].includes(p.operation??'')||!['connected','all'].includes(p.fillScope??'connected')))throw Error('Farboperation prüfen.');
   if(p.strokes&&(!Array.isArray(p.strokes)||p.strokes.flat().length>2000||p.strokes.some(s=>!Array.isArray(s)||s.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)))))throw Error('Farbstriche prüfen.');
-  if(r.kind!=='patch'||p.version!==1||!['ground','water'].includes(p.target)||!/^#[\da-f]{6}$/i.test(p.color)||
+  if(r.kind!=='patch'||![1,2].includes(p.version)||!['ground','water'].includes(p.target)||!/^#[\da-f]{6}$/i.test(p.color)||
     !['round','soft','textured'].includes(p.tip)||![p.opacity,p.flow].every(v=>Number.isFinite(v)&&v>=.1&&v<=1)||
     !Number.isFinite(p.radius)||p.radius<=0||!Number.isSafeInteger(p.seed)||p.seed<0||p.seed>0xffffffff||typeof p.fill!=='boolean'||
     Object.keys(r.values).length||(!p.fill&&!r.points.length))throw Error('Farbpinsel prüfen.');

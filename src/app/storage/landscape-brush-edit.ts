@@ -1,3 +1,4 @@
+import {colorSurface} from '../landscape-color-surface';
 import {applyMaskStroke,isLandMode,strokeBox,maskLandSpans} from '../land-mask';
 import {randomUUID} from 'node:crypto';
 import {bounds, contains, type LandscapeRecord, type LandscapeAction} from '../atlas-landscape';
@@ -8,19 +9,29 @@ import {landscapeRegion,putLandscape,landMaskRegion} from './atlas-landscape';
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
 export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'landscape-brush'}>){
   if(isLandMode(a.mode)){
+    if(a.record?.paint)throw Error('Landpinsel darf keine Farbmaske enthalten.');
     const stroke={mode:a.mode,radius:a.radius,roughness:a.roughness,seed:a.seed,samples:a.samples??[]};
     if(!stroke.samples.length)throw Error('Zeitstempel des Landpinsels fehlen.');
     const records=landMaskRegion(db,cam,strokeBox(stroke));
     for(const tile of applyMaskStroke(records,stroke))putLandscape(db,cam,tile,tile.revision||null);
     return;
   }
-  const r=structuredClone(a.record);
+  let r=structuredClone(a.record);
   if(r.kind!=='patch'||!r.polygons.length||!Number.isFinite(a.radius)||a.radius<=0||!Number.isFinite(a.roughness)||a.roughness<0||a.roughness>2||
     !['land','land-erase','raise','lower','freshwater','freshwater-erase','ground-color','water-color','color-erase'].includes(a.mode))throw Error('Landschaftspinsel prüfen.');
   const points=[...r.points,...r.polygons.flatMap(p=>[...p.outer,...p.holes.flat()])];
   if(points.length>100000||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y))||r.polygons.some(p=>p.outer.length<3)||!Number.isSafeInteger(a.seed)||a.seed<0||a.seed>0xffffffff||typeof a.fill!=='boolean'||a.fill!==!!r.paint?.fill)throw Error('Pinselgeometrie prüfen.');
   validateColor(r);
   let box=bounds(r),records:LandscapeRecord[];
+  if(r.paint?.version===2){
+    const mode=r.paint.operation==='erase'?'color-erase':r.paint.target==='water'?'water-color':'ground-color';
+    if(a.mode!==mode||r.propertyOnly||r.mask||r.surface)throw Error('Farbauftrag prüfen.');
+    if(a.fill&&db.prepare("SELECT count(*) n FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch'").get(cam).n>10000)throw Error('Zu viele Flächen zum Füllen.');
+    records=landscapeRegion(db,cam,a.fill?undefined:box);
+    r=colorSurface(r,records);
+    if(!r.polygons.length){if(a.fill)throw Error('Keine passende Fläche zum Füllen.');return;}
+    putLandscape(db,cam,r,null);return;
+  }
   if(a.fill){
     // Filling is explicit, not a camera read. A bounded author set avoids unbounded global allocation.
     if(db.prepare("SELECT count(*) n FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch'").get(cam).n>10000)throw Error('Zu viele Flächen zum Füllen. Mit dem Farbpinsel abschnittsweise malen.');

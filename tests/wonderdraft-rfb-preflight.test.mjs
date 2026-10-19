@@ -93,5 +93,27 @@ test('valid CLI still transmits inputs and records its test framebuffer', async 
     assert.equal(metadata.sessionId, f.session.id); assert.equal(metadata.width, 64); assert.equal(metadata.height, 48);
     assert.equal(metadata.screenshotSha256, createHash('sha256').update(fs.readFileSync(path.join(f.run, 'screens', 'valid.png'))).digest('hex'));
     assert.equal(JSON.parse(fs.readFileSync(path.join(f.run, 'input.jsonl'))).screenshotSha256, metadata.screenshotSha256);
+    messages.length = 0;
+    const strokeFile = path.join(f.run, 'stroke.json');
+    fs.writeFileSync(strokeFile, JSON.stringify([{x:2,y:3,t:0},{x:20,y:30,t:200},{x:2,y:3,t:400}]));
+    await exec(process.execPath, [cli, '--session', sessionPath, '--stroke-file', strokeFile, '--shot', 'stroke', '--settle-ms', '100'], {timeout:10000});
+    assert.deepEqual(messages.filter(b=>b[0]===5).map(b=>[b[1],b.readUInt16BE(2),b.readUInt16BE(4)]),
+      [[0,2,3],[1,2,3],[1,20,30],[1,2,3],[0,2,3]]);
+    const stroke = JSON.parse(fs.readFileSync(path.join(f.run, 'screens', 'stroke.json'))).actions[0];
+    assert.equal(stroke.requestedMs,400);
+    assert(stroke.actualMs>=380 && stroke.actualMs<1000);
+    assert.equal(stroke.points.length,3);
   } finally { for (const socket of sockets) socket.destroy(); await new Promise(resolve => server.close(resolve)); f.remove(); }
+});
+
+
+test('timed original strokes validate every point and duration before transport',()=>{
+ const f=fixture();try{
+  const file=path.join(f.run,'stroke.json'),points=[{x:1,y:2,t:0},{x:20,y:10,t:500},{x:40,y:20,t:1000}];
+  fs.writeFileSync(file,JSON.stringify(points));assert.deepEqual(preflightRfbInput({'stroke-file':file},f.session).stroke,points);
+  assert.throws(()=>preflightRfbInput({'stroke-file':file,click:'1,2'},f.session),/separate/);
+  for(const bad of [[{x:1,y:2,t:10},{x:20,y:2,t:500}],[{x:1,y:2,t:0},{x:64,y:2,t:500}],[{x:1,y:2,t:0},{x:20,y:2,t:60001}],[{x:1,y:2,t:0},{x:20,y:2,t:500},{x:20,y:2,t:400}]]){
+   fs.writeFileSync(file,JSON.stringify(bad));assert.throws(()=>preflightRfbInput({'stroke-file':file},f.session));
+  }
+ }finally{f.remove();}
 });

@@ -186,7 +186,8 @@ async function settled() {
   await atlasCanvasReady(page);
 }
 async function mode(value, radius) {
-  await page.locator(`[data-land-mode="${value}"]`).click();
+  await page.locator('#land-operation').selectOption(['land-erase','lower'].includes(value)?'erase':'add');
+  await page.locator('#land-coast-roughness').fill(['raise','lower'].includes(value)?'2':'0');
   await page.locator("#land-radius").fill(String(radius));
 }
 async function hold(x, y, ms) {
@@ -199,6 +200,13 @@ async function hold(x, y, ms) {
 }
 try {
   await start();
+  const worker=await page.evaluate(()=>new Promise(resolve=>{
+    const w=new Worker(new URL('atlas-brush-worker.js',document.baseURI));
+    const timer=setTimeout(()=>{w.terminate();resolve('timeout');},5000);
+    w.onerror=()=>{clearTimeout(timer);w.terminate();resolve('error');};
+    w.onmessage=e=>{clearTimeout(timer);w.terminate();resolve(e.data.error??e.data.pixels.length);};
+    w.postMessage({generation:1,records:[],box:{x:0,y:0,width:10,height:10},width:10,height:10});
+  }));assert.equal(worker,400,'Packaged brush worker must load through the restricted app protocol');
   await tool("paint");
   for (let i = 0; i < 3; i++)
     await page
@@ -246,6 +254,35 @@ try {
   result.checks.push(
     "neutral unpainted land and crisp coast in actual window pixels",
   );
+  const landBeforeColor=maskBytes();
+  await tool('color');
+  assert(await page.locator('#land-color-options').isVisible());
+  assert(await page.locator('#land-shape-options').isHidden());
+  await page.locator('#land-radius').fill(String(r*.7));
+  await page.locator('#land-tip').selectOption('round');
+  await page.locator('#land-paint-color').fill('#22aa33');
+  await stroke([[x-r,y],[x+r,y]]);await settled();
+  const windowRgb=async(px,py)=>{const shot=require('pngjs').PNG.sync.read(await page.screenshot()),p=await at(px,py),i=(Math.round(p.y)*shot.width+Math.round(p.x))*4;return [...shot.data.slice(i,i+3)];};
+  assert.deepEqual(await windowRgb(x,y),[34,170,51]);assert.equal(maskBytes(),landBeforeColor);
+  await capture('02a-color-paint');
+  await page.locator('#land-color-operation').selectOption('erase');
+  await page.locator('#land-paint-opacity').fill('0.5');
+  await hold(x,y,100);
+  const partial=await windowRgb(x,y);assert(partial[0]>34&&partial[0]<238);assert.equal(maskBytes(),landBeforeColor);
+  await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.deepEqual(await windowRgb(x,y),[34,170,51]);
+  await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.deepEqual(await windowRgb(x,y),partial);
+  await page.locator('#land-paint-opacity').fill('1');await hold(x,y,100);
+  assert.deepEqual(await windowRgb(x,y),[238,229,207]);assert.equal(maskBytes(),landBeforeColor);
+  await capture('02b-color-erase');
+  result.checks.push('separate color tool with paint/erase switch, partial pigment erasure, unchanged land and exact undo/redo');
+  await page.locator('#land-color-operation').selectOption('paint');
+  await page.locator('#land-tip').selectOption('soft');
+  const beforeCancel=JSON.stringify(records()),cp=await at(x,y);
+  await page.mouse.move(cp.x,cp.y);await page.mouse.down();await page.waitForTimeout(400);await page.keyboard.press('Escape');await page.mouse.up();
+  assert.equal(JSON.stringify(records()),beforeCancel);
+  result.checks.push('Escape discards color preview');
+  await tool('paint');assert.equal(Number(await page.locator('#land-radius').inputValue()),r);
+  assert(await page.locator('#land-color-options').isHidden());
   await mode("land-erase", r * 0.35);
   await hold(x, y, 80);
   assert.equal(atTerrain(x, y), "water");

@@ -99,7 +99,7 @@ export function validateStroke(s: MaskStroke) {
     !Number.isFinite(s.radius) ||
     s.radius < 1 ||
     !Number.isFinite(s.roughness) ||
-    s.roughness < 0.1 ||
+    s.roughness < 0 ||
     s.roughness > 2 ||
     !Number.isSafeInteger(s.seed) ||
     s.seed < 0 ||

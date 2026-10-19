@@ -16,10 +16,10 @@ export function drawLandscape(
   raster?: import("./landscape-raster").LandscapeRaster[],
   unavailableAssets?: ReadonlySet<string>,
 ) {
-  if(!raster&&records.some(r=>r.mask)&&typeof document!=='undefined'){
+  if(!raster&&records.some(r=>r.mask||r.paint?.version===2)&&typeof document!=='undefined'){
     const w=Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),h=Math.min(1024,Math.max(1,Math.ceil(b.height/mpp))),image=new LandscapeRasterizer(b,w,h);
     for(const r of [...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))image.paint(r);
-    for(const r of records)if(r.paint)image.paintColor(r);
+    for(const r of [...records].filter(r=>r.paint).sort((a,b)=>(a.order??0)-(b.order??0)))image.paintColor(r);
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d')!;ctx.putImageData(new ImageData(new Uint8ClampedArray(image.finish()),w,h),0,0);
     raster=[{campaignId:'',revision:0,box:b,width:w,height:h,data:canvas.toDataURL()}];
   }
@@ -29,7 +29,7 @@ export function drawLandscape(
   const drawColors=()=>{
     if(raster||colorsDrawn)return;colorsDrawn=true;
     let water:import('./contracts').Polygon[]=[{outer:[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}],holes:[]}];
-    for(const r of ordered)if(r.kind==='patch'&&r.values.terrain)water=r.values.terrain==='water'?unionPolygons(water,r.polygons):subtractPolygons(water,r.polygons);
+    for(const r of ordered)if(r.kind==='patch'&&!r.propertyOnly&&r.values.terrain)water=r.values.terrain==='water'?unionPolygons(water,r.polygons):subtractPolygons(water,r.polygons);
     for(const r of ordered)if(r.paint)for(const part of colorParts(r)){
       const polygons=r.paint.target==='water'?intersectPolygons(part.polygons,water):subtractPolygons(part.polygons,water);
       root.append(landscapeNode('polygons',{polygons:polygons.map(p=>({outer:p.outer.map(v=>({x:v.x-b.x,y:v.y-b.y})),holes:p.holes.map(r=>r.map(v=>({x:v.x-b.x,y:v.y-b.y})))})),pointer:false,opacity:part.opacity*r.paint.opacity,style:{fill:part.color,fillRule:'evenodd'}}));
@@ -61,7 +61,7 @@ export function drawLandscape(
         g.append(outline);
       }
     } else if (r.kind === "patch") {
-      if (r.values.terrain && !raster)
+      if (r.values.terrain && !r.propertyOnly && !raster)
         g.append(
           landscapeNode("polygons", {polygons: r.polygons.map((p) => ({
                 outer: p.outer.map((v) => ({ x: v.x - b.x, y: v.y - b.y })),

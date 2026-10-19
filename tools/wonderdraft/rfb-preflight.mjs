@@ -42,6 +42,24 @@ export function preflightRfbInput(values, session) {
     if (parts.length !== 2) throw new Error('drag start:end required');
     drag = parts.map(point);
   }
+  let stroke;
+  if (values['stroke-file'] !== undefined) {
+    if (['click', 'drag', 'move', 'wheel', 'key', 'text', 'hold', 'drag-key'].some(k => values[k] !== undefined))
+      throw new Error('Timed stroke must be a separate input request');
+    const file = values['stroke-file'];
+    if (!path.isAbsolute(file) || fs.statSync(file).size > 100000) throw new Error('Bounded absolute stroke file required');
+    const points = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (!Array.isArray(points) || points.length < 2 || points.length > 1000) throw new Error('Stroke needs 2–1000 timed points');
+    let prior = -1;
+    stroke = points.map(p => {
+      if (!p || ![p.x, p.y, p.t].every(Number.isFinite) || !Number.isInteger(p.t) || p.t < prior || p.t < 0 || p.t > 60000)
+        throw new Error('Stroke time invalid');
+      prior = p.t;
+      const [x, y] = point(p.x + ',' + p.y);
+      return { x, y, t: p.t };
+    });
+    if (stroke[0].t !== 0 || stroke.at(-1).t < 1) throw new Error('Stroke starts at zero and needs duration');
+  }
   let wheel;
   if (values.wheel !== undefined) {
     const parts = values.wheel.split(':');
@@ -67,5 +85,5 @@ export function preflightRfbInput(values, session) {
     fs.accessSync(directory, fs.constants.W_OK);
   }
   return { clickMs, settleMs, heldNames, heldCodes: heldNames.map(k => RFB_KEYS[k]), buttonMask,
-    move, click, drag, wheel, keyCodes, textCodes, shotTarget, metadataTarget };
+    move, click, drag, stroke, wheel, keyCodes, textCodes, shotTarget, metadataTarget };
 }

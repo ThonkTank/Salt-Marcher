@@ -14,7 +14,7 @@ const { values } = parseArgs({ options: {
   text: { type: 'string' }, drag: { type: 'string' }, wheel: { type: 'string' },
   button: { type: 'string', default: 'left' },
   hold: { type: 'string' }, 'drag-key': { type: 'string' },
-  'settle-ms': { type: 'string' }, 'click-ms': { type: 'string' },
+  'settle-ms': { type: 'string' }, 'click-ms': { type: 'string' }, 'stroke-file': { type: 'string' },
 } });
 if (!values.session) throw new Error('Original session path required');
 const session = JSON.parse(fs.readFileSync(values.session, 'utf8'));
@@ -82,6 +82,23 @@ try {
     }
     pointer(b); actions.push({ drag: values.drag, button: values.button,
       ...(values['drag-key'] ? { duringDrag: { key: 'Escape', afterStep: 8, totalSteps: 16 } } : {}) });
+  }
+  if (input.stroke) {
+    const points = input.stroke, first = points[0], last = points.at(-1), sent = [];
+    pointer([first.x, first.y]); await pause(100);
+    const began = performance.now();
+    pointer([first.x, first.y], buttonMask);
+    sent.push({ ...first, sentMs: performance.now() - began });
+    try {
+      for (const p of points.slice(1)) {
+        const remaining = began + p.t - performance.now();
+        if (remaining > 0) await pause(remaining);
+        pointer([p.x, p.y], buttonMask);
+        sent.push({ ...p, sentMs: performance.now() - began });
+      }
+    } finally { pointer([last.x, last.y]); }
+    actions.push({ strokeFile: values['stroke-file'], button: values.button,
+      requestedMs: last.t, actualMs: performance.now() - began, points: sent });
   }
   if (values.wheel) {
     const { point: p, ticks: n } = input.wheel;

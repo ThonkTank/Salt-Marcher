@@ -292,7 +292,7 @@ export function putLandscape(
   const b = bounds(r),
     next = {
       ...r,
-      ...(r.kind==='patch'&&r.values.terrain&&!r.mask&&r.surface!=='freshwater'?{maskManaged:true}:{}),
+      ...(r.kind==='patch'&&r.values.terrain&&!r.propertyOnly&&!r.mask&&r.surface!=='freshwater'?{maskManaged:true}:{}),
       order:
         r.order ??
         db
@@ -314,7 +314,7 @@ export function putLandscape(
     b.y + b.height,
     JSON.stringify(next),
   );
-  if(r.kind==='patch'&&r.values.terrain&&!r.mask&&r.surface!=='freshwater'){
+  if(r.kind==='patch'&&r.values.terrain&&!r.propertyOnly&&!r.mask&&r.surface!=='freshwater'){
     const prior=old?JSON.parse(old.payload):null,moved=prior&&JSON.stringify(prior.polygons)!==JSON.stringify(r.polygons);
     if(moved&&prior.values.terrain)writeTerrainMask(db,cam,{...prior,values:{terrain:'water'}});
     if(!prior||moved||prior.values.terrain!==r.values.terrain)writeTerrainMask(db,cam,r);
@@ -328,6 +328,15 @@ function writeTerrainMask(db:any,cam:string,r:LandscapeRecord){
   for(const tile of applyMaskArea(records,r))putLandscape(db,cam,tile,tile.revision||null);
 }
 export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
+  if(a.kind==='landscape-land-stroke'){
+    if(!a.stroke||Object.keys(a).some(k=>!['kind','stroke'].includes(k))||Object.keys(a.stroke).some(k=>!['mode','radius','roughness','seed','samples'].includes(k)))throw Error('Landauftrag prüfen.');
+    return executeBrush(db,cam,{kind:'landscape-brush',record:{} as LandscapeRecord,...a.stroke,fill:false});
+  }
+  if(a.kind==='landscape-color-stroke'){
+    const p=a.record?.paint;
+    if(!p||p.version!==2||a.record.propertyOnly||a.record.mask||a.record.surface||Object.keys(a.record.values).length)throw Error('Farbauftrag prüfen.');
+    return executeBrush(db,cam,{kind:'landscape-brush',record:a.record,mode:p.operation==='erase'?'color-erase':p.target==='water'?'water-color':'ground-color',radius:p.radius,roughness:0,seed:p.seed,fill:p.fill});
+  }
   if(a.kind==="landscape-brush")return executeBrush(db,cam,a);
   if (a.kind === "landscape-batch") {
     for(const r of a.remove??[])executeLandscape(db,cam,{kind:"landscape-remove",...r});
@@ -339,7 +348,7 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
     return putLandscape(db, cam, a.record, a.expectedRevision);
   if (a.kind === "landscape-remove") {
     const row=db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? AND id=? AND revision=?').get(cam,a.id,a.expectedRevision);
-    if(row){const r=JSON.parse(row.payload);if(r.mask)throw Error('Landmaske mit dem Pinsel bearbeiten.');if(r.kind==='patch'&&r.values.terrain&&r.surface!=='freshwater')writeTerrainMask(db,cam,{...r,values:{terrain:'water'}});}
+    if(row){const r=JSON.parse(row.payload);if(r.mask)throw Error('Landmaske mit dem Pinsel bearbeiten.');if(r.kind==='patch'&&r.values.terrain&&!r.propertyOnly&&r.surface!=='freshwater')writeTerrainMask(db,cam,{...r,values:{terrain:'water'}});}
 
     if (
       db
@@ -377,10 +386,11 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
       width: 0,
     } as any),
   );
-  if(a.field==='terrain')writeTerrainMask(db,cam,{id:'reset',revision:0,name:'',kind:'patch',width:0,resolution:a.resolution,points:[],polygons:a.polygons,values:{terrain:'water'}});
+  if(a.field==='terrain'&&!a.propertyOnly)writeTerrainMask(db,cam,{id:'reset',revision:0,name:'',kind:'patch',width:0,resolution:a.resolution,points:[],polygons:a.polygons,values:{terrain:'water'}});
   for (const r of records) {
     if (
       r.kind !== "patch" ||
+      (a.propertyOnly===true && r.propertyOnly!==true) ||
       r.resolution > a.resolution ||
       r.resolution <= a.resolution / 3 ||
       !Object.hasOwn(r.values, a.field)
