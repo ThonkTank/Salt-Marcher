@@ -264,7 +264,7 @@ test("rendered water agrees with mask queries and malformed input rolls back", (
   );
   assert.deepEqual(
     [...pixels.slice((50 * 100 + 70) * 4, (50 * 100 + 70) * 4 + 3)],
-    [184, 200, 150],
+    [238, 229, 207],
   );
   const before = f.records();
   assert.throws(
