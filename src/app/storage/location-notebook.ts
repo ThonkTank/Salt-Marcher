@@ -1,6 +1,6 @@
 import type {LocationMaterial,LocationMaterialsQuery,LocationMaterialsPage} from '../location-notebook-contracts';
 import {calendarDate} from '../world-model';
-import {calendarEvents} from './agenda';
+import {calendarEvents} from './calendar-events';
 import {readWorldCalendar} from './world';
 import {readWorldSources} from './world-sources';
 import {deskContent} from './scene-desk';

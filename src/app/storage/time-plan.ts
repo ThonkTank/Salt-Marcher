@@ -1,17 +1,9 @@
-import {createHash} from 'node:crypto';
-import type {CalendarEvent} from '../world-contracts';
 import type {TimeRequest,TimePreview,ClockEventTarget} from '../time-plan-contracts';
 import {agendaDuration,agendaOccurrence,unitMs} from '../agenda-model';
-import {checkedCalendarEvent} from '../world-model';
+import {calendarEvents,readClockEvent} from './calendar-events';
 import {validInstant} from '../time-plan-model';
 import {readWorldCalendar} from './world';
 import {readLiveScene} from './live';
-export function readClockEvent(db:any,cam:string,id:string):CalendarEvent{return decodeClockEvent(db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' AND id=?").get(cam,id));}
-function decodeClockEvent(row:any,includeTrashed=false):CalendarEvent{
- if(!row||createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw new Error('Kalenderereignis beschädigt.');const event=checkedCalendarEvent(JSON.parse(row.payload),true);
- if(event.id!==row.id||event.revision!==row.revision||!includeTrashed&&event.trashed)throw new Error('Kalenderereignis geändert, beschädigt oder im Papierkorb.');return event;
-}
-
 export function previewSceneTime(db:any,cam:string,r:TimeRequest):TimePreview{
  if(!r||typeof r.reason!=='string'||r.reason.length>2000)throw new Error('Zeitgrund benötigt höchstens 2.000 Zeichen.');const scene=readLiveScene(db,cam,r.sceneId),focus=db.prepare('SELECT focus_id,focus_revision FROM live_state WHERE campaign_id=?').get(cam),calendar=readWorldCalendar(db,cam);if(scene.retired||focus?.focus_id!==scene.id)throw new Error('Zeitvorschau gehört nicht mehr zur fokussierten Gruppe.');if(r.expectedCalendarRevision!==undefined&&r.expectedCalendarRevision!==calendar.revision)throw new Error('Kalender geändert. Zeitdialog neu öffnen.');const now=BigInt(scene.clock.instantMs);let to:bigint,target:ClockEventTarget|undefined;
  if(r.kind==='duration')to=now+agendaDuration(calendar,r.amount,r.unit);
@@ -20,8 +12,8 @@ export function previewSceneTime(db:any,cam:string,r:TimeRequest):TimePreview{
  else if(r.kind==='event'){const event=readClockEvent(db,cam,r.eventId);if(event.revision!==r.expectedRevision)throw new Error('Ereignis geändert. Agenda aktualisieren.');const occurrence=agendaOccurrence(event,scene.clock.instantMs),instant=r.phase==='end'?occurrence.endMs:occurrence.startMs;to=BigInt(instant);target={eventId:event.id,expectedRevision:event.revision,phase:r.phase,instantMs:instant};}
  else throw new Error('Zeitvorschau benötigt Dauer, Datum oder Ereignis.');
  if(to<=now||!validInstant(String(to)))throw new Error('Zeit muss vorwärts gehen. Bei bereits laufendem Ereignis dessen Ende wählen.');const events:TimePreview['events']=[];let eventCount=0n;
- for(const row of db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='calendar-event' ORDER BY id").iterate(cam)){
-  const event=decodeClockEvent(row,true);if(event.trashed||event.locationId&&event.locationId!==scene.locationId)continue;const first=BigInt(event.startMs),repeat=event.repeatMs?BigInt(event.repeatMs):null;let start=first;if(repeat&&now>=first)start=first+((now-first)/repeat+1n)*repeat;
+ for(const event of calendarEvents(db,cam)){
+  if(event.trashed||event.locationId&&event.locationId!==scene.locationId)continue;const first=BigInt(event.startMs),repeat=event.repeatMs?BigInt(event.repeatMs):null;let start=first;if(repeat&&now>=first)start=first+((now-first)/repeat+1n)*repeat;
   if(start<=now||start>to)continue;const count=repeat?(to-start)/repeat+1n:1n;eventCount+=count;
   for(let occurrences=0;occurrences<40&&BigInt(occurrences)<count;occurrences++){
    events.push({name:event.name,instantMs:String(start)});events.sort((a,b)=>BigInt(a.instantMs)<BigInt(b.instantMs)?-1:BigInt(a.instantMs)>BigInt(b.instantMs)?1:a.name.localeCompare(b.name));if(events.length>40)events.pop();if(!repeat)break;start+=repeat;

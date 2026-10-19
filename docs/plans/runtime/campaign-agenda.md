@@ -26,6 +26,14 @@ Ereignislisten als nicht verfügbar erkennbar; direktes Öffnen ihrer Ortsagenda
 wird abgewiesen. Autoreninhalte und Ereignisdefinitionen werden beim Lesen
 nicht verändert. Die gezielten Storegegenproben stehen in `agenda-storage.test.ts`.
 
+`storage/calendar-events.ts` prüft gespeicherte Ereignisse gemeinsam für Agenda,
+Ortsmappe, Zeitvorschau, Weltansicht und Backup: Prüfsumme, Feldvertrag sowie
+ID und Revision gegenüber dem Datensatz. Erst danach entscheiden die jeweiligen
+Zugänge über Ort, Suche und Papierkorb. Ein archivierter Termin bleibt in der
+Agenda wiederherstellbar; als direktes Zeitziel wird er abgewiesen. Der Livewriter
+liest sein Ereignisziel unmittelbar aus diesem unabhängigen Modul. Die bisherigen
+Listenreihenfolgen und gespeicherten Bytes bleiben erhalten; keine Migration.
+
 `CampaignAgenda` zeigt Ereignisse und Fristen, bereitet neue Einträge relativ
 zur angezeigten Gruppenzeit oder als absolutes Fantasy-Datum vor und schreibt
 über den bestehenden Worldwriter. `AgendaBasis` bindet die Kalenderrevision
