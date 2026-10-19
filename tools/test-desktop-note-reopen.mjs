@@ -83,11 +83,13 @@ async function back() {
 try {
   for (const scale of [1, 2]) {
     stage = 'reopen and update originals at ' + scale; await launch(scale);
-    await page.locator('#note-thread-active').uncheck(); await allSources(); await card(clue.id).waitFor();
+    await page.locator('#note-thread-active').uncheck(); await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
+    await page.getByRole('button',{name:'Quellenauswahl leeren',exact:true}).click();await allSources();await card(clue.id).waitFor();
     if (scale === 1) assert.match(await card(clue.id).innerText(), /Geschlossen/);
     // Explicitly exclude an unrelated source. Its existing visit link must survive.
-    await card(other.id).locator('input[type=checkbox]').uncheck();
-    for(const source of background)await card(source.id).locator('input[type=checkbox]').uncheck();
+    await card(npc.id).locator('input[type=checkbox]').check();
+    assert.deepEqual(await page.locator('#note-thread-sources input[type=checkbox]').evaluateAll(ns=>ns.filter(n=>n.checked).map(n=>n.value)),[npc.id]);assert(await page.locator('#note-thread-include-root').isChecked());
+    await page.locator('#note-thread-clear-selection').scrollIntoViewIfNeeded();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await writeFile(out+'/source-selection-'+scale+'.png',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage().then(image=>image.toPNG())));
     await edit(clue.id);
     const clueText = 'Die Lieferung galt als geklärt.\nNeuer Hinweis ' + scale + ': Eine zweite Lieferung kommt um Mitternacht.';
     await page.locator('#note-gm').fill(clueText);
@@ -106,6 +108,7 @@ try {
     await page.getByRole('button',{name:'Mit dieser Mappe zum Spielabend…',exact:true}).click();
     await page.waitForFunction(()=>document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-use').disabled);
     assert.equal(await page.locator('#note-thread-heading').innerText(),'Notizmappe: '+overview.title);assert.equal(await page.locator('#note-thread-plan').inputValue(),plan.id);assert.equal(await page.locator('#note-thread-visit').inputValue(),plan.scenes[0].id);assert.equal(await page.locator('#note-thread-parent').isVisible(),false);
+    await page.locator('#note-thread-clear-selection').scrollIntoViewIfNeeded();assert(await page.locator('#note-thread-clear-selection').evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}));
     await page.screenshot({path:out+'/handoff-'+scale+'.png'});
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
     assert(!await card(other.id).locator('input[type=checkbox]').isChecked());
@@ -137,7 +140,7 @@ try {
       assert.equal(check.narrative(a.token, clue.id).state.status, 'open');
       assert.deepEqual(new Set(check.session(a.token, plan.id).visits[0].noteIds), new Set([other.id, overview.id, npc.id, clue.id]));
     } finally { check.close(); }
-    results.push({scale, reopenedOriginal: true, laterPageRestored:true, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, freshEdit: true});
+    results.push({scale, reopenedOriginal: true, laterPageRestored:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, freshEdit: true});
   }
   assert.deepEqual(errors, []);
   for (const {pid} of launches) assert.throws(() => process.kill(pid, 0), {code: 'ESRCH'});

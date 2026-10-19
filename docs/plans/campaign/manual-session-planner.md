@@ -55,6 +55,13 @@ Geschlossene Spuren lassen sich nach Abschalten von „Geschlossene Spuren
 ausblenden“ im Originaleditor wieder öffnen und ergänzen. Die Notizmappe hält
 eine revisionsgebundene Auswahl; Checkboxen, Anzahl und Besuchsauftrag werden
 daraus abgeleitet. Geänderte ungeprüfte Quellen sind nicht vorausgewählt.
+„Quellenauswahl leeren“ setzt diese Auswahl gemeinsam zurück, ohne die getrennte
+Wahl der Übersicht, das Besuchsziel oder vorhandene Besuchsverknüpfungen zu
+ändern. Anschließend geladene oder neu hinzukommende Quellen bleiben abgewählt;
+einzeln ausdrücklich gewählte Quellen behalten ihre Revisionsbindung. Der
+Rückweg aus einer untergeordneten Mappe bewahrt diese Entscheidung. Ein neues
+Öffnen der Mappe beginnt wieder mit der üblichen Vorauswahl; es gibt keinen
+zusätzlichen gespeicherten Auswahlstand.
 Im eingeblendeten Quelleneditor führt „Mit dieser Mappe zum Spielabend…“ über
 den vorhandenen Flush zur bereits geprüften Dossierauswahl und ihrem Ziel.
 Die eigene Mappe einer Quelle bleibt separat über „Notizmappe öffnen…“ erreichbar.

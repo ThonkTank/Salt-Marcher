@@ -70,6 +70,7 @@ interface NoteMapFrame {
   choices: Map<string, { stamp: string; selected: boolean }>;
   active: boolean;
   includeRoot: boolean;
+  autoSelectSources: boolean;
   planId: string;
   visitId: string;
   planName: string;
@@ -95,6 +96,8 @@ export class NoteThreadDialog {
   private sources = node("div");
   private active = node("input");
   private includeRoot = node("input");
+  private clearSelection = node("button", "Quellenauswahl leeren");
+  private autoSelectSources = true;
   private more = node("button", "Weitere Quellen");
   private refresh = node("button", "Aktualisieren");
   private close = node("button", "Schließen");
@@ -189,6 +192,15 @@ export class NoteThreadDialog {
     this.includeRoot.checked = true;
     this.active.id = "note-thread-active";
     this.includeRoot.id = "note-thread-include-root";
+    this.clearSelection.id = "note-thread-clear-selection";
+    this.clearSelection.type = "button";
+    this.clearSelection.onclick = () => {
+      if (!this.dialog.open || !this.owner?.current() || this.owner.blocked() || this.busy || this.loading || this.stale || this.editing !== null) return;
+      this.autoSelectSources = false;
+      for (const [id, choice] of this.choices) this.choices.set(id, { ...choice, selected: false });
+      this.controls();
+      this.status.textContent = "Quellenauswahl geleert. Weitere Quellen bleiben abgewählt.";
+    };
     this.sources.id = "note-thread-sources";
     this.summary.id = "note-thread-summary";
     this.body.id = "note-thread-root";
@@ -364,6 +376,8 @@ export class NoteThreadDialog {
     if (preparing) this.reading.prepend(this.target, this.status);
     else this.reading.append(this.target, this.status);
     this.sourceChoices.hidden = !preparing;
+    if (preparing) this.target.insertBefore(this.clearSelection, this.rootChoice);
+    else this.summary.after(this.clearSelection);
     this.controls();
     if (preparing) this.dialog.scrollTop = 0;
   }
@@ -372,6 +386,7 @@ export class NoteThreadDialog {
     this.root = frame?.root ?? null;
     this.entries.clear(); this.sourceLinks.clear();
     this.choices = new Map(frame?.choices);
+    this.autoSelectSources = frame?.autoSelectSources ?? true;
     this.additions.clear();
     this.active.checked = frame?.active ?? true;
     this.includeRoot.checked = frame?.includeRoot ?? true;
@@ -414,7 +429,7 @@ export class NoteThreadDialog {
       const owner = await this.options.prepare();
       if (!this.current(epoch) || this.editing !== id) return;
       if (!owner?.current() || owner.id !== id) throw Error("Eingabe noch nicht übernommen. Original bleibt geöffnet; Speicherstatus prüfen.");
-      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loaded: this.entries.size, scroll: this.readingScroll, preparing: this.preparing };
+      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, autoSelectSources: this.autoSelectSources, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loaded: this.entries.size, scroll: this.readingScroll, preparing: this.preparing };
       this.restoreEditor?.(); this.restoreEditor = null; this.editing = null; this.inspection = null;
       this.parents.push(parent); this.epoch++; this.request++; this.searchRequest++; this.busy = false;
       await this.showMap(owner, undefined, preparing);
@@ -575,7 +590,7 @@ export class NoteThreadDialog {
               e.status !== "unknown"
             : previous
               ? previous.stamp === e.stamp && previous.selected
-              : !append && e.status !== "closed" && e.status !== "unknown");
+              : this.autoSelectSources && !append && e.status !== "closed" && e.status !== "unknown");
         // Reading a page restores source order; later explicit selections append in choice order.
         this.choices.delete(e.id);
         this.choices.set(e.id, { stamp: e.stamp, selected });
