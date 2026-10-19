@@ -8,7 +8,7 @@ export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
 export const REGION_CACHE_BYTES=64*1024*1024;
 /** Geometry is display-only. In particular it is never a CityCommand upsert. */
-export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'outline'|'position'|'angle'|'width'|'interior'>;
+export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'footprint'|'outline'|'position'|'angle'|'width'|'interior'>;
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;

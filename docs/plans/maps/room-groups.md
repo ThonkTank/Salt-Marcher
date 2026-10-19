@@ -1,0 +1,68 @@
+# Gemeinsame Raumgruppen
+
+Gebäude und Dungeons verwenden denselben `scope` und dieselben Room-, Geschoss-,
+Zeichnungs- und Key-Records. Ein Gebäude in einer Stadt trägt dieselbe Kennung
+wie seine Raumgruppe. Seine Kontur ist eine abgeleitete Darstellung der Räume,
+kein zweiter frei bearbeitbarer Grundriss. Die bestehende Atlasbindung übernimmt
+Position und Drehung des Stadteintrags; sie erzeugt keinen zweiten Innenraum.
+
+## Anlegen und bearbeiten
+
+**Einzelhaus** und **Raumgruppe anlegen** öffnen dieselbe Vorschau. Art, Breite,
+Tiefe und Zufallsstartwert bestimmen den Entwurf. Geschosse und Keller werden
+standardmäßig passend zur Art gewählt, können aber ausdrücklich überschrieben
+werden. Vorschaugeschoss und Neu würfeln ändern noch keine Kampagnendaten.
+Übernehmen speichert alle Räume, Türen, Treppen, Eingänge und Möbel gemeinsam.
+Eine freie Gruppe kann auch leer beginnen und anschließend manuell gezeichnet
+werden. Zoom erzeugt keine Daten.
+
+Die Profile Wohnhaus, Werkstatt, Handel, Taverne, Tempel und Lager ergänzen die
+Stadtbebauung. Gewölbe, Krypta und Höhle verwenden dieselben Objekte. Ausgestattete
+Gästezimmer enthalten Betten, Küchen Herd und Arbeitsfläche, Grabkammern
+Sarkophage. Einrichtung bleibt einzeln auswählbar und veränderbar. Der Generator
+ist lokal und reproduzierbar; er erzeugt keine Encounter oder Bewohnergeschichten.
+
+Räume bearbeiten, Türen und Gegenstände versetzen, Raumtexte schreiben und
+Geschosse wechseln funktionieren für beide Arten gleich. Raumteilung erhält
+Identität und Texte auf der größeren Seite; der neue Teil erhält einen leeren
+Key. Die Teilungswand kann anschließend mit dem gemeinsamen Türwerkzeug geöffnet
+werden. Die gemeinsame History umfasst auch abgeleitete Gebäudeformen.
+Die proportionale Gruppenskalierung erhält Geschosshöhen, Kennungen und Texte.
+Bereits in das feste 5-Fuß-Volumenraster überführte Räume werden weiterhin mit
+dem Volumenwerkzeug bearbeitet; freie Gruppenskalierung und Raumteilung lehnen
+solche Bestände atomar ab. Bespielte Gruppen und offene Raumentwürfe verhindern
+das Löschen, solange deren Spielreferenzen noch bestehen.
+
+## Besitzer und Schutz
+
+`room-group-generator.ts` liefert den versionierten Entwurf für die Vorschau;
+Main erzeugt ihn aus demselben bestätigten Rezept erneut. SQLite bleibt die
+Schreibgrenze. `room_group` ergänzt Generatorherkunft und Schutzstatus, während
+Room und DrawingElement die eigentlichen Inhalte besitzen. Das Feld `footprint`
+des Stadteintrags ist ein neu berechenbarer Cache mit Polygonen und Innenlöchern.
+
+Unveränderte generierte Gebäude samt Ausstattung dürfen durch die nächste
+Bebauungsvorschau ersetzt werden. Manuelle Geometrie-/Key-/Einrichtungsänderungen
+und Personenbindungen schützen die Gruppe. Eine neue Vorschau darf diesen Schutz
+nicht umgehen. Abbruch schreibt keine Teilgruppe, Konflikte rollen den gesamten
+Befehl zurück. Atlas-History und Kampagnenkopien umfassen die neuen Records.
+
+Das neue Testformat verwendet SQLite-Schema 50. Bestehende Haus-Testbestände
+werden nicht automatisch umgedeutet oder gelöscht; eine neue Kampagne verwenden.
+`CampaignWorkbench`, `.kwcampaign` und die bestehenden Archivformatkennungen
+bleiben erhalten. Die ursprünglichen Quellen in `docs/scope-sources.json` bleiben
+unverändert; diese Nutzerpräzisierung ersetzt die bisherige Zielregel einer erst
+nachträglich angelegten leeren Innenraumhülle.
+
+## Nachweise
+
+`tests/desktop-room-groups.test.mjs` prüft Generatorprofile, Einrichtung,
+Verbindungen, gemeinsame Identität, abgeleitete Außenkontur, History,
+Wiederöffnung, Skalierung und unabhängigen Kampagnentransfer.
+`tools/test-desktop-room-groups.mjs` spielt Einzelhaus, Krypta, Raumtext und
+Prozessneustart in Electron durch. Die bestehenden Atlasregressionen prüfen
+zusätzlich metrische Transformationen, Raumkopien und begrenzte Ausschnittsleser.
+`tools/measure-room-groups.mjs` erzeugt 5.000 eingerichtete Häuser über den
+kanonischen Atlasbefehl und misst Wiederöffnung sowie begrenzte Ausschnittsleser.
+Native Qualifikation, große eingerichtete Städte und Owner-Abnahme bleiben
+getrennte Nachweise; ein grüner Unitlauf ersetzt sie nicht.

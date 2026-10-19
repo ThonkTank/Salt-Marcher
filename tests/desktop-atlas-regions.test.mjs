@@ -42,7 +42,7 @@ test('rotated city with 5000 buildings: resolved roads, targeted author details 
  })();
  const r=await f.read(query({x:9960,y:20000,width:40,height:40}));assert.equal(r.cities.length,1);assert(r.cities[0].units.length<30);assert(!JSON.stringify(r).includes('PRIVATE-HOUSE'));const road=r.cities[0].units.find(u=>u.id==='road');assert.equal(road.outline.length,2);assert(!('nodeIds' in road));
  const focus=f.reader.focus(f.source,'building','b4999');assert.equal(focus.cityId,city);const site=f.store.atlasCitySite(token,city,'b4999');assert(site.unit.notes.startsWith('PRIVATE-HOUSE'));assert.equal(site.related.length,0);
- const made=f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,action:{kind:'dungeon-create',name:'Keller',x:0,y:0,buildingId:'b4999'}});assert(made.result.id);
+ const made={result:{id:'b4999'}};const fullCity=f.store.city(token,city);const unit=fullCity.units.find(u=>u.id==='b4999');const commandId=randomUUID();f.store.executeAtlasCommit({commandId,token,campaignId:cam,action:{kind:'city',command:{commandId,token,campaignId:cam,cityId:fullCity.header.id,expectedRevision:fullCity.header.revision,action:{kind:'change',upsert:[unit],remove:[],label:'Raumgruppe ausarbeiten'}}}});assert(made.result.id);
  const around=await f.read({...query({x:focus.point.x-10,y:focus.point.y-10,width:20,height:20}),scopeId:made.result.id});const binding=around.bindings.find(b=>b.ownerId===made.result.id);
  assert(binding,'The selected empty interior retains its exact parent transform');assert.equal(around.frames[binding.id].x,focus.point.x);assert.equal(around.frames[binding.id].y,focus.point.y);
  // Focus remains independent of loaded city records.

@@ -37,6 +37,9 @@ export interface CampaignAtlas<R extends RoomGeometry = Room,E extends DrawingEl
   canRedo: boolean;
 }
 export type AtlasAction =
+  | {kind:"group-room-split";roomId:string;expectedRevision:number;axis:"x"|"y";ratio:number}
+  | {kind:"group-scale";scopeId:string;factor:number}
+  | {kind:"group-generate";name:string;x:number;y:number;recipe:import("./room-group-generator").GroupRecipe}
   | import("./atlas-territories").TerritoryAction
   | import("./atlas-landscape").LandscapeAction
   | {
@@ -67,7 +70,6 @@ export type AtlasAction =
       name: string;
       x: number;
       y: number;
-      buildingId?: string;
     }
   | { kind: "entrance"; entrance: AtlasEntrance }
   | {

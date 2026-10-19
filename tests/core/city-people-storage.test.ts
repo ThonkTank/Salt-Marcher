@@ -11,7 +11,7 @@ import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
 
 const npcId=(tail:string)=>campaignLocalId(`00000000-0000-4000-8000-${tail.padStart(12,'0')}`);
-const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],jobs:[],rooms:[],interior:false});
+const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],jobs:[],interior:false});
 function fixture(label:string){
  const root=mkdtempSync(join(tmpdir(),label)),store=new CampaignStore(join(root,'campaign.sqlite'),'test'),campaign=store.create('Stadtleben'),workspace=store.activate(campaign.id),location=newLocation('city-place','Hafenstadt','city',['description','notes']),ada=npcId('701'),bert=npcId('702');
  store.changePreparation({commandId:'location',campaignId:campaign.id,token:workspace.token,change:{kind:'location',expectedRevision:null,document:location}});

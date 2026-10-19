@@ -7,7 +7,7 @@ export type AtlasTool = {
   panel?: 'library' | 'generation';
 };
 export type AtlasToolGroup = {id: string; label: string; icon: string; tools: readonly AtlasTool[]};
-export const atlasSections: Readonly<Record<AtlasSection, string>> = {terrain:'Landschaft',city:'Stadt',interior:'Dungeon'};
+export const atlasSections: Readonly<Record<AtlasSection, string>> = {terrain:'Landschaft',city:'Stadt',interior:'Räume'};
 const land = (id:string,label:string,icon:string,value:string,settings?:Readonly<Record<string,string>>):AtlasTool => ({id,label,icon,control:'land-tool',value,settings});
 const city = (value:string,label:string,icon:string):AtlasTool => ({id:value,label,icon,control:'city-tool',value});
 const dungeon = (value:string,label:string,icon:string,panel?:'library'):AtlasTool => ({id:value,label,icon,control:'drawing-tool',value,panel});

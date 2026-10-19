@@ -23,30 +23,27 @@ Die [Referenzgalerie](#referenzgalerie) hält feste Ergebnisbilder mit Datum, Qu
 1. Im Atlas eine Siedlungsfläche aufziehen, Straßen und Plätze vorgeben und die verbleibenden Flächen bebauen lassen. Größe, Siedlungstyp und Dichte sind wenige sichtbare Optionen im bestehenden Panel. Eine Vorschau zeigt den Plan; Übernehmen macht ihn direkt bearbeitbar, Abbrechen verwirft ihn vollständig.
 2. Eine Straße ziehen oder einen Punkt verschieben. Angrenzende Bebauung in noch generierbaren Bereichen gezielt in einer Vorschau erneuern; bereits bearbeitete oder verknüpfte Häuser bleiben erhalten.
 3. Ein Haus oder Viertel anklicken, ändern und bei Bedarf beschreiben. Seine Ortsinformationen erscheinen im bestehenden Key-Panel. Für unbeschriebene Häuser müssen keine Ortsdateien einzeln angelegt werden.
-4. Ein Haus ausdrücklich mit einer leeren Innenraumhülle ausarbeiten und hineinzoomen. Außenform und Innenräume sind Teile desselben Gebäudes; Wände, Räume und Keys lassen sich unmittelbar bearbeiten. Bei einem bereits ausgearbeiteten Gebäude genügt Zoom zur Navigation. Herauszoomen zeigt wieder Straße, Stadt und Region.
+4. Ein Haus mit passenden eingerichteten Räumen erzeugen und hineinzoomen. Außenform und Innenräume sind Teile desselben Gebäudes; Wände, Räume und Keys lassen sich unmittelbar bearbeiten. Bei einem bereits ausgearbeiteten Gebäude genügt Zoom zur Navigation. Herauszoomen zeigt wieder Straße, Stadt und Region.
 
 Dieser Ablauf benötigt keine Karte-öffnen-, Betreten-, Aktivieren- oder Modusaktion. Das Werkzeug bleibt bei Zoom erhalten; die Werkzeugleiste wird nicht durch eine andere Editoroberfläche ersetzt. Eine direkte Auswahl darf passende Eigenschaften zeigen. Die Auswahl bestimmt den Gegenstand der Änderung, nicht einen neuen Arbeitsmodus. Texteingabe erhält ihren Fokus und löst keine Kartenkürzel aus.
 
 Bei sehr weitem Zoom erscheinen Stadtstruktur und wichtige Orte; beim Näherkommen Gebäude und Dekoration, danach verankerte Innenräume. Das sind sichtbare Details desselben räumlichen Datenstands. Kontrollpunkte, Orientierung und Metermaßstab dürfen beim Übergang nicht springen. Dachdarstellung und Innenraum müssen eine ausgewählte oder bearbeitete Geometrie sichtbar halten.
 
-## Gebäude und Innenräume als ein Objekt
+## Gebäude und Dungeons als gemeinsame Raumgruppen
 
-**Nutzerpräzisierung vom 11.10.2026; Zielverhalten, noch keine vollständige Implementierung.** Der vollständige [Vorbereitungs- und Spielablauf](ROADMAP-HEX-ATLAS.md#konkrete-nutzerabläufe) verwendet die Taverne „Zum Silbernen Ast“ als Beispiel. Gebäudehülle, Außen-/Innenwände, Räume, Geschosse und Dach werden gemeinsam bearbeitet. Außenansicht und Innenansicht sind verschiedene Detailtiefen desselben Objekts. Ein unabhängig veränderter Hausumriss mit nachträglich einzupassender Dungeonkarte ist nicht das Ziel.
+**Nutzerpräzisierung vom 19.10.2026.** Gebäude und Dungeons bestehen aus denselben Räumen. Beide sind benannte Raumgruppen mit gemeinsamen Werkzeugen. Ihre Außenform ergibt sich aus den Räumen; ein zusätzlicher Hausumriss mit separat angehängter Innenraumkarte entfällt. Dachdarstellung, Nutzung und Bezeichnung sind Eigenschaften der Gruppe.
 
-Der [Werkzeugkatalog](ROADMAP-HEX-ATLAS.md#werkzeuge-und-bediengefühl) definiert die gemeinsame Bedienung: benannte Fachwerkzeuge, Landschaftspinsel, Klickpunkte/Rechteckziehen für präzise Geometrie, sichtbare Vorschauen und direkte Korrekturgriffe. Bebauung erzeugen und Innenräume anlegen sind ausdrückliche Aktionen am ausgewählten Objekt; Key-Arbeit bleibt im gemeinsamen Panel.
+Neue Häuser und Dungeons können zufällig und vollständig eingerichtet entstehen. Die Art bestimmt Raumfunktionen, passende Geschosse und Keller. Vorhandene Testdaten dürfen neu aufgebaut werden; eine Übernahme des alten Haus-/Innenraummodells ist nicht erforderlich. [Datenbesitzer, Bedienung und Prüfwege](docs/plans/maps/room-groups.md).
 
-| Meine Änderung | Wirkung am gemeinsamen Gebäude |
+| Meine Änderung | Wirkung an derselben Raumgruppe |
 | --- | --- |
-| Innenräume anlegen | Ausdrückliche Aktion erzeugt eine leere Hülle; anschließend zeichne ich Trennwände, Räume und Türen. Zoom allein erzeugt keine Daten. |
-| Eine Wand verschieben | Gebäudeform und angrenzende Raumgrenzen ändern sich im ausdrücklich gewählten Wandumfang konsistent in einem Befehl. |
-| „Gebäude skalieren“ wählen | Grundrisse aller Geschosse samt Außenform und Innengeometrie werden horizontal proportional skaliert; Höhen und Geschossabstände bleiben erhalten. |
-| Gebäude verschieben oder drehen | Alle Gebäudeteile folgen; physische Maße und lokale Raumform bleiben erhalten. |
-| Geschoss oder Schnitt wählen | Ich bearbeite dieselbe Gebäudegeometrie in der gewählten Höhe; das Dach verdeckt meine Auswahl nicht. Ein Keller darf über den oberirdischen Umriss hinausreichen. |
-| Einen ungültigen Vorschlag machen | Die Vorschau zeigt den Fehler. Ich korrigiere oder verwerfe sie; der bestätigte Stand bleibt erhalten. |
+| Haus oder Dungeon erzeugen | Vorschau zeigt Räume, Türen, Treppen und Einrichtung; erst Übernehmen speichert. |
+| Eine Wand verschieben | Angrenzende Räume und die abgeleitete Außenform folgen gemeinsam. |
+| Gesamte Raumgruppe skalieren | Horizontale Grundrisse und Ausstattung ändern sich zusammen; Höhen bleiben erhalten. |
+| Verschieben oder drehen | Alle Teile folgen; lokale Raummaße bleiben erhalten. |
+| Geschoss oder Schnitt wählen | Derselbe räumliche Bestand wird in der gewählten Höhe bearbeitet. Keller dürfen über den oberirdischen Umriss hinausreichen. |
 
-Kennungen, Texte, Abschnitts-/Raumlinks und Referenzen bleiben bei diesen Änderungen erhalten. Raumteilung/-vereinigung bewahrt Autoreninhalte und zeigt uneindeutige Zuordnungen sichtbar zur Auflösung. Manuelle Änderungen, Innenräume, Keys und Bindungen schützen ein Gebäude automatisch bei Regeneration; eine einzelne Freigabe ist ausdrücklich und löscht selbst noch nichts.
-
-Die bisherige Haus-/Dungeonbindung, ihre Fünf-Fuß-Rasterumrechnung und begrenzten Hostbelege bleiben vorhandener Teilstand. Die technische Umsetzung des gemeinsamen Gebäudeobjekts einschließlich Speicherformat und Übernahme vorhandener Daten ist vor Produktänderungen zu konkretisieren. Eigenständige Ruinen-/Höhlendungeons bleiben unabhängig platzierbare Dungeons; ein solcher Verweis ist kein Gebäudegeschoss. Vorhandene Grundrisse können ausdrücklich als Gebäudeinnenraum übernommen werden, sobald Übernahme, Maße und stabile Referenzen geklärt sind.
+Manuelle Änderungen, Texte und Bindungen schützen die Gruppe vor Regeneration. Ausschließlich generierte, unveränderte Räume und Einrichtung lösen diesen Schutz nicht aus. Kennungen und Autoreninhalte bleiben bei Bearbeitung und gemeinsamer Rücknahme erhalten. Eigenständige Höhlen und Ruinen bleiben frei platzierbare Raumgruppen.
 
 ### Wandumfang und horizontale Gesamtskalierung
 
@@ -74,7 +71,7 @@ Die vollständigen CITY-Anforderungen bleiben im bestehenden Katalog; Grundfunkt
 | **CITY-00 – Ergebnisvorbilder festlegen** | Kleine Referenzgalerie und Ergebnis-/Bedienkriterien festlegen. | Übersicht und Detail aller drei Vorbilder prüfen; keine Originalgeste als Pflicht übernehmen. |
 | **CITY-01 – Stadt im Atlas zeichnen** | Native .city direkt am Ort anlegen; Straße, Platz und zwei Häuser im selben Editor bearbeiten. | Nur hinein-/herauszoomen; Haus verschieben, Straße ändern, Undo/Redo, speichern und frisch öffnen. |
 | **CITY-02 – Nutzbare Stadt erzeugen** | Siedlungsfläche, Straßen und Platz vorgeben; Bebauung mit wenigen sichtbaren Vorgaben in Vorschau erzeugen und als direkt editierbaren Grundplan übernehmen. | Dorf und kleine Stadt erzeugen, sofort ein Gebäude und eine Straße ändern; Abbruch ohne Restdaten, Undo, Wiederöffnung. |
-| **CITY-03 – Hausgrundriss und Keys direkt bearbeiten** | Gebäude mit Orts-Key und ausdrücklich angelegter Innenraumhülle gemeinsam ausarbeiten; Außenform und Räume desselben Objekts im durchgehenden Editor ändern. | Region → Stadt → Haus → Raum nur zoomen; Wandänderung gegenüber Gesamtskalierung prüfen; Straßen-, Gebäude-, Raum- und Key-Änderung mit gemeinsamer Undo-Folge und frischer Öffnung. |
+| **CITY-03 – Hausgrundriss und Keys direkt bearbeiten** | Gebäude mit Orts-Key und gemeinsamen Räumen ausarbeiten; Außenform und Räume desselben Objekts im durchgehenden Editor ändern. | Region → Stadt → Haus → Raum nur zoomen; Wandänderung gegenüber Gesamtskalierung prüfen; Straßen-, Gebäude-, Raum- und Key-Änderung mit gemeinsamer Undo-Folge und frischer Öffnung. |
 | **CITY-04 – Verfeinern ohne Arbeit zu verlieren** | Ausgewählten Bereich neu erzeugen; bearbeitete Gebäude und solche mit Innenräumen, Keys oder Bindungen sowie Grenzen und Straßen schützen. | Ein Viertel erneuern; benannter POI, Gebäude samt Innenräumen und manuelle Straße bleiben wertgleich; Undo stellt Gesamtstand wieder her. |
 | **CITY-05 – Straßen und Stadtbefestigung** | Hauptstraßen/Gassen, Kreuzungen, Brücken, Tore, Mauern und Türme zusammenhängend ausarbeiten. | Regionalstraße → Tor → Platz; Flussquerung; Tor oder Straßenpunkt ziehen, ohne verbundene Wege und geschützte Bauten zu verlieren. |
 | **CITY-06 – Viertel, Bewohner und Fraktionen** | Viertel, besondere Gebäude und POIs; Bewohner mit Haushalten/Berufen, Beziehungen und Familienansicht sowie Fraktionen und Zugehörigkeiten stabil mit Orten verbinden. | Hafenstadt/ummauerte Stadt ausarbeiten; Bewohner, Beziehung und Fraktionszugehörigkeit einzeln und Bewohner in Vorschau gesammelt ändern; Cancel, gemeinsame Undo-Folge, geschützte Regeneration und frischen Prozess mit stabilen IDs/Bindungen prüfen. |

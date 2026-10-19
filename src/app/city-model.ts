@@ -4,6 +4,7 @@ import {paintMarkup} from "./atlas-paint-svg";
 import type {CityPoint as P,CityUnit,CityView,CityRecipe,CityPreview} from './city-contracts';
 export function inside(p:P,poly:P[]){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i]!,b=poly[j]!;if((a.y>p.y)!==(b.y>p.y)&&p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x)yes=!yes;}return yes;}
 export function posed(u:CityUnit):P[]{const c=Math.cos(u.angle??0),s=Math.sin(u.angle??0),p=u.position??{x:0,y:0};return(u.outline??[]).map(a=>({x:p.x+a.x*c-a.y*s,y:p.y+a.x*s+a.y*c}));}
+export function posedFootprint(u:CityUnit){const c=Math.cos(u.angle??0),s=Math.sin(u.angle??0),p=u.position??{x:0,y:0},at=(a:P)=>({x:p.x+a.x*c-a.y*s,y:p.y+a.x*s+a.y*c});return (u.footprint??[{outer:u.outline??[],holes:[]}]).map(poly=>({outer:poly.outer.map(at),holes:poly.holes.map(h=>h.map(at))}));}
 export function roadPoints(u:CityUnit,units:CityUnit[]):P[]{const nodes=new Map(units.filter(n=>n.kind==='node').map(n=>[n.id,n.point!]));const ids=u.nodeIds??[];return ids.length>=2?[nodes.get(ids[0]!)!,...(u.via??[]),nodes.get(ids.at(-1)!)!].filter(Boolean):u.outline??[];}
 const distance=(p:P,a:P,b:P)=>{const dx=b.x-a.x,dy=b.y-a.y,t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/(dx*dx+dy*dy||1))),x=a.x+t*dx,y=a.y+t*dy;return{distance:Math.hypot(p.x-x,p.y-y),angle:Math.atan2(dy,dx)};};
 function seedNumber(s:string){let v=2166136261;for(const c of s)v=Math.imul(v^c.charCodeAt(0),16777619);return v>>>0;}
@@ -18,17 +19,17 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  const bins=new Map<string,{minX:number;minY:number;maxX:number;maxY:number}[]>(),cell=Math.max(8,r.size*3);
  const bounds=(p:P[])=>({minX:Math.min(...p.map(a=>a.x))-1,minY:Math.min(...p.map(a=>a.y))-1,maxX:Math.max(...p.map(a=>a.x))+1,maxY:Math.max(...p.map(a=>a.y))+1});
  const keys=(b:ReturnType<typeof bounds>)=>{const a:string[]=[];for(let x=Math.floor(b.minX/cell);x<=Math.floor(b.maxX/cell);x++)for(let y=Math.floor(b.minY/cell);y<=Math.floor(b.maxY/cell);y++)a.push(x+':'+y);return a;};
- const index=(b:ReturnType<typeof bounds>)=>{for(const k of keys(b)){const v=bins.get(k)??[];v.push(b);bins.set(k,v);}};for(const u of obstacles)index(bounds(posed(u)));
+ const index=(b:ReturnType<typeof bounds>)=>{for(const k of keys(b)){const v=bins.get(k)??[];v.push(b);bins.set(k,v);}};for(const u of obstacles)index(bounds(posedFootprint(u).flatMap(p=>p.outer)));
  const buildings:CityUnit[]=[];let attempts=0;
  for(let y=minY+step/2;y<maxY;y+=step)for(let x=minX+step/2;x<maxX;x+=step){
   if(cancel())throw new Error('Bebauungsvorschau abgebrochen.');attempts++;if(attempts%200===0){progress(buildings.length);await new Promise<void>(resolve=>setTimeout(resolve,0));}
   if(random()>r.density)continue;const p={x:x+(random()-.5)*step*.4,y:y+(random()-.5)*step*.4};if(!inside(p,points)||excluded.some(u=>inside(p,u.outline??[])))continue;
   let nearest={distance:Infinity,angle:0,width:6};for(const road of roads){const d=distance(p,road.a,road.b);if(d.distance<nearest.distance)nearest={...d,width:road.width};}if(nearest.distance>r.reach)continue;
-  const w=r.size*(.7+random()*.5),h=r.size*(.7+random()*.7),u:CityUnit={id:view.header.id+':building:'+seedNumber(r.seed)+':'+attempts,kind:'building',name:'',protected:false,position:p,angle:nearest.angle,outline:[{x:-w/2,y:-h/2},{x:w/2,y:-h/2},{x:w/2,y:h/2},{x:-w/2,y:h/2}],use:r.use,notes:'',districtId:r.districtId,ownerId:null,recipe:{seed:r.seed,algorithm:'street-infill-v1'},rooms:[],interior:false};
+  const w=r.size*(.7+random()*.5),h=r.size*(.7+random()*.7),u:CityUnit={id:view.header.id+':building:'+seedNumber(r.seed)+':'+attempts,kind:'building',name:'',protected:false,position:p,angle:nearest.angle,outline:[{x:-w/2,y:-h/2},{x:w/2,y:-h/2},{x:w/2,y:h/2},{x:-w/2,y:h/2}],groupRecipe:{version:1,seed:r.seed+':'+attempts,profile:r.use as import('./room-group-generator').GroupProfile,width:w,depth:h},use:r.use,notes:'',districtId:r.districtId,ownerId:null,recipe:{seed:r.seed,algorithm:'street-infill-v1'},interior:true};
   if(obstacles.some(a=>a.id===u.id))continue;const corners=posed(u);if(corners.some(a=>!inside(a,points)||excluded.some(e=>inside(a,e.outline??[]))))continue;
   if(roads.some(a=>distance(p,a.a,a.b).distance<a.width/2+Math.hypot(w,h)/2+1))continue;
   const b=bounds(corners);if(keys(b).some(k=>(bins.get(k)??[]).some(a=>a.minX<b.maxX&&a.maxX>b.minX&&a.minY<b.maxY&&a.maxY>b.minY)))continue;
-  index(b);buildings.push(u);if(buildings.length>=5000)throw new Error('Mehr als 5.000 Häuser in einer Vorschau. Teile das Viertel auf.');
+  index(b);buildings.push(u);if(buildings.length>5000)throw new Error('Mehr als 5.000 Häuser in einer Vorschau. Teile das Viertel auf.');
  }
  return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,replaceIds,attempts};
 }
@@ -39,7 +40,7 @@ export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,labe
  for(const u of v.units.filter(u=>(u.kind==='road'||u.kind==='wall')&&mapLineVisible('road',u.width??6,mpp)))root.append(atlasPaint("polyline", {points: pts(roadPoints(u,v.units)), style: {fill: null, stroke: u.kind==='wall'?'#625e52':'#c1ae8b', lineWidth: mapLineWidth(u.width??6,mpp), lineJoin: 'round', lineCap: 'round'}}));
  for(const u of v.units.filter(u=>u.kind==='building')){
   if(!mapFootprintVisible(u.outline??[],mpp))continue;
-  const group=atlasPaint("group", {data: {cityUnit: String(u.id)}});group.append(atlasPaint("polygon", {points: pts(posed(u)), style: {fill: h.roof, stroke: '#624337', lineWidth: Math.max(.2,Math.min(.8,mpp||.8))}}));
+  const group=atlasPaint("group", {data: {cityUnit: String(u.id)}});group.append(atlasPaint(u.footprint?"polygons":"polygon", {...(u.footprint?{polygons: posedFootprint(u)}:{points:posed(u)}), style: {fill: h.roof, stroke: '#624337', lineWidth: Math.max(.2,Math.min(.8,mpp||.8))}}));
   if(labels&&u.name)group.append(atlasPaint("text", {x: u.position!.x, y: u.position!.y, style: {fontSize: 6, textAlign: 'center', fill: '#352822'}}, u.name));root.append(group);
  }
  return root;

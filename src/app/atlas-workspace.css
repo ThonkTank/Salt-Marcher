@@ -157,3 +157,5 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 
 /* Keep the active campaign identifiable without another toolbar control. */
 #campaign-atlas #atlas-navigation{max-width:min(34vw,18rem);overflow:hidden;text-overflow:ellipsis}
+
+.room-group-dialog{width:min(960px,94vw);max-width:min(960px,94vw);max-height:92vh;overflow:auto}.group-recipe-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.group-recipe-fields label{display:grid;gap:4px}.group-preview{background:#eee7d7;margin:12px 0;height:min(48vh,460px)}.group-preview svg{width:100%;height:100%;display:block}

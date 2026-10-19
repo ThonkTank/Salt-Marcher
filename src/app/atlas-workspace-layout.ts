@@ -204,7 +204,7 @@ export class AtlasWorkspaceLayout {
   this.root.querySelectorAll('[data-family-action]').forEach(n=>n.remove());this.selection.querySelectorAll('[data-family-action]').forEach(n=>n.remove());
   this.root.querySelectorAll<HTMLElement>('[data-tool-buttons]').forEach(n=>n.hidden=true);
   const add=(node:HTMLElement|null,target=this.tools)=>{if(node)this.move(node,target,this.familyNodes);};
-  add(el('atlas-placement'),this.selection);add(el('atlas-building-interior'),this.selection);
+  add(el('atlas-placement'),this.selection);
   if(section==='terrain'){
    add(el('atlas-landscape-tools'));add(el('land-selection'),this.selection);
    const template=button('atlas-template-open','');this.railButton(template,'▧','Vorlage');template.onclick=()=>void this.requestContext('reference-image','Nachzeichenvorlage',[el('land-reference').closest('details')!]);template.dataset.familyAction='true';this.palette.append(template);
@@ -218,7 +218,7 @@ export class AtlasWorkspaceLayout {
    for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);
   }
   if(section==='interior'){
-   add(el('atlas-floor-field'));this.railButton(el('atlas-create-dungeon'),'⊕','Dungeon anlegen');add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);
+   add(el('atlas-floor-field'));this.railButton(el('atlas-create-dungeon'),'⊕','Raumgruppe anlegen');add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);
    for(const id of ['drawing-element-size-field','drawing-light-radius-field','drawing-text-field'])add(el(id),el('drawing-toolbar'));
    el('drawing-tool-options').classList.add('atlas-extra-only');
    el('key-open').textContent='Beschreibung bearbeiten…';add(el('key-open'),this.selection);add(el('empty'),this.selection);add(el('editor'),this.selection);
@@ -306,7 +306,7 @@ export class AtlasWorkspaceLayout {
   }
   const more=el<HTMLButtonElement>('atlas-more-options');more.hidden=navigating||this.family!=='interior'||!['object','scatter'].includes(tool.value);
   el('atlas-measure').setAttribute('aria-pressed',String(measuring));
-  el('atlas-active-tool').textContent=this.root.dataset.placing?(this.family==='city'?'Stadt anlegen':'Dungeon anlegen'):navigating?(this.root.dataset.panMode==='true'?'Hand':'Auswahl'):(match?.tool.label??toolNames[tool.value]?.[1]??tool.selectedOptions[0]?.textContent??'Werkzeug');
+  el('atlas-active-tool').textContent=this.root.dataset.placing?(this.family==='city'?'Stadt anlegen':'Raumgruppe anlegen'):navigating?(this.root.dataset.panMode==='true'?'Hand':'Auswahl'):(match?.tool.label??toolNames[tool.value]?.[1]??tool.selectedOptions[0]?.textContent??'Werkzeug');
   el('atlas-select').setAttribute('aria-pressed',String((navigating||this.family==='interior'&&tool.value==='select')&&this.root.dataset.panMode!=='true'));el('atlas-pan').setAttribute('aria-pressed',String(this.root.dataset.panMode==='true'));
  }
 }

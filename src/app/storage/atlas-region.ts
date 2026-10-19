@@ -13,7 +13,7 @@ import type {AtlasRegionSource,AtlasRegionQuery,AtlasRegionGeometry,AtlasObjectF
 import {REGION_REPLY_BYTES,REGION_VECTOR_OBJECTS,emptyDrawing,validateRegion} from '../atlas-region-contracts';
 import type {Point,Polygon,RoomGeometry} from '../contracts';
 import {validateRoom} from '../contracts';
-import {posed,roadPoints} from '../city-model';
+import {posedFootprint,roadPoints} from '../city-model';
 import {anchored,inside} from '../drawing-model';
 import {volumeProjection} from '../volume-model';
 import {LandscapeRasterizer} from '../landscape-raster';
@@ -87,14 +87,14 @@ export class AtlasRegionReader {
    this.store('room','',row.scope_id,row.floor_id,row.id,{value,polygons},row.sourceOrder);
   }else if(table==='city_unit'){
    const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node')return;
-   const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior}=u;
+   const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint}=u;
    let outline=u.outline,points:Point[]|undefined;
    if(['road','wall'].includes(kind)){
     const nodes=(u.nodeIds??[]).map((id:string)=>{const n=this.source('city_unit',id);if(n?.city_id!==row.city_id)throw new Error('Straßenknoten fehlt.');return parse(n);});
     points=roadPoints(u,nodes);if(points.length<2)throw new Error('Straßenknoten fehlt.');outline=points;
    }
-   const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,outline};
-   this.store('unit',row.city_id,'','',id,{value,...(points?{points,stroke:width??6}:{polygons:[{outer:kind==='building'?posed(value):outline??[],holes:[]}]})},row.sourceOrder);
+   const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,outline};
+   this.store('unit',row.city_id,'','',id,{value,...(points?{points,stroke:width??6}:{polygons:kind==='building'?posedFootprint(value):[{outer:outline??[],holes:[]}]})},row.sourceOrder);
   }else if(table==='drawing_element'){
    const e=parse(row);validateDrawingElement(e);if(e.id!==row.id||e.scopeId!==row.scope_id||e.floorId!==row.floor_id)throw new Error('Zeichnung widersprüchlich.');if(e.archived)return;
    const {notes:unused,content:unusedContent,...value}=e;
@@ -124,7 +124,9 @@ export class AtlasRegionReader {
     for(;;){
      const batch=this.sql(`SELECT rowid sourceOrder,*${fields} FROM ${table} WHERE campaign_id=? AND rowid>? ORDER BY rowid LIMIT 128`).all(this.campaign,cursor);
      if(!batch.length)break;
-     for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}
+     // Furnished towns have many more shapes than roof-only maps. Commit one
+     // bounded TEMP batch, retaining the cancellation yield between batches.
+     this.db.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
      await pause();
     }
    }
