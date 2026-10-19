@@ -310,7 +310,8 @@ function renderReinforcements(){
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
  if(grouped)for(const members of groups){
   const actor=members[0]!;
-  add('group:'+actor.groupId,(actor.groupName?actor.groupName+' · ':'')+(combat?.sources?.find(c=>c.id===actor.sourceId)?.name??actor.name)+' · vorhandene Initiative '+actor.initiative+' ('+members.length+')');
+  const names=members.slice(0,2).map(p=>p.name).join(', ')+(members.length>2?' …':'');
+  add('group:'+actor.groupId,(actor.groupName?actor.groupName+' · ':'')+names+' · vorhandene Initiative '+actor.initiative+' ('+members.length+')');
  }
  // A completed catalog search must never silently retain an unrelated troop.
  else for(const c of reinforcementResults??combat?.sources??[])add('creature:'+c.id,c.name+' · HG '+c.challengeRating);

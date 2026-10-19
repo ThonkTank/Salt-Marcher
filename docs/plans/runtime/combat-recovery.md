@@ -83,6 +83,11 @@ sonst wäre die verbrauchte legendäre Aktion erneut verfügbar.
 Mobkarten erhalten bestätigte Trupp-/Teilnehmeridentitäten und individuelle Züge;
 kein HP-Pool oder Schadensüberlauf. Anzeige und Frontwechsel erklärt
 `combat-mob-ui.ts`; die Karte besitzt keine zweite Kampfautorität.
+Die Verstärkungsauswahl nennt die ersten zwei vorhandenen Mitglieder je Trupp
+(bei weiteren mit Auslassungszeichen), optional dessen Namen sowie Initiative
+und Anzahl. Gleiche Kreatur, Initiative und Menge dürfen die Mitgliedsidentität
+nicht verdecken. Der Command bindet weiterhin die gespeicherte Trupp-ID; die
+Vorschau führt keine eigene Identität oder persistierten Namen ein.
 
 ## Nachbereitung und bestehende Schätze
 
