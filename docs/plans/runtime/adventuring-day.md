@@ -103,6 +103,20 @@ diesen kontrollierten Fällen ersetzt; deren Flush-/Recoverypfad ist dadurch
 nicht qualifiziert. Native Escape-/Light-Dismiss-/Fokus-/Layoutprüfung und
 unbekannte IPC-Ausgänge bleiben gesonderte Abnahmen.
 
+Beim Ein-/Ausschalten einer Figur hält die Partyoberfläche nur Fokus-ID,
+Roster- und Fokusrevision für den bestehenden Membershipcommand fest. Eine
+Kopie der gesamten Liveansicht mit allen Profilen und Scenetexten entfällt;
+die drei skalaren Werte bleiben auch über den anschließenden Flush unverändert.
+
+Die vorhandene native Probe `tools/test-desktop-scene-selection-read.mjs`
+verbindet nun Abwesenheit, zweistufige Rast und Rückkehr bei 100 % mit gespeicherten
+Szenengruppen, Initiative/Abschluss bei 200 % und einer weiteren frischen Öffnung.
+Sie prüft unveränderte Rastfakten der abwesenden Figur, genau 60 Minuten Szenenzeit,
+alle drei zurückgekehrten Partyfiguren im Kampf und einmalig 120 XP / 40 je Figur.
+Die inaktive Reserve bleibt unverändert. Quellenlesefehler und die gemeinsame
+Encounter-Auswahl behalten ihre bisherigen gezielten Prüfungen. Dieser Ablauf
+ersetzt keine vollständige Party-, Plattform- oder Recoveryabnahme.
+
 ## Begegnungen als vollständigen Tagesplan bewerten
 
 Version 0.127 verbindet den bestehenden Rechner mit gespeicherten Encounter-Vorlagen.
