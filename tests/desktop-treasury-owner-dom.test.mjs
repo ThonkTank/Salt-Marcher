@@ -142,7 +142,9 @@ for(const phase of ['after','list','detail','history','write','unresolved'])test
  await until(()=>x.messages.some(m=>m.text.includes(phase==='unresolved'?'Buchungsantwort fehlt':failure)));
  await until(()=>!x.el('treasure-distribution-dialog').open||!x.el('distribution-confirm').disabled);
  assert.equal(x.commands.length,1);assert.equal(committed,!['write','unresolved'].includes(phase));
- assert.equal(x.el('treasure-distribution-dialog').open,['write','unresolved'].includes(phase));
+ assert.equal(x.el('treasure-distribution-dialog').open,true);
+ assert.equal(x.el('distribution-receipt').hidden,!committed);
+ if(committed){const receipt=x.el('distribution-receipt');assert.match(receipt.textContent,/Beute verteilt · Alpha/);assert.match(receipt.textContent,/2 × Seil/);assert.match(receipt.textContent,/Im Schatz verbleiben: 3 × Seil/);x.el('distribution-confirm').onclick();await tick();assert.equal(x.commands.length,1,'confirmed receipt cannot book again after a refresh failure');}
  if(['write','unresolved'].includes(phase)){assert.equal(input.value,'2');assert.ok(!x.messages.some(m=>m.text.includes('gespeichert')));}
  else{assert.ok(x.messages.some(m=>m.text.includes('gespeichert')&&m.text.includes(failure)));assert.ok(!x.messages.some(m=>m.text.includes('Verteilung bleibt offen')));}
 });
