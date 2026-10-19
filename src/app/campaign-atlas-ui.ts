@@ -148,6 +148,7 @@ export class CampaignAtlasWorkbench {
     start?: Point;
   } | null = null;
   private pathDrag: {id:number;token:string|undefined;element:import('./drawing-contracts').DrawingElement;index:number;insert:boolean;point:Point;x:number;y:number;moved:boolean} | null = null;
+  private rectangleCommit=false;
   private roomDrag: { id: number; scopeId: string; floorId: string; start: Point; last: Point; x: number; y: number; moved: boolean } | null = null;
   private brushId: number | null = null;
   private brushQueue = Promise.resolve();
@@ -1254,7 +1255,7 @@ export class CampaignAtlasWorkbench {
       this.ignoreClick = false;
       return;
     }
-    if (this.exportOpen || this.busy || this.root.dataset.panMode==="true" || this.spacePan || e.altKey || e.button !== 0 || this.drag || this.vertexDrag || this.pathDrag)
+    if (this.exportOpen || this.busy || this.rectangleCommit || this.root.dataset.panMode==="true" || this.spacePan || e.altKey || e.button !== 0 || this.drag || this.vertexDrag || this.pathDrag)
       return;
     if(!this.camera.ready||!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird vorbereitet.');return;}
     const p = this.point(e);
@@ -1420,22 +1421,33 @@ export class CampaignAtlasWorkbench {
     }
   }
   private async createRoomRectangle() {
-    const [a, b] = this.draft as [Point, Point];
-    if (Math.abs(a.x - b.x) < 0.01 || Math.abs(a.y - b.y) < 0.01) {
-      this.draft = [a];
-      throw new Error("Raum benötigt eine Fläche. Zweite Ecke erneut wählen.");
+    const owner=this.owner,scope=this.scopeId,floor=this.floorId,append=get<HTMLInputElement>("drawing-append").checked;
+    const current=()=>this.owner===owner&&this.scopeId===scope&&this.floorId===floor;
+    const [a,b]=this.draft as [Point,Point];
+    if(Math.abs(a.x-b.x)<.01||Math.abs(a.y-b.y)<.01){
+      this.draft=[a];throw new Error("Raum benötigt eine Fläche. Zweite Ecke erneut wählen.");
     }
-    let result;
-    try{result = await atlasDrawingRectangle(a,b);}catch(error){this.draft=[a];throw error;}
-    if (result) {
-      this.cancel();
-      const id = result.workspace.selectedId!;
-      get<HTMLSelectElement>("drawing-tool").value="select";
-      await this.opts.selectRoom(id);
-      this.selection = {kind:"room",id};
-      // Selecting the new room persists its context and changes the source fence.
-      await this.refresh();
-    } else this.draft = [a];
+    this.rectangleCommit=true;
+    try{
+      let result;
+      try{result=await atlasDrawingRectangle(a,b);}catch(error){if(current())this.draft=[a];throw error;}
+      if(result&&current()){
+        this.cancel();
+        const id=result.workspace.selectedId!;
+        await this.opts.selectRoom(id);
+        if(!current())return;
+        this.selection={kind:"room",id};
+        // Selecting the new room persists its context and changes the source fence.
+        await this.refresh();
+        if(!current())return;
+        // Continue creating rooms; an append finishes the selected room instead.
+        if(!append){
+          get<HTMLSelectElement>("drawing-tool").value="room-rectangle";
+          get("drawing-tool").dispatchEvent(new window.Event("change",{bubbles:true}));
+          get("atlas-room-draw").click();
+        }
+      }else if(current())this.draft=[a];
+    }finally{this.rectangleCommit=false;}
   }
   private suppressClick() {
     this.ignoreClick = true;
@@ -1453,7 +1465,7 @@ export class CampaignAtlasWorkbench {
   private down(e: PointerEvent) {
     this.ignoreClick=false; // A real press starts a new gesture; delayed drag clicks are consumed by click().
     if (e.button !== 0 || e.altKey || this.spacePan || this.root.dataset.panMode==="true") return;
-    if (this.busy || !this.geometryCurrent() || !this.camera.ready) {
+    if (this.busy || this.rectangleCommit || !this.geometryCurrent() || !this.camera.ready) {
       // A rejected press owns its release/click, even if the frame finishes meanwhile.
       this.suppressClick();
       return;
@@ -2039,7 +2051,7 @@ export class CampaignAtlasWorkbench {
     this.root.dataset.elementSelected=String(this.selection?.kind==='element');
     const elementId=['interior','decoration'].includes(this.family)?selectedDrawingElementId():null;
     const selectedKey=this.family==='terrain'?(this.landscape.selectionId?'landscape:'+this.landscape.selectionId:null):elementId?'element:'+elementId:this.selection?this.selection.kind+':'+this.selection.id:null;
-    this.layout?.selectionChanged(selectedKey);
+    this.layout?.selectionChanged(selectedKey,false,!this.rectangleCommit);
     get("atlas-create-dungeon").hidden=!["navigation","interior","decoration"].includes(this.family);
     get("atlas-create-city").hidden=!["navigation","city"].includes(this.family);
     const floor = get<HTMLSelectElement>("atlas-floor"),
