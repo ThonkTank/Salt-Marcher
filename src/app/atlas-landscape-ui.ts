@@ -1,3 +1,4 @@
+import {mapLabelEditor,readMapLabelEditor} from './map-label-editor';
 import {landscapeRasterBounds} from './landscape-raster';
 import {isLandMode,strokeBox,type MaskStroke} from './land-mask';
 import {LandscapeToolSettings,lineControls,readLineControls} from "./landscape-tool-settings";
@@ -470,6 +471,7 @@ export class LandscapeWorkbench {
   private brushPointCount() {
     return this.points.length + this.brushStrokes.reduce((count, points) => count + points.length, 0);
   }
+  get selectedLabel(){return this.selected?(this.selected.kind==='place'?'place:':'landscape:')+this.selected.id:undefined;}
   hasDraft() {
     return (
       (this.tool !== "measure" && this.points.length > 0) ||
@@ -629,14 +631,14 @@ export class LandscapeWorkbench {
     let background=this.background;
     if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
       const node=atlasPaint('group',{retainGeometry:true});
-      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
       this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
     }
     const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
     let node=background.node;
     if(this.selected&&background.selectedSlot>=0&&this.selectionRecords.size<=1){
       // Keep the original painter slot, especially for references below terrain.
-      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets);
+      const selected=atlasPaint('group');drawLandscape(selected,[this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
       node=atlasPaint('group',{retainGeometry:true});node.append(...background.node.children);
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
@@ -999,6 +1001,7 @@ export class LandscapeWorkbench {
       return input;
     };
     label("Name des ausgewählten Objekts", "land-name", r.name);
+    if(r.kind!=="reference")mapLabelEditor(root,"land",r.label,()=>{this.dirty=true;});
     label("X in m", "land-x", String(r.points[0]!?.x ?? 0), "number");
     label("Y in m", "land-y", String(r.points[0]!?.y ?? 0), "number");
     const button = (name: string, run: () => void) => {
@@ -1146,6 +1149,7 @@ export class LandscapeWorkbench {
     const r = this.selected;
     if (!r) return;
     r.name = html<HTMLInputElement>("land-name").value;
+    r.label=readMapLabelEditor(this.inspectorRoot,"land");
     const p = {
         x: Number(html<HTMLInputElement>("land-x").value),
         y: Number(html<HTMLInputElement>("land-y").value),

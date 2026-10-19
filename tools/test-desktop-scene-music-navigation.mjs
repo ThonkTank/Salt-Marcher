@@ -1,12 +1,16 @@
 // Owned native task: Atlas → two scene music contexts → Stop → restart → explicit Play.
 import {createRequire} from 'node:module';
-import {mkdtemp,mkdir,readFile,writeFile,stat} from 'node:fs/promises';
+import {mkdtemp,mkdir,readFile,writeFile,stat,rm} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
 import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
+import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core'),Database=require('better-sqlite3');
+const out=process.env.QA_EVIDENCE_DIR??root+'/.build/scene-music-native';await mkdir(out,{recursive:true});
+// A failed rerun must not leave an earlier run's success as its result.
+await rm(out+'/result.json',{force:true});
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/scene-music-native-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore}=require(root+'/.build/scene-music-native-store.cjs'),out=root+'/.build/scene-music-native';await mkdir(out,{recursive:true});
+const {CampaignStore}=require(root+'/.build/scene-music-native-store.cjs');
 async function fixture(){const profile=await mkdtemp('/tmp/scene-music-native-'),store=new CampaignStore(profile+'/workbench.sqlite'),campaign=store.create('Musik für Hafen und Turm'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
 await mkdir(profile+'/audio',{recursive:true});
 for(const [name,hz,intensity]of[['Hafen bei Nacht',220,20],['Sturm am Turm',330,80],['Freie Wahl',440,50]]){
@@ -29,8 +33,13 @@ try{for(const scale of [1,2]){
  let capturedNavigation=false;async function music(){if(await page.locator('#campaign-atlas').isVisible()){await page.locator('#atlas-navigation').click();if(!capturedNavigation){await page.screenshot({path:out+'/navigation-'+scale+'.png'});capturedNavigation=true;}await page.locator('#music-tab').click();}else{if(!await page.locator('#music-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#music-tab').click();}await page.locator('#audio-list article').first().waitFor();assert.equal(await page.locator('#workspace-navigation').evaluate(n=>n.parentElement.tagName),'BODY');assert.equal(await page.locator('#music-tab').count(),1);}
  await launch();db=new Database(profile+'/workbench.sqlite',{readonly:true});const state=()=>JSON.parse(db.prepare('SELECT payload FROM music_state').get().payload),scenes=()=>db.prepare('SELECT * FROM live_scene ORDER BY id').all(),assets=()=>db.prepare('SELECT * FROM audio_asset ORDER BY id').all(),originalScenes=scenes(),originalAssets=assets(),selected=originalAssets.find(r=>JSON.parse(r.payload).name==='Freie Wahl').id;
  // The original tab handler still guards an unfinished Atlas edit.
- await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready');
- await page.locator('[data-tool-select="land-tool"][data-tool-value="river"]').click();const map=await page.locator('#campaign-map').boundingBox();await page.mouse.click(map.x+map.width*.5,map.y+map.height*.5);await page.locator('#atlas-navigation').click();await page.locator('#music-tab').click();assert.equal(await page.locator('#campaign-atlas').isVisible(),true);assert.equal(await page.locator('#music').isVisible(),false);assert.match(await page.locator('#atlas-navigation-popup').innerText().catch(()=>''),/Musik und Ambience/);await page.locator('#land-cancel').click();
+ await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready');await atlasCanvasReady(page);
+ const atlasRows=()=>db.prepare('SELECT * FROM atlas_landscape ORDER BY id').all(),originalAtlas=atlasRows();
+ await page.locator('[data-tool-group="water"]').click();await page.locator('[data-atlas-tool="river"]').click();
+ await page.waitForFunction(()=>document.querySelector('#land-tool').value==='river'&&!document.querySelector('#atlas-section').disabled);await atlasCanvasReady(page);
+ const map=await page.locator('#campaign-map').boundingBox();await page.mouse.click(map.x+map.width*.5,map.y+map.height*.5);await page.locator('#land-cancel').waitFor({state:'visible'});
+ await page.locator('#atlas-navigation').click();await page.locator('#music-tab').click();assert.equal(await page.locator('#campaign-atlas').isVisible(),true);assert.equal(await page.locator('#music').isVisible(),false);assert.match(await page.locator('#atlas-navigation-popup').innerText().catch(()=>''),/Musik und Ambience/);
+ await page.locator('#land-cancel').click();await page.locator('#land-cancel').waitFor({state:'hidden'});assert.deepEqual(atlasRows(),originalAtlas,'discarding the guarded gesture must not persist a river');
  await music();
  const options=originalScenes.map(r=>({id:r.id,title:r.title})),harbor=options.find(s=>s.title==='Hafen bei Nacht'),tower=options.find(s=>s.title==='Sturm am Turm');
  async function focus(scene){await page.locator('#live-tab').click();await page.locator('#scene-focus').selectOption(scene.id);await page.waitForFunction(id=>document.querySelector('#scene-focus').value===id,scene.id);await music();await page.waitForFunction(title=>document.querySelector('#music-context-description').textContent.includes(title),scene.title);}
@@ -65,5 +74,6 @@ try{for(const scale of [1,2]){
  await page.locator('#atlas-tab').click();await page.waitForFunction(()=>document.body.classList.contains('atlas-workspace'));await music();assert.deepEqual(await audio(),[]);await page.screenshot({path:out+'/stopped-'+scale+'.png'});assert.deepEqual(scenes(),originalScenes);assert.deepEqual(assets(),expectedAssets);db.close();db=null;await close();
  await launch();assert.deepEqual(await audio(),[]);await music();assert.match(await page.locator('#music-now').innerText(),/Freie Wahl.*Gestoppt/);assert.deepEqual(await audio(),[]);await page.locator('#music [data-music-transport="play"]').click();await page.waitForFunction(id=>[...document.querySelectorAll('audio')].some(a=>a.src.endsWith('/'+id)&&!a.paused&&a.currentTime>.1),selected);assert.equal((await audio()).length,1);await page.locator('#music [data-music-transport="stop"]').click();await page.waitForFunction(()=>[...document.querySelectorAll('audio')].every(a=>a.paused));db=new Database(profile+'/workbench.sqlite',{readonly:true});assert.deepEqual(scenes(),originalScenes);assert.deepEqual(assets(),expectedAssets);db.close();db=null;await close();proxy.kill();proxy=null;assert.deepEqual(errors,[]);results.push({scale,profile,atlasDraftGuard:true,singleNavigationOwner:true,sceneSettings:[20,80],multiStepBack:true,manualTrackPreserved:true,draftStop:scale===1?'console':'mini',invalidDraftPreserved:true,checkpointFailureStop:true,soundboardStop:true,literalNotesPreserved:true,stopPreserved:true,restartSilent:true,explicitPlayDecoded:true,authorDataPreserved:true});
  }
- await writeFile(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),launches,results},null,2));console.log(JSON.stringify({launches,results}));
+ const buildHashes=Object.fromEntries(await Promise.all(['main.cjs','ui/renderer.js','ui/app.css'].map(async name=>[name,createHash('sha256').update(await readFile(root+'/.build/desktop/'+name)).digest('hex')])));
+ await writeFile(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),buildHashes,launches,results},null,2));console.log(JSON.stringify({launches,results}));
 }catch(e){if(page)await page.screenshot({path:out+'/failure.png'}).catch(()=>{});throw e;}finally{db?.close();if(app)await app.close().catch(()=>{});proxy?.kill();}

@@ -32,6 +32,7 @@ export type LandscapeField =
   | "interrupt"
   | "access";
 export interface LandscapeRecord {
+  label?:import("./map-label-style").MapLabelStyle;
   id: string;
   revision: number;
   kind: "patch" | "river" | "road" | "reference" | "place";

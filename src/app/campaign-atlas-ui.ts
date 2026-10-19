@@ -1,3 +1,5 @@
+import {MapLabelLayout,measureMapText,paintMapLabels,drawTerritories} from './atlas-cartography';
+import {TerritoryWorkbench} from './atlas-territories-ui';
 import {AtlasWorkspaceLayout} from './atlas-workspace-layout';
 import { AtlasReferenceUI } from "./atlas-reference-ui";
 import { travelHexSizes } from "./atlas-navigation-scale";
@@ -124,6 +126,8 @@ export class CampaignAtlasWorkbench {
   private renderQueued = false;
   private panelKey:unknown[]|null=null;
   private floorOptionsKey='';
+  private territories!:TerritoryWorkbench;
+  private labelLayout=new MapLabelLayout();
   private baseGeometry:{key:unknown[];node:AtlasPaint;origin:Point;authorSlot:number[]|null}|null=null;
   private drawingDock: {node: HTMLElement; parent: HTMLElement; next: ChildNode | null}[] = [];
   private entranceOptions='';
@@ -267,7 +271,11 @@ export class CampaignAtlasWorkbench {
       this.camera.stopZoom();this.reference.open();this.layout.comparison(true);
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
+    this.territories=new TerritoryWorkbench(this.svg,{focus:b=>{const aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight),width=Math.max(b.width,b.height*aspect,10)*1.2,height=width/aspect;this.camera.set({x:b.x+b.width/2-width/2,y:b.y+b.height/2-height/2,width,height},true);},data:()=>this.data,enabled:()=>this.family==='terrain'&&!this.exportOpen,point:e=>this.camera.point(e),box:()=>this.camera.view,current:()=>this.geometryCurrent()&&this.camera.ready,write:a=>this.write(a,false,true),redraw:()=>this.scheduleRender(),error:e=>this.error(e)});
     this.landscape=new LandscapeWorkbench(this.svg,{selected:id=>this.layout?.selectionChanged('landscape:'+id,true),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),box:()=>this.camera.view,redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready});
+    this.landscape.panel.append(this.territories.panel);
+    get<HTMLSelectElement>('land-tool').add(new Option('Regionen','territory'));
+    get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
     this.hitDialog.id='atlas-hit-candidates';this.hitDialog.addEventListener('close',()=>this.hitVersion++);this.root.append(this.hitDialog);
     this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
     let viewport:{width:number;height:number}|null=null;
@@ -636,6 +644,7 @@ export class CampaignAtlasWorkbench {
     this.scopeId = null;
     this.draft = [];
     this.root.dataset.roomDraw = "false";
+    this.labelLayout=new MapLabelLayout();
     this.camera.context(w.campaign.id, {
       x: -15000,
       y: -10000,
@@ -734,7 +743,7 @@ export class CampaignAtlasWorkbench {
     )
       return false;
     if (
-      this.landscape.hasDraft() ||
+      this.landscape.hasDraft() || this.territories.hasDraft() ||
       this.bindingDirty ||
       this.draft.length ||
       this.brushId !== null ||
@@ -918,7 +927,7 @@ export class CampaignAtlasWorkbench {
     if(this.reference.active)this.reference.close();
     if (flush && !(await this.opts.flush())) return;
     if (this.root.dataset.roomDraw === "true" && (this.draft.length || this.roomDrag)) { this.opts.status("Raumzug zuerst abschließen oder abbrechen.",true); return; }
-    if (this.landscape.hasDraft()) { this.opts.status("Landschaftszug zuerst abschließen oder abbrechen.",true); return; }
+    if (this.landscape.hasDraft()||this.territories.hasDraft()) { this.opts.status("Landschaftszug zuerst abschließen oder abbrechen.",true); return; }
     // An idle rectangle cursor is not a draft and must not capture the next tool's clicks.
     this.root.dataset.roomDraw="false";
     this.creation=null;delete this.root.dataset.placing;this.root.dataset.panMode="false";
@@ -2045,7 +2054,7 @@ export class CampaignAtlasWorkbench {
   private render(preview=false) {
     const data=this.data;
     if(!data||this.root.hidden)return;
-    this.renderPanel(data);this.renderTravel();this.layout?.sync();
+    this.renderPanel(data);this.renderTravel();this.layout?.sync();this.territories.sync(this.owner?.token??'');
     const box = this.camera.view;
     this.svg.dataset.atlasOriginX = String(box.x);
     this.svg.dataset.atlasOriginY = String(box.y);
@@ -2095,7 +2104,7 @@ export class CampaignAtlasWorkbench {
           marker.data.kind = "city";
           marker.data.id = city.header.id;
           root.append(marker);
-          this.label(root, city.header.name, center, mpp);
+          // City names are placed by the shared cartographic layer.
           continue;
         }
         let shownCity = city;
@@ -2160,7 +2169,7 @@ export class CampaignAtlasWorkbench {
             Math.min(...pts.map((p) => p.y)) <= ymax
           );
         });
-        const cityScene = cityPaint({ ...shownCity, units: visibleUnits });
+        const cityScene = cityPaint({ ...shownCity, units: visibleUnits }, false,mpp);
         for (const c of cityScene.children) {
           const uid = c.data.cityUnit,
             interior = data.bindings.find(
@@ -2238,7 +2247,8 @@ export class CampaignAtlasWorkbench {
         );
       }
 
-      if(!this.exportOpen)this.drawInteriorAuthor(root,mpp);
+      if(!get<HTMLInputElement>('atlas-perception').checked){const raster=data.region?.territoryRaster;if(raster)root.append(shape('image',{source:raster.data,x:raster.box.x-box.x,y:raster.box.y-box.y,width:raster.box.width,height:raster.box.height,pointer:false}));const state=data.region?.territories;if(state)drawTerritories(root,state,box,mpp);const candidates=[...(data.region?.labels??[]),...(data.region?.landscape?.labels??[])];paintMapLabels(root,this.labelLayout.layout(candidates,box,mpp,measureMapText,this.territories.selectedLabel??this.landscape.selectedLabel??(this.selection?(['building','city-unit'].includes(this.selection.kind)?'unit':this.selection.kind)+':'+this.selection.id:undefined), !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),box,mpp);if(this.labelLayout.animating)this.scheduleRender();}
+      if(!this.exportOpen){this.drawInteriorAuthor(root,mpp);this.territories.draw(root,box,mpp);}
       if(this.exportOpen){
         const b=this.exportDrag?.moved?this.exportRectangle(this.exportDrag.start,this.exportDrag.last):this.exportDungeon?this.dungeonOutputBox():this.exportBox;
         if(b)root.append(shape('rect',{x:b.x-box.x,y:b.y-box.y,width:b.width,height:b.height,pointer:false,style:{fill:null,stroke:'#a84720',lineWidth:2*mpp,lineDash:[8*mpp,5*mpp]},data:{editorOnly:'true'}}));
@@ -2298,9 +2308,10 @@ export class CampaignAtlasWorkbench {
       const exportQuery={...this.regionQuery(),box:{...box},perception:audience==='public'},references=get<HTMLInputElement>('atlas-export-reference').checked,grid=get<HTMLInputElement>('atlas-export-grid').checked,level=get<HTMLSelectElement>('atlas-hex-level').value,scale=(document.getElementById('atlas-export-scale') as HTMLInputElement|null)?.checked??false;
       const format=get<HTMLSelectElement>("atlas-export-format").value as 'png'|'jpeg',size=Number(get<HTMLInputElement>("atlas-export-size").value);
       if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
+      const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
+      exportQuery.width=width;exportQuery.height=height;
       const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
       const snapshot=fresh.value;
-      const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
       let source:AtlasPaint|AsyncIterable<AtlasExportTile>;
       if(audience==='public'){
         if(snapshot.geometry.position&&snapshot.perception)source=publicAtlasPaint(snapshot,box);
@@ -2311,6 +2322,7 @@ export class CampaignAtlasWorkbench {
           source=publicAtlasPaint(snapshot,box,frame.value.frame);
         }
       } else {
+        const labels=new MapLabelLayout().layout([...(snapshot.region?.labels??[]),...(snapshot.region?.landscape?.labels??[])],box,box.width/width,measureMapText);
         source=atlasExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
           const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence,references},'export');if(!response.ok)return response;
           const tile=response.value,layer=tile.region.landscape;
@@ -2318,7 +2330,10 @@ export class CampaignAtlasWorkbench {
           if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw new Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
           const assets=new Map<string,string>();
           if(references)for(const r of layer.records)if(r.assetId&&!assets.has(r.assetId)){const image=await window.campaign.referenceAssetPreview(owner.token,r.assetId,2048);if(!image.ok)throw new Error(image.error);assets.set(r.assetId,image.value);}
-          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
+          const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{automaticLabels:true,rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
+          const raster=tile.region?.territoryRaster;if(raster)scene.append(shape('image',{source:raster.data,x:raster.box.x-part.x,y:raster.box.y-part.y,width:raster.box.width,height:raster.box.height,pointer:false}));
+          if(tile.region?.territories)drawTerritories(scene,tile.region.territories,part,part.width/w);
+          paintMapLabels(scene,labels,part,box.width/width);
           return{ok:true,value:{campaignId:tile.campaignId,revision:tile.revision,box:tile.region.box,width:w,height:h,scene}};
         },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{status(`Atlas wird ausgegeben: ${done}/${total}`);});
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')status('Dichte Landschaft als Übersicht; Vorlagen als Umrisse.');
@@ -2362,6 +2377,7 @@ export class CampaignAtlasWorkbench {
     );
   }
   private label(root: AtlasPaint, text: string, p: Point, mpp: number) {
+    if(this.data?.region?.labels)return;
     if (root.data.mapScene) p = this.relativePoint(p);
     const t = shape("text", {x: p.x, y: p.y - 8 * mpp, pointer: false, style: {fontSize: 12 * mpp, textAlign: 'center', stroke: "#f2eee3", lineWidth: 3 * mpp, fill: "#283d3b"}});
     t.text = text;
@@ -2491,7 +2507,7 @@ export class CampaignAtlasWorkbench {
       path.data.kind = "room";
       path.data.id = room.id;
       g.append(path);
-      appendRoomNumber(g, room, mpp);
+      if(!this.data?.region?.labels)appendRoomNumber(g, room, mpp);
       const vertices = room.polygons[0]!.outer;
       if (
         (Math.max(...vertices.map((p) => p.x)) -
