@@ -461,23 +461,23 @@
   },
   "after": [
     {
-      "checkout": "643145fcaeb8178c769af3cdfe30610ebf4f719f",
+      "checkout": "553c8492aac5e854f5b7f6e4fa16b42c100d48d6",
       "dirty": false,
       "hashes": {
-        "main.cjs": "725548060bd7166d47fbbf9359502e386521331d0e804007ae02310e2f963824",
+        "main.cjs": "dcf8223c08b92e356d74b8e1a62990a612595569b3beed520c24750ad9159bb7",
         "ui/renderer.js": "9aa80bd8bbe256f03b63af66956e674eb7389db87143a249843f7239b79b3db1"
       },
-      "profile": "/tmp/gm-shop-switch-TdRCgO",
+      "profile": "/tmp/gm-shop-switch-4Ydztk",
       "zoom": 1,
       "fixture": {
         "campaign": {
-          "id": "563412ae-d76e-4ecf-bf18-c956cb0e0fb9",
+          "id": "d70339d7-288e-4659-b772-fe2859c9bc45",
           "name": "Markttag mit zwei Händlern",
           "revision": 0
         },
         "heroes": [
           {
-            "id": "a1045423-30fa-4368-8168-36e135c7a7da",
+            "id": "a69f4944-be47-44f4-a2ed-b09bb56b4562",
             "ordinal": 0,
             "profile": {
               "name": "Ada"
@@ -489,7 +489,7 @@
             "sceneId": null
           },
           {
-            "id": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+            "id": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
             "ordinal": 1,
             "profile": {
               "name": "Borin"
@@ -503,21 +503,21 @@
         ],
         "shops": [
           {
-            "id": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+            "id": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
             "revision": 1,
             "name": "Hafenladen",
             "owner": {
               "kind": "npc",
-              "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+              "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "bdcb8d93-fc3a-466d-86b1-24eb26f09575",
+                "id": "70d9aa5d-59a3-4f51-badc-b1905039346e",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                  "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                   "revision": 1
                 },
                 "quantity": 5,
@@ -531,21 +531,21 @@
             ]
           },
           {
-            "id": "22d65f6e-0780-4b4a-81aa-4a6709021a55",
+            "id": "e1a87c2b-3289-49bf-9e7c-f10396419144",
             "revision": 1,
             "name": "Bergladen",
             "owner": {
               "kind": "npc",
-              "id": "942ab9f3-fdba-4a00-a1a4-d6ed5699479f"
+              "id": "02dffbaa-281f-4988-a2d7-1d31ba680c94"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "fd4993de-cd26-4c89-9301-2841f060e3b4",
+                "id": "aa068789-1e56-4e95-b05d-4c3ced84f3a1",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                  "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                   "revision": 1
                 },
                 "quantity": 7,
@@ -561,12 +561,12 @@
         ],
         "items": [
           {
-            "id": "3a2e0fbc-de33-4fb9-b9f1-1e14ef5eb347",
-            "characterId": "a1045423-30fa-4368-8168-36e135c7a7da",
+            "id": "111c71db-109c-444b-8508-d82fad8182bc",
+            "characterId": "a69f4944-be47-44f4-a2ed-b09bb56b4562",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+              "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
               "revision": 1
             },
             "name": "Seil",
@@ -582,16 +582,16 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:43.940Z",
+            "recordedAt": "2026-10-19T09:47:05.161Z",
             "parentId": null
           },
           {
-            "id": "7f778e81-cd69-4c50-b260-66c757004f78",
-            "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+            "id": "50f2921d-55ef-489b-802b-76beb82b6fde",
+            "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "d70b754d-e0ce-49ba-8ef6-062964623ff8",
+              "definitionId": "114d83c9-4211-4456-8ce4-01addbbc5fe0",
               "revision": 1
             },
             "name": "Heiltrank",
@@ -607,7 +607,7 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:43.958Z",
+            "recordedAt": "2026-10-19T09:47:05.175Z",
             "parentId": null
           }
         ]
@@ -615,12 +615,12 @@
       "canonical": {
         "inventory": [
           {
-            "id": "0ff84caf-ae64-4019-ba12-a550b7246660",
-            "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+            "id": "ff157016-e729-4241-a5a1-67ab32e06308",
+            "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
             "revision": 2,
             "reference": {
               "kind": "authored",
-              "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+              "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
               "revision": 1
             },
             "name": "Seil",
@@ -633,30 +633,30 @@
             "paidCopper": "400",
             "counterparty": "Hafenladen · Besitzer Hafenladen",
             "counterpartyReference": {
-              "shopId": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+              "shopId": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
               "owner": {
                 "kind": "npc",
-                "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+                "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
               }
             },
             "instanceId": null,
             "treasureId": null,
             "combatId": null,
-            "sceneId": "f53d1778-02cb-4c57-92fc-561b1c5b2836",
+            "sceneId": "13f27ad5-73c1-4d4a-b1ed-eca738aa8687",
             "locationId": null,
             "instantMs": "0",
-            "recordedAt": "2026-10-19T09:37:50.887Z",
+            "recordedAt": "2026-10-19T09:47:12.042Z",
             "parentId": null,
             "currentName": "Seil",
             "currentUnitCopper": "200"
           },
           {
-            "id": "7f778e81-cd69-4c50-b260-66c757004f78",
-            "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+            "id": "50f2921d-55ef-489b-802b-76beb82b6fde",
+            "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "d70b754d-e0ce-49ba-8ef6-062964623ff8",
+              "definitionId": "114d83c9-4211-4456-8ce4-01addbbc5fe0",
               "revision": 1
             },
             "name": "Heiltrank",
@@ -672,7 +672,7 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:43.958Z",
+            "recordedAt": "2026-10-19T09:47:05.175Z",
             "parentId": null,
             "currentName": "Heiltrank",
             "currentUnitCopper": "500"
@@ -680,12 +680,12 @@
         ],
         "sold": [
           {
-            "id": "99d94c73-112f-4d36-b9a5-9f8dfc25b546",
-            "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+            "id": "cf2d2d33-3153-453e-98fd-a36093e5b07f",
+            "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+              "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
               "revision": 1
             },
             "name": "Seil",
@@ -698,41 +698,41 @@
             "paidCopper": "200",
             "counterparty": "Hafenladen · Besitzer Hafenladen",
             "counterpartyReference": {
-              "shopId": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+              "shopId": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
               "owner": {
                 "kind": "npc",
-                "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+                "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
               }
             },
             "instanceId": null,
             "treasureId": null,
             "combatId": null,
-            "sceneId": "f53d1778-02cb-4c57-92fc-561b1c5b2836",
+            "sceneId": "13f27ad5-73c1-4d4a-b1ed-eca738aa8687",
             "locationId": null,
             "instantMs": "0",
-            "recordedAt": "2026-10-19T09:37:51.353Z",
-            "parentId": "0ff84caf-ae64-4019-ba12-a550b7246660",
+            "recordedAt": "2026-10-19T09:47:12.606Z",
+            "parentId": "ff157016-e729-4241-a5a1-67ab32e06308",
             "currentName": "Seil",
             "currentUnitCopper": "200"
           }
         ],
         "shop": {
           "shop": {
-            "id": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+            "id": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
             "revision": 3,
             "name": "Hafenladen",
             "owner": {
               "kind": "npc",
-              "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+              "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "bdcb8d93-fc3a-466d-86b1-24eb26f09575",
+                "id": "70d9aa5d-59a3-4f51-badc-b1905039346e",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                  "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                   "revision": 1
                 },
                 "quantity": 3,
@@ -751,7 +751,7 @@
           "restockEvents": [],
           "items": [
             {
-              "id": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+              "id": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
               "revision": 1,
               "name": "Seil",
               "category": "equipment",
@@ -773,17 +773,17 @@
           ],
           "history": [
             {
-              "id": "d070ea18-3b6a-4a69-95ce-ba6079b24dcd",
-              "time": "2026-10-19T09:37:51.355Z",
+              "id": "ff252d0d-879a-4aa9-aa10-307409b6dda1",
+              "time": "2026-10-19T09:47:12.611Z",
               "description": "Verkauf an Shop: 1 × Seil",
               "facts": {
                 "entry": {
-                  "id": "99d94c73-112f-4d36-b9a5-9f8dfc25b546",
-                  "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+                  "id": "cf2d2d33-3153-453e-98fd-a36093e5b07f",
+                  "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
                   "revision": 1,
                   "reference": {
                     "kind": "authored",
-                    "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                    "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                     "revision": 1
                   },
                   "name": "Seil",
@@ -796,35 +796,35 @@
                   "paidCopper": "200",
                   "counterparty": "Hafenladen · Besitzer Hafenladen",
                   "counterpartyReference": {
-                    "shopId": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+                    "shopId": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
                     "owner": {
                       "kind": "npc",
-                      "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+                      "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
                     }
                   },
                   "instanceId": null,
                   "treasureId": null,
                   "combatId": null,
-                  "sceneId": "f53d1778-02cb-4c57-92fc-561b1c5b2836",
+                  "sceneId": "13f27ad5-73c1-4d4a-b1ed-eca738aa8687",
                   "locationId": null,
                   "instantMs": "0",
-                  "recordedAt": "2026-10-19T09:37:51.353Z",
-                  "parentId": "0ff84caf-ae64-4019-ba12-a550b7246660"
+                  "recordedAt": "2026-10-19T09:47:12.606Z",
+                  "parentId": "ff157016-e729-4241-a5a1-67ab32e06308"
                 }
               }
             },
             {
-              "id": "eaf899b1-1d4e-4913-a7d6-fd6d45a5e3cb",
-              "time": "2026-10-19T09:37:50.888Z",
+              "id": "b5b525b9-d962-4dbd-bb26-b1b1a0cf4fb6",
+              "time": "2026-10-19T09:47:12.044Z",
               "description": "Kauf: 3 × Seil",
               "facts": {
                 "entry": {
-                  "id": "0ff84caf-ae64-4019-ba12-a550b7246660",
-                  "characterId": "ee599bf9-54bd-45e9-960c-bc4c0e494792",
+                  "id": "ff157016-e729-4241-a5a1-67ab32e06308",
+                  "characterId": "8d22a55d-b74b-4ce6-a1a2-e6549f5e482f",
                   "revision": 1,
                   "reference": {
                     "kind": "authored",
-                    "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                    "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                     "revision": 1
                   },
                   "name": "Seil",
@@ -837,44 +837,44 @@
                   "paidCopper": "600",
                   "counterparty": "Hafenladen · Besitzer Hafenladen",
                   "counterpartyReference": {
-                    "shopId": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+                    "shopId": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
                     "owner": {
                       "kind": "npc",
-                      "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+                      "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
                     }
                   },
                   "instanceId": null,
                   "treasureId": null,
                   "combatId": null,
-                  "sceneId": "f53d1778-02cb-4c57-92fc-561b1c5b2836",
+                  "sceneId": "13f27ad5-73c1-4d4a-b1ed-eca738aa8687",
                   "locationId": null,
                   "instantMs": "0",
-                  "recordedAt": "2026-10-19T09:37:50.887Z",
+                  "recordedAt": "2026-10-19T09:47:12.042Z",
                   "parentId": null
                 }
               }
             },
             {
-              "id": "7005e4eb-4ba9-4f4b-97f8-2fdc23f3a0d1",
-              "time": "2026-10-19T09:37:43.976Z",
+              "id": "33fff8ff-4c2f-4eaa-8037-32097c5abbb7",
+              "time": "2026-10-19T09:47:05.192Z",
               "description": "Shop angelegt",
               "facts": {
                 "shop": {
-                  "id": "69ad520d-5d0a-4cd7-819a-4356d3552ba8",
+                  "id": "8dcfb73b-c97b-44c8-913e-59acb14d5149",
                   "revision": 1,
                   "name": "Hafenladen",
                   "owner": {
                     "kind": "npc",
-                    "id": "29938a1c-d7f9-4b11-ad23-8230a84ddb38"
+                    "id": "6d420f37-4ddc-423b-a423-f5d27f44c2db"
                   },
                   "notes": "  Preisliste\r\n- Markttag",
                   "trashed": false,
                   "stock": [
                     {
-                      "id": "bdcb8d93-fc3a-466d-86b1-24eb26f09575",
+                      "id": "70d9aa5d-59a3-4f51-badc-b1905039346e",
                       "reference": {
                         "kind": "authored",
-                        "definitionId": "40c2db78-8075-4e97-a7ea-d08024d3fa3e",
+                        "definitionId": "03b10a24-05d3-48c7-b011-e5f413dbf6c5",
                         "revision": 1
                       },
                       "quantity": 5,
@@ -892,10 +892,10 @@
           ]
         }
       },
-      "history": "2026-10-19T09:37:51.355Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T09:37:50.888Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T09:37:43.976Z · Shop angelegt",
+      "history": "2026-10-19T09:47:12.611Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T09:47:12.044Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T09:47:05.192Z · Shop angelegt",
       "launches": [
         {
-          "pid": 2291818,
+          "pid": 2307411,
           "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
           "exit": {
             "code": 0,
@@ -904,7 +904,7 @@
           "pidAbsent": true
         },
         {
-          "pid": 2292184,
+          "pid": 2307977,
           "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
           "exit": {
             "code": 0,
@@ -919,23 +919,23 @@
       "sharedContextRetryVerified": true
     },
     {
-      "checkout": "643145fcaeb8178c769af3cdfe30610ebf4f719f",
+      "checkout": "553c8492aac5e854f5b7f6e4fa16b42c100d48d6",
       "dirty": false,
       "hashes": {
-        "main.cjs": "725548060bd7166d47fbbf9359502e386521331d0e804007ae02310e2f963824",
+        "main.cjs": "dcf8223c08b92e356d74b8e1a62990a612595569b3beed520c24750ad9159bb7",
         "ui/renderer.js": "9aa80bd8bbe256f03b63af66956e674eb7389db87143a249843f7239b79b3db1"
       },
-      "profile": "/tmp/gm-shop-switch-VDcGnX",
+      "profile": "/tmp/gm-shop-switch-a2vSVK",
       "zoom": 2,
       "fixture": {
         "campaign": {
-          "id": "5d8261ea-7860-46bf-8bcd-60b322c7620e",
+          "id": "87819bd9-9f15-4470-88da-0d5488c4e9da",
           "name": "Markttag mit zwei Händlern",
           "revision": 0
         },
         "heroes": [
           {
-            "id": "21bb0340-2b03-4b75-98a4-fe4cfad90710",
+            "id": "c3648030-5037-4b8b-85e2-6dadce7c407e",
             "ordinal": 0,
             "profile": {
               "name": "Ada"
@@ -947,7 +947,7 @@
             "sceneId": null
           },
           {
-            "id": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+            "id": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
             "ordinal": 1,
             "profile": {
               "name": "Borin"
@@ -961,21 +961,21 @@
         ],
         "shops": [
           {
-            "id": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+            "id": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
             "revision": 1,
             "name": "Hafenladen",
             "owner": {
               "kind": "npc",
-              "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+              "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "9f91520b-d66d-45e1-8853-7dd0035345cd",
+                "id": "d9f054ae-6e7f-46af-adbb-381574ceb043",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                  "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                   "revision": 1
                 },
                 "quantity": 5,
@@ -989,21 +989,21 @@
             ]
           },
           {
-            "id": "eaf8df8f-fc81-464f-a60d-030a5a07aad8",
+            "id": "16148a82-ab8c-409f-ba1e-8b54a45e9376",
             "revision": 1,
             "name": "Bergladen",
             "owner": {
               "kind": "npc",
-              "id": "1e3f758c-4609-415f-b18b-69ed7d2e4451"
+              "id": "48a0bc85-373a-4a5a-8b35-fc70b6a74a2d"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "aeee948a-25c0-49ba-8578-8135df008a30",
+                "id": "e7941550-9872-439d-b938-97a3667d4524",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                  "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                   "revision": 1
                 },
                 "quantity": 7,
@@ -1019,12 +1019,12 @@
         ],
         "items": [
           {
-            "id": "72837f6c-ce97-4c17-8aee-09748b176a4e",
-            "characterId": "21bb0340-2b03-4b75-98a4-fe4cfad90710",
+            "id": "5eb81a7b-5c47-4746-8037-f1bb3065e620",
+            "characterId": "c3648030-5037-4b8b-85e2-6dadce7c407e",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+              "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
               "revision": 1
             },
             "name": "Seil",
@@ -1040,16 +1040,16 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:44.382Z",
+            "recordedAt": "2026-10-19T09:47:05.270Z",
             "parentId": null
           },
           {
-            "id": "38e82559-2c07-4579-9624-8d2bb074c009",
-            "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+            "id": "57a8d10e-7e97-4bd5-b3d2-92aa135a7613",
+            "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "d7e147e4-46e2-46c3-af33-4d20ad21d843",
+              "definitionId": "808f5c04-9f44-40b6-b66b-a868dc6195f3",
               "revision": 1
             },
             "name": "Heiltrank",
@@ -1065,7 +1065,7 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:44.408Z",
+            "recordedAt": "2026-10-19T09:47:05.295Z",
             "parentId": null
           }
         ]
@@ -1073,12 +1073,12 @@
       "canonical": {
         "inventory": [
           {
-            "id": "0cf5d738-6696-4339-bd88-10b81530eae0",
-            "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+            "id": "efbdfd62-2d55-412a-9aeb-74e2ba3e0530",
+            "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
             "revision": 2,
             "reference": {
               "kind": "authored",
-              "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+              "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
               "revision": 1
             },
             "name": "Seil",
@@ -1091,30 +1091,30 @@
             "paidCopper": "400",
             "counterparty": "Hafenladen · Besitzer Hafenladen",
             "counterpartyReference": {
-              "shopId": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+              "shopId": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
               "owner": {
                 "kind": "npc",
-                "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+                "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
               }
             },
             "instanceId": null,
             "treasureId": null,
             "combatId": null,
-            "sceneId": "d703593e-a158-4851-b3c8-fa0ea34addf1",
+            "sceneId": "baa88ff1-4b26-448b-b713-ffd82424a1ec",
             "locationId": null,
             "instantMs": "0",
-            "recordedAt": "2026-10-19T09:37:51.346Z",
+            "recordedAt": "2026-10-19T09:47:13.224Z",
             "parentId": null,
             "currentName": "Seil",
             "currentUnitCopper": "200"
           },
           {
-            "id": "38e82559-2c07-4579-9624-8d2bb074c009",
-            "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+            "id": "57a8d10e-7e97-4bd5-b3d2-92aa135a7613",
+            "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "d7e147e4-46e2-46c3-af33-4d20ad21d843",
+              "definitionId": "808f5c04-9f44-40b6-b66b-a868dc6195f3",
               "revision": 1
             },
             "name": "Heiltrank",
@@ -1130,7 +1130,7 @@
             "sceneId": null,
             "locationId": null,
             "instantMs": null,
-            "recordedAt": "2026-10-19T09:37:44.408Z",
+            "recordedAt": "2026-10-19T09:47:05.295Z",
             "parentId": null,
             "currentName": "Heiltrank",
             "currentUnitCopper": "500"
@@ -1138,12 +1138,12 @@
         ],
         "sold": [
           {
-            "id": "04bed214-9f65-4a4f-9316-f7ec775ee6b2",
-            "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+            "id": "8ebd7b21-85e2-4a8c-8b3c-bfae0f54486a",
+            "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
             "revision": 1,
             "reference": {
               "kind": "authored",
-              "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+              "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
               "revision": 1
             },
             "name": "Seil",
@@ -1156,41 +1156,41 @@
             "paidCopper": "200",
             "counterparty": "Hafenladen · Besitzer Hafenladen",
             "counterpartyReference": {
-              "shopId": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+              "shopId": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
               "owner": {
                 "kind": "npc",
-                "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+                "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
               }
             },
             "instanceId": null,
             "treasureId": null,
             "combatId": null,
-            "sceneId": "d703593e-a158-4851-b3c8-fa0ea34addf1",
+            "sceneId": "baa88ff1-4b26-448b-b713-ffd82424a1ec",
             "locationId": null,
             "instantMs": "0",
-            "recordedAt": "2026-10-19T09:37:51.810Z",
-            "parentId": "0cf5d738-6696-4339-bd88-10b81530eae0",
+            "recordedAt": "2026-10-19T09:47:13.947Z",
+            "parentId": "efbdfd62-2d55-412a-9aeb-74e2ba3e0530",
             "currentName": "Seil",
             "currentUnitCopper": "200"
           }
         ],
         "shop": {
           "shop": {
-            "id": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+            "id": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
             "revision": 3,
             "name": "Hafenladen",
             "owner": {
               "kind": "npc",
-              "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+              "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
             },
             "notes": "  Preisliste\r\n- Markttag",
             "trashed": false,
             "stock": [
               {
-                "id": "9f91520b-d66d-45e1-8853-7dd0035345cd",
+                "id": "d9f054ae-6e7f-46af-adbb-381574ceb043",
                 "reference": {
                   "kind": "authored",
-                  "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                  "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                   "revision": 1
                 },
                 "quantity": 3,
@@ -1209,7 +1209,7 @@
           "restockEvents": [],
           "items": [
             {
-              "id": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+              "id": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
               "revision": 1,
               "name": "Seil",
               "category": "equipment",
@@ -1231,17 +1231,17 @@
           ],
           "history": [
             {
-              "id": "00451c98-ac8a-4dad-992e-c2a736e51be9",
-              "time": "2026-10-19T09:37:51.812Z",
+              "id": "43c85d63-ae47-42dd-aa52-6415fdd2cdd3",
+              "time": "2026-10-19T09:47:13.948Z",
               "description": "Verkauf an Shop: 1 × Seil",
               "facts": {
                 "entry": {
-                  "id": "04bed214-9f65-4a4f-9316-f7ec775ee6b2",
-                  "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+                  "id": "8ebd7b21-85e2-4a8c-8b3c-bfae0f54486a",
+                  "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
                   "revision": 1,
                   "reference": {
                     "kind": "authored",
-                    "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                    "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                     "revision": 1
                   },
                   "name": "Seil",
@@ -1254,35 +1254,35 @@
                   "paidCopper": "200",
                   "counterparty": "Hafenladen · Besitzer Hafenladen",
                   "counterpartyReference": {
-                    "shopId": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+                    "shopId": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
                     "owner": {
                       "kind": "npc",
-                      "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+                      "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
                     }
                   },
                   "instanceId": null,
                   "treasureId": null,
                   "combatId": null,
-                  "sceneId": "d703593e-a158-4851-b3c8-fa0ea34addf1",
+                  "sceneId": "baa88ff1-4b26-448b-b713-ffd82424a1ec",
                   "locationId": null,
                   "instantMs": "0",
-                  "recordedAt": "2026-10-19T09:37:51.810Z",
-                  "parentId": "0cf5d738-6696-4339-bd88-10b81530eae0"
+                  "recordedAt": "2026-10-19T09:47:13.947Z",
+                  "parentId": "efbdfd62-2d55-412a-9aeb-74e2ba3e0530"
                 }
               }
             },
             {
-              "id": "410bb982-feb7-4f86-b5ff-d054a54593e1",
-              "time": "2026-10-19T09:37:51.347Z",
+              "id": "742fa711-8e1c-4099-a6a8-7756707419a4",
+              "time": "2026-10-19T09:47:13.225Z",
               "description": "Kauf: 3 × Seil",
               "facts": {
                 "entry": {
-                  "id": "0cf5d738-6696-4339-bd88-10b81530eae0",
-                  "characterId": "6b83529f-a2b2-43c5-8a2c-85b913d52d5c",
+                  "id": "efbdfd62-2d55-412a-9aeb-74e2ba3e0530",
+                  "characterId": "b918fdbc-c6fb-411e-87e4-8e4e9ecefe21",
                   "revision": 1,
                   "reference": {
                     "kind": "authored",
-                    "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                    "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                     "revision": 1
                   },
                   "name": "Seil",
@@ -1295,44 +1295,44 @@
                   "paidCopper": "600",
                   "counterparty": "Hafenladen · Besitzer Hafenladen",
                   "counterpartyReference": {
-                    "shopId": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+                    "shopId": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
                     "owner": {
                       "kind": "npc",
-                      "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+                      "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
                     }
                   },
                   "instanceId": null,
                   "treasureId": null,
                   "combatId": null,
-                  "sceneId": "d703593e-a158-4851-b3c8-fa0ea34addf1",
+                  "sceneId": "baa88ff1-4b26-448b-b713-ffd82424a1ec",
                   "locationId": null,
                   "instantMs": "0",
-                  "recordedAt": "2026-10-19T09:37:51.346Z",
+                  "recordedAt": "2026-10-19T09:47:13.224Z",
                   "parentId": null
                 }
               }
             },
             {
-              "id": "5ed83047-6ab1-4a30-b9c1-543d9881c0ef",
-              "time": "2026-10-19T09:37:44.443Z",
+              "id": "5b87afd6-93fc-472a-bd6b-062c29d2d103",
+              "time": "2026-10-19T09:47:05.328Z",
               "description": "Shop angelegt",
               "facts": {
                 "shop": {
-                  "id": "e7ced474-73cb-4e51-bfec-64e5c19a3f69",
+                  "id": "9f076a81-07ae-49f4-aadc-7f99ec4a6b62",
                   "revision": 1,
                   "name": "Hafenladen",
                   "owner": {
                     "kind": "npc",
-                    "id": "32fbd286-8e48-420d-8a68-f9dbbfde8616"
+                    "id": "e60b5ae5-1c37-48c7-884d-31f481e76755"
                   },
                   "notes": "  Preisliste\r\n- Markttag",
                   "trashed": false,
                   "stock": [
                     {
-                      "id": "9f91520b-d66d-45e1-8853-7dd0035345cd",
+                      "id": "d9f054ae-6e7f-46af-adbb-381574ceb043",
                       "reference": {
                         "kind": "authored",
-                        "definitionId": "0fd239a5-ec73-45af-a98c-d31429f857e4",
+                        "definitionId": "5ab0028b-ccd3-40db-8111-15dbe7f7b0a9",
                         "revision": 1
                       },
                       "quantity": 5,
@@ -1350,10 +1350,10 @@
           ]
         }
       },
-      "history": "2026-10-19T09:37:51.812Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T09:37:51.347Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T09:37:44.443Z · Shop angelegt",
+      "history": "2026-10-19T09:47:13.948Z · Verkauf an Shop: 1 × Seil · Erlös: 1,00 GM · Figur: Borin\n\n2026-10-19T09:47:13.225Z · Kauf: 3 × Seil · Gezahlt: 6,00 GM · Figur: Borin\n\n2026-10-19T09:47:05.328Z · Shop angelegt",
       "launches": [
         {
-          "pid": 2291863,
+          "pid": 2307419,
           "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
           "exit": {
             "code": 0,
@@ -1362,7 +1362,7 @@
           "pidAbsent": true
         },
         {
-          "pid": 2292209,
+          "pid": 2308037,
           "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
           "exit": {
             "code": 0,
@@ -1378,10 +1378,10 @@
     }
   ],
   "existingNativeRegression": {
-    "checkout": "643145fcaeb8178c769af3cdfe30610ebf4f719f",
+    "checkout": "553c8492aac5e854f5b7f6e4fa16b42c100d48d6",
     "dirty": false,
     "hashes": {
-      "main.cjs": "725548060bd7166d47fbbf9359502e386521331d0e804007ae02310e2f963824",
+      "main.cjs": "dcf8223c08b92e356d74b8e1a62990a612595569b3beed520c24750ad9159bb7",
       "ui/renderer.js": "9aa80bd8bbe256f03b63af66956e674eb7389db87143a249843f7239b79b3db1"
     },
     "scale": 1,
@@ -1413,13 +1413,13 @@
         "remainingPaidCopper": "68",
         "soldPaidCopper": "33",
         "actualSaleCopper": "7",
-        "history": "2026-10-19T09:37:58.867Z · Verkauf an Shop: 1 × Seil · Erlös: 0,07 GM · Figur: Ada\n\n2026-10-19T09:37:58.514Z · Kauf: 3 × Seil · Gezahlt: 1,01 GM · Figur: Ada\n\n2026-10-19T09:37:50.560Z · Verkauf an Shop: 1 × Heiltrank · Erlös: 3,00 GM · Figur: Borin\n\n2026-10-19T09:37:50.108Z · Kauf: 1 × Seil · Gezahlt: 5,00 GM · Figur: Ada\n\n2026-10-19T09:37:44.046Z · Shop angelegt",
+        "history": "2026-10-19T09:47:22.788Z · Verkauf an Shop: 1 × Seil · Erlös: 0,07 GM · Figur: Ada\n\n2026-10-19T09:47:22.312Z · Kauf: 3 × Seil · Gezahlt: 1,01 GM · Figur: Ada\n\n2026-10-19T09:47:12.450Z · Verkauf an Shop: 1 × Heiltrank · Erlös: 3,00 GM · Figur: Borin\n\n2026-10-19T09:47:11.792Z · Kauf: 1 × Seil · Gezahlt: 5,00 GM · Figur: Ada\n\n2026-10-19T09:47:05.328Z · Shop angelegt",
         "reopenedIdentical": true
       }
     },
     "launches": [
       {
-        "pid": 2291827,
+        "pid": 2307418,
         "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
         "exit": {
           "code": 0,
@@ -1427,7 +1427,7 @@
         }
       },
       {
-        "pid": 2292250,
+        "pid": 2308124,
         "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
         "exit": {
           "code": 0,
@@ -1435,7 +1435,7 @@
         }
       },
       {
-        "pid": 2292703,
+        "pid": 2308602,
         "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
         "exit": {
           "code": 0,
@@ -1464,5 +1464,5 @@
     "Public demo login was interrupted and reopened; no controlled normal server restart claim.",
     "A pre-launch shared temporary Store bundle collision was fixed with per-process bundle paths; final zoom runs both completed normally."
   ],
-  "integrationBase": "b79f18e77a69dcce59073bdbaf9b37cd73756e1f"
+  "integrationBase": "4ddebc6282f5329abd1855ce34f92394c1ced68b"
 }
