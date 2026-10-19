@@ -296,7 +296,13 @@ Atlas-Rechtecke benutzen denselben Zeichenbefehl wie freie Raumkonturen:
 bestätigte Rückgabe. Der Atlas übersetzt nur Weltkoordinaten und die Zieh-/
 Zwei-Klick-Geste. Es gibt dafür ein Raum-Namensfeld; das Platzierungsfeld für
 Dungeon-/Stadtnamen ist kein zweiter Raumautor. Vorschau und Commit rasten
-an denselben lokalen Punkten ein. Die Geste bleibt ein gesonderter Adapter,
+an denselben lokalen Punkten ein. Nach einem neu gezeichneten Rechteck bleibt
+sein Werkzeug aktiv; der Name ist für den nächsten Raum ausgewählt. Die
+Raumauswahl öffnet währenddessen keine verdeckende Eigenschaftenleiste;
+auch beim Wechsel zum Rechteckwerkzeug weichen bereits offene Eigenschaften.
+Ausdrückliche Auswahl und Details bleiben erreichbar. Anhängen
+an einen bestehenden Raum beendet den einzelnen Formschritt weiterhin.
+Die Geste bleibt ein gesonderter Adapter,
 weil sie Weltkoordinaten und Pointercapture besitzt; sie schreibt keine eigene
 Raumgeometrie mehr. Verspätete Vorbereitung nach Kontextwechsel schreibt nicht.
 `desktop-drawing-draft-lifecycle.test.mjs` prüft diesen Anschluss samt Ergänzen
@@ -304,7 +310,10 @@ und Abbruch. `tools/test-desktop-dungeon-groundplan.mjs` prüft den nativen
 Ablauf aus drei benannten Räumen, zwei Türen, Wandvergrößerung, Undo/Redo,
 PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung.
 `--moved-wall` setzt eine Tür ausdrücklich auf die verschobene Wand und prüft
-zusätzlich ihre neuen PNG-Pixel sowie die leere alte Position. Der frühere
+zusätzlich ihre neuen PNG-Pixel sowie die leere alte Position. Der Ablauf prüft
+außerdem die tatsächlich an Canvas übergebenen Namen aller drei Räume. Eine
+von aktiver Raumgeometrie verdeckte Dungeon-Markerbeschriftung weicht dem
+Raum-Key; der fremde Dungeon bleibt in Suche und Trefferauswahl erhalten. Der frühere
 Grundlauf vergrößerte eine andere Wand und bemerkte verlorene Türbindungen nicht.
 
 Ausgewählte Zeichnungspfade haben Punkt- und Segmentgriffe für einzelne

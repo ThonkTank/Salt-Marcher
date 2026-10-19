@@ -193,7 +193,7 @@ export class AtlasWorkspaceLayout {
  // Compatibility for domain callers: selection never replaces the tool panel.
  showPane(pane:'tool'|'selection'){if(pane==='selection')this.openSelection();else this.showToolSettings(true);}
  private openSelection(){this.openContext('selection','Eigenschaften',[this.selection]);}
- selectionChanged(key:string|null,explicit=false){if(key===this.selectionKey&&!explicit)return;this.selectionKey=key;if(key)this.openSelection();else if(this.auxiliary==='selection')this.clearContext();}
+ selectionChanged(key:string|null,explicit=false,reveal=true){if(key===this.selectionKey&&!explicit)return;this.selectionKey=key;if(key&&reveal)this.openSelection();else if(!key&&this.auxiliary==='selection')this.clearContext();}
  beforeTool(){if(this.auxiliary&&this.auxiliary!=='key'&&this.auxiliary!=='selection')this.clearContext();}
  setFamily(family:Family){
   if(family==='travel')return;
@@ -261,6 +261,7 @@ export class AtlasWorkspaceLayout {
   try{
    if(!await this.host.tool(section,tool.control,tool.value,tool.settings))return;
    if(group){this.groupMemory.set(section,group);this.toolMemory.set(section+':'+group,tool.id);}
+   if(section==='interior'&&tool.id==='room-rectangle'&&this.auxiliary==='selection')this.hideContext();
    this.renderGroups();this.showToolSettings(true);
    if(tool.panel==='library')await this.requestContext('library','Objekte wählen',[el('drawing-tool-options')]);
    if(tool.panel==='generation')await this.openGeneration();
