@@ -1,6 +1,7 @@
 import type { Point, Polygon } from "./contracts";
 import type { AtlasCell, Terrain } from "./world-contracts";
 import { atlasHexAt, atlasHexPoint } from "./campaign-atlas-model";
+import { linePoints, lineContains } from "./landscape-line";
 export const HEX_METERS = 4828.032;
 export const EARTH_WIDTH = 40000000,
   EARTH_HEIGHT = 20000000;
@@ -41,6 +42,9 @@ export interface LandscapeRecord {
   values: Partial<Omit<AtlasCell, "q" | "r" | "level">>;
   order?: number;
   style?: "path" | "road" | "stream" | "river";
+  line?: import("./landscape-line").LandscapeLine;
+  paint?: import("./landscape-brush").LandscapeColor;
+  surface?: "land" | "sea" | "freshwater";
   locationId?: string;
   assetId?: string;
   imageWidth?: number;
@@ -51,8 +55,10 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:"landscape-brush"; record:LandscapeRecord; mode:Exclude<import("./landscape-brush").BrushMode,"terrain">; radius:number; roughness:number; seed:number; fill:boolean}
   | {
       kind: "landscape-batch";
+      remove?: {id:string;expectedRevision:number}[];
       records: {
         record: LandscapeRecord;
         expectedRevision: number | null;
@@ -170,10 +176,7 @@ export function effectiveLandscape(
   for (const r of records)
     if (
       r.kind === "river" &&
-      r.points.some(
-        (v, i) =>
-          i > 0 && segmentDistance(p, r.points[i - 1]!, v) <= r.width / 2,
-      )
+      lineContains(r,p)
     ) {
       out.terrain = "water";
       out.river = true;
@@ -182,10 +185,7 @@ export function effectiveLandscape(
     if (
       r.kind === "road" &&
       out.terrain !== "water" &&
-      r.points.some(
-        (v, i) =>
-          i > 0 && segmentDistance(p, r.points[i - 1]!, v) <= r.width / 2,
-      )
+      lineContains(r,p)
     )
       out.road = true;
   return out;
@@ -193,7 +193,7 @@ export function effectiveLandscape(
 export function bounds(record: LandscapeRecord): LandscapeBox {
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const include=(p:Point)=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);};
-  for(const p of record.points)include(p);
+  for(const p of record.line ? linePoints(record) : record.points)include(p);
   for(const polygon of record.polygons)for(const p of polygon.outer)include(p);
   if(minX===Infinity)throw new Error("Geometrie fehlt.");
   if(record.kind==='reference'){
@@ -201,7 +201,7 @@ export function bounds(record: LandscapeRecord): LandscapeBox {
     for(const v of [{x:w,y:0},{x:w,y:h},{x:0,y:h}])include({x:p.x+v.x*Math.cos(a)-v.y*Math.sin(a),y:p.y+v.x*Math.sin(a)+v.y*Math.cos(a)});
   }
   const pad =
-      record.kind === "river" || record.kind === "road" ? record.width / 2 : 0,
+      record.kind === "river" || record.kind === "road" ? record.width * (record.line ? 1 : .5) : 0,
     x = minX - pad,
     y = minY - pad;
   return {

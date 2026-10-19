@@ -423,11 +423,11 @@ export class CampaignStore {
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
-      if(a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
+      if(a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
         const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
         const wasPhysical=(id: string)=>physical(this.db.prepare("SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?").get(cam,id)?.kind);
-        landscapeEnvironment=a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id)):physical(a.record.kind)||wasPhysical(a.record.id));
+        landscapeEnvironment=a.kind==='landscape-brush'||a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?(a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id))||(a.remove??[]).some(x=>wasPhysical(x.id))):physical(a.record.kind)||wasPhysical(a.record.id));
         executeLandscape(this.db,cam,a);
         if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.record.points[0]!,m.hexMeters)}});}
 

@@ -21,6 +21,7 @@ export interface PaintStyle {
   lineCap?: CanvasLineCap;
   lineJoin?: CanvasLineJoin;
   lineDash?: number[];
+  lineDashOffset?: number;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: string | number;

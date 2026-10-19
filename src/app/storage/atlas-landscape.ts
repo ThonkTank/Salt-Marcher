@@ -1,3 +1,6 @@
+import {executeBrush} from "./landscape-brush-edit";
+import { validateLine } from "../landscape-line";
+import { validateColor } from "../landscape-brush";
 import {REGION_REPLY_BYTES} from '../atlas-region-contracts';
 import { createHash, randomUUID } from "node:crypto";
 import polygonClipping from "polygon-clipping";
@@ -222,6 +225,8 @@ export function putLandscape(
     !r.values
   )
     throw new Error("Landschaftsdaten prüfen.");
+  validateLine(r);
+  validateColor(r);
   const pts = [
     ...r.points,
     ...r.polygons.flatMap((p) => [...p.outer, ...p.holes.flat()]),
@@ -303,7 +308,9 @@ export function putLandscape(
   );
 }
 export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
+  if(a.kind==="landscape-brush")return executeBrush(db,cam,a);
   if (a.kind === "landscape-batch") {
+    for(const r of a.remove??[])executeLandscape(db,cam,{kind:"landscape-remove",...r});
     for (const r of a.records)
       putLandscape(db, cam, r.record, r.expectedRevision);
     return;
