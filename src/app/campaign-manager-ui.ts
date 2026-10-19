@@ -53,32 +53,37 @@ async function acceptPreview(){
   let result;
   try{result=unwrap(await window.campaign.acceptCampaignTransfer(p.ticket,name,choices));}
   catch(error){const state=await reconcileAcceptance();if(state==='not-applied')throw error;return;}
-  clearPending();
+  const cleanup=clearPending();
   const owns=preview===p&&request===transferRequest&&gen===generation&&token===context()?.token;
   if(preview===p){preview=null;transferRequest++;el<HTMLDialogElement>('campaign-transfer-dialog').close();}
   if(owns)el<HTMLDialogElement>('campaign-manager-dialog').close();
   await changed(owns?result.id:undefined);
-  if(owns)tell('Unabhängige Kampagne übernommen.');
+  if(owns)transferOutcome('Unabhängige Kampagne übernommen.',cleanup);
  }finally{accepting=false;lock();}
 }
 
-function clearPending(){window.localStorage.removeItem(pendingKey);pendingTicket=null;}
+function clearPending(){
+ // A confirmed Store outcome must remain usable even if local journal cleanup fails.
+ try{window.localStorage.removeItem(pendingKey);pendingTicket=null;return '';}
+ catch{return 'Der geklärte Auftragsvermerk konnte lokal nicht entfernt werden. Das bestätigte Ergebnis bleibt gültig. Öffne Pakete und Kopien und prüfe die Übernahme erneut, bevor du eine weitere startest.';}
+}
+function transferOutcome(text:string,cleanup:string){const message=text+(cleanup?' '+cleanup:'');el('campaign-transfer-progress').textContent=message;tell(message,!!cleanup);}
 async function reconcileAcceptance(){
  const ticket=pendingTicket;if(!ticket)return;
  const status=unwrap(await window.campaign.campaignTransferStatus(ticket));
  if(ticket!==pendingTicket)return;
  if(status.state==='pending'){tell('Die Übernahme läuft noch. Status erneut prüfen.');return status.state;}
- clearPending();
+ const cleanup=clearPending();
  if(status.state==='applied'){
   if(preview?.ticket===ticket){preview=null;transferRequest++;el<HTMLDialogElement>('campaign-transfer-dialog').close();}
   // Recovered outcomes update the list without selecting an old campaign context.
-  await changed();tell('Übernahme bestätigt: '+status.campaign.name);
- }else tell('Keine übernommene Kampagne vorhanden. Du kannst die Übernahme erneut starten.');
+  await changed();transferOutcome('Übernahme bestätigt: '+status.campaign.name,cleanup);
+ }else transferOutcome(cleanup?'Keine übernommene Kampagne vorhanden.':'Keine übernommene Kampagne vorhanden. Du kannst die Übernahme erneut starten.',cleanup);
  return status.state;
 }
 async function checkAcceptance(){if(accepting||!pendingTicket)return;accepting=true;lock();try{await reconcileAcceptance();}finally{accepting=false;lock();}}
 
-export function initCampaignManager(status:typeof tell,getContext:typeof context,flush:typeof before,onChanged:typeof changed){tell=status;context=getContext;before=flush;changed=onChanged;el('campaign-manager').onclick=()=>{generation++;run(()=>{pendingTicket=window.localStorage.getItem(pendingKey);lock();el<HTMLDialogElement>('campaign-manager-dialog').showModal();});};
+export function initCampaignManager(status:typeof tell,getContext:typeof context,flush:typeof before,onChanged:typeof changed){tell=status;context=getContext;before=flush;changed=onChanged;el('campaign-manager').onclick=()=>{generation++;run(()=>{pendingTicket=window.localStorage.getItem(pendingKey);if(pendingTicket)el('campaign-transfer-progress').textContent='Ein früherer Auftragsvermerk ist erhalten. Übernahme prüfen liest ausschließlich den gespeicherten Buchungsstatus.';lock();el<HTMLDialogElement>('campaign-manager-dialog').showModal();});};
  lock();
  for(const id of ['campaign-transfer-check','campaign-transfer-check-preview'])el(id).onclick=()=>run(checkAcceptance);
  el('campaign-manager-close').onclick=()=>run(closeManager);
