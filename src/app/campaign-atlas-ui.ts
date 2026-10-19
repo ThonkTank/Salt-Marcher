@@ -916,18 +916,28 @@ export class CampaignAtlasWorkbench {
   private roomPreview<T extends import("./contracts").RoomGeometry>(original: T): T {
     const drag = this.vertexDrag;
     if (!drag || drag.room.id !== original.id) return original;
-    const room = {...original, polygons: structuredClone(drag.room.polygons)}, points = room.polygons[drag.polygon]!.outer;
-    if (!drag.edge) points[drag.vertex] = {...drag.point};
+    const polygon = drag.room.polygons[drag.polygon]!, outer = polygon.outer;
+    let points: Point[] | undefined;
+    const move = (index: number, point: Point) => {
+      const before = outer[index]!;
+      if (before.x === point.x && before.y === point.y) return;
+      (points ??= [...outer])[index] = point;
+    };
+    if (!drag.edge) move(drag.vertex, {...drag.point});
     else {
-      const a = points[drag.vertex]!, b = points[(drag.vertex + 1) % points.length]!;
+      const a = outer[drag.vertex]!, next = (drag.vertex + 1) % outer.length, b = outer[next]!;
       const dx = b.x - a.x, dy = b.y - a.y, length = Math.hypot(dx, dy);
       if (length && drag.start) {
         const nx = -dy / length, ny = dx / length;
         const distance = (drag.point.x - drag.start.x) * nx + (drag.point.y - drag.start.y) * ny;
-        for (const p of [a, b]) { p.x += nx * distance; p.y += ny * distance; }
+        move(drag.vertex, {...a, x: a.x + nx * distance, y: a.y + ny * distance});
+        move(next, {...b, x: b.x + nx * distance, y: b.y + ny * distance});
       }
     }
-    return room;
+    if (!points) return original;
+    const polygons = [...drag.room.polygons];
+    polygons[drag.polygon] = {...polygon, outer: points};
+    return {...original, polygons};
   }
   private syncDrawingFloor() {
     if (!this.scopeId) return;
@@ -1559,7 +1569,7 @@ export class CampaignAtlasWorkbench {
       const room = this.roomPreview(v.room);
       this.vertexDrag = null;
       this.suppressClick();
-      if (JSON.stringify(room.polygons) === JSON.stringify(v.room.polygons)) { this.render(); return; }
+      if (room === v.room) { this.render(); return; }
       if (this.owner)
         await this.write(
           {
