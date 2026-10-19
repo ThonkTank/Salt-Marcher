@@ -56,12 +56,12 @@ try{
  await reference(page,'Deutschland');await page.locator('#atlas-reference-focus').click();await ready(page);const portrait=await view(page);assert(portrait.width>=639000&&portrait.height>=867000);await page.screenshot({path:output+'/portrait.png'});
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').setSize(1440,900));await ready(page);
  await reference(page,'Deutschland');await page.locator('#atlas-reference-search').press('Escape');assert(await page.locator('#atlas-reference-panel').isHidden());
- await page.locator('#atlas-families button[data-family="terrain"]').click();await page.locator('#atlas-view').click();await page.locator('#land-auto-level').uncheck();await page.keyboard.press('Escape');await page.locator('button[data-tool-select=land-tool][data-tool-value=hex]').click();await page.locator('#atlas-hex-level').selectOption('day');await ready(page);
+ await page.locator('#atlas-section').selectOption('terrain');await page.waitForFunction(()=>!document.querySelector('#atlas-section').disabled);await page.locator('#atlas-view').click();await page.locator('#land-auto-level').uncheck();await page.keyboard.press('Escape');await page.locator('button[data-tool-select=land-tool][data-tool-value=hex]').click();await page.locator('#atlas-hex-level').selectOption('day');await ready(page);
  const cb=await canvas.boundingBox();await page.mouse.move(cb.x+cb.width/2,cb.y+cb.height/2);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#atlas-hex-level').disabled);assert(await page.locator('#land-auto-level').isDisabled());
  await page.mouse.up();await page.waitForFunction(()=>!document.querySelector('#atlas-hex-level').disabled&&document.querySelector('#land-status').textContent==='Gespeichert');await ready(page);
- await page.locator('button[data-tool-select=land-tool][data-tool-value=river]').click();await page.mouse.click(cb.x+cb.width*.4,cb.y+cb.height*.4);
+ await page.locator('[data-tool-group=water]').click();await page.locator('[data-atlas-tool=river]').click();await page.mouse.click(cb.x+cb.width*.4,cb.y+cb.height*.4);
  await openComparison(page);assert(await page.locator('#atlas-reference-panel').isHidden(),'pending drawing blocks comparison');
- await canvas.press('Escape');await page.locator('button[data-tool-select=land-tool][data-tool-value=hex]').click();await ready(page);
+ await canvas.press('Escape');await page.locator('[data-tool-group=land]').click();await page.locator('[data-atlas-tool=hex]').click();await ready(page);
  await page.screenshot({path:output+'/day-grid.png'});
  await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-grid').check();await page.locator('#atlas-export-size').fill('1024');
  await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},output+'/day-grid-export.png');
