@@ -1,6 +1,6 @@
 # NPC-Dossier, Gespräch und bestehende Fachbesitzer
 
-Stand: 15.10.2026. Ergänzt Kampagnenwissen, Party-/Livebetrieb,
+Stand: 20.10.2026. Ergänzt Kampagnenwissen, Party-/Livebetrieb,
 Encounter und [Actor Autonomy](../runtime/actor-autonomy.md). Die fachlichen
 Owner bleiben Weltprofil, LiveScene, Combat und Autonomie; das Dossier liest
 und vermittelt zwischen ihnen. SRC-F02 verlangt kampagneneigene NPCs und
@@ -43,6 +43,9 @@ bestätigten Geschichte. Der bestehende Draftwriter sichert unvollständige
 Eingaben; erst ausdrückliches „NPC übernehmen“ hängt den Text an die Geschichte
 und übernimmt genau den passenden CAS-Entwurf. Altentwürfe ohne dieses optionale
 Feld bleiben lesbar; fehlender Text wird nicht als historische Tatsache ergänzt.
+„Gespräch festhalten…“ führt direkt zum sichtbaren Gesprächsfeld im
+vorhandenen Profilformular. Ein bestehender Gesprächsentwurf erhält keinen
+weiteren Zeitheader. Der allgemeine Profileinstieg bleibt bei den Stammdaten.
 Alte Dialogantworten melden oder entsperren keine neue Übergabe.
 
 Vor Dispatch sichert `npc-ui.ts` den Originalauftrag einschließlich Command-ID,
@@ -114,6 +117,13 @@ Belege. Ein Fraktionsbestand wird dabei nicht automatisch einem NPC oder einem
 unbenannten Kämpfer zugerechnet. Der gesonderte manuelle Bestandsabschluss sowie
 vollständige Plattform-/Accessibility-/Owner-Abnahme bleiben offen.
 
+Der native Ablauf `tools/test-desktop-npc-conversation.mjs` prüft Dossier →
+sichtbares Gesprächsfeld → gesicherter Rohentwurf → regulärer Close/Fresh →
+Fortsetzung und ausdrückliche einmalige Übernahme → erneuter Close/Fresh bei
+100 und 200 Prozent. Unveränderte Autorenprosa einschließlich CRLF, der zweite
+NSC und der Live-Szenenstand werden getrennt geprüft. Das qualifiziert diesen
+Bedienweg; Antwortverlust und die vollständige SMR-AC-03/04-Abnahme bleiben offen.
+
 ## Nächste Lieferung und Abnahme
 
 - Native Antwortverluste vor/nach Dispatch und beim Prüfen mit kontrollierter
@@ -137,7 +147,8 @@ vollständige Plattform-/Accessibility-/Owner-Abnahme bleiben offen.
 Lokale Kontexttests sowie echter NPC-Renderer/SQLitewriter prüfen diese engeren
 Übergänge und Entwurfsbytes. Frischer SQLite-Leser, Rendereraktivierung und
 native Appwiederaufnahme sind getrennte Belege; vollständige Produktabnahme,
-native Wiederaufnahme und Erreichbarkeit bleiben offen. Die lokalen Faultproben
+native Fehler-/Kontextwechselqualifikation und vollständige Erreichbarkeit
+bleiben offen. Die lokalen Faultproben
 belegen den engeren Originalauftrag-/Rohentwurfsvertrag; sie sind keine vollständige
 Produkt- oder Datenlebenszyklusabnahme.
 
