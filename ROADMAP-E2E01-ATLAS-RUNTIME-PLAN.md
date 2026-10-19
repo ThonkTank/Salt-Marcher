@@ -323,6 +323,11 @@ betroffenen Punkt. Ein zurückgezogener Punkt erzeugt keinen Historyeintrag.
 `tools/test-desktop-access-path.mjs` prüft den kreuzenden Zugangsweg bei 100/200 %
 über Korrektur, Undo/Redo, editierbare Dungeondaten, tatsächliche PNG-Pixel und
 Neustart. Gebäudeinhalt, Pfadidentität und Metadaten bleiben dabei erhalten.
+Die Auswahl liest das genaue Zeichnungselement. Eine bereits geladene
+Zeichenbasis benötigt dafür keinen zweiten Raumstil-/Volumenread; nur Features
+laden ihren Laufzustand nach. Lesefehler beim Featurezustand und verspätete Antworten
+nach Kampagnenwechsel bleiben gesperrt. Die native Probe wartet beim Import auf
+die aktive Kampagnen-ID und misst den Weg neben der mittigen Raumbeschriftung.
 
 Kanten-/Eckpunktzüge senden `shape.preserveBoundaryAnchors`: Die unveränderte
 Polygon-/Kantenreihenfolge erklärt die Zuordnung. Beginn und Bewegung der
