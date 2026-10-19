@@ -1029,8 +1029,8 @@ export class CampaignStore {
     this.guard(command.token,command.campaignId);
     const a=command.action,guard=()=>{this.guard(command.token,command.campaignId);};
     if(a.kind!=='rest'||!a.scene||this.db.prepare('SELECT 1 FROM progress_receipt WHERE command_id=?').get(command.commandId))return executeProgress(this.db,command,guard);
-    const current=readLive(this.db,command.campaignId),scene=readLiveScene(this.db,command.campaignId,a.scene.id);
-    if(current.focusId!==scene.id||current.focusRevision!==a.scene.expectedFocusRevision||scene.membershipRevision!==a.scene.expectedMembershipRevision||scene.clock.revision!==a.scene.expectedClockRevision||scene.retired)throw new Error('Rastgruppe oder Szenenzeit geändert. Aktuellen Spieltisch laden.');
+    const current=readLive(this.db,command.campaignId),scene=current.scene;
+    if(!scene||scene.id!==a.scene.id||current.focusRevision!==a.scene.expectedFocusRevision||scene.membershipRevision!==a.scene.expectedMembershipRevision||scene.clock.revision!==a.scene.expectedClockRevision||scene.retired)throw new Error('Rastgruppe oder Szenenzeit geändert. Aktuellen Spieltisch laden.');
     if(!a.recipients.every(r=>scene.members.includes(r.characterId)))throw new Error('Rast nur mit Figuren dieser Szene.');
     if((a.scene.amount===undefined)!==(a.scene.unit===undefined))throw new Error('Rastdauer und Zeiteinheit gemeinsam angeben.');
     // Scene ownership is required even when the user deliberately keeps time.

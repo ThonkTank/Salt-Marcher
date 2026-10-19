@@ -95,6 +95,10 @@ Die historischen Commands ganz ohne Scene bleiben für ihre bestehenden Aufrufer
 unterstützt und erhalten damit keine nachträglich erfundene Szenenbindung.
 Keine Datenmigration oder zusätzliche persistente Vormerkung.
 
+Die Rastgrenze verwendet die bereits validierte fokussierte Scene aus demselben
+Live-Read. Sind Fokus und Primary identisch, liest dieser deren vollständigen
+Inhalt nur einmal; eine andere Primary wird weiterhin separat geprüft.
+
 `desktop-party-rest-confirmation.test.mjs` prüft mit echten DOMhandlern und
 SQLiteStore den read-only Erstklick, genau einen zweiten Commit, Verwerfen bei
 Auswahl-/Dauer-ABA und Kontextwechseln, Readfehler, explizite Zeitwahl, fehlende

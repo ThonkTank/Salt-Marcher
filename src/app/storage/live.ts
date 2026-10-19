@@ -95,7 +95,7 @@ export function readLive(db: any, campaignId: string): LiveView {
     }
     if (!Number.isSafeInteger(state.focus_revision) || state.focus_revision < 0) throw new Error('Focusrevision ist beschädigt.');
     const scene = readLiveScene(db, campaignId, state.focus_id);
-    if (scene.retired || readLiveScene(db, campaignId, state.primary_id).retired) throw new Error('Focus oder Primary verweist auf eine frühere Scene.');
+    if (scene.retired || state.primary_id !== scene.id && readLiveScene(db, campaignId, state.primary_id).retired) throw new Error('Focus oder Primary verweist auf eine frühere Scene.');
     const sceneIds = new Set<string>();
     for (const row of db.prepare('SELECT id FROM live_scene WHERE campaign_id=?').all(campaignId)) {
       clock(db, campaignId, row.id);
