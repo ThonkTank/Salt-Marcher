@@ -80,6 +80,7 @@ export class AtlasCanvasScene {
   readonly commands: Command[] = [];
   readonly images = new Set<string>();
   readonly requiredImages = new Set<string>();
+  readonly landscapeImages = new Set<string>();
   constructor(readonly root: AtlasPaint, cache:AtlasPathCache=new WeakMap()) {
     const visit = (
       node: AtlasPaint,
@@ -122,7 +123,7 @@ export class AtlasCanvasScene {
           ancestry,
 
         });
-        if (node.kind === "image" && g.source) {this.images.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
+        if (node.kind === "image" && g.source) {this.images.add(g.source);if(node.data.landscapeRaster==='true')this.landscapeImages.add(g.source);if(!g.optionalImage)this.requiredImages.add(g.source);}
       }
       for (const child of node.children)
         visit(child, matrix, style, alpha, pointer, hud, title, ancestry, retained);

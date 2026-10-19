@@ -317,6 +317,16 @@ test("one decoder and one replaceable successor discard superseded image frames 
   assert(f.closed.includes("wait:a"));
   assert.equal(f.root.dataset.decodedBytes, String(512 * 256 * 4));
 });
+test("derived landscape images retain their 1024-pixel coast detail while reference previews stay bounded", async (t) => {
+  const f=fixture(t);
+  f.canvas.render(root=>root.append(atlasPaint("image",{source:"coast",width:10,height:10,data:{landscapeRaster:"true"}})));
+  await settle();
+  assert.equal(f.canvas.ready,true);
+  assert.equal(f.root.dataset.decodedBytes,String(1024*512*4));
+  f.canvas.render(root=>root.append(atlasPaint("image",{source:"reference",width:10,height:10,optionalImage:true})));
+  await settle();
+  assert.equal(f.root.dataset.decodedBytes,String(512*256*4));
+});
 test("decoding failure revokes hits and retry keeps the same surface, camera and listeners", async (t) => {
   const f = fixture(t);
   let bad = true;

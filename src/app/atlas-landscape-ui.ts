@@ -1,3 +1,4 @@
+import {landscapeRasterBounds} from './landscape-raster';
 import {applyMaskStroke,isLandMode,strokeBox,type MaskStroke} from './land-mask';
 import {LandscapeToolSettings,lineControls,readLineControls} from "./landscape-tool-settings";
 import {brushFootprint,type BrushMode} from "./landscape-brush";
@@ -411,13 +412,12 @@ export class LandscapeWorkbench {
   private async previewMask(){
     const source=this.maskStroke,generation=this.maskGeneration;if(!source)return;
     const stroke:MaskStroke={...source,samples:[...source.samples,...(this.pointer!==null?[{...this.lastPoint,t:Math.min(300000,performance.now()-this.maskStart)}]:[])]};
-    const b=strokeBox(stroke);
+    const b=strokeBox(stroke),frame=this.host.box(),mpp=frame.width/Math.max(1,document.getElementById('campaign-map')!.clientWidth);
     try{
-      const reply=await window.campaign.atlasMaskRegion(this.token,b);
+      const reply=await window.campaign.atlasMaskRegion(this.token,landscapeRasterBounds(b,Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),Math.min(1024,Math.max(1,Math.ceil(b.height/mpp)))));
       if(generation!==this.maskGeneration||!reply.ok)return;
       const tiles=applyMaskStroke(reply.value.records,stroke),ids=new Set(tiles.map(r=>r.id)),records=[...reply.value.records.filter(r=>!ids.has(r.id)),...tiles];
       const node=atlasPaint('group',{pointer:false,data:{editorOnly:'true',landMaskDraft:'true'}});
-      const frame=this.host.box(),mpp=frame.width/Math.max(1,document.getElementById('campaign-map')!.clientWidth);
       drawLandscape(node,records,b,mpp,this.assets,false);
       this.maskPreview=atlasPaint('group',{matrix:[1,0,0,1,b.x,b.y],pointer:false,data:{editorOnly:'true'}});this.maskPreview.append(node);this.host.redraw();
     }catch(error){this.say((error as Error).message);}

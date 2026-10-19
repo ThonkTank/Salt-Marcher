@@ -222,6 +222,30 @@ try {
   await settled();
   assert.equal(atTerrain(x, y), "plains");
   await capture("02-land");
+  const landShot = require("pngjs").PNG.sync.read(await page.screenshot()),
+    center = await at(x, y),
+    shore = await at(x, y - r);
+  const rgb = (p) => {
+    const at = (Math.round(p.y) * landShot.width + Math.round(p.x)) * 4;
+    return [...landShot.data.slice(at, at + 3)];
+  };
+  assert.deepEqual(
+    rgb(center),
+    [238, 229, 207],
+    "Unpainted land must be neutral in the actual window",
+  );
+  let ink = 0;
+  for (let dy = -5; dy <= 5; dy++) {
+    const [red, green, blue] = rgb({ x: shore.x, y: shore.y + dy });
+    if (red < 170 && green < 150 && blue < 115) ink++;
+  }
+  assert(
+    ink >= 1 && ink <= 6,
+    "The actual coast must have a narrow visible outline",
+  );
+  result.checks.push(
+    "neutral unpainted land and crisp coast in actual window pixels",
+  );
   await mode("land-erase", r * 0.35);
   await hold(x, y, 80);
   assert.equal(atTerrain(x, y), "water");
