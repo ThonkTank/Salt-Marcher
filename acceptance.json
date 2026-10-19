@@ -6,6 +6,7 @@
     "tests": [
       "tests/desktop-updates.test.mjs",
       "tests/desktop-update-ui.test.mjs",
+      "tests/desktop-preset-settings.test.mjs",
       "tools/test-desktop-updates.mjs"
     ],
     "verified": "25 gezielte Tests einschließlich echter Prozessabbrüche an den dauerhaften Journalphasen; native Paketprobe mit zwei Versionen, Erstinstallation, UI-Download, Installation, Neustart, eigenem Datenordner und Erhalt von Kampagnen und Medien.",

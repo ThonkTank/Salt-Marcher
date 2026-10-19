@@ -122,3 +122,10 @@ test('opening a pending registry hides all previously confirmed preset values im
  let release;x.window.campaign.presetRegistry=id=>new Promise(resolve=>release=()=>resolve({ok:true,value:x.store.presetRegistry(id)}));const opening=x.ui.openPresetSettings(other.id);await settle();assert.equal(x.el('preset-form').hidden,true);assert.equal(x.el('preset-selection').children.length,0);assert.match(x.el('preset-effective').textContent,/geladen/);assert.doesNotMatch(x.el('preset-effective').textContent,/Nur Wald/);assert.equal(x.el('preset-assign').disabled,true);
  release();await opening;await settle();assert.equal(x.el('preset-context').value,other.id);assert.equal(x.el('preset-form').hidden,false);assert.match(x.el('preset-effective').textContent,/Systempreset/);assert.equal(x.calls.length,2);
 });
+
+test('updates cannot bypass an unfinished settings preset',async t=>{
+ const x=await fixture(t);await x.open(x.campaign.id);let opened=0;x.document.addEventListener('saltmarcher-open-updates',()=>opened++);
+ x.el('settings-updates').onclick();assert.equal(opened,1);
+ x.el('preset-copy').onclick();x.edit('preset-name','Ungespeichert');x.el('settings-updates').onclick();assert.equal(opened,1);assert.match(x.el('preset-status').textContent,/zuerst speichern/);assert.equal(x.el('preset-name').value,'Ungespeichert');
+ await x.save();x.el('settings-updates').onclick();assert.equal(opened,2);
+});

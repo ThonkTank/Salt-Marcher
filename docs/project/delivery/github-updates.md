@@ -58,7 +58,8 @@ Archivgröße/-hash, Dateiverzeichnis-Hash und Datenformatgrenzen. Das Archiv wi
 Links, Pfadausbrüche und zusätzliche Dateien werden abgewiesen.
 
 Vor dem Wechsel schließt die Oberfläche ihre Bearbeitung über `leaveWorkspace`
-ab. Main sperrt weitere Arbeit und wartet auf IPC-Aufträge, Sicherung und Worker.
+ab. Ungespeicherte Generator-Presets müssen zuvor gespeichert oder ausdrücklich
+verworfen werden. Main sperrt weitere Arbeit und wartet auf IPC-Aufträge, Sicherung und Worker.
 Der separate Helfer wartet auf das Ende des alten Prozesses, hält Kernel-Sperren
 für Installation und Profil und sichert das geschlossene Profil samt Medien.
 Die neue Anwendung führt ihre echten Storemigrationen und vollständige
@@ -77,6 +78,8 @@ auf. Bei unlesbarem Journal bleiben die Originale erhalten und der Start stoppt.
 - `node --test tests/desktop-updates.test.mjs tests/desktop-update-ui.test.mjs`: Versions-/Signatur-/Archivprüfung,
   Releaseauswahl, Netzwerkfehler, getrennte Aktionen, Locks, Sicherung und
   Fehler sowie echte Prozessabbrüche an den Aktivierungsgrenzen.
+- `node --test tests/desktop-preset-settings.test.mjs`: Ein ungespeichertes
+  Generator-Preset verhindert den Übergang zu Updates und bleibt erhalten.
 - `npm run package:desktop -- .build/update-native-base` und
   `node tools/test-desktop-updates.mjs .build/update-native-base`: zwei echte
   Linuxpakete, Bootstrap, UI-Download, Installation, Erststart und Erhalt von
