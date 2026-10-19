@@ -74,3 +74,14 @@ test('the real family switch releases an idle rectangle cursor but preserves a s
  editor.draft=[];allow=false;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');
  allow=true;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'city');assert.equal(events.length,2);
 });
+
+
+test('a room created while drawing records its selection without opening an obstructing inspector',t=>{
+ const {layout}=fixture(t),opened=[];layout.openSelection=()=>opened.push(layout.selectionKey);
+ layout.selectionChanged('room:Torhalle',false,false);
+ layout.selectionChanged('room:Wachstube',false,false);
+ assert.deepEqual(opened,[]);assert.equal(layout.selectionKey,'room:Wachstube');
+ layout.selectionChanged('room:Wachstube',true);
+ assert.deepEqual(opened,['room:Wachstube'],'explicit Details/selection still opens the same room');
+ layout.selectionChanged('room:Archiv');assert.deepEqual(opened,['room:Wachstube','room:Archiv']);
+});

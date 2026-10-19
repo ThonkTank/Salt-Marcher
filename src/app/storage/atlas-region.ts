@@ -255,7 +255,20 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
     result.territoryRaster={box:{...q.box},width,height,data:'data:image/png;base64,'+PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64')};
    }
   }
-  if(!q.perception)result.labels=boundedLabels(labelCandidates,q.box);
+  if(!q.perception){
+   // A coarse Dungeon marker must not replace a room key in the active floor.
+   // Keep the marker/search target and all authored data; only its covered caption yields.
+   const active=result.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===q.scopeId),frame=active&&result.frames[active.id];
+   if(frame)labelCandidates=labelCandidates.filter(c=>{
+    if(!c.id.startsWith('scope:')||c.id==='scope:'+q.scopeId)return true;
+    const point=inverse(c.point,frame);
+    for(const row of this.candidates('room','',q.scopeId!,q.floorId,{...point,width:0,height:0})){
+     try{const room=this.roomShape(row,q);if(room?.polygons&&inside(point,room.polygons))return false;}catch{/* The regular visit reports unreadable rooms; a caption cannot blank the map. */}
+    }
+    return true;
+   });
+   result.labels=boundedLabels(labelCandidates,q.box);
+  }
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
   try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
   if(bytes(result)>REGION_REPLY_BYTES)throw new Error('Ausschnitt überschreitet das Darstellungsbudget. Weiter hineinzoomen.');
