@@ -775,20 +775,23 @@ export class LandscapeWorkbench {
       .forEach((n) => (n.disabled = value));
   }
   private async commit(a: AtlasAction) {
-    const token=this.token,keep=this.tool==='select'&&a.kind==='landscape-put'&&
-      (a.record.kind==='road'||a.record.kind==='river')?a.record.id:null;
+    const token = this.token,
+      keep = this.tool === 'select' && a.kind === 'landscape-put' &&
+        (a.record.kind === 'road' || a.record.kind === 'river')
+        ? a.record.id
+        : null;
     this.saving = true;
     this.disable(true);
     try {
       const r = await this.host.write(a);
       if (!r)
         throw new Error("Änderung nicht bestätigt. Entwurf bleibt erhalten.");
-      if(token!==this.token)return r;
+      if (token !== this.token) return r;
       this.clearMask();
       this.points = [];
       this.brushStrokes = [];
       this.selectionRecords.clear();
-      this.draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;
+      this.draftSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
       this.dirty = false;
       this.calibration = null;
       this.selected = null;
@@ -797,17 +800,24 @@ export class LandscapeWorkbench {
       html("land-selection").replaceChildren();
       this.key = "";
       await this.load(true);
-      if(keep){
-        const fence=this.host.data()?.region?.fence;
+      if (keep) {
+        const fence = this.host.data()?.region?.fence;
         // The acknowledged edit has a new revision. Read it before accepting
         // another handle drag; never reuse the pre-save inspector snapshot.
-        try{
-          const latest=await window.campaign.atlasLandscapeObject(token,keep);
-          if(token!==this.token||fence!==this.host.data()?.region?.fence)return r;
-          if(latest.ok){this.selected=structuredClone(latest.value);this.inspector();this.objectOptions();}
-        }catch{ /* The edit is saved; reopening the selection remains available. */ }
+        try {
+          const latest = await window.campaign.atlasLandscapeObject(token, keep);
+          if (token !== this.token || fence !== this.host.data()?.region?.fence)
+            return r;
+          if (latest.ok) {
+            this.selected = structuredClone(latest.value);
+            this.inspector();
+            this.objectOptions();
+          }
+        } catch { /* The edit is saved; reopening the selection remains available. */ }
       }
-      this.say(keep&&!this.selected?"Gespeichert. Objekt erneut auswählen.":"Gespeichert");
+      this.say(keep && !this.selected
+        ? "Gespeichert. Objekt erneut auswählen."
+        : "Gespeichert");
       return r;
     } finally {
       this.saving = false;
@@ -844,7 +854,14 @@ export class LandscapeWorkbench {
     }
     if (this.selected) {
       this.readInspector();
-      if(this.selectionRecords.size>1)return this.commit({kind:'landscape-batch',records:[...this.selectionRecords.values()].map(record=>({record,expectedRevision:record.revision}))});
+      if (this.selectionRecords.size > 1)
+        return this.commit({
+          kind: 'landscape-batch',
+          records: [...this.selectionRecords.values()].map(record => ({
+            record,
+            expectedRevision: record.revision,
+          })),
+        });
       if (this.selected.kind === "place" && this.doc)
         return this.commit({
           kind: "landscape-place",
@@ -867,8 +884,16 @@ export class LandscapeWorkbench {
       return;
     }
     if (!this.points.length) return;
-    if(this.maskStroke)return this.commit({kind:'landscape-land-stroke',stroke:this.maskStroke});
-    if(this.tool==='color')return this.commit({kind:'landscape-color-stroke',record:this.colorRecord()});
+    if (this.maskStroke)
+      return this.commit({
+        kind: 'landscape-land-stroke',
+        stroke: this.maskStroke,
+      });
+    if (this.tool === 'color')
+      return this.commit({
+        kind: 'landscape-color-stroke',
+        record: this.colorRecord(),
+      });
     const res = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
     if (["paint", "color", "property", "freshwater", "hex", "reset"].includes(this.tool)) {
       let polygons: Polygon[];
@@ -878,26 +903,42 @@ export class LandscapeWorkbench {
         const radius = Number(html<HTMLInputElement>("land-radius").value);
         if (!Number.isFinite(radius) || radius <= 0)
           throw new Error("Pinselradius prüfen.");
-        polygons = [...this.brushStrokes, this.points].flatMap(points => this.tool==='freshwater'?brushFootprint(points,radius,0,this.draftSeed):strokePolygon(points, radius));
+        polygons = [...this.brushStrokes, this.points].flatMap(points =>
+          this.tool === 'freshwater'
+            ? brushFootprint(points, radius, 0, this.draftSeed)
+            : strokePolygon(points, radius));
       }
-      if(this.tool==='freshwater'){
-        const mode=this.settings.mode() as Exclude<BrushMode,'terrain'>,radius=Number(html<HTMLInputElement>('land-radius').value),r=emptyRecord('patch');
-        r.points=this.points;r.polygons=polygons;r.resolution=res;r.values={terrain:html<HTMLSelectElement>('atlas-terrain').value as any};
-        return this.commit({kind:'landscape-brush',record:r,mode,radius,roughness:this.settings.roughness(),seed:this.draftSeed,fill:!!r.paint?.fill});
+      if (this.tool === 'freshwater') {
+        const mode = this.settings.mode() as Exclude<BrushMode, 'terrain'>,
+          radius = Number(html<HTMLInputElement>('land-radius').value),
+          r = emptyRecord('patch');
+        r.points = this.points;
+        r.polygons = polygons;
+        r.resolution = res;
+        r.values = { terrain: html<HTMLSelectElement>('atlas-terrain').value as any };
+        return this.commit({
+          kind: 'landscape-brush',
+          record: r,
+          mode,
+          radius,
+          roughness: this.settings.roughness(),
+          seed: this.draftSeed,
+          fill: !!r.paint?.fill,
+        });
       }
       const field = html<HTMLSelectElement>("land-field")
         .value as LandscapeField;
       if (this.tool === "reset")
         return this.commit({
           kind: "landscape-reset",
-          propertyOnly:true,
+          propertyOnly: true,
           polygons,
           field,
           resolution: res,
         });
       const r = emptyRecord("patch"),
         raw = html<HTMLInputElement>("land-value").value;
-      r.propertyOnly=true;
+      r.propertyOnly = true;
       r.resolution = res;
       r.polygons = polygons;
       r.values =
