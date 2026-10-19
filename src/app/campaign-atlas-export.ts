@@ -10,7 +10,21 @@ import {
   atlasHexPoint,
   localToAtlas,
 } from "./campaign-atlas-model";
+import {regionValue} from "./atlas-region-contracts";
 import { terrainColors } from "./world-model";
+/** Full current-floor bounds come from the source index, including offscreen rooms. */
+export function dungeonExportBox(a:AtlasRenderView,scopeId:string|null,floorId:string,scale=false,size=2048):CanvasBox|null {
+  if(!scopeId||a.region?.scopeId!==scopeId||a.region.floorId!==floorId)return null;
+  const b=regionValue(a.region.scopeBounds,scopeId),binding=a.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===scopeId);
+  if(!b||!binding||![b.x,b.y,b.width,b.height].every(Number.isFinite)||b.width<0||b.height<0||b.width+b.height<=0)return null;
+  const frame=atlasFrame(a,binding),points=[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}].map(p=>localToAtlas(p,frame));
+  const x=Math.min(...points.map(p=>p.x)),y=Math.min(...points.map(p=>p.y)),width=Math.max(...points.map(p=>p.x))-x,height=Math.max(...points.map(p=>p.y))-y;
+  const margin=Math.max(1.524,Math.max(width,height)*.05);
+  const box={x:x-margin,y:y-margin,width:width+2*margin,height:height+2*margin};
+  // Keep the metric overlay below the authored plan, including at 256 px.
+  if(scale){const pixels=Math.min(1024,Math.max(256,size));box.height+=Math.max(72*box.width/pixels,72*box.height/(pixels-72));}
+  return box;
+}
 /** Public output uses only the public projection, never hidden GM nodes. */
 export function publicAtlasPaint(
   a: AtlasRenderView,

@@ -14,7 +14,7 @@ buildSync({
   platform: "node",
   format: "cjs",
 });
-const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
+const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
 )("../.build/atlas-canvas-test.cjs");
 class Matrix {
@@ -747,4 +747,46 @@ test('a direction reversal does not finish an outstanding zoom in the old direct
  f.canvas.zoom(.9,undefined,true);
  for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+200);
  assert.equal(f.canvas.view.width,displayed.width*.9);
+});
+
+
+test('dungeon export frames source-indexed whole-floor geometry, not visible rooms, through the resolved rotated binding',()=>{
+ const binding={id:'binding',kind:'dungeon',ownerId:'s',parent:'building',parentId:'house',x:0,y:0,angle:0};
+ const data={bindings:[binding],cities:[],workspace:{rooms:[]},region:{scopeId:'s',floorId:'upper',scopeBounds:{s:{x:-10,y:-5,width:40,height:10}},frames:{binding:{x:100,y:-200,angle:Math.PI/2}},coverage:{mode:'raster'}}};
+ const before=JSON.stringify(data),box=dungeonExportBox(data,'s','upper');
+ for(const [key,value] of Object.entries({x:93,y:-212,width:14,height:44}))assert(Math.abs(box[key]-value)<1e-9,key);
+ assert.equal(JSON.stringify(data),before,'Framing changes no geometry or binding');
+ assert.equal(dungeonExportBox(data,'s','ground'),null,'Old-floor bounds are never silently reused');
+ assert.equal(dungeonExportBox(data,'other','upper'),null);
+ data.region.scopeBounds={};assert.equal(dungeonExportBox(data,'s','upper'),null,'No viewport fallback for missing whole-floor metadata');
+});
+
+test('chosen dungeon framing follows later confirmed enlargement and refuses stale scope or floor metadata',t=>{
+ fixture(t);
+ const data={bindings:[{id:'b',kind:'dungeon',ownerId:'s',parent:'world',x:0,y:0,angle:0}],cities:[],region:{scopeId:'s',floorId:'ground',scopeBounds:{s:{x:0,y:0,width:10,height:10}}}};
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,scopeId:'s',floorId:'ground',exportDungeon:true,exportBox:{x:800,y:800,width:1,height:1},camera:{view:{x:10,y:10,width:5,height:5}}});
+ const first=ui.outputBox();assert(first.width>10);
+ data.region.scopeBounds.s.width=30;assert(ui.outputBox().width>first.width,'An earlier export must not retain the old rectangle');
+ ui.floorId='upper';assert.equal(ui.outputBox(),null,'No old custom box or camera fallback');
+ ui.exportDungeon=false;assert.deepEqual(ui.outputBox(),ui.exportBox,'Explicit free framing still works');
+ ui.exportBox=null;assert.deepEqual(ui.outputBox(),ui.camera.view);
+});
+
+
+test('automatic ground-plan framing reserves a scale strip even at small output sizes',()=>{
+ const data={bindings:[{id:'b',kind:'dungeon',ownerId:'s',parent:'world',x:0,y:0,angle:0}],cities:[],region:{scopeId:'s',floorId:'ground',scopeBounds:{s:{x:0,y:0,width:10,height:20}}}};
+ for(const size of [256,1024,2048]){
+  const plain=dungeonExportBox(data,'s','ground'),scaled=dungeonExportBox(data,'s','ground',true,size);
+  const mpp=Math.max(scaled.width,scaled.height)/Math.min(1024,size);
+  assert(scaled.height-plain.height>=62*mpp,'Scale must stay in its own footer');
+ }
+});
+
+test('ground-plan preview fits the unobscured canvas when the export panel overlays it',t=>{
+ const f=fixture(t),panel=f.document.createElement('aside');panel.id='atlas-secondary';panel.getBoundingClientRect=()=>({left:700});f.document.body.append(panel);
+ let view;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{svg:{getBoundingClientRect:()=>({left:300,right:1000,width:700,height:600})},camera:{set:v=>view=v}}),box={x:10,y:20,width:60,height:30};
+ ui.frameOutput(box);const mpp=view.width/700;
+ const left=(box.x-view.x)/mpp,right=(box.x+box.width-view.x)/mpp;
+ assert(left>=12&&right<=400-12,'The entire frame remains left of the overlay');
+ assert((box.y-view.y)/mpp>=12);assert((box.y+box.height-view.y)/mpp<=600-12);
 });

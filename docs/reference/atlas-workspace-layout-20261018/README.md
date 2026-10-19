@@ -25,3 +25,45 @@ python3 tools/ui-session.py node tools/test-desktop-atlas-author-overlay.mjs
 ```
 
 95 gezielte Tests nach der Zusammenführung mit den aktuellen Tür- und Wiederaufnahmeänderungen für Atlas, Frame-/Reisekontext, Autorenüberlagerung, Dungeonentwürfe, Raumtexte und gemeinsame Livefläche bestanden lokal. Die verpflichtende vollständige Candidate-CI bleibt ein eigener Nachweis. Der direkte vollständige Bedienvergleich mit allen vier Originalprodukten, physische Touchpadgesten und die visuelle Owner-Abnahme sind damit nicht abgeschlossen. Benutzerbestände wurden für diese Prüfungen nicht geöffnet; eine installierte Produktversion wurde nicht ersetzt.
+
+
+## Grundriss bis zur PNG-Ausgabe, 19.10.2026
+
+Neue direkte Prüfung der Aufgabe: leere Kampagne öffnen, Dungeon platzieren,
+Torhalle/Wachstube/Archiv zeichnen und benennen, zwei Türen setzen, Torhalle
+am Wandgriff vergrößern, aktualisierte PNG ausgeben. Native Wiederöffnung,
+Undo/Redo, Raum-/Türidentitäten und unveränderte Raumtexte wurden zusätzlich
+geprüft. Normale und doppelte Geräteskalierung, vier normale Prozessexits.
+Der vorhandene automatische Fokus nach Dungeonplatzierung funktioniert;
+die Probe wartet jetzt seinen Abschluss ab.
+
+Die vorherige Ansichtsausgabe hatte viel leeren Rand. **Dungeon-Grundriss**
+verwendet stattdessen die vollständigen indizierten Geschossgrenzen, auch bei
+Offscreen-Räumen oder Rasterdarstellung. Der Rahmen wird nach einer späteren
+Vergrößerung neu abgeleitet, fehlt bei unpassenden Geschossdaten ausdrücklich
+und schreibt keine Geometrie. Eine überlagernde rechte Leiste verdeckt die
+Vorschau nicht mehr. Der Maßstab erhält eigenen Platz unter dem Grundriss.
+Freie Ansicht und manuell gezogener Ausgabebereich bleiben verfügbar.
+
+[Vorherige Ansichtsausgabe](groundplan-viewport-before.png),
+[ausgegebener Grundriss](groundplan-framed.png),
+[native Vorschau bei doppelter Skalierung](groundplan-preview-200.png),
+[Prozesse und Quellhashes](groundplan-20261019.json).
+
+Dieselbe Aufgabe wurde in der echten Weboberfläche von Dungeon Scrawl
+(`https://app.dungeonscrawl.com/`, 19.10.2026; keine Buildnummer sichtbar)
+ausgeführt: Rechtecke/Korridore, zwei Türsymbole, separate Raumtexte mit
+Schriftkorrektur, überlappende Erweiterung der Torhalle, tatsächlicher
+PNG-Download (1400 × 910) und visuelles Öffnen der Datei. Eine versehentlich
+nicht überlappende Erweiterung wurde rückgängig gemacht. Das finale Ergebnis
+ist zusammenhängend. Der vorgeschlagene Inhaltsrahmen ersparte dort manuelles
+Einrahmen. [Weboberfläche](groundplan-scrawl-ui.jpg),
+[tatsächliche PNG](groundplan-scrawl.png). Keine Anmeldung, öffentliche
+Veröffentlichung oder Neustartqualifikation des Vergleichsprodukts.
+
+Wiederholen: `python3 tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs --moved-wall --dungeon-frame`.
+95 gezielte Canvas-, Export-, Autorenüberlagerungs- und Entwurffälle bestanden
+lokal. Vier neue Fälle sichern Offscreen-/gedrehte Geschossgrenzen,
+Neuberechnung nach Vergrößerung, Maßstabsabstand und unverdeckte Vorschau.
+Diese begrenzte Aufgabe belegt weder vollständige Dungeon-Scrawl-Parität noch
+menschliche GM-Vorlieben, installierte Pakete oder Owner-Abnahme.
