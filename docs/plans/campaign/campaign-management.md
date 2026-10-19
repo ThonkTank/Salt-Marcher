@@ -127,3 +127,27 @@ Der konkrete Presetvertrag und seine weiteren Abnahmen stehen in
 [Generatorregeln](generator-settings.md). Historische und importierte Kampagnen
 ohne lokale Nutzungsmetadaten zeigen unbekannte Daten.
 Vollständige OS-, Tastatur-, 200-%- und Crashqualifikation bleibt eigenständig.
+
+## Bestätigte Kopie und lokale Transferbereinigung
+
+Kopie und Paketimport teilen den bestehenden Main-/Snapshot-/Receiptweg. Nach
+bestätigter Übernahme darf ein Fehler beim Entfernen von
+`campaign-pending-transfer` weder die neue Kampagne noch die Aktualisierung der
+Liste blockieren. Der lokale Vermerk bleibt in diesem Fall erhalten; neue
+Transfers bleiben gesperrt, bis „Übernahme prüfen“ das gespeicherte Ergebnis
+liest und den Vermerk entfernen kann. Auch bei verlorener Annahmeantwort und
+nach Profilneustart wird ausschließlich der Beleg gelesen. Keine erneute
+Annahme, zusätzliche Zielkampagne oder Änderung des Archivformats.
+
+`desktop-campaign-transfer-ui.test.mjs` prüft direkte und wiederaufgenommene
+Bestätigung sowie einen ungebuchten Auftrag bei fehlgeschlagener Bereinigung.
+Die native Probe `python3 tools/ui-session.py node tools/test-desktop-campaign-copy.mjs`
+führt Original → Kopie bearbeiten → Paketexport → unabhängiger Import → Neustart
+und getrennte Weiterarbeit aus. Ein Raum mit Geometrie/Prosa, zwei verknüpfte
+Notizen und ihre Raum-Key-Verweise erhalten getrennte Zielkennungen. Sourceprosa,
+Geometrie, literale Linkbeispiele und Paketbytes bleiben erhalten. Die Probe
+lenkt nur die Dateiauswahl auf Testpfade und injiziert Bereinigungsfehler sowie
+eine verlorene Antwort nach echtem Commit. Status-/Bereinigungswiederholung
+lässt die serialisierten SQLitebytes unverändert; drei Prozesse enden normal.
+Die Fixture qualifiziert diesen Notiz-/Kartenweg; Medienumfang, andere
+Betriebssysteme, Hard-Crash und Ownerabnahme behalten ihre eigenen Kriterien.
