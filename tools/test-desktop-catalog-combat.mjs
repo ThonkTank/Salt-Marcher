@@ -11,6 +11,8 @@ const {CampaignStore}=require(root+'/.build/catalog-combat-store.cjs'),profile=a
 let scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;
 const character=store.executeLive(cmd({kind:'create-character',profile:{name:'Mira'}})).character,live=store.live(w.token);
 scene=store.executeLive(cmd({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision})).scene;
+const savedPlan=store.saveEncounterPlan({...cmd(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Wache am Hafentor',notes:'  Geschützte Vorlagenprosa\r\n',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:2,grouped:true}],sources:[],catalogHash:''}});
+const other=store.create('Andere Kampagne'),ow=store.activate(other.id);store.executeLive({commandId:randomUUID(),campaignId:other.id,token:ow.token,action:{kind:'initialize',expectedRosterRevision:0}});
 store.tutorial('skipped');store.close();
 const bus=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
 for(let i=0;i<100&&!await stat(bus).catch(()=>null);i++)await new Promise(r=>setTimeout(r,20));
@@ -35,6 +37,26 @@ async function close(){
 }
 async function catalog(page){
  if(!await page.locator('#combat-catalog-open').isVisible())await page.getByText('Weitere Begegnung vorbereiten',{exact:true}).click();await page.locator('#combat-catalog-open').click();await page.locator('#catalog-search').fill('Goblin');await page.getByRole('button',{name:'Suchen',exact:true}).click();await page.getByRole('button',{name:'Goblin',exact:true}).click();await page.locator('#catalog-quantity').fill('2');await page.locator('#catalog-grouped').check();await page.locator('#catalog-live-add:enabled').waitFor();await page.locator('#catalog-live-add').click();
+}
+async function staleCatalogHandoff(scale,kind){
+ const page=await launch(scale);
+ await app.evaluate(({ipcMain})=>{
+  const read=ipcMain._invokeHandlers.get('campaign:live'),write=ipcMain._invokeHandlers.get('campaign:execute-combat');globalThis.qaHandoffWrites=[];let hold=true;
+  ipcMain.removeHandler('campaign:live');ipcMain.handle('campaign:live',async(e,...args)=>{const result=await read(e,...args);if(hold){hold=false;globalThis.qaHandoffHeld=true;await new Promise(r=>globalThis.qaHandoffRelease=r);}return result;});
+  ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',async(e,c)=>{globalThis.qaHandoffWrites.push(c);return write(e,c);});
+ });
+ if(kind==='creature')await catalog(page);
+ else{
+  if(!await page.locator('#combat-catalog-open').isVisible())await page.getByText('Weitere Begegnung vorbereiten',{exact:true}).click();
+  await page.locator('#combat-catalog-open').click();await page.locator('#catalog-plan-open').click();await page.locator('#encounter-list').selectOption(savedPlan.id);await page.waitForFunction(name=>document.getElementById('encounter-name').value===name,savedPlan.name);await page.locator('#encounter-prepare').click();
+ }
+ const deadline=Date.now()+10000;while(!await app.evaluate(()=>globalThis.qaHandoffHeld)&&Date.now()<deadline)await new Promise(r=>setTimeout(r,20));assert(await app.evaluate(()=>globalThis.qaHandoffHeld));
+ await page.locator('#application-trigger').click();await page.locator('#campaign-screen-open').click();await page.locator('.campaign-card[data-campaign-id="'+other.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
+ await page.waitForFunction(id=>document.getElementById('campaigns').value===id&&!document.getElementById('workspace-navigation').inert,other.id);
+ await app.evaluate(()=>globalThis.qaHandoffRelease());await new Promise(r=>setTimeout(r,1500));
+ const writes=await app.evaluate(()=>globalThis.qaHandoffWrites);assert.deepEqual(writes,[],'a stale '+kind+' handoff must not create or change a combat in the newly opened campaign');await close();
+ const fresh=new CampaignStore(file);try{assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(other.id).n,0);const active=fresh.activate(campaign.id);assert.deepEqual(fresh.encounterPlan(active.token,savedPlan.id),savedPlan);}finally{fresh.close();}
+ return {kind,campaignSwitchDuringLiveRead:true,combatWrites:0};
 }
 try{
  for(const scale of [1,2]){
@@ -74,6 +96,7 @@ try{
   const fresh=new CampaignStore(file);let combat;
   try{const active=fresh.activate(campaign.id);combat=fresh.combat(active.token,scene.id).combat;assert.equal(combat.phase,'finished');assert.equal(combat.outcome,'Goblins ergeben sich · Prüfung '+scale);assert.deepEqual(combat.participants,running.participants);const pc=combat.participants.find(p=>p.characterId===character.id);assert.equal(pc.initiative,18);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(campaign.id).n,results.length+1);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(rejected[0].commandId).n,0);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(initial[1].commandId).n,1);}finally{fresh.close();}
   page=await launch(scale);await page.waitForFunction(n=>document.getElementById('combat-resolution-summary').textContent.includes('Goblins ergeben sich · Prüfung '+n),scale);assert((await page.locator('#combat-status').innerText()).includes('Abgeschlossen'));await close();results.push({scale,rejectedWithoutPartialCombat:true,creationWrites:2,acceptedCreationWrites:1,replyLossRecovered:true,sharedInitiative:12,playerInitiative:18,rollPreviewModes:['normal','advantage','disadvantage'],previewDiscardWithoutCombatWrite:true,hp:[4,7,7],reinforcement:{existingTroop:1,newCreature:'hobgoblin',conditionsPreserved:true,turnPreserved:true,runningReopened:true},nextUndoNext:true,outcome:combat.outcome,reopened:true,commandsBeforeRestart:commands.map(c=>c.action.kind)});
+  results.at(-1).staleHandoffs=[];for(const kind of ['creature','plan'])results.at(-1).staleHandoffs.push(await staleCatalogHandoff(scale,kind));
  }
  const buildHashes=Object.fromEntries(await Promise.all(['main.cjs','ui/renderer.js'].map(async name=>[name,createHash('sha256').update(await readFile(root+'/.build/desktop/'+name)).digest('hex')])));
  assert.deepEqual(errors,[]);await writeFile(output+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),buildHashes,profile,launches,results},null,2));console.log(JSON.stringify({profile,launches,results}));
