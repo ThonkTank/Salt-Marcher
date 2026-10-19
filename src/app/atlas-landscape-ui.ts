@@ -303,14 +303,18 @@ export class LandscapeWorkbench {
           this.dirty = true;
           if(this.selectionRecords.size>1)this.background=null;
         } else {
+          const events=this.tool==='color'?(e.getCoalescedEvents?.()??[]):[];
+          for(const sample of events.length?events:[e]){
+          const p=this.point(sample);
           const previous = this.points.at(-1), size = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
           const a = previous && atlasHexAt(previous, size), b = atlasHexAt(p, size);
           const changed = !previous || (this.tool === "hex"
             ? a!.q !== b.q || a!.r !== b.r
-            : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(1, Number(html<HTMLInputElement>("land-radius").value) / 3));
+            : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(this.tool==='color'?1e-6:1, (this.colorDraft?.radius??Number(html<HTMLInputElement>('land-radius').value)) / 3));
           if (changed) {
             if (this.brushPointCount() < 1000) this.points.push(p);
             else this.say("Entwurf voll. Zuerst abschließen oder verwerfen.");
+          }
           }
         }
         this.host.redraw();
