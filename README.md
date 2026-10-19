@@ -95,7 +95,8 @@ Produktabnahme. Bedienung, Grenzen und nächste Schritte stehen in den verlinkte
 | Agenda und Zeit | Bis zum Fantasiedatum oder Ereignis warten, Vorschau prüfen und Gruppenzeit ausdrücklich bestätigen. Fristen nach Fantasiedatum und Gruppenzeit suchen, planen und wiederholen; bestätigt keine neue Gruppenzeit. |
 | Reise und Weltfolgen | Ziele und bis zu 20 Wegpunkte im Atlas oder auf der Reisekarte am Spieltisch wählen, Vorschau prüfen und Reise bestätigen. Abschnitte, Camp mit Warten/Rast, geprüfte Restreise, Fortsetzen und Abbruch verwenden dieselbe Gruppenzeit; Shops, Kalender und Wetter hängen daran. Offene Routeneingaben sind lokale Entwürfe. |
 | Spieleranzeige | Getrenntes passives Fenster für ausdrücklich freigegebene Ortsbilder, NPC-Porträts, Handouts und gefilterte Dungeongeometrie; Blank jederzeit. Keine Übernahme privater Notizen, Kampf-/Verfolgungsdaten oder Vorlesetexte. |
-| Musik und Extensions | Kontextbezogene lokale Medien und ein eng begrenzter Erweiterungsanschluss; vollständige Anforderungen, Rechte, Datenwege und offene Lieferungen im [Dokumentationsindex](docs/INDEX.md). |
+| Musik | Kontextbezogene lokale Medien; [Bedienung, Fehler und Wiederaufnahme](docs/plans/runtime/music-recovery.md#nutzerablauf-und-vertrag). |
+| Extensions | Eng begrenzter Erweiterungsanschluss; [Installation, Rechte und Wiederaufnahme](docs/plans/extensions/installation-recovery.md#aktueller-ablauf-und-integritätsgrenze). |
 
 ## Noch zu prüfen und umzusetzen
 
