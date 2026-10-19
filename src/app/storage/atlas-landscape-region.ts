@@ -1,3 +1,4 @@
+import {orderedColors} from '../landscape-brush';
 import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
 import type {Point} from '../contracts';
@@ -100,7 +101,7 @@ export class AtlasLandscapeReader {
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
      const image=new LandscapeRasterizer(box,pixels,pixels),samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;for(const r of this.rows(source,image.sampleBox,true,samplePixels))image.paint(r);
-     for(const r of [...this.rows(source,image.sampleBox,true,samplePixels)].filter(r=>r.paint).sort((a,b)=>(a.order??0)-(b.order??0)))image.paintColor(r);
+     for(const r of orderedColors([...this.rows(source,image.sampleBox,true,samplePixels)]))image.paintColor(r);
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
       if(r.kind==='road'||r.kind==='river')image.paintRecordLine(r,q.box.width/q.width);
       else if(r.kind==='place')image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');

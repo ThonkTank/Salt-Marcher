@@ -1,5 +1,5 @@
 import { applyMaskStroke, type MaskStroke } from "./land-mask";
-import { validateColor, brushFootprint } from "./landscape-brush";
+import { validateColor, brushFootprint, orderedColors } from "./landscape-brush";
 import { colorSurface } from "./landscape-color-surface";
 import { LandscapeRasterizer } from "./landscape-raster";
 import type { LandscapeBox, LandscapeRecord } from "./atlas-landscape";
@@ -35,9 +35,7 @@ export function renderBrushPreview(job: BrushPreviewJob): Uint8Array {
     (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
   );
   for (const r of ordered) image.paint(r);
-  for (const r of records
-    .filter((r) => r.paint)
-    .sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity)))
+  for (const r of orderedColors(records))
     image.paintColor(r);
   return image.finish();
 }

@@ -41,6 +41,14 @@ export function validateColor(r:LandscapeRecord){
     Object.keys(r.values).length||(!p.fill&&!r.points.length))throw Error('Farbpinsel prüfen.');
   if(!p.fill){let count=0;for(const stroke of p.strokes??[r.points]){if(stroke.length)count++;for(let i=1;i<stroke.length;i++)count+=Math.max(1,Math.ceil(Math.hypot(stroke[i]!.x-stroke[i-1]!.x,stroke[i]!.y-stroke[i-1]!.y)/(p.radius*.5)));}if(count>4000)throw Error('Farbzug zu lang. In kürzeren Abschnitten malen.');}
 }
+/** Preserve the legacy coarse/fine painter stack below newly authored pigment. */
+export function orderedColors(records:LandscapeRecord[]){
+  return records.filter(r=>r.paint).sort((a,b)=>{
+    const legacyA=a.paint!.version===1,legacyB=b.paint!.version===1;
+    if(legacyA!==legacyB)return legacyA?-1:1;
+    return (legacyA?b.resolution-a.resolution:0)||(a.order??Infinity)-(b.order??Infinity);
+  });
+}
 export interface ColorPart {polygons:Polygon[];color:string;opacity:number}
 /** Numeric feather bands are identical in the Canvas and overview raster. */
 export function colorParts(r:LandscapeRecord):ColorPart[]{

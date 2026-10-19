@@ -349,3 +349,13 @@ test("format 47 upgrade preserves history and records; format 48 archive carries
     image,
   );
 });
+
+test('legacy fine/coarse color stacking survives new chronological pigment and erasing',t=>{
+  const f=fixture(t);f.write(land());
+  const fine=color({version:1,color:'#ff0000'}).record,coarse=color({version:1,color:'#0000ff'}).record;
+  fine.resolution=1;coarse.resolution=10;
+  f.write({kind:'landscape-put',record:fine,expectedRevision:null});f.write({kind:'landscape-put',record:coarse,expectedRevision:null});
+  assert.deepEqual(pixel(render(f.records())),[255,0,0,255]);
+  f.write(color());assert.deepEqual(pixel(render(f.records())),[34,170,51,255]);
+  f.write(color({operation:'erase'}));assert.deepEqual(pixel(render(f.records())),[238,229,207,255]);
+});
