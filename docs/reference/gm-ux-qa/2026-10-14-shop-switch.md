@@ -124,3 +124,8 @@ Verständlichkeit oder Überlegenheit wurden nicht gemessen.
 
 [UI-Spuren, kanonische Ergebnisse, Versionen, Bundlehashes und Prozessenden](2026-10-19-shop-trader.json).
 Native Quellbuilds sind geprüft; Paketinstallation und Owner-Abnahme bleiben offen.
+
+Nach Abgleich mit Main `581a6d053daaec4efe1de51445ca002d8168e5a2` wurde die
+vollständige native Handelsaufgabe samt gemeinsamem Fehler/Wiederholen und
+Katalogrückweg bei beiden Zoomstufen erneut ausgeführt. Die abschließenden
+Bundlehashes und Prozessenden im Ergebnis gehören zu dieser Kombination.
