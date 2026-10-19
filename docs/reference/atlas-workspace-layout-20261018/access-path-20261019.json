@@ -1,0 +1,112 @@
+{
+  "source": "d818403a459aa058864f93827ecdd5560eec0f15",
+  "dirty": true,
+  "buildHashes": {
+    "main.cjs": "ad35127acadd45a9b6ae5f8d0cf83539c8b3a1a85f122e580c88e889452a5cab",
+    "ui/renderer.js": "1bd2fe9b9af0405cfb526a605bfb5c196c03b0669900f2590bb155f26a9f66ac"
+  },
+  "launches": [
+    {
+      "scale": 1,
+      "pid": 2611293,
+      "exit": {
+        "code": 0,
+        "signal": null
+      }
+    },
+    {
+      "scale": 1,
+      "pid": 2611471,
+      "exit": {
+        "code": 0,
+        "signal": null
+      }
+    },
+    {
+      "scale": 2,
+      "pid": 2611656,
+      "exit": {
+        "code": 0,
+        "signal": null
+      }
+    },
+    {
+      "scale": 2,
+      "pid": 2612341,
+      "exit": {
+        "code": 0,
+        "signal": null
+      }
+    }
+  ],
+  "results": [
+    {
+      "scale": 1,
+      "profile": "/tmp/access-path-hnfRH7",
+      "before": {
+        "old": 49,
+        "bend": 0
+      },
+      "after": {
+        "old": 0,
+        "bend": 49
+      },
+      "points": [
+        {
+          "x": -6.096,
+          "y": 6.096
+        },
+        {
+          "x": 6.096,
+          "y": -9.144
+        },
+        {
+          "x": 18.288,
+          "y": 6.096
+        }
+      ],
+      "buildingBytesPreserved": true,
+      "metadataPreserved": true,
+      "undoRedo": true,
+      "editableExport": true,
+      "packageRestoredAndEdited": true,
+      "backupIndependentOfPublicSettings": true,
+      "cancelledBackupReadonly": true,
+      "fresh": true
+    },
+    {
+      "scale": 2,
+      "profile": "/tmp/access-path-GqsE8f",
+      "before": {
+        "old": 28,
+        "bend": 0
+      },
+      "after": {
+        "old": 0,
+        "bend": 37
+      },
+      "points": [
+        {
+          "x": -6.096,
+          "y": 6.096
+        },
+        {
+          "x": 6.096,
+          "y": -9.144
+        },
+        {
+          "x": 18.288,
+          "y": 6.096
+        }
+      ],
+      "buildingBytesPreserved": true,
+      "metadataPreserved": true,
+      "undoRedo": true,
+      "editableExport": true,
+      "packageRestoredAndEdited": true,
+      "backupIndependentOfPublicSettings": true,
+      "cancelledBackupReadonly": true,
+      "fresh": true
+    }
+  ]
+}
