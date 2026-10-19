@@ -490,11 +490,19 @@ async function openPartyLoot(id:string,token:string|undefined,sceneId:string|und
   const current=()=>!!token&&context?.token===token&&data?.scene?.id===sceneId&&activeParty().some(c=>c.id===id);
   if(!current()||!await flushLive()||!current())return;
   selected=id;characterDraft=structuredClone(originalCharacter()!);renderCharacter();renderList();
-  lootReturnOwner={token:token!,sceneId:sceneId!,characterId:id};get('live-loot-back').hidden=false;
+  lootReturnOwner={token:token!,sceneId:sceneId!,characterId:id};get('live-loot-back').hidden=false;get('reward-panel').classList.add('is-personal-loot');
   get('ledger-character-heading').scrollIntoView({block:'start'});get('ledger-character-heading').tabIndex=-1;get('ledger-character-heading').focus({preventScroll:true});
 }
+/** Open a confirmed recipient without changing group membership or focus. */
+export async function openLiveCharacterLoot(id:string){
+ const token=context?.token;if(!await ensureLiveRuntime()||context?.token!==token||!await flushLive()||context?.token!==token)return;
+ const character=data?.roster.find(c=>c.id===id&&!c.archived);if(!character)throw new Error('Beuteempfänger ist nicht mehr verfügbar.');
+ selected=id;characterDraft=structuredClone(character);renderCharacter();renderList();
+ lootReturnOwner=activeParty().some(c=>c.id===id)?{token:token!,sceneId:data!.scene!.id,characterId:id}:null;get('live-loot-back').hidden=!lootReturnOwner;get('reward-panel').classList.toggle('is-personal-loot',!!lootReturnOwner);
+ get('ledger-character-heading').scrollIntoView({block:'start'});get('ledger-character-heading').tabIndex=-1;get('ledger-character-heading').focus({preventScroll:true});
+}
 function returnFromPartyLoot(){
-  const owner=lootReturnOwner;get('live-loot-back').hidden=true;lootReturnOwner=null;
+  const owner=lootReturnOwner;get('live-loot-back').hidden=true;lootReturnOwner=null;get('reward-panel').classList.remove('is-personal-loot');
   if(!owner||context?.token!==owner.token||data?.scene?.id!==owner.sceneId||!activeParty().some(c=>c.id===owner.characterId))return;
   get('live-party-quick').scrollIntoView({block:'start'});
   [...get('live-party-reference').querySelectorAll<HTMLButtonElement>('[data-character-id]')].find(b=>b.dataset.characterId===owner.characterId)?.focus({preventScroll:true});
@@ -504,6 +512,7 @@ function renderPartyReference(){
   if(healthOwner&&(healthOwner.token!==context?.token||healthOwner.sceneId!==data?.scene?.id||healthOwner.characterId!==selected||!active.some(c=>c.id===healthOwner!.characterId)))closeHealthDialog(false);
   reference.replaceChildren();
   if(lootReturnOwner&&(lootReturnOwner.token!==context?.token||lootReturnOwner.sceneId!==data?.scene?.id||lootReturnOwner.characterId!==selected||!active.some(c=>c.id===lootReturnOwner!.characterId))){lootReturnOwner=null;get('live-loot-back').hidden=true;}
+  get('reward-panel').classList.toggle('is-personal-loot',!!lootReturnOwner);
   for(const character of active){
     const button=document.createElement('button'),name=document.createElement('strong'),facts=document.createElement('span'),action=document.createElement('small'),profile=character.profile,row=progress.get(character.id);
     name.textContent=profile.name+(profile.playerName?' · '+profile.playerName:'');name.title=name.textContent;facts.textContent=partyHealthFacts(row)+' · '+partyProgressFacts(row)+' · RK '+(profile.armorClass??'—')+' · Bewegung '+(profile.speedFeet===undefined?'—':profile.speedFeet+' ft')+(profile.characterClass?' · '+profile.characterClass:'');

@@ -882,3 +882,14 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
  .combat-roster{position:static;max-height:none;overflow:visible}
  .combat-table-scroll{max-height:none}
 }
+
+/* A member's loot action keeps the allocation workspace behind the explicit return. */
+#reward-panel.is-personal-loot > .preparation-columns { grid-template-columns: minmax(0, 1fr); }
+#reward-panel.is-personal-loot > .preparation-columns > section:first-child { display: none; }
+#ledger-stack-tools { max-width: 38rem; }
+#distribution-receipt article { padding: .5rem 0; border-bottom: 1px solid var(--border, #ccd3db); }
+#distribution-receipt h4 { margin: .5rem 0; }
+#ledger-editor { scroll-margin-top: var(--workspace-content-offset); }
+.ledger-transfer-fields { display:grid; grid-template-columns:5rem minmax(8rem,1fr) minmax(10rem,1fr); gap:.75rem; }
+.ledger-transfer-fields :is(input,select) { width:100%; box-sizing:border-box; }
+@media(max-width:650px) { .ledger-transfer-fields { grid-template-columns:minmax(0,1fr); } }
