@@ -1,3 +1,4 @@
+import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
 import {colorParts} from "./landscape-brush";
 import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
@@ -11,22 +12,41 @@ export class LandscapeRasterizer {
   private readonly water: Uint8Array;
   private readonly w: number;
   private readonly h: number;
+  private masks:LandscapeRecord[]=[];
+  private fresh:LandscapeRecord[]=[];
+  private maskPending=false;
   constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number) {
     if(!box||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0||
        !Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>1024||height>1024)
       throw new Error('Landschaftsübersicht prüfen.');
     this.w=width*2;this.h=height*2;
     this.samples=new Uint8Array(this.w*this.h*4);
-    this.water=new Uint8Array(this.w*this.h);
+    this.water=new Uint8Array(this.w*this.h).fill(1);
     this.pixels=new Uint8Array(width*height*4);
   }
   paint(record: LandscapeRecord) {
+    if(record.mask){this.masks.push(record);this.maskPending=true;return;}
+    if(record.surface==='freshwater'){this.fresh.push(record);this.maskPending=true;return;}
     if(record.kind!=='patch'||!record.values.terrain)return;
+    if(record.maskManaged)this.maskPending=true;
     const color=terrainColors[record.values.terrain];if(!color)throw new Error('Geländefarbe fehlt.');
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
-    for(const polygon of record.polygons)this.polygon(polygon,rgb,1,undefined,record.values.terrain==='water');
+    for(const polygon of record.polygons)this.polygon(polygon,rgb,1,undefined,record.maskManaged?undefined:record.values.terrain==='water');
+  }
+  private applyMasks(){
+    if(!this.maskPending)return;this.maskPending=false;
+    const land=[184,200,150],sea=[127,168,189];
+    for(const r of this.masks.sort((a,b)=>b.resolution-a.resolution)){
+      const m=r.mask!,size=256*m.pixel,x0=Math.max(0,Math.floor((m.x-this.box.x)/this.box.width*this.w)),x1=Math.min(this.w,Math.ceil((m.x+size-this.box.x)/this.box.width*this.w)),y0=Math.max(0,Math.floor((m.y-this.box.y)/this.box.height*this.h)),y1=Math.min(this.h,Math.ceil((m.y+size-this.box.y)/this.box.height*this.h));
+      for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const v=maskAt(m,{x:this.box.x+(x+.5)/this.w*this.box.width,y:this.box.y+(y+.5)/this.h*this.box.height});if(v!==undefined)this.water[y*this.w+x]=v<MASK_SEA_LEVEL?1:0;}
+    }
+    for(let i=0;i<this.water.length;i++){
+      const at=i*4;if(this.water[i]||!this.samples[at+3]||(this.samples[at]===127&&this.samples[at+1]===168&&this.samples[at+2]===189)){const rgb=this.water[i]?sea:land;for(let c=0;c<3;c++)this.samples[at+c]=rgb[c]!;this.samples[at+3]=255;}
+    }
+    for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
   }
   paintColor(record:LandscapeRecord){
+    this.applyMasks();
     if(!record.paint)return;
     // Accumulate flow within one stroke, then apply its maximum opacity once.
     // Allocation is limited to the visible tile, never the authored world extent.
@@ -103,6 +123,7 @@ export class LandscapeRasterizer {
     }
   }
   finish(): Uint8Array {
+    this.applyMasks();
     for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++){
       const out=(y*this.width+x)*4, totals=[0,0,0];let alpha=0;
       for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){

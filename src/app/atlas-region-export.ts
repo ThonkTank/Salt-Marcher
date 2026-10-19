@@ -29,7 +29,7 @@ export function atlasRegionPaint(
     landscapeNode("rect", {
       width: box.width,
       height: box.height,
-      style: { fill: "#b8c896" },
+      style: { fill: "#7fa8bd" },
     }),
   );
   drawLandscape(

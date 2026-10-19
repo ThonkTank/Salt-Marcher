@@ -204,6 +204,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   importAtlas:(c)=>ipcRenderer.invoke('atlas:import',c),
   atlasOverview:token=>ipcRenderer.invoke('atlas:overview',token),
   atlasObjects:(token,query)=>ipcRenderer.invoke('atlas:objects',token,query),
+  atlasMaskRegion:(token,box)=>ipcRenderer.invoke('atlas:mask-region',token,box),
   atlasLandscapeObject:(token,id)=>ipcRenderer.invoke('atlas:object',token,id),
   atlasRoom:(token,id)=>ipcRenderer.invoke('atlas:room',token,id),
   atlasDrawingCommit:command=>ipcRenderer.invoke('atlas:drawing-commit',command),

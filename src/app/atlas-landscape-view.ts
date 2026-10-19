@@ -1,3 +1,4 @@
+import {LandscapeRasterizer} from './landscape-raster';
 import {colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
 import { lineParts } from "./landscape-line";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
@@ -18,12 +19,19 @@ export function drawLandscape(
   phase:"all"|"base"|"lines"="all",
 ) {
   records=records.filter(r=>phase==='all'||(['road','river','place'].includes(r.kind)?phase==='lines':phase==='base'));
+  if(!raster&&records.some(r=>r.mask)&&typeof document!=='undefined'){
+    const w=Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),h=Math.min(1024,Math.max(1,Math.ceil(b.height/mpp))),image=new LandscapeRasterizer(b,w,h);
+    for(const r of [...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))image.paint(r);
+    for(const r of records)if(r.paint)image.paintColor(r);
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d')!;ctx.putImageData(new ImageData(new Uint8ClampedArray(image.finish()),w,h),0,0);
+    raster=[{campaignId:'',revision:0,box:b,width:w,height:h,data:canvas.toDataURL()}];
+  }
   const landscapeNode=atlasPaint;
   let rasterDrawn=false,colorsDrawn=false;
   const ordered=[...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0));
   const drawColors=()=>{
     if(raster||colorsDrawn)return;colorsDrawn=true;
-    let water:import('./contracts').Polygon[]=[];
+    let water:import('./contracts').Polygon[]=[{outer:[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}],holes:[]}];
     for(const r of ordered)if(r.kind==='patch'&&r.values.terrain)water=r.values.terrain==='water'?unionPolygons(water,r.polygons):subtractPolygons(water,r.polygons);
     for(const r of ordered)if(r.paint)for(const part of colorParts(r)){
       const polygons=r.paint.target==='water'?intersectPolygons(part.polygons,water):subtractPolygons(part.polygons,water);

@@ -113,7 +113,7 @@ export function publicAtlasPaint(
         style: {
           fill:
             terrainColors[cell.terrain as keyof typeof terrainColors] ??
-            "#b8c896",
+            "#7fa8bd",
         },
       });
       if (cell.label)

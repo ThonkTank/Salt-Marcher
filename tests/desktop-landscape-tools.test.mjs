@@ -35,7 +35,7 @@ test('invalid options and a stale second batch member roll back the whole write'
  assert.throws(()=>f.write({kind:'landscape-batch',records:[{record:{...before[0],width:100},expectedRevision:before[0].revision},{record:before[1],expectedRevision:0}]}),/inzwischen/);assert.deepEqual(f.records(),before);
  for(const invalid of [{version:2},{color:'url(bad)'},{roughness:Infinity},{seed:-1},{meander:2}])assert.throws(()=>f.write({kind:'landscape-put',record:{...a,id:randomUUID(),line:{...a.line,...invalid}},expectedRevision:null}),/prüfen/);
 });
-function brush(mode,points=[{x:0,y:0}]){const r=patch('plains');r.points=points;r.polygons=brushFootprint(points,100,.6,42);if(mode.includes('color')&&mode!=='color-erase'){r.values={};r.paint={version:1,target:mode==='water-color'?'water':'ground',color:'#e51c23',opacity:.5,flow:1,tip:'soft',radius:100,seed:42,fill:false};}return {kind:'landscape-brush',record:r,mode,radius:100,roughness:.6,seed:42,fill:false};}
+function brush(mode,points=[{x:0,y:0}]){const r=patch('plains');r.points=points;r.polygons=brushFootprint(points,100,.6,42);if(mode.includes('color')&&mode!=='color-erase'){r.values={};r.paint={version:1,target:mode==='water-color'?'water':'ground',color:'#e51c23',opacity:.5,flow:1,tip:'soft',radius:100,seed:42,fill:false};}return {kind:'landscape-brush',record:r,mode,radius:100,roughness:.6,seed:42,fill:false,samples:[{...points[0],t:0},{...points.at(-1),t:2000}]};}
 test('freshwater erasing restores underlying terrain without replacing other properties',t=>{
  const f=fixture(t),land={...patch(),values:{terrain:'forest',elevationM:42}};f.write({kind:'landscape-put',record:land,expectedRevision:null});f.write(brush('freshwater'));assert.equal(effectiveLandscape(f.records(),{x:0,y:0}).terrain,'water');f.write(brush('freshwater-erase'));assert.equal(effectiveLandscape(f.records(),{x:0,y:0}).terrain,'forest');assert.equal(effectiveLandscape(f.records(),{x:0,y:0}).elevationM,42);f.write({kind:'undo'});assert.equal(effectiveLandscape(f.records(),{x:0,y:0}).terrain,'water');
 });
@@ -77,7 +77,7 @@ test('legacy stacking is unchanged and explicit over-symbol lines have a separat
  assert.deepEqual(get([road,place]),[place.id,road.id]);road.line=newLine('road');assert.deepEqual(get([road,place]),[road.id,place.id]);road.line.overSymbols=true;assert.deepEqual(get([road,place]),[place.id,road.id]);
 });
 test('separate retained color strokes never paint a bridge after a failed save',()=>{
- const r=brush('ground-color',[{x:-300,y:0}]).record;r.paint.strokes=[[{x:-300,y:0}],[{x:300,y:0}]];r.polygons=r.paint.strokes.flatMap(s=>brushFootprint(s,100));
+ const r=brush('ground-color',[{x:-300,y:0}]).record;r.paint.target='water';r.paint.strokes=[[{x:-300,y:0}],[{x:300,y:0}]];r.polygons=r.paint.strokes.flatMap(s=>brushFootprint(s,100));
  const image=new LandscapeRasterizer({x:-500,y:-150,width:1000,height:300},100,30);image.paintColor(r);const pixels=image.finish();assert.equal(pixels[(15*100+50)*4+3],0);assert(pixels[(15*100+20)*4+3]>0);assert(pixels[(15*100+80)*4+3]>0);
 });
 test('very long and narrow styled roads stay bounded in overview and numeric geometry',()=>{
@@ -85,7 +85,7 @@ test('very long and narrow styled roads stay bounded in overview and numeric geo
 });
 
 test('flow accumulates within a stroke while opacity caps the whole stroke',()=>{
- const render=(opacity,flow)=>{const r=brush('ground-color',[{x:-60,y:0},{x:60,y:0},{x:-60,y:0}]).record;r.paint={...r.paint,tip:'round',opacity,flow};r.polygons=brushFootprint(r.points,100);const image=new LandscapeRasterizer({x:-200,y:-200,width:400,height:400},40,40);image.paintColor(r);return image.finish()[(20*40+20)*4+3];};
+ const render=(opacity,flow)=>{const r=brush('ground-color',[{x:-60,y:0},{x:60,y:0},{x:-60,y:0}]).record;r.paint={...r.paint,target:'water',tip:'round',opacity,flow};r.polygons=brushFootprint(r.points,100);const image=new LandscapeRasterizer({x:-200,y:-200,width:400,height:400},40,40);image.paintColor(r);return image.finish()[(20*40+20)*4+3];};
  assert(render(.5,1)<=128);assert(render(1,.5)>render(.5,1));assert(render(1,.1)<render(1,1));
 });
 

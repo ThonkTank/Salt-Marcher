@@ -166,7 +166,7 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 46) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 47) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
@@ -238,7 +238,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=46');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=47');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -289,6 +289,13 @@ export class CampaignStore {
    });}
   executeAtlasTravel(c:import('../atlas-travel-contracts').AtlasTravelCommand){this.applyAtlasTravel(c);return this.campaignAtlas(c.token);}
   executeAtlasTravelCommit(c:import('../atlas-travel-contracts').AtlasTravelCommand):import('../atlas-travel-contracts').AtlasTravelCommit{this.applyAtlasTravel(c);return{campaignId:c.campaignId,commandId:c.commandId,sceneId:c.sceneId};}
+  atlasMaskRegion(token:string,box:import('../atlas-landscape').LandscapeBox){
+    const cam=this.guard(token);
+    if(!box||![box.x,box.y,box.width,box.height,box.x+box.width,box.y+box.height].every(Number.isFinite)||box.width<=0||box.height<=0)throw Error('Pinselbereich prüfen.');
+    const bytes=this.db.prepare('SELECT coalesce(sum(length(payload)),0) n FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?').get(cam,box.x,box.x+box.width,box.y,box.y+box.height) as {n:number};
+    if(bytes.n>16*1024*1024)throw Error('Pinselbereich zu groß. In kürzeren Zügen bearbeiten.');
+    return{revision:atlasRoot(this.db,cam).revision,records:this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? AND json_extract(payload,'$.kind')='patch'").all(cam,box.x,box.x+box.width,box.y,box.y+box.height).map((r:{payload:string})=>JSON.parse(r.payload) as import('../atlas-landscape').LandscapeRecord)};
+  }
   landscapeFind(token:string,text:string){const cam=this.guard(token);if(typeof text!=='string'||text.length>200)throw new Error('Suchtext prüfen.');return this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100").all(cam,text,text).map((r:any)=>JSON.parse(r.payload)) as import('../atlas-landscape').LandscapeRecord[];}
   landscapeRegion(token:string,box:import('../atlas-landscape').LandscapeBox,metersPerPixel=0,includePatches=true){const cam=this.guard(token);return {revision:atlasRoot(this.db,cam).revision,records:landscapeRegion(this.db,cam,box,metersPerPixel,includePatches)};}
   registerReference(token:string,mime:string,bytes:Buffer){const cam=this.guard(token),id=hash(bytes);this.db.prepare('INSERT OR IGNORE INTO atlas_reference_asset VALUES(?,?,?,?)').run(cam,id,mime,bytes);return id;}
@@ -1156,7 +1163,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
@@ -1187,7 +1194,7 @@ export class CampaignStore {
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
       if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
 
-      if(c.schema===45){source.transaction(()=>{installLandscape(source);source.pragma('user_version=46');})();}
+      if(c.schema===45||c.schema===46){source.transaction(()=>{installLandscape(source);source.pragma('user_version=47');})();}
       installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}

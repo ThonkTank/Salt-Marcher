@@ -30,7 +30,7 @@ test('compact landscape commit is durable and idempotent without full atlas read
  const first=f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1}),record=patch(),command=f.command({kind:'landscape-put',record,expectedRevision:null});
  f.store.campaignAtlas=()=>{throw new Error('whole atlas unavailable');};
  const ack=f.store.executeAtlasCommit(command);assert.equal(ack.commandId,command.commandId);assert.equal(ack.revision,1);assert.equal(ack.canUndo,true);assert.equal('atlas' in ack,false);
- assert.deepEqual(f.store.executeAtlasCommit(command),ack);assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);
+ assert.deepEqual(f.store.executeAtlasCommit(command),ack);assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.filter(r=>!r.mask).length,1);
  assert.throws(()=>f.store.executeAtlasCommit({...command,action:{...command.action,record:{...record,name:'Different'}}}),/anders verwendet/);
  assert.throws(()=>f.store.atlasObjects(f.w.token,{kind:'room',text:'',limit:1,cursor:first.next}),/inzwischen geändert/);
  f.fresh();assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records[0].values.terrain,'forest');
@@ -38,10 +38,10 @@ test('compact landscape commit is durable and idempotent without full atlas read
 const rectangleBox={x:-1000,y:-1000,width:5000,height:5000};
 test('connection-local landscape index tracks movement, undo/redo, deletion and restart',t=>{
  const f=fixture(t),record=patch();f.store.landscapeRegion(f.w.token,rectangleBox);assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_temp_master WHERE name='atlas_landscape_area'").get().n,1);const write=action=>f.store.executeAtlasCommit(f.command(action));
- write({kind:'landscape-put',record,expectedRevision:null});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);
- write({kind:'landscape-put',record:{...record,polygons:[rectangle(1e8,1e8,100,100)]},expectedRevision:1});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
- write({kind:'undo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,1);write({kind:'redo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.length,0);
- write({kind:'landscape-remove',id:record.id,expectedRevision:f.store.landscapeRegion(f.w.token,{x:1e8,y:1e8,width:200,height:200}).records[0].revision});write({kind:'undo'});f.fresh();assert.equal(f.store.landscapeRegion(f.w.token,{x:1e8,y:1e8,width:200,height:200}).records.length,1);
+ write({kind:'landscape-put',record,expectedRevision:null});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.filter(r=>!r.mask).length,1);
+ write({kind:'landscape-put',record:{...record,polygons:[rectangle(1e8,1e8,100,100)]},expectedRevision:1});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.filter(r=>!r.mask).length,0);
+ write({kind:'undo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.filter(r=>!r.mask).length,1);write({kind:'redo'});assert.equal(f.store.landscapeRegion(f.w.token,rectangleBox).records.filter(r=>!r.mask).length,0);
+ write({kind:'landscape-remove',id:record.id,expectedRevision:f.store.landscapeRegion(f.w.token,{x:1e8,y:1e8,width:200,height:200}).records[0].revision});write({kind:'undo'});f.fresh();assert.equal(f.store.landscapeRegion(f.w.token,{x:1e8,y:1e8,width:200,height:200}).records.filter(r=>!r.mask).length,1);
  assert.equal(f.store.db.prepare("SELECT count(*) n FROM sqlite_master WHERE name='atlas_landscape_area'").get().n,0);
  const before=f.store.atlasOverview(f.w.token).revision;f.store.landscapeRegion(f.w.token,rectangleBox,1,true);f.store.landscapeRegion(f.w.token,rectangleBox,1,false);assert.equal(f.store.atlasOverview(f.w.token).revision,before);
 });
@@ -78,6 +78,7 @@ test('a landscape edit pauses an active local trip without changing confirmed po
  const f=fixture(t),command=action=>f.command(action),scene=f.store.executeLive(command({kind:'initialize',expectedRosterRevision:f.store.live(f.w.token).rosterRevision})).scene;
  const character=f.store.executeLive(command({kind:'create-character',profile:{name:'Ada',speedFeet:30}})).character,live=f.store.live(f.w.token);
  f.store.executeLive(command({kind:'membership',characterId:character.id,expectedRevision:character.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision}));
+ f.store.executeAtlasCommit(command({kind:'landscape-put',record:patch(-100,-100,200,200,'plains'),expectedRevision:null}));
  const preview=f.store.previewAtlasTravel(f.w.token,{x:20,y:0});f.store.executeAtlasTravel({...command({kind:'start',preview}),sceneId:scene.id});const before=f.store.sceneWorld(f.w.token,scene.id);
  f.store.campaignAtlas=()=>{throw new Error('No complete atlas for terrain');};f.store.executeAtlasCommit(command({kind:'landscape-put',record:patch(),expectedRevision:null}));
  const row=f.store.db.prepare('SELECT payload FROM atlas_local_journey WHERE campaign_id=? AND scene_id=?').get(f.campaign.id,scene.id);assert.equal(JSON.parse(row.payload).status,'paused');const after=f.store.sceneWorld(f.w.token,scene.id);assert.deepEqual(after.position,before.position);assert.deepEqual(after.scene.clock,before.scene.clock);
