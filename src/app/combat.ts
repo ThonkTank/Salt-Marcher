@@ -382,7 +382,6 @@ function render() {
   const creation=get<HTMLDetailsElement>('combat-creation'),creationId=combat?.id??'';
   if(creation.dataset.combatId!==creationId){creation.dataset.combatId=creationId;creation.open=!combat;}
   renderReinforcements();
-  get('combat-creation').hidden = false;
   get('combat-catalog-open').hidden=editableCombat(combat??null);
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
@@ -454,7 +453,6 @@ function render() {
   }
   if (selected && !combat?.participants.some(p => p.id === selected)) selected = null;
   renderPartyCandidates();renderEditor();renderAttackEffect();renderSaveEffect();renderDamageEffect();renderConcentrationEffect();lock();
-  get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
 }
 function renderSelection() { for(const button of get('combat-rows').querySelectorAll<HTMLButtonElement>('.combat-mob-card button[aria-pressed]'))button.setAttribute('aria-pressed',String(button.dataset.mobFrontId===selected));for (const row of get('combat-rows').querySelectorAll<HTMLTableRowElement>('tr[data-participant-id]')) row.querySelector('button')?.setAttribute('aria-pressed', String(row.dataset.participantId === selected)); }
 export const deferLegendaryCost=(kind:CreatureRollPreset['kind'])=>kind==='attack'||kind==='save'||kind==='check';
