@@ -58,6 +58,13 @@ test('a second click cannot race a pending section change',async t=>{
  const x=fixture(t);x.defer();const pending=x.layout.chooseSection('city');await x.layout.chooseSection('interior');assert.equal(x.calls.length,1);x.release();await pending;assert.equal(x.layout.family,'city');assert.equal(x.layout.changingTool,false);
 });
 
+test('global Dungeon selection reaches the existing author tool and respects a rejected switch',async t=>{
+ const x=fixture(t),navigation=[];x.layout.host.navigation=async pan=>navigation.push(pan);x.layout.family='interior';x.document.getElementById('drawing-tool').value='door';
+ await x.layout.select();assert.equal(x.document.getElementById('drawing-tool').value,'select');assert.deepEqual(x.calls,[{section:'interior',id:'drawing-tool',value:'select',settings:undefined}]);assert.deepEqual(navigation,[]);
+ x.document.getElementById('drawing-tool').value='door';x.allow(false);await x.layout.select();assert.equal(x.document.getElementById('drawing-tool').value,'door');assert.equal(x.layout.changingTool,false);
+ for(const section of ['terrain','city']){x.layout.family=section;await x.layout.select();}assert.deepEqual(navigation,[false,false]);assert.equal(x.calls.length,2);
+});
+
 test('the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush',async t=>{
  const {document,root}=fixture(t);for(const id of ['atlas-families','atlas-tool-fields']){const node=document.createElement('div');node.id=id;root.append(node);}
  const statuses=[],events=[];let allow=true;

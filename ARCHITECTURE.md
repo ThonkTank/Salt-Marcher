@@ -355,7 +355,7 @@ Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
 
 | Änderung | Zuständiger Einstieg |
 | --- | --- |
-| Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](src/app/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |
+| Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](src/app/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Die globale Auswahl verwendet im Dungeon das bestehende Zeichen-Auswahlwerkzeug, damit Raum- und Pfadgriffe erreichbar bleiben. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |
 | Leisten, umgehängte Controls, Kontextpanel | [AtlasWorkspaceLayout](src/app/atlas-workspace-layout.ts); Originalcontrols mit ihren Handlern verschieben, nicht kopieren. |
 | Breiten, Anordnung, responsive Darstellung | [atlas-workspace.css](src/app/atlas-workspace.css); der [Desktopbuild](tools/build-desktop.mjs) hängt sie an `app.css` an. |
 | Werkzeug-/Navigationswechsel und offene Eingaben | [CampaignAtlasWorkbench](src/app/campaign-atlas-ui.ts): `new AtlasWorkspaceLayout` verbindet `prepare`/`tool`/`navigation` mit Flush und `setFamily`. Layout ruft diese Fachgrenze auf; Operationswerte ändern sich erst nach erfolgreicher Entwurfsprüfung. |

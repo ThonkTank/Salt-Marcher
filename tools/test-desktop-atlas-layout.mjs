@@ -59,7 +59,7 @@ try{
   await chooseTool('rooms','room-rectangle');const draftBox=await page.locator('#campaign-map').boundingBox();await page.mouse.click(draftBox.x+draftBox.width*.2,draftBox.y+draftBox.height*.2);
   await page.locator('[data-tool-group=walls]').click();await page.waitForFunction(()=>!document.querySelector('#atlas-section').disabled);assert.equal(await page.locator('#atlas-group-tools').getAttribute('data-group'),'rooms');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'true');await page.locator('#campaign-map').press('Escape');result.roomDraftSwitchBlocked=true;
 
-  await chooseTool('rooms','room-rectangle');await page.locator('#atlas-select').click();await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.family==='navigation');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'false');result.idlePreviewSwitch=true;
+  await chooseTool('rooms','room-rectangle');await page.locator('#atlas-select').click();await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.family==='interior'&&document.querySelector('#drawing-tool').value==='select');assert.equal(await page.locator('#atlas-select').getAttribute('aria-pressed'),'true');assert.equal(await page.locator('#campaign-atlas').getAttribute('data-room-draw'),'false');result.idlePreviewSwitch=true;
 
   assert(await page.locator('#atlas-terrain').isHidden());assert(await page.locator('#atlas-hex-level').isHidden());
 
