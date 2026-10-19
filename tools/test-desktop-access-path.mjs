@@ -1,4 +1,4 @@
-// Native access-path correction: original building, one bend, Undo/Redo, editable JSON, PNG and Fresh.
+// Native access-path correction: original building, one bend, Undo/Redo, campaign package, PNG and Fresh.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, readFile, writeFile, stat, readdir } from "node:fs/promises";
 import { spawn, execFileSync } from "node:child_process";
@@ -19,13 +19,13 @@ require("esbuild").buildSync({
       "export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/drawing-model';",
     resolveDir: root,
   },
-  outfile: ".build/access-path-store.cjs",
+  outfile: `.build/access-path-store-${process.pid}.cjs`,
   bundle: true,
   platform: "node",
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore, newElement } = require(root + "/.build/access-path-store.cjs"),
+const { CampaignStore, newElement } = require(root + `/.build/access-path-store-${process.pid}.cjs`),
   source = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
   buildHashes = Object.fromEntries(
@@ -121,6 +121,7 @@ try {
       await page.locator("#atlas-search").fill("Zollhaus");
       await page.locator("#atlas-search-results button").filter({ hasText: "Zollhaus" }).click();
       await page.waitForFunction(() => document.getElementById("room-name")?.value === "Zollhaus");
+      await page.waitForFunction(() => JSON.parse(document.getElementById("campaign-map").dataset.atlasView).height < 100);
       await atlasCanvasReady(page);
       if (await page.locator("#atlas-secondary").isVisible()) await page.locator("#atlas-secondary-close").click();
       await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -136,7 +137,7 @@ try {
         false,
       );
       await page.mouse.click(p.x, p.y);
-      await page.waitForFunction(() => document.getElementById("drawing-element-name").value === "Zugangsweg");
+      await page.waitForFunction(() => document.getElementById("campaign-atlas").dataset.elementSelected === "true" && document.getElementById("drawing-element-name").value === "Zugangsweg");
       await atlasCanvasReady(page);
     };
     async function launch() {
@@ -158,6 +159,7 @@ try {
         w.setContentSize(1400, 1000);
       });
       page = await app.firstWindow();
+      await page.emulateMedia({reducedMotion:"reduce"});
       page.setDefaultTimeout(15000);
       page.on("pageerror", (e) => errors.push(e.stack));
       await page.waitForFunction(() => document.body.dataset.tutorialReady === "true");
@@ -260,14 +262,22 @@ try {
     const after = await png("corrected");
     assert.equal(after.old, 0);
     assert(after.bend > 0);
-    if (await page.locator("#atlas-secondary").isHidden()) await page.locator("#atlas-context-toggle").click();
-    await page.getByText("Archiv und Ausgabe", { exact: true }).click();
-    await page.locator("#drawing-public-export").uncheck();
-    const editable = out + "/" + scale + "-editable.json";
+    const beforeBackup = readPath();
+    // Backup is a direct export action, independent of public image/archive settings.
+    assert.equal(await page.locator("#drawing-public-export").isChecked(), true);
+    await page.locator("#atlas-output-open").click();
+    await page.locator("#atlas-export-audience").selectOption("public");
+    await page.locator("#atlas-export-kind").selectOption("campaign");
+    await app.evaluate(({ dialog }) => { dialog.showSaveDialog = async () => ({ canceled: true }); });
+    await page.locator("#atlas-output-save-campaign").click();
+    await page.waitForFunction(() => document.getElementById('atlas-output-save-status').textContent === 'Kampagnensicherung abgebrochen.');
+    assert.deepEqual(readRoom(), originalRoom);
+    assert.deepEqual(readPath(), beforeBackup);
+    const editable = out + "/" + scale + "-editable.kwcampaign";
     await app.evaluate(({ dialog }, file) => {
       dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
     }, editable);
-    await page.locator("#drawing-export-json").click();
+    await page.locator("#atlas-output-save-campaign").click();
     await until(() => {
       try {
         return require("node:fs").statSync(editable).size > 100;
@@ -275,16 +285,15 @@ try {
         return false;
       }
     });
-    const document = JSON.parse(await readFile(editable, "utf8"));
-    assert.deepEqual(
-      document.view.elements.find((e) => e.id === path.id),
-      readPath(),
-    );
-    assert.deepEqual(
-      document.rooms.find((r) => r.id === room.id),
-      room,
-    );
-    await page.screenshot({ path: out + "/" + scale + "-edited.png" });
+    await page.waitForFunction(() => document.getElementById('atlas-output-save-status').textContent === 'Bearbeitbare Kampagne gesichert.');
+    assert.equal(await page.locator("#drawing-public-export").isChecked(), true);
+    assert((await readFile(editable)).length > 100);
+    assert.deepEqual(readPath(), beforeBackup);
+    assert.deepEqual(readRoom(), originalRoom);
+    await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const screenshot = await app.evaluate(async ({ BrowserWindow }) =>
+      (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));
+    await writeFile(out + "/" + scale + "-edited.png", Buffer.from(screenshot, 'base64'));
     const savedPath = readPath();
     db.close();
     db = null;
@@ -294,6 +303,42 @@ try {
     db = new Database(profile + "/workbench.sqlite", { readonly: true });
     assert.deepEqual(readPath(), savedPath);
     assert.deepEqual(readRoom(), originalRoom);
+    // Restore the actual package through the existing import UI, then edit its path.
+    await app.evaluate(({ dialog }, file) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] });
+    }, editable);
+    await page.locator('#atlas-navigation').click();
+    await page.locator('#campaign-manager').click();
+    await page.locator('#campaign-import-package').click();
+    await page.locator('#campaign-transfer-dialog').waitFor({state:'visible'});
+    const restoredName = 'Zollhaus wiederhergestellt '+scale;
+    await page.locator('#campaign-transfer-name').fill(restoredName);
+    await page.locator('#campaign-transfer-accept').click();
+    await page.locator('#campaign-transfer-dialog').waitFor({state:'hidden'});
+    await page.waitForFunction(() => document.getElementById('status').textContent === 'Unabhängige Kampagne übernommen.');
+    const restoredCampaign = db.prepare('SELECT id FROM campaign WHERE name=?').get(restoredName).id;
+    const restoredPath = () => db.prepare('SELECT payload FROM drawing_element WHERE campaign_id=?')
+      .all(restoredCampaign).map(r=>JSON.parse(r.payload)).find(e=>e.name==='Zugangsweg');
+    const restoredRoom = JSON.parse(db.prepare('SELECT payload FROM room WHERE campaign_id=?').get(restoredCampaign).payload);
+    assert.deepEqual(restoredRoom.polygons, room.polygons);
+    assert.deepEqual(restoredRoom.sections.map(s=>s.markdown), room.sections.map(s=>s.markdown));
+    assert.deepEqual(restoredPath().points, savedPath.points);
+    assert.equal(restoredPath().notes, savedPath.notes);
+    if (!(await page.locator('#atlas-tab').isVisible())) await page.locator('#workspace-nav-summary').click();
+    await page.locator('#atlas-tab').click();
+    await page.locator('button[data-family="interior"]').click();
+    await choose();
+    for (let i=0;i<2;i++) await page.getByRole('button',{name:'Verkleinern',exact:true}).click();
+    await atlasCanvasReady(page);
+    const from = await atlasCanvasPoint(page, savedPath.points[1], false),
+      to = await atlasCanvasPoint(page, {x:6.096,y:-12.192}, false);
+    await page.mouse.move(from.x,from.y);await page.mouse.down();
+    await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();
+    await until(()=>restoredPath().points[1].y === -12.192);
+    await page.waitForFunction(() => document.getElementById('drawing-element-points').value.includes('-12.192'));
+    await atlasCanvasReady(page);
+    assert.deepEqual(readPath(), savedPath, 'restored edits never overwrite the source campaign');
+
     db.close();
     db = null;
     await close();
@@ -310,6 +355,9 @@ try {
       metadataPreserved: true,
       undoRedo: true,
       editableExport: true,
+      packageRestoredAndEdited: true,
+      backupIndependentOfPublicSettings: true,
+      cancelledBackupReadonly: true,
       fresh: true,
     });
   }
