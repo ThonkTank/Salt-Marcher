@@ -177,3 +177,19 @@ Reale Store-/Zielhost-/P02-/P04-/OSnachweise stehen noch aus. Vergangene
 Kern-/Hostbelege stehen unverändert in `acceptance.json`, `docs/reference/` und
 `116c16af48b6a073216685c8d8e2cc74fada82c3:ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md`.
 Sie erhalten ihren Scope, keinen neuen synthetischen PASS.
+
+### Visible transfer entry and independent continuation
+
+The campaign screen offers **Paket importieren…** directly, including before a
+campaign is opened. The transfer manager names the open source for export and
+local copy; those source actions are unavailable without an active campaign.
+The import/copy preview names its source and shows drawing, room, knowledge and
+other principal content counts before confirmation. Complete inventory, size
+and producer version remain in the package details. Conflict decisions and the
+stored-ticket recovery path are shared by both import entries.
+
+`tools/test-desktop-campaign-transfer-visit.mjs` exercises export, direct import,
+linked-note and room-key edits, normal shutdown, fresh-process reopening and
+separate continuation of source and import. Only native file selection is
+instrumented. The fault/recovery visit remains in
+`tools/test-desktop-campaign-copy.mjs`; the clean visit does not replace it.
