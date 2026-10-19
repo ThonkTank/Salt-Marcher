@@ -7,7 +7,6 @@ type AreaAction=Extract<CombatAction,{kind:'area-damage'}>;
 type Row={actor:Combatant;source:Creature|undefined;check:HTMLInputElement;save:HTMLSelectElement;defense:HTMLSelectElement;preview:HTMLElement};
 const node=<K extends keyof HTMLElementTagNameMap>(tag:K,text?:string)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 const names:Record<DamageType,string>={acid:'Säure',bludgeoning:'Wucht',cold:'Kälte',fire:'Feuer',force:'Energie',lightning:'Blitz',necrotic:'Nekrotisch',piercing:'Stich',poison:'Gift',psychic:'Psychisch',radiant:'Gleißend',slashing:'Hieb',thunder:'Schall'};
-const choose=(select:HTMLSelectElement,value:string)=>{const options=[...select.querySelectorAll('option')];for(const option of options)option.selected=false;const chosen=options.find(o=>o.value===value);if(chosen)chosen.selected=true;};
 /** One typed damage pool, independent saves and defenses, one command and one undo. */
 export class CombatAreaPanel{
  private combat:CombatState|null=null;private token:string|null=null;private blocked=true;private busy=false;
@@ -17,7 +16,7 @@ export class CombatAreaPanel{
  private unavailable=node('p');private overrides=node('input');private overrideLabel=node('label');private defenseHeading=node('span','Abwehr');
  constructor(private root:HTMLElement,private execute:(action:CombatAction,revision:number)=>Promise<boolean>){
   root.className='combat-area';root.hidden=true;this.amount.type='number';this.amount.min='1';this.amount.max='1000000';this.amount.step='1';this.amount.id='combat-area-amount';this.type.id='combat-area-type';
-  for(const [value,text]of [['','Schadensart wählen…'],...damageTypes.map(t=>[t,names[t]+' ('+t+')']),['manual','Schon berechneter Schaden']]){const o=node('option',text);o.value=value!;this.type.append(o);}choose(this.type,'');
+  for(const [value,text]of [['','Schadensart wählen…'],...damageTypes.map(t=>[t,names[t]+' ('+t+')']),['manual','Schon berechneter Schaden']]){const o=node('option',text);o.value=value!;this.type.append(o);}
   const amountLabel=node('label','Gemeinsamer Schaden');amountLabel.htmlFor=this.amount.id;const typeLabel=node('label','Schadensart');typeLabel.htmlFor=this.type.id;
   const tools=node('div');tools.className='combat-area-tools';const amountField=node('div'),typeField=node('div');amountField.append(amountLabel,this.amount);typeField.append(typeLabel,this.type);tools.append(amountField,typeField,this.party);
   const headings=node('div');headings.className='combat-area-row combat-area-head';headings.append(node('span','Ziel'),node('span','Rettungswurf / Anteil'),this.defenseHeading);
@@ -27,8 +26,8 @@ export class CombatAreaPanel{
   const footer=node('div'),actions=node('div');footer.className='combat-area-footer';actions.className='toolbar';actions.append(this.apply,this.cancel);footer.append(this.status,actions);
   root.append(this.title,tools,this.hint,this.unavailable,this.overrideLabel,headings,this.rows,footer);
   this.cancel.onclick=()=>{if(!this.busy)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy)this.close();});
-  this.amount.oninput=()=>this.update();this.type.onchange=()=>{this.overrides.checked=false;for(const row of this.draft?.rows??[])choose(row.defense,this.type.value==='manual'?'full':'auto');this.update();};
-  this.overrides.onchange=()=>{if(!this.overrides.checked)for(const row of this.draft?.rows??[])choose(row.defense,this.type.value==='manual'?'full':'auto');this.update();};
+  this.amount.oninput=()=>this.update();this.type.onchange=()=>{this.overrides.checked=false;for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
+  this.overrides.onchange=()=>{if(!this.overrides.checked)for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
   this.party.onclick=()=>{for(const row of this.draft?.rows??[])row.check.checked=!!row.actor.characterId&&row.actor.healthKnown!==false;this.update();};this.apply.onclick=()=>void this.commit();
  }
  private close(){this.draft=null;this.message=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
@@ -42,7 +41,7 @@ export class CombatAreaPanel{
   const rolls=action?creatureActionRolls(action.action):[],dc=rolls.find(p=>p.kind==='save')?.dc??null,parts=rolls.filter(p=>p.kind==='damage'),known=[...new Set(parts.map(p=>p.damageType))],fixedType=known.length===1&&isDamageType(known[0])?known[0]:undefined;
   this.draft={revision:combat.revision,fixedType,rows:[],...(action?{source:{participantId:action.participantId,actionId:action.action.id},legendary:action.legendary}:{})};
   this.title.textContent=action?combat.participants.find(p=>p.id===action.participantId)?.name+' · '+action.action.name+(dc?' · SG '+dc:' · bestätigter Treffer'):'Flächenschaden';
-  this.amount.value=String(action&&(parts.length<=1||fixedType)?creatureAverageDamage(action.action)??'':'');choose(this.type,fixedType??'');
+  this.amount.value=String(action&&(parts.length<=1||fixedType)?creatureAverageDamage(action.action)??'':'');this.type.value=fixedType??'';
   this.hint.textContent=parts.length>1&&!fixedType?'Mehrere Schadensarten: Betrag und Schadensart für diesen Anteil eintragen. Weitere Anteile getrennt anwenden.':'Spieler würfeln am Tisch. Ihr Ergebnis und die Abwehr werden getrennt berücksichtigt: erst der Rettungswurf, dann Resistenz oder Verwundbarkeit.';
   this.rows.replaceChildren();this.overrides.checked=false;
   const unknown=combat.participants.filter(p=>p.healthKnown===false);
@@ -55,8 +54,8 @@ export class CombatAreaPanel{
    if(p.healthKnown===false)continue;
    const row=node('div'),label=node('label'),check=node('input'),save=node('select'),defense=node('select'),preview=node('small');row.className='combat-area-row';preview.className='combat-area-preview';check.type='checkbox';check.value=p.id;check.setAttribute('aria-label','Ziel '+p.name);label.className='check-label';const identity=node('span');identity.append(node('span',p.name+' · '+p.hp+'/'+p.maxHp+' HP'),preview);label.append(check,identity);
    save.dataset.role='save';save.setAttribute('aria-label','Rettungswurf für '+p.name);defense.dataset.role='defense';defense.setAttribute('aria-label','Abwehr für '+p.name);
-   for(const [value,text]of [['full',dc?'Fehlgeschlagen · voll':'Voll'],['half',dc?'Bestanden · halb':'Halb (bestanden)'],['none','Kein Schaden']]){const o=node('option',text);o.value=value!;save.append(o);}choose(save,'full');
-   for(const [value,text]of [['auto','Statblock'],['full','Voll (manuell)'],['half','Resistenz · halb'],['double','Verwundbar · doppelt'],['none','Immun · kein Schaden']]){const o=node('option',text);o.value=value!;defense.append(o);}choose(defense,'auto');
+   for(const [value,text]of [['full',dc?'Fehlgeschlagen · voll':'Voll'],['half',dc?'Bestanden · halb':'Halb (bestanden)'],['none','Kein Schaden']]){const o=node('option',text);o.value=value!;save.append(o);}
+   for(const [value,text]of [['auto','Statblock'],['full','Voll (manuell)'],['half','Resistenz · halb'],['double','Verwundbar · doppelt'],['none','Immun · kein Schaden']]){const o=node('option',text);o.value=value!;defense.append(o);}
    check.onchange=save.onchange=defense.onchange=()=>this.update();row.append(label,save,defense);this.rows.append(row);this.draft.rows.push({actor:p,source:sources.get(p.sourceId??''),check,save,defense,preview});
   }
   this.root.hidden=false;this.update();const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'){if(typeof dialog.showModal==='function')dialog.showModal();else this.root.setAttribute('open','');}else this.root.scrollIntoView({block:'nearest'});
