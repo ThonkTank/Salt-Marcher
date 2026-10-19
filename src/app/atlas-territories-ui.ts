@@ -524,6 +524,20 @@ export class TerritoryWorkbench {
       this.clear(false);
       this.revision = -1;
       await this.load();
+      // Canonical noding may insert a neighbour junction before the old index.
+      // Keep the edited point selected by its position, never a stale index.
+      this.vertex = null;
+      if (action.kind === "territory-vertex" && action.point) {
+        const point = action.point;
+        this.chosen()?.polygons.forEach((p, polygon) =>
+          [p.outer, ...p.holes].forEach((r, ring) => {
+            const vertex = r.findIndex(
+              (v) => Math.hypot(v.x - point.x, v.y - point.y) < 1e-7,
+            );
+            if (vertex >= 0) this.vertex = { polygon, ring, vertex };
+          }),
+        );
+      }
       this.say("Gespeichert");
     } catch (e) {
       el(this.panel, "territory-retry").hidden = el(

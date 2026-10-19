@@ -290,11 +290,37 @@ try {
   );
   result.checks.push("erasure does not give land to neighbour");
   await page.locator("#territory-operation").selectOption("vertices");
+  const openPolygons = (polygons) =>
+    polygons.map((p) => {
+      const open = (r) =>
+        r.length > 3 && r[0].x === r.at(-1).x && r[0].y === r.at(-1).y
+          ? r.slice(0, -1)
+          : r;
+      return { outer: open(p.outer), holes: p.holes.map(open) };
+    });
+  const beforeInsert = records().find((r) => r.id === "Westmark").polygons;
+  const edge = await at(-100, 0);
+  await page.keyboard.down("Shift");
+  await page.mouse.click(edge.x, edge.y);
+  await page.keyboard.up("Shift");
+  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 6);
+  await page
+    .locator("#territory-name")
+    .evaluate((n) => (n.closest("details").open = true));
+  await page.locator("#territory-vertex-delete").click();
+  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 7);
+  assert.deepEqual(
+    openPolygons(records().find((r) => r.id === "Westmark").polygons),
+    openPolygons(beforeInsert),
+  );
+  result.checks.push(
+    "inserted boundary point remains selected for immediate deletion",
+  );
   await stroke([
     [-100, -50],
     [-95, -45],
   ]);
-  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 6);
+  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 8);
   result.checks.push("point refinement after brush stroke");
   await page.locator("#territory-operation").selectOption("label");
   const point = await at(-65, 0);
