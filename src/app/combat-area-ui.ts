@@ -11,6 +11,7 @@ const choose=(select:HTMLSelectElement,value:string)=>{const options=[...select.
 /** One typed damage pool, independent saves and defenses, one command and one undo. */
 export class CombatAreaPanel{
  private combat:CombatState|null=null;private token:string|null=null;private blocked=true;private busy=false;
+ private message:string|null=null;
  private draft:{revision:number;source?:AreaAction['source'];legendary?:AreaAction['legendary'];fixedType?:DamageType;rows:Row[]}|null=null;
  private title=node('h2');private amount=node('input');private type=node('select');private rows=node('div');private status=node('p');private hint=node('p');private apply=node('button','Schaden gemeinsam anwenden');private cancel=node('button','Abbrechen');private party=node('button','Party auswählen');
  private unavailable=node('p');private overrides=node('input');private overrideLabel=node('label');private defenseHeading=node('span','Abwehr');
@@ -25,12 +26,12 @@ export class CombatAreaPanel{
   this.overrides.type='checkbox';this.overrides.id='combat-area-overrides';this.overrideLabel.className='check-label';this.overrideLabel.append(this.overrides,node('span','Abwehr manuell anpassen'));
   const footer=node('div'),actions=node('div');footer.className='combat-area-footer';actions.className='toolbar';actions.append(this.apply,this.cancel);footer.append(this.status,actions);
   root.append(this.title,tools,this.hint,this.unavailable,this.overrideLabel,headings,this.rows,footer);
-  this.cancel.onclick=()=>{if(!this.busy&&!this.blocked)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy&&!this.blocked)this.close();});
+  this.cancel.onclick=()=>{if(!this.busy)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy)this.close();});
   this.amount.oninput=()=>this.update();this.type.onchange=()=>{this.overrides.checked=false;for(const row of this.draft?.rows??[])choose(row.defense,this.type.value==='manual'?'full':'auto');this.update();};
   this.overrides.onchange=()=>{if(!this.overrides.checked)for(const row of this.draft?.rows??[])choose(row.defense,this.type.value==='manual'?'full':'auto');this.update();};
   this.party.onclick=()=>{for(const row of this.draft?.rows??[])row.check.checked=!!row.actor.characterId&&row.actor.healthKnown!==false;this.update();};this.apply.onclick=()=>void this.commit();
  }
- private close(){this.draft=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
+ private close(){this.draft=null;this.message=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
  context(combat:CombatState|null,token:string|null,blocked:boolean){
   if(this.token!==token||this.combat?.id!==combat?.id){this.close();this.busy=false;}
   this.combat=combat;this.token=token;this.blocked=blocked;this.update();
@@ -78,17 +79,19 @@ export class CombatAreaPanel{
    const hp=Math.max(0,actor.hp-Math.max(0,result.amount-actor.tempHp)),temp=Math.max(0,actor.tempHp-result.amount);
    preview.textContent=(save.value==='half'?'Rettungswurf: '+result.afterSave+' · ':'')+(manual?'Abwehr bereits eingerechnet':result.note)+' · '+result.amount+' Schaden → '+hp+'/'+actor.maxHp+' HP'+(temp?' + '+temp+' temp.':'');
   }
-  this.amount.disabled=this.party.disabled=disabled;this.type.disabled=disabled||!!draft.fixedType;this.cancel.disabled=this.busy||this.blocked;
+  this.amount.disabled=this.party.disabled=disabled;this.type.disabled=disabled||!!draft.fixedType;this.cancel.disabled=this.busy;this.cancel.textContent=this.message?'Schließen und Status prüfen':'Abbrechen';
   this.overrides.disabled=disabled||!count;this.overrideLabel.hidden=manual;this.overrideLabel.style.visibility=count?'visible':'hidden';this.defenseHeading.hidden=manual||!this.overrides.checked;this.root.classList.toggle('show-defenses',!manual&&this.overrides.checked);
   this.apply.disabled=disabled||!count||!valid||!this.amount.value||!Number.isSafeInteger(amount)||amount<1||amount>1000000;
-  this.status.textContent=stale?'Kampfstand geändert. Abbrechen und die Aktion mit dem aktuellen Stand neu öffnen.':count+' Ziele · '+(valid?total+' wirksamer Schaden gesamt · ':'')+'eine Bestätigung, eine Rücknahme. Temporäre HP und Konzentration werden berücksichtigt.';
+  this.status.textContent=stale?'Kampfstand geändert. Abbrechen und die Aktion mit dem aktuellen Stand neu öffnen.':this.message??count+' Ziele · '+(valid?total+' wirksamer Schaden gesamt · ':'')+'eine Bestätigung, eine Rücknahme. Temporäre HP und Konzentration werden berücksichtigt.';
  }
  private async commit(){
   const draft=this.draft;if(!draft||this.apply.disabled)return;
   const type=isDamageType(this.type.value)?this.type.value:undefined;
   const targets=draft.rows.filter(row=>row.check.checked).map(row=>({participantId:row.actor.id,scale:row.save.value as 'full'|'half'|'none',defense:this.type.value==='manual'?'full' as const:row.defense.value as DamageScale}));
-  this.busy=true;this.update();
-  try{const ok=await this.execute({kind:'area-damage',amount:Number(this.amount.value),targets,...(type?{damageType:type}:{}),...(draft.source?{source:draft.source}:{}),...(draft.legendary?{legendary:draft.legendary}:{})},draft.revision);if(this.draft===draft&&ok){this.close();this.busy=false;}}
+  this.message=null;this.busy=true;this.update();
+  const unconfirmed=()=>{if(this.draft===draft)this.message='Keine Bestätigung erhalten. Eingaben bleiben erhalten. Dialog schließen und Buchungsstatus sowie Kampfstand prüfen, bevor du erneut Schaden anwendest.';};
+  try{const ok=await this.execute({kind:'area-damage',amount:Number(this.amount.value),targets,...(type?{damageType:type}:{}),...(draft.source?{source:draft.source}:{}),...(draft.legendary?{legendary:draft.legendary}:{})},draft.revision);if(this.draft===draft&&ok){this.close();this.busy=false;}else if(!ok)unconfirmed();}
+  catch{unconfirmed();}
   finally{if(this.draft===draft){this.busy=false;this.update();}}
  }
 }

@@ -47,8 +47,28 @@ async function fireWave(page,scale,screenshot=false){
  for(const name of ['Goblin A','Goblin B'])await page.getByRole('checkbox',{name:'Ziel '+name,exact:true}).check();
  await page.getByRole('combobox',{name:'Rettungswurf für Goblin B',exact:true}).selectOption('half');
  assert.match(await page.locator('#combat-area-targets').innerText(),/3 Schaden → 1\/7 HP/);assert.match(await page.locator('#combat-area-targets').innerText(),/1 Schaden → 6\/7 HP/);
- if(screenshot)await page.screenshot({path:output+'/area-preview-'+scale+'.png'});
- await page.locator('#combat-area-apply').click();await page.locator('#combat-area-effect').waitFor({state:'hidden'});
+ if(screenshot){
+  await page.screenshot({path:output+'/area-preview-'+scale+'.png'});
+  await app.evaluate(({ipcMain})=>{
+   const write=ipcMain._invokeHandlers.get('campaign:execute-combat'),read=ipcMain._invokeHandlers.get('campaign:commit-status');let lose=true;globalThis.qaAreaStatusUnavailable=true;
+   ipcMain.removeHandler('campaign:commit-status');ipcMain.handle('campaign:commit-status',(e,...args)=>globalThis.qaAreaStatusUnavailable?{ok:false,error:'Controlled status read failure'}:read(e,...args));
+   ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',async(e,c)=>{const result=await write(e,c);if(c.action.kind==='area-damage'&&lose){lose=false;throw Error('Controlled area reply loss after commit');}return result;});
+  });
+ }
+ await page.locator('#combat-area-apply').click();
+ if(screenshot){
+  await page.waitForFunction(()=>document.getElementById('combat-area-effect').textContent.includes('Keine Bestätigung'));
+  assert.equal(await page.locator('#combat-area-amount').inputValue(),'3');assert.equal(await page.locator('#combat-area-targets input:checked').count(),2);
+  assert.equal(await page.locator('#combat-area-apply').isDisabled(),true);assert.equal(await page.locator('#combat-area-cancel').isEnabled(),true);
+  await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+  const png=await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));await writeFile(output+'/area-unconfirmed-'+scale+'.png',Buffer.from(png,'base64'));
+  if(scale===1)await page.locator('#combat-area-cancel').click();else await page.keyboard.press('Escape');
+  await page.locator('#combat-area-effect').waitFor({state:'hidden'});await app.evaluate(()=>{globalThis.qaAreaStatusUnavailable=false;});
+  await page.locator('#commit-check').click();await page.locator('#commit-pending').waitFor({state:'hidden'});
+  const commands=(await app.evaluate(()=>globalThis.qaCatalogCommands)).filter(c=>c.action.kind==='area-damage');assert.equal(commands.length,1,'status recovery must never send the wave again');
+  const db=new Database(file,{readonly:true});try{assert.equal(db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(commands[0].commandId).n,1);}finally{db.close();}
+ }
+ await page.locator('#combat-area-effect').waitFor({state:'hidden'});
 }
 async function staleCatalogHandoff(scale,kind){
  const page=await launch(scale);
@@ -112,7 +132,7 @@ try{
   await page.locator('#combat-resolution-summary').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/completed-'+scale+'.png'});const commands=beforeRestartCommands;await close();
   const fresh=new CampaignStore(file);let combat;
   try{const active=fresh.activate(campaign.id);combat=fresh.combat(active.token,scene.id).combat;assert.equal(combat.phase,'finished');assert.equal(combat.outcome,'Goblins ergeben sich · Prüfung '+scale);assert.deepEqual(combat.participants,running.participants);const pc=combat.participants.find(p=>p.characterId===character.id);assert.equal(pc.initiative,18);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(campaign.id).n,results.length+1);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(rejected[0].commandId).n,0);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(initial[1].commandId).n,1);}finally{fresh.close();}
-  page=await launch(scale);await page.waitForFunction(n=>document.getElementById('combat-resolution-summary').textContent.includes('Goblins ergeben sich · Prüfung '+n),scale);assert((await page.locator('#combat-status').innerText()).includes('Abgeschlossen'));await close();results.push({scale,rejectedWithoutPartialCombat:true,creationWrites:2,acceptedCreationWrites:1,replyLossRecovered:true,sharedInitiative:12,playerInitiative:18,rollPreviewModes:['normal','advantage','disadvantage'],previewDiscardWithoutCombatWrite:true,hp:[1,6,7],area:{sharedDamage:3,targetScales:['full','half'],unaffectedPreserved:true,oneUndo:true,roundAndTurnPreserved:true},reinforcement:{existingTroop:1,newCreature:'hobgoblin',conditionsPreserved:true,turnPreserved:true,runningReopened:true},nextUndoNext:true,outcome:combat.outcome,reopened:true,commandsBeforeRestart:commands.map(c=>c.action.kind)});
+  page=await launch(scale);await page.waitForFunction(n=>document.getElementById('combat-resolution-summary').textContent.includes('Goblins ergeben sich · Prüfung '+n),scale);assert((await page.locator('#combat-status').innerText()).includes('Abgeschlossen'));await close();results.push({scale,rejectedWithoutPartialCombat:true,creationWrites:2,acceptedCreationWrites:1,replyLossRecovered:true,sharedInitiative:12,playerInitiative:18,rollPreviewModes:['normal','advantage','disadvantage'],previewDiscardWithoutCombatWrite:true,hp:[1,6,7],area:{sharedDamage:3,targetScales:['full','half'],unaffectedPreserved:true,oneUndo:true,roundAndTurnPreserved:true,unconfirmedRecovery:{statusReachable:true,writeCount:1,closeMethod:scale===1?'button':'Escape'}},reinforcement:{existingTroop:1,newCreature:'hobgoblin',conditionsPreserved:true,turnPreserved:true,runningReopened:true},nextUndoNext:true,outcome:combat.outcome,reopened:true,commandsBeforeRestart:commands.map(c=>c.action.kind)});
   results.at(-1).staleHandoffs=[];for(const kind of ['creature','plan'])results.at(-1).staleHandoffs.push(await staleCatalogHandoff(scale,kind));
  }
  const buildHashes=Object.fromEntries(await Promise.all(['main.cjs','ui/renderer.js'].map(async name=>[name,createHash('sha256').update(await readFile(root+'/.build/desktop/'+name)).digest('hex')])));

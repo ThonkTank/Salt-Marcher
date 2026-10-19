@@ -84,6 +84,13 @@ Der bestehende native Katalog-/Kampflauf prüft zusätzlich zwei Feuerziele mit
 vollem/halbem Anteil, unveränderte übrige Teilnehmer, ein gemeinsames Undo,
 erneutes Anwenden, Fortsetzen, Abschluss und Wiederöffnen bei 100/200 %.
 
+Eine fehlende Schreibbestätigung bleibt im geöffneten Schadensdialog sichtbar;
+die gewählten Eingaben bleiben dort erhalten. Solange der Schreibversuch läuft,
+bleibt Schließen gesperrt. Danach dürfen Schließen und Escape den modalen Dialog
+verlassen, auch wenn ein ungeklärter Command weitere Schreibaktionen sperrt.
+So bleibt der vorhandene Buchungsstatusknopf erreichbar. Schließen verwirft
+weder das Receipt-Ticket noch dessen Schreibschutz und wiederholt keinen Command.
+
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 
 `character_progress` publiziert vollständige PC-Gesundheit samt Todesrettungen

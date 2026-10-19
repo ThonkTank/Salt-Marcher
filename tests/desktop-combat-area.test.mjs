@@ -77,6 +77,26 @@ test('typed area preview shows exact per-target results and submits a single con
  const previews=rows.filter(r=>r.querySelector('input').checked).map(r=>r.querySelector('.combat-area-preview').textContent);assert.match(previews[0],/Immunität.*0 Schaden → 102\/102/);assert.match(previews[1],/Rettungswurf: 14.*Resistenz.*7 Schaden → 60\/67/);assert.match(previews[2],/Verwundbarkeit.*56 Schaden → 2\/58/);
  root.querySelector('#combat-area-apply').onclick();await new Promise(r=>setImmediate(r));assert.equal(calls.length,1);assert.deepEqual(calls[0][0],fireWave(targets));assert.equal(root.hidden,true);
 });
+for(const close of ['button','escape'])test('unconfirmed area damage keeps inputs and allows '+close+' to reach status recovery after the write settles',async t=>{
+ const x=fixture(t),document=await dom(t),root=document.getElementById('area'),calls=[];let settle;
+ const panel=new CombatAreaPanel(root,(...args)=>{calls.push(args);return new Promise((resolve,reject)=>{settle=()=>close==='button'?resolve(false):reject(Error('Reply unavailable'));});});
+ panel.context(x.combat,x.w.token,false);panel.open();root.querySelector('#combat-area-amount').value='9';const type=root.querySelector('#combat-area-type');type.value='fire';type.onchange();const target=root.querySelector('.combat-area-row input');target.checked=true;target.onchange();
+ root.querySelector('#combat-area-apply').onclick();assert.equal(root.querySelector('#combat-area-cancel').disabled,true);
+ root.dispatchEvent(new document.defaultView.Event('cancel'));assert.equal(root.hidden,false,'the in-flight write must finish before closing');
+ panel.context(x.combat,x.w.token,true);settle();await new Promise(r=>setImmediate(r));
+ assert.match(root.querySelector('[role=status]').textContent,/Keine Bestätigung.*Eingaben bleiben erhalten.*Buchungsstatus/);
+ assert.equal(root.querySelector('#combat-area-amount').value,'9');assert.equal(target.checked,true);assert.equal(root.querySelector('#combat-area-apply').disabled,true);
+ assert.equal(root.querySelector('#combat-area-cancel').disabled,false);assert.equal(calls.length,1);
+ if(close==='button')root.querySelector('#combat-area-cancel').onclick();else root.dispatchEvent(new document.defaultView.Event('cancel'));
+ assert.equal(root.hidden,true);panel.open();assert.equal(root.hidden,true,'closing does not bypass the pending-write barrier');
+ panel.context(x.combat,x.w.token,false);panel.open();assert.doesNotMatch(root.querySelector('[role=status]').textContent,/Keine Bestätigung/);assert.equal(calls.length,1,'opening again never repeats the write');
+});
+test('an unconfirmed old area reply cannot annotate or close a new encounter decision',async t=>{
+ const x=fixture(t),document=await dom(t),root=document.getElementById('area');let reject;
+ const panel=new CombatAreaPanel(root,()=>new Promise((_,fail)=>{reject=fail;}));panel.context(x.combat,x.w.token,false);panel.open();root.querySelector('#combat-area-amount').value='9';const type=root.querySelector('#combat-area-type');type.value='fire';type.onchange();const target=root.querySelector('.combat-area-row input');target.checked=true;target.onchange();root.querySelector('#combat-area-apply').onclick();
+ panel.context({...x.combat,id:'other'},'other-token',false);panel.open();reject(Error('Old reply'));await new Promise(r=>setImmediate(r));
+ assert.equal(root.hidden,false);assert.doesNotMatch(root.querySelector('[role=status]').textContent,/Keine Bestätigung/);assert.equal(root.querySelector('#combat-area-amount').value,'');
+});
 test('conditional area defense keeps the source rule visible and requires a deliberate override',async t=>{
  const x=fixture(t),targets=mixedTargets(x),document=await dom(t),root=document.getElementById('area'),panel=new CombatAreaPanel(root,async()=>true);panel.context(x.combat,x.w.token,false);panel.open();root.querySelector('#combat-area-amount').value='28';const type=root.querySelector('#combat-area-type');type.value='bludgeoning';type.onchange();const row=[...root.querySelectorAll('.combat-area-row')].find(r=>r.querySelector('input')?.value===targets[1].id);row.querySelector('input').checked=true;row.querySelector('input').onchange();assert.equal(root.querySelector('#combat-area-apply').disabled,true);assert.match(row.textContent,/nonmagical weapons.*silvered/);
  const defense=row.querySelector('[data-role=defense]'),overrides=root.querySelector('#combat-area-overrides');assert.equal(defense.hidden,true);overrides.checked=true;overrides.onchange();assert.equal(defense.hidden,false);defense.value='half';defense.onchange();assert.equal(root.querySelector('#combat-area-apply').disabled,false);assert.match(row.textContent,/14 Schaden/);
