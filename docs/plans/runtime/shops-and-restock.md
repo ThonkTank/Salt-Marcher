@@ -42,7 +42,8 @@ Der Handelsbereich verwendet eine gemeinsame ausdrücklich gewählte Figur für
 Kauf und Verkauf. Inaktive Figuren bleiben als Verkäufer verfügbar; Kaufbuttons
 sind für sie gesperrt. Überschrift, Buchungsschaltflächen und Verlauf nennen die
 Figur auch beim Scrollen. Katalog und Shops besitzen direkte Bereichsschalter;
-Shopdaten, Zeitbasis und Warenlieferungen sind gesammelt aufklappbar. Neue Shops
+Shopdaten, Zeitbasis und Warenlieferungen sind gesammelt aufklappbar.
+Gemeinsame Ladefehler und deren Wiederholen bleiben in beiden Bereichen sichtbar. Neue Shops
 und die geführte Ortszuordnung öffnen diese Verwaltung. Der Gesamtweg bis zum
 Teilrückverkauf und Neustart steht in `tools/test-desktop-shop-trade.mjs`;
 [beobachteter Vergleich und Grenzen](../../reference/gm-ux-qa/2026-10-14-shop-switch.md#kauf-und-teilrückverkauf-unter-einer-figurenwahl--19102026).
