@@ -258,13 +258,61 @@ try {
   );
   await ready(page);
   await page.screenshot({ path: output + "/narrow.png" });
-  await app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()
-      .find((w) => w.getTitle() === "SaltMarcher")
-      .webContents.setZoomFactor(2),
-  );
+  await app.evaluate(({ BrowserWindow }) => {
+    const win = BrowserWindow.getAllWindows().find(
+      (w) => w.getTitle() === "SaltMarcher",
+    );
+    win.setSize(1600, 1000);
+    win.webContents.setZoomFactor(2);
+  });
   await ready(page);
-  await page.screenshot({ path: output + "/ui-200-percent.png" });
+  results.enlarged = await page.evaluate(() => ({
+    viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
+    map: (() => {
+      const r = document.querySelector("#campaign-map").getBoundingClientRect();
+      return { width: r.width, height: r.height };
+    })(),
+    names: window.cartographyTexts.filter((t) =>
+      /Nebelstadt|Haus am Markt|straße|Lindenweg|Altstadt|Nebelstrom/.test(
+        t.text,
+      ),
+    ),
+  }));
+  assert(results.enlarged.map.width >= 300);
+  assert(results.enlarged.names.length > 0);
+  assert(results.enlarged.names.every((t) => t.size >= 12 && t.size <= 20.1));
+  await writeFile(
+    output + "/ui-200-percent.png",
+    Buffer.from(
+      await app.evaluate(async ({ BrowserWindow }) =>
+        (
+          await BrowserWindow.getAllWindows()
+            .find((w) => w.getTitle() === "SaltMarcher")
+            .webContents.capturePage()
+        )
+          .toPNG()
+          .toString("base64"),
+      ),
+      "base64",
+    ),
+  );
+  await page.locator("#atlas-secondary-close").click();
+  await ready(page);
+  await writeFile(
+    output + "/ui-200-percent-map.png",
+    Buffer.from(
+      await app.evaluate(async ({ BrowserWindow }) =>
+        (
+          await BrowserWindow.getAllWindows()
+            .find((w) => w.getTitle() === "SaltMarcher")
+            .webContents.capturePage()
+        )
+          .toPNG()
+          .toString("base64"),
+      ),
+      "base64",
+    ),
+  );
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()
       .find((w) => w.getTitle() === "SaltMarcher")
