@@ -17,9 +17,10 @@ function fixture(t){
  let detach=async()=>false;
  let edit=async(id,current)=>{el('note-title').value=id;el('note-gm').value='Original '+id;return current();},back=async current=>{el('note-title').value='Mappe';return current();};
  const owner={token:'A',id:root.id,destination:{planId:'P',visitId:'V'},plans:[{id:'P',name:'Abend',scenes:[{id:'V',title:'Ermitteln'}]}],current:()=>valid,blocked:()=>blocked,edit:(...a)=>edit(...a),returnToRoot:(...a)=>back(...a),room:async(id,current,restore)=>{rooms.push({id,current,restore});return true;},add:(...a)=>add(...a),detach:(...a)=>detach(...a),use:(...a)=>use(...a)};
- const ui=new NoteThreadDialog({prepare:async()=>owner,api:{noteThread:(...a)=>{calls.push(a);return read(...a);},checkNoteThread:(...a)=>check(...a),deskContent:(...a)=>detail(...a),searchDesk:(...a)=>search(...a),noteRoomUses:async()=>ok({entries:[{id:'Archiv',title:'Archiv',number:'2',unavailable:false}],next:null})},tell:(...a)=>messages.push(a)});
+ let prepare=async()=>owner;
+ const ui=new NoteThreadDialog({prepare:()=>prepare(),api:{noteThread:(...a)=>{calls.push(a);return read(...a);},checkNoteThread:(...a)=>check(...a),deskContent:(...a)=>detail(...a),searchDesk:(...a)=>search(...a),noteRoomUses:async()=>ok({entries:[{id:'Archiv',title:'Archiv',number:'2',unavailable:false}],next:null})},tell:(...a)=>messages.push(a)});
  const el=id=>document.getElementById(id),click=name=>[...el('note-thread-dialog').querySelectorAll('button')].find(b=>b.textContent===name).onclick(),select=(id,value)=>{el(id).value=value;el(id).onchange();};
- t.after(()=>{ui.reset();globalThis.document=prior;});return{ui,el,click,select,root,all,calls,adds,used,rooms,messages,owner,setDetach:f=>detach=f,setEdit:f=>edit=f,setBack:f=>back=f,setRead:f=>read=f,setDetail:f=>detail=f,setSearch:f=>search=f,setCheck:f=>check=f,setUse:f=>use=f,setAdd:f=>add=f,retire:()=>valid=false,block:()=>blocked=true};
+ t.after(()=>{ui.reset();globalThis.document=prior;});return{ui,el,click,select,root,all,calls,adds,used,rooms,messages,owner,setPrepare:f=>prepare=f,setDetach:f=>detach=f,setEdit:f=>edit=f,setBack:f=>back=f,setRead:f=>read=f,setDetail:f=>detail=f,setSearch:f=>search=f,setCheck:f=>check=f,setUse:f=>use=f,setAdd:f=>add=f,retire:()=>valid=false,block:()=>blocked=true};
 }
 test('one map reads original sources and room context with confirmed status, selecting only open and untracked sources',async t=>{
  const x=fixture(t);await x.ui.open();await until(()=>x.el('note-thread-sources').textContent.includes('Raumhinweise: Archiv'));assert.match(x.el('note-thread-sources').textContent,/GM Nera/);assert.match(x.el('note-thread-sources').textContent,/Gerücht · Offen/);assert.doesNotMatch(x.el('note-thread-sources').textContent,/Erledigt/);assert.match(x.el('note-thread-choice').textContent,/^3 Originalnotizen/);x.click('Raum öffnen: Archiv');assert.equal(x.rooms[0].id,'Archiv');assert(x.rooms[0].current());x.ui.reset();assert.equal(x.rooms[0].current(),false);
@@ -226,4 +227,31 @@ test('handoff from a source editor retains the whole dossier, deliberate choices
 
 test('a source without a planning destination cannot silently use the first historical visit',async t=>{
  const x=fixture(t);delete x.owner.destination;await x.ui.open(true);assert.equal(x.el('note-thread-plan').value,'');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-visit','V');x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.equal(x.used[0].target.visitId,'V');
+});
+
+
+test('clearing source choices retains the separate root and destination, and leaves later or newly read sources unselected',async t=>{
+ const x=fixture(t),later=entry('Späte Spur','open');x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:40}));
+ await x.ui.open();x.el('note-thread-clear-selection').click();assert.equal(x.el('note-thread-include-root').checked,true);assert.match(x.el('note-thread-choice').textContent,/^1 Originalnotizen/);
+ assert([...x.el('note-thread-reading').querySelectorAll('input[data-thread-source]')].every(b=>!b.checked));assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');assert.equal(x.used.length,0);assert.equal(x.adds.length,0);
+ x.el('note-thread-more').click();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);assert([...x.el('note-thread-reading').querySelectorAll('input[data-thread-source]')].every(b=>!b.checked));
+ const late=()=>x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"] input');late().checked=true;late().onchange();
+ const fresh=entry('Neue Quelle');x.setRead(async()=>ok({root:x.root,entries:[...x.all.slice(0,2),later,fresh],total:4,next:null}));x.click('Aktualisieren');await until(()=>!x.el('note-thread-active').disabled);
+ assert.equal(late().checked,true);assert.equal(x.el('note-thread-sources').querySelector('[data-note-id="Neue Quelle"] input').checked,false);
+ x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),[later.id]);assert.equal(x.used[0].selection.includeRoot,true);assert.equal(x.used[0].target.visitId,'V');
+});
+
+test('nested maps keep their own initial selection while returning restores the cleared parent intent; a new opening resets it',async t=>{
+ const x=fixture(t),child=entry('Kindquelle'),fresh=entry('Neue Quelle');await x.ui.open();const clear=x.el('note-thread-clear-selection');clear.click();
+ const nera=x.el('note-thread-sources').querySelector('[data-note-id="Nera"] input');nera.checked=true;nera.onchange();
+ x.setRead(async(_t,id)=>ok({root:id==='Nera'?note('Nera'):x.root,entries:id==='Nera'?[child]:[...x.all,fresh],total:id==='Nera'?1:4,next:null}));x.setPrepare(async()=>({...x.owner,id:'Nera'}));
+ x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);await x.ui.open();assert.match(x.el('note-thread-heading').textContent,/Nera/);assert.equal(x.el('note-thread-sources').querySelector('input').checked,true);
+ x.el('note-thread-parent').click();await until(()=>x.el('note-thread-heading').textContent==='Notizmappe: Mappe'&&!x.el('note-thread-active').disabled);
+ assert.equal(x.el('note-thread-sources').querySelector('[data-note-id="Nera"] input').checked,true);assert.equal(x.el('note-thread-sources').querySelector('[data-note-id="Neue Quelle"] input').checked,false);
+ x.ui.reset();x.setPrepare(async()=>x.owner);await x.ui.open(true);assert.strictEqual(x.el('note-thread-clear-selection'),clear);assert(x.el('note-thread-reading').firstElementChild.contains(clear));assert.equal(x.el('note-thread-dialog').querySelectorAll('#note-thread-clear-selection').length,1);assert.equal(x.el('note-thread-sources').querySelector('[data-note-id="Neue Quelle"] input').checked,true);
+});
+
+test('clearing cannot change a choice while a page is pending or its owner is blocked or retired',async t=>{
+ const x=fixture(t),late=deferred();await x.ui.open();const first=x.el('note-thread-sources').querySelector('input'),clear=x.el('note-thread-clear-selection');x.setRead(()=>late.promise);x.click('Aktualisieren');assert.equal(clear.disabled,true);clear.onclick();assert.equal(first.checked,true);
+ late.resolve(ok({root:x.root,entries:x.all,total:3,next:null}));await until(()=>!clear.disabled);x.block();clear.onclick();assert.equal(x.el('note-thread-sources').querySelector('input').checked,true);x.retire();clear.onclick();assert.equal(x.el('note-thread-sources').querySelector('input').checked,true);assert.equal(x.used.length,0);
 });
