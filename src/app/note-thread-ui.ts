@@ -395,9 +395,7 @@ export class NoteThreadDialog {
     this.drawVisits(frame ? frame.visitId : destination ? owner.destination?.visitId : undefined);
     if (frame) { this.planName.value = frame.planName; this.visitTitle.value = frame.visitTitle; }
     const epoch = this.epoch;
-    await this.load(false);
-    while (frame && this.current(epoch) && !this.stale && this.next !== null && this.entries.size < frame.loaded)
-      await this.load(true);
+    await this.reload(frame?.loaded);
     if (!this.current(epoch)) return;
     if (frame?.searched && !this.stale) await this.search(frame.additions);
     if (!this.current(epoch)) return;
@@ -605,6 +603,12 @@ export class NoteThreadDialog {
         this.controls();
       }
     }
+  }
+  private async reload(loaded = 0, reviewed?: { id: string; selected: boolean }) {
+    const epoch = this.epoch;
+    await this.load(false, reviewed);
+    while (this.current(epoch) && !this.stale && this.next !== null && this.entries.size < loaded)
+      await this.load(true, reviewed);
   }
   private drawSource(e: NoteThreadEntry, epoch: number) {
     const card = node("article"),
@@ -998,7 +1002,7 @@ export class NoteThreadDialog {
       this.reading.hidden = false;
       this.busy = false;
       if (refresh) {
-        await this.load(false, { id, selected });
+        await this.reload(this.entries.size, { id, selected });
         if (!this.current(epoch)) return false;
         this.dialog.scrollTop = this.readingScroll;
         const card = [
@@ -1113,6 +1117,7 @@ export class NoteThreadDialog {
   private async prepareVisit() {
     if (
       this.busy ||
+      this.loading ||
       this.stale ||
       !this.root ||
       !this.owner?.current() ||

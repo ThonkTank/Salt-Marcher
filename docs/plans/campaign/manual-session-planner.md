@@ -58,6 +58,11 @@ daraus abgeleitet. Geänderte ungeprüfte Quellen sind nicht vorausgewählt.
 Im eingeblendeten Quelleneditor führt „Mit dieser Mappe zum Spielabend…“ über
 den vorhandenen Flush zur bereits geprüften Dossierauswahl und ihrem Ziel.
 Die eigene Mappe einer Quelle bleibt separat über „Notizmappe öffnen…“ erreichbar.
+Rückwege aus Quelleneditor und untergeordneter Mappe verwenden denselben
+Leseablauf für den bereits geladenen Umfang. Auch Quellen auf späteren Seiten
+bleiben dadurch sichtbar und in der geprüften Auswahl; neue ungeprüfte
+Quellrevisionen bleiben abgewählt. Eine noch ausstehende oder fehlgeschlagene
+Seite gibt keine Übergabe frei, ein Kontextwechsel entwertet alte Antworten.
 [Native Wiederaufnahme und Obsidian-Gegenprobe](../../reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
