@@ -67,3 +67,51 @@ lokal. Vier neue Fälle sichern Offscreen-/gedrehte Geschossgrenzen,
 Neuberechnung nach Vergrößerung, Maßstabsabstand und unverdeckte Vorschau.
 Diese begrenzte Aufgabe belegt weder vollständige Dungeon-Scrawl-Parität noch
 menschliche GM-Vorlieben, installierte Pakete oder Owner-Abnahme.
+
+
+## Zugangsweg und bearbeitbare Sicherung, 19.10.2026
+
+Eine eigene native Prüfung auf `d818403a459aa058864f93827ecdd5560eec0f15`
+mit den Exportänderungen dieser Arbeitskopie erhält das Zollhaus, zieht einen
+kreuzenden Weg am mittleren Griff nach außen und prüft Undo/Redo sowie die
+wirkliche PNG. Raumgeometrie, Raumtext und Wegmetadaten bleiben erhalten.
+Der [Lauf mit Build-Prüfsummen](access-path-20261019.json) erfasst normale und
+doppelte Geräteskalierung, reduzierte Bewegung und vier normale Prozessexits.
+Die Probe wartet nach der Ortsuche auf den tatsächlich fokussierten Ausschnitt;
+ein bereits gefülltes Namensfeld bestätigt noch keine abgeschlossene Navigation.
+
+Unter **Export → Ausgabe: Bearbeitbare Kampagne → Kampagne sichern…** ist
+jetzt das bestehende vollständige Kampagnenpaket erreichbar. Nur dessen
+Optionen sind dann sichtbar; die Bildausgabe bleibt eine eigene Auswahl.
+Abbrechen ändert die geprüften Autoreninhalte nicht. Öffentliche Bild- oder
+Archivoptionen redigieren die Sicherung nicht; die Oberfläche nennt ausdrücklich
+GM-Inhalte. Das tatsächlich erzeugte Paket wurde über **Pakete und Kopien**
+als unabhängige Kampagne importiert. Dort ließ sich der Weg erneut ziehen,
+während der ursprüngliche Weg unverändert blieb. Der historische JSON-Datenauszug
+ist keine qualifizierte wiederherstellbare Sicherung.
+
+[Export bei einfacher Skalierung](access-path-export-100.png),
+[Export bei doppelter Skalierung](access-path-export-200.png),
+[tatsächliche PNG](access-path-corrected.png).
+
+Der Gegenvergleich bleibt teilweise offen. In der echten Excalidraw-Weboberfläche
+wurden Rechteck, Beschriftung und unabhängige Linie gezeichnet, am mittleren
+Punkt korrigiert, rückgängig gemacht und wiederholt. Nach Neuladen blieb die
+Zeichnung bearbeitbar. Der lokale Dateidialog war über die verfügbare
+Browsersteuerung nicht bedienbar; eine fertige PNG wurde dort nicht belegt.
+In Dungeon Scrawl wurden Haus und Weg auf getrennten Ebenen gezeichnet, der
+alte Pfad radiert und der neue um das Haus geführt. Zweimal Undo/Redo stellte
+die jeweiligen Verläufe wieder her. Der [wirkliche PNG-Download](access-path-scrawl.png)
+zeigt den erhaltenen Grundriss. Seine bearbeitbare Speicherdatei und deren
+Wiederöffnung blieben ebenfalls am Dateidialog offen. Beide Webprodukte wurden
+am 19.10.2026 ohne sichtbare Buildnummer benutzt. Es wurde kein vollständiger
+Gegenvergleich im Capability-Katalog eingetragen.
+
+Auch `tools/test-desktop-region-export.mjs` bestand mit vier normalen
+Prozessexits bei einfacher und doppelter Skalierung: Wege korrigieren,
+Undo/Redo, Messen, PNG-Schrift über Kachelgrenzen und Wiederöffnung. Die Probe
+schließt vor dem Ziehen die verdeckende rechte Leiste; zuvor hatte die Mausgeste
+Seitentext statt eines Weggriffes ausgewählt. [Regionslauf](access-path-region-20261019.json).
+Installation, andere Plattformen und Owner-Abnahme wurden nicht geprüft.
+
+Wiederholen: `python3 tools/ui-session.py node tools/test-desktop-access-path.mjs`.
