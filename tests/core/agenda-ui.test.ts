@@ -172,7 +172,7 @@ test('a saved deadline stays selected beyond the old horizon and the first forty
  assert.equal(queries.at(-1).eventId,undefined);assert.doesNotMatch(x.dialog.textContent!,/Einzelansicht/);
 });
 
-test('saving an event moved outside its location and search keeps the same identity through trash and restore',async t=>{
+test('saving an event moved outside its location keeps the same identity through trash and restore',async t=>{
  const x=await fixture(t),current=x.store.world(x.workspace.token).events[0]!;
  x.store.executeWorld(x.command({kind:'calendar-event',event:{...current,locationId:x.location.id},expectedRevision:current.revision}));
  x.agenda.reset();await x.agenda.openForLocation(x.location.id,'Nordtor',x.event.id);x.click('Ereignis bearbeiten');
