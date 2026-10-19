@@ -968,9 +968,9 @@ Die damals gemessene verstrichene Renderer-Taskzeit für Pan/Hover bleibt unter1
 Vorschauen in der abschließenden Serie unter13ms p95. Zoom erreichte vor
 der nachfolgenden Korrektur bei Landschaft/Dungeon rund16–23ms p95. Das Profil zeigte
 mehrfache Reads/Renderaufbauten innerhalb einer Radfolge. Kameraaufträge
-verwenden nun120ms Ruhezeit und erhalten bis zur Antwort die schon transformierte
-Szene; Quellen-/Filteränderungen behalten ihren eigenen Ladeweg. Veraltete
-Autorenhits bleiben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
+verwendeten im damaligen Nachlauf120ms Ruhezeit und erhielten bis zur Antwort die
+schon transformierte Szene; Quellen-/Filteränderungen behielten ihren eigenen
+Ladeweg. Veraltete Autorenhits blieben gesperrt. Der unmittelbare Nachlauf senkt Zoom auf etwa4–6ms
 p95; die abschließende Serie mit veränderten Endmaßstäben bestätigt
 3,2–5,9ms p95 für Zoom. Das Nachladen nach einer solchen Folge dauert
 32–481ms; seine gesamte Taskzeit über diesen Zeitraum wird separat erfasst
@@ -980,6 +980,8 @@ Compositorpräsentation noch GPUlaufzeit. Platzhalter gelten nicht als nutzbar:
 vollständige Quellenabdeckung, tatsächliche Zeichenkommandos und sichtbarer
 Viewport werden geprüft. Fensterbilder stammen aus Electron `capturePage`;
 Playwrights Ausschnitt kann bei nativer200%-Skalierung die falsche Bildfläche erfassen.
+Diese Messwerte gehören zum damaligen Ladeweg; das [aktuelle Kameraladen](ARCHITECTURE.md#darstellung-suche-und-spieleranzeige)
+verwendet gedrosselte Reads während der Zoomgeste.
 
 Eine erneute lokale Lastserie am kombinierten Stand vom18.10.2026 erreicht
 bei100000 Landschaftsflächen die Öffnungsziele nicht durchgehend:

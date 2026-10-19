@@ -72,13 +72,12 @@ expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist in denselben
 quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht
 und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden vorhandene
 Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
-den TEMP-Index. Kameraaufträge halten zusammenhängende Radfolgen auf der alten
-transformierten Szene und lesen erst nach 120 ms Ruhezeit den nötigen neuen Frame.
-Veraltete Autorenhits bleiben bis dahin gesperrt.
+den TEMP-Index. Das [aktuelle Kamera-Ladeverhalten](#darstellung-suche-und-spieleranzeige)
+trennt laufende Vorschauen von der Freigabe genauer Autorenhits.
 
-Der lokale native Vergleich senkt Landschaftsöffnung mit 100000 Flächen plus
+Der lokale native Vergleich vom 17.10.2026 senkte die Landschaftsöffnung mit 100000 Flächen plus
 1200 Objekten bei 100/200% von etwa 3,62–3,69 s auf 1,45–1,52 s einschließlich
-sichtbarem Ausschnitt. Input-CPU für Zoom sinkt auf etwa 3–6 ms p95; das ist
+sichtbarem Ausschnitt. Input-CPU für Zoom sank auf etwa 3–6 ms p95; das ist
 keine Compositor-/GPUzeit. B02 nutzt schmale 128er-Payloadseiten und verwirft
 nur nachweislich wirkungslose Raster-Samples. Ein 8/16/32-MiB-Cacheexperiment
 begründet keine Budgeterhöhung. Je 20 geschlossene Zoomzyklen auf vier Beständen
