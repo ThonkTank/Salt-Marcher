@@ -154,12 +154,13 @@ try {
         env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: "unix:path=" + bus },
       });
       launches.push({ scale, pid: app.process().pid });
+      page = await app.firstWindow();
+      await page.waitForURL('**/index.html');
       await app.evaluate(({ BrowserWindow }) => {
         const w = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith("/index.html"));
         w.unmaximize();
         w.setContentSize(1400, 1000);
       });
-      page = await app.firstWindow();
       await page.emulateMedia({reducedMotion:"reduce"});
       page.setDefaultTimeout(15000);
       page.on("pageerror", (e) => errors.push(e.stack));
@@ -238,7 +239,8 @@ try {
             }
           return count;
         };
-      const pixels = { old: red({ x: 6.096, y: 6.096 }), bend: red({ x: 6.096, y: -9.144 }) };
+      // Sample the crossing inside the building, clear of its centered room label.
+      const pixels = { old: red({ x: 1.524, y: 6.096 }), bend: red({ x: 6.096, y: -9.144 }) };
       await page.locator("#atlas-output-back").click();
       assert.equal(await page.locator('#atlas-panel').isVisible(), toolsVisible);
       assert.equal(await page.evaluate(() => localStorage.getItem('atlas-editor-layout-v4')), layout, 'export does not overwrite the preferred editing layout');
@@ -326,8 +328,8 @@ try {
     await page.locator('#campaign-transfer-name').fill(restoredName);
     await page.locator('#campaign-transfer-accept').click();
     await page.locator('#campaign-transfer-dialog').waitFor({state:'hidden'});
-    await page.waitForFunction(() => document.getElementById('status').textContent === 'Unabhängige Kampagne übernommen.');
     const restoredCampaign = db.prepare('SELECT id FROM campaign WHERE name=?').get(restoredName).id;
+    await page.waitForFunction(id => document.getElementById('campaigns').value === id && !document.querySelector('main').inert, restoredCampaign);
     const restoredPath = () => db.prepare('SELECT payload FROM drawing_element WHERE campaign_id=?')
       .all(restoredCampaign).map(r=>JSON.parse(r.payload)).find(e=>e.name==='Zugangsweg');
     const restoredRoom = JSON.parse(db.prepare('SELECT payload FROM room WHERE campaign_id=?').get(restoredCampaign).payload);
@@ -335,8 +337,10 @@ try {
     assert.deepEqual(restoredRoom.sections.map(s=>s.markdown), room.sections.map(s=>s.markdown));
     assert.deepEqual(restoredPath().points, savedPath.points);
     assert.equal(restoredPath().notes, savedPath.notes);
-    if (!(await page.locator('#atlas-tab').isVisible())) await page.locator('#workspace-nav-summary').click();
-    await page.locator('#atlas-tab').click();
+    if (await page.locator('#campaign-atlas').isHidden()) {
+      if (!(await page.locator('#atlas-tab').isVisible())) await page.locator('#workspace-nav-summary').click();
+      await page.locator('#atlas-tab').click();
+    }
     await page.locator('#atlas-section').selectOption('interior');
     await choose();
     for (let i=0;i<2;i++) await page.getByRole('button',{name:'Verkleinern',exact:true}).click();

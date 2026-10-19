@@ -27,7 +27,12 @@ export async function selectElement(id:string){
  element=null;dirty=false;renderInspector();
  const result=await window.campaign.drawingElement(w.token,id);
  if(!owned(w.token,generation)||request!==elementRead)return;
- const source=unwrap(result),extra=unwrap(await window.campaign.drawingMap(w.token,selectedRoom()?.id??'',id));if(!owned(w.token,generation)||request!==elementRead)return;data??=extra;data.features=[...data.features.filter(f=>f.id!==id),...extra.features];
+ const source=unwrap(result);
+ if(!data||source.kind==='feature'){
+  const extra=unwrap(await window.campaign.drawingMap(w.token,selectedRoom()?.id??'',id));
+  if(!owned(w.token,generation)||request!==elementRead)return;
+  data??=extra;data.features=[...data.features.filter(f=>f.id!==id),...extra.features];
+ }
  element=structuredClone(source);dirty=false;if(data){const {notes:unused,content:unusedContent,...projection}=element;data.elements=[...data.elements.filter(e=>e.id!==id),projection];}renderInspector();
 }
 async function execute(action:DrawingAction){

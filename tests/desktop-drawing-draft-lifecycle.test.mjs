@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {parseHTML} from './helpers/dom.mjs';
-buildSync({stdin:{contents:"export * from './src/app/drawing-ui';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';export {AtlasPaint} from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/drawing-draft-lifecycle.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/drawing-ui';export {newElement} from './src/app/drawing-model';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';export {AtlasPaint} from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/drawing-draft-lifecycle.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),file=require.resolve('../.build/drawing-draft-lifecycle.cjs');
 async function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:global.window,document:global.document,Event:global.Event,CustomEvent:global.CustomEvent};Object.assign(global,{window,document,Event:window.Event,CustomEvent:window.CustomEvent});t.after(()=>Object.assign(global,previous));
@@ -16,6 +16,31 @@ async function fixture(t){
  const ui=Object.assign(Object.create(drawing.CampaignAtlasWorkbench.prototype),{scopeId:'local',brushQueue:Promise.resolve(),frame:()=>({x:0,y:0,angle:0}),render(){},error:e=>errors.push(e)});
  return{...drawing,ui,document,window,errors,owner:()=>owner,select(room){selected=room;owner.rooms=[room];owner.selectedId=room.id;},hold(){let release;const task=new Promise(r=>release=r);prepare=()=>task;return()=>release(true);},switchOwner:async()=>{owner={...owner,token:'next'};await drawing.activateDrawing(owner,false);}};
 }
+const emptyDrawing=()=>({coverage:'selected',elements:[],styles:[],volumes:[],features:[],hiddenRooms:[],hiddenFloors:[]});
+test('a loaded path remains selectable from its exact record when unrelated room extras cannot be read',async t=>{
+ const f=await fixture(t),source={...f.newElement('path','local','ground',null,[{x:0,y:0},{x:10,y:0}]),name:'Zugang',notes:'  Erhaltene Notiz\r\n'};
+ f.document.getElementById('drawing-tool').value='select';
+ f.window.campaign={drawingMap:async()=>({ok:true,value:emptyDrawing()})};await f.reloadDrawing();
+ let extraReads=0;f.window.campaign={drawingElement:async()=>({ok:true,value:source}),drawingMap:async()=>{extraReads++;return{ok:false,error:'Raumstil nicht lesbar'};}};
+ await f.selectElement(source.id);
+ assert.equal(extraReads,0);assert.equal(f.selectedDrawingElementId(),source.id);assert.deepEqual(f.atlasDrawingDraft().element,source);
+ assert.equal(f.document.getElementById('drawing-element-notes').value,source.notes);assert.equal(f.document.getElementById('drawing-element-points').value,'0, 0\n10, 0');
+});
+test('first selection initializes the drawing basis and feature selections still refresh their runtime facts',async t=>{
+ const f=await fixture(t),path=f.newElement('path','local','ground',null,[{x:0,y:0},{x:10,y:0}]),feature={...f.newElement('feature','local','ground',null,[{x:1,y:1}]),maxCharges:3};
+ let source=path,reads=0;f.window.campaign={drawingElement:async()=>({ok:true,value:source}),drawingMap:async()=>{reads++;return{ok:true,value:{...emptyDrawing(),features:source===feature?[{id:feature.id,charges:2,resetStartedMs:null}]:[]}};}};
+ await f.selectElement(path.id);assert.equal(reads,1);assert.equal(f.selectedDrawingElementId(),path.id);
+ source=feature;await f.selectElement(feature.id);assert.equal(reads,2);assert.match(f.document.getElementById('drawing-feature-status').textContent,/2\/3 Charges/);
+ f.window.campaign.drawingMap=async()=>({ok:false,error:'Featurestand nicht lesbar'});
+ await assert.rejects(f.selectElement(feature.id),/Featurestand/);assert.equal(f.selectedDrawingElementId(),null);assert.equal(f.document.getElementById('drawing-element-form').hasAttribute('hidden'),true);
+});
+test('a delayed feature supplement cannot restore an element after a campaign switch',async t=>{
+ const f=await fixture(t),feature=f.newElement('feature','local','ground',null,[{x:1,y:1}]);let release;
+ f.window.campaign={drawingElement:async()=>({ok:true,value:feature}),drawingMap:()=>new Promise(r=>release=r)};
+ const task=f.selectElement(feature.id);await new Promise(r=>setImmediate(r));await f.switchOwner();
+ release({ok:true,value:{...emptyDrawing(),features:[{id:feature.id,charges:1}]}});await task;
+ assert.equal(f.selectedDrawingElementId(),null);assert.equal(f.document.getElementById('drawing-element-form').hasAttribute('hidden'),true);
+});
 for(const change of ['cancel','tool','owner'])test('queued brush points cannot recreate a draft after '+change,async t=>{
  const f=await fixture(t),release=f.hold();f.ui.queueBrush({x:-5,y:-5});f.ui.queueBrush({x:0,y:0});f.ui.queueBrush({x:5,y:5});
  await new Promise(r=>setImmediate(r));
