@@ -29,9 +29,9 @@ Keine Paketinstallation oder menschliche Produktabnahme ist daraus ableitbar.
 
 ## Rückkehr im Atlas am 19.10.2026
 
-Erneute vollständige Aufgabe auf Basis `fa8d75f6867832c39dd07ee1288cfadd4250b32a`
+Erneute vollständige Aufgabe auf Basis `54c0e95c5fb4c10c1aed76ef279ff95e1682737d`
 plus dem in [context-results.json](context-results.json) durch Bundlehashes
-gebundenen Rückweg- und Quellenbindungsänderungen. [Vorher](context-return-before.png) führt „Zurück zur
+gebundenen Rückwegänderungen. [Vorher](context-return-before.png) führt „Zurück zur
 Notiz“ aus dem Atlas in die allgemeine Wissensansicht. [Nachher](context-return-after.png)
 öffnet dieselbe Aktion die Quelle wieder bei der ursprünglichen Sakristei.
 Die beiden Raumverwendungen bleiben unmittelbar von dort erreichbar.
@@ -45,6 +45,8 @@ Der aktualisierte native Ablauf `tools/test-desktop-room-rule-reuse.mjs` beginnt
 an der sichtbaren Atlassuche. Er verknüpft beide Räume, korrigiert die Quelle,
 bearbeitet die Torhalle, kehrt zweimal zum ursprünglichen Atlas-Kontext zurück,
 prüft den anklickbaren Rückweg bei 200 %, beendet normal und öffnet frisch.
+Eine kontrolliert ausgelöste laufende IME-Eingabe blockiert die Raumnavigation;
+die Quelle bleibt anschließend über „Zum Raumtext“ verlassbar.
 Volltextsuche, beide aktuellen Quellen, die lokale Ergänzung und der bisherige
 Wissensansicht-Rückweg werden erneut benutzt. 35 weitere Notizen, beide
 Originalabschnitte und die Quellenbindungen bleiben bei zusätzlichem Store-Read

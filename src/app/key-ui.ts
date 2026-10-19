@@ -270,12 +270,11 @@ export async function openRoomKey(id:string,current=()=>true,returned?:()=>void,
 export async function openNoteRoomKey(id:string,current:()=>boolean,returned:()=>void,source?:{id:string;label:string}):Promise<boolean>{
  const origin=roomId,o=owner();
  if(!noteContext?.ownsEditor||!source||!origin)return openRoomKey(id,current,returned);
- const previousReturn=keyReturn,previousLeave=keyLeave,closeLabel=el('key-close').textContent??'Schließen';
- const valid=()=>owns(o)&&current();
+ const previousReturn=keyReturn,previousLeave=keyLeave,closeLabel=el('key-close').textContent??'Schließen',atlas=document.body.classList.contains('atlas-workspace');
+ const valid=()=>owns(o)&&current()&&(!atlas||document.body.classList.contains('atlas-workspace'));
  return openRoomKey(id,valid,()=>{void(async()=>{
   if(!valid()||!await openRoomKey(origin,valid,previousReturn??undefined,undefined,closeLabel,previousLeave??undefined)||!valid())return;
-  const restored=transition;
-  await noteContext!.open(source.id,source.label,()=>valid()&&transition===restored&&roomId===origin);
+  await noteContext!.open(source.id,source.label,()=>valid()&&roomId===origin);
  })().catch(error=>{if(valid())reportFailure(error);});});
 }
 function focusPassage(target:KeyPassageTarget,focus=true){

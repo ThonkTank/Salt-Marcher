@@ -2,17 +2,17 @@
   "date": "2026-10-19",
   "saltmarcher": {
     "complete": true,
-    "source": "fa8d75f6867832c39dd07ee1288cfadd4250b32a",
+    "source": "54c0e95c5fb4c10c1aed76ef279ff95e1682737d",
     "hashes": {
       "main.cjs": "a4f93a7e3c45a8ccafd6f438880e152afaf6c89bdae42ed45ac5cc679f27429b",
       "preload.cjs": "c505f3d6e86ef59e2e36619e06f840848da7793585cad49318458246ee56914e",
-      "ui/renderer.js": "d5bfbb72d4e65f2a5c665ec714a3dab7e021b05fd5120bbf45b0f3d676bb3d9b",
+      "ui/renderer.js": "8fbad9ae59528213da331b7bc1278dd7bc3e29c9add433566e7dd78feabdb9c0",
       "ui/index.html": "047eb1a795cd8fd885eeae4f5ba310e46c513daf92c50963b36ef463494047dd",
       "ui/app.css": "e4f1b39a61390e982cf774013f012a4a189c65d31670d0f12a156a73cffade10"
     },
     "launches": [
       {
-        "pid": 1678148,
+        "pid": 1693713,
         "exit": {
           "code": 0,
           "signal": null
@@ -20,7 +20,7 @@
         "pidAbsent": true
       },
       {
-        "pid": 1678726,
+        "pid": 1694061,
         "exit": {
           "code": 0,
           "signal": null
@@ -29,12 +29,12 @@
       }
     ],
     "errors": [],
-    "profile": "/tmp/gm-room-rule-zPi84a",
-    "file": "/tmp/gm-room-rule-zPi84a/workbench.sqlite",
+    "profile": "/tmp/gm-room-rule-lhflYM",
+    "file": "/tmp/gm-room-rule-lhflYM/workbench.sqlite",
     "content": {
       "rule": {
         "version": 1,
-        "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
+        "id": "c96b67e7-8f84-4c3a-8415-4774be2890db",
         "revision": 2,
         "kind": "note",
         "title": "Druckplatten – Abwicklung",
@@ -46,7 +46,7 @@
       },
       "keys": [
         {
-          "id": "5967df53-0754-4b69-baa9-e84df7628d99",
+          "id": "8e21df92-0567-4b24-b247-3457b840ec3a",
           "revision": 1,
           "scopeId": "local",
           "kind": "room",
@@ -57,7 +57,7 @@
           "attributes": {},
           "blocks": [
             {
-              "id": "cb93789e-fb90-4ca3-95f5-5e3da52ce2c1",
+              "id": "d619c413-f718-419a-996a-6b66b1c460e0",
               "kind": "text",
               "visibility": "gm",
               "text": "Kupfernadeln hinter der Tür. Die Platte wird mit dem Rad im Nebenraum zurückgestellt.",
@@ -69,7 +69,7 @@
               "revealedText": ""
             },
             {
-              "id": "eca79d2f-ccac-4de8-9143-3f018a3d4c32",
+              "id": "9da620d6-c95c-443d-8554-f7e03db10062",
               "kind": "legacy",
               "visibility": "gm",
               "text": "",
@@ -81,7 +81,7 @@
               "revealedText": ""
             },
             {
-              "id": "42b377cd-fff1-472b-bdcc-9abd8b9a425b",
+              "id": "ef4c1026-1df0-46ef-b5ac-93c1d0817c00",
               "kind": "geometry",
               "visibility": "public",
               "text": "",
@@ -93,7 +93,7 @@
               "revealedText": ""
             },
             {
-              "id": "8bda570a-916d-41dd-89ab-e3a8bec7866a",
+              "id": "c31ebee2-c6c7-4b28-be12-5aa94202e027",
               "kind": "attributes",
               "visibility": "public",
               "text": "",
@@ -105,7 +105,7 @@
               "revealedText": ""
             },
             {
-              "id": "018ab025-e0f8-4487-8c3b-c02694c8476c",
+              "id": "4256e974-ab9c-4120-ac99-1f514dd7f61e",
               "kind": "exits",
               "visibility": "public",
               "text": "",
@@ -123,13 +123,13 @@
           "references": [
             {
               "kind": "note",
-              "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
+              "id": "c96b67e7-8f84-4c3a-8415-4774be2890db",
               "label": "Druckplatten – Abwicklung"
             }
           ]
         },
         {
-          "id": "5deb341e-93aa-404c-9adb-940797769d3b",
+          "id": "e1d63b12-ec36-4fca-99a5-cd051fc0789e",
           "revision": 2,
           "scopeId": "local",
           "kind": "room",
@@ -140,7 +140,7 @@
           "attributes": {},
           "blocks": [
             {
-              "id": "814e5879-5b06-4388-9f63-1304ae206513",
+              "id": "b2ea5783-76b4-4e9d-b543-eaae9436db0f",
               "kind": "text",
               "visibility": "gm",
               "text": "Zwei bronzene Speere hinter dem Relief. Die Platte wird mit dem Hebel hinter dem Relief zurückgestellt. Nach der Entschärfung bleibt der Hebel mit rotem Band markiert.",
@@ -152,7 +152,7 @@
               "revealedText": ""
             },
             {
-              "id": "7dd16b43-06b4-4495-91bf-bfe939d3c8fd",
+              "id": "1b7b3490-95b9-4abc-9da0-4264088dbed6",
               "kind": "legacy",
               "visibility": "gm",
               "text": "",
@@ -164,7 +164,7 @@
               "revealedText": ""
             },
             {
-              "id": "e103523b-8f8c-4aff-8e33-ecd3672ffc30",
+              "id": "89cb740b-7ae1-43c8-861d-3079c457604a",
               "kind": "geometry",
               "visibility": "public",
               "text": "",
@@ -176,7 +176,7 @@
               "revealedText": ""
             },
             {
-              "id": "a57296e6-b059-4bf2-815f-ea478b341541",
+              "id": "f3a4fc12-7d6b-4985-aef3-8043af89b8be",
               "kind": "attributes",
               "visibility": "public",
               "text": "",
@@ -188,7 +188,7 @@
               "revealedText": ""
             },
             {
-              "id": "8072e76e-99a2-4741-8a8d-5936f51aab31",
+              "id": "54ac12c9-e810-4bce-a6cb-f053bc0976ca",
               "kind": "exits",
               "visibility": "public",
               "text": "",
@@ -206,7 +206,7 @@
           "references": [
             {
               "kind": "note",
-              "id": "f13299df-4c55-4c10-8b9b-62f1bd4289b9",
+              "id": "c96b67e7-8f84-4c3a-8415-4774be2890db",
               "label": "Druckplatten – Abwicklung"
             }
           ]
@@ -217,6 +217,7 @@
     },
     "normalAnd200": true,
     "contextualAtlasReturn": true,
+    "blockedImeReturn": true,
     "preparationReturn": true,
     "task": "Shared trap source in two room keys; query retained and direct keyboard linking; central correction, two uses, local edit, normal Fresh fulltext refind and both current room sources",
     "humanAcceptance": false,
