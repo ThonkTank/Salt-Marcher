@@ -68,6 +68,22 @@ individuelle HP, Zugwechsel/Undo, XP-Abschluss und Neustart gemeinsam aus.
 Das ersetzt keine großen Kampf-/History-, Mehrplattform- oder physischen
 Eingabeabnahmen. Anlage-/Gegnerrohentwürfe und andere Anlagewege bleiben offen.
 
+## Flächenschaden: eine gebundene Entscheidung
+
+Der Dialog bindet Teilnehmer, Statblock und Revision beim Öffnen. Seine Vorschau
+verwendet diese geprüfte Basis direkt; ein neuer Kampfstand sperrt die Übernahme
+bis zum ausdrücklichen Wiederöffnen. Alte Zeilenangaben werden nicht mit neuer HP
+oder neuer Abwehr vermischt. Die gemeinsame Schadensfunktion erhält nur den
+betroffenen Statblock, statt selbst im gesamten Kampf zu suchen.
+
+Der Writer indiziert seine kanonischen Teilnehmer und Quellen einmal je Command.
+Ziel-ID, Dopplungen, Quellenbezug und Revision werden weiterhin atomar geprüft;
+vorhandene Quellenreihenfolge und Receiptformate bleiben erhalten. Erst der
+Rettungswurfanteil, dann die Abwehr: Die Berechnung bleibt mit der Vorschau geteilt.
+Der bestehende native Katalog-/Kampflauf prüft zusätzlich zwei Feuerziele mit
+vollem/halbem Anteil, unveränderte übrige Teilnehmer, ein gemeinsames Undo,
+erneutes Anwenden, Fortsetzen, Abschluss und Wiederöffnen bei 100/200 %.
+
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 
 `character_progress` publiziert vollständige PC-Gesundheit samt Todesrettungen
