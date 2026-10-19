@@ -160,3 +160,33 @@ test('a party-only preparation cannot start through either start command; reject
   combat=act({kind:'add',name:'Späher',count:1,grouped:false,maxHp:7,armorClass:15,initiativeBonus:2}).combat;combat=act({kind:'start'}).combat;assert.equal(combat.phase,'running');assert.equal(combat.participants.length,2);
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
+
+
+test('confirmed area damage reveals each affected mob and reports individual HP without opening unrelated groups',async()=>{
+ const x=await fixture();try{
+  let c=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;
+  const act=action=>c=x.store.executeCombat({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,combatId:c.id,expectedRevision:c.revision,action}).combat;
+  act({kind:'add-creature',creatureId:'ogre',count:4,grouped:true,initiative:12});
+  act({kind:'add-creature',creatureId:'goblin',count:3,grouped:true,initiative:8});act({kind:'start'});
+  x.el('combat-refresh').onclick();await until(()=>x.el('combat-rows').textContent.includes('Ogre'));
+  assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,1);
+  const type=x.el('combat-area-type');Object.defineProperty(type,'value',{value:'',writable:true});
+  x.el('combat-area-open').onclick();x.el('combat-area-amount').value='21';
+  for(const select of x.el('combat-area-targets').querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.dataset.role==='save'?'full':'auto',writable:true});
+  type.value='fire';type.onchange();
+  const targets=c.participants.filter(p=>p.sourceId==='ogre').slice(0,3);
+  for(const [i,p]of targets.entries()){
+   const check=x.el('combat-area-targets').querySelector('input[value="'+p.id+'"]');check.checked=true;
+   const save=check.closest('.combat-area-row').querySelector('[data-role=save]'),defense=check.closest('.combat-area-row').querySelector('[data-role=defense]');
+   Object.defineProperty(save,'value',{value:i?'half':'full',writable:true});Object.defineProperty(defense,'value',{value:'auto',writable:true});check.onchange();
+  }
+  x.el('combat-area-apply').onclick();await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
+  assert.match(x.messages.at(-1),/Flächenschaden gespeichert.*Ogre A 38\/59 HP.*Ogre B 49\/59 HP.*Ogre C 49\/59 HP/);
+  assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,5);
+  const toggles=[...x.el('combat-rows').querySelectorAll('.combat-mob-toggle')];
+  assert.equal(toggles.find(b=>b.getAttribute('aria-label').startsWith('Ogre')).getAttribute('aria-expanded'),'true');
+  assert.equal(toggles.find(b=>b.getAttribute('aria-label').startsWith('Goblin')).getAttribute('aria-expanded'),'false');
+  const result=x.store.combat(x.w.token,c.sceneId,c.id).combat;assert.equal(result.turnId,c.turnId);assert.equal(result.round,c.round);
+  assert.deepEqual(result.participants.filter(p=>p.sourceId==='ogre').map(p=>p.hp),[38,49,49,59]);assert(result.participants.filter(p=>p.sourceId==='goblin').every(p=>p.hp===7));
+ }finally{x.cleanup();}
+});
