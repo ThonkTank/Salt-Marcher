@@ -373,10 +373,6 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           state.participants = state.participants.filter(c => c.id !== p.id);
           if (state.turnId === p.id) { const next = order[index + 1] ?? order[0]; state.turnId = state.participants.length ? (next?.id === p.id ? state.participants[0]!.id : next!.id) : null; if (index === order.length - 1 && state.participants.length) state.round++;const current=state.participants.find(actor=>actor.id===state.turnId);if(current){resetLegendary(state,current);tickEffects(current,'start');} }
           if (!state.participants.length) { state.phase = 'preparing'; state.round = 0; state.turnId = null; }
-        } else if (a.kind === 'roll') {
-          if (!['normal', 'advantage', 'disadvantage'].includes(a.mode)) throw new Error('Würfelmodus ungültig.');
-          const rolls = new Map<string, number>();
-          for (const p of state.participants.filter(p => !p.characterId)) { if (!rolls.has(p.groupId)) { const x = randomInt(1, 21), y = a.mode === 'normal' ? x : randomInt(1, 21); rolls.set(p.groupId, (a.mode === 'advantage' ? Math.max(x, y) : Math.min(x, y)) + p.initiativeBonus); } p.initiative = rolls.get(p.groupId)!; }
         } else if (a.kind === 'start') {
           startCombat(db,cam,state);
         } else if (a.kind === 'next') {

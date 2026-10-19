@@ -243,6 +243,26 @@ test('late initiative lookup cannot reopen a different encounter',async t=>{
 });
 
 
+test('initiative rolls stay in the working draft until one explicit apply, with discard, combat undo and fresh storage',async t=>{
+ const x=await uiFixture(t),before=structuredClone(x.combat);
+ x.el('combat-initiative-open').onclick();await until(()=>x.el('initiative-rows').querySelector('input')&&!x.el('initiative-save').disabled);
+ const input=x.el('initiative-rows').querySelector('input');
+ Object.defineProperty(x.el('initiative-mode'),'value',{configurable:true,writable:true,value:'normal'});
+ for(const mode of ['normal','advantage','disadvantage']){
+  x.el('initiative-mode').value=mode;x.el('initiative-roll').onclick();
+  assert(Number(input.value)>=3&&Number(input.value)<=22);assert.equal(x.writes.length,0);
+  assert.deepEqual(x.store.combat(x.w.token,x.scene.id,before.id).combat,before);
+  x.el('initiative-roll-undo').onclick();assert.equal(input.value,'9');
+ }
+ x.el('initiative-roll').onclick();const rolled=Number(input.value);
+ x.el('initiative-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-next').disabled);
+ assert.equal(x.writes[0].action.kind,'initiative');let saved=x.store.combat(x.w.token,x.scene.id,before.id).combat;
+ assert(saved.participants.every(p=>p.initiative===rolled));assert.equal(saved.turnId,before.turnId);assert.equal(saved.round,before.round);
+ const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.campaign.id);assert.deepEqual(fresh.combat(w.token,x.scene.id,before.id).combat,saved);}finally{fresh.close();}
+ x.el('combat-undo').onclick();await until(()=>x.writes.length===2&&!x.el('combat-next').disabled);
+ saved=x.store.combat(x.w.token,x.scene.id,before.id).combat;assert.deepEqual(saved.participants,before.participants);assert.equal(saved.turnId,before.turnId);
+});
+
 test('initiative previews roll once per troop with its bonus and never roll player entries',t=>{
  const x=fixture(t),hero={...x.combat.participants[0],id:'hero',groupId:'hero-group',characterId:'hero-character',initiative:18,initiativeBonus:99},c={...x.combat,participants:[hero,...x.combat.participants]};
  for(const [mode,expected,calls] of [['normal',5,1],['advantage',19,2],['disadvantage',5,2]]){let i=0;const result=rolledMonsterInitiatives(c,mode,()=>[3,17][i++]);assert.equal(i,calls);assert.deepEqual(result,[{participantId:x.combat.participants[0].id,initiative:expected}]);assert.equal(hero.initiative,18);}
