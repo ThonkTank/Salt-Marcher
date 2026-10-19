@@ -94,6 +94,15 @@ wartet weiterhin auf die angefragten Quellen, während gesunde Referenzen bereit
 nutzbar sind. Das ist keine automatische Auflösung mehrdeutiger Begriffe und
 keine vollständige Reference-Graph-Lieferung.
 
+Der native Aufruf `npm run test:desktop-rule-context-ui` verwendet
+`tools/test-desktop-rule-reading.mjs`: vollständiges Lesen, Gruppenregeln,
+regelbezogene Proben und Wiederöffnen beider Gruppen bei 100/200 %.
+Eine zurückgehaltene A-Antwort wird erst nach dem Wechsel nach B freigegeben;
+B muss anschließend mit eigener Regelrevision speichern können. Der frühere
+separate Kontextlauf verwendete die versteckte Kampagnenauswahl und scheiterte
+vor diesem Gegenfall. Gemeinsame Fixtures, Start und Neustart werden nur noch
+an einem Ort gepflegt. Ergebnisbelege binden Gitstand, Dirty-Status und Buildhashes.
+
 ## Automatische Begriffsreferenzen: nächste zusammenhängende Lieferung
 
 Die [Originalanforderung Reference Graph](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/reference/requirements/requirements-reference-graph.md)

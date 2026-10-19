@@ -24,6 +24,11 @@ Foundry-Bedienmessung oder menschliche Geschwindigkeitsparität.
 Nachweise: `tests/desktop-rule-context.test.mjs`,
 `tests/desktop-mask-integration.test.mjs`, bestehende Rule-/Chase-/Masken- und
 Todesrettungswurfprüfungen sowie `tools/test-desktop-rule-context.mjs`.
+Der damalige separate native Kontextlauf ist inzwischen in
+`tools/test-desktop-rule-reading.mjs` aufgegangen; der npm-Aufruf
+`test:desktop-rule-context-ui` bleibt erhalten. Der gemeinsame aktuelle Lauf
+prüft zusätzlich den vollständigen Leseweg und beide Gruppen nach Neustart.
+
 Die native Probe erhält sämtliche ursprünglichen Notizbytes, schließt normal
 und öffnet beide Gruppen mit ihren jeweiligen Regeln frisch.
 
