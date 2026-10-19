@@ -8,7 +8,7 @@ import {parseHTML} from 'linkedom';
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
 export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
-export const atlasDrawingSnapPoint=p=>p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
+export const atlasDrawingSnapPoint=p=>globalThis.atlasSnap?globalThis.atlasSnap(p):p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
 export const selectedDrawingElementId=()=>null,selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},atlasDrawingUndoPoint=()=>{},reloadDrawing=()=>{};`}));}}]});
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
@@ -137,7 +137,7 @@ test('a wall grip previews and commits both endpoints in one shape write, preser
  assert.deepEqual(preview.polygons[0].outer,[{x:1,y:2},{x:12,y:2},{x:12,y:8},{x:1,y:8}]);
  assert.deepEqual(preview.polygons[0].holes,before.polygons[0].holes);assert.deepEqual(source,before);
  await f.ui.up({pointerId:4});assert.equal(writes.length,1);
- const command=writes[0].command;assert.equal(command.action.kind,'shape');assert.equal(command.action.roomId,'room');assert.equal(command.action.expectedRevision,7);assert.deepEqual(command.action.polygons,preview.polygons);
+ const command=writes[0].command;assert.equal(command.action.kind,'shape');assert.equal(command.action.roomId,'room');assert.equal(command.action.expectedRevision,7);assert.deepEqual(command.action.polygons,preview.polygons);assert.equal(command.action.preserveBoundaryAnchors,true);
 });
 test('wall handles use local edge normals and preserve nonadjacent vertices; no movement creates no history entry',async t=>{
  const f=fixture(t),writes=[];f.original.polygons[0].outer=[{x:0,y:0},{x:4,y:4},{x:4,y:8},{x:0,y:8}];
@@ -200,4 +200,11 @@ test('selected path exposes constant-size vertices and insertion grips on the au
  const f=fixture(t);f.ui.selection={kind:'element',id:'path'};f.document.querySelector('#drawing-tool').value='select';global.atlasAuthorDraft.element={id:'path',kind:'path',scopeId:'local',floorId:'ground',points:[{x:1,y:2},{x:9,y:2}]};
  const scene=f.render(),handles=all(scene).filter(n=>n.data.atlasPathVertex!==undefined||n.data.atlasPathInsert!==undefined);assert.equal(handles.length,3);assert(handles.every(n=>n.geometry.radius===1));const author=scene.children.find(n=>n.data.editorOnly==='true');assert(author.children.indexOf(global.atlasDraftNode)<author.children.indexOf(handles[0]),'Opaque selected-element paint must precede its grips');assert.equal(all(scene).filter(n=>n.data.atlasVertex!==undefined).length,0);
  f.document.querySelector('#atlas-perception').checked=true;assert.equal(all(f.render()).filter(n=>n.data.atlasPathVertex!==undefined).length,0);
+});
+
+test('room grip movement uses the drawing tool snap policy in local coordinates',t=>{
+ const f=fixture(t),previous=globalThis.atlasSnap;t.after(()=>{globalThis.atlasSnap=previous;});
+ const seen=[];globalThis.atlasSnap=p=>{seen.push(p);return{x:Math.round(p.x/2)*2,y:Math.round(p.y/2)*2};};
+ Object.assign(f.ui,{point:()=>({x:12.1,y:3.9}),frame:()=>({x:0,y:0,angle:0}),render(){},vertexDrag:{id:9,room:f.original,point:{x:9,y:2}}});
+ f.ui.move({pointerId:9});assert.deepEqual(seen,[{x:12.1,y:3.9}]);assert.deepEqual(f.ui.vertexDrag.point,{x:12,y:4});
 });

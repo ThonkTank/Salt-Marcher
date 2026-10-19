@@ -1423,8 +1423,8 @@ export class CampaignAtlasWorkbench {
           polygon: Number(handle.data.polygon),
           vertex: Number(handle.data.atlasVertex ?? handle.data.atlasEdge),
           edge: handle.data.atlasEdge !== undefined,
-          start: atlasToLocal(this.point(e), this.frame(room.scopeId)),
-          point: atlasToLocal(this.point(e), this.frame(room.scopeId)),
+          start: atlasDrawingSnapPoint(atlasToLocal(this.point(e), this.frame(room.scopeId))),
+          point: atlasDrawingSnapPoint(atlasToLocal(this.point(e), this.frame(room.scopeId))),
         };
         this.svg.setPointerCapture(e.pointerId);
         e.preventDefault();
@@ -1463,10 +1463,10 @@ export class CampaignAtlasWorkbench {
       this.partyDrag.last = this.point(e);
       this.render();
     } else if (this.vertexDrag?.id === e.pointerId) {
-      this.vertexDrag.point = atlasToLocal(
+      this.vertexDrag.point = atlasDrawingSnapPoint(atlasToLocal(
         this.point(e),
         this.frame(this.vertexDrag.room.scopeId),
-      );
+      ));
       this.render();
     } else if (this.drag?.id === e.pointerId) {
       this.drag.last = this.point(e);
@@ -1546,6 +1546,7 @@ export class CampaignAtlasWorkbench {
                 roomId: room.id,
                 expectedRevision: v.room.revision,
                 polygons: room.polygons,
+                preserveBoundaryAnchors: true,
               },
             },
           },

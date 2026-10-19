@@ -302,8 +302,27 @@ Raumgeometrie mehr. Verspätete Vorbereitung nach Kontextwechsel schreibt nicht.
 `desktop-drawing-draft-lifecycle.test.mjs` prüft diesen Anschluss samt Ergänzen
 und Abbruch. `tools/test-desktop-dungeon-groundplan.mjs` prüft den nativen
 Ablauf aus drei benannten Räumen, zwei Türen, Wandvergrößerung, Undo/Redo,
-PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung. Physische
-Eingabe- und vollständige 3D-Produktabnahme bleiben davon getrennt.
+PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung.
+`--moved-wall` setzt eine Tür ausdrücklich auf die verschobene Wand und prüft
+zusätzlich ihre neuen PNG-Pixel sowie die leere alte Position. Der frühere
+Grundlauf vergrößerte eine andere Wand und bemerkte verlorene Türbindungen nicht.
+
+Kanten-/Eckpunktzüge senden `shape.preserveBoundaryAnchors`: Die unveränderte
+Polygon-/Kantenreihenfolge erklärt die Zuordnung. Beginn und Bewegung der
+Griffe verwenden den vorhandenen Zeichenrasterfang statt eines eigenen
+ungefangenen Koordinatenwegs; `--offset-grip` prüft einen Zielpunkt zwischen
+Rasterlinien mit erwarteter gespeicherter Rasterwand. Der gemeinsame Drawing-Writer
+prüft gleiche Konturtopologie, nicht kollabierte Kanten und den Ausschluss einer
+zusätzlichen affinen Transformation vor dem ersten Write. Ein Türpunkt auf dem
+weiterhin vorhandenen Segment bleibt physisch stehen; andernfalls folgt sein
+relativer Kantenparameter der verformten Wand. Erst danach wird an die kanonische
+Volumenprojektion gebunden, deren Ringreihenfolge anders sein darf. Ohne sichere
+Wandnähe bleibt der vorhandene ungebundene Erhaltungsweg maßgeblich. Beliebige
+Konturersetzungen, Schnitte und Merges behaupten keine solche Kantenzuordnung.
+Keine Schemaänderung oder heuristische Reparatur früher ungebundener Türen.
+`desktop-boundary-anchor.test.mjs` prüft Wand-/Eckpunktänderung, Volumenprojektion,
+Originaltexte, andere Türen, atomare Ablehnung, Replay, Undo/Redo und Fresh.
+Physische Eingabe- und vollständige 3D-Produktabnahme bleiben davon getrennt.
 
 Dungeonreisen verwenden die vorhandenen transaktionalen `dungeon_receipt`-
 Belege auch nach verlorener IPC-Antwort: Die UI hält den ursprünglichen Auftrag
