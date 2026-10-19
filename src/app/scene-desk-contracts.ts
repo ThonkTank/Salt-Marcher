@@ -45,7 +45,7 @@ export interface SceneDeskAPI {
   sceneDesk(token: string, sceneId: string): Promise<Result<SceneDesk>>;
   searchDesk(
     token: string,
-    kind: "world" | "note" | "item" | "creature" | "encounter" | "reference",
+    kind: "world" | "note" | "rule" | "item" | "creature" | "encounter" | "reference",
     search: string,
     offset: number,
   ): Promise<Result<{ entries: DeskEntry[]; next: number | null;notice?:string }>>;

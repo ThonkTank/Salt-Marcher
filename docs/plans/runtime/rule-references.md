@@ -145,11 +145,14 @@ nicht.
    in `flushLive` berücksichtigen. Abnahme: Pin/Refresh/Unpin vor/nach Commit
    unterbrechen, Scenewechsel, Close/Fresh; Replyverlust lesend am gleichen Command
    aufklären, keine neue Command-ID als automatischer Retry.
-2. **Regelsuche vereinfachen.** Das Regelpanel lädt weiterhin die ganze
-   `Preparation` und zeigt höchstens 20 Regeln ohne Folgeseite. Den vorhandenen
-   begrenzten Suchweg nutzen oder um nötige Regeltexte ergänzen; keine dritte Suche
-   bauen. Abnahme: Regeln hinter vielen anderen Notizen, GM-Textsuche, weitere
-   Treffer, Quellenänderung und Campaignwechsel.
+2. **Regelsuche weiter abnehmen.** Das Regelpanel verwendet jetzt den vorhandenen
+   begrenzten Notizsuchweg, filtert Regeln vor der Seitengrenze und bietet weitere
+   Treffer an. „Regel lesen“ zeigt das Original vor dem Anheften; die Übernahme
+   prüft atomar die angezeigte Quellenrevision. [Vollständiger nativer Ablauf und
+   Obsidian-Gegenprobe](../../reference/gm-ux-qa/2026-10-14-rule-context.md#hausregel-vor-dem-festhalten-lesen)
+   prüfen Suche, Lesen, Probe, Gruppenwechsel und Fresh bei 100/200 % Zoom.
+   Beschädigte Quellen, sehr große Regelbestände und vollständige
+   Campaignwechselabnahme bleiben von diesen Belegen getrennt.
 3. **Aktuelle Definitionen und Geschichte verbinden.** Den vorhandenen
    SharedDefinition-/Importkonfliktweg für installationsweite Regeln verwenden,
    Quellen-/Lizenzprovenienz und kampagneneigene Hausregeln erhalten. Laufende/

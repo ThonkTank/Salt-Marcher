@@ -1,5 +1,5 @@
 import type {WorkspaceGeometry,Result} from './contracts';
-import type {Note} from './preparation-contracts';
+import type {DeskEntry} from './scene-desk-contracts';
 import type {SceneRuleCommand,SceneRules} from './rule-reference-contracts';
 import type {SceneCheck,SceneCheckCommand,SceneChecks} from './scene-check-contracts';
 import {formatInstant} from './live-contracts';
@@ -28,23 +28,49 @@ async function command(action:SceneRuleCommand['action']){
  const o=owner(),basis=view;if(!o||!basis||busy)return;busy=true;ruleReadRequest++;lock();
  try{
   const result=await window.campaign.executeSceneRule({commandId:crypto.randomUUID(),campaignId:o.campaignId,token:o.token,sceneId:o.sceneId,expectedRevision:basis.revision,action});
-  if(!current(o))return;ruleReadRequest++;accept(unwrap(result),o);await search();if(current(o))tell('Regelreferenzen der Gruppe gespeichert.');
- }catch(error){if(current(o))tell((error as Error).message,true);}finally{if(current(o)){busy=false;lock();}}
+  if(!current(o))return;ruleReadRequest++;accept(unwrap(result),o);await search();if(current(o))tell('Regelreferenzen der Gruppe gespeichert.');return true;
+ }catch(error){if(current(o))tell((error as Error).message,true);return false;}finally{if(current(o)){busy=false;lock();}}
 }
 function renderPins(){const root=el('live-rule-pins');root.replaceChildren();if(!view?.pins.length){const p=document.createElement('p');p.className='caption';p.textContent='Noch keine Regel für diese Gruppe angeheftet.';root.append(p);return;}for(const pin of view.pins){const card=document.createElement('article'),title=document.createElement('h4'),status=document.createElement('p'),publicText=document.createElement('pre'),details=document.createElement('details'),summary=document.createElement('summary'),gm=document.createElement('pre'),actions=document.createElement('div');title.textContent=pin.title;status.className='caption';status.textContent=pin.unavailable?'Quelle nicht mehr verfügbar – eingefrorener Stand bleibt lesbar.':pin.stale?'Quelle geändert – eingefrorener Stand bleibt aktiv.':'Quelle Revision '+pin.sourceRevision;publicText.textContent=pin.readAloud;summary.textContent='GM-Details';gm.textContent=pin.gmNotes;details.append(summary,gm);actions.className='toolbar';if(pin.stale&&!pin.unavailable)actions.append(button('Aus Quelle aktualisieren',()=>void command({kind:'refresh',noteId:pin.noteId})));actions.append(button('Von Gruppe lösen',()=>void command({kind:'unpin',noteId:pin.noteId})));card.append(title,status,publicText,details,actions);root.append(card);}}
+/** Search and reading share the canonical note reader; inspecting a rule does not pin it. */
 async function search(){
- const w=workspace,id=sceneId,g=generation,r=++searchRequest,query=el<HTMLInputElement>('live-rule-search').value;if(!w||!id||!view)return;
- const current=()=>g===generation&&workspace?.token===w.token&&sceneId===id&&r===searchRequest&&el<HTMLInputElement>('live-rule-search').value===query;
- try{
-  const prep=unwrap(await window.campaign.preparation(w.token,query));if(!current())return;
-  const root=el('live-rule-results');root.replaceChildren();const pinned=new Set(view?.pins.map(p=>p.noteId));
-  for(const row of prep.notes.filter(row=>!row.trashed&&row.note.kind==='rule'&&!pinned.has(row.note.id)).slice(0,20)){const card=document.createElement('article'),title=document.createElement('strong'),excerpt=document.createElement('span');title.textContent=row.note.title;excerpt.textContent=' · '+excerptFor(row.note);card.append(title,excerpt,button('Anheften',()=>void command({kind:'pin',noteId:row.note.id})));root.append(card);}
-  if(!root.childNodes.length)message(root,'Keine weitere Regelreferenz gefunden.');lock();
- }catch(error){if(current()){message(el('live-rule-results'),(error as Error).message,true);tell((error as Error).message,true);}}
+ const o=owner(),r=++searchRequest,query=el<HTMLInputElement>('live-rule-search').value;if(!o||!view)return;
+ const currentSearch=()=>current(o)&&r===searchRequest&&el<HTMLInputElement>('live-rule-search').value===query;
+ const root=el('live-rule-results'),seen=new Set<string>();root.replaceChildren();
+ const load=async(offset:number,more:HTMLButtonElement|null=null)=>{
+  if(!currentSearch())return;if(more)more.disabled=true;
+  try{
+   const page=unwrap(await window.campaign.searchDesk(o.token,'rule',query,offset));if(!currentSearch())return;
+   more?.remove();const pinned=new Set(view?.pins.map(p=>p.noteId));
+   for(const entry of page.entries){if(entry.ref.kind!=='note'||pinned.has(entry.ref.id)||seen.has(entry.ref.id))continue;seen.add(entry.ref.id);root.append(ruleCandidate(entry,o,currentSearch));}
+   if(page.notice){const notice=document.createElement('p');notice.textContent=page.notice;notice.setAttribute('role','alert');root.append(notice);}
+   if(page.next!==null){const next=page.next;const b=button('Weitere Regeln anzeigen',()=>void load(next,b));root.append(b);}
+   if(!root.childNodes.length)message(root,'Keine weitere Regelreferenz gefunden.');lock();
+  }catch(error){if(currentSearch()){if(more){more.disabled=false;more.textContent='Weitere Regeln erneut laden';}else message(root,(error as Error).message,true);tell((error as Error).message,true);}}
+ };
+ await load(0);
+}
+function ruleCandidate(entry:DeskEntry,o:Owner,currentSearch:()=>boolean){
+ const card=document.createElement('article'),details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement('div');
+ summary.textContent=entry.title+' · Regel lesen';
+ if(entry.preview){const p=document.createElement('p'),preview=entry.preview; p.className='caption';p.textContent=('parts' in preview?preview.owner+' · '+preview.parts.map(p=>p.text).join(''):preview.label+' · '+preview.text);summary.append(p);}
+ details.append(summary,body);card.append(details);
+ if(entry.unavailable){body.textContent='Quelle nicht verfügbar. Erneut suchen.';return card;}
+ let loading=false,loaded=false;
+ const read=async()=>{
+  if(!currentSearch()||loading||loaded)return;loading=true;message(body,'Regel wird gelesen…');
+  try{
+   const content=unwrap(await window.campaign.deskContent(o.token,entry.ref));if(!currentSearch()||!card.isConnected)return;
+   if(content.unavailable||content.ref.kind!=='note'||content.ref.id!==entry.ref.id||!content.note||content.note.kind!=='rule'||content.note.id!==entry.ref.id||content.note.revision!==content.revision)throw Error('Regelquelle nicht verfügbar. Erneut suchen.');
+   body.replaceChildren();const revision=document.createElement('p');revision.className='caption';revision.textContent=content.title+' · Quelle Revision '+content.revision;body.append(revision);
+   for(const [label,value]of [['Zum Vorlesen',content.note.readAloud],['GM-Details',content.note.gmNotes]])if(value){const h=document.createElement('h5'),p=document.createElement('pre');h.textContent=label!;p.textContent=value!;p.className='rule-candidate-text';body.append(h,p);}
+   const pin=button('Anheften',async()=>{if(!currentSearch()||!loaded)return;const saved=await command({kind:'pin',noteId:entry.ref.id,expectedSourceRevision:content.revision});if(!saved&&currentSearch()){loaded=false;pin.disabled=true;body.append(button('Regel erneut lesen',()=>void read()));}});body.append(pin);loaded=true;lock();
+  }catch(error){if(currentSearch()&&card.isConnected){message(body,(error as Error).message,true);body.append(button('Regel erneut lesen',()=>void read()));}}
+  finally{loading=false;}
+ };
+ details.ontoggle=()=>{if(details.open)void read();};return card;
 }
 
-
-function excerptFor(note:Note){const text=(note.readAloud||note.gmNotes).replace(/\s+/g,' ').trim();return text.length>140?text.slice(0,137)+'…':text;}
 export function initRuleReferences(status:typeof tell){tell=status;ensure();}
 export function activateRuleReferences(next:WorkspaceGeometry){
  workspace=next;sceneId=null;view=null;checks=null;busy=false;generation++;ruleReadRequest++;checkReadRequest++;searchRequest++;

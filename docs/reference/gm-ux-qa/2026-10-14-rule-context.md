@@ -44,3 +44,56 @@ Probe in B. [Abschlussbeleg](2026-10-14-rule-context-sync.json).
 Letzter Abgleich: Archivierte Scenes sperren ihre Masken und deren Undo; der
 Verlauf bleibt erhalten. Die vorhandenen Archiv-Gegenproben bestanden zusätzlich.
 Mehrere offene Begegnungen und die gemeinsame HP-Wahrheit bleiben erhalten.
+
+
+## Hausregel vor dem Festhalten lesen
+
+Am 19.10.2026 wurde auf Main-Basis `ee7d3605305997adb5daa74fa40e02945b69ca96`
+eine vollständige weitere GM-Aufgabe ausgeführt: Im geteilten Spiel die
+Sicherungsleinenregel nachschlagen, ihren Vorteil und die Einschränkung ohne
+Ankerpunkt lesen, für die betroffene Gruppe festhalten, eine Geschicklichkeitsprobe
+mit Vorteil, +2 und SG 12 protokollieren, Gruppen wechseln und nach regulärem
+Neustart Regelbasis und Ergebnis wiederfinden.
+
+Der vollständige Ausgangsweg funktionierte, aber [am Treffer](2026-10-19-rule-reading-before.png)
+stand ausschließlich „Anheften“. Der vollständige GM-Text war erst danach über
+„GM-Details“ lesbar. Die ungezielte Liste zeigte kommentarlos nur 20 von 25 Regeln;
+die Inhaltssuche nach „schlüpfrigen“ fand die gesuchte Quelle bereits korrekt.
+
+Jetzt öffnet „Regel lesen“ direkt im Treffer das kanonische Original. Lesen
+verändert weder Gruppenpins noch Quelltexte. Erst „Anheften“ übernimmt den
+angezeigten Stand; eine inzwischen geänderte Quelle wird atomar abgewiesen und
+kann ausdrücklich erneut gelesen werden. Die bereits vorhandene Notizsuche
+liefert Regeln mit Filter vor der 40er-Seitengrenze, Textfundstelle und weiteren
+Treffern. Es gibt keinen neuen Index, Speicher oder Writer.
+
+Derselbe vollständige Ablauf besteht bei [100 %](2026-10-19-rule-reading-100.png)
+und [200 % Zoom](2026-10-19-rule-reading-200.png), einschließlich weiterem Scrollen
+im langen Regeltext. Die Gegenprobe erreicht zusätzlich alle 45 Regeln über
+weitere Treffer. Die betroffene Gruppe erhält genau eine Regelbasis und eine
+Probe; die andere bleibt ohne beides. Maximum der beiden Würfel plus Modifikator,
+SG-Auswertung, Quellenrevision und alle ursprünglichen Notizbytes werden am
+kanonischen Store geprüft. Vier reguläre Exits 0, abwesende PIDs und identische
+finale Bundlehashes sind im [Ergebnis](2026-10-19-rule-reading.json) festgehalten.
+[Nach Neustart](2026-10-19-rule-reading-fresh.png) bleiben Regel und Ergebnis lesbar.
+
+Die tatsächliche [Obsidian-Gegenprobe nach Neustart](2026-10-19-rule-reading-obsidian.png)
+verwendet einen eigenen Vault mit 25 Hausregeln und zwei Gruppennotizen:
+Strg+Umschalt+F → „schlüpfrigen“ → Treffer öffnen → vollständige Regel lesen →
+bestehende Gruppennotiz öffnen → Regel verlinken, Einschränkung festhalten und
+Beispielwürfel 7/11 mit Vorteil, +2 und SG 12 manuell protokollieren → andere
+Gruppe und zurück → normal schließen → frisch Ergebnis und Originalregel öffnen.
+Die [Inhaltssuche](https://obsidian.md/help/plugins/search) und
+[internen Links](https://obsidian.md/help/links) sind Obsidian-Kernfunktionen.
+Ein Würfelplugin wurde nicht verwendet; die vorgegebenen Beispielwerte sind kein
+Nachweis automatischen Würfelns. Originalregel und zweite Gruppennotiz bleiben
+unverändert. Zwei Exits 0 sind belegt. Installierte Obsidian-App-Dateien 1.14.4
+liefen unter Test-Electron 44.7.0; dies qualifiziert nicht den Flatpak-Launcher.
+
+Der Vergleich stützt die Trennung von Lesen und Festhalten. SaltMarcher erhält
+den Gruppenbezug und berechnet die Probe; Obsidian benötigt hier manuelle
+Protokollierung. Eine allgemeine menschliche Präferenz folgt daraus nicht.
+69 gezielte Authority-/Store-/Such-/Schnellsuchtests bestehen. Die neue native
+Probe ist `tools/test-desktop-rule-reading.mjs` (`GM_QA_ZOOM=2` für 200 %).
+Paketinstallation, menschliche Bedienabnahme und vollständige SMR-AC-03/-04-Abnahme
+bleiben offen.
