@@ -36,19 +36,25 @@ denselben Gruppenprüfweg; verworfene oder fremde Gruppen erzeugen keine Runtime
 
 ## Spontane Katalogübernahme ohne Teilkampf
 
-Die erste Katalogkreatur gehört zur atomaren Kampfanlage. `CombatAction.create`
-bindet optional `catalogCreature` (ID, Anzahl, Gruppenmodus); derselbe
-`addCreature`-Pfad wie bei Verstärkung löst sie vor dem ersten Kampfrecord auf.
-Plan, Generator und Szenengruppenauswahl sind getrennte Anlagequellen und dürfen
-nicht gleichzeitig gebunden werden. Bei fehlendem/abgeschlossenem Kampf sendet
-der Renderer einen Anlageauftrag, bei offenem Kampf einen `add-creature`-Auftrag.
-Die ausdrückliche spontane Katalogübernahme und die Szenengruppenauswahl bleiben
-erreichbar; es entsteht keine zweite veränderliche Planungskopie.
+Die spontane Auswahl öffnet am Spieltisch dieselbe Suche wie spätere Verstärkung.
+Ein separater Vorlagenkatalog und die erneute Quellenwahl entfallen. Der erste
+`catalogCreature`-Auftrag erzeugt Szenengruppe, Weltfiguren und Initiative in
+einer Transaktion. Weitere `add-creature`-Aufträge materialisieren ihre Figuren
+auf dieselbe Weise. `scene_opponent_group` bindet diese Gruppen auch ohne Ort
+oder übernommenen Spielabendbesuch an die Szene (Speicherversion 51).
+
+Die Originalanforderungen verlangen Scene-eigene Figuren und fortgeführte HP;
+der bisherige Katalogweg erzeugte nur anonyme Kampfteilnehmer. Die Katalogwahl
+ist deshalb eine Übernahme in die Szene. Die Initiative referenziert deren
+`worldActorId` und verwendet den bestehenden gemeinsamen HP-Speicher. Der
+Abschluss behält sein historisches Ergebnis; eine erneute Begegnung verwendet
+die überlebenden Figuren mit ihrem aktuellen Zustand. Alte anonyme Kampfarchive
+werden nicht nachträglich mit erfundenen Weltidentitäten versehen.
 
 Ungültige Daten, veraltete Membershipbasis und spätere Receiptfehler rollen die
-gesamte Anlage zurück, einschließlich der ersten Gegner. Replay und bestehende
-`commitStatus`-Klärung bestätigen denselben vollständigen Kampf. Bestehende
-Receiptformate und Kampfdaten bleiben ohne Schemawechsel erhalten.
+gesamte Übernahme einschließlich Gruppen und Figuren zurück. Replay und
+`commitStatus` bestätigen denselben vollständigen Vorgang. Bestehende
+Receiptformate und Kampfarchive bleiben erhalten.
 
 Initiativewürfe verwenden ausschließlich die Vorschau in `combat-initiative.ts`
 und den gesicherten Initiativeentwurf; erst `initiative` übernimmt die Werte

@@ -323,8 +323,8 @@ test('reinforcement dialog separates troop additions from catalog results and cl
  x.el('combat-add-open').onclick();assert.equal(dialog.hasAttribute('open'),true);
  assert.match(x.el('combat-add-context').textContent,/Runde 1.*Zug bleibt erhalten/);
  assert.equal(x.el('combat-rows').innerHTML,roster);assert.equal(x.writes.length,0);
- assert.equal(x.el('combat-creature-source').value,'group');
- assert.equal(x.el('combat-creature-initiative-field').hidden,true);
+ assert.equal(x.el('combat-creature-source').value,'catalog');
+ assert.equal(x.el('combat-creature-initiative-field').hidden,false);
  x.el('combat-creature-source').value='catalog';x.el('combat-creature-source').onchange();
  assert.equal(x.el('combat-creature-search-form').hidden,false);assert.equal(x.el('combat-creature-initiative-field').hidden,false);
  assert.doesNotMatch(x.el('combat-creature-select').textContent,/vorhandene Initiative/);
@@ -406,4 +406,40 @@ test('an attack cannot roll against unknown armor and can select a known target 
  const select=x.el('combat-attack-target'),roll=x.el('combat-attack-roll');select.value=target.id;select.onchange();assert(roll.disabled);assert.match(select.textContent,/RK offen/);assert.match(roll.title,/zuerst eintragen/);assert.match(x.el('combat-attack-hint').textContent,/Ziel-RK noch offen.*RK-Spalte/);
  const before=x.store.db.serialize();roll.onclick();await tick();assert.equal(x.writes.length,0);assert(before.equals(x.store.db.serialize()));assert.match(x.messages.at(-1)[0],/Rüstungsklasse/);
  select.value=x.combat.participants[1].id;select.onchange();assert.equal(roll.disabled,false);assert.doesNotMatch(x.el('combat-attack-hint').textContent,/Ziel-RK noch offen/);
+});
+
+
+test('spontaneous survivors remain scene figures with shared HP after finish, restart and a second mask',t=>{
+ const x=fixture(t),id=x.combat.id,first=x.combat.participants[0],actorId=first.worldActorId;
+ assert.ok(actorId);const groups=x.store.scenePreparation(x.w.token,x.scene.id).groups;
+ assert.equal(groups.length,1);assert.equal(groups[0].actors.length,3);assert.equal(groups[0].actors[0].name,'Goblin A');
+ x.execute({kind:'damage',participantId:first.id,amount:3});
+ assert.equal(x.store.scenePreparation(x.w.token,x.scene.id).groups[0].actors[0].hp,4);
+ x.execute({kind:'undo'});assert.equal(x.store.scenePreparation(x.w.token,x.scene.id).groups[0].actors[0].hp,7);
+ x.execute({kind:'damage',participantId:first.id,amount:3});x.execute({kind:'finish',outcome:'Goblins ergeben sich'});
+ x.store.close();x.store=new CampaignStore(x.file);x.w=x.store.activate(x.campaign.id);
+ const persisted=x.store.scenePreparation(x.w.token,x.scene.id).groups[0];
+ assert.equal(persisted.actors[0].id,actorId);assert.equal(persisted.actors[0].hp,4);
+ const next=x.execute({kind:'create',sceneId:x.scene.id,title:'Erneute Begegnung',includeParty:false,expectedMembershipRevision:x.scene.membershipRevision,preparedGroupId:persisted.id,expectedPreparedRevision:persisted.revision});
+ assert.equal(next.participants.find(p=>p.worldActorId===actorId).hp,4);
+ x.execute({kind:'damage',participantId:next.participants.find(p=>p.worldActorId===actorId).id,amount:1});
+ assert.equal(x.store.scenePreparation(x.w.token,x.scene.id).groups[0].actors[0].hp,3);
+ assert.equal(x.store.combat(x.w.token,x.scene.id,id).combat.participants[0].hp,4,'finished result retains its historic snapshot');
+});
+
+test('scene opponent identities and health survive a complete campaign copy with independent ids',async t=>{
+ const x=fixture(t),first=x.combat.participants[0];x.execute({kind:'damage',participantId:first.id,amount:3});x.execute({kind:'finish',outcome:'Ergeben sich'});
+ const snapshot=x.root+'/opponents.sqlite';await x.store.campaignSnapshot(x.w.token,snapshot);
+ const target=new CampaignStore(x.root+'/copy.sqlite');try{
+  const copy=target.acceptCampaignSnapshot(snapshot,'Kopie',{}),w=target.activate(copy.id),scene=target.live(w.token).scene,groups=target.scenePreparation(w.token,scene.id).groups;
+  assert.notEqual(scene.id,x.scene.id);assert.equal(groups.length,1);assert.equal(groups[0].actors.length,3);assert.equal(groups[0].actors[0].hp,4);assert.notEqual(groups[0].actors[0].id,first.worldActorId);
+  const combat=target.combat(w.token,scene.id).combat;assert.equal(combat.participants[0].worldActorId,groups[0].actors[0].id);assert.equal(combat.outcome,'Ergeben sich');await target.backup(x.root+'/safe.sqlite');
+ }finally{target.close();}
+});
+test('schema 50 upgrades without changing records and missing schema 51 scene links fail closed',t=>{
+ const root=mkdtempSync(tmpdir()+'/scene-opponent-upgrade-'),file=root+'/workbench.sqlite';let store=new CampaignStore(file);t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
+ const cam=store.create('Bestehende Kampagne'),w=store.activate(cam.id);store.executeLive({commandId:randomUUID(),campaignId:cam.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});
+ store.db.exec('DROP TABLE scene_opponent_group;PRAGMA user_version=50');const before=store.db.prepare('SELECT * FROM live_scene').all();store.close();store=new CampaignStore(file);
+ assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),51);
+ store.db.exec('DROP TABLE scene_opponent_group');store.close();assert.throws(()=>new CampaignStore(file),/Szenengegner-Zuordnung fehlt/);
 });

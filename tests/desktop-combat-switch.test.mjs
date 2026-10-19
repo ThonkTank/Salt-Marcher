@@ -65,7 +65,17 @@ test(`a reply for a different encounter never becomes the editable selected enco
 }
 
 
-test('history search remains available after a selected combat cannot be read',async()=>{const x=await fixture();try{x.fail();x.choose(x.a.id);await until(()=>x.el('combat-load-status').getAttribute('role')==='alert');let reads=0;Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;this.dispatchEvent(new window.Event('close'));};window.campaign.maskHistory=async(_token,sceneId,query)=>{reads++;return{ok:true,value:{campaignId:x.w.campaign.id,sceneId,query,items:[],total:0,next:null}};};assert.equal(x.el('combat-history-open').disabled,false);x.el('combat-history-open').onclick();await tick();await tick();assert.equal(reads,1);}finally{x.cleanup();}});
+test('history search remains available after a selected combat cannot be read',async()=>{
+ const x=await fixture(),prototypes=[[window.HTMLSelectElement.prototype,'value'],[window.HTMLElement.prototype,'showModal'],[window.HTMLElement.prototype,'close']].map(([proto,key])=>({proto,key,descriptor:Object.getOwnPropertyDescriptor(proto,key)}));
+ try{
+  x.fail();x.choose(x.a.id);await until(()=>x.el('combat-load-status').getAttribute('role')==='alert');let reads=0;
+  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});
+  window.HTMLElement.prototype.showModal=function(){this.setAttribute('open','');};
+  window.HTMLElement.prototype.close=function(){this.removeAttribute('open');this.dispatchEvent(new window.Event('close'));};
+  window.campaign.maskHistory=async(_token,sceneId,query)=>{reads++;return{ok:true,value:{campaignId:x.w.campaign.id,sceneId,query,items:[],total:0,next:null}};};
+  assert.equal(x.el('combat-history-open').disabled,false);x.el('combat-history-open').onclick();await tick();await tick();assert.equal(reads,1);
+ }finally{for(const {proto,key,descriptor} of prototypes){if(descriptor)Object.defineProperty(proto,key,descriptor);else delete proto[key];}x.cleanup();}
+});
 
 test('a packet encounter invalidated before loading issues no read or command',async()=>{const x=await fixture();try{const count=x.reads.length;await x.ui.prepareWorldGroup({id:'group',title:'Angezeigte Gruppe',revision:1},undefined,()=>false);assert.equal(x.reads.length,count);assert.equal(x.writes.length,0);}finally{x.cleanup();}});
 test('a packet encounter invalidated during loading never sends a create command',async()=>{const x=await fixture();try{let active=true;x.hold();const pending=x.ui.prepareWorldGroup({id:'group',title:'Angezeigte Gruppe',revision:1},undefined,()=>active);await until(()=>x.waiting.length===1);active=false;x.release();await pending;assert.equal(x.writes.length,0);}finally{x.cleanup();}});
@@ -115,17 +125,17 @@ test('an encounter handoff read begun before a new visit cannot create a combat 
  }finally{x.cleanup();}
 });
 
-test('an empty encounter offers the existing creature catalog without creating an empty combat',async()=>{
- const x=await fixture(false);try{let opened=0,current;x.ui.setCombatCatalogNavigation(async lease=>{opened++;current=lease;});
-  const button=x.el('combat-catalog-open');assert.equal(button.hidden,false);assert.equal(button.disabled,false);button.click();await until(()=>opened===1);assert.equal(current(),true);assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.store.live(x.w.token).scene.id).combat,null);
-  x.ui.combatContext(null,null);assert.equal(current(),false);
+test('an empty encounter opens an in-place catalog picker without creating a mask and revokes it with the scene',async()=>{
+ const x=await fixture(false);try{
+  await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');
+  const button=x.el('combat-catalog-open'),dialog=x.el('combat-add-dialog');assert.equal(button.hidden,false);assert.equal(button.disabled,false);
+  button.onclick();assert.equal(dialog.hasAttribute('open'),true);assert.equal(x.el('combat-creature-search-form').hidden,false);assert.equal(x.writes.length,0);
+  assert.equal(x.store.combat(x.w.token,x.store.live(x.w.token).scene.id).combat,null);
+  x.ui.combatContext(null,null);assert.equal(dialog.hasAttribute('open'),false);button.click();assert.equal(dialog.hasAttribute('open'),false);assert.equal(x.writes.length,0);
  }finally{x.cleanup();}
 });
-test('a revoked scene cannot open the catalog after its draft flush',async()=>{
- const x=await fixture(false);try{let opened=0;x.ui.setCombatCatalogNavigation(async()=>{opened++;});x.el('combat-catalog-open').click();x.ui.combatContext(null,null);await tick();await tick();assert.equal(opened,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}
-});
-test('the spontaneous entry cannot append to an already editable encounter',async()=>{
- const x=await fixture();try{let opened=0;x.ui.setCombatCatalogNavigation(async()=>{opened++;});assert.equal(x.el('combat-catalog-open').hidden,true);x.el('combat-catalog-open').click();await tick();assert.equal(opened,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}
+test('the new encounter entry does not open over an editable encounter',async()=>{
+ const x=await fixture();try{assert.equal(x.el('combat-catalog-open').hidden,true);x.el('combat-catalog-open').click();assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.writes.length,0);}finally{x.cleanup();}
 });
 
 test('quick picker displays stable combat numbers for otherwise identical titles',async()=>{const x=await fixture({finished:true});try{const c=x.store.combat(x.w.token,x.a.sceneId,x.b.id).combat;x.store.executeCombat({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,combatId:c.id,expectedRevision:c.revision,action:{kind:'notes',title:'Torwache',notes:''}});x.el('combat-refresh').onclick();await until(()=>x.el('combat-title').textContent==='Torwache');const options=[...x.el('combat-history').children];assert.equal(options.length,2);assert(options.every(o=>/Torwache · Nr. [0-9]+/.test(o.textContent)));assert.equal(new Set(options.map(o=>o.textContent.match(/Nr. [0-9]+/)[0])).size,2);}finally{x.cleanup();}});

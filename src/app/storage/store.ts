@@ -170,7 +170,8 @@ export class CampaignStore {
     const schema = this.db.pragma('user_version', { simple: true });
     if(schema>0&&schema<50&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='city_unit'").get()&&this.db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get()){this.db.close();throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');}
     if(schema>=50&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='room_group'").get()){this.db.close();throw Error('Raumgruppenspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if (schema > 50) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 51) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if(schema>=51&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_opponent_group'").get()){this.db.close();throw Error('Szenengegner-Zuordnung fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
@@ -243,7 +244,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=50');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=51');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -806,6 +807,7 @@ export class CampaignStore {
     return this.workspace();
   }
   private validateDatabase(db: any) {
+    if(db.pragma('user_version',{simple:true})>=51&&!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_opponent_group'").get())throw Error('Szenengegner-Zuordnung fehlt.');
     validateCampaignAtlases(db);
     for(const row of db.prepare("SELECT value FROM settings WHERE key LIKE 'session-recap:%'").iterate())checkedSessionRecapDraft(JSON.parse(row.value));
     for(const row of db.prepare('SELECT campaign_id,scene_id FROM live_moment_draft').iterate())readLiveMomentDraft(db,row.campaign_id,row.scene_id);
@@ -1177,7 +1179,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
     this.validateDatabase(db);
@@ -1212,7 +1214,7 @@ export class CampaignStore {
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installRoomGroups(source);source.pragma('user_version=50');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installRoomGroups(source);installSessionSchema(source);source.pragma('user_version=51');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }

@@ -1,3 +1,4 @@
+import {retainSceneOpponents} from './scene-opponents';
 import {sceneEncounterParty,selectedSceneGroup,sceneGroupMembers,assessSceneGroups} from '../scene-encounter-selection';
 import {areaTargetDamage} from '../area-damage';
 import {confirmCombatNpcLosses} from './combat-world-losses';
@@ -227,7 +228,9 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
       if(a.catalogCreature!==undefined){
         const first=a.catalogCreature;
         if(!first||typeof first.creatureId!=='string'||!first.creatureId||typeof first.grouped!=='boolean')throw new Error('Ungültige Katalogauswahl.');
-        addCreature(state,readCreature(first.creatureId),first.count,first.grouped);
+        const source=readCreature(first.creatureId),before=state.participants.length;
+        addCreature(state,source,first.count,first.grouped);
+        retainSceneOpponents(db,cam,state,source,state.participants.slice(before));
       }
       checkedCombat(state);
       const ordinal = db.prepare('SELECT coalesce(max(ordinal),0)+1 n FROM combat WHERE campaign_id=?').get(cam).n;
@@ -275,7 +278,9 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
           if(state.participants.some(p=>p.worldActorId===actor.id))throw new Error('NPC steht bereits in dieser Begegnung.');
           addNamedActor(db,cam,state,actor.id,scene.locationId);
         } else if (a.kind === 'add-creature') {
-          addCreature(state,readCreature(a.creatureId),a.count,a.grouped,a.groupId,undefined,a.initiative);
+          const source=readCreature(a.creatureId),before=state.participants.length;
+          addCreature(state,source,a.count,a.grouped,a.groupId,undefined,a.initiative);
+          retainSceneOpponents(db,cam,state,source,state.participants.slice(before));
         } else if (a.kind === 'add') {
           if (!Number.isSafeInteger(a.count) || a.count < 1 || a.count > 100 || state.participants.length + a.count > 1000) throw new Error('Bitte 1–100 Teilnehmer hinzufügen.');
           const shared = randomUUID();
