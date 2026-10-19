@@ -294,14 +294,7 @@ export function drawTerritories(
     if (layer.visible)
       for (const t of state.territories
         .filter((t) => t.layerId === layer.id)
-        .sort(
-          (a, b) =>
-            b.rank - a.rank ||
-            (b.kind === "road" || b.kind === "river"
-              ? (b.available ?? 0) - (a.available ?? 0)
-              : 0) ||
-            a.id.localeCompare(b.id),
-        )) {
+        .sort((a, b) => b.rank - a.rank || a.id.localeCompare(b.id))) {
         const b = territoryBounds(t.polygons);
         if (!footprintVisible(Math.max(b.width, b.height), mpp)) continue;
         root.append(
