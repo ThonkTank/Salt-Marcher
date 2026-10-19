@@ -61,3 +61,6 @@ test('city drawing joins an existing landscape endpoint and one undo restores bo
 test('legacy paths retain original screen dashes and custom lines retain width at every zoom',()=>{
  const r=road();delete r.line;r.style='path';r.width=1;assert.deepEqual(lineParts(r,10)[0].dash,[50,30]);assert.equal(lineParts(r,10)[0].width,20);r.line={version:1,curve:'linear',color:'#aa0011',roughness:0,meander:0,fadeIn:false,seed:1,style:'dotted',overSymbols:false};assert.deepEqual(lineParts(r,1),lineParts(r,100));
 });
+test('typed curves remain identical across a rotated city frame even with unequal segment lengths',()=>{
+ const r=road('avenue',[{x:-20,y:15},{x:0,y:0},{x:2000,y:900}]),angle=.71,transform=p=>({x:-3000+p.x*Math.cos(angle)-p.y*Math.sin(angle),y:1700+p.x*Math.sin(angle)+p.y*Math.cos(angle)}),expected=linePoints(r).map(transform),actual=linePoints({...r,points:r.points.map(transform)});for(let i=0;i<actual.length;i++)assert(Math.hypot(actual[i].x-expected[i].x,actual[i].y-expected[i].y)<1e-8);
+});

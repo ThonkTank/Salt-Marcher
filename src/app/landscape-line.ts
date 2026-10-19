@@ -65,9 +65,11 @@ export function linePoints(r: LandscapeRecord): Point[] {
     const steps=32,amp=r.kind==='river'?s.meander*Math.min(len*.12,r.width*12):r.width*s.roughness*.45;
     for(let j=0;j<steps;j++){
       const t=j/steps,t2=t*t,t3=t2*t;
-      const tangent=(v:number,d:number)=>Math.max(-len,Math.min(len,(v-d)/2));
+      // Typed curves must commute with city-frame rotation. Legacy curves retain
+      // their historical component clamp until an explicit type assignment.
+      const tangent=(v:Point,d:Point,k:'x'|'y')=>s.version===2?(v[k]-d[k])/2*Math.min(1,len/(Math.hypot(v.x-d.x,v.y-d.y)/2||1)):Math.max(-len,Math.min(len,(v[k]-d[k])/2));
       const component=(k:'x'|'y')=>s.curve==='linear'?a[k]+(b[k]-a[k])*t:
-        (2*t3-3*t2+1)*a[k]+(t3-2*t2+t)*tangent(b[k],before[k])+(-2*t3+3*t2)*b[k]+(t3-t2)*tangent(after[k],a[k]);
+        (2*t3-3*t2+1)*a[k]+(t3-2*t2+t)*tangent(b,before,k)+(-2*t3+3*t2)*b[k]+(t3-t2)*tangent(after,a,k);
       const offset=Math.sin(Math.PI*t)*(amp*Math.sin(t*Math.PI*2*(r.kind==='river'?1+(1-s.meander)*3:1)+noise(s.seed,i+(s.continuity?.segmentOffset??0))*Math.PI)+r.width*s.roughness*.12*Math.sin(t*Math.PI*8+noise(s.seed,i+111+(s.continuity?.segmentOffset??0))));
       result.push({x:component('x')-dy/len*offset,y:component('y')+dx/len*offset});
     }
