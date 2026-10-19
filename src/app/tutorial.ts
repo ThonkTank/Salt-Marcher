@@ -167,7 +167,7 @@ export const tutorialCapabilityLessons={
   'hex-access-fields':'hex-access','travel-access-choices':'hex-access',
   'catalog-item-reference':'item-reference','catalog-items-tab':'item-reference',
   'scene-desk':'scene-desk','desk-search-form':'scene-desk','desk-create-form':'scene-desk','desk-editor':'scene-desk',
-  'combat-panel':'multiple-encounters','combat-create-form':'multiple-encounters','combat-history-open':'multiple-encounters','combat-start':'multiple-encounters','combat-drafts':'multiple-encounters',
+  'combat-panel':'multiple-encounters','combat-history-open':'multiple-encounters','combat-start':'multiple-encounters','combat-drafts':'multiple-encounters',
   'chase-panel':'chase','chase-new':'chase','chase-start':'chase','chase-round':'chase','chase-finish':'chase','chase-history-open':'chase','chase-draft-retry':'chase',
   'session-profile-form':'session-generation','session-generate-form':'session-generation','session-history':'session-generation',
   'combat-finish':'combat-rewards','visit-reward-award':'combat-rewards','reward-panel':'combat-rewards',

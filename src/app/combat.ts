@@ -383,7 +383,6 @@ function render() {
   if(creation.dataset.combatId!==creationId){creation.dataset.combatId=creationId;creation.open=!combat;}
   renderReinforcements();
   get('combat-creation').hidden = false;
-  get('combat-create-form').hidden=true;
   get('combat-catalog-open').hidden=editableCombat(combat??null);
   get('combat-shared-notice').textContent=combat?.sharedNotice??'';
   get('combat-workspace').hidden = !combat;
@@ -521,7 +520,6 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-draft-retry').onclick=()=>{void(async()=>{if(!workspace)return;const g=generation;if(await draftCache.retry(workspace.token,workspace.campaign.id)&&g===generation){tell('Entwürfe gesichert; noch nicht übernommen.');await listDrafts();}})();};
   get('combat-party-form').onsubmit=event=>{event.preventDefault();const p=view?.partyCandidates?.find(p=>p.characterId===value('combat-party-select'));if(p)void execute({kind:'add-party',characterId:p.characterId,expectedMembershipRevision:p.membershipRevision,expectedProgressRevision:p.progressRevision,...(value('combat-party-initiative').trim()?{initiative:Number(value('combat-party-initiative'))}:{})});};
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
-  get('combat-create-form').onsubmit = event => { event.preventDefault(); if (scene) void execute({ kind: 'create', sceneId: scene.id, expectedMembershipRevision: scene.membershipRevision, title: value('combat-new-title'), includeParty: get<HTMLInputElement>('combat-include-party').checked }); };
   get('combat-resume').onclick=()=>get('combat-panel').scrollIntoView({block:'start'});
   get('combat-scene').onclick=()=>get('running-editor').scrollIntoView({block:'start'});
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
