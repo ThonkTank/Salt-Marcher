@@ -649,7 +649,7 @@ async function packetOriginal(x){
  x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));const detail=x.store.session(x.workspace.token,plan.id).visits[1];x.store.executeSession({...x.command(null),action:{kind:'visit',planId:plan.id,expectedRevision:detail.revision,detail:{...detail,readAloud:'  Eigene Begrüßung\r\n',noteIds:[x.ids.ada,x.ids.borin]}}});
  const saved=x.store.session(x.workspace.token,plan.id);x.window.campaign.sessionPacket=async(...args)=>({ok:true,value:x.store.sessionPacket(...args)});await x.activate();await x.ui.openPreparedNote(x.ids.ada);await x.ui.openPreparedVisit(plan.id,plan.scenes[1].id);x.el('session-packet-open').click();await until(()=>x.el('session-packet-dialog').open&&x.el('session-packet-dialog').getAttribute('aria-busy')==='false');
  x.el('session-packet-search').value='Drei';x.el('session-packet-search').oninput();x.el('session-packet-content').scrollTop=343;x.el('session-packet-dialog').scrollTop=92;
- const block=[...x.el('session-packet-content').querySelectorAll('.packet-reference')].find(e=>e.querySelector('h4').textContent==='Borin · NSC');
+ const block=[...x.el('session-packet-content').querySelectorAll('.packet-block')].find(e=>e.querySelector('h4').textContent==='Borin');
  assert.ok(block,'the displayed German note heading must identify the original editor action');
  return{raw,plan,saved,open:()=>block.querySelector('.packet-block-action').click()};
 }
