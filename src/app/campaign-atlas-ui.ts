@@ -2043,7 +2043,7 @@ export class CampaignAtlasWorkbench {
           marker.data.kind = "city";
           marker.data.id = city.header.id;
           root.append(marker);
-          this.label(root, city.header.name, center, mpp);
+          this.label(root, city.header.name, center, mpp,'city:'+city.header.id);
           continue;
         }
         let shownCity = city;
@@ -2301,9 +2301,9 @@ export class CampaignAtlasWorkbench {
       p.y - r <= b.y + b.height
     );
   }
-  private label(root: AtlasPaint, text: string, p: Point, _mpp: number) {
+  private label(root: AtlasPaint, text: string, p: Point, _mpp: number, id:string) {
     if (root.data.mapScene) p = this.relativePoint(p);
-    root.append(shape('group',{mapLabels:[{id:'place:'+text+':'+p.x+':'+p.y,text,kind:'place',point:p,priority:80}]}));
+    root.append(shape('group',{mapLabels:[{id,text,kind:'place',point:p,priority:80}]}));
   }
   private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#7fa8bd"}}));}
   private drawInterior(
@@ -2347,6 +2347,7 @@ export class CampaignAtlasWorkbench {
           data.scopes.find((s) => s.id === b.ownerId)?.name ?? "Dungeon",
           center,
           mpp,
+          'scope:'+b.ownerId,
         );
         return;
       }
@@ -2604,6 +2605,6 @@ export class CampaignAtlasWorkbench {
     token.data.atlasObject = "true";
     token.data.kind = "party";
     root.append(token);
-    this.label(root, d.geometry.sceneTitle, position, mpp);
+    this.label(root, d.geometry.sceneTitle, position, mpp,'party-scene');
   }
 }
