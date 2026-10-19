@@ -121,6 +121,7 @@ export class TerritoryWorkbench {
       this.input<HTMLSelectElement>("territory-layer").value = l.id;
     });
     this.input("territory-search").oninput = () => this.list();
+    this.input("territory-mode").onchange = () => this.host.redraw();
     this.input("territory-preset").onchange = () => {
       this.input<HTMLInputElement>("territory-prominence").value =
         this.value("territory-preset");
@@ -212,7 +213,7 @@ export class TerritoryWorkbench {
     canvas.addEventListener("pointercancel", () => this.cancelStroke());
     canvas.addEventListener("lostpointercapture", () => this.cancelStroke());
     canvas.addEventListener("keydown", (e) => {
-      if (!this.enabled || e.defaultPrevented) return;
+      if (!this.enabled || this.busy || e.defaultPrevented) return;
       if (e.key === "Escape") {
         this.cancelStroke();
         e.preventDefault();
