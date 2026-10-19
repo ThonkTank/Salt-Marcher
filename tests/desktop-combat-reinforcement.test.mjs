@@ -85,6 +85,24 @@ test('reinforcement keeps same-creature troops distinct and preserves the select
  const saved=x.store.combat(x.w.token,x.scene.id,c.id).combat;
  assert.equal(saved.participants.at(-1).groupId,secondGroup);assert.equal(saved.participants.at(-1).initiative,15);assert.equal(saved.participants[3].hp,4);assert.equal(saved.participants[5].groupId,c.participants[5].groupId);assert.equal(saved.turnId,c.turnId);
 });
+test('same-creature troops with equal initiative and quantity expose their members before choosing reinforcement',async t=>{
+ const x=await uiFixture(t);
+ const reinforced=x.execute({kind:'add-creature',creatureId:x.creature.id,count:3,grouped:true,initiative:9});
+ const second=reinforced.participants.slice(3),secondGroup=second[0].groupId;
+ const before=structuredClone(x.execute({kind:'edit',participantId:second[0].id,changes:{hp:4,conditions:'Liegend'}}));await x.ui.openExistingCombat(before.id);
+ const select=x.el('combat-creature-select'),options=[...select.options];
+ assert.equal(options.length,2);assert.notEqual(options[0].textContent,options[1].textContent);
+ assert.match(options[0].textContent,/Goblin A, Goblin B ….*vorhandene Initiative 9 \(3\)/);
+ assert.match(options[1].textContent,/Goblin D, Goblin E ….*vorhandene Initiative 9 \(3\)/);
+ assert.doesNotMatch(options[1].textContent,/Goblin F/,'large troops use a bounded member preview');
+ select.value=options.find(o=>o.textContent.includes('Goblin D')).value;
+ x.el('combat-creature-count').value='1';x.el('combat-creature-form').onsubmit({preventDefault(){}});
+ await until(()=>x.writes.length===1&&!x.el('combat-creature-add').disabled);
+ const saved=x.store.combat(x.w.token,x.scene.id,before.id).combat;
+ assert.equal(x.writes[0].action.groupId,secondGroup);assert.equal(saved.participants.at(-1).groupId,secondGroup);
+ assert.equal(saved.participants.at(-1).initiative,9);assert.deepEqual(saved.participants.slice(0,6),before.participants);
+ assert.equal(saved.turnId,before.turnId);assert.equal(saved.round,before.round);
+});
 test('late catalog results cannot populate another encounter or enable a fabricated choice',async t=>{
  const x=await uiFixture(t);x.el('combat-creature-search').value='Dragon';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
  const other=x.execute({kind:'create',sceneId:x.scene.id,title:'Andere Begegnung',includeParty:false,expectedMembershipRevision:x.scene.membershipRevision});await x.ui.openExistingCombat(other.id);
@@ -224,7 +242,7 @@ test('troop rename changes all peers atomically, preserves individual aliases an
 test('runner saves one troop name for the selected group and offers it directly for reinforcement',async t=>{
  const x=await uiFixture(t);x.el('combat-rows').querySelector('[data-mob-front-id]').onclick();await until(()=>!x.el('fighter-name').disabled);
  x.el('fighter-group-name').value='Schützen';x.el('fighter-group-name').dispatchEvent(new window.Event('input'));await tick();await tick();x.el('combat-participant-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
- assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin · vorhandene Initiative 9/);assert.match(x.el('combat-rows').querySelector('.combat-mob-card strong').textContent,/^Schützen/);assert.ok(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.every(p=>p.groupName==='Schützen'));
+ assert.equal(x.writes[0].action.changes.groupName,'Schützen');assert.match(x.el('combat-creature-select').textContent,/Schützen · Goblin A, Goblin B … · vorhandene Initiative 9/);assert.match(x.el('combat-rows').querySelector('.combat-mob-card strong').textContent,/^Schützen/);assert.ok(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.every(p=>p.groupName==='Schützen'));
 });
 
 
