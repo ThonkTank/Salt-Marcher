@@ -8,19 +8,23 @@ export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
 export const REGION_CACHE_BYTES=64*1024*1024;
 /** Geometry is display-only. In particular it is never a CityCommand upsert. */
-export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point'|'outline'|'position'|'angle'|'width'|'interior'>;
+export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'outline'|'position'|'angle'|'width'|'interior'>;
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
  slice:number|null;roofs:boolean;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
+ labels?:import('./atlas-cartography').MapLabelCandidate[];
  state:'ready'|'error'; records:LandscapeRecord[]; tiles:import('./landscape-raster').LandscapeRaster[];
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
 }
 export interface AtlasHit extends Omit<AtlasObjectFocus,'kind'> {kind:AtlasObjectFocus['kind']|'landscape';name:string;landscapeKind?:LandscapeRecord['kind']}
 export interface AtlasHitPage {items:AtlasHit[];next:number|null;fence:string;total:number;unavailable?:('geometry'|'landscape')[]}
 export interface AtlasRegionGeometry {
+ labels?:import("./atlas-cartography").MapLabelCandidate[];
+ territoryRaster?:{box:LandscapeBox;width:number;height:number;data:string};
+ territories?:import("./atlas-territories").TerritoryState;
  campaignId:string;token:string;revision:number;fence:string;box:LandscapeBox;slice:number|null;scopeId:string|null;floorId:string;
  rooms:RoomGeometry[];floors:WorkspaceGeometry['floors'];drawing:DrawingMapView;
  cities:CityGeometry[];bindings:AtlasBinding[];scopes:{id:string;name:string}[];

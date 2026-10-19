@@ -37,6 +37,7 @@ export interface CampaignAtlas<R extends RoomGeometry = Room,E extends DrawingEl
   canRedo: boolean;
 }
 export type AtlasAction =
+  | import("./atlas-territories").TerritoryAction
   | import("./atlas-landscape").LandscapeAction
   | {
       kind: "drawing-import";
@@ -105,6 +106,7 @@ export interface AtlasCommitAck {
 }
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
 export interface AtlasAPI extends importAtlasRegionAPI {
+  atlasTerritories(token:string,box?:import("./atlas-landscape").LandscapeBox):Promise<Result<import("./atlas-territories").TerritoryState>>;
   atlasDrawingCommit(command:DrawingCommand):Promise<Result<{workspace:import('./contracts').Workspace;view:import('./drawing-contracts').DrawingView;atlasRevision:number}>>;
   atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;
   atlasRenderView(token:string):Promise<Result<AtlasRenderView>>;

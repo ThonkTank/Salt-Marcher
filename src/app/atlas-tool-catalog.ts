@@ -23,6 +23,7 @@ export const atlasToolGroups: Readonly<Record<AtlasSection, readonly AtlasToolGr
       land('hex','Hexfläche füllen','⬡','hex'),
       land('reset','Eigenschaft zurücksetzen','↺','reset'),
     ]},
+    {id:'regions',label:'Regionen',icon:'▧',tools:[land('territory','Regionenpinsel','▧','territory')]},
     {id:'water',label:'Wasser',icon:'≈',tools:[
       land('water-add','Wasser malen','＋','freshwater',{'land-freshwater-operation':'add'}),
       land('water-erase','Wasser entfernen','−','freshwater',{'land-freshwater-operation':'erase'}),

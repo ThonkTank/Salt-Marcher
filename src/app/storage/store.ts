@@ -1,3 +1,4 @@
+import {installTerritories,readTerritories,executeTerritory} from './atlas-territories';
 import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
@@ -165,7 +166,8 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if (schema > 48) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 49) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
@@ -237,7 +239,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);this.db.pragma('user_version=48');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);this.db.pragma('user_version=49');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -418,6 +420,7 @@ export class CampaignStore {
       return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace:this.workspace(),scene,...atlasHistoryState(this.db,cam)};
     })();
   }
+  atlasTerritories(token:string,box?:import("../atlas-landscape").LandscapeBox){return readTerritories(this.db,this.guard(token),box);}
   executeAtlas(c:AtlasCommand){
     const result=this.applyAtlas(c);
     return {atlas:this.campaignAtlas(c.token),result};
@@ -430,6 +433,7 @@ export class CampaignStore {
     const nested=(v:{token:string;campaignId:string;commandId:string})=>{if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId)throw new Error('Atlasbefehl gehört zu einem anderen Kontext.');};
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
+      if(a.kind==='territory-layer'||a.kind==='territory-put'||a.kind==='territory-remove'||a.kind==='territory-stroke'||a.kind==='territory-vertex')return executeTerritory(this.db,cam,a);
       if(a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
         const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
@@ -1158,7 +1162,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     this.validateDatabase(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
@@ -1190,6 +1194,7 @@ export class CampaignStore {
       if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
+      if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
       installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}

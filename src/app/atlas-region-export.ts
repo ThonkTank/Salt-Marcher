@@ -14,6 +14,7 @@ export function atlasRegionPaint(
   width: number,
   assets: Map<string, string>,
   options: {
+    automaticLabels?:boolean;
     grid: boolean;
     level: number | string;
     references: boolean;
@@ -38,7 +39,7 @@ export function atlasRegionPaint(
     mpp,
     assets,
     options.references,
-    options.rasters,
+    options.rasters,undefined,options.automaticLabels,
   );
   if (options.grid) drawLandscapeGrid(scene, box, options.level, mpp);
   if (data.region?.raster) {
@@ -73,7 +74,7 @@ export function atlasRegionPaint(
         }),
       );
     } else {
-      const cityScene = cityPaint(city);
+      const cityScene = cityPaint(city,!options.automaticLabels,mpp);
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);
@@ -117,7 +118,7 @@ export function atlasRegionPaint(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
     )) {
       g.append(roomFacePaint(room,mpp,data.geometry.drawing.styles?.find(s=>s.id===room.id)));
-      if (room.polygons[0]?.outer[0]) {
+      if (!options.automaticLabels && room.polygons[0]?.outer[0]) {
         const p = centerInRoom(room);
         g.append(
           landscapeNode(

@@ -1,3 +1,6 @@
+import {mapFootprintVisible,mapLineVisible,mapLineWidth} from '../atlas-scale-policy';
+import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
+import {readTerritories} from './atlas-territories';
 import {AtlasLandscapeReader} from './atlas-landscape-region';
 import {roomMapStyle} from './drawing';
 import {readDungeonVolume} from './volume';
@@ -84,13 +87,13 @@ export class AtlasRegionReader {
    this.store('room','',row.scope_id,row.floor_id,row.id,{value,polygons},row.sourceOrder);
   }else if(table==='city_unit'){
    const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node')return;
-   const {id,kind,name,protected:protectedValue,point,position,angle,width,interior}=u;
+   const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior}=u;
    let outline=u.outline,points:Point[]|undefined;
    if(['road','wall'].includes(kind)){
     const nodes=(u.nodeIds??[]).map((id:string)=>{const n=this.source('city_unit',id);if(n?.city_id!==row.city_id)throw new Error('Straßenknoten fehlt.');return parse(n);});
     points=roadPoints(u,nodes);if(points.length<2)throw new Error('Straßenknoten fehlt.');outline=points;
    }
-   const value={id,kind,name,protected:protectedValue,point,position,angle,width,interior,outline};
+   const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,outline};
    this.store('unit',row.city_id,'','',id,{value,...(points?{points,stroke:width??6}:{polygons:[{outer:kind==='building'?posed(value):outline??[],holes:[]}]})},row.sourceOrder);
   }else if(table==='drawing_element'){
    const e=parse(row);validateDrawingElement(e);if(e.id!==row.id||e.scopeId!==row.scope_id||e.floorId!==row.floor_id)throw new Error('Zeichnung widersprüchlich.');if(e.archived)return;
@@ -180,10 +183,10 @@ export class AtlasRegionReader {
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
     const extent=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,floor)??{x:null};
-    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);if(b.parent==='world'&&overlap({x:f.x,y:f.y,width:0,height:0},q.box)){metadata?.(b,f);emit({value:{id:b.ownerId},points:[{x:0,y:0}],stroke:mpp*12},f,'scope-marker',b);}continue;}
+    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);if(b.parent==='world'&&overlap({x:f.x,y:f.y,width:0,height:0},q.box)){metadata?.(b,f);emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:0,y:0}],stroke:mpp*12},f,'scope-marker',b);}continue;}
     if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
     metadata?.(b,f);
-    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
+    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
     for(const r of this.candidates('room','',b.ownerId,floor,local))try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch{if(this.countFaults)this.readFaults++;}
     for(const r of this.candidates('element','',b.ownerId,floor,local))emit(JSON.parse(r.payload),f,'element',b);
    }
@@ -192,25 +195,35 @@ export class AtlasRegionReader {
  read(source:AtlasRegionSource,q:AtlasRegionQuery):AtlasRegionGeometry{
   this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   const result:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box:{...q.box},slice:q.slice,scopeId:q.scopeId,floorId:q.floorId,rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
+  let labelCandidates:MapLabelCandidate[]=[];
   let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
   const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{
    if(dense||Object.hasOwn(result.frames,b.id))return;
    const scope=b.kind==='dungeon'?this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId):null,
     floors=scope?this.sql('SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind=\'floor\' AND h.hidden=1)').all(this.campaign,b.ownerId):[];
-   used+=bytes([b,f,h,scope,floors]);if(used>REGION_REPLY_BYTES-32768){dense=true;return;}
+   used+=bytes([b,f,h,scope,floors]);if(used>REGION_REPLY_BYTES-800*1024){dense=true;return;}
    result.bindings.push(b);result.frames[b.id]=f;if(scope){const e=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,b.ownerId===q.scopeId?q.floorId:'ground');if(e)result.scopeBounds[b.ownerId]=e;}if(scope){result.scopes.push(scope);result.floors.push(...floors);}
-   if(h){const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
+   if(h){labelCandidates.push({id:'city:'+h.id,text:h.name,kind:'city',rank:3,point:at({x:h.width/2,y:h.height/2},f),locationId:h.locationId});const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
   };
   this.visit(q,(s,_f,kind,b)=>{
-   if(kind==='city-paper')return;result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense=true;
+   if(kind==='city-paper')return;
+   if((s.value.name||kind==='room'&&s.value.number)&&kind!=='city-marker'){
+    const labelStart=labelCandidates.length;
+    if(kind==='scope-marker')labelCandidates.push({id:'scope:'+b.ownerId,text:s.value.name,kind:'place',rank:2,point:at(s.points![0]!,_f)});
+    else if(s.polygons){const polygons=s.polygons.map(p=>({outer:p.outer.map(p=>at(p,_f)),holes:p.holes.map(r=>r.map(p=>at(p,_f)))})),labelKind=kind==='room'?'room':s.value.kind==='building'?'building':'area',candidate=labelFromPolygon(kind+':'+s.value.id,kind==='room'?(s.value.number?'['+s.value.number+'] ':'')+s.value.name:s.value.name,labelKind,polygons,kind==='room'?0:s.value.kind==='building'?1:2);if(candidate)labelCandidates.push(candidate);}
+    else if(s.points&&s.value.kind==='road')labelCandidates.push(...lineLabels('unit:'+s.value.id,s.value.name,'road',s.points.map(p=>at(p,_f)),2,q.box));
+    const style=s.value.label;if(style){const transformed={...style,...(style.point?{point:at(style.point,_f)}:{}),...(style.angle===undefined?{}:{angle:style.angle+_f.angle})};labelCandidates.splice(labelStart,labelCandidates.length-labelStart,...styledLabels(labelCandidates.slice(labelStart),transformed));}
+    if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
+   }
+result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense=true;
    if(dense)return;
-   const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-32768){dense=true;return;}used+=cost;
+   const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-800*1024){dense=true;return;}used+=cost;
    if(kind==='room'){
     result.rooms.push(s.value);if(s.style){used+=bytes(s.style);result.drawing.styles.push(s.style);}
    }else if(kind==='unit'){cities.get(b.ownerId)?.units.push(s.value);if(s.value.kind==='building'){const child=this.sql("SELECT owner_id FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,s.value.id);if(child){result.interiors[s.value.id]=child.owner_id;used+=bytes([s.value.id,child.owner_id]);}}}
    else if(kind==='element')result.drawing.elements.push(s.value);
   },metadata);
-  if(bytes(result)>REGION_REPLY_BYTES-32768)dense=true;
+  if(bytes(result)>REGION_REPLY_BYTES-800*1024)dense=true;
   if(dense){
    this.countFaults=false;
    result.rooms=[];result.cities=[];result.bindings=[];result.frames=Object.create(null);result.scopeBounds=Object.create(null);result.interiors=Object.create(null);result.scopes=[];result.floors=[];result.drawing=emptyDrawing();result.coverage.mode='raster';
@@ -219,14 +232,30 @@ export class AtlasRegionReader {
    const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),image=new LandscapeRasterizer(q.box,width,height);
    this.visit(q,(s,f,kind,_b,h)=>{
     const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
+    if(kind==='unit'&&s.value.kind==='building'&&!mapFootprintVisible(polygons?.flatMap(p=>p.outer)??[],q.box.width/q.width))return;
+    if(kind==='unit'&&s.value.kind==='road'&&!mapLineVisible('road',s.stroke??6,q.box.width/q.width))return;
     let color=kind==='city-paper'?h!.paper:kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
     if(kind==='room')color=s.style?.fill??color;
     if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
-    else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:s.stroke??q.box.width/q.width*2,color);}
+    else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:mapLineWidth(s.stroke??q.box.width/q.width*2,q.box.width/q.width),color);}
    });
    const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
    result.raster={box:{...q.box},width,height,data:'data:image/png;base64,'+data};
   }
+  if(!q.perception){
+   const state=readTerritories(this.db,source.campaignId,q.box);
+   labelCandidates.push(...territoryLabels(state));
+   if(bytes(state)<=256*1024)result.territories=state;
+   else {
+    const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),image=new LandscapeRasterizer(q.box,width,height),mpp=q.box.width/q.width;
+    for(const l of state.layers)if(l.visible)for(const t of state.territories.filter(t=>t.layerId===l.id).sort((a,b)=>b.rank-a.rank||a.id.localeCompare(b.id))){
+     image.paintPolygons(t.polygons,t.color,t.opacity);
+     if(mpp<=labelScaleLimits[t.rank]!*4)for(const p of t.polygons)for(const ring of [p.outer,...p.holes])image.paintLine([...ring,ring[0]!],mpp*(t.rank>=4?1.8:1.1),t.color);
+    }
+    result.territoryRaster={box:{...q.box},width,height,data:'data:image/png;base64,'+PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64')};
+   }
+  }
+  if(!q.perception)result.labels=boundedLabels(labelCandidates,q.box);
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
   try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
   if(bytes(result)>REGION_REPLY_BYTES)throw new Error('Ausschnitt überschreitet das Darstellungsbudget. Weiter hineinzoomen.');
