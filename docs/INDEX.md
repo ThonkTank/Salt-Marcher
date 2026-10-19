@@ -27,7 +27,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
 | Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
 | GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](plans/runtime/rule-references.md), [Autorenverweise und Kopien](plans/campaign/authored-text-references.md) |
-| Beutewertung und Vergleich | [Gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md), [gemeinsame Schatzverteilung](plans/runtime/treasure-distribution.md) |
+| Beuteoberflächen und Wertvergleich | [UI-Einstiege für Schatz und Charakterbeute](plans/runtime/treasure-distribution.md#codeeinstiege-der-beuteoberflächen), [gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md) |
 | Shopbesitzer, Wiederherstellung und Restock | [Aktueller Zeitweg und nächste vollständige Lieferungen](plans/runtime/shops-and-restock.md) |
 | Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |
 | Katalogsuche, Filter und Inhaltswechsel | [Suchvertrag](plans/runtime/catalog-browsing.md#aktueller-suchvertrag), [Inhaltswechsel und Wiederaufnahme](plans/runtime/catalog-browsing.md#inhaltswechsel-und-wiederaufnahme) |
