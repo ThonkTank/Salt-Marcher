@@ -280,8 +280,8 @@ die Diagnose über drei bestehende Besitzer:
 | Läuft der Aufruf noch oder existiert schon ein Receipt? | [`CommitTracker`](desktop/commit-tracker.ts), angeschlossen in [`desktop/main.ts`](desktop/main.ts) an `campaign:commit-status`: ergänzt den gespeicherten Status um laufende Aufrufe. Ein fehlender DB-Beleg allein bedeutet währenddessen noch nicht „nicht gebucht“. |
 | Gehört der gespeicherte Beleg zu diesem Auftrag? | [`CampaignStore.commitStatus`](src/app/storage/store.ts) prüft den Aktivierungskontext; [`storage/commit-receipt.ts`](src/app/storage/commit-receipt.ts) prüft Campaign, Fingerprint, Prüfsumme und Fachbezug. |
 
-Die Rückbindung an die Fachansicht erfolgt über `onCommitResolved`, beim Kampf
-in `recoveredCombat` aus [`combat.ts`](src/app/combat.ts). Ein modaler Aufrufer
+`checkPendingCommit` meldet einen bestätigten Beleg über `onCommitResolved` an
+den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](src/app/combat.ts). Ein modaler Aufrufer
 muss laufenden Aufruf und ungeklärtes Ergebnis unterscheiden: `busy` im
 [`CombatAreaPanel`](src/app/combat-area-ui.ts) endet mit dem Aufruf, die gemeinsame
 Buchungssperre bleibt bis zur Klärung bestehen. Der [Flächenschaden-Vertrag](docs/plans/runtime/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung)
