@@ -16,6 +16,7 @@ export class KeyNoteContext {
  private panel=node('section');private content=node('div');private status=node('p');private heading=node('h3');
  private closeButton=node('button','Zum Raumtext');
  private restoreEditor:(()=>void)|null=null;
+ private target:{id:string;label:string}|null=null;
  private epoch=0;private pending:Promise<void>|null=null;private valid:()=>boolean=()=>false;
  constructor(private dialog:HTMLDialogElement,private options:NoteContextOptions){
   this.panel.id='key-reference-panel';this.panel.hidden=true;this.panel.setAttribute('aria-labelledby','key-reference-heading');this.heading.id='key-reference-heading';
@@ -27,14 +28,15 @@ export class KeyNoteContext {
   dialog.addEventListener('close',()=>this.reset());
  }
  get active(){return !this.panel.hidden;}
+ get source(){return this.active&&!this.content.hidden&&this.valid()&&this.target?{...this.target}:null;}
  setStatus(text:string,error=false){if(!this.active)return;this.status.textContent=text;this.status.dataset.error=String(error);}
  reset(){
-  this.epoch++;this.pending=null;this.valid=()=>false;
+  this.epoch++;this.pending=null;this.target=null;this.valid=()=>false;
   this.restoreEditor?.();this.restoreEditor=null;
   this.panel.hidden=true;this.dialog.classList.remove('has-key-reference');this.closeButton.disabled=false;
  }
  async open(id:string,label:string,current:()=>boolean){
-  this.reset();const epoch=this.epoch,valid=()=>this.epoch===epoch&&current()&&this.dialog.open;this.valid=valid;
+  this.reset();const epoch=this.epoch,valid=()=>this.epoch===epoch&&current()&&this.dialog.open;this.valid=valid;this.target={id,label};
   this.heading.textContent=label;this.panel.hidden=false;this.dialog.classList.add('has-key-reference');this.content.hidden=true;this.setStatus('Notiz wird gelesen…');
   this.restoreEditor=mountNoteEditor(this.content,()=>this.reset());
   const task=(async()=>{

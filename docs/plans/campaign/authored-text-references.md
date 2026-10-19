@@ -44,6 +44,11 @@ nochmals angeboten. Der Suchbegriff bleibt beim Raumwechsel, wird beim Wechsel
 der Kampagnenaktivierung geleert; entfernte Treffer haben keine Schreibautorität.
 [Native Aufgabe und Obsidian-Gegenprobe](../../reference/gm-ux-qa/room-rule-reuse-20261018/README.md)
 prüfen zentrale Korrektur, beide Raumverwendungen, individuelle Ergänzung und Fresh.
+Ein aus der eingeblendeten Quelle geöffneter Raum kehrt zur Quelle beim ursprünglichen
+Raum zurück. Der Atlas bleibt dabei offen. Während der Quellenbearbeitung besitzt
+der vorhandene Notizeditor die Detailfläche; „Zum Raumtext“ bleibt beim Scrollen
+sichtbar und gibt die Raumfelder wieder frei. Aus der Wissensansicht begonnene
+Raumverwendungen behalten deren bisherigen Rückweg.
 
 ## Markierte Texte als Weltwissen übernehmen
 
