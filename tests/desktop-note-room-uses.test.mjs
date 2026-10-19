@@ -61,3 +61,14 @@ test('empty and exhausted pages retain campaign-wide damage notices without prod
  x.store.db.prepare('DELETE FROM dungeon_key_content WHERE campaign_id=?').run(x.campaign.id);
  assert.deepEqual(x.read(),{entries:[],next:null});
 });
+
+test('room places keep same-named floor identities separate and retain links when their floor is missing',t=>{
+ const x=fixture(t,2),before=x.read(),otherScope=randomUUID();
+ x.store.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(x.campaign.id,otherScope,'Andere Karte');
+ x.store.db.prepare('INSERT INTO drawing_floor VALUES(?,?,?,?,?)').run(x.campaign.id,otherScope,'ground','Fremdes Geschoss',0);
+ assert.deepEqual(x.read(),before);
+ x.store.db.prepare('UPDATE drawing_floor SET name=? WHERE campaign_id=? AND scope_id=? AND id=?').run('Untergeschoss',x.campaign.id,'local','ground');
+ assert(x.read().entries.every(e=>e.place.endsWith(' · Untergeschoss')));
+ x.store.db.prepare('DELETE FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').run(x.campaign.id,'local','ground');
+ const bytes=x.store.db.serialize(),missing=x.read();assert.equal(missing.entries.length,2);assert(missing.entries.every(e=>e.unavailable));assert.match(missing.notice,/unvollständig: 2 Quellen/);assert.deepEqual(x.store.db.serialize(),bytes);
+});

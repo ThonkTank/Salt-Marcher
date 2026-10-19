@@ -34,12 +34,16 @@ export function readNoteRoomUses(db:any,cam:string,note:{id:string;kind:string},
  ), matches AS (
   SELECT k.id,json_extract(k.doc,'$.scope') scope,json_extract(k.doc,'$.excerpt') excerpt FROM keys k
   WHERE EXISTS(SELECT 1 FROM json_each(k.doc,'$.refs') r WHERE json_extract(r.value,'$.id')=@id AND json_extract(r.value,'$.kind')=@kind)
- ), page AS (
-  SELECT m.*,r.name FROM matches m LEFT JOIN room r ON r.campaign_id=@cam AND r.id=m.id
+ ), page AS MATERIALIZED (
+  SELECT m.*,r.name,r.scope_id roomScope,r.floor_id floorId FROM matches m
+  LEFT JOIN room r ON r.campaign_id=@cam AND r.id=m.id
   ORDER BY r.name COLLATE NOCASE,m.id LIMIT 41 OFFSET @offset
  ), problems AS (
   SELECT count(*) count FROM keys WHERE json_extract(doc,'$.problem')=1
- ) SELECT p.id,p.scope,p.excerpt,b.count problems FROM problems b LEFT JOIN page p ON 1
+ ) SELECT p.id,p.scope,p.excerpt,s.name scopeName,f.name floorName,b.count problems
+ FROM problems b LEFT JOIN page p ON 1
+ LEFT JOIN scope s ON s.campaign_id=@cam AND s.id=p.roomScope
+ LEFT JOIN drawing_floor f ON f.campaign_id=@cam AND f.scope_id=p.roomScope AND f.id=p.floorId
  ORDER BY p.name COLLATE NOCASE,p.id`).all({cam,id:note.id,kind:note.kind,offset});
  // The left join retains the problem count even for an empty or exhausted page.
  const matches=rows.filter((row:any)=>row.id!==null);
@@ -49,9 +53,8 @@ export function readNoteRoomUses(db:any,cam:string,note:{id:string;kind:string},
    const room=drawingRoom(db,cam,row.id),stored=db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,row.id);
    validateRoom(room);
    if(room.id!==stored.id||room.scopeId!==stored.scope_id||room.floorId!==stored.floor_id||room.revision!==stored.revision||room.name!==stored.name||room.number!==stored.number||room.scopeId!==row.scope||typeof room.number!=='string')throw new Error('Raumidentität');
-   const scope=db.prepare('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(cam,room.scopeId),floor=db.prepare('SELECT name FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(cam,room.scopeId,room.floorId);
-   if(!scope||!floor)throw new Error('Raumort');
-   entries.push({id:room.id,title:room.name,number:room.number,place:scope.name+' · '+floor.name,excerpt:row.excerpt,unavailable:false});
+   if(row.scopeName===null||row.floorName===null)throw new Error('Raumort');
+   entries.push({id:room.id,title:room.name,number:room.number,place:row.scopeName+' · '+row.floorName,excerpt:row.excerpt,unavailable:false});
   }catch{problems++;entries.push({id:row.id,title:'Raum nicht verfügbar',number:'',place:'Quelle fehlt oder ist beschädigt',excerpt:'',unavailable:true});}
  }
  return{entries,next:matches.length>40?offset+40:null,...(problems?{notice:`Raumverweise unvollständig: ${problems} Quellen konnten nicht gelesen oder zugeordnet werden.`}:{})};
