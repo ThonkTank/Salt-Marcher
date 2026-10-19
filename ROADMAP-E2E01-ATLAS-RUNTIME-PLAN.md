@@ -603,8 +603,8 @@ niemals die Pixelkontur. Die UI meldet Rastermodus und beschädigte Einträge.
 Raster und Vektor verwenden dieselbe Ebenenfolge: Stadtpapier unter Dungeons,
 Straßen unter Gebäudedächern. Überlappende Gegenproben prüfen die tatsächlichen
 PNG-Pixel; reine Objektzählung hätte den verdeckten Dungeon nicht bemerkt.
-Der serialisierte Geometriecache hat zusammen 64 MiB Nutzdatenbudget, geteilt
-in 24 MiB Ansicht und 24 MiB Ausgabe sowie je 8 MiB Landschaftskacheln in beiden Bereichsworkern. Das ist keine Obergrenze des tatsächlichen
+Die getrennten Geometrie- und Landschaftskachelcaches haben zusammen 64 MiB
+Nutzdatenbudget: 24 MiB Ansicht und 24 MiB Ausgabe sowie je 8 MiB Landschaftskacheln in beiden Bereichsworkern. Das ist keine Obergrenze des tatsächlichen
 Electron-/SQLite-/GPU-Speichers. Aktive Autorenentwürfe, exakte Fachleser und
 der vorhandene Landschaftsbildcache sind getrennte Klassen.
 
