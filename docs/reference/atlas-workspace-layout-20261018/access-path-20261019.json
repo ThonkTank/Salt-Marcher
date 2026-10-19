@@ -1,14 +1,15 @@
 {
-  "source": "3ee4a7927ec42c2f130f1c325eee4c7b9d0956fa",
-  "dirty": false,
+  "source": "575cf8bc59344570d29ded2e31eae7d45fa3904a",
+  "dirty": true,
   "buildHashes": {
     "main.cjs": "00a68decf57c94d3c1b0e5b9108186159717244abe972d15db5a4125f93bb64d",
-    "ui/renderer.js": "1bd2fe9b9af0405cfb526a605bfb5c196c03b0669900f2590bb155f26a9f66ac"
+    "ui/renderer.js": "29ca15d2cf99c3d54d4145b6155da1a18774b34bd989ea7eef81b1f4ad313aad",
+    "ui/app.css": "061b931426f6a0974f69d87b3e3fac4b29c2ed56c109eceb46015c41e936094c"
   },
   "launches": [
     {
       "scale": 1,
-      "pid": 2633439,
+      "pid": 2730684,
       "exit": {
         "code": 0,
         "signal": null
@@ -16,7 +17,7 @@
     },
     {
       "scale": 1,
-      "pid": 2633795,
+      "pid": 2731008,
       "exit": {
         "code": 0,
         "signal": null
@@ -24,7 +25,7 @@
     },
     {
       "scale": 2,
-      "pid": 2634498,
+      "pid": 2731167,
       "exit": {
         "code": 0,
         "signal": null
@@ -32,7 +33,7 @@
     },
     {
       "scale": 2,
-      "pid": 2635043,
+      "pid": 2731540,
       "exit": {
         "code": 0,
         "signal": null
@@ -42,7 +43,7 @@
   "results": [
     {
       "scale": 1,
-      "profile": "/tmp/access-path-2tdL3m",
+      "profile": "/tmp/access-path-sBUsma",
       "before": {
         "old": 49,
         "bend": 0
@@ -70,20 +71,22 @@
       "undoRedo": true,
       "editableExport": true,
       "packageRestoredAndEdited": true,
+      "exportPreviewUncovered": true,
+      "editingLayoutPreferenceRetained": true,
       "backupIndependentOfPublicSettings": true,
       "cancelledBackupReadonly": true,
       "fresh": true
     },
     {
       "scale": 2,
-      "profile": "/tmp/access-path-nyqrPx",
+      "profile": "/tmp/access-path-cqFSzi",
       "before": {
-        "old": 28,
+        "old": 42,
         "bend": 0
       },
       "after": {
         "old": 0,
-        "bend": 37
+        "bend": 47
       },
       "points": [
         {
@@ -104,6 +107,8 @@
       "undoRedo": true,
       "editableExport": true,
       "packageRestoredAndEdited": true,
+      "exportPreviewUncovered": true,
+      "editingLayoutPreferenceRetained": true,
       "backupIndependentOfPublicSettings": true,
       "cancelledBackupReadonly": true,
       "fresh": true
