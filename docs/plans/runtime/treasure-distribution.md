@@ -177,3 +177,34 @@ Umhängung. Alte Scenerewards können zusätzlich einen Herkunftsort enthalten; 
 Lesen gilt deren Scene als aktueller Anker. Neue explizite Umhängungen setzen beide
 Felder eindeutig. Ein Papierkorbort/archivierte Gruppe bleibt als offene
 Zuordnung auffindbar und wird nicht still auf unplaced umgeschrieben.
+
+## Anschluss an die persönliche Beute
+
+Nach bestätigter Sammelverteilung zeigt der Dialog die tatsächlich gebuchten
+Anteile und den unverteilten Rest. Die Empfängerlinks öffnen die persönliche
+Beute direkt. Diese Bestätigung beschreibt die Buchung; spätere Weitergaben
+und Korrekturen stehen im Ledger. Veraltete Bestätigungen und Empfängerlinks
+können keine neue Buchung oder Navigation auslösen.
+
+In der persönlichen Ansicht bleibt die unverteilte Beute hinter der Rückkehr
+zur Gruppe. Die interne Weitergabe steht vor den getrennt aufklappbaren
+Verkaufs-, Korrektur- und Stapelaktionen. Ein erhaltener Eintrag mit Menge null
+heißt dort „Kein Restbestand“; seine Historie bleibt erhalten.
+
+`tools/test-desktop-treasure-distribution.mjs` führt die Aufgabe mit einem
+eigenen Fund vollständig nativ aus: 101 Münzen auf drei Figuren, zwei Tränke,
+einen Trank weitergeben, normal schließen, erneut öffnen und alle Bestände
+sowie den Rest prüfen. Die abschließende Leseprüfung kontrolliert Definitionen,
+Herkunft, unveränderten Fortschritt und den Weitergabeempfänger. Das ist ein
+gezielter Ablaufnachweis, keine vollständige Loot- oder Produktabnahme.
+
+Die [Ausgangsansicht](../../reference/gm-ux-qa/treasure-distribution-20261019/before-transfer.png),
+[Bestätigung](../../reference/gm-ux-qa/treasure-distribution-20261019/after-receipt.png)
+und [Weitergabe](../../reference/gm-ux-qa/treasure-distribution-20261019/after-transfer.png)
+zeigen den untersuchten Anschluss. Derselbe Fund wurde am 19.10.2026 in
+[Bag of Holding](https://www.bagofholding.cloud/) verteilt, der Trank von Ada an
+Cleo gegeben und das Blatt nach geschlossenem Tab erneut geöffnet:
+[erhaltene Bestände und Rest](../../reference/gm-ux-qa/treasure-distribution-20261019/bag-of-holding-fresh.png).
+Die Münzteilung erforderte dort manuelle Rest- und Anteilszeilen; die
+Weitergabe war über das Gegenstandsmenü direkt erreichbar. Eine unveränderliche
+Buchungshistorie des Vergleichsprodukts ist damit nicht belegt.
