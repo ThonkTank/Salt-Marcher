@@ -66,8 +66,10 @@ Der erste räumliche Anschluss verwendet TEMP-SQLite/Rtree im readonly Worker,
 inkrementelle, transaktionale Quellinvalidierung und getrennte genaue
 Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
 auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
-Geometrie gebunden. Der Geometriecache zählt serialisierte Nutzdaten und
-begrenzt Ansicht und Export gemeinsam auf 64 MiB. Die exakten Regelreader und
+Geometrie gebunden. Ansicht und Export haben je 24 MiB Geometriecache und
+je 8 MiB Landschaftskacheln im jeweiligen Bereichsworker: zusammen 64 MiB
+serialisierte Nutzdaten. Dieses Budget begrenzt nicht den tatsächlichen
+Electron-/SQLite-/GPU-Speicher. Die exakten Regelreader und
 expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist in denselben
 quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht
 und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden vorhandene
