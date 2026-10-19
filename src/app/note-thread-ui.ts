@@ -254,6 +254,8 @@ export class NoteThreadDialog {
     const target = this.target;
     target.className = "note-thread-target";
     this.sourceChoices.id = "note-thread-source-choices";
+    this.sourceChoices.setAttribute("role", "group");
+    this.sourceChoices.setAttribute("aria-label", "Quellen für den Spielabend");
     const destinations = node("div");
     destinations.className = "note-thread-destinations";
     destinations.append(

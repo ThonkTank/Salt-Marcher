@@ -115,7 +115,32 @@ try {
     await page.waitForFunction(()=>document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-use').disabled);
     assert.equal(await page.locator('#note-thread-heading').innerText(),'Notizmappe: '+overview.title);assert.equal(await page.locator('#note-thread-plan').inputValue(),plan.id);assert.equal(await page.locator('#note-thread-visit').inputValue(),plan.scenes[0].id);assert.equal(await page.locator('#note-thread-parent').isVisible(),false);
     await page.locator('#note-thread-clear-selection').scrollIntoViewIfNeeded();assert(await page.locator('#note-thread-clear-selection').evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}));
-    await page.screenshot({path:out+'/handoff-'+scale+'.png'});
+    // Many loaded sources must not push the destination down by their full height.
+    const sourceChoices = page.locator('#note-thread-source-choices');
+    const sourceLayout = await sourceChoices.evaluate(el => ({height:el.getBoundingClientRect().height, viewport:innerHeight, scrollHeight:el.scrollHeight, clientHeight:el.clientHeight}));
+    assert(sourceLayout.height <= sourceLayout.viewport * .25, 'Source choices must leave room for the destination');
+    assert(sourceLayout.scrollHeight > sourceLayout.clientHeight, 'Fixture must exercise an overflowing source list');
+    assert.equal(await sourceChoices.getAttribute('role'), 'group');
+    assert.equal(await sourceChoices.getAttribute('aria-label'), 'Quellen für den Spielabend');
+    const sourceBoxes = sourceChoices.locator('input[type=checkbox]');
+    const sourceCount = await sourceBoxes.count();
+    assert.equal(sourceCount, background.length + 3);
+    await page.locator('#note-thread-include-root').focus();
+    for (let i = 0; i < sourceCount; i++) {
+      await page.keyboard.press('Tab');
+      assert(await sourceBoxes.nth(i).evaluate(el => document.activeElement === el), 'Tab must reach every source in order');
+    }
+    const keyboardScroll = await sourceChoices.evaluate(el => {
+      const box = el.getBoundingClientRect(), last = el.querySelector('label:last-child input').getBoundingClientRect();
+      return {top:el.scrollTop, lastVisible:last.top >= box.top && last.bottom <= box.bottom};
+    });
+    assert(keyboardScroll.top > 0 && keyboardScroll.lastVisible, 'Keyboard focus must reveal the last source');
+    await page.keyboard.press('Tab');
+    assert(await page.locator('#note-thread-plan').evaluate(el => document.activeElement === el), 'The destination must follow the source choices');
+    await sourceChoices.evaluate(el => el.scrollTop = 0);
+    await page.locator('#note-thread-dialog').evaluate(el => el.scrollTop = 0);
+    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+    await writeFile(out+'/handoff-'+scale+'.png',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage().then(image=>image.toPNG())));
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
     assert(!await card(other.id).locator('input[type=checkbox]').isChecked());
     await page.locator('#note-thread-active').check();
@@ -146,7 +171,7 @@ try {
       assert.equal(check.narrative(a.token, clue.id).state.status, 'open');
       assert.deepEqual(new Set(check.session(a.token, plan.id).visits[0].noteIds), new Set([other.id, overview.id, npc.id, clue.id]));
     } finally { check.close(); }
-    results.push({scale, reopenedOriginal: true, laterPageRestored:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, freshEdit: true});
+    results.push({scale, reopenedOriginal: true, laterPageRestored:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, boundedSourceChoices:sourceLayout, keyboardSourceSelection:true, freshEdit: true});
   }
   assert.deepEqual(errors, []);
   for (const {pid} of launches) assert.throws(() => process.kill(pid, 0), {code: 'ESRCH'});

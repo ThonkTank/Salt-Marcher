@@ -47,7 +47,10 @@ Im Kopf des Notizeditors öffnet **Für Spielabend verwenden…** die Quellenwah
 und das Ziel vor den Originaltexten. Die Übersicht und ihre geladenen Quellen
 lassen sich dort einzeln auswählen. Ein vorhandener aktueller Abend/Besuch ist
 vorausgewählt; neue Ziele erhalten eigene Namen. Auswahlfelder ohne vorhandene
-Alternativen entfallen. **Notizmappe öffnen…** bleibt der Einstieg zum Lesen
+Alternativen entfallen. Die Quellenwahl bleibt auch bei vielen geladenen Notizen
+auf einen Teil der Fensterhöhe begrenzt und scrollt beim Tastaturfokus mit.
+Spielabend, Besuch und Bestätigung folgen direkt auf diesen Bereich.
+**Notizmappe öffnen…** bleibt der Einstieg zum Lesen
 und Bearbeiten der Quellen. Beide Wege verwenden dieselben Originalnotizen und
 die bestehenden geprüften Besuchsverknüpfungen.
 
@@ -73,7 +76,9 @@ Seite gibt keine Übergabe frei, ein Kontextwechsel entwertet alte Antworten.
 [Native Wiederaufnahme und Obsidian-Gegenprobe](../../reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
-Close/Fresh bei 100 und 200 %. Das ist keine vollständige SMR-AC-03-Abnahme.
+Close/Fresh bei 100 und 200 %. Er prüft außerdem die begrenzte Quellenwahl
+mit 42 Quellen, jeden Tab-Schritt bis zur letzten Quelle und den anschließenden
+Fokus auf dem Spielabendziel. Das ist keine vollständige SMR-AC-03-Abnahme.
 
 Gespeicherte Begegnungen werden erst ab zwei Suchzeichen über den vorhandenen
 Katalogzugang gelesen. SQL begrenzt auf neun Metadatensätze: acht auswählbare
