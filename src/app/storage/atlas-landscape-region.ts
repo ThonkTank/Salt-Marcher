@@ -1,3 +1,5 @@
+import {MapLabelPool,linePresentation} from "../atlas-cartography";
+import {landscapeLabel} from "../atlas-label-sources";
 import {orderedColors} from '../landscape-brush';
 import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
@@ -79,13 +81,16 @@ export class AtlasLandscapeReader {
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number):AtlasLandscapeLayer{
   const layer:AtlasLandscapeLayer={state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
+  const labels=new MapLabelPool(512,Math.min(192*1024,Math.floor(budget/4)));
   let used=0,dense=false,referenceBytes=0;const references:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    if(q.references===false&&r.kind==='reference')continue;
+   labels.add(landscapeLabel(r,q.box.width/q.width));
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
    const record=visual(r),size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(layer.coverage.objects>500||layer.coverage.references>16||used+size>Math.min(512*1024,budget/3)){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
   }
+  layer.labels=labels.values();
   layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=exactReferences?references:[];
   if(!dense&&!this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch' AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height))return layer;
   // At most four world-aligned tiles; a smaller detail level is explicit display aggregation.
@@ -120,6 +125,7 @@ export class AtlasLandscapeReader {
  hits(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0):AtlasHitPage{
   const mpp=q.box.width/q.width,tolerance=mpp*6,box={x:p.x-tolerance,y:p.y-tolerance,width:tolerance*2,height:tolerance*2},items:AtlasHit[]=[];let skipped=0,more=false;
   for(const r of this.rows(source,box,false)){
+   if((r.kind==='road'||r.kind==='river')&&!linePresentation(r.kind,r.width,mpp,q.selectedIds?.includes(r.id)).opacity)continue;
    const touch=r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:lineContains(r,p,tolerance);
    if(!touch)continue;if(skipped++<offset)continue;if(items.length===40){more=true;continue;}
    const b=bounds(r);items.push({kind:'landscape',id:r.id,name:r.name||({road:'Weg',river:'Fluss',place:'Ort',reference:'Bildvorlage',patch:'Gelände'}[r.kind]),landscapeKind:r.kind,point:{x:b.x+b.width/2,y:b.y+b.height/2},box:b,revision:r.revision});

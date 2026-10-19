@@ -1,3 +1,4 @@
+import type {MapLabel} from "./atlas-cartography";
 import type {RoomGeometry,WorkspaceGeometry,Point} from './contracts';
 import type {AtlasBinding,AtlasRenderView} from './campaign-atlas-contracts';
 import type {DrawingMapView} from './drawing-contracts';
@@ -12,9 +13,11 @@ export type CityUnitGeometry=Pick<CityUnit,'id'|'kind'|'name'|'protected'|'point
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
+ selectedIds?:string[];
  slice:number|null;roofs:boolean;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
+ labels?:MapLabel[];
  state:'ready'|'error'; records:LandscapeRecord[]; tiles:import('./landscape-raster').LandscapeRaster[];
  coverage:{complete:boolean;mode:'detail'|'raster';objects:number;references:number};error?:string;
 }
@@ -22,6 +25,7 @@ export interface AtlasHit extends Omit<AtlasObjectFocus,'kind'> {kind:AtlasObjec
 export interface AtlasHitPage {items:AtlasHit[];next:number|null;fence:string;total:number;unavailable?:('geometry'|'landscape')[]}
 export interface AtlasRegionGeometry {
  campaignId:string;token:string;revision:number;fence:string;box:LandscapeBox;slice:number|null;scopeId:string|null;floorId:string;
+ labels?:MapLabel[];
  rooms:RoomGeometry[];floors:WorkspaceGeometry['floors'];drawing:DrawingMapView;
  cities:CityGeometry[];bindings:AtlasBinding[];scopes:{id:string;name:string}[];
  frames:Record<string,{x:number;y:number;angle:number}>;scopeBounds:Record<string,LandscapeBox>;interiors:Record<string,string>;
@@ -53,6 +57,7 @@ export interface AtlasRegionAPI {
 }
 export const emptyDrawing=():DrawingMapView=>({elements:[],styles:[],hiddenRooms:[],hiddenFloors:[],features:[]});
 export function validateRegion(q:AtlasRegionQuery){
+ if(q?.selectedIds!==undefined&&(!Array.isArray(q.selectedIds)||q.selectedIds.length>32||q.selectedIds.some(id=>typeof id!=="string"||id.length>256)))throw new Error("Kartenauswahl prüfen.");
  if(!q||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.references!==undefined&&typeof q.references!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
 }
 
