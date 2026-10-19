@@ -61,7 +61,6 @@ export type CombatAction =
   | { kind:'effect-remove';participantId:string;effectId:string }
   | { kind:'visibility';participantId:string;hidden:boolean }
   | { kind: 'remove'; participantId: string }
-  | { kind: 'roll'; mode: 'normal' | 'advantage' | 'disadvantage' }
   | { kind: 'start' | 'next' | 'undo' }
   | { kind: 'notes'; title: string; notes: string }
   | { kind: 'finish'; outcome: string; rewards?: FinishRewards; finishDraftWriteId?:string };

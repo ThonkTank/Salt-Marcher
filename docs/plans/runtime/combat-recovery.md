@@ -50,6 +50,12 @@ gesamte Anlage zurück, einschließlich der ersten Gegner. Replay und bestehende
 `commitStatus`-Klärung bestätigen denselben vollständigen Kampf. Bestehende
 Receiptformate und Kampfdaten bleiben ohne Schemawechsel erhalten.
 
+Initiativewürfe verwenden ausschließlich die Vorschau in `combat-initiative.ts`
+und den gesicherten Initiativeentwurf; erst `initiative` übernimmt die Werte
+atomar. Der frühere direkte `roll`-Schreibweg entfällt. Bereits bestätigte
+historische Receipts werden weiterhin als gespeichertes Ergebnis wiederholt,
+ohne neu zu würfeln.
+
 Die gezielten Store-/Controllerprüfungen decken Party/Mob, Fresh/Replay,
 Quellenkonflikte, Rollback und verlorene Antwort ab. Die native Probe führt bei
 100/200 % Katalogauswahl, kontrollierte Ablehnung/Replyverlust, Spieler-/Gruppeninitiative,
