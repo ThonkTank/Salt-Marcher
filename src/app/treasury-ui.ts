@@ -501,13 +501,14 @@ export function initTreasury(
   status: typeof tell,
   changed: () => Promise<void>,
   navigate: typeof enter,
+  openLoot?: (token:string,id:string)=>Promise<void>,
 ) {
   tell = status;
   after = changed;
   enter = navigate;
   if (ready) return;
   ready = true;
-  distribution=new TreasureDistribution(status,()=>w,async()=>{if(!await flushTreasury())return false;if(dirty){tell("Schatzangaben zuerst übernehmen oder verwerfen.",true);return false;}return true;},execute);
+  distribution=new TreasureDistribution(status,()=>w,async()=>{if(!await flushTreasury())return false;if(dirty){tell("Schatzangaben zuerst übernehmen oder verwerfen.",true);return false;}return true;},execute,openLoot);
   const batch=document.createElement("button");batch.id="treasury-distribute";batch.type="button";batch.textContent="Beute gemeinsam verteilen…";el("treasury-apply").after(batch);batch.onclick=()=>run(()=>distribution.open(book?.id));
   onCommitState(lock);
   onCommitResolved((event) => {

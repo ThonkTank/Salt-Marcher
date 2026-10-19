@@ -195,7 +195,7 @@ function renderLedger() {
   const entries=ledger.items, cumulative=ledger.totalCopper===null?null:BigInt(ledger.totalCopper);
   get('ledger-summary').textContent=ledgerLoaded?'Kumulativ erhaltene Beute: '+(cumulative===null?'nicht vollständig bekannt':gold(cumulative.toString()))+' · Käufe ausgeschlossen; Weitergaben zählen einmal beim ursprünglichen Empfänger, spätere Verkaufspreise aktualisieren den Wert.'+(ledger.unavailableCount?' · '+ledger.unavailableCount+' Einträge nicht verfügbar.':''):selected?'Beute wird geladen.':'Figur auswählen.';
   for(const l of entries){
-    const amount=ledgerCopper(l),b=document.createElement('button');b.textContent=l.quantity+' × '+(l.currentName??l.name)+' · '+({received:'Erhalten',sold:'Verkauft',given:'Weitergegeben'}[l.status])+(l.origin==='purchase'?' · Kauf':l.origin==='transfer'?' · Übernahme aus Weitergabe':'')+' · '+(amount===null?'Wert unbekannt':gold(amount.toString()));if(l.sourceTitle){const source=document.createElement('small');source.textContent='Fund: '+l.sourceTitle;b.append(document.createElement('br'),source);}b.setAttribute('aria-pressed',String(l.id===selectedLedger));b.onclick=()=>{void loadLedgerItem(l.id).catch(error=>tell(error.message,true));};root.append(b);
+    const amount=ledgerCopper(l),b=document.createElement('button');b.textContent=l.quantity+' × '+(l.currentName??l.name)+' · '+(l.status==='received'&&l.quantity===0?'Kein Restbestand':{received:'Erhalten',sold:'Verkauft',given:'Weitergegeben'}[l.status])+(l.origin==='purchase'?' · Kauf':l.origin==='transfer'?' · Übernahme aus Weitergabe':'')+' · '+(amount===null?'Wert unbekannt':gold(amount.toString()));if(l.sourceTitle){const source=document.createElement('small');source.textContent='Fund: '+l.sourceTitle;b.append(document.createElement('br'),source);}b.setAttribute('aria-pressed',String(l.id===selectedLedger));b.onclick=()=>{void loadLedgerItem(l.id).catch(error=>tell(error.message,true));};root.append(b);
   }
   for(const problem of ledger.problems){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent='Eintrag nicht verfügbar: '+problem.id+' · '+problem.message;root.append(p);}
   get('ledger-more').hidden=!ledger.next;
@@ -246,7 +246,7 @@ async function loadLedgerItem(id:string){
     if(ledgerFormOwner!==id){get<HTMLInputElement>('ledger-quantity').value=String(value('ledger-operation')==='correct'?detail.quantity:1);get<HTMLInputElement>('ledger-reason').value='';const price=BigInt(detail.actualSaleCopper??'0');get<HTMLInputElement>('ledger-price').value=(price/100n).toString()+'.'+(price%100n).toString().padStart(2,'0');get<HTMLInputElement>('ledger-counterparty').value=detail.status==='received'?'':detail.counterparty;get<HTMLSelectElement>('ledger-linked-counterparty').value=detail.counterpartyLink?detail.counterpartyLink.kind+':'+detail.counterpartyLink.id:'';}
     ledgerDetail=detail;ledgerFormOwner=id;
   }catch(error){if(current())ledgerDetailError=(error as Error).message;}
-  finally{if(current()){ledgerDetailLoading=false;renderLedger();}}
+  finally{if(current()){ledgerDetailLoading=false;renderLedger();if(ledgerDetail)get('ledger-editor').scrollIntoView?.({block:'start'});}}
 }
 async function loadHistory(more = false) {
   if (!workspace || !selected) { get('progress-history-list').replaceChildren(); return; }
