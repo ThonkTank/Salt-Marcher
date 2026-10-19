@@ -25,7 +25,7 @@ try{for(const scale of [1,2]){
  }
  await launch();db=new Database(profile+'/workbench.sqlite',{readonly:true});
  const rooms=()=>db.prepare('SELECT * FROM room ORDER BY id').all().map(r=>({...r,...JSON.parse(r.payload)})),room=name=>rooms().find(r=>r.name===name),doors=()=>db.prepare("SELECT payload FROM drawing_element WHERE kind='door' ORDER BY id").all().map(r=>JSON.parse(r.payload));
- const bindingsBefore=db.prepare("SELECT count(*) n FROM atlas_binding WHERE kind='dungeon'").get().n;await page.locator('#atlas-create-dungeon').click();let b=await page.locator('#campaign-map').boundingBox();await page.mouse.click(b.x+b.width*.5,b.y+b.height*.5);
+ const bindingsBefore=db.prepare("SELECT count(*) n FROM atlas_binding WHERE kind='dungeon'").get().n;await page.locator('#atlas-create-dungeon').click();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await atlasCanvasReady(page);let b=await page.locator('#campaign-map').boundingBox();await page.mouse.click(b.x+b.width*.5,b.y+b.height*.5);
  await until(()=>db.prepare("SELECT count(*) n FROM atlas_binding WHERE kind='dungeon'").get().n===bindingsBefore+1);await atlasCanvasReady(page);
  await page.waitForFunction(()=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<150);
  for(let i=0;i<24;i++){if(JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')).width<70)break;await page.getByRole('button',{name:'Vergrößern',exact:true}).click();}await atlasCanvasReady(page);

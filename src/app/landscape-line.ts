@@ -143,12 +143,9 @@ export function lineParts(r:LandscapeRecord,mpp=0,selected=false):LinePart[]{
   const offset=(side:number)=>points.map((p,i)=>{const a=points[Math.max(0,i-1)]!,b=points[Math.min(points.length-1,i+1)]!,l=Math.hypot(b.x-a.x,b.y-a.y)||1;return{x:p.x-(b.y-a.y)/l*w*side,y:p.y+(b.x-a.x)/l*w*side};});
   const dashOffset=r.line.continuity?.distanceOffset??0;
   if(t.kind==='river'){
-    const water=legacyParts({...r,line:{...r.line,version:1,color:t.color,style:'solid'}},points,w).map(p=>({...p,opacity:d.opacity}));
-    // Do not draw caps across mouths: only the two banks have an outline.
-    if(t.pattern!=='bank')return water;
-    const sides=water[0]?.polygons?.[0]?.outer;
-    if(sides){const n=sides.length/2;return [...water,part(w*.035,'#527e96',sides.slice(0,n)),part(w*.035,'#527e96',sides.slice(n))];}
-    return [...water,part(w*.035,'#527e96',offset(-.48)),part(w*.035,'#527e96',offset(.48))];
+    // A continuous water fill merges with lakes and tributaries. Per-object
+    // bank strokes would run through the receiving water at every junction.
+    return legacyParts({...r,line:{...r.line,version:1,color:t.color,style:'solid'}},points,w).map(p=>({...p,opacity:d.opacity}));
   }
   switch(t.pattern){
     case 'dots':return [{...part(),dash:[w*.05,w*1.8],dashOffset}];

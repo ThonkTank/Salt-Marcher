@@ -11,10 +11,10 @@ export const lineTypes = [
   {id:'trade-road',name:'Handelsstraße',kind:'road',width:10,rank:3,pattern:'double-edge',color:'#dfcfad'},
   {id:'rill',name:'Rinnsal',kind:'river',width:.5,rank:0,pattern:'water',color:'#7fa8bd'},
   {id:'brook',name:'Bach',kind:'river',width:2,rank:1,pattern:'water',color:'#7fa8bd'},
-  {id:'river',name:'Fluss',kind:'river',width:12,rank:2,pattern:'bank',color:'#7fa8bd'},
-  {id:'large-river',name:'Großer Fluss',kind:'river',width:40,rank:3,pattern:'bank',color:'#7fa8bd'},
-  {id:'major-river',name:'Strom',kind:'river',width:150,rank:3,pattern:'bank',color:'#7fa8bd'},
-  {id:'canal',name:'Kanal',kind:'river',width:8,rank:2,pattern:'bank',color:'#7fa8bd'},
+  {id:'river',name:'Fluss',kind:'river',width:12,rank:2,pattern:'water',color:'#7fa8bd'},
+  {id:'large-river',name:'Großer Fluss',kind:'river',width:40,rank:3,pattern:'water',color:'#7fa8bd'},
+  {id:'major-river',name:'Strom',kind:'river',width:150,rank:3,pattern:'water',color:'#7fa8bd'},
+  {id:'canal',name:'Kanal',kind:'river',width:8,rank:2,pattern:'water',color:'#7fa8bd'},
 ] as const;
 export type LineTypeId = typeof lineTypes[number]['id'];
 export type LineType = typeof lineTypes[number];

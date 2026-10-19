@@ -6,7 +6,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {randomUUID,createHash} from 'node:crypto';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3');
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/shared-roads';export * from './src/app/landscape-line';export * from './src/app/line-types';export * from './src/app/city-model';export * from './src/app/landscape-raster';export * from './src/app/atlas-region-export';",resolveDir:process.cwd()},outfile:'.build/shared-roads-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,AtlasRegionReader,newLine,lineParts,linePoints,lineDisplay,lineHit,lineLength,splitLine,lineTypes,cityRoadRecord,atlasRegionPaint}=require('../.build/shared-roads-test.cjs');
+const {CampaignStore,AtlasRegionReader,newLine,lineParts,linePoints,lineDisplay,lineHit,lineLength,splitLine,lineTypes,cityRoadRecord,atlasRegionPaint,LandscapeRasterizer}=require('../.build/shared-roads-test.cjs');
 const road=(type='street',points=[{x:0,y:0},{x:500,y:0}])=>({id:randomUUID(),revision:0,kind:lineTypes.find(t=>t.id===type).kind,name:'Unveränderter Name',width:lineTypes.find(t=>t.id===type).width,points,polygons:[],resolution:1,values:{},line:newLine(lineTypes.find(t=>t.id===type).kind,42,type)});
 function fixture(t){const dir=mkdtempSync('/tmp/shared-roads-');let store=new CampaignStore(dir+'/campaign.sqlite');const cam=store.create('Gemeinsame Wege');let w=store.activate(cam.id);const f={dir,cam,get store(){return store;},get token(){return w.token;},write(action){return store.executeAtlasCommit({commandId:randomUUID(),token:w.token,campaignId:cam.id,action});},get(id){return store.atlasLandscapeObject(w.token,id);},city(name='Stadt',x=1000,y=-500){return f.write({kind:'city-create',name,x,y,width:300,height:200}).result.id;},editCity(cityId,upsert,remove=[]){const commandId=randomUUID();return store.executeAtlasCommit({commandId,token:w.token,campaignId:cam.id,action:{kind:'city',command:{commandId,token:w.token,campaignId:cam.id,cityId,expectedRevision:store.city(w.token,cityId).header.revision,action:{kind:'change',upsert,remove,label:'Straße bearbeiten'}}}});},fresh(){store.close();store=new CampaignStore(dir+'/campaign.sqlite');w=store.activate(cam.id);}};t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return f;}
 const units=()=>[{id:randomUUID(),kind:'node',name:'',protected:true,point:{x:10,y:50}},{id:randomUUID(),kind:'node',name:'',protected:true,point:{x:200,y:50}}];
@@ -63,4 +63,13 @@ test('legacy paths retain original screen dashes and custom lines retain width a
 });
 test('typed curves remain identical across a rotated city frame even with unequal segment lengths',()=>{
  const r=road('avenue',[{x:-20,y:15},{x:0,y:0},{x:2000,y:900}]),angle=.71,transform=p=>({x:-3000+p.x*Math.cos(angle)-p.y*Math.sin(angle),y:1700+p.x*Math.sin(angle)+p.y*Math.cos(angle)}),expected=linePoints(r).map(transform),actual=linePoints({...r,points:r.points.map(transform)});for(let i=0;i<actual.length;i++)assert(Math.hypot(actual[i].x-expected[i].x,actual[i].y-expected[i].y)<1e-8);
+});
+test('typed river mouths leave no per-object bank seams inside receiving water',()=>{
+ for(const type of lineTypes.filter(t=>t.kind==='river')){
+  const r=road(type.id,[{x:0,y:0},{x:100,y:0}]);r.width=12;r.line={...r.line,roughness:0,meander:0,fadeIn:false};
+  const raster=new LandscapeRasterizer({x:40,y:-10,width:20,height:20},200,200);
+  raster.paintPolygons([{outer:[{x:40,y:-10},{x:60,y:-10},{x:60,y:10},{x:40,y:10}],holes:[]}],'#7fa8bd');
+  const before=Uint8Array.from(raster.finish());raster.paintRecordLine(r,.1);
+  assert.deepEqual(raster.finish(),before,type.id+' must merge without an interior outline');
+ }
 });
