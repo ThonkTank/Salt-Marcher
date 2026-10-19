@@ -19,11 +19,12 @@ try{for(const scale of [1,2]){
  const errors=[];
  async function launch(){
   app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[root+'/.build/desktop/main.cjs','--ozone-platform=x11','--force-device-scale-factor='+scale,'--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus}});launches.push({scale,pid:app.process().pid,runtime:await app.evaluate(()=>({electron:process.versions.electron,node:process.versions.node,chrome:process.versions.chrome}))});
+  page=await app.firstWindow();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.stack));await page.waitForURL(/\/index\.html$/);
   await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));w.unmaximize();w.setContentSize(1400,1000);});
-  page=await app.firstWindow();page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
+  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
   await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
   if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
-  await page.evaluate(()=>{const original=CanvasRenderingContext2D.prototype.fillText;window.qaPaintedText=[];CanvasRenderingContext2D.prototype.fillText=function(text,...args){window.qaPaintedText.push(String(text));return original.call(this,text,...args);};});
+  await page.evaluate(()=>{const original=CanvasRenderingContext2D.prototype.fillText;window.qaPaintedText=[];CanvasRenderingContext2D.prototype.fillText=function(text,...args){if(!this.canvas.isConnected)window.qaPaintedText.push(String(text));return original.call(this,text,...args);};});
   await page.locator('#atlas-section').selectOption('interior');await page.waitForFunction(()=>!document.querySelector('#atlas-section').disabled);await atlasCanvasReady(page);
  }
  await launch();db=new Database(profile+'/workbench.sqlite',{readonly:true});
