@@ -32,6 +32,7 @@ const originalGroups=x.groups(),legacyJsonBytes=Buffer.byteLength(JSON.stringify
 const busPath=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,busPath,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
 for(let i=0;i<100;i++){if(await stat(busPath).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
 let app,closed=true;const errors=[],results=[],artifacts={};
+async function bounded(promise,ms){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Desktop process did not close within '+ms+' ms')),ms);})]);}finally{clearTimeout(timer);}}
 function facts(){const db=new Database(file,{readonly:true});try{return{progress:db.prepare('SELECT id,payload FROM character_progress ORDER BY id').all(),clock:db.prepare('SELECT * FROM scene_clock WHERE scene_id=?').get(scene.id),combat:db.prepare('SELECT payload FROM combat WHERE scene_id=? ORDER BY ordinal DESC LIMIT 1').get(scene.id)?.payload};}finally{db.close();}}
 async function until(check){const end=Date.now()+20000;while(!check()&&Date.now()<end)await new Promise(r=>setTimeout(r,25));assert(check(),'Expected confirmed Party/Combat state');}
 async function restWithAbsentMember(page){
@@ -41,11 +42,12 @@ async function restWithAbsentMember(page){
  await page.waitForFunction(()=>document.querySelectorAll('#party-active .party-card').length===2&&!document.querySelector('#party-short-rest').disabled);
  await page.locator('#party-rest > summary').click();assert.equal(await page.locator('#party-rest-members input').count(),2);
  const before=facts();await page.locator('#party-short-rest').click();assert.match(await page.locator('#party-rest-status').innerText(),/Ada, Borin/);assert(!await page.locator('#party-rest-status').innerText().then(t=>t.includes('Cora')));assert.deepEqual(facts(),before,'the first rest click is read-only');
+ await page.locator('#party-rest-status').scrollIntoViewIfNeeded();await page.screenshot({path:output+'/rest-confirmation-1.png'});
  await page.locator('#party-short-rest').click();await until(()=>facts().clock.instant_ms!==before.clock.instant_ms);await page.waitForFunction(()=>!document.querySelector('#party-short-rest').disabled);
  const rested=facts();assert.equal(BigInt(rested.clock.instant_ms)-BigInt(before.clock.instant_ms),3600000n);assert.deepEqual(state(rested),state(original),'the absent figure receives no rest');
  for(const hero of x.heroes.slice(0,2)){const p=JSON.parse(rested.progress.find(p=>p.id===hero.id).payload);assert.equal(p.rest.baseline,240);assert.equal(p.rest.sections,1);assert.equal(p.rest.shortXp,0);}
  await page.locator('#party-roster-panel > summary').click();await page.locator('#party-search').fill('Cora');const card=page.locator('#party-roster [data-character-id="'+absent+'"]');await card.locator('.party-member-toggle').click();await card.getByRole('button',{name:'Zur Party',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('#party-active .party-card').length===3&&!document.querySelector('#party-short-rest').disabled);
- assert.deepEqual(facts(),rested,'rejoining does not change progress, rest or time');await page.screenshot({path:output+'/rest-return-1.png'});await page.locator('#party-close').click();
+ assert.deepEqual(facts(),rested,'rejoining does not change progress, rest or time');await page.locator('#party-popover').evaluate(node=>{node.scrollTop=0;});await page.screenshot({path:output+'/rest-return-1.png'});await page.locator('#party-close').click();
 }
 for(const p of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'])artifacts[p]=createHash('sha256').update(await readFile('.build/desktop/'+p)).digest('hex');
 try{
@@ -120,9 +122,9 @@ try{
    await page.waitForFunction(()=>document.querySelector('#combat-status').textContent.includes('Abgeschlossen'));assert.match(await page.locator('#combat-resolution-summary').innerText(),/Torwache befriedet/);assert.match(await page.locator('#combat-resolution-summary').innerText(),/120 XP gebucht/);await page.screenshot({path:output+'/finished-reopened-2.png'});results.push({scale,stage});
   }
   assert.equal(await page.evaluate(()=>window.devicePixelRatio),scale);
-  const ended=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));
+  const pid=app.process().pid,ended=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
-  const exit=await ended;assert.deepEqual(exit,{code:0,signal:null});closed=true;results.at(-1).exit=exit;
+  const exit=await bounded(ended,10000);assert.deepEqual(exit,{code:0,signal:null});assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});closed=true;results.at(-1).exit=exit;results.at(-1).pid=pid;
  }
  const fresh=new CampaignStore(file);try{
   const token=fresh.activate(campaign.id).token,combat=fresh.combat(token,scene.id).combat;
@@ -133,4 +135,4 @@ try{
  assert.deepEqual(errors,[]);
  await writeFile(path.join(output,'result.json'),JSON.stringify({head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTree:execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),profile,results,errors,artifacts},null,2));console.log(JSON.stringify({results,groupFactsUnchanged:true}));
 }catch(error){await writeFile(path.join(output,'failure.json'),JSON.stringify({error:error.stack,profile,results,errors},null,2));if(app&&!closed)try{await(await app.firstWindow()).screenshot({path:path.join(output,'failure.png')});}catch{}throw error;}
-finally{if(app&&!closed)await app.close();proxy.kill();}
+finally{try{if(app&&!closed)await bounded(app.close(),3000);}finally{proxy.kill();}}

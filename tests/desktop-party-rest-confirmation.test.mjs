@@ -103,6 +103,29 @@ test('guard-only rest rejects a stale scene membership atomically without consum
   x.store.executeLive(x.command({kind:'membership',characterId:x.hero.id,expectedRevision:l.roster[0].membershipRevision,expectedRosterRevision:l.rosterRevision,active:false,targetSceneId:null,expectedFocusRevision:l.focusRevision}));
   const bytes=x.digest();assert.throws(()=>x.store.executeProgress(x.command(action)),/Rastgruppe/);assert.equal(x.digest(),bytes);
 });
+test('rest in a focused split rejects another scene, foreign members and stale focus or clock without writes',t=>{
+  const x=fixture(t),other=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Bela'}})).character;
+  let l=x.store.live(x.workspace.token);
+  x.store.executeLive(x.command({kind:'membership',characterId:other.id,expectedRevision:other.membershipRevision,expectedRosterRevision:l.rosterRevision,active:true,targetSceneId:l.scene.id,expectedFocusRevision:l.focusRevision}));
+  l=x.store.live(x.workspace.token);
+  const split=x.store.executeLive(x.command({kind:'move',sceneId:l.scene.id,expectedRosterRevision:l.rosterRevision,expectedFocusRevision:l.focusRevision,expectedClockRevision:l.scene.clock.revision,expectedSceneMembershipRevision:l.scene.membershipRevision,memberIds:[other.id],target:{kind:'new',title:'Bela unterwegs',expectedContentRevision:l.scene.revision}})).session.createdScene;
+  l=x.store.live(x.workspace.token);x.store.executeLive(x.command({kind:'focus',sceneId:split.id,expectedRevision:l.focusRevision}));
+  l=x.store.live(x.workspace.token);
+  assert.notEqual(l.scene.id,l.primaryId);
+  const before=x.p(),p=x.store.progress(x.workspace.token).characters.find(c=>c.characterId===other.id),action={kind:'rest',rest:'long',recipients:[{characterId:other.id,revision:p.revision}],scene:{id:l.scene.id,expectedMembershipRevision:l.scene.membershipRevision,expectedClockRevision:l.scene.clock.revision,expectedFocusRevision:l.focusRevision}},bytes=x.digest();
+  for(const damage of ['scene','member','focus','clock']){
+    const changed=structuredClone(action);
+    if(damage==='scene')changed.scene.id=l.primaryId;
+    if(damage==='member')changed.recipients=[{characterId:x.hero.id,revision:before.revision}];
+    if(damage==='focus')changed.scene.expectedFocusRevision++;
+    if(damage==='clock')changed.scene.expectedClockRevision++;
+    assert.throws(()=>x.store.executeProgress(x.command(changed)),/Rastgruppe|Figuren dieser Szene/);assert.equal(x.digest(),bytes);
+  }
+  x.store.executeProgress(x.command(action));
+  assert.deepEqual(x.p(),before);
+  assert.equal(x.store.progress(x.workspace.token).characters.find(c=>c.characterId===other.id).revision,p.revision+1);
+  assert.deepEqual(x.store.live(x.workspace.token).scene.clock,l.scene.clock);
+});
 test('empty duration or missing selected progress cannot arm a misleading rest preview',async t=>{
   const x=fixture(t);await x.openParty();x.get('rest-short').value='';x.click('short');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/Dauer/);
   x.get('rest-short').value='60';x.dom.window.campaign.progress=async()=>({ok:true,value:{characters:[]}});x.get('refresh').onclick();await tick();x.click('short');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/Fortschritt/);
