@@ -178,14 +178,14 @@ async function shot(name){await page.screenshot({path:out+'/'+name+'.png'});awai
 async function map(){await page.locator('#note-room-uses-list button').filter({hasText:'Torhalle'}).click();await page.locator('#key-dialog').waitFor({state:'visible'});}
 try {
  await launch(); launches.push(app.process().pid); await shot('startup'); await open(original.id);
- await page.locator('#atlas-navigation').click(); await shot('navigation'); await page.locator('#campaign-header-name').click(); await page.locator('#campaign-screen-packages').click();
+ await page.locator('#atlas-navigation').click(); await shot('navigation'); await page.locator('#campaign-manager').click();
  await page.locator('#campaign-manager-dialog').waitFor({state:'visible'}); await shot('export');
  if(!process.argv.includes('--before'))assert.equal(await page.locator('#campaign-transfer-source').innerText(),'Geöffnete Kampagne: Nebelmark Original');
  await app.evaluate(({dialog},path)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:path});},profile+'/transfer.kwcampaign');
  await page.locator('#campaign-export').click(); await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Kampagnenpaket mit Daten und Medien exportiert.'));
  const archive=await readFile(profile+'/transfer.kwcampaign');
  await app.evaluate(({dialog},path)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[path]});},profile+'/transfer.kwcampaign');
- if(process.argv.includes('--before'))await page.locator('#campaign-import-package').click();else{await page.locator('#campaign-manager-close').click();await page.locator('#campaign-screen-import').click();}
+ if(process.argv.includes('--before'))await page.locator('#campaign-import-package').click();else{await page.locator('#campaign-manager-close').click();if(!await page.locator('#campaign-header-name').isVisible())await page.locator('#atlas-navigation').click();await page.locator('#campaign-header-name').click();await page.locator('#campaign-screen-import').click();}
  await page.locator('#campaign-transfer-dialog').waitFor({state:'visible'}); await shot('preview');
  observations.preview=await page.locator('#campaign-transfer-dialog').innerText();
  if(!process.argv.includes('--before')){assert.match(await page.locator('#campaign-transfer-summary').innerText(),/1 Dungeonzeichnung.*1 Raum.*2 Wissenseinträge/);assert.equal(await page.locator('#campaign-manager-dialog').isVisible(),false);assert.equal(await page.locator('#campaign-transfer-origin').innerText(),'Quelle: Nebelmark Original');}
