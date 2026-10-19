@@ -42,7 +42,8 @@ test('wrong definition replies never become editable or usable',async()=>{
 test('campaign reactivation invalidates outstanding definition replies',async()=>{
  const x=await fixture();try{const original=window.campaign.itemDefinition,pause=held();window.campaign.itemDefinition=()=>pause.promise;await x.choose(x.defs[1].id);await until(()=>!x.el('item-load-status').hidden);x.ui.activateItems(x.w);pause.resolve(await original(x.defs[1].id));await tick();assert.equal(x.el('item-editor').hidden,true);assert.equal(x.el('item-load-status').hidden,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
 });
-test('an incomplete definition keeps its editor repairable when switching is rejected',async()=>{
+test('an incomplete definition keeps its editor repairable when switching is rejected',async t=>{
+ const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
  const x=await fixture();try{x.el('item-name').value='';x.el('item-description').value='Unfertiger Entwurf';x.el('item-form').oninput();await x.choose(x.defs[1].id);await until(()=>x.messages.length>0&&!x.el('item-name').disabled);assert.equal(x.el('item-name').value,'');assert.equal(x.el('item-description').value,'Unfertiger Entwurf');x.el('item-name').value='Seil korrigiert';x.el('item-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.itemDefinition(x.defs[0].id).description,'Unfertiger Entwurf');}finally{await x.cleanup();}
 });
 test('valid edits save before switching and preserve untouched normalized CRLF prose',async()=>{

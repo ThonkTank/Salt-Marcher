@@ -87,6 +87,8 @@ for(const field of ['secret','id','scopeId','kind','revision'])test('map project
 
 test('reader cancellation joins its worker before a disposable source can be removed',async t=>{
  const f=fixture(t),w=f.store.activateShell(f.cam.id),source=f.store.roomReadSource(w.token),service=new RoomDirectoryService(path.resolve('.build/room-reads-worker.cjs'));t.after(()=>service.close());
- const read=service.read(source,{text:'PRIVATE'}).catch(e=>e);await new Promise(resolve=>setImmediate(resolve));
+ // read() first awaits the previous exit. Resume after that microtask, before
+ // yielding to worker result events: a small source may already finish in one turn.
+ const read=service.read(source,{text:'PRIVATE'}).catch(e=>e);await Promise.resolve();
  const worker=service.job?.worker;assert(worker,'the source reader must have started');await service.cancelAndWait();assert.equal(worker.threadId,-1,'snapshot cleanup must wait for actual worker exit');assert.match((await read).message,/abgebrochen/);
 });

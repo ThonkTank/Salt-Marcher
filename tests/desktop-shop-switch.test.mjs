@@ -51,7 +51,8 @@ test('wrong shop and inventory owners never become tradable',async()=>{
 test('seller read failure offers same-owner retry without retaining the previous inventory',async()=>{
  const x=await fixture();try{const original=window.campaign.ledgerInventory;let fail=true;window.campaign.ledgerInventory=async(t,q)=>q.characterId===x.heroes[1].id&&fail?(fail=false,{ok:false,error:'Inventar nicht lesbar'}):original(t,q);x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();await until(()=>x.el('shop-seller-status').getAttribute('role')==='alert');assert.equal(x.el('shop-sale-item').options.length,0);x.el('shop-seller-retry').onclick();await until(()=>!x.el('shop-sale-fields').disabled);x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes[0].action.ledgerId,x.items[1].id);assert.equal(x.el('shop-seller-status').hidden,true);assert(!x.messages.includes('Inventar nicht lesbar'));}finally{await x.cleanup();}
 });
-test('an incomplete shop draft blocks the switch while keeping the previous editor repairable',async()=>{
+test('an incomplete shop draft blocks the switch while keeping the previous editor repairable',async t=>{
+ const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
  const x=await fixture();try{x.el('shop-name').value='';x.el('shop-form').oninput();x.choose(x.shops[1].id);await until(()=>x.messages.length>0&&!x.el('shop-fields').disabled);assert.equal(x.el('shop-name').value,'');assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen');x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen korrigiert');}finally{await x.cleanup();}
 });
 test('seller changes during a definition read invalidate the pending sale',async()=>{

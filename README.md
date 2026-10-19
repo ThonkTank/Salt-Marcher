@@ -38,7 +38,7 @@ npm run build:desktop
 ```
 
 `npm run build` bleibt der historische Pluginbuild; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
-`npm test` erneuert die Testvorbereitung und führt die aktive Suite standardmäßig mit bis zu zwei Testprozessen aus.
+`npm test` erneuert die Testvorbereitung und führt die aktive Suite standardmäßig mit bis zu vier Testprozessen (begrenzt durch verfügbare CPUs) aus.
 Die [Testanleitung](docs/development/testing.md) beschreibt Einzeltests, serielle Diagnose und Laufberichte.
 Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.

@@ -1,12 +1,13 @@
 import { readdirSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
+import { availableParallelism } from 'node:os';
 
 const args = process.argv.slice(2);
 if (args.length && (args.length !== 1 || args[0] !== '--serial')) {
   throw new Error('Usage: npm test [-- --serial]');
 }
-const concurrency = args[0] === '--serial' ? 1 : 2;
+const concurrency = args[0] === '--serial' ? 1 : Math.min(4, availableParallelism());
 const files = [
   '.build/tests.cjs',
   ...readdirSync('tests').filter(file => file.endsWith('.test.mjs')).sort().map(file => `tests/${file}`),
