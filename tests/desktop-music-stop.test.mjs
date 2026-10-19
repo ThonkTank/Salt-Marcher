@@ -12,15 +12,15 @@ for(const [source,name] of [['src/app/storage/store.ts','music-stop-store'],['sr
 async function until(check){for(let i=0;i<70;i++){if(check())return;await tick();}assert.ok(check(),'Expected music choice did not arrive');}
 async function fixture(){
  const root=mkdtempSync(path.join(tmpdir(),'music-stop-')),{CampaignStore}=require('../.build/music-stop-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),campaign=store.create('Ruhige Szene'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
- mkdirSync(root+'/audio');const assets=[];for(const [name,kind] of [['Bühne','song'],['Regen','ambience'],['Wind','ambience']]){const bytes=Buffer.from('Own state fixture '+name),sha256=createHash('sha256').update(bytes).digest('hex');writeFileSync(root+'/audio/'+sha256+'.wav',bytes);let asset=store.ingestAudio(w.token,{sha256,extension:'.wav',bytes:bytes.length,mime:'audio/wav',originalName:name+'.wav'});store.executeMusic(command({kind:'asset',asset:{...asset,kind},expectedRevision:asset.revision}));assets.push(store.audioAsset(asset.id));}
+ mkdirSync(root+'/audio');const assets=[];for(const [name,kind] of [['Bühne','song'],['Regen','ambience'],['Wind','ambience']]){const bytes=Buffer.from('Own state fixture '+name),sha256=createHash('sha256').update(bytes).digest('hex');writeFileSync(root+'/audio/'+sha256+'.wav',bytes);let asset=store.ingestAudio(w.token,{sha256,extension:'.wav',bytes:bytes.length,mime:'audio/wav',originalName:name+'.wav'});store.executeMusic(command({kind:'asset',asset:{...asset,kind,notes:'  Original\r\nZweite Zeile\r\n'},expectedRevision:asset.revision}));assets.push(store.audioAsset(asset.id));}
  const execute=action=>store.executeMusic(command({...action,expectedRevision:store.music(w.token).state.revision}));const [song,rain,wind]=assets;const state=store.music(w.token).state;execute({kind:'settings',...state,fadeSeconds:0});execute({kind:'ambience',assetId:wind.id,operation:'add'});
  const saved=Object.fromEntries(['window','document','setTimeout','clearTimeout','setInterval','clearInterval','requestAnimationFrame','cancelAnimationFrame'].map(k=>[k,globalThis[k]]));const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document,setTimeout:()=>1,clearTimeout:()=>{},setInterval:()=>1,clearInterval:()=>{},requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{}});
  const create=document.createElement.bind(document);document.createElement=tag=>{const a=create(tag);if(tag==='audio'){for(const [key,value] of Object.entries({paused:true,ended:false,volume:1,currentTime:0,duration:60,readyState:1}))Object.defineProperty(a,key,{value,writable:true,configurable:true});a.play=async()=>{a.paused=false;};a.pause=()=>{a.paused=true;};a.load=()=>{a.currentTime=0;};}return a;};
- const result=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};let hold=null,reply=null;
- window.campaign={onAudioTransfer:()=>{},music:async token=>result(()=>store.music(token)),musicPosition:async()=>({ok:true}),preparation:async token=>result(()=>store.preparation(token)),audioAssets:async q=>result(()=>store.audioAssets(q)),audioAsset:async id=>result(()=>store.audioAsset(id)),executeMusic:async c=>{const r=result(()=>store.executeMusic(c));if(c.action.kind===hold||c.action.operation===hold){hold=null;return new Promise(resolve=>{reply=()=>{resolve(r);reply=null;};});}return r;}};
+ const result=fn=>{try{return{ok:true,value:fn()};}catch(error){return{ok:false,error:error.message};}};let hold=null,reply=null,positionFailure=false,positionCalls=0;const commands=[];
+ window.campaign={onAudioTransfer:()=>{},music:async token=>result(()=>store.music(token)),musicPosition:async()=>{positionCalls++;return positionFailure?{ok:false,error:'Positionsspeicherung nicht erreichbar'}:{ok:true};},preparation:async token=>result(()=>store.preparation(token)),audioAssets:async q=>result(()=>store.audioAssets(q)),audioAsset:async id=>result(()=>store.audioAsset(id)),executeMusic:async c=>{commands.push(c);const r=result(()=>store.executeMusic(c));if(c.action.kind===hold||c.action.operation===hold){hold=null;return new Promise(resolve=>{reply=()=>{resolve(r);reply=null;};});}return r;}};
  delete require.cache[require.resolve('../.build/music-stop-ui.cjs')];const ui=require('../.build/music-stop-ui.cjs');ui.initMusic(()=>{},async()=>{});for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:'',writable:true});ui.activateMusic(w);await ui.openMusic();
  const audible=()=>Array.from(document.querySelectorAll('audio')).filter(a=>!a.paused),click=(name,button)=>Array.from(document.querySelectorAll('#audio-list article')).find(a=>a.querySelector('h4').textContent===name).querySelectorAll('button').forEach(b=>{if(b.textContent===button)b.click();}),transport=operation=>document.querySelector('#music-mini [data-music-transport='+operation+']').click();
- return{root,store,w,ui,song,rain,wind,document,execute,audible,click,transport,hold:op=>{hold=op;},hasReply:()=>!!reply,release:()=>reply(),async cleanup(){if(reply)reply();await tick();ui.deactivateMusic();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}};
+ return{root,store,w,ui,song,rain,wind,document,execute,commands,failPosition:value=>{positionFailure=value;},positionCalls:()=>positionCalls,audible,click,transport,hold:op=>{hold=op;},hasReply:()=>!!reply,release:()=>reply(),async cleanup(){if(reply)reply();await tick();ui.deactivateMusic();store.close();Object.assign(globalThis,saved);rmSync(root,{recursive:true,force:true});}};
 }
 async function startAndStop(x){x.click('Bühne','Abspielen');await until(()=>x.audible().some(a=>a.dataset.musicSlot));x.click('Wind','Sound hinzufügen');await until(()=>x.audible().some(a=>a.dataset.ambienceId===x.wind.id));x.transport('stop');await until(()=>x.store.music(x.w.token).state.manualHold==='stop'&&x.audible().length===0);}
 function onlyRain(x){assert.equal(x.audible().length,1);assert.equal(x.audible()[0].dataset.ambienceId,x.rain.id);assert(Math.abs(x.audible()[0].volume-.3)<.00001);assert.equal(x.store.music(x.w.token).state.status,'stopped');assert.match(x.document.getElementById('music-mini-title').textContent,/1 Sound aktiv/);}
@@ -47,5 +47,41 @@ test('adding or unmuting an explicit layer after Stop keeps autoplay music stopp
 
 test('a failed ambience layer recovers through explicit asset retry while another sound keeps playing',async()=>{
  const x=await fixture();try{x.click('Wind','Sound hinzufügen');await until(()=>x.audible().some(a=>a.dataset.ambienceId===x.wind.id));x.click('Regen','Sound hinzufügen');await until(()=>x.audible().length===2);const broken=x.audible().find(a=>a.dataset.ambienceId===x.wind.id);broken.onerror();await until(()=>x.store.audioAsset(x.wind.id).problem&&x.audible().length===1);assert.equal(x.audible()[0].dataset.ambienceId,x.rain.id);assert.equal(broken.parentNode===null,true);const retry=x.execute({kind:'retry-asset',id:x.wind.id});assert.equal(retry.state.forcedAmbience.includes(x.wind.id),true);await x.ui.refreshMusic();await until(()=>x.audible().length===2);assert.notEqual(x.audible().find(a=>a.dataset.ambienceId===x.wind.id),broken);broken.onerror();await tick();assert.equal(x.store.audioAsset(x.wind.id).problem,null);assert.equal(x.audible().length,2);
+ }finally{await x.cleanup();}
+});
+
+for(const control of ['console','mini','soundboard'])test(control+' Stop ignores invalid metadata and a failed position checkpoint without discarding the draft',async()=>{
+ const x=await fixture();try{
+  x.click('Bühne','Abspielen');await until(()=>x.audible().length===2);
+  const playing=x.store.music(x.w.token).state.current;x.store.musicPosition(x.w.token,playing.playbackId,21.5);assert.equal(x.store.music(x.w.token).state.current.positionSeconds,21.5);
+  x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');
+  const name=x.document.getElementById('audio-name'),notes=x.document.getElementById('audio-notes');name.value='';notes.value=x.song.notes.replace(/\r\n/g,'\n');x.document.getElementById('audio-editor').oninput();
+  assert.equal(await x.ui.flushMusic(),false);const calls=x.positionCalls();x.failPosition(true);
+  if(control==='soundboard')assert.equal(await x.ui.runLiveMusic(x.w.token,v=>({kind:'transport',operation:'stop',expectedRevision:v.state.revision})),true);
+  else x.document.querySelector((control==='console'?'#music':'#music-mini')+' [data-music-transport=stop]').click();
+  await until(()=>x.store.music(x.w.token).state.manualHold==='stop'&&x.audible().length===0);
+  assert.equal(x.positionCalls(),calls);assert.equal(name.value,'');assert.equal(notes.value,x.song.notes.replace(/\r\n/g,'\n'));assert.deepEqual(x.store.audioAsset(x.song.id),x.song);
+  assert.equal(x.store.music(x.w.token).state.current.positionSeconds,0);assert.equal(x.commands.filter(c=>c.action.operation==='stop').length,1);
+  assert.equal(await x.ui.flushMusic(),false);name.value='Bühne korrigiert';x.failPosition(false);assert.equal(await x.ui.flushMusic(),true);
+  assert.equal(x.store.audioAsset(x.song.id).name,'Bühne korrigiert');assert.equal(x.store.audioAsset(x.song.id).notes,x.song.notes);
+  x.ui.activateMusic(x.w);await x.ui.openMusic();assert.equal(x.audible().length,0);x.transport('play');await until(()=>x.audible().some(a=>a.dataset.musicSlot));
+ }finally{await x.cleanup();}
+});
+
+test('Stop does not wait for an applied metadata reply and that late reply cannot restart playback',async()=>{
+ const x=await fixture();try{
+  x.click('Bühne','Abspielen');await until(()=>x.audible().length===2);x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');
+  x.document.getElementById('audio-name').value='Bühne spät';x.document.getElementById('audio-editor').oninput();x.hold('asset');const saving=x.ui.flushMusic();await until(x.hasReply);
+  x.transport('stop');await until(()=>x.store.music(x.w.token).state.manualHold==='stop'&&x.audible().length===0);
+  assert.equal(x.hasReply(),true);assert.equal(x.document.getElementById('audio-name').value,'Bühne spät');x.release();assert.equal(await saving,true);await x.ui.refreshMusic();assert.equal(x.audible().length,0);
+  assert.equal(x.store.audioAsset(x.song.id).notes,x.song.notes);assert.equal(x.store.music(x.w.token).state.status,'stopped');
+ }finally{await x.cleanup();}
+});
+
+test('editing music notes preserves literal untouched prefixes and original line endings',async()=>{
+ const x=await fixture();try{
+  x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');
+  x.document.getElementById('audio-notes').value='  Original\nNeue zweite Zeile\n';x.document.getElementById('audio-editor').oninput();assert.equal(await x.ui.flushMusic(),true);
+  assert.equal(x.store.audioAsset(x.song.id).notes,'  Original\r\nNeue zweite Zeile\r\n');
  }finally{await x.cleanup();}
 });
