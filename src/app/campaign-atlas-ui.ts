@@ -1112,7 +1112,7 @@ export class CampaignAtlasWorkbench {
     const record=result.value;
     await this.setFamily('terrain',false);if(this.owner!==owner)return;
     if(record.points[0])this.focus(record.points[0],15000);
-    await this.landscape.select(record);
+    await this.landscape.selectId(record.id);
   }
 
   private beginPlacement(kind:"city"|"dungeon"){

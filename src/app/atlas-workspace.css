@@ -151,3 +151,6 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 /* Keep the header reachable at 200% scale, without horizontal page scrolling. */
 @media(max-width:850px){#campaign-atlas .atlas-header-management{flex-wrap:wrap}#campaign-atlas .atlas-header-search{max-width:none}#campaign-atlas .atlas-search-popup{top:100px}}
 #campaign-atlas :is(#atlas-panel,#atlas-secondary) button{white-space:normal;overflow-wrap:anywhere}
+
+/* Export has its own controls; retain the editing layout preference for the return. */
+#campaign-atlas[data-task=output][data-secondary=true] #atlas-panel{display:none}

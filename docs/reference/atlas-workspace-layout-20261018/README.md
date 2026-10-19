@@ -71,7 +71,7 @@ menschliche GM-Vorlieben, installierte Pakete oder Owner-Abnahme.
 
 ## Zugangsweg und bearbeitbare Sicherung, 19.10.2026
 
-Eine eigene native Prüfung auf Mainbasis `96a9fe72d2338457b437447fd10765e1174a3627`
+Eine eigene native Prüfung auf Mainbasis `aa160737974d030afedf75fcb0f099f1f778347f`
 mit den Exportänderungen dieser Branch erhält das Zollhaus, zieht einen
 kreuzenden Weg am mittleren Griff nach außen und prüft Undo/Redo sowie die
 wirkliche PNG. Raumgeometrie, Raumtext und Wegmetadaten bleiben erhalten.
@@ -83,6 +83,10 @@ ein bereits gefülltes Namensfeld bestätigt noch keine abgeschlossene Navigatio
 Unter **Export → Ausgabe: Bearbeitbare Kampagne → Kampagne sichern…** ist
 jetzt das bestehende vollständige Kampagnenpaket erreichbar. Nur dessen
 Optionen sind dann sichtbar; die Bildausgabe bleibt eine eigene Auswahl.
+Während das Exportpanel offen ist, macht die Zeichenleiste der Vorschau Platz.
+Bei Rückkehr bleiben ihre vorherige Sichtbarkeit und die gespeicherte
+Bearbeitungsanordnung erhalten. Auch bei doppelter Skalierung bleibt das
+Zollhaus tatsächlich auf der unverdeckten Kartenfläche. [Zuvor verdeckt](access-path-obscured-200.png).
 Abbrechen ändert die geprüften Autoreninhalte nicht. Öffentliche Bild- oder
 Archivoptionen redigieren die Sicherung nicht; die Oberfläche nennt ausdrücklich
 GM-Inhalte. Das tatsächlich erzeugte Paket wurde über **Pakete und Kopien**
@@ -132,7 +136,10 @@ keine Notwendigkeit genau dieser drei Schritte im GM-Ablauf.
 Auch `tools/test-desktop-region-export.mjs` bestand mit vier normalen
 Prozessexits bei einfacher und doppelter Skalierung: Wege korrigieren,
 Undo/Redo, Messen, PNG-Schrift über Kachelgrenzen und Wiederöffnung. Die Probe
-schließt vor dem Ziehen die verdeckende rechte Leiste; zuvor hatte die Mausgeste
+verwendet die aktuelle Bereichs-/Gruppenwahl und die globale Auswahl/Messung.
+Explizite Objektauswahl beendet einen temporären Messzug, einschließlich einer
+Auswahl über die Suche. Überlappende Fluss-/Wegtreffer werden ausdrücklich über
+ihren Namen gewählt. Vor dem Ziehen schließt die Probe die verdeckende rechte Leiste; zuvor hatte die Mausgeste
 Seitentext statt eines Weggriffes ausgewählt. [Regionslauf](access-path-region-20261019.json).
 Installation, andere Plattformen und Owner-Abnahme wurden nicht geprüft.
 

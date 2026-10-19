@@ -615,6 +615,8 @@ export class LandscapeWorkbench {
     for(const r of records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
   }
   async selectId(id:string){
+    // Explicit selection leaves a temporary ruler just like a tool change.
+    if(this.tool==='measure'&&!this.saving&&this.pointer===null){this.points=[];this.measurement=[];}
     const token=this.token,frame=this.host.data()?.region?.fence,generation=++this.selectionRequest;
     if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
     const response=await window.campaign.atlasLandscapeObject(token,id);
