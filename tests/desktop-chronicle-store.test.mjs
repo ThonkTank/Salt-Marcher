@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 const require=createRequire(import.meta.url);
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/chronicle-store-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 test('SQLite groups award receipts before filtering and retains the newest bounded combat history',()=>{

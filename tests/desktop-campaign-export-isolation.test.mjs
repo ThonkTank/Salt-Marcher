@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync,readFileSync,readdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';import path from 'node:path';
-import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import Database from 'better-sqlite3';
+import {randomUUID,createHash} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import Database from 'better-sqlite3';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/campaign-export-isolation.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/campaign-export-isolation.cjs'),hash=b=>createHash('sha256').update(b).digest('hex');
 function fixture(t){const root=mkdtempSync(path.join(tmpdir(),'export-isolation-')),store=new CampaignStore(path.join(root,'source.sqlite')),cam=store.create('Gesunde Quelle'),w=store.activate(cam.id),id=randomUUID();store.changePreparation({commandId:randomUUID(),campaignId:cam.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'quest',title:'Wortgetreu '+id,readAloud:'Nutzerprosa',gmNotes:'Privat',relations:[],creatureId:null,deleted:false}}});t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});return{root,store,cam,w,id};}

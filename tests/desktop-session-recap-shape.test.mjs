@@ -4,7 +4,7 @@ import {mkdtempSync,rmSync,readFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/session-recap-shape.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/session-recap-shape.cjs');
 for(const [name,make] of [

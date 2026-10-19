@@ -29,11 +29,11 @@ bleiben erhalten. Keine Änderungen am Campaign-Producer.
   `verify` und `verifyExtension`, auch in Recovery. Location, World und Manifest
   laufen im vorhandenen Journal samt tatsächlichem Ack/Rollback. Kein neuer
   Speicherweg, keine neue History oder Kamera.
-- Die [Kernregression](../../../tests/core/atlas-campaign-save.test.ts) verwendet
+- Die [Kernregression](https://github.com/ThonkTank/Salt-Marcher/blob/c359cc5c890c3a34bc3ef66273081015d11d9ce8/tests/core/atlas-campaign-save.test.ts) verwendet
   die tatsächlichen Created-/Key-/Move-Daten aus H01. Sie prüft Save, weitere
   Saves, Undo/Redo, frisches Repository/Provider, den bearbeitbaren Mount nach
   autoritativem Rollback sowie Prepared-/Committed-Recovery und gefälschte Closure.
-- Die [Hostregression](../../../tests/atlas-campaign-host.entry.ts) betätigt den
+- Die [Hostregression](https://github.com/ThonkTank/Salt-Marcher/blob/c359cc5c890c3a34bc3ef66273081015d11d9ce8/tests/atlas-campaign-host.entry.ts) betätigt den
   tatsächlichen Save-Button im DOM-Host mit dem Vault-Adapter und seinen
   synchronen Pending-/nachfolgenden Resolved-Manifestevents. Repository, History,
   Renderer, Kamera, Context und Mountgeneration bleiben. Eine frische View öffnet

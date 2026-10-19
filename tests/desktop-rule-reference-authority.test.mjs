@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {readFileSync} from 'node:fs';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';import {readFileSync} from 'node:fs';import {buildSync} from 'esbuild';import {parseHTML} from './helpers/dom.mjs';
 buildSync({...(process.env.RULE_REFERENCE_UI_SOURCE?{stdin:{contents:readFileSync(process.env.RULE_REFERENCE_UI_SOURCE,'utf8'),resolveDir:process.cwd()+'/src/app',sourcefile:'rule-reference-ui.ts',loader:'ts'}}:{entryPoints:['src/app/rule-reference-ui.ts']}),outfile:'.build/rule-reference-authority.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 async function until(fn){for(let n=0;n<100&&!fn();n++)await tick();assert.ok(fn());}

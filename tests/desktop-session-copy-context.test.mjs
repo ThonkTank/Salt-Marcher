@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/session-copy-ui.ts'],outfile:'.build/planner-session-copy-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const until=async check=>{const deadline=Date.now()+3000;while(!check()&&Date.now()<deadline)await new Promise(r=>setTimeout(r,5));assert.ok(check());};

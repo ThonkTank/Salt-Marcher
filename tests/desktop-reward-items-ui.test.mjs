@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {createRequire} from 'node:module';
 buildSync({entryPoints:['src/app/reward-items-ui.ts'],outfile:'.build/reward-items-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const {rewardItemsEditor}=createRequire(import.meta.url)('../.build/reward-items-ui.cjs');

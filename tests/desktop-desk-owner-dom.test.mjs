@@ -4,7 +4,7 @@ import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {build} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 await build({entryPoints:['src/app/scene-desk-ui.ts'],outfile:'.build/desk-owner-dom.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'idle-neighbors',setup(build){build.onResolve({filter:/^\.\/(narrative-ui|catalog-ui)$/},a=>({path:a.path,namespace:'idle'}));build.onLoad({filter:/.*/,namespace:'idle'},()=>({contents:'export async function showNarrative(){};export async function flushNarrative(){return true};export function renderCreatureDetail(){}',loader:'js'}));}}]});
 const require=createRequire(import.meta.url),ok=value=>({ok:true,value}),tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};

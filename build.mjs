@@ -64,44 +64,14 @@ const productBuild = await build({
   ],
 });
 if (test) {
-  // Keep entry-specific host fixtures isolated and builds sequential.
-  const entries = [
-    ["catalog-creature-view-dom"],
-    ["catalog-creature-view-adapter", "obsidian-view-stub.ts"],
-    ["room-key-search-panel", "obsidian-view-stub.ts", "room-key-search-test"],
-    ["atlas-copy-modal", "obsidian-atlas-modal-stub.ts"],
-    ["dungeon-view-lifecycle", "obsidian-dungeon-view-stub.ts", "dungeon-view-test"],
-    ["campaign-entry-dom"],
-    ["vault-campaign-runtime-source", "obsidian-campaign-stub.ts"],
-    ["atlas-detail-entry"],
-    ["world-notes-panel"],
-    ["world-notes-view", "obsidian-view-stub.ts"],
-    ["atlas-campaign-host", "obsidian-atlas-host-stub.ts"],
-  ];
-  for (const [name, fixture, workerNamespace] of entries) {
-    await build({
-      entryPoints: [`tests/${name}.entry.ts`],
-      outfile: `.build/${name}.cjs`,
-      bundle: true, format: "cjs", platform: "node", target: "es2022",
-      sourcemap: true, logLevel: "info",
-      plugins: fixture ? [{
-        name: "test-host-stubs",
-        setup(builder) {
-          builder.onResolve({ filter: /^obsidian$/ }, () => ({
-            path: new URL(`./tests/fixtures/${fixture}`, import.meta.url).pathname,
-          }));
-          if (workerNamespace) {
-            builder.onResolve({ filter: /^dungeon-compute-worker$/ }, () => ({
-              path: "compute-worker-stub", namespace: workerNamespace,
-            }));
-            builder.onLoad({ filter: /.*/, namespace: workerNamespace }, () => ({
-              contents: "export default '';", loader: "js",
-            }));
-          }
-        },
-      }] : [],
-    });
-  }
+  // Every store fixture uses this exact bundle; individual test processes keep
+  // their own store instances and databases.
+  await mkdir('.build/test-shared/catalog', {recursive:true});
+  await copyFile('src/features/catalog/data/srd-5.1.generated.json', '.build/test-shared/catalog/srd-5.1.generated.json');
+  await build({
+    entryPoints: ['src/app/storage/store.ts'], outfile: '.build/test-shared/store.cjs',
+    bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'],
+  });
 }
 if (!test) {
   const mainBytes = (await stat("main.js")).size;

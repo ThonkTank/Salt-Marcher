@@ -10,6 +10,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | den Nutzerzweck oder die Priorität klären | [Produktziele](PRODUCT.md) und [fachliche Lieferfolge](ROADMAP.md) | [Atlasabläufe und Work → Efficient → Beautiful / KISS](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel), konkreter Fachplan |
 | eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](../ARCHITECTURE.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
 | eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](../ROADMAP-E2E-GATES-CANDIDATE.md) | [Atlas-Bedienproben](../ROADMAP-HEX-ATLAS.md#spätere-bedienabnahme), [GM-Aufgaben](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md) und `acceptance.json` |
+| Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](development/testing.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |
 | --- | --- |

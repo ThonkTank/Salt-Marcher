@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 
 buildSync({entryPoints:['src/app/number-input-scroll.ts'],outfile:'.build/number-input-scroll-test.cjs',bundle:true,platform:'node',format:'cjs'});
 const {initNumberInputScroll}=createRequire(import.meta.url)('../.build/number-input-scroll-test.cjs');

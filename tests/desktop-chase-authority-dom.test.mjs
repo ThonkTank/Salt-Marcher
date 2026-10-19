@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from 'linkedom';
+import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from './helpers/dom.mjs';
 buildSync({stdin:{contents:"export * from './src/app/chase-ui';export {initCommitControls,updateCommitControls} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'chase-authority-entry.ts'},outfile:'.build/chase-authority-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
 async function until(fn){const deadline=performance.now()+5000;while(!fn()&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,5));assert.ok(fn(),'expected chase UI state');}

@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {createRequire}from'node:module';import {buildSync}from'esbuild';import {parseHTML}from'linkedom';
+import test from 'node:test';import assert from 'node:assert/strict';import {createRequire}from'node:module';import {buildSync}from'esbuild';import {parseHTML}from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/anchored-popup.ts'],outfile:'.build/anchored-popup.cjs',bundle:true,platform:'node',format:'cjs'});
 const {bindAnchoredPopup}=createRequire(import.meta.url)('../.build/anchored-popup.cjs');
 function setup(){

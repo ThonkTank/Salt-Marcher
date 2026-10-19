@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/text-reference-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/text-reference-store.cjs');
 const save=(s,w,note)=>s.changePreparation({commandId:randomUUID(),campaignId:w.campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note}});

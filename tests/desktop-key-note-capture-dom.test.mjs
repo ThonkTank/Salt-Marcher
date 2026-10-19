@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {randomUUID} from 'node:crypto';

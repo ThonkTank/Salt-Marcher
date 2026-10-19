@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/creature-detail-ui.ts'],outfile:'.build/creature-detail-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const {loadCreatureDetail}=createRequire(import.meta.url)('../.build/creature-detail-ui.cjs');
 const creature=id=>({id,name:id,abilities:{str:10},traits:[],actions:[],legendaryActions:[]});

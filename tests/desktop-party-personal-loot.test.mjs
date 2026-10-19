@@ -1,11 +1,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 import {createRequire} from 'node:module';
 import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {randomUUID} from 'node:crypto';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 for(const [entry,out]of [['src/app/party-loot-ui.ts','party-personal-loot-ui'],['src/app/storage/store.ts','party-personal-loot-store']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../.build/party-personal-loot-store.cjs'),{PartyLootPanel}=require('../.build/party-personal-loot-ui.cjs'),tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){for(let i=0;i<250;i++){if(check())return;await tick();}assert.ok(check(),'UI did not settle');}

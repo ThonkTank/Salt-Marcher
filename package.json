@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "tsc --noEmit",
-    "test": "node build.mjs --test && node --test --test-concurrency=1 .build/tests.cjs .build/catalog-creature-view-dom.cjs .build/catalog-creature-view-adapter.cjs .build/room-key-search-panel.cjs .build/atlas-copy-modal.cjs .build/dungeon-view-lifecycle.cjs .build/campaign-entry-dom.cjs .build/atlas-detail-entry.cjs .build/world-notes-panel.cjs .build/world-notes-view.cjs .build/atlas-campaign-host.cjs .build/vault-campaign-runtime-source.cjs \"tests/*.test.mjs\" tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs tests/adr-prototypes/p03-contract.test.mjs tests/adr-prototypes/p03-channel.test.mjs tests/adr-prototypes/p03-renderer.test.mjs tests/adr-prototypes/p03-pixel-oracle.test.mjs tests/adr-prototypes/p03-evidence.test.mjs",
+    "test": "node tools/run-tests.mjs",
     "test:desktop-weather": "node --test --test-concurrency=1 tests/desktop-weather-integrity.test.mjs tests/desktop-weather-authority.test.mjs",
     "test:desktop-live-moment": "node --test --test-concurrency=1 tests/desktop-live-moment-context.test.mjs",
     "test:desktop-narrative-basis": "node --test --test-concurrency=1 tests/desktop-narrative-basis.test.mjs",
@@ -45,7 +45,7 @@
     "test:desktop-chronicle-ui": "node tools/test-desktop-chronicle-search.mjs",
     "test:desktop-music-stop": "node --test --test-concurrency=1 tests/desktop-music-stop.test.mjs tests/desktop-soundboard-context.test.mjs tests/desktop-audio-response.test.mjs",
     "test:desktop-music-stop-ui": "node tools/test-desktop-music-stop.mjs",
-    "test:desktop-combat-switch": "node --test --test-concurrency=1 tests/desktop-combat-switch.test.mjs tests/desktop-combat-switch-finished.test.mjs",
+    "test:desktop-combat-switch": "node --test --test-concurrency=1 tests/desktop-combat-switch.test.mjs",
     "test:desktop-combat-switch-ui": "node tools/test-desktop-combat-switch.mjs",
     "test:desktop-live-archive": "node --test --test-concurrency=1 tests/desktop-live-archive.test.mjs",
     "test:desktop-live-archive-ui": "node tools/test-desktop-live-archive.mjs",
@@ -105,5 +105,5 @@
     "typescript": "^5.9.0"
   },
   "productName": "SaltMarcher",
-  "description": "Lokaler Arbeitsraum für Kampagnen, Atlas und Spielleitung"
+  "description": "Lokaler Arbeitsraum f\u00fcr Kampagnen, Atlas und Spielleitung"
 }

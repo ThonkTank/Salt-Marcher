@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/note-merge-ui.ts'],outfile:'.build/note-merge-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const {NoteMergeUI}=createRequire(import.meta.url)('../.build/note-merge-ui.cjs');
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};

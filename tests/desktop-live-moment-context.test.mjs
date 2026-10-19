@@ -1,3 +1,4 @@
+import {fixtureStore} from './helpers/store.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,mkdirSync,copyFileSync,readFileSync,rmSync} from 'node:fs';
@@ -5,13 +6,13 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {buildSync} from './helpers/build.mjs';
+import {parseHTML} from './helpers/dom.mjs';
 const base='.build/planner-live-moment',require=createRequire(import.meta.url);
 mkdirSync(base+'/catalog',{recursive:true});copyFileSync('src/features/catalog/data/srd-5.1.generated.json',base+'/catalog/srd-5.1.generated.json');buildSync({entryPoints:['src/app/storage/store.ts'],outfile:base+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});buildSync({stdin:{contents:"export {newLocation} from './src/features/location/location-schema';export * from './src/app/live';export {initSessionPacket,setSessionPacketSurface} from './src/app/session-packet-ui';",resolveDir:process.cwd(),sourcefile:'live-packet-fixture.ts'},outfile:base+'/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const settle=async()=>{for(let i=0;i<8;i++)await new Promise(r=>setImmediate(r));};
 async function setup(t,resume=true,initialize=true,recapRaw){
- const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
+ const root=mkdtempSync(path.join(tmpdir(),'moment-context-')),{CampaignStore}=require('../'+base+'/store.cjs'),store=fixtureStore(CampaignStore,path.join(root,'store.sqlite')),campaign=store.create('Abend'),w=store.activate(campaign.id);
  const command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character);
  const scene=initialize?store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene:null;

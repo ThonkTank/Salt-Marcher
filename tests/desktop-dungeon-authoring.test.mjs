@@ -1,5 +1,5 @@
 import {test} from 'node:test';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdtempSync,rmSync} from 'node:fs';

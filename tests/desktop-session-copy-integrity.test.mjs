@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
-import {buildSync} from 'esbuild';
+import {buildSync} from './helpers/build.mjs';
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/planner-session-copy-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=createRequire(import.meta.url)('../.build/planner-session-copy-store.cjs');
 function fixture(t){const root=mkdtempSync(path.join(tmpdir(),'session-copy-integrity-')),store=new CampaignStore(path.join(root,'store.sqlite')),campaign=store.create('Quelle'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action}),plan={version:1,id:randomUUID(),revision:1,name:'Original',scenes:['Erste','Zweite'].map(title=>({id:randomUUID(),title,notes:'  '+title+'\r\n',locationId:null}))};store.changePreparation({...command(null),change:{kind:'plan',plan,expectedRevision:null}});const d=store.session(w.token,plan.id).visits[1];store.executeSession(command({kind:'visit',planId:plan.id,expectedRevision:d.revision,detail:{...d,readAloud:'  Öffentlich\r\n',reward:{id:randomUUID(),poolXp:25,items:[],placedTreasureId:null,awarded:false}}}));t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});return{store,w,command,plan};}

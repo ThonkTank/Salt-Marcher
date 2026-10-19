@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
-import {parseHTML} from 'linkedom';
+import {parseHTML} from './helpers/dom.mjs';
 buildSync({entryPoints:['src/app/key-note-context.ts'],outfile:'.build/key-note-context.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{KeyNoteContext}=require('../.build/key-note-context.cjs'),tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
