@@ -90,6 +90,15 @@ Der bestehende native Katalog-/Kampflauf prüft zusätzlich zwei Feuerziele mit
 vollem/halbem Anteil, unveränderte übrige Teilnehmer, ein gemeinsames Undo,
 erneutes Anwenden, Fortsetzen, Abschluss und Wiederöffnen bei 100/200 %.
 
+Nach bestätigtem Flächenschaden öffnen sich die betroffenen Mobkarten, damit
+individuelle HP und unbetroffene Mitglieder direkt kontrollierbar sind. Andere
+Trupps behalten ihren Aufklappzustand. Die Schreibbestätigung nennt die
+tatsächlichen HP jedes Ziels; Rundenzähler und aktiver Zug bleiben erhalten.
+`tools/test-desktop-area-results.mjs` prüft den vollständigen Ablauf mit vier
+Ogern, drei Zielen und zwei bestandenen Rettungswürfen bis zum Abschluss und
+Wiederöffnen bei 100/200 %. Das belegt keine menschliche Bedienabnahme oder
+einen vollständigen aktuellen Vergleichslauf in einem anderen Produkt.
+
 Eine fehlende Schreibbestätigung bleibt im geöffneten Schadensdialog sichtbar;
 die gewählten Eingaben bleiben dort erhalten. Solange der Schreibversuch läuft,
 bleibt Schließen gesperrt. Danach dürfen Schließen und Escape den modalen Dialog
