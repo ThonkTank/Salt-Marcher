@@ -2,7 +2,7 @@
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { atlasCanvasReady } from "./atlas-canvas-probe.mjs";
@@ -153,14 +153,12 @@ async function capture(name) {
   await page.screenshot({ path: out + "/" + name + ".png" });
 }
 async function stroke(points) {
-  const p = await at(...points[0]);
-  await page.mouse.move(p.x, p.y);
-  await page.mouse.down();
-  for (const point of points.slice(1)) {
-    const q = await at(...point);
-    await page.mouse.move(q.x, q.y, { steps: 12 });
-  }
-  await page.mouse.up();
+  const screen=await Promise.all(points.map(p=>at(...p))),native=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentBounds());
+  const mouse=p=>['mousemove','--sync',String(Math.round(native.x+p.x)),String(Math.round(native.y+p.y))];
+  const args=[...mouse(screen[0]),'mousedown','1'];
+  for(let i=1;i<screen.length;i++)args.push('sleep',String(.7/(screen.length-1)),...mouse(screen[i]));
+  args.push('mouseup','1');
+  await new Promise((resolve,reject)=>execFile('xdotool',args,{env:process.env},error=>error?reject(error):resolve()));
 }
 
 const maskBytes = () =>
@@ -281,6 +279,15 @@ try {
   await page.mouse.move(cp.x,cp.y);await page.mouse.down();await page.waitForTimeout(400);await page.keyboard.press('Escape');await page.mouse.up();
   assert.equal(JSON.stringify(records()),beforeCancel);
   result.checks.push('Escape discards color preview');
+  await page.locator('#land-radius').fill(String(r*.35));
+  const curve=Array.from({length:49},(_,i)=>[x-r+2*r*i/48,y+Math.sin(i/48*Math.PI*2)*r*.5]);
+  await stroke(curve);await settled();
+  const curveRecord=records().filter(v=>v.paint).sort((a,b)=>b.order-a.order)[0];
+  const ys=curveRecord.paint.strokes.flat().map(p=>p.y);
+  assert(Math.max(...ys)>y+r*.35&&Math.min(...ys)<y-r*.35,'Fast color curve retains both bends from coalesced input');
+  assert.equal(maskBytes(),landBeforeColor);await capture('02c-fast-color-curve');
+  result.checks.push('fast native color curve retains both bends without changing land');
+
   await tool('paint');assert.equal(Number(await page.locator('#land-radius').inputValue()),r);
   assert(await page.locator('#land-color-options').isHidden());
   await mode("land-erase", r * 0.35);
