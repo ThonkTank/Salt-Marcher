@@ -31,9 +31,9 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  }
  return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,replaceIds,attempts};
 }
-export function cityPaint(v:import("./atlas-region-contracts").CityGeometry){
+export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,background=true){
  const pts=(p:P[])=>p,h=v.header,root=atlasPaint("group", {size:{width:h.width,height:h.height}});
- root.title=h.name;root.append(atlasPaint("rect", {width: h.width, height: h.height, style: {fill: h.paper}}));
+ root.title=h.name;if(background)root.append(atlasPaint("rect", {width: h.width, height: h.height, style: {fill: h.paper}}));
  for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))root.append(atlasPaint("polygon", {points: pts(u.outline??[]), style: {fill: u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9', stroke: '#a69071', lineWidth: .7}}),atlasPaint("text", {x: u.outline?.[0]?.x??0, y: u.outline?.[0]?.y??0, style: {fontSize: 8, fill: '#52452e'}}, u.name));
  for(const u of v.units.filter(u=>u.kind==='road'||u.kind==='wall'))root.append(atlasPaint("polyline", {points: pts(roadPoints(u,v.units)), style: {fill: null, stroke: u.kind==='wall'?'#625e52':'#c1ae8b', lineWidth: u.width??6, lineJoin: 'round', lineCap: 'round'}}));
  for(const u of v.units.filter(u=>u.kind==='building')){

@@ -63,17 +63,8 @@ export function atlasRegionPaint(
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
-    if (city.header.width / mpp < 20) {
-      g.append(
-        landscapeNode("circle", {
-          x: city.header.width / 2,
-          y: city.header.height / 2,
-          radius: mpp * 3,
-          style: { fill: "#5b4338" },
-        }),
-      );
-    } else {
-      const cityScene = cityPaint(city);
+    {
+      const cityScene = cityPaint(city,false);
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);

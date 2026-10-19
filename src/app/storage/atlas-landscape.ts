@@ -1,3 +1,4 @@
+import {validateTerritory,validateLayer,territoryBox} from '../atlas-territory';
 import {REGION_REPLY_BYTES} from '../atlas-region-contracts';
 import { createHash, randomUUID } from "node:crypto";
 import polygonClipping from "polygon-clipping";
@@ -209,7 +210,7 @@ export function putLandscape(
 ) {
   if (
     !r ||
-    !["patch", "river", "road", "reference", "place"].includes(r.kind) ||
+    !["patch", "river", "road", "reference", "place", "territory", "region-layer"].includes(r.kind) ||
     typeof r.id !== "string" ||
     !r.id ||
     typeof r.name !== "string" ||
@@ -227,7 +228,7 @@ export function putLandscape(
     ...r.polygons.flatMap((p) => [...p.outer, ...p.holes.flat()]),
   ];
   if (
-    !pts.length ||
+    (!pts.length && r.kind!=="territory") ||
     pts.length > 100000 ||
     pts.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))
   )
@@ -277,7 +278,9 @@ export function putLandscape(
     .get(cam, r.id);
   if ((old?.revision ?? null) !== expected)
     throw new Error("Landschaft inzwischen geändert. Neu laden.");
-  const b = bounds(r),
+  if(r.kind==="territory")validateTerritory(r);
+  if(r.kind==="region-layer")validateLayer(r.regionLayer!);
+  const b = r.kind==="territory"?territoryBox(r):bounds(r),
     next = {
       ...r,
       order:
@@ -289,6 +292,7 @@ export function putLandscape(
           .get(cam).n,
       revision: (expected ?? 0) + 1,
     };
+  if(r.territory?.label.position&&r.polygons.length){const p=r.territory.label.position,right=Math.max(b.x+b.width,p.x),bottom=Math.max(b.y+b.height,p.y);b.x=Math.min(b.x,p.x);b.y=Math.min(b.y,p.y);b.width=right-b.x;b.height=bottom-b.y;}
   db.prepare(
     "INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,min_x=excluded.min_x,max_x=excluded.max_x,min_y=excluded.min_y,max_y=excluded.max_y,payload=excluded.payload",
   ).run(
@@ -302,7 +306,9 @@ export function putLandscape(
     JSON.stringify(next),
   );
 }
-export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
+export function executeLandscape(db: any, cam: string, a: Exclude<LandscapeAction,{kind:"landscape-territory"|"landscape-region-layer"|"landscape-territory-delete"}>) {
+  const protectedId=(id:string)=>["territory","region-layer"].includes(db.prepare("SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?").get(cam,id)?.kind);
+  if(a.kind==="landscape-remove"?protectedId(a.id):a.kind==="landscape-batch"?a.records.some(x=>["territory","region-layer"].includes(x.record.kind)||protectedId(x.record.id)):a.kind!=="landscape-reset"&&(["territory","region-layer"].includes(a.record.kind)||protectedId(a.record.id)))throw Error("Regionen nur über das Regionswerkzeug ändern.");
   if (a.kind === "landscape-batch") {
     for (const r of a.records)
       putLandscape(db, cam, r.record, r.expectedRevision);

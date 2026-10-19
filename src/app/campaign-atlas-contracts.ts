@@ -37,6 +37,7 @@ export interface CampaignAtlas<R extends RoomGeometry = Room,E extends DrawingEl
   canRedo: boolean;
 }
 export type AtlasAction =
+  | {kind:"geometry-context";geometry:"city"|"dungeon"}
   | import("./atlas-landscape").LandscapeAction
   | {
       kind: "drawing-import";
@@ -86,17 +87,18 @@ export interface AtlasCommand {
 }
 /** Small GM-only reads. These DTOs never contain room prose or complete cities. */
 export interface AtlasOverview {
+  regionLayers?: import("./atlas-territory").AtlasRegionLayer[];
   campaignId: string; token: string; revision: number; canUndo: boolean; canRedo: boolean;
   counts: {rooms: number; cities: number; landscape: number};
   landscapeBounds: import('./atlas-landscape').LandscapeBox | null;
 }
 export interface AtlasObjectQuery {
-  kind: 'room' | 'city' | 'landscape' | 'scope'; text: string; limit: number;
-  cursor?: {token: string; fence: number; revision: number; after: string; kind: 'room' | 'city' | 'landscape' | 'scope'; text: string};
+  kind: 'room' | 'city' | 'landscape' | 'scope' | 'territory'; text: string; limit: number;
+  cursor?: {token: string; fence: number; revision: number; after: string; kind: 'room' | 'city' | 'landscape' | 'scope' | 'territory'; text: string};
 }
 export interface AtlasObjectPage {
   campaignId: string; token: string; revision: number;
-  items: {id: string; name: string; revision: number; scopeId?: string; floorId?: string; number?: string}[];
+  items: {id: string; name: string; revision: number; scopeId?: string; floorId?: string; number?: string;parentId?:string|null;layerId?:string}[];
   next: AtlasObjectQuery['cursor'] | null;
 }
 export interface AtlasCommitAck {
