@@ -90,6 +90,8 @@ bleibt Schließen gesperrt. Danach dürfen Schließen und Escape den modalen Dia
 verlassen, auch wenn ein ungeklärter Command weitere Schreibaktionen sperrt.
 So bleibt der vorhandene Buchungsstatusknopf erreichbar. Schließen verwirft
 weder das Receipt-Ticket noch dessen Schreibschutz und wiederholt keinen Command.
+Die [Entwickleranschlüsse der Bestätigung](../../../ARCHITECTURE.md#buchungsantworten-klären)
+verbinden Dialog, gemeinsame Buchungssperre und gespeicherten Beleg.
 
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 

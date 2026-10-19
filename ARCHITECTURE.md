@@ -269,6 +269,27 @@ Actorrelocation gehören zum selben Command. Reiseundo hat eigene kausale
 Checkpoints und darf später etablierte fremde Folgen nicht zurückrollen.
 Campaignhistorie sind dauerhafte erklärende Fakten, kein Undoersatz.
 
+### Buchungsantworten klären
+
+Für die in [`CommitFamily`](src/app/commit-receipt.ts) gebundenen Writes führt
+die Diagnose über drei bestehende Besitzer:
+
+| Frage | Einstieg |
+| --- | --- |
+| Ist derselbe Command noch ungeklärt? | [`commit-confirmation.ts`](src/app/commit-confirmation.ts): `writeConfirmed` sichert die Referenz vor dem Senden; `hasPendingCommit` sperrt weitere Buchungen. `checkPendingCommit` bedient den vorhandenen Statusknopf. |
+| Läuft der Aufruf noch oder existiert schon ein Receipt? | [`CommitTracker`](desktop/commit-tracker.ts), angeschlossen in [`desktop/main.ts`](desktop/main.ts) an `campaign:commit-status`: ergänzt den gespeicherten Status um laufende Aufrufe. Ein fehlender DB-Beleg allein bedeutet währenddessen noch nicht „nicht gebucht“. |
+| Gehört der gespeicherte Beleg zu diesem Auftrag? | [`CampaignStore.commitStatus`](src/app/storage/store.ts) prüft den Aktivierungskontext; [`storage/commit-receipt.ts`](src/app/storage/commit-receipt.ts) prüft Campaign, Fingerprint, Prüfsumme und Fachbezug. |
+
+Die Rückbindung an die Fachansicht erfolgt über `onCommitResolved`, beim Kampf
+in `recoveredCombat` aus [`combat.ts`](src/app/combat.ts). Ein modaler Aufrufer
+muss laufenden Aufruf und ungeklärtes Ergebnis unterscheiden: `busy` im
+[`CombatAreaPanel`](src/app/combat-area-ui.ts) endet mit dem Aufruf, die gemeinsame
+Buchungssperre bleibt bis zur Klärung bestehen. Der [Flächenschaden-Vertrag](docs/plans/runtime/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung)
+erklärt Schließen/Escape und erhaltene Eingaben. Gezielte Prüfungen:
+[`desktop-combat-area`](tests/desktop-combat-area.test.mjs) für den Dialog,
+[`desktop-chase-switch`](tests/desktop-chase-switch.test.mjs) für die gemeinsame
+Bestätigung und Rückbindung nach verlorener Antwort.
+
 ## Runtime und gemeinsame Weltfolgen
 
 Der [Scene-Fachvertrag](docs/plans/runtime/smr03-live-scene-contract.md) besitzt
