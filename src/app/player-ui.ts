@@ -60,7 +60,12 @@ function paint(){
  renderPlayer(el('player-preview'),view.frame,'campaign://app/player');el('player-state').textContent=view.frame.mode==='blank'?(view.frame.reason??'Anzeige leer.'):view.frame.mode==='map'?'Reisekarte der fokussierten Gruppe.':'Freigegebene Ansicht. Bildoverride und Ausblenden verändern keine Charakterkenntnis.';
 }
 function publish(o:Owner,result:PlayerView,request:number){if(!owns(o)||request!==presentation||hasView(o)&&result.settings.revision<view!.settings.revision)return false;view=result;viewOwner=o;paint();return true;}
-async function reload(o:Owner){const request=++presentation,result=await window.campaign.playerView(o.token,hasView(o)&&value('player-map')?{mapId:value('player-map'),q:Number(value('player-q')),r:Number(value('player-r')),search:value('player-map-search')}:undefined);if(!owns(o)||request!==presentation)return false;return publish(o,unwrap(result),request);}
+async function reload(o:Owner,reviewFocus=false){
+ const basis=hasView(o)?view:null,request=++presentation,result=await window.campaign.playerView(o.token,basis&&value('player-map')?{mapId:value('player-map'),q:Number(value('player-q')),r:Number(value('player-r')),search:value('player-map-search')}:undefined);
+ if(!owns(o)||request!==presentation)return false;const next=unwrap(result);
+ if(basis&&!reviewFocus&&(basis.focusId!==next.focusId||basis.focusRevision!==next.focusRevision||basis.focusMembershipRevision!==next.focusMembershipRevision||basis.focusLocationId!==next.focusLocationId))throw new Error('Fokussierte Gruppe geändert. Aktualisiere die Spielersteuerung und prüfe die Freigabe erneut.');
+ return publish(o,next,request);
+}
 function closeControls(){generation++;presentation++;actions++;el<HTMLDialogElement>('player-dialog').close();}
 export function deactivatePlayer(){closeControls();view=null;viewOwner=null;baseline.clear();for(const id of ['player-art-title','player-public-label','player-map-search'])input(id).value='';for(const id of ['player-q','player-r'])input(id).value='0';}
 function settings(mode:'follow'|'image',blank:boolean):PlayerAction{return{kind:'settings',settings:{blank,mode,imageId:value('player-image')||null,title:value('player-title'),labels:input('player-labels').checked,light:value('player-light') as PlayerSettings['light'],displayId:value('player-screen')?Number(value('player-screen')):null,fullscreen:input('player-fullscreen').checked}};}
@@ -120,9 +125,9 @@ export function initPlayerUI(status:typeof tell,getContext:typeof context,flush:
   const screens=await window.campaign.playerScreens();if(!owns(o))return;
   if(!hasView(o)){baseline.clear();view=null;viewOwner=null;}
   options('player-screen',unwrap(screens).map(s=>({id:String(s.id),name:s.name})),value('player-screen')||null,true);
-  if(await reload(o)&&owns(o))el<HTMLDialogElement>('player-dialog').showModal();
+  if(await reload(o,true)&&owns(o))el<HTMLDialogElement>('player-dialog').showModal();
  });};
- el('player-close-controls').onclick=closeControls;el<HTMLDialogElement>('player-dialog').oncancel=event=>{event.preventDefault();closeControls();};el('player-refresh').onclick=()=>run(owner(),reload);
+ el('player-close-controls').onclick=closeControls;el<HTMLDialogElement>('player-dialog').oncancel=event=>{event.preventDefault();closeControls();};el('player-refresh').onclick=()=>run(owner(),o=>reload(o,true));
  el('player-show-follow').onclick=()=>submit(settings('follow',false),true);el('player-show-image').onclick=()=>submit(settings('image',false),true);el('player-blank').onclick=()=>submit({kind:'blank'});
  el('player-close-window').onclick=()=>{const o=owner();if(!o||!hasView(o))return;const intent=++actions;run(o,async o=>{unwrap(await window.campaign.playerWindow(o.token,false));if(owns(o)&&intent===actions)await reload(o);});};
  el('player-map-search').oninput=()=>{paintMap();run(owner(),reload);};
