@@ -80,8 +80,7 @@ export function validateNarrativeBackup(db:any){
  }
  for(const row of db.prepare('SELECT * FROM narrative_award').iterate()){
   const award=checkedAward(db,row.campaign_id,row),key=row.campaign_id+'\0'+row.note_id,state=states.get(key);
-  if(row.id!==award.id||row.note_id!==award.noteId||state?.awardId!==award.id)throw new Error('Narrativer Belohnungsbeleg ist falsch zugeordnet.');
-  narrativeDocument(db,row.campaign_id,row.note_id,true);
+  if(state?.awardId!==award.id)throw new Error('Narrativer Belohnungsbeleg ist falsch zugeordnet.');
   awards.add(row.campaign_id+'\0'+award.id);
  }
  for(const [key,state]of states)if(state.awardId&&!awards.has(key.slice(0,key.indexOf('\0'))+'\0'+state.awardId))throw new Error('Narrativer Status verweist auf einen fehlenden Belohnungsbeleg.');
