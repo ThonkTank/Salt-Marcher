@@ -154,3 +154,6 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 
 /* Export has its own controls; retain the editing layout preference for the return. */
 #campaign-atlas[data-task=output][data-secondary=true] #atlas-panel{display:none}
+
+/* Keep the active campaign identifiable without another toolbar control. */
+#campaign-atlas #atlas-navigation{max-width:min(34vw,18rem);overflow:hidden;text-overflow:ellipsis}

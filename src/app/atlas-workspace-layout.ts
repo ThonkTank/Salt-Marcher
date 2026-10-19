@@ -142,12 +142,13 @@ export class AtlasWorkspaceLayout {
   // The shell keeps runtime controls. They never enter an editor popup.
   el('atlas-to-party').classList.add('atlas-runtime-control');
   const observer=new MutationObserver(()=>{
+   const campaign=el('campaign-header-name').textContent??'';nav.textContent=campaign?'Atlas · '+campaign+' ▾':'Atlas ▾';nav.title=campaign?'Kampagne: '+campaign:'Atlas';
    const pending=!el('atlas-recover').hidden||!el('commit-pending').hidden||!el('error-actions').hidden||!el('backup-status').hidden||!el('world-write-recovery').hidden;
    const failed=pending||el('atlas-save-status').dataset.error==='true'||el('status').dataset.error==='true';
    const message=el('atlas-save-status').textContent||el('status').textContent||'Gesichert';
    status.textContent=failed?'Speicherstand prüfen':message.startsWith('Kartenausschnitt')?'Gesichert':message;status.title=message;status.dataset.error=String(failed);status.setAttribute('aria-label','Status: '+status.textContent);
   });
-  for(const id of ['status','atlas-save-status','atlas-recover','commit-pending','error-actions','backup-status','world-write-recovery','graph-preview-banner'])observer.observe(el(id),{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class','data-error']});
+  for(const id of ['campaign-header-name','status','atlas-save-status','atlas-recover','commit-pending','error-actions','backup-status','world-write-recovery','graph-preview-banner'])observer.observe(el(id),{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','class','data-error']});
   el('atlas-search-results').classList.add('atlas-search-popup');
  }
  setActive(active:boolean){
