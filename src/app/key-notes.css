@@ -70,3 +70,11 @@
 
 /* The map editor has a handoff for its complete reviewed source selection. */
 #note-thread-editor #note-thread-prepare{display:none}
+
+.note-thread-selection-summary{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.note-thread-selection-summary p{flex:1;min-width:12rem}
+.note-thread-selection-summary button{align-self:center}
+#note-thread-review{margin-top:1rem;border-top:1px solid var(--line);padding-top:.8rem}
+#note-thread-review>summary{cursor:pointer;font-weight:600}
+#note-thread-target-hint{font-size:.9rem;overflow-wrap:anywhere}
+#note-thread-review label:has(#note-thread-active){display:flex;align-items:center;gap:.5rem;width:fit-content}

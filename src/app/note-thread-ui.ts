@@ -81,6 +81,7 @@ interface NoteMapFrame {
   loadedIds: string[];
   scroll: number;
   preparing: boolean;
+  reviewOpen: boolean;
 }
 /** A reading projection of one existing note and its direct note references, with existing writers. */
 export class NoteThreadDialog {
@@ -110,7 +111,11 @@ export class NoteThreadDialog {
   private planName = node("input");
   private use = node("button", "Auswahl für den Spielabend verwenden");
   private choice = node("p");
+  private selectionSummary = node("div");
+  private targetHint = node("p");
   private target = node("section");
+  private mapContent = node("div");
+  private review = node("details");
   private sourceChoices = node("div");
   private rootChoice = label("Übersichtsnotiz ebenfalls verknüpfen", this.includeRoot);
   private preparing = false;
@@ -217,6 +222,12 @@ export class NoteThreadDialog {
     this.visitTitle.id = "note-thread-visit-title";
     this.planName.id = "note-thread-plan-name";
     this.choice.id = "note-thread-choice";
+    this.targetHint.id = "note-thread-target-hint";
+    this.targetHint.setAttribute("role", "status");
+    this.plan.setAttribute("aria-describedby", this.targetHint.id);
+    this.visit.setAttribute("aria-describedby", this.targetHint.id);
+    this.planName.setAttribute("aria-describedby", this.targetHint.id);
+    this.visitTitle.setAttribute("aria-describedby", this.targetHint.id);
     this.visitTitle.maxLength = this.planName.maxLength = 1000;
     for (const b of [
       this.more,
@@ -251,6 +262,8 @@ export class NoteThreadDialog {
     );
     const target = this.target;
     target.className = "note-thread-target";
+    this.selectionSummary.className = "note-thread-selection-summary";
+    this.selectionSummary.append(this.choice);
     this.sourceChoices.id = "note-thread-source-choices";
     this.sourceChoices.setAttribute("role", "group");
     this.sourceChoices.setAttribute("aria-label", "Quellen für den Spielabend");
@@ -266,11 +279,12 @@ export class NoteThreadDialog {
       node("h3", "Für einen Spielabend vorbereiten"),
       this.rootChoice,
       this.sourceChoices,
-      this.choice,
+      this.selectionSummary,
       destinations,
+      this.targetHint,
       this.use,
     );
-    this.reading.append(
+    this.mapContent.append(
       node(
         "p",
         "Originalnotizen und ihre bestätigten Zustände gemeinsam lesen. Die Mappe zeigt direkte Beziehungen und Textverweise dieser Übersichtsnotiz.",
@@ -282,9 +296,10 @@ export class NoteThreadDialog {
       this.summary,
       this.sources,
       this.more,
-      target,
-      this.status,
     );
+    this.review.id = "note-thread-review";
+    this.review.append(node("summary", "Originaltexte und Quellen bearbeiten…"));
+    this.reading.append(this.mapContent, target, this.status);
     this.dialog.append(head, this.reading, this.editor);
     document.body.append(this.dialog);
     this.close.onclick = () => {
@@ -322,6 +337,7 @@ export class NoteThreadDialog {
     this.add.onclick = () => void this.addSources();
     this.plan.onchange = () => this.drawVisits();
     this.visit.onchange = () => this.controls();
+    this.planName.oninput = this.visitTitle.oninput = () => this.controls();
     this.use.onclick = () => void this.prepareVisit();
   }
   get rootId() {
@@ -374,11 +390,15 @@ export class NoteThreadDialog {
   }
   private placeTarget(preparing: boolean) {
     this.preparing = preparing;
-    if (preparing) this.reading.prepend(this.target, this.status);
-    else this.reading.append(this.target, this.status);
+    if (preparing) {
+      this.review.append(this.mapContent);
+      this.reading.replaceChildren(this.target, this.status, this.review);
+      this.selectionSummary.append(this.clearSelection);
+    } else {
+      this.reading.replaceChildren(this.mapContent, this.target, this.status);
+      this.summary.after(this.clearSelection);
+    }
     this.sourceChoices.hidden = !preparing;
-    if (preparing) this.target.insertBefore(this.clearSelection, this.rootChoice);
-    else this.summary.after(this.clearSelection);
     this.controls();
     if (preparing) this.dialog.scrollTop = 0;
   }
@@ -392,6 +412,7 @@ export class NoteThreadDialog {
     this.includeRoot.checked = frame?.includeRoot ?? true;
     this.query.value = frame?.query ?? "";
     this.collect.open = frame?.collectOpen ?? false;
+    this.review.open = frame?.reviewOpen ?? false;
     this.candidates.replaceChildren(); this.sources.replaceChildren(); this.body.replaceChildren();
     this.searchStatus.textContent = ""; this.status.textContent = "";
     this.reading.hidden = false; this.editor.hidden = true;
@@ -429,7 +450,7 @@ export class NoteThreadDialog {
       const owner = await this.options.prepare();
       if (!this.current(epoch) || this.editing !== id) return;
       if (!owner?.current() || owner.id !== id) throw Error("Eingabe noch nicht übernommen. Original bleibt geöffnet; Speicherstatus prüfen.");
-      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loadedIds: [...this.entries.keys()], scroll: this.readingScroll, preparing: this.preparing };
+      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, reviewOpen: this.review.open, loadedIds: [...this.entries.keys()], scroll: this.readingScroll, preparing: this.preparing };
       this.restoreEditor?.(); this.restoreEditor = null; this.editing = null; this.inspection = null;
       this.parents.push(parent); this.epoch++; this.request++; this.searchRequest++; this.busy = false;
       await this.showMap(owner, undefined, preparing);
@@ -515,6 +536,12 @@ export class NoteThreadDialog {
       picked.size +
       Number(this.includeRoot.checked) +
       " Originalnotizen ausgewählt. Vorhandene Besuchsnotizen bleiben erhalten.";
+    this.targetHint.textContent = !this.plan.value && !this.planName.value.trim()
+      ? "Spielabend auswählen oder neuen Spielabend benennen."
+      : !this.visit.value && !this.visitTitle.value.trim()
+        ? "Besuch auswählen oder neuen Besuch benennen."
+        : "";
+    this.targetHint.hidden = !this.targetHint.textContent;
   }
   private async load(
     append: boolean,
@@ -603,7 +630,7 @@ export class NoteThreadDialog {
         " verknüpften Quellen angezeigt" +
         (active ? " · geschlossene Spuren ausgeblendet." : ".");
       this.status.textContent = this.entries.size
-        ? "Quelltexte lesen und Auswahl für die Vorbereitung prüfen."
+        ? this.preparing ? "" : "Quelltexte lesen und Auswahl für die Vorbereitung prüfen."
         : this.next !== null
           ? "Noch keine passenden Quellen. Weitere Quellen laden."
           : "Noch keine passenden Quellen. Oben vorhandene Notizen verknüpfen.";
@@ -1171,8 +1198,11 @@ export class NoteThreadDialog {
       (!target.visitId && !target.title.trim()) ||
       (!target.planId && !target.planName.trim())
     ) {
-      this.status.textContent =
-        "Neuen Spielabend beziehungsweise Besuch benennen.";
+      this.controls();
+      const missing = !target.planId && !target.planName.trim()
+        ? this.plan.options.length > 1 ? this.plan : this.planName
+        : this.visit.options.length > 1 ? this.visit : this.visitTitle;
+      missing.focus();
       return;
     }
     this.busy = true;

@@ -107,6 +107,14 @@ oder vorhandener Abend und Besuch gewählt; ein Abendwechsel wählt keinen Besuc
 vor. `tools/test-desktop-protocol-visit.mjs` prüft diesen Weg bis zur erneuten
 Originalbearbeitung nach Neustart. [Vergleich und native Belege](../../reference/gm-ux-qa/protocol-note-selection-20261018/README.md#vorhandenen-abend-bewusst-wählen--19102026).
 
+Die direkte Vorbereitung zeigt zuerst die Quellenauswahl und das Ziel. Die
+Aktion zum Leeren steht bei der Auswahlzählung. „Originaltexte und Quellen
+bearbeiten…“ öffnet bei Bedarf dieselben Originaltexte, Bearbeitungs- und
+Quellenaktionen; die normale lesende Notizmappe zeigt sie weiterhin direkt.
+Prüfen, Bearbeiten und Zurückkehren erhalten Auswahl und Ziel. Die Zielhilfe
+nennt die noch fehlende Angabe und verschwindet unmittelbar nach deren Wahl
+oder Eingabe. Fehler beim Quellenlesen oder Speichern bleiben separat sichtbar.
+
 ## Beziehungspaare beim Kampagnentransfer
 
 Paarhistory und offene Paaraufträge verwenden `sourceId` als lokale World-Notiz.

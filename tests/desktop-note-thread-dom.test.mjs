@@ -231,6 +231,27 @@ test('a source without a planning destination cannot silently use the first hist
  const x=fixture(t);delete x.owner.destination;await x.ui.open(true);assert.equal(x.el('note-thread-plan').value,'');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-plan','P');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);x.select('note-thread-visit','V');x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.equal(x.used[0].target.visitId,'V');
 });
 
+test('preparing keeps source management together while review, edits and return preserve the chosen destination',async t=>{
+ const x=fixture(t);await x.ui.open(true);const review=x.el('note-thread-review');
+ assert.equal(review.open,false);assert(review.contains(x.el('note-thread-root')));assert(review.contains(x.el('note-thread-sources')));
+ assert.equal(x.el('note-thread-clear-selection').parentElement.className,'note-thread-selection-summary');
+ const box=x.el('note-thread-source-choices').querySelector('input');box.checked=false;box.onchange();
+ review.open=true;x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);x.el('note-thread-return').click();await until(()=>x.el('note-thread-editor').hidden);
+ assert.equal(review.open,true);assert.equal(box.checked,false);assert.equal(x.el('note-thread-sources').querySelector('input').checked,false);
+ assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');assert.equal(x.used.length,0);
+ x.ui.reset();await x.ui.open();assert.equal(review.isConnected,false);assert(x.el('note-thread-reading').contains(x.el('note-thread-root')));
+});
+
+test('destination guidance follows selection and typing without clearing actual save failures',async t=>{
+ const x=fixture(t);delete x.owner.destination;await x.ui.open(true);const hint=x.el('note-thread-target-hint');
+ assert.match(hint.textContent,/Spielabend auswählen/);x.el('note-thread-use').click();await tick();assert.equal(x.used.length,0);
+ x.select('note-thread-plan','P');assert.match(hint.textContent,/Besuch auswählen/);x.select('note-thread-visit','V');assert.equal(hint.hidden,true);assert.equal(hint.textContent,'');assert.doesNotMatch(x.el('note-thread-status').textContent,/benennen/);
+ x.select('note-thread-plan','');x.el('note-thread-plan-name').value='Fortsetzung';x.el('note-thread-plan-name').oninput();assert.match(hint.textContent,/Besuch auswählen/);
+ x.el('note-thread-visit-title').value='Bei der Scheune';x.el('note-thread-visit-title').oninput();assert.equal(hint.hidden,true);assert.equal(hint.textContent,'');
+ x.setCheck(async()=>({ok:false,error:'Quelle inzwischen geändert'}));x.el('note-thread-use').click();await until(()=>x.el('note-thread-status').textContent.includes('inzwischen'));
+ x.el('note-thread-visit-title').value='Am Tor';x.el('note-thread-visit-title').oninput();assert.match(x.el('note-thread-status').textContent,/Quelle inzwischen geändert/);assert.equal(x.used.length,0);
+});
+
 
 test('clearing source choices retains the separate root and destination, and leaves later or newly read sources unselected',async t=>{
  const x=fixture(t),later=entry('Späte Spur','open');x.root.relations=[...x.all.slice(0,2),later].map(e=>({targetId:e.id,label:'Quelle'}));
