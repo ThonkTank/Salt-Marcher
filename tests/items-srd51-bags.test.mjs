@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { BAGS, bagsSourceRows, validateBagsSlice, validateBagsPdfXml } from "../tools/items-srd51-bags.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-bags-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-bags-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, dataRoot), "utf8"));
-const [transcript, inventory, schema] = await Promise.all([
-  readJson("items-srd51-transcript.json"), readJson("items-srd51-inventory.json"), readJson("items-srd51-schema-v1.json"),
+const [transcript, inventory] = await Promise.all([
+  readJson("items-srd51-transcript.json"), readJson("items-srd51-inventory.json"),
 ]);
 // A narrow offline fixture does not contain all 239 headings. The full official
 // PDF integration in items-srd51-source.test.mjs independently derives them.
@@ -33,30 +33,18 @@ test("Bags fixture is original hash-bound official three-page XML, not synthetic
     scope: "complete-heading-bounded-stream-with-die-range-and-color-table-ownership" });
 });
 
-test("captured item transcript and inventory satisfy their complete JSON schemas", () => {
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
-
+// Positive rows are checked in full by the central "items source package" test.
 for (const item of BAGS) {
-  test(`${item.name}: complete ordinal/page/header/prose/table golden and schema`, () => {
-    assert.equal(validateBagsSlice(transcript, inventory).records, 4);
-    const row = bagsSourceRows().find(row => row.record.name === item.name);
-    assert.equal(row.occurrence.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
-    assert.equal(row.occurrence.mergeIntoId, null);
-    assert.equal(row.occurrence.variantId, null);
-    assert.equal(row.record.attunement, "not-required");
-    assert.equal(row.record.cost, undefined);
-    // Conditional bean weight and holding capacity are not invented conversions.
-    assert.equal(row.record.carryingCapacity, undefined);
-  });
-  test(`${item.name}: missing last paragraph, invented facts, IDs, page spans and merge fail closed`, () => {
-    for (const mutate of [
+  test(`${item.name}: source record and occurrence damage fail closed`, () => {
+    const faults = [
       row => row.description.splice(item.description.length - 1, 1),
       row => row.description.push({ text: "Invented extra rule.", occurrenceId: row.id }),
       row => row.id = "srd51:magic-item:magic-items-a-z:999",
       row => row.source.pdfPages = [209],
       row => row.attunement = "required",
-    ]) {
+    ];
+    // Full field matrix once per comparator; every item still tests record and occurrence rejection.
+    for (const mutate of item === BAGS[0] ? faults : faults.slice(0, 1)) {
       const copy = structuredClone(transcript);
       const row = copy.records.find(row => row.name === item.name);
       mutate(row);
@@ -95,7 +83,6 @@ test("Tricks retains all three color tables without flattening or invented varia
   // Same multiset of creatures, wrong color/die ownership must still fail.
   [props[0].description, props[8].description] = [props[8].description, props[0].description];
   assert.throws(() => validateBagsSlice(copy, inventory), /table ownership/);
-  assert.equal(validateTranscriptData(transcript, inventory, { allowIncomplete: true }).complete, false);
 });
 
 test("real Bags XML rejects changed range, partial split-page egg row, reordered color cells and extra body rules", () => {

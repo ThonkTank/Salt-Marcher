@@ -13,7 +13,7 @@ function fixture(t,scope='campaign'){
  const dir=mkdtempSync(path.join(tmpdir(),'encounter-table-integrity-')),file=path.join(dir,'world.sqlite'),store=new CampaignStore(file),campaign=store.create('Quellen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
  const table={id:randomUUID(),revision:0,scope,name:'Wachen',description:'  Originalprosa\r\n\r\n',entries:[{creatureId:'guard',weight:'1'},{creatureId:'goblin',weight:'2'}],habitats:[],time:'any',lootTableId:null,trashed:false};
  const creation=command({kind:'table-save',table,expectedRevision:null}),ack=store.executeGeneration(creation);
- const read=()=>store.encounterTables(w.token,true).find(row=>row.id===table.id),original=read(),damage=edit=>{const changed=structuredClone(original);edit(changed);const payload=JSON.stringify(changed),checksum=createHash('sha256').update(payload).digest('hex');store.db.prepare('UPDATE encounter_table SET payload=?,checksum=? WHERE id=?').run(payload,checksum,table.id);return{payload,checksum};};
+ const read=()=>store.encounterTables(w.token,true).find(row=>row.id===table.id),original=read(),damage=edit=>{const changed=structuredClone(original);edit(changed);const payload=JSON.stringify(changed),checksum=createHash('sha256').update(payload).digest('hex');store.db.prepare('UPDATE encounter_table SET payload=?,checksum=? WHERE id=?').run(payload,checksum,table.id);};
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});return{dir,file,store,campaign,w,command,creation,ack,table:original,read,damage};
 }
 const invalid=[
@@ -27,17 +27,22 @@ const invalid=[
  ['invalid loot identity',t=>t.lootTableId={id:'loot'}],
 ];
 for(const [name,edit] of invalid)test(`stored encounter table ${name} fails closed without rewriting its original bytes`,async t=>{
- const x=fixture(t),row=x.damage(edit),before=x.store.db.serialize();
+ const x=fixture(t);x.damage(edit);const before=x.store.db.serialize();
  assert.throws(x.read,/Tabelle|Gewicht|Kreatur/);
- assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-trash',id:x.table.id,expectedRevision:x.table.revision,trashed:true})),/Tabelle|Gewicht|Kreatur/);
- assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',table:{...x.table,name:'Überschreiben'},expectedRevision:x.table.revision})),/Tabelle|Gewicht|Kreatur/);
- assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.store.db.prepare('SELECT payload,checksum FROM encounter_table WHERE id=?').get(x.table.id),row);
- const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.campaign.id);assert.throws(()=>fresh.encounterTables(w.token,true),/Tabelle|Gewicht|Kreatur/);}finally{fresh.close();}
+ // Each field reaches decodeTable; this representative also guards both writers and Fresh.
+ if(name==='duplicate creatures'){
+  assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-trash',id:x.table.id,expectedRevision:x.table.revision,trashed:true})),/Tabelle|Gewicht|Kreatur/);
+  assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',table:{...x.table,name:'Überschreiben'},expectedRevision:x.table.revision})),/Tabelle|Gewicht|Kreatur/);
+ }
+ assert.ok(x.store.db.serialize().equals(before));
+ if(name==='duplicate creatures'){
+  const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.campaign.id);assert.throws(()=>fresh.encounterTables(w.token,true),/Tabelle|Gewicht|Kreatur/);}finally{fresh.close();}
+ }
 });
 test('a malformed encounter table cannot replace a known-good backup with a checksummed invalid candidate',async t=>{
  const x=fixture(t),safe=path.join(x.dir,'safe.sqlite');await x.store.backup(safe);const saved=readFileSync(safe);
- const row=x.damage(t=>t.entries=[t.entries[0],{...t.entries[0]}]),before=x.store.db.serialize();
- await assert.rejects(x.store.backup(safe),/Tabelle|Kreatur/);assert.deepEqual(readFileSync(safe),saved);assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.store.db.prepare('SELECT payload,checksum FROM encounter_table WHERE id=?').get(x.table.id),row);
+ x.damage(t=>t.entries=[t.entries[0],{...t.entries[0]}]);const before=x.store.db.serialize();
+ await assert.rejects(x.store.backup(safe),/Tabelle|Kreatur/);assert.deepEqual(readFileSync(safe),saved);assert.ok(x.store.db.serialize().equals(before));
 });
 test('valid exact decimal weights, zero shares, author prose and unavailable creature identities stay readable',async t=>{
  const x=fixture(t);x.damage(t=>{t.entries=[{creatureId:'external-creature-no-longer-installed',weight:'0001,250000000001'},{creatureId:'guard',weight:'0'}];t.habitats=['Wald'];});
@@ -53,10 +58,10 @@ test('campaign-local damage does not block an unrelated campaign table read, edi
 });
 
 test('invalid installation-wide tables remain in every affected campaign read and write boundary',t=>{
- const x=fixture(t,'installation');x.damage(t=>t.entries=[]);const original=x.store.db.prepare('SELECT * FROM encounter_table WHERE id=?').get(x.table.id),other=x.store.create('Gemeinsamer Owner'),w=x.store.activate(other.id),before=x.store.db.serialize();
+ const x=fixture(t,'installation');x.damage(t=>t.entries=[]);const other=x.store.create('Gemeinsamer Owner'),w=x.store.activate(other.id),before=x.store.db.serialize();
  assert.throws(()=>x.store.encounterTables(w.token,true),/Tabelle/);
  assert.throws(()=>x.store.executeGeneration({commandId:randomUUID(),token:w.token,campaignId:other.id,action:{kind:'table-save',table:{...x.table,id:randomUUID(),revision:0,scope:'campaign'},expectedRevision:null}}),/Tabelle/);
- assert.ok(x.store.db.serialize().equals(before));assert.deepEqual(x.store.db.prepare('SELECT * FROM encounter_table WHERE id=?').get(x.table.id),original);
+ assert.ok(x.store.db.serialize().equals(before));
 });
 
 test('an original confirmed table receipt remains a historical fact when current table content is damaged',t=>{

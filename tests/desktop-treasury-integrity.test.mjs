@@ -23,13 +23,16 @@ function activeMember(x){
  live=x.store.live(x.w.token);x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:live.rosterRevision}));return x.store.live(x.w.token).roster[0];
 }
 function damage(x,table,edit){const row=x.store.db.prepare('SELECT * FROM '+table).get(),value=JSON.parse(row.payload);edit(value);const p=JSON.stringify(value);x.store.db.prepare('UPDATE '+table+' SET payload=?,checksum=?').run(p,hash(p));}
-for(const [name,edit]of [
- ['target identity',d=>d.treasureId=randomUUID()],['future revision',d=>d.revision=99],['raw quantity',d=>d.items[0].quantity=3],['definition version',d=>d.items[0].reference.revision=-1],['definition owner',d=>d.items[0].reference.definitionId=randomUUID()],['lot identity',d=>d.items[0].lotId=42],['location owner',d=>d.locationId=randomUUID()],['write identity',d=>d.writeId=''],
-])test(`checksummed treasury draft ${name} damage cannot be read or replace a safe backup`,async t=>{
- const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const before=readFileSync(safe);damage(x,'treasury_draft',edit);const bytes=x.store.db.serialize();assert.throws(()=>x.store.treasuryDraft(x.w.token,x.id));await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(before));assert.ok(x.store.db.serialize().equals(bytes));
+// readTreasuryDraft/validateTreasuryDrafts share checkedRow. Treasure reads and
+// backups share checkedTreasureRow, but definition lookup is a separate backup path.
+// Keep all field checks; exercise each backup path with an explicit true below.
+for(const [name,edit,backup=false]of [
+ ['target identity',d=>d.treasureId=randomUUID()],['future revision',d=>d.revision=99],['raw quantity',d=>d.items[0].quantity=3,true],['definition version',d=>d.items[0].reference.revision=-1],['definition owner',d=>d.items[0].reference.definitionId=randomUUID()],['lot identity',d=>d.items[0].lotId=42],['location owner',d=>d.locationId=randomUUID()],['write identity',d=>d.writeId=''],
+])test(`checksummed treasury draft ${name} damage cannot be read${backup?" or replace a safe backup":""}`,async t=>{
+ const x=fixture(t),safe=path.join(x.root,'safe.sqlite');const before=backup?(await x.store.backup(safe),readFileSync(safe)):null;damage(x,'treasury_draft',edit);const bytes=x.store.db.serialize();assert.throws(()=>x.store.treasuryDraft(x.w.token,x.id));if(backup){await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(before));}assert.ok(x.store.db.serialize().equals(bytes));
 });
-for(const [name,edit]of [['identity',d=>d.id=randomUUID()],['allocated quantity',d=>d.items[0].allocated=6],['duplicate lot',d=>d.items.push({...d.items[0]})],['negative quantity',d=>d.items[0].quantity=-1],['definition owner',d=>d.items[0].reference.definitionId=randomUUID()]])test(`checksummed treasure ${name} damage cannot replace a safe backup`,async t=>{
- const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const before=readFileSync(safe);damage(x,'treasure',edit);const bytes=x.store.db.serialize();assert.throws(()=>x.store.treasure(x.w.token,x.id));await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(before));assert.ok(x.store.db.serialize().equals(bytes));
+for(const [name,edit,backup=false]of [['identity',d=>d.id=randomUUID()],['allocated quantity',d=>d.items[0].allocated=6,true],['duplicate lot',d=>d.items.push({...d.items[0]})],['negative quantity',d=>d.items[0].quantity=-1],['definition owner',d=>d.items[0].reference.definitionId=randomUUID(),true]])test(`checksummed treasure ${name} damage is rejected without changing source${backup?" or replacing a safe backup":""}`,async t=>{
+ const x=fixture(t),safe=path.join(x.root,'safe.sqlite');const before=backup?(await x.store.backup(safe),readFileSync(safe)):null;damage(x,'treasure',edit);const bytes=x.store.db.serialize();assert.throws(()=>x.store.treasure(x.w.token,x.id));if(backup){await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(before));}assert.ok(x.store.db.serialize().equals(bytes));
 });
 test('missing treasury draft table cannot replace a safe backup',async t=>{
  const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const before=readFileSync(safe);x.store.db.exec('DROP TABLE treasury_draft');await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(before));

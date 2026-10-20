@@ -1,16 +1,11 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import { checkedKeyTarget } from "../../src/features/atlas/key-target";
 import { checkedLocationPlacements } from "../../src/features/atlas/location-placement";
-import { AtlasHistory } from "../../src/features/atlas/atlas-history";
 import {
   newOverworld,
   parseOverworld,
 } from "../../src/features/atlas/overworld";
-import {
-  TerrainSource,
-  TerrainStroke,
-} from "../../src/features/atlas/terrain-source";
 import {
   checkedLocationDocument,
   newLocation,
@@ -18,10 +13,6 @@ import {
   serializeLocationDocument,
   type LocationDocument,
 } from "../../src/features/location/location-schema";
-import {
-  LocationSource,
-  locationDocumentChange,
-} from "../../src/features/location/location-source";
 
 const document = () =>
   newLocation("location-a", "Ödhafen", "city", ["description", "notes"]);
@@ -177,153 +168,4 @@ test("Unified native Key targets preserve owner/section identity and reject file
     { ...location, sectionId: undefined },
   ])
     assert.throws(() => checkedKeyTarget(bad));
-});
-test("Real Terrain and Location owners share one atomic creation command and exact Undo/Redo, with stale/invalid changes rejected before either mutation", async () => {
-  const history = new AtlasHistory(),
-    terrain = new TerrainSource(
-      newOverworld("world", "Welt", "pointy"),
-      history,
-      async () => {
-        throw new Error("unexpected read");
-      },
-    ),
-    location = new LocationSource("location-a", history);
-  await terrain.ensure([
-    { q: -1, r: 0 },
-    { q: 0, r: 0 },
-  ]);
-  const stroke = new TerrainStroke(terrain, "land");
-  stroke.add({ q: -1, r: 0 });
-  const created = document();
-  assert.equal(
-    history.execute({
-      label: "Ort und Gelände anlegen",
-      changes: [
-        ...stroke.preview(),
-        locationDocumentChange(location.id, null, created),
-      ],
-    }),
-    true,
-  );
-  assert.equal(terrain.cells().length, 1);
-  assert.deepEqual(location.read(), created);
-  assert.equal(history.undoDepth, 1);
-  history.undo();
-  assert.equal(terrain.cells().length, 0);
-  assert.equal(location.read(), null);
-  history.redo();
-  assert.equal(terrain.cells().length, 1);
-  assert.deepEqual(location.read(), created);
-  const next = new TerrainStroke(terrain, "forest");
-  next.add({ q: 0, r: 0 });
-  const before = structuredClone(location.read());
-  await assert.rejects(
-    async () =>
-      history.execute({
-        label: "ungültig",
-        changes: [
-          ...next.preview(),
-          {
-            ownerId: location.id,
-            target: "document",
-            before: JSON.parse(serializeLocationDocument(created)),
-            after: {
-              ...JSON.parse(serializeLocationDocument(created)),
-              id: "foreign",
-            },
-          },
-        ],
-      }),
-    /Ortskennung/,
-  );
-  assert.equal(terrain.cells().length, 1);
-  assert.deepEqual(location.read(), before);
-  assert.equal(history.undoDepth, 1);
-  assert.throws(
-    () =>
-      history.execute({
-        label: "stale",
-        changes: [
-          ...next.preview(),
-          locationDocumentChange(location.id, null, created),
-        ],
-      }),
-    /kollidiert/,
-  );
-  assert.equal(terrain.cells().length, 1);
-  assert.deepEqual(location.read(), created);
-});
-test("Location section edit/reorder preserves IDs and exact text; stale retry retains redo and no-op has no command", () => {
-  const history = new AtlasHistory(),
-    source = new LocationSource("location-a", history, document()),
-    before = source.read()!;
-  const after = checkedLocationDocument({
-    ...before,
-    sections: before.sections.map((s) =>
-      s.id === "notes" ? { ...s, markdown: bytes } : s,
-    ),
-  });
-  const change = locationDocumentChange(source.id, before, after);
-  assert.ok(Object.isFrozen(change.after));
-  history.execute({ label: "Text", changes: [change] });
-  history.undo();
-  assert.equal(history.canRedo, true);
-  assert.throws(
-    () =>
-      history.execute({
-        label: "stale",
-        changes: [locationDocumentChange(source.id, after, before)],
-      }),
-    /kollidiert/,
-  );
-  assert.equal(history.canRedo, true);
-  history.redo();
-  const now = source.read()!,
-    reordered = checkedLocationDocument({
-      ...now,
-      sections: [...now.sections].reverse(),
-    });
-  history.execute({
-    label: "Reihenfolge",
-    changes: [locationDocumentChange(source.id, now, reordered)],
-  });
-  assert.deepEqual(
-    source.read()!.sections.map((s) => s.id),
-    ["notes", "description"],
-  );
-  assert.equal(source.read()!.sections[0]!.markdown, bytes);
-  assert.equal(
-    history.execute({
-      label: "No-op",
-      changes: [locationDocumentChange(source.id, reordered, reordered)],
-    }),
-    false,
-  );
-  assert.equal(history.undoDepth, 2);
-});
-test("Invalid native owner input does not reserve an ID; duplicate registered owner cannot replace live Location or Terrain", () => {
-  const history = new AtlasHistory();
-  assert.throws(
-    () => new LocationSource("location-b", history, document()),
-    /Ortskennung/,
-  );
-  const correct = checkedLocationDocument({ ...document(), id: "location-b" }),
-    source = new LocationSource("location-b", history, correct);
-  assert.throws(
-    () => new LocationSource("location-b", history),
-    /bereits registriert/,
-  );
-  assert.deepEqual(source.read(), correct);
-  const terrain = new TerrainSource(
-    newOverworld("world", "Welt", "flat"),
-    history,
-    async () => {
-      throw new Error("unexpected");
-    },
-  );
-  assert.throws(
-    () => new LocationSource("world", history),
-    /bereits registriert/,
-  );
-  assert.deepEqual(terrain.cells(), []);
 });

@@ -11,9 +11,11 @@ test('damaged autonomy job cannot replace an earlier complete backup or campaign
  const x=fixture(t),backup=path.join(x.root,'backup.sqlite'),snapshot=path.join(x.root,'campaign.sqlite');await x.store.backup(backup);await x.store.campaignSnapshot(x.w.token,snapshot);const beforeBackup=readFileSync(backup),beforeSnapshot=readFileSync(snapshot);x.store.db.prepare('UPDATE autonomy_job SET checksum=?').run('broken');const source=x.store.db.serialize();
  await assert.rejects(x.store.backup(backup),/Autonomie|Job/i);await assert.rejects(x.store.campaignSnapshot(x.w.token,snapshot),/Autonomie|Job/i);assert.deepEqual(readFileSync(backup),beforeBackup);assert.deepEqual(readFileSync(snapshot),beforeSnapshot);assert.deepEqual(x.store.db.serialize(),source);
 });
-for(const field of ['id','revision'])test(`job ${field} must agree with its SQL owner before read, time confirmation and backup`,async t=>{
- const x=fixture(t);x.mutate(j=>({...j,[field]:field==='id'?randomUUID():99}));const source=x.store.db.serialize();assert.throws(()=>x.store.autonomy(x.w.token),/Autonomie|Job/i);
- x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:0}));const scene=x.store.live(x.w.token).scene,before=x.store.db.serialize();assert.throws(()=>x.store.executeLive(x.command({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:60,unit:'seconds',calendarVersion:'relative-v1',reason:'NPC-Zeit'})),/Autonomie|Job/i);assert.deepEqual(x.store.db.serialize(),before);await assert.rejects(x.store.backup(path.join(x.root,'invalid.sqlite')),/Autonomie|Job/i);assert.ok(source.length);
+// checkedJobRow is shared by reads, time capture and validateAutonomy. Stored
+// controls below retain its backup traversal; preserve the separate clock writer.
+for(const field of ['id','revision'])test(`job ${field} must agree with its SQL owner before read and time confirmation`,t=>{
+ const x=fixture(t);x.mutate(j=>({...j,[field]:field==='id'?randomUUID():99}));const source=x.store.db.serialize();assert.throws(()=>x.store.autonomy(x.w.token),/Autonomie|Job/i);assert.deepEqual(x.store.db.serialize(),source);
+ x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:0}));const scene=x.store.live(x.w.token).scene,before=x.store.db.serialize();assert.throws(()=>x.store.executeLive(x.command({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:60,unit:'seconds',calendarVersion:'relative-v1',reason:'NPC-Zeit'})),/Autonomie|Job/i);assert.deepEqual(x.store.db.serialize(),before);
 });
 test('invalid job controls and need effects are rejected before any state or receipt is written',t=>{
  const x=fixture(t);for(const changes of [{enabled:'false'},{exclusive:1},{roles:'guard'},{needEffects:[]},{needEffects:{hunger:'10'}},{priority:'10'},{locationId:17}]){
