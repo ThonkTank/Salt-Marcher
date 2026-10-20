@@ -9,6 +9,7 @@ import type {NpcDailyOverride,NpcDailySlot} from '../../src/app/npc-contracts';
 import {CampaignStore} from '../../src/app/storage/store';
 import {campaignLocalId} from '../../src/features/campaign/campaign-contracts';
 import {newLocation} from '../../src/features/location/location-schema';
+import {calendarDate} from '../../src/app/world-model';
 
 const npcId=(tail:string)=>campaignLocalId(`00000000-0000-4000-8000-${tail.padStart(12,'0')}`);
 const building=(id:string,name:string):CityUnit=>({id,kind:'building',name,protected:true,position:{x:20,y:20},angle:0,outline:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],use:'Wohnhaus',notes:'',residentIds:[],workerIds:[],households:[],jobs:[],interior:false});
@@ -81,6 +82,37 @@ test('city activity pages use the selected group clock, authored search and exac
   assert.deepEqual(query('Besucherbuch').rows.map(row=>row.name),['Ada']);assert.deepEqual(query('Bert').rows.map(row=>row.name),['Bert','Ada']);assert.deepEqual(query('home').rows,[]);assert.deepEqual(query('',f.shop.id).rows.map(row=>row.name),['Ada']);assert.deepEqual(query('',f.home.id).rows.map(row=>row.name),['Ada','Bert']);assert.equal(f.store.city(f.workspace.token,'city').header.revision,bound.header.revision);assert.equal(f.store.npc(f.workspace.token,f.ada).locationId,null);
   const unavailable=f.store.cityActivities(f.workspace.token,{cityId:'city',sceneId:'archived-group',focusFallback:false,unitId:null,text:'',offset:0});assert.equal(unavailable.sceneId,null);assert.match(unavailable.sceneTitle,/nicht mehr verfügbar/);assert.deepEqual(unavailable.scenes,[{id:scene.id,title:scene.title}]);assert.deepEqual(unavailable.rows,[]);const held=f.store.cityActivities(f.workspace.token,{cityId:'city',sceneId:null,focusFallback:false,unitId:null,text:'',offset:0});assert.equal(held.sceneId,null);assert.match(held.sceneTitle,/Keine Gruppenuhr/);assert.deepEqual(held.rows,[]);
  }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
+});
+
+test('weekly visit exceptions agree across dossier, city and location after reopening',()=>{
+ const f=fixture('weekly-visits-');let closed=false;
+ try{
+  const plan:NpcDailySlot[]=[{id:'market',startMinute:0,endMinute:720,activity:'Marktaufsicht',place:'location',locationId:'city-place',notes:'Autorenplan',weekdays:[0]}];
+  const saved=setNpcPlan(f,f.ada,plan,[{day:'8',label:'Erster Ruhetag',slots:[]},{day:'15',label:'Zweiter Ruhetag',slots:[]}]);
+  f.store.executeCity({commandId:'bind-weekly-home',campaignId:f.campaign.id,token:f.workspace.token,cityId:'city',expectedRevision:f.revision,action:{kind:'change',upsert:[{...f.home,residentIds:[f.ada]}],remove:[],label:'Wohnbindung'}});
+  const scene=f.store.executeLive({commandId:'weekly-scene',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'initialize',expectedRosterRevision:0}}).scene!;
+  const check=(store:CampaignStore,token:string,current:boolean,nextDay:number)=>{
+   const before=store.live(token),calendar=store.world(token).calendar;
+   const dossier=store.npcDossier(token,scene.id,f.ada);
+   const city=store.cityActivities(token,{cityId:'city',sceneId:scene.id,focusFallback:false,unitId:null,text:'',offset:0}).rows[0]!;
+   const location=store.locationActivities(token,{locationId:'city-place',sceneId:scene.id,focusFallback:false,text:'',offset:0}).rows[0]!;
+   assert.equal(dossier.dailyPlan?.nextDay,String(nextDay));
+   const date=calendarDate(calendar,String((nextDay-1)*86400_000));
+   for(const row of [city,location]){
+    assert.equal(!!row.current,current);assert.equal(row.next?.activity,'Marktaufsicht');assert.equal(row.next?.date,date);
+    assert.equal(row.actualLocation,'Ohne Ortsbindung');
+   }
+   assert.equal(!!dossier.dailyPlan?.current,current);
+   assert.deepEqual(store.npc(token,f.ada),saved);
+   assert.deepEqual(store.live(token),before,'Reading plans cannot advance or focus a group');
+  };
+  check(f.store,f.workspace.token,true,22);
+  f.store.executeLive({commandId:'to-rest-day',campaignId:f.campaign.id,token:f.workspace.token,action:{kind:'advance-clock',sceneId:scene.id,expectedRevision:0,amount:168,unit:'hours',calendarVersion:'relative-v1',reason:'Zum Ruhetag'}});
+  check(f.store,f.workspace.token,false,22);
+  f.store.close();closed=true;
+  const fresh=new CampaignStore(join(f.root,'campaign.sqlite'),'test');
+  try{const w=fresh.activate(f.campaign.id);check(fresh,w.token,false,22);}finally{fresh.close();}
+ }finally{if(!closed)f.store.close();rmSync(f.root,{recursive:true,force:true});}
 });
 
 test('cross-city NPC moves share one guarded undo and redo step',()=>{

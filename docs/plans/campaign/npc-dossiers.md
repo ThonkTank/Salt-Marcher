@@ -231,3 +231,23 @@ NPC ohne weiteren Besuch auffindbar halten. Ein Termin andernorts verdeckt den
 nächsten Besuch hier nicht. Wochenregeln und nächtliche Aktivitäten bleiben
 wirksam; auch leere Datumsausnahmen müssen beim Ortsfilter erhalten bleiben,
 weil sie den normalen Plan und den Überhang der vorherigen Nacht aufheben.
+
+Der nächste reguläre Beginn wird je verwendetem Wochentag am ersten folgenden
+Tag ohne Datumsausnahme gesucht; Ausnahmen mit eigenen Aktivitäten treten mit
+ihren tatsächlichen Terminen hinzu. Es gibt kein festes Vorschaufenster:
+aufeinanderfolgende wöchentliche Ruhetage dürfen den späteren regulären Besuch
+nicht verschwinden lassen. Dossier, Stadt und Ortsbesuche verwenden dieselbe
+Berechnung; eine Ortsprojektion behält auch Ausnahmen ohne passenden Besuch.
+Eine zusätzliche Uhr, gespeicherte Terminprojektion oder Migration ist dafür
+nicht erforderlich.
+
+`tests/desktop-npc-schedule.test.mjs` prüft diesen Vertrag einschließlich 64
+ausgefallener Termine, unterschiedlicher Wochenlängen, Nachtaktivitäten und
+ferner Einzeltermine gegen eine unabhängige tageweise Referenzrechnung.
+`tests/core/city-people-storage.test.ts` verbindet die drei Leser mit bestätigten
+Profilen und frischer SQLite-Wiederöffnung. Der native Ablauf
+`tools/test-desktop-npc-weekly-visits.mjs` prüft Wochenplan und unvollständigen
+Ruhetagentwurf → regulärer Neustart → Bestätigung → Dossier und Ortsmappe →
+weiterer Ruhetag → erneuter Neustart bei 100 und 200 Prozent. Tatsächlicher Ort,
+Gruppenzeit, andere NSCs und unveränderte Autorenprosa werden dabei gesondert
+geprüft. Das ist keine vollständige CITY-07- oder Owner-Abnahme.
