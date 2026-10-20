@@ -12,6 +12,11 @@ const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-routes-nativ
 const native=await createNativeSession({root,output:out,name:'terrain-routes'}),profile=native.profile;
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-spatial-model';",resolveDir:root},outfile:root+'/.build/route-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,heightRecord,emptyRecord,newLine,TerrainSampler,projectTerrain}=require(root+'/.build/route-store.cjs');
+const reopenFrom=process.argv.includes('--reopen-from')?process.argv[process.argv.indexOf('--reopen-from')+1]:undefined;
+if(reopenFrom){
+ const prior=JSON.parse(await readFile(reopenFrom,'utf8')),snapshot=new Database(path.join(prior.profile,'workbench.sqlite'),{readonly:true});
+ try{await snapshot.backup(path.join(profile,'workbench.sqlite'));}finally{snapshot.close();}
+}else{
 const store=new CampaignStore(profile+'/workbench.sqlite'),cam=store.create('Straßen und Flüsse'),active=store.activate(cam.id);
 const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action});
 for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)write({kind:'landscape-put',expectedRevision:null,record:heightRecord(x*512,y*512,8,Float32Array.from({length:4096},(_,i)=>{
@@ -19,6 +24,7 @@ for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)write({kind:'landscape-put',expected
 }))});
 const reference={...emptyRecord('road'),name:'Referenzstraße',width:8,line:newLine('road'),points:[{x:-180,y:0},{x:0,y:40},{x:180,y:0}]};
 write({kind:'landscape-put',record:reference,expectedRevision:null});store.tutorial('skipped');store.close();
+}
 const db=new Database(profile+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare('SELECT payload FROM atlas_landscape ORDER BY id').all().map(r=>JSON.parse(r.payload));
 const result={checks:[]};let app,page;
 const capture=name=>native.capture(page,name);
@@ -40,6 +46,14 @@ async function ready(){await page.waitForFunction(()=>document.querySelector('#t
 async function change(id,value){await page.locator('#route-'+id).fill(String(value));await page.locator('#route-'+id).press('Tab');}
 async function save(){await action('save').click();await page.waitForFunction(()=>document.querySelector('#route-status')?.textContent==='Verlauf und Geländeform gespeichert.',null,{timeout:60000});}
 try{
+ if(reopenFrom){
+  const before=records();await start();await focus('Passstraße');
+  await page.getByRole('button',{name:'Verlauf und Gelände bearbeiten',exact:true}).click();await ready();
+  await action('fit').click();await atlasCanvasReady(page);await tilt();await capture('reopened-main-route');
+  assert.equal(await page.locator('dialog[open]').count(),0);assert.equal(await page.locator('#route-canvas').count(),0);
+  assert.deepEqual(records(),before);await action('close').click();await close();
+  mark('Gesicherte Trasse in frischem Profil öffnen und mit derselben Hauptkamera weiter prüfen; keine Schreibänderung');
+ }else{
  await start();await focus('Referenzstraße');await capture('00-existing-top');
  const mainSurface=await page.locator('#atlas-terrain-spatial').elementHandle();
  await page.locator('#land-selection').getByRole('button',{name:'Geländegerecht planen',exact:true}).click();await ready();
@@ -110,6 +124,7 @@ try{
  await page.getByRole('button',{name:'Verlauf und Gelände bearbeiten',exact:true}).click();await ready();assert.equal(await page.locator('#route-width').inputValue(),'12.192');
  await page.locator('#route-units').selectOption('dnd');assert.equal(await page.locator('#route-width').inputValue(),'40');await action('close').click();assert.equal(await page.locator('#atlas-units').inputValue(),'dnd');await close();
  mark('Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz');
+ }
  await native.finish({complete:true,...result});
 }catch(error){await native.fail(error);throw error;}
 finally{db.close();await native.dispose();}

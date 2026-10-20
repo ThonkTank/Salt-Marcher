@@ -1,0 +1,29 @@
+{
+  "complete": true,
+  "checks": [
+    "Gesicherte Trasse in frischem Profil öffnen und mit derselben Hauptkamera weiter prüfen; keine Schreibänderung"
+  ],
+  "source": "6a2d8e819dd2fc9067dac6ca65430754f5781bc5",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/terrain-routes-ArQdUX",
+  "artifacts": {
+    "main.cjs": "81a4142a98c2f7f78852de58487f59f948836b991fcd967e758d5f7b2025d0af",
+    "preload.cjs": "6d351727f029c423496e5a8c44cf3c1fd916f0374f2e4d8d8022ba503d8a799d",
+    "ui/renderer.js": "4ff3f260b06a419563b62f624bb3e7bab65c5ec67c7cf78e99738757f00b88ce",
+    "ui/index.html": "ab4b31f2ab036304c7ef14d605cd3173426428c6b0f7250512a2752277a4bc0b",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 1917404,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
