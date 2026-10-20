@@ -115,3 +115,11 @@ test('land settings retain independent size and strength, optional target and co
  show('smooth');assert.equal(f('land-radius').value,'150');assert.equal(settings.height().strength,90);
  show('color');assert.equal(settings.mode(),'color-erase');
 });
+
+
+test('a found place selects the generic object context while vegetation retains its dedicated tools',t=>{
+ const {layout}=fixture(t),opened=[];layout.openSelection=()=>opened.push(layout.selectionKey);
+ layout.groupMemory.set('terrain','vegetation');layout.landscapeSelectionChanged('ferry','place');
+ assert.equal(layout.groupMemory.get('terrain'),'objects');assert.equal(layout.toolList.dataset.group,'objects');assert.deepEqual([...layout.toolList.querySelectorAll('button')].map(b=>b.textContent.replace(/\s+/g,' ').trim()),['↖Objekt auswählen','⚑Ort platzieren']);
+ assert.deepEqual(opened,['landscape:ferry']);layout.landscapeSelectionChanged('wood','vegetation');assert.equal(layout.groupMemory.get('terrain'),'vegetation');assert.equal(layout.toolList.dataset.group,'vegetation');
+});

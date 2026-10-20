@@ -34,7 +34,7 @@ export const atlasToolGroups: Readonly<Record<AtlasSection, readonly AtlasToolGr
       land('water-color-erase','Wasserfarbe radieren','◌','color',{'land-color-target':'water','land-color-operation':'erase'}),
     ]},
     {id:'routes',label:'Wege & Flächen',icon:'╱',tools:[land('road','Weg zeichnen','╱','road')]},
-    {id:'objects',label:'Objekte',icon:'⚑',tools:[land('place','Ort platzieren','⚑','place')]},
+    {id:'objects',label:'Objekte',icon:'⚑',tools:[land('object-select','Objekt auswählen','↖','select'),land('place','Ort platzieren','⚑','place')]},
   ],
   city: [
     {id:'areas',label:'Flächen',icon:'▧',tools:[city('district','Viertelfläche','▧'),city('water','Wasserfläche','≈')]},

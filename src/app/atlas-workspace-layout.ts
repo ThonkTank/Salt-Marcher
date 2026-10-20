@@ -205,6 +205,11 @@ export class AtlasWorkspaceLayout {
  // Compatibility for domain callers: selection never replaces the tool panel.
  showPane(pane:'tool'|'selection'){if(pane==='selection')this.openSelection();else this.showToolSettings(true);}
  private openSelection(){this.openContext('selection','Eigenschaften',[this.selection]);}
+ /** Selection controls follow the selected record, not the first tool sharing "select". */
+ landscapeSelectionChanged(id:string,kind:import('./atlas-landscape').LandscapeRecord['kind']){
+  this.groupMemory.set('terrain',kind==='vegetation'?'vegetation':'objects');
+  this.renderGroups();this.sync();this.selectionChanged('landscape:'+id,true);
+ }
  selectionChanged(key:string|null,explicit=false,reveal=true){if(key===this.selectionKey&&!explicit)return;this.selectionKey=key;if(key&&reveal)this.openSelection();else if(!key&&this.auxiliary==='selection')this.clearContext();}
  beforeTool(){if(this.auxiliary&&this.auxiliary!=='key'&&this.auxiliary!=='selection')this.clearContext();}
  setFamily(family:Family){

@@ -118,7 +118,7 @@ export class LandscapeWorkbench {
       hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
       point:(e:MouseEvent)=>Point;
       refresh?:()=>Promise<unknown>;
-      selected?:(id:string)=>void;
+      selected?:(id:string,kind:LandscapeRecord['kind'])=>void;
       choose?: (point:Point)=>Promise<void>;
       current?:()=>boolean;
       redraw: () => void;
@@ -1093,7 +1093,7 @@ export class LandscapeWorkbench {
     }
     this.inspector();
     this.objectOptions();
-    this.host.selected?.(record.id);
+    this.host.selected?.(record.id,record.kind);
     this.host.redraw();
   }
   private inspector() {
@@ -1126,8 +1126,12 @@ export class LandscapeWorkbench {
     if(r.kind==='road'||r.kind==='river'){const plan=document.createElement('button');plan.textContent='Geländegerecht planen';plan.onclick=()=>void this.openRoute(r).catch(e=>this.host.error(e));root.append(plan);}
     label("Name des ausgewählten Objekts", "land-name", r.name);
     if(r.kind!=="reference")mapLabelEditor(root,"land",r.label,()=>{this.dirty=true;});
-    label("X in m", "land-x", String(r.points[0]!?.x ?? 0), "number");
-    label("Y in m", "land-y", String(r.points[0]!?.y ?? 0), "number");
+    const x=label("X in m", "land-x", String(r.points[0]!?.x ?? 0), "number"),y=label("Y in m", "land-y", String(r.points[0]!?.y ?? 0), "number");
+    let position:HTMLDetailsElement|undefined;
+    if(r.kind==='place'){
+      position=document.createElement('details');position.id='land-position';
+      const title=document.createElement('summary');title.textContent='Position';position.append(title,x.closest('label')!,y.closest('label')!);
+    }
     const button = (name: string, run: () => void) => {
       const b = document.createElement("button");
       b.type = "button";
@@ -1254,6 +1258,7 @@ export class LandscapeWorkbench {
         this.inspector();
       });
     }
+    if(position)root.append(position);
     button(
       "Auswahl speichern",
       () => void this.finish().catch((e) => this.host.error(e)),
