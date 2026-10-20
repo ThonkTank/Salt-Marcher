@@ -125,10 +125,17 @@ test('group selection preserves per-target decisions, excludes unknown health an
  const combat=structuredClone(x.combat),ogres=combat.participants.filter(p=>p.sourceId==='ogre');ogres[3].healthKnown=false;
  const document=await dom(t),root=document.getElementById('area'),calls=[],panel=new CombatAreaPanel(root,async a=>{calls.push(a);return true;});
  panel.context(combat,x.w.token,false);panel.open();const selection=root.querySelector('#combat-area-selection'),choose=value=>{selection.value=value;selection.onchange();},checks=()=>[...root.querySelectorAll('.combat-area-row input')];
- assert.ok([...selection.options].some(o=>o.value==='group:'+ogres[0].groupId&&o.textContent.endsWith('3 Ziele')));
+ assert.ok([...selection.options].some(o=>o.value==='group:'+ogres[0].groupId&&o.textContent.includes('3 Ziele')));
  choose('group:'+ogres[0].groupId);assert.deepEqual(checks().filter(c=>c.checked).map(c=>c.value),ogres.slice(0,3).map(p=>p.id));assert.equal(selection.value,'group:'+ogres[0].groupId);
  const row=root.querySelector('input[value="'+ogres[1].id+'"]').closest('.combat-area-row'),save=row.querySelector('[data-role=save]');save.value='half';save.onchange();
  choose('none');assert.equal(checks().filter(c=>c.checked).length,0);choose('all');assert.equal(checks().filter(c=>c.checked).length,combat.participants.length-1);
  choose('group:'+ogres[0].groupId);assert.equal(save.value,'half');assert.equal(checks().some(c=>c.value===ogres[3].id),false);
  panel.context({...combat,revision:combat.revision+1},x.w.token,false);assert.equal(selection.disabled,true);choose('none');assert.equal(checks().filter(c=>c.checked).length,3);assert.equal(calls.length,0);
+});
+
+test('separate troops of the same creature remain distinguishable and select only their own members',async t=>{
+ const x=fixture(t);for(let i=0;i<2;i++)x.act({kind:'add-creature',creatureId:'ogre',count:4,grouped:true,initiative:5});
+ const document=await dom(t),root=document.getElementById('area'),panel=new CombatAreaPanel(root,async()=>true);panel.context(x.combat,x.w.token,false);panel.open();
+ const selection=root.querySelector('#combat-area-selection'),choices=[...selection.options].filter(o=>o.value.startsWith('group:'));assert.equal(choices.length,2);assert.notEqual(choices[0].textContent,choices[1].textContent);
+ for(const choice of choices){selection.value=choice.value;selection.onchange();const expected=x.combat.participants.filter(p=>'group:'+p.groupId===choice.value).map(p=>p.id);assert.deepEqual([...root.querySelectorAll('.combat-area-row input')].filter(c=>c.checked).map(c=>c.value),expected);}
 });

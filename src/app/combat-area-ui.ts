@@ -28,7 +28,7 @@ export class CombatAreaPanel{
   this.cancel.onclick=()=>{if(!this.busy)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy)this.close();});
   this.amount.oninput=()=>this.update();this.type.onchange=()=>{this.overrides.checked=false;for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
   this.overrides.onchange=()=>{if(!this.overrides.checked)for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
-  this.selection.onchange=()=>{if(this.selection.disabled||!this.draft)return;const choice=this.selection.value;if(!choice)return;for(const row of this.draft.rows)row.check.checked=choice==='all'||choice==='party'&&!!row.actor.characterId||choice==='group:'+row.actor.groupId;this.update();};this.apply.onclick=()=>void this.commit();
+  this.selection.onchange=()=>{if(this.selection.disabled||!this.draft)return;const choice=this.selection.value;if(!choice)return;for(const row of this.draft.rows)row.check.checked=choice==='all'||choice==='party'&&!!row.actor.characterId||!row.actor.characterId&&choice==='group:'+row.actor.groupId;this.update();};this.apply.onclick=()=>void this.commit();
  }
  private close(){this.draft=null;this.message=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
  context(combat:CombatState|null,token:string|null,blocked:boolean){
@@ -63,7 +63,8 @@ export class CombatAreaPanel{
   if(this.draft.rows.some(row=>row.actor.characterId))option('party','Party auswählen');
   const groups=new Map<string,Row[]>();
   for(const row of this.draft.rows){if(row.actor.characterId)continue;const group=groups.get(row.actor.groupId)??[];group.push(row);groups.set(row.actor.groupId,group);}
-  for(const [id,group]of groups)if(group.length>1){const first=group[0]!,title=first.actor.groupName?.trim()||first.source?.name||group.map(row=>row.actor.name).join(', ');option('group:'+id,title+' · '+group.length+' Ziele');}
+  const choices=[...groups].filter(([,group])=>group.length>1).map(([id,group])=>({id,group,title:group[0]!.actor.groupName?.trim()||group[0]!.source?.name||group.map(row=>row.actor.name).join(', ')}));
+  for(const {id,group,title}of choices){const distinguish=choices.some(other=>other.id!==id&&other.title===title)?' ('+group[0]!.actor.name+' … '+group.at(-1)!.actor.name+')':'';option('group:'+id,title+' · '+group.length+' Ziele'+distinguish);}
   option('all','Alle Teilnehmer auswählen');option('none','Auswahl aufheben');this.selection.value='';
   this.root.hidden=false;this.update();const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'){if(typeof dialog.showModal==='function')dialog.showModal();else this.root.setAttribute('open','');}else this.root.scrollIntoView({block:'nearest'});
   this.amount.focus();this.amount.select?.();
