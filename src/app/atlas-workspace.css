@@ -186,7 +186,7 @@ body.atlas-workspace .atlas-units-control select { width:auto; min-width:0; padd
 #terrain-route-editor #route-status {margin:8px 0 0;}
 
 /* Consistent brush rows: label/value above a full-width slider. */
-#campaign-atlas #atlas-panel .atlas-brush-range,.vegetation-dialog .atlas-brush-range{display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;align-items:center;gap:4px 8px!important;margin:10px 0!important;font-size:12px}
+#campaign-atlas #atlas-panel .atlas-brush-range:not([hidden]),.vegetation-dialog .atlas-brush-range:not([hidden]){display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;align-items:center;gap:4px 8px!important;margin:10px 0!important;font-size:12px}
 .atlas-brush-range>span:first-child{grid-column:1;grid-row:1;font-weight:600}
 .atlas-brush-range small{font-size:11px;font-weight:400;color:#62717c;margin-left:4px}
 .atlas-brush-range>input[type=number]:not([hidden]),.atlas-brush-range>output{grid-column:2;grid-row:1;text-align:right;font-variant-numeric:tabular-nums;min-width:0}
