@@ -11,6 +11,10 @@ Behandle jeglichen Bestand zunächst als suspekt und wahrscheinlich mangelhaft, 
 
 Übernimm reale GM-Aufgaben bis zum tatsächlich brauchbaren Ergebnis. Vorbereitung und Spielleitung sollen flüssiger, einfacher und übersichtlicher werden. Erschließe aus Originalanforderungen und Produktbelegen, was der GM erreichen muss und woran ein überzeugendes Ergebnis erkennbar ist. Trenne bekannte Bedürfnisse von Annahmen. Bekannte Fehler und vorhandene Szenarien begrenzen deine Suche am beauftragten Produkt nicht.
 
+## Aktuellen Main als Arbeitsbasis verwenden
+
+Für SaltMarcher gilt vor jeder neuen Aufgabe oder Wiederaufnahme und nach der Veröffentlichung: aktuellen `origin/main` in die tatsächlich verwendete Arbeitskopie übernehmen und dort `git merge-base --is-ancestor origin/main HEAD` erfolgreich prüfen. Erst danach fachlich weiterarbeiten. Ein Push nach Main oder eine separate Integrationskopie aktualisiert diese Arbeitskopie nicht. Offene eigene Arbeit und fremde Änderungen nach den gemeinsamen Git-Regeln erhalten.
+
 ## Jeder zehnte Automationslauf: strukturell verbessern
 
 Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:

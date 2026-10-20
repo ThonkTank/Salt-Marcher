@@ -17,6 +17,10 @@ Begutachte zuerst das sichtbare Endergebnis eines konkreten Nutzerablaufs. Klär
 
 Beseitige alle unnötigen Abweichungen von diesem Standardpfad selbst und prüfe die Wirkung am vollständigen betroffenen Nutzerablauf. Schütze Nutzerinhalte, notwendige Fähigkeiten und externe Formatbindungen. Halte begründet notwendige Abweichungen und offene Annahmen knapp im bestehenden Plan fest; bringe Anforderungen, Planung und Iststand in Einklang. Beschränke die Arbeit nicht auf isolierte Randfehler, wenn deren Ursache im gemeinsamen Entstehungsweg liegt.
 
+## Aktuellen Main als Arbeitsbasis verwenden
+
+Für SaltMarcher gilt vor jeder neuen Aufgabe oder Wiederaufnahme und nach der Veröffentlichung: aktuellen `origin/main` in die tatsächlich verwendete Arbeitskopie übernehmen und dort `git merge-base --is-ancestor origin/main HEAD` erfolgreich prüfen. Erst danach fachlich weiterarbeiten. Ein Push nach Main oder eine separate Integrationskopie aktualisiert diese Arbeitskopie nicht. Offene eigene Arbeit und fremde Änderungen nach den gemeinsamen Git-Regeln erhalten.
+
 ## Jeder zehnte Automationslauf: strukturell verbessern
 
 Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:

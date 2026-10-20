@@ -10,6 +10,10 @@ Verantwortung und Ablauf selbst; Doku ergänzt nötige Einstiege, Zusammenhänge
 und Gründe. Kürze zählt nicht als Nutzen, wenn dieselbe Sucharbeit hinter mehr
 Hilfsfunktionen oder Verweisen fortbesteht.
 
+## Aktuellen Main als Arbeitsbasis verwenden
+
+Für SaltMarcher gilt vor jeder neuen Aufgabe oder Wiederaufnahme und nach der Veröffentlichung: aktuellen `origin/main` in die tatsächlich verwendete Arbeitskopie übernehmen und dort `git merge-base --is-ancestor origin/main HEAD` erfolgreich prüfen. Erst danach fachlich weiterarbeiten. Ein Push nach Main oder eine separate Integrationskopie aktualisiert diese Arbeitskopie nicht. Offene eigene Arbeit und fremde Änderungen nach den gemeinsamen Git-Regeln erhalten.
+
 ## Jeder zehnte Automationslauf: strukturell verbessern
 
 Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
