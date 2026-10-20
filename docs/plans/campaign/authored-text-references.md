@@ -42,7 +42,8 @@ ansehen…“ öffnet denselben Notizeditor schreibgeschützt. Dessen vorhandene
 Wiederherstellungsauftrag gibt die Quelle für ihre bestehenden Raum- und
 Spielabendverweise wieder frei; er erzeugt keine Ersatznotiz nach Namen.
 Der gemeinsame Editor fokussiert bei einem Papierkorboriginal die verfügbare
-Wiederherstellungsaktion statt des deaktivierten Titelfelds. Nach bestätigtem
+Wiederherstellungsaktion statt des deaktivierten Titelfelds. Die Aktion steht
+vor den nachladenden Raumverwendungen und bleibt dadurch in Sicht. Nach bestätigtem
 Restore geht der Fokus zum wieder editierbaren Titel zurück, auch nach Klärung
 einer verlorenen Antwort. Notiz-ID, bestehende Verweise und spätere Texte bleiben
 erhalten; die Statusabfrage wiederholt den Writer nicht.
