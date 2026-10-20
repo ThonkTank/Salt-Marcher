@@ -216,11 +216,12 @@ for(const recovery of [false,true,'missing-context'])test('area results expose c
   act({kind:'add-creature',creatureId:'goblin',count:3,grouped:true,initiative:8});act({kind:'start'});
   x.el('combat-refresh').onclick();await until(()=>x.el('combat-rows').textContent.includes('Ogre'));
   assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,1);
-  const type=x.el('combat-area-type');Object.defineProperty(type,'value',{value:'',writable:true});
+  const type=x.el('combat-area-type'),selection=x.el('combat-area-selection');for(const control of [type,selection])Object.defineProperty(control,'value',{value:'',writable:true});
   x.el('combat-area-open').onclick();x.el('combat-area-amount').value='21';
   for(const select of x.el('combat-area-targets').querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.dataset.role==='save'?'full':'auto',writable:true});
   type.value='fire';type.onchange();
-  const targets=c.participants.filter(p=>p.sourceId==='ogre').slice(0,3);
+  const ogres=c.participants.filter(p=>p.sourceId==='ogre'),targets=ogres.slice(0,3);
+  selection.value='group:'+ogres[0].groupId;selection.onchange();assert.equal([...x.el('combat-area-targets').querySelectorAll('input')].filter(input=>input.checked).length,4);const excluded=x.el('combat-area-targets').querySelector('input[value="'+ogres[3].id+'"]');excluded.checked=false;excluded.onchange();
   for(const [i,p]of targets.entries()){
    const check=x.el('combat-area-targets').querySelector('input[value="'+p.id+'"]');check.checked=true;
    const save=check.closest('.combat-area-row').querySelector('[data-role=save]'),defense=check.closest('.combat-area-row').querySelector('[data-role=defense]');
