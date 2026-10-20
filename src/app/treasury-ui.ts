@@ -285,8 +285,9 @@ export async function flushTreasury() {
   if (timer) clearTimeout(timer);
   return (await keep()) && current() && (!w || !hasPendingCommit(w.campaign.id));
 }
-async function execute(action: ProgressAction) {
-  if (!w || pending || hasPendingCommit(w.campaign.id)) return false;
+async function execute(action: ProgressAction,failed?:(message:string)=>void) {
+  if (!w || pending) return false;
+  if(hasPendingCommit(w.campaign.id)){failed?.('Eine Buchung ist noch ungeklärt. Schließen und den Buchungsstatus prüfen; keinen neuen Schreibversuch starten.');return false;}
   const token = w.token,
     g = generation,
     current = editorOwner(),
@@ -339,7 +340,11 @@ async function execute(action: ProgressAction) {
       );
       return true;
     } catch (e) {
-      if (current()) tell((confirmed ? "Schatzänderung gespeichert. Anzeige konnte nicht aktualisiert werden: " : "") + (e as Error).message, true);
+      if (current()) {
+        const message=(e as Error).message;
+        if(!confirmed)failed?.(message+(hasPendingCommit(command.campaignId)?" Schließen und den Buchungsstatus prüfen; keinen neuen Schreibversuch starten.":" Eingaben bleiben erhalten."));
+        tell((confirmed ? "Schatzänderung gespeichert. Anzeige konnte nicht aktualisiert werden: " : "") + message, true);
+      }
       return confirmed && current();
     } finally {
       if (pending === task) pending = null;

@@ -45,7 +45,14 @@ Neuladen von Liste, Schatz, Verlauf oder abhängigen Ansichten, wechselt die
 bereits gebuchte Verteilung zur schreibgeschützten Bestätigung. Der
 Kampagnenstatus nennt sowohl den gespeicherten
 Auftrag als auch den Anzeigefehler; eine zweite Erfolgsmeldung verdeckt ihn nicht.
-Ein abgelehnter oder ungeklärter Write hält die Eingaben weiterhin offen.
+Ein abgelehnter oder ungeklärter Write hält die Eingaben weiterhin offen. Der
+Sender gibt dessen konkreten Fehler über den bestehenden Dialogaufruf zurück.
+Nur die zugehörige, noch geöffnete Dialoggeneration zeigt ihn bei den erhaltenen
+Mengen und scrollt ihn sichtbar. Bei ungeklärtem Receipt nennt er Schließen und
+den gemeinsamen Buchungsstatus; erneutes Bestätigen sendet keinen zweiten Auftrag.
+Nach Statusklärung wird der aktuelle Schatz gelesen. Ein Receipt bleibt der
+ursprünglichen Verteilung zugeordnet, auch nach persönlichen Korrekturen.
+
 
 
 Die Bestätigung trägt die tatsächlich angezeigte Action mit Mengen, Empfängern
@@ -164,8 +171,10 @@ offen; die hier beschriebenen Entwurfs- und Batchtests ersetzen ihn nicht.
 
 1. Den vorhandenen `writeConfirmed('progress', …)`-Weg in `treasury-ui.ts`
    mit der Batchaction bis zur UI qualifizieren: verlorene Antwort nach bestätigtem
-   Write, Pendingstatus und Reopen/Fresh. Die obige Storeprobe deckt Status und
-   Wiederholung nach neueren Korrekturen ab, der Dialogablauf bleibt offen. OriginalcommandID/Fingerprint und
+   Write, Pendingstatus und Reopen/Fresh. Die native Probe deckt kontrollierte
+   Ablehnung, Verlust der Schreibantwort plus fehlschlagende Statusabfrage,
+   explizite Klärung ohne Wiederholung und anschließende Korrektur/Weitergabe ab.
+   Weitere Crash-/Portabilitätsfälle bleiben offen. OriginalcommandID/Fingerprint und
    neuere Rawmengen getrennt erhalten. Ein bestätigtes Receipt verbraucht nur
    seinen Auftrag; fehlende Antwort erzeugt keine zweite Verteilung.
 2. Authored Rohmengen und Empfängerauswahl vor Navigation/Close dauerhaft sichern,
@@ -216,9 +225,16 @@ heißt dort „Kein Restbestand“; seine Historie bleibt erhalten.
 
 `tools/test-desktop-treasure-distribution.mjs` führt die Aufgabe mit einem
 eigenen Fund vollständig nativ aus: 101 Münzen auf drei Figuren, zwei Tränke,
-einen Trank weitergeben, normal schließen, erneut öffnen und alle Bestände
-sowie den Rest prüfen. Die abschließende Leseprüfung kontrolliert Definitionen,
-Herkunft, unveränderten Fortschritt und den Weitergabeempfänger. Das ist ein
+Adas persönliche Münzmenge mit Grund von 33 auf 32 berichtigen, einen Trank
+weitergeben, normal schließen, erneut öffnen und alle Bestände sowie den Rest
+prüfen. Der Schatz behält die historisch verteilten 99 Münzen und zwei Restmünzen;
+die persönliche Mengenkorrektur ist keine Rückgabe in den Fund. Die abschließende
+Leseprüfung kontrolliert Definitionen, Vorher-/Nachher-Verlauf, unveränderte Bytes
+des ursprünglichen Verteilungsreceipts, Herkunft, Fortschritt und Weitergabeempfänger.
+`--reject-once` ergänzt einen tatsächlich sichtbaren Ablehnungsgrund ohne Ledgerwirkung;
+`--reply-loss` ergänzt verlorene Antwort, gesperrten Wiederholungsversuch und die
+vorhandene Statusklärung. Die Probe wartet vor dem Zoom auf das geladene Fenster,
+entfernt alte Erfolgsdateien und verlangt begrenzte normale Prozessabschlüsse. Das ist ein
 gezielter Ablaufnachweis, keine vollständige Loot- oder Produktabnahme.
 
 Die [Ausgangsansicht](../../reference/gm-ux-qa/treasure-distribution-20261019/before-transfer.png),

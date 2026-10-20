@@ -137,7 +137,7 @@ for(const phase of ['after','list','detail','history','write','unresolved'])test
  const list=window.campaign.treasures;window.campaign.treasures=async(...args)=>committed&&phase==='list'?{ok:false,error:failure}:list(...args);
  window.campaign.commitStatus=async()=>({ok:true,value:{outcome:phase==='unresolved'?'pending':'not-applied'}});
  window.campaign.executeProgress=async command=>{x.commands.push(command);if(phase==='write'||phase==='unresolved')return{ok:false,error:failure};committed=true;return{ok:true,value:{characters:[person],notices:[],treasureId:'a',ledgerIds:['grant']}};};
- x.el('distribution-review').scrollIntoView=()=>{};
+ x.el('distribution-review').scrollIntoView=()=>{};x.el('distribution-status').scrollIntoView=()=>{};
  await x.ui.openTreasureDistribution('a');const input=x.el('distribution-grid').querySelector('input');input.value='2';input.oninput();x.el('distribution-check').click();x.el('distribution-confirm').click();
  await until(()=>x.messages.some(m=>m.text.includes(phase==='unresolved'?'Buchungsantwort fehlt':failure)));
  await until(()=>!x.el('treasure-distribution-dialog').open||!x.el('distribution-confirm').disabled);
@@ -145,6 +145,7 @@ for(const phase of ['after','list','detail','history','write','unresolved'])test
  assert.equal(x.el('treasure-distribution-dialog').open,true);
  assert.equal(x.el('distribution-receipt').hidden,!committed);
  if(committed){const receipt=x.el('distribution-receipt');assert.match(receipt.textContent,/Beute verteilt · Alpha/);assert.match(receipt.textContent,/2 × Seil/);assert.match(receipt.textContent,/Im Schatz verbleiben: 3 × Seil/);x.el('distribution-confirm').onclick();await tick();assert.equal(x.commands.length,1,'confirmed receipt cannot book again after a refresh failure');}
- if(['write','unresolved'].includes(phase)){assert.equal(input.value,'2');assert.ok(!x.messages.some(m=>m.text.includes('gespeichert')));}
+ if(['write','unresolved'].includes(phase)){assert.match(x.el('distribution-status').textContent,phase==='unresolved'?/Buchungsantwort fehlt.*Schließen.*Buchungsstatus/:new RegExp(failure));assert.equal(input.value,'2');assert.ok(!x.messages.some(m=>m.text.includes('gespeichert')));}
  else{assert.ok(x.messages.some(m=>m.text.includes('gespeichert')&&m.text.includes(failure)));assert.ok(!x.messages.some(m=>m.text.includes('Verteilung bleibt offen')));}
+ if(phase==='unresolved'){x.el('distribution-confirm').onclick();await until(()=>x.el('distribution-status').textContent.includes('Eine Buchung ist noch ungeklärt'));assert.equal(x.commands.length,1);assert.equal(input.value,'2');assert.equal(x.el('distribution-receipt').hidden,true);}
 });
