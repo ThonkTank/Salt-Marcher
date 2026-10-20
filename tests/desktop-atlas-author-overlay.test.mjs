@@ -6,7 +6,7 @@ import {parseHTML} from './helpers/dom.mjs';
 // Real workbench render/author layer. Only the independently owned drawing tool
 // is replaced, to supply a draft without mounting its complete inspector.
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
-export function atlasDrawingMeasurement(){return null;}export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
+export function atlasDrawingHasDraft(){return false;}export function atlasDrawingMeasurement(){return null;}export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
 export const atlasDrawingSnapPoint=p=>globalThis.atlasSnap?globalThis.atlasSnap(p):p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
 export const selectedDrawingElementId=()=>null,selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},atlasDrawingUndoPoint=()=>{},reloadDrawing=()=>{};`}));}}]});

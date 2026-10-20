@@ -280,3 +280,26 @@ test('an overlapping empty Dungeon caption yields to active room keys without lo
  f.store.atlasRoomCommit({commandId:randomUUID(),token,campaignId,roomId:id,expectedRevision:room.revision,name:room.name,polygons:[{...polygons[0],holes:[[{x:-1,y:-1},{x:1,y:-1},{x:1,y:1},{x:-1,y:1}]]}],sections:room.sections});
  region=await f.read(q);assert(region.labels.some(l=>l.id==='scope:local'),'the room hole leaves the other location visible');
 });
+
+test('objects ignore legacy city sheets; painted areas neither own nor mutate their geometry',async t=>{
+ const f=fixture(t,1),write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action});
+ const city=write({kind:'city-create',name:'Legacy storage title',x:1000,y:1000,width:20,height:20}).result.id;
+ const house={id:'independent-house',kind:'building',name:'Gasthaus',protected:false,position:{x:500,y:500},angle:0,outline:[{x:-10,y:-10},{x:10,y:-10},{x:10,y:10},{x:-10,y:10}],use:'Taverne',notes:'',interior:false};
+ put(f.store,'city_unit',f.campaign.id,house.id,house,city);
+ const node=(id,x)=>({id,kind:'node',name:'',protected:false,point:{x,y:480}});
+ put(f.store,'city_unit',f.campaign.id,'street-a',node('street-a',450),city);put(f.store,'city_unit',f.campaign.id,'street-b',node('street-b',550),city);
+ put(f.store,'city_unit',f.campaign.id,'independent-road',{id:'independent-road',kind:'road',name:'Feldweg',protected:false,nodeIds:['street-a','street-b'],via:[],width:6},city);
+ const q=query({x:1400,y:1400,width:200,height:200}),initial=await f.read(q),units=()=>f.store.db.prepare('SELECT id,payload,checksum FROM city_unit WHERE campaign_id=? ORDER BY id').all(f.campaign.id),before=units();
+ assert(initial.cities.flatMap(c=>c.units).some(u=>u.id===house.id),'house outside the old 20m sheet is streamed');
+ assert.equal(f.reader.hit(f.source,q,{x:1500,y:1500}).id,house.id);
+ const geometry=initial.cities.flatMap(c=>c.units);
+ const assertGeometry=async()=>{const region=await f.read(q);assert.deepEqual(region.cities.flatMap(c=>c.units),geometry);assert.deepEqual(units(),before);assert(!region.labels.some(l=>l.id.startsWith('city:')));};
+ const area={id:'painted-area',revision:0,name:'Beliebiger Name',layerId:'politics',parentId:null,typeId:'city',rank:3,polygons:[{outer:[{x:1450,y:1450},{x:1550,y:1450},{x:1550,y:1550},{x:1450,y:1550}],holes:[]}],color:'#b58445',opacity:.15,border:'solid'};
+ write({kind:'territory-put',territory:area,expectedRevision:null});await assertGeometry();
+ let saved=f.store.atlasTerritories(f.shell.token).territories.find(a=>a.id===area.id);
+ write({kind:'territory-put',territory:{...saved,name:'Umbenannt',polygons:saved.polygons.map(p=>({...p,outer:p.outer.map(v=>({x:v.x+10000,y:v.y}))}))},expectedRevision:saved.revision});await assertGeometry();
+ saved=f.store.atlasTerritories(f.shell.token).territories.find(a=>a.id===area.id);
+ write({kind:'territory-remove',id:area.id,expectedRevision:saved.revision});await assertGeometry();
+ write({kind:'undo'});await assertGeometry();write({kind:'redo'});await assertGeometry();
+ const overview=await f.read(query({x:1000,y:1000,width:10000,height:10000}));assert(!overview.labels.some(l=>l.id.startsWith('city:')));assert(overview.cities.flatMap(c=>c.units).some(u=>u.id==='independent-road'),'zoom never replaces independent geometry with a city marker');
+});

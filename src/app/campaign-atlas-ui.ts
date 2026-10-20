@@ -1146,10 +1146,10 @@ export class CampaignAtlasWorkbench {
 
     const current=()=>request===this.searchRequest&&this.owner?.token===token&&get<HTMLInputElement>('atlas-search').value.trim().toLocaleLowerCase('de')===text;
     const more=(title:string,load:()=>Promise<void>)=>{const b=document.createElement('button');b.textContent=title;b.onclick=()=>{b.remove();void load().catch(e=>{if(current())this.error(e);});};root.append(b);};
-    const page=async(kind:'city'|'landscape'|'scope',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
+    const page=async(kind:'landscape'|'scope',cursor?:import('./campaign-atlas-contracts').AtlasObjectQuery['cursor'])=>{
       const result=await window.campaign.atlasObjects(token,{kind,text,limit:40,cursor});if(!current())return;if(!result.ok)throw new Error(result.error);
-      for(const item of result.value.items)add(item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):kind==='scope'?this.navigateScope(item.id).catch(e=>this.error(e)):this.navigate(kind,item.id)));
-      if(result.value.next)more(kind==='city'?'Weitere Städte':kind==='scope'?'Weitere Dungeons':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
+      for(const item of result.value.items)add(item.name,()=>void (kind==='landscape'?this.navigateLandscape(item.id).catch(e=>this.error(e)):this.navigateScope(item.id).catch(e=>this.error(e))));
+      if(result.value.next)more(kind==='scope'?'Weitere Dungeons':'Weitere Landschaftsobjekte',()=>page(kind,result.value.next!));
     };
     const rooms=async(cursor?:import('./contracts').RoomDirectoryQuery['cursor'])=>{
       const result=await window.campaign.roomDirectory(token,{text,limit:40,...(cursor?{cursor}: {})},'atlas');if(!current())return;if(!result.ok)throw new Error(result.error);
@@ -1157,9 +1157,15 @@ export class CampaignAtlasWorkbench {
       if(result.value.unreadable){const warning=document.createElement('p');warning.setAttribute('role','alert');warning.textContent=result.value.unreadable+' Raumtexte konnten nicht durchsucht werden.';root.append(warning);}
       if(result.value.next)more('Weitere Räume',()=>rooms(result.value.next!));
     };
-    const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add(item.cityTitle+' · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
-    for(const task of [rooms(),page('city'),page('landscape'),page('scope'),buildings()])void task.catch(e=>{if(current())this.error(e);});
+    const areas=async()=>{const result=await window.campaign.atlasTerritories(token);if(!current())return;if(!result.ok)throw Error(result.error);for(const area of result.value.territories.filter(t=>t.polygons.length&&t.name.toLocaleLowerCase('de').includes(text)))add('Gebiet · '+area.name,()=>void this.navigateTerritory(area.id).catch(e=>this.error(e)));};
+    const buildings=async(offset=0)=>{const result=await window.campaign.cityBuildings(token,{text,offset});if(!current())return;if(!result.ok)throw new Error(result.error);for(const item of result.value.items)add('Haus · '+item.title,()=>void this.navigate('city',item.cityId,item.unitId));if(result.value.next!==null)more('Weitere Häuser',()=>buildings(result.value.next!));};
+    for(const task of [rooms(),areas(),page('landscape'),page('scope'),buildings()])void task.catch(e=>{if(current())this.error(e);});
 
+  }
+
+  private async navigateTerritory(id:string){
+    const owner=this.owner;if(!owner||!await this.flush()||!await this.opts.flush()||owner!==this.owner)return;
+    await this.setFamily('terrain',false);this.selection=null;get<HTMLSelectElement>('land-tool').value='territory';this.territories.sync(owner.token);await this.territories.select(id);this.layout?.showPane('tool');this.render();
   }
 
   private async navigateLandscape(id:string) {
@@ -2201,30 +2207,6 @@ export class CampaignAtlasWorkbench {
               : citySaved,
           f = atlasFrame(data, binding),
           g = shape("group", {matrix: frameMatrix(this.relative(f))});
-        g.data.atlasObject = "true";
-        g.data.kind = "city";
-        g.data.id = city.header.id;
-        const center = localToAtlas(
-          { x: city.header.width / 2, y: city.header.height / 2 },
-          f,
-        );
-        if (
-          !this.visible(
-            center,
-            Math.max(city.header.width, city.header.height),
-            data.region?.box??box,
-          )
-        )
-          continue;
-        if (mpp > city.header.width / 25) {
-          const marker = shape("circle", {x: center.x - box.x, y: center.y - box.y, radius: 6 * mpp, style: {fill: "#c58a58", stroke: "#4f4230", lineWidth: mpp}});
-          marker.data.atlasObject = "true";
-          marker.data.kind = "city";
-          marker.data.id = city.header.id;
-          root.append(marker);
-          // City names are placed by the shared cartographic layer.
-          continue;
-        }
         let shownCity = city;
         if (
           this.drag?.selection?.kind === "building" &&

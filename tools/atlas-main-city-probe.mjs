@@ -38,11 +38,11 @@ export function seedAtlasCity(store, token, campaignId) {
   });
   const cityId = write({
     kind: "city-create",
-    name: "Stadt auf der Landschaft",
+    name: "Historische Ablage",
     x: 1500,
     y: 1500,
-    width: 500,
-    height: 400,
+    width: 20,
+    height: 20,
   }).result.id;
   const header = store.city(token, cityId).header;
   const units = [
@@ -106,16 +106,49 @@ export function seedAtlasCity(store, token, campaignId) {
       },
     },
   });
+  write({
+    kind: "territory-put",
+    expectedRevision: null,
+    territory: {
+      id: "painted-neighbourhood",
+      revision: 0,
+      name: "Gebiet über unabhängigen Objekten",
+      layerId: "politics",
+      parentId: null,
+      typeId: "city",
+      rank: 3,
+      polygons: [
+        {
+          outer: [
+            { x: 1480, y: 1550 },
+            { x: 2050, y: 1520 },
+            { x: 2080, y: 1820 },
+            { x: 1490, y: 1850 },
+          ],
+          holes: [],
+        },
+      ],
+      color: "#b58445",
+      opacity: 0.05,
+      border: "dashed",
+    },
+  });
   return cityId;
 }
 
-export async function verifyAtlasCity(page, settle, capture) {
-  await page.locator("#atlas-search").fill("Stadt auf der Landschaft");
+export async function verifyAtlasCity(page, settle, capture, readObjects) {
+  await page.locator("#atlas-search").fill("Gebiet über unabhängigen Objekten");
   await page
     .locator("#atlas-search-results")
-    .getByRole("button", { name: "Stadt auf der Landschaft", exact: true })
+    .getByRole("button", {
+      name: "Gebiet · Gebiet über unabhängigen Objekten",
+      exact: true,
+    })
     .click();
   await page.locator("#atlas-search").fill("");
+  await settle();
+  // Selecting an area only selects its paint overlay; navigation remains free.
+  await page.locator("#atlas-select").click();
   await settle();
   await page.evaluate(
     () =>
@@ -171,6 +204,36 @@ export async function verifyAtlasCity(page, settle, capture) {
     await page.locator("dialog[open] #vegetation-spatial-canvas").count(),
     0,
   );
+  const objectsBefore = readObjects();
+  await page.locator("#atlas-search").fill("Gebiet über unabhängigen Objekten");
+  await page
+    .locator("#atlas-search-results")
+    .getByRole("button", {
+      name: "Gebiet · Gebiet über unabhängigen Objekten",
+      exact: true,
+    })
+    .click();
+  await page.locator("#atlas-search").fill("");
+  await settle();
+  const properties = page
+    .locator("#atlas-territory-tools details")
+    .filter({ has: page.locator("#territory-delete") });
+  if (!(await properties.evaluate((e) => e.open)))
+    await properties.locator("summary").click();
+  await page.locator("#territory-delete").click();
+  await page
+    .locator('#territory-region option[value="painted-neighbourhood"]')
+    .waitFor({ state: "detached" });
+  await settle();
+  assert.deepEqual(
+    readObjects(),
+    objectsBefore,
+    "deleting painted area preserves every authored object byte",
+  );
+  const withoutArea = await inspect();
+  assert(withoutArea.roof > 50);
+  assert.equal(withoutArea.paper, 0);
+  await capture("08-area-removed-objects-remain");
   // Real GPU context loss must fall back once, without an automatic retry loop.
   await page.locator("#atlas-terrain-spatial").evaluate((c) => {
     const extension = c.getContext("webgl2").getExtension("WEBGL_lose_context");
@@ -198,5 +261,10 @@ export async function verifyAtlasCity(page, settle, capture) {
   assert.equal(await page.locator("#atlas-terrain-spatial").count(), 1);
   assert(await page.locator("#atlas-camera-retry").isHidden());
   await capture("07-city-camera-recovered");
-  return { top, tilted, contextRecovery: true };
+  return {
+    top,
+    tilted,
+    areaDeletionPreservesObjects: true,
+    contextRecovery: true,
+  };
 }

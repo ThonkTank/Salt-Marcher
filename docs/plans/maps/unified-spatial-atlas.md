@@ -8,14 +8,14 @@ SaltMarcher erhält **eine gemeinsame Kartenfläche mit einer perspektivischen K
 
 Der Atlas soll auf allen sinnvollen Maßstäben als flüssiger Editor und Map Explorer funktionieren. Lesbare, ansprechende Darstellung schließt ausdrücklich Wälder/Bäume und andere Geländeassets, Straßen- und Flussdarstellung samt Texturen sowie Gebäude und Regionen ein. Ihre Größe, Detailtiefe und Sichtbarkeit müssen sich sinnvoll mit der Zoomstufe ändern.
 
-Der Zoom verändert kontinuierlich die Darstellung und Informationsdichte: Küsten bleiben scharf, Höhenlinien werden sinnvoll ergänzt, Straßen und Flüsse bleiben lesbar, Namen wechseln nach Bedeutung und verfügbarem Platz. Städte erscheinen je nach Maßstab als Marker, Fläche oder Bebauung. Auswahl, Werkzeuge und History bleiben durchgehend erhalten.
+Der Zoom verändert kontinuierlich die Darstellung und Informationsdichte: Küsten bleiben scharf, Höhenlinien werden sinnvoll ergänzt, Straßen und Flüsse bleiben lesbar, Namen wechseln nach Bedeutung und verfügbarem Platz. Gezeichnete Gebiete und einzelne Objekte erhalten passende Detailstufen; eigenständige Stadtmarker oder automatisch aus einer Dokumenthülle abgeleitete Stadtnamen entfallen. Auswahl, Werkzeuge und History bleiben durchgehend erhalten.
 
 Festgelegt:
 
 - **Ebener, wachsender Meterraum**, ohne feste Kartenränder oder Weltkugel.
 - Perspektivische Kamera mit 360° Drehung und zunächst 0–75° Neigung aus der Senkrechten. Draufsicht und Nordausrichtung sind unmittelbar erreichbar.
 - **Räumliche Bearbeitung auch innerhalb von Gebäuden und Dungeons.** Keine erzwungene Rückkehr zur Draufsicht.
-- Städte bestehen aus Straßen, Gebäuden, Plätzen und weiteren Objekten direkt auf der Landschaft. Rechteckige Stadtpapierflächen oder sichtbare Grenzen alter Teilkarten gehören nicht in die Hauptkarte; Stadtzugehörigkeit bleibt eine logische Gruppierung.
+- Auf der Karte gibt es ausschließlich unabhängige Objekte wie Straßen, Gebäude und Plätze. Benutzer können darüber beliebige benannte Gebiete malen. Diese Gebiete definieren oder besitzen keine Stadt und keine enthaltene Geometrie: Anlegen, Umformen, Verschieben und Löschen eines Gebietes verändert kein Objekt. Alte Stadtdokumente dürfen weder Papier, Marker, Namen noch unsichtbare Grenzen erzeugen. Ihre bisherigen Speicherzuordnungen sind Übergangsdetails, keine fachliche Zugehörigkeit.
 - Gesamter vorhandener Atlasumfang einschließlich Terrain, Bewuchs, Straßen, Gewässern, Regionen, Beschriftungen, Stadt-/Dungeonwerkzeugen, Ausgabe und Spieleranzeige.
 - Noch offene, davon unabhängige Stadt-/Dungeon-Paritätsfeatures bleiben in ihren Fachroadmaps.
 - Bestehende Kampagnen sind unwichtige Testdaten: neue Testkampagnen und erforderliche Schemaänderungen sind zulässig. Bestehende Dateien werden nicht gelöscht oder stillschweigend umgedeutet.
@@ -85,6 +85,8 @@ Bereits hier prüfen: negative und weit entfernte Weltkoordinaten, kleine Raumde
 
 ### P2 — Gemeinsame Kamera und räumliche Atlasfläche integrieren
 
+Aktualisiertes Objektmodell: [unabhängige Geometrie und gemalte Gebiete](../../reference/atlas-independent-objects-20261020/README.md). Sichtbarkeit, Zoom und Ausgabe lösen keine Stadtmarker mehr aus; die Ablösung alter Stadt-Einstiege in den Autorenwerkzeugen bleibt offen.
+
 Lokaler Teilanschluss: [Hauptkamera, normale Raumbearbeitung und Stadtobjekte auf der Landschaft](../../reference/atlas-main-surface-20261020/README.md). Neigen und Werkzeugwechsel behalten dieselbe Fläche; das historische Stadtpapier entfällt. Gebäudevolumen, Geschosse, vollständige Detailstufen und Ausgabe bleiben offen.
 
 Die vorhandenen Zeichenebenen unter der gemeinsamen Kamera in der bestehenden Atlasoberfläche zusammenführen. Eine Kamera steuert sämtliche Inhalte, Auswahlrahmen, Griffe und Messungen. Kameranahe GPU-Koordinaten und geeignete Tiefenbereiche verhindern Zittern und Flächenflimmern zwischen Welt- und Raummaßstab.
@@ -114,7 +116,7 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 - Küsten bleiben eigene scharfe Konturen; Relief und Bodenfarben werden getrennt gestaltet.
 - Höhenlinien behalten ihre tatsächlichen Höhen. Hauptlinien bleiben bestehen, Zwischenlinien werden schrittweise ergänzt; automatische Intervalle sind Standard, feste Intervalle bleiben wählbar.
 - Straßen und Flüsse erhalten vereinfachte Verläufe, kontrollierte Bildschirmbreiten und maßstabsabhängige Namen.
-- Regionen, Städte und Stadtteile erhalten hierarchische Flächen, Grenzen und Beschriftungen. Bedeutende Siedlungen wechseln zwischen Marker, Fläche und Bebauung.
+- Benutzer malen unabhängige Gebietsflächen mit Grenzen und Beschriftungen über die Geometrie. Bezeichnungen wie Stadt oder Stadtteil sind ausschließlich Typen dieser Overlays; darunterliegende Objekte bleiben unabhängig. Dokumenthüllen erzeugen keine zusätzlichen Marker oder Beschriftungen.
 - Namen verwenden Prioritäten, alternative Positionen, Linienbeschriftung und gemeinsame Überlappungsprüfung über Kachelgrenzen hinweg.
 - Ein-/Ausblendschwellen besitzen Übergangsbereiche gegen Flackern. Übergänge beginnen unmittelbar; kurze Überblendungen ersetzen verspätetes Aufpoppen.
 - Automatische Platzierung erhält manuelle Beschriftungspositionen und Bedeutungsangaben. Ausgewählte Objekte bleiben im GM-Editor auffindbar.

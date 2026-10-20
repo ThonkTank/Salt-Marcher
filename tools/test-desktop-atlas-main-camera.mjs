@@ -345,7 +345,9 @@ try {
     assert.deepEqual(readRoom().polygons, saved.polygons);
     await capture("04-reopened");
   }
-  result.city = await verifyAtlasCity(page, settle, capture);
+  result.city = await verifyAtlasCity(page, settle, capture, () =>
+    db.prepare("SELECT id,payload,checksum FROM city_unit ORDER BY id").all(),
+  );
   mark(
     "City objects sit on landscape in the main camera; GPU context loss falls back once and explicit retry recovers",
   );
