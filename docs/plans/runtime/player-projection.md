@@ -1,6 +1,6 @@
 # Passive Spielerprojektion: Karten, Art und sichere Ausgabe
 
-Stand: 14.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
+Stand: 20.10.2026. Ergänzt den [Player-/Extensionanschluss](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
 und den [Gesamtumfang](../../SCOPE.md).
 
 ## Gebundener Vertrag und Entscheidung
@@ -80,7 +80,17 @@ Neue Textmoduscommands werden vor Wirkung und Receipt abgewiesen. Die
 produktive Steuerung und der Live-Cue bieten automatische Karten-/Artansicht,
 ausdrückliche Bildwahl bzw. Blank; beide Vorlesetextbuttons wurden entfernt.
 Live-Cues öffnen Ortsart, NPC-Porträts oder ein
-spontanes Handout direkt für die geprüfte Gruppe. Eine neu ausgewählte Orts-ID
+spontanes Handout direkt für die geprüfte Gruppe. Im geöffneten NSC-Dossier
+am Szenentisch stehen „Porträt für Spieler zeigen“ und „Anzeige leeren“ direkt
+neben den privaten Angaben. Das Zeigen verwendet den geöffneten NSC und die
+geprüfte Fokusgruppe; offene Angaben werden vor der Freigabe gesichert. Blank
+wartet nicht auf diese Speicherung und widerruft einen noch offenen Bildauftrag.
+Ein ausgeblendetes Bild bleibt nach Neustart ausgeblendet, bis es erneut bewusst
+gezeigt wird. Die native Ablaufprüfung liegt in
+[test-desktop-npc-portrait.mjs](../../../tools/test-desktop-npc-portrait.mjs);
+Editorwechsel und konkurrierende Aufträge prüfen die
+[Desk-Regressionen](../../../tests/desktop-desk-owner-dom.test.mjs).
+Eine neu ausgewählte Orts-ID
 wird als sichtbarer Auftrag gebunden; erst ihr erfolgreicher Save erlaubt die
 direkte Bild-/Livefreigabe. Ein Savefehler veröffentlicht nichts.
 Ein Pickerabbruch ändert die

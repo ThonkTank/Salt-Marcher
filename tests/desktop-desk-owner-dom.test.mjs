@@ -9,7 +9,7 @@ await build({entryPoints:['src/app/scene-desk-ui.ts'],outfile:'.build/desk-owner
 const require=createRequire(import.meta.url),ok=value=>({ok:true,value}),tick=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 async function until(check){for(let i=0;i<80&&!check();i++)await tick();assert.ok(check(),'Expected desk state did not arrive.');}
-function fixture(t){
+function fixture(t,player){
  const {window}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={};
  for(const key of ['window','document','setTimeout','clearTimeout'])previous[key]=globalThis[key];
  for(const select of window.document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.querySelector('option')?.value??'',writable:true,configurable:true});
@@ -32,7 +32,7 @@ function fixture(t){
   pinSceneDesk:async(_token,id,_revision,ref)=>ok({sceneId:id,revision:1,place:null,pins:[{ref,title:notes.get(ref.id)?.title??"Created",label:"NPC"}]}),
  };
  const file=require.resolve('../.build/desk-owner-dom.cjs');delete require.cache[file];const ui=require(file);
- ui.initSceneDesk((text,error)=>errors.push({text,error}),async()=>{},async()=>{});
+ ui.initSceneDesk((text,error)=>errors.push({text,error}),async()=>{},async()=>{},player);
  const activate=token=>ui.sceneDeskContext({token,campaign:{id:token}},{id:'scene-'+token,revision:1,membershipRevision:1,locationId:null,members:[]});
  const title=()=>window.document.querySelector('#desk-fields input');
  const edit=text=>{const input=title();input.value=text;input.oninput();};
@@ -129,4 +129,28 @@ test('a flush waits for its scene draft read and cannot continue in a replacemen
  x.activate('beta');await until(()=>x.title()?.value==='beta');x.edit('Beta remains mine');
  held.resolve(ok(null));assert.equal(await flush,false);assert.equal(x.title().value,'Beta remains mine');assert.equal(x.changes.length,0);
  assert.equal(await x.ui.flushSceneDesk(),true);assert.equal(x.changes.at(-1).campaignId,'beta');
+});
+
+
+test('NPC portrait action uses the open record and old handlers cannot publish a later record',async t=>{
+ const calls=[],pending=deferred();
+ const x=fixture(t,{showNpc:async(id,current)=>{calls.push({id,current});return pending.promise;},blank:async()=>true});
+ x.activate('alpha');await until(()=>x.title()?.value==='alpha');assert.equal(x.el('desk-player-actions').hidden,false);
+ const old=x.el('desk-player-show').onclick;old();await until(()=>calls.length===1);assert.equal(calls[0].id,x.ids.alpha);assert.equal(calls[0].current(),true);
+ x.activate('beta');await until(()=>x.title()?.value==='beta');assert.equal(calls[0].current(),false);old();assert.equal(calls.length,1);
+ pending.resolve(true);await tick();assert.equal(x.el('desk-player-status').textContent,'');
+});
+
+test('blanking from the NPC dossier does not wait for an in-flight portrait or private note save',async t=>{
+ const pending=deferred();let blanks=0,currentPortrait;
+ const x=fixture(t,{showNpc:async(_id,current)=>{currentPortrait=current;return pending.promise;},blank:async()=>{blanks++;return true;}});
+ x.activate('alpha');await until(()=>x.title()?.value==='alpha');x.edit('Private draft');const save=x.hold(),flushing=x.ui.flushSceneDesk();await until(()=>x.writes.length===1);
+ x.el('desk-player-show').onclick();x.el('desk-player-blank').onclick();await until(()=>blanks===1);assert.match(x.el('desk-player-status').textContent,/geleert/);assert.equal(currentPortrait(),false);assert.equal(x.el('desk-player-show').disabled,false);
+ save.resolve(ok());pending.resolve(false);await flushing;await tick();assert.equal(x.changes[0].change.note.title,'Private draft');
+});
+
+test('ordinary knowledge notes do not offer an NPC portrait',async t=>{
+ const x=fixture(t,{showNpc:async()=>true,blank:async()=>true});
+ const read=window.campaign.deskContent;window.campaign.deskContent=async(...args)=>{const r=await read(...args);r.value.note.kind='note';return r;};
+ x.activate('alpha');await until(()=>x.title()?.value==='alpha');assert.equal(x.el('desk-player-actions').hidden,true);
 });
