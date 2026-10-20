@@ -26,8 +26,12 @@ diesen Weg auch bei ausgefallener Positionsspeicherung ab.
   werden erklärt und ersetzen keine bestätigte Automatikauswahl.
 - `music-ui.ts` bindet Antworten und Commands an den Workspace.
   `LocalAudioPlayer` hält zwei Songslots und einzelne Ambience-Elemente.
-  Gespeicherte Auswahl autorisiert nach Aktivierung keine lokale Wiedergabe;
-  Media-/Play-/Fadegenerationen entziehen alten Callbacks ihre Autorität.
+  Gespeicherte Auswahl autorisiert nach Aktivierung keine lokale Wiedergabe.
+  Die Freigabe für Song beziehungsweise gesamte Ambience folgt direkt daraus, ob
+  ihre bestätigte Revision neuer als die letzte Stop-Revision ist. Zwei
+  zusätzliche veränderliche Freigabeflags entfallen. Einzelne ausdrücklich gewählte
+  Ambience-Schichten behalten ihre getrennte Freigabe. Media-/Play-/Fadegenerationen
+  entziehen alten Callbacks ihre Autorität.
 - Decoderfehler stoppen nur die betroffene Schicht und werden am Asset gespeichert.
   Metadaten und Bytes bleiben erhalten. Entfernte Fehlerschichten geben Fade,
   Audioquelle, Element und Runtimeeintrag frei; andere Schichten laufen weiter.
