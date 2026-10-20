@@ -32,9 +32,11 @@ export function heightBrushBounds(s:HeightStroke){
   const box={x:b.x-pad,y:b.y-pad,width:b.width+2*pad,height:b.height+2*pad};
   return s.visibility?terrainSourceBounds(s.visibility,pad):box;
 }
+/** Smaller cells are finer; a coarse stroke cannot replace finer authored nodes. */
+export function heightBrushResolution(radius:number){return Math.max(2**-24,2**Math.floor(Math.log2(radius/32)));}
 export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void):LandscapeRecord[]{
   validateHeightStroke(s);
-  const box=strokeBox(s),pixel=Math.max(2**-24,2**Math.floor(Math.log2(s.radius/32))),edge=64*pixel;
+  const box=strokeBox(s),pixel=heightBrushResolution(s.radius),edge=64*pixel;
   // Midpoint integration along the whole gesture, independent of event frequency.
   const dabs:{x:number;y:number;seconds:number}[]=[];
   for(let i=1;i<s.samples.length;i++){
