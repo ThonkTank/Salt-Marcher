@@ -132,9 +132,11 @@ führt zur Korrekturmeldung. Preset-, Tabellen-, Katalog-, NPC- und Weltquellenp
 bleiben zuständig. Quelle, Partymitgliedschaft, HP und Scenezeit ändern sich nicht.
 
 Vor Erzeugen den Vorlagenentwurf abschließen und bestätigte Revision binden.
-Änderungen an Name, Notizen, Einträgen oder Ausgangsvorlage entwerten die Vorschau.
-Eine später geänderte Basis sperrt Übernahme, erhält aber den lesbaren alten
-Snapshot. Alte Previewformate ohne Füllbasis bleiben gültig. Restart, Backup und
+Änderungen an Name, Notizen, Einträgen oder Ausgangsvorlage entwerten die Vorschau
+für neue Übernahmen. Eine später geänderte Basis sperrt die erste Übernahme; der
+alte Snapshot bleibt lesbar. [Bereits gespeicherte Vorlagen öffnen](#gespeicherte-vorbereitung-aus-einer-früheren-vorschau-öffnen)
+liest unabhängig von der geänderten Füllbasis den aktuellen Autorenstand.
+Alte Previewformate ohne Füllbasis bleiben gültig. Restart, Backup und
 unabhängiger Transfer erhalten Vorschauen; der bestehende Walker remappt lokale
 Vorlagen-/Eintrags-/NPC-IDs, erhält Kreaturkatalogdaten und freie Prosa.
 Keine Schemaänderung oder zweiter Selector.
