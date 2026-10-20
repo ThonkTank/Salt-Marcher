@@ -4,7 +4,7 @@ import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
-import { cityPaint } from "./city-model";
+import { cityObjectsPaint } from "./city-model";
 import { centerInRoom } from "./dungeon-model";
 import { elementPaint, roomFacePaint } from "./drawing-model";
 export function atlasRegionPaint(
@@ -74,7 +74,7 @@ export function atlasRegionPaint(
         }),
       );
     } else {
-      const cityScene = cityPaint(city,!options.automaticLabels,mpp);
+      const cityScene = cityObjectsPaint(city,!options.automaticLabels,mpp);
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);

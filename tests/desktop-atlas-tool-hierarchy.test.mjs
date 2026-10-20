@@ -123,3 +123,17 @@ test('a found place selects the generic object context while vegetation retains 
  assert.equal(layout.groupMemory.get('terrain'),'objects');assert.equal(layout.toolList.dataset.group,'objects');assert.deepEqual([...layout.toolList.querySelectorAll('button')].map(b=>b.textContent.replace(/\s+/g,' ').trim()),['↖Objekt auswählen','⚑Ort platzieren']);
  assert.deepEqual(opened,['landscape:ferry']);layout.landscapeSelectionChanged('wood','vegetation');assert.equal(layout.groupMemory.get('terrain'),'vegetation');assert.equal(layout.toolList.dataset.group,'vegetation');
 });
+
+test('main-camera pose is locked during room, city and output gestures, and released after cancellation',()=>{
+ const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{
+  busy:false,landscape:{hasDraft:()=>false},territories:{hasDraft:()=>false},draft:[],brushId:null,
+  drag:null,vertexDrag:null,pathDrag:null,roomDrag:null,partyDrag:null,entranceDraft:null,
+  placeIntent:null,exportDrag:null,exportCorner:null,
+ });
+ assert.equal(editor.cameraDraftPending(),false);
+ for(const key of ['drag','vertexDrag','pathDrag','roomDrag','partyDrag','entranceDraft','placeIntent','exportDrag','exportCorner']){
+  editor[key]={};assert.equal(editor.cameraDraftPending(),true,key);editor[key]=null;
+ }
+ editor.draft=[{x:1,y:2}];assert.equal(editor.cameraDraftPending(),true);editor.draft=[];
+ assert.equal(editor.cameraDraftPending(),false);
+});

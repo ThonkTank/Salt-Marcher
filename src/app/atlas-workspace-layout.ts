@@ -231,7 +231,7 @@ export class AtlasWorkspaceLayout {
    this.railButton(el('atlas-create-city'),'⊕','Stadt anlegen');add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-path-hint'));add(el('city-finish').parentElement);
    add(el('city-inspector'),this.selection);add(el('city-empty'));add(el('city-count'),this.selection);add(el('city-demographics'),this.selection);add(el('city-factions'),this.selection);
    const extra=document.createElement('details');extra.dataset.familyAction='true';extra.innerHTML='<summary>Stadtdarstellung und Ausgabe</summary>';this.selection.append(extra);
-   for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);
+   for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);el('city-paper').closest('label')!.hidden=true;
   }
   if(section==='interior'){
    add(el('atlas-floor-field'));this.railButton(el('atlas-create-dungeon'),'⊕','Raumgruppe anlegen');add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);

@@ -2,7 +2,6 @@ import {mapLabelEditor,readMapLabelEditor} from './map-label-editor';
 import {openTerrainRoute} from './terrain-route-ui';
 import {vegetationSpec,type VegetationInstance,type VegetationOverride} from './vegetation';
 import {vegetationControls,vegetationInspector} from './vegetation-controls';
-import {openVegetationSpatial} from './vegetation-spatial';
 import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
 import {heightBrushBounds,heightBrushResolution,type HeightStroke} from './terrain-brush';
 import {drawMeasurements,areaMeasures,pathMeasures,radiusMeasures} from './atlas-measurements';
@@ -57,7 +56,6 @@ type Tool =
 export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   private vegetationSettings=vegetationSpec();
-  private spatialViewState={tilt:45,rotation:0,exaggeration:1};
   private vegetationFields=document.createElement('div');
   private vegetationInstance:VegetationInstance|undefined;
   private inspectorRoot: HTMLElement;
@@ -113,6 +111,7 @@ export class LandscapeWorkbench {
     svg: HTMLCanvasElement,
     private host: {
       box: () => LandscapeBox;
+      camera?:()=>void;
       visibility?:()=>import("./terrain-spatial-model").TerrainView|undefined;
       navigate?:(box:LandscapeBox)=>void;
       hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
@@ -143,7 +142,7 @@ export class LandscapeWorkbench {
     const asset=document.createElement('label');asset.textContent='Einzelobjekt';asset.innerHTML+='<select id="vegetation-asset"><option value="oak">Laubbaum</option><option value="pine">Nadelbaum</option><option value="rock">Felsen</option><option value="shrub">Strauch</option></select>';this.vegetationFields.append(asset);
     const selectionFilter=document.createElement('label');selectionFilter.textContent='Bewuchs auswählen';
     selectionFilter.innerHTML+='<select id="vegetation-selection-filter"><option value="all">Alle sichtbaren Objekte</option><option value="trees">Bäume</option><option value="rocks">Felsen unter Baumkronen</option><option value="undergrowth">Unterwuchs unter Baumkronen</option></select>';this.panel.append(selectionFilter);
-    const spatial=document.createElement('button');spatial.type='button';spatial.id='vegetation-spatial';spatial.textContent='Räumliche Landschaft';spatial.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}void openVegetationSpatial({token:this.token,box:this.host.box(),viewState:this.spatialViewState,terrain:{settings:this.settings,radius:html<HTMLInputElement>('land-radius'),tool:this.tool,selection:this.selected?.id,choose:tool=>{this.tool=tool as Tool;html<HTMLSelectElement>('land-tool').value=tool;this.settings.show(tool);}},write:a=>this.commit(a),error:e=>this.host.error(e),navigate:b=>this.host.navigate?.(b),select:async(area,instance)=>{await this.host.refresh?.();await this.selectVegetation(area,instance);}}).catch(e=>this.host.error(e));};this.panel.append(spatial);
+    const spatial=document.createElement('button');spatial.type='button';spatial.id='vegetation-spatial';spatial.textContent='Atlaskamera neigen';spatial.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}this.host.camera?.();};this.panel.append(spatial);
     this.inspectorRoot=this.panel.querySelector<HTMLElement>('#land-selection')!;
     html("atlas-tool-fields").after(this.panel);
     this.settings=new LandscapeToolSettings(this.panel,()=>{this.toolFields();this.host.redraw();},()=>{if(this.hasDraft()){this.say("Zuerst abschließen oder verwerfen.");return false;}return true;});

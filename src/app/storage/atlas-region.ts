@@ -179,7 +179,6 @@ export class AtlasRegionReader {
     if(!overlap(bounds(corners({x:0,y:0,width:h.width,height:h.height}).map(p=>at(p,f))),q.box))continue;
     metadata?.(b,f,h);
     if(mpp>h.width/25){emit({value:{id:h.id,name:h.name},points:[{x:h.width/2,y:h.height/2}],stroke:mpp*12},f,'city-marker',b,h);continue;}
-    emit({value:{id:h.id},polygons:[{outer:corners({x:0,y:0,width:h.width,height:h.height}),holes:[]}]},f,'city-paper',b,h);
     for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=JSON.parse(r.payload);emit(s,f,'unit',b,h);}
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
@@ -208,7 +207,6 @@ export class AtlasRegionReader {
    if(h){labelCandidates.push({id:'city:'+h.id,text:h.name,kind:'city',rank:3,point:at({x:h.width/2,y:h.height/2},f),locationId:h.locationId});const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
   };
   this.visit(q,(s,_f,kind,b)=>{
-   if(kind==='city-paper')return;
    if((s.value.name||kind==='room'&&s.value.number)&&kind!=='city-marker'){
     const labelStart=labelCandidates.length;
     if(kind==='scope-marker')labelCandidates.push({id:'scope:'+b.ownerId,text:s.value.name,kind:'place',rank:2,point:at(s.points![0]!,_f)});
@@ -236,7 +234,7 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
     const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
     if(kind==='unit'&&s.value.kind==='building'&&!mapFootprintVisible(polygons?.flatMap(p=>p.outer)??[],q.box.width/q.width))return;
     if(kind==='unit'&&s.value.kind==='road'&&!mapLineVisible('road',s.stroke??6,q.box.width/q.width))return;
-    let color=kind==='city-paper'?h!.paper:kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
+    let color=kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
     if(kind==='room')color=s.style?.fill??color;
     if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
     else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:mapLineWidth(s.stroke??q.box.width/q.width*2,q.box.width/q.width),color);}
@@ -320,7 +318,7 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
    }
   }
   this.visit(q,(s,f,kind,b)=>{
-   if(kind==='city-paper'||visual&&kind==='element'&&s.value.id===visualElementId)return;
+   if(visual&&kind==='element'&&s.value.id===visualElementId)return;
    const touch=touches(s,inverse(p,f),q.box.width/q.width);
    if(touch)emit(s,f,kind,b);
   },undefined,{x:p.x-radius,y:p.y-radius,width:radius*2,height:radius*2});return{items,next:more?offset+items.length:null,fence:source.fence,total:matched,...(this.readFaults||this.sql('SELECT 1 FROM temp.region_problem LIMIT 1').get()?{unavailable:['geometry'] as ('geometry')[]}: {})};
@@ -328,7 +326,7 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
  hit(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point):AtlasObjectFocus|null{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box))throw new Error('Kartenauswahl prüfen.');
   let hit:AtlasObjectFocus|null=null;this.visit(q,(s,f,kind,b)=>{
-   if(kind==='city-paper')return;const touch=touches(s,inverse(p,f),q.box.width/q.width);
+   const touch=touches(s,inverse(p,f),q.box.width/q.width);
    if(touch)hit=kind==='city-marker'?this.focus(source,'city',b.ownerId):kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
   });return hit;
  }

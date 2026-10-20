@@ -4,6 +4,7 @@ import {brushPreviewRecords,type BrushPreviewJob} from './atlas-brush-worker';
 import {terrainGrid,type TerrainView,type TerrainGrid} from './terrain-spatial-model';
 import {LandscapeRasterizer} from './landscape-raster';
 import {orderedColors} from './landscape-brush';
+import {terrainColors} from './world-model';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
 export interface SpatialJob extends BrushPreviewJob {view:TerrainView;source:string}
 export interface SpatialReply {generation:number;source:string;grid:TerrainGrid;pixels:Uint8Array;width:number;height:number;draft:boolean;routes?:LandscapeRecord[];protectedLimit?:number;heightM?:number;contourInk?:string}
@@ -14,7 +15,10 @@ export function renderTerrainSpatial(job:SpatialJob):SpatialReply{
   const routes=records.filter(r=>r.kind==='road'||r.kind==='river');
   const point=job.heightStroke?.samples.at(-1);
   const contourInk=records.find(r=>r.terrainSettings)?.terrainSettings?.style?.ink??DEFAULT_TERRAIN_STYLE.ink;
-  return {routes,protectedLimit,contourInk,heightM:point?new TerrainSampler(records).sample(point).heightM:undefined,generation:job.generation,source:job.source,grid,pixels:image.finish(),width:job.width,height:job.height,draft:!!(job.heightStroke||job.color)};
+  // This texture is the opaque world base. Empty raster pixels are ocean, not black holes.
+  const pixels=image.finish(),water=[1,3,5].map(i=>parseInt(terrainColors.water.slice(i,i+2),16));
+  for(let i=0;i<pixels.length;i+=4){const alpha=pixels[i+3]!/255;if(alpha<1){for(let c=0;c<3;c++)pixels[i+c]=Math.round(pixels[i+c]!*alpha+water[c]!*(1-alpha));pixels[i+3]=255;}}
+  return {routes,protectedLimit,contourInk,heightM:point?new TerrainSampler(records).sample(point).heightM:undefined,generation:job.generation,source:job.source,grid,pixels,width:job.width,height:job.height,draft:!!(job.heightStroke||job.color)};
 }
 if(typeof self!=='undefined'&&typeof document==='undefined')self.onmessage=(event:MessageEvent<SpatialJob>)=>{
   try{const result=renderTerrainSpatial(event.data);self.postMessage(result,{transfer:[result.pixels.buffer,result.grid.heights.buffer]});}

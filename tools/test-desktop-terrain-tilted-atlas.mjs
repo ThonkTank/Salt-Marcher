@@ -367,7 +367,7 @@ try {
   await atlasCanvasReady(page);
   if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();
   await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.locator('#atlas-terrain-tilt').click();await page.keyboard.press('Escape');
-  await spatialReady();await page.locator('#atlas-view').click();for(let i=0;i<4;i++)await page.locator('#terrain-exaggeration').press('ArrowLeft');await page.keyboard.press('Escape');await page.waitForFunction(()=>JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection).exaggeration===1&&document.querySelector('#campaign-map').dataset.terrainReady==='ready');await capture('01-tilted');
+  await spatialReady();await page.waitForFunction(()=>JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection).exaggeration===1&&document.querySelector('#campaign-map').dataset.terrainReady==='ready');await capture('01-tilted');
   if(process.argv.includes('--contours')){await page.locator('#atlas-display').click();await page.locator('#land-contours').selectOption('100');await page.keyboard.press('Escape');await atlasCanvasReady(page);await spatialReady();result.contourInterval=100;}
   if(process.argv.includes('--camera-only'))await cameraMotion();else {
   const initialCamera=(await camera()).view,baseline=maskBytes(),sample=p=>new TerrainSampler(records()).query(p);
@@ -413,8 +413,8 @@ try {
   // Shared navigation stays bounded and releases the GPU canvas on return.
   const nav=await camera();await page.mouse.move(nav.left+nav.width*.5,nav.top+nav.height*.5);await page.mouse.wheel(0,-120);await zoomReached(nav,-120);await spatialReady();assert((await camera()).view.width<nav.view.width);
   await page.mouse.down({button:'middle'});await page.mouse.move(nav.left+nav.width*.55,nav.top+nav.height*.55,{steps:6});await page.mouse.up({button:'middle'});await spatialReady();const panCamera=(await camera()).view;
-  await page.locator('#atlas-view').click();await page.locator('#terrain-top').click();await page.keyboard.press('Escape');await atlasCanvasReady(page);assert.deepEqual((await camera()).view,panCamera);assert.equal(await page.locator('#atlas-terrain-spatial').count(),0);assert.equal(maskBytes(),baseline);
-  mark('Wheel zoom and middle-button pan share the Atlas camera; returning disposes the spatial canvas');
+  await page.locator('#atlas-view').click();await page.locator('#terrain-top').click();await page.keyboard.press('Escape');await atlasCanvasReady(page);assert.deepEqual((await camera()).view,panCamera);assert.equal(await page.locator('#atlas-terrain-spatial').count(),1);assert.equal(JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection')).tilt,0);assert.equal(maskBytes(),baseline);
+  mark('Wheel zoom and middle-button pan share the Atlas camera; returning keeps the same main Atlas canvas');
   await page.locator('#atlas-search').fill('Bergdorf');await page.locator('#atlas-search-results button').filter({hasText:'Bergdorf'}).click();await atlasCanvasReady(page);await page.locator('#atlas-search').fill('');
   assert.equal(await page.locator('#land-name').inputValue(),'Bergdorf');
   await page.locator('#atlas-view').click();await page.locator('#atlas-terrain-tilt').click();await page.keyboard.press('Escape');await spatialReady();assert.equal(await page.locator('#land-name').inputValue(),'Bergdorf');

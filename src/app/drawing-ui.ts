@@ -151,6 +151,7 @@ export function atlasDrawingMeasurement(hover?:Point){
  if(draft&&tool!=='select'){if(kind==='light')draft.width=Number(value('drawing-light-radius'));if(kind==='object')draft.width=draft.height=Number(value('drawing-element-size'));}
  return {tool,points,polygons,element:draft,radius:Number(value('drawing-brush')),floor:floor()};
 }
+export function atlasDrawingHasDraft(){return busy||dirty||styleDirty||!!pendingElement||!!pendingStyle||path.length>0||preview!==null;}
 export function atlasDrawingDraft(){return{polygons:preview,path:[...path],floor:floor(),element:!dirty&&!pendingElement&&value('drawing-tool')==='select'?element:null};}
 /** The Atlas drag adapter shares the same name, grid, append rules and writer as point tools. */
 export function atlasDrawingSnapPoint(p:Point):Point {

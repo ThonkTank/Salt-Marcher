@@ -855,3 +855,20 @@ test('a current editable campaign export reports failure and releases both outpu
  const f=editableExportFixture(t),saving=f.ui.saveEditableCampaign();await f.until(()=>f.held.length===1);f.held.shift()({ok:false,error:'No disk space'});await saving;
  assert.equal(f.get('atlas-output-save-status').textContent,'Sicherung fehlgeschlagen: No disk space');assert.deepEqual(f.errors,['No disk space']);assert.equal(f.get('atlas-export-png').disabled,false);assert.equal(f.get('atlas-output-save-campaign').disabled,false);
 });
+
+test("spatial presentation shares normal input, scene publication, HUD and pan without a second navigation handler",async t=>{
+ const f=fixture(t),calls=[],spatial={ready:true,
+  paint:(scene,origin)=>calls.push({kind:'paint',scene,origin}),
+  overlay:scene=>calls.push({kind:'overlay',scene}),
+  point:()=>({x:17,y:23}),hitAt:(_e,keys)=>({data:{id:'spatial',key:keys[0]}}),
+  navigationPoint:e=>({x:f.canvas.view.x+e.clientY*2,y:f.canvas.view.y-e.clientX*2})};
+ f.canvas.options.presentation=()=>spatial;
+ f.canvas.options.overlay=root=>{root.append(atlasPaint('rect',{width:10,height:10,hud:true,style:{fill:'green'}}));};
+ f.canvas.render(root=>root.append(rect('world')));await settle();
+ assert.equal(calls[0].scene.commands[0].node.data.id,'world');assert(calls.some(c=>c.kind==='overlay'));
+ assert.deepEqual(f.canvas.point({clientX:9,clientY:8}),{x:17,y:23});
+ assert.deepEqual(f.canvas.hitAt({clientX:9,clientY:8},['atlasVertex']),{data:{id:'spatial',key:'atlasVertex'}});
+ const before=f.canvas.view;f.pointer('pointerdown',100,100);f.pointer('pointermove',120,130);f.pointer('pointerup',120,130);f.flush();
+ assert.equal(f.canvas.view.x,before.x-60);assert.equal(f.canvas.view.y,before.y+40);assert.equal(f.changes.length,1);
+ spatial.ready=false;assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:9,clientY:8}),null);
+});

@@ -77,3 +77,8 @@ test('spatial contour ink is drawn at display time, not baked into background pi
  const plain=renderTerrainSpatial({...job,contours:0}),ink=renderTerrainSpatial({...job,contours:50});
  assert.deepEqual(plain.pixels,ink.pixels);assert.deepEqual(plain.grid.heights,ink.grid.heights);assert.equal(ink.contourInk,'#685639');
 });
+
+test('main Atlas empty terrain is opaque ocean behind ordinary map objects',()=>{
+ const v=view({focusM:0,tilt:0}),r=renderTerrainSpatial({generation:1,source:'empty',view:v,records:[],box:v.box,width:16,height:16,contours:0});
+ for(let i=0;i<r.pixels.length;i+=4)assert.deepEqual([...r.pixels.slice(i,i+4)],[127,168,189,255]);
+});

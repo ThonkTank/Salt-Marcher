@@ -15,6 +15,7 @@ Festgelegt:
 - **Ebener, wachsender Meterraum**, ohne feste Kartenränder oder Weltkugel.
 - Perspektivische Kamera mit 360° Drehung und zunächst 0–75° Neigung aus der Senkrechten. Draufsicht und Nordausrichtung sind unmittelbar erreichbar.
 - **Räumliche Bearbeitung auch innerhalb von Gebäuden und Dungeons.** Keine erzwungene Rückkehr zur Draufsicht.
+- Städte bestehen aus Straßen, Gebäuden, Plätzen und weiteren Objekten direkt auf der Landschaft. Rechteckige Stadtpapierflächen oder sichtbare Grenzen alter Teilkarten gehören nicht in die Hauptkarte; Stadtzugehörigkeit bleibt eine logische Gruppierung.
 - Gesamter vorhandener Atlasumfang einschließlich Terrain, Bewuchs, Straßen, Gewässern, Regionen, Beschriftungen, Stadt-/Dungeonwerkzeugen, Ausgabe und Spieleranzeige.
 - Noch offene, davon unabhängige Stadt-/Dungeon-Paritätsfeatures bleiben in ihren Fachroadmaps.
 - Bestehende Kampagnen sind unwichtige Testdaten: neue Testkampagnen und erforderliche Schemaänderungen sind zulässig. Bestehende Dateien werden nicht gelöscht oder stillschweigend umgedeutet.
@@ -49,6 +50,10 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
 
+Die jüngste Nutzerkorrektur priorisiert jetzt den Anschluss an die **normale Atlasfläche**: Kippen darf keine separate Geländeansicht aktivieren und ein Werkzeugwechsel darf die Kamera nicht zurücksetzen. Der bisherige Kamera-/Konturen-PR bleibt bis zum belegten Anschluss ein Entwurf.
+
+KISS, Single Responsibility, DRY und modulare Zuständigkeiten gelten ausdrücklich: vorhandene Werkzeughandler und numerische Zeichenkommandos werden weiterverwendet; eine kleine Präsentationsschnittstelle verbindet Kamera, Projektion und Treffer. GPU-Geometrie, Textdarstellung und Terrain-Datenversorgung bleiben getrennte Besitzer. Eine parallele Implementierung jedes Autorenwerkzeugs ist nicht vorgesehen.
+
 Kamera, Projektion, räumliche Treffer, Szenenaktualisierung und Ressourcenfreigabe werden direkt im bestehenden Atlas verbessert. Zuerst bleiben Kamerabewegungen von Nachladen und Geländeaufbau unabhängig. Danach folgen wiederverwendbare Bereichsdaten, scharfe Kartografie und unmittelbare Terrainbearbeitung. Vorhandene Gelände-/Objektmodule werden erweitert; bereits funktionierende Werkzeuge bleiben angeschlossen.
 
 Der aktualisierte Auftrag erlaubt freie technische Änderungen einschließlich des Backends, solange das geforderte Verhalten erreicht wird. Ein Abschluss erfordert anschließend drei vollständige kritische Untersuchungen ohne weiteren Arbeitsfund; einzelne grüne Tests zählen nicht als diese Abschlussprüfungen. Solange bekannte Lücken bestehen, bleibt die Optimierung in Arbeit.
@@ -79,6 +84,8 @@ Bereits hier prüfen: negative und weit entfernte Weltkoordinaten, kleine Raumde
 **Abschluss:** Der verbesserte Atlas erfüllt den funktionalen Mindestumfang und die Leistungsziele des Ausschnitts. Verbleibende Implementierungsarbeit ist dokumentiert; reine Navigation ohne Bearbeitung genügt nicht.
 
 ### P2 — Gemeinsame Kamera und räumliche Atlasfläche integrieren
+
+Lokaler Teilanschluss: [Hauptkamera, normale Raumbearbeitung und Stadtobjekte auf der Landschaft](../../reference/atlas-main-surface-20261020/README.md). Neigen und Werkzeugwechsel behalten dieselbe Fläche; das historische Stadtpapier entfällt. Gebäudevolumen, Geschosse, vollständige Detailstufen und Ausgabe bleiben offen.
 
 Die vorhandenen Zeichenebenen unter der gemeinsamen Kamera in der bestehenden Atlasoberfläche zusammenführen. Eine Kamera steuert sämtliche Inhalte, Auswahlrahmen, Griffe und Messungen. Kameranahe GPU-Koordinaten und geeignete Tiefenbereiche verhindern Zittern und Flächenflimmern zwischen Welt- und Raummaßstab.
 

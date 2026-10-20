@@ -1,6 +1,6 @@
 # Atlasdarstellung, Auswahl und Bildausgabe
 
-Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
+Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Der Anschluss nutzt die vorhandenen Atlaswerkzeuge; die folgenden Teilbelege ersetzen noch keine vollständige Produktabnahme.
 
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
@@ -24,26 +24,31 @@ Die aufgeführten Prüfwege sind keine neue Ausführung oder Produktabnahme.
 
 ## Draufsicht und Geländeprojektion
 
-Die gemeinsame Draufsicht zeichnet numerische Kommandos direkt auf Canvas2D.
-Kartenobjekte erzeugen weder verbundene SVG-/DOM-Elemente noch einen versteckten
-zweiten Kartenhost. Fachfelder und Status bleiben DOM-Controls. `cityPaint` und
-`elementPaint` erzeugen passive Geometrie; historische SVG-Schnittstellen behalten
-ihren Serializer samt Maskierung am Ausgaberand. Es entsteht kein zweites
-Autorenmodell oder Datenformat.
+Der normale Atlas veröffentlicht seine vorhandenen numerischen `AtlasPaint`-Kommandos über `AtlasPresentation`. `AtlasCanvas` bleibt Besitzer von Navigation, Szenengeneration, Bilddecodierung und Trefferfreigabe. Seine Eingaben verwenden die Weltpunkte und Treffer des aktiven Präsentationsadapters. Neigen, Drehen, senkrechtes Ausrichten und Werkzeugwechsel behalten denselben WebGL-Renderer; Canvas2D zeichnet darüber nur Bildschirmhilfen wie den Maßstab. Andere bestehende Canvasverbraucher und die Rasterausgabe verwenden denselben unveränderten Zeichenvertrag.
 
-**Atlas kippen** verwendet im bestehenden Three.js-Renderer eine perspektivische Kamera. `atlas-camera.ts` definiert die gemeinsame Meterprojektion für GPU-Adapter, Arbeitsebenen und kanonische Pinselverdeckung. Drehung und Neigung verändern vorhandene GPU-Puffer unmittelbar; Zoom und Pan können die letzte bestätigte Oberfläche während des Nachladens weiter bewegen. `terrain-spatial-source.ts` hält einen einzelnen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Nachgeladen wird bei unzureichender Abdeckung, mehr als 25 % Vergrößerung, relevantem Pixelmaßstab oder geändertem Inhalt/Quellenkontext. Das ist eine begrenzte Wiederverwendung, noch kein weltweites Kachel-LOD. Ältere orthografische Pinselschnappschüsse bleiben lesbar. Der
-Vorschauworker leitet Höhennetz und Farbtextur aus Bereichsdaten ab; Eingabe,
-Kamerabox, Auswahl, Landpinsel und History bleiben mit dem Atlas verbunden.
-Dreieckstreffer werden in Weltmeter zurückgeführt; Überhöhung ändert keine
-Autorenhöhe. Main/SQLite bleiben kanonisch. Beim Verlassen werden Worker,
-Geometrien und Texturen freigegeben. Aktive Wissensmasken und der vorhandene
-Bildexport wechseln zur Draufsicht. Der vollständige Kameraanschluss sämtlicher Atlaswerkzeuge und die gemeinsame Ausgabe bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
+Die GPU-Anbindung hat getrennte Zuständigkeiten:
+
+- `atlas-spatial-geometry.ts`: numerische Flächen/Pfade, Löcher und gestrichelte Linien; nur gespeicherte Symbolpfade werden als SVG-Literal gelesen.
+- `atlas-spatial-surface.ts`: Geländeanpassung und lokale, kameranahe Koordinaten.
+- `atlas-spatial-label.ts` und `atlas-spatial-color.ts`: Textressourcen und CSS-Farbtransparenz.
+- `atlas-spatial-scene.ts`: GPU-Ressourcen, Zeichenreihenfolge und ursprüngliche Auswahl-IDs.
+- `terrain-spatial-view.ts`: gemeinsame Kamera, Gelände, Trassen und Atlasobjekte; `terrain-spatial-ui.ts`: Kameraeinstellungen und gebündelte Terrainaufträge.
+
+Die bestehenden Stadt-, Raum- und Landschaftswerkzeuge bleiben die Autorenbesitzer. Weder Zeichenkommandos noch GPU-Treffer erhalten Schreibautorität; Main/SQLite validieren und speichern weiterhin. Der frühere Einstieg „Räumliche Landschaft“ richtet jetzt die Hauptkamera aus, statt ein Landschaftsfenster zu öffnen. Die historischen Spezialmodule bleiben bis zur vollständigen Funktionsdeckung als Referenz erhalten.
+
+**Städte haben keine Papierfläche im Atlas.** `cityObjectsPaint` liefert Straßen, Häuser und weitere angelegte Objekte ohne rechteckigen Hintergrund oder lokalen Canvasrahmen. Hauptkarte und Atlasexport verwenden diesen gemeinsamen Objektaufbau; auch der dichte Bereichsraster zeichnet kein `city-paper` mehr. Nur der historische eigenständige Dokumentserializer besitzt noch seine Papierausgabe. Stadtzugehörigkeit und Bindings sind logische Datenbeziehungen, keine zusätzliche Kartenfläche.
+
+`atlas-camera.ts` definiert die Meterprojektion für Kamera, Arbeitsebenen und kanonische Pinselverdeckung. Poseänderungen bewegen vorhandene GPU-Puffer unmittelbar. `terrain-spatial-source.ts` hält einen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Ältere orthografische Pinselschnappschüsse bleiben lesbar; Überhöhung verändert keine gespeicherten Meterwerte.
+
+Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2D. Weitere Neuzeichnungen starten den gescheiterten Renderer nicht erneut. „Atlaskamera erneut laden“ im Ansichtsmenü ist der ausdrückliche Wiederanlauf. Laufende Raum-, Stadt-, Landschafts- und Bereichsgesten sperren Poseänderungen.
+
+**Offene Grenzen:** Der neue Anschluss überträgt zunächst vorhandene Flächen, Symbole, Texte und Griffe auf die Terrainoberfläche. Gebäudevolumen, Geschoss-Arbeitsebenen, semantische Detailstufen, vollständige Maskierung und perspektivische Ausgabe sind damit nicht fertig. Bei aktiver Wissensmaske bleibt der qualifizierte gefilterte Canvasweg maßgeblich. Rasterexport und Spieleranzeige sind noch nicht an dieselbe Kamera angeschlossen. Die vollständigen Abnahmekriterien bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
 
 ### Höhenlinien auf dem vorhandenen Geländenetz
 
-`terrain-contours.ts` zeichnet die gewählten Höhenintervalle im GPU-Material des räumlichen Atlas. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
+`terrain-contours.ts` zeichnet die gewählten Höhenintervalle im GPU-Material der gemeinsamen Atlasoberfläche. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
 
-Intervallwechsel aktualisieren das Material unmittelbar, ohne Geländedaten oder Textur neu aufzubauen. Der bisherige Canvas2D-/Exportpfad verwendet weiterhin seine Rasterkonturen; automatische Intervallwahl und gemeinsame Kartografie aller Ansichten bleiben offen. Die Linien folgen dem angezeigten Dreiecksnetz, dessen begrenzte Auflösung bei weiterem Zoom durch LOD verbessert werden muss. Die native Pixelprobe liegt in `tools/terrain-contour-probe.mjs` und wird durch die vorhandene Kamera-/Autorenprobe aufgerufen.
+Intervallwechsel aktualisieren das Material unmittelbar, ohne Geländedaten oder Textur neu aufzubauen. Andere Canvas2D-Verbraucher und der Export verwenden weiterhin ihre Rasterkonturen; automatische Intervallwahl und gemeinsame Kartografie aller Ansichten bleiben offen. Die Linien folgen dem angezeigten Dreiecksnetz, dessen begrenzte Auflösung bei weiterem Zoom durch LOD verbessert werden muss. Die native Pixelprobe liegt in `tools/terrain-contour-probe.mjs` und wird durch die vorhandene Kamera-/Autorenprobe aufgerufen.
 
 ## Welcher Frame darf Eingaben annehmen?
 

@@ -123,7 +123,7 @@ export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number, level?
   const lines=[bar.label,...(hex?[`Hex: ${lengthLabel(hex,system)} · Kante zu Kante`,`Richtzeit: ${hexTravelLabel(hex)}`,`Ebene · Normaltempo · 8 Reisestunden/Tag`]:[])];
   const available=Math.max(60,b.width/mpp-24),wrapped=wrapMeasurementLines(lines.slice(1),Math.max(8,Math.floor((available-16)/6.1)));
   const width=Math.min(available,Math.max(bar.pixels+16,...[bar.label,...wrapped].map(l=>l.length*6.1+16))),height=hex?52+wrapped.length*18:48;
-  const g=atlasPaint('group',{matrix:[mpp,0,0,mpp,12*mpp,b.height-(height+12)*mpp],pointer:false,data:{editorOnly:'true',atlasScale:'true'}});
+  const g=atlasPaint('group',{matrix:[mpp,0,0,mpp,12*mpp,b.height-(height+12)*mpp],pointer:false,hud:true,data:{editorOnly:'true',atlasScale:'true'}});
   g.append(atlasPaint('rect',{width,height,style:{fill:'#fffaf0',fillOpacity:.94},pointer:false}));
   g.append(atlasPaint('polyline',{points:[{x:8,y:28},{x:8,y:34},{x:8+bar.pixels/2,y:34},{x:8+bar.pixels/2,y:29},{x:8+bar.pixels/2,y:34},{x:8+bar.pixels,y:34},{x:8+bar.pixels,y:28}],style:{fill:null,stroke:'#23382d',lineWidth:2},pointer:false}));
   [bar.label,...wrapped].forEach((line,i)=>g.append(atlasPaint('text',{x:8,y:i===0?18:36+i*18,style:{fontSize:11,fill:'#23382d'},pointer:false},line)));

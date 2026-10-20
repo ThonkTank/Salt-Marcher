@@ -1,0 +1,130 @@
+{
+  "source": "5d91cedda0b08c3c54fef086ada0fc4a75a72580",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/landscape-xUtscg",
+  "errors": [],
+  "checks": [
+    "Lower a visible pass with a true world hit, shared coast and one undo/redo; return to the identical top-view camera",
+    "Rotation, tilt and exaggeration preserve canonical metres; Escape restores the displayed base mesh",
+    "Smooth the same spatial surface with the shared third tool and undo",
+    "Paint and erase visible land in the tilted view; pigment is frozen in world space and preserves every height",
+    "Wheel zoom and middle-button pan share the Atlas camera; returning keeps the same main Atlas canvas",
+    "Selecting the same place survives both projection switches",
+    "Knowledge-mask change returns to the filtered top view and disables the unqualified spatial player view",
+    "Fresh native process retains the exact authored terrain and pigment"
+  ],
+  "sourceHashes": {
+    "src/app/terrain-height.ts": "498d44c85b01ea5a0933d4727314eb3f5def862fbcb7d5b35fee7339dfc47a4d",
+    "src/app/landscape-brush.ts": "e9d361dc8455d480787da1ebc25c76f488bd046c410970f4d12b267fd03a58d6",
+    "tests/terrain-tilted-atlas.test.mjs": "71000bc3a6acd350dfb50dec95369b3bbeba89e35222194425c3f47d3a9c8f72",
+    "tests/terrain-tilted-atlas-storage.test.mjs": "5fda3f3d1ce675933b66490c80a47a77ae1cbeb53a466f9249ca7f19c2079839",
+    "tools/build-desktop.mjs": "cf01f271f1720dff6b8569ab90dcab42ccaeb2df55dc865b88d71708ac0e480b",
+    "src/app/terrain-spatial-ui.ts": "7c8dd3ca079da7b8e99253923081165d0a98f7e461459729e9f2e7e5b66387fd",
+    "src/app/terrain-spatial-view.ts": "20360be4453e8f582522ba307bd5512f3581c29f1058cb5ceb04d52acdf64132",
+    "src/app/terrain-spatial-worker.ts": "b385493ab0adbaca7fab3aa67f80835c9f149f9c9ad6afbe30450eda168c99e3",
+    "src/app/terrain-spatial-model.ts": "5b6408ceb8f60a66c62454a3e6d79f5d3437fb256e475eb13dc8d0819feaa01d",
+    "src/app/atlas-camera.ts": "c41e6c4c3af02fe7e460146ea6c91f1e91374dcc92ed66fe67e93e14b64f01be",
+    "src/app/terrain-spatial-source.ts": "25038f9b70448c97a96f6ddf92ca9bc09a844c9fb400cfd47acf85b2eac5b42d",
+    "src/app/terrain-contours.ts": "274427558b0ad8100c296ff8816c51027a91d1692de57bcade2cf9c3573b4e56",
+    "tools/terrain-contour-probe.mjs": "da3295010f9b3b6946c7c9ff0d5321c49f59e7f0faef081735be2d02c5d1cff6",
+    "src/app/terrain-color-visibility.ts": "fb6df8ceb358cf3b7c4d8b949962500c6d0f0c68073f0b72affb6e7b71b1ffa4",
+    ".build/desktop/ui/terrain-spatial-worker.js": "6b20b0350820dc6e0e8580c24849b6c1252a2cee61ba339fc4d4d161f4129e4a",
+    "src/app/terrain-brush.ts": "9a1d2828689052b8da6530844138a9af60d79fc875c2bb28726c67661d013786",
+    "src/app/atlas-tool-catalog.ts": "380a4bf616a760660ce53a048f7851a42a2b15bdd20122b83c2960294ce98cab",
+    "src/app/atlas-workspace-layout.ts": "ef901e28680fbf315103e99a06fc9ae8d17328cfc31502b79d90d17e0476ef71",
+    "src/app/atlas-units.ts": "0d68f7e65c61f24292a003befe7f491e803ddc99b2dfab9d11f3aed0f683da2d",
+    "tests/desktop-atlas-tool-hierarchy.test.mjs": "0ad4a78313aeec04045eb2686400436015601689fc7abea2daf5992ffd01cb2d",
+    "src/app/campaign-atlas-ui.ts": "9af689946e4f7e02aba674563c3f5eb57e73df3cfc9bd1f05aedfbaefcd03536",
+    "tests/terrain-brush.test.mjs": "b7ba20274efa0a4e935ee4557cbb34bbe1aed4dc0336098896aad2d23ba26a17",
+    "src/app/landscape-color-surface.ts": "5dd38e2f73ebfb3349e1c31af10f7287db49e8b9ad692f2923c0d03ab09d6e84",
+    "src/app/landscape-tool-settings.ts": "2bcd327c5c2e996380259b24681d46dece853677e5806d6e4387b3b76fff0f8e",
+    "src/app/storage/campaign-atlas.ts": "8414e5fc65061617e12b9768361169f9886b84baf61dd2d2bba4e9df7d45ace2",
+    "src/app/campaign-atlas-contracts.ts": "b2ab858422314963bc6716f8b8891713ca51b72ba31baad2081ef45fafeca1e4",
+    "src/app/atlas-region-contracts.ts": "172c7e836626bd75e1b8680e8ae64286ed5cfe47a8e0fbef588221daabddc513",
+    "src/app/atlas-landscape-view.ts": "3a68541623a58fe2ebaf7820bce5e891252db82031a5582af5cda0adbabb8d4b",
+    "tests/terrain-height.test.mjs": "674bbeb6c14c4bedc3831427a79f21628a9e4fac7bdf4305e042391ea362e917",
+    "src/app/atlas-landscape.ts": "8dc30845a5851104cb3a5120ecbe685a73ed99874d3a6fa5bdd30573eb66cd32",
+    "src/app/atlas-brush-worker.ts": "a137c4bebcc1857a4f03a20d2f0be129bacceb340c600661140e7173714969a6",
+    "src/app/landscape-raster.ts": "bee24b2382c5768e46347a06d063d71d961d3da2a453b5a95a73c3459090b179",
+    "src/app/storage/atlas-landscape.ts": "a93d4158c43b00489039d5d96f4236b7b050b1be6a5f44a24c94477542e285e6",
+    "src/app/storage/landscape-brush-edit.ts": "2e21474336ccdd688bb3bc54879013493d2d553ac9321f2000dae2cd45188bca",
+    "src/app/storage/atlas-landscape-region.ts": "7ee0eb8da0c870c67f50f03e5fdd19375cc62beb0f18314b81dbc985318d55b9",
+    "src/app/storage/store.ts": "2e42d183498801baccbc0ca33ca0a0d747c49d44cc304feef28cfcf8e60795a1",
+    "src/app/atlas-landscape-ui.ts": "19b675b5b777557c540466164634e8faa872842ac9664502b4e5a6b314413074",
+    "desktop/main.ts": "ad36e54e6efde940cb3afd3c64548bbc8b62a1ef5414d0fd033ee98c220b8b1e",
+    "desktop/preload.ts": "cd7af6b0797b12dd3b030fa70774a350d132ad63cab305c7d4783b0c8d22a1b2",
+    ".build/desktop/main.cjs": "5902d7b7741cad02e9dff91e0a92e31a8211c46ab7282dab617fe82b94b469ea",
+    ".build/desktop/ui/atlas-brush-worker.js": "272aa4fcf21c7cf20270efac42fae65d9f46d28fe7ffda71f22fee3f87c1873b",
+    ".build/desktop/ui/renderer.js": "f764ddc32138ab427c793061ef6bd4197b91aa5414a9b55e55b64ebc613b3307",
+    ".build/desktop/atlas-region-worker.cjs": "12ddea768ba5cff14906fc9ac8c2079274cd8814ca1aebe286aaa99bd6a49968",
+    "tools/test-desktop-terrain-tilted-atlas.mjs": "29848a4370c450f6a5679a0ab9f71197ba08b0611e9cf9bded7f861786d68c84",
+    "tools/terrain-relief-scene.mjs": "b8b856df247430156c4e3fe6d5524a9df35471655b593496015ee1bbd51346c3",
+    "src/app/terrain-relief.ts": "0d78d421fce3d871ec4a43bb3189a5b5a6aa71c43e356dd06fe7ec62e9868615"
+  },
+  "contourInterval": 100,
+  "gpu": {
+    "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (WHL GT2), OpenGL 4.6)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "initialProjection": {
+    "projection": "perspective",
+    "box": {
+      "x": -15000,
+      "y": -14100,
+      "width": 30000,
+      "height": 28200
+    },
+    "frame": {
+      "x": -5000,
+      "y": -4052.4193548387093,
+      "width": 10000,
+      "height": 8104.838709677419
+    },
+    "columns": 193,
+    "rows": 193,
+    "focusM": 832.8810424804688,
+    "tilt": 45,
+    "rotation": 0,
+    "exaggeration": 1
+  },
+  "pass": {
+    "x": -700,
+    "y": -700
+  },
+  "before": {
+    "heightM": 565.3227081298828,
+    "resolutionM": 8,
+    "revision": 2,
+    "seaLevelM": 0,
+    "water": false,
+    "slopeDegrees": 34.53628162097601,
+    "normal": {
+      "x": 0.503693496246288,
+      "y": 0.2601926310206309,
+      "z": 0.8237673558728535
+    }
+  },
+  "previewWaitMs": 1053,
+  "after": {
+    "heightM": -20,
+    "resolutionM": 8,
+    "revision": 3,
+    "seaLevelM": 0,
+    "water": true,
+    "slopeDegrees": 0,
+    "normal": {
+      "x": 0,
+      "y": 0,
+      "z": 1
+    }
+  },
+  "commitWaitMs": [
+    5197
+  ],
+  "ok": true,
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "normalExit": true
+}

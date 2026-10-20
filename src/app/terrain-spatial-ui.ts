@@ -6,12 +6,13 @@ import type {SpatialJob,SpatialReply} from './terrain-spatial-worker';
 import type {LandscapeBox,LandscapeRecord} from './atlas-landscape';
 import type {Point} from './contracts';
 import {atlasFieldValue,lengthLabel} from './atlas-units';
-import {wheelZoomFactor} from './atlas-navigation-scale';
 import {terrainSourceWindow,type TerrainSourceWindow} from './terrain-spatial-source';
+import type {AtlasPresentation} from './atlas-presentation';
+import type {AtlasCanvasScene} from './atlas-canvas-scene';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord}
 
-/** The second Atlas projection shares its canvas input, camera box, selection and author tools. */
-export class TerrainSpatialUI {
+/** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
+export class TerrainSpatialUI implements AtlasPresentation {
   active=false;ready=false;
   private canvas:HTMLCanvasElement|null=null;
   private view:TerrainSpatialView|null=null;
@@ -24,58 +25,45 @@ export class TerrainSpatialUI {
   private samplePad=0;
   private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
-  private lastPoint:Point={x:0,y:0};private space=false;
-  private drag:{id:number;anchor:Point}|null=null;
+  private lastPoint:Point={x:0,y:0};private blockedGesture=false;
   private controls:HTMLElement;
   private toggle:HTMLButtonElement;
-  private tilt=45;private rotation=0;private exaggeration=2;
+  private failed=false;
+  private retry:HTMLButtonElement;
+  private tilt=0;private rotation=0;private exaggeration=1;
   constructor(private input:HTMLCanvasElement,private host:{
     draft:()=>TerrainDraft|null;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
-    tool:()=>string;pan:()=>boolean;set:(box:LandscapeBox)=>void;zoom:(factor:number,anchor:Point)=>void;stopZoom:()=>void;redraw:()=>void;
-    choose:(point:Point)=>Promise<void>;route?:(kind:'road'|'river',tilt:number)=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
+    tool:()=>string;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
+    route?:(kind:'road'|'river',tilt:number)=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
     this.toggle=document.createElement('button');this.toggle.id='atlas-terrain-tilt';this.toggle.textContent='Atlas kippen';this.toggle.type='button';
-    this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=true;
-    this.controls.innerHTML='<label>Neigung<input id="terrain-tilt" type="range" min="0" max="75" value="45"></label><label>Drehung<input id="terrain-rotation" type="range" min="-180" max="180" value="0"></label><label>Höhenüberhöhung<input id="terrain-exaggeration" type="range" min="0.25" max="8" step="0.25" value="2"></label><p>Nur die Darstellung wird überhöht. Die drei Landpinsel bearbeiten weiterhin Meterwerte.</p><button id="terrain-top" type="button">Zur Draufsicht</button>';
-    document.getElementById('atlas-view-popup')!.append(this.toggle,this.controls);
+    this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=false;
+    this.controls.innerHTML='<label>Neigung<input id="terrain-tilt" type="range" min="0" max="75" value="0"></label><label>Drehung<input id="terrain-rotation" type="range" min="-180" max="180" value="0"></label><label>Höhenüberhöhung<input id="terrain-exaggeration" type="range" min="0.25" max="8" step="0.25" value="1"></label><p>Nur die Darstellung wird überhöht. Die drei Landpinsel bearbeiten weiterhin Meterwerte.</p><button id="terrain-top" type="button">Zur Draufsicht</button>';
+    this.retry=document.createElement('button');this.retry.id='atlas-camera-retry';this.retry.type='button';this.retry.textContent='Atlaskamera erneut laden';this.retry.hidden=true;
+    this.retry.onclick=()=>{if(this.host.hasDraft())return;this.failed=false;this.retry.hidden=true;this.setActive(true);};
+    document.getElementById('atlas-view-popup')!.append(this.toggle,this.controls,this.retry);
     for(const [kind,label]of [['road','Straße planen'],['river','Fluss planen']] as const){const button=document.createElement('button');button.id='terrain-plan-'+kind;button.textContent=label;button.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}void this.host.route?.(kind,this.tilt).catch(this.host.error);};this.controls.append(button);}
-    this.toggle.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setActive(!this.active);};
-    this.controls.querySelector<HTMLButtonElement>('#terrain-top')!.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setActive(false);};
+    this.toggle.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(this.tilt===0?45:0,this.rotation);};
+    this.controls.querySelector<HTMLButtonElement>('#terrain-top')!.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(0,0);};
     for(const id of ['tilt','rotation','exaggeration'] as const)this.controls.querySelector<HTMLInputElement>('#terrain-'+id)!.oninput=e=>{
-      const field=e.target as HTMLInputElement;if(this.host.hasDraft()){field.value=String(this[id]);return;}this[id]=Number(field.value);if(id==='exaggeration')this.requested='';else if(this.frame)this.reframe(this.frame);this.host.redraw();
+      const field=e.target as HTMLInputElement;if(this.host.hasDraft()){field.value=String(this[id]);return;}this[id]=Number(field.value);if(id==='exaggeration'){this.requested='';this.host.redraw();}else this.setPose(this.tilt,this.rotation);
     };
-    document.getElementById('land-tool')!.addEventListener('change',()=>{if(this.active&&!['height','smooth','color','select'].includes(this.host.tool()))this.setActive(false);});
     const parent=input.parentElement!;
     // Parent capture runs before the existing 2D canvas/author handlers; the latter still own brush gestures.
     parent.addEventListener('pointerdown',e=>{
       if(e.target!==input||!this.active)return;
-      if(e.button===1||e.altKey||this.space||this.host.pan()){
-        e.preventDefault();e.stopImmediatePropagation();
-        if(this.host.hasDraft())return;this.host.stopZoom();const anchor=this.view?.planePoint(e.clientX,e.clientY);if(!anchor)return;this.drag={id:e.pointerId,anchor};input.setPointerCapture(e.pointerId);e.preventDefault();e.stopImmediatePropagation();return;
-      }
-      if(!this.ready){e.preventDefault();e.stopImmediatePropagation();return;}
-      if(e.button===0&&!['height','smooth','color','select'].includes(this.host.tool())){this.setActive(false);e.preventDefault();e.stopImmediatePropagation();return;}
-      const hit=this.view?.hit(e.clientX,e.clientY,this.host.tool()==='select');if(!hit){e.preventDefault();e.stopImmediatePropagation();return;}this.lastPoint=hit;if(this.host.tool()==='select'){e.preventDefault();e.stopImmediatePropagation();}
+      this.blockedGesture=false;
+      if(this.host.navigation(e))return;
+      if(!this.ready){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}
+      const hit=this.view?.hit(e.clientX,e.clientY,this.host.tool()==='select');if(!hit){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}this.lastPoint=hit;
     },true);
+    parent.addEventListener('click',e=>{if(e.target===input&&this.blockedGesture){this.blockedGesture=false;e.preventDefault();e.stopImmediatePropagation();}},true);
     parent.addEventListener('pointermove',e=>{
-      if(e.target!==input||!this.active)return;
-      if(this.drag){
-        const p=this.view?.planePoint(e.clientX,e.clientY),frame=this.frame;
-        if(p&&frame)this.host.set({...frame,x:frame.x+this.drag.anchor.x-p.x,y:frame.y+this.drag.anchor.y-p.y});e.preventDefault();e.stopImmediatePropagation();return;
-      }
+      if(e.target!==input||!this.active||this.host.panning())return;
       const hit=this.view?.hit(e.clientX,e.clientY);if(!hit||!this.ready){e.stopImmediatePropagation();return;}this.lastPoint=hit;
       const field=document.getElementById('land-radius') as HTMLInputElement;
       this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
     },true);
-    parent.addEventListener('pointerup',e=>{if(e.target!==input||!this.active||!this.drag)return;this.drag=null;if(input.hasPointerCapture(e.pointerId))input.releasePointerCapture(e.pointerId);e.preventDefault();e.stopImmediatePropagation();},true);
-    parent.addEventListener('pointercancel',()=>{this.drag=null;},true);
-    parent.addEventListener('wheel',e=>{
-      if(e.target!==input||!this.active)return;e.preventDefault();e.stopImmediatePropagation();if(this.host.hasDraft()||!this.frame)return;
-      const p=this.view?.planePoint(e.clientX,e.clientY)??{x:this.frame.x+this.frame.width/2,y:this.frame.y+this.frame.height/2};
-      this.host.zoom(wheelZoomFactor(e.deltaY,e.deltaMode,input.clientHeight),p);
-    },{capture:true,passive:false});
-    parent.addEventListener('click',e=>{if(e.target!==input||!this.active||this.host.tool()!=='select'||this.host.hasDraft())return;const p=this.view?.hit(e.clientX,e.clientY,true);e.preventDefault();e.stopImmediatePropagation();if(p)void this.host.choose(p).catch(this.host.error);},true);
-    input.addEventListener('keydown',e=>{if(e.code==='Space')this.space=true;});window.addEventListener('keyup',e=>{if(e.code==='Space')this.space=false;});window.addEventListener('blur',()=>{this.space=false;this.drag=null;});
     input.addEventListener('pointerleave',()=>this.view?.showCursor(null,0));
     new ResizeObserver(()=>{this.placeCanvas();this.view?.render();}).observe(input);
   }
@@ -85,18 +73,35 @@ export class TerrainSpatialUI {
     const field=document.getElementById('land-radius') as HTMLInputElement;
     this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
   }
-  point(e:MouseEvent){const hit=this.view?.hit(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
+  navigationPoint(e:{clientX:number;clientY:number}){return this.view?.planePoint(e.clientX,e.clientY)??null;}
+  point(e:{clientX:number;clientY:number}){const hit=this.view?.hit(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
+  paint(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){this.view?.publish(scene,origin,images);}
+  overlay(scene:AtlasCanvasScene,origin:Point){this.view?.overlay(scene,origin);}
+  hitAt(e:{clientX:number;clientY:number},keys:string[]){return this.view?.hitAt(e.clientX,e.clientY,keys)??null;}
+  setPose(tilt:number,rotation=this.rotation){
+    if(this.host.hasDraft())return;
+    this.tilt=tilt;this.rotation=rotation;
+    (this.controls.querySelector('#terrain-tilt') as HTMLInputElement).value=String(tilt);
+    (this.controls.querySelector('#terrain-rotation') as HTMLInputElement).value=String(rotation);
+    this.toggle.textContent=tilt===0?'Atlas kippen':'Senkrecht ausrichten';
+    this.toggle.setAttribute('aria-pressed',String(tilt!==0));
+    if(this.frame)this.reframe(this.frame);
+  }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setContours(interval:number){this.view?.setContours(interval);}
+  private fail(error:unknown){
+    this.failed=true;this.retry.hidden=false;this.host.cancel();this.setActive(false);this.host.error(error);
+  }
   setActive(active:boolean){
+    if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
-    if(this.active===active)return;this.active=active;this.controls.hidden=!active;this.toggle.textContent=active?'Draufsicht':'Atlas kippen';this.toggle.setAttribute('aria-pressed',String(active));
-    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.opacity='';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;this.host.redraw();return;}
+    if(this.active===active)return;this.active=active;
+    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;this.host.redraw();return;}
     try{
-      this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:1;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.opacity='0';this.input.dataset.terrainView='tilted';this.input.dataset.terrainReady='loading';
-      this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.active){this.host.cancel();this.setActive(false);this.host.error(Error('Grafikdarstellung verloren. Der Atlas ist wieder in Draufsicht verfügbar.'));}});
+      this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
+      this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.active){this.fail(Error('Grafikdarstellung verloren. Der Atlas ist in Draufsicht verfügbar. Die Atlaskamera kann im Ansichtsmenü erneut geladen werden.'));}});
       this.requested='';this.host.redraw();
-    }catch(error){this.setActive(false);this.host.error(error);}
+    }catch(error){this.fail(error);}
   }
   private placeCanvas(){if(!this.canvas)return;this.canvas.style.left=this.input.offsetLeft+'px';this.canvas.style.top=this.input.offsetTop+'px';this.canvas.style.width=this.input.clientWidth+'px';this.canvas.style.height=this.input.clientHeight+'px';}
   /** Called by the existing Atlas camera before any asynchronous region request. */
@@ -108,9 +113,11 @@ export class TerrainSpatialUI {
   }
   sync(token:string,frame:LandscapeBox,revision:number,objects:LandscapeRecord[],contours:number){
     this.token=token;this.reframe(frame);this.revision=revision;this.objects=objects;
-    this.toggle.disabled=(document.getElementById('atlas-perception') as HTMLInputElement).checked;
+    this.toggle.disabled=this.failed||(document.getElementById('atlas-perception') as HTMLInputElement).checked;
+    this.controls.hidden=this.failed;this.retry.disabled=this.host.hasDraft()||(document.getElementById('atlas-perception') as HTMLInputElement).checked;
     if(this.toggle.disabled&&this.active)this.setActive(false);
-    if(!this.active)return;this.placeCanvas();this.setContours(contours);
+    if(this.toggle.disabled)return;
+    if(!this.active)this.setActive(true);if(!this.active)return;this.placeCanvas();this.setContours(contours);
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
@@ -139,7 +146,7 @@ export class TerrainSpatialUI {
       this.records=[...new Map([...this.objects.filter(r=>r.kind!=='patch'),...reply.value.records].map(r=>[r.id,r])).values()];
       const focusM=Math.max(new TerrainSampler(this.records).seaLevelM,new TerrainSampler(this.records).sample({x:frame.x+frame.width/2,y:frame.y+frame.height/2}).heightM);
       this.params={projection:'perspective',box,frame:{...this.frame!},columns:193,rows:193,focusM,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};this.source=source;this.lastDraft='null';this.queue(contours,true);
-    }catch(error){if(this.active&&this.requested===source){this.setActive(false);this.host.error(error);}}
+    }catch(error){if(this.active&&this.requested===source){this.fail(error);}}
   }
   private queue(contours:number,baseOnly=false){
     if(!this.params||!this.active)return;if(this.busy){this.queued=true;return;}
@@ -147,15 +154,15 @@ export class TerrainSpatialUI {
     const generation=++this.generation,source=this.source,draft=baseOnly||this.host.writing()?null:this.host.draft();this.lastDraft=JSON.stringify(draft);
     this.worker.onmessage=(e:MessageEvent<SpatialReply&{error?:string}>)=>{
       if(!this.active||source!==this.source||source!==this.requested||generation!==this.generation||e.data.generation!==generation)return;this.busy=false;
-      if(e.data.error){this.host.error(Error(e.data.error));this.input.dataset.terrainReady='error';this.ready=false;return;}
+      if(e.data.error){this.fail(Error(e.data.error));return;}
       if(e.data.draft&&!this.host.draft()){this.queue(contours,true);return;}
       if(!e.data.draft)this.baseline=e.data;this.view!.setData(e.data);this.reframe(this.frame!);this.ready=true;this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(e.data.draft);this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
       if(e.data.protectedLimit!==undefined)document.getElementById('land-status')!.textContent='Pinselwirkung am geschützten Verlauf lokal begrenzt. Eingriffsgrenzen wären sonst überschritten.';
       if(e.data.heightM!==undefined)document.getElementById('land-cursor-height')!.textContent='Höhe: '+lengthLabel(e.data.heightM)+' · Vorschau';
-      this.view!.showSelection(this.host.selection());
+      this.view!.showSelection(this.host.selection());this.host.redraw();
       if(this.queued||!e.data.draft&&this.host.draft()&&!this.host.writing()){this.queued=false;this.queue(contours);}
     };
-    this.worker.onerror=()=>{this.busy=false;this.host.error(Error('Räumliche Vorschau fehlgeschlagen.'));this.setActive(false);};
+    this.worker.onerror=()=>this.fail(Error('Atlaskamera konnte nicht geladen werden. Im Ansichtsmenü erneut versuchen.'));
     const width=draft?512:1024,height=Math.max(128,Math.min(1024,Math.round(width*this.params.box.height/this.params.box.width)));
     const job:SpatialJob={generation,source,view:this.params,records:this.records,box:this.params.box,width,height,contours,displayMpp:this.sourceWindow!.frame.width/this.sourceWindow!.pixelWidth,...draft};this.worker.postMessage(job);
   }

@@ -51,7 +51,7 @@ import type {
 } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
-import { cityPaint, roadPoints } from "./city-model";
+import { cityObjectsPaint, roadPoints } from "./city-model";
 import { volumeProjection } from "./volume-model";
 import { elementPaint, roomFacePaint, nearestAnchor } from "./drawing-model";
 import { atlasCityPoint, atlasCityState, atlasCityMeasurement, atlasCityUndoPoint, openCityReference } from "./city-ui";
@@ -61,6 +61,7 @@ import {
   atlasDrawingSnapPoint,
   selectedDrawingElementId,
   atlasDrawingDraft,
+  atlasDrawingHasDraft,
   atlasDrawingUndoPoint,
   drawingOverlay,
   atlasDrawingScope,
@@ -208,6 +209,7 @@ export class CampaignAtlasWorkbench {
     this.root.addEventListener("terrain-display-change",()=>{this.spatial?.setContours(this.landscape.contours());void this.refresh();});
     this.camera = new AtlasCanvas(this.svg, {
       redraw:()=>this.render(),
+      presentation:()=>this.spatial?.active?this.spatial:null,
       relative: true,
       smoothZoom: true,
       overlay:(root,box,mpp)=>{this.syncBrushSizes();const again=this.landscape?.drawOverlay(root,box,mpp);this.reference?.draw(root,box,mpp);this.drawAuthorMeasurements(root,box,mpp);return again;},
@@ -284,7 +286,7 @@ export class CampaignAtlasWorkbench {
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
     this.territories=new TerritoryWorkbench(this.svg,{focus:b=>{const aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight),width=Math.max(b.width,b.height*aspect,10)*1.2,height=width/aspect;this.camera.set({x:b.x+b.width/2-width/2,y:b.y+b.height/2-height/2,width,height},true);},data:()=>this.data,enabled:()=>this.family==='terrain'&&!this.exportOpen,point:e=>this.camera.point(e),box:()=>this.camera.view,current:()=>this.geometryCurrent()&&this.camera.ready,write:a=>this.write(a,false,true),redraw:()=>this.scheduleRender(),error:e=>this.error(e)});
-    this.landscape=new LandscapeWorkbench(this.svg,{selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),hit:(e,s)=>this.spatial?.active?null:this.camera.hitAt(e,s),point:e=>this.spatial?.active?this.spatial.point(e):this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
+    this.landscape=new LandscapeWorkbench(this.svg,{selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),camera:()=>this.spatial?.setPose(45),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
     this.landscape.panel.append(this.territories.panel);
     get<HTMLSelectElement>('land-tool').add(new Option('Regionen','territory'));
     get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
@@ -546,9 +548,9 @@ export class CampaignAtlasWorkbench {
       if(control.wheel(e,this.svg.clientHeight))this.spatial?.refreshBrushCursor(e.clientX,e.clientY);
     },{capture:true,passive:false});
     this.spatial=new TerrainSpatialUI(this.svg,{
-      route:(kind,tilt)=>this.landscape.planTerrainRoute(kind,tilt),draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.landscape.hasDraft()||this.territories.hasDraft()||this.busy,cancel:()=>this.landscape.cancel(),
-      tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',pan:()=>this.root.dataset.panMode==='true',
-      set:box=>this.camera.set(box,true),zoom:(factor,anchor)=>this.camera.zoom(factor,anchor,true),stopZoom:()=>this.camera.stopZoom(),redraw:()=>this.scheduleRender(),choose:p=>this.chooseAt(p,'all'),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
+      route:(kind,tilt)=>this.landscape.planTerrainRoute(kind,tilt),draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
+      tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
+      redraw:()=>this.scheduleRender(),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
     });
     this.updateHexLabels();
     this.svg.addEventListener("keydown", (e) => {
@@ -914,7 +916,6 @@ export class CampaignAtlasWorkbench {
     if(this.reference.active)this.reference.close();
     if(open&&(!(await this.flush())||!(await this.opts.flush())))return;
     if(this.exporting)return;
-    if(open)this.spatial?.setActive(false);
     this.root.dataset.output=String(open);
     if(open&&this.exportDungeon&&!['interior','decoration'].includes(this.family)){this.exportDungeon=false;this.exportBox=null;}
     this.exportOpen=open;this.exportChoosing=false;this.exportDrag=null;this.exportCorner=null;
@@ -983,7 +984,6 @@ export class CampaignAtlasWorkbench {
     this.family = f;
     // Layout sync remembers matching tools; publish the accepted mode before it runs.
     this.root.dataset.family = f;
-    if(['city','interior','decoration'].includes(f))this.spatial?.setActive(false);
     this.landscape.setActive(!this.exportOpen&&f==="terrain");
     for (const b of get("atlas-families").querySelectorAll<HTMLButtonElement>(
       "button",
@@ -2144,6 +2144,12 @@ export class CampaignAtlasWorkbench {
     if(points.length)drawMeasurements(root,box,mpp,localToAtlas(points.at(-1)!,frame),lines);
   }
   private brushControls=new Map<string,BrushSizeControl>();
+  private cameraDraftPending(){
+    return !!(this.busy||this.landscape.hasDraft()||this.territories.hasDraft()||
+      this.draft.length||this.brushId!==null||this.drag||this.vertexDrag||this.pathDrag||
+      this.roomDrag||this.partyDrag||this.entranceDraft||this.placeIntent||this.exportDrag||
+      this.exportCorner||atlasCityState()||atlasDrawingHasDraft());
+  }
   private brushDraftPending(){
     const land=!!this.landscape?.hasDraft()&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense','vegetation-line'].includes(get<HTMLSelectElement>('land-tool').value);
     const drawing=['interior','decoration'].includes(this.family)&&['room-cave','room-erase','scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)&&atlasDrawingDraft().path.length>0;
@@ -2281,7 +2287,7 @@ export class CampaignAtlasWorkbench {
             Math.min(...pts.map((p) => p.y)) <= ymax
           );
         });
-        const cityScene = cityPaint({ ...shownCity, units: visibleUnits }, false,mpp);
+        const cityScene = cityObjectsPaint({ ...shownCity, units: visibleUnits }, false,mpp);
         for (const c of cityScene.children) {
           const uid = c.data.cityUnit,
             interior = data.bindings.find(
@@ -2502,7 +2508,7 @@ export class CampaignAtlasWorkbench {
     t.text = text;
     root.append(t);
   }
-  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#7fa8bd"}}));}
+  private drawTerrain(root:AtlasPaint,box:CanvasBox,_mpp:number){const cover=this.data?.region?.box??box;root.append(shape("rect", {x: cover.x-box.x, y: cover.y-box.y, width: cover.width, height: cover.height, style: {fill: "#7fa8bd"},data:{spatialGround:"true"}}));}
   private drawInterior(
     root: AtlasPaint,
     b: AtlasBinding,
