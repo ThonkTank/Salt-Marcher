@@ -308,13 +308,12 @@ Raumgeometrie mehr. Verspätete Vorbereitung nach Kontextwechsel schreibt nicht.
 `desktop-drawing-draft-lifecycle.test.mjs` prüft diesen Anschluss samt Ergänzen
 und Abbruch. `tools/test-desktop-dungeon-groundplan.mjs` prüft den nativen
 Ablauf aus drei benannten Räumen, zwei Türen, Wandvergrößerung, Undo/Redo,
-PNG-Ausgabe und Neustart mit 100 % und 200 % Geräteskalierung.
-`--moved-wall` setzt eine Tür ausdrücklich auf die verschobene Wand und prüft
-zusätzlich ihre neuen PNG-Pixel sowie die leere alte Position. Der Ablauf prüft
+PNG-Ausgabe und Neustart mit 100 % und 200 % Browserzoom.
+Die feste Probe setzt eine Tür ausdrücklich auf die verschobene Wand und prüft
+ihre neuen PNG-Pixel sowie die leere alte Position. Der Ablauf prüft
 außerdem die tatsächlich an Canvas übergebenen Namen aller drei Räume. Eine
 von aktiver Raumgeometrie verdeckte Dungeon-Markerbeschriftung weicht dem
-Raum-Key; der fremde Dungeon bleibt in Suche und Trefferauswahl erhalten. Der frühere
-Grundlauf vergrößerte eine andere Wand und bemerkte verlorene Türbindungen nicht.
+Raum-Key; der fremde Dungeon bleibt in Suche und Trefferauswahl erhalten.
 
 Ausgewählte Zeichnungspfade haben Punkt- und Segmentgriffe für einzelne
 Korrekturen. Die Geste bindet einen unveränderten Ausgangssnapshot; ihre
@@ -332,8 +331,8 @@ die aktive Kampagnen-ID und misst den Weg neben der mittigen Raumbeschriftung.
 Kanten-/Eckpunktzüge senden `shape.preserveBoundaryAnchors`: Die unveränderte
 Polygon-/Kantenreihenfolge erklärt die Zuordnung. Beginn und Bewegung der
 Griffe verwenden den vorhandenen Zeichenrasterfang statt eines eigenen
-ungefangenen Koordinatenwegs; `--offset-grip` prüft einen Zielpunkt zwischen
-Rasterlinien mit erwarteter gespeicherter Rasterwand. Der gemeinsame Drawing-Writer
+ungefangenen Koordinatenwegs. Die Grundrissprobe zieht zu einem Zielpunkt zwischen
+Rasterlinien und prüft die erwartete gespeicherte Rasterwand. Der gemeinsame Drawing-Writer
 prüft gleiche Konturtopologie, nicht kollabierte Kanten und den Ausschluss einer
 zusätzlichen affinen Transformation vor dem ersten Write. Ein Türpunkt auf dem
 weiterhin vorhandenen Segment bleibt physisch stehen; andernfalls folgt sein

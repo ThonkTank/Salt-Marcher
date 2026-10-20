@@ -156,3 +156,27 @@ Koordinaten, Schnittwechsel, Formen und Grenzen sowie echte Store-History und
 Fresh-Reopen mit unveränderter Prosa. Dies erweitert die räumliche Bedienung,
 belegt aber weder die gesamte 100.000-Zellen-Latenzabnahme noch alle geforderten
 Auswahl-/Transformationsformen oder den vollständigen kontinuierlichen Atlas.
+
+## Grundriss zeichnen und als Bild ausgeben
+
+Eine freie Raumgruppe kann im Erzeugungsdialog mit „Leer beginnen“ angelegt
+werden. Räume und Türen werden anschließend mit den gemeinsamen Zeichenwerkzeugen
+bearbeitet. Der Bildexport liest die bestätigte Geometrie; er verändert keine
+Raum-, Tür- oder Keydaten. Kacheln, Quell-Fence, Bildgrößenlimit und die getrennte
+öffentliche Projektion bleiben die Exportgrenzen.
+
+Jeder Bildexport besitzt seinen eigenen Lauf samt Abbruchzustand. Eine
+Workspace-Aktivierung verwirft dessen UI-Zuständigkeit, auch bei Wiederverwendung
+desselben Workspace-Objekts. Späte Lese- und Speicherantworten können weder den
+neuen Export sperren/freigeben noch dort einen Erfolg anzeigen. Diese Fälle prüft
+`tests/desktop-atlas-canvas.test.mjs` mit kontrollierten Antworten.
+
+`python tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs`
+zeichnet drei benannte Räume und zwei Türen, vergrößert eine Wand samt Tür,
+prüft Undo/Redo und die tatsächlich gespeicherten PNG-Pixel und öffnet den Stand
+nach regulärem Prozessende erneut. Der gemeinsame native Sitzungshelfer prüft
+Laufzeitdateien, frische Aufnahmen und verschwundene PIDs. Der Ablauf läuft bei
+100 und 200 Prozent Browserzoom. Ein Kampagnenwechsel während zurückgehaltener
+Leseantworten lässt nur den neuen Export speichern. Verzögerte Speicherantworten
+und erneute Aktivierung desselben Workspace-Objekts sind dadurch nur im DOM-Test,
+nicht nativ qualifiziert. `QA_EVIDENCE_DIR` trennt Varianten und Vergleichsläufe.
