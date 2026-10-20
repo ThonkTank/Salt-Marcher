@@ -97,7 +97,7 @@ export function validateStroke(s: MaskStroke) {
   if (
     !isLandMode(s.mode) ||
     !Number.isFinite(s.radius) ||
-    s.radius < 1 ||
+    s.radius <= 0 ||
     !Number.isFinite(s.roughness) ||
     s.roughness < 0 ||
     s.roughness > 2 ||

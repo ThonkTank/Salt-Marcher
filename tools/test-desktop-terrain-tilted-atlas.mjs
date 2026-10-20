@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
@@ -295,7 +296,7 @@ try {
   // Use a visible pass on the seeded reference landscape, in world metres.
   const projection=await page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.terrainProjection)),grid=terrainGrid(records(),projection);result.initialProjection=projection;
   const p=[{x:-700,y:-700},{x:-500,y:100},{x:-900,y:-1500}].find(p=>terrainVisible(grid,p));assert(p,'A portion of the reference pass is visible');result.pass=p;const before=sample(p);result.before=before;
-  await page.locator('#land-height-mode').selectOption('lower');await page.locator('#land-radius').fill('450');await page.locator('#land-height-strength').fill('900');await page.locator('#land-height-feather').fill('0.7');
+  await setHeightDirection(page,'lower');await setBrushWorldRadius(page,'land-radius','450');await page.locator('#land-height-strength').fill('900');await page.locator('#land-height-feather').fill('0.7');
   await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('-20');
   const screen=await at(p.x,p.y);await page.mouse.move(screen.x,screen.y);await page.mouse.down();
   const previewStart=Date.now();await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainPreview==='true',null,{timeout:60000});result.previewWaitMs=Date.now()-previewStart;
@@ -314,7 +315,7 @@ try {
   assert.equal(maskBytes(),baseline);
   await page.keyboard.press('Escape');
   await page.locator('#land-height-target-enabled').uncheck();
-  await page.locator('#land-height-mode').selectOption('raise');
+  await setHeightDirection(page,'raise');
   const rotated=await at(p.x,p.y);await page.mouse.move(rotated.x,rotated.y);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainPreview==='true');await page.keyboard.press('Escape');await page.mouse.up();
   await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainPreview==='false');assert.equal(maskBytes(),baseline);
   mark('Rotation, tilt and exaggeration preserve canonical metres; Escape restores the displayed base mesh');
@@ -322,10 +323,10 @@ try {
   await page.locator('#atlas-view').click();
   for(const [id,fraction]of [['rotation',.5],['tilt',30/65],['exaggeration',.75/7.75]]){const input=page.locator('#terrain-'+id),r=await input.boundingBox();await input.click({position:{x:8+(r.width-16)*fraction,y:r.height/2}});}
   await page.keyboard.press('Escape');await spatialReady();
-  await tool('smooth');await page.locator('#land-radius').fill('600');await page.locator('#land-height-strength').fill('1000');
+  await tool('smooth');await setBrushWorldRadius(page,'land-radius','600');await page.locator('#land-height-strength').fill('1000');
   await hold(p.x,p.y,600);assert.notEqual(maskBytes(),baseline);await history('undo');await spatialReady();assert.equal(maskBytes(),baseline);
   mark('Smooth the same spatial surface with the shared third tool and undo');
-  await tool('color');await page.locator('#land-radius').fill('220');await page.locator('#land-paint-color').fill('#d644aa');await page.locator('#land-tip').selectOption('round');
+  await tool('color');await setBrushWorldRadius(page,'land-radius','220');await page.locator('#land-paint-color').fill('#d644aa');await page.locator('#land-tip').selectOption('round');
   const pigmentPoint={x:p.x+100,y:p.y+100},pigmentBefore=await visibleColor(pigmentPoint.x,pigmentPoint.y);await stroke([[p.x-20,p.y],[p.x+20,p.y]]);await settled();await page.mouse.move(20,20);
   const painted=await visibleColor(pigmentPoint.x,pigmentPoint.y);assert.notDeepEqual(painted,pigmentBefore);assert.equal(maskBytes(),baseline);assert(records().filter(r=>r.paint).every(r=>!r.paint.visibility));await capture('06-painted');
   await page.locator('#land-color-operation').selectOption('erase');await stroke([[p.x-20,p.y],[p.x+20,p.y]]);await settled();await page.mouse.move(20,20);assert.deepEqual(await visibleColor(pigmentPoint.x,pigmentPoint.y),pigmentBefore);assert.equal(maskBytes(),baseline);

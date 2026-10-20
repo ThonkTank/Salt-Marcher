@@ -1,0 +1,45 @@
+{
+  "checks": [
+    "Richtung, fünf Vorlagen, Bildschirmradius und sprungfreier Weltmaßmodus",
+    "Höhenzug, gesperrte Kamera/Größe während des Zugs, Undo/Redo",
+    "Land-, Farb-, Wasser-, Daten- und Bewuchspinsel sowie Wasseroptionen",
+    "Regions-, Höhlen-, Radier- und Streupinsel skalieren mit dem Atlaszoom",
+    "Globaler Reliefstil und bildschirmfester Radius im gekippten Atlas",
+    "PNG-Ausgabe mit globalem Reliefstil",
+    "Wiederöffnen mit erhaltenem Radius und Reliefstil bei anderem Browserzoom"
+  ],
+  "campaign": "25d62d0c-cb12-4691-9e95-b3c7f28ffd53",
+  "source": "a88d0120c29f2275149e59b9fba0d35b38c5b3b1",
+  "dirty": true,
+  "profile": "/tmp/atlas-brush-ux-aqgWZI",
+  "artifacts": {
+    "main.cjs": "579d26a10648de12c7fb5651bebf90f6e08b0ea92e13c8a1b5c6976546e4c9a7",
+    "preload.cjs": "6d351727f029c423496e5a8c44cf3c1fd916f0374f2e4d8d8022ba503d8a799d",
+    "ui/renderer.js": "1d52454b6077b09257e5fb7b87761d843f7d8afda8e1b0eac84359db0ef65887",
+    "ui/index.html": "d0e1a937ffd86dfed427030af6b3f35edbe205b482411b949c8813c3efb58a41",
+    "ui/app.css": "17ca17643b5e6ac0c37e06b4e8169bef30ea43e019b33da104e6d6bbdbe33e5d"
+  },
+  "launches": [
+    {
+      "pid": 125113,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2947.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 125850,
+      "zoom": 1.25,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-2947.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

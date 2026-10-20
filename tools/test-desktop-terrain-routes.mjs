@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Product inputs and a fresh profile; SQLite reads are assertions, never UI shortcuts.
 import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,readFile,writeFile} from 'node:fs/promises';
@@ -75,7 +76,7 @@ try{
  await capture('04-shared-tilted-atlas');
  mark('Gemeinsamer gekippter Atlas zeigt dieselben gespeicherten Verläufe');
  await page.locator('#atlas-section').selectOption('terrain');await page.locator('[data-tool-group="land"]').click();await page.locator('[data-atlas-tool="land-shape"]').click();
- await page.locator('#land-radius').fill('35');await page.locator('#land-height-strength').fill('100');await page.locator('#land-height-mode').selectOption('raise');await page.locator('#land-height-target-enabled').uncheck();
+ await setBrushWorldRadius(page,'land-radius','35');await page.locator('#land-height-strength').fill('100');await setHeightDirection(page,'raise');await page.locator('#land-height-target-enabled').uncheck();
  await page.waitForFunction(()=>document.querySelector('#campaign-map')?.dataset.terrainReady==='ready',null,{timeout:60000});
  const normal=rs=>rs.map(({revision,...r})=>r),beforeBrush=normal(records()),point={x:-100,y:-70};
  const projection=await page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.terrainProjection)),rect=await page.locator('#campaign-map').boundingBox();

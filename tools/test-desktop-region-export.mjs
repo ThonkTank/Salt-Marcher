@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import{atlasCanvasReady,atlasCanvasPoint}from './atlas-canvas-probe.mjs';
 import{createHash}from'node:crypto';
 import{createRequire}from'node:module';import{mkdtemp,mkdir,stat,readFile,writeFile}from'node:fs/promises';import{spawn,execFileSync}from'node:child_process';import assert from'node:assert/strict';
@@ -32,13 +33,13 @@ try{for(const scale of [1,2]){
  const finish=async name=>{await page.locator('#land-finish').click();await until(()=>!!record(name));await page.waitForFunction(()=>!document.querySelector('#land-finish').disabled);};
  // Author a real land body before placing destinations or drawing inland water.
  await tool('paint');const landView=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view'));
- await page.locator('#land-coast-roughness').fill('0.5');const landRadius=Math.max(landView.width,landView.height)*2;await page.locator('#land-radius').fill(String(landRadius));assert.equal(Number(await page.locator('#land-radius').inputValue()),landRadius);
+ await page.locator('#land-coast-roughness').fill('0.5');const landRadius=Math.max(landView.width,landView.height)*2;await setBrushWorldRadius(page,'land-radius',String(landRadius));assert.equal(Number(await page.locator('#land-radius').inputValue()),landRadius);
  const landBox=await page.locator('#campaign-map').boundingBox();
  await page.mouse.move(landBox.x+landBox.width*.32,landBox.y+landBox.height*.4);await page.mouse.down();await page.mouse.move(landBox.x+landBox.width*.65,landBox.y+landBox.height*.5,{steps:24});await page.mouse.up();
  await until(()=>records().some(r=>r.mask));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);
  // Paint travel elevation without modifying land form, pigment or campaign time.
  const beforeProperties=facts(),propertyBox=await page.locator('#campaign-map').boundingBox();
- await tool('property');await page.locator('#land-field').selectOption('elevationM');await page.locator('#land-value').fill('321');await page.locator('#land-radius').fill(String(landView.width*.035));
+ await tool('property');await page.locator('#land-field').selectOption('elevationM');await page.locator('#land-value').fill('321');await setBrushWorldRadius(page,'land-radius',String(landView.width*.035));
  await page.mouse.move(propertyBox.x+propertyBox.width*.25,propertyBox.y+propertyBox.height*.6);await page.mouse.down();await page.mouse.move(propertyBox.x+propertyBox.width*.4,propertyBox.y+propertyBox.height*.6,{steps:4});await page.mouse.up();
  await until(()=>records().some(r=>r.propertyOnly&&r.values.elevationM===321));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);
  const elevation=records().find(r=>r.propertyOnly&&r.values.elevationM===321);assert(elevation.polygons.length);assert(!elevation.mask&&!elevation.paint);

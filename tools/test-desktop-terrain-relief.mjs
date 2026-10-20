@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection,setTerrainContours,openTerrainDisplay} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
@@ -266,8 +267,8 @@ try {
   await atlasCanvasReady(page);console.log('Region ready');await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.locator('#atlas-view').click();
   if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();await atlasCanvasReady(page);
   const baseline=maskBytes(),mode=()=>records().find(r=>r.terrainSettings)?.terrainSettings.style?.mode??'drawn';
-  const styleRoot=page.locator('#land-relief-style');await styleRoot.locator('summary').click();
-  const apply=async value=>{console.log('Style',value);await page.locator('#land-relief-mode').selectOption(value);await page.locator('#land-relief-apply').click();await settled();assert.equal(mode(),value);assert.equal(maskBytes(),baseline);};
+  await openTerrainDisplay(page);
+  const apply=async value=>{await openTerrainDisplay(page);console.log('Style',value);await page.locator('#land-relief-mode').selectOption(value);await page.locator('#land-relief-apply').click();await settled();assert.equal(mode(),value);assert.equal(maskBytes(),baseline);};
   await capture('01-region-drawn');await apply('shaded');await capture('02-region-shaded');
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(mode(),'drawn');
   await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.equal(mode(),'shaded');
@@ -275,17 +276,17 @@ try {
   await apply('drawn');await page.locator('#land-relief-light').fill('290');await page.locator('#land-relief-strength').fill('0.7');await page.locator('#land-relief-apply').click();await settled();
   assert.equal(records().find(r=>r.terrainSettings).terrainSettings.style.lightDegrees,290);assert.equal(maskBytes(),baseline);
   mark('Three land tools; shared style, analysis, lighting and undo preserve terrain and places');
-  await styleRoot.locator('summary').click();
+  await page.keyboard.press('Escape');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);await capture('04-continent');
   for(let i=0;i<6;i++)await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);await capture('05-place');
   const placeCamera=await camera();const center={x:placeCamera.view.x+placeCamera.view.width*.5,y:placeCamera.view.y+placeCamera.view.height*.5};
-  await page.locator('#land-height-mode').selectOption('raise');await page.locator('#land-radius').fill('250');await page.locator('#land-height-strength').fill('350');
+  await setHeightDirection(page,'raise');await setBrushWorldRadius(page,'land-radius','250');await page.locator('#land-height-strength').fill('350');
   await page.locator('#land-coast-roughness').fill('0.7');const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
   await page.waitForFunction(()=>document.querySelector('#land-cursor-height').textContent.includes('Vorschau'));await capture('06-preview');await page.mouse.up();await settled();assert.notEqual(maskBytes(),baseline);
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),baseline);
   mark('Continent, region and local views; real brush preview and atomic undo');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);
-  await page.locator('#land-contours').selectOption('100');await atlasCanvasReady(page);await capture('07-contours');
+  await setTerrainContours(page,'100');await atlasCanvasReady(page);await capture('07-contours');
   await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');
   await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-size').fill('1024');await page.locator('#atlas-export-grid').uncheck();
   await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:60000});

@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Real Electron controls in a disposable profile. No author mutation via page.evaluate.
 import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -141,7 +142,7 @@ try{
  assert.equal(Number(await page.locator('#vegetation-object-x').inputValue()),-100);
  await page.locator('#vegetation-selection-filter').selectOption('all');
  mark('The map selects the protected rock under a canopy through the same type filter');
- await tool('vegetation');await page.locator('#land-radius').fill('20');
+ await tool('vegetation');await setBrushWorldRadius(page,'land-radius','20');
  await page.evaluate(()=>{
   const c=document.querySelector('#campaign-map');window.vegetationMapLatency=[];
   document.addEventListener('pointermove',e=>{

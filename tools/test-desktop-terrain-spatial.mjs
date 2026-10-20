@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Real Electron controls in a disposable profile. No author mutation via page.evaluate.
 import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -60,11 +61,16 @@ const center=()=>page.locator('#vegetation-spatial-canvas').evaluate(n=>{const b
 async function range(id,value){await page.locator('#'+id).focus();await page.keyboard.press('Home');for(let i=0;i<value;i++)await page.keyboard.press('ArrowRight');}
 async function press(ms=600){const p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForTimeout(ms);await page.mouse.up();await spatialReady();}
 try{
- await start();await page.locator('[data-atlas-tool="land-shape"]').click();await page.locator('#land-radius').fill('48');await page.locator('#land-height-strength').fill('300');
+ await start();await page.locator('[data-atlas-tool="land-shape"]').click();await setBrushWorldRadius(page,'land-radius','48');await page.locator('#land-height-strength').fill('300');
  const startingCamera=await camera();await page.locator('#vegetation-spatial').click();await spatialReady();assert.equal(await page.locator('#vegetation-spatial-tool').inputValue(),'height');
  assert.equal(await page.locator('#terrain-spatial-controls #land-radius').inputValue(),'48');const original=heights(),before=height();await capture('00-tilted-pass');
+ await page.locator('#land-radius-fixed').uncheck();await page.locator('#land-radius-value').fill('65');await page.locator('#land-radius-value').press('Tab');
+ const screenWorld=Number(await page.locator('#land-radius').inputValue()),zoomPoint=await center();await page.mouse.move(zoomPoint.x,zoomPoint.y);await page.mouse.wheel(0,-240);await page.waitForTimeout(350);await spatialReady();
+ assert(Math.abs(Number(await page.locator('#land-radius').inputValue())/screenWorld-Math.exp(-.24))<.001);assert.equal(Number(await page.locator('#land-radius-value').inputValue()),65);
+ await page.mouse.wheel(0,240);await page.waitForTimeout(350);await spatialReady();await setBrushWorldRadius(page,'land-radius','48');
+ mark('Räumlicher Bildschirmradius bleibt beim Zoom konstant; Umrechnung folgt der orthografischen Projektion');
  await range('terrain-spatial-exaggeration',15);assert.equal(await page.locator('#terrain-spatial-exaggeration').inputValue(),'4');assert.equal(heights(),original);
- await page.locator('#land-height-mode').selectOption('lower');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('10');
+ await setHeightDirection(page,'lower');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('10');
  const p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').dataset.terrainDraft==='ready',null,{timeout:60000});
  assert.equal(heights(),original);await capture('01-lowered-preview');await page.mouse.up();await spatialReady();assert(height().heightM<before.heightM-20);assert(Math.abs(height().heightM-10)<1);const lowered=heights();
  mark('Gekippten Pass bei vierfacher Überhöhung absenken: Vorschau schreibt nichts, tatsächliche Meter und Zielhöhe stimmen');
@@ -73,10 +79,10 @@ try{
  mark('Draufsicht und gekippte Ansicht teilen exakt einen Undo-/Redo-Schritt');
  await page.locator('#land-height-target-enabled').uncheck();const unchanged=heights();await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').dataset.terrainDraft==='ready');await page.keyboard.press('Escape');await page.mouse.up();assert.equal(heights(),unchanged);assert(await page.locator('#vegetation-spatial-canvas').isVisible());
  mark('Escape verwirft die räumliche Höhenvorschau ohne Autorenänderung');
- await page.locator('#land-height-mode').selectOption('raise');await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('60');await press(200);const peak=height().heightM;
- await page.locator('#vegetation-spatial-tool').selectOption('smooth');await page.locator('#land-radius').fill('48');await page.locator('#land-height-strength').fill('300');await press();assert(height().heightM<peak);assert(height().heightM>=10);
+ await setHeightDirection(page,'raise');await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('60');await press(200);const peak=height().heightM;
+ await page.locator('#vegetation-spatial-tool').selectOption('smooth');await setBrushWorldRadius(page,'land-radius','48');await page.locator('#land-height-strength').fill('300');await press();assert(height().heightM<peak);assert(height().heightM>=10);
  mark('Glätten wirkt auf denselben Höhenkern und erhält die Grenzen der Nachbarschaft');
- await page.locator('#vegetation-spatial-tool').selectOption('color');await page.locator('#land-radius').fill('48');await page.locator('#land-tip').selectOption('round');await page.locator('#land-color-operation').selectOption('paint');const preColor=heights();await press();assert.equal(heights(),preColor);assert(all().some(r=>r.paint?.operation==='paint'));
+ await page.locator('#vegetation-spatial-tool').selectOption('color');await setBrushWorldRadius(page,'land-radius','48');await page.locator('#land-tip').selectOption('round');await page.locator('#land-color-operation').selectOption('paint');const preColor=heights();await press();assert.equal(heights(),preColor);assert(all().some(r=>r.paint?.operation==='paint'));
  await page.locator('#land-color-operation').selectOption('erase');await press();assert.equal(heights(),preColor);assert(all().some(r=>r.paint?.operation==='erase'));await capture('03-color-and-smooth');
  mark('Land bemalen und Farbradierung sind in 3D bedienbar und verändern keine Höhen');
  await page.locator('#vegetation-spatial-tool').selectOption('height');await page.locator('#land-height-target-enabled').uncheck();const baseline=heights();
@@ -84,11 +90,11 @@ try{
  await press(200);await page.waitForFunction(()=>document.body.textContent.includes('database is locked'));assert.equal(heights(),baseline);fault.exec('ROLLBACK');fault.close();
  await page.locator('#vegetation-spatial-finish').click();await spatialReady();assert.notEqual(heights(),baseline);await page.locator('#vegetation-spatial-undo').click();await spatialReady();assert.equal(heights(),baseline);
  mark('Schreibfehler erhält den Entwurf; Wiederholen speichert, ein Undo stellt den Ausgang wieder her');
- await page.locator('#land-height-mode').selectOption('lower');await page.locator('#land-height-strength').fill('300');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('-20');await press(800);assert(height().water);await capture('04-new-coast');
+ await setHeightDirection(page,'lower');await page.locator('#land-height-strength').fill('300');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('-20');await press(800);assert(height().water);await capture('04-new-coast');
  await page.locator('#vegetation-tilted-view').click();await capture('04-new-coast-tilted');assert(height().water);await page.locator('#vegetation-spatial-undo').click();await spatialReady();assert.equal(heights(),baseline);
  mark('Absenken unter Meeresspiegel erzeugt dieselbe Küste in beiden Ansichten; Undo stellt Land und Höhen wieder her');
  await page.locator('#vegetation-tilted-view').click();await page.locator('#vegetation-spatial-close').click();await atlasCanvasReady(page);assert.equal(await page.locator('#land-radius').inputValue(),'48');assert.equal(heights(),baseline);const returnedCamera=await camera();assert(Math.abs(returnedCamera.view.x+returnedCamera.view.width/2-startingCamera.view.x-startingCamera.view.width/2)<.01);assert(Math.abs(returnedCamera.view.y+returnedCamera.view.height/2-startingCamera.view.y-startingCamera.view.height/2)<.01);await capture('04-return-to-map');
- await page.locator('#vegetation-spatial').click();await spatialReady();assert.equal(await page.locator('#terrain-spatial-exaggeration').inputValue(),'4');await capture('05-reopen-view');await page.locator('#vegetation-spatial-tool').selectOption('select');const roadPick=await center();await page.mouse.click(roadPick.x,roadPick.y);await page.locator('#vegetation-spatial-canvas').waitFor({state:'detached'});await page.waitForFunction(id=>document.querySelector('#land-selection')?.dataset.selectionId===id,all().find(r=>r.kind==='road').id);mark('Auswahl des sichtbaren Weges öffnet denselben Atlasdatensatz und Inspektor');await atlasCanvasReady(page);
+ await page.locator('#vegetation-spatial').click();await spatialReady();assert.equal(await page.locator('#terrain-spatial-exaggeration').inputValue(),'4');await capture('05-reopen-view');await page.locator('#vegetation-top-view').click();await range('terrain-spatial-exaggeration',0);await page.locator('#vegetation-spatial-tool').selectOption('select');const roadCanvas=await page.locator('#vegetation-spatial-canvas').boundingBox(),roadScale=Math.min(roadCanvas.width/returnedCamera.view.width,roadCanvas.height/returnedCamera.view.height),roadPick=await center();await page.mouse.click(roadPick.x+(-278-returnedCamera.view.x-returnedCamera.view.width/2)*roadScale,roadPick.y+(-30+2/540*60-returnedCamera.view.y-returnedCamera.view.height/2)*roadScale);await page.locator('#vegetation-spatial-canvas').waitFor({state:'detached'});await page.waitForFunction(id=>document.querySelector('#land-selection')?.dataset.selectionId===id,all().find(r=>r.kind==='road').id);mark('Auswahl des sichtbaren Weges öffnet denselben Atlasdatensatz und Inspektor');await atlasCanvasReady(page);
  const expected=all();await close();await start();assert.deepEqual(all(),expected);await capture('06-fresh-process');await close();
  mark('Rückkehr erhält Ausschnitt und Werkzeuge; Ansichtsüberhöhung bleibt visuell, frischer Prozess erhält gespeicherte Höhen');
  assert.deepEqual(result.errors,[]);result.complete=true;

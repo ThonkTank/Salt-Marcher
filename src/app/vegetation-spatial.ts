@@ -1,3 +1,4 @@
+import {BrushSizeControl,brushSizeControl} from './atlas-brush-size';
 import {routeMeshes} from './terrain-route-view';
 import * as THREE from 'three';
 import type {Point,Polygon} from './contracts';
@@ -191,10 +192,19 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
   const terrainTool=()=>!!host.terrain&&['height','smooth','color'].includes(tool.value);
   let terrainDraft:Exclude<SpatialTerrainDraft,{kind:'landscape-route'}>|undefined,draftFence:string|undefined,held=false,started=0,lastTerrainPoint:Point|undefined,previewEpoch=0,previewBusy=false,previewTimer:ReturnType<typeof setTimeout>|undefined;
   const terrainRadius=()=>Number(atlasFieldValue(host.terrain!.radius));
-  const syncTools=()=>{selectionLabel.hidden=tool.value!=='select';terrainPanel.hidden=!terrainTool();element('presets').hidden=terrainTool();element('radius').closest('label')!.hidden=terrainTool();if(terrainTool())host.terrain!.choose(tool.value);};
+  const syncTools=()=>{selectionLabel.hidden=tool.value!=='select';terrainPanel.hidden=!terrainTool();element('presets').hidden=terrainTool();element('radius').closest('label')!.hidden=terrainTool();if(terrainTool())host.terrain!.choose(tool.value);syncBrushSize();};
   const draftPending=()=>!!terrainDraft||!!gesture||points.length>0;
+  const spatialSize=new BrushSizeControl(element<HTMLInputElement>('radius'),()=>view.render());
+  const syncBrushSize=()=>{
+    const r=canvas.getBoundingClientRect(),scale=Math.max(box.width/Math.max(1,r.width),box.height/Math.max(1,r.height));
+    const key=({paint:'vegetation',clear:'vegetation-clear',thin:'vegetation-thin',dense:'vegetation-dense',line:'vegetation-line'} as Record<string,string>)[tool.value]??tool.value;
+    spatialSize.sync('land-radius:'+key,scale,draftPending()||writing);
+    if(host.terrain)brushSizeControl(host.terrain.radius)?.sync('land-radius:'+tool.value+(tool.value==='color'?':'+document.querySelector<HTMLSelectElement>('#land-color-target')!.value+':'+document.querySelector<HTMLSelectElement>('#land-color-operation')!.value:''),scale,draftPending()||writing);
+  };
+  for(const type of ['pointerdown','pointermove','pointerup','wheel'])canvas.addEventListener(type,syncBrushSize,true);
+  dialog.addEventListener('input',syncBrushSize);dialog.addEventListener('change',syncBrushSize);
   const stopPreview=()=>{previewEpoch++;clearTimeout(previewTimer);previewBusy=false;};
-  const clearTerrain=()=>{stopPreview();view.lockSurfaceCamera(false);terrainDraft=undefined;held=false;lastTerrainPoint=undefined;terrainPanel.disabled=false;delete canvas.dataset.terrainDraft;};
+  const clearTerrain=()=>{stopPreview();view.lockSurfaceCamera(false);terrainDraft=undefined;held=false;lastTerrainPoint=undefined;terrainPanel.disabled=false;syncBrushSize();delete canvas.dataset.terrainDraft;};
   const updateTerrain=(world:Point,t:number)=>{
     lastTerrainPoint=world;
     if(terrainDraft?.kind==='landscape-height-stroke'){
@@ -226,17 +236,17 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
     try{const r=await (host.terrain?window.campaign.atlasSpatialScene(host.token,queryBox,queryBox.width/Math.max(1,canvas.clientWidth)):window.campaign.atlasVegetationScene(host.token,queryBox,queryBox.width/Math.max(1,canvas.clientWidth)));if(closed||generation!==request||reload)return;
       if(!r.ok)throw Error(r.error);data=r.value;view.setData(data);status.textContent=`${data.instances.length} sichtbare Bestandsobjekte · ${Math.round(box.width)} m Ausschnitt · Änderungen werden im Atlas gespeichert.`;}
     catch(e){data=undefined;if(!closed){status.textContent=String(e);host.error(e);}}
-    finally{loading=false;if(!closed&&generation===request){if(reload&&!gesture?.pan)void load();else{busy=false;canvas.setAttribute('aria-busy','false');}}}
+    finally{loading=false;if(!closed&&generation===request){if(reload&&!gesture?.pan)void load();else{busy=false;syncBrushSize();canvas.setAttribute('aria-busy','false');}}}
   };
   const write=async(a:LandscapeAction|{kind:'undo'|'redo'})=>{
     if(busy)return;busy=true;writing=true;canvas.setAttribute('aria-busy','true');let failed=false,error:unknown;
     try{if(terrainDraft){const current=await window.campaign.atlasSpatialScene(host.token,box,box.width/Math.max(1,canvas.clientWidth),undefined,draftFence);if(!current.ok)throw Error(current.error);}const result=await host.write(a);if(!result)throw Error('Änderung nicht bestätigt.');points=[];clearTerrain();}
     catch(e){failed=true;error=e;host.error(e);}
-    finally{writing=false;busy=false;await load();if(failed&&!closed){status.textContent=String(error)+(draftPending()?' Entwurf bleibt erhalten; erneut abschließen oder verwerfen.':'');view.showDraft(points);view.render();}}
+    finally{writing=false;busy=false;syncBrushSize();await load();if(failed&&!closed){status.textContent=String(error)+(draftPending()?' Entwurf bleibt erhalten; erneut abschließen oder verwerfen.':'');view.showDraft(points);view.render();}}
   };
   const commit=async(samples:Point[],mode:string)=>{
     if(busy)return;
-    const radius=Number(element<HTMLInputElement>('radius').value);if(!Number.isFinite(radius)||radius<=0){status.textContent='Positiven Pinselradius wählen.';return;}
+    const radius=Number(atlasFieldValue(element<HTMLInputElement>('radius')));if(!Number.isFinite(radius)||radius<=0){status.textContent='Positiven Pinselradius wählen.';return;}
     if(!samples.length){status.textContent='Zuerst auf der Landschaft zeichnen.';return;}
     points=[...samples];let polygons:Polygon[];
     if(mode==='area'){if(samples.length<3){status.textContent='Mindestens drei Eckpunkte setzen.';return;}polygons=[{outer:samples,holes:[]}];}
@@ -256,7 +266,7 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
     const seed=crypto.getRandomValues(new Uint32Array(1))[0]!;
     if(tool.value==='color'){const r=emptyRecord('patch');r.resolution=Math.max(1,radius/32);r.points=[world];r.paint=host.terrain!.settings.color(radius,seed);r.polygons=r.paint.fill?[{outer:[{x:box.x,y:box.y},{x:box.x+box.width,y:box.y},{x:box.x+box.width,y:box.y+box.height},{x:box.x,y:box.y+box.height}],holes:[]}]:brushFootprint(r.points,radius);terrainDraft={kind:'landscape-color-stroke',record:r};}
     else terrainDraft={kind:'landscape-height-stroke',stroke:{...host.terrain!.settings.height(),radius,seed,samples:[{...world,t:0}]}};
-    started=e.timeStamp;lastTerrainPoint=world;held=true;draftFence=data.fence;view.lockSurfaceCamera(true);terrainPanel.disabled=true;canvas.focus();canvas.setPointerCapture(e.pointerId);canvas.dataset.terrainDraft='pending';void previewTerrain();
+    started=e.timeStamp;lastTerrainPoint=world;held=true;draftFence=data.fence;view.lockSurfaceCamera(true);terrainPanel.disabled=true;syncBrushSize();canvas.focus();canvas.setPointerCapture(e.pointerId);canvas.dataset.terrainDraft='pending';void previewTerrain();
   },true);
   canvas.addEventListener('pointermove',e=>{
     if(!terrainTool())return;e.stopImmediatePropagation();const p=local(e),world=view.hit(p.x,p.y);if(!world)return;
@@ -277,24 +287,24 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
       const area=i?.areaId??view.pickRecord(p.x,p.y)??data?.records.filter(r=>r.vegetation&&contains(world,r.polygons)).at(-1)?.id;
       if(area){const record=data?.records.find(r=>r.id===area);close();if(record?.route)void import('./terrain-route-ui').then(m=>m.openTerrainRoute({token:host.token,box,record,kind:record.kind==='river'?'river':'road',write:host.write})).catch(host.error);else void host.select(area,i).catch(host.error);}return;
     }
-    if(tool.value==='area'||tool.value==='line'){points.push(world);view.showDraft(points);view.render();status.textContent=points.length+' Punkte · Abschließen übernimmt; Escape verwirft.';return;}
-    gesture={start:p,box:{...box},points:[world],pan:tool.value==='navigate'};if(!gesture.pan){view.showDraft(gesture.points,Number(element<HTMLInputElement>('radius').value));view.render();}canvas.setPointerCapture(e.pointerId);
+    if(tool.value==='area'||tool.value==='line'){points.push(world);syncBrushSize();view.showDraft(points);view.render();status.textContent=points.length+' Punkte · Abschließen übernimmt; Escape verwirft.';return;}
+    gesture={start:p,box:{...box},points:[world],pan:tool.value==='navigate'};syncBrushSize();if(!gesture.pan){view.showDraft(gesture.points,Number(atlasFieldValue(element<HTMLInputElement>('radius'))));view.render();}canvas.setPointerCapture(e.pointerId);
   };
   canvas.onpointermove=e=>{
-    const p=local(e);if(!gesture){if(!busy&&data&&tool.value!=='navigate'&&tool.value!=='select'){const world=view.hit(p.x,p.y);if(world){view.showDraft(points.length?[...points,world]:[world],['area','line'].includes(tool.value)?0:Number(element<HTMLInputElement>('radius').value));view.render();}}return;}
+    const p=local(e);if(!gesture){if(!busy&&data&&tool.value!=='navigate'&&tool.value!=='select'){const world=view.hit(p.x,p.y);if(world){view.showDraft(points.length?[...points,world]:[world],['area','line'].includes(tool.value)?0:Number(atlasFieldValue(element<HTMLInputElement>('radius'))));view.render();}}return;}
     if(gesture.pan){const step=box.width/canvas.clientWidth,a=view.rotation*Math.PI/180,dx=(p.x-gesture.start.x)*step,dy=(p.y-gesture.start.y)*step/Math.max(.4,Math.cos(view.tilt*Math.PI/180));
       box={...gesture.box,x:gesture.box.x-dx*Math.cos(a)-dy*Math.sin(a),y:gesture.box.y+dx*Math.sin(a)-dy*Math.cos(a)};if(loading)reload=true;view.setViewport(box);return;}
     const world=view.hit(p.x,p.y),last=gesture.points.at(-1)!;
-    if(world&&Math.hypot(world.x-last.x,world.y-last.y)>Number(element<HTMLInputElement>('radius').value)/4&&gesture.points.length<500)gesture.points.push(world);
-    view.showDraft(gesture.points,Number(element<HTMLInputElement>('radius').value));view.render();
+    if(world&&Math.hypot(world.x-last.x,world.y-last.y)>Number(atlasFieldValue(element<HTMLInputElement>('radius')))/4&&gesture.points.length<500)gesture.points.push(world);
+    view.showDraft(gesture.points,Number(atlasFieldValue(element<HTMLInputElement>('radius'))));view.render();
     status.textContent=gesture.points.length+' Pinselstützpunkte · Loslassen speichert.';
   };
   canvas.onpointerup=e=>{const g=gesture;gesture=undefined;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!g)return;if(g.pan)void load();else void commit(g.points,tool.value).catch(host.error);};
-  canvas.onpointercancel=()=>{gesture=undefined;view.showDraft([]);view.render();};
-  canvas.onwheel=e=>{e.preventDefault();if(writing||!data||draftPending())return;const factor=Math.exp(Math.max(-.5,Math.min(.5,e.deltaY*.001))),w=Math.max(40,Math.min(1e7,box.width*factor)),h=w*box.height/box.width;box={x:box.x+(box.width-w)/2,y:box.y+(box.height-h)/2,width:w,height:h};view.setViewport(box);void load();};
+  canvas.onpointercancel=()=>{gesture=undefined;syncBrushSize();view.showDraft([]);view.render();};
+  canvas.onwheel=e=>{e.preventDefault();if(writing||!data||draftPending())return;const factor=Math.exp(Math.max(-.5,Math.min(.5,e.deltaY*.001))),w=Math.max(40,Math.min(1e7,box.width*factor)),h=w*box.height/box.width;box={x:box.x+(box.width-w)/2,y:box.y+(box.height-h)/2,width:w,height:h};syncBrushSize();view.setViewport(box);void load();};
   canvas.addEventListener('webglcontextlost',e=>{if(closed)return;e.preventDefault();close(true);host.error(Error('GPU-Kontext verloren. Landschaft ist in der Draufsicht verfügbar.'));});
   element('finish').onclick=()=>{if(terrainDraft){held=false;stopPreview();void write(terrainDraft);}else void commit([...points],tool.value).catch(host.error);};
-  element('cancel').onclick=()=>{if(busy)return;clearTerrain();points=[];gesture=undefined;if(data)view.setData(data);view.showDraft([]);view.render();status.textContent='Entwurf verworfen.';};
+  element('cancel').onclick=()=>{if(busy)return;clearTerrain();points=[];gesture=undefined;syncBrushSize();if(data)view.setData(data);view.showDraft([]);view.render();status.textContent='Entwurf verworfen.';};
   element('undo').onclick=()=>{if(draftPending()){status.textContent='Zuerst Entwurf abschließen oder verwerfen.';return;}void write({kind:'undo'});};
   element('redo').onclick=()=>{if(draftPending()){status.textContent='Zuerst Entwurf abschließen oder verwerfen.';return;}void write({kind:'redo'});};
   element<HTMLInputElement>('tilt').oninput=()=>{if(draftPending()){element<HTMLInputElement>('tilt').value=String(view.tilt);return;}view.tilt=Number(element<HTMLInputElement>('tilt').value);view.render();};
@@ -303,10 +313,10 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
   dialog.querySelector<HTMLButtonElement>('#vegetation-tilted-view')!.onclick=()=>{if(draftPending())return;view.tilt=45;element<HTMLInputElement>('tilt').value='45';view.render();};
   element('export').onclick=()=>void(async()=>{if(busy||draftPending()||!data)return;view.showDraft([]);view.render();const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Bildausgabe fehlgeschlagen.');const r=await window.campaign.exportAtlasPNG(host.token,new Uint8Array(await blob.arrayBuffer()),'gm','png',data.fence);if(!r.ok)throw Error(r.error);status.textContent=r.value.cancelled?'Ausgabe abgebrochen.':'Räumliche Ansicht als PNG gespeichert.';})().catch(e=>{status.textContent=String(e);host.error(e);});
   exaggerationInput.oninput=()=>{if(draftPending()){exaggerationInput.value=String(view.exaggeration);return;}view.setExaggeration(Number(exaggerationInput.value));};
-  const observer=new ResizeObserver(()=>view.render());observer.observe(canvas);
-  function close(force=false){if(closed)return;if(!force&&(writing||draftPending())){status.textContent=writing?'Änderung wird gespeichert.':'Zuerst Entwurf abschließen oder verwerfen.';return;}closed=true;request++;stopPreview();observer.disconnect();for(const {node,mark}of moved)mark.replaceWith(node);terrainPanel.disabled=false;if(host.viewState)Object.assign(host.viewState,{tilt:view.tilt,rotation:view.rotation,exaggeration:view.exaggeration});dialog.close();view.dispose();dialog.remove();host.navigate?.(box);}
+  const observer=new ResizeObserver(()=>{syncBrushSize();view.render();});observer.observe(canvas);
+  function close(force=false){if(closed)return;if(!force&&(writing||draftPending())){status.textContent=writing?'Änderung wird gespeichert.':'Zuerst Entwurf abschließen oder verwerfen.';return;}closed=true;spatialSize.dispose();if(host.terrain)brushSizeControl(host.terrain.radius)?.sync('land-radius:'+tool.value,box.width/Math.max(1,canvas.clientWidth),false);request++;stopPreview();observer.disconnect();for(const {node,mark}of moved)mark.replaceWith(node);terrainPanel.disabled=false;if(host.viewState)Object.assign(host.viewState,{tilt:view.tilt,rotation:view.rotation,exaggeration:view.exaggeration});dialog.close();view.dispose();dialog.remove();host.navigate?.(box);}
   element('close').onclick=()=>close();
-  dialog.oncancel=e=>{e.preventDefault();if(writing)return;if(draftPending()){clearTerrain();gesture=undefined;points=[];if(data)view.setData(data);view.showDraft([]);view.render();status.textContent='Entwurf verworfen.';}else close();};
+  dialog.oncancel=e=>{e.preventDefault();if(writing)return;if(draftPending()){clearTerrain();gesture=undefined;points=[];syncBrushSize();if(data)view.setData(data);view.showDraft([]);view.render();status.textContent='Entwurf verworfen.';}else close();};
   tool.onchange=()=>{if(busy||draftPending()){tool.value=selectedTool;status.textContent='Zuerst Entwurf abschließen oder verwerfen.';return;}selectedTool=tool.value;syncTools();view.showDraft([]);view.render();};
   await load();
 }

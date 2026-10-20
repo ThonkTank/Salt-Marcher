@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Actual Electron UI in a synthetic profile; canonical data checked after each gesture.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";
@@ -279,7 +280,7 @@ async function shot(name) {
 try {
   await start();
   await shot("01-regions");
-  await page.locator("#territory-radius").fill("12");
+  await setBrushWorldRadius(page,'territory-radius',"12");
   await stroke([
     [-5, -15],
     [5, 15],

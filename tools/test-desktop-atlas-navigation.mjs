@@ -19,7 +19,7 @@ async function launch(){app=await _electron.launch({executablePath:executable,ar
 async function ready(page){await page.waitForFunction(()=>document.querySelector('#campaign-atlas').dataset.regionState==='ready'&&['loaded','empty'].includes(document.querySelector('#campaign-map').dataset.canvasState),null,{timeout:30000});}
 async function view(page){return page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.atlasView));}
 async function close(){const exit=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
-async function openComparison(page){await page.locator('#atlas-reference-open').click();}
+async function openComparison(page){await page.locator('#atlas-view').click();await page.locator('#atlas-reference-open').click();}
 async function reference(page,name){await openComparison(page);await page.locator('#atlas-reference-search').fill(name);await page.locator('#atlas-reference-results button').filter({hasText:new RegExp('^'+name+' ·')}).first().click();}
 try{
  let page=await launch();const canvas=page.locator('#campaign-map'),bounds=await canvas.boundingBox(),v0=await view(page);

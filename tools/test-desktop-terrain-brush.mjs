@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection,setTerrainContours} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
@@ -259,11 +260,11 @@ try {
   const core=require(root+'/.build/brush-native-store.cjs'),sample=(x,y)=>new core.TerrainSampler(records()).query({x,y});
   async function heightMode(mode,radius,strength=300,feather=.8,target){
     await page.locator('[data-atlas-tool="'+(mode==='smooth'?'land-smooth':'land-shape')+'"]').click();
-    await page.locator('#land-radius').fill(String(radius));
+    await setBrushWorldRadius(page,'land-radius',String(radius));
     await page.locator('#land-height-strength').fill(String(strength));
     await page.locator('#land-height-feather').fill(String(feather));
     if(mode!=='smooth'){
-      await page.locator('#land-height-mode').selectOption(mode);
+      await setHeightDirection(page,mode);
       await page.locator('#land-height-target-enabled').setChecked(target!==undefined);
       if(target!==undefined)await page.locator('#land-height-target').fill(String(target));
     }
@@ -298,7 +299,7 @@ try {
   const colorHeights=maskBytes();
   await page.locator('[data-atlas-tool="land-color"]').click();
   assert.equal(await page.locator('#land-color-operation').isVisible(),true);
-  await page.locator('#land-radius').fill(String(r*.4));
+  await setBrushWorldRadius(page,'land-radius',String(r*.4));
   await page.locator('#land-tip').selectOption('round');
   await page.locator('#land-paint-color').fill('#d644aa');
   const beforeColor=await visibleColor(x+r,y);
@@ -327,7 +328,7 @@ try {
   assert.equal(await page.locator('#status').getAttribute('data-error'),'false');assert.equal(await page.locator('#atlas-save-status').getAttribute('data-error'),'false');
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),baseline);
   mark('A rejected native write retains the draft; retry commits it and one undo restores the original');
-  await page.locator('#land-contours').selectOption('50');await atlasCanvasReady(page);
+  await setTerrainContours(page,'50');await atlasCanvasReady(page);
   await page.mouse.move(hill.x,hill.y);await page.waitForFunction(()=>/Höhe:.*(?:m|km)/.test(document.querySelector('#land-cursor-height').textContent));
   await capture('02-relief-contours');assert.equal(maskBytes(),baseline);
   await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');
