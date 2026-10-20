@@ -17,7 +17,7 @@ export function validateTerrainProjection(q:TerrainProjectionRequest){
  if(!q)throw Error('Geländeansicht prüfen.');validateTerrainView(q.view);validateTerrainDetail(q.detail,q.view.box);
  if(!Number.isSafeInteger(q.revision)||q.revision<0||q.fence!==undefined&&typeof q.fence!=='string'||
   ![q.width,q.height].every(n=>Number.isInteger(n)&&n>=16&&n<=1024)||
-  !Number.isFinite(q.contours)||q.contours<0||q.contours>100000||!Number.isFinite(q.displayMpp)||q.displayMpp<=0||
+  !Number.isFinite(q.contours)||q.contours<0&&q.contours!==-1||q.contours>100000||!Number.isFinite(q.displayMpp)||q.displayMpp<=0||
   q.heightStroke&&q.color||Object.keys(q).some(k=>!['detail','view','width','height','contours','displayMpp','revision','fence','objects','heightStroke','color'].includes(k)))throw Error('Geländeansicht prüfen.');
  if(q.heightStroke)validateHeightStroke(q.heightStroke);if(q.color)validateColor(q.color);
  if(q.objects!==undefined){

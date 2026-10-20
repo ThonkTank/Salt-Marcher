@@ -52,9 +52,10 @@ test('gesture transaction, failed write, single undo/redo, restart and preview a
 });
 test('shade and optional contours remain seamless across raster tiles and do not author data',()=>{
  const rs=plane((x,y)=>100+x*2+y*.5),before=JSON.stringify(rs),box={x:-32,y:-16,width:64,height:32};
- const whole=pixels(rs,box,64,32,10),left=pixels(rs,{...box,width:32},32,32,10),right=pixels(rs,{...box,x:0,width:32},32,32,10);
+ for(const interval of [10,-1]){
+ const whole=pixels(rs,box,64,32,interval),left=pixels(rs,{...box,width:32},32,32,interval),right=pixels(rs,{...box,x:0,width:32},32,32,interval);
  for(let y=0;y<32;y++){assert.deepEqual(whole.slice(y*64*4,(y*64+32)*4),left.slice(y*32*4,(y+1)*32*4));assert.deepEqual(whole.slice((y*64+32)*4,(y+1)*64*4),right.slice(y*32*4,(y+1)*32*4));}
- assert.notDeepEqual(whole,pixels(rs,box,64,32));assert.equal(JSON.stringify(rs),before);
+ assert.notDeepEqual(whole,pixels(rs,box,64,32));assert.equal(JSON.stringify(rs),before);}
  const north=pixels(plane((x,y)=>200+x+y),box,64,32),south=pixels(plane((x,y)=>200-x-y),box,64,32);assert(north[0]>south[0]);
 });
 test('invalid controls and excessive work fail before any height is produced',()=>{
@@ -72,7 +73,8 @@ test('region reader caches contour modes separately; display reads preserve the 
  reader.sync(source);const plain=reader.read(source,query,2*1024*1024),lines=reader.read(source,{...query,contours:50},2*1024*1024);
  assert.equal(plain.state,'ready');assert.equal(lines.state,'ready');assert.notDeepEqual(plain.tiles.map(t=>t.data),lines.tiles.map(t=>t.data));
  assert.deepEqual(reader.read(source,query,2*1024*1024),plain);assert.equal(store.atlasRegionSource(active.token).fence,source.fence);
- for(const contours of [-1,NaN,Infinity,1e7])assert.throws(()=>validateRegion({...query,contours}));
+ validateRegion({...query,contours:-1});
+ for(const contours of [-2,-.5,NaN,Infinity,1e7])assert.throws(()=>validateRegion({...query,contours}));
 });
 
 test('optional directional target never overshoots or reverses existing terrain',()=>{

@@ -57,5 +57,5 @@ test('canonical streamed visibility preserves occlusion independently of local a
 });
 test('projection bounds reject unbounded buffers, unknown fields and renderer-supplied source heights',()=>{
  const view={box:{x:0,y:0,width:10,height:10},frame:{x:0,y:0,width:10,height:10},columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:2},q={view,width:64,height:64,revision:0,contours:0,displayMpp:1};
- validateTerrainProjection(q);for(const bad of [{width:4096},{displayMpp:0},{heights:[1,2]},{objects:Array(1501).fill({})},{view:{...view,heights:[1]}}])assert.throws(()=>validateTerrainProjection({...q,...bad}));
+ validateTerrainProjection(q);validateTerrainProjection({...q,contours:-1});for(const bad of [{contours:-2},{contours:-.5},{width:4096},{displayMpp:0},{heights:[1,2]},{objects:Array(1501).fill({})},{view:{...view,heights:[1]}}])assert.throws(()=>validateTerrainProjection({...q,...bad}));
 });

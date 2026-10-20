@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
+import {CONTOUR_BASE_METRES,CONTOUR_SPACING_PIXELS} from './terrain-contour-style';
 
 /** Display-only ink on the same triangular surface used for visible brush hits.
  * Derivatives express metres per actual screen pixel, keeping lines sharp as the
@@ -27,15 +28,25 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
         float spacingFade=1.0-smoothstep(interval*.15,interval*.4,gradient);
         return (1.0-smoothstep(max(0.0,halfWidth-.5),halfWidth+.5,distancePx))*spacingFade;
       }
+      float terrainContourBand(float interval,float gradient){
+        return max(terrainContour(interval,gradient,.45)*.38,terrainContour(interval*5.0,gradient,.75)*.52);
+      }
     `+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
       float terrainGradient=length(vec2(dFdx(terrainContourHeight),dFdy(terrainContourHeight)));
-      if(terrainContourInterval>0.0&&terrainGradient>0.00001){
-        float minorInk=terrainContour(terrainContourInterval,terrainGradient,.45)*.38;
-        float majorInk=terrainContour(terrainContourInterval*5.0,terrainGradient,.75)*.52;
-        diffuseColor.rgb=mix(diffuseColor.rgb,terrainContourInk,max(minorInk,majorInk));
+      if(terrainContourInterval!=0.0&&terrainGradient>0.00001){
+        float interval=terrainContourInterval;
+        float blend=0.0;
+        if(interval<0.0){
+          float level=max(0.0,log2(terrainGradient*${CONTOUR_SPACING_PIXELS.toFixed(1)}/${CONTOUR_BASE_METRES.toFixed(1)}));
+          interval=${CONTOUR_BASE_METRES.toFixed(1)}*exp2(floor(level));
+          blend=smoothstep(0.0,1.0,fract(level));
+        }
+        float ink=terrainContourBand(interval,terrainGradient);
+        if(terrainContourInterval<0.0)ink=mix(ink,terrainContourBand(interval*2.0,terrainGradient),blend);
+        diffuseColor.rgb=mix(diffuseColor.rgb,terrainContourInk,ink);
       }
     `);
   };
-  material.customProgramCacheKey=()=> 'terrain-contours-v1';
+  material.customProgramCacheKey=()=> 'terrain-contours-v2';
 }

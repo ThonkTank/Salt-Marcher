@@ -108,7 +108,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(!this.active)return;this.baseline={...data,source:this.source};this.publish(this.baseline);
   }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
-  setContours(interval:number){this.view?.setContours(interval);}
+  setContours(interval:number){this.pendingContours=interval;this.view?.setContours(interval);}
   private fail(error:unknown){
     this.failed=true;this.retry.hidden=false;this.host.cancel();this.setActive(false);this.host.error(error);
   }
@@ -157,10 +157,10 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(this.loadBusy||!this.active)return;
     this.loadTimer=setTimeout(()=>{
       this.loadTimer=undefined;if(!this.active)return;const source=this.requested;this.loadBusy=true;
-      void this.load(source,this.pendingContours).finally(()=>{this.loadBusy=false;if(this.active&&this.requested!==source)this.scheduleLoad(this.pendingContours);});
+      void this.load(source).finally(()=>{this.loadBusy=false;if(this.active&&this.requested!==source)this.scheduleLoad(this.pendingContours);});
     },100);
   }
-  private async load(source:string,contours:number){
+  private async load(source:string){
     const frame={...this.sourceWindow!.frame},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
     try{
       const view:TerrainView={projection:'perspective',box,frame,columns:193,rows:193,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
@@ -173,8 +173,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
       this.records=[];this.recordsSource='';
       this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
       const data={...reply.value,source};this.baseline=data;this.publish(data);
-      this.setContours(contours);
-      if(this.host.draft()&&!this.host.writing())void this.queue(contours);
+      this.setContours(this.pendingContours);
+      if(this.host.draft()&&!this.host.writing())void this.queue(this.pendingContours);
 
     }catch(error){this.sourceFailed(source,error);}
   }

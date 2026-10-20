@@ -213,7 +213,7 @@ export class CampaignAtlasWorkbench {
     document.getElementById("workspace-navigation")!.after(this.root);
     mountDungeonTravelConsole(get("atlas-local-console"));
     this.svg = this.root.querySelector("#campaign-map")!;
-    this.root.addEventListener("terrain-display-change",()=>{this.spatial?.setContours(this.landscape.contours());void this.refresh();});
+    this.root.addEventListener("terrain-display-change",()=>{if(this.spatial?.active)this.spatial.setContours(this.landscape.contours());else void this.refresh();});
     this.camera = new AtlasCanvas(this.svg, {
       redraw:()=>this.render(),
       presentation:()=>this.spatial?.active?this.spatial:null,
@@ -617,7 +617,7 @@ export class CampaignAtlasWorkbench {
   }
   private regionQuery(buffered=false):AtlasRegionQuery{
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
-    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,contours:this.landscape.contours(),perception:get<HTMLInputElement>('atlas-perception').checked};
+    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,contours:this.spatial?.active?0:this.landscape.contours(),perception:get<HTMLInputElement>('atlas-perception').checked};
   }
   private scheduleRegion(camera=false){
     if(this.root.hidden||!this.owner)return;
@@ -2580,7 +2580,7 @@ export class CampaignAtlasWorkbench {
     const floor = b.ownerId === this.scopeId ? this.floorId : "ground",
       shown = rooms.filter((r) => r.floorId === floor),
       elements=data.geometry.drawing.elements.filter(e=>e.scopeId===b.ownerId&&e.floorId===floor&&!e.archived);
-    if (b.parent === "world" && (shown.length || elements.length || b.ownerId !== "local" || !!regionValue(data.region?.scopeBounds,b.ownerId))) {
+    if (b.parent === "world" && (shown.length || elements.length || !!regionValue(data.region?.scopeBounds,b.ownerId))) {
       const points = [...shown.flatMap((r) => r.polygons.flatMap((p) => p.outer)),...elements.flatMap(e=>e.points)],
         extent = regionValue(data.region?.scopeBounds,b.ownerId)?.width ?? (points.length
           ? Math.max(...points.map((p) => p.x)) -

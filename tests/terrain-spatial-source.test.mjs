@@ -64,6 +64,12 @@ test('source change during IPC discards the old campaign; record ordering does n
 
 test('contour interval changes are immediate display changes without source reads or worker invalidation',async t=>{
  const f=fixture(t);f.sync();const loading=f.load();f.resolveRead();await loading;
- const key=f.ui.requested;f.sync(frame,1,'campaign',100);
- assert.equal(f.ui.view.interval,100);assert.equal(f.ui.requested,key);assert.equal(f.ui.ready,true);assert.equal(f.jobs.length,0);assert.equal(f.reads.length,1);
+ const key=f.ui.requested;for(const interval of [-1,100,0]){f.sync(frame,1,'campaign',interval);assert.equal(f.ui.view.interval,interval);}
+ assert.equal(f.ui.requested,key);assert.equal(f.ui.ready,true);assert.equal(f.jobs.length,0);assert.equal(f.reads.length,1);
+});
+test('a late terrain reply cannot restore an earlier contour mode',async t=>{
+ const f=fixture(t);f.sync();const loading=f.load(),key=f.ui.requested;
+ f.ui.setContours(-1);assert.equal(f.ui.view.interval,-1);
+ f.resolveRead();await loading;
+ assert.equal(f.ui.view.interval,-1);assert.equal(f.ui.requested,key);assert.equal(f.reads.length,1);
 });

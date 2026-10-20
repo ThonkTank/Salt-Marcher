@@ -1,4 +1,5 @@
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
+import {terrainContourInk} from './terrain-contour-style';
 import type {TerrainField,TerrainLattice} from './terrain-field-stream';
 import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
 import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
@@ -203,9 +204,7 @@ export class LandscapeRasterizer {
       const light=lighting(sx,sy);
       const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
       const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
-      const delta=Math.hypot(zx,zy),interval=this.contours;
-      const remainder=interval>0?((z[i]!%interval)+interval)%interval:0;
-      const contour=interval>0&&delta>1e-5&&delta<interval/2?Math.max(0,1-Math.min(remainder,interval-remainder)/(delta*1.4))*.38:0;
+      const contour=terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
       const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
       for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
     }

@@ -109,7 +109,7 @@ Caches bleiben begrenzt. Im Vergleich werden 64/128/256 MiB je relevanter Cachek
 
 ### P4 — Semantischen Zoom und kartografische Gestaltung vervollständigen
 
-Erster lokaler Teilschritt: [GPU-Höhenlinien mit konstanter Strichbreite und unmittelbarem Intervallwechsel](../../reference/atlas-gpu-contours-20261020/README.md). Automatische Intervalle, gemeinsame Ausgabe und die weiteren Objektklassen bleiben offen.
+Erster lokaler Teilschritt: [GPU-Höhenlinien mit konstanter Strichbreite und unmittelbarem Intervallwechsel](../../reference/atlas-gpu-contours-20261020/README.md). Fortsetzung im Repository: automatische, kontinuierlich überblendete Höhenintervalle sind Standard; feste Intervalle bleiben wählbar. Die perspektivische Ausgabe nutzt dasselbe GPU-Material, der Canvasfallback dieselben Abstandsregeln. Weitere Objektklassen, Küstenkonturen und vollständige visuelle Zoomabnahme bleiben offen.
 
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
