@@ -12,7 +12,15 @@ Ambience der fokussierten Running Scene. Manuelle Auswahl, Queue, Stop, Skip,
 Back, Loop und deaktiviertes Autoplay haben Vorrang vor Automatik.
 
 „Stopp“ in Konsole, Miniplayer und Soundboard benötigt keine vorherige
-Speicherung offener Beschreibungen und keinen Positions-Checkpoint. Der
+Speicherung offener Beschreibungen, keinen Positions-Checkpoint und keine
+vorgeschaltete Musikabfrage. Eine ausstehende Leseantwort hält Stop nicht auf.
+Als absoluter GM-Befehl stoppt er den aktuellen Writerstand auch nach einer
+inzwischen bestätigten Auswahl; Queue und Beschreibungen werden nicht aus
+einem alten Snapshot ersetzt. Ungültige/zukünftige Revisionen und veraltete
+relative Befehle bleiben gesperrt. Der bestehende Receipt verhindert, dass ein
+wiederholter Stopauftrag eine spätere ausdrückliche Wiedergabe erneut stoppt.
+Vor Stop begonnene Wiedergabevorbereitungen prüfen nach ihren asynchronen
+Schritten dieselbe Stop-Revision und können die Stille nicht wieder aufheben. Der
 bestehende Writer setzt Status, manuellen Vorrang und Position null gemeinsam;
 ungültige Eingaben bleiben zur Korrektur offen. Eine verspätete
 Metadatenantwort darf die Ausgabe nicht erneut starten. Beim anschließenden
