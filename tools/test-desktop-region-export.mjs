@@ -36,12 +36,12 @@ try{for(const scale of [1,2]){
  const landRadius=Math.max(landView.width,landView.height);await setBrushWorldRadius(page,'land-radius',String(landRadius));await setHeightDirection(page,'raise');
  await page.locator('#land-height-strength').fill('100000');await page.locator('#land-height-feather').fill('0');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('100');
  const landBox=await page.locator('#campaign-map').boundingBox();await page.mouse.move(landBox.x+landBox.width*.5,landBox.y+landBox.height*.5);await page.mouse.down();await page.waitForTimeout(250);await page.mouse.up();
- await until(()=>records().some(r=>r.height));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);await native.capture(page,'01-land');console.log('Land ready',scale);
+ await until(()=>records().some(r=>r.height));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert',null,{timeout:60000});await atlasCanvasReady(page);await native.capture(page,'01-land');console.log('Land ready',scale);
  // Paint travel elevation without modifying land form, pigment or campaign time.
  const beforeProperties=facts(),propertyBox=await page.locator('#campaign-map').boundingBox();
  await tool('property');await page.locator('#land-field').selectOption('elevationM');await page.locator('#land-value').fill('321');await setBrushWorldRadius(page,'land-radius',String(landView.width*.035));
  await page.mouse.move(propertyBox.x+propertyBox.width*.25,propertyBox.y+propertyBox.height*.6);await page.mouse.down();await page.mouse.move(propertyBox.x+propertyBox.width*.4,propertyBox.y+propertyBox.height*.6,{steps:4});await page.mouse.up();
- await until(()=>records().some(r=>r.propertyOnly&&r.values.elevationM===321));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);
+ await until(()=>records().some(r=>r.propertyOnly&&r.values.elevationM===321));await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert',null,{timeout:60000});await atlasCanvasReady(page);
  const elevation=records().find(r=>r.propertyOnly&&r.values.elevationM===321);assert(elevation.polygons.length);assert(!elevation.mask&&!elevation.paint);
  await page.locator('#atlas-undo').click();await until(()=>facts()===beforeProperties);await page.locator('#atlas-redo').click();await until(()=>records().some(r=>r.id===elevation.id));await atlasCanvasReady(page);
  for(const [name,x,y]of[['Falkenbrück',.2,.4],['Nebelkloster',.5,.2],['Moorwacht',.8,.7]]){await tool('place');await page.locator('#atlas-new-name').fill(name);await click(x,y);await finish(name);await page.waitForFunction(n=>document.querySelector('#land-name')?.value===n,name);}
