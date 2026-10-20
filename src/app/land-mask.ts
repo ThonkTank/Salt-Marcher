@@ -122,7 +122,7 @@ export function validateStroke(s: MaskStroke) {
     last = p.t;
   }
 }
-export function strokeBox(s: MaskStroke): LandscapeBox {
+export function strokeBox(s: Pick<MaskStroke, "radius" | "samples">): LandscapeBox {
   let x = Infinity,
     y = Infinity,
     right = -Infinity,

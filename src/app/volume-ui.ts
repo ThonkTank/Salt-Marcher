@@ -1,3 +1,4 @@
+import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room,RoomGeometry} from './contracts';
 import type {DrawingView} from './drawing-contracts';
@@ -7,7 +8,7 @@ import {volumeFromRoom,volumeProjection,isometricVolume} from './volume-model';
 import {roomPath} from './drawing-model';
 import {brushStroke,volumeArea,extendStroke,voxelKey,type VolumeBrush} from './volume-stroke';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
-const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
+const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id));
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:DrawingView|null=null,generation=0,readRequest=0,roomId:string|null=null,gesture:number|null=null;
 let pending:Promise<boolean>|null=null,writing=false;
@@ -151,7 +152,7 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
  el('volume-close').onclick=()=>{close();};
  el('volume-dialog').addEventListener('cancel',e=>{e.preventDefault();close();});
  el('volume-slice').oninput=()=>{safeRender();if(stroke)paintCell({...stroke.last,z:Number(value('volume-slice'))});};el('volume-height').oninput=safeRender;
- const shift=(n:number)=>{field('volume-slice').value=String(Number(value('volume-slice'))+n);safeRender();if(stroke)paintCell({...stroke.last,z:Number(value('volume-slice'))});};
+ const shift=(n:number)=>{setAtlasFieldValue(field('volume-slice'), String(Number(value('volume-slice'))+n));safeRender();if(stroke)paintCell({...stroke.last,z:Number(value('volume-slice'))});};
  el('volume-lower').onclick=()=>shift(-1);el('volume-higher').onclick=()=>shift(1);
  el('volume-initialize').onclick=()=>{
   const r=room();if(!r||!data)return;

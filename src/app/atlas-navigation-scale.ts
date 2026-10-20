@@ -1,5 +1,6 @@
+import {atlasUnits,FOOT,MILE,lengthLabel,type AtlasUnits} from './atlas-units';
 import type { CanvasBox } from './passive-map-canvas';
-import { hexSize, formatDistance } from './atlas-landscape';
+import { hexSize } from './atlas-landscape';
 
 export const travelHexSizes = [
   { id: 'hour', label: '1 Stunde', miles: 3 },
@@ -18,10 +19,22 @@ export function gridMeters(id: string | number): number {
   if (Number.isInteger(level) && level >= 0 && level <= 10) return hexSize(level);
   throw Error('Unbekannte Hexgröße.');
 }
-export const distanceLabel = formatDistance;
-export function scaleBar(metersPerPixel: number, viewportWidth: number) {
-  const pixels = Math.min(160, viewportWidth / 3);
-  return { pixels, meters: pixels * metersPerPixel, label: distanceLabel(pixels * metersPerPixel) };
+export const distanceLabel = lengthLabel;
+export function scaleBar(metersPerPixel: number, viewportWidth: number, system:AtlasUnits=atlasUnits()) {
+  const maxPixels = Math.min(160, viewportWidth / 3), maxMeters=maxPixels*metersPerPixel;
+  const base=system==='dnd'?(maxMeters>=MILE?MILE:FOOT):(maxMeters>=1000?1000:1);
+  const value=maxMeters/base,power=10**Math.floor(Math.log10(value));
+  const nice=([5,2,1].find(n=>n*power<=value)??1)*power;
+  const meters=nice*base;
+  return {pixels:meters/metersPerPixel,meters,label:lengthLabel(meters,system)};
+}
+export function hexTravelLabel(meters:number){
+ const hours=meters/MILE/3,days=hours/8;
+ const n=(v:number)=>v.toLocaleString('de-DE',{maximumSignificantDigits:3});
+ if(hours<8)return `${n(hours)} ${hours===1?'Stunde':'Stunden'}`;
+ if(days>=30-1e-8&&Math.abs(days/30-Math.round(days/30))<1e-8)return `${n(days/30)} ${Math.round(days/30)===1?'Monat':'Monate'}`;
+ if(days>=7-1e-8&&Math.abs(days/7-Math.round(days/7))<1e-8)return `${n(days/7)} ${Math.round(days/7)===1?'Woche':'Wochen'}`;
+ return `${n(days)} ${Math.abs(days-1)<1e-8?'Reisetag':'Reisetage'}`;
 }
 export function automaticGrid(mpp: number, previous: string | null): string {
   // Log distance treats zooming in and out symmetrically. Hysteresis retains

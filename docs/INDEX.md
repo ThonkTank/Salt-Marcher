@@ -17,7 +17,9 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
 | Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
 | Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](plans/maps/atlas-cartography.md) |
-| Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](plans/maps/landscape-tools.md) |
+| Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](plans/maps/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](plans/maps/terrain-routes.md) |
+| Höhenlandschaft und kippbarer Atlas | [Relief-Roadmap R0–R7](plans/maps/terrain-relief.md): gezeichnete Gebirge, gekoppelte Küsten, Höhenabfragen und räumliche Ansicht |
+| Bewuchs und Felsen | [Landschaftsvorlagen, automatische Bestände und Einzelkorrekturen](plans/maps/vegetation.md) |
 | Gemeinsame Gebäude und Dungeons | [Raumgruppen, Generierung und Speichergrenze](plans/maps/room-groups.md) |
 | Stadt | [Stadtziele](../ROADMAP-CITIES.md), [technische Anforderungen](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), [Referenzgalerie](../ROADMAP-CITIES.md#referenzgalerie) |
 | Dungeon | [Grundrisse und Objekte](../ROADMAP-PARITY.md), [weitere Werkzeuge](../ROADMAP-PARITY-TOOLS.md), [3D/Rooms/Paths/Passages](plans/dungeon/smr04-spatial-coverage.md), [Geometrie und Vorschau](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#dungeon-geometrie-und-vorschau) |

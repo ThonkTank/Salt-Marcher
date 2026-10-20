@@ -1,11 +1,14 @@
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
+import {drawVegetation} from './vegetation-view';
+import {wrapMeasurementLines} from './atlas-measurements';
+import {lengthLabel,atlasUnits,type AtlasUnits} from './atlas-units';
 import {LandscapeRasterizer} from './landscape-raster';
 import {orderedColors,colorParts,unionPolygons,subtractPolygons,intersectPolygons} from './landscape-brush';
 import { lineParts } from "./landscape-line";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { hexPolygon, LANDSCAPE_PLACE_FONT_PX } from "./atlas-landscape";
-import { gridMeters, scaleBar } from "./atlas-navigation-scale";
+import { gridMeters, scaleBar, hexTravelLabel } from "./atlas-navigation-scale";
 import { terrainColors } from "./world-model";
 export function drawLandscape(
   root: AtlasPaint,
@@ -18,7 +21,7 @@ export function drawLandscape(
   unavailableAssets?: ReadonlySet<string>,
   automaticLabels=false,
 ) {
-  if(!raster&&records.some(r=>r.mask||r.paint?.version===2)&&typeof document!=='undefined'){
+  if(!raster&&records.some(r=>r.height||r.terrainSettings||r.mask||r.paint?.version===2)&&typeof document!=='undefined'){
     const w=Math.min(1024,Math.max(1,Math.ceil(b.width/mpp))),h=Math.min(1024,Math.max(1,Math.ceil(b.height/mpp))),image=new LandscapeRasterizer(b,w,h);
     for(const r of [...records].sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))image.paint(r);
     for(const r of orderedColors(records))image.paintColor(r);
@@ -43,8 +46,8 @@ export function drawLandscape(
   };
   for (const r of [...records].sort(
     (a, b) =>
-      (a.kind === "reference" ? -1 : a.kind === "patch" ? 0 : a.line?.overSymbols ? 3 : a.line ? 1 : 2) -
-        (b.kind === "reference" ? -1 : b.kind === "patch" ? 0 : b.line?.overSymbols ? 3 : b.line ? 1 : 2) ||
+      (a.kind === "reference" ? -1 : (a.kind === "patch" || a.kind === "vegetation") ? 0 : a.line?.overSymbols ? 3 : a.line ? 1 : 2) -
+        (b.kind === "reference" ? -1 : (b.kind === "patch" || b.kind === "vegetation") ? 0 : b.line?.overSymbols ? 3 : b.line ? 1 : 2) ||
       b.resolution - a.resolution ||
       (a.order ?? 0) - (b.order ?? 0),
   )) {
@@ -63,6 +66,8 @@ export function drawLandscape(
         const outline=landscapeNode('rect',{x:0,y:0,width:r.width,height:r.width*(r.imageHeight??1)/(r.imageWidth??1),matrix:[Math.cos(r.angle??0),Math.sin(r.angle??0),-Math.sin(r.angle??0),Math.cos(r.angle??0),r.points[0]!.x-b.x,r.points[0]!.y-b.y],style:{fill:null,stroke:'#75604e',lineWidth:mpp},data:{referenceState:state,referenceId:r.id},title:`${r.name||'Bildvorlage'} · ${state==='loading'?'wird geladen':'nicht verfügbar'}`});
         g.append(outline);
       }
+    } else if (r.kind === "vegetation") {
+      drawVegetation(g,r,b,mpp);
     } else if (r.kind === "patch") {
       if (r.values.terrain && !r.propertyOnly && !raster)
         g.append(
@@ -112,12 +117,15 @@ export function drawLandscapeGrid(
         landscapeNode("polygon", {points: hexPolygon(q, y, size).outer.map(v=>({x:v.x-b.x,y:v.y-b.y})), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: String("true")}}),
       );
 }
-export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number) {
-  const landscapeNode=atlasPaint;
-  const bar = scaleBar(mpp, b.width / mpp), len = bar.meters;
-  root.append(
-    landscapeNode("rect", {x:mpp*12,y:b.height-mpp*62,width:Math.min(b.width-mpp*24,mpp*280),height:mpp*44,style:{fill:"#fffaf0",fillOpacity:.92},pointer:false,data:{editorOnly:"true"}}),
-    landscapeNode("polyline", {points:[{x:mpp*20,y:b.height-mpp*35},{x:mpp*20,y:b.height-mpp*30},{x:mpp*20+len/2,y:b.height-mpp*30},{x:mpp*20+len/2,y:b.height-mpp*35},{x:mpp*20+len/2,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*30},{x:mpp*20+len,y:b.height-mpp*35}], pointer: false, style: {fill: null, stroke: "#23382d", lineWidth: mpp * 2}, data: {editorOnly: String("true")}}),
-    landscapeNode("text", {matrix:[mpp,0,0,mpp,mpp*20,b.height-mpp*42], x:0,y:0, style: {fontSize:11, fill: "#23382d"}, data: {editorOnly: String("true")}}, bar.label),
-  );
+export function gridVisible(b:LandscapeBox,level:number|string){return Math.ceil(Math.max(b.width,b.height)/gridMeters(level))+2<=45;}
+export function drawScale(root: AtlasPaint, b: LandscapeBox, mpp: number, level?:number|string,system:AtlasUnits=atlasUnits()) {
+  const bar=scaleBar(mpp,b.width/mpp,system),hex=level!==undefined&&gridVisible(b,level)?gridMeters(level):null;
+  const lines=[bar.label,...(hex?[`Hex: ${lengthLabel(hex,system)} · Kante zu Kante`,`Richtzeit: ${hexTravelLabel(hex)}`,`Ebene · Normaltempo · 8 Reisestunden/Tag`]:[])];
+  const available=Math.max(60,b.width/mpp-24),wrapped=wrapMeasurementLines(lines.slice(1),Math.max(8,Math.floor((available-16)/6.1)));
+  const width=Math.min(available,Math.max(bar.pixels+16,...[bar.label,...wrapped].map(l=>l.length*6.1+16))),height=hex?52+wrapped.length*18:48;
+  const g=atlasPaint('group',{matrix:[mpp,0,0,mpp,12*mpp,b.height-(height+12)*mpp],pointer:false,data:{editorOnly:'true',atlasScale:'true'}});
+  g.append(atlasPaint('rect',{width,height,style:{fill:'#fffaf0',fillOpacity:.94},pointer:false}));
+  g.append(atlasPaint('polyline',{points:[{x:8,y:28},{x:8,y:34},{x:8+bar.pixels/2,y:34},{x:8+bar.pixels/2,y:29},{x:8+bar.pixels/2,y:34},{x:8+bar.pixels,y:34},{x:8+bar.pixels,y:28}],style:{fill:null,stroke:'#23382d',lineWidth:2},pointer:false}));
+  [bar.label,...wrapped].forEach((line,i)=>g.append(atlasPaint('text',{x:8,y:i===0?18:36+i*18,style:{fontSize:11,fill:'#23382d'},pointer:false},line)));
+  root.append(g);
 }

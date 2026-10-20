@@ -5,8 +5,8 @@ import {parseHTML} from './helpers/dom.mjs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/atlas-tool-catalog';export {AtlasWorkspaceLayout} from './src/app/atlas-workspace-layout';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",resolveDir:process.cwd()},outfile:'.build/atlas-tool-hierarchy.cjs',bundle:true,platform:'node',format:'cjs'});
-const {atlasToolGroups,availableAtlasGroups,atlasToolMatches,AtlasWorkspaceLayout,CampaignAtlasWorkbench}=require('../.build/atlas-tool-hierarchy.cjs');
+buildSync({stdin:{contents:"export * from './src/app/atlas-tool-catalog';export {LandscapeToolSettings} from './src/app/landscape-tool-settings';export {AtlasWorkspaceLayout} from './src/app/atlas-workspace-layout';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",resolveDir:process.cwd()},outfile:'.build/atlas-tool-hierarchy.cjs',bundle:true,platform:'node',format:'cjs'});
+const {LandscapeToolSettings,atlasToolGroups,availableAtlasGroups,atlasToolMatches,AtlasWorkspaceLayout,CampaignAtlasWorkbench}=require('../.build/atlas-tool-hierarchy.cjs');
 function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));
  const original={document:global.document,Event:global.Event};global.document=document;global.Event=window.Event;t.after(()=>Object.assign(global,original));
@@ -21,30 +21,32 @@ function fixture(t){
  layout.host={error(error){throw error;},async tool(section,id,value,settings){calls.push({section,id,value,settings});if(release)await new Promise(r=>release=r);if(!allowed)return false;layout.family=section;document.getElementById(id).value=value;for(const [key,v]of Object.entries(settings??{}))document.getElementById(key).value=v;return true;}};
  return {layout,document,root,panels,calls,allow(v){allowed=v;},defer(){release=true;},release(){release();release=null;}};
 }
-test('every native tool has a route, with selection and measuring kept global',t=>{
+test('every native tool has a route, with global selection and a dedicated vegetation filter',t=>{
  const {document}=fixture(t);
  for(const [section,id]of [['terrain','land-tool'],['city','city-tool'],['interior','drawing-tool']]){
   const groups=availableAtlasGroups(document,section),routes=new Set(groups.flatMap(g=>g.tools.map(t=>t.value)));
   for(const option of document.getElementById(id).options)assert(routes.has(option.value)||['select','measure'].includes(option.value),section+': '+option.value);
   assert(groups.every(g=>g.tools.length));assert(!groups.some(g=>g.tools.some(t=>t.value==='measure')));
  }
- assert.deepEqual(availableAtlasGroups(document,'terrain').map(g=>g.label),['Land','Wasser','Wege & Flächen','Objekte']);
+ assert.deepEqual(availableAtlasGroups(document,'terrain').map(g=>g.label),['Land','Bewuchs & Felsen','Geländedaten','Wasser','Wege & Flächen','Objekte']);
+ assert(availableAtlasGroups(document,'terrain').find(g=>g.id==='vegetation').tools.some(t=>t.id==='vegetation-select'&&t.value==='select'));
+ assert.deepEqual(availableAtlasGroups(document,'terrain')[0].tools.map(t=>t.label),['Land formen','Land bemalen','Glätten']);
  assert.equal(availableAtlasGroups(document,'city').some(g=>g.id==='objects'),false);
 });
 test('switching to a different group recalls its last tool; rejected switches preserve both memories and controls',async t=>{
  const x=fixture(t),water=availableAtlasGroups(x.document,'terrain').find(g=>g.id==='water'),river=water.tools.find(t=>t.id==='river'),land=availableAtlasGroups(x.document,'terrain')[0];
  await x.layout.activateTool('terrain','water',river);assert.equal(x.layout.groupMemory.get('terrain'),'water');
- await x.layout.chooseGroup('terrain',land);assert.equal(x.document.getElementById('land-tool').value,'paint');
+ await x.layout.chooseGroup('terrain',land);assert.equal(x.document.getElementById('land-tool').value,'height');
  await x.layout.chooseGroup('terrain',water);assert.equal(x.document.getElementById('land-tool').value,'river');
  x.allow(false);await x.layout.chooseGroup('terrain',land);assert.equal(x.layout.groupMemory.get('terrain'),'water');assert.equal(x.document.getElementById('land-tool').value,'river');assert.equal(x.layout.changingTool,false);
 });
 test('section return restores the last group and tool without disturbing option values',async t=>{
- const x=fixture(t),water=availableAtlasGroups(x.document,'terrain')[1];await x.layout.activateTool('terrain','water',water.tools.find(t=>t.id==='river'));
+ const x=fixture(t),water=availableAtlasGroups(x.document,'terrain').find(g=>g.id==='water');await x.layout.activateTool('terrain','water',water.tools.find(t=>t.id==='river'));
  x.document.getElementById('land-width').value='31';await x.layout.chooseSection('city');assert.equal(x.layout.family,'city');await x.layout.chooseSection('terrain');assert.equal(x.layout.family,'terrain');assert.equal(x.layout.groupMemory.get('terrain'),'water');assert.equal(x.document.getElementById('land-tool').value,'river');assert.equal(x.document.getElementById('land-width').value,'31');
 });
-test('land/water color and add/erase routes apply their complete operation only after acceptance',async t=>{
+test('three land tools and water routes apply their complete operation only after acceptance',async t=>{
  const x=fixture(t),groups=availableAtlasGroups(x.document,'terrain'),tools=groups.flatMap(g=>g.tools);
- for(const id of ['land-add','land-erase','land-color','land-color-erase','water-add','water-erase','water-color','water-color-erase']){
+ for(const id of ['land-shape','land-smooth','land-color','water-add','water-erase','water-color','water-color-erase']){
   const entry=tools.find(t=>t.id===id),group=groups.find(g=>g.tools.includes(entry));await x.layout.activateTool('terrain',group.id,entry);assert(atlasToolMatches(x.document,entry));assert.equal(tools.filter(t=>atlasToolMatches(x.document,t)).length,1);
  }
  const old=x.document.getElementById('land-color-target').value;x.allow(false);await x.layout.activateTool('terrain','land',tools.find(t=>t.id==='land-color'));assert.equal(x.document.getElementById('land-color-target').value,old);
@@ -93,4 +95,19 @@ test('entering rectangle drawing hides existing properties only after the tool s
  allow(false);await layout.activateTool('interior','rooms',tool);assert.equal(layout.contextVisible,true);
  allow(true);await layout.activateTool('interior','rooms',tool);assert.equal(layout.contextVisible,false);
  assert.equal(layout.auxiliary,'selection','Details can restore the existing properties');
+});
+
+test('land settings retain independent size and strength, optional target and color eraser',t=>{
+ const {document}=fixture(t),panel=document.createElement('div');document.body.append(panel);
+ panel.innerHTML='<label>Width<input id="land-width"></label><label>Radius<input id="land-radius" value="500"></label>';
+ const settings=new LandscapeToolSettings(panel,()=>{}),f=id=>panel.querySelector('#'+id);
+ settings.show('height');assert.equal(settings.height().targetM,undefined);assert.equal(settings.height().mode,'raise');
+ f('land-radius').value='800';f('land-height-mode').value='lower';f('land-height-strength').value='750';f('land-coast-roughness').value='1.5';
+ f('land-height-target-enabled').checked=true;f('land-height-target').value='-50';settings.show('height');assert.equal(settings.height().targetM,-50);
+ settings.show('smooth');assert.equal(f('land-radius').value,'500');assert.equal(settings.height().strength,300);assert.equal(settings.height().mode,'smooth');
+ assert.equal(settings.height().targetM,undefined);assert.equal(settings.height().roughness,undefined);assert(f('land-shape-options').hidden);
+ f('land-radius').value='150';f('land-height-strength').value='90';settings.show('color');f('land-color-operation').value='erase';assert.equal(settings.mode(),'color-erase');
+ settings.show('height');assert.equal(f('land-radius').value,'800');assert.equal(settings.height().strength,750);assert.equal(settings.height().mode,'lower');assert.equal(settings.height().roughness,1.5);assert.equal(settings.height().targetM,-50);
+ settings.show('smooth');assert.equal(f('land-radius').value,'150');assert.equal(settings.height().strength,90);
+ settings.show('color');assert.equal(settings.mode(),'color-erase');
 });

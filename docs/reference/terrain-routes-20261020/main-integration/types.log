@@ -1,0 +1,7 @@
+
+> saltmarcher@0.167.0 check
+> tsc --noEmit
+
+
+> saltmarcher@0.167.0 check:desktop
+> tsc --noEmit -p desktop/tsconfig.json

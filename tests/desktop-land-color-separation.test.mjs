@@ -160,13 +160,14 @@ const pixel = (pixels, x = 0, y = 0) =>
       (Math.floor((y + 200) / 2) * 200 + Math.floor((x + 200) / 2)) * 4 + 4,
     ),
   );
-const masks = (rs) => JSON.stringify(rs.filter((r) => r.mask));
-test("hard land is a neutral filled disk; property-only edits change queries without changing land or its pixels", (t) => {
+const heights = (rs) => JSON.stringify(rs.filter((r) => r.height));
+test("hard land is a neutral filled disk; terrain/climate properties change queries without changing heights or pixels", (t) => {
   const f = fixture(t);
   f.write(land());
   const base = f.records(),
     image = render(base),
-    mask = masks(base);
+    mask = heights(base);
+  assert(base.some(r=>r.height), "Height preservation assertions need authored height data");
   assert.deepEqual(pixel(image), [238, 229, 207, 255]);
   assert.deepEqual(pixel(image, 80), [238, 229, 207, 255]);
   f.write({
@@ -174,7 +175,7 @@ test("hard land is a neutral filled disk; property-only edits change queries wit
     record: {
       ...patch(),
       propertyOnly: true,
-      values: { terrain: "forest", elevationM: 42 },
+      values: { terrain: "forest", climate: "cold" },
     },
     expectedRevision: null,
   });
@@ -186,21 +187,21 @@ test("hard land is a neutral filled disk; property-only edits change queries wit
     effectiveLandscape(f.records(), { x: 180, y: 0 }).terrain,
     "water",
   );
-  assert.equal(masks(f.records()), mask);
+  assert.equal(heights(f.records()), mask);
   assert.deepEqual(render(f.records()), image);
 });
 test("painting and soft/partial erasing affect pigment only, one undo per operation, preserved after reopening", (t) => {
   const f = fixture(t);
   f.write(land());
   const base = render(f.records()),
-    mask = masks(f.records());
+    mask = heights(f.records());
   f.write(color());
   const painted = render(f.records());
   assert.deepEqual(pixel(painted), [34, 170, 51, 255]);
   f.write(color({ operation: "erase", opacity: 0.5 }));
   const half = render(f.records());
   assert(pixel(half)[0] > 34 && pixel(half)[0] < 238);
-  assert.equal(masks(f.records()), mask);
+  assert.equal(heights(f.records()), mask);
   f.write({ kind: "undo" });
   assert.deepEqual(render(f.records()), painted);
   f.write({ kind: "redo" });
@@ -227,7 +228,7 @@ test("all three color tips differ, opacity caps coverage and a soft eraser feath
   f.write(color({ operation: "erase", tip: "soft" }));
   const erased = render(f.records());
   assert(pixel(erased)[0] > pixel(erased, 60)[0]);
-  assert.equal(masks(f.records()), masks(base));
+  assert.equal(heights(f.records()), heights(base));
 });
 test("color over sea does not color later land; erased and restored colored land retains pigment", (t) => {
   const f = fixture(t);

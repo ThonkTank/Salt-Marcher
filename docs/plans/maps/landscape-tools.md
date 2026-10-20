@@ -4,6 +4,8 @@ Beauftragter Ausbau vom 19.10.2026. Städte, Symbole, Generator und Heightmap-Im
 
 ## Bedienung und Daten
 
+Für das neue Höhenmodell ergänzt [Geländegebundene Straßen und Flüsse](terrain-routes.md) einen gemeinsamen Planungseditor mit Start-/Zwischen-/Zielpunkten, begrenzten Erdarbeiten, Bauwerken und Schutz bei späteren Geländeänderungen. Die folgenden freien Linienfunktionen gelten weiterhin für Objekte ohne geplantes Höhenprofil.
+
 Straßen und Flüsse speichern Weltmeter-Kontrollpunkte und optionale `line.version = 1`: Kurve, Farbe, Rauheit, Mäander, Quellverjüngung, Zufallsstart, Straßenmuster und Zeichenebene. Die zehn Straßenmuster bilden die sichtbaren Referenzvorschauen mit eigener Geometrie nach; proprietäre Assets werden nicht übernommen. Neue Vorgaben und ausgewählte Objekte besitzen getrennte Kontrollen. Umschalt-Klick erweitert die Auswahl derselben Verlaufsart; Ziehen verschiebt die ganze Auswahl. Breite/Stil lassen sich ausdrücklich gemeinsam anwenden. Punktaktionen bleiben erhalten. Teilen speichert angrenzende Tangenten und den bisherigen Verlaufabstand.
 
 Land hinzufügen/radieren, Küste anheben/absenken und Süßwasser hinzufügen/radieren sind Wirkungen des Geländepinsels. Küstenänderungen betreffen nur den berührten Rand. Süßwasserradierung entfernt die eigene Wasserschicht und legt das darunterliegende Gelände frei. Die alte Eigenschafts-/Hexbearbeitung bleibt verfügbar.
@@ -81,3 +83,14 @@ Zusätzliche Regression: `desktop-land-color-separation.test.mjs` prüft neutral
 
 
 Lokaler Prüfstand dieser Umsetzung: 138 gezielte automatisierte Prüfungen bestanden, einschließlich bestehender Atlas-Regionen, Canvas und Desktopoberfläche; TypeScript für App/Desktop und beide Builds bestanden. Die native Quellprüfung `land-color-separation-20261019/ui-source/result.json` bestand elf Fälle mit normalem Programmende, einschließlich sichtbarer Farb-/Radierwirkung, Speichern, Fehlerwiederholung und PNG. Paketprüfung und Installation werden getrennt im lokalen `installation-source.json` dokumentiert; dies ist keine Integration nach `main` und kein exact-SHA-CI-Nachweis.
+
+## Höhenanschluss R1 (Format 49)
+
+Für neue Geländearbeit ersetzt [Relief-R1](../../reference/terrain-relief-r1-20261019/README.md) die oben historisch beschriebene Landmasken-Autorenschaft durch metrische Höhenkacheln. Land-/Radierwerkzeuge, Vorschau und Küsten lesen denselben Höhenkern. Meeresspiegel liegt in den Landschaftseinstellungen; Süßwasser speichert einen begrenzten Bereich mit Wasserstand. Farbe bleibt getrennt. Format-47/48-Befunde und Wonderdraft-Vergleiche bleiben historische Belege, keine Abnahme der neuen Höhenwerkzeuge. Die [R2-Höhenbearbeitung](../../reference/terrain-relief-r2-20261019/README.md) ergänzt Anheben, Absenken, Glätten, Zielhöhe, Grundschattierung und Höhenlinien. Die [gezeichnete Reliefoptik R4](../../reference/terrain-relief-r4-20261020/README.md) ist lokal umgesetzt und geprüft. [R5](../../reference/terrain-tilted-atlas-r5-20261020/README.md) ergänzt die integrierte gekippte Ansicht mit denselben drei Landpinseln; Objekte/Höhennutzer und abschließende Leistung/Ausgabe bleiben R6/R7.
+
+
+## Aktuelle Landwerkzeuge · R2 Vereinheitlichung, 20.10.2026
+
+Die historischen Landmasken- und Vierpinselbeschreibungen oben werden für die aktuelle Bedienung durch drei Werkzeuge ersetzt: **Land formen** (Erhöhen/Absenken, Stärke, Roughness, optionale Zielhöhe), **Land bemalen** (einschließlich Farbradierung) und **Glätten**. Größe und weicher Rand bleiben einstellbar. Zielhöhe begrenzt die gewählte Richtung, Roughness verändert die unregelmäßige Wirkung unabhängig davon. Land und Meer folgen weiterhin Höhe und Meeresspiegel; Farbaufträge ändern keine Höhen. Geländeart, Hexfüllung und Rücksetzung bleiben in der eigenen Gruppe Geländedaten.
+
+Die aktuelle native Prüfung ist `tools/test-desktop-terrain-brush.mjs`: Insel aus leerem Meer, Hügel, Hochfläche, Bucht, Glätten, sichtbare Farbe/Radierung, History, Abbruch, Speicherfehler, Export und Neustart. `tools/test-desktop-terrain-height.mjs` und die Landaktion der Layoutprobe verwenden ebenfalls die neue Bedienung. Ältere Vierpinsel-/Fraktalproben dokumentieren historische Operationsverträge und sind keine Qualifikation der drei neuen Werkzeuge. [Prüfbeleg](../../reference/terrain-land-tools-20261020/README.md).

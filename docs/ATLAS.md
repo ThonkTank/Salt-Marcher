@@ -10,7 +10,7 @@ Ganz links steht eine 76 Pixel breite Werkzeugleiste: jedes Symbol trägt seinen
 
 Eigenschaften einer ausdrücklichen Auswahl, **Beschreibung bearbeiten**, Objektbibliothek, **Viertel bebauen**, Analyse, Nachzeichenvorlage, Größenvergleich und Bildexport öffnen ihren Kontext rechts. Diese Leiste ist standardmäßig 340 Pixel breit und zwischen 280 und 480 Pixeln verstellbar. Würden weniger als 560 Pixel Kartenbreite verbleiben, überlagert sie die Karte. Schließen erhält den aktuellen Kontext und offene Eingaben; Zoomen und Nachladen öffnen sie nicht wieder. Der Schalter oben blendet den Kontext erneut ein. Eine offene Raumbeschreibung wird nicht automatisch durch einen anderen Kontext verdrängt. Raumtexte verwenden dieselben Key-Records und Speicherregeln.
 
-Breiten und Sichtbarkeit der linken Leisten bleiben als eigene lokale Ansichtspräferenz erhalten. Seitenleistenänderungen erhalten Kartenmittelpunkt und Meter pro Bildschirmpixel, ohne Autorenänderung oder Eintrag im Ansichtsverlauf. Die feste Maßstabsleiste bleibt als nicht bedienbare Kartenanzeige sichtbar.
+Breiten und Sichtbarkeit der linken Leisten bleiben als eigene lokale Ansichtspräferenz erhalten. Seitenleistenänderungen erhalten Kartenmittelpunkt und Meter pro Bildschirmpixel, ohne Autorenänderung oder Eintrag im Ansichtsverlauf. Die Maßstabsleiste bleibt als nicht bedienbare Kartenanzeige sichtbar; ihre Balkenlänge folgt gut lesbaren Entfernungen.
 
 Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** verschieben vorübergehend die Kamera. Enter schließt einen Punktzug ab, Backspace entfernt seinen letzten Punkt, Escape verwirft ihn. Kartenkürzel wirken auf der Karte, nicht während Texteingaben. Werkzeuge und Werkzeugfamilien dürfen einen begonnenen Zug nicht stillschweigend verwerfen.
 
@@ -26,6 +26,22 @@ Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** vers
 
 Dungeondateien werden beim Import in eine offene Kampagne am zuletzt gewählten Atlaspunkt eingefügt. Räume, Geschosse und Abschnittsbindungen bekommen kollisionsfreie lokale IDs; der originale UTF-8-Quelltext bleibt zusätzlich erhalten. Ohne offene Kampagne bleibt der Import als neue Kampagne möglich. Unabhängige Kampagnenkopien erhalten eigene IDs und eine frische Autorhistorie; räumliche Beziehungen bleiben verbunden.
 
+Für Wälder, Wiesen, Buschland und Felsen gibt es **Landschaft → Bewuchs &
+Felsen**. Eine Vorlage verbindet Bodenbild und Geländeart mit einem automatisch
+verteilten Bestand. Pinsel, Polygon und Hecke/Baumreihe legen Flächen an;
+Freihalten, Ausdünnen und Verdichten korrigieren sie. Bäume und Felsen lassen
+sich einzeln auswählen und geschützt bearbeiten. **Räumliche Landschaft**
+zeigt und bearbeitet dieselben Bestände auf dem Höhengelände.
+[Bedienung, Datenregeln und Grenzen](plans/maps/vegetation.md).
+
+## Gelände formen und Ansicht kippen
+
+**Landschaft → Land** enthält **Land formen**, **Land bemalen** und **Glätten**. Land formen hebt oder senkt mit Stärke, Roughness und optionaler Zielhöhe; die Höhe bestimmt die Küste am Meeresspiegel. Farbe bleibt unabhängig.
+
+**Ansicht → Atlas kippen** zeigt denselben Höhenbestand räumlich. Neigung, Drehung und Höhenüberhöhung ändern nur die Darstellung. Die drei Landpinsel bearbeiten die sichtbare Oberfläche in Weltmetern; verdeckte Höhenknoten werden geschützt. **Draufsicht** kehrt unmittelbar zurück, mit derselben Kamera, Auswahl und gemeinsamen Rückgängig-Schritten. Andere Gelände- und Grundrisswerkzeuge sowie der bestehende Bildexport führen zur Draufsicht. Wissens- und Sichtmasken verwenden weiterhin die gefilterte Draufsicht.
+
+[Lokale R5-Prüfung und offene R6-/R7-Grenzen](reference/terrain-tilted-atlas-r5-20261020/README.md).
+
 ## Leiten
 
 Außerhalb des Atlaseditors unter **Leiten** die Fokusgruppe wählen. Die dortige Atlasansicht verwendet ihre vorhandene Position, Mitgliedschaft, ihr Tempo und ihre Uhr. Ziel anklicken → **Weg prüfen** → **Reise starten** → Schritt/Runde/Wiedergabe. Ein lokaler Fußweg meidet Häuser, Wasser und Mauern; lange Strecken verwenden die vorhandene Weltreise. Die lokale Wegsuche ist eine abgeleitete Navigationshilfe und verändert keine Quellkonturen.
@@ -34,7 +50,7 @@ Raum auswählen → **Eingang verbinden** → zuerst Außenpunkt, dann Innenpunk
 
 NPCs, Spuren, Wege und **Wissen und Sicht der Gruppe** verwenden vorhandene Dungeon-Laufdaten. Unpassende Geometrieänderungen, die Figuren außerhalb ihrer Räume zurückließen, werden abgewiesen; geänderte Reisegrundlagen halten laufende Wege an. Routen werden nach Neustart weiter angezeigt, automatische Wiedergabe beginnt erst auf ausdrücklichen Start.
 
-**Export** erzeugt den Ausschnitt als PNG oder JPEG. **Dungeon-Grundriss** rahmt alle nicht ausgeblendeten Räume und Zeichnungen des aktuellen Dungeon-Geschosses mit Rand ein, einschließlich außerhalb der Ansicht liegender Inhalte. Der Rahmen folgt späteren bestätigten Größenänderungen. Die Vorschau passt neben eine überlagernde Exportleiste; eine ausgegebene Maßstabsleiste erhält Platz unter dem Grundriss. **Aktuelle Ansicht** und **Bereich aufziehen** bleiben für freie Ausschnitte verfügbar. **Maßstab ausgeben** ergänzt standardmäßig eine Leiste mit Metern beziehungsweise Kilometern und Meilen; für eine Ausgabe ohne Leiste das Häkchen entfernen. Sehr flache Bilder unter 100 Pixel Höhe bieten dafür keinen lesbaren Platz. GM-Ausgabe verwendet die sichtbare Bearbeitungsansicht. Die öffentliche Ausgabe wird ausschließlich aus der vorhandenen öffentlichen Wahrnehmungsprojektion aufgebaut. Ein fehlender öffentlicher Kontext wird gemeldet; GM-Knoten werden dafür nicht bloß ausgeblendet.
+**Export** erzeugt den Ausschnitt als PNG oder JPEG. **Dungeon-Grundriss** rahmt alle nicht ausgeblendeten Räume und Zeichnungen des aktuellen Dungeon-Geschosses mit Rand ein, einschließlich außerhalb der Ansicht liegender Inhalte. Der Rahmen folgt späteren bestätigten Größenänderungen. Die Vorschau passt neben eine überlagernde Exportleiste; eine ausgegebene Maßstabsleiste erhält Platz unter dem Grundriss. **Aktuelle Ansicht** und **Bereich aufziehen** bleiben für freie Ausschnitte verfügbar. **Maßstab ausgeben** ergänzt standardmäßig eine Leiste im oben gewählten Einheitensystem; für eine Ausgabe ohne Leiste das Häkchen entfernen. Sehr flache Bilder unter 100 Pixel Höhe bieten dafür keinen lesbaren Platz. GM-Ausgabe verwendet die sichtbare Bearbeitungsansicht. Die öffentliche Ausgabe wird ausschließlich aus der vorhandenen öffentlichen Wahrnehmungsprojektion aufgebaut. Ein fehlender öffentlicher Kontext wird gemeldet; GM-Knoten werden dafür nicht bloß ausgeblendet.
 
 **Export → Ausgabe: Bearbeitbare Kampagne → Kampagne sichern…** speichert ein bearbeitbares Kampagnenpaket einschließlich Karten, Raumtexten, GM-Inhalten und Medien. Die Auswahl für öffentliche Bilder beschränkt diese Sicherung nicht. Über **Atlas → Pakete und Kopien** lässt sich das Paket als unabhängige Kampagne importieren. PNG und JPEG bleiben in derselben Exportansicht erreichbar. Solange das Exportpanel offen ist, macht die linke Zeichenleiste der Kartenansicht Platz. Bei der Rückkehr zur Bearbeitung gilt wieder ihre vorherige Anordnung.
 
@@ -46,15 +62,15 @@ Alte Testbestände ohne Atlaswurzel werden nicht in ein Mehrkartenmodell migrier
 
 ## Eine Region vorbereiten (0.157)
 
-Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Anzeige- und Zeichenstufen entsprechen 1 Tag (24 Meilen), 1 Woche (168), 1 Monat (720), 3 Monaten (2.160) und 12 Monaten (8.640). Grundlage sind 3 Meilen/Stunde, 8 Reisestunden/Tag, 7 Tage/Woche und 30 Tage/Monat. Diese Größenreferenzen verändern die tatsächliche Reiseberechnung nicht. Bestehende Hexflächen behalten ihre Geometrie und Auflösung. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben in Metern bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
+Die kleinste Hexstufe misst **3 Meilen / 4828,032 m zwischen gegenüberliegenden Kanten**. Weitere Anzeige- und Zeichenstufen entsprechen 1 Tag (24 Meilen), 1 Woche (168), 1 Monat (720), 3 Monaten (2.160) und 12 Monaten (8.640). Grundlage sind 3 Meilen/Stunde, 8 Reisestunden/Tag, 7 Tage/Woche und 30 Tage/Monat. Diese Größenreferenzen verändern die tatsächliche Reiseberechnung nicht. Bestehende Hexflächen behalten ihre Geometrie und Auflösung. Hexstufe und Kamera sind unabhängig: Städte und Räume bleiben unabhängig davon in realen Längenmaßen bearbeitbar. **Weltübersicht** zoomt bis zu einer erdgroßen Referenzfläche von 40.000 × 20.000 km; je Fensterformat erscheint zusätzlicher Rand. Die Welt bleibt verschiebbar.
 
 Unter **Landschaft → Region vorbereiten**:
 
 1. Gelände/Küste malen oder Hexfläche füllen wählen. Geländeart und Hexstufe einstellen; der Pinselradius gilt nur für freie Pinselzüge. Hexzüge füllen auch bei schneller Bewegung alle Hexes zwischen den aufgenommenen Punkten; die farbige Vorschau zeigt die spätere Fläche. Loslassen übernimmt einen Gelände-/Hexpinselzug als einen gemeinsamen rücknehmbaren Schritt. **Zug abschließen** bleibt für Punktzüge und offene Eigenschaften verfügbar. Gelände, Höhe und Klima werden getrennt überschrieben; **Eigenschaft zur Vorgabe zurücksetzen** entfernt nur die gewählte Eigenschaft im bemalten Bereich der gewählten Stufe. Feinere Vorgaben bleiben bestehen.
 2. Fluss oder Weg wählen, Punkte setzen und abschließen. Unter Auswahl einen Verlauf anklicken oder aus der Objektliste wählen. Punkte ziehen speichert den Verlauf beim Loslassen; er bleibt für die nächste Punktkorrektur ausgewählt. Punkte einfügen/entfernen, am inneren Punkt teilen oder die Breite ändern und anschließend Auswahl speichern. Eine gezeichnete Straßenquerung ist keine Brücke.
 3. Namen eingeben, Ort platzieren und abschließen. Im selben Panel die geordneten Markdown-Abschnitte bearbeiten. Die Abschnitte besitzen stabile Links; Umbenennen und Verschieben ändern ihre Kennungen nicht. Entfernen aus dem Atlas löscht die Ortsprosa nicht. Die vorhandenen Orts- und Weltfunktionen verwenden dieselben Ortskennungen.
-4. Unter Nachzeichenvorlage ein PNG/JPEG/WebP laden, zwei Punkte im Bild anklicken und deren reale Entfernung in Metern eingeben. Abschließen übernimmt die Kalibrierung. Über die Objektliste die Vorlage auswählen; Deckkraft, Sichtbarkeit, Sperre und Lage bearbeiten. Nach Entsperren dienen der Ursprung und der gegenüberliegende Griff zum Verschieben beziehungsweise Skalieren/Drehen. Die importierte Vorlage wird innerhalb der Kampagne gespeichert und mitkopiert.
-5. Strecke messen wählen und Wegpunkte setzen. Die Anzeige verwendet reale Meter, Kilometer und Meilen; Messen speichert keine Autorenänderung und verbraucht keine Reisezeit. Ein Werkzeugwechsel beendet die Messung ohne zusätzlichen Abschluss. Die dynamische Maßstabsleiste bleibt beim Zoomen lesbar.
+4. Unter Nachzeichenvorlage ein PNG/JPEG/WebP laden, zwei Punkte im Bild anklicken und deren reale Entfernung in der angezeigten Einheit eingeben. Abschließen übernimmt die Kalibrierung. Über die Objektliste die Vorlage auswählen; Deckkraft, Sichtbarkeit, Sperre und Lage bearbeiten. Nach Entsperren dienen der Ursprung und der gegenüberliegende Griff zum Verschieben beziehungsweise Skalieren/Drehen. Die importierte Vorlage wird innerhalb der Kampagne gespeichert und mitkopiert.
+5. Strecke messen wählen und Wegpunkte setzen. Die Anzeige verwendet das gewählte Einheitensystem; Messen speichert keine Autorenänderung und verbraucht keine Reisezeit. Ein Werkzeugwechsel beendet die Messung ohne zusätzlichen Abschluss. Die dynamische Maßstabsleiste bleibt beim Zoomen lesbar.
 6. Ausgabebereich wählen, zwei Ecken setzen und abschließen. Unter Export PNG oder JPEG, Raster und längste Bildkante bis 8192 Pixel einstellen. Ohne Rahmen gilt die aktuelle Ansicht. GM-Ausgaben zeigen bestätigte Inhalte ohne Bearbeitungsgriffe, Entwürfe oder Messhilfen. Vorlagen sind standardmäßig ausgeschlossen. Öffentliche Ausgabe verwendet weiterhin die bestehende Wissensprojektion.
 
 Die [native Regionsprobe](../tools/test-desktop-region-export.mjs) bereitet drei Orte auf ausdrücklich gezeichnetem Land, einen sichtbaren Fluss und ihren Verbindungsweg vor. Sie prüft den Messwert gegen die gespeicherten Meterpunkte, die Wegkorrektur mit Undo/Redo, Land und Flussufer im PNG sowie unveränderte Quellen nach Ausgabe und Neustart bei Skalierung 1 und 2. Schrift über internen Ausgabekachelgrenzen bleibt eine zusätzliche Gegenprobe; ein unsichtbarer Fluss auf einer reinen Ozeanfläche gilt nicht als erfolgreiche Regionsvorbereitung.
@@ -67,9 +83,9 @@ Offen bleiben der vollständige Biom-/Symbolkatalog, Heightmaps, automatische Br
 
 ## Maßstab und geografische Vergleiche
 
-Die feste Leiste unten zeigt die Entfernung über 160 Bildschirmpixel, in kleinen
-Fenstern höchstens ein Drittel der Kartenbreite. Meter/Kilometer und Meilen
-folgen dem Zoom unmittelbar. Mausrad und
+Die Leiste unten verwendet runde Entfernungen in 1/2/5-Abstufungen mit einer
+passenden Balkenlänge bis 160 Bildschirmpixeln, in kleinen Fenstern höchstens
+einem Drittel der Kartenbreite. Entfernung und Einheit folgen Zoom und Maßeinstellung. Mausrad und
 Trackpad zoomen um den Mauszeiger, die Plus-/Minustasten um die Ansichtsmitte.
 **Vorige Ansicht** nimmt eine zusammenhängende Zoomgeste zurück. Reduzierte
 Bewegung in den Systemeinstellungen schaltet die Übergangsanimation aus.
@@ -99,3 +115,37 @@ verwenden genau die ausgewählte Größe ohne Übergangsüberblendung.
 ## Regionen malen und Karten beschriften
 
 Unter **Landschaft → Regionen** werden Regionen primär mit dem Pinsel bearbeitet; Punkte dienen anschließend der Grenzkorrektur. Geografische, politische und eigene Ebenen besitzen Typen, Bedeutung und optionale Oberregionen. Straßen-, Gewässer-, Regions- und Gebäudenamen verwenden eine gemeinsame zoomabhängige Anordnung. Bedienung, Speicherung und Prüfgrenzen stehen im [Fachvertrag zur Kartenbeschriftung](plans/maps/atlas-cartography.md).
+## Größen beim Bearbeiten und Maßeinheiten
+
+**Maße** in der oberen Atlasleiste schaltet zwischen **DnD** (Standard: Fuß und
+Meilen, Flächen in Quadratfuß/Quadratmeilen) und **Metrisch** (Meter/Kilometer,
+Quadratmeter/Quadratkilometer) um. Die Einstellung gilt für den Atlas, seine
+Maßeingaben, Messung, Größenvergleiche und den Bildmaßstab und bleibt lokal über
+Neustarts erhalten. Auch Punktlisten und die räumlichen Dungeonwerkzeuge folgen
+der Auswahl; diskrete 3D-Werkzeuge behalten ihre bisherigen Rasterabstände.
+Interne Geometrie, Entwürfe und Speicherformate behalten ihre bisherigen Einheiten.
+Ein Wechsel speichert keine Kartenänderung. Ungültige offene Maßtexte müssen vor
+dem Wechsel korrigiert werden.
+
+Beim Zeichnen oder Auswählen steht die aktuelle Größe direkt an der Geometrie:
+Verläufe zeigen Länge und Breite, Flächen ihren Inhalt sowie Breite und Höhe,
+Pinsel Radius und Durchmesser, Objekte ihre Abmessungen und Licht/Features ihre
+Reichweite. Flächen berücksichtigen Löcher; gekrümmte Landschaftswege verwenden
+den dargestellten Verlauf. Gebäudemaße beziehen sich auf ihre eigene Kontur und
+ändern sich nicht beim Drehen. Die Anzeige folgt dem Entwurf und den Griffen,
+bleibt ohne Autorenwirkung und wird nicht in Kartenbilder übernommen.
+
+Bei eingeschaltetem und darstellbarem Hexraster ergänzt der Maßstab die aktuelle
+Hexgröße **zwischen gegenüberliegenden Kanten** und eine **Reise-Richtzeit**.
+Sie verwendet Normaltempo auf Ebene: 3 Meilen pro Stunde, 8 Reisestunden pro Tag,
+7 Tage pro Woche und 30 Tage pro Monat. Die konkrete Gruppenreise berechnet
+Tempo, Gelände und Wetter weiterhin separat. Automatische Stufenwechsel
+aktualisieren die Anzeige; ohne Raster entfällt die Hexinformation. Im Bildexport
+erscheint sie nur zusammen mit Raster und Maßstab.
+
+Gezielte Prüfungen: `tests/desktop-atlas-measurements.test.mjs`,
+`tests/desktop-atlas-navigation.test.mjs` und
+`tools/test-desktop-atlas-measurements.mjs`. Der native Ablauf verwendet eine
+synthetische Kampagne und prüft Wegentwurf, Einheitenwechsel, Raumzug mit
+Undo/Redo, Viertelfläche, Gebäudevorschau, Export und metrische Wiederöffnung.
+Diese Fälle sind keine vollständige Abnahme aller Werkzeugvarianten.

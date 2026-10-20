@@ -1,4 +1,6 @@
-import { applyMaskStroke, type MaskStroke } from "./land-mask";
+import {applyTerrainBrush,type HeightStroke} from './terrain-brush';
+import {applyHeightStroke,TerrainSampler} from './terrain-height';
+import { type MaskStroke } from "./land-mask";
 import { validateColor, brushFootprint, orderedColors } from "./landscape-brush";
 import { colorSurface } from "./landscape-color-surface";
 import { LandscapeRasterizer } from "./landscape-raster";
@@ -11,12 +13,15 @@ export interface BrushPreviewJob {
   width: number;
   height: number;
   stroke?: MaskStroke;
+  heightStroke?:HeightStroke;
+  contours?:number;
+  displayMpp?:number;
   color?: LandscapeRecord;
 }
-export function renderBrushPreview(job: BrushPreviewJob): Uint8Array {
+export function brushPreviewRecords(job:BrushPreviewJob,limited?:(factor:number)=>void):LandscapeRecord[]{
   let records = job.records;
-  if (job.stroke) {
-    const tiles = applyMaskStroke(records, job.stroke),
+  if (job.stroke||job.heightStroke) {
+    const tiles = job.heightStroke?applyTerrainBrush(records,job.heightStroke,limited):applyHeightStroke(records, job.stroke!),
       ids = new Set(tiles.map((r) => r.id));
     records = [...records.filter((r) => !ids.has(r.id)), ...tiles];
   }
@@ -30,7 +35,13 @@ export function renderBrushPreview(job: BrushPreviewJob): Uint8Array {
     const r = colorSurface(color, records);
     if (r.polygons.length) records = [...records, r];
   }
-  const image = new LandscapeRasterizer(job.box, job.width, job.height);
+  return records;
+}
+export function renderBrushPreview(job: BrushPreviewJob,onHeight?:(height:number)=>void,limited?:(factor:number)=>void): Uint8Array {
+  const records=brushPreviewRecords(job,limited);
+  const point=(job.heightStroke??job.stroke)?.samples.at(-1);
+  if(point)onHeight?.(new TerrainSampler(records).sample(point).heightM);
+  const image = new LandscapeRasterizer(job.box, job.width, job.height,job.contours,job.displayMpp);
   const ordered = [...records].sort(
     (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
   );
@@ -43,9 +54,10 @@ export function renderBrushPreview(job: BrushPreviewJob): Uint8Array {
 if (typeof self !== "undefined" && typeof document === "undefined")
   self.onmessage = (event: MessageEvent<BrushPreviewJob>) => {
     try {
-      const pixels = renderBrushPreview(event.data);
+      let heightM:number|undefined,protectedLimit:number|undefined;
+      const pixels = renderBrushPreview(event.data,value=>{heightM=value;},factor=>{protectedLimit=factor;});
       self.postMessage(
-        { generation: event.data.generation, pixels },
+        { generation: event.data.generation, pixels,heightM,protectedLimit },
         { transfer: [pixels.buffer] },
       );
     } catch (error) {

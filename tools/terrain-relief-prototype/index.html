@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'">
+<title>SaltMarcher · Reliefstudie</title><link rel="stylesheet" href="style.css">
+<body><header><strong>SaltMarcher</strong><span>Reliefstudie · Sattelpass</span><span class="prototype">Isolierter Prototyp R0</span></header>
+<main><aside>
+<h1>Die Graukämme</h1><p class="intro">Ein Gebirge, zwei Ansichten. Erkunde den Pass und forme seine Hänge.</p>
+<fieldset><legend>Ansicht</legend><div class="pair"><button id="top" aria-pressed="false">Draufsicht</button><button id="tilted" aria-pressed="true">Räumlich</button></div>
+<label>Maßstab<select id="scale"><option value="continent">Kontinent</option><option value="region" selected>Region</option><option value="place">Ort</option></select></label>
+<label>Neigung <output id="tilt-value">40°</output><input id="tilt" type="range" min="0" max="65" value="40"></label>
+<label>Drehung<input id="rotation" type="range" min="-180" max="180" value="0"></label>
+<label>Höhenüberhöhung <output id="ex-value">2×</output><input id="exaggeration" type="range" min="1" max="16" value="2"></label></fieldset>
+<fieldset><legend>Darstellung vergleichen</legend><label>Reliefstil<select id="style"><option value="drawn">Schattierung + Felsstriche</option><option value="shade">Nur Schattierung</option></select></label><label class="check"><input id="labels" type="checkbox" checked> Ortsnamen zeigen</label></fieldset>
+<fieldset><legend>Gelände bearbeiten</legend><label>Werkzeug<select id="tool"><option value="navigate">Erkunden</option><option value="raise">Anheben</option><option value="lower">Absenken</option></select></label><label>Radius <output id="radius-value"></output><input id="radius" type="range" min="100" max="12000" step="100" value="4500"></label><label>Höhenänderung je Zug <output id="strength-value">300 m</output><input id="strength" type="range" min="20" max="1000" step="20" value="300"></label><div class="pair"><button id="undo" disabled>Rückgängig</button><button id="redo" disabled>Wiederholen</button></div></fieldset>
+<p class="help">Ziehen: erkunden oder malen. Mausrad: zoomen. Rechte Maustaste: verschieben. Escape: Zug verwerfen.</p><button id="reset">Testlandschaft zurücksetzen</button><p class="limit">Feste Testlandschaft. Änderungen nur für diese Sitzung; kein Zugriff auf Kampagnen.</p>
+</aside><section id="viewport" aria-label="Interaktive Reliefkarte"><canvas id="flat" aria-label="Karte in Draufsicht"></canvas><canvas id="spatial" aria-label="Karte in räumlicher Ansicht"></canvas><canvas id="overlay" aria-hidden="true"></canvas><div id="map-labels"></div><div id="map-caption">Sattelpass<br><span>Gebirge · Flusstal · Hochweide</span></div><div id="scale-bar"></div><div id="error" hidden role="alert"></div></section></main>
+<footer><span id="status" role="status">Landschaft wird aufgebaut …</span><span id="metrics"></span></footer><script type="module" src="app.js"></script></body></html>

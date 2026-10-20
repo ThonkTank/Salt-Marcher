@@ -1,3 +1,4 @@
+import {validateTerrainView,type TerrainView} from './terrain-spatial-model';
 import polygonClipping from 'polygon-clipping';
 import type { Point, Polygon } from './contracts';
 import type { LandscapeRecord } from './atlas-landscape';
@@ -6,6 +7,7 @@ export interface LandscapeColor {
   version:1|2; operation?:'paint'|'erase'; fillScope?:'connected'|'all'; target:'ground'|'water'; color:string; opacity:number; flow:number;
   tip:'round'|'soft'|'textured'; radius:number; seed:number; fill:boolean;
   strokes?:Point[][];
+  visibility?:TerrainView;
 }
 export const clipPolygons=(ps:Polygon[])=>ps.map(p=>[p.outer,...p.holes].map(r=>r.map(p=>[p.x,p.y] as [number,number])));
 export const unclipPolygons=(ps:ReturnType<typeof polygonClipping.union>):Polygon[]=>ps.map(p=>({outer:p[0]!.map(([x,y])=>({x,y})),holes:p.slice(1).map(r=>r.map(([x,y])=>({x,y})))}));
@@ -33,6 +35,7 @@ export function validateColor(r:LandscapeRecord){
   if(r.propertyOnly!==undefined&&(r.propertyOnly!==true||r.kind!=='patch'||r.paint||r.mask||r.surface||r.maskManaged))throw Error('Eigenschaftsfläche prüfen.');
   if(r.surface&&!['land','sea','freshwater'].includes(r.surface))throw Error('Wasser-/Landfläche prüfen.');
   const p=r.paint;if(!p)return;
+  if(p.visibility){validateTerrainView(p.visibility);if(p.fill)throw Error("In der räumlichen Ansicht mit Pinselzügen malen.");}
   if(p.version===2&&(!['paint','erase'].includes(p.operation??'')||!['connected','all'].includes(p.fillScope??'connected')))throw Error('Farboperation prüfen.');
   if(p.strokes&&(!Array.isArray(p.strokes)||p.strokes.flat().length>2000||p.strokes.some(s=>!Array.isArray(s)||s.some(v=>!Number.isFinite(v.x)||!Number.isFinite(v.y)))))throw Error('Farbstriche prüfen.');
   if(r.kind!=='patch'||![1,2].includes(p.version)||!['ground','water'].includes(p.target)||!/^#[\da-f]{6}$/i.test(p.color)||

@@ -27,6 +27,7 @@ try{
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);
+ if(!baseline)await page.locator('#atlas-units').selectOption('metric'); // Existing fixture dimensions are meters.
  let frameWidth=1280,frameHeight=800,frameZoom=1;
  async function frame(name,width=frameWidth,height=frameHeight,zoom=frameZoom){
   frameWidth=width;frameHeight=height;frameZoom=zoom;
@@ -98,7 +99,7 @@ try{
   await chooseSection('terrain');
   // A real landscape gesture and shared history through the new direct route.
   if(await page.locator('#atlas-secondary').isVisible())await page.locator('#atlas-secondary-close').click();
-  await chooseTool('land','land-add');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-add');await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-erase');await page.locator('#land-radius').fill('2');
+  await chooseTool('land','land-shape');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-shape');await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.dataset.atlasTool),'land-color');await page.locator('#land-radius').fill('2');
   const paintBox=await page.locator('#campaign-map').boundingBox();
   await page.mouse.move(paintBox.x+paintBox.width*.2,paintBox.y+paintBox.height*.3);await page.mouse.down();await page.mouse.move(paintBox.x+paintBox.width*.3,paintBox.y+paintBox.height*.35,{steps:5});await page.mouse.up();
   await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);

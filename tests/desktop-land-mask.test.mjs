@@ -178,7 +178,7 @@ test("coarse changes update existing fine detail, including an entirely erased c
   assert.equal(terrain(rs), "water");
   assert.equal(terrain(rs, 300), "plains");
 });
-test("atomic command, undo/redo, fresh reopen and archive preserve the mask", async (t) => {
+test("atomic command, undo/redo, fresh reopen and archive preserve heights", async (t) => {
   const f = fixture(t);
   f.write(command(stroke("raise", 100)));
   const before = f.records();
@@ -193,8 +193,8 @@ test("atomic command, undo/redo, fresh reopen and archive preserve the mask", as
   assert.equal(terrain(f.records()), "plains");
   const bytes = (rs) =>
     rs
-      .filter((r) => r.mask)
-      .map((r) => [`${r.mask.pixel}:${r.mask.x}:${r.mask.y}`, r.mask.data])
+      .filter((r) => r.height)
+      .map((r) => [`${r.height.pixel}:${r.height.x}:${r.height.y}`, r.height.data])
       .sort();
   assert.deepEqual(bytes(f.records()), bytes(after));
   const file = f.dir + "/copy.sqlite";
@@ -213,7 +213,7 @@ test("atomic command, undo/redo, fresh reopen and archive preserve the mask", as
     bytes(after),
   );
 });
-test("terrain authorship uses occupancy while retaining semantic terrain and elevation", (t) => {
+test("terrain authorship couples the coast to elevation while retaining semantic terrain", (t) => {
   const f = fixture(t),
     r = {
       id: randomUUID(),
@@ -240,7 +240,7 @@ test("terrain authorship uses occupancy while retaining semantic terrain and ele
   assert.equal(terrain(f.records()), "forest");
   f.write(command(stroke("land-erase")));
   assert.equal(terrain(f.records()), "water");
-  assert.equal(effectiveLandscape(f.records(), { x: 0, y: 0 }).elevationM, 42);
+  assert.equal(effectiveLandscape(f.records(), { x: 0, y: 0 }).elevationM, -100);
   f.write(command(stroke("land")));
   assert.equal(terrain(f.records()), "forest");
 });
@@ -367,7 +367,7 @@ test("format 46 conversion preserves explicit terrain and establishes one checkp
   f.write({ kind: "undo" });
   assert.equal(terrain(f.records()), "forest");
 });
-test("malformed archived mask is rejected before a campaign is published", async (t) => {
+test("malformed archived height is rejected before a campaign is published", async (t) => {
   const f = fixture(t);
   f.write(command(stroke("land")));
   const file = f.dir + "/bad.sqlite";
@@ -375,7 +375,7 @@ test("malformed archived mask is rejected before a campaign is published", async
   const Database = require("better-sqlite3"),
     db = new Database(file);
   db.prepare(
-    "UPDATE atlas_landscape SET payload=json_set(payload,'$.mask.version',99) WHERE json_extract(payload,'$.mask') IS NOT NULL",
+    "UPDATE atlas_landscape SET payload=json_set(payload,'$.height.version',99) WHERE json_extract(payload,'$.height') IS NOT NULL",
   ).run();
   db.close();
   const before = f.store.list();

@@ -1,5 +1,7 @@
+import {terrainViewBounds} from '../terrain-spatial-model';
+import {applyHeightStroke,TerrainSampler} from '../terrain-height';
 import {colorSurface} from '../landscape-color-surface';
-import {applyMaskStroke,isLandMode,strokeBox,maskLandSpans} from '../land-mask';
+import {isLandMode,strokeBox,maskLandSpans} from '../land-mask';
 import {randomUUID} from 'node:crypto';
 import {bounds, contains, type LandscapeRecord, type LandscapeAction} from '../atlas-landscape';
 import {intersectPolygons,subtractPolygons,unionPolygons,validateColor,colorParts} from '../landscape-brush';
@@ -13,10 +15,11 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
     const stroke={mode:a.mode,radius:a.radius,roughness:a.roughness,seed:a.seed,samples:a.samples??[]};
     if(!stroke.samples.length)throw Error('Zeitstempel des Landpinsels fehlen.');
     const records=landMaskRegion(db,cam,strokeBox(stroke));
-    for(const tile of applyMaskStroke(records,stroke))putLandscape(db,cam,tile,tile.revision||null);
+    for(const tile of applyHeightStroke(records,stroke))putLandscape(db,cam,tile,tile.revision||null);
     return;
   }
   let r=structuredClone(a.record);
+  if(r.mask||r.height||r.terrainSettings)throw Error('Pinselauftrag darf keine zusätzlichen Geländedaten enthalten.');
   if(r.kind!=='patch'||!r.polygons.length||!Number.isFinite(a.radius)||a.radius<=0||!Number.isFinite(a.roughness)||a.roughness<0||a.roughness>2||
     !['land','land-erase','raise','lower','freshwater','freshwater-erase','ground-color','water-color','color-erase'].includes(a.mode))throw Error('Landschaftspinsel prüfen.');
   const points=[...r.points,...r.polygons.flatMap(p=>[...p.outer,...p.holes.flat()])];
@@ -27,7 +30,7 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
     const mode=r.paint.operation==='erase'?'color-erase':r.paint.target==='water'?'water-color':'ground-color';
     if(a.mode!==mode||r.propertyOnly||r.mask||r.surface)throw Error('Farbauftrag prüfen.');
     if(a.fill&&db.prepare("SELECT count(*) n FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch'").get(cam).n>10000)throw Error('Zu viele Flächen zum Füllen.');
-    records=landscapeRegion(db,cam,a.fill?undefined:box);
+    records=landscapeRegion(db,cam,a.fill?undefined:r.paint.visibility?terrainViewBounds(r.paint.visibility,box):box);
     r=colorSurface(r,records);
     if(!r.polygons.length){if(a.fill)throw Error('Keine passende Fläche zum Füllen.');return;}
     putLandscape(db,cam,r,null);return;
@@ -71,6 +74,7 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
   }
   if(r.paint)throw Error('Landpinsel darf keine Farbmaske enthalten.');
   const water=['land-erase','lower','freshwater'].includes(a.mode);
+  if(a.mode==='freshwater'){const sampler=new TerrainSampler(records);r.waterLevelM??=Math.max(sampler.seaLevelM,sampler.sample(r.points[0]??r.polygons[0]!.outer[0]!).heightM)+1;}
   r.surface=a.mode==='freshwater'?'freshwater':water?'sea':'land';
   r.values={terrain:water?'water':r.values.terrain&&r.values.terrain!=='water'?r.values.terrain:'plains'};
   // Fine authored overrides remain authoritative, as with the existing terrain brush.

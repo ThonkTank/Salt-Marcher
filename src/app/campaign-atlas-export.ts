@@ -1,3 +1,4 @@
+import {atlasUnits,type AtlasUnits} from './atlas-units';
 import { AtlasPaint, atlasPaint } from "./atlas-paint";
 import { AtlasCanvasScene } from "./atlas-canvas-scene";
 import {drawScale} from "./atlas-landscape-view";
@@ -147,10 +148,10 @@ export function publicAtlasPaint(
   return scene;
 }
 /** Metric overlay is composed once after all scene tiles, at a readable image size. */
-export function atlasExportScale(box:CanvasBox,width:number,height:number){
+export function atlasExportScale(box:CanvasBox,width:number,height:number,level?:number|string,system:AtlasUnits=atlasUnits()){
   if(width<256||height<100)return undefined;
-  const scene=atlasPaint('group'),mpp=box.width/width*Math.max(1,Math.min(width/1024,height/100));
-  drawScale(scene,box,mpp);
+  const scene=atlasPaint('group'),mpp=box.width/width*Math.max(1,Math.min(width/1024,height/(level===undefined?100:140)));
+  drawScale(scene,box,mpp,level,system);
   return scene;
 }
 /** A scene is drawn directly; GM scenes stream through one reusable tile surface. */

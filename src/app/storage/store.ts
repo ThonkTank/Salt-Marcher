@@ -2,6 +2,8 @@ import {checkedWorldNoteRow} from "./world-note-row";
 import {nearestAnchor} from '../drawing-model';
 import {splitGroupRoom,scaleRoomGroup,installRoomGroups,storeGroupDraft,groupRecipeForHouse,refreshChangedGroupHulls,refreshGroupHull,removeGeneratedGroup,validateRoomGroups} from './room-groups';
 import {installTerritories,readTerritories,executeTerritory} from './atlas-territories';
+import {vegetationScene} from './vegetation';
+import {TerrainSampler} from '../terrain-height';
 import {readSceneEncounterSelection} from './scene-encounter-selection';
 import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
@@ -14,7 +16,7 @@ import {roomGeometries,visibleRoomWhere,roomDirectoryQuery,roomOrder} from './ro
 import type {WorkspaceShell,WorkspaceGeometry,RoomDirectoryQuery} from '../contracts';
 import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
-import {installLandscape,landscapeRegion,executeLandscape} from './atlas-landscape';
+import {installLandscape,landscapeRegion,executeLandscape,terrainRegion} from './atlas-landscape';
 import {rememberSourceUnlink,validateNoteSourceHistory} from './note-source-history';
 import {readNoteThread,checkNoteThread} from './note-thread';
 import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices,hasNoteTitle} from './key-note-capture';
@@ -171,7 +173,7 @@ export class CampaignStore {
     const schema = this.db.pragma('user_version', { simple: true });
     if(schema>0&&schema<50&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='city_unit'").get()&&this.db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get()){this.db.close();throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');}
     if(schema>=50&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='room_group'").get()){this.db.close();throw Error('Raumgruppenspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if (schema > 51) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 52) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     if(schema>=51&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_opponent_group'").get()){this.db.close();throw Error('Szenengegner-Zuordnung fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
@@ -245,7 +247,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=51');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=52');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -298,12 +300,25 @@ export class CampaignStore {
    });}
   executeAtlasTravel(c:import('../atlas-travel-contracts').AtlasTravelCommand){this.applyAtlasTravel(c);return this.campaignAtlas(c.token);}
   executeAtlasTravelCommit(c:import('../atlas-travel-contracts').AtlasTravelCommand):import('../atlas-travel-contracts').AtlasTravelCommit{this.applyAtlasTravel(c);return{campaignId:c.campaignId,commandId:c.commandId,sceneId:c.sceneId};}
+  atlasVegetationScene(token:string,box:import('../atlas-landscape').LandscapeBox,mpp:number){const cam=this.guard(token);return {...vegetationScene(this.db,cam,box,mpp,atlasRoot(this.db,cam).revision),fence:this.atlasRegionSource(token).fence};}
+  atlasSpatialScene(token:string,box:import('../atlas-landscape').LandscapeBox,mpp:number,draft?:import('../spatial-terrain').SpatialTerrainDraft,fence?:string){
+    const cam=this.guard(token),source=this.atlasRegionSource(token);
+    if(fence!==undefined&&source.fence!==fence)throw Error('Gelände inzwischen geändert. Entwurf verwerfen und erneut zeichnen.');
+    return {...vegetationScene(this.db,cam,box,mpp,atlasRoot(this.db,cam).revision,{draft}),fence:source.fence};
+  }
+  atlasHeight(token:string,point:import('../contracts').Point){
+    const cam=this.guard(token);
+    if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y)||Math.max(Math.abs(point.x),Math.abs(point.y))>1e12)throw Error('Höhenpunkt prüfen.');
+    const nearby=terrainRegion(this.db,cam,{x:point.x-1,y:point.y-1,width:2,height:2}),step=Math.max(1,...nearby.filter(r=>r.height).map(r=>r.resolution));
+    const records=terrainRegion(this.db,cam,{x:point.x-step,y:point.y-step,width:step*2,height:step*2});
+    return {...new TerrainSampler(records).query(point),revision:atlasRoot(this.db,cam).revision};
+  }
   atlasMaskRegion(token:string,box:import('../atlas-landscape').LandscapeBox){
     const cam=this.guard(token);
     if(!box||![box.x,box.y,box.width,box.height,box.x+box.width,box.y+box.height].every(Number.isFinite)||box.width<=0||box.height<=0)throw Error('Pinselbereich prüfen.');
     const bytes=this.db.prepare('SELECT coalesce(sum(length(payload)),0) n FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?').get(cam,box.x,box.x+box.width,box.y,box.y+box.height) as {n:number};
     if(bytes.n>16*1024*1024)throw Error('Pinselbereich zu groß. In kürzeren Zügen bearbeiten.');
-    return{revision:atlasRoot(this.db,cam).revision,records:this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? AND json_extract(payload,'$.kind')='patch'").all(cam,box.x,box.x+box.width,box.y,box.y+box.height).map((r:{payload:string})=>JSON.parse(r.payload) as import('../atlas-landscape').LandscapeRecord)};
+    return{revision:atlasRoot(this.db,cam).revision,records:terrainRegion(this.db,cam,box,true)};
   }
   landscapeFind(token:string,text:string){const cam=this.guard(token);if(typeof text!=='string'||text.length>200)throw new Error('Suchtext prüfen.');return this.db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')!='patch' AND (instr(lower(json_extract(payload,'$.name')),lower(?))>0 OR json_extract(payload,'$.locationId')=?) LIMIT 100").all(cam,text,text).map((r:any)=>JSON.parse(r.payload)) as import('../atlas-landscape').LandscapeRecord[];}
   landscapeRegion(token:string,box:import('../atlas-landscape').LandscapeBox,metersPerPixel=0,includePatches=true){const cam=this.guard(token);return {revision:atlasRoot(this.db,cam).revision,records:landscapeRegion(this.db,cam,box,metersPerPixel,includePatches)};}
@@ -316,7 +331,7 @@ export class CampaignStore {
   atlasOverview(token:string):import('../campaign-atlas-contracts').AtlasOverview {
     const cam=this.guard(token);
     return this.db.transaction(()=>{
-      const root=atlasRoot(this.db,cam), b=this.db.prepare('SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=?').get(cam);
+      const root=atlasRoot(this.db,cam), b=this.db.prepare("SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NULL").get(cam);
       return {campaignId:cam,token,revision:root.revision,...atlasHistoryState(this.db,cam),
         counts:{rooms:this.db.prepare("SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)").get(cam).n,cities:this.db.prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?').get(cam).n,landscape:this.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(cam).n},
         landscapeBounds:b.x===null?null:{x:b.x,y:b.y,width:b.xmax-b.x,height:b.ymax-b.y}};
@@ -442,13 +457,13 @@ export class CampaignStore {
     const result=executeAtlasWrite(this.db,c,()=>{
       const a=c.action,cam=c.campaignId;
       if(a.kind==='territory-layer'||a.kind==='territory-put'||a.kind==='territory-remove'||a.kind==='territory-stroke'||a.kind==='territory-vertex')return executeTerritory(this.db,cam,a);
-      if(a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
+      if(a.kind==='landscape-route'||a.kind==='landscape-terrain-style'||a.kind==='landscape-vegetation-edit'||a.kind==='landscape-height-stroke'||a.kind==='landscape-sea-level'||a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-batch'||a.kind==='landscape-put'||a.kind==='landscape-reset'||a.kind==='landscape-remove'||a.kind==='landscape-place'){
         if(a.kind==='landscape-place')this.commitPreparation({commandId:c.commandId+':key',token:c.token,campaignId:cam,change:{kind:'location',document:a.document,expectedRevision:a.expectedLocationRevision}});
-        const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river'].includes(kind);
+        const physical=(kind: string | undefined)=>kind!==undefined&&['patch','road','river','vegetation'].includes(kind);
         const wasPhysical=(id: string)=>physical(this.db.prepare("SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE campaign_id=? AND id=?").get(cam,id)?.kind);
-        landscapeEnvironment=a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?(a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id))||(a.remove??[]).some(x=>wasPhysical(x.id))):physical(a.record.kind)||wasPhysical(a.record.id));
+        landscapeEnvironment=a.kind==='landscape-terrain-style'?false:a.kind==='landscape-vegetation-edit'||a.kind==='landscape-height-stroke'||a.kind==='landscape-sea-level'||a.kind==='landscape-land-stroke'||a.kind==='landscape-color-stroke'||a.kind==='landscape-brush'||a.kind==='landscape-reset'||(a.kind==='landscape-remove'?wasPhysical(a.id):a.kind==='landscape-batch'?(a.records.some(x=>physical(x.record.kind)||wasPhysical(x.record.id))||(a.remove??[]).some(x=>wasPhysical(x.id))):physical(a.record.kind)||wasPhysical(a.record.id));
         executeLandscape(this.db,cam,a);
-        if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.record.points[0]!,m.hexMeters)}});}
+        if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.point??a.record.points[0]!,m.hexMeters)}});}
 
         const row=this.db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,atlasRoot(this.db,cam).map_id),m=JSON.parse(row.payload);m.revision++;const payload=json(m);this.db.prepare("UPDATE world_record SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND kind='map' AND id=?").run(m.revision,payload,hash(payload),cam,m.id);return;
       }
@@ -1180,7 +1195,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==51&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
     this.validateDatabase(db);
@@ -1215,7 +1230,7 @@ export class CampaignStore {
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installRoomGroups(source);installSessionSchema(source);source.pragma('user_version=51');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installRoomGroups(source);installSessionSchema(source);source.pragma('user_version=52');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }

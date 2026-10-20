@@ -89,13 +89,15 @@
     "png-tools": "1.1.1",
     "pngjs": "^7.0.0",
     "polygon-clipping": "^0.15.7",
-    "yauzl": "3.4.0"
+    "yauzl": "3.4.0",
+    "three": "0.186.1"
   },
   "devDependencies": {
     "@types/clipper-lib": "^6.4.0",
     "@types/node": "^22.0.0",
     "@types/pngjs": "^6.0.5",
     "@types/yauzl": "^3.4.0",
+    "@types/three": "^0.183.1",
     "ajv": "8.20.0",
     "better-sqlite3": "13.0.3",
     "electron": "44.7.0",

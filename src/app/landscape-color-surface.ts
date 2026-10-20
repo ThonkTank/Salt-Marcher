@@ -1,3 +1,5 @@
+import {visibleTerrainColor} from './terrain-color-visibility';
+import {terrainLandSpans,terrainSettings,DEFAULT_HEIGHT_M} from './terrain-height';
 import { contains, type LandscapeRecord } from "./atlas-landscape";
 import { maskLandSpans } from "./land-mask";
 import {
@@ -9,6 +11,11 @@ import type { Polygon } from "./contracts";
 
 /** Snapshot of the surface at authorship; later coast changes cannot reveal paint laid over sea. */
 export function landSurface(records: LandscapeRecord[]): Polygon[] {
+  if(records.some(r=>r.height)){
+    let land:Polygon[]=[];
+    for(const r of records.filter(r=>r.height).sort((a,b)=>b.resolution-a.resolution))land=unionPolygons(subtractPolygons(land,r.polygons),terrainLandSpans(records,[r]));
+    return land;
+  }
   let land: Polygon[] = [];
   const masks = records
     .filter((r) => r.mask)
@@ -40,9 +47,15 @@ export function colorSurface(
   record: LandscapeRecord,
   records: LandscapeRecord[],
 ): LandscapeRecord {
-  const r = structuredClone(record),
+  const r = visibleTerrainColor(structuredClone(record),records),
     p = r.paint!;
-  const land = landSurface(records);
+  let land = landSurface(records);
+  if(DEFAULT_HEIGHT_M>terrainSettings(records).seaLevelM){
+    if(p.fill&&p.target==='ground')throw Error('Unbegrenzten Untergrund mit dem Farbpinsel bearbeiten.');
+    // Newly exposed background has no authored tiles. Restrict its colour snapshot to the actual stroke.
+    const authored=records.filter(r=>r.height||r.surface==='freshwater'&&(r.waterLevelM??terrainSettings(records).seaLevelM+1)>=DEFAULT_HEIGHT_M).flatMap(r=>r.polygons);
+    land=unionPolygons(land,subtractPolygons(r.polygons,unionPolygons(authored,[])));
+  }
   if (p.fill) {
     if (p.target === "water" && p.fillScope === "all")
       throw Error("Wasserfüllung benötigt einen geschlossenen See.");

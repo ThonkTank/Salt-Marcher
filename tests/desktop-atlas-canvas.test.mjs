@@ -676,13 +676,13 @@ test('export scale uses world meters and is drawn once after streamed tiles with
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
  f.ctx.drawImage=()=>events.push('tile');f.ctx.clearRect=()=>events.push('clear');f.ctx.fillText=text=>events.push(text);
  const box={x:-15000,y:-9000,width:30000,height:18000},overlay=atlasExportScale(box,1024,614);
- const bar=overlay.children.find(n=>n.kind==='polyline');assert.equal(bar.geometry.points[5].x-bar.geometry.points[1].x,30000/1024*160,'a fixed 160-pixel bar spans its actual world distance');
+ const group=overlay.children[0],bar=group.children.find(n=>n.kind==='polyline');assert(Math.abs((bar.geometry.points[5].x-bar.geometry.points[1].x)*group.geometry.matrix[0]-2*1609.344)<1e-8,'nice 2-mile bar spans the actual world distance');
  const read=async(part,width,height)=>({ok:true,value:{campaignId:'c',revision:1,box:part,width,height,scene:atlasPaint('rect',{width:part.width,height:part.height,style:{fill:'green'}})}});
  await atlasImage(atlasExportTiles(box,1024,614,'c',1,read,()=>true),1024,614,box,'png',()=>true,overlay);
- assert.equal(events.filter(e=>e==='4,69 km · 2,91 Meilen').length,1);assert.equal(events.at(-1),'4,69 km · 2,91 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
- const world=atlasExportScale({x:0,y:0,width:20000000,height:12000000},2048,1229),label=world.children.find(n=>n.kind==='text');
+ assert.equal(events.filter(e=>e==='2 Meilen').length,1);assert.equal(events.at(-1),'2 Meilen');assert(events.lastIndexOf('clear')<events.lastIndexOf('tile'),'legend composition must preserve the completed map');
+ const world=atlasExportScale({x:0,y:0,width:20000000,height:12000000},2048,1229),label=world.children[0].children.find(n=>n.kind==='text');
  assert.equal(label.style.fontSize,11,'world-scale labels use browser-safe glyph metrics');
- assert.equal(label.geometry.matrix[0],20000000/1024,'the transform preserves printed label size');
+ assert.equal(world.children[0].geometry.matrix[0],20000000/1024,'the transform preserves printed label size');
  assert.equal(atlasExportScale(box,8192,50),undefined,'an extremely shallow output has no space for a legible scale');
 });
 

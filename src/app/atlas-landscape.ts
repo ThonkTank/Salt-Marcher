@@ -1,3 +1,5 @@
+import {routeBounds} from './terrain-route';
+import {TerrainSampler} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import type { Point, Polygon } from "./contracts";
 import type { AtlasCell, Terrain } from "./world-contracts";
@@ -35,7 +37,7 @@ export interface LandscapeRecord {
   label?:import("./map-label-style").MapLabelStyle;
   id: string;
   revision: number;
-  kind: "patch" | "river" | "road" | "reference" | "place";
+  kind: "patch" | "river" | "road" | "reference" | "place" | "vegetation";
   name: string;
   points: Point[];
   polygons: Polygon[];
@@ -44,13 +46,19 @@ export interface LandscapeRecord {
   values: Partial<Omit<AtlasCell, "q" | "r" | "level">>;
   order?: number;
   style?: "path" | "road" | "stream" | "river";
+  route?: import('./terrain-route').TerrainRoute;
   line?: import("./landscape-line").LandscapeLine;
   paint?: import("./landscape-brush").LandscapeColor;
   mask?: import("./land-mask").LandMask;
   maskManaged?: boolean;
+  height?: import("./terrain-height").HeightTile;
+  terrainSettings?: import("./terrain-height").TerrainSettings;
+  waterLevelM?: number;
   propertyOnly?: boolean;
   sourceCell?: {mapId:string;q:number;r:number;level:number};
   surface?: "land" | "sea" | "freshwater";
+  vegetation?: import("./vegetation").VegetationSpec;
+  vegetationView?: import("./vegetation").VegetationView;
   locationId?: string;
   assetId?: string;
   imageWidth?: number;
@@ -61,6 +69,13 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:'landscape-route';record:LandscapeRecord;expectedRevision:number|null;sourceRevision:number}
+
+  | {kind:'landscape-vegetation-edit';polygons:Polygon[];mode:'clear'|'thin'|'dense'}
+
+  | {kind:"landscape-terrain-style"; style:import("./terrain-relief").TerrainStyle}
+  | {kind:"landscape-sea-level"; seaLevelM:number}
+  | {kind:"landscape-height-stroke"; stroke:import("./terrain-brush").HeightStroke}
   | {kind:"landscape-land-stroke"; stroke:import("./land-mask").MaskStroke}
   | {kind:"landscape-color-stroke"; record:LandscapeRecord}
 
@@ -92,6 +107,7 @@ export type LandscapeAction =
     }
   | {
       kind: "landscape-place";
+      point?: Point;
       record: LandscapeRecord;
       document: import("../features/location/location-schema").LocationDocument;
       expectedLocationRevision: number | null;
@@ -181,17 +197,20 @@ export function effectiveLandscape(
     .sort(
       (a, b) => b.resolution - a.resolution || (a.order ?? 0) - (b.order ?? 0),
     ))
-    if (!record.mask && contains(p, record.polygons)) {
+    if (!record.mask && record.surface!=='freshwater' && contains(p, record.polygons)) {
       if(record.propertyOnly){const {terrain,...values}=record.values;Object.assign(out,values);}
       else Object.assign(out, record.values);
     }
+  const authoredTerrain=out.terrain;
   let occupancy:number|undefined;
   for(const r of records.filter(r=>r.mask).sort((a,b)=>b.resolution-a.resolution)) {const value=maskAt(r.mask!,p);if(value!==undefined)occupancy=value;}
   if(occupancy!==undefined)out.terrain=occupancy>=MASK_SEA_LEVEL?(out.terrain&&out.terrain!=='water'?out.terrain:'plains'):'water';
   else if(records.some(r=>r.maskManaged))out.terrain='water';
-  if(out.terrain!=='water')for(const r of records.filter(r=>r.propertyOnly).sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))if(r.values.terrain&&contains(p,r.polygons))out.terrain=r.values.terrain;
+  const heightField=records.some(r=>r.height||r.terrainSettings);
+  if(heightField){const sample=new TerrainSampler(records),height=sample.sample(p);out.elevationM=height.heightM;out.terrain=sample.water(p,height.heightM)?'water':(authoredTerrain&&authoredTerrain!=='water'?authoredTerrain:'plains');}
+  if(out.terrain!=='water')for(const r of records.filter(r=>r.propertyOnly||r.kind==='vegetation').sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0)))if(r.values.terrain&&(!heightField||r.values.terrain!=='water')&&contains(p,r.polygons))out.terrain=r.values.terrain;
   // Freshwater remains an independently erasable surface.
-  for(const r of records)if(r.surface==='freshwater'&&contains(p,r.polygons))out.terrain='water';
+  for(const r of records)if(!heightField&&r.surface==='freshwater'&&contains(p,r.polygons))out.terrain='water';
   // Rivers are water surfaces. Roads never turn water into a crossing.
   for (const r of records)
     if (
@@ -211,10 +230,12 @@ export function effectiveLandscape(
   return out;
 }
 export function bounds(record: LandscapeRecord): LandscapeBox {
+  if(record.route)return routeBounds(record);
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const include=(p:Point)=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);};
   for(const p of record.line ? linePoints(record) : record.points)include(p);
   for(const polygon of record.polygons)for(const p of polygon.outer)include(p);
+  for(const o of record.vegetation?.overrides??[])if(!o.removed){include({x:o.x-o.size,y:o.y-o.size});include({x:o.x+o.size,y:o.y+o.size});}
   if(minX===Infinity)throw new Error("Geometrie fehlt.");
   if(record.kind==='reference'){
     const p=record.points[0]!,w=record.width,h=w*(record.imageHeight??1)/(record.imageWidth??1),a=record.angle??0;

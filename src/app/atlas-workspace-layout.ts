@@ -1,3 +1,4 @@
+import {initAtlasUnits,atlasUnits,setAtlasUnits} from './atlas-units';
 import {bindAnchoredPopup} from './anchored-popup';
 import {atlasSections,availableAtlasGroups,atlasToolMatches,type AtlasSection,type AtlasTool,type AtlasToolGroup} from './atlas-tool-catalog';
 
@@ -5,7 +6,7 @@ type Family='navigation'|'terrain'|'city'|'interior'|'decoration'|'travel';
 type Section=AtlasSection;
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const button=(id:string,text:string)=>{const b=document.createElement('button');b.id=id;b.type='button';b.textContent=text;return b;};
-const toolNames:Record<string,[string,string]>={select:['↖','Auswahl'],paint:['◒','Land'],color:['◉','Farbe'],property:['▧','Werte'],freshwater:['≈','Süßwasser'],hex:['⬡','Hexfläche'],reset:['↺','Zurücksetzen'],river:['≋','Fluss'],road:['╱','Weg'],place:['⚑','Ort'],measure:['↔','Messen'],district:['▧','Viertel'],plaza:['□','Platz'],water:['≈','Wasser'],wall:['▥','Wand'],building:['⌂','Haus'],'room-rectangle':['▭','Raum'],'room-polygon':['⬠','Freier Raum'],'room-cave':['◒','Höhle'],'room-erase':['◐','Radieren'],'room-hole':['◯','Aussparung'],door:['⊓','Tür / Portal'],stairs:['▤','Treppe'],light:['☼','Licht'],object:['♧','Objekt'],scatter:['⁙','Streuen'],path:['╱','Pfad'],terrain:['▧','Terrain'],roof:['⌂','Dach'],text:['T','Text'],feature:['◇','Feature']};
+const toolNames:Record<string,[string,string]>={select:['↖','Auswahl'],height:['◒','Land formen'],smooth:['∿','Glätten'],color:['◉','Farbe'],property:['▧','Werte'],freshwater:['≈','Süßwasser'],hex:['⬡','Hexfläche'],reset:['↺','Zurücksetzen'],river:['≋','Fluss'],road:['╱','Weg'],place:['⚑','Ort'],measure:['↔','Messen'],district:['▧','Viertel'],plaza:['□','Platz'],water:['≈','Wasser'],wall:['▥','Wand'],building:['⌂','Haus'],'room-rectangle':['▭','Raum'],'room-polygon':['⬠','Freier Raum'],'room-cave':['◒','Höhle'],'room-erase':['◐','Radieren'],'room-hole':['◯','Aussparung'],door:['⊓','Tür / Portal'],stairs:['▤','Treppe'],light:['☼','Licht'],object:['♧','Objekt'],scatter:['⁙','Streuen'],path:['╱','Pfad'],terrain:['▧','Terrain'],roof:['⌂','Dach'],text:['T','Text'],feature:['◇','Feature']};
 
 /** Layout owns presentation, never copies a form or its domain event handlers. */
 export class AtlasWorkspaceLayout {
@@ -74,6 +75,7 @@ export class AtlasWorkspaceLayout {
   try{const p=JSON.parse(localStorage.getItem('atlas-editor-layout-v4')??localStorage.getItem('atlas-editor-layout-v3')??'null');if(p){this.width=Math.max(240,Math.min(360,Number(p.width)||280));this.detailWidth=Math.max(280,Math.min(480,Number(p.detailWidth)||340));this.root.dataset.collapsed=String(p.collapsed===true);this.toolSettingsVisible=true;}}catch{/* optional preference */}
   this.resizer(this.toolSettings,'atlas-panel-width','Werkzeugeinstellungen verbreitern',false);
   this.resizer(this.secondary,'atlas-details-width','Kontextleiste verbreitern',true);
+  initAtlasUnits(document);
   this.createHeader();
   document.addEventListener('keydown',this.keyHandler,true);
   new ResizeObserver(()=>this.applyWidth()).observe(this.root);
@@ -137,7 +139,11 @@ export class AtlasWorkspaceLayout {
   status.setAttribute('aria-live','polite');status.setAttribute('aria-label','Speicherstatus und Meldungen');this.notices.append(el('atlas-recover'),el('atlas-region-retry'));
   el('atlas-output-open').textContent='Export';
   const players=button('atlas-player-open-controls','Spieleranzeige');players.onclick=()=>el('player-open-controls').click();
-  manage.append(nav,search,players,el('atlas-reference-open'),view,imports,el('atlas-output-open'),status,toggle);
+  const unitLabel=document.createElement('label');unitLabel.className='atlas-units-control';unitLabel.textContent='Maße ';
+  const unitSelect=document.createElement('select');unitSelect.id='atlas-units';unitSelect.setAttribute('aria-label','Maßeinheiten');
+  unitSelect.innerHTML='<option value="dnd">DnD</option><option value="metric">Metrisch</option>';unitSelect.value=atlasUnits();
+  unitSelect.onchange=()=>{if(!setAtlasUnits(unitSelect.value as 'dnd'|'metric'))unitSelect.value=atlasUnits();};unitLabel.append(unitSelect);
+  manage.append(unitLabel,nav,search,players,el('atlas-reference-open'),view,imports,el('atlas-output-open'),status,toggle);
   controls.replaceChildren(camera[2]!,camera[3]!,camera[0]!,camera[1]!,camera[4]!);navigate.append(el('atlas-undo'),el('atlas-redo'),pick,pan,measure,controls,el('atlas-overview'));
   header.append(manage,navigate);
   // The shell keeps runtime controls. They never enter an editor popup.
@@ -240,7 +246,7 @@ export class AtlasWorkspaceLayout {
  private renderTools(group=this.currentGroup()){
   this.toolList.replaceChildren();this.toolList.dataset.group=group?.id??'';
   for(const tool of group?.tools??[]){const b=button('','');this.railButton(b,tool.icon,tool.label);b.dataset.atlasTool=tool.id;b.dataset.toolSelect=tool.control;b.dataset.toolValue=tool.value;b.onclick=()=>void this.activateTool(this.family,group!.id,tool);this.toolList.append(b);}
-  for(const id of ['land-tool','city-tool','drawing-tool','land-operation','land-color-target','land-color-operation','land-freshwater-operation'])el(id)?.closest('label')?.classList.add('atlas-native-tool-select');
+  for(const id of ['land-tool','city-tool','drawing-tool','land-color-target','land-freshwater-operation'])el(id)?.closest('label')?.classList.add('atlas-native-tool-select');
  }
  private async select(){
   if(this.family==='interior')await this.activateTool('interior',null,{id:'select',label:'Auswahl',icon:'↖',control:'drawing-tool',value:'select'});

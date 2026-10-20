@@ -1,10 +1,11 @@
+import {atlasFieldValue,setAtlasFieldValue,lengthLabel} from './atlas-units';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
 import type {DrawingView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
-const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>field(id).value;
+const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id));
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:DrawingView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
 let generation=0,readRequest=0,editIntent=0,pending:Promise<boolean>|null=null,writing=false;
@@ -13,7 +14,7 @@ const formIds=['path-name','path-notes','path-from','path-to','path-from-pin','p
 type Form=Record<string,string|boolean>;
 let formBase:Form|null=null;
 function snapshot():Form{return Object.fromEntries(formIds.map(id=>[id,field(id).type==='checkbox'?field(id).checked:value(id)]));}
-function restore(values:Form){for(const[id,v]of Object.entries(values))if(typeof v==='boolean')field(id).checked=v;else field(id).value=v;}
+function restore(values:Form){for(const[id,v]of Object.entries(values))if(typeof v==='boolean')field(id).checked=v;else setAtlasFieldValue(field(id), v);}
 function sameForm(a:Form,b:Form){return formIds.every(id=>a[id]===b[id]);}
 function pathDirty(){return !!draft&&!!formBase&&!sameForm(snapshot(),formBase);}
 function invalidatePreview(){editIntent++;preview=null;el<HTMLButtonElement>('path-commit').disabled=true;el('path-preview-status').textContent='Eingaben geändert. Verbindung erneut vorschlagen lassen.';drawPreview();}
@@ -45,13 +46,13 @@ function drawForm(){
  options('path-from',draft.from.roomId);options('path-to',draft.to.roomId);
  field('path-name').value=draft.name;el<HTMLTextAreaElement>('path-notes').value=draft.notes;
  field('path-from-pin').checked=draft.from.pinned;field('path-to-pin').checked=draft.to.pinned;
- for(const[prefix,anchor]of [['from',draft.from],['to',draft.to]] as const){for(const coord of ['x','y','z'] as const)field('path-'+prefix+'-'+coord).value=anchor.local?String(anchor.local[coord]):'';field('path-'+prefix+'-face').value=anchor.local?.face??'east';}
- field('path-waypoints').value=draft.waypoints.map(p=>[p.x,p.y,p.z].join(', ')).join('\n');
+ for(const[prefix,anchor]of [['from',draft.from],['to',draft.to]] as const){for(const coord of ['x','y','z'] as const)setAtlasFieldValue(field('path-'+prefix+'-'+coord), anchor.local?String(anchor.local[coord]):'');setAtlasFieldValue(field('path-'+prefix+'-face'), anchor.local?.face??'east');}
+ setAtlasFieldValue(field('path-waypoints'), draft.waypoints.map(p=>[p.x,p.y,p.z].join(', ')).join('\n'));
  const names:Record<ConnectionForm,string>={corridor:'Korridor',stairs:'Treppe',ramp:'Rampe',ladder:'Leiter',shaft:'Schacht'};
- for(const[id,values]of [['path-forms',draft.segments.map(s=>names[s.form])],['path-widths',draft.segments.map(s=>s.widthSteps)],['path-heights',draft.segments.map(s=>s.heightSteps)],['path-factors',draft.segments.map(s=>s.factor)]] as const)field(id).value=values.join(', ');
+ for(const[id,values]of [['path-forms',draft.segments.map(s=>names[s.form])],['path-widths',draft.segments.map(s=>s.widthSteps)],['path-heights',draft.segments.map(s=>s.heightSteps)],['path-factors',draft.segments.map(s=>s.factor)]] as const)setAtlasFieldValue(field(id), values.join(', '));
  field('path-medium').value=draft.medium;
  el<HTMLButtonElement>('path-preview').disabled=draft.mode==='area';el<HTMLButtonElement>('path-commit').disabled=!preview;
- el('path-preview-status').textContent=preview?'Vorschau '+preview.distanceMeters.toFixed(1)+' m · '+preview.volume.columns.length+' Säulen · noch nicht übernommen':'Endräume wählen und Verbindung vorschlagen lassen.';drawPreview();
+ el('path-preview-status').textContent=preview?'Vorschau '+lengthLabel(preview.distanceMeters)+' · '+preview.volume.columns.length+' Säulen · noch nicht übernommen':'Endräume wählen und Verbindung vorschlagen lassen.';drawPreview();
 }
 interface SideValues{description:string;seconds:string;kind:PassageSide['target']['kind'];targetId:string;passable:boolean;sight:boolean;light:boolean;sound:boolean}
 const sideValues=(side:PassageSide):SideValues=>({description:side.description,seconds:String(side.additionalSeconds),kind:side.target.kind,targetId:side.target.id??'',passable:side.passable,sight:side.sight,light:side.light,sound:side.sound});
@@ -88,7 +89,7 @@ function collect():DungeonPath{
  const forms:Record<string,ConnectionForm>={korridor:'corridor',treppe:'stairs',rampe:'ramp',leiter:'ladder',schacht:'shaft',corridor:'corridor',stairs:'stairs',ramp:'ramp',ladder:'ladder',shaft:'shaft'};
  const waypoints=value('path-waypoints').trim()?value('path-waypoints').trim().split('\n').map(line=>{
   const coordinates=line.trim().split(/[;,\s]+/).map(Number);
-  if(coordinates.length!==3||coordinates.some(n=>!Number.isFinite(n)))throw new Error('Wegpunkte: je Zeile X, Y, Höhe in Metern.');
+  if(coordinates.length!==3||coordinates.some(n=>!Number.isFinite(n)))throw new Error('Wegpunkte: je Zeile X, Y, Höhe in der gewählten Maßeinheit.');
   return{x:coordinates[0]!,y:coordinates[1]!,z:coordinates[2]!};
  }):[];
  const total=waypoints.length+1;
@@ -113,7 +114,7 @@ function collect():DungeonPath{
  const segments=Array.from({length:total},(_,i)=>({form:names[i]??names.at(-1)!,widthSteps:widths[i]??widths.at(-1)!,heightSteps:heights[i]??heights.at(-1)!,factor:factors[i]??factors.at(-1)!}));
  return{...draft,scopeId:volume.scopeId,name:value('path-name'),notes:value('path-notes'),from,to,waypoints,segments,medium:value('path-medium') as 'air'|'water'};
 }
-function drawPreview(){const svg=el<SVGSVGElement&HTMLElement>('path-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();if(!preview)return;const points=preview.path.route.map(p=>({x:(p.x+.5)*U,y:(p.y+.5)*U,z:p.z*U})),all=[preview.fromWorld,...points,preview.toWorld],minX=Math.min(...all.map(p=>p.x))-U,minY=Math.min(...all.map(p=>p.y))-U,maxX=Math.max(...all.map(p=>p.x))+U,maxY=Math.max(...all.map(p=>p.y))+U;svg.setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);const line=document.createElementNS(ns,'polyline');line.setAttribute('points',all.map(p=>p.x+','+p.y).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','#b16d45');line.setAttribute('stroke-width','.2');svg.append(line);for(const p of all){const c=document.createElementNS(ns,'circle');c.setAttribute('cx',String(p.x));c.setAttribute('cy',String(p.y));c.setAttribute('r','.15');c.setAttribute('fill','#497c92');svg.append(c);}for(const [p,label]of [[preview.fromWorld,'A'],[preview.toWorld,'B']] as const){const t=document.createElementNS(ns,'text');t.setAttribute('x',String(p.x));t.setAttribute('y',String(p.y-.35));t.setAttribute('font-size','.6');t.textContent=label+' · '+p.z.toFixed(2)+' m';svg.append(t);}}
+function drawPreview(){const svg=el<SVGSVGElement&HTMLElement>('path-map'),ns='http://www.w3.org/2000/svg';svg.replaceChildren();if(!preview)return;const points=preview.path.route.map(p=>({x:(p.x+.5)*U,y:(p.y+.5)*U,z:p.z*U})),all=[preview.fromWorld,...points,preview.toWorld],minX=Math.min(...all.map(p=>p.x))-U,minY=Math.min(...all.map(p=>p.y))-U,maxX=Math.max(...all.map(p=>p.x))+U,maxY=Math.max(...all.map(p=>p.y))+U;svg.setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);const line=document.createElementNS(ns,'polyline');line.setAttribute('points',all.map(p=>p.x+','+p.y).join(' '));line.setAttribute('fill','none');line.setAttribute('stroke','#b16d45');line.setAttribute('stroke-width','.2');svg.append(line);for(const p of all){const c=document.createElementNS(ns,'circle');c.setAttribute('cx',String(p.x));c.setAttribute('cy',String(p.y));c.setAttribute('r','.15');c.setAttribute('fill','#497c92');svg.append(c);}for(const [p,label]of [[preview.fromWorld,'A'],[preview.toWorld,'B']] as const){const t=document.createElementNS(ns,'text');t.setAttribute('x',String(p.x));t.setAttribute('y',String(p.y-.35));t.setAttribute('font-size','.6');t.textContent=label+' · '+lengthLabel(p.z);svg.append(t);}}
 function drawList(){
  if(!data)return;
  const list=el('path-list');list.replaceChildren();

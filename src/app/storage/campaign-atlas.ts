@@ -1,4 +1,7 @@
 import {validateTerritories} from './atlas-territories';
+import {validateRoute} from '../terrain-route';
+import {validateVegetation} from '../vegetation';
+import {validateTerrain} from '../terrain-height';
 import {validateMask} from '../land-mask';
 import {validateLine} from '../landscape-line';
 import {validateColor} from '../landscape-brush';
@@ -419,7 +422,7 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'territory-layer':true,'territory-put':true,'territory-remove':true,'territory-stroke':true,'territory-vertex':true,
   'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
   'group-room-split':true,'group-scale':true,'group-generate':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
-  'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
+  'landscape-route':true,'landscape-vegetation-edit':true,'landscape-terrain-style':true,'landscape-height-stroke':true,'landscape-sea-level':true,'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
 export function executeAtlasWrite(
   db: any,
@@ -531,8 +534,12 @@ export function validateCampaignAtlases(db: any) {
         .get(table)
     )
       throw new Error("Atlasstore unvollständig: " + table);
-  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL").iterate()){
-    const record=JSON.parse(row.payload);validateLine(record);validateColor(record);validateMask(record);
+  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'").iterate()){
+    const record=JSON.parse(row.payload);validateLine(record);validateColor(record);validateMask(record);validateTerrain(record);validateVegetation(record);validateRoute(record);
+  }
+  if(schema>=49){
+    if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.terrainSettings') IS NOT NULL GROUP BY campaign_id HAVING count(*)>1").get())throw Error('Doppelter Meeresspiegel.');
+    if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1").get())throw Error('Doppelte Höhenkachel.');
   }
   for (const root of db.prepare("SELECT * FROM campaign_atlas").iterate()) {
     const maps = db

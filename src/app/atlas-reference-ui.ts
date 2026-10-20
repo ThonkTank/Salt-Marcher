@@ -28,6 +28,7 @@ export class AtlasReferenceUI {
     this.status=this.panel.querySelector('#atlas-reference-status')!;
     this.show=this.panel.querySelector('#atlas-reference-show')!;
     this.focus=this.panel.querySelector('#atlas-reference-focus')!;
+    document.addEventListener('atlas-units-changed',()=>{if(this.active){this.list();this.update();}});
     this.search.oninput=this.category.onchange=()=>this.list();
     this.show.onclick=()=>{if(this.box)this.host.set(this.fitted());};
     this.focus.onclick=()=>{if(this.box){const box=this.fitted();this.close();this.host.set(box);}};

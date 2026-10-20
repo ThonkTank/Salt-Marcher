@@ -1,4 +1,5 @@
 import {initUpdateUI} from './update-ui';
+import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
 import {editTextareaText} from './key-reading-model';
 import {initNumberInputScroll} from './number-input-scroll';
 import {workspaceGeometryOnly as geometryOnly} from './atlas-render-view';
@@ -245,7 +246,7 @@ async function leaveWorkspace() {
   if (await flush()) return true;
   if (!workspace || !draft || pointer || composing) return false;
   try {
-    unwrap(await api.keepRoomDraft(workspace.token, draft.id, { room: draft, points: el<HTMLTextAreaElement>('points').value, pointsChanged: el('points').dataset.changed === 'true', failedEdit }));
+    unwrap(await api.keepRoomDraft(workspace.token, draft.id, { room: draft, points: atlasFieldValue(el<HTMLTextAreaElement>('points')), pointsChanged: el('points').dataset.changed === 'true', failedEdit }));
     hasRetainedDraft = true;
     return true;
   } catch (error) { status('Entwurf konnte nicht gesichert werden: ' + (error as Error).message, true); return false; }
@@ -304,7 +305,7 @@ function readPoints() {
   if (!draft) return;
   const input = el<HTMLTextAreaElement>('points');
   if (input.dataset.changed !== 'true') return;
-  const points = input.value.split('\n').filter(line => line.trim()).map(line => {
+  const points = atlasFieldValue(input).split('\n').filter(line => line.trim()).map(line => {
     const values = line.trim().split(/[,;\s]+/);
     if (values.length !== 2 || values.some(v => !v || !Number.isFinite(Number(v)))) throw new Error('Koordinaten als x, y eingeben.');
     return { x: Number(values[0]), y: Number(values[1]) };
@@ -360,7 +361,7 @@ async function setDraft() {
       if (!retained || !current()) return;
       draft = structuredClone(retained.room); hasRetainedDraft = true;
       renderRoomInputs(draft, token);
-      el<HTMLTextAreaElement>('points').value = retained.points; el('points').dataset.changed = String(retained.pointsChanged);
+      setAtlasFieldValue(el<HTMLTextAreaElement>('points'),retained.points); el('points').dataset.changed = String(retained.pointsChanged);
       failedEdit = retained.failedEdit; writeBlocked = !!failedEdit;
       el('error-actions').hidden = !writeBlocked;
       draw(); status('Arbeitsentwurf wiederaufgenommen. Die Änderung ist noch nicht als Autorenstand gespeichert.', true);
@@ -375,7 +376,7 @@ async function setDraft() {
     }
   }
 }
-function updatePoints() { if (draft) { const field = el<HTMLTextAreaElement>('points'); field.value = draft.polygons[0]!.outer.map(p => `${p.x}, ${p.y}`).join('\n'); field.dataset.changed = 'false'; } }
+function updatePoints() { if (draft) { const field = el<HTMLTextAreaElement>('points'); setAtlasFieldValue(field,draft.polygons[0]!.outer.map(p => `${p.x}, ${p.y}`).join('\n')); field.dataset.changed = 'false'; } }
 function updateHistory() {
   el<HTMLButtonElement>('undo').disabled = roomDraftLoading || roomDraftReadFailed || !workspace?.canUndo;
   el<HTMLButtonElement>('redo').disabled = roomDraftLoading || roomDraftReadFailed || !workspace?.canRedo;

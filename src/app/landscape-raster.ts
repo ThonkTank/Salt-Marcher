@@ -1,4 +1,6 @@
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
+import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLight,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
+import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
 import {colorParts} from "./landscape-brush";
@@ -9,7 +11,7 @@ import { terrainColors } from './world-model';
 export const UNPAINTED_LAND = [238, 229, 207] as const;
 const COAST_INK = [104, 86, 57] as const;
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
-export const LANDSCAPE_RASTER_PAD = 4;
+export const LANDSCAPE_RASTER_PAD = 16;
 export function landscapeRasterBounds(box:LandscapeBox,width:number,height:number):LandscapeBox {
   const dx=box.width/width*LANDSCAPE_RASTER_PAD,dy=box.height/height*LANDSCAPE_RASTER_PAD;
   return {x:box.x-dx,y:box.y-dy,width:box.width+2*dx,height:box.height+2*dy};
@@ -24,12 +26,18 @@ export class LandscapeRasterizer {
   private readonly h: number;
   private colorBase:Uint8Array|null=null;
   private colorLayer:Uint8Array|null=null;
+  private covers:LandscapeRecord[]=[];
+  private coverPending=false;
   private masks:LandscapeRecord[]=[];
+  private heights:LandscapeRecord[]=[];
   private fresh:LandscapeRecord[]=[];
   private maskPending=false;
   private coastPending=false;
+  private elevations:Float32Array|null=null;
+  private terrainStyle:Readonly<TerrainStyle>=DEFAULT_TERRAIN_STYLE;
+  private seaLevelM=0;
   readonly sampleBox:LandscapeBox;
-  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number) {
+  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width) {
     if(!box||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0||
        !Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>1024||height>1024)
       throw new Error('Landschaftsübersicht prüfen.');
@@ -40,6 +48,9 @@ export class LandscapeRasterizer {
     this.pixels=new Uint8Array(width*height*4);
   }
   paint(record: LandscapeRecord) {
+    if(record.terrainSettings){this.terrainStyle=record.terrainSettings.style??DEFAULT_TERRAIN_STYLE;this.seaLevelM=record.terrainSettings.seaLevelM;}
+    if(record.vegetation){this.covers.push(record);this.coverPending=true;return;}
+    if(record.height||record.terrainSettings||record.route){this.heights.push(record);this.maskPending=true;this.coastPending=true;return;}
     if(record.propertyOnly)return;
     if(record.mask){this.masks.push(record);this.maskPending=true;this.coastPending=true;return;}
     if(record.surface==='freshwater'){this.fresh.push(record);this.maskPending=true;this.coastPending=true;return;}
@@ -50,20 +61,43 @@ export class LandscapeRasterizer {
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
     for(const polygon of record.polygons)this.polygon(polygon,rgb,1,undefined,record.maskManaged?undefined:record.values.terrain==='water');
   }
+  private applyVegetation(){
+    this.applyMasks();if(!this.coverPending)return;this.coverPending=false;
+    for(const r of this.covers.sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0))){
+      const rgb=[1,3,5].map(i=>parseInt(r.vegetation!.preset.ground.slice(i,i+2),16));
+      for(const polygon of r.polygons)this.polygon(polygon,rgb,.78,'ground');
+    }
+  }
   private applyMasks(){
     if(!this.maskPending)return;this.maskPending=false;
-    const land=UNPAINTED_LAND,sea=[127,168,189];
+    const land=reliefRgb(this.terrainStyle.land),sea=[127,168,189];
     for(const r of this.masks.sort((a,b)=>b.resolution-a.resolution)){
       const m=r.mask!,size=256*m.pixel,x0=Math.max(0,Math.floor((m.x-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w,Math.ceil((m.x+size-this.sampleBox.x)/this.sampleBox.width*this.w)),y0=Math.max(0,Math.floor((m.y-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h,Math.ceil((m.y+size-this.sampleBox.y)/this.sampleBox.height*this.h));
       for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const v=maskAt(m,{x:this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,y:this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height});if(v!==undefined)this.water[y*this.w+x]=v<MASK_SEA_LEVEL?1:0;}
     }
+    if(this.heights.length){const sampler=new TerrainSampler([...this.heights,...this.fresh]);
+      this.water.fill(DEFAULT_HEIGHT_M<=sampler.seaLevelM?1:0);
+      this.elevations=new Float32Array(this.w*this.h).fill(DEFAULT_HEIGHT_M);
+      // Only the union of authored supports needs sampling. Distant ocean stays implicit.
+      const spans=new Int32Array(this.h*2);for(let y=0;y<this.h;y++){spans[y*2]=this.w;spans[y*2+1]=0;}
+      for(const r of [...this.heights.filter(r=>r.height),...this.fresh]){
+        const points=r.polygons.flatMap(p=>p.outer);let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+        for(const p of points){left=Math.min(left,p.x);top=Math.min(top,p.y);right=Math.max(right,p.x);bottom=Math.max(bottom,p.y);}
+        const x0=Math.max(0,Math.floor((left-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w,Math.ceil((right-this.sampleBox.x)/this.sampleBox.width*this.w)),y0=Math.max(0,Math.floor((top-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h,Math.ceil((bottom-this.sampleBox.y)/this.sampleBox.height*this.h));
+        for(let y=y0;y<y1;y++){spans[y*2]=Math.min(spans[y*2]!,x0);spans[y*2+1]=Math.max(spans[y*2+1]!,x1);}
+      }
+      for(let y=0;y<this.h;y++)for(let x=spans[y*2]!;x<spans[y*2+1]!;x++){
+        const p={x:this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,y:this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height},z=sampler.sample(p).heightM;
+        this.elevations[y*this.w+x]=z;this.water[y*this.w+x]=sampler.water(p,z)?1:0;
+      }
+    }
     for(let i=0;i<this.water.length;i++){
       const at=i*4;if(this.water[i]||!this.samples[at+3]||(this.samples[at]===127&&this.samples[at+1]===168&&this.samples[at+2]===189)){const rgb=this.water[i]?sea:land;for(let c=0;c<3;c++)this.samples[at+c]=rgb[c]!;this.samples[at+3]=255;}
     }
-    for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
+    if(!this.heights.length)for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
   }
   paintColor(record:LandscapeRecord){
-    this.applyMasks();
+    this.applyVegetation();
     const p=record.paint;if(!p)return;
     this.colorBase??=this.samples.slice();this.colorLayer??=new Uint8Array(this.samples.length);
     const pigment=new LandscapeRasterizer(this.box,this.width,this.height);
@@ -117,9 +151,10 @@ export class LandscapeRasterizer {
     }
   }
   private applyCoast(){
-    this.applyMasks();
+    this.applyVegetation();
     if(!this.coastPending)return;
     this.coastPending=false;
+    this.applyRelief();
     const w=this.w,h=this.h,water=this.water,distance=new Uint8Array(w*h).fill(24);
     // Chamfer distance in half-sample units; bounded to a three-pixel shore band.
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
@@ -138,6 +173,45 @@ export class LandscapeRasterizer {
       const at=i*4,old=this.samples[at+3]!/255,total=alpha+old*(1-alpha);
       for(let c=0;c<3;c++)this.samples[at+c]=Math.round((COAST_INK[c]!*alpha+this.samples[at+c]!*old*(1-alpha))/total);
       this.samples[at+3]=Math.round(total*255);
+    }
+  }
+  private applyRelief(){
+    const z=this.elevations;if(!z)return;
+    const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink);
+    // A small symmetric screen footprint suppresses bilinear-cell facets without changing heights or coasts.
+    const step=4,stride=step*this.w;
+    for(let y=step;y<this.h-step;y++)for(let x=step;x<this.w-step;x++){
+      const i=y*this.w+x;if(this.water[i])continue;
+      const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
+      const light=reliefLight(sx,sy,style);
+      const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
+      const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
+      const delta=Math.hypot(zx,zy),interval=this.contours;
+      const remainder=interval>0?((z[i]!%interval)+interval)%interval:0;
+      const contour=interval>0&&delta>1e-5&&delta<interval/2?Math.max(0,1-Math.min(remainder,interval-remainder)/(delta*1.4))*.38:0;
+      const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
+      for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
+    }
+    if(style.mode!=='drawn'||!style.strength)return;
+    const sample=(p:{x:number;y:number})=>{
+      const x=Math.round((p.x-this.sampleBox.x)/dx-.5),y=Math.round((p.y-this.sampleBox.y)/dy-.5);
+      if(x<step||y<step||x>=this.w-step||y>=this.h-step)return {heightM:0,sx:0,sy:0,water:true};
+      const i=y*this.w+x;return {heightM:z[i]!,sx:(z[i+step]!-z[i-step]!)/(2*dx*step),sy:(z[i+stride]!-z[i-stride]!)/(2*dy*step),water:!!this.water[i]};
+    };
+    const mpp=Math.max(this.box.width/this.width,Math.min(this.displayMpp,this.box.width/this.width*2));
+    // Marks affect only relief pixels; symbols, labels and roads are drawn later.
+    for(const mark of reliefMarks(this.box,mpp,sample,style.strength)){
+      const points=mark.points.map(p=>({x:(p.x-this.sampleBox.x)/dx-.5,y:(p.y-this.sampleBox.y)/dy-.5}));
+      const radius=mark.width/Math.max(dx,dy)/2;
+      const left=Math.max(0,Math.floor(Math.min(...points.map(p=>p.x))-radius-1)),right=Math.min(this.w-1,Math.ceil(Math.max(...points.map(p=>p.x))+radius+1));
+      const top=Math.max(0,Math.floor(Math.min(...points.map(p=>p.y))-radius-1)),bottom=Math.min(this.h-1,Math.ceil(Math.max(...points.map(p=>p.y))+radius+1));
+      for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++){
+        const i=y*this.w+x;if(this.water[i])continue;
+        let distance=Infinity;
+        for(let j=1;j<points.length;j++){const a=points[j-1]!,b=points[j]!,vx=b.x-a.x,vy=b.y-a.y,t=Math.max(0,Math.min(1,((x-a.x)*vx+(y-a.y)*vy)/(vx*vx+vy*vy||1)));distance=Math.min(distance,Math.hypot(x-a.x-vx*t,y-a.y-vy*t));}
+        const alpha=mark.opacity*Math.max(0,Math.min(1,radius+.5-distance));
+        if(alpha)for(let c=0;c<3;c++){const at=i*4+c;this.samples[at]=Math.round(this.samples[at]!*(1-alpha)+inkRgb[c]!*alpha);}
+      }
     }
   }
   paintRecordLine(record:LandscapeRecord,mpp=0){

@@ -159,3 +159,28 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 #campaign-atlas #atlas-navigation{max-width:min(34vw,18rem);overflow:hidden;text-overflow:ellipsis}
 
 .room-group-dialog{width:min(960px,94vw);max-width:min(960px,94vw);max-height:92vh;overflow:auto}.group-recipe-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}.group-recipe-fields label{display:grid;gap:4px}.group-preview{background:#eee7d7;margin:12px 0;height:min(48vh,460px)}.group-preview svg{width:100%;height:100%;display:block}
+body.atlas-workspace .atlas-units-control { display:flex; flex-direction:row; align-items:center; gap:4px; white-space:nowrap; margin:0; font-size:12px; }
+body.atlas-workspace .atlas-units-control select { width:auto; min-width:0; padding:4px; }
+
+/* Terrain-bound vegetation shares the Atlas source and author history. */
+.vegetation-dialog {width:94vw;max-width:1600px;height:90vh;max-height:94vh;padding:14px;background:#eee9dc;color:#283a2e;border:1px solid #8c947f;border-radius:10px;}
+.vegetation-dialog::backdrop {background:#1c2829a8;}
+.vegetation-top {display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+.vegetation-top strong {margin-right:auto;}
+.vegetation-body {display:grid;grid-template-columns:240px minmax(0,1fr);height:calc(100% - 100px);gap:12px;}
+.vegetation-body aside {overflow:auto;padding:8px;background:#faf6ec;}
+.vegetation-body label {display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+.vegetation-body canvas {width:100%;height:100%;min-height:300px;touch-action:none;border:1px solid #b4b6a5;border-radius:6px;}
+#vegetation-options[hidden] {display:none;}
+@media(max-width:700px){.vegetation-body{grid-template-columns:180px minmax(0,1fr)}.vegetation-dialog{width:98vw;}}
+
+/* Fixed viewport tracks prevent WebGL's intrinsic canvas size from growing a dialog. */
+#terrain-route-editor[open] {display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;}
+#terrain-route-editor .vegetation-body {height:auto;min-height:0;}
+#terrain-route-editor .vegetation-body > aside {min-height:0;}
+#terrain-route-editor .route-viewports {display:grid;grid-template-rows:minmax(0,1fr) 110px;min-height:0;min-width:0;overflow:hidden;}
+#terrain-route-editor .route-viewports canvas {min-height:0;height:100%;width:100%;display:block;}
+#terrain-route-editor #route-points {padding-left:22px;}
+#terrain-route-editor #route-points li {padding-bottom:8px;}
+#terrain-route-editor #route-protected,#terrain-route-editor #route-fade {width:auto;align-self:flex-start;}
+#terrain-route-editor #route-status {margin:8px 0 0;}

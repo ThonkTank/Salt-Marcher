@@ -1,0 +1,10 @@
+[
+  {
+    "check": "typecheck-final",
+    "exitCode": 0
+  },
+  {
+    "check": "desktop-typecheck-final",
+    "exitCode": 0
+  }
+]

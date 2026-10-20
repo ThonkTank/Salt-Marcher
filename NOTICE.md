@@ -1,5 +1,11 @@
 # Third-party notices
 
+## Three.js
+
+The spatial vegetation renderer includes Three.js 0.186.1, copyright
+2010–2026 Three.js Authors, under the MIT license. The complete license is
+included in desktop builds at `licenses/three-LICENSE.txt`.
+
 ## Dungeons & Dragons System Reference Document 5.1
 
 This work includes material taken from the

@@ -44,6 +44,7 @@ function noise(seed:number, n:number) {
 }
 /** Stable world geometry. Neither the camera nor the output resolution participates. */
 export function linePoints(r: LandscapeRecord): Point[] {
+  if(r.route?.nodes.length)return r.route.nodes.map(p=>({x:p.x,y:p.y}));
   const s=r.line,p=r.points;
   if(!s||p.length<2)return p;
   const result:Point[]=[];
@@ -67,7 +68,7 @@ export function linePoints(r: LandscapeRecord): Point[] {
 export interface LinePart { points:Point[]; width:number; color:string; opacity:number; polygons?:Polygon[]; dash?:number[]; dashOffset?:number }
 /** Common numeric paint parts for screen, dense overview and export. */
 export function lineParts(r:LandscapeRecord):LinePart[]{
-  const points=linePoints(r),s=r.line,w=r.width,color=s?.color??(r.kind==='river'?'#629ebc':'#a37e51');
+  const points=linePoints(r),s=r.line,w=r.width,color=r.route?.conflict?'#bf503d':s?.color??(r.kind==='river'?'#629ebc':'#a37e51');
   const part=(width=w,opacity=1,c=color):LinePart=>({points,width,color:c,opacity});
   if(!s)return [part()];
   if(r.kind==='river'){
@@ -126,10 +127,12 @@ export function lineContains(r:LandscapeRecord,p:Point,tolerance=0):boolean{
 }
 
 export function translateLine(r:LandscapeRecord,dx:number,dy:number){
+  if(r.route)throw Error('Geplante Verläufe im Verlaufseditor verschieben.');
   r.points=r.points.map(p=>({x:p.x+dx,y:p.y+dy}));
   const c=r.line?.continuity;if(c)for(const key of ['before','after'] as const){const p=c[key];if(p)c[key]={x:p.x+dx,y:p.y+dy};}
 }
 export function splitLine(r:LandscapeRecord,index:number,id:string):[LandscapeRecord,LandscapeRecord]{
+  if(r.route)throw Error('Geplante Verläufe über ihre Zwischenpunkte bearbeiten.');
   if(index<=0||index>=r.points.length-1)throw Error('Einen inneren Verlaufpunkt auswählen.');
   const first={...structuredClone(r),points:r.points.slice(0,index+1)},second={...structuredClone(r),id,revision:0,points:r.points.slice(index)};
   if(r.line){

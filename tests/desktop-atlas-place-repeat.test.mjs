@@ -57,7 +57,7 @@ test('finished measurement survives overlay repaint and returns to grid guidance
  const x=setup(t),tool=x.document.getElementById('land-tool');tool.value='measure';tool.onchange();x.document.getElementById('land-auto-level').checked=true;
  const before=x.store.db.serialize();x.click(0,0);x.click(1.524,0);await x.view.finish();
  const root={append(){}};x.view.draw(root,{x:0,y:0,width:10,height:10},.1);x.view.drawOverlay(root,{x:0,y:0,width:10,height:10},.1);
- assert.equal(x.document.getElementById('land-status').textContent,'1,52 m · 0,000947 Meilen');
+ assert.equal(x.document.getElementById('land-status').textContent,'5 ft');
  assert.equal(x.view.hasDraft(),false);assert.deepEqual(x.commands,[]);assert.deepEqual(x.store.db.serialize(),before);
  x.view.cancel();x.view.drawOverlay(root,{x:0,y:0,width:10,height:10},.1);
  assert.match(x.document.getElementById('land-status').textContent,/Kante zu Kante/);assert.deepEqual(x.store.db.serialize(),before);

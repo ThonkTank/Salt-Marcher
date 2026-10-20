@@ -15,10 +15,12 @@ const dungeon = (value:string,label:string,icon:string,panel?:'library'):AtlasTo
 export const atlasToolGroups: Readonly<Record<AtlasSection, readonly AtlasToolGroup[]>> = {
   terrain: [
     {id:'land',label:'Land',icon:'◒',tools:[
-      land('land-add','Land hinzufügen','＋','paint',{'land-operation':'add'}),
-      land('land-erase','Land entfernen','−','paint',{'land-operation':'erase'}),
-      land('land-color','Land einfärben','◉','color',{'land-color-target':'ground','land-color-operation':'paint'}),
-      land('land-color-erase','Landfarbe radieren','◌','color',{'land-color-target':'ground','land-color-operation':'erase'}),
+      land('land-shape','Land formen','◒','height'),
+      land('land-color','Land bemalen','◉','color',{'land-color-target':'ground'}),
+      land('land-smooth','Glätten','∿','smooth'),
+    ]},
+    {id:'vegetation',label:'Bewuchs & Felsen',icon:'♧',tools:[land('vegetation','Landschaft malen','♧','vegetation'),land('vegetation-area','Landschaft umgrenzen','⬠','vegetation-area'),land('vegetation-line','Hecke / Baumreihe','⋮','vegetation-line'),land('vegetation-clear','Freihalten','◯','vegetation-clear'),land('vegetation-thin','Ausdünnen','−','vegetation-thin'),land('vegetation-dense','Verdichten','＋','vegetation-dense'),land('vegetation-object','Einzelbaum / Felsen','♠','vegetation-object'),land('vegetation-select','Bewuchs auswählen','↖','select')]},
+    {id:'properties',label:'Geländedaten',icon:'▧',tools:[
       land('property','Geländedaten','▧','property'),
       land('hex','Hexfläche füllen','⬡','hex'),
       land('reset','Eigenschaft zurücksetzen','↺','reset'),

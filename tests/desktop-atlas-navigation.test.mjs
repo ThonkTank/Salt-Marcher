@@ -18,15 +18,15 @@ test('travel presets have physical across-flat distances and preserve numeric le
   const points=root.children[0].geometry.points;assert(Math.abs(Math.max(...points.map(p=>p.x))-Math.min(...points.map(p=>p.x))-preset.meters)<1e-6);
  }
 });
-test('scale keeps CSS length while labels follow physical camera distance including fractional units',()=>{
+test('scale uses nice physical distances within the available CSS width',()=>{
  for(const mpp of [.0001,.5,100,100000])for(const width of [180,800,1800]){
-  const bar=scaleBar(mpp,width);assert.equal(bar.pixels,Math.min(160,width/3));assert.equal(bar.meters/mpp,bar.pixels);
+  const bar=scaleBar(mpp,width);assert(bar.pixels<=Math.min(160,width/3)+1e-8);assert(bar.pixels>Math.min(160,width/3)/5);assert.equal(bar.meters/mpp,bar.pixels);
   const root=new AtlasPaint('group');drawScale(root,{x:0,y:0,width:width*mpp,height:500*mpp},mpp);
-  const points=root.children.find(n=>n.kind==='polyline').geometry.points;
-  assert(Math.abs((points[5].x-points[1].x)/mpp-bar.pixels)<1e-7);
-  assert.equal(root.children.find(n=>n.kind==='text').style.fontSize,11,'glyph size stays browser-safe at world scale');
+  const group=root.children[0],points=group.children.find(n=>n.kind==='polyline').geometry.points;
+  assert(Math.abs((points[5].x-points[1].x)-bar.pixels)<1e-7);
+  assert.equal(group.children.find(n=>n.kind==='text').style.fontSize,11);
  }
- assert.notEqual(scaleBar(100,800).label,scaleBar(101,800).label);
+ assert.equal(scaleBar(90,800).label,scaleBar(91,800).label,'nearby zoom levels retain a useful round distance');
 });
 test('auto grid has hysteresis in both directions and reaches every preset',()=>{
  for(const p of travelHexSizes)assert.equal(automaticGrid(p.meters/100,null),p.id);
@@ -64,9 +64,9 @@ test('reference fitting contains the entire metric frame and preserves its cente
 });
 
 
-test('measurement and scale labels retain fine distances and use the same locale and precision',()=>{
+test('metric measurement and scale labels retain fine distances and legacy formatter precision',()=>{
  const {formatDistance}=require('../.build/atlas-landscape.cjs');
  for(const [meters,expected]of [[.015,'0,015 m · 0,00000932 Meilen'],[1.524,'1,52 m · 0,000947 Meilen'],[4828.032,'4,83 km · 3 Meilen']]){
-  assert.equal(distanceLabel(meters),expected);assert.equal(formatDistance(meters),expected);
+  assert.equal(distanceLabel(meters,'metric'),expected.split(' · ')[0]);assert.equal(formatDistance(meters),expected);
  }
 });
