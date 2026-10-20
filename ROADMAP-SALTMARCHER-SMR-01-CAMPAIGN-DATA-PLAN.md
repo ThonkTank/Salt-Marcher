@@ -61,6 +61,28 @@ Recovery, legt Verlust offen; nur Ambiguität braucht eine Auswahl.
 
 Der Desktop führt Remap und Veröffentlichung im [Campaign-Store](src/app/storage/campaign-data.ts) aus. Der ungenutzte alternative `stageCampaignRemap`-Modellpfad wurde entfernt; die folgenden Anforderungen bleiben verbindlich.
 
+Gemeinsame Definitionen werden bei Konfliktprüfung und Planung gestreamt; die
+jeweiligen ID-Abfragen werden pro Tabelle einmal vorbereitet. Die Veröffentlichung
+baut aus dem bestehenden Wiederverwendungsplan einen tabellenweisen ID-Index.
+Gegenstandskopf und Versionszeilen können dieselbe ID besitzen und bleiben daher
+getrennte Schlüsselräume. Unveränderte Definitionen benötigen keine wiederholte
+lineare Suche in der gesamten Wiederverwendungsliste. Explizite Konfliktwahl,
+historische Aliase, Quellbytes und atomarer Rollback bleiben verbindlich.
+`tests/desktop-campaign-shared-definitions.test.mjs` prüft wiederholten Import,
+alle drei Entscheidungen mit Autorenverweisen über Fresh und einen Fehler nach
+begonnenem Definitionsersatz.
+
+Die lokale instrumentierte Gegenprobe mit 600/1.200 zusätzlichen Definitionen
+fand vor der Änderung 3.608.641/10.064.341 Vergleiche in der Wiederverwendungsliste;
+danach entfällt diese Suche. Annahmezeiten lagen dort ungefähr bei
+5,1/7,9 statt 1,5/1,6 Sekunden. Das ist kein allgemeiner Laufzeitgrenzwert:
+Validierung, ID-Remap, viele Konfliktarchive, Snapshot und Medienarbeit brauchen
+weiterhin eigene Skalierungsabnahmen. Der konsistente SQLite-Snapshot und die
+Stagingkopie schützen vollständige Daten einschließlich opaker Capabilitybytes.
+Gemeinsame Sammlungen bleiben geschlossene Kandidatenbestände für Generierung
+und Musikautomatik; bloß unreferenzierte Definitionen werden nicht entfernt.
+
+
 Unabhängige Campaignkopie/-import vergibt neue IDs für alle lokalen Objekte,
 Scenes/Runtime, Checkpoints, Abschnitte und Referenzen. Quelle und bestehende
 Campaigns bleiben unverändert; kein Merge in ein vorhandenes Ziel. Restore
@@ -194,6 +216,8 @@ working on maps.
 
 `tools/test-desktop-campaign-transfer-visit.mjs` exercises export, direct import,
 linked-note and room-key edits, normal shutdown, fresh-process reopening and
-separate continuation of source and import. Only native file selection is
-instrumented. The fault/recovery visit remains in
+separate continuation of source and import. It records actual browser zoom,
+owned process identities, bounded normal exits and fresh native window captures;
+its disposable profile honors disk-backed `TMPDIR`. Only native file selection
+is instrumented. The fault/recovery visit remains in
 `tools/test-desktop-campaign-copy.mjs`; the clean visit does not replace it.
