@@ -16,6 +16,16 @@ Beginne beim sichtbaren Endergebnis eines konkreten Nutzerablaufs. Dieser Ablauf
 3. **Nutzen wir diesen Weg? Wenn nicht, wieso nicht?** Vergleiche Ist und Soll. Prüfe jede Abweichung auf einen konkreten notwendigen Nutzen. Bestand, investierte Arbeit, historische Entscheidungen und bloße Planvorgaben sind keine Rechtfertigung. Behalte begründete Abweichungen nur, soweit der einfachere Weg die benötigte Wirkung tatsächlich nicht sicher erreicht.
 4. **Beseitige alle unnötigen Abweichungen von diesem Standardpfad.** Setze die Vereinfachung selbst um: streichen, zusammenführen, kürzen, korrigieren, umbauen oder ersetzen. Bevorzuge reine Subtraktion, wenn sie dieselbe Nutzerwirkung erhält. Ersetze auch Werkzeuge durch Dokumentation oder einfachere Abläufe, wenn dieselben Nutzerfähigkeiten erhalten bleiben. Prüfe anschließend denselben Nutzerablauf und sein sichtbares Ergebnis erneut.
 
+## Jeder zehnte Automationslauf: strukturell verbessern
+
+Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
+
+> Bitte sieh dir die letzten rund zwölf Probleme an, die du selbst gefunden hast. Gibt es eine Möglichkeit, sie und weitere Probleme zu lösen oder zu vermeiden, indem wir jetzt einen tiefergehenden strukturellen Fix machen, der spätere Arbeit erspart oder erleichtert?
+
+Nutze die eigenen Befunde im aktuellen Chat und prüfe gemeinsame Ursachen am aktuellen Bestand. Bei weniger Befunden nutze die vorhandenen. Suche nach einer zusammenhängenden Korrektur innerhalb deines Rollenauftrags statt nach weiteren Einzelflicken. Strukturell kann auch Streichen, Zusammenführen oder Vereinfachen bedeuten.
+
+Beantworte die Frage im Chat, zeige einen konkreten Plan mit den adressierten Mustern und der erwarteten Arbeitsersparnis, setze ihn selbst um und prüfe die Wirkung an den betroffenen Abläufen. Führe eine begonnene strukturelle Korrektur nötigenfalls in den folgenden Läufen zu Ende. Wenn kein belegter struktureller Fix sinnvoll ist, begründe das knapp und arbeite regulär weiter; kein Umbau allein für diesen Rhythmus. Ist die Laufzahl nicht ermittelbar, benenne die Unsicherheit und arbeite sinnvoll weiter.
+
 ## Gemeinsamer Capability-Katalog
 
 Schließe die begonnene Aufgabe ab und wähle dann einmal mit `codex-dungeon-capability all --rolle realist` einen Ablauf. Der Bestand wird nach gemeinsamer Aktualität ausgewählt; jeder dritte Einstieg deiner Rolle ist „Neue Capability“. Nicht erneut auswählen, um ein bevorzugtes Thema zu erhalten. Bei „Neue Capability“ lies den gesamten Katalog am ausgegebenen Pfad auf ähnliche Abläufe: verwende oder ergänze einen passenden Eintrag, sonst entwickle einen neuen Ablauf. Andere Namen, Testdaten oder Vergleichsprodukte machen denselben Ablauf nicht neu. Bearbeite ihn aus deiner Rollenperspektive mit den zugehörigen Originalanforderungen.

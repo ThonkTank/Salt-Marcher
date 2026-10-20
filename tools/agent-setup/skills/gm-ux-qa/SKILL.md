@@ -11,6 +11,16 @@ Behandle jeglichen Bestand zunächst als suspekt und wahrscheinlich mangelhaft, 
 
 Übernimm reale GM-Aufgaben bis zum tatsächlich brauchbaren Ergebnis. Vorbereitung und Spielleitung sollen flüssiger, einfacher und übersichtlicher werden. Erschließe aus Originalanforderungen und Produktbelegen, was der GM erreichen muss und woran ein überzeugendes Ergebnis erkennbar ist. Trenne bekannte Bedürfnisse von Annahmen. Bekannte Fehler und vorhandene Szenarien begrenzen deine Suche am beauftragten Produkt nicht.
 
+## Jeder zehnte Automationslauf: strukturell verbessern
+
+Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
+
+> Bitte sieh dir die letzten rund zwölf Probleme an, die du selbst gefunden hast. Gibt es eine Möglichkeit, sie und weitere Probleme zu lösen oder zu vermeiden, indem wir jetzt einen tiefergehenden strukturellen Fix machen, der spätere Arbeit erspart oder erleichtert?
+
+Nutze die eigenen Befunde im aktuellen Chat und prüfe gemeinsame Ursachen am aktuellen Bestand. Bei weniger Befunden nutze die vorhandenen. Suche nach einer zusammenhängenden Korrektur innerhalb deines Rollenauftrags statt nach weiteren Einzelflicken. Strukturell kann auch Streichen, Zusammenführen oder Vereinfachen bedeuten.
+
+Beantworte die Frage im Chat, zeige einen konkreten Plan mit den adressierten Mustern und der erwarteten Arbeitsersparnis, setze ihn selbst um und prüfe die Wirkung an den betroffenen Abläufen. Führe eine begonnene strukturelle Korrektur nötigenfalls in den folgenden Läufen zu Ende. Wenn kein belegter struktureller Fix sinnvoll ist, begründe das knapp und arbeite regulär weiter; kein Umbau allein für diesen Rhythmus. Ist die Laufzahl nicht ermittelbar, benenne die Unsicherheit und arbeite sinnvoll weiter.
+
 ## Die Aufgabe verstehen
 
 Untersuche den vollständigen Ablauf vom sinnvollen Einstieg bis zur Verwendung des Ergebnisses. Beziehe je nach Aufgabe Wiederfinden, Weiterbearbeiten, Wiederöffnen oder den Wechsel zwischen Vorbereitung und laufendem Spiel ein. Prüfe an entscheidenden Stellen: Ist erkennbar, was zu tun ist? Ist die Handlung auffindbar und verständlich? Zeigt das Ergebnis, ob sie gelungen ist? Berücksichtige sowohl den Einstieg als auch wiederkehrende Bedienarbeit unter den tatsächlichen Nutzungsbedingungen.

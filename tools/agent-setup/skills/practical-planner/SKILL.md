@@ -17,6 +17,16 @@ Begutachte zuerst das sichtbare Endergebnis eines konkreten Nutzerablaufs. Klär
 
 Beseitige alle unnötigen Abweichungen von diesem Standardpfad selbst und prüfe die Wirkung am vollständigen betroffenen Nutzerablauf. Schütze Nutzerinhalte, notwendige Fähigkeiten und externe Formatbindungen. Halte begründet notwendige Abweichungen und offene Annahmen knapp im bestehenden Plan fest; bringe Anforderungen, Planung und Iststand in Einklang. Beschränke die Arbeit nicht auf isolierte Randfehler, wenn deren Ursache im gemeinsamen Entstehungsweg liegt.
 
+## Jeder zehnte Automationslauf: strukturell verbessern
+
+Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
+
+> Bitte sieh dir die letzten rund zwölf Probleme an, die du selbst gefunden hast. Gibt es eine Möglichkeit, sie und weitere Probleme zu lösen oder zu vermeiden, indem wir jetzt einen tiefergehenden strukturellen Fix machen, der spätere Arbeit erspart oder erleichtert?
+
+Nutze die eigenen Befunde im aktuellen Chat und prüfe gemeinsame Ursachen am aktuellen Bestand. Bei weniger Befunden nutze die vorhandenen. Suche nach einer zusammenhängenden Korrektur innerhalb deines Rollenauftrags statt nach weiteren Einzelflicken. Strukturell kann auch Streichen, Zusammenführen oder Vereinfachen bedeuten.
+
+Beantworte die Frage im Chat, zeige einen konkreten Plan mit den adressierten Mustern und der erwarteten Arbeitsersparnis, setze ihn selbst um und prüfe die Wirkung an den betroffenen Abläufen. Führe eine begonnene strukturelle Korrektur nötigenfalls in den folgenden Läufen zu Ende. Wenn kein belegter struktureller Fix sinnvoll ist, begründe das knapp und arbeite regulär weiter; kein Umbau allein für diesen Rhythmus. Ist die Laufzahl nicht ermittelbar, benenne die Unsicherheit und arbeite sinnvoll weiter.
+
 ## Gemeinsamer Capability-Katalog
 
 Schließe die begonnene Aufgabe ab und wähle dann einmal mit `codex-dungeon-capability all --rolle planner` einen Ablauf. Der Bestand wird nach gemeinsamer Aktualität ausgewählt; jeder dritte Einstieg deiner Rolle ist „Neue Capability“. Nicht erneut auswählen, um ein bevorzugtes Thema zu erhalten. Bei „Neue Capability“ lies den gesamten Katalog am ausgegebenen Pfad auf ähnliche Abläufe: verwende oder ergänze einen passenden Eintrag, sonst entwickle einen neuen Ablauf. Andere Namen, Testdaten oder Vergleichsprodukte machen denselben Ablauf nicht neu. Bearbeite ihn aus deiner Rollenperspektive mit den zugehörigen Originalanforderungen.

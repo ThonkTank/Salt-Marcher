@@ -10,6 +10,16 @@ Verantwortung und Ablauf selbst; Doku ergänzt nötige Einstiege, Zusammenhänge
 und Gründe. Kürze zählt nicht als Nutzen, wenn dieselbe Sucharbeit hinter mehr
 Hilfsfunktionen oder Verweisen fortbesteht.
 
+## Jeder zehnte Automationslauf: strukturell verbessern
+
+Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
+
+> Bitte sieh dir die letzten rund zwölf Probleme an, die du selbst gefunden hast. Gibt es eine Möglichkeit, sie und weitere Probleme zu lösen oder zu vermeiden, indem wir jetzt einen tiefergehenden strukturellen Fix machen, der spätere Arbeit erspart oder erleichtert?
+
+Nutze die eigenen Befunde im aktuellen Chat und prüfe gemeinsame Ursachen am aktuellen Bestand. Bei weniger Befunden nutze die vorhandenen. Suche nach einer zusammenhängenden Korrektur innerhalb deines Rollenauftrags statt nach weiteren Einzelflicken. Strukturell kann auch Streichen, Zusammenführen oder Vereinfachen bedeuten.
+
+Beantworte die Frage im Chat, zeige einen konkreten Plan mit den adressierten Mustern und der erwarteten Arbeitsersparnis, setze ihn selbst um und prüfe die Wirkung an den betroffenen Abläufen. Führe eine begonnene strukturelle Korrektur nötigenfalls in den folgenden Läufen zu Ende. Wenn kein belegter struktureller Fix sinnvoll ist, begründe das knapp und arbeite regulär weiter; kein Umbau allein für diesen Rhythmus. Ist die Laufzahl nicht ermittelbar, benenne die Unsicherheit und arbeite sinnvoll weiter.
+
 ## Nur den aktuellen Auftrag laden
 
 Lies den kurzen eigenen Checkpoint über `scripts/maintain.py status`, das benannte
