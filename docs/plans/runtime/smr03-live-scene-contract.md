@@ -848,11 +848,12 @@ Name, XP und Rast; eine zweite Schnellwertezeile entfällt.
 
 Profilanlage und Profiländerung verwenden nach bestätigter Writer-Antwort
 denselben identitätsgebundenen Roster-Sprung. Er öffnet das Roster, setzt den
-vorhandenen Identitätsfilter und fokussiert dessen Suche. Die bestätigte Figur
+vorhandenen Identitätsfilter. Die Suche erhält den Fokus erst nach Freigabe der
+Controls und nur in derselben Kampagne und Partyfenster-Instanz. Die bestätigte Figur
 bleibt dadurch auch nach Namensänderung, unter einem früheren Filter und jenseits
 der ersten 40 Einträge erreichbar; gleichnamige Figuren bleiben getrennt.
 Fehlgeschlagene oder veraltete Antworten behalten Formular und bisherigen Filter.
-Es entsteht kein zusätzlicher Auswahlzustand. Die native Quellbuild-Probe
+Es entsteht kein zweiter dauerhafter Auswahlzustand. Die native Quellbuild-Probe
 `tools/test-desktop-character-profile.mjs` verbindet dies mit offenen Profilwerten,
 XP-Setzen/-Addition/-Abzug, unveränderten Rastfakten und frischer Neuöffnung.
 

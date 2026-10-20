@@ -53,6 +53,7 @@ for(const zoom of [1,2]){
   const created=db.prepare('SELECT id FROM character_profile WHERE id NOT IN ('+ids.map(()=>'?').join(',')+')').all(...ids);assert.equal(created.length,1);const id=created[0].id;
   assert.equal(await page.locator('#party-search').inputValue(),id,'Confirmed new character must be reachable through the existing roster route despite the old filter');
   assert.equal(await page.locator('#party-roster .party-card').count(),1);assert.equal(await row(id).count(),1);
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'party-search','Only unlocked controls can receive the confirmed handoff focus');
   assert.deepEqual(profile(id),{name:'Ada'});assert.equal(progress(id).xp,null);assert.equal(progress(id).health,null);
   console.log('Confirmed filtered creation',zoom);await native.capture(page,'created');
   // Repeat the same handoff for a renamed homonym found under its previous name.
@@ -60,6 +61,7 @@ for(const zoom of [1,2]){
   await page.locator('#party-name').fill('Ada neu');await page.locator('#party-field-playerName').fill('Lea Ω');await page.locator('#party-field-languages').fill('Common, Elvish');
   await page.locator('#party-profile-form button[type=submit]').click();await page.locator('#party-editor').waitFor({state:'hidden'});await settled();
   assert.equal(await page.locator('#party-search').inputValue(),id);assert.equal(await page.locator('#party-roster .party-card').count(),1);
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'party-search');
   assert.deepEqual(profile(id),{name:'Ada neu',playerName:'Lea Ω',languages:['Common','Elvish']});
   if(await row(id).locator('.party-card-details').isHidden())await row(id).locator('.party-member-toggle').click();
   await row(id).getByRole('button',{name:'Zur Party',exact:true}).click();await settled();
