@@ -223,8 +223,9 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
   const action:CombatAction=editableCombat(view?.combat??null)
     ?{kind:'add-creature',creatureId,count,grouped}
     :{kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision,catalogCreature:{creatureId,count,grouped}};
-  const ok=get('combat-add-dialog').hasAttribute('open')?await submitReinforcement(failed=>execute(action,undefined,owner.current,failed)):await execute(action,undefined,owner.current);
-  if(ok&&owner.current()){
+  const dialogOpen=get('combat-add-dialog').hasAttribute('open');
+  const ok=dialogOpen?await submitReinforcement(failed=>execute(action,undefined,owner.current,failed),()=>catalogAdditionConfirmed(creatureId,count)):await execute(action,undefined,owner.current);
+  if(ok&&owner.current()&&!(dialogOpen&&view?.combat?.phase==='preparing')){
     closeReinforcements();
     // The live focus bar has just appeared after leaving the catalog. Measure
     // its sticky offset before positioning the encounter heading beneath it.
@@ -311,11 +312,22 @@ function closeReinforcements(){
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
  if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
 }
-async function submitReinforcement(send:(failed:(message:string)=>void)=>Promise<boolean>){
+async function submitReinforcement(send:(failed:(message:string)=>void)=>Promise<boolean>,confirmed=closeReinforcements){
  if(!workspace)return false;
  return reinforcementBooking.run({campaignId:workspace.campaign.id,
   current:captureView(()=>[workspace?.token,scene?.id,generation],()=>get('combat-add-dialog').hasAttribute('open')),
-  send,lock:()=>lock(),report:message=>{get('combat-add-status').textContent=message;},confirmed:closeReinforcements});
+  send,lock:()=>lock(),report:message=>{get('combat-add-status').textContent=message;},confirmed});
+}
+/** Preparation collects several confirmed species before moving on to initiative. */
+function catalogAdditionConfirmed(creatureId:string,count:number){
+ if(view?.combat?.phase!=='preparing'){closeReinforcements();return;}
+ const name=view.combat.sources?.find(c=>c.id===creatureId)?.name??'Gegner';
+ get('combat-add-status').textContent=count+' × '+name+' übernommen.';
+ reinforcementResults=[];reinforcementSourceChosen=true;
+ get<HTMLSelectElement>('combat-creature-source').value='catalog';
+ get<HTMLInputElement>('combat-creature-search').value='';get('combat-creature-status').textContent='';
+ get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-initiative').value='';
+ renderReinforcements();lock();get<HTMLInputElement>('combat-creature-search').focus();
 }
 function openReinforcements(){
  if(blocked()||!workspace||!scene)return;
@@ -328,6 +340,7 @@ function openReinforcements(){
 }
 function renderReinforcements(){
  const select=get<HTMLSelectElement>('combat-creature-select'),previous=select.value,combat=view?.combat;
+ get('combat-preparation-initiative').hidden=combat?.phase!=='preparing';
  const source=get<HTMLSelectElement>('combat-creature-source');
  const groups=combat?initiativeGroups(combat).filter(members=>{
   const actor=members[0]!;
@@ -340,8 +353,9 @@ function renderReinforcements(){
  get('combat-creature-search-form').hidden=grouped;get('combat-creature-status').hidden=grouped;
  get('combat-creature-initiative-field').hidden=grouped||!editableCombat(combat??null);get('combat-creature-grouped-field').hidden=grouped||Number(value('combat-creature-count'))<=1;
  get('combat-creature-select-label').textContent=grouped?'Vorhandener Trupp':'Katalogkreatur';
- get('combat-creature-add').textContent=editableCombat(combat??null)?'Gegner hinzufügen':'Für aktuelle Gruppe vorbereiten';
- get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps.':'Die Gegner bleiben als Szenenfiguren mit ihren HP und Zuständen erhalten.';
+ get('combat-creature-add').textContent='Gegner hinzufügen';
+ get('combat-reinforcement').querySelector<HTMLLabelElement>('label[for="combat-creature-source"]')!.textContent=combat?.phase==='running'?'Verstärkung aus':'Gegner aus';
+ get('combat-creature-explanation').textContent=grouped?'Neue Mitglieder erhalten die Initiative des Trupps.':'Übernommene Gegner behalten ihre HP und Zustände auch für spätere Begegnungen.';
  select.replaceChildren();
  const add=(id:string,text:string)=>{const option=document.createElement('option');option.value=id;option.textContent=text;select.append(option);};
  if(grouped)for(const members of groups){
@@ -374,6 +388,7 @@ function lockConditionShortcuts(){
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution,#combat-selection'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
   get<HTMLButtonElement>('combat-add-close').disabled=!!pending||reinforcementBooking.busy;
+  get<HTMLButtonElement>('combat-preparation-initiative').disabled=blocked()||reinforcementBusy||view?.combat?.phase!=='preparing';
   selectionPanel?.lock();
   resolution?.setBlocked(!!blocked());
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -431,7 +446,7 @@ function render() {
   const additions=get<HTMLDialogElement>('combat-add-dialog');
   if(additions.dataset.combatId!==(combat?.id??'')&&!reinforcementBooking.busy)closeReinforcements();
   additions.dataset.combatId=combat?.id??'';
-  get('combat-add-context').textContent=combat?.phase==='running'?'Runde '+combat.round+' · Am Zug: '+(combat.participants.find(p=>p.id===combat.turnId)?.name??'—')+' · Zug bleibt erhalten.':'Gegner mit Statblock, HP und XP übernehmen.';
+  get('combat-add-context').textContent=combat?.phase==='running'?'Runde '+combat.round+' · Am Zug: '+(combat.participants.find(p=>p.id===combat.turnId)?.name??'—')+' · Zug bleibt erhalten.':combat?.phase==='preparing'?'Vorbereitet: '+initiativeGroups(combat).filter(members=>!members[0]!.characterId).map(members=>members.length+' × '+(members[0]!.groupName??combat.sources?.find(c=>c.id===members[0]!.sourceId)?.name??members[0]!.name)).join(' · '):'Gegner mit Statblock, HP und XP übernehmen.';
   get('combat-status').textContent = !combat ? 'Bereite hier die nächste Begegnung dieser Gruppe vor.' : combat.phase === 'preparing' ? 'Vorbereitung · HP und Initiative anpassen, dann ausdrücklich beginnen.' : combat.phase === 'finished' ? 'Abgeschlossen · ' + combat.outcome + (combat.rewards?.totalXp ? ' · ' + combat.rewards.totalXp + ' XP verteilt' : '') : combat.phase==='retired'?'Archiviert · Quellgruppe wurde beendet; kein Kampfergebnis abgeleitet.':'Runde ' + combat.round + ' · Am Zug: ' + (combat.participants.find(p => p.id === combat.turnId)?.name ?? '—');
   const history = get<HTMLSelectElement>('combat-history'); history.replaceChildren();
   const recent=[...(view?.recent??knownRecent)];if(combat&&!recent.some(item=>item.id===combat.id))recent.unshift({id:combat.id,title:combat.title,phase:combat.phase});
@@ -572,6 +587,7 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
+  get('combat-preparation-initiative').onclick=()=>{if(blocked()||reinforcementBusy||view?.combat?.phase!=='preparing')return;closeReinforcements();void initiativePanel?.open();};
   get('combat-add-open').onclick=openReinforcements;get('combat-add-close').onclick=()=>{if(!pending)closeReinforcements();};
   get('combat-add-dialog').addEventListener('cancel',event=>{event.preventDefault();if(!pending)closeReinforcements();});
   get('combat-creature-source').onchange=()=>{reinforcementSourceChosen=true;get<HTMLInputElement>('combat-creature-initiative').value='';renderReinforcements();lock();};
@@ -586,7 +602,8 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
    if(!editableCombat(view?.combat??null)){void addCatalogCreature(creatureId,Number(value('combat-creature-count')),get<HTMLInputElement>('combat-creature-grouped').checked);return;}
    const initiative=value('combat-creature-initiative').trim();
    get('combat-add-status').textContent='';
-   void submitReinforcement(failed=>execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})},undefined,()=>true,failed));
+   const count=Number(value('combat-creature-count'));
+   void submitReinforcement(failed=>execute({kind:'add-creature',creatureId,count,grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})},undefined,()=>true,failed),()=>catalogAdditionConfirmed(creatureId,count));
   };
   get('combat-add-form').onsubmit = event => { event.preventDefault();if(blocked())return;get('combat-add-status').textContent=''; void submitReinforcement(failed=>execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) },undefined,()=>true,failed)); };
   get('combat-start').onclick = () => void execute({ kind: 'start' });
