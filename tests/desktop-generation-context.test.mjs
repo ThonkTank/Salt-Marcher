@@ -175,3 +175,25 @@ test('saved-plan opening cannot claim success when the current authored draft ca
  const historical=historyRun(x,'historical');historical.acceptedPlanIds=['saved'];window.campaign.generationRun=async()=>({ok:true,value:historical});await chooseHistory(x,'historical');
  x.choice().onclick();await settle();assert.equal(x.el('encounter-name').value,'Unsaved authored title');assert.match(x.el('generation-feedback').textContent,/Offene Encounter-Eingabe/);assert.doesNotMatch(x.el('generation-feedback').textContent,/geöffnet/);assert.equal(x.accepted.length,0);assert.equal(x.choice().disabled,false);
 });
+
+test('reopening the current saved preparation reads after flushing its authored draft',async t=>{
+ const x=await fixture(t);let saved={...structuredClone(x.plan),sources:[],catalogHash:'pinned'},writes=0;const reads=[];
+ window.campaign.encounterPlan=async()=>{reads.push(saved.name);return{ok:true,value:structuredClone(saved)};};
+ window.campaign.creatureInfo=async()=>({ok:true,value:{types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'}});
+ window.campaign.saveEncounterPlan=async command=>{writes++;saved={...structuredClone(command.plan),revision:saved.revision+1};return{ok:true,value:structuredClone(saved)};};
+ x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:saved.id});
+ const historical=historyRun(x,'historical');historical.acceptedPlanIds=[saved.id];window.campaign.generationRun=async()=>({ok:true,value:historical});await chooseHistory(x,'historical');
+ x.el('encounter-name').value='Latest authored title';x.el('encounter-name').oninput();reads.length=0;x.choice().onclick();await settle();
+ assert.equal(writes,1);assert.deepEqual(reads,['Latest authored title']);assert.equal(x.el('encounter-name').value,'Latest authored title');assert.equal(x.accepted.length,0);assert.match(x.el('generation-feedback').textContent,/geöffnet/);
+});
+
+test('saved-plan reopening preserves edits made while its read is pending',async t=>{
+ const x=await fixture(t);let saved={...structuredClone(x.plan),sources:[],catalogHash:'pinned'},pause=null;const ok=value=>({ok:true,value});
+ window.campaign.encounterPlan=async()=>{const response=ok(structuredClone(saved));return pause?(await pause.promise,response):response;};
+ window.campaign.creatureInfo=async()=>ok({types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'});
+ window.campaign.saveEncounterPlan=async command=>{saved={...structuredClone(command.plan),revision:saved.revision+1};return ok(structuredClone(saved));};
+ x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:saved.id});
+ const historical=historyRun(x,'historical');historical.acceptedPlanIds=[saved.id];window.campaign.generationRun=async()=>ok(historical);await chooseHistory(x,'historical');
+ pause=held();x.choice().onclick();await settle();x.el('encounter-name').value='Edited during read';x.el('encounter-name').oninput();pause.resolve();await settle();
+ assert.equal(saved.name,'Edited during read');assert.equal(x.el('encounter-name').value,'Edited during read');assert.match(x.el('generation-feedback').textContent,/geöffnet/);
+});
