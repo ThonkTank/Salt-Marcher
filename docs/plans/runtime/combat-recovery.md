@@ -158,13 +158,16 @@ zusammen mit den gewählten Eingaben. Während des Schreibversuchs sind Schließ
 und Escape gesperrt; danach geben beide den vorhandenen Buchungsstatusknopf frei.
 Die gemeinsame Buchungssperre bleibt bis zur Statusklärung aktiv. Die Klärung
 liest den vorhandenen Beleg und den aktuellen Kampf, ohne Gegner erneut anzulegen.
-Das gilt auch für freie Teilnehmer ohne Statblock; vorbereitete Gruppen verwenden
+Der Fehlerhinweis gilt auch für die erste Kataloganlage und freie Teilnehmer
+ohne Statblock; vorbereitete Gruppen verwenden
 ihren eigenen Auswahlweg. Die native Verstärkungsprobe wählt den Trupp ausdrücklich,
 wartet vor dem Zoom auf das Fenster und entfernt alte Erfolgsdateien vor dem Start.
 Mit `--reply-loss` prüft sie bei 100 % Truppverstärkung und bei 200 % eine neue
 Katalogkreatur mit verlorener Antwort, einmaligem Receipt, unveränderten bisherigen
 Teilnehmern, Fresh, Fortsetzen, Abschluss und erneutem Fresh. Kontrollierte Ablehnung
-und Schließschutz während des laufenden Writes prüft zusätzlich der Controller.
+der ersten Kataloganlage prüft sie anschließend am abgeschlossenen Kampf ohne
+neue Kampfmaske; den Schließschutz während des laufenden Writes prüft zusätzlich
+der Controller.
 
 ## Nachbereitung und bestehende Schätze
 
