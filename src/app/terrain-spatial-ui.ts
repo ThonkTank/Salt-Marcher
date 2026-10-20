@@ -10,6 +10,7 @@ import {atlasFieldValue,lengthLabel} from './atlas-units';
 import {terrainSourceWindow,type TerrainSourceWindow} from './terrain-spatial-source';
 import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
+import {terrainNavigationPlan} from './terrain-navigation-plan';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
 
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
@@ -25,6 +26,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private source='';private requested='';private generation=0;private busy=false;private queued=false;private lastDraft='';
   private baseline:SpatialReply|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
+  private detailSource='';
   private samplePad=0;
   private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
@@ -43,7 +45,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=false;
     this.controls.innerHTML='<label>Neigung<input id="terrain-tilt" type="range" min="0" max="75" value="0"></label><label>Drehung<input id="terrain-rotation" type="range" min="-180" max="180" value="0"></label><label>Höhenüberhöhung<input id="terrain-exaggeration" type="range" min="0.25" max="8" step="0.25" value="1"></label><p>Nur die Darstellung wird überhöht. Die drei Landpinsel bearbeiten weiterhin Meterwerte.</p><button id="terrain-top" type="button">Zur Draufsicht</button>';
     this.retry=document.createElement('button');this.retry.id='atlas-camera-retry';this.retry.type='button';this.retry.textContent='Atlaskamera erneut laden';this.retry.hidden=true;
-    this.retry.onclick=()=>{if(this.host.hasDraft())return;this.failed=false;this.retry.hidden=true;this.setActive(true);};
+    this.retry.onclick=()=>{if(this.host.hasDraft())return;this.failed=false;this.retry.hidden=true;if(this.active){this.detailSource='';this.scheduleLoad(this.pendingContours);}else this.setActive(true);};
     document.getElementById('atlas-view-popup')!.append(this.toggle,this.controls,this.retry);
     for(const [kind,label]of [['road','Straße planen'],['river','Fluss planen']] as const){const button=document.createElement('button');button.id='terrain-plan-'+kind;button.textContent=label;button.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}void this.host.route?.(kind).catch(this.host.error);};this.controls.append(button);}
     this.toggle.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(this.tilt===0?45:0,this.rotation);};
@@ -96,7 +98,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   gesture(active:boolean){
     this.view?.freezePicking(active);
-    if(active){clearTimeout(this.loadTimer);this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;}
+    if(active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;}
+    else if(this.needsLoad())this.scheduleLoad(this.pendingContours);
   }
   liveQuery(detail?:(box:LandscapeBox)=>LandscapeBox|undefined):import('./terrain-presentation').TerrainFrameQuery|null{
     if(!this.active||!this.params||!this.frame)return null;
@@ -116,7 +119,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
-    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;this.host.redraw();return;}
+    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
       this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.active){this.fail(Error('Grafikdarstellung verloren. Der Atlas ist in Draufsicht verfügbar. Die Atlaskamera kann im Ansichtsmenü erneut geladen werden.'));}});
@@ -150,34 +153,43 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);
     if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
+    if(this.needsLoad()&&!this.loadBusy&&this.loadTimer===undefined)this.scheduleLoad(contours);
   }
+  private needsLoad(){return this.active&&(!this.ready||this.detailSource!==this.requested)&&!this.host.hasDraft()&&!this.host.live()&&!this.host.writing();}
   /** Coalesce camera motion before IPC; discard obsolete replies without accumulating main-thread reads. */
   private scheduleLoad(contours:number){
-    this.pendingContours=contours;clearTimeout(this.loadTimer);
-    if(this.loadBusy||!this.active)return;
+    this.pendingContours=contours;clearTimeout(this.loadTimer);this.loadTimer=undefined;
+    if(this.loadBusy||!this.active||this.host.hasDraft()||this.host.live())return;
     this.loadTimer=setTimeout(()=>{
       this.loadTimer=undefined;if(!this.active)return;const source=this.requested;this.loadBusy=true;
-      void this.load(source).finally(()=>{this.loadBusy=false;if(this.active&&this.requested!==source)this.scheduleLoad(this.pendingContours);});
+      void this.load(source).finally(()=>{this.loadBusy=false;if(this.active&&(this.requested!==source||this.needsLoad()))this.scheduleLoad(this.pendingContours);});
     },100);
   }
   private async load(source:string){
-    const frame={...this.sourceWindow!.frame},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
+    const token=this.token,revision=this.revision,generation=this.generation;
+    const current=()=>this.active&&this.requested===source&&this.generation===generation&&!this.host.live()&&!this.host.hasDraft()&&!this.host.writing();
     try{
-      const refinement={x:frame.x-frame.width/4,y:frame.y-frame.height/4,width:frame.width*1.5,height:frame.height*1.5};
-      const view:TerrainView={projection:'perspective',box,frame,refinement,columns:257,rows:257,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
-      // Normal navigation reads a bounded derived field on the readonly worker.
-      // Canonical author records are requested only when a draft needs them.
-      const width=512,height=Math.max(128,Math.min(512,Math.round(width*box.height/box.width)));
-      const reply=await window.campaign.atlasTerrainProjection(token,{view,revision,width,height,detail:refinement,detailResolution:1024,objects:this.objectSources,contours:0,displayMpp:frame.width/this.sourceWindow!.pixelWidth});
-      if(!this.active||this.requested!==source||this.host.live())return;
-      if(!reply.ok)throw Error(reply.error);if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
-      this.records=[];this.recordsSource='';
-      this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
-      const data={...reply.value,source};this.baseline=data;this.publish(data);
-      this.setContours(this.pendingContours);
-      if(this.host.draft()&&!this.host.writing())void this.queue(this.pendingContours);
-
-    }catch(error){this.sourceFailed(source,error);}
+      const stages=terrainNavigationPlan(this.sourceWindow!,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources);
+      // An interrupted refinement resumes from the already usable surface.
+      const start=this.source===source&&this.ready&&this.baseline?1:0;
+      for(let stage=start;stage<stages.length;stage++){
+        if(!current())return;
+        const reply=await window.campaign.atlasTerrainProjection(token,stages[stage]!);
+        if(!current())return;
+        if(!reply.ok)throw Error(reply.error);
+        if(reply.value.revision!==revision){this.ready=false;this.requested='';this.host.redraw();return;}
+        this.records=[];this.recordsSource='';
+        this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
+        this.detailSource=stage===1?source:'';this.input.dataset.terrainQuality=stage===1?'detail':'overview';
+        const data={...reply.value,source};this.baseline=data;this.publish(data);this.setContours(this.pendingContours);
+        if(stage===1)this.retry.hidden=true;
+      }
+    }catch(error){
+      if(!current())return;
+      if(this.ready&&this.source===source&&!String(error).includes('inzwischen geändert')){
+        this.detailSource=source;this.retry.hidden=false;this.host.error(error); // Keep the usable overview; explicit retry, no loop.
+      }else this.sourceFailed(source,error);
+    }
   }
   private sourceFailed(source:string,error:unknown){
     if(!this.active||this.requested!==source||this.host.writing()||this.host.live())return;

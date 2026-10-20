@@ -29,12 +29,32 @@ try{
  browser=await require('playwright-core').chromium.connectOverCDP('http://127.0.0.1:'+port);
  page=browser.contexts()[0].pages().find(p=>p.url().endsWith('/index.html'));assert(page,'Real desktop index window missing');page.setDefaultTimeout(20000);page.on('pageerror',e=>result.errors.push(e.stack));
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
+ await page.evaluate(()=>{
+  window.__terrainLoads=[];
+  new MutationObserver(()=>{
+   const el=document.querySelector('#campaign-map'),quality=el?.dataset.terrainQuality;
+   if(!quality||el.dataset.terrainReady!=='ready')return;
+   const rows=window.__terrainLoads,last=rows.at(-1);
+   if(last?.quality!==quality)rows.push({quality,time:performance.now(),view:JSON.parse(el.dataset.terrainProjection)});
+  }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-terrain-ready','data-terrain-quality']});
+ });
  await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-450,y:-300,width:900,height:600})),campaign.id);
  await page.locator('.campaign-card').filter({hasText:'Repository-Start'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  const ready=async()=>{await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');};await ready();
  assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-view'),'main');const surface=await page.locator('#atlas-terrain-spatial').elementHandle();assert.equal(await page.locator('#vegetation-spatial-dialog').count(),0);
+ await page.waitForFunction(()=>window.__terrainLoads.some(r=>r.quality==='overview'));
+ const early=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),area=await page.locator('#campaign-map').boundingBox();
+ await page.mouse.move(area.x+area.width/2,area.y+area.height/2);await page.mouse.wheel(0,-60);
+ await page.waitForFunction(w=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<w,early.width);
+ const cameraQuality=await page.locator('#campaign-map').getAttribute('data-terrain-quality');
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail');
+ result.loading={stages:await page.evaluate(()=>window.__terrainLoads),cameraQuality};
+ assert.deepEqual(result.loading.stages.slice(0,2).map(r=>r.quality),['overview','detail']);
+ assert.equal(cameraQuality,'overview','camera must respond while detail is still pending');
+ assert(await surface.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
+ result.checks.push('Overview geometry becomes usable before fine colour; wheel navigation responds during refinement on the same canvas.');
  await page.screenshot({path:out+'/01-repository-atlas.png'});
  assert.equal(await page.locator('#land-contours').inputValue(),'-1','automatic contours are the default');
  result.contours=await terrainContourPixels(page);
@@ -44,6 +64,7 @@ try{
  await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.wheel(0,-300);await page.waitForFunction(w=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<w,before.width);await ready();
  result.camera=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));assert.equal(result.camera.tilt,45);assert.equal(result.camera.rotation,25);assert(await surface.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
  assert(result.camera.refinement);assert.equal(result.camera.columns,257);assert.equal(result.camera.rows,257);
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail');
  await page.screenshot({path:out+'/02-repository-tilt-zoom.png'});result.checks.push('npm run start:desktop launches this repository; campaign navigation opens the main Atlas.','Tilt, rotation and wheel zoom retain the same main canvas.');
  result.checks.push('Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.');
  result.artifacts={};for(const file of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html'])result.artifacts[file]=createHash('sha256').update(await readFile('.build/desktop/'+file)).digest('hex');

@@ -19,6 +19,6 @@ test('stale projection refreshes once; obsolete, live and committing replies can
 test('late navigation reads cannot replace the live authored frame',async t=>{
  const old=global.window;let resolve;global.window={campaign:{atlasTerrainProjection:()=>new Promise(r=>resolve=r)}};t.after(()=>{global.window=old;});
  let live=false,published=0;const box={x:0,y:0,width:10,height:10},state=Object.create(TerrainSpatialUI.prototype);
- Object.assign(state,{active:true,sourceWindow:{frame:box,pixelWidth:1000},frame:box,objectSources:[],token:'t',revision:1,requested:'view',host:{live:()=>live,writing:()=>false},publish:()=>published++,sourceFailed:()=>assert.fail('obsolete live reply must be ignored')});
+ Object.assign(state,{active:true,sourceWindow:{frame:box,pixelWidth:1000},frame:box,objectSources:[],token:'t',revision:1,requested:'view',host:{live:()=>live,hasDraft:()=>false,writing:()=>false},publish:()=>published++,sourceFailed:()=>assert.fail('obsolete live reply must be ignored')});
  const pending=state.load('view',0);live=true;resolve({ok:true,value:{revision:1,grid:{view:{}}}});await pending;assert.equal(published,0);
 });
