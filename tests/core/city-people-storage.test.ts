@@ -96,8 +96,8 @@ test('weekly visit exceptions agree across dossier, city and location after reop
    const dossier=store.npcDossier(token,scene.id,f.ada);
    const city=store.cityActivities(token,{cityId:'city',sceneId:scene.id,focusFallback:false,unitId:null,text:'',offset:0}).rows[0]!;
    const location=store.locationActivities(token,{locationId:'city-place',sceneId:scene.id,focusFallback:false,text:'',offset:0}).rows[0]!;
-   assert.equal(dossier.dailyPlan?.nextDay,String(nextDay));
    const date=calendarDate(calendar,String((nextDay-1)*86400_000));
+   assert.equal(dossier.dailyPlan?.nextDate,date);
    for(const row of [city,location]){
     assert.equal(!!row.current,current);assert.equal(row.next?.activity,'Marktaufsicht');assert.equal(row.next?.date,date);
     assert.equal(row.actualLocation,'Ohne Ortsbindung');
