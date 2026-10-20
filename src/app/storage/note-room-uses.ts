@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {checkedKeyRow} from './dungeon-key';
-import {drawingRoom} from './drawing';
+import {drawingRoomFromRow} from './drawing';
 import {validateRoom} from '../contracts';
 import type {NoteRoomUsesPage} from '../preparation-contracts';
 
@@ -35,27 +35,31 @@ export function readNoteRoomUses(db:any,cam:string,note:{id:string;kind:string},
   SELECT k.id,json_extract(k.doc,'$.scope') scope,json_extract(k.doc,'$.excerpt') excerpt FROM keys k
   WHERE EXISTS(SELECT 1 FROM json_each(k.doc,'$.refs') r WHERE json_extract(r.value,'$.id')=@id AND json_extract(r.value,'$.kind')=@kind)
  ), page AS MATERIALIZED (
-  SELECT m.*,r.name,r.scope_id roomScope,r.floor_id floorId FROM matches m
+  SELECT m.*,r.name FROM matches m
   LEFT JOIN room r ON r.campaign_id=@cam AND r.id=m.id
   ORDER BY r.name COLLATE NOCASE,m.id LIMIT 41 OFFSET @offset
  ), problems AS (
   SELECT count(*) count FROM keys WHERE json_extract(doc,'$.problem')=1
- ) SELECT p.id,p.scope,p.excerpt,s.name scopeName,f.name floorName,b.count problems
+ ) SELECT r.*,p.id keyId,p.scope keyScope,p.excerpt,s.name scopeName,f.name floorName,b.count problems
  FROM problems b LEFT JOIN page p ON 1
- LEFT JOIN scope s ON s.campaign_id=@cam AND s.id=p.roomScope
- LEFT JOIN drawing_floor f ON f.campaign_id=@cam AND f.scope_id=p.roomScope AND f.id=p.floorId
- ORDER BY p.name COLLATE NOCASE,p.id`).all({cam,id:note.id,kind:note.kind,offset});
+ LEFT JOIN room r ON r.campaign_id=@cam AND r.id=p.id
+ LEFT JOIN scope s ON s.campaign_id=@cam AND s.id=r.scope_id
+ LEFT JOIN drawing_floor f ON f.campaign_id=@cam AND f.scope_id=r.scope_id AND f.id=r.floor_id
+ ORDER BY p.name COLLATE NOCASE,p.id`).iterate({cam,id:note.id,kind:note.kind,offset});
  // The left join retains the problem count even for an empty or exhausted page.
- const matches=rows.filter((row:any)=>row.id!==null);
- let problems=rows[0].problems;const entries:NoteRoomUsesPage['entries']=[];
- for(const row of matches.slice(0,40)){
+ // Stream full room bodies only after the metadata page has been selected.
+ let problems=0,count=0;const entries:NoteRoomUsesPage['entries']=[];
+ for(const row of rows){
+  if(count===0)problems=row.problems;
+  if(row.keyId===null)continue;
+  if(++count>40)break;
   try{
-   const room=drawingRoom(db,cam,row.id),stored=db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,row.id);
+   const room=drawingRoomFromRow(row);
    validateRoom(room);
-   if(room.id!==stored.id||room.scopeId!==stored.scope_id||room.floorId!==stored.floor_id||room.revision!==stored.revision||room.name!==stored.name||room.number!==stored.number||room.scopeId!==row.scope||typeof room.number!=='string')throw new Error('Raumidentität');
+   if(room.id!==row.id||room.scopeId!==row.scope_id||room.floorId!==row.floor_id||room.revision!==row.revision||room.name!==row.name||room.number!==row.number||room.scopeId!==row.keyScope||typeof room.number!=='string')throw new Error('Raumidentität');
    if(row.scopeName===null||row.floorName===null)throw new Error('Raumort');
    entries.push({id:room.id,title:room.name,number:room.number,place:row.scopeName+' · '+row.floorName,excerpt:row.excerpt,unavailable:false});
-  }catch{problems++;entries.push({id:row.id,title:'Raum nicht verfügbar',number:'',place:'Quelle fehlt oder ist beschädigt',excerpt:'',unavailable:true});}
+  }catch{problems++;entries.push({id:row.keyId,title:'Raum nicht verfügbar',number:'',place:'Quelle fehlt oder ist beschädigt',excerpt:'',unavailable:true});}
  }
- return{entries,next:matches.length>40?offset+40:null,...(problems?{notice:`Raumverweise unvollständig: ${problems} Quellen konnten nicht gelesen oder zugeordnet werden.`}:{})};
+ return{entries,next:count>40?offset+40:null,...(problems?{notice:`Raumverweise unvollständig: ${problems} Quellen konnten nicht gelesen oder zugeordnet werden.`}:{})};
 }

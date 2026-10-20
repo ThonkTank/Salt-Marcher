@@ -72,3 +72,19 @@ test('room places keep same-named floor identities separate and retain links whe
  x.store.db.prepare('DELETE FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').run(x.campaign.id,'local','ground');
  const bytes=x.store.db.serialize(),missing=x.read();assert.equal(missing.entries.length,2);assert(missing.entries.every(e=>e.unavailable));assert.match(missing.notice,/unvollständig: 2 Quellen/);assert.deepEqual(x.store.db.serialize(),bytes);
 });
+
+
+test('joined room sources reject rehashed identity overrides and keep missing uses visible without changing bytes',t=>{
+ const x=fixture(t),row=x.store.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(x.campaign.id,x.rooms[0].id);
+ for(const [field,value]of Object.entries({id:randomUUID(),scopeId:'other',floorId:'other',revision:999,name:'Forged title',number:'999'})){
+  const payload=JSON.stringify({...JSON.parse(row.payload),[field]:value});
+  x.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.campaign.id,row.id);
+  const before=x.store.db.serialize(),page=x.read();
+  assert.equal(page.entries.length,3);assert.deepEqual(page.entries.filter(e=>e.unavailable).map(e=>e.id),[row.id],field);
+  assert.match(page.notice,/unvollständig: 1 Quellen/);assert.deepEqual(x.store.db.serialize(),before);
+ }
+ x.store.db.prepare('DELETE FROM room WHERE campaign_id=? AND id=?').run(x.campaign.id,row.id);
+ const before=x.store.db.serialize(),page=x.read();
+ assert.equal(page.entries.length,3);assert.deepEqual(page.entries.filter(e=>e.unavailable).map(e=>e.id),[row.id]);
+ assert.match(page.notice,/unvollständig: 1 Quellen/);assert.deepEqual(x.store.db.serialize(),before);
+});

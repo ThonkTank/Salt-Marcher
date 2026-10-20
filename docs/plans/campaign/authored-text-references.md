@@ -70,8 +70,9 @@ Raumverwendungen behalten deren bisherigen Rückweg.
 derselben geprüften Key-Projektion ab. Auch leere und vollständig abgefragte
 Seiten behalten diese Hinweise. Die Metadatenprüfung prüft die Originalbytes
 jedes Keys einmal; ein warmer, begrenzter Projektionscache spart das erneute
-Parsen, aber niemals die Prüfsumme. Raumidentität und Ort werden weiterhin aus
-dem aktuellen Kampagnenstand geprüft. Gezielte Store-/DOMprüfungen stehen in
+Parsen, aber niemals die Prüfsumme. Raumidentität, Originalbytes und Ort kommen aus demselben verbundenen
+Read des aktuellen Kampagnenstands; pro Treffer wird der Raum nicht erneut geladen.
+Fehlende Räume bleiben unter der verknüpften Key-ID als nicht verfügbar sichtbar. Gezielte Store-/DOMprüfungen stehen in
 `tests/desktop-note-room-uses*.test.mjs`; die native Gesamtaufgabe prüft
 `tools/test-desktop-room-rule-reuse.mjs`.
 
