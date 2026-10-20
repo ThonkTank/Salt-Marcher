@@ -1,20 +1,17 @@
 import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Product inputs and a fresh profile; SQLite reads are assertions, never UI shortcuts.
 import {createRequire} from 'node:module';
-import {mkdir,mkdtemp,readFile,writeFile} from 'node:fs/promises';
-import {homedir} from 'node:os';
-import {execFileSync} from 'node:child_process';
-import {randomUUID,createHash} from 'node:crypto';
+import {mkdir,readFile} from 'node:fs/promises';
+import path from 'node:path';
+import {createNativeSession} from './native-session.mjs';
+import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
-const root=process.cwd(),require=createRequire(import.meta.url),{_electron}=require('playwright-core'),{buildSync}=require('esbuild'),Database=require('better-sqlite3');
-const cache=homedir()+'/.cache/saltmarcher';await mkdir(cache,{recursive:true});
-const profile=await mkdtemp(cache+'/routes-native-'),out=root+'/.build/terrain-routes-native';await mkdir(out,{recursive:true});
-const build=root+'/.build/terrain-routes-desktop';
-await writeFile(out+'/build.mjs',(await readFile('tools/build-desktop.mjs','utf8')).replaceAll('.build/desktop','.build/terrain-routes-desktop'));
-execFileSync(process.execPath,[out+'/build.mjs'],{cwd:root,stdio:'pipe'});
-buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-spatial-model';",resolveDir:root},outfile:out+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord,emptyRecord,newLine,TerrainSampler,projectTerrain}=require(out+'/store.cjs');
+const root=process.cwd(),require=createRequire(import.meta.url),{buildSync}=require('esbuild'),Database=require('better-sqlite3');
+const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-routes-native');await mkdir(out,{recursive:true});
+const native=await createNativeSession({root,output:out,name:'terrain-routes'}),profile=native.profile;
+buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-spatial-model';",resolveDir:root},outfile:root+'/.build/route-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,heightRecord,emptyRecord,newLine,TerrainSampler,projectTerrain}=require(root+'/.build/route-store.cjs');
 const store=new CampaignStore(profile+'/workbench.sqlite'),cam=store.create('Straßen und Flüsse'),active=store.activate(cam.id);
 const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action});
 for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)write({kind:'landscape-put',expectedRevision:null,record:heightRecord(x*512,y*512,8,Float32Array.from({length:4096},(_,i)=>{
@@ -23,23 +20,18 @@ for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)write({kind:'landscape-put',expected
 const reference={...emptyRecord('road'),name:'Referenzstraße',width:8,line:newLine('road'),points:[{x:-180,y:0},{x:0,y:40},{x:180,y:0}]};
 write({kind:'landscape-put',record:reference,expectedRevision:null});store.tutorial('skipped');store.close();
 const db=new Database(profile+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare('SELECT payload FROM atlas_landscape ORDER BY id').all().map(r=>JSON.parse(r.payload));
-const result={profile,out,checks:[],errors:[],sourceHashes:{},exits:[]};let app,page;
-for(const file of ['src/app/terrain-route.ts','src/app/terrain-route-planner.ts','src/app/terrain-route-ui.ts','src/app/terrain-route-view.ts','src/app/terrain-height.ts','src/app/terrain-brush.ts','src/app/storage/terrain-route.ts','src/app/terrain-spatial-view.ts','src/app/terrain-spatial-ui.ts','src/app/atlas-landscape-ui.ts',build+'/main.cjs',build+'/ui/renderer.js'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
-const capture=name=>page.screenshot({path:out+'/'+name+'.png'});
+const result={checks:[]};let app,page;
+const capture=name=>native.capture(page,name);
 const mark=name=>{result.checks.push(name);console.log(name);};
 async function start(){
- app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[build+'/main.cjs','--data-dir',profile,'--ozone-platform=x11'],timeout:60000});
- page=await app.firstWindow();page.setDefaultTimeout(30000);page.on('pageerror',e=>result.errors.push(e.stack));
+ page=await native.launch();app=native.app;
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  await page.locator('.campaign-card').filter({hasText:'Straßen und Flüsse'}).getByRole('button',{name:/^(Öffnen|Fortsetzen)$/}).click();
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);
 }
-async function close(){
- const process=app.process(),exit=new Promise(resolve=>process.once('exit',(code,signal)=>resolve({code,signal})));
- await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());const ended=await exit;assert.deepEqual(ended,{code:0,signal:null});result.exits.push(ended);app=null;
-}
+async function close(){await native.close();app=null;}
 async function focus(name){await page.locator('#atlas-search').fill(name);await page.locator('#atlas-search-results button').filter({hasText:name}).first().click();await atlasCanvasReady(page);await page.locator('#atlas-search').fill('');}
 const editor=()=>page.locator('#terrain-route-editor');
 const action=name=>editor().locator(`[data-action="${name}"]`);
@@ -49,9 +41,27 @@ async function save(){await action('save').click();await page.waitForFunction(()
 try{
  await start();await focus('Referenzstraße');await capture('00-existing-top');
  await page.locator('#land-selection').getByRole('button',{name:'Geländegerecht planen',exact:true}).click();await ready();
- await change('name','Passstraße');await change('width',12);await ready();await capture('01-road-top');
+ await change('name','Passstraße');await change('width',40);await ready();await capture('01-road-top');
+ assert.match(await page.locator('#route-width').locator('..').innerText(),/ft/);
+ const beforeSwitch=records();
+ const pointX=await page.locator('#route-point-x-0').inputValue();
+ for(let i=0;i<3;i++){
+  await page.locator('#route-units').selectOption('metric');assert.equal(await page.locator('#route-width').inputValue(),'12.192');assert.match(await page.locator('#route-profile').getAttribute('aria-label'),/ m/);
+  await page.locator('#route-units').selectOption('dnd');assert.equal(await page.locator('#route-width').inputValue(),'40');assert.equal(await page.locator('#route-point-x-0').inputValue(),pointX);
+ }
+ assert.deepEqual(records(),beforeSwitch,'Units must not persist previews');
+ await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher');w.setSize(1440,1000);w.webContents.setZoomFactor(2);});await page.waitForFunction(()=>innerWidth<=720);
+ await page.locator('#route-units').selectOption('metric');await capture('01b-route-metric-200');
+ const box=await editor().evaluate(el=>({left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right,width:innerWidth,overflow:el.scrollWidth-el.clientWidth}));assert(box.left>=0&&box.right<=box.width&&box.overflow<=1,JSON.stringify(box));
+ await page.locator('#route-units').selectOption('dnd');
  await action('tilt').click();await capture('02-road-tilted');assert(!records().some(r=>r.route),'preview must remain readonly');
- await save();let road=records().find(r=>r.name==='Passstraße');assert(road.route.nodes.length>2);assert(road.route.protected);
+ await save();let road=records().find(r=>r.name==='Passstraße');assert.equal(road.width,12.192);assert(road.route.nodes.length>2);assert(road.route.protected);
+ await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/route.png');await action('export').click();
+ await page.waitForFunction(()=>document.querySelector('#route-canvas').getAttribute('aria-busy')==='false');
+ for(let i=0;i<100;i++){if(await readFile(out+'/route.png').catch(()=>null))break;await page.waitForTimeout(50);}
+ assert(require('pngjs').PNG.sync.read(await readFile(out+'/route.png')).width>100);
+ await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.setZoomFactor(1));await page.waitForFunction(()=>innerWidth>1000);
+ await page.locator('#route-units').selectOption('metric');
  mark('Straße aus bestehender Linie planen, beide Ansichten und atomare Übernahme');
  const previous=JSON.stringify(road.route.anchors);await editor().getByText('Planungsgrenzen',{exact:true}).click();await change('cut',1);await action('cancel').click();assert.equal(JSON.stringify(records().find(r=>r.id===road.id).route.anchors),previous);
  await action('close').click();await atlasCanvasReady(page);
@@ -60,7 +70,7 @@ try{
  const canvas=await page.locator('#route-canvas').boundingBox();
  await page.mouse.click(canvas.x+canvas.width*.25,canvas.y+canvas.height*.5);await page.mouse.click(canvas.x+canvas.width*.7,canvas.y+canvas.height*.5);
  const positions=[[-150,-70],[150,-70]];
- for(let i=0;i<2;i++)for(const [j,axis]of ['X','Y'].entries()){const field=editor().getByRole('spinbutton',{name:axis+' Punkt '+(i+1),exact:true});await field.fill(String(positions[i][j]));await field.press('Tab');}
+ for(let i=0;i<2;i++)for(const [j,axis]of ['X','Y'].entries()){const field=editor().getByRole('spinbutton',{name:axis+' Punkt '+(i+1)+' (m)',exact:true});await field.fill(String(positions[i][j]));await field.press('Tab');}
  await change('name','Talfluss');await action('fit').click();await ready();await action('tilt').click();await capture('03-river-preview');await save();
  const river=records().find(r=>r.name==='Talfluss');assert(river.route.nodes.every((p,i,a)=>!i||p.z<a[i-1].z));
  mark('Fluss mit echten Punktklicks und Koordinatenkorrektur, abfließendes Profil und verbundenes Bett');
@@ -87,8 +97,11 @@ try{
  await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.deepEqual(normal(records()),beforeBrush);
  mark('Echter Geländepinselzug erhält geschützte Verläufe; ein Undo nimmt Gelände und Profile zurück');
  const expected=records().filter(r=>r.route).map(({revision,...r})=>r);await close();await start();assert.deepEqual(records().filter(r=>r.route).map(({revision,...r})=>r),expected);
- await focus('Passstraße');await capture('05-fresh-process');await close();
+ await focus('Passstraße');await capture('05-fresh-process');
+ assert.equal(await page.locator('#atlas-units').inputValue(),'metric');
+ await page.locator('#land-selection').getByRole('button',{name:'Geländegerecht planen',exact:true}).click();await ready();assert.equal(await page.locator('#route-width').inputValue(),'12.192');
+ await page.locator('#route-units').selectOption('dnd');assert.equal(await page.locator('#route-width').inputValue(),'40');await action('close').click();assert.equal(await page.locator('#atlas-units').inputValue(),'dnd');await close();
  mark('Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz');
- assert.deepEqual(result.errors,[]);result.complete=true;
-}catch(e){result.complete=false;result.error=e.stack;await page?.screenshot({path:out+'/failure.png'}).catch(()=>{});throw e;}
-finally{await writeFile(out+'/result.json',JSON.stringify(result,null,2));db.close();if(app)await app.close();console.log(JSON.stringify({complete:result.complete,out,checks:result.checks.length}));}
+ await native.finish({complete:true,...result});
+}catch(error){await native.fail(error);throw error;}
+finally{db.close();await native.dispose();}

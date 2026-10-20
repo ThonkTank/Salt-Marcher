@@ -146,6 +146,7 @@ export class AtlasWorkspaceLayout {
   const unitSelect=document.createElement('select');unitSelect.id='atlas-units';unitSelect.setAttribute('aria-label','Maßeinheiten');
   unitSelect.innerHTML='<option value="dnd">DnD</option><option value="metric">Metrisch</option>';unitSelect.value=atlasUnits();
   unitSelect.onchange=()=>{if(!setAtlasUnits(unitSelect.value as 'dnd'|'metric'))unitSelect.value=atlasUnits();};unitLabel.append(unitSelect);
+  document.addEventListener('atlas-units-changed',()=>{unitSelect.value=atlasUnits();});
   this.viewMenu.append(players,el('atlas-reference-open'));
   manage.append(unitLabel,nav,search,view,display,imports,el('atlas-output-open'),status,toggle);
   controls.replaceChildren(camera[2]!,camera[3]!,camera[0]!,camera[1]!,camera[4]!);navigate.append(el('atlas-undo'),el('atlas-redo'),pick,pan,measure,controls,el('atlas-overview'));
