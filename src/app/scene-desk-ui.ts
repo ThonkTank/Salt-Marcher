@@ -38,6 +38,8 @@ let searchPage: { kind: string; query: string } | null = null, searchBusy = fals
 let saving: Promise<boolean> | null = null,
   timer: ReturnType<typeof setTimeout> | null = null,
   initialized = false;
+type PlayerCues = { showNpc(id:string,current:()=>boolean):Promise<boolean>; blank():Promise<boolean> };
+let playerCues:PlayerCues|undefined,playerCueIntent=0;
 let tell: (s: string, error?: boolean) => void,
   encounter: (p: EncounterPlan) => Promise<void>,
   creature: (id: string, count: number, grouped: boolean) => Promise<void>;
@@ -55,8 +57,10 @@ export function initSceneDesk(
   status: typeof tell,
   prepare: typeof encounter,
   add: typeof creature,
+  player?: PlayerCues,
 ) {
   tell = status;
+  playerCues = player;
   encounter = prepare;
   creature = add;
   if (initialized) return;
@@ -289,6 +293,32 @@ function mark() {
   const current=editorOwner();
   timer = setTimeout(() => {if(current())void keep();}, 250);
 }
+function drawPlayerActions(c:DeskContent) {
+  const current=editorOwner(), npc=c.note?.kind==='npc'&&!c.unavailable?c.note.id:null;
+  el("desk-player-actions").hidden=!npc||!playerCues;
+  el("desk-player-status").textContent='';
+  const show=el<HTMLButtonElement>("desk-player-show");
+  show.disabled=false;
+  show.onclick=()=>{
+    if(!npc||!playerCues||!current())return;
+    const intent=++playerCueIntent, owns=()=>current()&&intent===playerCueIntent;
+    show.disabled=true;
+    void playerCues.showNpc(npc,owns).then(ok=>{
+      if(owns())el("desk-player-status").textContent=ok?'Porträt auf der Spieleranzeige geöffnet.':'Porträt nicht freigegeben. Meldung beachten.';
+    }).catch(error=>{
+      if(owns()){el("desk-player-status").textContent=(error as Error).message;tell((error as Error).message,true);}
+    }).finally(()=>{if(owns())show.disabled=false;});
+  };
+  // Blanking reduces disclosure immediately, including while a note save is pending.
+  el("desk-player-blank").onclick=()=>{
+    if(!current()||!playerCues)return;
+    const intent=++playerCueIntent, owns=()=>current()&&intent===playerCueIntent;
+    show.disabled=false;
+    void playerCues.blank().then(ok=>{
+      if(owns())el("desk-player-status").textContent=ok?'Spieleranzeige geleert.':'Anzeige konnte nicht geleert werden. Meldung beachten.';
+    }).catch(error=>{if(owns())tell((error as Error).message,true);});
+  };
+}
 function drawEditor() {
   const c = content!,
     root = el("desk-fields");
@@ -298,6 +328,7 @@ function drawEditor() {
   el("desk-note-status").textContent = draft
     ? "Gesicherte Eingabe wieder geöffnet."
     : "";
+  drawPlayerActions(c);
   const change = edit();
   const editing=el<HTMLDetailsElement>("desk-editing"), preview=el("desk-note-preview");
   editing.open=!c.note||!!draft;
