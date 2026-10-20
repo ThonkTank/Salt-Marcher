@@ -297,3 +297,20 @@ Sechs Fehler werden vorher/nachher erkannt; 14 unveränderte Kontrollläufe best
 Ein einzeln entfernter später Fehlerguard bleibt in beiden Fassungen durch den
 früheren Antwortguard verdeckt; der Ausfall beider Guards wird erkannt. Das ist ein
 begrenzter Nachweis der betroffenen Pfade, keine allgemeine Mutationsquote.
+
+Die Regel-/Textreferenzphase prüft zehn Dateien mit 112 bisherigen Fällen und
+behält 110. Der gemockte reine Autorenlink-Handoff entfällt zugunsten des bereits
+vorhandenen Store-/UI-Falls mit exakten Textbytes und Gruppenbesitzer. Die einfache
+Ortsauswahl steckt im ausführlicheren Navigationsfall; ihre Dokumenttextassertion
+prüft dort weiterhin genau die erste Auswahl. Alle Quellen-, Recovery-, Kopier-,
+Readonly- und historischen Regelzustände bleiben separat.
+
+Acht unterschiedliche Literalformen bleiben einzeln im Textparser geprüft.
+Die drei unveränderten Verbraucher für Klartext, Kopier-Remap und Dokumentverweise
+laufen auf dessen leerem Ergebnis einmal statt achtmal. Gemessen sinken in dieser
+Matrix 32 Assertions auf elf und 40 Parseraufrufe auf zwölf. Positive Umformung,
+CRLF/Autorenbytes, lange Quellen und unbegrenztes Kopieren behalten eigene Fälle.
+Acht isolierte Fehler werden vorher/nachher erkannt: drei Parsergrenzen, die drei
+Verbraucher, das gerenderte Ortsziel und unveränderte Übergabeprosa. Alle 16
+unveränderten Kontrollläufe bestehen. Bei der Ortsdarstellung trägt die übernommene
+Assertion die bisherige Fehlererkennung. Das ist kein nativer Fokus-/Tastaturnachweis.
