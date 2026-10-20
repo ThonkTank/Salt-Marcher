@@ -1,5 +1,7 @@
 # Atlasdarstellung, Auswahl und Bildausgabe
 
+Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt

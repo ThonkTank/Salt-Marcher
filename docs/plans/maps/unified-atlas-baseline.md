@@ -1,0 +1,102 @@
+# Gemeinsamer räumlicher Atlas: Ausgangsbasis und Prüfablauf
+
+Arbeitsstand 20.10.2026, zu [P0 der Roadmap](unified-spatial-atlas.md#p0--umfang-und-vergleichbare-ausgangsbasis-sichern).
+P0 ist in Arbeit. Native Messergebnisse, vollständige große Prüfwelt und der
+integrierte Enginevergleich sind noch keine bestandenen Abnahmen.
+Die [ersten lokalen Prüfungen und der unvollständige native Lauf](../../reference/unified-atlas-p0-20261020/README.md)
+halten bestätigte Ergebnisse, korrigierte Fixturefehler und offene Grenzen fest.
+
+## Gesicherte Ausgangsstände
+
+Die geteilte Arbeitskopie auf `e80b3bfb74673a8c08b6f896fc21522e4eb9e036`
+enthält weitere nicht integrierte Terrainarbeiten. Sie wurde einschließlich
+unversionierter, nicht ignorierter Dateien gesichert: 3.489 Dateien, SHA-256 je
+Datei, binärer Git-Diff und Git-Status. Während der Sicherung änderte sich keine
+erfasste Datei. Archiv und geprüft entpackte Quelle liegen auf diesem Host unter
+`~/.cache/saltmarcher/unified-atlas/p0-baseline-20261020T190511Z/`.
+Das ist eine Quellsicherung, kein reproduzierter nativer Leistungsbefund.
+
+Die isolierte Umsetzung begann auf `origin/main` bei
+`f83b04418f9822424c3ab6c3ae9610b314014e49`, Branch
+`codex/unified-spatial-atlas`, Arbeitskopie
+`~/.cache/saltmarcher/unified-atlas/implementation`.
+Dieser neuere Integrationsstand enthält bereits gemeinsame Raumgruppen und
+Regionen. Messungen beider Stände müssen ihre Quellen und Funktionen getrennt
+ausweisen. Vor der Integration ist erneut aktuelles `origin/main` maßgeblich.
+
+## Umfang und Quellenzuordnung
+
+Die einzelnen sichtbaren Werkzeuge stehen in
+[`atlas-tool-catalog.ts`](../../../src/app/atlas-tool-catalog.ts).
+Die folgende Zuordnung schließt zusätzliche Einträge der
+[`Atlasoberfläche`](../../../src/app/atlas-workspace-layout.ts) und Verbraucher
+ein; die Werkzeugleiste allein ist keine vollständige Funktionsliste.
+P6 muss jeden Eintrag in der gemeinsamen räumlichen Fläche nachweisen.
+
+| Gruppe | Zu erhaltende Werkzeuge und Abläufe | Fachquelle / Lieferphase |
+| --- | --- | --- |
+| Navigation und Auswahl | Zoomen am Weltpunkt, Schieben, Rücksprung, Übersicht, Suche, präzise/mehrdeutige Treffer, Griffe, Größenvergleich, Maße und Einheiten, 200 % | HEX-05/08/22, P2/P3; [Darstellungsregeln](../../development/atlas-rendering.md) |
+| Land und Daten | Formen, Glätten, Bodenfarbe, Geländeeigenschaften, Hexfüllung, Zurücksetzen, Maßstabswahl, Meeresspiegel | HEX-06/16, P5; [Relief](terrain-relief.md) |
+| Bewuchs | Landschaft malen/umgrenzen, Baumreihe, Freihalten, Ausdünnen, Verdichten, Einzelbaum/Felsen, Einzelkorrektur/Auswahl | HEX-18, P5/P6; [Bewuchs](vegetation.md) |
+| Gewässer und Trassen | Wasser setzen/entfernen/färben/radieren, Fluss und Straße zeichnen, Geländeprofil und Verlauf korrigieren | HEX-14/15/17, P4/P6; [Trassen](terrain-routes.md), [Landschaftswerkzeuge](landscape-tools.md) |
+| Regionen und Namen | Regionenpinsel, Grenzen und Hierarchie, freie/gebundene Namen, Stil/Anker, Orte und Schlüssel | HEX-20, P4; [Kartografie](atlas-cartography.md) |
+| Vorlagen und Assets | Referenzbilder importieren/ausrichten, Bibliothek, Symbole, freie Texte, Streuung | HEX-18/19/20, P6; [Landschaftswerkzeuge](landscape-tools.md) |
+| Stadt | Anlegen, Viertel/Wasserflächen, Straße/Platz, Haus/Befestigung, Bebauungsvorschlag, Dichte/Größe/Nutzung, Inspektor/Personen/Fraktionen, SVG/JSON | CITY-03, HEX-22, P6; [Stadtplan](../../../ROADMAP-CITIES.md) |
+| Räume und Gruppen | Rechteck/freies Polygon/Höhle, Radieren/Löcher, Generieren, Skalieren/Teilen, verknüpfte Keys, Einrichtung, Geschosse | HEX-05/22, P6; [Raumgruppen](room-groups.md) |
+| Innenraumobjekte | Wand/Tür/Portal/Treppe, Terrain/Wasser/Pfad/Dach, Objekt/Streuung/Licht/Text/Feature, Bibliothek und Inspektor | P6; [Dungeonumfang](../dungeon/smr04-spatial-coverage.md) |
+| Räumliche Zusatzwerkzeuge | Volumen, Graph, Wege/Passagen, Schnitt, Dächer, Triggerfelder, Dungeoninhalt, Binder und Raumsuche | P6; [Dungeonumfang](../dungeon/smr04-spatial-coverage.md) |
+| Gemeinsamer Zustand | Werkzeug/Auswahl über Maßstäbe, Undo/Redo, Autosave, offene/unbekannte Bestätigung, Wiederherstellung/Neustart | P2/P5/P7; [Speichergrenze](../../../ARCHITECTURE.md) |
+| Verbraucher | Reisevorschau/Partymarker/Eingänge, Wissensfilter, Spielerfenster, Bildexport, Kampagnenarchiv | P6/P7; [Reise](hex-travel.md), [Spieleranzeige](../runtime/player-projection.md) |
+
+HEX-IDs bezeichnen die Lieferpakete in der [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md).
+Das bestehende `acceptance.json` verwendet daneben konkrete Fälle, insbesondere
+`E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001`, `E2E01-HEX-SPACE-STORE-001` und
+`E2E01-HEX-SPACE-HOST-001`. Diese werden nicht durch neue Tests automatisch
+auf „bestanden“ gesetzt. Ursprüngliche Anforderungen in `docs/scope-sources.json`
+bleiben unverändert. P0 muss die Laufzeit- und Verbraucherfälle weiter konkretisieren.
+
+## Reproduzierbare kleine Prüfwelt
+
+[`scene.ts`](../../../tools/atlas-benchmark/scene.ts) beschreibt die Geometrie
+unabhängig vom Renderer. Ihre analytische Höhenfläche erzeugt 64 regionale und
+16 lokale Höhenkacheln mit denselben Höhenwerten an gemeinsamen Punkten. Küste,
+Insel, Gebirge und Tal liegen über positiven und negativen Koordinaten.
+Hinzu kommen Straße, Fluss, Wald, zwei Ortsnamen, drei hierarchische Regionen,
+36 eingerichtete Stadthäuser, eine mehrgeschossige Dorftaverne und eine Krypta.
+
+[`seed.ts`](../../../tools/atlas-benchmark/seed.ts) schreibt ausschließlich über
+den kanonischen Store. Geometrie, Rezepte und ihre SHA-256 sind reproduzierbar;
+vom Store vergebene Kampagnen-/Stadt-/Gruppenkennungen stehen im Manifest.
+Datenbankbytes sind wegen dieser Kennungen keine Determinismusbehauptung.
+Der Erzeuger verlangt ein neues Verzeichnis und überschreibt keine Kampagne.
+
+```sh
+node build.mjs --test
+node --test tests/atlas-benchmark.test.mjs
+node tools/atlas-benchmark/create.mjs "$HOME/.cache/saltmarcher/atlas-pruefwelt-v1"
+npm run build:desktop
+python3 tools/ui-session.py timeout --signal=TERM --kill-after=10s 300s node tools/atlas-benchmark/native.mjs "$HOME/.cache/saltmarcher/atlas-pruefwelt-v1"
+```
+
+Die [Regression](../../../tests/atlas-benchmark.test.mjs) prüft Wasser/Land/Gebirge,
+gleiche Höhen an groben/feinen Stützpunkten, Regionseltern, eingerichtete Geschosse,
+Raumbearbeitung/Undo und unveränderte Kennungen/Geometrie nach frischem Store.
+Die native Probe kopiert den Bestand in ein eigenes aufbewahrtes Profil, öffnet
+1920 × 1080 Inhalt, zeigt die Übersicht und zoomt mit echten Wheel-Eingaben zur
+Taverne. Sie sichert Viewports, Screenshots, Rendererfehler und Prozessende.
+Region-ready-Zeiten und rAF-Abstände sind ausdrücklich keine Messung des ersten
+veränderten Terrainpixels oder der Compositorpräsentation. Fremde Hostlast und
+OS-Caches sind unkontrolliert. Kein schmaler Probelauf belegt bereits 60 FPS.
+
+## Offene P0-Arbeit
+
+- Große Variante: 40.000 × 20.000 km, 100.000 Hexes, 5.000 Orte,
+  50 Detailbereiche, Stadt mit 5.000 Gebäuden, Dungeon mit über 4.000 Entitäten,
+  Volumenfall mit 100.000 Zellen. `buildings(5000)` allein ist keine solche Welt.
+- Prüfwelt visuell auf fachliche Plausibilität prüfen: insbesondere Flusshöhen,
+  Küstenanschluss und Platzierung von Wegen/Gebäuden; analytische Höhen sind
+  noch kein Beleg für natürliche Gestaltung.
+- Native Ausgangsmessungen mit den vollständigen Gesten, Pinseländerung und
+  Wandänderung/Undo; 30 Minuten Ressourcenprüfung sowie tatsächliche Pixelreaktion.
+- Bestehende Testdateien inhaltlich den vollständigen Verbraucherfällen zuordnen.
+- Beide P1-Prototypen müssen anschließend dieselben Bestände und Abläufe verwenden.

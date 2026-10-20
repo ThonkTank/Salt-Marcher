@@ -17,6 +17,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | --- | --- |
 | Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
 | Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
+| Gemeinsamer räumlicher Atlas und semantischer Zoom | [Roadmap P0–P8](plans/maps/unified-spatial-atlas.md), [Ausgangsbasis und Prüfablauf](plans/maps/unified-atlas-baseline.md) |
 | Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](plans/maps/atlas-cartography.md) |
 | Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](plans/maps/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](plans/maps/terrain-routes.md) |
 | Höhenlandschaft und kippbarer Atlas | [Relief-Roadmap R0–R7](plans/maps/terrain-relief.md): gezeichnete Gebirge, gekoppelte Küsten, Höhenabfragen und räumliche Ansicht |
