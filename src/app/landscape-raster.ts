@@ -173,7 +173,11 @@ export class LandscapeRasterizer {
     if(!this.coastPending)return;
     this.coastPending=false;
     this.applyRelief();
-    const w=this.w,h=this.h,water=this.water,distance=new Uint8Array(w*h).fill(24);
+    const w=this.w,h=this.h,water=this.water;
+    // A homogeneous tile has no shoreline. Avoid distance passes and scratch
+    // allocation on the common all-land / all-ocean viewport refinements.
+    if(!water.includes(water[0]===0?1:0))return;
+    const distance=new Uint8Array(w*h).fill(24);
     // Chamfer distance in half-sample units; bounded to a three-pixel shore band.
     for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
       const i=y*w+x,v=water[i];
@@ -204,7 +208,7 @@ export class LandscapeRasterizer {
       const light=lighting(sx,sy);
       const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
       const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
-      const contour=terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
+      const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
       const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
       for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
     }
@@ -299,12 +303,12 @@ export class LandscapeRasterizer {
   finish(): Uint8Array {
     this.applyCoast();
     for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++){
-      const out=(y*this.width+x)*4, totals=[0,0,0];let alpha=0;
-      for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-        const at=(((y+LANDSCAPE_RASTER_PAD)*2+dy)*this.w+(x+LANDSCAPE_RASTER_PAD)*2+dx)*4,a=this.samples[at+3]!;alpha+=a;
-        for(let c=0;c<3;c++)totals[c]!+=this.samples[at+c]!*a;
+      const out=(y*this.width+x)*4,at=((y+LANDSCAPE_RASTER_PAD)*2*this.w+(x+LANDSCAPE_RASTER_PAD)*2)*4,below=at+this.w*4,s=this.samples;
+      const a=s[at+3]!,b=s[at+7]!,c=s[below+3]!,d=s[below+7]!,alpha=a+b+c+d;
+      if(alpha){
+        for(let channel=0;channel<3;channel++)this.pixels[out+channel]=Math.round((s[at+channel]!*a+s[at+4+channel]!*b+s[below+channel]!*c+s[below+4+channel]!*d)/alpha);
+        this.pixels[out+3]=Math.round(alpha/4);
       }
-      if(alpha){for(let c=0;c<3;c++)this.pixels[out+c]=Math.round(totals[c]!/alpha);this.pixels[out+3]=Math.round(alpha/4);}
     }
     return this.pixels;
   }

@@ -1,6 +1,7 @@
 import {streamTerrainField,type TerrainStream} from '../terrain-field-stream';
 import {validateTerrainView,type TerrainView,type TerrainGrid} from '../terrain-spatial-model';
 import type {LandscapeRecord} from '../atlas-landscape';
+import {terrainGridLayout} from '../terrain-grid-layout';
 
 /** Authoritative visibility lattice. Never accepts heights supplied by the renderer. */
 export function readTerrainGrid(db:any,cam:string,view:TerrainView,stream?:TerrainStream,cache?:import('../terrain-projection-cache').TerrainProjectionCache):TerrainGrid{
@@ -15,6 +16,10 @@ export function readTerrainGrid(db:any,cam:string,view:TerrainView,stream?:Terra
   const get=db.prepare('SELECT payload FROM atlas_landscape WHERE rowid=?');
   for(const row of rows)yield JSON.parse(get.get(row.rowid).payload) as LandscapeRecord;
  };
- const b=view.box,lattice={x:b.x,y:b.y,dx:b.width/(view.columns-1),dy:b.height/(view.rows-1),columns:view.columns,rows:view.rows};
- return{view,heights:cache?cache.grid(lattice,seaLevelM,records):streamTerrainField(lattice,seaLevelM,records).surface!,seaLevelM};
+ const heights=new Float32Array(view.columns*view.rows);
+ for(const {x,y,lattice}of terrainGridLayout(view).blocks){
+  const part=cache?cache.grid(lattice,seaLevelM,records):streamTerrainField(lattice,seaLevelM,records).surface!;
+  for(let row=0;row<lattice.rows;row++)heights.set(part.subarray(row*lattice.columns,(row+1)*lattice.columns),(y+row)*view.columns+x);
+ }
+ return{view,heights,seaLevelM};
 }

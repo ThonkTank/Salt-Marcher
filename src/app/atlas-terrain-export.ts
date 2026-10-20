@@ -22,7 +22,7 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   const layer=snapshot.region?.landscape;
   if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
   const objects=terrainObjectSources(snapshot,{mpp:view.frame.width/width,roofs:options.roofs,scopeId:snapshot.region?.scopeId??null});
-  const projection=await window.campaign.atlasTerrainProjection(token,{revision:snapshot.revision,fence:snapshot.region!.fence,view,width:1024,height:Math.max(16,Math.min(1024,Math.round(1024*view.box.height/view.box.width))),objects,contours:0,displayMpp:view.frame.width/width},'export');
+  const projection=await window.campaign.atlasTerrainProjection(token,{revision:snapshot.revision,fence:snapshot.region!.fence,view,width:1024,height:Math.max(16,Math.min(1024,Math.round(1024*view.box.height/view.box.width))),detail:view.refinement,detailResolution:view.refinement?1024:undefined,objects,contours:0,displayMpp:view.frame.width/width},'export');
   if(!projection.ok)throw Error(projection.error);check();
   if(projection.value.revision!==snapshot.revision||projection.value.fence!==snapshot.region!.fence)throw Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');
   const assets=new Map<string,string>();

@@ -2,6 +2,12 @@ import type {LandscapeBox} from './atlas-landscape';
 import type {Point} from './contracts';
 /** A bounded display refinement, never author data or a replacement visibility grid. */
 export interface TerrainDetail {box:LandscapeBox;width:number;height:number;pixels:Uint8Array}
+/** Legacy brush patches stay square; viewport refinements preserve their aspect. */
+export function terrainDetailDimensions(box:LandscapeBox,resolution?:number){
+  if(resolution===undefined)return {width:256,height:256};
+  const size=Math.max(box.width,box.height);
+  return {width:Math.max(16,Math.round(resolution*box.width/size)),height:Math.max(16,Math.round(resolution*box.height/size))};
+}
 export function terrainDetailBox(point:Point,radius:number,view:LandscapeBox):LandscapeBox|undefined{
   if(!Number.isFinite(radius)||radius<=0)return;
   const step=2**Math.ceil(Math.log2(radius))*2,x=Math.round(point.x/step)*step,y=Math.round(point.y/step)*step;

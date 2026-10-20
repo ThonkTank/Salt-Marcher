@@ -12,6 +12,7 @@ import {validateTerrainProjection,type TerrainProjectionRequest,type TerrainProj
 import type {AtlasRegionSource} from '../atlas-region-contracts';
 import {readTerrainGrid} from './terrain-grid';
 import {readRouteTerrain} from './terrain-route';
+import {terrainDetailDimensions} from '../terrain-detail';
 
 export type ProjectionStream=(kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox)=>Iterable<LandscapeRecord>;
 const overlap=(r:LandscapeRecord,b:LandscapeBox)=>{const a=bounds(r);return a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;};
@@ -52,7 +53,9 @@ export function readTerrainProjection(db:any,source:AtlasRegionSource,q:TerrainP
  }
  const retainedRoutes=new Set(routes.map(r=>r.id));
  const render=(area:LandscapeBox,pixelWidth:number,pixelHeight:number,displayMpp:number)=>{
- const pixels=new Uint8Array(pixelWidth*pixelHeight*4),edge=cache?128:Math.max(pixelWidth,pixelHeight);
+ // Cold display reads amortize the supersampled halo across larger batches.
+ // Cache entries and local invalidation remain 32-pixel pieces below.
+ const pixels=new Uint8Array(pixelWidth*pixelHeight*4),edge=cache?512:Math.max(pixelWidth,pixelHeight);
  const pixelBox=(x:number,y:number,width:number,height:number)=>({x:area.x+x*area.width/pixelWidth,y:area.y+y*area.height/pixelHeight,width:width*area.width/pixelWidth,height:height*area.height/pixelHeight});
  const draw=(box:LandscapeBox,width:number,height:number)=>{
    const image=new LandscapeRasterizer(box,width,height,q.contours,displayMpp);image.paint(settings);
@@ -90,7 +93,8 @@ export function readTerrainProjection(db:any,source:AtlasRegionSource,q:TerrainP
  return pixels;
  };
  const pixels=render(view.box,q.width,q.height,q.displayMpp);
- const detail=q.detail?{box:q.detail,width:256,height:256,pixels:render(q.detail,256,256,Math.min(q.displayMpp,Math.max(q.detail.width,q.detail.height)/256))}:undefined;
+ const size=q.detail&&terrainDetailDimensions(q.detail,q.detailResolution);
+ const detail=q.detail&&size?{box:q.detail,...size,pixels:render(q.detail,size.width,size.height,Math.min(q.displayMpp,Math.max(q.detail.width/size.width,q.detail.height/size.height)))}:undefined;
  const endObjects=terrainTraceStart('projection.objects',source.revision);
  const objects=(q.objects??[]).flatMap(o=>{
   const p=terrainObjectPoints(o),x=Math.min(...p.map(p=>p.x)),y=Math.min(...p.map(p=>p.y)),right=Math.max(...p.map(p=>p.x)),bottom=Math.max(...p.map(p=>p.y));

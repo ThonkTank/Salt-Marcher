@@ -43,6 +43,25 @@ Die [Terrain-Zusammenführung](../reference/atlas-terrain-reconciliation-2026102
 
 `atlas-camera.ts` definiert die Meterprojektion für Kamera, Arbeitsebenen und kanonische Pinselverdeckung. Poseänderungen bewegen vorhandene GPU-Puffer unmittelbar. `terrain-spatial-source.ts` hält einen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Ältere orthografische Pinselschnappschüsse bleiben lesbar; Überhöhung verändert keine gespeicherten Meterwerte.
 
+`terrain-grid-layout.ts` verteilt die Knoten eines gemeinsamen Geländenetzes:
+Ein optionales `TerrainView.refinement` erhält drei Viertel der Intervalle je
+Achse, die äußeren Ränder den Rest. Die Hauptkamera verwendet 257×257 Knoten
+mit einer Verfeinerung über der anderthalbfachen Ausschnittsbreite. Alle Bänder
+teilen ihre Randknoten; es gibt keine überlappenden Geländeebenen. Renderer,
+Dreieckshöhen, kanonische Sichtprüfung, Spieler-Höhenprojektion und Main-Cache
+verwenden dasselbe Layout. Alte Views ohne Verfeinerung bleiben gleichmäßig.
+Der Readonly-Worker sampelt bis zu neun reguläre Blöcke; lokale Invalidierung
+und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
+
+Eine Textur von höchstens 512 Pixeln je Kante deckt den Kontext ab; die sichtbare
+Mitte erhält zusätzlich bis zu 1024 Pixel im passenden Seitenverhältnis.
+`TerrainDetailMaterial` mischt sie am Rand ein. Die perspektivische Ausgabe
+fordert dieselbe Verfeinerung an. Kalte Raster werden in größeren 512er-Batches
+berechnet, während der Cache weiterhin 32er-Stücke lokal ersetzt. Das ist ein
+begrenzter Schritt zur Detailverteilung, noch kein weltweites Kachel-LOD oder
+schrittweises Nachladen. Bei starker Neigung kann die begrenzte Abdeckung am
+Horizont weiterhin sichtbar werden.
+
 Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2D. Weitere Neuzeichnungen starten den gescheiterten Renderer nicht erneut. „Atlaskamera erneut laden“ im Ansichtsmenü ist der ausdrückliche Wiederanlauf. Laufende Raum-, Stadt-, Landschafts- und Bereichsgesten sperren Poseänderungen.
 
 **Offene Grenzen:** Der neue Anschluss überträgt zunächst vorhandene Flächen, Symbole, Texte und Griffe auf die Terrainoberfläche. Gebäudevolumen aus Raumgrundrissen und perspektivische Bildausgabe sind [angeschlossen und lokal geprüft](../reference/atlas-objects-main-20261021/README.md). Vollständige Geschoss-Arbeitsebenen, semantische Detailstufen und Maskierung bleiben offen. Bei aktiver Wissensmaske bleibt der qualifizierte gefilterte Canvasweg maßgeblich. Bildexport verwendet denselben Kamerarenderer; die laufende Spieleranzeige ist noch separat zu qualifizieren. Die vollständigen Abnahmekriterien bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.

@@ -99,6 +99,8 @@ Zoom bleibt am anvisierten Weltpunkt verankert. Fenstergrößenwechsel, Suchspr�
 
 Erster lokaler Teilschritt: [bestehende Geländeausschnitte bei kleinen Kameraänderungen wiederverwenden](../../reference/atlas-surface-reuse-20261020/README.md). Dies beseitigt unnötige Neuaufträge, ersetzt aber noch kein Kachel-LOD und keine Leistungsabnahme.
 
+Weiterer Teilschritt im Hauptatlas: Das vorhandene Geländenetz konzentriert Knoten auf die sichtbare Mitte, mit gemeinsamen Randknoten und identischer Autoren-Sichtprüfung. Eine feinere Textur ergänzt den gröberen Kontext. Readonly-Projektion und Main-Autorcache verwenden dieselbe Bandaufteilung. Kalte Rasterarbeit wird gebündelt; lokale Änderungen bleiben klein. Weltfeste Kacheln, priorisiertes schrittweises Nachladen und die gesamte Leistungsabnahme bleiben offen.
+
 Feste Weltkacheln mit vereinfachten Darstellungen und lokal feineren Daten einführen. Die sichtbare Größe beziehungsweise der projizierte Fehler entscheidet über die benötigte Detailstufe; bei geneigter Kamera erhält der Vordergrund mehr Details.
 
 Vorhandene gröbere Kacheln bleiben bis zur Ablösung sichtbar. Nachbarschaft und erwartetes Zoomziel werden begrenzt vorgeladen. Überholte Aufgaben werden abgebrochen, fertige Puffer schrittweise hochgeladen. Änderungen invalidieren nur betroffene Kacheln und deren notwendige Ableitungen.

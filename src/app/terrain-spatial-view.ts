@@ -16,6 +16,7 @@ import type {Point} from './contracts';
 import {AtlasSpatialScene} from './atlas-spatial-scene';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
 import {terrainContourUniforms} from './terrain-contours';
+import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
@@ -55,7 +56,7 @@ export class TerrainSpatialView {
   }
   private surface(){
     const g=this.grid!;
-    return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:Math.min(g.view.box.width/(g.view.columns-1),g.view.box.height/(g.view.rows-1)),routeIds:this.routeIds,closedObjectIds:this.objectLayer?.closedIds,objectHeights:this.objectLayer?.heights,scopeBases:this.objectLayer?.scopeBases};
+    return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:terrainGridLayout(g.view).minimumStep,routeIds:this.routeIds,closedObjectIds:this.objectLayer?.closedIds,objectHeights:this.objectLayer?.heights,scopeBases:this.objectLayer?.scopeBases};
   }
   publish(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){
     if(this.publication?.scene===scene)return;
@@ -98,7 +99,7 @@ export class TerrainSpatialView {
   setData(data:SpatialReply){
     this.removeLine(this.cursor);this.cursor=null;
     const previous=this.grid,oldOrigin=this.origin;
-    const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view,b=v.box;
+    const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view;
     this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
     this.contours??=terrainContourUniforms();
     const partial=data.update&&sameTerrainIdentity(this.identity,data.update.base)?data.update:undefined;
@@ -113,14 +114,14 @@ export class TerrainSpatialView {
     this.identity=data.identity;
     this.routeState??=new Map();this.routeIds=new Set((data.routes??[]).map(r=>r.id));
     const dispose=(meshes:THREE.Mesh[])=>{for(const mesh of meshes){this.scene.remove(mesh);mesh.geometry.dispose();for(const m of Array.isArray(mesh.material)?mesh.material:[mesh.material])m.dispose();}};
-    const dx=b.width/(v.columns-1),dy=b.height/(v.rows-1),changed=next.rects.map(r=>({x:b.x+(r.x-1)*dx,y:b.y+(r.y-1)*dy,width:(r.width+2)*dx,height:(r.height+2)*dy}));
+    const step=terrainGridLayout(v).minimumStep,changed=next.rects.map(r=>terrainGridRect(v,r,1));
     const transform=JSON.stringify([this.origin,v.focusM,v.exaggeration]);
     for(const [id,state]of this.routeState)if(!this.routeIds.has(id)){dispose(state.meshes);this.routeState.delete(id);}
     for(const r of data.routes??[]){
       const key=JSON.stringify([r,transform,data.protectedLimit]),old=this.routeState.get(r.id);
       if(old?.key===key&&!changed.some(box=>terrainBoxesOverlap(box,bounds(r))))continue;
       if(old)dispose(old.meshes);
-      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,Math.min(dx,dy)/2,data.protectedLimit!==undefined&&!!r.route?.protected);
+      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,step/2,data.protectedLimit!==undefined&&!!r.route?.protected);
       for(const mesh of meshes)this.scene.add(mesh);this.routeState.set(r.id,{key,meshes});
     }
     this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);

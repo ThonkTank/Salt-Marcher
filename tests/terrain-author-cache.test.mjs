@@ -31,6 +31,14 @@ test('trusted seeded surface is reused; successful local writes invalidate only 
  assert.deepEqual(f.read(),f.canonical());assert(f.read().heights.every(x=>x>=150));
  assert(stats.bytes<=8*1024*1024);
 });
+test('focused sampling seeds all nine canonical bands and keeps local brush invalidation exact',t=>{
+ const f=fixture(t);f.view.refinement={x:-64,y:-64,width:256,height:256};f.seed();
+ const stats=f.cache.cache.tiles,misses=stats.misses,hits=stats.hits;
+ assert.deepEqual(f.read(),f.canonical());assert.equal(stats.misses,misses);assert.equal(stats.hits-hits,9);
+ f.write({kind:'landscape-height-stroke',stroke:{mode:'raise',radius:8,strength:120,feather:.8,visibility:f.view,samples:[{x:32,y:32,t:0},{x:32,y:32,t:100}]}});
+ assert.deepEqual(f.read(),f.canonical());assert.equal(stats.misses,misses);assert(stats.bytes<=8*1024*1024);
+ f.write({kind:'undo'});assert.deepEqual(f.read(),f.canonical());
+});
 test('Undo, Redo, deletion, failed writes, outer rollback and unversioned writes cannot retain stale surfaces',t=>{
  const f=fixture(t);f.seed();const original=f.canonical();
  const record=heightRecord(0,0,1,new Float32Array(4096).fill(200));

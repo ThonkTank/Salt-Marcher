@@ -163,11 +163,12 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private async load(source:string){
     const frame={...this.sourceWindow!.frame},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
     try{
-      const view:TerrainView={projection:'perspective',box,frame,columns:193,rows:193,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
+      const refinement={x:frame.x-frame.width/4,y:frame.y-frame.height/4,width:frame.width*1.5,height:frame.height*1.5};
+      const view:TerrainView={projection:'perspective',box,frame,refinement,columns:257,rows:257,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
       // Normal navigation reads a bounded derived field on the readonly worker.
       // Canonical author records are requested only when a draft needs them.
-      const width=1024,height=Math.max(128,Math.min(1024,Math.round(width*box.height/box.width)));
-      const reply=await window.campaign.atlasTerrainProjection(token,{view,revision,width,height,objects:this.objectSources,contours:0,displayMpp:frame.width/this.sourceWindow!.pixelWidth});
+      const width=512,height=Math.max(128,Math.min(512,Math.round(width*box.height/box.width)));
+      const reply=await window.campaign.atlasTerrainProjection(token,{view,revision,width,height,detail:refinement,detailResolution:1024,objects:this.objectSources,contours:0,displayMpp:frame.width/this.sourceWindow!.pixelWidth});
       if(!this.active||this.requested!==source||this.host.live())return;
       if(!reply.ok)throw Error(reply.error);if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
       this.records=[];this.recordsSource='';

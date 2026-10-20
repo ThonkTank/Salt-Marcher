@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type {SpatialReply} from './terrain-spatial-worker';
 
-/** Local brush detail composes with the main material, including its GPU contours. */
+/** Viewport or local brush detail composes with the main material and GPU contours. */
 export class TerrainDetailMaterial {
   private detailTexture:THREE.DataTexture|null=null;
   update(material:THREE.MeshBasicMaterial,data:SpatialReply,rects:import('./terrain-frame').TerrainRect[]|undefined){
