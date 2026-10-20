@@ -1,5 +1,5 @@
 // Real Live-desk travel on the shared Atlas. Run through tools/ui-session.py after build:desktop.
-// GM_QA_ZOOM=2 repeats at actual 200% browser zoom. This does not qualify causal Undo/Redo.
+// GM_QA_ZOOM=2 repeats at actual 200% browser zoom, including Undo/Redo and fresh reopening.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,readFile,writeFile,stat,rm} from 'node:fs/promises';
@@ -10,7 +10,7 @@ import {currentProcessGroup} from './process-group.mjs';
 const root=process.cwd(),out=process.env.QA_EVIDENCE_DIR??path.join(root,'.build/travel-checkpoints');
 const zoom=Number(process.env.GM_QA_ZOOM??1);assert([1,2].includes(zoom));
 await mkdir(out,{recursive:true});await rm(path.join(out,'result.json'),{force:true});
-const result={checkout:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),zoom,hashes:{},launches:[],errors:[],maps:[],limitations:['Causal travel Undo/Redo is outside this probe.'],installedPackageAcceptance:false,humanAcceptance:false};
+const result={checkout:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),zoom,hashes:{},launches:[],errors:[],maps:[],limitations:['The two-hex native task does not qualify every time consumer or owner acceptance.'],installedPackageAcceptance:false,humanAcceptance:false};
 for(const file of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'])result.hashes[file]=createHash('sha256').update(await readFile(root+'/.build/desktop/'+file)).digest('hex');
 const require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
 const bundle='.build/travel-checkpoint-store-'+process.pid+'.cjs';
@@ -23,8 +23,11 @@ const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:
 store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:store.live(workspace.token).rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:store.live(workspace.token).focusRevision}));
 const prose='  Eigene Reiseprosa\r\nbleibt erhalten.  ',current=store.liveScene(workspace.token,scene.id);
 store.executeLive(command({kind:'scene-content',sceneId:scene.id,expectedRevision:current.revision,title:'Küstenreise',notes:prose,locationId:null}));
-const base=store.world(workspace.token).maps[0],cell={r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt:''};
+const base=store.world(workspace.token).maps[0],cell={r:0,level:0,terrain:'plains',elevationM:20,climate:null,road:false,river:false,label:'',faction:'',interrupt:''};
 store.executeWorld(command({kind:'map',expectedRevision:base.revision,map:{...base,name:'Küstenweg',cells:[0,1,2].map(q=>({...cell,q,interrupt:q===1?'Frische Spuren am Weg':''}))}}));
+// The canonical Atlas elevation (rather than legacy cell.elevationM) makes this
+// fixture a visible land route. Product authoring uses the same landscape writer.
+store.executeAtlasCommit(command({kind:'landscape-put',record:{id:randomUUID(),revision:0,kind:'patch',name:'Küstenland',points:[],polygons:[{outer:[{x:-12000,y:-12000},{x:22000,y:-12000},{x:22000,y:12000},{x:-12000,y:12000}],holes:[]}],resolution:1000,width:0,values:{terrain:'plains',elevationM:20}},expectedRevision:null}));
 store.executeWorld(command({kind:'place-scene',sceneId:scene.id,position:{mapId:base.id,q:0,r:0,locationId:null},expectedSceneRevision:store.liveScene(workspace.token,scene.id).revision,expectedPositionRevision:0}));
 store.executeWorld(command({kind:'weather-override',sceneId:scene.id,expectedClockRevision:0,expectedOverrideRevision:null,weather:{label:'Klar',kind:'clear',intensity:0,windKmh:0,effects:{visibilityMeters:10000,travelFactor:1,perception:'Normal',temperatureC:15,ambience:[],combatNote:''},source:'GM-Override'}}));
 store.tutorial('skipped');store.close();
@@ -67,11 +70,11 @@ async function mapState(q,route,name){
  const visible=await page.locator('#campaign-map').evaluate(c=>{const r=c.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,height:innerHeight,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id};});assert(visible.y>0&&visible.y<visible.height);assert.equal(visible.hit,'campaign-map');
  await shot(name+'-map');await page.locator('#world-journey-status').scrollIntoViewIfNeeded();await shot(name+'-status');
 }
-function canonical(q,instant,status){
+function canonical(q,instant,status,timeSteps=q){
  const fresh=new CampaignStore(filename);try{
   const w=fresh.activate(campaign.id),state=fresh.sceneWorld(w.token,scene.id);
   assert.equal(state.position.q,q);assert.equal(state.position.r,0);assert.equal(state.scene.clock.instantMs,instant);assert.equal(state.journey.status,status);assert.equal(state.scene.notes,prose);assert.equal(state.scene.title,'Küstenreise');
-  assert.equal(fresh.db.prepare('SELECT count(*) n FROM scene_time_step WHERE campaign_id=? AND scene_id=?').get(campaign.id,scene.id).n,q);
+  assert.equal(fresh.db.prepare('SELECT count(*) n FROM scene_time_step WHERE campaign_id=? AND scene_id=?').get(campaign.id,scene.id).n,timeSteps);
   return {position:state.position,clock:state.scene.clock,journey:state.journey,knowledge:state.knowledge};
  }finally{fresh.close();}
 }
@@ -84,8 +87,15 @@ try{
  assert.equal(await page.locator('#journey-step').isDisabled(),true);await mapState(1,true,'interrupted');await close();result.interrupted=canonical(1,'3600000','interrupted');
  await launch();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.includes('Zur GM-Entscheidung angehalten'));await mapState(1,true,'fresh-interrupted');
  assert.equal(await page.locator('#journey-play').isEnabled(),true);await page.locator('#journey-play').click();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.includes('Angekommen'));await mapState(2,false,'arrived');await close();result.arrived=canonical(2,'7200000','arrived');
- await launch();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.includes('Angekommen'));await mapState(2,false,'fresh-arrived');assert.equal(await page.locator('#journey-play').isDisabled(),true);await close();assert.deepEqual(canonical(2,'7200000','arrived'),result.arrived);
- assert.deepEqual(result.errors,[]);result.checkpointWorkflowComplete=true;await writeFile(path.join(out,'result.json'),JSON.stringify(result,null,2));console.log('COMPLETE checkpoint interruption, explicit restart resume, exact clock and Canvas at '+zoom+' zoom; causal Undo/Redo remains open.');
+ await launch();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.includes('Angekommen'));await mapState(2,false,'fresh-arrived');assert.equal(await page.locator('#journey-play').isDisabled(),true);await page.locator('#travel-undo').click();
+ await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.startsWith('Pausiert'));
+ await mapState(1,true,'undone');await close();result.undone=canonical(1,'3600000','paused',3);
+ await launch();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.startsWith('Pausiert'));
+ await mapState(1,true,'fresh-undone');assert.equal(await page.locator('#travel-redo').isEnabled(),true);
+ await page.locator('#travel-redo').click();await page.waitForFunction(()=>document.querySelector('#world-journey-status').textContent.startsWith('Angekommen'));
+ await mapState(2,false,'redone');await close();result.redone=canonical(2,'7200000','arrived',4);
+ assert.deepEqual(result.redone.knowledge,result.arrived.knowledge);
+ assert.deepEqual(result.errors,[]);result.checkpointWorkflowComplete=true;result.causalUndoRedoComplete=true;await writeFile(path.join(out,'result.json'),JSON.stringify(result,null,2));console.log('COMPLETE checkpoint interruption, explicit restart resume, Undo/Redo, exact clock and Canvas at '+zoom+' zoom.');
 }catch(error){await writeFile(path.join(out,'failure.json'),JSON.stringify({error:error.stack,...result},null,2));if(app&&!closed){await writeFile(path.join(out,'pixels.json'),JSON.stringify(await page.evaluate(()=>window.__travelPixelProbe))).catch(()=>{});await shot('failure').catch(()=>{});}throw error;
 }finally{
  if(app&&!closed){const process=app.process(),timer=setTimeout(()=>{if(process.exitCode===null)process.kill('SIGKILL');},5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}

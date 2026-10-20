@@ -502,3 +502,32 @@ for(const clear of ['clear','remove-last'])test(`empty route stays empty after $
   assert.deepEqual(requests.at(-1).destination,{q:2,r:0});assert.deepEqual(requests.at(-1).waypoints,[]);assert.equal(x.writes,0);
  }finally{x.cleanup();}
 });
+
+
+async function arrivedHistoryFixture(){
+ const x=await travelFixture(),command=action=>({commandId:randomUUID(),campaignId:x.campaign.id,token:x.w.token,action});
+ const p=x.store.previewTravel(x.w.token,{sceneId:x.scene.id,mapId:x.map.id,destination:{q:1,r:0},destinationLocationId:null,waypoints:[],paceKmh:1,factor:1,finalSeconds:3600}),j=x.store.executeWorld(command({kind:'journey',preview:p})).scene.journey;
+ x.store.executeWorld(command({kind:'journey-step',id:j.id,expectedRevision:j.revision,maxSteps:1}));await x.ui.openWorld();return x;
+}
+test('arrived travel exposes causal undo before the planning form and repeats only on an explicit click',async()=>{
+ const x=await arrivedHistoryFixture();try{
+  const get=id=>x.document.getElementById(id);assert.equal(get('journey-play').parentElement.hidden,true);assert.equal(x.document.querySelector('.world-travel>h3').nextElementSibling.id,'world-journey-console');assert.equal(get('travel-undo').hidden,false);assert.equal(get('travel-undo').disabled,false);
+  get('travel-undo').onclick();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).position.q===0);await until(()=>get('travel-redo').hidden===false&&!get('travel-redo').disabled);assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).journey.status,'paused');
+  const n=x.sent.length;await tick();await tick();assert.equal(x.sent.length,n,'undo never automatically resumes playback');get('travel-redo').onclick();await until(()=>x.store.sceneWorld(x.w.token,x.scene.id).position.q===1);await until(()=>get('journey-play').parentElement.hidden);assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'3600000');
+ }finally{x.cleanup();}
+});
+test('a delayed inverse reply cannot target a newly activated campaign or issue a second inverse',async()=>{
+ const x=await arrivedHistoryFixture();try{
+  x.hold();x.document.getElementById('travel-undo').onclick();await until(x.hasReply);assert.equal(x.document.getElementById('travel-undo').disabled,true);x.document.getElementById('travel-undo').onclick();await tick();assert.equal(x.sent.filter(c=>c.action.kind==='travel-history').length,1);
+  const c=x.store.create('Neue Kampagne'),w=x.store.activate(c.id);x.ui.activateWorld(w);await x.ui.openWorld();const before=x.store.db.serialize();x.release();await tick();await tick();assert.deepEqual(x.store.db.serialize(),before);assert.equal(x.document.getElementById('travel-history-controls').hidden,true);assert.equal(x.sent.filter(c=>c.action.kind==='travel-history').length,1);
+ }finally{x.cleanup();}
+});
+
+test('a lost inverse acknowledgement is reconciled by receipt without another write',async()=>{
+ const x=await arrivedHistoryFixture();try{
+  const original=x.window.campaign.executeWorld;let lost=true;
+  x.window.campaign.executeWorld=async command=>{const result=await original(command);if(command.action.kind==='travel-history'&&lost){lost=false;throw Error('Antwort verloren');}return result;};
+  x.document.getElementById('travel-undo').onclick();await until(()=>!x.document.getElementById('world-write-recovery').hidden);const n=x.sent.length;
+  assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).position.q,0);assert.equal(x.document.getElementById('travel-undo').disabled,true);assert.equal(await x.ui.reconcileWorldWrite(),true);await x.ui.openWorld();assert.equal(x.sent.length,n);assert.equal(x.store.sceneWorld(x.w.token,x.scene.id).scene.clock.instantMs,'0');assert.equal(x.document.getElementById('travel-redo').hidden,false);
+ }finally{x.cleanup();}
+});

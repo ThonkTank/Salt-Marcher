@@ -33,6 +33,38 @@ function trap(x,changes={}){
  const element={id:randomUUID(),revision:0,scopeId:'local',floorId:'ground',roomId:'room',kind:'feature',points:[{x:5,y:5}],name:'Fallgrube',notes:'',secret:true,color:'#000000',width:1,height:1,angle:0,variant:'',blocksSight:false,blocksSound:false,passable:true,state:'open',targetRoomId:null,targetFloorId:null,anchor:null,feature:'trap',maxCharges:1,resetSeconds:0,resetMode:'empty',triggerRadius:0,triggerHeight:0,assetId:null,archived:false,...changes};
  x.store.executeDrawing(x.command({kind:'element',element,expectedRevision:null}));return element;
 }
+
+test('travel checkpoints restore trap resets and completed NPC work, including pending redo in an independent archive copy',async t=>{
+ const x=fixture(t),locationId=randomUUID(),npcId=randomUUID();
+ x.store.changePreparation({...x.command(null),change:{kind:'location',expectedRevision:null,document:{kind:'location',version:1,id:locationId,name:'Wachort',type:'poi',sections:[],detailMaps:[],keyLinks:[]}}});
+ x.store.changePreparation({...x.command(null),change:{kind:'note',expectedRevision:null,note:{version:1,id:npcId,revision:1,kind:'npc',title:'Wache',readAloud:'',gmNotes:'  Autorenwissen\r\n',relations:[],creatureId:null,deleted:false}}});
+ x.store.executeAutonomy(x.command({kind:'actor',expectedRevision:null,initialLocationId:locationId,actor:{id:npcId,revision:0,enabled:true,paused:false,role:'',needs:[],jobPriorities:{},assignedJobId:null,allowConflict:false,defense:12,attackBonus:0,maxHpLossPercent:10,cursor:0,offsetSeconds:0,jobId:null,progressSeconds:0,pending:null}}));
+ x.store.executeAutonomy(x.command({kind:'job',expectedRevision:1,job:{...x.job,locationId,durationSeconds:3,exclusive:true}}));
+ const pc=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Iri',speedFeet:30}})).character,v=x.store.live(x.w.token);
+ x.store.executeLive(x.command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:v.rosterRevision,active:true,targetSceneId:null,expectedFocusRevision:v.focusRevision}));
+ const scene=x.store.executeLive(x.command({kind:'initialize',expectedRosterRevision:x.store.live(x.w.token).rosterRevision})).scene;
+ const map=x.store.world(x.w.token).maps[0],cell={r:0,level:0,terrain:'plains',elevationM:0,climate:null,road:false,river:false,label:'',faction:'',interrupt:''};
+ x.store.executeWorld(x.command({kind:'map',expectedRevision:map.revision,map:{...map,cells:[0,1,2,3].map(q=>({...cell,q}))}}));
+ x.store.executeWorld(x.command({kind:'place',mapId:map.id,locationId,expectedRevision:null,hex:{q:3,r:0}}));
+ x.store.executeWorld(x.command({kind:'place-scene',sceneId:scene.id,position:{mapId:map.id,q:0,r:0,locationId:null},expectedSceneRevision:scene.revision,expectedPositionRevision:0}));
+ const feature=trap(x,{resetSeconds:6});x.store.activateFeature(x.w.token,feature.id,scene.id,x.store.drawing(x.w.token).features.find(f=>f.id===feature.id).revision,'activate',null,randomUUID());
+ const before=x.store.autonomy(x.w.token).actors.find(a=>a.id===npcId),preview=x.store.previewTravel(x.w.token,{sceneId:scene.id,mapId:map.id,destination:{q:3,r:0},destinationLocationId:locationId,waypoints:[],paceKmh:1,factor:1,finalSeconds:9});
+ const j=x.store.executeWorld(x.command({kind:'journey',preview})).scene.journey;x.store.executeWorld(x.command({kind:'journey-step',id:j.id,expectedRevision:j.revision,maxSteps:3}));
+ const completed=x.store.autonomy(x.w.token).actors.find(a=>a.id===npcId),logs=x.store.autonomy(x.w.token).logs;assert(completed.cursor>before.cursor);assert(logs.some(l=>l.kind==='complete'));
+ const act=(store,w,cam,sceneId,direction)=>{const s=store.sceneWorld(w.token,sceneId),h=s.travelHistory[direction];return store.executeWorld({commandId:randomUUID(),campaignId:cam,token:w.token,action:{kind:'travel-history',sceneId,id:h.id,revision:h.revision,direction,expectedClockRevision:s.scene.clock.revision,expectedPositionRevision:s.position.revision,expectedJourneyRevision:s.journey.revision}});};
+ act(x.store,x.w,x.cam.id,scene.id,'undo');let a=x.store.autonomy(x.w.token).actors.find(a=>a.id===npcId);assert.equal(a.cursor,before.cursor);assert.equal(a.progressSeconds,before.progressSeconds);assert.equal(x.store.autonomy(x.w.token).logs.length,0);
+ // Even a checksummed historical row cannot bypass the current domain decoder.
+ const checkpoint=x.store.db.prepare('SELECT * FROM travel_checkpoint WHERE ordinal=2').get(),forged=JSON.parse(checkpoint.payload),effect=forged.effects.find(e=>e.table==='dungeon_feature_state'),body=JSON.parse(effect.before.payload);body.charges=99;effect.before.payload=JSON.stringify(body);effect.before.checksum=hash(effect.before.payload);const bad=JSON.stringify(forged);x.store.db.prepare('UPDATE travel_checkpoint SET payload=?,checksum=? WHERE id=?').run(bad,hash(bad),checkpoint.id);
+ const unchanged=x.store.db.serialize();assert.throws(()=>act(x.store,x.w,x.cam.id,scene.id,'undo'),/Fallenladung/);assert.deepEqual(x.store.db.serialize(),unchanged);x.store.db.prepare('UPDATE travel_checkpoint SET payload=?,checksum=? WHERE id=?').run(checkpoint.payload,checkpoint.checksum,checkpoint.id);
+ act(x.store,x.w,x.cam.id,scene.id,'undo');assert.equal(x.store.drawing(x.w.token).features.find(f=>f.id===feature.id).charges,0);
+ const snapshot=path.join(x.root,'pending-redo.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const bytes=readFileSync(snapshot),copy=new CampaignStore(path.join(x.root,'copy.sqlite'));
+ try{
+  const campaign=copy.acceptCampaignSnapshot(snapshot,'Unabhängige Rücknahme',{}),w=copy.activate(campaign.id),copiedScene=copy.live(w.token).scene.id;
+  act(copy,w,campaign.id,copiedScene,'redo');act(copy,w,campaign.id,copiedScene,'redo');
+  const current=copy.autonomy(w.token).actors[0];assert.notEqual(current.id,npcId);assert.equal(current.cursor,completed.cursor);assert.equal(current.progressSeconds,completed.progressSeconds);assert.equal(copy.autonomy(w.token).logs.filter(l=>l.kind==='complete').length,logs.filter(l=>l.kind==='complete').length);assert.equal(copy.drawing(w.token).features[0].charges,1);
+  assert.equal(copy.sceneWorld(w.token,copiedScene).scene.clock.instantMs,'9000');assert.deepEqual(readFileSync(snapshot),bytes);
+ }finally{copy.close();}
+});
 test('autonomy projects the same checked trap choices without building unrelated dungeon views',t=>{
  const x=fixture(t),valid=trap(x),fallback=trap(x,{name:''});trap(x,{archived:true});trap(x,{roomId:null});trap(x,{feature:'puzzle'});trap(x,{kind:'object'});
  const expected=x.store.drawing(x.w.token).elements.filter(e=>!e.archived&&e.kind==='feature'&&e.feature==='trap'&&e.roomId!==null).map(e=>({id:e.id,name:e.name||'Falle'}));

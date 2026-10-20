@@ -37,6 +37,44 @@ function setup(interrupt='',destination=false){
  return x;
 }
 
+function historyCommand(x,direction,overrides={}){
+ const s=x.state(),step=s.travelHistory[direction];assert(step,'expected a travel history candidate');
+ return x.command({kind:'travel-history',sceneId:s.scene.id,id:step.id,revision:step.revision,direction,expectedClockRevision:s.scene.clock.revision,expectedPositionRevision:s.position.revision,expectedJourneyRevision:s.journey.revision,...overrides});
+}
+
+test('several checkpoints undo and redo exact time, position and knowledge without repeating time consumers',()=>{
+ const x=setup();try{
+  const initial=x.state();let j=x.accept();x.store.executeWorld(x.step(j,3));const arrived=x.state();
+  assert.equal(arrived.journey.status,'arrived');assert.equal(x.store.db.prepare('SELECT count(*) n FROM travel_checkpoint').get().n,3);
+  for(const q of [2,1,0]){x.store.executeWorld(historyCommand(x,'undo'));const s=x.state();assert.equal(s.position.q,q);assert.equal(s.scene.clock.instantMs,String(q*3000));assert.equal(s.journey.status,'paused');}
+  assert.deepEqual(x.state().knowledge,initial.knowledge);
+  const timeReceipts=x.store.db.prepare("SELECT * FROM scene_time_step WHERE json_extract(payload,'$.calendarVersion')='relative-v1'").all();assert.equal(timeReceipts.length,3);
+  for(const q of [1,2,3]){x.store.executeWorld(historyCommand(x,'redo'));const s=x.state();assert.equal(s.position.q,q);assert.equal(s.scene.clock.instantMs,String(q*3000));}
+  assert.equal(x.state().journey.status,'arrived');assert.deepEqual(x.state().knowledge,arrived.knowledge);
+  assert.deepEqual(x.store.db.prepare("SELECT * FROM scene_time_step WHERE json_extract(payload,'$.calendarVersion')='relative-v1'").all(),timeReceipts);
+  x.reopen();assert.equal(x.state().scene.clock.instantMs,'9000');assert.equal(x.state().position.q,3);
+ }finally{x.cleanup();}
+});
+
+test('travel undo preserves later authored prose and receipts; replay cannot undo the next checkpoint',()=>{
+ const x=setup();try{
+  x.store.executeWorld(x.step(x.accept(),3));const before=x.state().scene;
+  x.live({kind:'scene-content',sceneId:before.id,expectedRevision:before.revision,title:'Eigener Titel',notes:'  Spätere Prosa\r\n',locationId:before.locationId});
+  const command=historyCommand(x,'undo');x.store.executeWorld(command);const once=x.state(),rows=x.store.db.prepare('SELECT * FROM world_receipt').all();
+  x.store.executeWorld(command);assert.deepEqual(x.state(),once);assert.deepEqual(x.store.db.prepare('SELECT * FROM world_receipt').all(),rows);
+  assert.equal(once.scene.notes,'  Spätere Prosa\r\n');assert.equal(once.scene.title,'Eigener Titel');
+  assert.throws(()=>x.store.executeWorld({...command,action:{...command.action,direction:'redo'}}),/Kennung|ander|Command|Auftrag|verwendet/);
+ }finally{x.cleanup();}
+});
+
+test('a later independent clock change cannot be hidden by travel undo',()=>{
+ const x=setup();try{
+  x.store.executeWorld(x.step(x.accept(),3));const command=historyCommand(x,'undo'),scene=x.state().scene;
+  x.live({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:1,unit:'hours',calendarVersion:'relative-v1',reason:'Rast'});const after=x.state();
+  assert.throws(()=>x.store.executeWorld(command),/Zeit|Reise|geändert/);assert.deepEqual(x.state(),after);
+ }finally{x.cleanup();}
+});
+
 test('journey acceptance rejects a forged displayed total instead of persisting contradictory timing',()=>{
  const x=setup();try{
   const preview=x.preview(),before=x.state();assert.equal(preview.durationSeconds,9);assert.equal(preview.segmentSeconds.reduce((a,b)=>a+b),9);
@@ -295,5 +333,40 @@ test('a local journey in one split group does not block another group world jour
   x.request={...x.request,sceneId:other.id};const world=x.world({kind:'journey',preview:x.preview()}).scene.journey,moved=x.store.executeWorld(x.step(world)).scene;
   assert.equal(moved.scene.id,other.id);assert.deepEqual(moved.journey.actorIds,[b.id]);assert.equal(moved.journey.nextIndex,2);
   assert.deepEqual(x.state(),before);assert.deepEqual(x.store.campaignAtlas(x.workspace.token).localJourney,local);
+ }finally{x.cleanup();}
+});
+
+
+test('an unregistered time consumer rolls back the checkpoint and capture can start again',()=>{
+ const x=setup('',true);try{
+  const j=x.accept(),before=x.store.db.serialize();
+  x.store.db.exec("CREATE TEMP TRIGGER unexpected_time AFTER UPDATE ON scene_clock BEGIN UPDATE location SET revision=revision+1; END;");
+  assert.throws(()=>x.store.executeWorld(x.step(j)),/Zeitfolge ohne geprüfte/);
+  x.store.db.exec('DROP TRIGGER unexpected_time');assert.deepEqual(x.store.db.serialize(),before);
+  x.store.executeWorld(x.step(j));assert.equal(x.state().position.q,1);assert.equal(x.store.db.prepare('SELECT count(*) n FROM travel_checkpoint').get().n,1);
+ }finally{x.cleanup();}
+});
+test('a new checkpoint after undo abandons the previous redo branch without deleting its evidence',()=>{
+ const x=setup();try{
+  x.store.executeWorld(x.step(x.accept(),3));x.store.executeWorld(historyCommand(x,'undo'));const old=x.state().travelHistory.redo.id;
+  let j=x.state().journey;x.world({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'active'});j=x.state().journey;x.store.executeWorld(x.step(j));
+  assert.equal(x.state().position.q,3);assert.equal(x.state().travelHistory.redo,null);assert.equal(x.store.db.prepare('SELECT abandoned FROM travel_checkpoint WHERE id=?').get(old).abandoned,1);
+  x.store.executeWorld(historyCommand(x,'undo'));assert.equal(x.state().position.q,2);x.store.executeWorld(historyCommand(x,'redo'));assert.equal(x.state().position.q,3);
+ }finally{x.cleanup();}
+});
+for(const damage of ['checksum','duplicate effect','foreign owner','original cause'])test('damaged travel history fails closed: '+damage,async()=>{
+ const x=setup();try{
+  x.store.executeWorld(x.step(x.accept(),3));const row=x.store.db.prepare('SELECT * FROM travel_checkpoint ORDER BY ordinal DESC LIMIT 1').get(),p=JSON.parse(row.payload);
+  if(damage==='duplicate effect')p.effects.push(p.effects[0]);
+  if(damage==='foreign owner')p.effects.find(e=>e.table==='scene_clock').before.scene_id=randomUUID();
+  if(damage==='original cause')p.commandId='missing';
+  const payload=JSON.stringify(p);x.store.db.prepare('UPDATE travel_checkpoint SET payload=?,checksum=? WHERE id=?').run(payload,damage==='checksum'?'broken':createHash('sha256').update(payload).digest('hex'),row.id);
+  const before=x.store.db.serialize();assert.throws(()=>x.state(),/Reise/);await assert.rejects(x.store.backup(path.join(x.root,'broken.sqlite')),/Reise/);assert.deepEqual(x.store.db.serialize(),before);
+ }finally{x.cleanup();}
+});
+test('schema 52 opens without invented historical checkpoints; schema 53 cannot silently recreate a missing owner',()=>{
+ const x=setup();try{
+  x.store.executeWorld(x.step(x.accept(),3));x.store.db.exec('DROP TABLE travel_checkpoint; PRAGMA user_version=52');x.reopen();assert.deepEqual(x.state().travelHistory,{undo:null,redo:null});assert.equal(x.state().position.q,3);assert.equal(x.store.db.pragma('user_version',{simple:true}),53);
+  x.store.db.exec('DROP TABLE travel_checkpoint');x.store.close();assert.throws(()=>new CampaignStore(x.filename),/Reisecheckpoint/);
  }finally{x.cleanup();}
 });

@@ -47,6 +47,27 @@ test('journey restock survives another scene catching up, replay, restart and an
   assert.ok(x.store.db.serialize().equals(source));assert.ok(readFileSync(snapshot).equals(bytes));
  }finally{copy.close();}
 });
+
+function history(x,direction){
+ const s=x.store.sceneWorld(x.w.token,x.b),h=s.travelHistory[direction];assert(h);
+ return x.command({kind:'travel-history',sceneId:x.b,id:h.id,revision:h.revision,direction,expectedClockRevision:s.scene.clock.revision,expectedPositionRevision:s.position.revision,expectedJourneyRevision:s.journey.revision});
+}
+test('checkpoint undo reverses only its restock and redo restores the exact stock and event identities',t=>{
+ const x=fixture(t);x.store.executeWorld(x.step(2));const arrived=x.store.shop(x.w.token,x.shop.id),events=x.history();
+ let shop=arrived.shop;x.store.executeItemShop(x.command({kind:'shop',expectedRevision:shop.revision,shop:{...shop,notes:'  Späterer Autorenhinweis\r\n'}}));
+ x.store.executeWorld(history(x,'undo'));const undone=x.store.shop(x.w.token,x.shop.id);
+ assert.deepEqual(undone.shop.stock.map(e=>e.quantity),[3,0,13]);assert.equal(undone.shop.notes,'  Späterer Autorenhinweis\r\n');assert.equal(x.history().length,1);
+ x.store.executeWorld(history(x,'redo'));const redone=x.store.shop(x.w.token,x.shop.id);
+ assert.deepEqual(redone.shop.stock,arrived.shop.stock);assert.deepEqual(new Set(x.history().map(e=>e.id)),new Set(events.map(e=>e.id)));assert.equal(redone.shop.notes,'  Späterer Autorenhinweis\r\n');
+});
+test('undo keeps shared restock facts established by a later authoritative scene while rewinding its own clock and knowledge',t=>{
+ const x=fixture(t);x.store.executeWorld(x.step(2));const a=x.store.liveScene(x.w.token,x.a);
+ x.store.executeLive(x.command({kind:'advance-clock',sceneId:x.a,expectedRevision:a.clock.revision,amount:8,unit:'seconds',calendarVersion:'relative-v1',reason:'Vorhut ist weiter'}));
+ const shared=x.store.shop(x.w.token,x.shop.id),other=x.store.liveScene(x.w.token,x.a);
+ x.store.executeWorld(history(x,'undo'));const s=x.store.sceneWorld(x.w.token,x.b);assert.equal(s.scene.clock.instantMs,'3000');assert.equal(s.position.q,1);assert(!s.knowledge.some(h=>h.q===2&&h.r===0));
+ assert.deepEqual(x.store.shop(x.w.token,x.shop.id),shared);assert.deepEqual(x.store.liveScene(x.w.token,x.a),other);
+ x.store.executeWorld(history(x,'redo'));assert.deepEqual(x.store.shop(x.w.token,x.shop.id),shared);assert.equal(x.store.liveScene(x.w.token,x.b).clock.instantMs,'6000');
+});
 test('a later segment restock failure rolls back earlier journey segments and every clock receipt',t=>{
  const x=fixture(t,true),step=x.step(2),before=x.store.db.serialize();assert.throws(()=>x.store.executeWorld(step),/Bestandsgrenze/);assert.ok(x.store.db.serialize().equals(before));
  assert.equal(x.store.sceneWorld(x.w.token,x.b).journey.nextIndex,1);assert.equal(x.store.liveScene(x.w.token,x.b).clock.instantMs,'0');assert.equal(x.store.sceneWorld(x.w.token,x.b).position.q,0);assert.equal(x.history().length,0);

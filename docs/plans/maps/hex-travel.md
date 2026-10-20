@@ -547,7 +547,8 @@ eigenständig offen.
 Der native Prüfweg `tools/test-desktop-travel-checkpoints.mjs` bedient die
 öffentliche Livekonsole: zwei Hexabschnitte mit ausdrücklich gesetzter
 Zweistundendauer, Unterbrechung nach dem ersten Abschnitt, normal schließen,
-frisch öffnen, ausdrücklich fortsetzen, ankommen und nochmals frisch öffnen.
+frisch öffnen, ausdrücklich fortsetzen, ankommen, frisch öffnen, den letzten Schritt zurücknehmen,
+nochmals frisch öffnen und denselben Schritt ausdrücklich wiederholen.
 Er verwendet die vorhandene Atlaswurzel mit 3-Meilen-Hexen. Die frühere Probe
 `test-desktop-travel-target.mjs` verwendet dagegen eine zweite Karte und den
 inzwischen verborgenen Welttab; ihre historischen Ziel-/Labelbelege sind keine
@@ -558,46 +559,67 @@ Gruppenmarker am bestätigten Hex, Restweg ab diesem Hex und kein Restweg nach
 Ankunft. Nur auf den Konsolenstatus oder den abgeschlossenen Read zu warten,
 kann vor dem nächsten Zeichenframe noch ein altes Kartenbild erfassen. Keine
 SVG-Objektabfrage: der veröffentlichte Atlas ist inzwischen ein Canvas.
-Frische kanonische Reads prüfen genau einen Zeitschritt je erreichtem Hex,
+Frische kanonische Reads prüfen genau eine ursprüngliche Zeitbuchung je erreichtem Hex
+und je einen zusätzlichen kausalen Zeitbeleg für Rücknahme und Wiederholung,
 die unveränderte Reiseprosa, Position und Uhr sowie den terminalen Stand ohne
 weitere Zeitbuchung. Belege enthalten Source-SHA, Dirty-Status, fünf Runtimehashes,
 Profil, tatsächlichen Browserzoom und normale Prozessausgänge; fehlgeschlagene
 Läufe können keinen alten Erfolgsbeleg hinterlassen.
 
-**Offener Produktmangel: kausales Reise-Undo/Redo.** Die Originalanforderung
+### Kausale Rücknahme und Wiederholung
+
+Die Originalanforderung
 [Program Capabilities, Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#L364-L368)
 verlangt mehrere rücknehmbare Checkpoints samt ausschließlich durch sie erzeugten
-Folgen und Schutz späterer autoritativer Scene-Fakten. Dafür gibt es im aktuellen
-`WorldAction` und der Reisekonsole keinen Befehl. `scene_time_step`,
-`world_history` und Receipts erklären die Buchungen, bilden aber noch keinen
-kausalen Rücknahmestack. Rückwärts gesetzte Gruppenzeit, administrative
-Platzierung und Atlas-Autoren-Undo erfüllen diese Anforderung nicht.
+Folgen und Schutz späterer autoritativer Scene-Fakten. Die Livekonsole bietet
+nun beim bestätigten Reisestand „Letzten Reiseschritt zurücknehmen“ und
+„Reiseschritt wiederholen“. Nach Ankunft steht dieser Stand vor dem Planungsformular;
+die abgeschlossenen Wiedergaberegler entfallen. Eine zurückgenommene aktive
+Reise bleibt pausiert. Wiederholen stellt die ursprünglichen Ergebnisse her,
+ohne Zeitverbraucher erneut auszuführen oder automatisch weiterzureisen.
 
-Die vollständige Lieferung muss beim bestehenden Checkpointwriter in
-`storage/world.ts` und `CampaignStore.consumeSceneTime` ansetzen: Positions-/
-Uhrwirkung, aufgedecktes Wissen, Restock, Dungeon-Reset, Autonomy und daraus
-abgeleitete Folgen benötigen ihre ursprüngliche Ursache und nachprüfbare
-Nachfolgebindungen. Die Wiederherstellung darf weder ganze Tabellen zurücksetzen
-noch nachträglich dieselben Zeitfolgen neu auswürfeln. Ein später von einer
-anderen Scene bestätigter gemeinsamer Fakt muss erhalten bleiben. Auftrag,
-Rücknahme und Wiederholung brauchen eigene idempotente Receipts; die
-ursprünglichen Belege bleiben unverändert. Persistenz, Validator, Archivtransfer
-und Salvage sind vor Einführung eines neuen Verlaufsformats gemeinsam anzupassen.
-Die bestehende Preload-/Maingrenze bleibt der einzige Schreibweg.
+`storage/travel-history.ts` gehört zum bestehenden Worldwriter. Schema 53 hält
+in `travel_checkpoint` pro Hexabschnitt die tatsächlich geänderten Runtimezeilen,
+ihre Ursache, Gruppe, Epoche, Zeit und Position fest. Verbindungslokale temporäre
+SQLite-Trigger erfassen die Änderungen innerhalb derselben Transaktion; unbekannte
+Zeitverbraucher brechen den gesamten Checkpoint ab. Keine Tabellen- oder
+Datenbanksnapshots werden zur Rücknahme eingespielt. Nur ursprünglich geänderte
+Felder werden invertiert; unabhängige spätere Prosa bleibt erhalten. Konflikte
+mit inzwischen geänderten betroffenen Feldern verhindern die gesamte Rücknahme.
+Domänenvalidatoren prüfen den resultierenden Stand vor dem Commit.
 
-Danach sind mehrstufige Rücknahme/Wiederholung, neuer Reisezweig, spätere fremde
-Scene, zwischenzeitliche Bearbeitung, verlorene Antwort, Restart und unabhängige
-Archivkopie bis in dieselbe Livekonsole zu prüfen. Die aktuelle native Probe
-qualifiziert ausschließlich Checkpoints und Wiederaufnahme und nennt Undo/Redo
-in ihrem Ergebnis ausdrücklich offen. `SMR-AC-08/09` und Ownerabnahme werden
-dadurch nicht geschlossen.
+Hat eine andere Scene derselben Epoche den betroffenen Zeitraum bereits bestätigt,
+bleiben gemeinsame Weltfolgen bestehen. Diese Entscheidung bleibt am Checkpoint
+auch für spätere Wiederholung gespeichert. Die eigene Uhr, Position und eigenes
+Wissen werden weiterhin zurückgenommen. Neue Bewegung nach Rücknahme verwirft
+den offenen Wiederholungszweig, erhält aber seine ursprünglichen Belege.
+Originalreceipts und vorwärts gerichtete `scene_time_step` bleiben unverändert;
+Rücknahme/Wiederholung erhalten eigene idempotente Receipts und zusätzliche
+`travel-history-v1`-Zeitbelege. Nur ein gültiger ursprünglicher Checkpoint erlaubt
+diesen rückwärts gerichteten Uhrübergang. Atlas-Autoren-Undo bleibt getrennt.
+
+Fresh und unabhängiger Archivtransfer erhalten auch ausstehendes Wiederholen,
+inklusive neu gebundener Checkpoint-, Zielort- und Zeitursachen-IDs. Altbestände
+bis Schema 52 bekommen keine erfundenen historischen Checkpoints. Ein fehlender
+Checkpoint-Speicher ab Schema 53 oder beschädigte Ursachen werden abgewiesen.
+Die vorhandenen Tests prüfen mehrere Schritte, neuen Zweig, unabhängige Prosa,
+Receiptreplay, spätere fremde Scene, Restock, Fallenreset, abgeschlossene NPC-Arbeit,
+Rollback unbekannter Zeitfolgen und unabhängige Kopie. Die native Probe bedient
+Unterbrechung, Wiederaufnahme, Rücknahme und Wiederholung mit vier normalen
+App-Starts und -Exits; technische Tests ersetzen keine Ownerabnahme.
+
+Der Verlauf gilt innerhalb der aktuellen angenommenen Weltreise. Nach Annahme
+einer neuen Route wird keine frühere Reise als Rücknahmeziel angeboten. Lokale
+Dungeonreisen, jede mögliche Autonomy-/Wahrnehmungsfolge, größere Routen und
+allgemeine Ownerabnahme sind dadurch nicht umfassend qualifiziert.
+`SMR-AC-08/09` bleiben eigenständig offen.
 
 ## Nächste ausführbare Lieferungen
 
-1. **Kausales Reise-Undo/Redo.** Den oben beschriebenen vollständigen
-   Checkpointvertrag einschließlich Zeitfolgen, fremder Scene-Fakten,
-   Persistenz/Transfer und echter Livebedienung liefern. Der bestehende
-   administrative Zeit-/Platzierungsweg ist kein Ersatz.
+1. **Rücknahme über Routengrenzen und weitere Zeitfolgen.** Den vorhandenen
+   kausalen Verlauf auf neue angenommene Routen und lokale Dungeonreisen erweitern
+   und weitere Autonomy-/Wahrnehmungskombinationen tatsächlich qualifizieren.
+   Administrative Zeit-/Platzierungsänderungen bleiben kein Ersatz.
 2. **Gemeinsamer Biomkatalog und größere Routen.** Die ursprüngliche Hexquelle
    verlangt installationseigene, im Editor verwaltete Biome und denselben
    Definitionsbestand für Kreaturfilterung. Die aktuelle Terrainmenge ist weiter

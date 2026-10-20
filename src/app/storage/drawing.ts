@@ -147,7 +147,14 @@ function checkedDrawingHistory(db:any,row:any){
  }
  return history;
 }
+export function validateFeatureStates(db:any){
+ for(const row of db.prepare('SELECT * FROM dungeon_feature_state').iterate()){
+  const state=parsed<any>(row),element=checkedElementRow(db.prepare('SELECT * FROM drawing_element WHERE campaign_id=? AND id=?').get(row.campaign_id,row.id));
+  if(element.kind!=='feature'||state.id!==row.id||state.revision!==row.revision||!Number.isSafeInteger(state.revision)||state.revision<0||!Number.isSafeInteger(state.charges)||state.charges<0||state.charges>element.maxCharges||!(state.resetStartedMs===null||typeof state.resetStartedMs==='string'&&/^(0|[1-9][0-9]{0,29})$/.test(state.resetStartedMs))||!(state.epochId===null||typeof state.epochId==='string'&&!!state.epochId)||((state.resetStartedMs===null)!==(state.epochId===null)))throw Error('Gespeicherte Fallenladung oder Resetzeit ungültig.');
+ }
+}
 export function validateDrawing(db:any){
+ validateFeatureStates(db);
  validateDungeonKeys(db);validateGraphLayouts(db);validateDungeonVolumes(db);validateDungeonPaths(db);validateDrawingElements(db);
  for(const row of db.prepare('SELECT * FROM drawing_history').iterate())checkedDrawingHistory(db,row);
 }

@@ -1,3 +1,4 @@
+import {installTravelHistory} from './travel-history';
 import {checkedWorldNoteRow} from "./world-note-row";
 import {nearestAnchor} from '../drawing-model';
 import {splitGroupRoom,scaleRoomGroup,installRoomGroups,storeGroupDraft,groupRecipeForHouse,refreshChangedGroupHulls,refreshGroupHull,removeGeneratedGroup,validateRoomGroups} from './room-groups';
@@ -87,7 +88,7 @@ import {installNpcDungeonSchema} from './npc-dungeon';
 import {installAutonomyDungeonSchema} from './autonomy-dungeon';
 import {installDungeonPlaySchema,dungeonCommandState,dungeonDisplay,dungeonView,previewDungeon,executeDungeon,validateDungeonPlay,dungeonGeometry,dungeonGeometryBasis} from './dungeon-play';
 import type {DungeonCommand,DungeonRequest} from '../dungeon-contracts';
-import {installDrawingSchema,roomMapStyle,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing} from './drawing';
+import {installDrawingSchema,roomMapStyle,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing,validateFeatureStates} from './drawing';
 import type {DrawingCommand} from '../drawing-contracts';
 import {installNpcWorldSchema} from './npc-world';
 import {installAutonomySchema,autonomyView,autonomyDecision,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
@@ -141,7 +142,7 @@ import type { EncounterPlanCommand } from '../encounter-contracts';
 import { readPresetRegistry,executePresetCommand,readPresetOutcome } from './preset-registry';
 import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, scenePreparation, cleanSessionVisits } from './session';
+import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, readWorldActor, scenePreparation, cleanSessionVisits } from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -171,9 +172,10 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
+    if(schema>=53&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='travel_checkpoint'").get()){this.db.close();throw Error('Reisecheckpoint-Speicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>0&&schema<50&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='city_unit'").get()&&this.db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get()){this.db.close();throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');}
     if(schema>=50&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='room_group'").get()){this.db.close();throw Error('Raumgruppenspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if (schema > 52) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
+    if (schema > 53) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
     if(schema>=51&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_opponent_group'").get()){this.db.close();throw Error('Szenengegner-Zuordnung fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
     if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
@@ -247,7 +249,7 @@ export class CampaignStore {
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
       if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=52');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);this.db.pragma('user_version=53');
 
     }).immediate();
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
@@ -1195,7 +1197,7 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==51&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
+    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==51&&schema!==52&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
     this.validateDatabase(db);
@@ -1230,7 +1232,7 @@ export class CampaignStore {
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installRoomGroups(source);installSessionSchema(source);source.pragma('user_version=52');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installRoomGroups(source);installSessionSchema(source);installTravelHistory(source);source.pragma('user_version=53');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }
@@ -1277,6 +1279,17 @@ export class CampaignStore {
     const ack=executeWorld(this.db,command,()=>{this.guard(command.token,command.campaignId);},{
       capture:()=>captureAutonomyBasis(this.db,command.campaignId),
       confirm:(commandId,before,after,basis)=>this.consumeSceneTime(command.campaignId,commandId,before.scene,after.scene,basis),
+      validateHistory:(_sceneId,tables)=>{
+        // Validate the restored runtime with its owning decoders before commit.
+        // A forged historical payload must never bypass today's domain rules.
+        validateLiveBackup(this.db,command.campaignId);validateWorldBackup(this.db);
+        if(tables.some(t=>t.startsWith('autonomy_')||t.startsWith('npc_')))validateAutonomy(this.db);
+        if(tables.some(t=>t==='shop'||t==='shop_event'))validateItemsBackup(this.db);
+        if(tables.includes('dungeon_feature_state'))validateFeatureStates(this.db);
+        if(tables.some(t=>t.startsWith('dungeon_')))validateDungeonPlay(this.db);
+        if(tables.some(t=>t==='player_hex_memory'))validatePlayer(this.db);
+        if(tables.includes('world_actor'))for(const row of this.db.prepare('SELECT id FROM world_actor WHERE campaign_id=?').all(command.campaignId))readWorldActor(this.db,command.campaignId,row.id);
+      },
     });
     this.updateMusic(command.campaignId);return ack;
   }).immediate();}
