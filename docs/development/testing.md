@@ -349,3 +349,25 @@ Indexierungsfehler verdeckt. Die fünf Offsetfälle verlangen jetzt die beabsich
 Validierungsfehlermeldung, sodass alle fünf die entfernte Prüfung erkennen.
 Unterschiedliche DOM-Besitzer, Fehlerzeitpunkte, Scan-/Seitengrenzen und beschädigte
 Raumquellen bleiben unverändert. Diese Phase liefert keinen neuen nativen Nachweis.
+
+Die Beziehungsphase prüft vier `core/world-links`-Dateien mit 65 Fällen und
+behält 64. Der Einzelfall zur verspäteten Einweg-Draftantwort nach erneutem Öffnen
+mit demselben Token wiederholt den Single-/Draftfall der Writer-Matrix. Seine
+zusätzliche Revisionsassertion bleibt dort erhalten. Unterschiedliche Writer,
+Antwortzeitpunkte, fremde Entwürfe und Recoveryzustände bleiben separat.
+
+Die zusätzliche Familienkopie wird im vorhandenen History-Kopierfall geprüft:
+Er kopiert jetzt ebenfalls nach einem Undo-/Redo-Zyklus und prüft beide
+Gegenrichtungen einschließlich Typ, Beschriftung und neuer Ziel-ID exakt.
+Der direkte Familientest behält Paarvalidierung, Graph und Undo/Redo. Gemessen
+sinken Snapshotaufrufe von sieben auf sechs, unabhängige Importe von sechs auf
+fünf, Storeinstanzen von 73 auf 71 und neue Notizschreibaufrufe von 127 auf 125.
+Für den erhaltenen Zustand kommen zwei Historyaufrufe hinzu (17 → 19).
+Vier direkte wiederholte Assertions entfallen; drei weitere werden übernommen.
+
+Drei isolierte Fehler bleiben vorher/nachher erkannt: fehlender Dialogbesitz
+bei verspäteter Draftantwort sowie veränderte Familientypen und Beschriftungen
+beim Kopieren. Alle sechs unveränderten Kontrollläufe bestehen. Die Kopierfehler
+werden nach der Bereinigung durch die übernommenen Assertions erkannt.
+Das belegt die genannten Überschneidungen, keine vollständige Fehlerabdeckung,
+keine aus Einzelmessungen abgeleitete Beschleunigung und keine native Abnahme.

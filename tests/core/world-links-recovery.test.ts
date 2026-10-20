@@ -211,14 +211,6 @@ test('pair preflight cannot remove a pair after the source was reopened with the
   assert.equal(f.calls.filter(call=>call.method==='executeWorldRelationPair').length,0);assert.equal(f.calls.filter(call=>call.method==='keepWorldRelationPairDraft').length,0);assert.equal(f.store.worldRelationPairHistory(f.workspace.token).cursor,1);assert.equal(f.el('world-links-status').textContent,status);
  }finally{f.cleanup();}
 });
-test('single draft acknowledgement cannot authorize a write from a reopened same-token source',async()=>{
- const f=await fixture(false,'single');try{
-  await choosePair(f);const paired=f.el<HTMLInputElement>('world-link-paired');paired.checked=false;paired.dispatchEvent(new Event('change',{bubbles:true}));
-  const started=deferred<void>(),hold=deferred<void>(),keep=f.api.keepDeskDraft;f.api.keepDeskDraft=async(...args:any[])=>{const result=await keep(...args);started.resolve();await hold.promise;return result;};
-  const task=f.click('Beziehung übernehmen','add');await started.promise;await f.reopen(false);const status=f.el('world-links-status').textContent,writeId=(f.workbench as any).writeId;hold.resolve();await task;
-  assert.equal(f.calls.filter(call=>call.method==='changePreparationContent').length,0);assert.equal((f.workbench as any).writeId,writeId);assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===f.source)!.note.revision,1);
- }finally{f.cleanup();}
-});
 
 for(const mode of ['pair','single','history'] as const)for(const phase of ['draft','success','failure'] as const){
  if(mode==='history'&&phase==='draft')continue;
@@ -231,7 +223,10 @@ for(const mode of ['pair','single','history'] as const)for(const phase of ['draf
    const status=f.el('world-links-status').textContent,label=f.el<HTMLInputElement>('world-link-label').value,writeId=(f.workbench as any).writeId,pairWriteId=(f.workbench as any).pairWriteId;
    hold.resolve();await task;
    assert.equal(f.el('world-links-status').textContent,status);assert.equal(f.el<HTMLInputElement>('world-link-label').value,label);assert.equal((f.workbench as any).writeId,writeId);assert.equal((f.workbench as any).pairWriteId,pairWriteId);assert.equal(f.el('world-link-form').inert,false);
-   if(phase==='draft')assert.equal(f.calls.filter(call=>call.method===(mode==='pair'?'executeWorldRelationPair':'changePreparationContent')).length,0);
+   if(phase==='draft'){
+    assert.equal(f.calls.filter(call=>call.method===(mode==='pair'?'executeWorldRelationPair':'changePreparationContent')).length,0);
+    if(mode==='single')assert.equal(f.store.preparation(f.workspace.token,'').notes.find(row=>row.note.id===f.source)!.note.revision,1);
+   }
   }finally{f.cleanup();}
  });
 }
