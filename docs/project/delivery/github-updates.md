@@ -13,6 +13,18 @@ ist voreingestellt und erfolgt nach dem Start höchstens einmal täglich.
 Sie lässt sich abschalten. Ein Hinweis unterbricht den Spielabend nicht.
 Herunterladen und **Installieren und neu starten** sind getrennte Aktionen;
 Schließen der App allein installiert kein Update. Offlinebetrieb bleibt möglich.
+Beim Wechsel zu Updates werden unveränderte oder gespeicherte Einstellungen
+regulär geschlossen. Offene Presetänderungen oder ungeklärte Speicheraufträge
+verhindern diesen Wechsel. Nach dem Installationsklick erscheint sofort
+„Neustart wird vorbereitet…“ mit einer laufenden Anzeige. Fehler bleiben sichtbar;
+ein erfolgreicher Auftrag bleibt bis zum Schließen der App gegen weitere Klicks gesperrt.
+Kann die Oberfläche ihren Arbeitszustand nicht abschließen, erscheint
+**Trotzdem aktualisieren…**. Erst **Ungespeicherte Eingaben verwerfen und
+aktualisieren** bestätigt den möglichen Verlust noch nicht gesicherter Eingaben.
+Zurück oder Escape bricht diese Bestätigung ab. Gespeicherte Arbeitsentwürfe
+werden nicht gelöscht. Paketprüfung, laufende Dateioperationen, Profilsicherung
+und Wiederherstellung durchlaufen weiterhin denselben Installationsweg;
+deren Fehler lassen sich mit dieser Option nicht übergehen.
 
 ## Erste Installation
 
@@ -113,11 +125,17 @@ auf. Bei unlesbarem Journal bleiben die Originale erhalten und der Start stoppt.
   Releaseauswahl, Netzwerkfehler, getrennte Aktionen, Locks, Sicherung und
   Fehler sowie echte Prozessabbrüche an den Aktivierungsgrenzen.
 - `node --test tests/desktop-preset-settings.test.mjs`: Ein ungespeichertes
-  Generator-Preset verhindert den Übergang zu Updates und bleibt erhalten.
+  Generator-Preset oder ungeklärter Auftrag verhindert den Übergang zu Updates.
+  Saubere Einstellungen werden vor dem Öffnen von Updates geschlossen.
 - `npm run package:desktop -- .build/update-native-base` und
   `node tools/test-desktop-updates.mjs .build/update-native-base`: zwei echte
-  Linuxpakete, Bootstrap, UI-Download, Installation, Erststart und Erhalt von
-  Kampagnen/Medien im eigenen Testprofil. Unter headless Linux mit `xvfb-run -a`.
+  Linuxpakete, Bootstrap, Einstellungen → Updates direkt vom Startbildschirm,
+  UI-Download, Rückmeldung beim Klick, Installation, Erststart und Erhalt von
+  Kampagnen/Medien im eigenen Testprofil. Zusätzlich mit `--workspace` ausführen,
+  um denselben Menüweg mit einer geöffneten Kampagne zu prüfen. Mit
+  `--workspace --force` wird zusätzlich eine blockierende Abschlussprüfung
+  nachgestellt und das ausdrücklich bestätigte Fortsetzen geprüft. Alle drei
+  Szenarien laufen im Releaseworkflow. Unter headless Linux mit `xvfb-run -a`.
   Testreleases verwenden einen separaten kurzlebigen Schlüssel und werden nicht
   veröffentlicht. Nachweise liegen in `.build/update-native-*`.
 

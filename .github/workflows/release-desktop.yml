@@ -42,8 +42,12 @@ jobs:
           if test -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns; then
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
-      - name: Test real packaged update and restart
+      - name: Test packaged update from the start screen through Settings
         run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package
+      - name: Test packaged update with an open workspace through Settings
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace
+      - name: Test explicitly confirmed update after a blocked editor
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --force
       - name: Upload verified assets as a draft
         run: gh release create "$GITHUB_REF_NAME" .build/release-assets/* --draft --verify-tag --title "SaltMarcher $GITHUB_REF_NAME" --generate-notes
         env:

@@ -124,8 +124,29 @@ test('opening a pending registry hides all previously confirmed preset values im
 });
 
 test('updates cannot bypass an unfinished settings preset',async t=>{
- const x=await fixture(t);await x.open(x.campaign.id);let opened=0;x.document.addEventListener('saltmarcher-open-updates',()=>opened++);
- x.el('settings-updates').onclick();assert.equal(opened,1);
+ const x=await fixture(t);await x.open(x.campaign.id);let opened=0,closed=0,focused=false;
+ x.el('application-trigger').focus=()=>{focused=true;};
+ x.window.addEventListener('generator-registry-changed',()=>closed++);
+ x.document.addEventListener('saltmarcher-open-updates',()=>{assert.equal(x.el('preset-manager').open,false);assert.equal(focused,true);assert.equal(closed,opened+1);opened++;});
+ x.el('settings-updates').onclick();assert.equal(opened,1);assert.equal(closed,1);
+ await x.open(x.campaign.id);focused=false;
  x.el('preset-copy').onclick();x.edit('preset-name','Ungespeichert');x.el('settings-updates').onclick();assert.equal(opened,1);assert.match(x.el('preset-status').textContent,/zuerst speichern/);assert.equal(x.el('preset-name').value,'Ungespeichert');
+ assert.equal(x.el('preset-manager').open,true);assert.equal(closed,1);
  await x.save();x.el('settings-updates').onclick();assert.equal(opened,2);
+});
+
+test('updates wait for registry reads and unresolved preset commands',async t=>{
+ const x=await fixture(t);let opened=0,resolveRead,rejectSave;
+ x.document.addEventListener('saltmarcher-open-updates',()=>opened++);
+ x.window.campaign.presetRegistry=id=>new Promise(resolve=>{resolveRead=()=>resolve({ok:true,value:x.store.presetRegistry(id)});});
+ const opening=x.ui.openPresetSettings(x.campaign.id);await settle();
+ x.el('settings-updates').onclick();assert.equal(opened,0);assert.equal(x.el('preset-manager').open,true);
+ resolveRead();await opening;
+ x.el('preset-copy').onclick();x.edit('preset-name','Ungeklärter Auftrag');
+ x.window.campaign.presetCommand=async command=>{x.store.presetCommand(command);return new Promise((_resolve,reject)=>{rejectSave=reject;});};
+ const saving=x.save();await settle();
+ x.el('settings-updates').onclick();assert.equal(opened,0);assert.equal(x.el('preset-manager').open,true);
+ rejectSave(new Error('Antwort nach Commit verloren'));await saving;
+ x.el('settings-updates').onclick();assert.equal(opened,0);assert.equal(x.el('preset-manager').open,true);
+ assert.equal(x.el('preset-name').value,'Ungeklärter Auftrag');assert.equal(x.el('preset-check').hidden,false);
 });
