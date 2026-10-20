@@ -56,3 +56,17 @@ test('unchanged distant roads retain meshes; local height edits rebuild only the
  state.setData({...data,identity:{...identity,revision:2,fence:'two'},routes,grid:{...data.grid,heights},update:{base:identity,heights:[{x:16,y:16,width:1,height:1}],pixels:[]}});
  assert.notEqual(state.routeState.get('near').meshes,near);assert.equal(state.routeState.get('far').meshes,far);
 });
+
+test('perspective output tiles match the full main-camera projection at their shared edge',()=>{
+ const {state,data}=fixture();state.reframe(data.grid.view.frame,55,25);
+ const point=new THREE.Vector3(1000,2000,30),full=point.clone().project(state.camera),captures=[];
+ state.renderer.render=()=>captures.push(point.clone().project(state.camera));
+ state.renderTile(1800,1200,0,0,900,1200);
+ state.renderTile(1800,1200,900,0,900,1200);
+ // setViewOffset uses the output aspect; compare against a full output of the same size.
+ state.renderTile(1800,1200,0,0,1800,1200);const expected=captures[2];
+ assert(Math.abs((captures[0].x-1)/2-expected.x)<1e-9);
+ assert(Math.abs((captures[1].x+1)/2-expected.x)<1e-9);
+ assert(Math.abs(captures[0].y-expected.y)<1e-9);assert.equal(state.camera.view.enabled,false);
+ state.render();assert(Math.abs(point.clone().project(state.camera).x-full.x)<1e-9,'editor pose is unchanged by image output');
+});

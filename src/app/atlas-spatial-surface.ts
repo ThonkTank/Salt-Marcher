@@ -2,6 +2,8 @@ import * as THREE from "three";
 import type { Point } from "./contracts";
 
 export interface AtlasSpatialSurface {
+  objectHeights?:ReadonlyMap<string,number>;
+  scopeBases?:ReadonlyMap<string,number>;
   origin: Point;
   focusM: number;
   exaggeration: number;

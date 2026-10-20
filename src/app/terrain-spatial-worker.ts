@@ -1,3 +1,4 @@
+import {resolveTerrainObjects,type TerrainObjectSource} from './terrain-objects';
 import type {LandscapeRecord} from './atlas-landscape';
 import {TerrainSampler} from './terrain-height';
 import {brushPreviewRecords,type BrushPreviewJob} from './atlas-brush-worker';
@@ -6,7 +7,7 @@ import {LandscapeRasterizer} from './landscape-raster';
 import {orderedColors} from './landscape-brush';
 import {terrainColors} from './world-model';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
-export interface SpatialJob extends BrushPreviewJob {view:TerrainView;source:string;routeRecords?:LandscapeRecord[]}
+export interface SpatialJob extends BrushPreviewJob {view:TerrainView;source:string;objectSources?:TerrainObjectSource[];routeRecords?:LandscapeRecord[]}
 export interface SpatialReply {detail?:import("./terrain-detail").TerrainDetail;identity?:import("./terrain-frame").TerrainFrameIdentity;update?:{base:import("./terrain-frame").TerrainFrameIdentity;heights:import("./terrain-frame").TerrainRect[];pixels:import("./terrain-frame").TerrainRect[];detail?:import("./terrain-frame").TerrainRect[]};objects?:import("./terrain-objects").TerrainObject[];generation:number;source:string;grid:TerrainGrid;pixels:Uint8Array;width:number;height:number;draft:boolean;routes?:LandscapeRecord[];vegetation?:LandscapeRecord[];protectedLimit?:number;heightM?:number;contourInk?:string}
 export function renderTerrainSpatial(job:SpatialJob):SpatialReply{
   let protectedLimit:number|undefined;
@@ -18,7 +19,7 @@ export function renderTerrainSpatial(job:SpatialJob):SpatialReply{
   // This texture is the opaque world base. Empty raster pixels are ocean, not black holes.
   const pixels=image.finish(),water=[1,3,5].map(i=>parseInt(terrainColors.water.slice(i,i+2),16));
   for(let i=0;i<pixels.length;i+=4){const alpha=pixels[i+3]!/255;if(alpha<1){for(let c=0;c<3;c++)pixels[i+c]=Math.round(pixels[i+c]!*alpha+water[c]!*(1-alpha));pixels[i+3]=255;}}
-  return {routes,vegetation:records.filter(r=>r.vegetationView),protectedLimit,contourInk,heightM:point?new TerrainSampler(records).sample(point).heightM:undefined,generation:job.generation,source:job.source,grid,pixels,width:job.width,height:job.height,draft:!!(job.heightStroke||job.color||job.routeRecords)};
+  return {objects:resolveTerrainObjects(job.objectSources??[],records),routes,vegetation:records.filter(r=>r.vegetationView),protectedLimit,contourInk,heightM:point?new TerrainSampler(records).sample(point).heightM:undefined,generation:job.generation,source:job.source,grid,pixels,width:job.width,height:job.height,draft:!!(job.heightStroke||job.color||job.routeRecords)};
 }
 if(typeof self!=='undefined'&&typeof document==='undefined')self.onmessage=(event:MessageEvent<SpatialJob>)=>{
   try{const result=renderTerrainSpatial(event.data);self.postMessage(result,{transfer:[result.pixels.buffer,result.grid.heights.buffer]});}

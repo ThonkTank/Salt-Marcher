@@ -56,9 +56,7 @@ Bestände nicht zurückstufen.
 
 Live-Pinselanzeige, partielle GPU-Updates und Höhenprofile sind jetzt an die
 gemeinsame Hauptkamera angeschlossen und [lokal geprüft](../../reference/atlas-live-main-camera-20261021/README.md).
-Noch zusammenzuführen sind Objekt-Höhenbindung und perspektivische Ausgabe. Die bisherigen Ausgabetests und Proben der separaten Ansicht sind
-hierfür keine Qualifikation. Erst danach folgen Übernahme und Prüfung über den
-Repository-Start. Die drei abschließenden Produktaudits stehen weiterhin aus.
+Objekt-Höhenbindung und perspektivische Ausgabe sind ebenfalls [an diese Hauptkamera angeschlossen und lokal geprüft](../../reference/atlas-objects-main-20261021/README.md). Die bisherigen Ausgabetests und Proben der separaten Ansicht werden dadurch nicht rückwirkend qualifiziert. Übernahme und Prüfung über den Repository-Start werden gesondert dokumentiert. Die drei abschließenden Produktaudits stehen weiterhin aus.
 
 ## Umfang und Quellenzuordnung
 

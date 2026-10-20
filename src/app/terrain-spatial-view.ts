@@ -1,3 +1,4 @@
+import {TerrainObjectLayer} from './terrain-object-view';
 import {bounds} from './atlas-landscape';
 import {terrainBoxesOverlap} from './terrain-cache';
 import {updateTerrainMesh} from './terrain-surface-mesh';
@@ -41,6 +42,7 @@ export class TerrainSpatialView {
   private overlayScene:AtlasSpatialScene|null=null;
   private publication:{scene:AtlasCanvasScene;origin:Point;images:ReadonlyMap<string,CanvasImageSource>}|null=null;
   private routeIds=new Set<string>();
+  private objectLayer:TerrainObjectLayer|null=null;
   private vegetation:AtlasSpatialVegetation|null=null;
   private vegetationRecords:LandscapeRecord[]|null=null;
   setVegetation(records:LandscapeRecord[]){
@@ -53,7 +55,7 @@ export class TerrainSpatialView {
   }
   private surface(){
     const g=this.grid!;
-    return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:Math.min(g.view.box.width/(g.view.columns-1),g.view.box.height/(g.view.rows-1)),routeIds:this.routeIds};
+    return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:Math.min(g.view.box.width/(g.view.columns-1),g.view.box.height/(g.view.rows-1)),routeIds:this.routeIds,closedObjectIds:this.objectLayer?.closedIds,objectHeights:this.objectLayer?.heights,scopeBases:this.objectLayer?.scopeBases};
   }
   publish(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){
     if(this.publication?.scene===scene)return;
@@ -75,6 +77,8 @@ export class TerrainSpatialView {
   hitAt(clientX:number,clientY:number,keys:string[]):PaintHit|null{
     const ray=this.ray(clientX,clientY),terrainDistance=this.picker?ray.intersectObject(this.picker)[0]?.distance:undefined;
     const overlay=this.overlayScene?.hit(ray,keys,terrainDistance);if(overlay)return overlay;
+    const foreground=Math.min(terrainDistance??Infinity,ray.intersectObjects(this.routes,false)[0]?.distance??Infinity);
+    const object=this.objectLayer?.hit(ray,keys,foreground);if(object)return object;
     const plant=this.vegetation?.hit(ray,keys,terrainDistance);if(plant)return plant;
     if(keys.includes('landscapeId')){
       const route=ray.intersectObjects(this.routes,false).find(h=>terrainDistance===undefined||h.distance<=terrainDistance+.2);
@@ -86,9 +90,9 @@ export class TerrainSpatialView {
     const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();
     ray.setFromCamera(new THREE.Vector2((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2),this.camera);return ray;
   }
-  constructor(readonly canvas:HTMLCanvasElement){
+  constructor(readonly canvas:HTMLCanvasElement,pixelRatio=Math.min(1.5,window.devicePixelRatio)){
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
-    this.renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
+    this.renderer.setPixelRatio(pixelRatio);this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
     this.scene.add(new THREE.HemisphereLight('#fff7df','#686e53',2.4));const sun=new THREE.DirectionalLight('#fff7de',2.1);sun.position.set(-.6,.8,1.4);this.scene.add(sun);
   }
   setData(data:SpatialReply){
@@ -120,6 +124,9 @@ export class TerrainSpatialView {
       for(const mesh of meshes)this.scene.add(mesh);this.routeState.set(r.id,{key,meshes});
     }
     this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
+    if(!this.objectLayer){this.objectLayer=new TerrainObjectLayer();this.scene.add(this.objectLayer.group);}
+    const objectsChanged=this.objectLayer.update(data.objects??[],{...this.origin,z:v.focusM},v.exaggeration);
+    if(objectsChanged&&!next.rects.length)this.rebuildAtlas();
     if(next.rects.length){this.rebuildVegetation(this.vegetationRecords??data.vegetation??[]);this.rebuildAtlas();}
     if(this.cursorState)this.cursor=this.ring(this.cursorState.point,this.cursorState.radius,'#a65f30');
     this.render();
@@ -141,19 +148,26 @@ export class TerrainSpatialView {
     if(!this.grid)return null;const r=this.canvas.getBoundingClientRect();
     return atlasPlanePoint(this.grid.view,{x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height});
   }
+  private outputTile:{width:number;height:number;x:number;y:number;w:number;h:number}|null=null;
+  /** Perspective sub-frusta retain the exact main-camera pose across bounded GPU tiles. */
+  renderTile(width:number,height:number,x:number,y:number,w:number,h:number){
+    this.outputTile={width,height,x,y,w,h};try{this.render();}finally{this.outputTile=null;this.camera.clearViewOffset();}
+  }
   render(){
-    if(!this.grid)return;const v=this.grid.view,w=Math.max(1,this.canvas.clientWidth),h=Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
+    if(!this.grid)return;const v=this.grid.view,w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
     this.camera.aspect=v.frame.width/v.frame.height;
     const eye=atlasCameraEye(v),target=new THREE.Vector3(v.frame.x+v.frame.width/2-this.origin.x,this.origin.y-v.frame.y-v.frame.height/2,0);
     const distance=Math.hypot(eye.x,eye.y,eye.z),extent=Math.max(v.box.width,v.box.height,this.heightRange*v.exaggeration);
     this.camera.near=Math.max(1e-6,distance*1e-6);this.camera.far=Math.max(distance*8,extent*3);this.camera.up.set(0,0,1);
     this.camera.position.copy(target).add(new THREE.Vector3(eye.x,-eye.y,eye.z));
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
-    this.camera.lookAt(target);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
+    this.camera.lookAt(target);
+    if(this.outputTile){const t=this.outputTile;this.camera.setViewOffset(t.width,t.height,t.x,t.y,t.w,t.h);}
+    this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
   }
-  hit(clientX:number,clientY:number,includeRoutes=false):Point|null{
+  hit(clientX:number,clientY:number,includeRoutes=false,includeObjects=false):Point|null{
     if(!this.picker)return null;const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2),(this.frozenPick?.camera??this.camera));
-    const hit=ray.intersectObjects(includeRoutes?[this.picker,...this.routes]:[this.picker],false)[0];if(!hit||!this.base)return null;const origin=this.frozenPick?.origin??this.origin,point={x:hit.point.x+origin.x,y:origin.y-hit.point.y};return hit.object!==this.picker||terrainVisible(this.base,point)?point:null;
+    const hit=ray.intersectObjects([this.picker,...(includeRoutes?this.routes:[]),...(includeObjects&&!this.frozenPick?this.objectLayer?.meshes??[]:[])],false)[0];if(!hit||!this.base)return null;const origin=this.frozenPick?.origin??this.origin,point={x:hit.point.x+origin.x,y:origin.y-hit.point.y};return hit.object!==this.picker||terrainVisible(this.base,point)?point:null;
   }
   project(p:Point){return this.grid?projectTerrain(this.grid.view,p,gridHeight(this.grid,p)):null;}
   private removeLine(line:THREE.Line|null){if(line){this.scene.remove(line);line.geometry.dispose();(line.material as THREE.Material).dispose();}}
@@ -167,7 +181,7 @@ export class TerrainSpatialView {
   dispose(){
     this.detail?.dispose();this.frozenPick=null;
     this.atlas?.dispose();this.overlayScene?.dispose();this.atlas=null;this.overlayScene=null;this.publication=null;
-    this.clearRoutes();this.vegetation?.dispose();this.vegetation=null;this.vegetationRecords=null;
+    this.objectLayer?.dispose();this.objectLayer=null;this.clearRoutes();this.vegetation?.dispose();this.vegetation=null;this.vegetationRecords=null;
     this.removeLine(this.cursor);this.removeLine(this.selection);this.cursor=null;this.selection=null;if(this.mesh){this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
     this.renderer.dispose();this.renderer.forceContextLoss();this.mesh=null;this.picker=null;this.grid=null;this.base=null;
   }

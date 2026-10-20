@@ -24,7 +24,7 @@ export class AtlasSpatialScene {
     source: AtlasCanvasScene,
     origin: Point,
     images: ReadonlyMap<string, CanvasImageSource>,
-    surface: AtlasSpatialSurface & { routeIds?: ReadonlySet<string> },
+    surface: AtlasSpatialSurface & { routeIds?: ReadonlySet<string>;closedObjectIds?:ReadonlySet<string> },
   ) {
     try {
       for (const [order, command] of source.commands.entries()) {
@@ -44,6 +44,8 @@ export class AtlasSpatialScene {
           )
         )
           continue;
+        // The volume owns the closed building face; keep author outlines and labels.
+        if(command.node.kind!=="text"&&command.ancestry.some(n=>surface.closedObjectIds?.has(n.data.cityUnit??"")))continue;
         if (command.cuts?.length)
           throw Error(
             "Maskierte Atlasgeometrie benötigt den freigegebenen Maskenrenderer.",
@@ -79,11 +81,15 @@ export class AtlasSpatialScene {
       x: m.a * x + m.c * y + m.e + origin.x,
       y: m.b * x + m.d * y + m.f + origin.y,
     });
+    const object=c.ancestry.find(n=>surface.objectHeights?.has(n.data.cityUnit??n.data.id??"")),
+      scope=c.ancestry.find(n=>surface.scopeBases?.has(n.data.spatialScope??"")),
+      elevation=object?surface.objectHeights!.get(object.data.cityUnit??object.data.id!)!:
+        scope?surface.scopeBases!.get(scope.data.spatialScope!)!+Number(scope.data.spatialFloor??0):undefined;
     const position = (p: Point) =>
       new THREE.Vector3(
         p.x - surface.origin.x,
         surface.origin.y - p.y,
-        (surface.height(p) - surface.focusM) * surface.exaggeration,
+        ((elevation??surface.height(p)) - surface.focusM) * surface.exaggeration,
       );
     const material = (color: string, alpha: number, map?: THREE.Texture) =>
       this.own(

@@ -205,28 +205,14 @@ export async function atlasImage(
     }
     checkCurrent();
     if(overlay)await drawScene(canvas,overlay,box,checkCurrent,false);
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      canvas.toBlob(
-        (b) =>
-          b ? resolve(b) : reject(Error("Bild konnte nicht erzeugt werden.")),
-        "image/" + format,
-        0.94,
-      ),
-    );
-    checkCurrent();
-    // Match the IPC/file limit before reading the encoded bytes.
-    if (blob.size > 64 * 1024 * 1024)
-      throw Error(
-        "Atlas-Bild ist größer als 64 MiB. Kleinere Ausgabegröße wählen.",
-      );
-    return new Uint8Array(await blob.arrayBuffer());
+    return await atlasCanvasBytes(canvas,format,current);
   } finally {
     canvas.width = canvas.height = 0;
     if (tileCanvas) tileCanvas.width = tileCanvas.height = 0;
   }
 }
 
-async function drawScene(
+export async function drawScene(
   canvas: HTMLCanvasElement,
   scene: AtlasPaint,
   box: CanvasBox,
@@ -266,4 +252,24 @@ async function drawScene(
     compiled.dispose();
     images.clear();
   }
+}
+
+export async function atlasCanvasBytes(canvas:HTMLCanvasElement,format:"png"|"jpeg",current:()=>boolean){
+  const checkCurrent=()=>{if(!current())throw Error("Atlas-Ausgabe abgebrochen.");};
+  checkCurrent();
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) =>
+          b ? resolve(b) : reject(Error("Bild konnte nicht erzeugt werden.")),
+        "image/" + format,
+        0.94,
+      ),
+    );
+    checkCurrent();
+    // Match the IPC/file limit before reading the encoded bytes.
+    if (blob.size > 64 * 1024 * 1024)
+      throw Error(
+        "Atlas-Bild ist größer als 64 MiB. Kleinere Ausgabegröße wählen.",
+      );
+    return new Uint8Array(await blob.arrayBuffer());
 }

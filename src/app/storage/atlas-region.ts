@@ -109,13 +109,13 @@ export class AtlasRegionReader {
    this.store('room','',row.scope_id,row.floor_id,row.id,{value,polygons},row.sourceOrder);
   }else if(table==='city_unit'){
    const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node')return;
-   const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint}=u;
+   const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,terrain}=u;
    let outline=u.outline,points:Point[]|undefined;
    if(['road','wall'].includes(kind)){
     const nodes=(u.nodeIds??[]).map((id:string)=>{const n=this.source('city_unit',id);if(n?.city_id!==row.city_id)throw new Error('Straßenknoten fehlt.');return parse(n);});
     points=roadPoints(u,nodes);if(points.length<2)throw new Error('Straßenknoten fehlt.');outline=points;
    }
-   const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,outline};
+   const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,terrain,outline};
    this.store('unit',row.city_id,'','',id,{value,...(points?{points,stroke:width??6}:{polygons:kind==='building'?posedFootprint(value):[{outer:outline??[],holes:[]}]})},row.sourceOrder);
   }else if(table==='drawing_element'){
    const e=parse(row);validateDrawingElement(e);if(e.id!==row.id||e.scopeId!==row.scope_id||e.floorId!==row.floor_id)throw new Error('Zeichnung widersprüchlich.');if(e.archived)return;
@@ -240,7 +240,17 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
    const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-800*1024){dense=true;return;}used+=cost;
    if(kind==='room'){
     result.rooms.push(s.value);if(s.style){used+=bytes(s.style);result.drawing.styles.push(s.style);}
-   }else if(kind==='unit'){cities.get(b.ownerId)?.units.push(s.value);if(s.value.kind==='building'){const child=this.sql("SELECT owner_id FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,s.value.id);if(child){result.interiors[s.value.id]=child.owner_id;used+=bytes([s.value.id,child.owner_id]);}}}
+   }else if(kind==='unit'){
+    cities.get(b.ownerId)?.units.push(s.value);
+    if(s.value.kind==='building'){
+      const child=this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,s.value.id);
+      if(child){
+        const childBinding=this.binding(child);metadata(childBinding,this.frame(childBinding));
+        s.value.floorElevations=result.floors.filter(f=>f.scopeId===child.owner_id).map(f=>f.sourceElevation);
+        result.interiors[s.value.id]=child.owner_id;used+=bytes([s.value.id,child.owner_id,s.value.floorElevations]);
+      }
+    }
+   }
    else if(kind==='element')result.drawing.elements.push(s.value);
   },metadata);
   if(bytes(result)>REGION_REPLY_BYTES-800*1024)dense=true;

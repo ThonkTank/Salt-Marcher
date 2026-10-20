@@ -4,7 +4,7 @@ import {validateTerrainView,type TerrainView} from './terrain-spatial-model';
 import {validateHeightStroke,type HeightStroke} from './terrain-brush';
 import {validateColor} from './landscape-brush';
 import type {LandscapeRecord} from './atlas-landscape';
-import {validateTerrainAnchor,type TerrainObjectSource} from './terrain-objects';
+import {validateTerrainAnchor,terrainObjectPoints,type TerrainObjectSource} from './terrain-objects';
 import type {SpatialReply} from './terrain-spatial-worker';
 
 export interface TerrainProjectionRequest {
@@ -23,11 +23,14 @@ export function validateTerrainProjection(q:TerrainProjectionRequest){
  if(q.objects!==undefined){
   if(!Array.isArray(q.objects)||q.objects.length>REGION_VECTOR_OBJECTS)throw Error('Zu viele Baukörper für diese Ansicht.');let points=0;
   for(const o of q.objects){
+   if(!o||!o.binding)throw Error('Baukörper prüfen.');
    validateTerrainAnchor(o.binding);
+   if(o.footprint!==undefined&&(!Array.isArray(o.footprint)||o.footprint.some(p=>!p||!Array.isArray(p.outer)||p.outer.length<3||!Array.isArray(p.holes)||p.holes.some(r=>!Array.isArray(r)||r.length<3))))throw Error('Baukörpergrundriss prüfen.');
+   if(o.closed!==undefined&&typeof o.closed!=='boolean'||o.scopeId!==undefined&&typeof o.scopeId!=='string')throw Error('Baukörperansicht prüfen.');
    if(!['building','entrance'].includes(o.kind)||typeof o.id!=='string'||typeof o.name!=='string'||!Array.isArray(o.outline)||!Array.isArray(o.floorElevations)||
     ![o.wallM,o.roofM,...o.floorElevations].every(z=>Number.isFinite(z)&&Math.abs(z)<=100000)||o.wallM<0||o.roofM<0||typeof o.color!=='string'||
-    ![o.anchor,...o.outline].every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Math.max(Math.abs(p.x),Math.abs(p.y))<=1e12))throw Error('Baukörper prüfen.');
-   points+=o.outline.length+o.floorElevations.length;if(points>100000)throw Error('Zu viele Baukörperpunkte.');
+    !terrainObjectPoints(o).every(p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Math.max(Math.abs(p.x),Math.abs(p.y))<=1e12))throw Error('Baukörper prüfen.');
+   points+=terrainObjectPoints(o).length+o.floorElevations.length;if(points>100000)throw Error('Zu viele Baukörperpunkte.');
   }
  }
  if(JSON.stringify(q).length>2*1024*1024)throw Error('Geländeauftrag zu groß.');

@@ -1,7 +1,7 @@
-import type {Point} from './contracts';
+import type {Point,Polygon} from './contracts';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
 import {atlasFrame,localToAtlas} from './campaign-atlas-model';
-import {posed} from './city-model';
+import {posedFootprint} from './city-model';
 import {TerrainSampler} from './terrain-height';
 import type {LandscapeRecord} from './atlas-landscape';
 
@@ -20,13 +20,14 @@ export function validateTerrainBuilding(b:TerrainBuilding|undefined){
 }
 export interface TerrainObjectSource {
   kind:'building'|'entrance';id:string;name:string;cityId?:string;roomId?:string;
+  scopeId?:string;closed?:boolean;footprint?:Polygon[];
   anchor:Point;outline:Point[];binding:TerrainAnchor;wallM:number;roofM:number;
   floorElevations:number[];color:string;
 }
 export interface TerrainObject extends TerrainObjectSource {
-  baseM:number;topM:number;groundM:number[];floorsM:number[];
+  baseM:number;topM:number;groundM:number[];floorsM:number[];footprintGroundM?:number[][][];
 }
-export function terrainObjectSources(a:AtlasRenderView):TerrainObjectSource[]{
+export function terrainObjectSources(a:AtlasRenderView,display?:{mpp:number;roofs:boolean;scopeId:string|null}):TerrainObjectSource[]{
   const objects:TerrainObjectSource[]=[];
   for(const city of a.cities){
     const binding=a.bindings.find(b=>b.kind==='city'&&b.ownerId===city.header.id);if(!binding)continue;
@@ -36,8 +37,9 @@ export function terrainObjectSources(a:AtlasRenderView):TerrainObjectSource[]{
       const settings=unit.terrain??defaultTerrainBuilding();
       const scope=a.region?.interiors[unit.id]??a.bindings.find(b=>b.parent==='building'&&b.parentId===unit.id)?.ownerId;
       const floorElevations=unit.floorElevations??a.geometry.floors.filter(f=>f.scopeId===scope).map(f=>f.elevation);
-      objects.push({kind:'building',id:unit.id,cityId:city.header.id,name:unit.name||'Haus',
-        anchor:localToAtlas(unit.position,frame),outline:posed(unit).map(p=>localToAtlas(p,frame)),
+      const footprint=posedFootprint(unit).map(p=>({outer:p.outer.map(p=>localToAtlas(p,frame)),holes:p.holes.map(r=>r.map(p=>localToAtlas(p,frame)))}));
+      objects.push({scopeId:scope,closed:!display||!scope||display.roofs&&display.mpp>.4&&display.scopeId!==scope,footprint,kind:'building',id:unit.id,cityId:city.header.id,name:unit.name||'Haus',
+        anchor:localToAtlas(unit.position,frame),outline:footprint[0]!.outer,
         binding:settings,wallM:settings.wallM,roofM:settings.roofM,floorElevations,
         color:city.header.roof});
     }
@@ -57,6 +59,12 @@ export function resolveTerrainObjects(sources:TerrainObjectSource[],records:Land
     const baseM=(o.binding.mode==='fixed'?0:sampler.sample(o.anchor).heightM)+o.binding.offsetM;
     const floorsM=o.floorElevations.map(z=>baseM+z);
     return {...o,baseM,topM:baseM+Math.max(0,...o.floorElevations)+o.wallM,
-      floorsM,groundM:o.outline.map(p=>sampler.sample(p).heightM)};
+      floorsM,groundM:o.outline.map(p=>sampler.sample(p).heightM),
+      footprintGroundM:o.footprint?.map(p=>[p.outer,...p.holes].map(r=>r.map(p=>sampler.sample(p).heightM)))};
   });
+}
+
+/** Includes every disconnected room footprint and courtyard boundary. */
+export function terrainObjectPoints(o:TerrainObjectSource){
+  return [o.anchor,...(o.footprint?o.footprint.flatMap(p=>[...p.outer,...p.holes.flat()]):o.outline)];
 }

@@ -7,7 +7,7 @@ import type {TerrainProjectionCache} from '../terrain-projection-cache';
 import {brushPreviewRecords} from '../atlas-brush-worker';
 import {heightBrushBounds} from '../terrain-brush';
 import {TerrainSampler,settingsRecord} from '../terrain-height';
-import {resolveTerrainObjects} from '../terrain-objects';
+import {resolveTerrainObjects,terrainObjectPoints} from '../terrain-objects';
 import {validateTerrainProjection,type TerrainProjectionRequest,type TerrainProjection} from '../terrain-projection';
 import type {AtlasRegionSource} from '../atlas-region-contracts';
 import {readTerrainGrid} from './terrain-grid';
@@ -93,7 +93,7 @@ export function readTerrainProjection(db:any,source:AtlasRegionSource,q:TerrainP
  const detail=q.detail?{box:q.detail,width:256,height:256,pixels:render(q.detail,256,256,Math.min(q.displayMpp,Math.max(q.detail.width,q.detail.height)/256))}:undefined;
  const endObjects=terrainTraceStart('projection.objects',source.revision);
  const objects=(q.objects??[]).flatMap(o=>{
-  const p=[o.anchor,...o.outline],x=Math.min(...p.map(p=>p.x)),y=Math.min(...p.map(p=>p.y)),right=Math.max(...p.map(p=>p.x)),bottom=Math.max(...p.map(p=>p.y));
+  const p=terrainObjectPoints(o),x=Math.min(...p.map(p=>p.x)),y=Math.min(...p.map(p=>p.y)),right=Math.max(...p.map(p=>p.x)),bottom=Math.max(...p.map(p=>p.y));
   const terrain=readRouteTerrain(db,source.campaignId,{x:x-1,y:y-1,width:right-x+2,height:bottom-y+2});
   if(local){const ids=new Set(local.map(r=>r.id));return resolveTerrainObjects([o],[...terrain.filter(r=>!ids.has(r.id)),...local]);}
   return resolveTerrainObjects([o],terrain);

@@ -29,7 +29,7 @@ export function atlasRegionPaint(
     landscapeNode("rect", {
       width: box.width,
       height: box.height,
-      style: { fill: "#7fa8bd" },
+      style: { fill: "#7fa8bd" },data:{spatialGround:"true"},
     }),
   );
   drawLandscape(
@@ -74,7 +74,7 @@ export function atlasRegionPaint(
           (!options.roofs || mpp <= 0.4 || interior === data.region?.scopeId)
         )
           for (const polygon of element.children.filter(
-            (n) => n.kind === "polygon",
+            (n) => ["polygon","polygons"].includes(n.kind),
           )) {
             polygon.style.fill = null;
             if (
@@ -104,6 +104,7 @@ export function atlasRegionPaint(
     const f = atlasFrame(data, b),
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
+        data:{spatialScope:b.ownerId,spatialFloor:String(data.geometry.floors.find(f=>f.scopeId===b.ownerId&&f.id===floor)?.elevation??0)},
       });
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,
