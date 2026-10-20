@@ -64,6 +64,9 @@ try{
  await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);await page.mouse.wheel(0,-300);await page.waitForFunction(w=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<w,before.width);await ready();
  result.camera=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));assert.equal(result.camera.tilt,45);assert.equal(result.camera.rotation,25);assert(await surface.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
  assert(result.camera.refinement);assert.equal(result.camera.columns,257);assert.equal(result.camera.rows,257);
+ result.refinementCapture={before:await page.locator('#campaign-map').getAttribute('data-terrain-quality')};
+ await page.screenshot({path:out+'/03-navigation-overview.png'});
+ result.refinementCapture.after=await page.locator('#campaign-map').getAttribute('data-terrain-quality');
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail');
  await page.screenshot({path:out+'/02-repository-tilt-zoom.png'});result.checks.push('npm run start:desktop launches this repository; campaign navigation opens the main Atlas.','Tilt, rotation and wheel zoom retain the same main canvas.');
  result.checks.push('Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.');

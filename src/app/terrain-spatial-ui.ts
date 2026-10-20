@@ -27,6 +27,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private baseline:SpatialReply|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
+  private retainedDetail:{token:string;revision:number;detail:import('./terrain-detail').TerrainDetail}|null=null;
   private samplePad=0;
   private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
@@ -119,6 +120,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
+    if(!active)this.retainedDetail=null;
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
@@ -167,6 +169,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   private async load(source:string){
     const token=this.token,revision=this.revision,generation=this.generation;
+    if(this.retainedDetail&&(this.retainedDetail.token!==token||this.retainedDetail.revision!==revision))this.retainedDetail=null;
     const current=()=>this.active&&this.requested===source&&this.generation===generation&&!this.host.live()&&!this.host.hasDraft()&&!this.host.writing();
     try{
       const stages=terrainNavigationPlan(this.sourceWindow!,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources);
@@ -181,7 +184,11 @@ export class TerrainSpatialUI implements AtlasPresentation {
         this.records=[];this.recordsSource='';
         this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
         this.detailSource=stage===1?source:'';this.input.dataset.terrainQuality=stage===1?'detail':'overview';
-        const data={...reply.value,source};this.baseline=data;this.publish(data);this.setContours(this.pendingContours);
+        if(stage===1&&reply.value.detail)this.retainedDetail={token,revision,detail:reply.value.detail};
+        // Same revision: retain sharp world-anchored colour where it still
+        // overlaps, while the new overview fills newly exposed surroundings.
+        const data={...reply.value,detail:reply.value.detail??this.retainedDetail?.detail,source};
+        this.baseline=data;this.publish(data);this.setContours(this.pendingContours);
         if(stage===1)this.retry.hidden=true;
       }
     }catch(error){

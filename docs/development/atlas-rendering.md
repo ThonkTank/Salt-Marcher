@@ -64,9 +64,13 @@ Mitte erhält zusätzlich bis zu 1024 Pixel im passenden Seitenverhältnis.
 fordert dieselbe Verfeinerung an. Kalte Raster werden in größeren 512er-Batches
 berechnet, während der Cache weiterhin 32er-Stücke lokal ersetzt. Das ist ein
 begrenzter Schritt zur Detailverteilung, noch kein weltweites Kachel-LOD.
+Die [native Prüfung und Messung](../reference/atlas-progressive-20261021/README.md) belegen die frühe Übersicht und Navigation während der Verfeinerung.
 `terrain-navigation-plan.ts` liefert zuerst dieselbe vollständige Geometrie mit
 höchstens 128×128 Farbpixeln, danach die feinen Texturen. Die erste Antwort gibt
 die Hauptfläche frei; Verfeinerung ändert keine Höhen oder Trefferkoordinaten.
+Bei Navigation behalten vorhandene Detailfarben ihre Weltkoordinaten und bleiben
+in der Überlappung sichtbar. Dieser einzelne gehaltene Ausschnitt wird bei
+Kampagnen- oder Revisionswechsel verworfen; alte Farben verdecken keine Edits.
 `TerrainSpatialUI` verwirft Antworten nach Quellen- oder Gestenwechsel und setzt
 unterbrochene Verfeinerung nach der Geste fort. Ein Fehler nur der Detailstufe
 behält die nutzbare Übersicht und bietet den vorhandenen Kamerawiederanlauf an.

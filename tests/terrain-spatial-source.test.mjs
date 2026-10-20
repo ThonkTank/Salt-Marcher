@@ -99,3 +99,13 @@ test('detail failure retains usable geometry and stops retries until an explicit
  f.reads[1].resolve({ok:false,error:'Detail worker failed'});await loading;
  assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainQuality,'overview');assert.equal(f.published.length,1);assert.equal(f.ui.retry.hidden,false);assert.equal(f.ui.needsLoad(),false);assert.equal(f.errors.length,1);
 });
+
+test('navigation retains sharp world-anchored colour, but edits and campaign changes discard it',async t=>{
+ const f=fixture(t,{manualDetail:true});f.sync();const first=f.load();f.resolveRead();await Promise.resolve();
+ const detail={box:{x:-300,y:-240,width:600,height:480},width:2,height:2,pixels:new Uint8Array(16).fill(88)};
+ f.reads[1].resolve({ok:true,value:{revision:1,grid:{view:f.reads[1].query.view},detail}});await first;
+ f.sync(zoom(.6));const next=f.load();f.resolveRead(2);await Promise.resolve();
+ assert.equal(f.published.at(-1).detail,detail,'keep the same world texture while new detail is pending');f.resolveRead(3);await next;
+ f.sync(zoom(.6),2);const edited=f.load();f.resolveRead(4,2);await Promise.resolve();assert.equal(f.published.at(-1).detail,undefined,'old pigment cannot cover a changed revision');f.resolveRead(5,2);await edited;
+ f.ui.retainedDetail={token:'campaign',revision:2,detail};f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await Promise.resolve();assert.equal(f.published.at(-1).detail,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
+});
