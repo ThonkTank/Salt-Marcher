@@ -34,6 +34,7 @@ async function capture(page,name,selector){
  console.log('Native capture: '+name);
  await app.evaluate(({BrowserWindow})=>{const window=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));window.show();window.focus();});
  if(selector)await page.locator(selector).scrollIntoViewIfNeeded();
+ await page.evaluate(()=>new Promise((resolve,reject)=>{let frame;const timer=setTimeout(()=>{cancelAnimationFrame(frame);reject(Error('Native capture received no fresh renderer frames'));},2500);frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{clearTimeout(timer);resolve();});});}));
  const pixels=Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG()));
  const png=require('pngjs').PNG.sync.read(pixels),colors=new Set();for(let i=0;i<png.data.length;i+=4*31)colors.add(png.data.readUInt32BE(i));
  assert(colors.size>8,'Native capture must contain rendered UI, not a blank frame');await writeFile(output+'/'+name+'.png',pixels);
@@ -69,5 +70,5 @@ try{
  page=await launch(2);await nav(page,'live-tab');if(await page.locator('#live-continue').isVisible())await page.locator('#live-continue').click();await page.locator('#combat-resume').click();await page.waitForFunction(()=>document.querySelector('#combat-resolution-summary').textContent.includes('Späher ziehen nach Verhandlung ab.'));await capture(page,'finished-fresh-2','#combat-resolution-summary');assert.deepEqual(plans()[0],saved);assert.deepEqual(read(db=>JSON.parse(db.prepare('SELECT payload FROM generation_run WHERE campaign_id=?').get(campaign.id).payload)),proposal);await close();
  assert.equal(loot().length,1);assert.deepEqual(loot()[0].items.map(({name,quantity,allocated})=>({name,quantity,allocated})),[{name:'Kreide',quantity:11,allocated:0}]);
  assert.deepEqual(errors,[]);await writeFile(output+'/result.json',JSON.stringify({source,dirty,profile,artifacts,launches,errors,planningLevels:[1,2,3],combatParty:['Ada','Borin'],saved,loot:loot(),combat:combat()},null,2));console.log(JSON.stringify({output,launches,errors}));
-}catch(error){await writeFile(output+'/failure.json',JSON.stringify({error:error.stack,profile,launches,errors},null,2));if(app)try{await capture(await app.firstWindow(),'failure');}catch{}throw error;}
+}catch(error){await writeFile(output+'/failure.json',JSON.stringify({source,dirty,artifacts,error:error.stack,profile,launches,errors},null,2));if(app)try{await capture(await app.firstWindow(),'failure');}catch{}throw error;}
 finally{if(app){const process=app.process(),timer=setTimeout(()=>{if(process.exitCode===null)process.kill('SIGKILL');},5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy.kill();}
