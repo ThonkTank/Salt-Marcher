@@ -68,3 +68,23 @@ test('an original confirmed table receipt remains a historical fact when current
  const x=fixture(t);x.damage(t=>t.entries=[]);const before=x.store.db.serialize();
  assert.deepEqual(x.store.executeGeneration(x.creation),x.ack);assert.ok(x.store.db.serialize().equals(before));assert.throws(x.read,/Tabelle/);
 });
+
+
+for(const weight of ['0','0.5','11','999999999999999999','-1'])test(`new and changed encounter weights reject ${weight} at the canonical writer`,t=>{
+ const x=fixture(t),before=x.store.db.serialize();
+ for(const fresh of [false,true])assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:fresh?null:1,table:{...x.table,id:fresh?randomUUID():x.table.id,entries:[{creatureId:'guard',weight},{creatureId:'goblin',weight:'1'}]}})),/gewicht/i);
+ assert.ok(x.store.db.serialize().equals(before),'Rejected edits must leave tables and receipts untouched');
+});
+
+test('legacy weights survive metadata edits, replay and Fresh but cannot be assigned to a new creature or table',async t=>{
+ const x=fixture(t);x.damage(table=>{table.entries[0].weight='0000,500000000001';table.entries[1].weight='20';});
+ const legacy=x.read(),save=x.command({kind:'table-save',expectedRevision:1,table:{...legacy,name:'Altbestand redigiert'}}),receipt=x.store.executeGeneration(save);
+ assert.deepEqual(x.read().entries,legacy.entries);assert.deepEqual(x.store.executeGeneration(save),receipt);assert.equal(x.read().revision,2);
+ const before=x.store.db.serialize();
+ assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:null,table:{...x.read(),id:randomUUID()}})),/1 bis 10/);
+ assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:2,table:{...x.read(),entries:[{creatureId:'bandit',weight:legacy.entries[0].weight}]}})),/1 bis 10/);
+ assert.ok(x.store.db.serialize().equals(before));
+ const backup=path.join(x.dir,'legacy-edited.sqlite');await x.store.backup(backup);const fresh=new CampaignStore(backup);try{const w=fresh.activate(x.campaign.id);assert.deepEqual(fresh.encounterTables(w.token,true)[0],x.read());}finally{fresh.close();}
+ const changed={...x.read(),entries:[{creatureId:'guard',weight:'10'},{creatureId:'goblin',weight:'1'}]};x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:2,table:changed}));assert.deepEqual(x.read().entries,changed.entries);
+ assert.throws(()=>x.store.executeGeneration(x.command({kind:'table-save',expectedRevision:3,table:legacy})),/1 bis 10/);
+});
