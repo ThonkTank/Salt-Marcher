@@ -227,7 +227,12 @@ export async function initTutorial() {
     title.textContent = lesson.title; text.textContent = lesson.text; item.append(title, text);
     return {lesson, item};
   });
-  let currentLesson = 'campaign';
+  const contextLessons: Readonly<Record<string, string>> = {...tutorialSurfaceLessons, ...tutorialCapabilityLessons};
+  const lessonAt = (target: Element | null): string | undefined => {
+    for (let element = target; element; element = element.parentElement) {
+      if (Object.hasOwn(contextLessons, element.id)) return contextLessons[element.id];
+    }
+  };
   const filter = () => {
     const query = search.value.trim().toLocaleLowerCase('de'); let count = 0;
     for (const row of rows) {
@@ -239,17 +244,22 @@ export async function initTutorial() {
   search.oninput = filter;
   const heading = document.getElementById('tutorial-heading')!; let opener: HTMLElement | null = null, opened = false;
   const warning = () => { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus konnte nicht gespeichert werden. Das Werkzeug bleibt benutzbar.'; };
-  const open = () => {
+  const open = (target: Element | null = null) => {
     if (dialog.open) return;
     opener = document.activeElement as HTMLElement | null; opened = true; help.textContent = 'Hilfe';
     const tab = document.querySelector('#workspace-navigation button[aria-pressed="true"]')?.id.replace(/-tab$/, '');
-    currentLesson = tab && document.body.classList.contains('has-workspace') ? tutorialSurfaceLessons[tab as keyof typeof tutorialSurfaceLessons] ?? 'campaign' : 'campaign';
+    const currentLesson = lessonAt(target) ?? (tab && document.body.classList.contains('has-workspace') ? tutorialSurfaceLessons[tab as keyof typeof tutorialSurfaceLessons] ?? 'campaign' : 'campaign');
     content.replaceChildren(...[...rows].sort((a,b) => Number(b.lesson.id === currentLesson) - Number(a.lesson.id === currentLesson)).map(row => row.item));
     search.value = ''; filter(); dialog.showModal(); heading.focus({preventScroll:true});
     content.scrollTop = 0; dialog.scrollTop = 0;
     void window.campaign.tutorial('shown').then(result => { if (!result.ok) warning(); }).catch(warning);
   };
-  help.onclick = open;
+  help.onclick = () => open();
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'F1' || event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    event.preventDefault();
+    open(document.activeElement);
+  });
   const finish = async (state: 'finished' | 'skipped') => {
     dialog.close();
     if (opener?.isConnected) opener.focus({preventScroll:true});
@@ -264,7 +274,7 @@ export async function initTutorial() {
   try {
     const result = await window.campaign.tutorial();
     if (!result.ok) throw new Error(result.error);
-    if (result.value.state === 'new' && !opened) { help.textContent = 'Hilfe · neu'; help.title = 'Neue Hilfe verfügbar. Bei Bedarf öffnen.'; }
+    if (result.value.state === 'new' && !opened) { help.textContent = 'Hilfe · neu'; help.title = 'Neue Hilfe verfügbar. F1 erklärt die fokussierte Funktion.'; }
   } catch { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus nicht verfügbar. Hilfe bleibt erreichbar.'; }
   finally { document.body.dataset.tutorialReady = 'true'; }
 }

@@ -57,6 +57,16 @@ Bewohner bleiben als World-NPC-Verweise am Gebäude gebunden.
 Volumen, Trigger/Fallenlaufzustand, Dungeon-Inhalte, Graphentwurf, Key-Ausgabe
 und gerichtete Passagen haben eigene Ablauflektionen mit Vorschau, Bestätigung
 und ihren jeweiligen Grenzen.
+F1 öffnet dieselbe Hilfe mit der Lektion des fokussierten Bedienelements oder
+seines nächsten zugeordneten Containers zuerst. Ohne solche Zuordnung gilt der
+Arbeitsbereich. Suche und Schließen verändern keine Fachentwürfe; Schließen gibt
+den Fokus an das ursprüngliche Bedienelement zurück, auch über einem anderen Dialog.
+Der Hilfe-Button bleibt der allgemeine Einstieg zum Arbeitsbereich.
+`tools/test-desktop-context-help.mjs` führt diesen Weg mit unfertiger Notiz,
+Themensuche, verschachteltem Einstellungsdialog und Neustart aus; die Probe
+verwendet tatsächlichen Browserzoom bei 100 und 200 Prozent. Sie ersetzt keine
+vollständige Tutorial-, Sprach- oder Screenreaderabnahme.
+
 Die Zuordnung steht im Code; dynamische Controls wie Journal und Schnellsuche
 brauchen zusätzliche Zuordnungsprüfungen. Eine zugeordnete Lektion belegt noch
 keine verständliche Erklärung jeder Unterfähigkeit oder native Bedienbarkeit.
