@@ -122,6 +122,8 @@ Paging beenden Timer; beide Inhalte bleiben per Tastatur und schmalem Inspector
 zugänglich. Der Import ist unvollständig: weitere magische Abschnitte und die
 unabhängige Quellenabnahme fehlen.
 
+Die Referenzsuche zeigt Name, Kategorie, lesbar bezeichnete Ausrüstungsart und Preisobergrenze direkt. Seltenheit, Magie, Einstimmung und Preisuntergrenze stehen unter „Weitere Filter“; dessen Beschriftung nennt auch geschlossen die Anzahl wirksamer Zusatzfilter. Sortieren, Inhaltswechsel und Zurücksetzen verwenden weiterhin dieselben Filterwerte. Bei gewöhnlicher Ausrüstung entfallen die redundante Magiezeile und nicht angegebene Seltenheit/Einstimmung im Detail. Vorhandene Angaben, unbekannter Preis oder unbekanntes Gewicht sowie unveränderte englische Quellregeln bleiben sichtbar. Der gewählte Gegenstand ersetzt die allgemeine Inspectorüberschrift. Der kurze Quellenhinweis zeigt die vom Reader gelieferte Vollständigkeit; aufklappen erschließt weiterhin vollständigen Importtext und Lizenz. Fehlende Vollständigkeitsangaben gelten ausdrücklich als unbekannt.
+
 ## Inhaltswechsel und Wiederaufnahme
 
 Akzeptierte Filter, Sortierung, Seite, Treffer, Auswahl, Inspector und Position
