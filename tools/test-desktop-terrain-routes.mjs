@@ -100,7 +100,7 @@ try{
  const expected=records().filter(r=>r.route).map(({revision,...r})=>r);await close();await start();assert.deepEqual(records().filter(r=>r.route).map(({revision,...r})=>r),expected);
  await focus('Passstraße');await capture('05-fresh-process');
  assert.equal(await page.locator('#atlas-units').inputValue(),'metric');
- await page.locator('#land-selection').getByRole('button',{name:'Geländegerecht planen',exact:true}).click();await ready();assert.equal(await page.locator('#route-width').inputValue(),'12.192');
+ await page.getByRole('button',{name:'Verlauf und Gelände bearbeiten',exact:true}).click();await ready();assert.equal(await page.locator('#route-width').inputValue(),'12.192');
  await page.locator('#route-units').selectOption('dnd');assert.equal(await page.locator('#route-width').inputValue(),'40');await action('close').click();assert.equal(await page.locator('#atlas-units').inputValue(),'dnd');await close();
  mark('Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz');
  await native.finish({complete:true,...result});
