@@ -9,7 +9,7 @@ function fixture(){
  const box={x:101100,y:458304,width:1894950,height:1180544},frame={x:732751,y:851819,width:631650,height:393515};
  const v={box,frame,columns:33,rows:33,focusM:120,tilt:45,rotation:0,exaggeration:2};
  const data={grid:{view:v,heights:new Float32Array(33*33).fill(120),seaLevelM:0},width:16,height:16,pixels:new Uint8Array(1024),draft:false};
- const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{setSize(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
+ const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{setSize(){},dispose(){},forceContextLoss(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
 }
 for(const pan of [0,100000])test(`preview retains the frozen world hit after camera translation ${pan}`,()=>{
  const {state,data}=fixture();const frame={...data.grid.view.frame,x:data.grid.view.frame.x+pan};state.reframe(frame,45,0);
@@ -69,4 +69,17 @@ test('perspective output tiles match the full main-camera projection at their sh
  assert(Math.abs((captures[1].x+1)/2-expected.x)<1e-9);
  assert(Math.abs(captures[0].y-expected.y)<1e-9);assert.equal(state.camera.view.enabled,false);
  state.render();assert(Math.abs(point.clone().project(state.camera).x-full.x)<1e-9,'editor pose is unchanged by image output');
+});
+
+test('retained detail stays on the same world point when the new surface clips its bounds',()=>{
+ const {state,data}=fixture(),detail={box:{x:800000,y:900000,width:50000,height:50000},width:16,height:16,pixels:new Uint8Array(1024)};
+ state.setData({...data,detail});const texture=state.detail.detailTexture;
+ // Zoom inside the old detail, whose bounds now extend beyond every surface edge.
+ const box={x:810000,y:910000,width:20000,height:20000},view={...data.grid.view,box,frame:box};
+ state.setData({...data,grid:{...data.grid,view},detail});assert.equal(state.detail.detailTexture,texture);
+ const uniforms=state.mesh.material.userData.terrainDetail,b=uniforms.detailBox.value;
+ const mapUV=new THREE.Vector2(.75,.75); // World point 825000,925000: centre of the retained colour.
+ mapUV.sub(new THREE.Vector2(b.x,b.y)).divide(new THREE.Vector2(b.z,b.w));
+ assert(mapUV.distanceTo(new THREE.Vector2(.5,.5))<1e-12);assert.equal(uniforms.detailEnabled.value,true);
+ state.dispose();
 });
