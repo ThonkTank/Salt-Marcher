@@ -39,7 +39,7 @@ async function launch(){
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');await app.evaluate(({BrowserWindow},zoom)=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.setZoomFactor(zoom),zoom);
  await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
  await page.waitForFunction(()=>!document.querySelector('#workspace-navigation').inert);
- if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();
+ if(await page.locator('#atlas-navigation').isVisible()){await page.locator('#atlas-navigation').click();await page.locator('#atlas-exit').click();}
  if(!await page.locator('#live-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#live-tab').click();
  if(await page.locator('#live-continue').isVisible())await page.locator('#live-continue').click();await page.locator('#running-notes').waitFor({state:'visible'});
  await page.locator('#live-travel-toggle').click();await page.locator('#travel-mode-target').waitFor({state:'visible'});
