@@ -1,6 +1,6 @@
 # Erklärbare Kampagnenhistorie und Chronik
 
-Stand: 14.10.2026. Verbindlicher Umfang: [SCOPE](../../SCOPE.md),
+Stand: 20.10.2026. Verbindlicher Umfang: [SCOPE](../../SCOPE.md),
 [Campaign/Data](../../../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md)
 und [Gesamtportfolio](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md).
 
@@ -18,8 +18,10 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
   Ergebnisgrenze, sodass auch ältere passende Ereignisse gefunden werden.
   Partywechsel, Zeit, Besuchsergebnisse, narrative Statusänderungen und
   Todesrettungswürfe bleiben sichtbar; interne Records verdrängen sie nicht.
-- **Ausgeben:** UI und Markdown zeigen höchstens 2.000 passende Ereignisse und
-  kennzeichnen Kürzungen. Zusammengehörige Kampfawards bleiben vollständig.
+- **Ausgeben:** Die Oberfläche zeigt 100 passende Ereignisse pro Seite; die
+  native Markdownausgabe liest sämtliche Treffer ihres eigenen festen Lesestands.
+  Die separate Kurzview-API begrenzt weiterhin auf 2.000 passende Ereignisse und
+  kennzeichnet Kürzungen. Zusammengehörige Kampfawards bleiben vollständig.
   Beschädigte Quellen oder Kontextlabels führen zu einem sichtbaren Lesefehler.
 - **Festhalten:** Ein manueller Moment speichert Bereich, Wortlaut, Ursprungsscene,
   damalige Figuren, Ort und Weltzeit. Er bestätigt keine XP, Beute oder Kampfenden.
@@ -97,11 +99,11 @@ Vorschlag, keine automatische XP- oder Beutebuchung.
    sowie Scene-/Weltzeit im Reader und UI darstellen. HP-/XP-/Lootkorrekturen und
    rückdatierte Folgen erhalten ihre ursprünglichen Records; Reise-Undo folgt
    seinen eigenen erlaubten Wirkungen.
-3. **Navigation und vollständige Ausgabe schließen.** Stabile Cursor, begrenzte
-   Kontextqueries und deterministische Zusammenführung liefern weitere Seiten.
-   Kontextmaps laden derzeit ganze Kampagnentabellen. Kampfawardgruppen dürfen
-   an Seitengrenzen keine Beteiligten verlieren. Vollständiger Export benötigt
-   denselben Snapshot, begrenzte Portionen, Abbruch und Fortschritt.
+3. **Langzeitlast der Seiten und Ausgabe messen.** Stabile Cursor, ein fester
+   Lesestand, begrenzte Kontextcaches sowie vollständige Ausgabe mit Abbruch und
+   Fortschritt sind angeschlossen. Der Export scannt die verbleibenden Quellen
+   pro Portion erneut; Langzeitlasten sind noch zu messen. Kampfawardgruppen
+   müssen auch dabei an Seitengrenzen sämtliche Beteiligten behalten.
 4. **Live-Wiederaufnahme schließen.** Moment- und Rückblickrohfelder vor Fresh
    dauerhaft sichern. Einen unbekannten Commandausgang am gleichen Command prüfen,
    keine neue ID als automatischer Retry. Native IME, Gruppenwechsel, Folgespur-
@@ -116,3 +118,21 @@ Vorschlag, keine automatische XP- oder Beutebuchung.
 Die neue Seitenabfrage zeigt 100 passende Ereignisse und einen stabilen Cursor aus Zeitpunkt, Quellenreihenfolge und ID. Ein eigener schreibgeschützter SQLite-Lesestand hält Fakten und Namen während des Blätterns fest; neue Ereignisse erscheinen erst nach Aktualisieren. Suche/Bereich beginnen einen neuen Lesestand, Verlassen schließt ihn. Der Reader behält je Quelle nur die nächste begrenzte Kandidatenmenge und liest benötigte Kontextnamen in einem kleinen Cache. Awardgruppen werden vor der Seitenauswahl vollständig zusammengeführt. Die bestehende Kurzabfrage bleibt für andere Produktleser verfügbar.
 
 Markdown ausgeben verwendet einen eigenen festen Lesestand und schreibt sämtliche Treffer portionsweise in eine temporäre Nachbardatei. Fortschritt und Abbruch sind sichtbar; erst der vollständige synchronisierte Inhalt ersetzt die gewählte Zieldatei. Ein Abbruch oder Fehler erhält vorhandene Ausgaben. Weder Blättern noch Export schreiben Kampagnenfakten. Der Export scannt verbleibende Quellen bei jeder Portion erneut; große Langzeitlasten bleiben zu messen, der Ergebnisspeicher wächst nicht mit der Ereigniszahl.
+
+## Filterentscheidung im Lesestand
+
+Der Reader entscheidet beim Aufnehmen eines vollständigen Ereignisses einmal
+über Kategorie und Suchtext. Kampfawards werden davor mit allen Beteiligten
+zusammengeführt. Die Oberfläche zeigt die bereits gefilterte Seite; Such- und
+Kampagnenwechsel entwerten ältere Antworten vor dem Neuladen. Cursor und Export
+bleiben an den festen SQLite-Lesestand gebunden. Der eigenständige Markdown-
+Helfer für einen übergebenen Kurzview filtert weiterhin nach seinen Argumenten.
+Quellprüfsummen, Kontextprüfung und bestätigte Historienbytes bleiben erhalten.
+
+Die native Suchprobe prüft Blättern, vollständige Ausgabe von 2.003 bestätigten
+XP-Ereignissen, einen alten Suchtreffer, gefilterte Ausgabe und Neustart sowie
+sichtbare Ablehnung eines gezielten Lesefehlers. Exportprüfungen warten auf die
+zum Auftrag gehörende Anzahl im Exportstatus, nicht allein auf eine vorhandene
+Datei. Die erneute native Ausführung am 20.10.2026 scheiterte bereits am
+Electron-Startzeitlimit; diese Qualifikation bleibt offen. Dies ist keine
+menschliche oder vollständige Historienabnahme.

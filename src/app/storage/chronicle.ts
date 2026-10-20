@@ -90,7 +90,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     for(const row of sourceRows(db,cam,'progress_event',progressKinds.filter(kind=>kind!=='combat-award'),page?.before?.recordedAt)){
       const f=payload(row);
       const entry=progressEntry(row,f,names,scenes,locations,narrativeLocations,combats);if(!entry)continue;
-      if(row.kind==='combat-award'||!chronicleMatches(entry,category,search))continue;
+      if(row.kind==='combat-award')continue;
       retain(progressEntries,entry);if(!page&&progressEntries.length>limit){progressTruncated=true;break;}
     }
     // Awards have one receipt per person. Match the complete group while retaining
@@ -98,7 +98,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
     const combatEntries:ChronicleEntry[]=[];
     let awardKey:string|null=null,awardEntry:ChronicleEntry|null=null;
     const finishAward=()=>{
-      if(awardEntry&&chronicleMatches(awardEntry,category,search)){
+      if(awardEntry){
         retain(combatEntries,awardEntry);
         if(combatEntries.length>2001){combatEntries.sort(compare);combatEntries.length=2001;}
       }
@@ -125,7 +125,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       else if(facts.kind==='party-move')summary=(sceneName(facts.fromSceneId,scenes)??'Unbekannte Gruppe')+' → '+(sceneName(facts.toSceneId,scenes)??'Unbekannte Gruppe')+(facts.createdScene?' · neue Gruppe':'');
       const followUp=facts.kind==='live-moment'&&['quest','rumor'].includes(facts.followUpKind)&&typeof facts.followUpId==='string'&&facts.followUpId?{kind:facts.followUpKind as 'quest'|'rumor',id:facts.followUpId}:undefined;
       const id='world:'+row.id;
-      const handoff=sessionMarker==='end'?text(facts.handoff):'';const entry:ChronicleEntry={...(handoff?{handoff}:{}),...(sessionMarker?{sessionMarker}:{}),id,sourceOrder:Number(row.cursor),recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:manualCategory??(facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world'),title,summary,people:party||facts.kind==='visit-outcome'||facts.kind==='live-moment'||sessionMarker?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null,...(followUp?{followUp}:{})};if(!chronicleMatches(entry,category,search))continue;retain(worldEntries,entry);if(!page&&worldEntries.length>limit){worldTruncated=true;break;}
+      const handoff=sessionMarker==='end'?text(facts.handoff):'';const entry:ChronicleEntry={...(handoff?{handoff}:{}),...(sessionMarker?{sessionMarker}:{}),id,sourceOrder:Number(row.cursor),recordedAt:text(f.recordedAt,new Date(0).toISOString()),category:manualCategory??(facts.kind==='visit-outcome'?'narrative':party?'party':travel?'travel':'world'),title,summary,people:party||facts.kind==='visit-outcome'||facts.kind==='live-moment'||sessionMarker?nameList(facts.characterIds,names):[],scene,location:locationId?locations.get(locationId)??null:null,...(followUp?{followUp}:{})};retain(worldEntries,entry);if(!page&&worldEntries.length>limit){worldTruncated=true;break;}
     }
     const timeEntries:ChronicleEntry[]=[];let timeTruncated=false;
     for(const row of sourceRows(db,cam,'scene_time_step',undefined,page?.before?.recordedAt)){
@@ -133,7 +133,7 @@ export function readChronicle(db:any,cam:string,category:ChronicleCategory|'all'
       if(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recordedAt)||!Number.isFinite(Date.parse(recordedAt)))throw new Error('Chronikquelle hat einen ungültigen Zeitpunkt.');
       const reason=text(f.reason);if(reason.startsWith('Reise '))continue;
       const travel=reason==='Dungeonbewegung'||reason==='Bestätigter Passagenlink',sceneRow=sceneRows.find((r:any)=>r.id===row.scene_id),locationId=sceneRow?.location_id??null;
-      const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+(f.calendarVersion==='campaign-calendar-v1'?formatDuration(String(BigInt(f.to)-BigInt(f.from)),f.calendar.daySeconds):String(f.amount)+' '+timeUnit(f.unit))+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};if(!chronicleMatches(entry,category,search))continue;retain(timeEntries,entry);if(!page&&timeEntries.length>limit){timeTruncated=true;break;}
+      const entry:ChronicleEntry={id:'time:'+row.id,recordedAt,category:travel?'travel':'world',title:travel?'Reisezeit fortgeschrieben':'Zeit fortgeschrieben',summary:'+'+(f.calendarVersion==='campaign-calendar-v1'?formatDuration(String(BigInt(f.to)-BigInt(f.from)),f.calendar.daySeconds):String(f.amount)+' '+timeUnit(f.unit))+(reason?' · '+reason:''),people:[],scene:scenes.get(row.scene_id)??null,location:locationId?locations.get(locationId)??null:null};retain(timeEntries,entry);if(!page&&timeEntries.length>limit){timeTruncated=true;break;}
     }
     const boundary=readSessionBoundary(db,cam),latestSessionMarker=boundary?{id:'world:'+boundary.row.id,recordedAt:text(boundary.body.recordedAt),category:'world' as const,title:text(boundary.body.text),summary:text(boundary.body.facts.summary),people:nameList(boundary.body.facts.characterIds,names),scene:sceneName(boundary.row.scene_id,scenes),location:locations.get(boundary.body.facts.locationId)??null,sessionMarker:boundary.body.facts.marker as 'start'|'end',...(boundary.body.facts.marker==='end'&&text(boundary.body.facts.handoff)?{handoff:text(boundary.body.facts.handoff)}:{})}:null;
     const entries=[...progressEntries,...combatEntries,...worldEntries,...timeEntries];
