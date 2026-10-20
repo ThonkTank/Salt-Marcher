@@ -431,14 +431,27 @@ try {
   await app.evaluate(({ dialog }, file) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
   }, out + "/atlas.png");
+  const exportStarted = Date.now();
   await page.locator("#atlas-export-png").click();
-  await page.waitForFunction(
-    () =>
-      document.querySelector("#atlas-save-status").textContent ===
-      "Atlas-PNG gespeichert",
-    null,
-    { timeout: 60000 },
-  );
+  // Tiles are sequential; detect a stalled export separately from host contention.
+  result.exportProgress = [];
+  let exportStatus = "", lastProgress = exportStarted;
+  while (exportStatus !== "Atlas-PNG gespeichert") {
+    const status = await page.locator("#atlas-save-status").textContent();
+    if (status !== exportStatus) {
+      exportStatus = status;
+      lastProgress = Date.now();
+      const progress = { elapsedMs: lastProgress - exportStarted, status };
+      result.exportProgress.push(progress);
+      console.log("PNG export", JSON.stringify(progress));
+    }
+    if (exportStatus === "Atlas-PNG gespeichert") break;
+    assert.ok(Date.now() - lastProgress < 60000, `PNG export stalled: ${exportStatus}`);
+    assert.ok(Date.now() - exportStarted < 180000, `PNG export exceeded three minutes: ${exportStatus}`);
+    assert.equal(await page.locator("#atlas-export-png").isDisabled(), true,
+      `PNG export ended without saving: ${exportStatus}`);
+    await page.waitForTimeout(500);
+  }
   const png = require("pngjs").PNG.sync.read(
     await readFile(out + "/atlas.png"),
   );
