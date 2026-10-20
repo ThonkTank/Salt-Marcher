@@ -172,7 +172,11 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
       }).join(' · ')+(openConcentration?' · Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.':'.'):null;
       revealConcentration=!!openConcentration;
       tell(areaResult??(action.kind==='hit'?('Treffer gespeichert · '+(action.critical?'kritisch · ':'')+actor!.name+' '+actor!.hp+'/'+actor!.maxHp+' HP'+(actor!.death?.dead?' · tot':actor!.death?' · Todesrettung '+actor!.death.successes+' Erfolge / '+actor!.death.failures+' Fehlschläge':'')+(openConcentration?' · Konzentration SG '+openConcentration.dc+' offen.':'.')):death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):effectTicks.length?'Rundeneffekte: '+effectTicks.join(' · ')+'.':'Kampf gespeichert.')); return true;
-    } catch (error) { if (generation === gen) tell((error as Error).message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true); return false; }
+    } catch (error) { if (generation === gen) {
+      const message=(error as Error).message;
+      if((action.kind==='add-creature'||action.kind==='add')&&get('combat-add-dialog').hasAttribute('open'))get('combat-add-status').textContent=message+(hasPendingCommit(command.campaignId)?' Über „Schließen“ zum Buchungsstatus wechseln.':' Eingaben bleiben erhalten.');
+      tell(message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true);
+    } return false; }
     finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
   })();
   lock(); return pending;
@@ -295,6 +299,7 @@ function closeReinforcements(){
 }
 function openReinforcements(){
  if(blocked()||!workspace||!scene)return;
+ get('combat-add-status').textContent='';
  get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  renderReinforcements();lock();
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
@@ -348,6 +353,7 @@ function lockConditionShortcuts(){
 }
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution,#combat-selection'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
+  get<HTMLButtonElement>('combat-add-close').disabled=!!pending;
   selectionPanel?.lock();
   resolution?.setBlocked(!!blocked());
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -543,7 +549,8 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
-  get('combat-add-open').onclick=openReinforcements;get('combat-add-close').onclick=closeReinforcements;
+  get('combat-add-open').onclick=openReinforcements;get('combat-add-close').onclick=()=>{if(!pending)closeReinforcements();};
+  get('combat-add-dialog').addEventListener('cancel',event=>{event.preventDefault();if(!pending)closeReinforcements();});
   get('combat-creature-source').onchange=()=>{reinforcementSourceChosen=true;get<HTMLInputElement>('combat-creature-initiative').value='';renderReinforcements();lock();};
   get('combat-creature-search-form').onsubmit=event=>{event.preventDefault();void searchReinforcements();};
   get('combat-creature-count').oninput=lock;
@@ -555,9 +562,10 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
    if(!creatureId)return;
    if(!editableCombat(view?.combat??null)){void addCatalogCreature(creatureId,Number(value('combat-creature-count')),get<HTMLInputElement>('combat-creature-grouped').checked);return;}
    const initiative=value('combat-creature-initiative').trim();
+   get('combat-add-status').textContent='';
    void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)closeReinforcements();});
   };
-  get('combat-add-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }).then(ok=>{if(ok)closeReinforcements();}); };
+  get('combat-add-form').onsubmit = event => { event.preventDefault();if(blocked())return;get('combat-add-status').textContent=''; void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }).then(ok=>{if(ok)closeReinforcements();}); };
   get('combat-start').onclick = () => void execute({ kind: 'start' });
   get('combat-next').onclick = () => void execute({ kind: 'next' });
   get('combat-undo').onclick = () => void execute({ kind: 'undo' });

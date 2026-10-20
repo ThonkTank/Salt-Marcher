@@ -10,7 +10,7 @@ import {parseHTML} from './helpers/dom.mjs';
 mkdirSync('.build/reinforcement/catalog',{recursive:true});
 copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/reinforcement/catalog/srd-5.1.generated.json');
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {searchCreatures} from './src/app/storage/encounters';export {rolledMonsterInitiatives,initiativeNumber} from './src/app/combat-initiative';",resolveDir:process.cwd()},outfile:'.build/reinforcement/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({entryPoints:['src/app/combat.ts'],outfile:'.build/reinforcement/ui.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:"export * from './src/app/combat';export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';",resolveDir:process.cwd()},outfile:'.build/reinforcement/ui.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),{CampaignStore,searchCreatures,rolledMonsterInitiatives,initiativeNumber}=require('../.build/reinforcement/store.cjs');
 const tick=()=>new Promise(r=>setImmediate(r));
 async function until(check){const deadline=Date.now()+5000;while(!check()&&Date.now()<deadline)await new Promise(r=>setTimeout(r,10));assert.ok(check(),'Expected reinforcement state');}
@@ -70,6 +70,36 @@ test('runner offers the existing group directly and commits a single source-back
  await until(()=>x.writes.length===1&&!x.el('combat-creature-add').disabled);
  assert.equal(x.writes[0].action.kind,'add-creature');assert.equal(x.writes[0].action.groupId,x.group);assert.equal(x.writes[0].action.initiative,undefined);
  assert.equal(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat.participants.length,4);
+});
+for(const source of ['group','catalog','free'])test(source+' reinforcement exposes a lost reply in the dialog and releases only closing until receipt recovery',async t=>{
+ const x=await uiFixture(t);x.ui.initCommitControls(()=>x.w,(...args)=>x.messages.push(args));
+ x.el('combat-add-open').onclick();x.el('combat-creature-source').value=source==='group'?'group':'catalog';x.el('combat-creature-source').onchange();
+ const form=source==='free'?x.el('combat-add-form'):x.el('combat-creature-form'),count=source==='free'?x.el('enemy-count'):x.el('combat-creature-count');
+ count.value='1';if(source==='catalog')x.el('combat-creature-initiative').value='10';if(source==='free')for(const [id,value]of Object.entries({'enemy-name':'Eigener Wächter','enemy-hp':'7','enemy-ac':'15','enemy-bonus':'2'}))x.el(id).value=value;
+ const before=structuredClone(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat);
+ let release;window.campaign.executeCombat=command=>{x.writes.push(command);return new Promise(resolve=>{release=()=>{x.store.executeCombat(command);resolve({ok:false,error:'Controlled lost reinforcement reply'});};});};
+ window.campaign.commitStatus=async()=>({ok:false,error:'Controlled unavailable receipt read'});
+ form.onsubmit({preventDefault(){}});await until(()=>!!release);
+ assert.equal(x.el('combat-add-close').disabled,true);x.el('combat-add-close').onclick();assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);
+ const cancel=new window.Event('cancel',{cancelable:true});x.el('combat-add-dialog').dispatchEvent(cancel);assert.equal(cancel.defaultPrevented,true);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);
+ release();await until(()=>x.messages.some(([message])=>message.includes('Buchungsantwort fehlt')));
+ assert.match(x.el('combat-add-status').textContent,/Buchungsantwort fehlt/);assert.match(x.el('combat-add-status').textContent,/Schließen.*Buchungsstatus/);
+ assert.equal(x.el('combat-creature-add').disabled,true);assert.equal(x.el('combat-add-close').disabled,false);
+ assert.equal(count.value,'1');assert.equal(x.el('combat-creature-source').value,source==='group'?'group':'catalog');
+ form.onsubmit({preventDefault(){}});await tick();assert.equal(x.writes.length,1);
+ if(source==='group')x.el('combat-add-close').onclick();else{const escape=new window.Event('cancel',{cancelable:true});x.el('combat-add-dialog').dispatchEvent(escape);assert.equal(escape.defaultPrevented,true);}
+ assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.el('combat-next').disabled,true);
+ window.campaign.commitStatus=async(...args)=>({ok:true,value:x.store.commitStatus(...args)});await x.ui.checkPendingCommit();
+ await until(()=>!x.el('combat-next').disabled);const actual=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;
+ assert.equal(x.writes.length,1);assert.equal(actual.participants.length,before.participants.length+1);assert.deepEqual(actual.participants.slice(0,-1),before.participants);assert.equal(actual.turnId,before.turnId);assert.equal(actual.round,before.round);
+ assert.equal(x.store.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(x.writes[0].commandId).n,1);
+ x.el('combat-add-open').onclick();assert.equal(x.el('combat-add-status').textContent,'');
+});
+test('a rejected reinforcement keeps its fields and displays its reason inside the dialog without a pending receipt',async t=>{
+ const x=await uiFixture(t);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();x.el('combat-creature-count').value='1';
+ const before=structuredClone(x.combat);window.campaign.executeCombat=async command=>{x.writes.push(command);return{ok:false,error:'Controlled group conflict'};};
+ x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>x.messages.some(([message])=>message.includes('Controlled group conflict')));
+ assert.match(x.el('combat-add-status').textContent,/Controlled group conflict/);assert.equal(x.el('combat-add-close').disabled,false);assert.equal(x.el('combat-creature-add').disabled,false);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);assert.equal(x.el('combat-creature-count').value,'1');assert.deepEqual(x.store.combat(x.w.token,x.scene.id,x.combat.id).combat,before);
 });
 test('reinforcement keeps same-creature troops distinct and preserves the selected troop across a health update',async t=>{
  const x=await uiFixture(t);
