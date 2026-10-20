@@ -17,3 +17,5 @@ QA_EVIDENCE_DIR=.build/atlas-independent-check python3 tools/ui-session.py timeo
 ## Grenzen
 
 Die Darstellung, Bereichsabfrage und Atlasausgabe kennen kein Stadtpapier, keine Dokumentgrenze und keinen aggregierten Stadtmarker mehr. Für vorhandene Daten bleiben `city_document`/`city_unit` vorläufig Speichercontainer mit einer Koordinatenumrechnung. Die Autorenwerkzeuge und ihre bisherigen Stadt-Einstiege müssen noch vollständig auf unabhängiges Anlegen ohne diese Benutzerkonzepte umgestellt werden. Dies ist eine offene Implementierungslücke, keine neue fachliche Zugehörigkeit. Keine Main-/Paket- oder Ownerabnahme.
+
+Lokaler Gesamtlauf: 3.799 Fälle bestanden, fünf Fehler in zwei veralteten Test-Doubles, ein übersprungener Fall. Nach Aktualisierung dieser Doubles bestanden sämtliche 42 Fälle der beiden betroffenen Dateien. Die drei Indexfälle einschließlich Upgrade bestanden ebenfalls. Das ist kein behaupteter zweiter grüner Gesamtlauf; die abschließende vollständige Exact-SHA-Prüfung läuft über Candidate CI.

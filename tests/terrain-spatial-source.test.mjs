@@ -27,9 +27,9 @@ function fixture(t){
  global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
  const input={clientWidth:1000,clientHeight:800,dataset:{}};
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
-  active:true,ready:false,input,host:{selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
+  active:true,ready:false,input,host:{hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
-  loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},canvas:null,
+  loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
   view:{reframe(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
