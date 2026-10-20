@@ -41,6 +41,19 @@ ist dort aber nicht für neue Verwendungen auswählbar. „Original im Papierkor
 ansehen…“ öffnet denselben Notizeditor schreibgeschützt. Dessen vorhandener
 Wiederherstellungsauftrag gibt die Quelle für ihre bestehenden Raum- und
 Spielabendverweise wieder frei; er erzeugt keine Ersatznotiz nach Namen.
+Der gemeinsame Editor fokussiert bei einem Papierkorboriginal die verfügbare
+Wiederherstellungsaktion statt des deaktivierten Titelfelds. Nach bestätigtem
+Restore geht der Fokus zum wieder editierbaren Titel zurück, auch nach Klärung
+einer verlorenen Antwort. Notiz-ID, bestehende Verweise und spätere Texte bleiben
+erhalten; die Statusabfrage wiederholt den Writer nicht.
+
+`tools/test-desktop-note-trash-recovery.mjs` führt diesen Weg mit echter Tastatur,
+Neustarts sowie Raum- und Spielabendverwendungen bei 100/200 Prozent Browserzoom
+aus; bei 200 Prozent geht die Restore-Antwort nach dem Commit absichtlich verloren.
+Echte CRLF-Autorenbytes bleiben im Speicher erhalten. Die Probe verwendet den
+vorhandenen nativen Sitzungshelfer: ein Fehlstart entfernt frühere Erfolgsdateien,
+und nur unveränderte Buildartefakte mit regulären Prozessenden qualifizieren den
+Lauf. Das ist keine vollständige Quellen-/Ownerabnahme.
 
 `storage/world-note-row.ts` prüft für Vorbereitung, gezielten Inhaltsleser,
 Notizmappe, Quellensuche, Notizwriter und Backup dieselbe Originalzeile:

@@ -1,3 +1,4 @@
+import {focusNoteEditor} from './note-editor-mount';
 import {acknowledgeFields,captureView} from './editor-transition';
 import {NoteMergeUI} from './note-merge-ui';
 import {registerPreparationPacketEditor,packetNoteFeedback} from './session-packet-ui';
@@ -422,7 +423,9 @@ async function renderNotes(initialLocationId?:string) {
   get('note-kind').textContent = ({ note: 'Notiz', npc: 'NSC', faction: 'Fraktion', quest: 'Quest', rumor: 'Gerücht', rule: 'Regel' })[row.note.kind];
   for (const id of ['note-title', 'note-read-aloud', 'note-gm']) get<HTMLInputElement>(id).disabled = row.trashed || draftProblems.has(draftKey('note', row.note.id));
   const mergeButton=get('note-merge-open');if(mergeButton)mergeButton.hidden=row.trashed||row.note.kind!=='npc';
+  const focusAction = ['note-remove','note-restore'].includes(document.activeElement?.id ?? '');
   get('note-remove').hidden = row.trashed; get('note-restore').hidden = !row.trashed;
+  if(focusAction)focusNoteEditor();
   if(token&&target)roomUses?.show(token,target,()=>context?.token===token&&selectedNote===target&&request===preparationLoad);
   renderRelations();await showNarrative(context,row.note,row.trashed,()=>flushPreparation(true,true),tell,undefined,undefined,initialLocationId);
 }
@@ -734,6 +737,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       if ((change.kind === 'note' || change.kind === 'note-trash') && noteDraft?.id === targetId && originalNote()) noteDraft = { ...noteDraft, revision: originalNote()!.revision };
       if (change.kind === 'plan' && planDraft?.id === targetId && originalPlan()) planDraft = { ...planDraft, revision: originalPlan()!.revision };
       if ((change.kind === 'location' || change.kind === 'location-trash') && locationDraft?.document.id === targetId && originalLocation()) locationDraft = { ...locationDraft, revision: originalLocation()!.revision };
+      const focusOnResolve = document.activeElement === get('preparation-reconcile');
       blocked = false; failedCommand = null; get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true;
       await retainOpenDrafts();
       if(!owns())return;
@@ -743,6 +747,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
         get<HTMLInputElement>('world-trash').checked = !!noteRow(targetId)?.trashed;
         await renderNotes();
         if (!owns()) return;
+        if(focusOnResolve)focusNoteEditor();
       }
       tell(result.outcome === 'applied' ? 'Speicherung der Vorbereitung bestätigt. Weitere Eingaben bleiben offen.' : change.kind==='note'&&change.excerpt?'Auszug nicht übernommen. Der Originaltext bleibt in der Quelle; dort erneut markieren und ausdrücklich übernehmen.':'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
     } catch (error) { if(owns())tell((error as Error).message + ' Status bleibt ungeklärt.', true); }

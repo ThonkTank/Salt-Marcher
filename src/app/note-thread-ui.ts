@@ -1,5 +1,5 @@
 import {markdownView} from './markdown-view';
-import { mountNoteEditor } from "./note-editor-mount";
+import { mountNoteEditor, focusNoteEditor } from "./note-editor-mount";
 import { noteThreadMembers, noteSourceLinks, restoreNoteSource, type NoteSourceRecovery, type NoteSourceLinks } from "./note-thread-edit";
 import type { Note } from "./preparation-contracts";
 import type { ManualPlan } from "../features/planner/manual-planner";
@@ -893,8 +893,8 @@ export class NoteThreadDialog {
         : this.inspection
           ? "Prüfe dieses Original. „Diese Quelle vormerken“ wählt es aus; verknüpft wird anschließend in der Mappe."
           : "Original bearbeiten. Text und narrativer Status verwenden die bisherigen Speicherfunktionen.";
-      document.getElementById("note-title")?.focus({ preventScroll: true });
       this.dialog.scrollTop = 0;
+      focusNoteEditor();
       return true;
     } catch (error) {
       if (this.current(epoch)) this.feedback((error as Error).message, true);
@@ -916,7 +916,7 @@ export class NoteThreadDialog {
       if (!valid()) return false;
       this.editing = id; this.inspection = null;
       this.editorStatus.textContent = "Original bearbeiten. Über „Zur Notizmappe“ zur bisherigen Auswahl zurückkehren.";
-      document.getElementById("note-title")?.focus({ preventScroll: true });
+      focusNoteEditor();
       return true;
     } catch (error) { if (this.current(epoch)) this.feedback((error as Error).message, true); return false; }
     finally { if (epoch === this.epoch) { this.openingNote = null; this.busy = false; this.controls(); } }

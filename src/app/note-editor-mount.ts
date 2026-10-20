@@ -45,3 +45,10 @@ export function mountNoteEditor(
   leases.push(lease);
   return lease.restore;
 }
+
+/** Read-only trash originals expose Restore instead of an editable title. */
+export function focusNoteEditor() {
+  document.getElementById("note-editor")
+    ?.querySelector<HTMLElement>("#note-title:enabled, #note-restore:not([hidden])")
+    ?.focus();
+}
