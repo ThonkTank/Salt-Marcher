@@ -181,3 +181,30 @@ test('a docked location inspector retains its own text reads, focus and write lo
  let release,sent;f.host.write=async a=>{sent=structuredClone(a);await new Promise(r=>release=r);return true;};const saving=f.ui.finish();await new Promise(r=>setImmediate(r));assert.equal(sent.kind,'landscape-place');assert.equal(sent.expectedLocationRevision,4);assert.equal(sent.document.sections[0].markdown,'  Überarbeitet\r\nWortlaut bleibt.\r\n');assert.equal(sent.document.sections[1].markdown,'Unverändert.');assert.equal(sent.document.name,'Neue Furt');assert([...root.querySelectorAll('input,textarea,button')].every(n=>n.disabled));await f.ui.finish();release();await saving;
  let focused;const proto=f.window.HTMLTextAreaElement.prototype,oldFocus=proto.focus,oldScroll=proto.scrollIntoView;proto.focus=function(){focused=this;};proto.scrollIntoView=()=>{};t.after(()=>{proto.focus=oldFocus;proto.scrollIntoView=oldScroll;});await f.ui.openLocation('location','note');assert.equal(focused.dataset.sectionBody,'note');assert.equal(focused.value,'Unverändert.');assert.equal(f.errors.length,0);
 });
+
+
+const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function heightRead(f,reader){
+ f.window.campaign={atlasHeight:reader};f.ui.setActive(true);
+ const tool=f.document.getElementById('land-tool');tool.value='height';tool.onchange();
+ f.document.getElementById('land-radius').value='120';f.ui.hovering=true;f.ui.lastPoint={x:3,y:4};
+ f.ui.cursorHeight();await delay(120);
+}
+test('height feedback identifies protected finer data and clears when the chosen radius becomes fine enough',async t=>{
+ const f=fixture(t);await heightRead(f,async()=>({ok:true,value:{heightM:300,resolutionM:1}}));
+ assert.match(f.document.getElementById('land-cursor-height').textContent,/984 ft.*Auflösung: 3,28 ft/);
+ assert.match(f.document.getElementById('land-brush-resolution').textContent,/6,56 ft/);
+ const hint=f.document.getElementById('land-height-protection');assert.equal(hint.hidden,false);assert.match(hint.textContent,/3,28 ft.*geschützt.*Radius verkleinern/);
+ f.document.getElementById('land-radius').value='32';f.ui.renderHeightPrecision();assert.equal(hint.hidden,true);
+ assert.match(f.document.getElementById('land-brush-resolution').textContent,/3,28 ft/);
+});
+for(const change of ['context','gesture','leave'])test('a late height query cannot label a replacement '+change,async t=>{
+ const f=fixture(t);let resolve;await heightRead(f,()=>new Promise(r=>resolve=r));assert.equal(typeof resolve,'function');
+ if(change==='context')f.ui.context('other');else if(change==='gesture')f.ui.maskGeneration++;else f.document.querySelector('canvas').dispatchEvent(new f.window.Event('pointerleave'));
+ resolve({ok:true,value:{heightM:300,resolutionM:1}});await delay(10);
+ assert.equal(f.document.getElementById('land-height-protection').hidden,true);assert.doesNotMatch(f.document.getElementById('land-cursor-height').textContent,/300/);
+});
+test('an untouched point has no invented zero-metre resolution or fine-detail warning',async t=>{
+ const f=fixture(t);await heightRead(f,async()=>({ok:true,value:{heightM:-100,resolutionM:null}}));
+ assert.equal(f.document.getElementById('land-cursor-height').textContent,'Höhe: -328 ft');assert.equal(f.document.getElementById('land-height-protection').hidden,true);
+});

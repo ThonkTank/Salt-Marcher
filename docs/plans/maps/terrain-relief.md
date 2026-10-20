@@ -41,6 +41,8 @@ Abnahme: Gebirge und Pass sind in beiden Ansichten verständlich; Ortsnamen blei
 
 Gekacheltes Höhenmodell einschließlich lokaler Verfeinerung, gemeinsamer Abfragen und versioniertem Speicherformat einführen. Meeresspiegel ist eine Kampagneneinstellung, anfangs 0 Meter. Unbearbeitete Bereiche liegen darunter. Land und Meereswasser ausschließlich aus dem wirksamen Höhenfeld ableiten. Landwerkzeuge bearbeiten künftig dieses Feld; keine zweite unabhängig schreibbare Landmaske. Farbe bleibt getrennt.
 
+Die Punktabfrage zeigt neben der Höhe die tatsächliche Datenauflösung. Bei Land formen und Glätten steht die Pinselauflösung direkt beim Radius. Trifft ein gröberer Pinsel auf ausdrücklich feinere Daten, erklärt ein Hinweis den Schutz und verweist auf einen kleineren Radius; nur im Bildschirmgrößenmodus hilft auch näheres Heranzoomen. Der Schutz selbst bleibt unverändert.
+
 Süßwasser bleibt ein Autorenobjekt mit Wasserstand und begrenzter Fläche. Sichtbare Wasserfläche berücksichtigt Gelände; automatische Überläufe und Abflussberechnung sind ausgeschlossen.
 
 Abnahme: Insel anheben, Meerenge absenken, rücknehmen und nach Neustart wiederfinden. Vorschau, Küste, Punktabfrage und gespeicherter Zustand stimmen auch an Kachelgrenzen überein.
