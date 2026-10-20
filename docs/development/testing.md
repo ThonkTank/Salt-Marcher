@@ -237,3 +237,29 @@ ignorierte Attunementprüfung. Die 20 Fehlergegenproben und ihre 40 unverändert
 Kontrollläufe ersetzen keine vollständige PDF-, native UI- oder Owner-Abnahme.
 Die beiden Reward-UI-Fälle bleiben getrennt: Katalogreferenzen und unfertige
 freie Eingaben besitzen unterschiedliche Bearbeitungsregeln.
+
+Die zentrale Item-Quelldatei prüft die positiven Ergebnisse von Opening Slice,
+Animated Shield, Apparatus, Armor +1/+2/+3, Invulnerability und Healing-Merge
+vollständig im vorhandenen Pakettest. Sechs zweite positive Validatoraufrufe
+entfallen; die beiden reinen Wiederholungsfälle für Shield und Invulnerability
+werden entfernt. Literale Quellenfakten, Hebelzuordnung, Varianten, Mergefehler
+und die sieben unterschiedlichen Prüfungen physischer Tabellenzeilen bleiben.
+Die gesonderte positive Schemakompilierung entfällt ebenfalls; der negative
+Subkategorietest bleibt neben der vollständigen Paketprüfung.
+
+Die Armor-/Arrow-Matrix prüft weiterhin jeden der vier Datensätze und jedes
+Inventarvorkommen negativ; weitere Feldvarianten laufen einmal über denselben
+vollständigen Zeilenvergleich. Die unveränderliche Original-XML-Datei wird
+nur einmal gelesen; ihre fünf Identitäts-/Hashassertions liegen im bestehenden
+Quellenbelegtest. Koordinaten- und Footeradversarien behalten ihre eigenen Fälle.
+Vollständige Sollwertlisten ersetzen zusätzlich daraus bereits folgende
+Längen-, Einzelwert- und Abwesenheitsassertions.
+
+Gemessen sinken die Assertions dieser Datei von 332 auf 283, tiefe Kopien von
+112 auf 85 und direkte Dateireads von 75 auf 64. Die 48 Fälle werden zu 46,
+weiterhin mit einem optionalen vollständigen PDF-Lauf. Elf isolierte Fehler
+werden vorher und nachher erkannt: sechs falsche Ergebniszusammenfassungen,
+drei ausgelassene Armor-/Arrow-Kontrollen, eine umgangene Schemaprüfung und ein
+falscher XML-Hashbeleg. Alle 22 unveränderten Kontrollläufe bestehen. Die
+Zusammenfassung allein gilt nicht als Einsparung: Tatsächlich entfallen sieben
+wiederholte positive Validatoraufrufe und die gemessenen Aufbau-/Prüfkosten.
