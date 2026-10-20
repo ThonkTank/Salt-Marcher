@@ -15,6 +15,8 @@ Pfade: `src/app/`; Prüfungen: `tests/`.
 | Teilnehmer-/Notizentwurf | `combat-draft-contracts.ts`, `combat-draft-cache.ts`, `storage/combat-drafts.ts` | `desktop-combat-drafts.test.mjs` |
 | Szenen-/Mehrgruppenauswahl | `storage/scene-encounter-selection.ts`, `combat-selection-ui.ts`, `storage/combat.ts` | `desktop-scene-encounter-selection.test.mjs` |
 | Gemeinsame PC-Gesundheit | `storage/mask-health.ts` | `desktop-combat-hit.test.mjs` |
+| Konzentrationswarteschlange und SG | [storage/combat.ts](../../../src/app/storage/combat.ts): `applyCombatDamage`, Commands `concentration`/`concentration-roll`; [combat-contracts.ts](../../../src/app/combat-contracts.ts): `concentrationDc`, `checkedCombat` | [desktop-combat-hit.test.mjs](../../../tests/desktop-combat-hit.test.mjs) |
+| CON-Vorschlag und Feldkorrektur | [combat.ts](../../../src/app/combat.ts): `creatureConstitutionSave`, `renderConcentrationEffect`, `execute`, `recoveredCombat` | [desktop-combat-switch.test.mjs](../../../tests/desktop-combat-switch.test.mjs), [native Konzentrationsprobe](../../../tools/test-desktop-concentration.mjs) |
 | Legendäre Aktion nach Kopie | `storage/campaign-data.ts`, `storage/mask-health.ts` | `desktop-legendary-transfer-integrity.test.mjs` |
 | Mobdarstellung | `combat-mob-ui.ts` | `desktop-combat-mob.test.mjs` |
 | Abschluss und Schatzverteilung | `storage/combat-resolution.ts`, `combat-resolution-ui.ts` | `desktop-combat-resolution.test.mjs` |
@@ -46,13 +48,15 @@ warten weiterhin auf die ausdrückliche Klärung.
 Die Prüfung übernimmt den CON-Rettungswurf aus dem im Kampf gespeicherten
 Statblock, einschließlich eines dort angegebenen Rettungswurfbonus. Ohne
 gesonderten Bonus gilt der CON-Attributsmodifikator. Unbekannte Werte bleiben
-ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar. Eine Korrektur
-bleibt für die laufende Prüfung bei erneutem Lesen und zusätzlichen Treffern
-erhalten. Erst deren bestätigter Abschluss – auch nach einer verlorenen Antwort –
-gibt das Eingabefeld für die nächste Prüfung frei. Rücknahme beginnt ebenfalls
-mit dem passenden Statblockwert. Gleicher Schaden und SG sind
-keine Identität einer Prüfung; die Rückbindung verwendet die bestehende
-Buchungsbestätigung ohne neue gespeicherte Kennungen.
+ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar.
+`renderConcentrationEffect` erhält diese flüchtige Korrektur bei erneutem Lesen
+und zusätzlichen Treffern. Erst die bestätigte Prüfung oder Rücknahme setzt
+`checkKey` zurück und beginnt wieder mit dem Statblockwert. Dafür beide
+Bestätigungswege in `execute` und `recoveredCombat` beachten, auch bei verlorener
+Antwort; Ablehnung darf den Feldinhalt nicht verwerfen. Gleicher Schaden und SG
+sind keine Prüfidentität. Die Rückbindung nutzt die [gemeinsame
+Buchungsbestätigung](../../../ARCHITECTURE.md#buchungsantworten-klären) ohne
+neue gespeicherte Kennungen.
 Die native Probe `tools/test-desktop-concentration.mjs` führt zwei gleiche,
 getrennt gebuchte Treffer, Bestanden/Rücknahme/Verloren, weiteren Schaden ohne Konzentration,
 Neustart mit offener Warteschlange und Abschluss samt erneutem Öffnen bei
