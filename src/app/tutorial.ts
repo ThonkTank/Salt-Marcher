@@ -239,14 +239,14 @@ export async function initTutorial() {
       row.item.hidden = !!query && !(row.lesson.title + ' ' + row.lesson.text).toLocaleLowerCase('de').includes(query);
       if (!row.item.hidden) count++;
     }
-    status.textContent = query ? count + ' Hilfethemen gefunden.' : 'Passend zum Arbeitsbereich zuerst. Alle Themen bleiben durchsuchbar.';
+    status.textContent = query ? count + ' Hilfethemen gefunden.' : 'Passendes Thema zuerst. Alle Themen bleiben durchsuchbar.';
   };
   search.oninput = filter;
   const heading = document.getElementById('tutorial-heading')!; let opener: HTMLElement | null = null, opened = false;
   const warning = () => { document.getElementById('tutorial-warning')!.textContent = 'Tutorialstatus konnte nicht gespeichert werden. Das Werkzeug bleibt benutzbar.'; };
   const open = (target: Element | null = null) => {
     if (dialog.open) return;
-    opener = document.activeElement as HTMLElement | null; opened = true; help.textContent = 'Hilfe';
+    opener = document.activeElement as HTMLElement | null; opened = true; help.textContent = 'Hilfe'; help.title = 'Hilfe (F1 zur fokussierten Funktion)';
     const tab = document.querySelector('#workspace-navigation button[aria-pressed="true"]')?.id.replace(/-tab$/, '');
     const currentLesson = lessonAt(target) ?? (tab && document.body.classList.contains('has-workspace') ? tutorialSurfaceLessons[tab as keyof typeof tutorialSurfaceLessons] ?? 'campaign' : 'campaign');
     content.replaceChildren(...[...rows].sort((a,b) => Number(b.lesson.id === currentLesson) - Number(a.lesson.id === currentLesson)).map(row => row.item));
