@@ -47,7 +47,10 @@ Die [Terrain-Zusammenführung](../reference/atlas-terrain-reconciliation-2026102
 Ein optionales `TerrainView.refinement` erhält drei Viertel der Intervalle je
 Achse, die äußeren Ränder den Rest. Die Hauptkamera verwendet 257×257 Knoten
 mit einer Verfeinerung über der anderthalbfachen Ausschnittsbreite. Alle Bänder
-teilen ihre Randknoten; es gibt keine überlappenden Geländeebenen. Renderer,
+teilen ihre Randknoten; es gibt keine überlappenden Geländeebenen.
+`terrain-ray.ts` schneidet nur die durchquerten Rasterzellen statt alle Dreiecke
+bei jeder Zeigerbewegung. Das Ergebnis bleibt der erste sichtbare Fronttreffer;
+Neigung, Überhöhung und die eingefrorene Pinsel-Trefferfläche bleiben wirksam. Renderer,
 Dreieckshöhen, kanonische Sichtprüfung, Spieler-Höhenprojektion und Main-Cache
 verwenden dasselbe Layout. Alte Views ohne Verfeinerung bleiben gleichmäßig.
 Der Readonly-Worker sampelt bis zu neun reguläre Blöcke; lokale Invalidierung

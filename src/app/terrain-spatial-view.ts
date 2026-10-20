@@ -17,6 +17,7 @@ import {AtlasSpatialScene} from './atlas-spatial-scene';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
 import {terrainContourUniforms} from './terrain-contours';
 import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
+import {terrainRaycast} from './terrain-ray';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
@@ -110,7 +111,15 @@ export class TerrainSpatialView {
     }
     this.detail??=new TerrainDetailMaterial();this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
     const geometry=this.mesh.geometry;
-    if(!data.draft&&!this.frozenPick){this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);}
+    if(!data.draft&&!this.frozenPick){
+      this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
+      this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);
+      const origin={...this.origin},picker=this.picker;
+      picker.raycast=(raycaster,hits)=>{
+        const r=raycaster.ray,distance=terrainRaycast(g,{x:r.origin.x+origin.x,y:origin.y-r.origin.y,z:g.view.focusM+r.origin.z/g.view.exaggeration},{x:r.direction.x,y:-r.direction.y,z:r.direction.z/g.view.exaggeration},raycaster.near,raycaster.far);
+        if(distance!==null)hits.push({distance,point:r.at(distance,new THREE.Vector3()),object:picker});
+      };
+    }
     this.identity=data.identity;
     this.routeState??=new Map();this.routeIds=new Set((data.routes??[]).map(r=>r.id));
     const dispose=(meshes:THREE.Mesh[])=>{for(const mesh of meshes){this.scene.remove(mesh);mesh.geometry.dispose();for(const m of Array.isArray(mesh.material)?mesh.material:[mesh.material])m.dispose();}};
