@@ -11,7 +11,7 @@
     ],
     "verified": "25 gezielte Tests einschließlich echter Prozessabbrüche an den dauerhaften Journalphasen; native Paketprobe mit zwei Versionen, Erstinstallation, UI-Download, Installation, Neustart, eigenem Datenordner und Erhalt von Kampagnen und Medien.",
     "delivery": "docs/project/delivery/github-updates.md",
-    "notClaimed": "Windows/macOS, Migration der früheren SaltMarcher-Datenbanken, allgemeine Produktabnahme. Veröffentlichung erfolgt ausdrücklich aus dem Releaseentwurf."
+    "notClaimed": "Windows/macOS, Migration der früheren SaltMarcher-Datenbanken, allgemeine Produktabnahme. Automatische oder manuell angeforderte Releases folgen der verbindlichen Regel in AGENTS.md."
   },
   "e2e01DungeonContribution": {
     "id": "E2E01-DUNGEON-I01",

@@ -49,3 +49,26 @@
 - Retain the `CampaignWorkbench` data directory and existing archive format
   identifiers. Do not open old SaltMarcher databases as workbench databases.
   See `docs/project/delivery/workbench-migration.md` for the cutover record.
+
+## Mandatory agent release cadence
+
+- After every integration, check GitHub. After **10 PRs merged into `main`**
+  since the last published stable release of the `saltmarcher-workbench` product
+  line, agents must automatically deliver and publish the next release. All
+  merged PRs count, including backend, refactoring, tests and documentation;
+  no functional-change condition applies.
+- An explicit manual release request takes priority and may release before PR 10.
+  Every successful publication, automatic or manual, resets the baseline to its
+  source tag. Count distinct PRs whose merge commits are in `main` after that tag,
+  not commits, PR-number differences or publication dates. Already integrated
+  changes absent from that package still count. Old-app releases do not count.
+- The agent reaching or finding the threshold owns delivery: version bump through
+  Candidate CI, exact green main commit, matching `vVERSION` tag, successful
+  signed package/native restart workflow, and verified published release. This
+  standing instruction authorizes publication without another permission question.
+  Report the baseline tag, PR count and release link, or a concrete blocker.
+- Check release PRs, tags, drafts and workflows first; continue an existing release
+  instead of duplicating it. A manual request supersedes a pending automatic
+  release rather than adding another. Failed builds and drafts do not reset the
+  count; never bypass checks or overwrite a published version.
+  Details: [GitHub releases](docs/project/delivery/github-updates.md#verbindlicher-release-rhythmus-für-agenten).
