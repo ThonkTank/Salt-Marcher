@@ -63,7 +63,7 @@ function init(){if(initialized)return;initialized=true;
   // The workspace close guard correctly refuses an open preset editor.
   // Finish its normal lifecycle before opening the update dialog.
   close();if(get<HTMLDialogElement>('preset-manager').open)return;
-  get('application-trigger').focus();openUpdates();
+  get(document.body.classList.contains('atlas-workspace')?'atlas-navigation':'application-trigger').focus();openUpdates();
  };get('preset-close').before(updates);
  get('preset-close').onclick=close;get<HTMLDialogElement>('preset-manager').oncancel=e=>{e.preventDefault();close();};
  get('preset-discard-keep').onclick=()=>get<HTMLDialogElement>('preset-discard').close();get('preset-discard-confirm').onclick=()=>{get<HTMLDialogElement>('preset-discard').close();discard();};

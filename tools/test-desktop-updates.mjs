@@ -45,8 +45,10 @@ try{
    await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  }
  async function openUpdates(page){
-   await page.locator('#application-trigger').click();await page.locator('#application-settings').click();await page.locator('#settings-updates').click();
+   const trigger=await page.locator('body').evaluate(b=>b.classList.contains('atlas-workspace'))?'#atlas-navigation':'#application-trigger';
+   await page.locator(trigger).click();await page.locator('#application-settings').click();await page.locator('#settings-updates').click();
    assert.equal(await page.locator('#preset-manager').evaluate(d=>d.open),false,'Settings must close before updates can leave the workspace');
+   return trigger;
  }
  await app.evaluate(async(_,{archive,signed,signature,manifest})=>{
    const fs=process.getBuiltinModule('node:fs'),stream=process.getBuiltinModule('node:stream');
@@ -58,8 +60,8 @@ try{
      throw new Error('Unexpected URL '+url);
    };
  },{archive:next.archive,signed:next.signed.toString('base64'),signature:next.signature.toString('base64'),manifest:next.manifest});
- await openUpdates(page);
- await page.locator('#updates-close').click();assert.equal(await page.locator('#application-trigger').evaluate(b=>document.activeElement===b),true);
+ const menuTrigger=await openUpdates(page);
+ await page.locator('#updates-close').click();assert.equal(await page.locator(menuTrigger).evaluate(b=>document.activeElement===b),true);
  await openUpdates(page);
  await page.locator('#updates-check').click();await page.locator('#updates-download').waitFor({state:'visible'});
  assert.equal(await realpath(path.join(root,'current')),oldDir);
