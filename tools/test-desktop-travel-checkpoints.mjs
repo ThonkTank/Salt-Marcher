@@ -25,9 +25,6 @@ const prose='  Eigene Reiseprosa\r\nbleibt erhalten.  ',current=store.liveScene(
 store.executeLive(command({kind:'scene-content',sceneId:scene.id,expectedRevision:current.revision,title:'Küstenreise',notes:prose,locationId:null}));
 const base=store.world(workspace.token).maps[0],cell={r:0,level:0,terrain:'plains',elevationM:20,climate:null,road:false,river:false,label:'',faction:'',interrupt:''};
 store.executeWorld(command({kind:'map',expectedRevision:base.revision,map:{...base,name:'Küstenweg',cells:[0,1,2].map(q=>({...cell,q,interrupt:q===1?'Frische Spuren am Weg':''}))}}));
-// The canonical Atlas elevation (rather than legacy cell.elevationM) makes this
-// fixture a visible land route. Product authoring uses the same landscape writer.
-store.executeAtlasCommit(command({kind:'landscape-put',record:{id:randomUUID(),revision:0,kind:'patch',name:'Küstenland',points:[],polygons:[{outer:[{x:-12000,y:-12000},{x:22000,y:-12000},{x:22000,y:12000},{x:-12000,y:12000}],holes:[]}],resolution:1000,width:0,values:{terrain:'plains',elevationM:20}},expectedRevision:null}));
 store.executeWorld(command({kind:'place-scene',sceneId:scene.id,position:{mapId:base.id,q:0,r:0,locationId:null},expectedSceneRevision:store.liveScene(workspace.token,scene.id).revision,expectedPositionRevision:0}));
 store.executeWorld(command({kind:'weather-override',sceneId:scene.id,expectedClockRevision:0,expectedOverrideRevision:null,weather:{label:'Klar',kind:'clear',intensity:0,windKmh:0,effects:{visibilityMeters:10000,travelFactor:1,perception:'Normal',temperatureC:15,ambience:[],combatNote:''},source:'GM-Override'}}));
 store.tutorial('skipped');store.close();
