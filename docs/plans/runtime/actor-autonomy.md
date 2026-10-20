@@ -146,11 +146,23 @@ Flush verarbeitet diese anschließend mit der neuen bestätigten Revision. Ein
 alter Finalizer kann keinen neuen Pendingflush freigeben. Keine zusätzliche
 Persistenz oder Simulation. `desktop-autonomy-context.test.mjs` prüft echte
 SQLitezustände über kontrollierte DOM-/IPC-Antworten; diese Verzögerungen sind
-keine nativen Latenz- oder Cancelnachweise. Eine zusätzliche Electronprobe belegt
-Konfigurationssave, vollständiges Nachholen ausdrücklich bestätigter Zeit und
-Kampagnenwechsel ohne Zeitwirkung auf den anderen Kontext. Ursprüngliche
-NPC-Texte und bestätigter Stand bleiben nach Fresh erhalten. Verzögerte Antworten
-und Abbruch während eines offenen Commands sind dadurch nicht nativ qualifiziert.
+keine nativen Latenz- oder Cancelnachweise. Der reproduzierbare native Prüfweg
+`node tools/test-desktop-autonomy.mjs` prüft die Fallen-Auswahl, einen als GM
+angelegten Wachjob, ausdrückliches Actor-Opt-in, bestätigte Scenezeit und
+Nachholen. Er prüft nach erneutem Nachholen und nativem Neustart unveränderte
+Ergebnisse und ursprüngliche NPC-Textbytes sowie normales Prozessende. Mit
+`QA_DEVICE_SCALE=2` läuft derselbe Ablauf bei 200 Prozent. Kampagnenwechsel,
+verzögerte Antworten und Abbruch während eines offenen Commands bleiben durch
+diese Probe nativ unqualifiziert.
+
+Die Autonomieansicht liest ihre Fallen-Angebote direkt mit
+`readDrawingElements` aus dem Drawing-Owner. Der Reader behält Prüfsummen-,
+Identitäts-, Werte- und Platzierungsprüfungen bei. Die vollständige Dungeonansicht
+mit Keys, Wegen, Passagen, Volumen und Featurezuständen wird dafür nicht aufgebaut.
+`desktop-autonomy-jobs-integrity.test.mjs` vergleicht die konkrete Fallenliste,
+prüft rein lesenden Zugriff und den vollständigen Command-Rollback bei beschädigten
+Elementquellen. Im kleinen Vergleichsfall sinken vorbereitete SQL-Anweisungen von
+25 auf 16; das ist keine allgemeine Latenz- oder 200-Actor-Qualifikation.
 
 ## Nächste ausführbare Schritte
 
