@@ -982,6 +982,8 @@ und frischer Prozess bleiben Teil desselben Ablaufs bei100% und200%.
 Die unten genannten Hardware-/Präsentationsabnahmen bleiben offen; auch diese
 Korrektur erklärt das gesamte Renderingpaket nicht für vollständig abgenommen.
 
+### Native Laufzeitvergleiche und Qualifikationsgrenzen
+
 Reproduzierbarer nativer Vergleich: `tools/measure-atlas-runtime.mjs` über
 `tools/ui-session.py` nach `build:desktop`. Derselbe Fixturebestand kann mit
 `ATLAS_BASELINE_FIXTURES` in eigene Profile kopiert werden; `ATLAS_RUNTIME_DIR`
@@ -1061,7 +1063,8 @@ Offener Abschluss, ohne Umfangsverkleinerung:
    kein Worker hatte mehr als einen aktiven Auftrag. Das ist eine begrenzte
    Navigationsprobe, kein unbegrenzter Leakbeweis.
    `ATLAS_CYCLES`/`ATLAS_COLLECT_GC` wiederholen diesen Messfall; Post-GC und
-   normale Speichernutzung nicht gleichsetzen. Cachegrößen nicht vorsorglich erhöhen.
+   normale Speichernutzung nicht gleichsetzen. Ein 8/16/32-MiB-Cacheexperiment
+   begründet keine Budgeterhöhung.
 3. Physische 16-GiB-Qualifikation, tatsächliche Präsentationslatenz und noch
    fehlende kombinierte Medien-/Einzelkontur-/Graph-/Public-Ausgabebelastungen
    getrennt abschließen. Bestehende funktionale Native- und Regressionstests

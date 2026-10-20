@@ -77,16 +77,10 @@ Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
 den TEMP-Index. Das [aktuelle Kamera-Ladeverhalten](#darstellung-suche-und-spieleranzeige)
 trennt laufende Vorschauen von der Freigabe genauer Autorenhits.
 
-Der lokale native Vergleich vom 17.10.2026 senkte die Landschaftsöffnung mit 100000 Flächen plus
-1200 Objekten bei 100/200% von etwa 3,62–3,69 s auf 1,45–1,52 s einschließlich
-sichtbarem Ausschnitt. Input-CPU für Zoom sank auf etwa 3–6 ms p95; das ist
-keine Compositor-/GPUzeit. B02 nutzt schmale 128er-Payloadseiten und verwirft
-nur nachweislich wirkungslose Raster-Samples. Ein 8/16/32-MiB-Cacheexperiment
-begründet keine Budgeterhöhung. Je 20 geschlossene Zoomzyklen auf vier Beständen
-halten lokale JS-/Prozess-/Bildspeicher stabil; längere Autorensitzungen und
-physische 16-GiB-Qualifikation bleiben offen. Daraus folgt noch keine Entscheidung
-gegen persistente abgeleitete Geometrie, GPU-Komposition oder einen anderen
-Cacheumfang. Details und Abnahmegrenzen hält der oben verlinkte Runtimeplan.
+Die [nativen Laufzeitvergleiche und Qualifikationsgrenzen](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#native-laufzeitvergleiche-und-qualifikationsgrenzen)
+stehen im Runtimeplan. Sie sind keine allgemeine Leistungsabnahme und entscheiden
+noch nicht gegen persistente abgeleitete Geometrie, GPU-Komposition oder einen
+anderen Cacheumfang.
 
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
 Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
