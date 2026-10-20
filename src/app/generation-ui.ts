@@ -155,6 +155,7 @@ function renderPreview(){const root=get('generation-preview');root.replaceChildr
 function accept(index:number,proposal:GenerationRun){
  const w=workspace,r=registry,g=generation,savedId=proposal.acceptedPlanIds[index];if(!w||run!==proposal||!savedId&&(!r||previewDirty))return Promise.resolve(false);
  return operation(async()=>{
+  await bridge.plan();if(!owned(w.token,g)||run!==proposal)return false;
   const response=savedId?await window.campaign.encounterPlan(w.token,savedId):await window.campaign.acceptGeneration({commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,runId:proposal.id,index,expectedRegistryRevision:r!.revision});
   if(!owned(w.token,g))return false;const plan=unwrap(response);if(savedId&&plan.id!==savedId)throw new Error('Vorlage gehört nicht zur Auswahl.');if(run!==proposal)return true;
   if(!savedId)proposal.acceptedPlanIds[index]=plan.id;await bridge.accept(plan);if(!owned(w.token,g))return false;

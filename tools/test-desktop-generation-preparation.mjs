@@ -5,11 +5,12 @@ import {mkdtemp,mkdir,stat,readFile,writeFile,rm} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
 import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
+import {tmpdir} from 'node:os';
 const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core'),Database=require('better-sqlite3');
 const output=process.env.QA_EVIDENCE_DIR??root+'/.build/generation-preparation-evidence';await mkdir(output,{recursive:true});await rm(output+'/result.json',{force:true});
 const source=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),group=await currentProcessGroup();
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/generation-preparation-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore}=require(root+'/.build/generation-preparation-store.cjs'),profile=await mkdtemp('/tmp/generation-preparation-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Waldweg am Abend'),w=store.activate(campaign.id),cmd=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
+const {CampaignStore}=require(root+'/.build/generation-preparation-store.cjs'),profile=await mkdtemp(tmpdir()+'/generation-preparation-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Waldweg am Abend'),w=store.activate(campaign.id),cmd=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
 let live=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0}));
 const heroes=[];
 for(const [name,xp] of [['Ada',0],['Borin',300],['Cora',900]]){

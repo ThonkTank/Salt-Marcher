@@ -36,6 +36,9 @@ offene Vorschau bleiben gebunden; ein Lesefehler steht am Generator und kann
 read-only erneut gelesen werden. Kann der bestehende Autorenentwurf vor dem
 Wechsel nicht gespeichert werden, bleibt er offen; der Generator meldet die
 Blockade statt fälschlich eine geöffnete Vorlage zu bestätigen.
+Der offene Autorenentwurf wird vor dem Read gespeichert. Entstehen während des
+Reads neue Eingaben derselben Vorlage, speichert die Übergabe sie ebenfalls und
+behält die neuere bestätigte Revision statt die ältere Leseantwort anzuzeigen.
 Auch der gemeinsame Übernahmepfad löst eine
 bestehende Zuordnung vor aktuellen Quellenprüfungen auf. Originalreceipts bleiben
 unverändert und geben bei exakt demselben Auftrag ihren ursprünglichen Stand
