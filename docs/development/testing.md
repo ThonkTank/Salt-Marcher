@@ -129,3 +129,11 @@ weisen alle vier Fehler zurück; unveränderte Kontrollläufe bestehen. Dieser
 Nachweis gilt für diese Änderungen, nicht als allgemeiner Mutation-Score.
 Historische Fixtures und Abnahmebelege bleiben unverändert. Die betroffenen
 nativen Item- und Raumgruppenproben verwenden jetzt `TMPDIR` für ihre Profile.
+
+Bei der anschließenden Einzelprüfung der Regel-UI erwiesen sich Gruppenwechsel,
+erneute Aktivierung derselben Gruppe, Quellenrevision und Schreibantwort als
+unterschiedliche Prüfgegenstände. Die A→B→A-Probe verwendet jetzt eine verspätete
+Antwort mit höherer Revision: Mit einer niedrigeren Revision hatte der
+Revisionsschutz einen defekten Aktivierungsschutz verdeckt. Eine Gegenprobe mit
+reiner Identitätsprüfung besteht vor dieser Testkorrektur und scheitert danach.
+Die Zahl der Fälle bleibt gleich; dies ist keine weitere Testeinsparung.
