@@ -1,3 +1,4 @@
+import {checkedWorldNoteRow} from "./world-note-row";
 import {nearestAnchor} from '../drawing-model';
 import {splitGroupRoom,scaleRoomGroup,installRoomGroups,storeGroupDraft,groupRecipeForHouse,refreshChangedGroupHulls,refreshGroupHull,removeGeneratedGroup,validateRoomGroups} from './room-groups';
 import {installTerritories,readTerritories,executeTerritory} from './atlas-territories';
@@ -620,10 +621,6 @@ export class CampaignStore {
     } catch (error) { throw new Error('Arbeitsentwurf enthält ungültige Raumdaten. Originalbytes bleiben erhalten: ' + (error as Error).message); }
     return draft;
   }
-  private decodeNote(row: Row, checksumError = 'Notizprüfung fehlgeschlagen.'): Note {
-    if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
-    return worldNoteDocument(JSON.parse(row.payload));
-  }
   private decodePreparationDraft(row: Row): PreparationDraft {
     if (hash(row.payload) !== row.checksum) throw new Error('Vorbereitungsentwurf ist beschädigt. Originalbytes bleiben erhalten.');
     const draft = checkedPreparationDraft(JSON.parse(row.payload)), target = preparationTarget(draft.change);
@@ -834,7 +831,7 @@ export class CampaignStore {
       if (!db.prepare(`SELECT 1 FROM ${table} WHERE campaign_id=? AND id=?`).get(row.campaign_id, target.id)) throw new Error('Vorbereitungsentwurf hat ein fehlendes Ziel.');
     }
     validateNoteSourceHistory(db);
-    for (const row of db.prepare('SELECT * FROM world_note').iterate()) this.decodeNote(row, 'Beschädigte Notiz im Backupkandidaten.');
+    for (const row of db.prepare('SELECT * FROM world_note').iterate()) checkedWorldNoteRow(row, 'Beschädigte Notiz im Backupkandidaten.');
     for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
     for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
     for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
@@ -907,8 +904,7 @@ export class CampaignStore {
     if(typeof id!=='string'||!id||id.length>1000)throw new Error('Ungültiges Notizziel.');
     const cam=this.guard(token);
     return this.db.transaction(()=>{const row=this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);
-      if(!row)throw new Error('Notiz nicht verfügbar.');const note=this.decodeNote(row);
-      if(note.id!==row.id||note.revision!==row.revision)throw new Error('Notiz falsch zugeordnet.');
+      if(!row)throw new Error('Notiz nicht verfügbar.');const note=checkedWorldNoteRow(row);
       return readNoteRoomUses(this.db,cam,note,offset);
     })();
   }
@@ -930,7 +926,7 @@ export class CampaignStore {
       const notes: Preparation['notes'] = [];
       for (const row of rows) {
         try {
-          const note = this.decodeNote(row), searchPreview = noteSearchPreview(row.search_preview,note,marks);
+          const note = checkedWorldNoteRow(row), searchPreview = noteSearchPreview(row.search_preview,note,marks);
           notes.push({ note, trashed: !!row.trashed, ...(searchPreview ? {searchPreview} : {}) });
         } catch { problems.push(`Notiz ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`); }
       }
@@ -1367,13 +1363,13 @@ export class CampaignStore {
         targetId = change.note.id;
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Notizkonflikt: Der gespeicherte Stand hat sich geändert.');
-        const oldNote = old ? this.decodeNote(old, 'Beschädigte Notiz darf nicht überschrieben werden.') : null;
+        const oldNote = old ? checkedWorldNoteRow(old, 'Beschädigte Notiz darf nicht überschrieben werden.') : null;
         const source=change.excerpt;
         let sourceNote:Note|null=null;
         if(source){
           const row=this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId,source.id);
           if(!row||row.trashed||row.revision!==source.revision)throw new Error('Auszugskonflikt: Die Quelle wurde geändert oder ist nicht verfügbar.');
-          sourceNote=this.decodeNote(row,'Beschädigte Quelle bleibt unverändert.');
+          sourceNote=checkedWorldNoteRow(row,'Beschädigte Quelle bleibt unverändert.');
           const selected=sourceNote[source.field].slice(source.start,source.end),other=source.field==='gmNotes'?'readAloud':'gmNotes';
           if(source.end>sourceNote[source.field].length||!selected.trim())throw new Error('Der Auszug stimmt nicht mit der markierten Quelle überein.');
           if(oldNote){
@@ -1409,7 +1405,7 @@ export class CampaignStore {
         targetId = change.id;
         const old = this.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed) throw new Error('Papierkorbkonflikt: Notizstand hat sich geändert.');
-        const note = this.decodeNote(old, 'Beschädigte Notiz bleibt gesperrt.'); revision = old.revision + 1;
+        const note = checkedWorldNoteRow(old, 'Beschädigte Notiz bleibt gesperrt.'); revision = old.revision + 1;
         if(change.trashed&&note.kind==='npc'&&this.db.prepare(`SELECT 1 FROM city_unit WHERE campaign_id=? AND (EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.residentIds') WHERE value=?) OR EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.workerIds') WHERE value=?)) LIMIT 1`).get(campaignId,targetId,targetId))throw new Error('NPC ist noch als Stadtbewohner oder Arbeitsplatzbindung verwendet. Bindung zuerst am Haus lösen.');
         const payload = json({ ...note, revision });
         this.db.prepare('UPDATE world_note SET trashed=?,revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(Number(change.trashed), revision, payload, hash(payload), campaignId, targetId);

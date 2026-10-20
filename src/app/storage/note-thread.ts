@@ -1,6 +1,6 @@
 import {readSourceUnlinks} from './note-source-history';
 import { createHash } from "node:crypto";
-import { worldNoteDocument } from "../../features/world/world-notes";
+import { checkedWorldNoteRow } from "./world-note-row";
 import { documentReferences, plainReferenceText } from "../text-references";
 import { readNarrative } from "./narrative";
 import type { Note } from "../preparation-contracts";
@@ -16,11 +16,7 @@ function noteRecord(db: any, cam: string, id: string) {
   const row = db
     .prepare("SELECT * FROM world_note WHERE campaign_id=? AND id=?")
     .get(cam, id);
-  if (!row || hash(row.payload) !== row.checksum)
-    throw Error("Notiz fehlt, ist beschädigt oder liegt im Papierkorb.");
-  const n = worldNoteDocument(JSON.parse(row.payload));
-  if (n.deleted || n.id !== row.id || n.revision !== row.revision)
-    throw Error("Notizzuordnung widersprüchlich.");
+  const n = checkedWorldNoteRow(row, "Notiz fehlt, ist beschädigt oder liegt im Papierkorb.");
   return { note: n, trashed: !!row.trashed };
 }
 function note(db: any, cam: string, id: string): Note {

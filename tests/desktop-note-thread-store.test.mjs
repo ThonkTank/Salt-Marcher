@@ -92,3 +92,17 @@ test('a closed trashed quest remains visible for recovery without inventing a co
 test('corruption in a trashed row never becomes permission to inspect an apparent trash original',t=>{
  const x=fixture(t),source=x.children[0];x.store.db.prepare('UPDATE world_note SET trashed=1 WHERE campaign_id=? AND id=?').run(x.campaign.id,source.id);damage(x,source.id,n=>n.title='Ungeprüfter Name',false);const e=x.read().entries.find(e=>e.id===source.id);assert.equal(e.unavailable,true);assert.equal(e.trashed,undefined);assert.equal(e.title,'Notiz nicht verfügbar');assert.equal(e.revision,null);
 });
+
+for(const fault of ['id','revision','deleted'])test(`a rehashed ${fault} mismatch cannot restore a trash original, appear as preparation or enter a backup`,async t=>{
+ const x=fixture(t),source=x.children[0];
+ x.store.changePreparation({...x.command(null),change:{kind:'note-trash',id:source.id,expectedRevision:1,trashed:true}});
+ damage(x,source.id,n=>{if(fault==='id')n.id=randomUUID();else if(fault==='revision')n.revision=42;else n.deleted=true;});
+ const before=x.store.db.serialize(),entry=x.read().entries.find(e=>e.id===source.id);
+ assert.equal(entry.unavailable,true);assert.equal(entry.revision,null);
+ const prep=x.store.preparation(x.w.token);assert(prep.problems.some(p=>p.includes(source.id)),'Preparation must quarantine the same invalid original as the dossier');
+ assert(!prep.notes.some(r=>r.note.id===source.id));
+ assert.throws(()=>x.store.changePreparation({...x.command(null),change:{kind:'note-trash',id:source.id,expectedRevision:2,trashed:false}}),/Notizzuordnung/);
+ assert.deepEqual(x.store.db.serialize(),before,'A rejected restore keeps damaged bytes and unrelated work intact');
+ await assert.rejects(x.store.backup(path.join(x.dir,'invalid-backup.sqlite')),/Notizzuordnung/);
+ assert.deepEqual(x.store.db.serialize(),before);
+});

@@ -1,3 +1,4 @@
+import {checkedWorldNoteRow} from "./world-note-row";
 import {searchNoteChoices} from './note-choice-search';
 import type { PreparationCommand } from '../preparation-contracts';
 import {saveNarrative,validateNarrativeState} from './narrative';
@@ -50,9 +51,7 @@ export function deskContent(db: any, cam: string, ref: DeskRef): DeskContent {
     const row = db
         .prepare("SELECT * FROM world_note WHERE campaign_id=? AND id=?")
         .get(cam, ref.id),
-      note = worldNoteDocument(decoded(row));
-    if (note.id !== row.id || note.revision !== row.revision)
-      throw new Error("Notizzuordnung widersprüchlich.");
+      note = checkedWorldNoteRow(row, "Inhalt fehlt oder ist beschädigt.");
     const prose=proseLinks(db,cam,note);
     return {
       ref,
