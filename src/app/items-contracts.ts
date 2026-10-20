@@ -5,6 +5,10 @@ export interface ItemCatalogFilter {search:string;category:string;magic:''|'yes'
 export interface ItemQuery extends ItemCatalogFilter {sort:'name'|'value';direction:'asc'|'desc';after:number;includeTrashed:boolean}
 export interface ItemPage {items:ItemDefinition[];total:number;next:number|null;problems:string[];sourceStatus:{complete:boolean;message:string}}
 export interface ShopStock {id:string;reference:ItemReference;quantity:number;unique:boolean;instanceId:string|null;buyCopper:string;sellCopper:string;notes:string;restock:{mode:'fill'|'add';quantity:number;intervalMs:string;nextDueMs:string}|null}
+/** Quotes and returned stock resolve the same concrete item or quantity stack. */
+export function shopStockForItem(stock:readonly ShopStock[],item:Pick<LedgerItem,'reference'|'instanceId'>){
+ return stock.find(e=>e.reference.definitionId===item.reference.definitionId&&(item.instanceId?e.instanceId===item.instanceId:!e.unique));
+}
 export type ShopRestockSchedule={intervalMs:string;nextDueMs:string}|{eventId:string;eventRevision:number;repeatMs:string|null;nextDueMs:string|null};
 export interface ShopRestockCatalog {filter:ItemCatalogFilter;minimum:number;maximum:number;buyCopper:string;sellCopper:string}
 export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];catalog?:ShopRestockCatalog|null;schedule:ShopRestockSchedule|null}

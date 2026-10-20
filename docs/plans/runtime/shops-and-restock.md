@@ -28,6 +28,13 @@ keine zusätzliche Figurengruppe, damit sein Shop direkt im Livebereich erschein
 Lesen verändert weder Position, Bestand noch Ledger; Owner-/Shoptrash und
 Handelsregeln bleiben beim vorhandenen Shopreader/-writer.
 
+Preisvorschlag und Rücknahme verwenden dieselbe Bestandszuordnung aus
+`shopStockForItem`: Definition und konkrete Einzelstückidentität, andernfalls
+die passende Mengenstapelzeile. Zwei Einzelstücke derselben Definition können
+verschiedene Preise haben; der Vorschlag verwendet den Ankaufspreis genau dieses
+Stücks. Fehlt eine passende Zeile, bleibt der bestehende Definitionsrichtwert
+als Vorschlag erhalten. Der ausdrücklich bestätigte Erlös bleibt maßgeblich.
+
 Der Handelsverlauf zeigt bei Käufen den tatsächlich gezahlten Gesamtpreis und
 bei Verkäufen den tatsächlichen Erlös aus dem bereits gespeicherten
 Ledger-Snapshot des Belegs. Spätere Preis-, Definitions- und Mengenänderungen
@@ -89,10 +96,15 @@ Gemeinsame Ladefehler und deren Wiederholen bleiben in beiden Bereichen sichtbar
 und die geführte Ortszuordnung öffnen diese Verwaltung. Der Gesamtweg bis zum
 Teilrückverkauf und Neustart steht in `tools/test-desktop-shop-trade.mjs`.
 Der native Ablauf prüft tatsächlich abweichende Preise (5,01 GM Kauf / 0,77 GM
-Erlös), 55 spätere Auffüllungen, geänderte heutige Shoppreise und erneutes
+Erlös), Rückkauf eines von zwei Einzelstücken derselben Definition mit eigenem
+Ankaufspreis und ausdrücklich abweichendem Erlös, 55 spätere Auffüllungen, geänderte heutige Shoppreise und erneutes
 Lesen der alten Beträge nach einem kontrollierten Seitenfehler. Regulärer
 Close/Fresh und 100/200 Prozent bleiben getrennte Laufbelege; vollständige
 SMR-AC-10- und Plattform-/Owner-Abnahme bleiben offen.
+Die Probe verwendet den gemeinsamen nativen Sitzungshelfer für Profilbesitz,
+Buildbindung vor jedem Start und nach dem Ablauf, frische nichtleere Aufnahmen,
+Fehlerbelege und Prozessabschluss. Diese technischen Garantien ersetzen keine
+fachlichen Bestands-, Ledger- und Belegprüfungen.
 [Beobachteter Vergleich und Grenzen](../../reference/gm-ux-qa/2026-10-14-shop-switch.md#kauf-und-teilrückverkauf-unter-einer-figurenwahl--19102026).
 
 `restockDue` schreibt mit bestätigter Scenezeit/Weltfolgen atomar. Nur eine

@@ -1,3 +1,4 @@
+import {shopStockForItem} from './items-contracts';
 import {nextAuthoredDefinition} from './item-definition-validation';
 import {validateShopShape} from './shop-validation';
 import {renderShopRestockTables} from './shop-restock-ui';
@@ -313,7 +314,7 @@ async function loadSeller(){
  }catch(error){if(current())sellerError=(error as Error).message;}
  finally{if(current()){sellerLoading=false;lockShopContext();}}
 }
-function salePrice(){if(!/^[0-9]+$/.test(value('shop-sale-quantity')))return;const l=ledger.find(l=>l.id===value('shop-sale-item'));if(!l)return;const e=shop?.shop.stock.find(e=>e.reference.definitionId===l.reference.definitionId&&!e.unique);const quote=e?.sellCopper??(l.currentUnitCopper!==undefined?l.currentUnitCopper:l.unitCopper);el<HTMLInputElement>('shop-sale-price').value=quote===null?'':amount(BigInt(quote)*BigInt(value('shop-sale-quantity')||'1')+'');}
+function salePrice(){if(!/^[0-9]+$/.test(value('shop-sale-quantity')))return;const l=ledger.find(l=>l.id===value('shop-sale-item'));if(!l)return;const e=shop?shopStockForItem(shop.shop.stock,l):undefined;const quote=e?.sellCopper??(l.currentUnitCopper!==undefined?l.currentUnitCopper:l.unitCopper);el<HTMLInputElement>('shop-sale-price').value=quote===null?'':amount(BigInt(quote)*BigInt(value('shop-sale-quantity')||'1')+'');}
 function lockItemActions(){
  const blocked=!!workspace&&hasPendingCommit(workspace.campaign.id);
  if(!blocked){for(const [button,disabled]of lockedButtons)button.disabled=disabled;lockedButtons.clear();lockShopContext();return;}
