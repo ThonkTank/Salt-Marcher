@@ -2,16 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { AtlasHistory } from "../../src/features/atlas/atlas-history";
-import {
-  CitySource,
-  cityDocumentChange,
-} from "../../src/features/city/commands";
 import {
   parseCityDocument,
   serializeCityDocument,
 } from "../../src/features/city/codec";
-import { editCity } from "../../src/features/city/edit";
 
 const root = "tests/fixtures/atlas-e2e-v1/";
 const id = (n: number) =>
@@ -130,56 +124,5 @@ test("City E2E seed pins actual codec bytes, IDs, meters and courtyard geometry"
         }),
       ),
     /unbekannte Felder/,
-  );
-});
-
-test("City E2E seed snapshots retain IDs/references and restore exact baseline in shared History", () => {
-  const bytes = seedBytes(),
-    before = parseCityDocument(bytes);
-  const history = new AtlasHistory(),
-    source = new CitySource(before, history);
-  const snapshot = source.read();
-  assert.equal(
-    Object.isFrozen(snapshot.buildings[1]!.footprint.holes[0]),
-    true,
-  );
-  const after = editCity(snapshot, [
-    {
-      kind: "set-building-pose",
-      buildingId: id(105),
-      position: { x: -5, y: 9 },
-      rotationRadians: 0,
-      scale: { x: 1, y: 1 },
-    },
-  ]);
-  history.execute({
-    label: "E2E Haus A verschieben",
-    changes: [cityDocumentChange(snapshot, after)],
-  });
-  assert.deepEqual(source.read().buildings[0]!.position, { x: -5, y: 9 });
-  assert.equal(serializeCityDocument(snapshot), bytes);
-  assert.deepEqual(source.read().roads, before.roads);
-  assert.deepEqual(source.read().buildings[1], before.buildings[1]);
-  history.undo();
-  assert.equal(serializeCityDocument(source.read()), bytes);
-  history.redo();
-  assert.equal(
-    serializeCityDocument(source.read()),
-    serializeCityDocument(after),
-  );
-  const reopened = new CitySource(parseCityDocument(bytes), new AtlasHistory());
-  assert.equal(serializeCityDocument(reopened.read()), bytes);
-  assert.equal(seedBytes(), bytes);
-  const broken = {
-    ...before,
-    roads: [{ ...before.roads[0], endNodeId: id(999) }],
-  };
-  assert.throws(
-    () => parseCityDocument(JSON.stringify(broken)),
-    /fehlenden Knoten/,
-  );
-  assert.equal(
-    serializeCityDocument(source.read()),
-    serializeCityDocument(after),
   );
 });

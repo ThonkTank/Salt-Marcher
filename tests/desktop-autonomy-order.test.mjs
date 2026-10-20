@@ -33,5 +33,4 @@ test('job and equal-duration route choices use stable IDs across host languages,
  const outputs=['de_DE.UTF-8','sv_SE.UTF-8'].map(locale=>{const result=spawnSync(process.execPath,['-e','('+observe.toString()+')()'],{env:{...process.env,LANG:locale,LC_ALL:locale},encoding:'utf8',timeout:30000});assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);});
  assert.match(outputs[0].locale,/^de/);assert.match(outputs[1].locale,/^sv/);
  for(const output of outputs){assert.deepEqual(output.results.jobs,{selected:'z-job',job:'z-job',progress:60,location:'start',routes:[]});assert.deepEqual(output.results.route,{selected:'move-job',job:null,progress:0,location:'destination',routes:['a-start-Z','c-Z-destination']});}
- assert.deepEqual(outputs[0].results,outputs[1].results);
 });

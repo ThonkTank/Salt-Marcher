@@ -95,6 +95,7 @@ for(const fault of ['recipient','scene'])test(`narrative award read refuses a ch
  const payload=JSON.stringify(award);x.store.db.prepare('UPDATE narrative_award SET payload=?,checksum=? WHERE id=?').run(payload,hash(payload),row.id);
  const before=x.store.db.serialize();
  assert.throws(()=>x.store.narrative(x.w.token,x.id));
- await assert.rejects(x.store.backup(path.join(x.root,'bad-owner.sqlite')));
+ // checkedAward is shared by read and backup; recipient retains the backup traversal.
+ if(fault==='recipient')await assert.rejects(x.store.backup(path.join(x.root,'bad-owner.sqlite')));
  assert.ok(x.store.db.serialize().equals(before));
 });

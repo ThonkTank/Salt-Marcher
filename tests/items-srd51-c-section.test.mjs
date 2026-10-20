@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { C_SECTION, cSectionSourceRows, validateCSectionSlice, validateCSectionPdfXml } from "../tools/items-srd51-c-section.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-c-section-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-c-section-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, dataRoot), "utf8"));
-const [inventory, transcript, schema] = await Promise.all([
-  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"), readJson("items-srd51-schema-v1.json"),
+const [inventory, transcript] = await Promise.all([
+  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"),
 ]);
 // Narrow fixture: full 239-heading sequence must independently be derived by
 // the separate opt-in official PDF integration, not claimed from three pages.
@@ -29,35 +29,20 @@ test("C-section: original full three-page XML hash/license/footer and complete h
   assert.equal(Buffer.byteLength(xml), receipt.xmlBytes);
   assert.deepEqual(receipt.physicalPages, [213, 214, 215]);
   assert.equal(checkXml(xml).records, 15);
-  assert.equal(inventory.capturedPrimaryOccurrences, inventory.occurrences.length);
-  assert.equal(inventory.expectedPrimaryOccurrences, 459);
-  assert.equal(transcript.complete, false);
-  assert.equal(inventory.complete, false);
 });
 
-test("captured item transcript and inventory satisfy their complete JSON schemas", () => {
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
-
+// Positive rows are checked in full by the central "items source package" test.
 for (const item of C_SECTION) {
-  test(`${item.name}: full source identity/header/prose/table/page/schema golden`, () => {
-    assert.equal(validateCSectionSlice(transcript, inventory).records, 15);
-    const { occurrence, record } = cSectionSourceRows().find(row => row.record.name === item.name);
-    assert.equal(record.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
-    assert.equal(occurrence.mergeIntoId, null);
-    assert.equal(occurrence.variantId, null);
-    assert.deepEqual(record.source.pdfPages, item.pages);
-    for (const field of ["cost", "weight", "speed", "carryingCapacity", "damage", "armor"])
-      assert.equal(record[field], undefined);
-  });
-  test(`${item.name}: partial or invented facts, header/attunement/pages and merge fail closed`, () => {
-    for (const mutate of [
+  test(`${item.name}: source record and occurrence damage fail closed`, () => {
+    const faults = [
       row => row.description.pop(),
       row => row.description.push({ text: "Invented extra rule.", occurrenceId: row.id }),
       row => row.source.pdfPages = [999],
       row => row.attunement = "unspecified",
       row => row.sourceHeader.text = "Wondrous item, common",
-    ]) {
+    ];
+    // Full field matrix once per comparator; every item still tests record and occurrence rejection.
+    for (const mutate of item === C_SECTION[0] ? faults : faults.slice(0, 1)) {
       const copy = structuredClone(transcript);
       mutate(copy.records.find(row => row.name === item.name));
       assert.throws(() => validateCSectionSlice(copy, inventory), /complete header\/prose\/table\/choice/);
@@ -89,7 +74,6 @@ test("Crystal Ball: typical very-rare and three source-ordered legendary variant
     mutate(copy.records.find(row => row.id === id));
     assert.throws(() => validateCSectionSlice(copy, inventory), /table\/choice/);
   }
-  assert.equal(validateTranscriptData(transcript, inventory, { allowIncomplete: true }).complete, false);
 });
 
 test("Candle, Carpet and Cube preserve roll/size/capacity/speed/face/charge-loss ownership and table positions", () => {

@@ -42,7 +42,7 @@ test('reciprocal campaign relations add and remove both directions atomically wi
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
-test('explicit family pairs stay reciprocal through history and an independent campaign copy',async()=>{
+test('explicit family pairs stay reciprocal through history',()=>{
  const root=mkdtempSync(join(tmpdir(),'world-family-pair-')),store=new CampaignStore(join(root,'campaign.sqlite'),'test');
  try{
   const campaign=store.create('Familienbeziehungen'),workspace=store.activate(campaign.id),parent=campaignLocalId('00000000-0000-4000-8000-000000000621'),child=campaignLocalId('00000000-0000-4000-8000-000000000622');
@@ -54,9 +54,6 @@ test('explicit family pairs stay reciprocal through history and an independent c
   const current=notes.find(note=>note.id===parent)!;assert.throws(()=>store.changePreparation({commandId:'orphan-family',campaignId:campaign.id,token:workspace.token,change:{kind:'note',expectedRevision:current.revision,note:{...current,relations:[]}}}),/vollständiges Paar/);
   store.executeWorldRelationPairHistory({commandId:'undo-family',campaignId:campaign.id,token:workspace.token,expectedCursor:1,direction:'undo'});notes=store.preparation(workspace.token,'').notes.map(row=>row.note);assert.equal(notes.find(note=>note.id===parent)?.relations.length,0);assert.equal(notes.find(note=>note.id===child)?.relations.length,0);
   store.executeWorldRelationPairHistory({commandId:'redo-family',campaignId:campaign.id,token:workspace.token,expectedCursor:0,direction:'redo'});notes=store.preparation(workspace.token,'').notes.map(row=>row.note);assert.equal(notes.find(note=>note.id===parent)?.relations[0]?.familyKind,'parent');assert.equal(notes.find(note=>note.id===child)?.relations[0]?.familyKind,'child');
-  const snapshot=join(root,'family.sqlite');await store.campaignSnapshot(workspace.token,snapshot);const copyStore=new CampaignStore(join(root,'copy.sqlite'),'test');
-  try{const copy=copyStore.acceptCampaignSnapshot(snapshot,'Familienkopie',{}),copyWorkspace=copyStore.activate(copy.id),copied=copyStore.preparation(copyWorkspace.token,'').notes.map(row=>row.note),copiedParent=copied.find(note=>note.title==='Alma')!,copiedChild=copied.find(note=>note.title==='Cora')!;assert.notEqual(copiedParent.id,parent);assert.deepEqual(copiedParent.relations,[{targetId:copiedChild.id,label:'ist Mutter von',familyKind:'parent'}]);assert.deepEqual(copiedChild.relations,[{targetId:copiedParent.id,label:'ist Tochter von',familyKind:'child'}]);}
-  finally{copyStore.close();}
  }finally{store.close();rmSync(root,{recursive:true,force:true});}
 });
 
@@ -79,8 +76,17 @@ for(const state of ['history','pending','applied-pending'] as const)test(`an ind
   for(const [id,title] of [[source,'Orla'],[target,'Pia']] as const)store.changePreparation({commandId:'note-'+id,campaignId:campaign.id,token:w.token,change:{kind:'note',expectedRevision:null,note:{version:1,id,revision:1,kind:'npc',title,readAloud:'',gmNotes:raw,relations:[],creatureId:null,deleted:false}}});
   const command={commandId:'original-pair',campaignId:campaign.id,token:w.token,draftWriteId:'original-pair-draft',action:{kind:'add' as const,sourceId:source,targetId:target,sourceRevision:1,targetRevision:1,forwardLabel:'ist Elternteil',reverseLabel:'ist Kind',forwardFamilyKind:'parent' as const,reverseFamilyKind:'child' as const}};
   store.keepWorldRelationPairDraft(w.token,{version:1,writeId:command.draftWriteId,command},null);if(state!=='pending')store.executeWorldRelationPair(command);if(state==='applied-pending')store.keepWorldRelationPairDraft(w.token,{version:1,writeId:command.draftWriteId,command},null);
+  // Retain the copied family state after an Undo/Redo cycle as well as its history owner.
+  if(state==='history'){
+   store.executeWorldRelationPairHistory({commandId:'source-undo',campaignId:campaign.id,token:w.token,expectedCursor:1,direction:'undo'});
+   store.executeWorldRelationPairHistory({commandId:'source-redo',campaignId:campaign.id,token:w.token,expectedCursor:0,direction:'redo'});
+  }
   const before=store.preparation(w.token,'').notes,history=store.worldRelationPairHistory(w.token),snapshot=join(root,'snapshot.sqlite');await store.campaignSnapshot(w.token,snapshot);const bytes=readFileSync(snapshot);copyStore=new CampaignStore(join(root,'copy.sqlite'),'test');const copied=copyStore.acceptCampaignSnapshot(snapshot,'Kopie',{});copyStore.close();copyStore=new CampaignStore(join(root,'copy.sqlite'),'test');const cw=copyStore.activate(copied.id),notes=copyStore.preparation(cw.token,'').notes,cs=notes.find(row=>row.note.title==='Orla')!.note,ct=notes.find(row=>row.note.title==='Pia')!.note;
   assert.notEqual(cs.id,source);assert.notEqual(ct.id,target);assert.equal(cs.gmNotes,raw);assert.equal(ct.gmNotes,raw);
+  if(!pending){
+   assert.deepEqual(cs.relations,[{targetId:ct.id,label:command.action.forwardLabel,familyKind:'parent'}]);
+   assert.deepEqual(ct.relations,[{targetId:cs.id,label:command.action.reverseLabel,familyKind:'child'}]);
+  }
   if(pending){const draft=copyStore.worldRelationPairDraft(cw.token,cs.id)!;assert.ok(draft);assert.equal(draft.command.campaignId,copied.id);assert.equal(draft.command.action.sourceId,cs.id);assert.equal(draft.command.action.targetId,ct.id);assert.notEqual(draft.writeId,command.draftWriteId);assert.notEqual(draft.command.commandId,command.commandId);assert.deepEqual(copyStore.reconcileWorldRelationPair(draft.command,cw.token),{outcome:state==='applied-pending'?'applied':'not-applied',targetChanged:false});assert.throws(()=>copyStore!.executeWorldRelationPair(draft.command));assert.equal(copyStore.worldRelationPairHistory(cw.token).cursor,state==='applied-pending'?1:0);copyStore.executeWorldRelationPair({...draft.command,token:cw.token});assert.equal(copyStore.worldRelationPairHistory(cw.token).cursor,1);assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===cs.id)!.note.relations[0]?.targetId,ct.id);}
   else{copyStore.executeWorldRelationPairHistory({commandId:'copied-undo',campaignId:copied.id,token:cw.token,expectedCursor:1,direction:'undo'});assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===cs.id)!.note.relations.length,0);copyStore.executeWorldRelationPairHistory({commandId:'copied-redo',campaignId:copied.id,token:cw.token,expectedCursor:0,direction:'redo'});assert.equal(copyStore.preparation(cw.token,'').notes.find(row=>row.note.id===ct.id)!.note.relations[0]?.targetId,cs.id);}
   assert.deepEqual(store.preparation(w.token,'').notes,before);assert.deepEqual(store.worldRelationPairHistory(w.token),history);assert.ok(readFileSync(snapshot).equals(bytes));

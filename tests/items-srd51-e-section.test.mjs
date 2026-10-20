@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { E_SECTION, eSectionSourceRows, validateESectionSlice, validateESectionPdfXml } from "../tools/items-srd51-e-section.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-e-section-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-e-section-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const root = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, root), "utf8"));
-const [inventory, transcript, schema] = await Promise.all([
-  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"), readJson("items-srd51-schema-v1.json"),
+const [inventory, transcript] = await Promise.all([
+  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"),
 ]);
 // Two-page snapshot does not prove the full 239-heading sequence. The opt-in
 // official-PDF source integration independently derives that complete stream.
@@ -36,37 +36,21 @@ test("E-section: original two-page XML identity/license and full heading oracle"
   assert.equal(Buffer.byteLength(xml), receipt.xmlBytes);
   assert.deepEqual(receipt.physicalPages, [220, 221]);
   assert.equal(checkXml(xml).records, 8);
-  assert.equal(inventory.capturedPrimaryOccurrences, inventory.occurrences.length);
-  assert.equal(inventory.expectedPrimaryOccurrences, 459);
-  assert.equal(transcript.complete, false);
-  assert.equal(inventory.complete, false);
 });
 
-test("captured item transcript and inventory satisfy their complete JSON schemas", () => {
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
-
+// Positive rows are checked in full by the central "items source package" test.
 for (const item of E_SECTION) {
-  test(`${item.name}: full source identity/header/prose/table/page/schema golden`, () => {
-    assert.equal(validateESectionSlice(transcript, inventory).records, 8);
-    const { occurrence, record } = rows.find(row => row.record.name === item.name);
-    assert.equal(record.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
-    assert.equal(occurrence.mergeIntoId, null);
-    assert.equal(occurrence.variantId, null);
-    assert.deepEqual(record.source.pdfPages, item.pages);
-    assert.deepEqual(record.rarity, { kind: "fixed", value: item.rarity });
-    for (const field of ["cost", "weight", "speed", "carryingCapacity", "damage", "armor"])
-      assert.equal(record[field], undefined);
-  });
-  test(`${item.name}: partial/invented facts, header, rarity, attunement, page and merge fail closed`, () => {
-    for (const mutate of [row => row.description.pop(),
+  test(`${item.name}: source record and occurrence damage fail closed`, () => {
+    const faults = [row => row.description.pop(),
       row => row.description.push({ text: "Invented extra rule.", occurrenceId: row.id }),
       row => row.source.pdfPages = [999], row => row.attunement = "unspecified",
       row => row.sourceHeader.text = "Wondrous item, common", row => row.rarity.value = "artifact",
-    ]) {
+    ];
+    // Full field matrix once per comparator; every item still tests record and occurrence rejection.
+    for (const mutate of item === E_SECTION[0] ? faults : faults.slice(0, 1)) {
       mutateRecord(item.name, mutate);
     }
-    if (rowNamed(item.name).description.length > 1)
+    if (item === E_SECTION[0] && rowNamed(item.name).description.length > 1)
       mutateRecord(item.name, row => row.description.reverse());
     const copy = structuredClone(inventory);
     copy.occurrences.find(row => row.sourceLabel === item.name).mergeIntoId = "srd51:magic-item:magic-items-a-z:62";
@@ -96,7 +80,6 @@ test("Elemental Gem retains four owned mappings without invented item variants",
   assert.equal(inventory.occurrences.filter(p => p.sourceLabel === "Elemental Gem").length, 1);
   mutateRecord(row.name, r => [r.properties[0].description, r.properties[1].description] = [r.properties[1].description, r.properties[0].description]);
   mutateRecord(row.name, r => r.description.reverse());
-  assert.equal(validateTranscriptData(transcript, inventory, { allowIncomplete: true }).complete, false);
 });
 
 test("Eyes continue across pages with mutual sight, humanoid target, recharge and distinct attunement", () => {

@@ -21,18 +21,6 @@ function fixture(){
  return{root,path,store,campaignId:campaign.id,token,actorId,jobId,sceneId:scene.id,db:(store as unknown as {db:any}).db};
 }
 
-test('damaged historical autonomy job rolls back catch-up and preserves an earlier backup',async()=>{
- const f=fixture(),safe=join(f.root,'safe.sqlite');
- try{
-  await f.store.backup(safe);const safeBytes=readFileSync(safe);
-  f.store.executeLive({commandId:'advance',campaignId:f.campaignId,token:f.token,action:{kind:'advance-clock',sceneId:f.sceneId,expectedRevision:0,amount:60,unit:'seconds',calendarVersion:'relative-v1',reason:'Autonomiezeit'}});
-  const row=f.db.prepare('SELECT * FROM autonomy_interval WHERE campaign_id=?').get(f.campaignId),basis=JSON.parse(row.payload);basis.jobs[0].enabled='false';const payload=JSON.stringify(basis);f.db.prepare('UPDATE autonomy_interval SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,checksum(payload),f.campaignId,row.id);
-  const command:AutonomyCommand={commandId:'catch-up',campaignId:f.campaignId,token:f.token,action:{kind:'catch-up',actorIds:[f.actorId],maxSteps:12}},before=f.db.serialize();
-  assert.throws(()=>f.store.executeAutonomy(command),/Autonomie-Job/);assert.ok(f.db.serialize().equals(before));
-  await assert.rejects(f.store.backup(safe),/Autonomie-Job/);assert.ok(readFileSync(safe).equals(safeBytes));
- }finally{f.store.close();rmSync(f.root,{recursive:true,force:true});}
-});
-
 test('historical actor, route, feature and dungeon bases are validated without current owners',async()=>{
  const f=fixture(),backup=join(f.root,'invalid.sqlite');let reopened:CampaignStore|undefined,originalClosed=false;
  try{

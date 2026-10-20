@@ -11,11 +11,12 @@ copyFileSync('src/features/catalog/data/srd-5.1.generated.json','.build/catalog/
 buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {creatureInfo,readCreature,searchCreatures} from './src/app/storage/encounters';export * from './src/features/catalog/creature-catalog';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/catalog-xp.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,CreatureCatalog,SRD_5_1_ARTIFACT_SHA256,SRD_5_1_XP_CORRECTIONS,SRD_5_1_REACTION_SUPPLEMENT,creatureInfo,readCreature,searchCreatures}=createRequire(import.meta.url)('../.build/catalog-xp.cjs');
 const bytes=readFileSync('src/features/catalog/data/srd-5.1.generated.json'),raw=JSON.parse(bytes),hash=value=>createHash('sha256').update(value).digest('hex');
+// Both projection checks read the same deeply immutable catalog.
+const catalog=new CreatureCatalog(raw);
 function fixture(t){const dir=mkdtempSync(path.join(tmpdir(),'catalog-xp-')),s=new CampaignStore(path.join(dir,'workbench.sqlite')),c=s.create('XP errata'),w=s.activate(c.id);t.after(()=>{s.close();rmSync(dir,{recursive:true,force:true});});return{s,c,w,command:()=>({commandId:randomUUID(),campaignId:c.id,token:w.token})};}
 
 test('four source-backed XP errata preserve pinned artifact bytes and unrelated creature details',()=>{
  assert.equal(hash(bytes),SRD_5_1_ARTIFACT_SHA256);assert.equal(SRD_5_1_XP_CORRECTIONS.length,4);
- const catalog=new CreatureCatalog(raw);
  for(const source of raw.creatures){const actual=catalog.detail(source.id),correction=SRD_5_1_XP_CORRECTIONS.find(c=>c.id===source.id);
   const {sourceId,sourceLabel,sourceVersion,rulesVersion,legacy,...details}=actual;
   const reactions=SRD_5_1_REACTION_SUPPLEMENT.creatures.find(c=>c.id===source.id);
@@ -48,7 +49,7 @@ test('a readable proposal made with the previous catalog cannot be accepted unde
 
 
 test('all twelve omitted reactions are readable, clearly named and immutable in the current catalog',()=>{
- const catalog=new CreatureCatalog(raw),ids=['bandit-captain','black-pudding','chain-devil','erinyes','gladiator','knight','marilith','noble','ochre-jelly','shield-guardian','shrieker','stone-giant'];
+ const ids=['bandit-captain','black-pudding','chain-devil','erinyes','gladiator','knight','marilith','noble','ochre-jelly','shield-guardian','shrieker','stone-giant'];
  assert.deepEqual(SRD_5_1_REACTION_SUPPLEMENT.creatures.map(c=>c.id),ids);
  for(const id of ids){const c=catalog.detail(id),source=raw.creatures.find(c=>c.id===id),added=c.traits.slice(source.traits.length);
   assert.equal(added.length,1);assert.match(added[0].name,/^Reaktion: /);assert.match(c.sourceVersion,/reactions\.1/);assert.ok(added[0].description.length>60);assert.ok(Object.isFrozen(added[0]));assert.ok(Object.isFrozen(c.traits));

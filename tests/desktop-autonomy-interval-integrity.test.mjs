@@ -19,13 +19,20 @@ function fixture(t,confirm=true){
  x.row=()=>x.store.db.prepare('SELECT * FROM autonomy_interval').get();
  x.mutate=fn=>{const row=x.row(),basis=JSON.parse(row.payload);fn(basis);const payload=JSON.stringify(basis);x.store.db.prepare('UPDATE autonomy_interval SET payload=?,checksum=? WHERE id=?').run(payload,hash(payload),row.id);};return x;
 }
-for(const damage of ['invalid job controls','duplicate historical jobs','reversed time'])test(`historical interval rejects ${damage} in catch-up, backup and export without replacing safe bytes`,async t=>{
- const x=fixture(t),backup=path.join(x.root,'safe.sqlite'),file=path.join(x.root,'campaign.sqlite');await x.store.backup(backup);await x.store.campaignSnapshot(x.w.token,file);const backupBytes=readFileSync(backup),fileBytes=readFileSync(file);
+// Catch-up and validateAutonomy share checkedIntervalRow. Keep each corruption
+// there; one representative also exercises both distinct backup/export writers.
+for(const [damage,copies=false] of [['invalid job controls',true],['duplicate historical jobs'],['reversed time']])test(`historical interval rejects ${damage} in catch-up${copies?', backup and export without replacing safe bytes':''}`,async t=>{
+ const x=fixture(t,false),backup=path.join(x.root,'safe.sqlite'),file=path.join(x.root,'campaign.sqlite');
+ let backupBytes,fileBytes;
+ // Retain the older-checkpoint protection from the duplicate core test.
+ if(copies){await x.store.backup(backup);await x.store.campaignSnapshot(x.w.token,file);backupBytes=readFileSync(backup);fileBytes=readFileSync(file);}
+ x.advance();
  if(damage==='invalid job controls')x.mutate(b=>{b.jobs[0].enabled='false';});
  if(damage==='duplicate historical jobs')x.mutate(b=>{b.jobs.push(structuredClone(b.jobs[0]));});
  if(damage==='reversed time')x.store.db.prepare('UPDATE autonomy_interval SET from_ms=to_ms,to_ms=from_ms').run();
- const bytes=x.store.db.serialize();assert.throws(x.catchUp,/Autonomie|Job|Intervall/i);assert.ok(x.store.db.serialize().equals(bytes),'Catch-up failure must roll back actors, logs, reservations and receipts');
- await assert.rejects(x.store.backup(backup),/Autonomie|Job|Intervall/i);await assert.rejects(x.store.campaignSnapshot(x.w.token,file),/Autonomie|Job|Intervall/i);assert.ok(backupBytes.equals(readFileSync(backup)));assert.ok(fileBytes.equals(readFileSync(file)));assert.ok(x.store.db.serialize().equals(bytes));
+ const error=damage==='invalid job controls'?/Autonomie-Job/:/Autonomie-Intervall/;
+ const bytes=x.store.db.serialize();assert.throws(x.catchUp,error);assert.ok(x.store.db.serialize().equals(bytes),'Catch-up failure must roll back actors, logs, reservations and receipts');
+ if(copies){await assert.rejects(x.store.backup(backup),error);await assert.rejects(x.store.campaignSnapshot(x.w.token,file),error);assert.ok(backupBytes.equals(readFileSync(backup)));assert.ok(fileBytes.equals(readFileSync(file)));assert.ok(x.store.db.serialize().equals(bytes));}
 });
 test('valid historical jobs remain unchanged when current job revisions change and survive Fresh',async t=>{
  const x=fixture(t),before=x.row();x.store.executeAutonomy(x.command({kind:'job',job:{...x.job,name:'Neue Wache',durationSeconds:20},expectedRevision:1}));
