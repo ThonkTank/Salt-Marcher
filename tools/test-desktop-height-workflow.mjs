@@ -22,7 +22,7 @@ const heights=()=>records(campaign).filter(r=>r.height).map(r=>r.height).sort((a
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const workers=async()=>Object.fromEntries(await Promise.all(['ui/atlas-brush-worker.js','atlas-region-worker.cjs'].map(async p=>[p,hash(await readFile('.build/desktop/'+p))])));
 const workerHashes=await workers(),checks=[];
-async function open(name){
+async function open(name,locate=true){
  page=await native.launch(zoom);
  await page.locator('.campaign-card').filter({hasText:name}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
@@ -31,9 +31,12 @@ async function open(name){
   await page.locator('#atlas-tab').click();
  }
  await atlasCanvasReady(page);
- await page.locator('#atlas-search').fill('Küstenanker');await page.locator('#atlas-search-results button').filter({hasText:'Küstenanker'}).click();await atlasCanvasReady(page);await page.locator('#atlas-search').fill('');
+ if(locate){await page.locator('#atlas-search').fill('Küstenanker');await page.locator('#atlas-search-results button').filter({hasText:'Küstenanker'}).click();await atlasCanvasReady(page);await page.locator('#atlas-search').fill('');}
  await page.locator('#atlas-units').selectOption('metric');await page.locator('#atlas-section').selectOption('terrain');
- for(let i=0;i<17;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();
+ // Reopen the landscape at its useful regional scale; a room jump is a separate workflow.
+ const width=()=>page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.atlasView).width);
+ for(let i=0;i<30&&await width()<8000;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();
+ for(let i=0;i<30&&await width()>16000;i++)await page.getByRole('button',{name:'Vergrößern',exact:true}).click();
  await atlasCanvasReady(page);
 }
 async function stroke(points){
@@ -75,14 +78,14 @@ try{
  await page.locator('[data-atlas-tool="water-add"]').click();await page.locator('#land-water-level').fill('160');await setBrushWorldRadius(page,'land-radius',250);await stroke([[-700,300]]);
  assertResult();assert.deepEqual(heights(),originalHeights);await history('undo');assert.equal(sample(-700,300).water,false);await history('redo');assertResult();await native.capture(page,'bounded-lake');
  const saved=records(campaign);checks.push('Independent sea level, bounded lake, unchanged heights, Undo/Redo');
- await native.close();await open(original.name);assert.deepEqual(records(campaign),saved);assertResult();await native.capture(page,'fresh-original');
+ await native.close();await open(original.name,false);assert.deepEqual(records(campaign),saved);assertResult();await native.capture(page,'fresh-original');
  const archive=native.profile+'/island.kwcampaign';
  await native.app.evaluate(({dialog},p)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:p});dialog.showOpenDialog=async()=>({canceled:false,filePaths:[p]});},archive);
  await page.locator('#atlas-navigation').click();await page.locator('#campaign-manager').click();await page.locator('#campaign-export').click();
  await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('Kampagnenpaket mit Daten und Medien exportiert.'),null,{timeout:60000});
  const archiveHash=hash(await readFile(archive));await page.locator('#campaign-import-package').click();await page.locator('#campaign-transfer-dialog').waitFor({state:'visible'});await page.locator('#campaign-transfer-name').fill('Insel aus Archiv');await page.locator('#campaign-transfer-accept').click();await page.locator('#campaign-transfer-dialog').waitFor({state:'hidden'});await atlasCanvasReady(page);
  const ids=db.prepare('SELECT DISTINCT campaign_id FROM atlas_landscape').all().map(r=>r.campaign_id);assert.equal(ids.length,2);campaign=ids.find(id=>id!==original.id);assert(campaign);assert.deepEqual(records(original.id),saved);assert.deepEqual(heights(),originalHeights);assertResult();assert.equal(hash(await readFile(archive)),archiveHash);await native.capture(page,'archive-copy');
- await native.close();await open('Insel aus Archiv');assertResult();assert.deepEqual(heights(),originalHeights);await shape(120,-100,'lower');await hover(-800,0);assert(await page.locator('#land-height-protection').isVisible());await native.capture(page,'fresh-copy');await native.close();
+ await native.close();await open('Insel aus Archiv',false);assertResult();assert.deepEqual(heights(),originalHeights);await shape(120,-100,'lower');await hover(-800,0);assert(await page.locator('#land-height-protection').isVisible());await native.capture(page,'fresh-copy');await native.close();
  assert.deepEqual(await workers(),workerHashes);checks.push('Normal restart, archive export and independent import, fresh copy retains fine peak, strait and bounded lake');
  await native.finish({complete:true,checks,workerHashes,archiveHash});console.log(JSON.stringify({complete:true,output,checks}));
 }catch(error){await native.fail(error);throw error;}finally{db.close();await native.dispose();}
