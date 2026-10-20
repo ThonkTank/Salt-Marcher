@@ -34,6 +34,23 @@ unbeteiligte Progressions-/Beuteleser sind keine Voraussetzung. Der Kampfwriter
 prüft Party-/Fokus- und Gruppenbasis vor Übernahme erneut. Verstärkung verwendet
 denselben Gruppenprüfweg; verworfene oder fremde Gruppen erzeugen keine Runtime.
 
+## Konzentration im Kampf
+
+Konzentration lässt sich bei der ausgewählten Figur unter **Zustände und
+Konzentration** unmittelbar beginnen oder beenden; der vollständige Werteeditor
+ist dafür nicht erforderlich. Offene Werteentwürfe sperren diese Schnellaktion,
+damit keine unbestätigten Angaben übergangen werden. Bei einer offenen
+Konzentrationsprüfung bleibt sie ebenfalls gesperrt. Zugwechsel und Abschluss
+warten weiterhin auf die ausdrückliche Klärung.
+
+Die Prüfung übernimmt den CON-Rettungswurf aus dem im Kampf gespeicherten
+Statblock, einschließlich eines dort angegebenen Rettungswurfbonus. Ohne
+gesonderten Bonus gilt der CON-Attributsmodifikator. Unbekannte Werte bleiben
+ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar. Die native
+Probe `tools/test-desktop-concentration.mjs` führt zwei getrennte Treffer,
+Bestanden/Verloren, Neustart mit offener Prüfung und Abschluss samt erneutem
+Öffnen bei 100/200 Prozent aus. Das ist keine menschliche Bedienabnahme.
+
 ## Kampf wechseln und erneut laden
 
 Die Schnellauswahl und der ausgewählte Kampf verwenden dieselben Zeilen aus

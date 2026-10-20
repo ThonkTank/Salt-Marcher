@@ -40,6 +40,51 @@ test('selecting another encounter blocks old writes and preserves its incomplete
  const d=x.store.combatDraft(x.w.token,x.a.id,'notes',x.a.id);assert.equal(d.values.title,'');assert.equal(d.values.notes,'Unfertig\r\n');
  }finally{x.cleanup();}
 });
+
+test('concentration uses a known Constitution save, including proficiency, while unknown values remain explicit',async()=>{
+ const x=await fixture();try{
+  const source={abilities:{con:12},savingThrows:'INT +9, WIS +6'};
+  assert.equal(x.ui.creatureConstitutionSave(source),1);
+  assert.equal(x.ui.creatureConstitutionSave({...source,savingThrows:'CON +9, INT +12'}),9);
+  assert.equal(x.ui.creatureConstitutionSave({...source,abilities:{con:7},savingThrows:''}),-2);
+  assert.equal(x.ui.creatureConstitutionSave({...source,savingThrows:'CON +0'}),0);
+  assert.equal(x.ui.creatureConstitutionSave(undefined),null);
+  assert.equal(x.ui.creatureConstitutionSave({...source,savingThrows:'CON unknown'}),null);
+ }finally{x.cleanup();}
+});
+
+test('the concentration shortcut changes only concentration and preserves open value drafts',async()=>{
+ const x=await fixture();try{
+  await x.fighter();const before=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat,actor=before.participants[0];
+  assert.equal(x.el('fighter-values').hasAttribute('open'),false);await until(()=>!x.el('fighter-concentration-toggle').disabled);x.el('fighter-concentration-toggle').onclick();
+  await until(()=>x.el('fighter-concentration-toggle').textContent==='Konzentration beenden'&&!x.el('fighter-concentration-toggle').disabled);
+  assert.deepEqual(x.writes.at(-1).action,{kind:'edit',participantId:actor.id,changes:{concentrating:true}});
+  const after=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;
+  assert.deepEqual(after.participants[0],{...actor,concentrating:true});assert.equal(after.turnId,before.turnId);assert.equal(after.round,before.round);
+  x.input('fighter-name','Ungespeicherter Name');const count=x.writes.length;
+  assert.equal(x.el('fighter-concentration-toggle').disabled,true);x.el('fighter-concentration-toggle').onclick();await tick();assert.equal(x.writes.length,count);
+  assert.equal(x.el('fighter-name').value,'Ungespeicherter Name');
+  assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].concentrating,true);
+ }finally{x.cleanup();}
+});
+
+test('pending concentration keeps its known save and manual override through redraws, and cannot be bypassed by its shortcut',async()=>{
+ const x=await fixture();try{
+  x.el('combat-concentration-effect').scrollIntoView=()=>{};
+  let c=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;
+  c=x.store.executeCombat({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,combatId:c.id,expectedRevision:c.revision,action:{kind:'add-creature',creatureId:'archmage',count:1,grouped:false}}).combat;
+  const actor=c.participants.find(p=>p.sourceId==='archmage');x.el('combat-refresh').onclick();await until(()=>x.el('combat-rows').textContent.includes(actor.name)&&x.el('combat-panel').getAttribute('aria-busy')==='false');
+  x.el('combat-rows').querySelector('[data-participant-id="'+actor.id+'"] button').onclick();await until(()=>x.el('combat-selected-name').textContent===actor.name&&!x.el('fighter-concentration-toggle').disabled);
+  x.el('fighter-concentration-toggle').onclick();await until(()=>x.el('fighter-concentration-toggle').textContent==='Konzentration beenden'&&!x.el('fighter-damage').disabled);
+  x.el('fighter-amount').value='32';x.el('fighter-damage').onclick();await until(()=>!x.el('combat-concentration-effect').hidden&&!x.el('combat-concentration-roll').disabled);
+  assert.match(x.el('combat-concentration-result').textContent,/SG 16.*CON \+1 laut Statblock/);assert.equal(x.el('combat-concentration-modifier').value,'1');
+  const count=x.writes.length;assert.equal(x.el('fighter-concentration-toggle').disabled,true);x.el('fighter-concentration-toggle').onclick();await tick();assert.equal(x.writes.length,count);
+  x.el('combat-concentration-modifier').value='4';x.el('combat-refresh').onclick();await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');assert.equal(x.el('combat-concentration-modifier').value,'4');
+  x.el('combat-concentration-roll').onclick();await until(()=>x.writes.some(c=>c.action.kind==='concentration-roll'));
+  assert.deepEqual(x.writes.at(-1).action,{kind:'concentration-roll',participantId:actor.id,modifier:4});
+  await until(()=>!x.el('fighter-damage').disabled);
+ }finally{x.cleanup();}
+});
 test('visiting a finished encounter preserves the open encounter draft and blocks stale writes',async()=>{
  const x=await fixture({finished:true});try{await x.fighter();x.input('combat-edit-title','');x.input('combat-notes','Unfertig\r\n');assert(await x.ui.flushCombat());x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);assert.equal(x.el('fighter-damage').disabled,true);x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await tick();assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,8);
  x.release();await until(()=>x.el('combat-title').textContent==='Torwache');x.choose(x.b.id);await until(()=>x.el('combat-title').textContent==='Keller'&&!x.el('combat-notes').disabled);await x.fighter();x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);assert.equal(x.writes[0].combatId,x.b.id);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,7);
