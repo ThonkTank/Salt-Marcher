@@ -1,3 +1,4 @@
+import {wheelZoomFactor} from './atlas-navigation-scale';
 import {atlasFieldValue, atlasUnits, FOOT, setAtlasFieldValue} from './atlas-units';
 
 export type BrushSizeMode = 'screen' | 'world';
@@ -60,6 +61,7 @@ export class BrushSizeControl {
     this.root=field.closest('label')!;this.root.classList.add('atlas-brush-range','atlas-brush-size');
     this.root.replaceChildren(this.caption,field,this.slider,this.number);
     field.hidden=true;
+    this.root.title='Pinselradius: Shift + Mausrad über der Karte';
     this.slider.type='range';this.slider.id=field.id+'-slider';this.slider.setAttribute('aria-label','Pinselradius');
     this.number.type='number';this.number.step='any';this.number.id=field.id+'-value';this.number.setAttribute('aria-label','Pinselradius eingeben');
     const toggle=document.createElement('span');toggle.className='atlas-brush-fixed';
@@ -92,6 +94,18 @@ export class BrushSizeControl {
     this.locked=locked;this.render();
   }
   preset(pixels:number){if(this.locked)return;model().preset(this.key,this.scale,pixels);this.save();this.render();this.changed();}
+  /** Shift may map a physical vertical wheel to deltaX on some platforms. */
+  wheel(event:WheelEvent,height:number):boolean {
+    if(!event.shiftKey||!this.key)return false;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(this.locked)return true;
+    const delta=event.deltaY||event.deltaX;
+    if(!Number.isFinite(delta)||!delta)return true;
+    const m=model(),s=m.size(this.key,this.scale),value=m.mode==='world'?s.world:s.screen;
+    m.set(this.key,this.scale,value/wheelZoomFactor(delta,event.deltaMode,height));
+    this.save();this.render();this.field.dispatchEvent(new Event('brush-size-change'));this.changed();
+    return true;
+  }
   private save(){try{localStorage.setItem('atlas-brush-sizes-v1',model().serialize());}catch{/* Session preference remains usable. */}}
   private render(){
     if(!this.key)return;

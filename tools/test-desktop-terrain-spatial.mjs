@@ -67,11 +67,26 @@ try{
  await page.locator('#land-radius-fixed').uncheck();await page.locator('#land-radius-value').fill('65');await page.locator('#land-radius-value').press('Tab');
  const screenWorld=Number(await page.locator('#land-radius').inputValue()),zoomPoint=await center();await page.mouse.move(zoomPoint.x,zoomPoint.y);await page.mouse.wheel(0,-240);await page.waitForTimeout(350);await spatialReady();
  assert(Math.abs(Number(await page.locator('#land-radius').inputValue())/screenWorld-Math.exp(-.24))<.001);assert.equal(Number(await page.locator('#land-radius-value').inputValue()),65);
+ await page.keyboard.down('Shift');await page.mouse.wheel(0,-80);await page.keyboard.up('Shift');await page.waitForTimeout(200);await spatialReady();
+ assert(Math.abs(Number(await page.locator('#land-radius-value').inputValue())-65*Math.exp(.16))<.01);
+ assert(Math.abs(Number(await page.locator('#land-radius').inputValue())/screenWorld-Math.exp(-.24+.16))<.001);
+ await page.keyboard.down('Shift');await page.mouse.wheel(0,80);await page.keyboard.up('Shift');await page.waitForTimeout(200);await spatialReady();
  await page.mouse.wheel(0,240);await page.waitForTimeout(350);await spatialReady();await setBrushWorldRadius(page,'land-radius','48');
+ for(const tool of ['paint','clear','thin','dense','line']){
+   await page.locator('#vegetation-spatial-tool').selectOption(tool);await spatialReady();
+   const radius=Number(await page.locator('#vegetation-spatial-radius').inputValue()),p=await center();await page.mouse.move(p.x,p.y);
+   await page.keyboard.down('Shift');await page.mouse.wheel(0,-80);await page.keyboard.up('Shift');await page.waitForTimeout(200);
+   assert(Math.abs(Number(await page.locator('#vegetation-spatial-radius').inputValue())/radius-Math.exp(.16))<.001,tool);
+   await page.keyboard.down('Shift');await page.mouse.wheel(0,80);await page.keyboard.up('Shift');await page.waitForTimeout(200);
+   assert(Math.abs(Number(await page.locator('#vegetation-spatial-radius').inputValue())/radius-1)<.001,tool);
+ }
+ await page.locator('#vegetation-spatial-tool').selectOption('height');await spatialReady();
+ mark('Shift + Mausrad ändert räumliche Gelände- und Bewuchsradien ohne Kamerazoom');
  mark('Räumlicher Bildschirmradius bleibt beim Zoom konstant; Umrechnung folgt der orthografischen Projektion');
  await range('terrain-spatial-exaggeration',15);assert.equal(await page.locator('#terrain-spatial-exaggeration').inputValue(),'4');assert.equal(heights(),original);
  await setHeightDirection(page,'lower');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('10');
  const p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').dataset.terrainDraft==='ready',null,{timeout:60000});
+ const heldRadius=await page.locator('#land-radius').inputValue();await page.keyboard.down('Shift');await page.mouse.wheel(0,-80);await page.keyboard.up('Shift');await page.waitForTimeout(100);assert.equal(await page.locator('#land-radius').inputValue(),heldRadius);
  assert.equal(heights(),original);await capture('01-lowered-preview');await page.mouse.up();await spatialReady();assert(height().heightM<before.heightM-20);assert(Math.abs(height().heightM-10)<1);const lowered=heights();
  mark('Gekippten Pass bei vierfacher Überhöhung absenken: Vorschau schreibt nichts, tatsächliche Meter und Zielhöhe stimmen');
  await page.locator('#vegetation-top-view').click();await capture('02-pass-top');assert.equal(heights(),lowered);

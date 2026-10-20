@@ -301,7 +301,15 @@ export async function openVegetationSpatial(host:{token:string;box:LandscapeBox;
   };
   canvas.onpointerup=e=>{const g=gesture;gesture=undefined;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!g)return;if(g.pan)void load();else void commit(g.points,tool.value).catch(host.error);};
   canvas.onpointercancel=()=>{gesture=undefined;syncBrushSize();view.showDraft([]);view.render();};
-  canvas.onwheel=e=>{e.preventDefault();if(writing||!data||draftPending())return;const factor=Math.exp(Math.max(-.5,Math.min(.5,e.deltaY*.001))),w=Math.max(40,Math.min(1e7,box.width*factor)),h=w*box.height/box.width;box={x:box.x+(box.width-w)/2,y:box.y+(box.height-h)/2,width:w,height:h};syncBrushSize();view.setViewport(box);void load();};
+  canvas.onwheel=e=>{
+    e.preventDefault();if(writing||!data||draftPending())return;
+    const radius=terrainTool()?brushSizeControl(host.terrain!.radius):['paint','clear','thin','dense','line'].includes(tool.value)?spatialSize:undefined;
+    if(radius?.wheel(e,canvas.clientHeight)){
+      const p=local(e),world=view.hit(p.x,p.y);
+      if(world){view.showDraft([world],terrainTool()?terrainRadius():Number(atlasFieldValue(element<HTMLInputElement>('radius'))));view.render();}
+      return;
+    }
+    const factor=Math.exp(Math.max(-.5,Math.min(.5,e.deltaY*.001))),w=Math.max(40,Math.min(1e7,box.width*factor)),h=w*box.height/box.width;box={x:box.x+(box.width-w)/2,y:box.y+(box.height-h)/2,width:w,height:h};syncBrushSize();view.setViewport(box);void load();};
   canvas.addEventListener('webglcontextlost',e=>{if(closed)return;e.preventDefault();close(true);host.error(Error('GPU-Kontext verloren. Landschaft ist in der Draufsicht verfügbar.'));});
   element('finish').onclick=()=>{if(terrainDraft){held=false;stopPreview();void write(terrainDraft);}else void commit([...points],tool.value).catch(host.error);};
   element('cancel').onclick=()=>{if(busy)return;clearTerrain();points=[];gesture=undefined;syncBrushSize();if(data)view.setData(data);view.showDraft([]);view.render();status.textContent='Entwurf verworfen.';};

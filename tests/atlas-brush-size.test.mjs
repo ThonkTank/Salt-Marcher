@@ -69,3 +69,35 @@ test('actual controls keep slider, typed units, locked drafts and preset paramet
   control.sync('dom-height',2,false);
   assert(!f('land-radius-value').disabled);
 });
+
+test('Shift wheel sizes the active brush in either mode, normalizes devices and preserves locked drafts',t=>{
+  const {document,window}=parseHTML('<html><body><label>Radius<input id="wheel-radius"></label></body></html>');
+  const old={document:global.document,Event:global.Event,localStorage:global.localStorage};
+  let saved,changes=0,manual=0;
+  Object.assign(global,{document,Event:window.Event,localStorage:{setItem:(_key,value)=>saved=value}});
+  t.after(()=>Object.assign(global,old));
+  const field=document.getElementById('wheel-radius'),control=new BrushSizeControl(field,()=>changes++);
+  t.after(()=>control.dispose());initAtlasUnits(document);setAtlasUnits('metric');
+  control.sync('wheel-height',10,false);
+  const fixed=document.getElementById('wheel-radius-fixed');fixed.checked=false;fixed.dispatchEvent(new Event('change'));
+  field.addEventListener('brush-size-change',()=>manual++);
+  const wheel=(deltaY,deltaMode=0,shiftKey=true,deltaX=0)=>{
+    const event=Object.assign(new Event('wheel',{cancelable:true}),{deltaY,deltaX,deltaMode,shiftKey});
+    const handled=control.wheel(event,800);assert.equal(event.defaultPrevented,handled);return handled;
+  };
+  control.preset(48);assert.equal(wheel(-80,0,false),false);assert.equal(Number(atlasFieldValue(field)),480);
+  for(const [delta,mode]of [[-80,0],[-5,1],[-.1,2]]){
+    control.preset(48);wheel(delta,mode);assert(Math.abs(Number(atlasFieldValue(field))-480*Math.exp(.16))<1e-9);
+  }
+  control.preset(48);wheel(0,0,true,-80);assert.equal(new BrushSizes(saved).size('wheel-height',10).world,Number(atlasFieldValue(field)));
+  wheel(80);assert(Math.abs(Number(atlasFieldValue(field))-480)<1e-9);
+  control.preset(199);wheel(-800);assert.equal(Number(atlasFieldValue(field)),2000);
+  control.preset(4);wheel(800);assert.equal(Number(atlasFieldValue(field)),40);
+  control.preset(48);fixed.checked=true;fixed.dispatchEvent(new Event('change'));setAtlasUnits('dnd');
+  wheel(-80);const world=Number(atlasFieldValue(field));assert(Math.abs(world-480*Math.exp(.16))<1e-9);
+  control.sync('wheel-height',20,false);assert.equal(Number(atlasFieldValue(field)),world);
+  control.sync('wheel-other',20,false);wheel(-80);control.sync('wheel-height',20,false);assert.equal(Number(atlasFieldValue(field)),world);
+  control.sync('wheel-height',20,true);const counts=[changes,manual];wheel(-80);assert.equal(Number(atlasFieldValue(field)),world);assert.deepEqual([changes,manual],counts);
+  control.sync('wheel-height',20,false);wheel(80);assert(Math.abs(Number(atlasFieldValue(field))-480)<1e-9);
+  assert(manual>0);
+});

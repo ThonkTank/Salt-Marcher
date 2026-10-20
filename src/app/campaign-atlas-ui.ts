@@ -534,6 +534,16 @@ export class CampaignAtlasWorkbench {
     this.svg.parentElement!.addEventListener('pointerdown',()=>this.camera.stopZoom(),true);
     this.svg.parentElement!.addEventListener('pointerdown',syncBrushes,true);
     this.root.addEventListener('change',syncBrushes);
+    this.svg.parentElement!.addEventListener('wheel',e=>{
+      if(!e.shiftKey||!this.svg.contains(e.target as Node)||this.exportOpen)return;
+      const id=this.family==='terrain'?(get<HTMLSelectElement>('land-tool').value==='territory'?'territory-radius':'land-radius'):
+        ['interior','decoration'].includes(this.family)?'drawing-brush':undefined;
+      const control=id?this.brushControls.get(id):undefined;
+      if(!control||control.root.hidden||control.field.closest('dialog[open]'))return;
+      if(id==='territory-radius'&&!['add','erase'].includes(get<HTMLSelectElement>('territory-operation').value))return;
+      this.camera.stopZoom();syncBrushes();
+      if(control.wheel(e,this.svg.clientHeight))this.spatial?.refreshBrushCursor(e.clientX,e.clientY);
+    },{capture:true,passive:false});
     this.spatial=new TerrainSpatialUI(this.svg,{
       route:(kind,tilt)=>this.landscape.planTerrainRoute(kind,tilt),draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.landscape.hasDraft()||this.territories.hasDraft()||this.busy,cancel:()=>this.landscape.cancel(),
       tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',pan:()=>this.root.dataset.panMode==='true',
@@ -2134,7 +2144,7 @@ export class CampaignAtlasWorkbench {
   }
   private brushControls=new Map<string,BrushSizeControl>();
   private brushDraftPending(){
-    const land=!!this.landscape?.hasDraft()&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense'].includes(get<HTMLSelectElement>('land-tool').value);
+    const land=!!this.landscape?.hasDraft()&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense','vegetation-line'].includes(get<HTMLSelectElement>('land-tool').value);
     const drawing=['interior','decoration'].includes(this.family)&&['room-cave','room-erase','scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)&&atlasDrawingDraft().path.length>0;
     return land||!!this.territories?.hasDraft()||this.brushId!==null||drawing;
   }
