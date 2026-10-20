@@ -1,6 +1,6 @@
 # Kampagnenagenda, Fantasy-Datum und Fristen
 
-Stand: 15.10.2026. Die Agenda ergänzt den vollständigen Reise-/Weltzeitvertrag
+Stand: 20.10.2026. Die Agenda ergänzt den vollständigen Reise-/Weltzeitvertrag
 und die Spielabendvorbereitung; sie ersetzt weder Timelinebesuche noch World
 Planner, Shoprestock oder zeitgebundene Autonomie.
 
@@ -69,6 +69,30 @@ gleichwertige Zeiteinheiten oder Datumsschreibweisen benötigen keinen weiteren
 Save; unveränderte Daten behalten auch Sekunden und Millisekunden. Nach einem
 bestätigten Receipt kann der Editor direkt schließen, sofern keine späteren
 Änderungen vorliegen.
+
+## Kalenderregeln aus der Agenda
+
+„Kalenderregeln bearbeiten…“ öffnet das bestehende Kalenderformular direkt in
+einem Dialog. Der frühere Welt-Tab führt inzwischen zum Atlas und ist deshalb
+kein verlässlicher Zugang zu diesen Feldern. Formular und Worldwriter bleiben
+einmal vorhanden; Ereignisse und Gruppenuhren werden beim Ändern der Regeln
+nicht verschoben. Dezimale Tagesstunden bilden die bereits unterstützte
+sekundengenaue Tageslänge ab, etwa 1,5 Stunden für einen 90-Minuten-Tag.
+
+Schließen und Escape bewahren offene Eingaben bis zum Speichern oder expliziten
+Verwerfen. Während des Speicherauftrags sind die Kalenderfelder gesperrt.
+Ein unbekannter Ausgang lässt sich im selben Dialog über den ursprünglichen
+Worldreceipt klären, ohne erneutes Senden. Spätere Eingaben bleiben erhalten.
+Die Kalenderrevision bleibt an den sichtbaren Entwurf gebunden; ein paralleles
+Weltlesen überschreibt weder Rohfelder noch die Konfliktbasis.
+`tests/desktop-calendar-rules.test.mjs` prüft diese Übergänge mit dem echten Store.
+
+`tools/test-desktop-agenda-deadline.mjs` prüft nativ bei tatsächlichem 100-/200-%-Zoom:
+90-Minuten-Tag konfigurieren, verlorene Speicherantwort klären, eine Frist sechs
+Tage voraus anlegen, sieben Tage mit sichtbarer Vorschau vorsetzen, normal
+schließen, neu starten und dieselbe Frist weiterbearbeiten. Bestehende Ereignisse
+und Gruppeninhalte bleiben dabei erhalten. Das ist keine Ownerabnahme und keine
+Neustartsicherung offener Rohentwürfe.
 
 ## Kontext und Speicherbestätigung
 
