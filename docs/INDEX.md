@@ -40,7 +40,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Erweiterungsinstallation und Wiederaufnahme | [Rechte, defekte Vermerke und nächste Unitlieferung](plans/extensions/installation-recovery.md) |
 | Installation und In-App-Updates | [Linux-Pakete, signierte GitHub Releases und Wiederherstellung](project/delivery/github-updates.md) |
 | Plattform und Architektur | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md), [Prototypen](../ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md), [Architektur](../ARCHITECTURE.md) |
-| Reise und Gruppenzeit | [Laufzustand, Datenregeln und offene Reiseabnahmen](plans/maps/hex-travel.md#vorhandener-ablauf-und-datenregeln) |
+| Reise und Gruppenzeit | [Laufzustand und Datenregeln](plans/maps/hex-travel.md#vorhandener-ablauf-und-datenregeln), [Checkpoint-/Restart-Prüfung und offenes Undo/Redo](plans/maps/hex-travel.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) |
 | Agenda, Fantasy-Datum und Fristen | [Kalenderplanung und ausdrücklicher Zeitsprung](plans/runtime/campaign-agenda.md#ausführbarer-anschluss) |
 | Scene-Wetter und GM-Override | [Datenvertrag, lokaler Nachweis und nächste Abnahmen](plans/runtime/weather.md) |
 | Musik und Ambience-Wiederaufnahme | [Fehlerfreigabe, GM-Vorrang und nächste Abnahmen](plans/runtime/music-recovery.md) |
