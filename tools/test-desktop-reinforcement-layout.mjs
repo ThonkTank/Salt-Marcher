@@ -1,34 +1,25 @@
-import {currentProcessGroup} from './process-group.mjs';
+import {createNativeSession} from './native-session.mjs';
 // Complete GM task from a seeded running encounter. All subsequent actions use native UI.
 import {createRequire} from 'node:module';
-import {mkdtemp,mkdir,readFile,writeFile,stat,rm} from 'node:fs/promises';
-import {spawn,execFileSync} from 'node:child_process';
-import {randomUUID,createHash} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
-const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core'),Database=require('better-sqlite3'),zoom=Number(process.env.GM_QA_ZOOM??1),out=process.env.QA_EVIDENCE_DIR??root+'/.build/reinforcement-layout-'+zoom;
- const processGroup=await currentProcessGroup(),replyLoss=process.argv.includes('--reply-loss');
- await mkdir(out,{recursive:true});await rm(out+'/result.json',{force:true});
+const root=process.cwd(),require=createRequire(root+'/package.json'),Database=require('better-sqlite3'),zoom=Number(process.env.GM_QA_ZOOM??1),out=process.env.QA_EVIDENCE_DIR??root+'/.build/reinforcement-layout-'+zoom;
+const replyLoss=process.argv.includes('--reply-loss');
+const native=await createNativeSession({root,output:out,name:'gm-reinforcement'}),{profile,launches,errors}=native;
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/reinforcement-probe-store-'+process.pid+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(root+'/.build/reinforcement-probe-store-'+process.pid+'.cjs');
-const profile=await mkdtemp('/tmp/gm-reinforcement-'),store=new CampaignStore(profile+'/workbench.sqlite'),campaign=store.create('Goblinverstärkung am Hafentor'),w=store.activate(campaign.id),cmd=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});const scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;
+const store=new CampaignStore(profile+'/workbench.sqlite'),campaign=store.create('Goblinverstärkung am Hafentor'),w=store.activate(campaign.id),cmd=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});const scene=store.executeLive(cmd({kind:'initialize',expectedRosterRevision:0})).scene;
 let combat=store.executeCombat({...cmd({kind:'create',sceneId:scene.id,title:'Hafentor',includeParty:false,expectedMembershipRevision:scene.membershipRevision}),combatId:null,expectedRevision:null}).combat;
 function seed(action){combat=store.executeCombat({...cmd(action),combatId:combat.id,expectedRevision:combat.revision}).combat;}
 seed({kind:'add-creature',creatureId:'goblin',count:2,grouped:true,initiative:12});seed({kind:'start'});seed({kind:'edit',participantId:combat.participants[0].id,changes:{hp:4,conditions:'Liegend'}});const original=structuredClone(combat);store.tutorial('skipped');store.close();
-const bus=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,bus,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});for(let i=0;i<100&&!await stat(bus).catch(()=>null);i++)await new Promise(r=>setTimeout(r,20));
-let app,page,stage='launch';const launches=[],errors=[],states=[],recoveries=[];
+let app,page,stage='launch';const states=[],recoveries=[];
 const read=()=>{const db=new Database(profile+'/workbench.sqlite',{readonly:true});try{return JSON.parse(db.prepare('SELECT payload FROM combat WHERE id=?').get(combat.id).payload);}finally{db.close();}};
-async function shot(name){await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
- await writeFile(out+'/'+name+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64')),'base64'));states.push({name,layout:await page.evaluate(()=>({viewport:{width:innerWidth,height:innerHeight},headerPosition:getComputedStyle(document.querySelector('body>header')).position,navigationTop:document.querySelector('#workspace-navigation').getBoundingClientRect().top,tableMaxHeight:getComputedStyle(document.querySelector('.combat-table-scroll')).maxHeight})),text:await page.locator('dialog[open]').count()?await page.locator('dialog[open]').innerText():await page.locator('#combat-panel').innerText()});}
-async function launch(expected='running'){app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[root+'/.build/desktop/main.cjs','--ozone-platform=x11','--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus}});launches.push({pid:app.process().pid,processGroup:await currentProcessGroup((path,encoding)=>readFile('/proc/'+app.process().pid+'/cgroup',encoding))});assert.equal(launches.at(-1).processGroup,processGroup);
-page=await app.firstWindow();page.setDefaultTimeout(20000);page.on('pageerror',e=>errors.push(e.stack));
- await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
- await app.evaluate(({BrowserWindow},z)=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.setZoomFactor(z),zoom);
+async function shot(name){await native.capture(page,name);states.push({name,layout:await page.evaluate(()=>({viewport:{width:innerWidth,height:innerHeight},headerPosition:getComputedStyle(document.querySelector('body>header')).position,navigationTop:document.querySelector('#workspace-navigation').getBoundingClientRect().top,tableMaxHeight:getComputedStyle(document.querySelector('.combat-table-scroll')).maxHeight})),text:await page.locator('dialog[open]').count()?await page.locator('dialog[open]').innerText():await page.locator('#combat-panel').innerText()});}
+async function launch(expected='running'){page=await native.launch(zoom);app=native.app;
  await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
  await page.waitForFunction(()=>!document.querySelector('#workspace-navigation').inert);if(!await page.locator('#live-tab').isVisible()){if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();if(!await page.getByRole('button',{name:'Party und Leiten',exact:true}).isVisible())await page.locator('#workspace-nav-summary').click();}await page.getByRole('button',{name:'Party und Leiten',exact:true}).click();
  await page.waitForFunction(expected=>document.getElementById('combat-status').textContent.includes(expected==='running'?'Am Zug: Goblin A':'Abgeschlossen'),expected);}
 async function checkControls(ids){if(!process.argv.includes('--assert-layout'))return;for(const id of ids){assert(await page.locator('#'+id).evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&r.left>=0&&r.right<=innerWidth&&e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),id+' must be fully visible and uncovered');}}
-async function close(){const process=app.process(),exit=new Promise(r=>process.once('exit',(code,signal)=>r({code,signal})));
- await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());let timer;try{const result=await Promise.race([exit,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal exit timed out')),10000))]);
- assert.deepEqual(result,{code:0,signal:null});launches.at(-1).exit=result;assert.throws(()=>globalThis.process.kill(process.pid,0),{code:'ESRCH'});launches.at(-1).absent=true;app=null;}finally{clearTimeout(timer);}}
+async function close(){await native.close();app=null;}
 async function add(lose){
  const count=read().participants.length,source=await page.locator('#combat-creature-source').inputValue();
  if(lose)await app.evaluate(({ipcMain})=>{
@@ -120,5 +111,4 @@ stage='new creature';
  await page.locator('#combat-add-close').click();
  await close();
  assert.deepEqual(errors,[]);
- await writeFile(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),buildHashes:Object.fromEntries(await Promise.all(['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'].map(async p=>[p,createHash('sha256').update(await readFile(root+'/.build/desktop/'+p)).digest('hex')]))),zoom,profile,original,current,final,launches,states,recoveries,errors,complete:true,processGroup,humanAcceptance:false,installedPackageAcceptance:false},null,2));console.log(JSON.stringify({out,launches}));}catch(e){if(app)await shot('failure').catch(()=>{});
- await writeFile(out+'/failure.json',JSON.stringify({stage,error:e.stack,launches,states},null,2));console.error(stage,e);throw e;}finally{if(app){const proc=app.process(),timer=setTimeout(()=>proc.kill('SIGKILL'),5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy.kill();}
+ await native.finish({zoom,original,current,final,states,recoveries,complete:true,humanAcceptance:false,installedPackageAcceptance:false});console.log(JSON.stringify({out,launches}));}catch(e){await native.fail(e);console.error(stage,e);throw e;}finally{await native.dispose();}

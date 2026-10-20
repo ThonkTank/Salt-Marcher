@@ -35,6 +35,25 @@ Dies liefert Wiederaufnahme und Nachvollziehbarkeit; der vollständige originale
 Reward-Engineumfang einschließlich aller Packing-/Channel-/Curse-Regeln und
 asynchroner Orchestrierung bleibt ein eigener offener Produktumfang.
 
+## Gezielte Planbestätigung und Wiederaufnahme
+
+`changePreparationPlan` bestätigt nur den betroffenen `ManualPlan`;
+`reconcilePreparationPlan` liest dessen Beleg, aktuelle Revision und Besuchszeilen
+in einer Transaktion. Nicht angewandt, Konflikt und unlesbares Ziel bleiben
+unterschieden. Die initiale Verzeichnisabfrage bleibt ein eigener Einstieg.
+Interne Sessionänderungen benutzen den transaktionalen Writer ohne anschließenden
+ungenutzten Verzeichnisread. ID-Indizes ersetzen wiederholte lineare Besuchssuchen.
+
+Der Renderer übernimmt den bestätigten Plan und aktualisiert seine Listen,
+erhält aber spätere editierbare Werte über den gemeinsamen Editorübergang.
+Notizen, Ortssuche und fremde Entwürfe werden durch Planantworten nicht ersetzt.
+`tests/desktop-plan-projection.test.mjs` verbietet globale Reads bei wachsendem
+Hintergrundbestand und prüft Replay, Fresh, Konflikte und Rollback;
+`tests/desktop-timeline-search.test.mjs` prüft auch spätere Eingabe während Recovery.
+`tools/test-desktop-manual-timeline.mjs` führt ohne Party drei Besuche, wiederholten
+Ort, Umordnung, späte Eingabe, Antwortverlust, Neustart und unabhängige Liveübernahme
+aus. Dies ist keine vollständige manuelle Sessionplanner-Abnahme.
+
 ## Aktueller Anschluss
 
 Die Desktopvorbereitung speichert Pläne, geordnete Besuche, exakte Notizen und

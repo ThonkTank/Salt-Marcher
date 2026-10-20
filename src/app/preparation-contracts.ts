@@ -64,11 +64,14 @@ export function checkedPreparationDraft(value: PreparationDraft): PreparationDra
   return value;
 }
 export interface NoteRoomUsesPage {entries:{id:string;title:string;number:string;place:string;excerpt:string;unavailable:boolean}[];next:number|null;notice?:string}
+export interface PlanReconciliation {outcome:'applied'|'not-applied'|'conflict';targetChanged:boolean;plan:ManualPlan|null}
 export interface PreparationAPI {
   noteMergePreview(token:string,sourceId:string,targetId:string):Promise<import('./contracts').Result<NoteMergePreview>>;
   noteRoomUses(token:string,noteId:string,offset:number):Promise<import('./contracts').Result<NoteRoomUsesPage>>;
   preparation(token: string, search: string): Promise<import('./contracts').Result<Preparation>>;
   changePreparation(command: PreparationCommand): Promise<import('./contracts').Result<Preparation>>;
+  changePreparationPlan(command: PreparationCommand): Promise<import('./contracts').Result<ManualPlan>>;
+  reconcilePreparationPlan(command:PreparationCommand,token?:string):Promise<import('./contracts').Result<PlanReconciliation>>;
   selectPreparation(token: string, selection: PreparationSelection): Promise<import('./contracts').Result<void>>;
   reconcilePreparation(command: PreparationCommand, token?: string): Promise<import('./contracts').Result<{ outcome: 'applied' | 'not-applied' | 'conflict'; targetChanged: boolean; data: Preparation }>>;
   preparationDraft(token: string, kind: PreparationEdit['kind'], id: string): Promise<import('./contracts').Result<PreparationDraft | null>>;

@@ -257,6 +257,8 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   keepSessionRecapDraft:(token:string,draft:import('../src/app/live-contracts').SessionRecapDraft,expected:import('../src/app/live-contracts').SessionRecapDraft|null)=>ipcRenderer.invoke('campaign:keep-session-recap-draft',token,draft,expected),
   executeLive: (command: unknown) => ipcRenderer.invoke('campaign:execute-live', command),
   liveStatus: (command: unknown, token: string) => ipcRenderer.invoke('campaign:live-status', command, token),
+  reconcilePreparationPlan:(command:import('../src/app/preparation-contracts').PreparationCommand,token?:string)=>ipcRenderer.invoke('campaign:reconcile-preparation-plan',command,token),
+  changePreparationPlan:(command:import('../src/app/preparation-contracts').PreparationCommand)=>ipcRenderer.invoke('campaign:change-preparation-plan',command),
   changePreparation: (command: unknown) => ipcRenderer.invoke('campaign:change-preparation', command),
   selectPreparation: (token: string, selection: unknown) => ipcRenderer.invoke('campaign:select-preparation', token, selection),
   reconcilePreparation: (command: unknown, token?: string) => ipcRenderer.invoke('campaign:reconcile-preparation', command, token),

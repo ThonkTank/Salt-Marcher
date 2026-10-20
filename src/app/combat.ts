@@ -1,3 +1,5 @@
+import {BookingDialog} from './booking-dialog';
+import {captureView} from './editor-transition';
 import {CombatSelectionPanel} from './combat-selection-ui';
 import {combatMobs,combatMobRow} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
@@ -141,7 +143,7 @@ function revealResultMembers(combat:CombatState,targetIds?:readonly string[]){
   const targets=targetIds?new Set(targetIds):null;
   for(const mob of combatMobs(combat))if(!targets||mob.members.some(member=>targets.has(member.id)))expandedMobs.add(mob.id);
 }
-async function execute(action: CombatAction, expectedRevision?:number,stillCurrent:()=>boolean=()=>true): Promise<boolean> {
+async function execute(action: CombatAction, expectedRevision?:number,stillCurrent:()=>boolean=()=>true,failed?:(message:string)=>void): Promise<boolean> {
   if (!workspace || !scene || blocked()||!stillCurrent()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='initiative'&&workspace&&view?.combat?draftCache.values.get(combatDraftKey(workspace.campaign.id,view.combat.id,'initiative',view.combat.id)):action.kind==='notes'?notesDraft():editDraft;
   const priorDamageDeath=action.kind==='damage'||action.kind==='hit'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
@@ -174,7 +176,7 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
       tell(areaResult??(action.kind==='hit'?('Treffer gespeichert · '+(action.critical?'kritisch · ':'')+actor!.name+' '+actor!.hp+'/'+actor!.maxHp+' HP'+(actor!.death?.dead?' · tot':actor!.death?' · Todesrettung '+actor!.death.successes+' Erfolge / '+actor!.death.failures+' Fehlschläge':'')+(openConcentration?' · Konzentration SG '+openConcentration.dc+' offen.':'.')):death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):effectTicks.length?'Rundeneffekte: '+effectTicks.join(' · ')+'.':'Kampf gespeichert.')); return true;
     } catch (error) { if (generation === gen) {
       const message=(error as Error).message;
-      if(get('combat-add-dialog').hasAttribute('open'))get('combat-add-status').textContent=message+(hasPendingCommit(command.campaignId)?' Über „Schließen“ zum Buchungsstatus wechseln.':' Eingaben bleiben erhalten.');
+      failed?.(message);
       tell(message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true);
     } return false; }
     finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
@@ -221,7 +223,8 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
   const action:CombatAction=editableCombat(view?.combat??null)
     ?{kind:'add-creature',creatureId,count,grouped}
     :{kind:'create',sceneId:owner.sceneId,title:'Neue Begegnung',includeParty:true,expectedMembershipRevision:owner.revision,catalogCreature:{creatureId,count,grouped}};
-  if(await execute(action)&&owner.current()){
+  const ok=get('combat-add-dialog').hasAttribute('open')?await submitReinforcement(failed=>execute(action,undefined,owner.current,failed)):await execute(action,undefined,owner.current);
+  if(ok&&owner.current()){
     closeReinforcements();
     // The live focus bar has just appeared after leaving the catalog. Measure
     // its sticky offset before positioning the encounter heading beneath it.
@@ -302,13 +305,21 @@ function renderConcentrationEffect(){
   get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(bonus===null?' · CON-Modifikator prüfen':' · CON '+(bonus>=0?'+':'')+bonus+' laut Statblock')+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
   const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=combat.id+':'+actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value=String(bonus??0);}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
 }
+const reinforcementBooking=new BookingDialog();
 function closeReinforcements(){
+ reinforcementBooking.reset();
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
  if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open');
 }
+async function submitReinforcement(send:(failed:(message:string)=>void)=>Promise<boolean>){
+ if(!workspace)return false;
+ return reinforcementBooking.run({campaignId:workspace.campaign.id,
+  current:captureView(()=>[workspace?.token,scene?.id,generation],()=>get('combat-add-dialog').hasAttribute('open')),
+  send,lock:()=>lock(),report:message=>{get('combat-add-status').textContent=message;},confirmed:closeReinforcements});
+}
 function openReinforcements(){
  if(blocked()||!workspace||!scene)return;
- get('combat-add-status').textContent='';
+ reinforcementBooking.reset();get('combat-add-status').textContent='';
  get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  renderReinforcements();lock();
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
@@ -362,7 +373,7 @@ function lockConditionShortcuts(){
 }
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution,#combat-selection'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
-  get<HTMLButtonElement>('combat-add-close').disabled=!!pending;
+  get<HTMLButtonElement>('combat-add-close').disabled=!!pending||reinforcementBooking.busy;
   selectionPanel?.lock();
   resolution?.setBlocked(!!blocked());
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
@@ -575,9 +586,9 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
    if(!editableCombat(view?.combat??null)){void addCatalogCreature(creatureId,Number(value('combat-creature-count')),get<HTMLInputElement>('combat-creature-grouped').checked);return;}
    const initiative=value('combat-creature-initiative').trim();
    get('combat-add-status').textContent='';
-   void execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})}).then(ok=>{if(ok)closeReinforcements();});
+   void submitReinforcement(failed=>execute({kind:'add-creature',creatureId,count:Number(value('combat-creature-count')),grouped:!!groupId||get<HTMLInputElement>('combat-creature-grouped').checked,...(groupId?{groupId}:initiative?{initiative:Number(initiative)}:{})},undefined,()=>true,failed));
   };
-  get('combat-add-form').onsubmit = event => { event.preventDefault();if(blocked())return;get('combat-add-status').textContent=''; void execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) }).then(ok=>{if(ok)closeReinforcements();}); };
+  get('combat-add-form').onsubmit = event => { event.preventDefault();if(blocked())return;get('combat-add-status').textContent=''; void submitReinforcement(failed=>execute({ kind: 'add', name: value('enemy-name'), count: Number(value('enemy-count')), grouped: get<HTMLInputElement>('enemy-grouped').checked, maxHp: Number(value('enemy-hp')), armorClass: Number(value('enemy-ac')), initiativeBonus: Number(value('enemy-bonus')) },undefined,()=>true,failed)); };
   get('combat-start').onclick = () => void execute({ kind: 'start' });
   get('combat-next').onclick = () => void execute({ kind: 'next' });
   get('combat-undo').onclick = () => void execute({ kind: 'undo' });

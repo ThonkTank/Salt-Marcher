@@ -470,6 +470,8 @@ else {
     handle('campaign:keep-session-recap-draft',(token:string,draft:any,expected:any)=>store.keepSessionRecapDraft(token,draft,expected));
     handle('campaign:execute-live', (command: LiveCommand) => store.executeLive(command));
     handle('campaign:live-status', (command: LiveCommand, token: string) => store.liveStatus(command, token));
+    handle('campaign:reconcile-preparation-plan',(command:PreparationCommand,token?:string)=>store.reconcilePreparationPlan(command,token));
+    handle('campaign:change-preparation-plan',(command:PreparationCommand)=>store.changePreparationPlan(command));
     handle('campaign:change-preparation', (command: PreparationCommand) => store.changePreparation(command));
     handle('campaign:select-preparation', (token: string, selection: PreparationSelection) => store.selectPreparation(token, selection));
     handle('campaign:reconcile-preparation', (command: PreparationCommand, token?: string) => store.reconcilePreparation(command, token));

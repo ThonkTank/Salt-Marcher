@@ -64,7 +64,7 @@ async function uiFixture(t){
  t.after(async()=>{ui.combatContext(null,null);await tick();Object.assign(globalThis,old);});return{...x,ui,el,writes,queries,messages};
 }
 test('runner offers the existing group directly and commits a single source-backed reinforcement',async t=>{
- const x=await uiFixture(t);assert.match(x.el('combat-creature-select').textContent,/Goblin.*vorhandene Initiative 9/);
+ const x=await uiFixture(t);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();assert.match(x.el('combat-creature-select').textContent,/Goblin.*vorhandene Initiative 9/);
  x.el('combat-creature-select').value='group:'+x.group;x.el('combat-creature-select').onchange();assert.equal(x.el('combat-creature-initiative').disabled,true);
  x.el('combat-creature-count').value='1';x.el('combat-creature-form').onsubmit({preventDefault(){}});
  await until(()=>x.writes.length===1&&!x.el('combat-creature-add').disabled);
@@ -105,7 +105,7 @@ test('reinforcement keeps same-creature troops distinct and preserves the select
  const x=await uiFixture(t);
  x.execute({kind:'add-creature',creatureId:x.creature.id,count:2,grouped:true,initiative:15});
  const c=x.execute({kind:'add-creature',creatureId:x.creature.id,count:1,grouped:false,initiative:6});
- await x.ui.openExistingCombat(c.id);
+ await x.ui.openExistingCombat(c.id);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();
  const select=x.el('combat-creature-select'),options=[...select.options];
  assert.equal(options.length,2);assert.match(options[0].textContent,/vorhandene Initiative 9 \(3\)/);assert.match(options[1].textContent,/vorhandene Initiative 15 \(2\)/);
  const secondGroup=c.participants[3].groupId;assert.equal(options[1].value,'group:'+secondGroup);select.value=options[1].value;
@@ -119,7 +119,7 @@ test('same-creature troops with equal initiative and quantity expose their membe
  const x=await uiFixture(t);
  const reinforced=x.execute({kind:'add-creature',creatureId:x.creature.id,count:3,grouped:true,initiative:9});
  const second=reinforced.participants.slice(3),secondGroup=second[0].groupId;
- const before=structuredClone(x.execute({kind:'edit',participantId:second[0].id,changes:{hp:4,conditions:'Liegend'}}));await x.ui.openExistingCombat(before.id);
+ const before=structuredClone(x.execute({kind:'edit',participantId:second[0].id,changes:{hp:4,conditions:'Liegend'}}));await x.ui.openExistingCombat(before.id);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();
  const select=x.el('combat-creature-select'),options=[...select.options];
  assert.equal(options.length,2);assert.notEqual(options[0].textContent,options[1].textContent);
  assert.match(options[0].textContent,/Goblin A, Goblin B ….*vorhandene Initiative 9 \(3\)/);
