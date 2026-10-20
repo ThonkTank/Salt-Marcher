@@ -121,6 +121,20 @@ Die inaktive Reserve bleibt unverändert. Quellenlesefehler und die gemeinsame
 Encounter-Auswahl behalten ihre bisherigen gezielten Prüfungen. Dieser Ablauf
 ersetzt keine vollständige Party-, Plattform- oder Recoveryabnahme.
 
+Bei gleichnamigen Rastempfängern nennen Auswahl und Vormerkung zusätzlich
+Spielername (oder „Spieler offen“) und einen eindeutigen kurzen ID-Präfix.
+Beide verwenden dieselbe vollständige Szenengruppe: Abwählen einer Namensvetterin
+verkürzt die Bestätigung nicht wieder auf den mehrdeutigen Namen. NFC- und
+Leerraumvarianten zählen als sichtbare Namensgleichheit, ohne Profile umzuschreiben.
+Eindeutige Namen bleiben kurz. Der bestehende ID-/Revisionsvertrag der Buchung
+bleibt unverändert.
+
+Die native Probe nutzt den gemeinsamen Sitzungsprüfer mit echtem Browserzoom.
+`GM_QA_NAMESAKES=1 GM_QA_ZOOM=2` führt den gesamten Ablauf bei 200 Prozent mit
+Noras und Noahs „Ada“ aus: nur Nora rastet, Noah und die abwesende Cora bleiben
+unverändert; danach kämpfen wieder alle drei und erhalten genau einmal ihre XP.
+DOM-/Storetests decken zusätzlich gleiche oder fehlende Spielernamen ab.
+
 ## Begegnungen als vollständigen Tagesplan bewerten
 
 Version 0.127 verbindet den bestehenden Rechner mit gespeicherten Encounter-Vorlagen.
