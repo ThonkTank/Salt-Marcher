@@ -2,7 +2,7 @@
 
 ## Atlas auf einen Blick
 
-**Desktop 0.157:** Regionswerkzeuge für freie Küsten, Flüsse/Wege, Orts-Keys, kalibrierte Bildvorlagen, Messung und saubere PNG-/JPEG-Ausgabe bis 8192 Pixel sind im gemeinsamen Atlas ergänzt. Kleinste Hexgröße: 3 Meilen Kante zu Kante; weiteste Ansicht: erdgroß. Bedienweg und Grenzen stehen unter [Eine Region vorbereiten](docs/ATLAS.md#eine-region-vorbereiten-0157). Die folgende ältere Bestandstabelle bleibt eine historische Einordnung.
+**Desktop 0.157:** Regionswerkzeuge für freie Küsten, Flüsse/Wege, Orts-Keys, kalibrierte Bildvorlagen, Messung und saubere PNG-/JPEG-Ausgabe bis 8192 Pixel sind im gemeinsamen Atlas ergänzt. Kleinste Hexgröße: 3 Meilen Kante zu Kante; weiteste Ansicht: erdgroß. Bedienweg und Grenzen stehen unter [Eine Region vorbereiten](docs/ATLAS.md#eine-region-vorbereiten). Die folgende ältere Bestandstabelle bleibt eine historische Einordnung.
 
 **Aktueller Desktopumbau:** Pro Kampagne genau eine gemeinsame Karte mit räumlichen Stadt-/Gebäudebindungen und einer Autorhistorie. Bedienung, Nachweisgrenzen und offene Fachumfänge stehen in [ATLAS.md](docs/ATLAS.md). Obsidian wird nicht weiterentwickelt. Die folgende Übersicht hält den älteren Integrationsstand fest und ist keine Freigabe des Desktopumbaus.
 

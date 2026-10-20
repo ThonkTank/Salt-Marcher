@@ -266,17 +266,30 @@ test('an overlapping empty Dungeon caption yields to active room keys without lo
  const write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId,action});
  const scopeId=write({kind:'dungeon-create',name:'Abendgrundriss',x:0,y:0}).result.id;
  write({kind:'dungeon-create',name:'Leerer Nachbar',x:40,y:0});
+ const planned=write({kind:'dungeon-create',name:'Geplanter Ort',x:0,y:0}).result.id;
  const polygons=[{outer:[{x:-5,y:-5},{x:5,y:-5},{x:5,y:5},{x:-5,y:5}],holes:[]}];
  const id=write({kind:'room-create',scopeId,floorId:'ground',name:'Wachstube',polygons}).result.id;
  const q={...query({x:-10,y:-10,width:60,height:20}),scopeId};
  let region=await f.read(q);
  assert(region.labels.some(l=>l.text.includes('Wachstube')));
- assert(!region.labels.some(l=>l.id==='scope:local'),'an empty drawing inside the room cannot replace its name');
+ assert(!region.labels.some(l=>l.id==='scope:'+planned),'an empty drawing inside the room cannot replace its name');
  assert(region.labels.some(l=>l.text==='Leerer Nachbar'),'separate empty Dungeons remain visible');
- assert(f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
- assert.equal(f.reader.focus(f.source,'scope','local').id,'local');
+ assert(f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id===planned));
+ assert.equal(f.reader.focus(f.source,'scope',planned).id,planned);
  // A hole no longer covers the marker. Rebuild after the geometry write.
  let room=f.store.atlasRoom(token,id);
  f.store.atlasRoomCommit({commandId:randomUUID(),token,campaignId,roomId:id,expectedRevision:room.revision,name:room.name,polygons:[{...polygons[0],holes:[[{x:-1,y:-1},{x:1,y:-1},{x:1,y:1},{x:-1,y:1}]]}],sections:room.sections});
- region=await f.read(q);assert(region.labels.some(l=>l.id==='scope:local'),'the room hole leaves the other location visible');
+ region=await f.read(q);assert(region.labels.some(l=>l.id==='scope:'+planned),'the room hole leaves the other location visible');
+});
+
+
+test('the empty initial drawing keeps its author frame without inventing a map label or hit target',async t=>{
+ const f=fixture(t,0),q=query({x:-20,y:-20,width:40,height:40}),before=f.store.db.serialize();
+ const region=await f.read(q),binding=region.bindings.find(b=>b.ownerId==='local');
+ assert(binding);assert(region.frames[binding.id]);assert(!region.labels.some(l=>l.id==='scope:local'));assert.equal(region.coverage.objects,0);
+ assert(!f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
+ assert.equal(f.reader.focus(f.source,'scope','local').id,'local');assert.ok(f.store.db.serialize().equals(before));
+ // Once the same frame has actual authored content, its coarse location marker is meaningful again.
+ f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'room-create',scopeId:'local',floorId:'ground',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:3,y:0},{x:3,y:3},{x:0,y:3}],holes:[]}]}});
+ const coarse=await f.read(query({x:-5000,y:-5000,width:10000,height:10000}));assert(coarse.labels.some(l=>l.id==='scope:local'));assert(f.reader.candidatesAt(f.source,query({x:-5000,y:-5000,width:10000,height:10000}),{x:1.5,y:1.5},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
 });

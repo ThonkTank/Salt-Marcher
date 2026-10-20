@@ -185,7 +185,8 @@ export class AtlasRegionReader {
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
     const extent=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,floor)??{x:null};
-    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);if(b.parent==='world'&&overlap({x:f.x,y:f.y,width:0,height:0},q.box)){metadata?.(b,f);emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:0,y:0}],stroke:mpp*12},f,'scope-marker',b);}continue;}
+    // The initial empty author frame is not a placed site. Explicit empty Dungeons remain map targets.
+    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);if(b.parent==='world'&&b.ownerId!=='local'&&overlap({x:f.x,y:f.y,width:0,height:0},q.box)){metadata?.(b,f);emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:0,y:0}],stroke:mpp*12},f,'scope-marker',b);}continue;}
     if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
     metadata?.(b,f);
     if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
