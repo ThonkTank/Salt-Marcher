@@ -111,6 +111,13 @@ stage='new creature';
  await launch('finished');
  assert.match(await page.locator('#combat-resolution-summary').innerText(),/Die Verstärkung ergibt sich/);
  await shot('fresh-finished');
+ stage='rejected initial catalog preparation';
+ await page.locator('#combat-creation summary').click();await page.locator('#combat-catalog-open').click();
+ await app.evaluate(({ipcMain})=>{const write=ipcMain._invokeHandlers.get('campaign:execute-combat');ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',(e,c)=>c.action.kind==='create'?{ok:false,error:'Controlled initial catalog rejection'}:write(e,c));});
+ await page.locator('#combat-creature-add').click();await page.waitForFunction(()=>document.getElementById('combat-add-status').textContent.includes('Controlled initial catalog rejection'));
+ assert.equal(await page.locator('#combat-add-close').isEnabled(),true);assert.equal(await page.locator('#combat-creature-add').isEnabled(),true);await shot('rejected-initial-catalog');await checkControls(['combat-add-close','combat-add-status']);assert.deepEqual(read(),final);
+ const db=new Database(profile+'/workbench.sqlite',{readonly:true});try{assert.equal(db.prepare('SELECT count(*) n FROM combat').get().n,1);}finally{db.close();}
+ await page.locator('#combat-add-close').click();
  await close();
  assert.deepEqual(errors,[]);
  await writeFile(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),buildHashes:Object.fromEntries(await Promise.all(['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'].map(async p=>[p,createHash('sha256').update(await readFile(root+'/.build/desktop/'+p)).digest('hex')]))),zoom,profile,original,current,final,launches,states,recoveries,errors,complete:true,processGroup,humanAcceptance:false,installedPackageAcceptance:false},null,2));console.log(JSON.stringify({out,launches}));}catch(e){if(app)await shot('failure').catch(()=>{});

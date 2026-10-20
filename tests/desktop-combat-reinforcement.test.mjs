@@ -401,8 +401,8 @@ test('catalog handoff creates one complete preparation and resolves a lost reply
  const current=x.store.combat(x.w.token,x.scene.id).combat;assert.notEqual(current.id,x.combat.id);assert.equal(current.revision,1);assert.equal(current.participants.length,2);assert.equal(x.el('combat-start').disabled,false);assert(!x.messages.some(m=>String(m[0]).includes('Buchungsantwort fehlt')));
 });
 test('failed initial catalog handoff preserves the selected finished combat instead of storing an empty replacement',async t=>{
- const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;const before=x.store.db.serialize();
- await x.ui.addCatalogCreature('missing',2,true);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.combat(x.w.token,x.scene.id).combat.id,x.combat.id);assert.match(x.el('combat-status').textContent,/Abgeschlossen/);
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;const before=x.store.db.serialize();x.el('combat-add-open').onclick();
+ await x.ui.addCatalogCreature('missing',2,true);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);assert.match(x.el('combat-add-status').textContent,/Kreatur/);assert.equal(x.el('combat-add-close').disabled,false);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.combat(x.w.token,x.scene.id).combat.id,x.combat.id);assert.match(x.el('combat-status').textContent,/Abgeschlossen/);
 });
 
 
