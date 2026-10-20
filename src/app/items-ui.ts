@@ -1,3 +1,4 @@
+import {validateShopShape} from './shop-validation';
 import {renderShopRestockTables} from './shop-restock-ui';
 import {writeConfirmed,hasPendingCommit,initCommitControls,updateCommitControls,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type {ProgressAck} from './progression';
@@ -37,6 +38,7 @@ async function command(action:ItemShopAction,snapshot:Shop|null=null):Promise<It
  if(action.kind!=='definition'&&action.kind!=='definition-trash'&&(!contextReady||contextLoading))throw new Error('Vergabe- und Shopkontext zuerst laden.');
  if(['purchase','sell','restock','random-restock'].includes(action.kind)&&!shopReady())throw new Error('Ausgewählten Shop zuerst laden.');
  if(action.kind==='sell'&&!sellerReady())throw new Error('Inventar der ausgewählten Figur zuerst laden.');
+ if(action.kind==='shop')validateShopShape(action.shop,true);
  if(action.kind==='shop'&&(action.shop.stock.some(e=>e.restock?.nextDueMs==='0')||(action.shop.restockTables??[]).some(t=>t.schedule?.nextDueMs==='0')))action={...action,scheduleClock:shopClock?{sceneId:shopClock.sceneId,expectedRevision:shopClock.expectedRevision}:undefined};
  const request={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token:owner.token,action:structuredClone(action)};
  const meta={owner:'items',token:owner.token,epoch:g,action:request.action,fields:action.kind==='definition'?definitionFields():shopFields(),snapshot};

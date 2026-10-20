@@ -51,9 +51,41 @@ test('wrong shop and inventory owners never become tradable',async()=>{
 test('seller read failure offers same-owner retry without retaining the previous inventory',async()=>{
  const x=await fixture();try{const original=window.campaign.ledgerInventory;let fail=true;window.campaign.ledgerInventory=async(t,q)=>q.characterId===x.heroes[1].id&&fail?(fail=false,{ok:false,error:'Inventar nicht lesbar'}):original(t,q);x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();await until(()=>x.el('shop-seller-status').getAttribute('role')==='alert');assert.equal(x.el('shop-sale-item').options.length,0);x.el('shop-seller-retry').onclick();await until(()=>!x.el('shop-sale-fields').disabled);x.el('shop-sale-item').value=x.items[1].id;x.sell();await x.settle();assert.equal(x.writes[0].action.ledgerId,x.items[1].id);assert.equal(x.el('shop-seller-status').hidden,true);assert(!x.messages.includes('Inventar nicht lesbar'));}finally{await x.cleanup();}
 });
-test('an incomplete shop draft blocks the switch while keeping the previous editor repairable',async t=>{
- const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
- const x=await fixture();try{x.el('shop-name').value='';x.el('shop-form').oninput();x.choose(x.shops[1].id);await until(()=>x.messages.length>0&&!x.el('shop-fields').disabled);assert.equal(x.el('shop-name').value,'');assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen');x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen korrigiert');}finally{await x.cleanup();}
+for(const incomplete of ['name','stock','restock'])test(`an incomplete shop ${incomplete} stays repairable without starting a booking`,async t=>{
+ const digest=crypto.subtle.digest.bind(crypto.subtle);let hashes=0,statusReads=0,markers=0;
+ t.mock.method(crypto.subtle,'digest',async(...args)=>{hashes++;await pause(40);return digest(...args);});
+ const x=await fixture(),status=window.campaign.commitStatus,set=window.localStorage.setItem;
+ window.campaign.commitStatus=async(...args)=>{statusReads++;return status(...args);};
+ window.localStorage.setItem=(key,value)=>{if(key.startsWith('pending-booking:'))markers++;set(key,value);};
+ const stockInput=()=>[...x.el('shop-stock').querySelectorAll('label')].find(l=>l.firstChild.textContent==='Bestand').querySelector('input');
+ const tableInput=()=>[...x.el('shop-restock').querySelectorAll('label')].find(l=>l.firstChild.textContent==='Name').querySelector('input');
+ let repair;
+ try{
+  if(incomplete==='name'){x.el('shop-name').value='   ';x.el('shop-form').oninput();repair=()=>{x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();};}
+  if(incomplete==='stock'){const input=stockInput();input.value='-1';input.onchange();repair=()=>{input.value='5';input.onchange();};}
+  if(incomplete==='restock'){[...x.el('shop-restock').querySelectorAll('button')].find(b=>b.textContent==='Auffülltabelle anlegen').onclick();await until(()=>x.el('shop-restock').querySelector('details'));const input=tableInput();input.value='';input.oninput();repair=()=>{input.value='Marktlieferung';input.oninput();};}
+  const before=x.store.db.serialize();x.choose(x.shops[1].id);
+  await until(()=>x.messages.length>0&&!x.el('shop-fields').disabled);
+  assert.equal(x.el('shop-load-status').hidden,true);assert.match(x.messages.at(-1),/ungültig|Menge|Warenauffülltabelle/);
+  assert.equal(hashes,0);assert.equal(markers,0);assert.equal(statusReads,0);assert.equal(x.writes.length,0);
+  assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen');
+  repair();assert(await x.ui.flushItems());assert.equal(hashes,1);assert.equal(markers,1);assert.equal(x.writes.length,1);
+  const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.notes,x.shops[0].notes);assert.equal(saved.stock[0].quantity,5);
+  if(incomplete==='name')assert.equal(saved.name,'Hafenladen korrigiert');
+  if(incomplete==='restock')assert.equal(saved.restockTables[0].name,'Marktlieferung');
+  x.choose(x.shops[1].id);await until(()=>x.el('shop-name').value==='Bergladen'&&!x.el('shop-fields').disabled);
+ }finally{window.campaign.commitStatus=status;await x.cleanup();}
+});
+
+test('a valid shop draft keeps navigation locked while its booking fingerprint is delayed',async t=>{
+ const x=await fixture(),gate=held(),digest=crypto.subtle.digest.bind(crypto.subtle);let started=false;
+ t.mock.method(crypto.subtle,'digest',async(...args)=>{started=true;await gate.promise;return digest(...args);});
+ try{
+  x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();x.choose(x.shops[1].id);await until(()=>started);
+  assert.equal(x.el('shop-fields').disabled,true);assert.equal(x.el('shop-name').value,'Hafenladen korrigiert');assert.equal(x.writes.length,0);
+  gate.resolve();await until(()=>x.el('shop-name').value==='Bergladen'&&!x.el('shop-fields').disabled);
+  assert.equal(x.writes.length,1);assert.equal(x.store.shop(x.w.token,x.shops[0].id).shop.name,'Hafenladen korrigiert');
+ }finally{gate.resolve();await x.cleanup();}
 });
 test('seller changes during a definition read invalidate the pending sale',async()=>{
  const x=await fixture();try{const original=window.campaign.itemDefinition,pause=held();window.campaign.itemDefinition=()=>pause.promise;x.sell();await tick();x.el('shop-seller').value=x.heroes[1].id;x.el('shop-seller').onchange();await until(()=>x.el('shop-sale-item').options.length===1);pause.resolve(await original(x.items[0].reference.definitionId));await x.settle();assert.equal(x.writes.length,0);assert.equal(x.store.ledgerItem(x.w.token,x.items[0].id).quantity,4);}finally{await x.cleanup();}

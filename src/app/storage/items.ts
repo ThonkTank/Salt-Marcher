@@ -1,7 +1,8 @@
+import {validateShopShape,validateShopQuantity as qty} from '../shop-validation';
 import {npcIdsAtLocation} from './npc-world';
 import {drawCatalogRestock} from './catalog-restock';
 import {checkedCalendarEvent} from '../world-model';
-import {validateRestockTables,prepareRestockTables,drawRestockTable} from './shop-restock';
+import {prepareRestockTables,drawRestockTable} from './shop-restock';
 import {createHash,randomUUID} from 'node:crypto';
 import type {Shop,ShopView,ShopHistoryPage,ShopSummary,ItemShopCommand,ItemShopAck} from '../items-contracts';
 import {copper,partitionLedgerPaidPrice,type LedgerItem} from '../progression';
@@ -18,19 +19,6 @@ export function installItemsSchema(db:any){installItemDefinitions(db);db.exec(`C
  CREATE TABLE IF NOT EXISTS shop_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);}
 function owner(db:any,cam:string,s:Shop){if(!['npc','location'].includes(s.owner.kind))throw new Error('Shop benötigt einen NPC oder Ort als Besitzer.');const row=db.prepare(`SELECT * FROM ${s.owner.kind==='npc'?'world_note':'location'} WHERE campaign_id=? AND id=?`).get(cam,s.owner.id);if(!row)throw new Error('Shopbesitzer fehlt.');const d=decoded<any>(row);if(s.owner.kind==='npc'&&d.kind!=='npc')throw new Error('Shopbesitzer muss ein NPC sein.');const name=d.title??d.name;if(d.id!==s.owner.id||s.owner.kind==='location'&&d.kind!=='location'||typeof name!=='string'||!name.trim()||name.length>1000)throw new Error('Shopbesitzer hat keine gültige Identität oder Bezeichnung.');return{name,unavailable:!!row.trashed};}
 function saveShop(db:any,cam:string,s:Shop){validateShopShape(s);const payload=json(s);db.prepare('INSERT INTO shop VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,s.id,s.revision,payload,hash(payload));}
-function validateShopShape(s:Shop,pending=false){
- const text=(v:unknown,max:number,nonempty=false)=>typeof v==='string'&&v.length<=max&&(!nonempty||!!v.trim());
- if(!s||!text(s.id,1000,true)||!Number.isSafeInteger(s.revision)||s.revision<(pending?0:1)||!text(s.name,1000,true)||!text(s.notes,100000)||typeof s.trashed!=='boolean'||!s.owner||!['npc','location'].includes(s.owner.kind)||!text(s.owner.id,1000,true)||!Array.isArray(s.stock)||s.stock.length>1000)throw new Error('Shopbeschreibung oder Revision ungültig.');
- const ids=new Set<string>(),instances=new Set<string>();
- for(const e of s.stock){
-  if(!e||!text(e.id,1000,true)||ids.has(e.id)||!e.reference||e.reference.kind!=='authored'||!text(e.reference.definitionId,1000,true)||!Number.isSafeInteger(e.reference.revision)||e.reference.revision<1||!text(e.notes,100000)||typeof e.unique!=='boolean')throw new Error('Shopbestandszeile oder Gegenstandsreferenz ungültig.');
-  ids.add(e.id);qty(e.quantity,true);price(e.buyCopper);price(e.sellCopper);
-  if(e.unique){if(e.quantity>1||!text(e.instanceId,1000,true)||instances.has(e.instanceId!)||e.restock!==null)throw new Error('Einzelstück benötigt eine eindeutige Identität und keine Auffüllregel.');instances.add(e.instanceId!);}
-  else if(e.instanceId!==null)throw new Error('Mengenstapel darf keine Einzelstückidentität haben.');
-  if(e.restock!==null){const r=e.restock;if(!r||!['fill','add'].includes(r.mode)||typeof r.intervalMs!=='string'||!/^[1-9][0-9]{0,17}$/.test(r.intervalMs)||typeof r.nextDueMs!=='string'||!/^(0|[1-9][0-9]{0,29})$/.test(r.nextDueMs))throw new Error('Auffüllregel benötigt eine gültige Menge, ein positives Intervall und eine darstellbare Fälligkeit.');qty(r.quantity);}
- }
- validateRestockTables(s,pending);
-}
 export function shopRecord(db:any,cam:string,id:string):Shop{const row=db.prepare('SELECT * FROM shop WHERE campaign_id=? AND id=?').get(cam,id),s=decoded<Shop>(row);validateShopShape(s);if(s.id!==id||s.revision!==row.revision)throw new Error('Shoprevision widersprüchlich.');return s;}
 function history(db:any,cam:string,s:Shop,description:string,facts:unknown){const id=randomUUID(),payload=json({time:new Date().toISOString(),description,facts});db.prepare('INSERT INTO shop_event VALUES(?,?,?,?,?)').run(cam,s.id,id,payload,hash(payload));return id;}
 function restockThrough(db:any,cam:string,id:string):bigint|null{
@@ -110,8 +98,6 @@ function scheduleTime(db:any,cam:string,shopId:string,basis:Extract<ItemShopComm
  if(db.prepare('SELECT 1 FROM live_state WHERE campaign_id=?').get(cam))throw new Error('Neue Auffüllregel benötigt eine ausdrücklich gewählte Scenezeit als Zeitbasis.');
  return BigInt(readCampaignTime(db,cam).instantMs);
 }
-function qty(n:number,zero=false){if(!Number.isSafeInteger(n)||n<(zero?0:1)||n>1000000)throw new Error('Menge muss eine ganze Zahl bis 1.000.000 sein.');}
-function price(s:string){if(typeof s!=='string'||!/^(0|[1-9][0-9]{0,17})$/.test(s))throw new Error('Ungültiger Preis.');}
 function checkedShop(db:any,cam:string,s:Shop,expected:number|null,basis:Extract<ItemShopCommand['action'],{kind:'shop'}>['scheduleClock']){
  validateShopShape(s,true);
  const row=db.prepare('SELECT revision FROM shop WHERE campaign_id=? AND id=?').get(cam,s.id);

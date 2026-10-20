@@ -57,6 +57,25 @@ Auffüllungen gegenüber einer zurückliegenden Gruppenzeit kenntlich zu machen.
 Eine spätere Beschleunigung dieses Fachreads benötigt denselben belegten
 Zeitstand und eigene Last-/Integritätsprüfung.
 
+Die reinen Shop-/Bestands-/Auffülltabellenprüfungen liegen gemeinsam in
+`shop-validation.ts`. Der Renderer verwendet dieselben Regeln vor dem Erzeugen
+einer Buchung; unvollständige Namen, Mengen oder Tabellen bleiben im bisherigen
+Editor korrigierbar, ohne Prüfsumme, Buchungsmarker, IPC oder Statusabfrage.
+Der Main-Writer prüft dieselbe Struktur erneut und behält Besitzerexistenz,
+Revisionen, Definitionen, Fälligkeiten, Receipts und Transaktion als Autorität.
+Eine gültige Korrektur verwendet weiterhin die vollständige Buchungsbestätigung;
+während einer verzögerten Prüfsumme bleiben weitere Buchungen und der Wechsel
+gesperrt. Die frühe Ablehnung führt keinen eigenen Validierungsregelbestand ein.
+
+`desktop-shop-switch.test.mjs` prüft unvollständigen Namen, negativen Bestand
+und unvollständige Auffülltabelle ohne Buchungsbeginn sowie eine gültige Korrektur
+bei gehaltener Prüfsumme. Die native Shopprobe führt den Namensablauf über echte
+IPC bei 100/200 Prozent und regulärem Neustart aus; CRLF-Notizen und fremde
+Ledgerbytes bleiben erhalten. Historische Schalter für absichtlich unsicheres
+Altverhalten entfallen aus dieser aktuellen Vertragsprobe. Metadaten einschließlich
+Buildhashes stehen auch bei Fehlern bereit; frische nichtleere Bilder, begrenztes
+reguläres Schließen und das anschließende Prozessende werden geprüft.
+
 `tools/test-desktop-shop-switch.mjs` prüft zusätzlich Kauf → Teilverkauf →
 regulärer Neustart mit Bestand und beiden Beträgen am selben Shop; die
 gezielten Storeprüfungen erhalten Rundungs-, Replay- und Rollbackregeln.
