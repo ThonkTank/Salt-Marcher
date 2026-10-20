@@ -277,3 +277,23 @@ beide Figuren, Definitionen und alle Assertions bleiben. Vier isolierte Fehler
 Bestandsübernahme und zu früh freigegebener Nutzungskontext) werden vorher/nachher
 erkannt. Alle acht unveränderten Kontrollläufe bestehen. Die 47 lokalen Fälle
 bestehen vor und nach der Änderung; daraus folgt keine kausale Laufzeitbehauptung.
+
+Die Katalogphase beurteilt Buildasset, Kreaturprovider, Campaignkatalog, Query/
+Kontext und XP-/Reaktionsprojektion gemeinsam: 105 Fälle werden zu 104. Ein
+Detailfehler-Ablauf lief zweimal mit demselben `ok:false`-Pfad und nur anderem
+Fehlertext; die verbleibende Variante prüft Anbietertext, gesperrte alte Aktionen
+und erneute Auswahl. Vier andere Detailfälle benötigen keinen vorbereiteten
+Encounter. Aktions-, Aktivierungs- und Rosterprüfungen behalten diesen Aufbau.
+Gemessen fallen dessen Speicheraufrufe von acht auf drei, einschließlich des
+entfallenen Falls; die Assertions der drei geänderten Dateien von 1.287 auf 1.269.
+
+Der Buildassettest liest zwei Dateien direkt und verwendet den schon vorbereiteten
+Payload. Drei zusätzliche Node-Hilfsprozesse und eine zweite Payloadvorbereitung
+entfallen; echter Build, Revision, Grenzen, Quellenhash und Einbettungsassertions
+bleiben. Das beschädigte Quellenfixture wird anschließend aufgeräumt. Die beiden
+XP-/Reaktionsprüfungen teilen einen tief unveränderlichen Katalog statt ihn zweimal
+zu konstruieren. Historische Quellenstände und vollständige Projektionen bleiben.
+Sechs Fehler werden vorher/nachher erkannt; 14 unveränderte Kontrollläufe bestehen.
+Ein einzeln entfernter später Fehlerguard bleibt in beiden Fassungen durch den
+früheren Antwortguard verdeckt; der Ausfall beider Guards wird erkannt. Das ist ein
+begrenzter Nachweis der betroffenen Pfade, keine allgemeine Mutationsquote.

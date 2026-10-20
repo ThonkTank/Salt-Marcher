@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, writeFile, readFile, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,8 +12,9 @@ import {
   prepareCatalogBuildAsset,
 } from "../tools/catalog-build-asset.mjs";
 
+const asset = await prepareCatalogBuildAsset();
+
 test("catalog build asset verifies the shared identity and numeric payload limits", async () => {
-  const asset = await prepareCatalogBuildAsset();
   assert.equal(asset.inventory.sha256, asset.identity.artifactSha256);
   assert.ok(asset.inventory.gzipBytes <= asset.identity.limits.gzipBytes);
   assert.ok(asset.inventory.base64Characters <= asset.identity.limits.base64Characters);
@@ -48,12 +49,10 @@ test("all catalog payload gates fail closed when exceeded", () => {
   );
 });
 
-test("product build inventories its revision and embeds only compressed catalog text", () => {
+test("product build inventories its revision and embeds only compressed catalog text", async () => {
   execFileSync(process.execPath, ["build.mjs"], { stdio: "pipe" });
-  const inventory = JSON.parse(execFileSync(process.execPath, ["-e",
-    "process.stdout.write(require('fs').readFileSync('.build/catalog-build-inventory.json'))"], { encoding: "utf8" }));
-  const main = execFileSync(process.execPath, ["-e",
-    "process.stdout.write(require('fs').readFileSync('main.js','utf8'))"], { encoding: "utf8", maxBuffer: 3_000_000 });
+  const inventory = JSON.parse(await readFile('.build/catalog-build-inventory.json', 'utf8'));
+  const main = await readFile('main.js', 'utf8');
   const head = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   const dirty = execFileSync("git", ["status", "--porcelain", "--untracked-files=no"], { encoding: "utf8" }).trim().length > 0;
   assert.equal(inventory.commit, head);
@@ -64,17 +63,12 @@ test("product build inventories its revision and embeds only compressed catalog 
   assert.equal(inventory.catalogPayloadLimitBytes, 180000);
   assert.match(main, /creativecommons\.org\/licenses\/by\/4\.0/);
   assert.doesNotMatch(main, /Mucous Cloud/);
-  assert.ok(main.includes((awaitablePayloadPrefix())));
+  assert.ok(main.includes(asset.payload.slice(0, 80)));
 });
 
-function awaitablePayloadPrefix() {
-  return execFileSync(process.execPath, ["-e",
-    "import('./tools/catalog-build-asset.mjs').then(async m=>process.stdout.write((await m.prepareCatalogBuildAsset()).payload.slice(0,80)))"],
-  { encoding: "utf8" });
-}
-
-test("catalog build asset rejects a changed source before bundling", async () => {
+test("catalog build asset rejects a changed source before bundling", async t => {
   const directory = await mkdtemp(join(tmpdir(), "dungeon-catalog-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
   const source = join(directory, "source.json");
   const identity = join(directory, "identity.json");
   await writeFile(source, "{}\n");
