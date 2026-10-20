@@ -1,11 +1,14 @@
+import {currentProcessGroup} from './process-group.mjs';
 // A complete GM transfer visit through Main/preload/SQLite; only native file selection is instrumented.
 // Initial fixtures use the Store; all campaign edits and transfer actions after launch use the visible UI.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, stat, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, stat, readFile, writeFile,rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import assert from "node:assert/strict";
+import os from "node:os";
+import path from "node:path";
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   { _electron } = require("playwright-core"),
@@ -19,10 +22,11 @@ require("esbuild").buildSync({
   external: ["better-sqlite3"],
 });
 const { CampaignStore } = require(root + "/.build/campaign-copy-store.cjs"),
-  profile = await mkdtemp("/tmp/campaign-copy-ui-"),
+  profile = await mkdtemp(path.join(os.tmpdir(),"campaign-copy-ui-")),
   file = profile + "/workbench.sqlite",
-  out = root + "/.build/campaign-transfer-visit/" + (process.argv.includes("--before") ? "before" : process.argv.includes("--zoom200") ? "after-200" : "after");
-await mkdir(out, { recursive: true });
+  out = process.env.QA_EVIDENCE_DIR ?? root + "/.build/campaign-transfer-visit/" + (process.argv.includes("--before") ? "before" : process.argv.includes("--zoom200") ? "after-200" : "after");
+await mkdir(out, { recursive: true });await rm(path.join(out,'result.json'),{force:true});
+const group=await currentProcessGroup();
 const room = {
   id: randomUUID(),
   scopeId: "local",
@@ -127,8 +131,12 @@ async function launch() {
     env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: "unix:path=" + bus },
   });
   closed = false;
-  if(process.argv.includes("--zoom200"))await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(2));
   page = await app.firstWindow();
+  const pid=app.process().pid,zoom=process.argv.includes('--zoom200')?2:1;
+  assert((await readFile(`/proc/${pid}/cmdline`,'utf8')).includes(profile));
+  assert.equal((await readFile(`/proc/${pid}/cgroup`,'utf8')).trim().split('::')[1],group);
+  launches.push({pid,zoom,cgroup:group});
+  await app.evaluate(({BrowserWindow},zoom)=>{const window=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));window.webContents.setZoomFactor(zoom);window.show();window.focus();},zoom);
   page.setDefaultTimeout(15000);
   page.on("pageerror", (e) => errors.push(e.stack));
   observations.runtime=await app.evaluate(({app})=>({version:app.getVersion(),electron:process.versions.electron,node:process.versions.node}));
@@ -144,10 +152,11 @@ async function close() {
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].close(),
   );
-  const exit = await done;
-  assert.deepEqual(exit, { code: 0, signal: null });
-  exits.push(exit);
-  closed = true;
+  let timer;try{
+    const exit=await Promise.race([done,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);
+    assert.deepEqual(exit,{code:0,signal:null});exits.push(exit);launches.at(-1).exit=exit;
+    await assert.rejects(stat('/proc/'+app.process().pid),{code:'ENOENT'});launches.at(-1).pidAbsent=true;closed=true;
+  }finally{clearTimeout(timer);}
 }
 async function open(id) {
   if (!(await page.locator("#campaign-screen").isVisible())) {
@@ -177,10 +186,13 @@ async function note(title) {
 }
 const observations={},launches=[],artifactHashes={};
 for(const rel of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css']) artifactHashes[rel]=createHash('sha256').update(await readFile(root+'/.build/desktop/'+rel)).digest('hex');
-async function shot(name){await writeFile(out+'/'+name+'.png',Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows()[0].webContents.capturePage()).toPNG().toString('base64')),'base64'));await writeFile(out+'/'+name+'.txt',await page.locator('body').ariaSnapshot());}
+async function shot(name){
+ await page.evaluate(()=>new Promise((resolve,reject)=>{let frame;const timer=setTimeout(()=>{cancelAnimationFrame(frame);reject(Error('No fresh native capture frames'));},2500);frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{clearTimeout(timer);resolve();});});}));
+ const bytes=Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG()));const png=require('pngjs').PNG.sync.read(bytes),colors=new Set();for(let i=0;i<png.data.length;i+=4*31)colors.add(png.data.readUInt32BE(i));assert(colors.size>8);await writeFile(out+'/'+name+'.png',bytes);await writeFile(out+'/'+name+'.txt',await page.locator('body').ariaSnapshot());
+}
 async function map(){await page.locator('#note-room-uses-list button').filter({hasText:'Torhalle'}).click();await page.locator('#key-dialog').waitFor({state:'visible'});}
 try {
- await launch(); launches.push(app.process().pid); await shot('startup'); await open(original.id);
+ await launch(); await shot('startup'); await open(original.id);
  if(!process.argv.includes('--before'))assert.equal(await page.locator('#atlas-navigation').innerText(),'Atlas · Nebelmark Original ▾');await page.locator('#atlas-navigation').click(); await shot('navigation'); await page.locator('#campaign-manager').click();
  await page.locator('#campaign-manager-dialog').waitFor({state:'visible'}); await shot('export');
  if(!process.argv.includes('--before'))assert.equal(await page.locator('#campaign-transfer-source').innerText(),'Geöffnete Kampagne: Nebelmark Original');
@@ -204,7 +216,7 @@ try {
  await page.locator('#note-gm').fill('Nur im Import: Nera öffnet das Tor.'); await map();
  await page.locator('#key-gm-notes').fill('Nur im Import: Der Basalttunnel ist offen.');
  await page.waitForFunction(()=>document.querySelector('#key-save-status').dataset.state==='saved'); await page.locator('#key-close').click(); await shot('edited');
- await close(); await launch(); launches.push(app.process().pid);
+ await close(); await launch();
  for(const [id,text,key] of [[original.id,npcText.replaceAll('\r\n','\n'),''],[imported,'Nur im Import: Nera öffnet das Tor.','Nur im Import: Der Basalttunnel ist offen.']]){
   await open(id); await note('Auftrag am Tor'); await page.locator('#note-relations button').filter({hasText:'beauftragt: Nera'}).click();
   assert.equal(await page.locator('#note-gm').inputValue(),text); await map(); assert.equal(await page.locator('#key-gm-notes').inputValue(),key);
@@ -223,4 +235,4 @@ try {
  assert.deepEqual(await readFile(profile+'/transfer.kwcampaign'),archive); assert.deepEqual(errors,[]);
  await writeFile(out+'/result.json',JSON.stringify({head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),profile,launches,exits,artifactHashes,observations,linkedNotesAndMapIndependent:true,archiveUnchanged:true,errors},null,2));
  console.log(JSON.stringify({out,exits,linkedNotesAndMapIndependent:true,errors}));
-}catch(error){if(app&&!closed)await shot('failure').catch(()=>{});throw error;}finally{if(app&&!closed)await app.close();proxy.kill();}
+}catch(error){await writeFile(out+'/failure.json',JSON.stringify({error:error.stack,profile,launches,errors},null,2));if(app&&!closed)await shot('failure').catch(()=>{});throw error;}finally{if(app&&!closed){const child=app.process(),timer=setTimeout(()=>{if(child.exitCode===null)child.kill('SIGKILL');},5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy.kill();}
