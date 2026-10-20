@@ -586,6 +586,8 @@ export class TerritoryWorkbench {
       const result = await window.campaign.atlasTerritories(token);
       if (token !== this.token || generation !== this.generation) return;
       if (!result.ok) throw Error(result.error);
+      if (this.vertex)
+        this.say("Region neu geladen. Grenzpunkt erneut wählen.");
       this.vertex = null;
       this.state = result.value;
       this.revision = data.revision;

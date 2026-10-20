@@ -345,6 +345,7 @@ try {
   assert.deepEqual(records(), beforeCorner);
   await page.locator('#atlas-undo').click();
   await waitFor(rows => rows.find(r => r.id === 'Westmark').revision === 8);
+  await page.waitForFunction(() => document.querySelector('#territory-status').textContent.includes('Grenzpunkt erneut wählen'));
   await page.locator('#atlas-redo').click();
   await waitFor(rows => rows.find(r => r.id === 'Westmark').revision === 9);
   const afterHistory = records();
@@ -368,7 +369,12 @@ try {
   ]);
   await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 10);
   assert.equal(records().find(r => r.id === 'Ostmark').revision, 5);
-  assert(records().every(r => r.polygons[0].outer.some(p => Math.abs(p.x+5)<1e-6 && Math.abs(p.y+45)<1e-6)));
+  const refined = records(), moved = [...refined.find(r => r.id === 'Westmark').polygons[0].outer]
+    .sort((a,b) => Math.hypot(a.x+5,a.y+45)-Math.hypot(b.x+5,b.y+45))[0];
+  const unitsPerPixel = await page.locator('#campaign-map').evaluate(n => JSON.parse(n.dataset.atlasView).width / n.getBoundingClientRect().width);
+  assert(Math.hypot(moved.x+5,moved.y+45) <= unitsPerPixel*2);
+  assert(refined.every(r => r.polygons[0].outer.some(p => p.x === moved.x && p.y === moved.y)));
+  await shot('03-shared-junction');
   result.checks.push("shared point refinement after brush stroke");
   await page.locator("#territory-operation").selectOption("label");
   const point = await at(-65, 0);
