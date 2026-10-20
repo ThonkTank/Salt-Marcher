@@ -384,6 +384,7 @@ else {
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
     handle('atlas:vegetation-scene',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,mpp:number)=>store.atlasVegetationScene(token,box,mpp));
     handle('atlas:spatial-scene',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,mpp:number,draft?:import('../src/app/spatial-terrain').SpatialTerrainDraft,fence?:string)=>draft?spatialRoutePreview(store,token,box,mpp,draft,fence):store.atlasSpatialScene(token,box,mpp,draft,fence));
+    handle('atlas:terrain-profile',(token:string,points:import('../src/app/contracts').Point[])=>store.atlasTerrainProfile(token,points));
     handle('atlas:height',(token:string,point:import('../src/app/contracts').Point)=>store.atlasHeight(token,point));
     handle('atlas:terrain-frame',async(token:string,request:import('../src/app/terrain-presentation').TerrainFrameRequest)=>{
       const q=request?.frame;

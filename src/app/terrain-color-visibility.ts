@@ -1,5 +1,5 @@
 import {bounds,type LandscapeRecord} from './atlas-landscape';
-import {intersectPolygons} from './landscape-brush';
+import {intersectPolygons,mergePolygons} from './landscape-brush';
 import {terrainGrid,terrainVisibility,type TerrainGrid} from './terrain-spatial-model';
 import type {Polygon} from './contracts';
 /** Bake the visible footprint once; later camera/height changes cannot move authored pigment. */
@@ -17,5 +17,5 @@ export function visibleTerrainColor(record:LandscapeRecord,records:LandscapeReco
       if(!visible&&start!==null){mask.push({outer:[{x:start*step,y:y*step},{x:x*step,y:y*step},{x:x*step,y:(y+1)*step},{x:start*step,y:(y+1)*step}],holes:[]});start=null;}
     }
   }
-  result.polygons=intersectPolygons(result.polygons,mask);delete result.paint!.visibility;return result;
+  result.polygons=intersectPolygons(result.polygons,mergePolygons(mask));delete result.paint!.visibility;return result;
 }

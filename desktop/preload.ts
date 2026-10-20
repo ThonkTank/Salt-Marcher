@@ -215,6 +215,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   atlasObjects:(token,query)=>ipcRenderer.invoke('atlas:objects',token,query),
   atlasVegetationScene:(token,box,mpp)=>ipcRenderer.invoke('atlas:vegetation-scene',token,box,mpp),
   atlasSpatialScene:(token,box,mpp,draft,fence)=>ipcRenderer.invoke('atlas:spatial-scene',token,box,mpp,draft,fence),
+  atlasTerrainProfile:(token,points)=>ipcRenderer.invoke('atlas:terrain-profile',token,points),
   atlasHeight:(token,point)=>ipcRenderer.invoke('atlas:height',token,point),
   atlasTerrainFrame:(token,q)=>ipcRenderer.invoke('atlas:terrain-frame',token,q),
   atlasTerrainProjection:(token,q,consumer)=>ipcRenderer.invoke('atlas:terrain-projection',token,q,consumer),

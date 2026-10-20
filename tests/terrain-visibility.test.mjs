@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({entryPoints:['src/app/terrain-spatial-model.ts'],outfile:'.build/terrain-visibility-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {terrainVisible,terrainVisibility}=require('../.build/terrain-visibility-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-color-visibility';export * from './src/app/landscape-brush';export * from './src/app/atlas-landscape';",resolveDir:process.cwd()},outfile:'.build/terrain-visibility-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {terrainVisible,terrainVisibility,visibleTerrainColor,brushFootprint,contains}=require('../.build/terrain-visibility-test.cjs');
 test('bounded visibility rays agree with complete triangle walks across ridges, rotations, sea and world scales',()=>{
  let compared=0,hidden=0,seen=0;
  for(const scale of [1,10000])for(const rotation of [0,45,89.999,180,270])for(const tilt of [0,35,65]){
@@ -17,4 +17,15 @@ test('bounded visibility rays agree with complete triangle walks across ridges, 
   }
  }
  assert(compared>=13000&&hidden>1000&&seen>1000);
+});
+
+test('color clipping dissolves adjacent visibility rows before intersecting a round stroke near axis zero',()=>{
+ const view={projection:'perspective',box:{x:-1200,y:-700,width:2400,height:1400},frame:{x:-400,y:-230,width:800,height:460},columns:33,rows:33,focusM:100,tilt:0,rotation:0,exaggeration:1};
+ const grid={view,heights:new Float32Array(33*33).fill(100),seaLevelM:0};
+ for(const y of [0,1e-14,-1e-14]){
+  const points=[{x:0,y}],record={points,polygons:brushFootprint(points,48),paint:{radius:48,visibility:view}},before=structuredClone(record);
+  const result=visibleTerrainColor(record,[],grid);
+  assert.equal(result.polygons.length,1);assert(contains({x:0,y},result.polygons));assert(contains({x:47,y},result.polygons));assert(!contains({x:49,y},result.polygons));
+  assert.deepEqual(record,before);assert.equal(result.paint.visibility,undefined);
+ }
 });

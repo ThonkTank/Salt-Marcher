@@ -1,8 +1,9 @@
 # Gemeinsamer räumlicher Atlas: Ausgangsbasis und Prüfablauf
 
 Arbeitsstand 20.10.2026, zu [P0 der Roadmap](unified-spatial-atlas.md#p0--umfang-und-vergleichbare-ausgangsbasis-sichern).
-P0 ist in Arbeit. Native Messergebnisse, vollständige große Prüfwelt und der
-integrierte Enginevergleich sind noch keine bestandenen Abnahmen.
+P0 ist in Arbeit. Native Leistungsmessungen, die vollständige große Prüfwelt
+und vollständige Bearbeitungsabläufe sind noch offen.
+Der externe Enginevergleich entfällt gemäß Nutzerentscheidung.
 Die [ersten lokalen Prüfungen und der unvollständige native Lauf](../../reference/unified-atlas-p0-20261020/README.md)
 halten bestätigte Ergebnisse, korrigierte Fixturefehler und offene Grenzen fest.
 
@@ -53,9 +54,9 @@ Die gemeinsame Schema-Version bleibt 53 einschließlich Raumgruppen, Regionen
 und Reisehistory; eine ältere Schema-Erwartung aus dem Terrainstand darf diese
 Bestände nicht zurückstufen.
 
-Noch zusammenzuführen sind die Live-Pinselanzeige in derselben Hauptkamera,
-partielle GPU-Updates, Höhenanalyse, Objekt-Höhenbindung und perspektivische
-Ausgabe. Die bisherigen Ausgabetests und Proben der separaten Ansicht sind
+Live-Pinselanzeige, partielle GPU-Updates und Höhenprofile sind jetzt an die
+gemeinsame Hauptkamera angeschlossen und [lokal geprüft](../../reference/atlas-live-main-camera-20261021/README.md).
+Noch zusammenzuführen sind Objekt-Höhenbindung und perspektivische Ausgabe. Die bisherigen Ausgabetests und Proben der separaten Ansicht sind
 hierfür keine Qualifikation. Erst danach folgen Übernahme und Prüfung über den
 Repository-Start. Die drei abschließenden Produktaudits stehen weiterhin aus.
 
@@ -138,6 +139,6 @@ Der kanonische Zellwriter sucht für jede Zelle nach Kampagne, Karte, Stufe, q u
 - Native Ausgangsmessungen mit den vollständigen Gesten, Pinseländerung und
   Wandänderung/Undo; 30 Minuten Ressourcenprüfung sowie tatsächliche Pixelreaktion.
 - Bestehende Testdateien inhaltlich den vollständigen Verbraucherfällen zuordnen.
-- Beide P1-Kandidaten verwenden dieselben vorhandenen Bestände und Abläufe. Große Fälle entstehen begleitend zu den jeweiligen Produktphasen; sie blockieren den frühen Kameraanschluss nicht.
+- P1 verbessert den vorhandenen Atlas anhand dieser Bestände und Abläufe. Große Fälle entstehen begleitend zu den jeweiligen Produktphasen; sie blockieren den frühen Kameraanschluss nicht.
 
 Der Ausdrucksindex und sein Lookup prüfen `json_valid` innerhalb von `CASE`, bevor sie Quellfelder lesen. So bleibt beschädigtes JSON für Diagnosen erhalten und blockiert keine gesunden Kampagnen beim Öffnen. Der frühere ungeschützte Index wird gezielt ersetzt; Quellen werden dabei nicht geändert. Die Indexregression umfasst beschädigte Datensätze und dieses Upgrade.

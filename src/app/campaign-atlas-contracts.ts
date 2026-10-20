@@ -119,6 +119,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
   atlasVegetationScene(token:string,box:import('./atlas-landscape').LandscapeBox,mpp:number):Promise<Result<import('./vegetation').VegetationScene>>;
   atlasSpatialScene(token:string,box:import('./atlas-landscape').LandscapeBox,mpp:number,draft?:import('./spatial-terrain').SpatialTerrainDraft,fence?:string):Promise<Result<import('./vegetation').VegetationScene>>;
+  atlasTerrainProfile(token:string,points:import('./contracts').Point[]):Promise<Result<import('./terrain-profile').TerrainProfile&{revision:number}>>;
   atlasHeight(token:string,point:import("./contracts").Point):Promise<Result<ReturnType<import('./terrain-height').TerrainSampler['query']>>>;
   atlasTerrainFrame(token:string,q:import('./terrain-presentation').TerrainFrameRequest):Promise<Result<import('./terrain-presentation').TerrainFrame>>;
   atlasTerrainProjection(token:string,q:import('./terrain-projection').TerrainProjectionRequest,consumer?:'view'|'export'):Promise<Result<import('./terrain-projection').TerrainProjection>>;

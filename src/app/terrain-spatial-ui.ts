@@ -32,7 +32,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private retry:HTMLButtonElement;
   private tilt=0;private rotation=0;private exaggeration=1;
   constructor(private input:HTMLCanvasElement,private host:{
-    draft:()=>TerrainDraft|null;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
+    draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
     tool:()=>string;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
     route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
@@ -54,13 +54,13 @@ export class TerrainSpatialUI implements AtlasPresentation {
       if(e.target!==input||!this.active)return;
       this.blockedGesture=false;
       if(this.host.navigation(e))return;
-      if(!this.ready){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}
+      if(!this.ready&&!this.host.live()){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}
       const hit=this.view?.hit(e.clientX,e.clientY,this.host.tool()==='select');if(!hit){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}this.lastPoint=hit;
     },true);
     parent.addEventListener('click',e=>{if(e.target===input&&this.blockedGesture){this.blockedGesture=false;e.preventDefault();e.stopImmediatePropagation();}},true);
     parent.addEventListener('pointermove',e=>{
       if(e.target!==input||!this.active||this.host.panning())return;
-      const hit=this.view?.hit(e.clientX,e.clientY);if(!hit||!this.ready){e.stopImmediatePropagation();return;}this.lastPoint=hit;
+      const hit=this.view?.hit(e.clientX,e.clientY);if(!hit||!this.ready&&!this.host.live()){e.stopImmediatePropagation();return;}this.lastPoint=hit;
       const field=document.getElementById('land-radius') as HTMLInputElement;
       this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
     },true);
@@ -72,6 +72,10 @@ export class TerrainSpatialUI implements AtlasPresentation {
     const hit=this.view?.hit(x,y);if(!hit)return;this.lastPoint=hit;
     const field=document.getElementById('land-radius') as HTMLInputElement;
     this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
+  }
+  screenAnchor(point:Point):Point|null{
+    const p=this.active?this.view?.project(point):null,frame=this.frame;
+    return p&&frame?{x:frame.x+p.x*frame.width,y:frame.y+p.y*frame.height}:null;
   }
   navigationPoint(e:{clientX:number;clientY:number}){return this.view?.planePoint(e.clientX,e.clientY)??null;}
   point(e:{clientX:number;clientY:number}){const hit=this.view?.hit(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
@@ -86,6 +90,19 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.toggle.textContent=tilt===0?'Atlas kippen':'Senkrecht ausrichten';
     this.toggle.setAttribute('aria-pressed',String(tilt!==0));
     if(this.frame)this.reframe(this.frame);
+  }
+  gesture(active:boolean){
+    this.view?.freezePicking(active);
+    if(active){clearTimeout(this.loadTimer);this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;}
+  }
+  liveQuery(detail?:(box:LandscapeBox)=>LandscapeBox|undefined):import('./terrain-presentation').TerrainFrameQuery|null{
+    if(!this.active||!this.params||!this.frame)return null;
+    return {kind:'tilted',query:{detail:detail?.(this.params.box),view:this.params,revision:this.revision,
+      width:this.baseline?.width??1024,height:this.baseline?.height??1024,contours:0,
+      displayMpp:this.sourceWindow!.frame.width/this.sourceWindow!.pixelWidth}};
+  }
+  presentLive(data:import('./terrain-projection').TerrainProjection){
+    if(!this.active)return;this.baseline={...data,source:this.source};this.publish(this.baseline);
   }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setContours(interval:number){this.view?.setContours(interval);}
@@ -119,6 +136,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(this.toggle.disabled)return;
     if(!this.active)this.setActive(true);if(!this.active)return;this.placeCanvas();this.setContours(contours);this.view?.setVegetation(objects);
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
+    if(this.host.live())return;
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
     const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
@@ -144,7 +162,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
       // Canonical author records are requested only when a draft needs them.
       const width=1024,height=Math.max(128,Math.min(1024,Math.round(width*box.height/box.width)));
       const reply=await window.campaign.atlasTerrainProjection(token,{view,revision,width,height,contours:0,displayMpp:frame.width/this.sourceWindow!.pixelWidth});
-      if(!this.active||this.requested!==source)return;
+      if(!this.active||this.requested!==source||this.host.live())return;
       if(!reply.ok)throw Error(reply.error);if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
       this.records=[];this.recordsSource='';
       this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';

@@ -1,3 +1,8 @@
+import {bounds} from './atlas-landscape';
+import {terrainBoxesOverlap} from './terrain-cache';
+import {updateTerrainMesh} from './terrain-surface-mesh';
+import {TerrainDetailMaterial} from './terrain-detail-material';
+import {sameTerrainIdentity,type TerrainFrameIdentity} from './terrain-frame';
 import type {LandscapeRecord} from './atlas-landscape';
 import {AtlasSpatialVegetation} from './atlas-spatial-vegetation';
 import {ATLAS_CAMERA_FOV,atlasCameraEye,atlasPlanePoint} from './atlas-camera';
@@ -9,7 +14,7 @@ import type {SpatialReply} from './terrain-spatial-worker';
 import type {Point} from './contracts';
 import {AtlasSpatialScene} from './atlas-spatial-scene';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
-import {terrainContourMaterial,terrainContourUniforms} from './terrain-contours';
+import {terrainContourUniforms} from './terrain-contours';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
@@ -18,11 +23,17 @@ export class TerrainSpatialView {
   readonly scene=new THREE.Scene();
   private mesh:THREE.Mesh<THREE.BufferGeometry,THREE.MeshBasicMaterial>|null=null;
   private picker:THREE.Mesh|null=null;
+  private frozenPick:{camera:THREE.PerspectiveCamera;origin:Point}|null=null;
+  freezePicking(active:boolean){this.frozenPick=active?{camera:this.camera.clone(),origin:{...this.origin}}:null;}
   private grid:TerrainGrid|null=null;
+  private identity:TerrainFrameIdentity|undefined;
+  private detail=new TerrainDetailMaterial();
   private base:TerrainGrid|null=null;
   private cursor:THREE.Line|null=null;
   private selection:THREE.Line|null=null;
   private routes:THREE.Mesh[]=[];
+  private routeState=new Map<string,{key:string;meshes:THREE.Mesh[]}>();
+  private cursorState:{point:Point;radius:number}|null=null;
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
   private contours=terrainContourUniforms();
@@ -82,30 +93,39 @@ export class TerrainSpatialView {
   }
   setData(data:SpatialReply){
     this.removeLine(this.cursor);this.cursor=null;
-    const {grid:g}=data,v=g.view,b=v.box;this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
-    const positions=new Float32Array(v.columns*v.rows*3),uv=new Float32Array(v.columns*v.rows*2),indices:number[]=[];
-    for(let y=0;y<v.rows;y++)for(let x=0;x<v.columns;x++){
-      const i=y*v.columns+x;positions.set([b.x+x*b.width/(v.columns-1)-this.origin.x,this.origin.y-b.y-y*b.height/(v.rows-1),(g.heights[i]!-v.focusM)*v.exaggeration],i*3);uv.set([x/(v.columns-1),y/(v.rows-1)],i*2);
-      if(x<v.columns-1&&y<v.rows-1)indices.push(i,i+v.columns,i+1,i+1,i+v.columns,i+v.columns+1);
-    }
-    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeBoundingSphere();
-    const texture=new THREE.DataTexture(data.pixels,data.width,data.height,THREE.RGBAFormat);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.needsUpdate=true;
-    if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
-    geometry.setAttribute('terrainElevation',new THREE.BufferAttribute(g.heights,1));
+    const previous=this.grid,oldOrigin=this.origin;
+    const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view,b=v.box;
+    this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
     this.contours??=terrainContourUniforms();
-    this.contours.terrainContourSea.value=g.seaLevelM;
-    this.contours.terrainContourInk.value.set(data.contourInk??'#685639');
-    const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});terrainContourMaterial(material,this.contours);
-    this.mesh=new THREE.Mesh(geometry,material);this.scene.add(this.mesh);
-    if(!data.draft){this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);}
-    this.clearRoutes();this.routeIds=new Set((data.routes??[]).map(r=>r.id));
-    for(const r of data.routes??[])for(const mesh of routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,Math.min(b.width/(v.columns-1),b.height/(v.rows-1))/2,data.protectedLimit!==undefined&&!!r.route?.protected)){
-      this.routes.push(mesh);this.scene.add(mesh);
+    const partial=data.update&&sameTerrainIdentity(this.identity,data.update.base)?data.update:undefined;
+    const next=updateTerrainMesh(this.mesh,{...data,grid:g},previous,oldOrigin,this.origin,partial,this.contours);
+    if(this.mesh!==next.mesh){
+      if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
+      this.mesh=next.mesh;this.scene.add(this.mesh);
     }
-    this.rebuildVegetation(this.vegetationRecords??data.vegetation??[]);
-    this.rebuildAtlas();this.render();
+    this.detail??=new TerrainDetailMaterial();this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
+    const geometry=this.mesh.geometry;
+    if(!data.draft&&!this.frozenPick){this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);}
+    this.identity=data.identity;
+    this.routeState??=new Map();this.routeIds=new Set((data.routes??[]).map(r=>r.id));
+    const dispose=(meshes:THREE.Mesh[])=>{for(const mesh of meshes){this.scene.remove(mesh);mesh.geometry.dispose();for(const m of Array.isArray(mesh.material)?mesh.material:[mesh.material])m.dispose();}};
+    const dx=b.width/(v.columns-1),dy=b.height/(v.rows-1),changed=next.rects.map(r=>({x:b.x+(r.x-1)*dx,y:b.y+(r.y-1)*dy,width:(r.width+2)*dx,height:(r.height+2)*dy}));
+    const transform=JSON.stringify([this.origin,v.focusM,v.exaggeration]);
+    for(const [id,state]of this.routeState)if(!this.routeIds.has(id)){dispose(state.meshes);this.routeState.delete(id);}
+    for(const r of data.routes??[]){
+      const key=JSON.stringify([r,transform,data.protectedLimit]),old=this.routeState.get(r.id);
+      if(old?.key===key&&!changed.some(box=>terrainBoxesOverlap(box,bounds(r))))continue;
+      if(old)dispose(old.meshes);
+      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,Math.min(dx,dy)/2,data.protectedLimit!==undefined&&!!r.route?.protected);
+      for(const mesh of meshes)this.scene.add(mesh);this.routeState.set(r.id,{key,meshes});
+    }
+    this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
+    if(next.rects.length){this.rebuildVegetation(this.vegetationRecords??data.vegetation??[]);this.rebuildAtlas();}
+    if(this.cursorState)this.cursor=this.ring(this.cursorState.point,this.cursorState.radius,'#a65f30');
+    this.render();
   }
-  private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];}
+
+  private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];this.routeState?.clear();}
   setContours(interval:number){
     if(this.contours.terrainContourInterval.value===interval)return;
     this.contours.terrainContourInterval.value=interval;this.render();
@@ -132,19 +152,20 @@ export class TerrainSpatialView {
     this.camera.lookAt(target);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
   }
   hit(clientX:number,clientY:number,includeRoutes=false):Point|null{
-    if(!this.picker)return null;const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2),this.camera);
-    const hit=ray.intersectObjects(includeRoutes?[this.picker,...this.routes]:[this.picker],false)[0];if(!hit||!this.base)return null;const point={x:hit.point.x+this.origin.x,y:this.origin.y-hit.point.y};return hit.object!==this.picker||terrainVisible(this.base,point)?point:null;
+    if(!this.picker)return null;const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2),(this.frozenPick?.camera??this.camera));
+    const hit=ray.intersectObjects(includeRoutes?[this.picker,...this.routes]:[this.picker],false)[0];if(!hit||!this.base)return null;const origin=this.frozenPick?.origin??this.origin,point={x:hit.point.x+origin.x,y:origin.y-hit.point.y};return hit.object!==this.picker||terrainVisible(this.base,point)?point:null;
   }
-  project(p:Point){return this.base?projectTerrain(this.base.view,p,gridHeight(this.base,p)):null;}
+  project(p:Point){return this.grid?projectTerrain(this.grid.view,p,gridHeight(this.grid,p)):null;}
   private removeLine(line:THREE.Line|null){if(line){this.scene.remove(line);line.geometry.dispose();(line.material as THREE.Material).dispose();}}
   private ring(p:Point|null,radius:number,color:string){
     if(!p||!this.grid||radius<=0)return null;const g=this.grid,positions:number[]=[];
     for(let i=0;i<=64;i++){const a=i*Math.PI/32,q={x:p.x+Math.cos(a)*radius,y:p.y+Math.sin(a)*radius};positions.push(q.x-this.origin.x,this.origin.y-q.y,(gridHeight(g,q)-g.view.focusM)*g.view.exaggeration+g.view.frame.width*.00015);}
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));const line=new THREE.Line(geometry,new THREE.LineBasicMaterial({color,depthTest:true}));this.scene.add(line);return line;
   }
-  showCursor(p:Point|null,radius:number){this.removeLine(this.cursor);this.cursor=this.ring(p,radius,'#a65f30');this.render();}
+  showCursor(p:Point|null,radius:number){this.cursorState=p?{point:{...p},radius}:null;this.removeLine(this.cursor);this.cursor=this.ring(p,radius,'#a65f30');this.render();}
   showSelection(p:Point|null){this.removeLine(this.selection);this.selection=this.ring(p,(this.grid?.view.frame.width??0)*.008,'#e68a28');this.render();}
   dispose(){
+    this.detail?.dispose();this.frozenPick=null;
     this.atlas?.dispose();this.overlayScene?.dispose();this.atlas=null;this.overlayScene=null;this.publication=null;
     this.clearRoutes();this.vegetation?.dispose();this.vegetation=null;this.vegetationRecords=null;
     this.removeLine(this.cursor);this.removeLine(this.selection);this.cursor=null;this.selection=null;if(this.mesh){this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}

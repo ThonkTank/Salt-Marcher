@@ -30,7 +30,7 @@ test('label stays in viewport in CSS pixels and is excluded from author/export h
  ]){
   const root=new api.AtlasPaint('group'),box={x:-1e6,y:2e6,width:width*mpp,height:400*mpp};
   api.drawMeasurements(root,box,mpp,{x:box.x+box.width,y:box.y+box.height},lines);
-  const label=root.children[0],rect=label.children[0];assert.equal(label.data.editorOnly,'true');assert.equal(label.geometry.pointer,false);
+  const label=root.children[0],rect=label.children[0];assert.equal(label.data.editorOnly,'true');assert.equal(label.geometry.hud,true);assert.equal(label.geometry.pointer,false);
   assert(label.geometry.matrix[4]/mpp+rect.geometry.width<=width);assert(label.geometry.matrix[5]/mpp+rect.geometry.height<=400);
   assert.equal(label.children[1].style.fontSize,12);
  }
@@ -72,4 +72,10 @@ test('unit switching converts real controls, keeps canonical values and draft sn
   }finally{proto.showModal=show;}
 
  }finally{Object.assign(global,saved);}
+});
+
+test('measurement label follows the projected surface anchor while retaining screen-sized furniture',()=>{
+ const root=new api.AtlasPaint('group'),box={x:-100,y:-100,width:800,height:400},anchor={x:0,y:0};
+ api.drawMeasurements(root,box,1,anchor,['Radius: 48 m'],p=>{assert.equal(p,anchor);return{x:300,y:100};});
+ const label=root.children[0];assert.deepEqual(label.geometry.matrix,[1,0,0,1,418,222]);assert.equal(label.geometry.hud,true);
 });

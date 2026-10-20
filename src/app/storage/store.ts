@@ -1,3 +1,4 @@
+import {profileBounds,terrainProfile} from '../terrain-profile';
 import {installTravelHistory} from './travel-history';
 import {checkedWorldNoteRow} from "./world-note-row";
 import {nearestAnchor} from '../drawing-model';
@@ -314,6 +315,12 @@ export class CampaignStore {
     const cam=this.guard(token),source=this.atlasRegionSource(token);
     if(fence!==undefined&&source.fence!==fence)throw Error('Gelände inzwischen geändert. Entwurf verwerfen und erneut zeichnen.');
     return {...vegetationScene(this.db,cam,box,mpp,atlasRoot(this.db,cam).revision,{draft}),fence:source.fence};
+  }
+  atlasTerrainProfile(token:string,points:import('../contracts').Point[]){
+    const first=this.atlasMaskRegion(token,profileBounds(points));
+    const pad=Math.max(1,...first.records.filter(r=>r.height).map(r=>r.resolution));
+    const reply=this.atlasMaskRegion(token,profileBounds(points,pad));
+    return{...terrainProfile(reply.records,points),revision:reply.revision};
   }
   atlasHeight(token:string,point:import('../contracts').Point){
     const cam=this.guard(token);

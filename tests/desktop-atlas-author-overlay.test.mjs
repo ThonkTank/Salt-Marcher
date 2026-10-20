@@ -243,3 +243,13 @@ test('room grip movement uses the drawing tool snap policy in local coordinates'
  Object.assign(f.ui,{point:()=>({x:12.1,y:3.9}),frame:()=>({x:0,y:0,angle:0}),render(){},vertexDrag:{id:9,room:f.original,point:{x:9,y:2}}});
  f.ui.move({pointerId:9});assert.deepEqual(seen,[{x:12.1,y:3.9}]);assert.deepEqual(f.ui.vertexDrag.point,{x:12,y:4});
 });
+
+// The final region refresh occurs while the brush is still closing. Releasing
+// that lock must invalidate the panel even when the source object is unchanged.
+test('finishing a live terrain stroke re-enables history without another region read',t=>{
+ const f=fixture(t);f.ui.landscape.livePainting=true;f.render();
+ assert.equal(f.document.getElementById('atlas-undo').disabled,true);
+ const data=f.ui.data;f.ui.landscape.livePainting=false;f.render();
+ assert.equal(f.ui.data,data);assert.equal(f.document.getElementById('atlas-undo').disabled,false);
+ assert.equal(f.document.getElementById('atlas-redo').disabled,true);
+});
