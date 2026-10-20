@@ -129,16 +129,17 @@ Originaldaten werden nicht repariert oder neu gespeichert.
 
 Shop-/Ownertrash unterbricht Auffüllen. Alte Fälligkeiten bleiben bestehen;
 ein aktiver Step nach Restore kann Perioden nachholen. Diese aktuelle Wirkung
-ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung über gespeicherte Shoptabellen ist implementiert;
-Kalenderereignisse als eigener Triggertyp bleiben offen.
+ist noch keine bestätigte Trashzeitpolitik. Gewichtete Auffüllung über gespeicherte
+Shoptabellen, [Ereignisauslöser](#gewichtete-warenlieferungen) und
+[gefilterte Kataloglieferungen](#dynamische-kataloglieferungen) sind implementiert.
 
 Die vorhandenen festen Intervalle sind verstrichene Millisekunden. Shopeditor,
 Zeitbasis und Zeitkonflikthinweis benennen ihre Tage deshalb als jeweils
 24 Stunden. Ein frei konfigurierter Kampagnentag kann eine andere Länge haben;
 Kalenderänderungen deuten bestehende Intervalle oder bestätigte Fälligkeiten
-nicht um. Kalendergebundene Regeln brauchen einen eigenen ausdrücklichen
-Triggertyp und gespeicherte Kalender-/Regelbasis, keine still geänderte Einheit
-bestehender Werte. Für diese Klarstellung gibt es keine Datenmigration.
+nicht um. Ereignisgebundene Lieferungen besitzen einen eigenen Triggertyp mit
+gespeicherter Ereigniskennung/-revision und Regelbasis. Sie ändern keine Einheit bestehender
+Intervalle; für diese Klarstellung gibt es keine Datenmigration.
 
 Automatische Auffüllungen halten pro Zeile ursprüngliche Regelparameter, Anzahl
 der Perioden, erste/letzte Fälligkeit und Mengen vor/nach dem Vorgang fest.
@@ -188,18 +189,18 @@ native Reisebedienung oder vollständige Produktabnahme.
 2. Ownertrash → mehrere Scenezeiten → Restore → nächster Step an einer festen
    Regel prüfen. Fortsetzungsregel/nächste Fälligkeit sichtbar erklären;
    bestehende Auffüllungen und manuelle Korrekturen nicht erneut anwenden.
-3. Kalendergebundene Regeln und katalogweite Filter an revisionierte Tabellen/Filter,
-   fällige Trigger und gespeicherte Zufallsbasis binden. Tatsächliche Auswahl,
-   Menge und Herkunft in `shop_event` festhalten; Retry/Fresh erhalten das
-   Resultat. Eine Zeitquelle, keine Bestätigungsfolge je konfiguriertem Ereignis.
-4. Gemischte Shops und lange Historien messen; erst bei Bedarf fällige Queries
-   und fortgesetzte Listen liefern. Native Ownerwarnung, Zeitfehler, verlorene
+3. Gewichtete, ereignisgebundene und Kataloglieferungen nativ bis zu Fälligkeit,
+   Fehler/Wiederholen, Neustart und unabhängiger Kampagnenkopie prüfen.
+   Die vorhandenen Storefälle ersetzen diese Bedien-/Prozessabnahme nicht.
+4. Gesamtlesen gemischter Shops und Auffüllfälligkeiten bei langen Historien
+   messen; vorhandene Verlaufsseiten qualifizieren diese Reads nicht.
+   Native Ownerwarnung, Zeitfehler, verlorene
    Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
 
 [Storeprüfungen](../../../tests/desktop-shop-owner-time.test.mjs) belegen manuelle/
 fällige/zukünftige Regeln mit fehlendem Owner, Rollback sowie Ownertrash,
 Restore und Neuzuordnung ohne Verlust der Shopidentität. Native Warnung,
-Trashzeitpolitik und gewichtete Regeln bleiben offen.
+Trashzeitpolitik und native Gesamtqualifikation der Warenlieferungen bleiben offen.
 
 ## Gewichtete Warenlieferungen
 
@@ -216,8 +217,7 @@ Scenezeit; bestätigte Fälligkeiten werden nie rückwirkend neu gewürfelt. Die
 gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
 hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
 im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und
-behalten Zufallsbasis und bestätigten Bestand. Kalenderereignisse können ab0.121 Lieferungen auslösen; katalogweite dynamische
-Filter sind ab0.122 als zusätzliche Warenquelle implementiert.
+behalten Zufallsbasis und bestätigten Bestand.
 
 Im Shop wird entweder ein Zeitintervall oder ein Agendaereignis gewählt. Die
 Ereignisrevision wird gebunden. Der erste Beginn liegt strikt nach der gewählten
@@ -257,3 +257,10 @@ Andernfalls gilt der in der Lieferregel festgelegte Kauf-/Verkaufspreis.
 Einzelstücke bleiben erhalten. Manuelle, Intervall- und Ereignisauslöser nutzen
 denselben Ablauf. Neue passende Definitionen werden ohne Regeländerung beim
 nächsten Termin berücksichtigt. Historische Ergebnisse bleiben unverändert.
+
+Die [Storegegenproben](../../../tests/desktop-restock-journey.test.mjs) prüfen
+gewichtete Lieferungen, gebundene Ereignisrevisionen und dynamische Katalogpools
+mit Replay, Neustart und unabhängiger Kopie. Die Zeitverarbeitung liegt bei
+`restockDue` in [storage/items.ts](../../../src/app/storage/items.ts), die
+Katalogauswahl bei [drawCatalogRestock](../../../src/app/storage/catalog-restock.ts).
+Das sind automatisierte Teilbelege; die native Gesamtqualifikation bleibt offen.
