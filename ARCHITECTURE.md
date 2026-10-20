@@ -101,6 +101,8 @@ Kugelprojektion, Serverpflicht, allgemeines Multiuser-Editing und freie
 kann sie wieder relevant machen. Beobachtung der Technik ist keine Erlaubnis,
 Atlasumfang oder externe Datenbindungen zu verkleinern.
 
+### Prozesse und Verantwortlichkeiten
+
 **Ein modularer TypeScript-Kern in einer eigenständigen Electron-Anwendung,
 ein lokaler SQLite-Schreibdienst, eine Atlasoberfläche.** Die
 [Plattformentscheidung](ROADMAP-SALTMARCHER-PLATFORM-ADR.md) begründet Alternativen
