@@ -39,7 +39,18 @@ export function dailyPlanAt(plan:NpcDailySlot[]|undefined,instantMs:string,daySe
  const slots=plan??[],dayMs=BigInt(daySeconds)*1000n,now=BigInt(instantMs),day=now/dayMs,second=Number((now%dayMs+dayMs)%dayMs)/1000;
  const empty={current:null,next:null,secondsUntilNext:null,nextInstantMs:null,nextDay:null,day:(day+1n).toString(),weekday:weekday(day,weekdays),overrideLabel:null,startsOnPreviousDay:false};
  try{checkedNpcSchedule(slots,overrides,daySeconds,weekdays);}catch(e){return{...empty,problem:(e as Error).message};}
- const schedule=scheduleDays(slots,overrides,weekdays),range=dayRanges(schedule,day,daySeconds/60).find(r=>second>=r.start*60&&second<r.end*60),days=new Set<bigint>();for(let d=0;d<=weekdays+overrides.length+1;d++)days.add(day+BigInt(d));for(const o of overrides)if(BigInt(o.day)-1n>=day)days.add(BigInt(o.day)-1n);
+ const schedule=scheduleDays(slots,overrides,weekdays),range=dayRanges(schedule,day,daySeconds/60).find(r=>second>=r.start*60&&second<r.end*60),days=new Set<bigint>([day]);
+ // A weekly appointment can be cancelled for many weeks. For each used weekday,
+ // only its first future non-exception day can supply the next regular start.
+ // Jump whole weeks across exceptions instead of imposing a calendar horizon.
+ const usedWeekdays=new Set(slots.flatMap(s=>s.weekdays??Array.from({length:weekdays},(_,i)=>i)));
+ for(const wanted of usedWeekdays){
+  let candidate=day+1n+BigInt((wanted-weekday(day+1n,weekdays)+weekdays)%weekdays);
+  while(schedule.override(candidate))candidate+=BigInt(weekdays);
+  days.add(candidate);
+ }
+ // Exceptions replace the regular day and may contain their own distant starts.
+ for(const o of overrides)if(BigInt(o.day)-1n>=day)days.add(BigInt(o.day)-1n);
  let next:NpcDailySlot|null=null,nextMs:bigint|null=null;for(const d of days)for(const slot of schedule.slots(d)){const start=d*dayMs+BigInt(slot.startMinute)*60000n;if(start>now&&(nextMs===null||start<nextMs)){next=slot;nextMs=start;}}
  return{current:range?.slot??null,next,secondsUntilNext:nextMs===null?null:Number(nextMs-now)/1000,nextInstantMs:nextMs?.toString()??null,nextDay:nextMs===null?null:(nextMs/dayMs+1n).toString(),day:(day+1n).toString(),weekday:weekday(day,weekdays),overrideLabel:schedule.override(day)?.label??null,startsOnPreviousDay:range?.previous??false,problem:null};
 }
