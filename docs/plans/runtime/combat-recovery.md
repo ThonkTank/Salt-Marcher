@@ -158,6 +158,13 @@ verbinden Dialog, gemeinsame Buchungssperre und gespeicherten Beleg.
 
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 
+Bei 0 HP stehen Todesrettungen unmittelbar neben den HP-Aktionen, vor Zustands-
+und Werteverwaltung. Erfolg, Fehlschlag und interner W20 bleiben direkt erreichbar;
+die ausführliche Schadensregel steht unter „Sonderfälle und Korrektur“.
+`tools/test-desktop-death-saves.mjs` führt Schaden, Erfolg und Fehlschlag, normalen
+Neustart, Heilung, Zugwechsel, Abschluss und erneutes Öffnen mit Skalierungsfaktoren
+1 und 2 aus. Die Sichtprüfung berücksichtigt die feste Musikleiste.
+
 `character_progress` publiziert vollständige PC-Gesundheit samt Todesrettungen
 in offene Masken derselben Figur; entfernte Flags dürfen nicht fortbestehen.
 Initiative, Identität, Runde und Zug bleiben maskenlokal. Der atomare Write
