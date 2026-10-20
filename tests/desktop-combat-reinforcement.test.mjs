@@ -397,7 +397,8 @@ test('invalid initial catalog data or a late receipt failure leaves no partial p
 for(const modal of [false,true])test('catalog handoff creates one complete preparation and resolves its single lost reply: '+(modal?'dialog':'catalog'),async t=>{
  const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);let followed=0;window.requestAnimationFrame=()=>{followed++;return 0;};if(modal)x.el('combat-add-open').onclick();
  window.campaign.executeCombat=async command=>{x.writes.push(command);x.store.executeCombat(command);throw new Error('reply lost');};
- await x.ui.addCatalogCreature(x.creature.id,2,true);assert.equal(followed,1);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.deepEqual(x.writes[0].action.catalogCreature,{creatureId:x.creature.id,count:2,grouped:true});
+ await x.ui.addCatalogCreature(x.creature.id,2,true);assert.equal(followed,modal?0:1);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),modal);
+ if(modal){assert.match(x.el('combat-add-context').textContent,/Vorbereitet: 2 × Goblin/);assert.equal(x.el('combat-preparation-initiative').disabled,false);assert.equal(x.el('combat-creature-select').value,'');assert.equal(x.el('combat-creature-add').disabled,true);}assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.deepEqual(x.writes[0].action.catalogCreature,{creatureId:x.creature.id,count:2,grouped:true});
  const current=x.store.combat(x.w.token,x.scene.id).combat;assert.notEqual(current.id,x.combat.id);assert.equal(current.revision,1);assert.equal(current.participants.length,2);assert.equal(x.el('combat-start').disabled,false);assert(!x.messages.some(m=>String(m[0]).includes('Buchungsantwort fehlt')));
 });
 test('failed initial catalog handoff preserves the selected finished combat instead of storing an empty replacement',async t=>{
@@ -472,4 +473,33 @@ test('schema 50 upgrades without changing records and missing schema 51 scene li
  store.db.exec('DROP TABLE scene_opponent_group;PRAGMA user_version=50');const before=store.db.prepare('SELECT * FROM live_scene').all();store.close();store=new CampaignStore(file);
  assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),52);
  store.db.exec('DROP TABLE scene_opponent_group');store.close();assert.throws(()=>new CampaignStore(file),/Szenengegner-Zuordnung fehlt/);
+});
+
+
+test('spontaneous preparation collects confirmed species in one picker and opens their shared initiative',async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);x.el('combat-add-open').onclick();
+ await x.ui.addCatalogCreature(x.creature.id,3,true);
+ const dialog=x.el('combat-add-dialog');assert.equal(dialog.hasAttribute('open'),true);assert.equal(x.el('combat-creature-count').value,'1');assert.equal(x.el('combat-creature-grouped').checked,false);assert.equal(x.el('combat-creature-select').value,'');assert.match(x.el('combat-add-status').textContent,/3 × Goblin übernommen/);
+ x.el('combat-creature-search').value='Orc';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);
+ const found=searchCreatures({text:'Orc',offset:0,limit:25,sort:'name',direction:'asc'});x.queries[0].resolve({ok:true,value:found});await until(()=>x.el('combat-creature-select').value==='creature:orc');
+ x.el('combat-creature-initiative').value='8';x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===2&&x.el('combat-add-status').textContent.includes('Orc übernommen'));
+ assert.equal(dialog.hasAttribute('open'),true);assert.match(x.el('combat-add-context').textContent,/3 × Goblin/);assert.match(x.el('combat-add-context').textContent,/1 × Orc/);assert.equal(x.el('combat-creature-select').value,'');assert.equal(x.el('combat-creature-add').disabled,true);
+ const current=x.store.combat(x.w.token,x.scene.id).combat;assert.equal(current.participants.length,4);assert.equal(new Set(current.participants.filter(p=>p.sourceId===x.creature.id).map(p=>p.groupId)).size,1);assert.equal(current.participants.at(-1).initiative,8);assert.equal(x.writes.filter(c=>c.action.kind==='create').length,1);
+ x.el('combat-preparation-initiative').onclick();await until(()=>x.el('combat-initiative-dialog').hasAttribute('open')&&x.el('initiative-rows').querySelectorAll('input').length===2);assert.equal(dialog.hasAttribute('open'),false);assert.match(x.el('initiative-rows').textContent,/Goblin A.*3 Teilnehmer/);assert.match(x.el('initiative-rows').textContent,/Orc A/);assert.equal(x.writes.length,2,'opening initiative cannot add another enemy');
+});
+
+test('a pending second species cannot jump into initiative and a rejected write retains its inputs',async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Beendet'});await x.ui.openExistingCombat(x.combat.id);x.el('combat-add-open').onclick();await x.ui.addCatalogCreature(x.creature.id,3,true);
+ x.el('combat-creature-search').value='Orc';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);x.queries[0].resolve({ok:true,value:searchCreatures({text:'Orc',offset:0,limit:25,sort:'name',direction:'asc'})});await until(()=>x.el('combat-creature-select').value==='creature:orc');
+ let release;window.campaign.executeCombat=command=>{x.writes.push(command);return new Promise(resolve=>release=()=>resolve({ok:false,error:'Controlled second species conflict'}));};x.el('combat-creature-count').value='2';x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>typeof release==='function');
+ assert.equal(x.el('combat-preparation-initiative').disabled,true);x.el('combat-preparation-initiative').onclick();assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);assert.equal(x.el('combat-initiative-dialog').hasAttribute('open'),false);
+ release();await until(()=>x.el('combat-add-status').textContent.includes('Controlled second species conflict'));assert.equal(x.el('combat-creature-select').value,'creature:orc');assert.equal(x.el('combat-creature-count').value,'2');assert.equal(x.store.combat(x.w.token,x.scene.id).combat.participants.length,3);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),true);
+});
+
+
+test('a late preparation confirmation cannot reopen the picker after leaving its campaign',async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Beendet'});await x.ui.openExistingCombat(x.combat.id);x.el('combat-add-open').onclick();await x.ui.addCatalogCreature(x.creature.id,3,true);
+ x.el('combat-creature-search').value='Orc';x.el('combat-creature-search-form').onsubmit({preventDefault(){}});await until(()=>x.queries.length===1);x.queries[0].resolve({ok:true,value:searchCreatures({text:'Orc',offset:0,limit:25,sort:'name',direction:'asc'})});await until(()=>x.el('combat-creature-select').value==='creature:orc');
+ let release;window.campaign.executeCombat=command=>{x.writes.push(command);return new Promise(resolve=>release=()=>resolve({ok:true,value:x.store.executeCombat(command)}));};x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>typeof release==='function');x.ui.combatContext(null,null);release();await tick();await tick();
+ assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.el('combat-initiative-dialog').hasAttribute('open'),false);assert.equal(x.el('combat-preparation-initiative').disabled,true);assert.doesNotMatch(x.el('combat-add-status').textContent,/Orc übernommen/);
 });

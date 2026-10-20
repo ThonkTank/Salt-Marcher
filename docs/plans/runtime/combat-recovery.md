@@ -83,6 +83,8 @@ Abschluss behält sein historisches Ergebnis; eine erneute Begegnung verwendet
 die überlebenden Figuren mit ihrem aktuellen Zustand. Alte anonyme Kampfarchive
 werden nicht nachträglich mit erfundenen Weltidentitäten versehen.
 
+Während der Vorbereitung bleibt die Katalogauswahl nach bestätigter Übernahme offen. Sie zeigt die tatsächlich vorbereiteten Trupps, leert die übernommene Auswahl und bietet den direkten Übergang zu „Initiative eintragen“. So lassen sich mehrere Kreaturenarten nacheinander übernehmen, ohne zwischen Auswahl und Kampfansicht zu wechseln. Erst die bestätigte Übernahme zählt zum angezeigten Bestand; eine fehlgeschlagene oder ungeklärte Buchung erhält ihre Eingaben und den bestehenden Schreibschutz. Verstärkung im laufenden Kampf kehrt nach Bestätigung zur Runde zurück.
+
 Ungültige Daten, veraltete Membershipbasis und spätere Receiptfehler rollen die
 gesamte Übernahme einschließlich Gruppen und Figuren zurück. Replay und
 `commitStatus` bestätigen denselben vollständigen Vorgang. Bestehende
