@@ -28,8 +28,8 @@ test('Stop followed by an explicit sound plays only that layer at the configured
  const x=await fixture();try{await startAndStop(x);x.click('Regen','Sound hinzufügen');await until(()=>x.audible().length===1);onlyRain(x);await x.ui.refreshMusic();onlyRain(x);assert.match(x.document.getElementById('music-layers').textContent,/Bereit/);
  }finally{await x.cleanup();}
 });
-test('a delayed pre-stop Play cannot authorize its old song or stored wind after a new rain choice',async()=>{
- const x=await fixture();try{x.hold('select');x.click('Bühne','Abspielen');await until(x.hasReply);await x.ui.refreshMusic();x.transport('stop');await until(()=>x.store.music(x.w.token).state.manualHold==='stop');x.click('Regen','Sound hinzufügen');await until(()=>x.audible().length===1);x.release();await tick();await tick();onlyRain(x);
+test('Stop applies to a pending Play without another read and its late reply cannot authorize old output',async()=>{
+ const x=await fixture();try{x.hold('select');x.click('Bühne','Abspielen');await until(x.hasReply);x.transport('stop');await until(()=>x.store.music(x.w.token).state.manualHold==='stop');x.click('Regen','Sound hinzufügen');await until(()=>x.audible().length===1);x.release();await tick();await tick();onlyRain(x);
  }finally{await x.cleanup();}
 });
 test('a late Stop reply cannot revoke rain explicitly chosen after that confirmed stop',async()=>{
@@ -84,4 +84,42 @@ test('editing music notes preserves literal untouched prefixes and original line
   x.document.getElementById('audio-notes').value='  Original\nNeue zweite Zeile\n';x.document.getElementById('audio-editor').oninput();assert.equal(await x.ui.flushMusic(),true);
   assert.equal(x.store.audioAsset(x.song.id).notes,'  Original\r\nNeue zweite Zeile\r\n');
  }finally{await x.cleanup();}
+});
+
+for(const control of ['console','mini','soundboard'])test(control+' Stop completes while an older player read is pending',async()=>{
+ const x=await fixture();let release,reading;try{
+  x.click('Bühne','Abspielen');await until(()=>x.audible().length===2);
+  const read=window.campaign.music;window.campaign.music=async token=>{const value=await read(token);return new Promise(resolve=>{release=async()=>{resolve(value);release=null;};});};
+  reading=x.ui.refreshMusic();await until(()=>!!release);
+  let stopping;if(control==='soundboard')stopping=x.ui.runLiveMusic(x.w.token,v=>({kind:'transport',operation:'stop',expectedRevision:v.state.revision}));
+  else x.document.querySelector((control==='console'?'#music':'#music-mini')+' [data-music-transport=stop]').click();
+  await until(()=>x.store.music(x.w.token).state.manualHold==='stop'&&x.audible().length===0);
+  assert(release,'Stop must finish before the held read');if(stopping)assert.equal(await stopping,true);
+  await release();await reading;assert.equal(x.audible().length,0);assert.equal(x.commands.filter(c=>c.action.operation==='stop').length,1);
+ }finally{if(release)await release();if(reading)await reading;await x.cleanup();}
+});
+
+test('absolute Stop preserves newer choices and its receipt cannot stop a later explicit Play again',async()=>{
+ const x=await fixture();try{
+  const basis=x.store.music(x.w.token).state.revision;x.execute({kind:'select',assetId:x.song.id});
+  const current=x.store.music(x.w.token).state;
+  for(const expectedRevision of [-1,NaN,current.revision+1])assert.throws(()=>x.store.executeMusic({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'transport',operation:'stop',expectedRevision}}));
+  const command={commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'transport',operation:'stop',expectedRevision:basis}};
+  const stopped=x.store.executeMusic(command);assert.equal(stopped.state.manualHold,'stop');assert.deepEqual(stopped.state.queue,current.queue);assert.deepEqual(stopped.state.forcedAmbience,current.forcedAmbience);assert.deepEqual(stopped.state.current.assetId,current.current.assetId);
+  assert.throws(()=>x.store.executeMusic({...command,commandId:randomUUID(),action:{kind:'transport',operation:'skip',expectedRevision:basis}}));
+  x.execute({kind:'transport',operation:'play'});const resumed=x.store.music(x.w.token).state;
+  assert.equal(x.store.executeMusic(command).state.status,'playing');assert.equal(x.store.music(x.w.token).state.revision,resumed.revision);
+ }finally{await x.cleanup();}
+});
+
+test('a sound choice waiting on an older checkpoint cannot undo a newer Stop',async()=>{
+ const x=await fixture();let release;try{
+  x.click('Bühne','Abspielen');await until(()=>x.audible().length===2);
+  const position=window.campaign.musicPosition;window.campaign.musicPosition=async(...args)=>{const result=await position(...args);return new Promise(resolve=>{release=()=>{resolve(result);release=null;};});};
+  x.click('Regen','Sound hinzufügen');await until(()=>!!release);
+  x.transport('stop');await until(()=>x.store.music(x.w.token).state.manualHold==='stop'&&x.audible().length===0);
+  release();await tick();await tick();
+  assert.equal(x.commands.filter(c=>c.action.kind==='ambience'&&c.action.assetId===x.rain.id).length,0);
+  assert.equal(x.audible().length,0);assert.equal(x.store.music(x.w.token).state.current.positionSeconds,0);
+ }finally{if(release)release();await tick();await x.cleanup();}
 });
