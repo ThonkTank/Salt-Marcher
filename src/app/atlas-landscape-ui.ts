@@ -506,9 +506,11 @@ export class LandscapeWorkbench {
     const hint=this.settings.precisionRoot.querySelector<HTMLElement>('#land-height-protection')!;hint.hidden=!protectedPoint;
     if(protectedPoint&&read.resolutionM!==null){
       const fixed=(document.getElementById('land-radius-fixed') as HTMLInputElement|null)?.checked;
-      const text='Feine Höhendetails ('+lengthLabel(read.resolutionM)+') bleiben geschützt. Radius verkleinern'+(fixed?'':' oder näher heranzoomen')+'.';
+      const protection='Feine Höhendetails ('+lengthLabel(read.resolutionM)+') bleiben geschützt.',remedy='Radius verkleinern'+(fixed?'':' oder näher heranzoomen')+'.',text=protection+' '+remedy;
       if(hint.textContent!==text)hint.textContent=text;
+      return [html('land-cursor-height').textContent??'',label,protection,remedy];
     }
+    return [];
   }
   private cursorHeight(){
     if(this.heightTimer||this.maskStroke)return;
@@ -518,7 +520,7 @@ export class LandscapeWorkbench {
         if(token===this.token&&generation===this.maskGeneration&&request===this.request&&!this.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok){
           this.heightRead={point:p,heightM:r.value.heightM,resolutionM:r.value.resolutionM,generation,request};
           html('land-cursor-height').textContent='Höhe: '+lengthLabel(r.value.heightM)+(r.value.resolutionM===null?'':' · Auflösung: '+lengthLabel(r.value.resolutionM));
-          this.renderHeightPrecision();
+          this.renderHeightPrecision();this.host.redraw();
         }
       }catch{/* A stale point must not replace a current height. */}finally{this.heightTimer=undefined;}
     },100);
@@ -806,6 +808,9 @@ export class LandscapeWorkbench {
       if(r.kind==='road'||r.kind==='river')lines=pathMeasures(linePoints(r),r.width);
       else if(r.kind==='patch')lines=areaMeasures(r.polygons);
       else if(r.kind==='reference')lines=[`${lengthLabel(r.width)} × ${lengthLabel(r.width*(r.imageHeight??1)/(r.imageWidth??1))}`];
+    }
+    if(brush&&this.hovering&&['height','smooth'].includes(this.tool)){
+      const protection=this.renderHeightPrecision();if(protection.length)lines=protection;
     }
     drawMeasurements(root,box,mpp,anchor,lines);
   }

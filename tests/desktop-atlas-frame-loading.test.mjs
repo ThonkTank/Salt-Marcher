@@ -195,7 +195,9 @@ test('height feedback identifies protected finer data and clears when the chosen
  assert.match(f.document.getElementById('land-cursor-height').textContent,/984 ft.*Auflösung: 3,28 ft/);
  assert.match(f.document.getElementById('land-brush-resolution').textContent,/6,56 ft/);
  const hint=f.document.getElementById('land-height-protection');assert.equal(hint.hidden,false);assert.match(hint.textContent,/3,28 ft.*geschützt.*Radius verkleinern/);
+ const protectedOverlay=new AtlasPaint('group');f.ui.drawMeasurements(protectedOverlay,{x:0,y:0,width:10,height:10},.02);assert.match(descendants(protectedOverlay).map(n=>n.text).join(' '),/Feine Höhendetails.*geschützt.*Radius verkleinern/);
  f.document.getElementById('land-radius').value='32';f.ui.renderHeightPrecision();assert.equal(hint.hidden,true);
+ const editableOverlay=new AtlasPaint('group');f.ui.drawMeasurements(editableOverlay,{x:0,y:0,width:10,height:10},.02);assert.doesNotMatch(descendants(editableOverlay).map(n=>n.text).join(' '),/geschützt/);
  assert.match(f.document.getElementById('land-brush-resolution').textContent,/3,28 ft/);
 });
 for(const change of ['context','gesture','leave'])test('a late height query cannot label a replacement '+change,async t=>{
