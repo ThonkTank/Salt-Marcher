@@ -263,3 +263,17 @@ drei ausgelassene Armor-/Arrow-Kontrollen, eine umgangene Schemaprüfung und ein
 falscher XML-Hashbeleg. Alle 22 unveränderten Kontrollläufe bestehen. Die
 Zusammenfassung allein gilt nicht als Einsparung: Tatsächlich entfallen sieben
 wiederholte positive Validatoraufrufe und die gemessenen Aufbau-/Prüfkosten.
+
+Die semantische Prüfung von Item-Referenz und Item-Auswahl erhält alle 47 Fälle.
+Öffentliche Quellenreferenz und bearbeitbare Definitionen haben unterschiedliche
+Controller und Speichergrenzen; gleiche Gegenstandsnamen machen ihre Tests nicht
+doppelt. Auswahl-, Query-, Aktivierungs-, Übergabe- und Kontextantworten sowie
+Transport- und Speicherfehler bleiben separat. Der gemeinsame Auswahlaufbau legt
+NPCs und Shops nur noch für die zwei Fälle mit vorhandenen, nicht ausgewählten
+Shops beziehungsweise ausdrücklicher Bestandsübernahme an. Die anderen 30 Fälle
+benötigen sie nicht. Gemessen entfallen 60 NPC- und 60 Shop-Schreibaufrufe im Aufbau;
+beide Figuren, Definitionen und alle Assertions bleiben. Vier isolierte Fehler
+(falsche Definitionsantwort, unerlaubte Shopabhängigkeit der Vergabe, ausgelassene
+Bestandsübernahme und zu früh freigegebener Nutzungskontext) werden vorher/nachher
+erkannt. Alle acht unveränderten Kontrollläufe bestehen. Die 47 lokalen Fälle
+bestehen vor und nach der Änderung; daraus folgt keine kausale Laufzeitbehauptung.
