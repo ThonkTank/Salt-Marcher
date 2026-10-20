@@ -589,6 +589,8 @@ native Probe für sichtbare Markdownsuche, Seiten bis zum letzten langen ID,
 Textcommit, ungültigen Entwurf und Fresh. Die Proben ergänzen die bestehenden
 Key-/Speicher-/Atlasprüfungen; sie schließen keine Gesamtfreigabe ein.
 
+#### Bereichsworker und Quellinvalidierung
+
 Der dritte Leseschnitt begrenzt jetzt die gemeinsame Atlas-/Livegeometrie auf
 angefragte Weltbereiche. `workspaceInitial` enthält höchstens den ausgewählten
 Raum; `atlasRegion` liefert Darstellungskonturen ohne Raumprosa oder
@@ -617,6 +619,8 @@ Quelle, Aktivierung, Revision, Ausschnitt, Geschoss, Höhenschnitt und
 Dachfilter binden Read und Hit. Veraltete Ergebnisse dürfen keine neue Auswahl
 oder Autorenmutation begründen.
 
+#### Darstellungsbudgets und Caches
+
 Die Grenzen sind absichtlich nach Datenklasse benannt: maximal 2 MiB kodierte
 Geometrieantwort, 1500 Vektorobjekte und maximal 16 MiB kodierter aktiver
 Darstellungskontext. Dichtere Raum-/Stadtansichten werden vollständig als
@@ -629,6 +633,8 @@ Die getrennten Geometrie- und Landschaftskachelcaches haben zusammen 64 MiB
 Nutzdatenbudget: 24 MiB Ansicht und 24 MiB Ausgabe sowie je 8 MiB Landschaftskacheln in beiden Bereichsworkern. Das ist keine Obergrenze des tatsächlichen
 Electron-/SQLite-/GPU-Speichers. Aktive Autorenentwürfe, exakte Fachleser und
 der vorhandene Landschaftsbildcache sind getrennte Klassen.
+
+#### Autorenreads, Prüfwege und offene Lastgrenzen
 
 Einzelne Häuser laden ihren vollständigen kanonischen Datensatz vor einer
 Änderung. Die Projektion wird nicht zum Upsert umgedeutet; Notizen, Bewohner,

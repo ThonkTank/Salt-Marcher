@@ -62,20 +62,11 @@ einfachere behalten; fehlende Nachweise als offen führen.
 | B10 | Lokale/regionale Navigation mit gemeinsamen Übergängen und Zeit | Navmesh/hierarchischer Graph/Kostenfelder nach echten Aufgaben; keine vorsorgliche Dauersimulation. |
 | B11 | Electron/TypeScript/SQLite | Andere WebView/native2D erst bei belegtem unerfüllbarem Speicher-/Grafik-/OS-/Installationsziel. |
 
-Der erste räumliche Anschluss verwendet TEMP-SQLite/Rtree im readonly Worker,
-inkrementelle, transaktionale Quellinvalidierung und getrennte genaue
-Autorenreads. Raum-/Stadtansichten wechseln oberhalb des Vektor-/Bytebudgets
-auf eine vollständige Rasterdarstellung; Auswahl bleibt an die kanonische
-Geometrie gebunden. Ansicht und Export haben je 24 MiB Geometriecache und
-je 8 MiB Landschaftskacheln im jeweiligen Bereichsworker: zusammen 64 MiB
-serialisierte Nutzdaten. Dieses Budget begrenzt nicht den tatsächlichen
-Electron-/SQLite-/GPU-Speicher. Die exakten Regelreader und
-expliziten Vollwerkzeuge sind hiervon getrennt. Die Landschaft ist in denselben
-quellengebundenen Bereichsframe integriert, einschließlich dichter Rasterübersicht
-und paginierter exakter Auswahl. Kleine Kameraverschiebungen verwenden vorhandene
-Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
-den TEMP-Index. Das [aktuelle Kamera-Ladeverhalten](#darstellung-suche-und-spieleranzeige)
-trennt laufende Vorschauen von der Freigabe genauer Autorenhits.
+[Bereichsworker und Quellinvalidierung](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#bereichsworker-und-quellinvalidierung)
+sowie [Darstellungs- und Cachebudgets](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#darstellungsbudgets-und-caches)
+stehen im Runtimeplan. [Framefreigabe](docs/development/atlas-rendering.md#welcher-frame-darf-eingaben-annehmen)
+und [Wiederverwendung beim Pan](docs/development/atlas-rendering.md#was-bleibt-bei-rasterwechsel-und-pan-erhalten)
+stehen im Darstellungsvertrag.
 
 [Prüfwege und offene Qualifikation](docs/development/atlas-rendering.md#prüfwege-und-offene-qualifikation)
 trennen native Laufzeitbelege von Hardware-/Präsentationsabnahme und weiteren
