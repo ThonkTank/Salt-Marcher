@@ -6,6 +6,19 @@ atomaren Handel, Ownerwarnung/Neuzuordnung, wiederherstellbare Beziehungen sowie
 manuelles, fixes und gewichtetes Auffüllen. Kaufpreis-/Ledgerregeln stehen im
 [Lootfachplan](loot-balance.md).
 
+## Handel ändern und prüfen
+
+| Änderung | Codeeinstieg |
+| --- | --- |
+| Preisvorschlag oder Beleganzeige | [items-ui.ts](../../../src/app/items-ui.ts): `salePrice`, `renderShopHistory` |
+| Einzelstück oder Mengenstapel zuordnen | [items-contracts.ts](../../../src/app/items-contracts.ts): `shopStockForItem`, gemeinsam für Vorschlag und Rücknahme |
+| Handel verbindlich buchen oder Belege lesen | [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop` mit Ledger, Bestand und Receipt in einer Transaktion; `history` speichert Belegfakten, `readShopHistory` liest sie seitenweise |
+
+Die [Preis-/Teilverkaufsprüfung](../../../tests/desktop-trade-paid-price.test.mjs)
+sichert Rundung, Replay und Fresh; die [Oberflächenprüfung](../../../tests/desktop-shop-switch.test.mjs)
+prüft Vorschlag und Verlaufsanzeige. Der native Gesamtweg und seine Grenzen stehen unten.
+Für die gemeinsame Belohnungsbewertung gilt der verlinkte Lootfachplan.
+
 ## Vorhandener Ablauf und Grenzen
 
 Gegenstandsvergabe und Handel verwenden das ohnehin geladene Live-Roster für
@@ -15,7 +28,7 @@ Käufer sind aktive, Verkäufer und Beuteempfänger auch inaktive Rosterfiguren;
 archivierte Figuren bleiben ausgeschlossen. Die Writer prüfen ihre jeweiligen
 Revisions- und Bestandsbasen weiterhin selbst.
 
-`items.ts.owner` prüft die Zuordnung; `ShopView.unavailable` berücksichtigt
+`storage/items.ts.owner` prüft die Zuordnung; `ShopView.unavailable` berücksichtigt
 Shop- und Ownertrash. Ownerrestore erhält die Beziehung, hebt ausdrücklichen
 Shoptrash nicht auf. Shopreads zeigen defekte Records einzeln. Der Shopeditor
 kann denselben Shop mit Bestand, Preisen und Historie neu zuordnen; Handel
