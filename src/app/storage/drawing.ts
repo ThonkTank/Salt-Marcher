@@ -60,7 +60,7 @@ function recordPlacement(references:Set<string>,cam:string,e:DrawingElement){
  if(references.has(key))throw new Error('Dieser konkrete Encounter / Loot besitzt bereits eine Dungeonplatzierung. Für eine weitere Platzierung eine unabhängige Inhaltskopie verwenden.');
  references.add(key);
 }
-function readDrawingElements(db:any,cam:string){
+export function readDrawingElements(db:any,cam:string){
  const elements:DrawingElement[]=[],references=new Set<string>();
  for(const row of db.prepare('SELECT * FROM drawing_element WHERE campaign_id=? ORDER BY rowid').iterate(cam)){
   const e=checkedElementRow(row);recordPlacement(references,cam,e);elements.push(e);
