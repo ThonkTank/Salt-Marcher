@@ -210,3 +210,30 @@ Fortschrittsdecoder aufgefangen; deren Auslassung wird in beiden Testständen
 nicht erkannt. Die Gegenproben belegen keine allgemeine Mutationsabdeckung.
 Sessionkopie, Wetter und Legendary-Transfer behalten ihre unterschiedlichen
 Writer-, Owner-, Zeit-, Recovery- und Replayprüfungen unverändert.
+
+Die 57 positiven Einzelgoldens der Bags-/B-/C-/D-/E-Itemabschnitte entfallen.
+Der bestehende Test `items source package is explicitly incomplete and fails
+closed by default` in `items-srd51-source.test.mjs` vergleicht bereits sämtliche
+vollständigen Referenzdatensätze und Inventarvorkommen mit dem eingecheckten
+Paket, einschließlich fehlender Felder. Quellen-XML, Hashbelege, Tabellenzellen,
+Seitenfortsetzungen, Flüche und gegenstandsspezifische Sonderregeln bleiben
+separat geprüft.
+
+Jeder Gegenstand behält eine beschädigte Prosa und eine beschädigte
+Inventarzuordnung als Negativprobe. Die übrigen Feldvarianten stehen einmal
+pro Abschnitt beim ersten Gegenstand: Jeder Abschnitt besitzt einen eigenen
+Vergleichseinstieg. Die separaten Tabellen-/Reihenfolgefälle bleiben bestehen.
+Fünf weitere positive Gesamtvalidierungen und zwölf wiederholte globale
+Inventarassertions entfallen; deren konkrete Gegenstücke stehen im zentralen
+Pakettest und im B-Abschnitt. Im Projektionstest entfällt ein erneutes Lesen
+der bereits geprüften Revision nach einem nachweislich schreibfreien Startup.
+
+Damit entfallen 57 ausgeführte Fälle und rechnerisch 823 Assertions; gemessen
+243 tiefe Datenkopien. Der Teilbestand einschließlich zentralem Quellpakettest
+sinkt von 195 auf 138 Fälle (jeweils ein optionaler PDF-Skip). In jedem der fünf
+Abschnitte erkennen alte und reduzierte Tests eine falsche Referenzprojektion,
+einen ausgelassenen Datensatz, ein ausgelassenes Inventarvorkommen und eine
+ignorierte Attunementprüfung. Die 20 Fehlergegenproben und ihre 40 unveränderten
+Kontrollläufe ersetzen keine vollständige PDF-, native UI- oder Owner-Abnahme.
+Die beiden Reward-UI-Fälle bleiben getrennt: Katalogreferenzen und unfertige
+freie Eingaben besitzen unterschiedliche Bearbeitungsregeln.

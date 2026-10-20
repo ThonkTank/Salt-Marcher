@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { B_SECTION, bSectionSourceRows, validateBSectionSlice, validateBSectionPdfXml } from "../tools/items-srd51-b-section.mjs";
-import { normalizePdfText, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText } from "../tools/items-srd51-source-verify.mjs";
 
 const fixture = new URL("./fixtures/items-srd51-b-section-poppler-25.03.xml", import.meta.url);
 const xml = await readFile(fixture, "utf8");
@@ -35,29 +35,18 @@ test("remaining B-section: complete original three-page XML hash, attribution an
   assert.equal(transcript.complete, false);
 });
 
-
-
+// Positive rows are checked in full by the central "items source package" test.
 for (const item of B_SECTION) {
-  test(`${item.name}: complete header/prose/identity/page/rarity/schema golden`, () => {
-    const { occurrence, record } = bSectionSourceRows().find(row => row.record.name === item.name);
-    assert.equal(record.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
-    assert.equal(occurrence.mergeIntoId, null);
-    assert.equal(occurrence.variantId, null);
-    assert.deepEqual(record.source.pdfPages, item.pages);
-    assert.equal(record.cost, undefined);
-    assert.equal(record.weight, undefined);
-    assert.equal(record.damage, undefined);
-    assert.equal(record.armor, undefined);
-    assert.equal(record.carryingCapacity, undefined);
-  });
-  test(`${item.name}: truncation/invented fact/page/attunement/merge fails closed`, () => {
-    for (const mutate of [
+  test(`${item.name}: source record and occurrence damage fail closed`, () => {
+    const faults = [
       row => row.description.pop(),
       row => row.description.push({ text: "Invented extra rule.", occurrenceId: row.id }),
       row => row.source.pdfPages = [999],
       row => row.attunement = "unspecified",
       row => row.cost = { sourceText: "1 gp", copperPieces: 100 },
-    ]) {
+    ];
+    // Full field matrix once per comparator; every item still tests record and occurrence rejection.
+    for (const mutate of item === B_SECTION[0] ? faults : faults.slice(0, 1)) {
       const copy = structuredClone(transcript);
       mutate(copy.records.find(row => row.name === item.name));
       assert.throws(() => validateBSectionSlice(copy, inventory), /complete header\/prose\/table\/choice/);
@@ -92,7 +81,6 @@ test("Giant Strength: five table-owned rarity choices, six prose varieties and c
     mutate(copy.records.find(row => row.id === id));
     assert.throws(() => validateBSectionSlice(copy, inventory), /table\/choice/);
   }
-  assert.equal(validateTranscriptData(transcript, inventory, { allowIncomplete: true }).complete, false);
 });
 
 test("real XML rejects table reassignment, missing cross-page curse, lost bullets, signs and recharge", () => {

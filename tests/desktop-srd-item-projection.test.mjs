@@ -28,5 +28,5 @@ test('a corrected projection advances only its current SRD head and preserves ob
  installItemDefinitions(db);const repaired=readItemDefinition(db,id);assert.equal(repaired.revision,8);assert.equal(repaired.sourceHash,old.sourceHash);assert.match(repaired.description,/range 80\/320/);
  assert.deepEqual(readItemDefinition(db,id,7),old);assert.deepEqual(db.prepare('SELECT * FROM item_definition_version WHERE id=? AND revision=7').get(id),oldBytes);assert.throws(()=>readItemDefinition(db,id,6),/historische Gegenstandsversion/);
  assert.deepEqual(db.prepare('SELECT * FROM item_definition WHERE id=?').get(copy.id),copyBytes);assert.deepEqual(readItemDefinition(db,unchanged.id),unchanged);
- const changes=db.prepare('SELECT total_changes() n').get().n;installItemDefinitions(db);assert.equal(db.prepare('SELECT total_changes() n').get().n,changes,'unchanged startup writes no new versions');assert.equal(readItemDefinition(db,id).revision,8);
+ const changes=db.prepare('SELECT total_changes() n').get().n;installItemDefinitions(db);assert.equal(db.prepare('SELECT total_changes() n').get().n,changes,'unchanged startup writes no new versions');
 });
