@@ -121,9 +121,11 @@ Unter **Landschaft → Regionen** werden Regionen primär mit dem Pinsel bearbei
 Meilen, Flächen in Quadratfuß/Quadratmeilen) und **Metrisch** (Meter/Kilometer,
 Quadratmeter/Quadratkilometer) um. Die Einstellung gilt für den Atlas, seine
 Maßeingaben, Messung, Größenvergleiche und den Bildmaßstab und bleibt lokal über
-Neustarts erhalten. Auch Punktlisten und die räumlichen Dungeonwerkzeuge folgen
+Neustarts erhalten. Auch Breite und Tiefe neu erzeugter Raumgruppen, Punktlisten und die räumlichen Dungeonwerkzeuge folgen
 der Auswahl; diskrete 3D-Werkzeuge behalten ihre bisherigen Rasterabstände.
-Interne Geometrie, Entwürfe und Speicherformate behalten ihre bisherigen Einheiten.
+Raumgruppen verwenden für Vorschau und Übernahme denselben metrischen Rezeptwert;
+40 × 25 Fuß ergeben 12,192 × 7,62 Meter. Interne Geometrie, Entwürfe und
+Speicherformate behalten ihre bisherigen Einheiten.
 Ein Wechsel speichert keine Kartenänderung. Ungültige offene Maßtexte müssen vor
 dem Wechsel korrigiert werden.
 
@@ -133,7 +135,9 @@ Pinsel Radius und Durchmesser, Objekte ihre Abmessungen und Licht/Features ihre
 Reichweite. Flächen berücksichtigen Löcher; gekrümmte Landschaftswege verwenden
 den dargestellten Verlauf. Gebäudemaße beziehen sich auf ihre eigene Kontur und
 ändern sich nicht beim Drehen. Die Anzeige folgt dem Entwurf und den Griffen,
-bleibt ohne Autorenwirkung und wird nicht in Kartenbilder übernommen.
+bleibt ohne Autorenwirkung und wird nicht in Kartenbilder übernommen. Die aktuelle
+Höhe, ihre Auflösung und eine laufende Höhenvorschau werden aus numerischen Werten
+in der gewählten Einheit formatiert; der Wechsel benötigt keine neue Höhenabfrage.
 
 Bei eingeschaltetem und darstellbarem Hexraster ergänzt der Maßstab die aktuelle
 Hexgröße **zwischen gegenüberliegenden Kanten** und eine **Reise-Richtzeit**.
@@ -147,5 +151,8 @@ Gezielte Prüfungen: `tests/desktop-atlas-measurements.test.mjs`,
 `tests/desktop-atlas-navigation.test.mjs` und
 `tools/test-desktop-atlas-measurements.mjs`. Der native Ablauf verwendet eine
 synthetische Kampagne und prüft Wegentwurf, Einheitenwechsel, Raumzug mit
-Undo/Redo, Viertelfläche, Gebäudevorschau, Export und metrische Wiederöffnung.
+Undo/Redo, Viertelfläche, Gebäudevorschau und -übernahme, Export und metrische
+Wiederöffnung. Gebäudemaße und gespeicherte Geometrie werden nach Einheitenwechsel
+und Neustart verglichen; der Gebäude-Dialog wird bei tatsächlichem 200-%-Zoom
+bedient. Die gemeinsame Native-Session-Prüfung verlangt normale Prozessenden.
 Diese Fälle sind keine vollständige Abnahme aller Werkzeugvarianten.
