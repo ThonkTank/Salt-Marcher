@@ -1,3 +1,4 @@
+import {installSourceCellIndex} from './atlas-source-cell';
 import {validateMapLabelStyle} from '../map-label-style';
 import {readRouteTerrain,routeProposal} from './terrain-route';
 import {validateRoute} from '../terrain-route';
@@ -39,16 +40,10 @@ export function installLandscape(db: any) {
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_landscape(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE INDEX IF NOT EXISTS landscape_area ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y);
- CREATE INDEX IF NOT EXISTS landscape_source_cell ON atlas_landscape(
-   campaign_id,
-   json_extract(payload,'$.sourceCell.mapId'),
-   json_extract(payload,'$.sourceCell.level'),
-   json_extract(payload,'$.sourceCell.q'),
-   json_extract(payload,'$.sourceCell.r')
- ) WHERE json_extract(payload,'$.sourceCell.mapId') IS NOT NULL;
  CREATE TABLE IF NOT EXISTS atlas_reference_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,mime TEXT NOT NULL,bytes BLOB NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS atlas_landscape_migration(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id)) STRICT;
  `);
+  installSourceCellIndex(db);
   for (const root of db
     .prepare(
       "SELECT * FROM campaign_atlas WHERE campaign_id NOT IN(SELECT campaign_id FROM atlas_landscape_migration)",

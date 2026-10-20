@@ -90,7 +90,7 @@ OS-Caches sind unkontrolliert. Kein schmaler Probelauf belegt bereits 60 FPS.
 
 ## Separater Speicherbefund: Hexzellen-Lookup
 
-Der kanonische Zellwriter sucht für jede Zelle nach Kampagne, Karte, Stufe, q und r in `sourceCell`. Ein partieller SQLite-Ausdrucksindex in `installLandscape` deckt diese vollständige Suche ab und wird beim Öffnen auch für bestehende Daten aufgebaut. Die [Regression](../../../tests/atlas-source-cell-index.test.mjs) prüft den tatsächlichen Queryplan sowie Aktualisieren ohne ID-Wechsel, Löschen und Wiederöffnen. Lokal bestanden; dies ist kein Leistungsnachweis der vollständigen 100.000-Hex-Welt und keine Voraussetzung für den Kameraanschluss.
+Der kanonische Zellwriter sucht für jede Zelle nach Kampagne, Karte, Stufe, q und r in `sourceCell`. Ein partieller SQLite-Ausdrucksindex aus `atlas-source-cell.ts`, aufgerufen von `installLandscape`, deckt diese vollständige Suche ab und wird beim Öffnen auch für bestehende Daten aufgebaut. Die [Regression](../../../tests/atlas-source-cell-index.test.mjs) prüft den tatsächlichen Queryplan sowie Aktualisieren ohne ID-Wechsel, Löschen und Wiederöffnen. Lokal bestanden; dies ist kein Leistungsnachweis der vollständigen 100.000-Hex-Welt und keine Voraussetzung für den Kameraanschluss.
 
 ## Offene P0-Arbeit
 
@@ -104,3 +104,5 @@ Der kanonische Zellwriter sucht für jede Zelle nach Kampagne, Karte, Stufe, q u
   Wandänderung/Undo; 30 Minuten Ressourcenprüfung sowie tatsächliche Pixelreaktion.
 - Bestehende Testdateien inhaltlich den vollständigen Verbraucherfällen zuordnen.
 - Beide P1-Kandidaten verwenden dieselben vorhandenen Bestände und Abläufe. Große Fälle entstehen begleitend zu den jeweiligen Produktphasen; sie blockieren den frühen Kameraanschluss nicht.
+
+Der Ausdrucksindex und sein Lookup prüfen `json_valid` innerhalb von `CASE`, bevor sie Quellfelder lesen. So bleibt beschädigtes JSON für Diagnosen erhalten und blockiert keine gesunden Kampagnen beim Öffnen. Der frühere ungeschützte Index wird gezielt ersetzt; Quellen werden dabei nicht geändert. Die Indexregression umfasst beschädigte Datensätze und dieses Upgrade.

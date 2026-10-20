@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
-    contents: "export {CampaignStore} from './src/app/storage/store';",
+    contents: "export {CampaignStore} from './src/app/storage/store'; export {sourceCellLookup,installSourceCellIndex} from './src/app/storage/atlas-source-cell';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-source-cell-index.cjs",
@@ -17,10 +17,7 @@ buildSync({
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore } = require("../.build/atlas-source-cell-index.cjs");
-// The exact lookup used by writeCellLandscape; every key must remain indexed.
-const lookup =
-  "SELECT id,revision FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.sourceCell.mapId')=? AND json_extract(payload,'$.sourceCell.level')=? AND json_extract(payload,'$.sourceCell.q')=? AND json_extract(payload,'$.sourceCell.r')=?";
+const { CampaignStore, sourceCellLookup: lookup, installSourceCellIndex } = require("../.build/atlas-source-cell-index.cjs");
 test("source-cell index backfills an existing database and follows canonical updates, deletes and reopen", (t) => {
   const root = homedir() + "/.cache/saltmarcher/tests";
   mkdirSync(root, { recursive: true });
@@ -114,4 +111,33 @@ test("source-cell index backfills an existing database and follows canonical upd
   assert.equal(store.db.prepare(lookup).get(...args), undefined);
   reopen();
   assert.equal(store.db.prepare(lookup).get(...args), undefined);
+});
+
+
+test('source-cell index excludes malformed JSON during writes and reopening without deleting it',t=>{
+ const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/source-cell-corrupt-');
+ let store=new CampaignStore(dir+'/world.sqlite');const cam=store.create('Healthy campaign');
+ t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+ store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)').run(cam.id,'broken',0,0,1,0,1,'{broken');
+ assert.equal(store.db.prepare(lookup).get(cam.id,'map',0,0,0),undefined);
+ store.close();store=new CampaignStore(dir+'/world.sqlite');
+ assert(store.activateShell(cam.id).token);
+ assert.equal(store.db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get('broken').payload,'{broken');
+ store.db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run('{still-broken','broken');
+ assert.equal(store.db.prepare(lookup).get(cam.id,'map',0,0,0),undefined);
+});
+
+
+test('upgrading the earlier unguarded source index retains its valid source row',()=>{
+ const db=new (require('better-sqlite3'))(':memory:');
+ try{
+  db.exec("CREATE TABLE atlas_landscape(campaign_id TEXT,id TEXT,revision INTEGER,payload TEXT); CREATE INDEX landscape_source_cell ON atlas_landscape(campaign_id,json_extract(payload,'$.sourceCell.mapId'))");
+  const payload=JSON.stringify({sourceCell:{mapId:'world',level:0,q:-3,r:4}});
+  db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?)').run('campaign','cell',7,payload);
+  installSourceCellIndex(db);
+  assert.deepEqual(db.prepare(lookup).get('campaign','world',0,-3,4),{id:'cell',revision:7});
+  db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?)').run('campaign','bad',1,'{bad');
+  installSourceCellIndex(db);
+  assert.equal(db.prepare('SELECT payload FROM atlas_landscape WHERE id=?').get('cell').payload,payload);
+ }finally{db.close();}
 });
