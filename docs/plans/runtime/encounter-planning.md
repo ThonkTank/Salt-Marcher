@@ -14,12 +14,49 @@ Liveübergabe: [Kampf-Recovery](combat-recovery.md).
 | Tabellen, Loot, Presets und Weltquellen | [generation-ui.ts](../../../src/app/generation-ui.ts), [world-source-ui.ts](../../../src/app/world-source-ui.ts), [storage/generation.ts](../../../src/app/storage/generation.ts); [Gewichte/Save](../../../tests/desktop-table-weights.test.mjs), [Scope](../../../tests/desktop-table-scope.test.mjs), [Weltquellen-UI](../../../tests/desktop-world-source-ui.test.mjs) |
 | Bestehende Vorlage auffüllen | [GenerationRequest/Run](../../../src/app/generation-contracts.ts), [Selector](../../../src/app/generation/selector.ts) und bestehender Vorlagenwriter; [Füll-/Transferfälle](../../../tests/desktop-generation-fill.test.mjs) |
 | Verknüpfte Beute reproduzieren und buchen | `lootItems` in [storage/generation.ts](../../../src/app/storage/generation.ts) berechnet Sessionvorschau und gebuchten Wurf; [Seeds, Gruppierung und Receipts](../../../tests/desktop-generation-loot.test.mjs) |
-| Generierung bis zum Folgeabend durchspielen | [Native Bedienprobe](../../../tools/test-desktop-generation-preparation.mjs): gemischte Level, thematische Tabelle, verknüpfte Beute, angepasste Vorlage, Appneustart, veränderte aktuelle Party, Kampfabschluss und erneutes Öffnen; Vorbereitung bei 100%, Wiederaufnahme und Kampf bei 200% |
+| Generierung bis zum Folgeabend durchspielen | [Native Bedienprobe](../../../tools/test-desktop-generation-preparation.mjs): gemischte Level, thematische Tabelle, verknüpfte Beute, angepasste Vorlage, Appneustart, veränderte aktuelle Party, Kampfabschluss und erneutes Öffnen; Vorbereitung, Quellenredaktion, Wiederöffnen aus der Vorschauhistorie und aktueller Gruppenstand beim Kampf |
 
 Vorhandene Store-/DOM- und native Einzelläufe qualifizieren ihre geprüften Fälle,
 keine vollständige Encounter-, 200%-, Plattform- oder unbekannte-Write-Abnahme.
 Kontrollierter Nachreadfehler, abgewiesener SQLitewrite, verlorene Antwort und
 vollständiger Appneustart bleiben verschiedene Belege.
+
+## Gespeicherte Vorbereitung aus einer früheren Vorschau öffnen
+
+Die erste Übernahme bleibt ein revisionierter Writer: `acceptGeneration` prüft
+Füllbasis, NPCs, Weltquellen, Tabellen, wirksames Preset und Katalog, bevor genau
+eine neue Vorlage entsteht. Die bestätigte Zuordnung gehört zu
+`generation_acceptance`; der unveränderte Run bleibt die Herkunft.
+
+Nach der Übernahme ist die Vorlage eigenständig bearbeitbar. „Gespeicherte
+Vorlage öffnen“ liest deshalb über den vorhandenen `encounterPlan`-Port ihren
+aktuellen Stand. Geänderte Generatorfilter, Planungseingaben oder Quellen sperren
+weiterhin neue Übernahmen, aber nicht diesen Read. Antwort-ID, Workspace und
+offene Vorschau bleiben gebunden; ein Lesefehler steht am Generator und kann
+read-only erneut gelesen werden. Kann der bestehende Autorenentwurf vor dem
+Wechsel nicht gespeichert werden, bleibt er offen; der Generator meldet die
+Blockade statt fälschlich eine geöffnete Vorlage zu bestätigen.
+Auch der gemeinsame Übernahmepfad löst eine
+bestehende Zuordnung vor aktuellen Quellenprüfungen auf. Originalreceipts bleiben
+unverändert und geben bei exakt demselben Auftrag ihren ursprünglichen Stand
+zurück; bewusstes Öffnen liest spätere Autorenänderungen.
+
+Davor führte der Öffnen-Button erneut den Writer aus und scheiterte etwa nach
+Redaktion einer Encounter-Tabelle oder Füllbasis, obwohl die gespeicherte Vorlage
+unverändert verfügbar war. Kein neues Format, keine Migration oder zweite
+Schreibgrenze ist nötig. Store-/DOM-Gegenfälle prüfen aktuelle Prosa, archivierte
+Tabelle, geänderte Füllbasis, unveränderte Run-/Receiptbytes, unübernommene
+Geschwistervorschläge, Lesefehler/Retry, blockierten Autorenwechsel, Antwortidentität und Campaignwechsel.
+Ein vollständiger Storeablauf öffnet die Vorbereitung, führt sie mit zwei
+aktuellen statt den drei geplanten Figuren unterschiedlicher Level durch und liest nach Fresh das
+abgeschlossene Ergebnis samt unveränderter Vorbereitung.
+
+Die native Probe redigiert nach dem ersten App-Exit die Quelltabelle und öffnet
+die frühere Vorbereitung über die Vorschauhistorie vor dem Kampf. Sie setzt nun
+wirklichen Browserzoom auf 1 beziehungsweise 2. Die früheren Aufrufe mit
+Geräteskalierungsfaktor 2 belegen keinen 200%-Browserzoom. Alte Erfolgsdateien
+werden vor dem Lauf entfernt; Prozessausgänge und Runtimehashes bleiben eigene
+Belege. Ein fehlgeschlagener nativer Lauf schließt weder Bedienung noch 200% ab.
 
 ## Planungsparty zwischen Vorlage und Generator bearbeiten
 
