@@ -123,6 +123,7 @@ export class NoteThreadDialog {
   private searchRequest = 0;
   private busy = false;
   private loading = false;
+  private reloadTarget = 0;
   private stale = false;
   private next: number | null = null;
   private total = 0;
@@ -297,14 +298,14 @@ export class NoteThreadDialog {
       if (!this.busy) void this.closeContext();
     });
     this.refresh.onclick = () => {
-      if (!this.busy) void this.load(false);
+      if (!this.busy && !this.loading) void this.reload(this.entries.size);
     };
     this.active.onchange = () => {
-      if (!this.busy) void this.load(false);
+      if (!this.busy && !this.loading) void this.reload(this.entries.size);
     };
     this.includeRoot.onchange = () => this.controls();
     this.more.onclick = () => {
-      if (!this.loading && !this.busy && this.next !== null)
+      if (!this.loading && !this.busy && !this.stale && this.next !== null)
         void this.load(true);
     };
     this.query.oninput = () => {
@@ -348,6 +349,7 @@ export class NoteThreadDialog {
     this.busy = false;
     this.loading = false;
     this.entries.clear();
+    this.reloadTarget = 0;
     this.choices.clear();
     this.sourceLinks.clear();
     this.additions.clear();
@@ -386,7 +388,7 @@ export class NoteThreadDialog {
   private async showMap(owner: NoteThreadSource, frame?: NoteMapFrame, preparing = false) {
     this.owner = owner;
     this.root = frame?.root ?? null;
-    this.entries.clear(); this.sourceLinks.clear();
+    this.entries.clear(); this.sourceLinks.clear(); this.reloadTarget = 0;
     this.choices = new Map(frame?.choices);
     this.autoSelectSources = frame?.autoSelectSources ?? true;
     this.additions.clear();
@@ -496,7 +498,7 @@ export class NoteThreadDialog {
     this.chooseSource.disabled = blocked || !this.inspection || this.editorContent.hidden;
     this.editRoot.disabled = blocked || this.editing !== null;
     this.more.hidden = this.next === null;
-    this.more.disabled = this.busy || this.loading;
+    this.more.disabled = this.busy || this.loading || this.stale;
     this.planName.parentElement!.hidden = !!this.plan.value;
     this.visitTitle.parentElement!.hidden = !!this.visit.value;
     this.plan.parentElement!.hidden = this.preparing && this.plan.options.length === 1;
@@ -622,10 +624,13 @@ export class NoteThreadDialog {
     }
   }
   private async reload(loaded = 0, reviewed?: { id: string; selected: boolean }) {
-    const epoch = this.epoch;
+    const epoch = this.epoch, target = Math.max(loaded, this.reloadTarget);
+    // A partial failure must not turn the next refresh into a first-page-only read.
+    this.reloadTarget = target;
     await this.load(false, reviewed);
-    while (this.current(epoch) && !this.stale && this.next !== null && this.entries.size < loaded)
+    while (this.current(epoch) && !this.stale && this.next !== null && this.entries.size < target)
       await this.load(true, reviewed);
+    if (this.current(epoch) && !this.stale) this.reloadTarget = 0;
   }
   private drawSource(e: NoteThreadEntry, epoch: number) {
     const card = node("article"),

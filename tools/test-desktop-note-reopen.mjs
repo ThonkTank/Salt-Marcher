@@ -1,17 +1,17 @@
 import {createRequire} from 'node:module';
-import {mkdtemp, mkdir, readFile, writeFile, stat} from 'node:fs/promises';
-import {spawn, execFileSync} from 'node:child_process';
-import {randomUUID, createHash} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
+import {createNativeSession} from './native-session.mjs';
 import assert from 'node:assert/strict';
 
 // Real Electron, a disposable profile, original note IDs and an existing session.
 const root = process.cwd(), require = createRequire(root + '/package.json');
-const {_electron} = require('playwright-core');
 const out = process.env.QA_EVIDENCE_DIR ?? root + '/.build/note-reopen';
-await mkdir(out, {recursive: true});
+const native = await createNativeSession({root, output: out, name: 'salt-note-reopen'});
+let page, stage = 'fixture'; const results = [];
+try {
 require('esbuild').buildSync({entryPoints: ['src/app/storage/store.ts'], outfile: '.build/note-reopen-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3']});
 const {CampaignStore} = require(root + '/.build/note-reopen-store.cjs');
-const profile = await mkdtemp('/tmp/salt-note-reopen-'), file = profile + '/workbench.sqlite';
+const file = native.profile + '/workbench.sqlite';
 const store = new CampaignStore(file), campaign = store.create('Die zurückgekehrte Spur'), w = store.activate(campaign.id);
 const cmd = action => ({commandId: randomUUID(), campaignId: campaign.id, token: w.token, action});
 const make = (title, kind, gmNotes) => ({version: 1, id: randomUUID(), revision: 1, title, kind, gmNotes, readAloud: '  Original zum Vorlesen\r\n', relations: [], creatureId: null, deleted: false});
@@ -30,22 +30,13 @@ store.executeSession(cmd({kind: 'visit', planId: plan.id, expectedRevision: visi
 const narrative = store.narrative(w.token, clue.id);
 store.executeProgress(cmd({kind: 'narrative-state', state: {...narrative.state, status: 'closed'}, expectedRevision: narrative.state.revision, expectedNoteRevision: clue.revision}));
 store.tutorial('skipped'); store.close();
-const source = execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim();
-const dirty = !!execFileSync('git', ['status', '--porcelain'], {encoding: 'utf8'}).trim(), hashes = {};
-for (const rel of ['main.cjs', 'preload.cjs', 'ui/renderer.js','ui/index.html','ui/app.css']) hashes[rel] = createHash('sha256').update(await readFile(root + '/.build/desktop/' + rel)).digest('hex');
-const bus = profile + '/bus', proxy = spawn('xdg-dbus-proxy', [process.env.DBUS_SESSION_BUS_ADDRESS, bus, '--filter', '--talk=org.freedesktop.portal.Desktop', '--talk=org.freedesktop.Notifications'], {stdio: 'ignore'});
-for (let i = 0; i < 100 && !await stat(bus).catch(() => null); i++) await new Promise(r => setTimeout(r, 20));
-let app, page, stage = 'launch'; const launches = [], errors = [], results = [];
 async function launch(scale) {
-  app = await _electron.launch({executablePath: root + '/node_modules/electron/dist/electron', args: [root + '/.build/desktop/main.cjs', '--ozone-platform=x11', '--force-device-scale-factor=' + scale, '--data-dir', profile], env: {...process.env, DBUS_SESSION_BUS_ADDRESS: 'unix:path=' + bus}});
-  launches.push({scale, pid: app.process().pid}); page = await app.firstWindow(); page.setDefaultTimeout(15000);
-  page.on('pageerror', e => errors.push(e.stack));
-  await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
+  page = await native.launch(scale);
   await page.locator('.campaign-card[data-campaign-id="' + campaign.id + '"]').getByRole('button', {name: /Öffnen|Fortsetzen/}).click();
   await page.waitForFunction(id => document.getElementById('campaigns').value === id && !document.getElementById('workspace-navigation').inert, campaign.id);
   if (!await page.locator('#preparation-tab').isVisible()) {
     if (await page.locator('#atlas-navigation').isVisible()) await page.locator('#atlas-navigation').click();
-    else await page.locator('#workspace-nav-summary').click();
+    if (!await page.locator('#preparation-tab').isVisible()) await page.locator('#workspace-nav-summary').click();
   }
   await page.locator('#preparation-tab').click(); await page.locator('#preparation-knowledge').click();
   await page.locator('#world-search').fill(overview.title);
@@ -62,15 +53,6 @@ async function allSources(){
     await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
   }
 }
-async function close() {
-  const exited = new Promise(r => app.process().once('exit', (code, signal) => r({code, signal})));
-  await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).close());
-  let timer;
-  try {
-    const exit = await Promise.race([exited, new Promise((_, reject) => timer = setTimeout(() => reject(Error('Normal close timed out')), 10000))]);
-    assert.deepEqual(exit, {code: 0, signal: null}); launches.at(-1).exit = exit; app = null;
-  } finally { clearTimeout(timer); }
-}
 const card = id => page.locator('#note-thread-sources article[data-note-id="' + id + '"]');
 async function edit(id) {
   await card(id).getByRole('button', {name: 'Notiz bearbeiten…', exact: true}).click();
@@ -80,7 +62,6 @@ async function back() {
   await page.locator('#note-thread-return').click();
   await page.waitForFunction(() => document.getElementById('note-thread-editor').hidden && !document.getElementById('note-thread-use').disabled);
 }
-try {
   for (const scale of [1, 2]) {
     // Each scale must really reopen a closed source, including after the prior fresh edit.
     const reset = new CampaignStore(file);
@@ -95,7 +76,7 @@ try {
     // Explicitly exclude an unrelated source. Its existing visit link must survive.
     await card(npc.id).locator('input[type=checkbox]').check();
     assert.deepEqual(await page.locator('#note-thread-sources input[type=checkbox]').evaluateAll(ns=>ns.filter(n=>n.checked).map(n=>n.value)),[npc.id]);assert(await page.locator('#note-thread-include-root').isChecked());
-    await page.locator('#note-thread-clear-selection').scrollIntoViewIfNeeded();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));await writeFile(out+'/source-selection-'+scale+'.png',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage().then(image=>image.toPNG())));
+    await page.locator('#note-thread-clear-selection').scrollIntoViewIfNeeded();await native.capture(page,'source-selection-'+scale+'.png');
     await edit(clue.id);
     const clueText = 'Die Lieferung galt als geklärt.\nNeuer Hinweis ' + scale + ': Eine zweite Lieferung kommt um Mitternacht.';
     await page.locator('#note-gm').fill(clueText);
@@ -110,7 +91,7 @@ try {
     const npcText = 'Nera verwahrt den Schlüssel.\nGespräch ' + scale + ': Sie erwartet die zweite Lieferung.';
     await page.locator('#note-gm').fill(npcText);
     if(scale===1){await page.locator('#note-gm').dispatchEvent('compositionstart');await page.locator('#note-thread-prepare-map').click();await page.waitForFunction(()=>!document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-return').disabled);assert.equal(await page.locator('#note-title').inputValue(),npc.title);await page.locator('#note-gm').dispatchEvent('compositionend');}
-    await page.screenshot({path:out+'/editor-'+scale+'.png'});
+    await native.capture(page,'editor-'+scale+'.png');
     await page.getByRole('button',{name:'Mit dieser Mappe zum Spielabend…',exact:true}).click();
     await page.waitForFunction(()=>document.getElementById('note-thread-editor').hidden&&!document.getElementById('note-thread-use').disabled);
     assert.equal(await page.locator('#note-thread-heading').innerText(),'Notizmappe: '+overview.title);assert.equal(await page.locator('#note-thread-plan').inputValue(),plan.id);assert.equal(await page.locator('#note-thread-visit').inputValue(),plan.scenes[0].id);assert.equal(await page.locator('#note-thread-parent').isVisible(),false);
@@ -139,27 +120,31 @@ try {
     assert(await page.locator('#note-thread-plan').evaluate(el => document.activeElement === el), 'The destination must follow the source choices');
     await sourceChoices.evaluate(el => el.scrollTop = 0);
     await page.locator('#note-thread-dialog').evaluate(el => el.scrollTop = 0);
-    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
-    await writeFile(out+'/handoff-'+scale+'.png',await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage().then(image=>image.toPNG())));
+    await native.capture(page,'handoff-'+scale+'.png');
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
     assert(!await card(other.id).locator('input[type=checkbox]').isChecked());
     await page.locator('#note-thread-active').check();
     await allSources();
     await card(clue.id).waitFor();
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
+    await page.locator('#note-thread-dialog').getByRole('button',{name:'Aktualisieren',exact:true}).click();
+    await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
+    await native.capture(page,'refreshed-selection-'+scale+'.png');
+    assert.equal(await card(clue.id).count(),1,'refresh must retain the loaded later-page source');
+    assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
     await page.locator('#note-thread-plan').selectOption(plan.id); await page.locator('#note-thread-visit').selectOption(plan.scenes[0].id);
-    await page.screenshot({path: out + '/reopened-' + scale + '.png'});
+    await native.capture(page,'reopened-'+scale+'.png');
     await page.locator('#note-thread-use').click(); await page.locator('#note-thread-dialog').waitFor({state: 'hidden'});
     assert.equal(await page.locator('#scene-title').inputValue(), plan.scenes[0].title);
     await page.locator('#session-packet-open').click();
     await page.waitForFunction(() => document.getElementById('session-packet-dialog').open && document.getElementById('session-packet-dialog').getAttribute('aria-busy') === 'false');
     const packet = await page.locator('#session-packet-content').innerText();
     assert(packet.includes('Neuer Hinweis ' + scale)); assert(packet.includes('Gespräch ' + scale)); assert(packet.includes(other.gmNotes.trim()));assert(!packet.includes(background[0].gmNotes.trim()));
-    await page.screenshot({path: out + '/packet-' + scale + '.png'}); await page.locator('#session-packet-close').click(); await close();
+    await native.capture(page,'packet-'+scale+'.png'); await page.locator('#session-packet-close').click(); await native.close();
     stage = 'fresh reopen and further edit at ' + scale; await launch(scale);
     await card(clue.id).waitFor(); assert.match(await card(clue.id).innerText(), /Offen/);
     await edit(clue.id); assert.equal(await page.locator('#note-gm').inputValue(), clueText);
-    await page.locator('#note-gm').fill(clueText + '\nFür den nächsten Abend bestätigt.'); await back(); await close();
+    await page.locator('#note-gm').fill(clueText + '\nFür den nächsten Abend bestätigt.'); await back(); await native.close();
     const check = new CampaignStore(file);
     try {
       const a = check.activate(campaign.id), prep = check.preparation(a.token), original = prep.notes.find(r => r.note.id === clue.id).note;
@@ -171,13 +156,11 @@ try {
       assert.equal(check.narrative(a.token, clue.id).state.status, 'open');
       assert.deepEqual(new Set(check.session(a.token, plan.id).visits[0].noteIds), new Set([other.id, overview.id, npc.id, clue.id]));
     } finally { check.close(); }
-    results.push({scale, reopenedOriginal: true, laterPageRestored:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, boundedSourceChoices:sourceLayout, keyboardSourceSelection:true, freshEdit: true});
+    results.push({scale, reopenedOriginal: true, laterPageRestored:true,explicitRefreshRetained:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, boundedSourceChoices:sourceLayout, keyboardSourceSelection:true, freshEdit: true});
   }
-  assert.deepEqual(errors, []);
-  for (const {pid} of launches) assert.throws(() => process.kill(pid, 0), {code: 'ESRCH'});
-  await writeFile(out + '/result.json', JSON.stringify({source, dirty, hashes, profile, launches, errors, results}, null, 2));
-  console.log(JSON.stringify({results, launches}));
+  await native.finish({results});
+  console.log(JSON.stringify({results, launches: native.launches}));
 } catch (error) {
-  if (app) await page.screenshot({path: out + '/failure.png'}).catch(() => {});
-  await writeFile(out + '/failure.json', JSON.stringify({source, dirty, hashes, profile, stage, launches, errors, error: error.stack}, null, 2)); throw error;
-} finally { if (app) await app.close(); proxy.kill(); }
+  error.message = stage + ': ' + error.message;
+  await native.fail(error); throw error;
+} finally { await native.dispose(); }
