@@ -155,8 +155,11 @@ Undo/Redo, Viertelfläche, Gebäudevorschau und -übernahme, Export und metrisch
 Wiederöffnung. Gebäudemaße und gespeicherte Geometrie werden nach Einheitenwechsel
 und Neustart verglichen; der Gebäude-Dialog wird bei tatsächlichem 200-%-Zoom
 bedient. Die gemeinsame Native-Session-Prüfung verlangt normale Prozessenden.
-Diese Fälle sind keine vollständige Abnahme aller Werkzeugvarianten. Der separate
-geländegebundene Trassenplaner besitzt weiterhin ausdrücklich metrisch beschriftete
-Breiten- und Grenzfelder. Seine Angleichung an die globale Maßeinstellung samt
-Koordinatenliste und Höhenprofil ist ein eigener offener Anschluss; der hier
-geprüfte Wegentwurf verwendet die direkte Atlasfläche.
+Diese Fälle sind keine vollständige Abnahme aller Werkzeugvarianten. Auch der
+geländegebundene Trassenplaner verwendet die gemeinsame Maßeinstellung für Breite,
+Planungsgrenzen, Punktkoordinaten und Höhenprofil. Sein Dialog bietet dieselbe
+Auswahl; Prozentsteigungen bleiben unverändert. Einheitenwechsel benötigen weder
+eine neue Geländeplanung noch einen Schreibvorgang. Unbearbeitete Koordinaten
+behalten ihre volle Genauigkeit. Zugehörige Prüfungen stehen in
+`tests/desktop-terrain-route-units.test.mjs` und
+`tools/test-desktop-terrain-routes.mjs`.
