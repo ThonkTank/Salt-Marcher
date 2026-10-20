@@ -143,3 +143,35 @@ test('failed planning save cannot silently fall back to campaign participants',a
  assert.equal(x.calls.length,0);assert.match(x.el('generation-feedback').textContent,/Offene Encounter-Eingabe/);
  assert.equal(x.el('encounter-name').value,'Unsaved patrol');
 });
+
+test('saved preparations open through their current read even after generator inputs change',async t=>{
+ const x=await fixture(t),opened=[],reads=[];x.ui.initGeneration(()=>{},{plan:async()=>x.plan,creature:()=>null,filters:()=>({}),info:()=>null,accept:async plan=>opened.push(plan)});
+ await x.make();x.choice().onclick();await settle();assert.equal(x.accepted.length,1);
+ x.setFilters({text:'Dragon'});assert.equal(x.choice().disabled,false,'a saved preparation is independent of a changed preview');
+ const saved={id:'accepted',name:'Later authored title',revision:2,notes:'  Later prose\r\n'};window.campaign.encounterPlan=async(token,id)=>{reads.push({token,id});return{ok:true,value:saved};};
+ x.choice().onclick();await settle();assert.deepEqual(reads,[{token:x.w.token,id:'accepted'}]);assert.equal(x.accepted.length,1,'opening must not invoke the acceptance writer again');assert.deepEqual(opened.at(-1),saved);
+});
+
+test('failed saved-plan reads stay local and retry without another acceptance',async t=>{
+ const x=await fixture(t);await x.make();x.choice().onclick();await settle();let fail=true,reads=0;
+ window.campaign.encounterPlan=async()=>{reads++;return fail?{ok:false,error:'Vorlage nicht lesbar'}:{ok:true,value:{id:'accepted',name:'Recovered'}};};
+ x.choice().onclick();await settle();assert.match(x.el('generation-feedback').textContent,/Vorlage nicht lesbar/);assert.equal(x.accepted.length,1);assert.equal(x.choice().disabled,false);
+ fail=false;x.choice().onclick();await settle();assert.equal(reads,2);assert.equal(x.accepted.length,1);
+});
+
+test('a saved-plan response cannot cross workspaces or substitute another identity',async t=>{
+ const x=await fixture(t),opened=[];x.ui.initGeneration(()=>{},{plan:async()=>x.plan,creature:()=>null,filters:()=>({}),info:()=>null,accept:async plan=>opened.push(plan)});await x.make();x.choice().onclick();await settle();opened.length=0;
+ window.campaign.encounterPlan=async()=>({ok:true,value:{id:'other',name:'Wrong plan'}});x.choice().onclick();await settle();assert.deepEqual(opened,[]);assert.match(x.el('generation-feedback').textContent,/Auswahl/);
+ const pause=held();window.campaign.encounterPlan=()=>pause.promise;x.choice().onclick();await settle();x.ui.activateGeneration({...x.w,token:'other',campaign:{id:'other'}});pause.resolve({ok:true,value:{id:'accepted',name:'Late plan'}});await settle();assert.deepEqual(opened,[]);assert.equal(x.accepted.length,1);
+});
+
+test('saved-plan opening cannot claim success when the current authored draft cannot be saved',async t=>{
+ const x=await fixture(t),plan={...structuredClone(x.plan),sources:[],catalogHash:'pinned',notes:'  Existing prose\r\n'},saved={...plan,id:'saved',name:'Saved preparation'};
+ window.campaign.encounterPlan=async(_token,id)=>({ok:true,value:structuredClone(id===plan.id?plan:saved)});
+ window.campaign.creatureInfo=async()=>({ok:true,value:{types:[],sizes:[],habitats:[],alignments:[],subtypes:[],notice:'Offline',hash:'pinned'}});
+ window.campaign.saveEncounterPlan=async()=>({ok:false,error:'Revision conflict'});
+ x.ui.initCatalog(()=>{},async()=>{},async()=>{});x.ui.activateCatalog(x.w);await x.ui.openCatalogReference({kind:'encounter',id:plan.id});
+ x.el('encounter-name').value='Unsaved authored title';x.el('encounter-name').oninput();
+ const historical=historyRun(x,'historical');historical.acceptedPlanIds=['saved'];window.campaign.generationRun=async()=>({ok:true,value:historical});await chooseHistory(x,'historical');
+ x.choice().onclick();await settle();assert.equal(x.el('encounter-name').value,'Unsaved authored title');assert.match(x.el('generation-feedback').textContent,/Offene Encounter-Eingabe/);assert.doesNotMatch(x.el('generation-feedback').textContent,/geöffnet/);assert.equal(x.accepted.length,0);assert.equal(x.choice().disabled,false);
+});

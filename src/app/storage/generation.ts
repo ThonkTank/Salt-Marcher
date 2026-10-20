@@ -192,8 +192,10 @@ export function assertGenerationSourcesCurrent(db:any,cam:string,run:GenerationR
  if(run.catalogHash!==creatureInfo().hash)throw new Error('Katalog geändert. Vorschau neu erzeugen.');
 }
 export function acceptGeneration(db:any,command:{commandId:string;campaignId:string;token:string;runId:string;index:number;expectedRegistryRevision:number},guard:()=>void):EncounterPlan{return db.transaction(()=>{guard();const cam=command.campaignId,fp=fingerprint(command),prior=db.prepare('SELECT * FROM generation_receipt WHERE command_id=?').get(command.commandId);if(prior){if(prior.campaign_id!==cam||prior.fingerprint!==fp)throw new Error('Änderungskennung bereits anders verwendet.');return decoded<EncounterPlan>(prior);}
- const run=readGenerationRun(db,cam,command.runId);assertGenerationSourcesCurrent(db,cam,run,command.expectedRegistryRevision);const plan=run.plans[command.index];if(!plan)throw new Error('Vorschlag nicht verfügbar.');
+ const run=readGenerationRun(db,cam,command.runId),plan=run.plans[command.index];if(!plan)throw new Error('Vorschlag nicht verfügbar.');
+ // Existing preparations are independent authored records, not a new adoption.
  if(run.acceptedPlanIds[command.index])return readEncounterPlan(db,cam,run.acceptedPlanIds[command.index]!);
+ assertGenerationSourcesCurrent(db,cam,run,command.expectedRegistryRevision);
  plan.generationOrigin={runId:run.id,index:command.index,seed:run.seed,preset:run.preset};
  const saved=saveEncounterPlan(db,{commandId:command.commandId+'|plan',campaignId:cam,token:command.token,plan,expectedRevision:null},guard);db.prepare('INSERT INTO generation_acceptance VALUES(?,?,?,?)').run(cam,run.id,command.index,saved.id);const payload=json(saved);db.prepare('INSERT INTO generation_receipt VALUES(?,?,?,?,?)').run(command.commandId,cam,fp,payload,hash(payload));return saved;
  }).immediate();}
