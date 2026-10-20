@@ -105,6 +105,15 @@ bleibt Schließen gesperrt. Danach dürfen Schließen und Escape den modalen Dia
 verlassen, auch wenn ein ungeklärter Command weitere Schreibaktionen sperrt.
 So bleibt der vorhandene Buchungsstatusknopf erreichbar. Schließen verwirft
 weder das Receipt-Ticket noch dessen Schreibschutz und wiederholt keinen Command.
+Nach erfolgreicher Statusklärung werden die betroffenen Mobkarten aus dem neu
+lesbaren aktuellen Kampfstand geöffnet. Die Ziel-IDs bleiben dafür während des
+laufenden Aufrufs im Bestätigungskontext; nach Neustart besitzt das Ticket nur
+seine Belegreferenz. Dann öffnet die ausdrückliche Kontrolle die Gruppen des
+bestätigten Kampfes. Fremde Kämpfe und fehlgeschlagene Reads übernehmen diese
+Anzeigeentscheidung nicht. Historische Beleg-HP ersetzen niemals aktuelle HP.
+Die native Flächenschaden-Probe führt den vollständigen Ablauf auch mit verlorener
+Antwort bis zur Statusklärung, zum Abschluss und zum normalen Wiederöffnen aus.
+Fehlenden flüchtigen Zielkontext prüft zusätzlich die Controllerprobe.
 Die [Entwickleranschlüsse der Bestätigung](../../../ARCHITECTURE.md#buchungsantworten-klären)
 verbinden Dialog, gemeinsame Buchungssperre und gespeicherten Beleg.
 

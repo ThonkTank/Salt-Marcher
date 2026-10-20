@@ -15,7 +15,7 @@ import {fighterDraftBasisMatches,fighterDraftFields,type FighterWorkingDraft,typ
 import {writeConfirmed,hasPendingCommit,onCommitState,onCommitResolved,type CommitResolution} from './commit-confirmation';
 import type { WorkspaceGeometry, Result } from './contracts';
 import type { LiveScene } from './live-contracts';
-import { hasCombatCondition,setCombatCondition,combatConditions,combatOrder,combatStartIssue, type CombatAction, type CombatView, type CombatCommand, type Combatant } from './combat-contracts';
+import { hasCombatCondition,setCombatCondition,combatConditions,combatOrder,combatStartIssue, type CombatAction, type CombatView, type CombatCommand, type Combatant, type CombatState } from './combat-contracts';
 import { prepareFinish, finishRewards, refreshProgress, onProgressChanged } from './progression-ui';
 import { renderCreatureDetail } from './creature-detail-ui';
 import type { EncounterPlan } from './encounter-contracts';
@@ -137,6 +137,10 @@ async function load(id?: string):Promise<boolean> {
   return false;
 }
 
+function revealResultMembers(combat:CombatState,targetIds?:readonly string[]){
+  const targets=targetIds?new Set(targetIds):null;
+  for(const mob of combatMobs(combat))if(!targets||mob.members.some(member=>targets.has(member.id)))expandedMobs.add(mob.id);
+}
 async function execute(action: CombatAction, expectedRevision?:number,stillCurrent:()=>boolean=()=>true): Promise<boolean> {
   if (!workspace || !scene || blocked()||!stillCurrent()) return false;
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='initiative'&&workspace&&view?.combat?draftCache.values.get(combatDraftKey(workspace.campaign.id,view.combat.id,'initiative',view.combat.id)):action.kind==='notes'?notesDraft():editDraft;
@@ -151,14 +155,10 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
       if(!stillCurrent())return false;
-      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft});
+      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,...(action.kind==='area-damage'?{areaTargetIds:action.targets.map(target=>target.participantId)}:{})});
       if (generation !== gen) return false;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
-      if(action.kind==='area-damage'&&result.combat){
-        const targets=new Set(action.targets.map(target=>target.participantId));
-        // Review individual results together, including untouched members of each affected mob.
-        for(const mob of combatMobs(result.combat))if(mob.members.some(member=>targets.has(member.id)))expandedMobs.add(mob.id);
-      }
+      if(action.kind==='area-damage'&&result.combat)revealResultMembers(result.combat,action.targets.map(target=>target.participantId));
       if(['create','edit','damage','hit','area-damage','heal','revive','death','death-roll','concentration','concentration-roll','undo','finish','confirm-npc-losses','remove','add-party','add-prepared-group'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
       const actor='participantId'in action?result.combat?.participants.find(p=>p.id===action.participantId):undefined,death=action.kind==='death'||action.kind==='death-roll'?actor?.deathLast:(action.kind==='damage'||action.kind==='hit')&&JSON.stringify(priorDamageDeath)!==JSON.stringify(actor?.death)?actor?.deathLast:undefined;
       const concentration=action.kind==='concentration'||action.kind==='concentration-roll'?actor?.concentrationLast:undefined;
@@ -507,10 +507,17 @@ function renderEditor() {
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
-  const result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft}|undefined;
+  const token=workspace.token,gen=generation,result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;areaTargetIds?:string[]}|undefined;
   if(meta?.token===workspace.token&&meta.editorDraft){draftCache.consumed(workspace.campaign.id,meta.editorDraft);if(meta.editorDraft.kind==='initiative')initiativePanel?.accepted(meta.editorDraft);}
-  if(result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id))await load(result.combat.id);
+  const loaded=result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id)?await load(result.combat.id):false;
   await refreshProgress();if(afterSaved)await afterSaved();
+  const current=view?.combat,targetIds=meta?.token===token?meta.areaTargetIds:undefined;
+  if(loaded&&current&&generation===gen&&workspace?.token===token&&current.id===result.combat?.id&&(targetIds||meta?.token!==token)){
+    // Reopen current canonical members, never restore the receipt's historical HP.
+    // After restart only the receipt reference survives, so review all groups.
+    revealResultMembers(current,targetIds);
+    render();
+  }
 }
 export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   tell = status;afterSaved=refresh;

@@ -9,7 +9,8 @@ import {createRequire} from 'node:module';
 import {buildSync} from './helpers/build.mjs';
 import {parseHTML} from './helpers/dom.mjs';
 const require=createRequire(import.meta.url);
-for(const [entry,out]of [['src/app/storage/store.ts','combat-switch-store'],['src/app/combat.ts','combat-switch-ui']])buildSync({entryPoints:[entry],outfile:'.build/'+out+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/combat-switch-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({stdin:{contents:"export * from './src/app/combat';export {initCommitControls,checkPendingCommit} from './src/app/commit-confirmation';",resolveDir:process.cwd()},outfile:'.build/combat-switch-ui.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const tick=()=>new Promise(r=>setImmediate(r));
 // Real WebCrypto work completes on the worker pool, not after a fixed number
 // of event-loop turns. Yield until the requested UI state, with a bounded deadline.
@@ -26,7 +27,7 @@ async function fixture(options=true){
  window.campaign={};for(const key of ['combatDraft','combatDrafts','keepCombatDraft','discardCombatDraft','commitStatus'])window.campaign[key]=async(...args)=>response(()=>store[key](...args));
  window.campaign.combat=async(...args)=>{reads.push(args[2]);const r=fail?{ok:false,error:'Begegnung nicht lesbar'}:response(()=>store.combat(...args));fail=false;if(hold){hold=false;return new Promise(resolve=>waiting.push(()=>resolve(r)));}return r;};
  window.campaign.executeCombat=async c=>{writes.push(c);return response(()=>store.executeCombat(c));};
- delete require.cache[require.resolve('../.build/combat-switch-ui.cjs')];const ui=require('../.build/combat-switch-ui.cjs');ui.initCombat(text=>messages.push(text));ui.combatContext(w,scene);const el=id=>document.getElementById(id);
+ delete require.cache[require.resolve('../.build/combat-switch-ui.cjs')];const ui=require('../.build/combat-switch-ui.cjs');ui.initCommitControls(()=>w,text=>messages.push(text));ui.initCombat(text=>messages.push(text));ui.combatContext(w,scene);const el=id=>document.getElementById(id);
  await until(()=>el('combat-title').textContent===(withCombats?'Keller':'Begegnung führen')&&!el('combat-notes').disabled);
  const choose=id=>{el('combat-history').value=id;el('combat-history').onchange();},input=(id,text)=>{el(id).value=text;el(id).dispatchEvent(new window.Event('input'));},fighter=async()=>{el('combat-rows').querySelector('button').onclick();await until(()=>!el('combat-participant').hidden&&!el('fighter-hp').disabled);};
  return{store,w,ui,a,b,el,choose,input,fighter,reads,writes,messages,waiting,hold:()=>{hold=true;},fail:()=>{fail=true;},release:()=>waiting.shift()(),cleanup(){ui.combatContext(null,null);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
@@ -162,7 +163,7 @@ test('a party-only preparation cannot start through either start command; reject
 });
 
 
-test('confirmed area damage reveals each affected mob and reports individual HP without opening unrelated groups',async()=>{
+for(const recovery of [false,true,'missing-context'])test('area results expose current members using the retained target context (recovery='+recovery+')',async()=>{
  const x=await fixture();try{
   let c=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;
   const act=action=>c=x.store.executeCombat({commandId:randomUUID(),token:x.w.token,campaignId:x.w.campaign.id,combatId:c.id,expectedRevision:c.revision,action}).combat;
@@ -180,13 +181,24 @@ test('confirmed area damage reveals each affected mob and reports individual HP 
    const save=check.closest('.combat-area-row').querySelector('[data-role=save]'),defense=check.closest('.combat-area-row').querySelector('[data-role=defense]');
    Object.defineProperty(save,'value',{value:i?'half':'full',writable:true});Object.defineProperty(defense,'value',{value:'auto',writable:true});check.onchange();
   }
-  x.el('combat-area-apply').onclick();await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);
-  assert.match(x.messages.at(-1),/Flächenschaden gespeichert.*Ogre A 38\/59 HP.*Ogre B 49\/59 HP.*Ogre C 49\/59 HP/);
-  assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,5);
+  let statusAvailable=false;
+  if(recovery){
+   window.campaign.executeCombat=async command=>{x.writes.push(command);x.store.executeCombat(command);return{ok:false,error:'Lost reply'};};
+   window.campaign.commitStatus=async(...args)=>statusAvailable?{ok:true,value:x.store.commitStatus(...args)}:{ok:true,value:{outcome:'pending'}};
+  }
+  x.el('combat-area-apply').onclick();
+  if(recovery){
+   await until(()=>x.messages.some(m=>m.includes('Buchungsantwort fehlt'))&&!x.el('combat-area-cancel').disabled);x.el('combat-area-cancel').onclick();
+   c=x.store.combat(x.w.token,c.sceneId,c.id).combat;act({kind:'damage',participantId:targets[0].id,amount:1});
+   statusAvailable=true;if(recovery==='missing-context'){x.ui.initCommitControls(()=>null,text=>x.messages.push(text));x.ui.initCommitControls(()=>x.w,text=>x.messages.push(text));}await x.ui.checkPendingCommit();
+   assert.match(x.messages.at(-1),/Buchung anhand ihres Belegs bestätigt/);
+  }else{await until(()=>x.writes.length===1&&!x.el('combat-undo').disabled);assert.match(x.messages.at(-1),/Flächenschaden gespeichert.*Ogre A 38\/59 HP.*Ogre B 49\/59 HP.*Ogre C 49\/59 HP/);}
+  assert.equal(x.writes.length,1,'status recovery cannot repeat the damage');
+  assert.equal(x.el('combat-rows').querySelectorAll('tr[data-participant-id]').length,recovery==='missing-context'?8:5);
   const toggles=[...x.el('combat-rows').querySelectorAll('.combat-mob-toggle')];
   assert.equal(toggles.find(b=>b.getAttribute('aria-label').startsWith('Ogre')).getAttribute('aria-expanded'),'true');
-  assert.equal(toggles.find(b=>b.getAttribute('aria-label').startsWith('Goblin')).getAttribute('aria-expanded'),'false');
+  assert.equal(toggles.find(b=>b.getAttribute('aria-label').startsWith('Goblin')).getAttribute('aria-expanded'),recovery==='missing-context'?'true':'false');
   const result=x.store.combat(x.w.token,c.sceneId,c.id).combat;assert.equal(result.turnId,c.turnId);assert.equal(result.round,c.round);
-  assert.deepEqual(result.participants.filter(p=>p.sourceId==='ogre').map(p=>p.hp),[38,49,49,59]);assert(result.participants.filter(p=>p.sourceId==='goblin').every(p=>p.hp===7));
+  assert.deepEqual(result.participants.filter(p=>p.sourceId==='ogre').map(p=>p.hp),[recovery?37:38,49,49,59]);assert.match(x.el('combat-rows').textContent,new RegExp((recovery?37:38)+' / 59'));assert(result.participants.filter(p=>p.sourceId==='goblin').every(p=>p.hp===7));
  }finally{x.cleanup();}
 });

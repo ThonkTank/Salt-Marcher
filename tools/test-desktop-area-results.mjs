@@ -7,7 +7,7 @@ const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}
 const output=process.env.QA_EVIDENCE_DIR??root+'/.build/area-results';await mkdir(output,{recursive:true});
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/area-results-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=require(root+'/.build/area-results-store.cjs'),results=[];
-for(const scale of [1,2]){
+for(const recovery of [false,true])for(const scale of [1,2]){
  const profile=await mkdtemp('/tmp/area-results-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Steinbrücke – Flächenzauber'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
  store.executeLive(command({kind:'initialize',expectedRosterRevision:0}));
  for(const [name,hp,armorClass] of [['Mira',20,16],['Rolan',18,14]]){
@@ -39,16 +39,32 @@ for(const scale of [1,2]){
   const exit=new Promise(r=>app.process().once('exit',(code,signal)=>r({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
   let timer;try{const result=await Promise.race([exit,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);assert.deepEqual(result,{code:0,signal:null});exits.push(result);app=null;}finally{clearTimeout(timer);}
  }
- async function shot(name){await app.firstWindow().then(p=>p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))));const png=await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));await writeFile(output+'/'+name+'-'+scale+'.png',Buffer.from(png,'base64'));}
+ async function shot(name){await app.firstWindow().then(p=>p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))));const png=await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));await writeFile(output+'/'+(recovery?'recovery-':'')+name+'-'+scale+'.png',Buffer.from(png,'base64'));}
  try{
   let page=await launch();assert.match(await page.locator('#combat-status').innerText(),/Runde 1.*Am Zug: Mira/);
   assert.equal(await page.locator('#combat-rows tr[data-participant-id]').count(),2,'baseline mob starts collapsed');
   await page.locator('#combat-area-open').click();await page.locator('#combat-area-amount').fill('21');await page.locator('#combat-area-type').selectOption('fire');
   for(const name of ['Ogre A','Ogre B','Ogre C'])await page.getByRole('checkbox',{name:'Ziel '+name,exact:true}).check();
   for(const name of ['Ogre B','Ogre C'])await page.getByRole('combobox',{name:'Rettungswurf für '+name,exact:true}).selectOption('half');
-  await shot('preview');await page.locator('#combat-area-apply').click();await page.locator('#combat-area-effect').waitFor({state:'hidden'});
+  await shot('preview');let areaCommandId=null;
+  if(recovery)await app.evaluate(({ipcMain})=>{
+   const write=ipcMain._invokeHandlers.get('campaign:execute-combat'),read=ipcMain._invokeHandlers.get('campaign:commit-status');let lose=true;globalThis.qaAreaStatusUnavailable=true;globalThis.qaAreaCommands=[];
+   ipcMain.removeHandler('campaign:commit-status');ipcMain.handle('campaign:commit-status',(e,...args)=>globalThis.qaAreaStatusUnavailable?{ok:false,error:'Controlled status read failure'}:read(e,...args));
+   ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',async(e,c)=>{globalThis.qaAreaCommands.push(c);const result=await write(e,c);if(c.action.kind==='area-damage'&&lose){lose=false;throw Error('Controlled reply loss');}return result;});
+  });
+  await page.locator('#combat-area-apply').click();
+  if(recovery){
+   await page.waitForFunction(()=>document.getElementById('combat-area-effect').textContent.includes('Keine Bestätigung'));await shot('unconfirmed');
+   const commands=(await app.evaluate(()=>globalThis.qaAreaCommands)).filter(c=>c.action.kind==='area-damage');assert.equal(commands.length,1);areaCommandId=commands[0].commandId;
+   if(scale===1)await page.locator('#combat-area-cancel').click();else await page.keyboard.press('Escape');
+   await app.evaluate(()=>{globalThis.qaAreaStatusUnavailable=false;});
+   await page.locator('#commit-check').click();await page.waitForFunction(()=>document.getElementById('status').textContent.includes('Buchung anhand ihres Belegs bestätigt'));
+   await page.locator('#commit-pending').waitFor({state:'hidden'});
+   assert.equal((await app.evaluate(()=>globalThis.qaAreaCommands)).filter(c=>c.action.kind==='area-damage').length,1);
+  }
+  await page.locator('#combat-area-effect').waitFor({state:'hidden'});
   await page.waitForFunction(()=>document.getElementById('combat-panel').getAttribute('aria-busy')==='false');
-  const areaMessage=await page.locator('#status').innerText();assert.match(areaMessage,/Flächenschaden gespeichert.*Ogre A 38\/59 HP.*Ogre B 49\/59 HP.*Ogre C 49\/59 HP/);
+  const areaMessage=await page.locator('#status').innerText();if(recovery)assert.match(areaMessage,/Buchung anhand ihres Belegs bestätigt/);else assert.match(areaMessage,/Flächenschaden gespeichert.*Ogre A 38\/59 HP.*Ogre B 49\/59 HP.*Ogre C 49\/59 HP/);
   assert.equal(await page.locator('#combat-rows tr[data-participant-id]').count(),6,'all affected and untouched members are visible without another expansion');
   for(const [name,hp,max]of [['Ogre A',38,59],['Ogre B',49,59],['Ogre C',49,59],['Ogre D',59,59],['Mira',20,20],['Rolan',18,18]]){
    await page.getByRole('button',{name:name+' · '+hp+' / '+max+' HP · Schaden oder Heilung',exact:true}).waitFor();
@@ -62,13 +78,14 @@ for(const scale of [1,2]){
   const losses=await page.locator('#combat-resolution').innerText();for(const [name,hp]of [['Ogre A',38],['Ogre B',49],['Ogre C',49],['Ogre D',59]])assert(losses.includes(name+' · '+hp+' HP bei Kampfabschluss'));
   await page.locator('#combat-resolution').scrollIntoViewIfNeeded();await shot('reopened');await close();assert.deepEqual(errors,[]);
   const fresh=new CampaignStore(file);try{const active=fresh.activate(campaign.id),c=fresh.combat(active.token,sceneId).combat,groups=fresh.scenePreparation(active.token,sceneId).groups;
+   if(areaCommandId)assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_receipt WHERE command_id=?').get(areaCommandId).n,1);
    assert.equal(c.phase,'finished');assert.equal(c.round,1);assert.equal(c.outcome,'Oger ziehen sich zurück');assert.equal(c.rewards.totalXp,0);
    assert.equal(c.participants.length,6);assert.equal(groups.length,1);const actors=groups.flatMap(g=>g.actors);assert.equal(actors.length,4);
    assert.deepEqual(c.participants.filter(p=>p.sourceId==='ogre').map(p=>p.hp),[38,49,49,59]);assert.deepEqual(actors.map(p=>p.hp),[38,49,49,59]);
    assert.deepEqual(c.participants.filter(p=>p.characterId).map(p=>p.hp),[20,18]);
    assert(c.participants.filter(p=>p.sourceId==='ogre').every(p=>p.initiative===12&&p.partitionKind==='mob'));
   }finally{fresh.close();}
-  results.push({scale,profile,exits,errors,participants:6,areaMessage,ogreHp:[38,49,49,59],unaffectedPartyHp:[20,18],turnIdBeforeArea:turnId});
+  results.push({scale,recovery,areaCommandId,profile,exits,errors,participants:6,areaMessage,ogreHp:[38,49,49,59],unaffectedPartyHp:[20,18],turnIdBeforeArea:turnId});
  }finally{if(app)await app.close().catch(()=>{});proxy.kill();}
 }
 const artifacts={};for(const name of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css']){const bytes=await readFile(root+'/.build/desktop/'+name);artifacts[name]=createHash('sha256').update(bytes).digest('hex');}
