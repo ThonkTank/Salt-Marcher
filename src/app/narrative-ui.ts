@@ -1,3 +1,4 @@
+import {openTreasureDistribution,closeStaleTreasureDistribution} from './treasury-ui';
 import {finishDraftCommit} from './finish-draft-ui';
 import type { WorkspaceGeometry } from "./contracts";
 import type { WorldNoteV1 } from "../features/world/world-notes";
@@ -77,6 +78,7 @@ export async function showNarrative(
   ownNoteReceipt=null;
   resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
   const n = ++request;
+  closeStaleTreasureDistribution();
   if (panel.hidden) {
     ownerKey = "";
     displayedNoteRevision = null;
@@ -102,7 +104,7 @@ export async function showNarrative(
   loading.textContent = "Narrative Angaben werden geladen…";
   panel.replaceChildren(loading);
   panel.setAttribute("aria-busy", "true");
-  let renderVersion = 0;
+  let renderVersion = 0, openingDistribution = false;
   let writeId: string | null = null,
     raw: NarrativeDraft | null = null,
     persisting: Promise<boolean> | null = null,
@@ -554,6 +556,22 @@ export async function showNarrative(
           ? "Beute liegt zur ausdrücklichen Zuweisung bereit."
           : "Keine Gegenstandsbelohnung.");
       panel.append(receipt);
+      if(d.award.treasureId){
+        const award=d.award,treasureId=award.treasureId!,distribute=document.createElement('button');
+        distribute.type='button';distribute.dataset.narrativeDistribute='true';
+        distribute.textContent='Beute gemeinsam verteilen…';distribute.disabled=openingDistribution;
+        const ownsAward=()=>current()&&!panel.hidden&&data?.award?.id===award.id&&data.award.treasureId===treasureId;
+        distribute.onclick=()=>void(async()=>{
+          if(!active()||openingDistribution||pending||task)return;
+          openingDistribution=true;distribute.disabled=true;
+          try{
+            if(!await flushNarrative()||!ownsAward()||!await drain()||!ownsAward())return;
+            await openTreasureDistribution(treasureId,award.sceneId??undefined,ownsAward);
+          }catch(error){if(ownsAward())tell((error as Error).message,true);}
+          finally{openingDistribution=false;if(current()){const button=panel.querySelector<HTMLButtonElement>('[data-narrative-distribute]');if(button)button.disabled=false;}}
+        })();
+        panel.append(distribute);
+      }
     }
   }
 }

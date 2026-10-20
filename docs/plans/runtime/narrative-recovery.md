@@ -15,6 +15,7 @@ Pfade sind relativ zu `src/app/`; Prüfungen stehen unter `tests/`.
 | Notiz, Status, Award und Metadatenentwurf | `storage/narrative.ts`, `narrative-ui.ts` | `desktop-narrative-integrity.test.mjs`, `desktop-narrative-basis.test.mjs` |
 | Abschlussdialog, Autosave und Verbrauch | `finish-draft-contracts.ts`, `finish-draft-ui.ts`, `storage/finish-drafts.ts` | `desktop-finish-draft-dom.test.mjs`, `desktop-finish-draft-store.test.mjs`, `desktop-finish-note-basis.test.mjs` |
 | Journalwechsel | `narrative-journal-ui.ts` | `desktop-narrative-journal-context.test.mjs` |
+| Direkter Schatz am bestätigten Abschluss | `narrative-ui.ts`, `treasury-ui.ts`, `treasure-distribution-ui.ts` | `desktop-narrative-treasure.test.mjs`, `desktop-treasure-distribution-context.test.mjs` |
 | XP, Beute und unabhängige Kopie | `storage/progression.ts`, `storage/campaign-data.ts` | `desktop-narrative-integrity.test.mjs` |
 
 ## Datenregeln, die mehrere Owner verbinden
@@ -54,6 +55,23 @@ und Awardcommand; der Writer prüft beide Actionbasen und verbraucht nur die
 angenommene Draftfassung atomar. Replay verbraucht keine spätere Eingabe.
 Diese Basisbindung benötigt weder Schemawechsel noch automatisches Legacyrewrite.
 
+## Vorhandene Beute direkt weiterführen
+
+Ein bestätigter Award mit `treasureId` bietet „Beute gemeinsam verteilen…“ direkt
+am Abschlussbeleg an. Der Einstieg übergibt die bereits durch den Narrativread
+geprüfte Schatz-ID an den gemeinsamen Treasurydialog. Er erzeugt weder einen
+weiteren Award noch einen Schatz und wählt keine Gegenstandsempfänger aus.
+Rohwerte werden vorher gesichert und der Notizbesitzer wird geflusht. Quest,
+Kampagnenaktivierung und Awardbindung werden nach jedem Await erneut geprüft;
+abgelöste Buttons dürfen den Dialog nicht öffnen. Ein Besitzerwechsel entwertet
+auch laufende Schatzreads und die spätere Bestätigung im gemeinsamen Dialog.
+Andere Treasuryaufrufe behalten ihren eigenen Kontext.
+
+Die bestehende Verteilung liest aktuelle Bestände und nutzt den gemeinsamen
+Progresswriter mit Receiptklärung. Teilmengen lassen den Rest im selben Schatz;
+XP und das historische Questresultat werden nicht erneut gebucht. Der unten noch
+offene Ausgang des eigentlichen narrativen Awardcommands bleibt davon getrennt.
+
 ## Noch vollständig zu liefern
 
 1. **Unbekannter Commandausgang.** `NarrativeDraft` und `FinishDraft` speichern
@@ -83,8 +101,11 @@ Die [native Bedienprobe](../../../tools/test-desktop-narrative-recovery.mjs)
 prüft fehlgeschlagenes Lesen ohne falsche Abschlussaktion, rohe Entwürfe über
 Neustart sowie deren Korrektur und einmaligen Questabschluss: Mitwirkende im
 gemeinsamen Dialog ausdrücklich ändern, XP aufrunden und den unverteilten Schatz
-nach erneutem Neustart wiederfinden. Fehler-/Rohwertprüfung läuft bei 100%,
-Wiederaufnahme, Abschluss und Schatzsuche bei 200%.
+nach erneutem Neustart direkt am Abschlussbeleg öffnen. Der ursprüngliche
+Lauf nutzte Geräteskalierung; die aktuelle Probe setzt echten Browserzoom
+100/200 %, sichert frische native Fensteraufnahmen und prüft normale Prozessenden.
+Die Erweiterung prüft ausdrückliche Teilverteilung und lesende Statusklärung
+nach verlorener Verteilungsantwort; der verbleibende Schatz behält seine Identität.
 
 Die genannten Store-/DOMtests belegen Teilverträge für Integrität, Basen,
 Rohwerterhalt, Replay und Kopie. Vollständige XP-/Loot-/History- sowie native
