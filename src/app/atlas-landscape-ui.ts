@@ -489,7 +489,7 @@ export class LandscapeWorkbench {
   private showReliefStyle(style:TerrainStyle|undefined){
     const s=style??DEFAULT_TERRAIN_STYLE;
     for(const [id,value]of Object.entries({mode:s.mode,land:s.land,ink:s.ink,light:s.lightDegrees,strength:s.strength})){
-      const field=html<HTMLInputElement>('land-relief-'+id);if(document.activeElement!==field)field.value=String(value);
+      const field=html<HTMLInputElement>('land-relief-'+id);field.value=String(value);
     }
   }
   private contourInterval=0;
@@ -618,7 +618,7 @@ export class LandscapeWorkbench {
     this.autoGrid=null;this.gridFade=null;
     this.cancel();
     this.records = [];this.background=null;
-    this.raster = undefined;this.minimumRevision=0;
+    this.raster = undefined;this.publishedLayer=undefined;this.minimumRevision=0;
     this.assets.clear();this.unavailableAssets.clear();this.assetFence='';
     this.key = "";
     this.request++;
@@ -655,9 +655,17 @@ export class LandscapeWorkbench {
         this.assets.clear();this.unavailableAssets.clear();if(calibration&&preview)this.assets.set(calibration,preview);
         this.assetFence=data.region!.fence;
       }
-      if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;this.key=frameKey;this.publishedLayer=layer;
+      if(!force&&this.key===frameKey&&this.publishedLayer===layer)return;
+      if(layer.state==='ready'){
+        const style=layer.terrainStyle??DEFAULT_TERRAIN_STYLE,previous=this.publishedLayer?.terrainStyle??DEFAULT_TERRAIN_STYLE;
+        // Camera reads retain the whole form. Only a new confirmed style (or
+        // campaign) replaces it, including a focused field after undo/redo.
+        if(!this.publishedLayer||(Object.keys(DEFAULT_TERRAIN_STYLE) as (keyof TerrainStyle)[]).some(key=>style[key]!==previous[key]))this.showReliefStyle(style);
+        this.publishedLayer=layer;
+      }
+      this.key=frameKey;
       this.request++;const generation=this.request;
-      this.records=layer.records;this.raster=layer.tiles;this.showReliefStyle(layer.terrainStyle);if(document.activeElement!==html('land-sea-level'))html<HTMLInputElement>('land-sea-level').value=String(layer.seaLevelM??0);html('land-reload').hidden=layer.state==='ready';
+      this.records=layer.records;this.raster=layer.tiles;if(document.activeElement!==html('land-sea-level'))html<HTMLInputElement>('land-sea-level').value=String(layer.seaLevelM??0);html('land-reload').hidden=layer.state==='ready';
       this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
@@ -675,7 +683,7 @@ export class LandscapeWorkbench {
     // The shared Atlas frame owns loading, cancellation and source identity.
     // Never reconstruct a second landscape view from independent reads.
     this.request++;
-    this.records=[];this.raster=undefined;this.background=null;this.publishedLayer=undefined;this.key="";this.objectOptions();
+    this.records=[];this.raster=undefined;this.background=null;this.key="";this.objectOptions();
     html("land-reload").hidden=false;
     this.say("Landschaftsframe nicht verfügbar. Ansicht erneut laden.");
     this.host.redraw();
