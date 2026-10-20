@@ -49,3 +49,20 @@ test('participant visibility preserves all raw round inputs and rejects a detach
  assert.equal(x.writes[0].action.kind,'visibility');assert.equal(x.store.chase(x.w.token,x.scene.id,x.b.id).chase.participants[0].hiddenFromPlayers,true);assert.equal(distance().value,'36');assert.equal(exhaustion().value,'2');assert.equal(x.el('chase-complication').value,'Marktstand');assert.equal(visibility().textContent,'Auf Spieleranzeige zeigen');
  await x.choose(x.a.id);oldVisibility.onclick();await tick();assert.equal(x.writes.length,1);
 }finally{x.cleanup();}});
+
+// A clock refresh must not discard the proposed next round or reveal another mask's completion.
+test('round context follows the scene clock while raw proposals and explicit completion stay separate',async()=>{const x=await fixture();try{
+ x.input(x.el('chase-people').querySelector('[data-distance]'),'36');await x.ui.flushChase();
+ x.ui.chaseContext(x.w,x.scene,[],'Tag 0 · 00:00:06');
+ assert.equal(x.el('chase-clock').textContent,'Gruppenzeit: Tag 0 · 00:00:06');
+ assert.equal(x.el('chase-clock').hidden,false);assert.equal(x.el('chase-people').querySelector('[data-distance]').value,'36');
+ assert.equal(x.el('chase-round-label').textContent,'Nächste Runde · Entwurf');assert.ok(!x.el('chase-completion').open);
+ x.el('chase-completion').open=true;x.input(x.el('chase-outcome'),'Tor erreicht');await x.ui.flushChase();
+ await x.choose(x.a.id);assert.equal(x.el('chase-outcome').value,'');assert.ok(!x.el('chase-completion').open);
+ await x.choose(x.b.id);assert.equal(x.el('chase-outcome').value,'Tor erreicht');assert.ok(x.el('chase-completion').open);
+ x.el('chase-finish').onclick();await until(()=>x.store.chase(x.w.token,x.scene.id,x.b.id).chase.status==='finished'&&!x.el('chase-new').disabled);
+ assert.equal(x.el('chase-round').hidden,true);assert.equal(x.el('chase-completion').hidden,true);assert.equal(x.el('chase-create').hidden,true);
+ assert.equal(x.el('chase-round-label').textContent,'Bestätigter Teilnehmerstand');assert.ok(x.el('chase-status').textContent.includes('Tor erreicht'));
+ assert.equal(x.store.liveScene(x.w.token,x.scene.id).clock.instantMs,'0');
+ x.ui.chaseContext(null,null);assert.equal(x.el('chase-clock').hidden,true);
+}finally{x.cleanup();}});

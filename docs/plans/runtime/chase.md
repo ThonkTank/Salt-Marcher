@@ -112,7 +112,11 @@ und vollständige native Crossworkflowabnahme bleiben offen.
    besitzt weiterhin Kalender, Autonomie, Restock und Dungeonfolgen.
    `tests/desktop-chase-time.test.mjs` prüft zwei Scenes und drei Masken, Fresh,
    lesende Statusklärung, Replay und atomare Rücknahme bei beschädigter
-   Kalenderbasis bzw. fehlgeschlagener Belegablage. Die Anzeige liest die aktuelle
+   Kalenderbasis bzw. fehlgeschlagener Belegablage. Die Anzeige zeigt die Gruppenzeit direkt beim Verfolgungsstand.
+   Rundenentwurf, Teilnehmerverwaltung und Abschluss sind getrennt gruppiert;
+   gesicherte Ergebniseingaben öffnen den Abschluss beim Wiederaufruf. Eine
+   abgeschlossene Maske zeigt ihren bestätigten Stand, ohne automatisch eine
+   neue Anlage vorzublenden. Die Anzeige liest die aktuelle
    Sceneuhr nach Bestätigung und Statusklärung; späte Reads dürfen weder eine
    andere Scene noch eine höhere Uhrrevision ersetzen. Offen bleibt die
    vollständige Actor-/Move-/Autonomieabnahme mit mehreren Maskentypen.

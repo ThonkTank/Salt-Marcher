@@ -433,7 +433,7 @@ function renderSceneMeta() {
   const scene = data?.scene;
   sceneDeskContext(context,resumed?scene??null:null);
   combatContext(context, resumed ? scene ?? null : null, data?.rosterRevision);
-  chaseContext(context,resumed?scene??null:null,data?.roster??[]);
+  chaseContext(context,resumed?scene??null:null,data?.roster??[],scene?formatSceneInstant(scene.clock.instantMs):'');
   const active = data?.roster.filter(c => c.active && c.sceneId === scene?.id) ?? [];
   get('live-party').textContent = active.length ? 'Dabei: ' + active.map(c => c.profile.name).join(', ') : 'Leere Party – Scene bleibt verfügbar.';
   renderPartyReference();
@@ -849,7 +849,7 @@ async function changeFocus(id: string,current:()=>boolean=()=>true) {
 }
 function renderTimePreview(){
  const scene=data?.scene,w=context,n=++timePreviewRequest;manualTimePreview=null;get<HTMLButtonElement>('time-advance').disabled=true;if(!scene||!w)return;const amount=value('time-amount'),unit=value('time-unit'),units:Record<string,'second'|'minute'|'hour'|'day'>={seconds:'second',minutes:'minute',hours:'hour',days:'day'};get('time-preview').textContent='Kalenderzeit wird berechnet…';
- void window.campaign.previewTime(w.token,{sceneId:scene.id,kind:'duration',amount,unit:units[unit]!,reason:value('time-reason')}).then(r=>{if(context?.token!==w.token||data?.scene?.id!==scene.id||n!==timePreviewRequest||amount!==value('time-amount')||unit!==value('time-unit'))return;if(!r.ok)throw new Error(r.error);manualTimePreview=r.value;clockCalendar=r.value.calendar;get('time-preview').textContent='Danach: '+calendarDate(r.value.calendar,r.value.to);get('live-clock').textContent='Seit Kampagnenbeginn: '+formatInstant(r.value.from,r.value.calendar.daySeconds);get<HTMLButtonElement>('time-advance').disabled=intentBlocked();renderGroups();}).catch(error=>{if(context?.token===w.token&&n===timePreviewRequest)get('time-preview').textContent=error.message;});
+ void window.campaign.previewTime(w.token,{sceneId:scene.id,kind:'duration',amount,unit:units[unit]!,reason:value('time-reason')}).then(r=>{if(context?.token!==w.token||data?.scene?.id!==scene.id||n!==timePreviewRequest||amount!==value('time-amount')||unit!==value('time-unit'))return;if(!r.ok)throw new Error(r.error);manualTimePreview=r.value;clockCalendar=r.value.calendar;get('time-preview').textContent='Danach: '+calendarDate(r.value.calendar,r.value.to);get('live-clock').textContent='Seit Kampagnenbeginn: '+formatInstant(r.value.from,r.value.calendar.daySeconds);get<HTMLButtonElement>('time-advance').disabled=intentBlocked();chaseContext(context,resumed?data?.scene??null:null,data?.roster??[],formatSceneInstant(r.value.from));renderGroups();}).catch(error=>{if(context?.token===w.token&&n===timePreviewRequest)get('time-preview').textContent=error.message;});
 }
 
 function render() {
