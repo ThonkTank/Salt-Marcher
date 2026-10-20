@@ -37,6 +37,13 @@ export interface GenerationAPI {
 export function exactWeight(value:string):string{
  if(typeof value!=='string'||!/^\d{1,18}([.,]\d{1,12})?$/.test(value.trim()))throw new Error('Gewicht benötigt eine nichtnegative exakte Dezimalzahl.');const[whole,part='']=value.trim().replace(',','.').split('.');const digits=part.replace(/0+$/,'');return BigInt(whole!).toString()+(digits?'.'+digits:'');
 }
+/** New encounter weights follow the authoring range; an unchanged stored entry keeps its exact legacy value. */
+export function encounterWeight(value:string,previous?:string):string{
+ let checked:string;try{checked=exactWeight(value);}catch{throw new Error('Neue oder geänderte Begegnungsgewichte benötigen ganze Zahlen von 1 bis 10.');}
+ if(previous!==undefined&&checked===exactWeight(previous))return previous;
+ if(!/^(?:[1-9]|10)$/.test(checked))throw new Error('Neue oder geänderte Begegnungsgewichte benötigen ganze Zahlen von 1 bis 10.');
+ return checked;
+}
 export function integerWeights(values:readonly string[]):bigint[]{const checked=values.map(exactWeight),scale=Math.max(0,...checked.map(v=>v.split('.')[1]?.length??0));return checked.map(v=>{const[whole,part='']=v.split('.');return BigInt(whole!)*10n**BigInt(scale)+BigInt(part.padEnd(scale,'0')||'0');});}
 export function weightShares(values:readonly string[]):string[]{const weights=integerWeights(values),sum=weights.reduce((a,b)=>a+b,0n);if(!sum)return weights.map(()=>'0,00 %');const floors=weights.map(w=>Number(w*10000n/sum));let remaining=10000-floors.reduce((a,b)=>a+b,0);const order=weights.map((w,i)=>({i,remainder:w*10000n%sum})).sort((a,b)=>a.remainder===b.remainder?a.i-b.i:a.remainder>b.remainder?-1:1);for(const e of order){if(!remaining--)break;floors[e.i]=floors[e.i]!+1;}return floors.map(v=>Math.floor(v/100)+','+String(v%100).padStart(2,'0')+' %');}
 export function currentGenerationLoot(refs:GenerationRun['lootTables'],tables:LootTable[]):LootTable|null{if(refs?.length!==1)return null;const ref=refs[0]!;return tables.find(table=>table.id===ref.id&&table.revision===ref.revision&&!table.trashed)??null;}

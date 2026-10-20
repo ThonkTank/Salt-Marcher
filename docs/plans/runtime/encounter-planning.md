@@ -74,8 +74,11 @@ Planungssnapshot beim Kampfstart.
 ## Begegnungstabellen: bestätigter Save und nachgelagerte Anzeige
 
 Die Generationtransaktion ist der Writer; Auswahl bleibt read-only, bestehender
-Scope erhalten. Dezimalgewichte weichen noch vom ursprünglichen Ganzzahlbereich
-1..10 ab; exakte Altgewichte nicht still runden oder verwerfen.
+Scope erhalten. Neue und geänderte Begegnungsgewichte folgen dem ursprünglichen Ganzzahlbereich
+1..10. Dialog und Main-Writer verwenden dieselbe Regel; unveränderte Altgewichte
+bleiben pro Kreatur und Tabellenrevision exakt erhalten. Lesen, Vorschläge und
+Archive unterstützen diese Altgewichte weiter, ohne Migration oder Rundung.
+Beutegewichte bleiben unabhängig davon exakte Dezimalzahlen.
 
 `executeGeneration` bestätigt Tabellen-/Loot-/Presetresultat im Receipt. Dieses
 Resultat gilt sofort: ein nachfolgender `generationSources`-Fehler macht daraus
