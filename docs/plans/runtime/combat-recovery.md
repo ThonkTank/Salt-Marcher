@@ -153,6 +153,19 @@ belegen den begrenzten Gegnerablauf mit unveränderten HP/Zuständen/Zug,
 Neustart und Abschluss bei 100/200 %. Keine vollständige Party-, Reward-,
 Mehrplattform- oder menschliche Bedienabnahme.
 
+Eine fehlende Antwort auf Verstärkung bleibt im modalen Dialog sichtbar,
+zusammen mit den gewählten Eingaben. Während des Schreibversuchs sind Schließen
+und Escape gesperrt; danach geben beide den vorhandenen Buchungsstatusknopf frei.
+Die gemeinsame Buchungssperre bleibt bis zur Statusklärung aktiv. Die Klärung
+liest den vorhandenen Beleg und den aktuellen Kampf, ohne Gegner erneut anzulegen.
+Das gilt auch für freie Teilnehmer ohne Statblock; vorbereitete Gruppen verwenden
+ihren eigenen Auswahlweg. Die native Verstärkungsprobe wählt den Trupp ausdrücklich,
+wartet vor dem Zoom auf das Fenster und entfernt alte Erfolgsdateien vor dem Start.
+Mit `--reply-loss` prüft sie bei 100 % Truppverstärkung und bei 200 % eine neue
+Katalogkreatur mit verlorener Antwort, einmaligem Receipt, unveränderten bisherigen
+Teilnehmern, Fresh, Fortsetzen, Abschluss und erneutem Fresh. Kontrollierte Ablehnung
+und Schließschutz während des laufenden Writes prüft zusätzlich der Controller.
+
 ## Nachbereitung und bestehende Schätze
 
 Ein Snapshot liest Outcome-/XP-Buchung und vorhandene Kampf-/Scene-/Ortsschätze
