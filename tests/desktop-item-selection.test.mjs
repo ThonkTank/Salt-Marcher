@@ -7,10 +7,10 @@ async function until(fn){
  // Fast DOM lookups can exhaust immediate ticks before the async commit fingerprint resolves.
  const deadline=performance.now()+5000;
  while(!fn()&&performance.now()<deadline)await pause(5);
- assert(fn(),'Expected shop state');
+ assert(fn(),'Expected item state');
 }
 async function fixture(){
- const root=mkdtempSync(path.join(tmpdir(),'shop-switch-')),{CampaignStore}=require('../.build/item-selection-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
+ const root=mkdtempSync(path.join(tmpdir(),'item-selection-')),{CampaignStore}=require('../.build/item-selection-store.cjs'),store=new CampaignStore(root+'/store.sqlite'),cam=store.create('Markttag'),w=store.activate(cam.id),command=action=>({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
  const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
  for(const c of heroes){const live=store.live(w.token);store.executeLive(command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision}));}
  const definition=store.executeItemShop(command({kind:'definition',expectedRevision:null,definition:{id:randomUUID(),revision:0,name:'Seil',category:'equipment',magic:false,rarity:'',attunement:'no',unitCopper:'200',weightText:'',properties:[],description:'  Original\r\n- Seil',source:{kind:'authored',label:'GM',license:null,url:null},trashed:false}})).definition;
@@ -42,9 +42,32 @@ test('wrong definition replies never become editable or usable',async()=>{
 test('campaign reactivation invalidates outstanding definition replies',async()=>{
  const x=await fixture();try{const original=window.campaign.itemDefinition,pause=held();window.campaign.itemDefinition=()=>pause.promise;await x.choose(x.defs[1].id);await until(()=>!x.el('item-load-status').hidden);x.ui.activateItems(x.w);pause.resolve(await original(x.defs[1].id));await tick();assert.equal(x.el('item-editor').hidden,true);assert.equal(x.el('item-load-status').hidden,true);assert.equal(x.writes.length,0);}finally{await x.cleanup();}
 });
-test('an incomplete definition keeps its editor repairable when switching is rejected',async t=>{
- const digest=crypto.subtle.digest.bind(crypto.subtle);t.mock.method(crypto.subtle,'digest',async(...args)=>{await pause(40);return digest(...args);});
- const x=await fixture();try{x.el('item-name').value='';x.el('item-description').value='Unfertiger Entwurf';x.el('item-form').oninput();await x.choose(x.defs[1].id);await until(()=>x.messages.length>0&&!x.el('item-name').disabled);assert.equal(x.el('item-name').value,'');assert.equal(x.el('item-description').value,'Unfertiger Entwurf');x.el('item-name').value='Seil korrigiert';x.el('item-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.itemDefinition(x.defs[0].id).description,'Unfertiger Entwurf');}finally{await x.cleanup();}
+for(const invalid of ['name','description'])test(`an incomplete definition ${invalid} stays repairable without starting a booking`,async t=>{
+ const digest=crypto.subtle.digest.bind(crypto.subtle);let hashes=0,markers=0,statusReads=0;
+ t.mock.method(crypto.subtle,'digest',async(...args)=>{hashes++;await pause(40);return digest(...args);});
+ const x=await fixture(),status=window.campaign.commitStatus,set=window.localStorage.setItem;
+ window.campaign.commitStatus=async(...args)=>{statusReads++;return status(...args);};window.localStorage.setItem=(key,value)=>{if(key.startsWith('pending-booking:'))markers++;set(key,value);};
+ try{
+  const raw=invalid==='description'?'X'.repeat(100001):'Unfertiger Entwurf';
+  x.el('item-name').value=invalid==='name'?'   ':'Seil';x.el('item-description').value=raw;x.el('item-form').oninput();const before=x.store.db.serialize();
+  await x.choose(x.defs[1].id);await until(()=>x.messages.length>0&&!x.el('item-name').disabled);
+  assert.equal(x.el('item-name').value,invalid==='name'?'   ':'Seil');assert.equal(x.el('item-description').value,raw);assert.equal(x.el('item-load-status').hidden,true);
+  assert.equal(hashes,0);assert.equal(markers,0);assert.equal(statusReads,0);assert.equal(x.writes.length,0);assert.ok(x.store.db.serialize().equals(before));
+  x.el('item-name').value='Seil korrigiert';x.el('item-description').value='Unfertiger Entwurf';x.el('item-form').oninput();assert(await x.ui.flushItems());
+  assert.equal(hashes,1);assert.equal(markers,1);assert.equal(x.writes.length,1);const saved=x.store.itemDefinition(x.defs[0].id);assert.equal(saved.name,'Seil korrigiert');assert.equal(saved.description,'Unfertiger Entwurf');
+  await x.choose(x.defs[1].id);await until(()=>x.el('item-name').value==='Heiltrank'&&!x.el('item-name').disabled);
+ }finally{window.campaign.commitStatus=status;await x.cleanup();}
+});
+
+test('a valid definition draft remains locked while its booking fingerprint is delayed',async t=>{
+ const x=await fixture(),gate=held(),digest=crypto.subtle.digest.bind(crypto.subtle);let started=false;
+ t.mock.method(crypto.subtle,'digest',async(...args)=>{started=true;await gate.promise;return digest(...args);});
+ try{
+  x.el('item-name').value='Seil korrigiert';x.el('item-description').value=x.defs[0].description.replace(/\r\n/g,'\n');x.el('item-form').oninput();await x.choose(x.defs[1].id);await until(()=>started);
+  assert.equal(x.el('item-name').disabled,true);assert.equal(x.el('item-name').value,'Seil korrigiert');assert.equal(x.writes.length,0);
+  gate.resolve();await until(()=>x.el('item-name').value==='Heiltrank'&&!x.el('item-name').disabled);assert.equal(x.writes.length,1);
+  const saved=x.store.itemDefinition(x.defs[0].id);assert.equal(saved.name,'Seil korrigiert');assert.equal(saved.description,x.defs[0].description);
+ }finally{gate.resolve();await x.cleanup();}
 });
 test('valid edits save before switching and preserve untouched normalized CRLF prose',async()=>{
  const x=await fixture();try{x.el('item-description').value=x.defs[0].description.replace(/\r\n/g,'\n');x.el('item-name').value='Seil verbessert';x.el('item-form').oninput();await x.choose(x.defs[1].id);await until(()=>x.el('item-name').value==='Heiltrank'&&!x.el('item-name').disabled);const saved=x.store.itemDefinition(x.defs[0].id);assert.equal(saved.name,'Seil verbessert');assert.equal(saved.description,x.defs[0].description);x.el('item-description').value='Neue\nHeilwirkung';x.el('item-form').oninput();assert(await x.ui.flushItems());assert.equal(x.store.itemDefinition(x.defs[1].id).description,'Neue\nHeilwirkung');}finally{await x.cleanup();}

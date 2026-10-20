@@ -1,6 +1,6 @@
 import {checkedCombat} from '../combat-contracts';
 import {checkedChaseView} from '../chase-contracts';
-import {checkedDefinition} from './item-definitions';
+import {checkedDefinition} from '../item-definition-validation';
 import {createHash} from 'node:crypto';
 import {checkedCommitReference,type CommitReference,type CommitOutcome} from '../commit-receipt';
 

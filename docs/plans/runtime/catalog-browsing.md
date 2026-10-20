@@ -72,6 +72,30 @@ Vorschlagsfingerprint entwertet auch bei ungültigen Filtern alte Vorschauen;
 historische Requestfilter bleiben unverändert. Korrigieren/Leeren gibt den
 normalen Weg wieder frei, ohne neue Persistenz.
 
+## Eigene Definitionsentwürfe und sichere Auswahl
+
+Eigene Definitionen werden in „Gegenstände und Shops“ bearbeitet. Die öffentliche
+SRD-Referenz bleibt read-only; eine eigene Kopie besitzt ihre eigene Identität.
+`item-definition-validation.ts` enthält die gemeinsame Strukturprüfung und die
+Konstruktion des nächsten eigenen Definitionsstands. Renderer und Writer verwenden
+denselben reinen Code. Ein leerer Name oder eine Beschreibung über 100.000 Zeichen
+bleibt vor Prüfsumme, Buchungsmarker und IPC im bisherigen Editor korrigierbar.
+Der Writer prüft weiterhin aktuellen Stand, SRD-Schreibschutz und historische
+Versionen innerhalb seiner Transaktion. Keine Migration oder Änderung vorhandener
+Definitionsbytes; gültige Korrekturen nutzen die bestehende Buchungsbestätigung.
+
+`desktop-item-selection.test.mjs` prüft frühe Ablehnung ohne Buchungsbeginn und
+DBänderung, genau eine korrigierte Buchung sowie einen gültigen Entwurf bei
+gehaltener Prüfsumme. Die native Probe `tools/test-desktop-item-selection.mjs`
+führt Namenskorrektur, blockierten Wechsel, Freigabe, Neustart und unabhängige Kopie
+bei 100/200 Prozent aus. Unberührte CRLF-Prosa, andere Definitionen und die zweite
+Figur bleiben erhalten; Vergabe, Schatz und Shopübernahme behalten ihre eigenen
+Checks. Die Probe benutzt aktuelle Kampagnenkarten, Bereichsschalter und
+Detailbereiche, zeichnet Buildhashes auch bei Fehlern auf und prüft frische
+nichtleere Bilder, begrenzte normale Exits und verschwundene Prozess-IDs.
+Historische Schalter für unsicheres Altverhalten entfallen. Diese Linuxprobe ist
+keine vollständige Plattform-, Tastatur- oder Owner-Abnahme.
+
 ## SRD-Gegenstandsreferenz
 
 `requirements-items-catalog.md` verlangt die öffentliche read-only SRD-Referenz.

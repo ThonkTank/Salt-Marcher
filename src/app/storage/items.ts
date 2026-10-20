@@ -1,3 +1,4 @@
+import {checkedDefinition} from '../item-definition-validation';
 import {validateShopShape,validateShopQuantity as qty} from '../shop-validation';
 import {npcIdsAtLocation} from './npc-world';
 import {drawCatalogRestock} from './catalog-restock';
@@ -7,7 +8,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import type {Shop,ShopView,ShopHistoryPage,ShopSummary,ItemShopCommand,ItemShopAck} from '../items-contracts';
 import {copper,partitionLedgerPaidPrice,type LedgerItem} from '../progression';
 import {saveLedger,event,readLedgerItem} from './progression';
-import {readItemDefinition,saveItemDefinition,installItemDefinitions,validateItemDefinitionVersions,checkedDefinition} from './item-definitions';
+import {readItemDefinition,saveItemDefinition,installItemDefinitions,validateItemDefinitionVersions} from './item-definitions';
 import {scenePreparation} from './session';
 import {readLiveScene,readCampaignTime} from './live';
 import {formatInstant} from '../live-contracts';

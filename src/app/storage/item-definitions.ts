@@ -1,3 +1,4 @@
+import {checkedDefinition,nextAuthoredDefinition} from '../item-definition-validation';
 import {budgetRarity} from '../dungeon-budget-contracts';
 import {srdItemDefinitions,srdItemSourceStatus} from './srd-items';
 import {coinDefinitions} from './coin-definitions';
@@ -5,14 +6,6 @@ import { createHash } from 'node:crypto';
 import type { ItemDefinition, ItemQuery, ItemPage, ItemCatalogFilter } from '../items-contracts';
 import { canonicalJson } from '../generation/canonical-json';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
-const categories = ['coins', 'equipment', 'trade-goods', 'magic', 'other'];
-const fields = ['id', 'revision', 'name', 'category', 'magic', 'rarity', 'attunement', 'unitCopper', 'weightText', 'properties', 'description', 'source', 'trashed'];
-export function checkedDefinition(d: ItemDefinition): ItemDefinition {
-  if (!d || typeof d !== 'object' || Array.isArray(d) || fields.some(key => !Object.hasOwn(d, key)) || Object.keys(d).some(key => !fields.includes(key) && key !== 'sourceHash') || typeof d.id !== 'string' || !d.id || !Number.isSafeInteger(d.revision) || d.revision < 1 || typeof d.name !== 'string' || !d.name.trim() || d.name.length > 1000 || !categories.includes(d.category) || typeof d.magic !== 'boolean' || typeof d.trashed !== 'boolean' || !['no', 'yes', 'unspecified'].includes(d.attunement) || typeof d.rarity !== 'string' || typeof d.weightText !== 'string' || typeof d.description !== 'string' || d.description.length > 100000 || !Array.isArray(d.properties) || d.properties.some(p => typeof p !== 'string') || d.unitCopper !== null && (typeof d.unitCopper !== 'string' || !/^(0|[1-9][0-9]{0,17})$/.test(d.unitCopper))) throw new Error('Gegenstandsdefinition hat ungültige Felder. Originalbytes bleiben erhalten.');
-  const s = d.source;
-  if (!s || typeof s !== 'object' || Array.isArray(s) || Object.keys(s).length !== 4 || !['authored', 'srd51'].includes(s.kind) || typeof s.label !== 'string' || !s.label.trim() || s.license !== null && typeof s.license !== 'string' || s.url !== null && typeof s.url !== 'string' || d.sourceHash !== undefined && typeof d.sourceHash !== 'string') throw new Error('Gegenstandsquelle hat ein unbekanntes Format.');
-  return d;
-}
 function decoded(row: any, id: string, revision: number): ItemDefinition {
   if (!row || hash(row.payload) !== row.checksum) throw new Error('Gegenstandsdefinition beschädigt oder nicht verfügbar. Originalbytes bleiben erhalten.');
   const d = checkedDefinition(JSON.parse(row.payload));
@@ -98,8 +91,8 @@ export function saveItemDefinition(db: any, input: ItemDefinition, expected: num
     if ((row?.revision ?? null) !== expected) throw new Error('Gegenstand geändert. Bitte aktualisieren.');
     if(input.source?.kind==='srd51'||row&&readItemDefinition(db,input.id).source.kind==='srd51')throw new Error('SRD-Quellen sind schreibgeschützt. Zuerst eine eigene Kopie anlegen.');
     if (row) recordItemDefinitionVersion(db, readItemDefinition(db, input.id));
-    const d: ItemDefinition = { ...input, revision: (expected ?? 0) + 1, source: { ...input.source,kind:'authored' } };
-    checkedDefinition(d); recordItemDefinitionVersion(db, d);
+    const d = nextAuthoredDefinition(input, expected);
+    recordItemDefinitionVersion(db, d);
     const payload = JSON.stringify(d);
     db.prepare('INSERT INTO item_definition(id,revision,payload,checksum) VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(d.id, d.revision, payload, hash(payload));
     db.prepare('INSERT INTO authored_item(id,revision,name,category,unit_copper) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,name=excluded.name,category=excluded.category,unit_copper=excluded.unit_copper').run(d.id, d.revision, d.name, d.category, d.unitCopper ?? '0');
