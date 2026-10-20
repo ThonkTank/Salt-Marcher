@@ -28,18 +28,21 @@ ausweisen. Vor der Integration ist erneut aktuelles `origin/main` maßgeblich.
 ## Repository-Start und Zusammenführung (21.10.2026)
 
 Der Nutzer startet aus `/home/aaron/Schreibtisch/projects/SaltMarcher` mit
-`npm run start:desktop`. Dieser Checkout steht weiterhin auf `e80b3bfb7` mit
-uncommittierten Terrainarbeiten. Die Kameraänderungen auf
-`codex/unified-spatial-atlas` sind dort **noch nicht verfügbar**. Native Prüfungen
-im isolierten Branch belegen dessen App-Einstieg, nicht den Start aus diesem
-Projektordner. Ein Entwicklungsbild ist kein Nachweis der lokalen Übernahme.
+`npm run start:desktop`. Dieser Projektordner verwendet jetzt
+`codex/atlas-development-start` mit dem zusammengeführten Hauptatlas
+auf `21a60b5e9`. Der [tatsächliche Entwicklungsstart ist nativ geprüft](../../reference/atlas-objects-main-20261021/repository-start.md):
+Kampagne → Atlas, Neigung, Drehung und Mausradzoom behalten dieselbe Canvasfläche.
+Die Prüfung verwendete eine isolierte Testkampagne; bestehende persönliche
+Kampagnen und die vollständige Produktabnahme sind davon nicht umfasst.
 
-Die erneute Sicherung liegt unter
-`~/.cache/saltmarcher/unified-atlas/repository-start-20261020T215309Z/`:
-3.489 Dateien, SHA-256-Manifest und Git-Diff; identisch zur P0-Sicherung.
-Die Zusammenführung verwendet die vorhandene R7-Basis für den dreiseitigen
-Abgleich. Der Projektordner wird erst nach Prüfung der kombinierten Fassung
-gezielt aktualisiert; bestehende Quelländerungen und Daten bleiben erhalten.
+Der frühere uncommittierte Stand auf `e80b3bfb7` ist unter
+`archive/atlas-development-before-20261021` gesichert (Git-Snapshot
+`b7ef1c63d1235c9ebcb5988c3b072c22cfafa789`). Alle 3.489 Dateien einschließlich
+unversionierter Quellen wurden gegen die Git-Sicherung und das vorhandene
+SHA-256-Archiv unter
+`~/.cache/saltmarcher/unified-atlas/repository-start-20261020T215309Z/`
+geprüft. Die Zusammenführung verwendete die vorhandene R7-Basis für den
+dreiseitigen Abgleich. Benutzerprofile wurden nicht verändert.
 
 Übernommen sind zunächst die gestreamten Terrainfelder, begrenzten abgeleiteten
 Caches, lokale Invalidierung, additive Höhenbänder und die Vorbereitung großer
@@ -56,7 +59,7 @@ Bestände nicht zurückstufen.
 
 Live-Pinselanzeige, partielle GPU-Updates und Höhenprofile sind jetzt an die
 gemeinsame Hauptkamera angeschlossen und [lokal geprüft](../../reference/atlas-live-main-camera-20261021/README.md).
-Objekt-Höhenbindung und perspektivische Ausgabe sind ebenfalls [an diese Hauptkamera angeschlossen und lokal geprüft](../../reference/atlas-objects-main-20261021/README.md). Die bisherigen Ausgabetests und Proben der separaten Ansicht werden dadurch nicht rückwirkend qualifiziert. Übernahme und Prüfung über den Repository-Start werden gesondert dokumentiert. Die drei abschließenden Produktaudits stehen weiterhin aus.
+Objekt-Höhenbindung und perspektivische Ausgabe sind ebenfalls [an diese Hauptkamera angeschlossen und lokal geprüft](../../reference/atlas-objects-main-20261021/README.md). Die bisherigen Ausgabetests und Proben der separaten Ansicht werden dadurch nicht rückwirkend qualifiziert. Der oben verlinkte Nachweis dokumentiert Übernahme und Prüfung über den Repository-Start. Die drei abschließenden Produktaudits stehen weiterhin aus.
 
 ## Umfang und Quellenzuordnung
 
