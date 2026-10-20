@@ -49,7 +49,7 @@ import {initPlayerUI,deactivatePlayer} from './player-ui';
 import {initCity,activateCity,openCity,prepareCityPersonBinding,flushCity} from './city-ui';
 import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
-import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
+import {initWorld,activateWorld,openWorld,openWorldCalendar,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
 import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type DungeonImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, ensurePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,openPreparedPlan,prepareNextVisit,showDayPreparation } from './preparation';
@@ -166,7 +166,7 @@ const dungeonBinder=new DungeonBinder(()=>workspace,leaveWorkspace,status,async(
 initAutonomy(status);
 initCity(status,id=>worldLinks.open({kind:'note',id}),async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;showTab('groups');await openGroups();if(current())await openNpcProfile(id,undefined,current);},async(id,current)=>{if(!current()||!await leaveWorkspace()||!current())return;await locationNotebook.open(id);});
 initWorld(status,flushLive,async()=>{await openLive();},async()=>{if(!(await leaveWorkspace()))return;showTab('world');await openWorld();},async(sceneId,kind)=>{if(kind==='wait')await openTimeNavigator(undefined,sceneId);else await openTravelRest(sceneId);});
-const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;showTab(kind);if(kind==='world')await openWorld();else await openLive();},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},id=>locationNotebook.open(id));
+const campaignAgenda=new CampaignAgenda(()=>workspace,leaveWorkspace,status,async kind=>{if(!await leaveWorkspace())return;if(kind==='calendar')await openWorldCalendar();else{showTab('live');await openLive();}},async target=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openTimeNavigator(target);},id=>locationNotebook.open(id));
 initLive(status, async id => {
   if (!(await leaveWorkspace())) return;
   await openPreparedLocation(id); showTab('preparation');
