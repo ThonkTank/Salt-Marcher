@@ -50,7 +50,7 @@ einfachere behalten; fehlende Nachweise als offen führen.
 
 | ID | Arbeitsrichtung | Weiter betrachtete Alternative / Wechselnachweis |
 | --- | --- | --- |
-| B01 | Atlas: Canvas2D-Draufsicht und [orthografische Three.js-Geländeansicht](#kippbare-geländeansicht) | Für die Draufsicht: Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. Zeichen-/Exportregeln stehen unter [Darstellung](#darstellung-suche-und-spieleranzeige), Cache-/Autoren-/Auswahlgrenzen im [Canvas2D-Vertrag](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#canvas2d-als-atlasdarstellung). Präsentationslatenz und physische16GiB bleiben getrennt von lokalen CPU-/Funktionstests zu qualifizieren. SVG-Adapter bleiben ausschließlich für historische Einzelansichten und deren bestehende Schnittstellen. |
+| B01 | Atlas: Canvas2D-Draufsicht und orthografische Three.js-Geländeansicht | [Darstellungs-, Auswahl- und Ausgabevertrag](docs/development/atlas-rendering.md). Für die Draufsicht: Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. Hardware-/Präsentationsqualifikation bleibt offen. |
 | B02 | SQLite-Rtree für Raum-/Stadtgeometrie und Landschaftsobjekte; kanonische Bounds-Btrees für Terrain | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
 | B03 | Exakte 1000-m-Bereichsadresse plus lokaler Offset, versionierter Codec | Andere Bereichsgröße/lokales Festkomma nur mit Präzisions- und Transfernachweis; kein vorzeitiges globales Double. |
 | B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
@@ -77,10 +77,9 @@ Canvas-Zeichenkommandos innerhalb geladener Abdeckung; eine Workerqueue erhält
 den TEMP-Index. Das [aktuelle Kamera-Ladeverhalten](#darstellung-suche-und-spieleranzeige)
 trennt laufende Vorschauen von der Freigabe genauer Autorenhits.
 
-Die [nativen Laufzeitvergleiche und Qualifikationsgrenzen](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#native-laufzeitvergleiche-und-qualifikationsgrenzen)
-stehen im Runtimeplan. Sie sind keine allgemeine Leistungsabnahme und entscheiden
-noch nicht gegen persistente abgeleitete Geometrie, GPU-Komposition oder einen
-anderen Cacheumfang.
+[Prüfwege und offene Qualifikation](docs/development/atlas-rendering.md#prüfwege-und-offene-qualifikation)
+trennen native Laufzeitbelege von Hardware-/Präsentationsabnahme und weiteren
+Architekturentscheidungen.
 
 Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
 Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
@@ -341,14 +340,9 @@ Quell-IDs, Queue/Cues und sichere Positionen sind portable Runtimewerte.
 
 Kamera, Werkzeugauswahl und Objektauswahl führen die Atlasdetails getrennt vom Layoutzustand. `AtlasWorkspaceLayout` ordnet bestehende Controls einer festen Befehlsleiste, der linken Symbolleiste, ihrer unabhängig klappbaren Einstellungsleiste und dem optionalen rechten Kontext zu; fachliche Ereignisse und Speichergrenzen bleiben bei ihren bisherigen Eigentümern. Größenänderungen der Kartenfläche erhalten Mittelpunkt und Meter pro CSS-Pixel ohne Ansichtsverlauf. Die Spielleitungssteuerung bleibt außerhalb des Editors. Das Atlas-Menü stellt den vorhandenen `workspace-navigation`-Knoten bereit; dessen ursprüngliche Handler prüfen offene Eingaben und wechseln innerhalb derselben Kampagne. Beim Verlassen des Editors wird der Knoten zurückgestellt. Kampagnenwechsel und Arbeitsbereichswechsel bleiben verschiedene Aktionen. Zoom ändert
 Darstellung und Abfragetiefe, keine Autorenwerte und keinen Pflichtmodus.
-In der Draufsicht liefern räumliche Abfragen nur sichtbare/betroffene Records und abgeleitete
-Geometrie; Render/Hit/Export konsumieren denselben bestätigten Stand und
-dieselben Transformationen. Ein DrawPlan ist Cache, kein zweites Dokument. Numerische Konturen einschließlich Löchern und Sichtmasken werden mit nativen Path2D-Pfadbefehlen aufgebaut und für Zeichnung/Trefferprüfung wiederverwendet; keine SVG-Pfadtext-Konvertierung erzeugter Geometrie. Affine Matrizen gehen direkt an Canvas2D; Atlas-Bildexporte zeichnen dieselben Kommandos zu PNG/JPEG ohne SVG-Zwischenbild. GM-Ausgaben lesen eine bestätigte Szenenkachel nach der anderen, zeichnen sie über eine wiederverwendbare Kachelfläche direkt ins Zielbild und kodieren nur dieses einmal; keine Kodierung der gerenderten Exportkacheln oder Sammlung aller Kacheln im Renderer. Bereits abgeleitete Rasterübersichten und importierte Bilder sind Bildquellen. Kodierte Bildbytes gehen als Uint8Array über die vorhandene IPC-Grenze zum Datei-Writer. Die Anzeige zeichnet direkt auf ihre begrenzte Canvasfläche; eine Hilfsfläche wird nur für die notwendige Sichtmasken-Komposition angelegt.
-Ausschnitt und Objektauswahl teilen einen readonly Worker/Index, halten aber je einen begrenzten Nachfolger. Eine neue Kameraanfrage darf nur die ältere Kameraanfrage ersetzen; wartende Auswahl wird zuerst bearbeitet.
-Kameraabfragen laufen während einer Zoomgeste gedrosselt mit höchstens einer laufenden Anfrage; ihr Puffer berücksichtigt das laufende Zoomziel. Passende Zwischenframes dürfen angezeigt werden, autorisieren aber keine Bearbeitung vor Erreichen des bestätigten Maßstabs. Filter-/Quellenwechsel verwerfen veraltete Antworten.
-Keine JSONvollparses oder Traversierung aller Dungeons je Kamerabild.
-
-Landschaft und Raum-/Stadtgeometrie kommen aus demselben quellengebundenen Bereichsframe. Der frühere unabhängige Landschaftslader samt Rasterworker und IPC entfällt. Begrenzte Rasterübersichten werden weiterhin im lesenden Datenbankworker erzeugt und als kompakte PNG-Layer übertragen; exakte Auswahl und Bearbeitung lesen die Originalgeometrie. Die Draufsicht verwendet die gemeinsame Canvas-Kamera für Eingabekoordinaten und begrenzte Vorschauen für Bildvorlagen; Originalbytes bleiben im Store und in Kampagnenkopien erhalten.
+Der [Darstellungs-, Auswahl- und Ausgabevertrag](docs/development/atlas-rendering.md)
+besitzt Zeichenwege, Quellen-/Framebindung, Raster-/Autorenebene, Budgets,
+Fehlerwiederaufnahme und die Trennung von GM-Ausgabe und öffentlicher Freigabe.
 
 Native DOM-Controls tragen Text, Suche, Menüs/Dialoge und Inspector. Der Canvas
 hat eine passende zugängliche Objektliste mit denselben Aktionen; Tastatur,
@@ -368,18 +362,9 @@ Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
 
 ### Kippbare Geländeansicht
 
-[`TerrainSpatialUI`](src/app/terrain-spatial-ui.ts) verbindet **Atlas kippen** mit
-Kamerabox, Auswahl und Landpinseln des bestehenden Atlas. Der
-[`Vorschauworker`](src/app/terrain-spatial-worker.ts) leitet Höhennetz und Farbtextur
-ab; [`TerrainSpatialView`](src/app/terrain-spatial-view.ts) zeichnet sie mit
-Three.js/WebGL und orthografischer Kamera. Dreieckstreffer werden in Weltmeter
-zurückgeführt, Überhöhung verändert keine Autorenwerte. Main/SQLite bleiben
-kanonisch; beim Verlassen werden Worker und GPU-Ressourcen freigegeben.
-
-Der vorhandene Bildexport und aktive Wissensmasken wechseln zur Draufsicht.
-Perspektivische Ausgabe sowie die vollständige Leistungs- und Spielerqualifikation
-bleiben R7-Aufgaben im [Geländeplan](docs/plans/maps/terrain-relief.md#r7--ausgabe-große-karten-und-produktabnahme).
-Die dort verlinkten nativen R5-Belege gelten für ihren isolierten Quellstand.
+[Gemeinsame Daten, Draufsicht und Geländeprojektion](docs/development/atlas-rendering.md#draufsicht-und-geländeprojektion)
+benennen Besitzer und Grenzen. Die [Relief-Roadmap](docs/plans/maps/terrain-relief.md)
+besitzt Fachlieferungen und R7-Abnahme.
 
 ### Atlasoberfläche ändern
 
