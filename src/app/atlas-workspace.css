@@ -207,7 +207,7 @@ body.atlas-workspace .atlas-units-control select { width:auto; min-width:0; padd
 #atlas-display-popup{max-height:80vh;overflow:auto}
 
 @media(max-width:1050px){
- #campaign-atlas .atlas-command-bar{flex-wrap:wrap;gap:4px 12px}
+ #campaign-atlas .atlas-command-bar{flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px 12px}
  #campaign-atlas .atlas-header-management{flex:1 1 100%;flex-wrap:wrap}
  #campaign-atlas .atlas-header-navigation{margin-left:auto;border-left:0;padding-left:0}
 }

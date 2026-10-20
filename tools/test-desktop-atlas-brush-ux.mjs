@@ -67,6 +67,15 @@ try {
   }
   await page.locator('#land-height-presets button').filter({hasText:'Hügel'}).click();
   await session.capture(page,'land-controls');
+  for(const [width,height,zoomFactor]of [[640,480,1],[1280,852,2],[1920,1080,1],[1280,852,1]]){
+    await session.app.evaluate(({BrowserWindow},s)=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));w.setMinimumSize(320,240);w.setContentSize(s.width,s.height);w.webContents.setZoomFactor(s.zoomFactor);},{width,height,zoomFactor});
+    await atlasCanvasReady(page);
+    const layout=await page.evaluate(()=>{const header=document.querySelector('.atlas-command-bar').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth>innerWidth,buttons:[...document.querySelectorAll('.atlas-command-bar button')].filter(n=>n.checkVisibility()).every(n=>{const b=n.getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.bottom<=header.bottom;}),fields:[...document.querySelectorAll('#atlas-group-tools,.atlas-dock-body,#atlas-tool-groups')].every(n=>n.scrollWidth<=n.clientWidth)};});
+    assert.deepEqual(layout,{scroll:false,buttons:true,fields:true});
+    const scaled=await size();assert(Math.abs(scaled.world/scaled.mpp-scaled.pixels)<.1);
+    if(width===640||zoomFactor===2)await session.capture(page,'layout-'+width+'-'+zoomFactor);
+  }
+  checks.push('Kompakte Oberfläche bei 640 px Fensterbreite und bis 200 % Skalierung ohne horizontales Überlaufen');
   await page.locator('#land-radius-slider').focus();await page.keyboard.press('ArrowRight');assert.equal((await size()).pixels,41);
   await page.keyboard.press('ArrowLeft');assert.equal((await size()).pixels,40);
   const before=await size();await zoom();const after=await size();

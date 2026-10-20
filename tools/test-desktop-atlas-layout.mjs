@@ -75,6 +75,7 @@ try{
   await page.locator('#atlas-panel-width').focus();await page.keyboard.press('ArrowRight');await atlasCanvasReady(page);
   const resizedTools=await camera();for(const k of ['cx','cy','mpp'])assert(Math.abs(beforeTools[k]-resizedTools[k])<1e-7,k);
   await page.keyboard.press('ArrowLeft');await atlasCanvasReady(page);await frame('tool-settings-left');
+  if(await page.locator('#atlas-secondary').isHidden())await page.locator('#atlas-context-toggle').click();await atlasCanvasReady(page);
   const stable=await camera();
   const history=await page.getByRole('button',{name:'Vorige Ansicht',exact:true}).isDisabled();
   await page.locator('#atlas-secondary-close').click();await atlasCanvasReady(page);

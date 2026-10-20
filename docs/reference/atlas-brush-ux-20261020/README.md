@@ -11,13 +11,15 @@ Die gemeinsame Oberfläche hat Richtungstasten, Slider und direkte Zahlenfelder,
 ## Lokale Prüfungen
 
 - 93 unterschiedliche automatisierte Fälle in `tests/atlas-brush-size.test.mjs`, `tests/desktop-atlas-tool-hierarchy.test.mjs`, `tests/terrain-brush.test.mjs`, `tests/terrain-relief.test.mjs`, `tests/terrain-tilted-atlas.test.mjs`, `tests/desktop-atlas-canvas.test.mjs` und `tests/terrain-height.test.mjs`: Größenumrechnung, Modus-/Werkzeugwechsel, Einheiten, Vorlagen, Sperren, Vorschau/Auftrag, kleine Radien, globale Stilinvalidierung und räumliche Projektion.
-- `tools/test-desktop-atlas-brush-ux.mjs`: echte Electron-Bedienelemente, Tastatur, alle angeschlossenen Pinselfamilien, Zoom, feste Größe, Kamera-/Größensperre, Höhenzug, Undo/Redo, globale Darstellung, gekippter Atlas, PNG, normaler Neustart mit Browserzoom 1,25 und erhaltenen Präferenzen. Der Regions-/Raumteil prüft hier Größen und Werkzeugwechsel; deren vollständige Geometriebearbeitung ist kein neuer Abnahmeanspruch.
+- `tools/test-desktop-atlas-brush-ux.mjs`: echte Electron-Bedienelemente, 640-Pixel-Fenster und 200-%-Skalierung ohne horizontales Überlaufen, Tastatur, alle angeschlossenen Pinselfamilien, Zoom, feste Größe, Kamera-/Größensperre, Höhenzug, Undo/Redo, globale Darstellung, gekippter Atlas, PNG, normaler Neustart mit Browserzoom 1,25 und erhaltenen Präferenzen. Der Regions-/Raumteil prüft hier Größen und Werkzeugwechsel; deren vollständige Geometriebearbeitung ist kein neuer Abnahmeanspruch.
 - `tools/test-desktop-terrain-spatial.mjs` (zehn native Prüfschritte bestanden): räumlicher Zoom und Größenwechsel, Zielhöhe, Vorschau, Glätten, Farbe/Radierung, Escape, Undo/Redo, Schreibfehler mit Wiederholung, Küste und Rückkehr/Neustart.
+
+Die zusätzliche breite Altprobe `tools/test-desktop-atlas-layout.mjs` lief bis zur Stadtvorschau und blieb beim anschließenden Stadt-Undo hängen; sie wird nicht als bestandener Gesamtlauf gewertet. Die hier geänderten Pinsel- und Größenabläufe einschließlich kleiner Fenster sind durch die gezielte native Probe oben geprüft.
 
 Native Ergebnisse binden Quellstand und Bundlehashes. Die Prüfkampagnen sind isoliert; keine vorhandene Nutzerkampagne wurde geöffnet. Repository- und Typprüfungen sowie beide Builds gehören zur technischen Prüfung. GitHub Candidate-CI und Integration werden separat über den zugehörigen PR nachgewiesen. Eine Paketinstallation oder Nutzerabnahme wird hier nicht behauptet.
 
 ## Native Belege
 
-[Ergebnis mit Bundlehashes und normalen Prozessabschlüssen](result.json), [räumlicher Bedienlauf](spatial-result.json), [gekippter Atlas](tilted-brush.png), [PNG-Ausgabe](region.png).
+[Ergebnis mit Bundlehashes und normalen Prozessabschlüssen](result.json), [200-%-Skalierung](layout-1280-2.png), [räumlicher Bedienlauf](spatial-result.json), [gekippter Atlas](tilted-brush.png), [PNG-Ausgabe](region.png).
 
 ![Kompakte Werkzeugoptionen neben der vergrößerten Kartenfläche](land-controls.png)
