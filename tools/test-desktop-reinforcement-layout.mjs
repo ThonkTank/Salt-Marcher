@@ -104,11 +104,12 @@ stage='new creature';
  await shot('fresh-finished');
  stage='rejected initial catalog preparation';
  await page.locator('#combat-creation summary').click();await page.locator('#combat-catalog-open').click();
- await app.evaluate(({ipcMain})=>{const write=ipcMain._invokeHandlers.get('campaign:execute-combat');ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',(e,c)=>c.action.kind==='create'?{ok:false,error:'Controlled initial catalog rejection'}:write(e,c));});
+ await app.evaluate(({ipcMain})=>{const write=ipcMain._invokeHandlers.get('campaign:execute-combat');ipcMain.removeHandler('campaign:execute-combat');ipcMain.handle('campaign:execute-combat',(e,c)=>c.action.kind==='create'&&!globalThis.qaAcceptInitialCatalog?{ok:false,error:'Controlled initial catalog rejection'}:write(e,c));});
  await page.locator('#combat-creature-add').click();await page.waitForFunction(()=>document.getElementById('combat-add-status').textContent.includes('Controlled initial catalog rejection'));
  assert.equal(await page.locator('#combat-add-close').isEnabled(),true);assert.equal(await page.locator('#combat-creature-add').isEnabled(),true);await shot('rejected-initial-catalog');await checkControls(['combat-add-close','combat-add-status']);assert.deepEqual(read(),final);
  const db=new Database(profile+'/workbench.sqlite',{readonly:true});try{assert.equal(db.prepare('SELECT count(*) n FROM combat').get().n,1);}finally{db.close();}
- await page.locator('#combat-add-close').click();
+ await native.app.evaluate(()=>{globalThis.qaAcceptInitialCatalog=true;});await page.locator('#combat-creature-add').click();await page.locator('#combat-add-dialog').waitFor({state:'hidden'});await page.locator('#combat-start:enabled').waitFor();
+ assert.deepEqual(read(),final);const created=new Database(profile+'/workbench.sqlite',{readonly:true});try{assert.equal(created.prepare('SELECT count(*) n FROM combat').get().n,2);}finally{created.close();}await shot('initial-catalog-confirmed');
  await close();
  assert.deepEqual(errors,[]);
- await native.finish({zoom,original,current,final,states,recoveries,complete:true,humanAcceptance:false,installedPackageAcceptance:false});console.log(JSON.stringify({out,launches}));}catch(e){await native.fail(e);console.error(stage,e);throw e;}finally{await native.dispose();}
+ await native.finish({zoom,original,current,final,states,recoveries,initialCatalogCreated:true,complete:true,humanAcceptance:false,installedPackageAcceptance:false});console.log(JSON.stringify({out,launches}));}catch(e){await native.fail(e);console.error(stage,e);throw e;}finally{await native.dispose();}
