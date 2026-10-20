@@ -816,3 +816,9 @@ test('room navigation from a relationship target identifies the displayed note i
 test('extracting from knowledge does not advertise the automatically loaded first plan as an intentional destination',async t=>{
  const x=await fixture(t),plan={version:1,id:randomUUID(),revision:1,name:'Historischer Abend',scenes:[{id:randomUUID(),title:'Vergangener Besuch',notes:'Unverändert',locationId:null}]};x.store.changePreparation(x.command({kind:'plan',expectedRevision:null,plan}));await x.activate();await x.ui.openPreparedNote(x.ids.borin);x.el('note-thread-prepare').click();await until(()=>x.el('note-thread-dialog').open&&!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-plan').value,'');assert.equal(x.el('note-thread-visit').value,'');x.el('note-thread-use').click();await settle();assert.equal(x.writes.length,0);assert.deepEqual(x.store.preparation(x.workspace.token).plans.find(p=>p.id===plan.id),plan);
 });
+
+test('editing a resumed handoff visit preserves its literal notes and identity through browser-normalized input',async t=>{
+ const x=await fixture(t);await x.activate();const raw='  Übergabe\r\n- Siv fragen  \rBorin wartet';await x.ui.prepareNextVisit(null,{title:'Am Salzsteg',notes:raw,locationId:null});const before=x.store.preparation(x.workspace.token).plans[0];
+ const field=x.el('scene-notes');field.value=raw.replace(/\r\n?/g,'\n')+'\nZusatz';field.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
+ const after=x.store.preparation(x.workspace.token).plans[0];assert.equal(after.id,before.id);assert.equal(after.scenes[0].id,before.scenes[0].id);assert.equal(after.scenes[0].notes,raw+'\rZusatz');
+});

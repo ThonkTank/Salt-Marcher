@@ -168,6 +168,33 @@ nicht ersetzt. Es gibt keine automatische Reparatur, Datenmigration oder neue
 Marker-/Schreibroute. Ein Fehler der eigentlichen Scene-/Partyquelle bleibt
 ein Gesamtfehler und wird nicht als Rückblickproblem abgeschwächt.
 
+## Originaltext vom Entwurf bis zum nächsten Besuch
+
+Rückblick und Übergabe erhalten beim Lesen normalisierter Browserfelder die
+Originalzeilenenden, Leerzeichen und Textverweise über den bestehenden
+`preserveLiteralEdit`-Helfer. Unveränderte Felder werden anhand ihrer sichtbaren
+Eingabefassung verglichen; CRLF allein gilt nicht als neuer Entwurf. Ein bestätigter
+Abschluss übernimmt den abgesendeten Originalwortlaut. Nur der Abschlussdialog
+sichert anschließend die verbliebene neuere Eingabe; ein zweiter leerer Save im
+Marker-Helfer darf sie nicht überholen.
+
+Der Einstiegsdialog hält die bearbeiteten privaten Notizen am bisherigen lokalen
+Dialogbesitzer. Der Planeditor erhält diese Bytes und bewahrt sie auch bei späterer
+Bearbeitung des Besuchs. Der bestätigte Chroniktext bleibt unverändert. Kein neues
+Schema, keine Migration und kein weiterer Writer. Ein Abbruch der Einstiegsvorbereitung
+verwirft deren unbestätigte Bearbeitung, erhält aber den Abschluss; der Einstieg
+lässt sich danach im Startbriefing erneut aus der historischen Übergabe vorbereiten.
+Ein unfertiger Einstiegsdialog ist damit noch kein über Neustart gesicherter Planentwurf.
+
+`tools/test-desktop-evening-handoff.mjs` prüft den vollständigen Linuxablauf bei
+100 und 200 %: CRLF-Rückblick ergänzen, normal schließen und frisch fortsetzen,
+bestätigen, Vorbereitung abbrechen, nach Neustart aus der historischen Übergabe
+vorbereiten, Mappe speichern und nach erneutem Neustart denselben Besuch bearbeiten.
+Jeder Lauf prüft vier normale Prozessenden, einen unveränderten historischen Abschluss,
+stabile Plan-/Besuchsidentitäten und unveränderte Gruppenzeit. Kontrollierte DOMproben
+normalisieren Textareas wie ein Browser und halten die Markerantwort für neuere
+Eingaben zurück. Native verzögerte Antworten, IME und physischer Crash bleiben offen.
+
 ## Offene Prüfungen
 
 - Echter Marker-/Textwriter mit verzögerter Antwort, neuer eigener Prosa,

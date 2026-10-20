@@ -669,7 +669,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     if (await change({ kind: 'plan', expectedRevision: next.revision, plan: next }, false)) { selectedScene = id; get<HTMLInputElement>('scene-search').value='';await renderPlans(); if(context?.token===token&&selectedPlan===planId&&selectedScene===id){rememberPlanningTarget();const title=get<HTMLInputElement>('scene-title');title.focus();title.select();} }
   })(); };
   for (const [id, field] of [['scene-title', 'title'], ['scene-notes', 'notes']] as const) {
-    get(id).addEventListener('input', () => { if (planDraft) { const before = originalPlan()?.scenes.find(s => s.id === selectedScene), text = value(id); planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, [field]: before && text === before[field].replace(/\r\n?/g, '\n') ? before[field] : text } : s) }; schedule(); } });
+    get(id).addEventListener('input', () => { if (planDraft) { const before = originalPlan()?.scenes.find(s => s.id === selectedScene), text = value(id); planDraft = { ...planDraft, scenes: planDraft.scenes.map(s => s.id === selectedScene ? { ...s, [field]: before && text === before[field].replace(/\r\n?/g, '\n') ? before[field] : field==='notes'?preserveLiteralEdit(s.notes,text):text } : s) }; schedule(); } });
     get(id).addEventListener('blur', () => { if (!composing) void flushPreparation(); });
   }
   for (const [id, delta] of [['scene-up', -1], ['scene-down', 1]] as const) get(id).onclick = () => { void (async () => {
