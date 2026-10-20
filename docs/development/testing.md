@@ -314,3 +314,21 @@ Acht isolierte Fehler werden vorher/nachher erkannt: drei Parsergrenzen, die dre
 Verbraucher, das gerenderte Ortsziel und unveränderte Übergabeprosa. Alle 16
 unveränderten Kontrollläufe bestehen. Bei der Ortsdarstellung trägt die übernommene
 Assertion die bisherige Fehlererkennung. Das ist kein nativer Fokus-/Tastaturnachweis.
+
+Die Notizphase behält alle 84 Fälle in sieben Dateien: Suche, Editorbesitz,
+Auszüge, Merge, Lesetext und Quellenwiederherstellung prüfen unterschiedliche
+Zustände. Die Suchfixtures erzeugen nur benötigte Treffer und Gegenbeispiele:
+Für drei Seiten genügen 40 + 40 + 2 Notizen. Bei der Regelsuche bleibt eine zum
+Suchtext passende Nichtregel vor den 45 Regeln; 84 nicht passende Notizen
+entfallen. Allgemeine Suchfälle behalten ein Gegenbeispiel dort, wo sie es prüfen.
+Die dritte Recovery-Quelle wird nur für die spätere neue Beziehung angelegt.
+Gemessen sinken neue Notizschreibaufrufe in beiden Dateien von 257 auf 150.
+Die Recovery-Datei nutzt außerdem den bereits vorbereiteten Store statt ihn
+zusammen mit dem kleinen Editierhelfer nochmals vollständig zu kompilieren.
+
+Acht isolierte Fehler bleiben vorher/nachher erkannt: fehlender Regeltypfilter,
+Filterung erst nach der Seitengrenze, ignorierter Suchtext, ignorierter Seitenoffset, gekürzte letzte Seite, fehlende Kampagnenfilterung,
+ignorierte History-Prüfsumme und eine fälschlich verfügbare Papierkorbquelle.
+Alle 16 unveränderten Kontrollläufe bestehen. Assertions und unterschiedliche
+Fälle bleiben erhalten; diese Kürzung belegt eingesparten Aufbau, keine native
+Abnahme und keinen aus einzelnen Laufzeiten abgeleiteten Geschwindigkeitsgewinn.
