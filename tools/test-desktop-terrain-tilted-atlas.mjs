@@ -97,6 +97,7 @@ for (const file of [
   "src/app/terrain-spatial-worker.ts",
   "src/app/terrain-spatial-model.ts",
   "src/app/atlas-camera.ts",
+  "src/app/terrain-spatial-source.ts",
   "src/app/terrain-color-visibility.ts",
   ".build/desktop/ui/terrain-spatial-worker.js",
 
@@ -286,7 +287,7 @@ async function hold(x, y, ms) {
   const started=Date.now();await settled();result.commitWaitMs??=[];result.commitWaitMs.push(Date.now()-started);
 }
 async function cameraMotion(){
-  result.scope='perspective camera only; not P1 engine or whole-product qualification';
+  result.scope='existing Atlas camera and surface reuse; not whole-product qualification';
   const baseline=maskBytes();
   await page.evaluate(()=>{
     const post=Worker.prototype.postMessage;
@@ -299,7 +300,7 @@ async function cameraMotion(){
       return post.apply(this,args);
     };
   });
-  const pixels=()=>page.locator('#atlas-terrain-spatial').evaluate(n=>n.toDataURL());
+  const pixels=async()=>createHash('sha256').update(await page.locator('#atlas-terrain-spatial').evaluate(n=>n.toDataURL())).digest('hex');
   const before=await pixels();
   await page.locator('#atlas-view').click();
   await page.locator('#terrain-rotation').focus();await page.keyboard.press('ArrowRight');
@@ -314,8 +315,20 @@ async function cameraMotion(){
   assert.deepEqual((await camera()).view,sky.view,'sky must not fall through to 2D panning');
   await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').press('Home');
   await page.keyboard.press('Escape');
+  const small=await camera(),smallPixels=await pixels();
+  await page.mouse.move(small.left+small.width*.5,small.top+small.height*.5);await page.mouse.wheel(0,-30);
+  await page.waitForFunction(width=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<width,small.view.width);
+  await atlasCanvasReady(page);await spatialReady();
+  await page.mouse.down({button:'middle'});await page.mouse.move(small.left+small.width*.52,small.top+small.height*.52,{steps:4});await page.mouse.up({button:'middle'});
+  await atlasCanvasReady(page);await spatialReady();
+  // The source request is debounced by 100 ms. Check beyond that boundary too.
+  await page.waitForTimeout(350);
+  assert.notEqual(await pixels(),smallPixels);
+  assert.equal(await page.evaluate(()=>window.cameraProbe.jobs),0,'small zoom and pan must reuse the completed surface');
+  result.smallNavigationTerrainJobs=0;
+  await capture('camera-reused-surface');
   await page.evaluate(()=>window.cameraProbe.hold=true);
-  const c=await camera(),prior=await pixels();await page.mouse.move(c.left+c.width*.55,c.top+c.height*.6);await page.mouse.wheel(0,-120);
+  const c=await camera(),prior=await pixels();await page.mouse.move(c.left+c.width*.55,c.top+c.height*.6);await page.mouse.wheel(0,-360);
   await page.waitForFunction(width=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<width,c.view.width);
   assert.notEqual(await pixels(),prior,'zoom must change actual pixels before worker completion');
   await page.waitForFunction(()=>window.cameraProbe.pending.length>0,null,{timeout:60000});
@@ -326,7 +339,7 @@ async function cameraMotion(){
   await page.evaluate(()=>{window.cameraProbe.hold=false;for(const post of window.cameraProbe.pending)post();window.cameraProbe.pending=[];});
   await spatialReady();assert.equal(maskBytes(),baseline);
   result.cameraJobs=await page.evaluate(()=>window.cameraProbe.jobs);
-  mark('Perspective tilt to 75 degrees and rotation change actual canvas pixels without terrain jobs; zoom and pan remain visible while worker completion is held; canonical heights unchanged');
+  mark('Perspective tilt to 75 degrees, rotation and small zoom/pan change actual canvas pixels without terrain jobs; larger zoom and pan remain visible while worker completion is held; canonical heights unchanged');
 }
 try {
   await start();await tool('height');

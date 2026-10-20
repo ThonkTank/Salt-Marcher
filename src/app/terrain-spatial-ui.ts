@@ -7,6 +7,7 @@ import type {LandscapeBox,LandscapeRecord} from './atlas-landscape';
 import type {Point} from './contracts';
 import {atlasFieldValue,lengthLabel} from './atlas-units';
 import {wheelZoomFactor} from './atlas-navigation-scale';
+import {terrainSourceWindow,type TerrainSourceWindow} from './terrain-spatial-source';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord}
 
 /** The second Atlas projection shares its canvas input, camera box, selection and author tools. */
@@ -21,6 +22,7 @@ export class TerrainSpatialUI {
   private baseline:SpatialReply|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private samplePad=0;
+  private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
   private lastPoint:Point={x:0,y:0};private space=false;
   private drag:{id:number;anchor:Point}|null=null;
@@ -88,7 +90,7 @@ export class TerrainSpatialUI {
   setActive(active:boolean){
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;this.controls.hidden=!active;this.toggle.textContent=active?'Draufsicht':'Atlas kippen';this.toggle.setAttribute('aria-pressed',String(active));
-    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.opacity='';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;this.host.redraw();return;}
+    if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.opacity='';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:1;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.opacity='0';this.input.dataset.terrainView='tilted';this.input.dataset.terrainReady='loading';
       this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.active){this.host.cancel();this.setActive(false);this.host.error(Error('Grafikdarstellung verloren. Der Atlas ist wieder in Draufsicht verfügbar.'));}});
@@ -110,7 +112,8 @@ export class TerrainSpatialUI {
     if(!this.active)return;this.placeCanvas();
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
-    const source=JSON.stringify([token,revision,frame,this.samplePad,this.exaggeration,contours,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision])]);
+    this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
+    const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,contours,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
     if(source!==this.requested){this.requested=source;this.ready=false;this.input.dataset.terrainReady='loading';this.generation++;this.busy=false;this.queued=false;this.baseline=null;this.worker?.terminate();this.worker=null;this.scheduleLoad(contours);return;}
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);
@@ -126,7 +129,7 @@ export class TerrainSpatialUI {
     },100);
   }
   private async load(source:string,contours:number){
-    const frame={...this.frame!},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
+    const frame={...this.sourceWindow!.frame},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
     try{
       const view:TerrainView={projection:'perspective',box,frame,columns:193,rows:193,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
       const reply=await window.campaign.atlasMaskRegion(token,terrainSourceBounds(view,this.samplePad));
@@ -134,7 +137,7 @@ export class TerrainSpatialUI {
       if(!reply.ok)throw Error(reply.error);if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
       this.records=[...new Map([...this.objects.filter(r=>r.kind!=='patch'),...reply.value.records].map(r=>[r.id,r])).values()];
       const focusM=Math.max(new TerrainSampler(this.records).seaLevelM,new TerrainSampler(this.records).sample({x:frame.x+frame.width/2,y:frame.y+frame.height/2}).heightM);
-      this.params={projection:'perspective',box,frame,columns:193,rows:193,focusM,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};this.source=source;this.lastDraft='null';this.queue(contours,true);
+      this.params={projection:'perspective',box,frame:{...this.frame!},columns:193,rows:193,focusM,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};this.source=source;this.lastDraft='null';this.queue(contours,true);
     }catch(error){if(this.active&&this.requested===source){this.setActive(false);this.host.error(error);}}
   }
   private queue(contours:number,baseOnly=false){
@@ -153,6 +156,6 @@ export class TerrainSpatialUI {
     };
     this.worker.onerror=()=>{this.busy=false;this.host.error(Error('Räumliche Vorschau fehlgeschlagen.'));this.setActive(false);};
     const width=draft?512:1024,height=Math.max(128,Math.min(1024,Math.round(width*this.params.box.height/this.params.box.width)));
-    const job:SpatialJob={generation,source,view:this.params,records:this.records,box:this.params.box,width,height,contours,displayMpp:this.frame!.width/Math.max(1,this.input.clientWidth),...draft};this.worker.postMessage(job);
+    const job:SpatialJob={generation,source,view:this.params,records:this.records,box:this.params.box,width,height,contours,displayMpp:this.sourceWindow!.frame.width/this.sourceWindow!.pixelWidth,...draft};this.worker.postMessage(job);
   }
 }

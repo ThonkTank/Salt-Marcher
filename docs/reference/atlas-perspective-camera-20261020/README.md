@@ -20,7 +20,7 @@ Die bestehende Hauptoberfläche, Terrainwerkzeuge, IDs, Main/SQLite-Schreibbefeh
 
 Die Rasteroberfläche bleibt sichtbar unscharf, Linien/Labels sind noch nicht vollständig an die gemeinsame Kamera angeschlossen. Höhenraster und Detailanfragen werden weiterhin ausschnittsbezogen neu berechnet. Im Autorenlauf betrug die beobachtete Wartezeit auf den Vorschau-Status 1.174 ms und ein beobachtetes Warten nach Loslassen 4.931 ms. Diese Statusbeobachtungen unter nicht kontrollierter Hostlast sind keine Pixelmessung und belegen die geforderten Leistungsziele ausdrücklich nicht.
 
-MapLibre muss denselben integrierten Ausschnitt einschließlich räumlicher Bearbeitung durchlaufen. Gebäude/Innenräume, vollständige Tiefenbeziehungen, Kachel-LOD, scharfe Kartografie, unmittelbare große Pinsel, gemeinsame Ausgabe und Spieleranzeige sind weitere Roadmapschritte. Der alte Darstellungsweg wird erst nach deren belegter Funktionsdeckung abgelöst.
+Der MapLibre-Vergleich wurde anschließend auf ausdrücklichen Nutzerwunsch eingestellt; weitere Arbeit verbessert unmittelbar den bestehenden Atlas. Gebäude/Innenräume, vollständige Tiefenbeziehungen, Kachel-LOD, scharfe Kartografie, unmittelbare große Pinsel, gemeinsame Ausgabe und Spieleranzeige sind weitere Roadmapschritte. Der alte Darstellungsweg wird erst nach deren belegter Funktionsdeckung abgelöst.
 
 ## Reproduktion
 

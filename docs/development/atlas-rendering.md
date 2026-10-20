@@ -31,13 +31,13 @@ zweiten Kartenhost. Fachfelder und Status bleiben DOM-Controls. `cityPaint` und
 ihren Serializer samt Maskierung am Ausgaberand. Es entsteht kein zweites
 Autorenmodell oder Datenformat.
 
-**Atlas kippen** verwendet im laufenden Three.js-Kandidaten eine perspektivische Kamera. `atlas-camera.ts` definiert die gemeinsame Meterprojektion für GPU-Adapter, Arbeitsebenen und kanonische Pinselverdeckung. Drehung und Neigung verändern vorhandene GPU-Puffer unmittelbar; Zoom und Pan können die letzte bestätigte Oberfläche während des Nachladens weiter bewegen. Ältere orthografische Pinselschnappschüsse bleiben lesbar. Der
+**Atlas kippen** verwendet im bestehenden Three.js-Renderer eine perspektivische Kamera. `atlas-camera.ts` definiert die gemeinsame Meterprojektion für GPU-Adapter, Arbeitsebenen und kanonische Pinselverdeckung. Drehung und Neigung verändern vorhandene GPU-Puffer unmittelbar; Zoom und Pan können die letzte bestätigte Oberfläche während des Nachladens weiter bewegen. `terrain-spatial-source.ts` hält einen einzelnen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Nachgeladen wird bei unzureichender Abdeckung, mehr als 25 % Vergrößerung, relevantem Pixelmaßstab oder geändertem Inhalt/Quellenkontext. Das ist eine begrenzte Wiederverwendung, noch kein weltweites Kachel-LOD. Ältere orthografische Pinselschnappschüsse bleiben lesbar. Der
 Vorschauworker leitet Höhennetz und Farbtextur aus Bereichsdaten ab; Eingabe,
 Kamerabox, Auswahl, Landpinsel und History bleiben mit dem Atlas verbunden.
 Dreieckstreffer werden in Weltmeter zurückgeführt; Überhöhung ändert keine
 Autorenhöhe. Main/SQLite bleiben kanonisch. Beim Verlassen werden Worker,
 Geometrien und Texturen freigegeben. Aktive Wissensmasken und der vorhandene
-Bildexport wechseln zur Draufsicht. Der vollständige Kameraanschluss sämtlicher Atlaswerkzeuge, der MapLibre-Vergleich und die gemeinsame Ausgabe bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
+Bildexport wechseln zur Draufsicht. Der vollständige Kameraanschluss sämtlicher Atlaswerkzeuge und die gemeinsame Ausgabe bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
 
 ## Welcher Frame darf Eingaben annehmen?
 

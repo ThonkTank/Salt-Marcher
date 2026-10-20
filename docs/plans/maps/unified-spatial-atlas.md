@@ -26,9 +26,9 @@ Einordnung: [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md), [bisherige Relief-Ro
 
 **Ein Darstellungsweg für den gesamten Atlas.** Terrain, Kartenlinien, Gebäude, Innenräume und Bearbeitungsgriffe teilen Kamera, Koordinatentransformation und Tiefeninformationen. DOM bleibt für Bedienelemente und Texteingabe zuständig.
 
-**Engineentscheidung durch einen frühen integrierten Vergleich.** Kandidat A ist MapLibre mit eigener ebener Projektion und eingebundenen räumlichen Zeichenebenen im selben Grafik-Kontext. Kandidat B ist ein gemeinsamer Three.js-Renderer mit eigener Kachel-, Kartografie- und Beschriftungsverwaltung. MapLibre bietet die dafür relevanten [Projektionsschnittstellen](https://maplibre.org/maplibre-gl-js/docs/guides/custom-crs/) und [Custom Layers](https://maplibre.org/maplibre-gl-js/docs/API/interfaces/CustomLayerInterface/); deren Eignung für unsere Bearbeitung ist damit noch nicht bewiesen.
+**Bestehende Atlas-Technik schrittweise verbessern.** Auf ausdrücklichen Nutzerwunsch vom 20.10.2026 entfällt der MapLibre-Vergleich. Der vorhandene Atlas mit Canvas2D, Three.js-Gelände, kanonischen Daten und Werkzeugen ist die Grundlage. Kamera, Datenversorgung und Darstellung werden dort verbessert und anschließend für die gemeinsame räumliche Fläche zusammengeführt. Die bisher begonnenen MapLibre-Adapter und Abhängigkeiten werden nicht übernommen.
 
-Die Entscheidung folgt festen Regeln: Beide müssen dieselben Funktions- und Leistungsprüfungen bestehen. Bestehen beide, erhält MapLibre wegen der vorhandenen Karten- und Beschriftungsfunktionen Vorrang. Scheitert es an Weltkoordinaten, räumlicher Bearbeitung, gemeinsamer Tiefe oder Leistung, wird Three.js gewählt. Besteht keiner, bleibt diese Phase offen; es erfolgt keine Integration eines ungeeigneten Fundaments. Im Produkt wird anschließend nur der gewählte Weg weitergeführt.
+Die Entscheidung für diesen Arbeitsweg ersetzt keine Funktions- oder Leistungsprüfung. Der vorhandene Renderer muss dieselben Produktziele erreichen; seine verbleibenden Grenzen werden pro Schritt geprüft und behoben.
 
 **Kamera, Nachladen und Schreiben arbeiten unabhängig.** Kamerabewegung und Stiländerungen verwenden vorhandene GPU-Daten. Hintergrundarbeit liefert feste, räumlich adressierte Detailkacheln. Speichern erzeugt lokale Änderungen und Invalidierungen, keinen vollständigen Kartenneuaufbau.
 
@@ -45,13 +45,15 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
 
-Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt und den Enginevergleich ausdrücklich beibehalten. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
+Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
 
-Als nächstes werden Kamera, Projektion, räumliche Treffer, Szenenaktualisierung und Ressourcenfreigabe hinter dem bestehenden Atlas angeschlossen. Der Three.js-Kandidat erweitert vorhandene Gelände-/Objektmodule; der MapLibre-Kandidat verwendet dieselben Daten und Gesten in derselben Hauptoberfläche und bindet räumliche Geometrie in den gemeinsamen GL-/Tiefenkontext ein. Es entstehen keine zwei neuen Anwendungen. Nach dem Vergleich bleibt ein Produktrenderer.
+Kamera, Projektion, räumliche Treffer, Szenenaktualisierung und Ressourcenfreigabe werden direkt im bestehenden Atlas verbessert. Zuerst bleiben Kamerabewegungen von Nachladen und Geländeaufbau unabhängig. Danach folgen wiederverwendbare Bereichsdaten, scharfe Kartografie und unmittelbare Terrainbearbeitung. Vorhandene Gelände-/Objektmodule werden erweitert; bereits funktionierende Werkzeuge bleiben angeschlossen.
+
+Der aktualisierte Auftrag erlaubt freie technische Änderungen einschließlich des Backends, solange das geforderte Verhalten erreicht wird. Ein Abschluss erfordert anschließend drei vollständige kritische Untersuchungen ohne weiteren Arbeitsfund; einzelne grüne Tests zählen nicht als diese Abschlussprüfungen. Solange bekannte Lücken bestehen, bleibt die Optimierung in Arbeit.
 
 Für den ersten sichtbaren Ausschnitt werden bestehende Kampagnen und Prüfwelten verwendet; die bereits angelegte kleine Prüfwelt ergänzt Lücken. Große Lastfälle entstehen bei den jeweiligen Umsetzungsschritten. Der gesondert zu prüfende Landschaftsindex blockiert den Kameraanschluss nicht. Laufende Änderungen im gemeinsamen Checkout bleiben erhalten; benötigte Terrainverbesserungen werden gezielt in den isolierten Arbeitsstand übernommen.
 
-Nach jedem Schritt: betroffene Typ-/Buildprüfungen und Regressionen, tatsächlicher nativer Ablauf, visuelle Kontrolle sowie je nach Änderung Speichern, Undo und frisches Öffnen. Gefundene Fehler werden vor abhängigen Schritten korrigiert. Die Reihenfolge P2–P8 und sämtliche Endkriterien bleiben verbindlich. P1 und der frühe Kameraanschluss aus P2 werden zusammen entwickelt; eine Engine wird erst nach dem gemeinsamen Funktions- und Leistungsvergleich ausgewählt.
+Nach jedem Schritt: betroffene Typ-/Buildprüfungen und Regressionen, tatsächlicher nativer Ablauf, visuelle Kontrolle sowie je nach Änderung Speichern, Undo und frisches Öffnen. Gefundene Fehler werden vor abhängigen Schritten korrigiert. Die Endkriterien von P2–P8 bleiben verbindlich; ihre technische Reihenfolge darf nach Wirkung und Abhängigkeiten angepasst werden. P1 und der frühe Kameraanschluss aus P2 werden zusammen entwickelt. Der integrierte Ausschnitt prüft die Verbesserungen am bestehenden Atlas; ein externer Enginevergleich ist keine Voraussetzung.
 
 
 ### P0 — Umfang und vergleichbare Ausgangsbasis sichern
@@ -64,25 +66,27 @@ Eine reproduzierbare Prüfwelt erstellen: Küste, Inseln, Gebirge, Tal, Fluss, S
 
 **Abschluss:** Werkzeugliste, feste Eingabefolgen, Screenshots und Messungen für den Ausgangsstand liegen vor. Die neue Roadmap ist mit `docs/INDEX.md`, den bestehenden Atlas-/Reliefplänen und den betroffenen Abnahme-IDs verbunden; ursprüngliche Quellenbindungen bleiben erhalten.
 
-### P1 — Architektur mit einem vollständigen Ausschnitt entscheiden
+### P1 — Vorhandenen Atlas an einem vollständigen Ausschnitt verbessern
 
-Erster lokaler Teilanschluss: [perspektivische Kamera und Navigation mit ausstehenden Detailaufträgen im vorhandenen Three.js-Atlas](../../reference/atlas-perspective-camera-20261020/README.md). Der Enginevergleich und P1 bleiben offen.
+Erster lokaler Teilanschluss: [perspektivische Kamera und Navigation mit ausstehenden Detailaufträgen im vorhandenen Three.js-Atlas](../../reference/atlas-perspective-camera-20261020/README.md). P1 bleibt offen; der Vergleich mit MapLibre wurde auf Nutzerwunsch eingestellt.
 
-Beide Kandidaten führen dieselbe kurze Aufgabe aus: Weltübersicht → Dorf → Gebäudeinnenraum, dabei drehen und neigen, Höhenlinien und Namen wechseln lassen, Gelände mit großem Pinsel bearbeiten, eine Wand ändern und beides rückgängig machen.
+Der bestehende Atlas wird schrittweise für diese kurze Aufgabe vervollständigt: Weltübersicht → Dorf → Gebäudeinnenraum, dabei drehen und neigen, Höhenlinien und Namen wechseln lassen, Gelände mit großem Pinsel bearbeiten, eine Wand ändern und beides rückgängig machen.
 
-Bereits hier prüfen: negative und weit entfernte Weltkoordinaten, kleine Raumdetails, Gelände-Verdeckung, Geschossschnitt, scharfe Linien, Quellenwechsel und laufende Datenanforderungen. Beide Prototypen laufen im nativen Electron-Fenster auf dem Zielhost.
+Bereits hier prüfen: negative und weit entfernte Weltkoordinaten, kleine Raumdetails, Gelände-Verdeckung, Geschossschnitt, scharfe Linien, Quellenwechsel und laufende Datenanforderungen. Die Verbesserungen werden im nativen Electron-Fenster auf dem Zielhost geprüft.
 
-**Abschluss:** Ein Kandidat erfüllt den funktionalen Mindestumfang und die Leistungsziele. Die Entscheidung dokumentiert verbleibende Implementierungsarbeit; ein reiner Kartenbetrachter zählt nicht als bestandener Prototyp.
+**Abschluss:** Der verbesserte Atlas erfüllt den funktionalen Mindestumfang und die Leistungsziele des Ausschnitts. Verbleibende Implementierungsarbeit ist dokumentiert; reine Navigation ohne Bearbeitung genügt nicht.
 
 ### P2 — Gemeinsame Kamera und räumliche Atlasfläche integrieren
 
-Den gewählten Renderer hinter die bestehende Atlasoberfläche setzen. Eine Kamera steuert sämtliche Inhalte, Auswahlrahmen, Griffe und Messungen. Kameranahe GPU-Koordinaten und geeignete Tiefenbereiche verhindern Zittern und Flächenflimmern zwischen Welt- und Raummaßstab.
+Die vorhandenen Zeichenebenen unter der gemeinsamen Kamera in der bestehenden Atlasoberfläche zusammenführen. Eine Kamera steuert sämtliche Inhalte, Auswahlrahmen, Griffe und Messungen. Kameranahe GPU-Koordinaten und geeignete Tiefenbereiche verhindern Zittern und Flächenflimmern zwischen Welt- und Raummaßstab.
 
 Zoom bleibt am anvisierten Weltpunkt verankert. Fenstergrößenwechsel, Suchsprünge und Rückkehr zur Draufsicht erhalten den räumlichen Zusammenhang. Neigen oder Drehen erzeugt keinen Ansichtswechsel.
 
 **Abschluss:** Die gesamte Prüfwelt ist in einer Fläche navigierbar und auswählbar. Mittelpunkt, Auswahl und Werkzeug bleiben über alle Kamerabewegungen stabil.
 
 ### P3 — Weltweites Streaming und Detailstufen aufbauen
+
+Erster lokaler Teilschritt: [bestehende Geländeausschnitte bei kleinen Kameraänderungen wiederverwenden](../../reference/atlas-surface-reuse-20261020/README.md). Dies beseitigt unnötige Neuaufträge, ersetzt aber noch kein Kachel-LOD und keine Leistungsabnahme.
 
 Feste Weltkacheln mit vereinfachten Darstellungen und lokal feineren Daten einführen. Die sichtbare Größe beziehungsweise der projizierte Fehler entscheidet über die benötigte Detailstufe; bei geneigter Kamera erhält der Vordergrund mehr Details.
 

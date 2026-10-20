@@ -165,6 +165,9 @@ test("reframing reuses uploaded buffers and moves both projection and picking im
   close(hit.x, target.x);
   close(hit.y, target.y);
   assert.deepEqual(view.base.view.frame, frame);
+  let renders=0;view.renderer.render=()=>renders++;
+  view.reframe({...frame},65,90);assert.equal(renders,0,'host sync must not draw the identical pose again');
+  view.reframe({...frame,x:frame.x+1},65,90);assert.equal(renders,1);
 });
 test("canonical visibility agrees with first GPU triangle along perspective rays, including top view", () => {
   for (const tilt of [0, 45, 75])

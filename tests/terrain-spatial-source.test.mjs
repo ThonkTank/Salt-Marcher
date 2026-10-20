@@ -1,0 +1,66 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {buildSync} from 'esbuild';
+import {createRequire} from 'node:module';
+import {parseHTML} from 'linkedom';
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-source';export * from './src/app/terrain-spatial-ui';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-source-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {terrainSourceWindow,TerrainSpatialUI}=createRequire(import.meta.url)('../.build/terrain-spatial-source-test.cjs');
+const frame={x:-200,y:-160,width:400,height:320};
+const zoom=(factor,b=frame)=>({x:b.x+b.width*(1-factor)/2,y:b.y+b.height*(1-factor)/2,width:b.width*factor,height:b.height*factor});
+test('one source lattice covers bounded pan/zoom, not a separate surface for every camera frame',()=>{
+ for(const offset of [0,-1e10,1e10])for(const size of [.001,1,1e5]){
+  const b={x:offset-200*size,y:-offset-160*size,width:400*size,height:320*size};
+  const source=terrainSourceWindow(null,b,1000,800);
+  for(const factor of [.81,1,1.24])assert.equal(terrainSourceWindow(source,zoom(factor,b),1000,800),source);
+  for(const factor of [.79,1.26])assert.notEqual(terrainSourceWindow(source,zoom(factor,b),1000,800),source);
+  assert.equal(terrainSourceWindow(source,{...b,x:b.x+199*size},1000,800),source);
+  assert.notEqual(terrainSourceWindow(source,{...b,x:b.x+201*size},1000,800),source);
+  assert.notEqual(terrainSourceWindow(source,b,1400,800),source,'pixel density matters even with the same world frame');
+  assert.notEqual(terrainSourceWindow(source,{...b,height:b.height*1.3},1000,800),source,'portrait resize must refresh too');
+ }
+});
+function fixture(t){
+ const prior={window:global.window,document:global.document,Worker:global.Worker};t.after(()=>Object.assign(global,prior));
+ const {window,document}=parseHTML('<html><body><input id="atlas-perception"><input id="land-radius" value="10"><p id="land-status"></p></body></html>');Object.assign(global,{window,document});Object.defineProperty(document,'baseURI',{value:'https://atlas.invalid/'});
+ const reads=[],jobs=[],published=[],errors=[];
+ window.campaign={atlasMaskRegion:(token,box)=>new Promise(resolve=>reads.push({token,box,resolve}))};
+ global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
+ const input={clientWidth:1000,clientHeight:800,dataset:{}};
+ const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
+  active:true,ready:false,input,host:{selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
+  sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
+  loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},canvas:null,
+  view:{reframe(){},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
+ });
+ const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
+ const load=()=>ui.load(ui.requested,0);
+ const resolveRead=(i=0,revision=1)=>reads[i].resolve({ok:true,value:{records:[],revision}});
+ const reply=(index=jobs.length-1)=>{
+  const {worker,job}=jobs[index];worker.onmessage({data:{generation:job.generation,source:job.source,grid:{view:job.view,heights:new Float32Array(4),seaLevelM:0},pixels:new Uint8Array(16),width:2,height:2,draft:false}});
+ };
+ return {ui,input,reads,jobs,published,errors,sync,load,resolveRead,reply};
+}
+test('pending IPC and worker survive small camera gestures; the result uses the latest pose',async t=>{
+ const f=fixture(t);f.sync();const key=f.ui.requested,loading=f.load();
+ f.sync(zoom(.9));assert.equal(f.ui.requested,key);assert.equal(f.reads.length,1);
+ f.resolveRead();await loading;assert.equal(f.jobs.length,1);assert.deepEqual(f.jobs[0].job.view.frame,zoom(.9));
+ f.ui.tilt=75;f.sync({...zoom(.9),x:-170});f.reply();assert.equal(f.ui.ready,true);assert.equal(f.published.length,1);
+ assert.equal(f.ui.visibility().tilt,75);assert.equal(f.ui.visibility().frame.x,-170);
+ for(let i=0;i<50;i++)f.sync(zoom(.9+i*.001));
+ assert.equal(f.jobs.length,1);assert.equal(f.reads.length,1);assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
+});
+test('detail/coverage changes invalidate pending replies while canonical revision, context and style always invalidate reuse',async t=>{
+ const f=fixture(t);f.sync();const first=f.load();f.resolveRead();await first;
+ f.sync(zoom(.7));assert.equal(f.ui.ready,false);assert.equal(f.jobs[0].worker.terminated,true);f.reply(0);assert.equal(f.published.length,0);
+ const second=f.load();f.resolveRead(1);await second;f.reply(1);assert.equal(f.ui.ready,true);
+ for(const [b,revision,token,contours] of [[zoom(.7),2,'campaign',0],[zoom(.7),2,'other',0],[zoom(.7),2,'other',50],[{...zoom(.7),x:800},2,'other',50]]){
+  const key=f.ui.requested;f.sync(b,revision,token,contours);assert.notEqual(f.ui.requested,key);assert.equal(f.ui.ready,false);
+ }
+});
+test('source change during IPC discards the old campaign; record ordering does not discard a valid surface',async t=>{
+ const f=fixture(t);f.sync();const first=f.load();f.sync(frame,1,'other');f.resolveRead();await first;assert.equal(f.jobs.length,0);
+ const objects=[{kind:'road',id:'a',revision:0},{kind:'river',id:'b',revision:2}];
+ f.sync(frame,1,'other',0,objects);const key=f.ui.requested;
+ f.sync(frame,1,'other',0,[...objects].reverse());assert.equal(f.ui.requested,key);
+ f.sync(frame,1,'other',0,[{...objects[0],revision:1},objects[1]]);assert.notEqual(f.ui.requested,key);
+});

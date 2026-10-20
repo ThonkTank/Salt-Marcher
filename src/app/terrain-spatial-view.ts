@@ -46,6 +46,8 @@ export class TerrainSpatialView {
   private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];}
   /** Retain GPU geometry and textures while the camera moves or details load. */
   reframe(frame:LandscapeBox,tilt:number,rotation:number){
+    const old=this.grid?.view;
+    if(old&&old.frame.x===frame.x&&old.frame.y===frame.y&&old.frame.width===frame.width&&old.frame.height===frame.height&&old.tilt===tilt&&old.rotation===rotation)return;
     for(const grid of new Set([this.grid,this.base]))if(grid)grid.view={...grid.view,frame:{...frame},tilt,rotation,projection:'perspective'};
     this.render();
   }
