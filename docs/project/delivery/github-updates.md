@@ -31,15 +31,49 @@ Datenprofil vor dem Wechsel. Sicherungen werden nicht automatisch gelöscht.
 
 ## Veröffentlichung
 
+### Verbindlicher Release-Rhythmus für Agenten
+
+**Nach jeweils zehn in `main` integrierten PRs veröffentlichen Agenten automatisch
+einen neuen Release.** Alle PRs zählen, auch Backendpflege, Refactoring, Tests und
+Dokumentation. Eine zusätzliche funktionale Änderung ist nicht erforderlich.
+Nach jeder Integration ist die Schwelle zu prüfen; der Agent, der sie erreicht
+oder bereits erfüllt vorfindet, übernimmt den Release bis zur Veröffentlichung.
+Diese dauerhafte Nutzeranweisung erlaubt die Veröffentlichung ohne weitere Rückfrage.
+
+Ein manuell angeforderter Release hat Vorrang und kann vor dem zehnten PR erfolgen.
+Er ersetzt einen gegebenenfalls laufenden automatischen Release. Jede erfolgreiche
+Veröffentlichung setzt die Basis auf ihren Paketstand zurück: Nach einem manuellen
+Release mit sieben enthaltenen PRs zählen wieder zehn weitere PRs bis zum nächsten
+automatischen Release.
+
+Basis ist der Quelltag des letzten veröffentlichten stabilen Releases der
+Produktlinie `saltmarcher-workbench`. Alte SaltMarcher-/AppImage-Releases zählen
+nicht. Über GitHub alle relevanten integrierten PRs ermitteln und deren Merge-Commits
+mit der Git-Historie zwischen Basistag und `main` abgleichen; bei Bedarf alle
+API-Seiten lesen. Jeder PR zählt einmal, unabhängig von seiner Commitzahl.
+PR-Nummern und Veröffentlichungsdatum ersetzen diesen Vergleich nicht:
+Integrationen, die noch nicht im veröffentlichten Paket enthalten sind, zählen
+weiterhin, auch wenn sie vor dessen Veröffentlichung erfolgten.
+
+Vor dem Start vorhandene Release-PRs, Tags, Entwürfe und Workflows prüfen und
+begonnene Arbeit fortführen statt doppelte Releases anzulegen. Fehlgeschlagene
+Builds und unveröffentlichte Entwürfe setzen den Zähler nicht zurück. CI,
+Signaturprüfung und native Paket-/Neustartprobe bleiben verpflichtend. Bei einem
+Blocker dessen Ursache melden; keine Prüfung umgehen. Im Abschluss Basistag,
+PR-Zahl und veröffentlichten Release-Link beziehungsweise Blocker nennen.
+
+### Releaseablauf
+
 1. Version in `package.json` und `package-lock.json` erhöhen. Änderungen über
    einen Kandidaten mit grüner `Candidate · exact-SHA aggregate` integrieren.
 2. Auf dem grünen Main-Commit den passenden `vVERSION`-Tag veröffentlichen.
-3. `Linux release draft` prüft Tag, Version, Main-Zugehörigkeit und die grüne
+3. `Linux release` prüft Tag, Version, Main-Zugehörigkeit und die grüne
    Baseline dieses exakten Commits. Es baut und signiert das Paket und führt
    eine native Updateprobe mit zwei isolierten Testversionen aus.
-4. Den erzeugten GitHub-Releaseentwurf prüfen und ausdrücklich veröffentlichen.
-   Vorhandene Releases werden nicht überschrieben. Fehlerkorrekturen benötigen
-   eine neue Version.
+4. Nach allen erfolgreichen Prüfungen lädt der Workflow die signierten Assets
+   zunächst als Entwurf hoch und veröffentlicht den vollständigen Release
+   automatisch. Vorhandene Releases werden nicht überschrieben; Korrekturen
+   benötigen eine neue Version.
 
 Das Repositorysecret `SALTMARCHER_UPDATE_PRIVATE_KEY` enthält den Ed25519-
 Privatschlüssel. Ausschließlich `resources/update-public-key.pem` wird verteilt.

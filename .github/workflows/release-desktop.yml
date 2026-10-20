@@ -1,4 +1,4 @@
-name: Linux release draft
+name: Linux release
 on:
   push:
     tags: ['v*']
@@ -44,7 +44,11 @@ jobs:
           fi
       - name: Test real packaged update and restart
         run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package
-      - name: Create draft without publishing
+      - name: Upload verified assets as a draft
         run: gh release create "$GITHUB_REF_NAME" .build/release-assets/* --draft --verify-tag --title "SaltMarcher $GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Publish the complete verified release
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --latest
         env:
           GH_TOKEN: ${{ github.token }}
