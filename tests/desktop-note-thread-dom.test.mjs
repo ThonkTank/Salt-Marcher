@@ -57,7 +57,8 @@ test('failed additional page preserves old sources and explicit refresh recovers
 });
 test('returning from a later source restores loaded pages, reviewed selection and the existing destination',async t=>{
  const x=fixture(t),later=entry('Späte Spur','open');x.all.push(later);
- x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:40}));
+ x.root.relations=[...x.all.slice(0,2),later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:2}));
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);
  const source=()=>[...x.el('note-thread-sources').querySelectorAll('article')].find(c=>c.dataset.noteId===later.id);
  const box=source().querySelector('input');box.checked=true;box.onchange();
@@ -65,12 +66,13 @@ test('returning from a later source restores loaded pages, reviewed selection an
  x.setBack(async current=>{later.stamp='reviewed'.padEnd(64,'b');return current();});
  x.el('note-thread-return').onclick();await until(()=>x.el('note-thread-editor').hidden&&!x.el('note-thread-use').disabled);
  assert(source(),'the reviewed source must remain visible after returning');assert.equal(source().querySelector('input').checked,true);
- assert.deepEqual(x.calls.map(c=>c[2]),[0,40,0,40]);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ assert.deepEqual(x.calls.map(c=>c[2]),[0,2,0,2]);assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
  x.el('note-thread-use').onclick();await until(()=>x.used.length===1);assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),['Nera','Offene Spur',later.id]);assert.equal(x.used[0].selection.entries.at(-1).stamp,later.stamp);
 });
 test('a pending restored page blocks handoff and cannot populate a newly opened map',async t=>{
  const x=fixture(t),later=entry('Späte Spur','open'),wait=deferred();let restoring=false;
- x.setRead(async(_t,_id,offset)=>offset?(restoring?wait.promise:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:40}));
+ x.root.relations=[...[x.all[0]],later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>offset?(restoring?wait.promise:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:1}));
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);
  x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);restoring=true;
  x.el('note-thread-return').onclick();await until(()=>x.calls.length===4);assert.equal(x.el('note-thread-use').disabled,true);
@@ -231,7 +233,8 @@ test('a source without a planning destination cannot silently use the first hist
 
 
 test('clearing source choices retains the separate root and destination, and leaves later or newly read sources unselected',async t=>{
- const x=fixture(t),later=entry('Späte Spur','open');x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:40}));
+ const x=fixture(t),later=entry('Späte Spur','open');x.root.relations=[...x.all.slice(0,2),later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:x.all.slice(0,2),total:3,next:offset?null:2}));
  await x.ui.open();x.el('note-thread-clear-selection').click();assert.equal(x.el('note-thread-include-root').checked,true);assert.match(x.el('note-thread-choice').textContent,/^1 Originalnotizen/);
  assert([...x.el('note-thread-reading').querySelectorAll('input[data-thread-source]')].every(b=>!b.checked));assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');assert.equal(x.used.length,0);assert.equal(x.adds.length,0);
  x.el('note-thread-more').click();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===3);assert([...x.el('note-thread-reading').querySelectorAll('input[data-thread-source]')].every(b=>!b.checked));
@@ -257,28 +260,31 @@ test('clearing cannot change a choice while a page is pending or its owner is bl
 });
 
 for(const refresh of ['refresh','filter'])test('explicit '+refresh+' retains the loaded later-page choice and destination',async t=>{
- const x=fixture(t),later=entry('Späte Spur','open');x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:[x.all[0]],total:2,next:offset?null:40}));
+ const x=fixture(t),later=entry('Späte Spur','open');x.root.relations=[...[x.all[0]],later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>ok({root:x.root,entries:offset?[later]:[x.all[0]],total:2,next:offset?null:1}));
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);
  const source=()=>x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"]');const box=source().querySelector('input');box.checked=true;box.onchange();
  if(refresh==='refresh')x.click('Aktualisieren');else{x.el('note-thread-active').checked=false;x.el('note-thread-active').onchange();}
- await until(()=>x.calls.length===4&&!x.el('note-thread-use').disabled);assert(source());assert.equal(source().querySelector('input').checked,true);assert.deepEqual(x.calls.map(c=>c[2]),[0,40,0,40]);
+ await until(()=>x.calls.length===4&&!x.el('note-thread-use').disabled);assert(source());assert.equal(source().querySelector('input').checked,true);assert.deepEqual(x.calls.map(c=>c[2]),[0,1,0,1]);
  assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');x.el('note-thread-use').onclick();await until(()=>x.used.length===1);assert(x.used[0].selection.entries.some(e=>e.id===later.id));
 });
 
 test('a failed later page retains the full refresh extent for retry and keeps handoff blocked',async t=>{
  const x=fixture(t),later=entry('Späte Spur','open'),wait=deferred();let phase='initial';
- x.setRead(async(_t,_id,offset)=>offset?(phase==='pending'?wait.promise:phase==='failed'?{ok:false,error:'Späte Seite fehlt'}:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:40}));
+ x.root.relations=[...[x.all[0]],later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>offset?(phase==='pending'?wait.promise:phase==='failed'?{ok:false,error:'Späte Seite fehlt'}:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:1}));
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);
  let box=x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"] input');box.checked=true;box.onchange();
  phase='failed';x.click('Aktualisieren');await until(()=>x.el('note-thread-status').textContent==='Späte Seite fehlt');assert.equal(x.el('note-thread-use').disabled,true);x.el('note-thread-use').onclick();await tick();assert.equal(x.used.length,0);
  assert.equal(x.el('note-thread-more').disabled,true);x.el('note-thread-more').onclick();await tick();assert.equal(x.calls.length,4);
  phase='pending';x.click('Aktualisieren');await until(()=>x.calls.length===6);assert.equal(x.el('note-thread-use').disabled,true);assert.equal(x.el('note-thread-active').disabled,true);
  wait.resolve(ok({root:x.root,entries:[later],total:2,next:null}));await until(()=>!x.el('note-thread-use').disabled);box=x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"] input');assert.equal(box.checked,true);
- assert.deepEqual(x.calls.map(c=>c[2]),[0,40,0,40,0,40]);
+ assert.deepEqual(x.calls.map(c=>c[2]),[0,1,0,1,0,1]);
 });
 
 test('refresh reloads only the reviewed extent and changed later-page sources require a new choice',async t=>{
- const x=fixture(t),later=entry('Späte Spur','open');x.setRead(async(_t,_id,offset)=>{assert.notEqual(offset,80,'unreviewed page must not be read');return ok({root:x.root,entries:offset?[later]:[x.all[0]],total:3,next:offset?80:40});});
+ const x=fixture(t),later=entry('Späte Spur','open');x.root.relations=[...[x.all[0]],later,entry('Ungeprüft')].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>{assert.notEqual(offset,2,'unreviewed page must not be read');return ok({root:x.root,entries:offset?[later]:[x.all[0]],total:3,next:offset?2:1});});
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);let box=x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"] input');box.checked=true;box.onchange();
  later.stamp='changed'.padEnd(64,'a');x.click('Aktualisieren');await until(()=>x.calls.length===4&&!x.el('note-thread-use').disabled);assert.equal(x.el('note-thread-sources').querySelector('[data-note-id="Späte Spur"] input').checked,false);assert.equal(x.el('note-thread-more').hidden,false);
 });
@@ -286,8 +292,50 @@ test('refresh reloads only the reviewed extent and changed later-page sources re
 
 test('a new map opening drops a failed refresh extent and ignores its late page',async t=>{
  const x=fixture(t),later=entry('Späte Spur'),wait=deferred();let pending=false;
- x.setRead(async(_t,_id,offset)=>offset?(pending?wait.promise:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:40}));
+ x.root.relations=[...[x.all[0]],later].map(e=>({targetId:e.id,label:'Quelle'}));
+ x.setRead(async(_t,_id,offset)=>offset?(pending?wait.promise:ok({root:x.root,entries:[later],total:2,next:null})):ok({root:x.root,entries:[x.all[0]],total:2,next:1}));
  await x.ui.open();x.el('note-thread-more').onclick();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===2);
  pending=true;x.click('Aktualisieren');await until(()=>x.calls.length===4);x.ui.reset();await x.ui.open();assert.equal(x.calls.length,5);assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);
  wait.resolve(ok({root:x.root,entries:[later],total:2,next:null}));await tick();assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);assert.equal(x.el('note-thread-more').hidden,false);assert.equal(x.el('note-thread-use').disabled,false);
+});
+
+
+// Small pages exercise member cursor semantics independently of the storage page size.
+for(const trigger of ['refresh','filter','editor','nested','retry'])test(`restoration follows source identities after insertion (${trigger})`,async t=>{
+ const x=fixture(t),last=entry('Späte Spur','open'),middle=entry('Mitte'),extra=[entry('Neu A'),entry('Neu B')],unseen=entry('Nicht gelesen');
+ let order=[x.all[0],x.all[1],middle,last,unseen],fail=false;
+ const root=()=>({...x.root,relations:order.map(e=>({targetId:e.id,label:'Quelle'}))});
+ x.setRead(async(_t,id,offset,active)=>{
+  if(id!==x.root.id)return ok({root:note(id),entries:[],total:0,next:null});
+  if(fail&&offset===4)return {ok:false,error:'Dritte Seite fehlt'};
+  return ok({root:root(),entries:order.slice(offset,offset+2).filter(e=>!active||e.status!=='closed'),total:order.length,next:offset+2<order.length?offset+2:null});
+ });
+ await x.ui.open();x.el('note-thread-more').click();await until(()=>x.el('note-thread-sources').querySelectorAll('article').length===4);
+ const source=id=>x.el('note-thread-sources').querySelector(`[data-note-id="${id}"] input`);source(last.id).checked=true;source(last.id).onchange();
+ if(trigger==='editor'||trigger==='nested'){
+  x.click('Notiz bearbeiten…');await until(()=>!x.el('note-thread-return').disabled);
+  if(trigger==='nested'){x.setPrepare(async()=>({...x.owner,id:x.all[0].id}));await x.ui.open();}
+ }
+ order=[...extra,...order];x.root.revision++;
+ if(trigger==='editor')x.el('note-thread-return').click();
+ else if(trigger==='nested')x.el('note-thread-parent').click();
+ else if(trigger==='filter'){x.el('note-thread-active').checked=false;x.el('note-thread-active').onchange();}
+ else {fail=trigger==='retry';x.click('Aktualisieren');}
+ if(fail){await until(()=>x.el('note-thread-status').textContent==='Dritte Seite fehlt');assert.equal(x.el('note-thread-use').disabled,true);fail=false;x.click('Aktualisieren');}
+ await until(()=>source(last.id)&&!x.el('note-thread-use').disabled);
+ assert.equal(source(last.id).checked,true);assert.equal(source(extra[0].id).checked,false);assert.equal(source(extra[1].id).checked,false);assert.equal(source(unseen.id),null);
+ assert.equal(x.el('note-thread-plan').value,'P');assert.equal(x.el('note-thread-visit').value,'V');
+ const offsets=x.calls.filter(c=>c[1]===x.root.id).map(c=>c[2]);assert.deepEqual(offsets,trigger==='retry'?[0,2,0,2,4,0,2,4]:[0,2,0,2,4]);
+ x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),[x.all[0].id,x.all[1].id,last.id]);
+});
+
+for(const change of ['closed','removed'])test(`a ${change} previously read source cannot trigger unrelated hydration or retain a hidden selection`,async t=>{
+ const x=fixture(t),hidden=entry('Bekannt','open'),unseen=entry('Ungeprüft');let changed=false;
+ x.setRead(async(_t,_id,offset,active)=>{
+  assert.equal(offset,0,'all relevant identities were already scanned');
+  const order=changed&&change==='removed'?[x.all[0],unseen]:[x.all[0],hidden,unseen];
+  return ok({root:{...x.root,relations:order.map(e=>({targetId:e.id,label:'Quelle'}))},entries:changed?[x.all[0]]:[x.all[0],hidden],total:order.length,next:changed&&change==='removed'?1:2});
+ });
+ await x.ui.open();changed=true;x.click('Aktualisieren');await until(()=>x.calls.length===2&&!x.el('note-thread-use').disabled);
+ assert.equal(x.el('note-thread-sources').querySelectorAll('article').length,1);assert.equal(x.el('note-thread-more').hidden,false);x.el('note-thread-use').click();await until(()=>x.used.length===1);assert.deepEqual(x.used[0].selection.entries.map(e=>e.id),[x.all[0].id]);
 });

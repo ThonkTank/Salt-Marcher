@@ -88,17 +88,26 @@ Im eingeblendeten Quelleneditor führt „Mit dieser Mappe zum Spielabend…“ 
 den vorhandenen Flush zur bereits geprüften Dossierauswahl und ihrem Ziel.
 Die eigene Mappe einer Quelle bleibt separat über „Notizmappe öffnen…“ erreichbar.
 Aktualisieren, Filterwechsel und Rückwege aus Quelleneditor oder untergeordneter
-Mappe verwenden denselben Leseablauf für den bereits geladenen Umfang. Auch Quellen auf späteren Seiten
-bleiben dadurch sichtbar und in der geprüften Auswahl; neue ungeprüfte
+Mappe verwenden denselben Leseablauf für die zuvor gelesenen Originalkennungen.
+`noteThreadMembers` liefert dafür dieselbe geordnete Mitgliedschaft wie der
+Speicherleser und die Übergabeprüfung. Neue Verknüpfungen vor einer gewählten
+Quelle können sie nicht durch eine gleich große andere Seite ersetzen. Gelesen
+wird bis zur letzten weiterhin verknüpften bekannten Kennung; der Cursor zählt
+auch ausgefilterte geschlossene Quellen. Entfernte Quellen erzwingen daher
+keinen vollständigen Durchlauf durch ungeprüfte weitere Seiten.
+Die Vorauswahl gilt nur beim ersten Öffnen. Beim Wiederlesen bleiben neue
+Quellen abgewählt; bestehende Auswahl und Ziel bleiben erhalten. Neue ungeprüfte
 Quellrevisionen bleiben abgewählt. Eine noch ausstehende oder fehlgeschlagene
 Seite gibt keine Übergabe frei. Nach einem Lesefehler stellt Aktualisieren erneut
-den zuvor geladenen Umfang her; einzelnes Nachladen umgeht diese Prüfung nicht.
+die zuvor gelesenen Kennungen her; einzelnes Nachladen umgeht diese Prüfung nicht.
 Ein Kontextwechsel entwertet alte Antworten.
 [Native Wiederaufnahme und Obsidian-Gegenprobe](../../reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
-Close/Fresh bei echtem Fensterzoom von 100 und 200 %. Auch explizites
-Aktualisieren erhält die ausgewählte Quelle auf Seite zwei. Er prüft außerdem die begrenzte Quellenwahl
+Close/Fresh bei echtem Fensterzoom von 100 und 200 %. Explizites Aktualisieren
+erhält die ausgewählte Quelle auch nach dem Einfügen von 40 weiteren
+Verknüpfungen vor ihr und der Verschiebung auf Seite drei. Er prüft außerdem
+die begrenzte Quellenwahl
 mit 42 Quellen, jeden Tab-Schritt bis zur letzten Quelle und den anschließenden
 Fokus auf dem Spielabendziel. Das ist keine vollständige SMR-AC-03-Abnahme.
 

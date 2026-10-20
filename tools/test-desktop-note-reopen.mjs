@@ -19,10 +19,12 @@ const npc = make('Nera die Quartiermeisterin', 'npc', 'Nera verwahrt den Schlüs
 const clue = make('Die wiedergefundenen Fässer', 'rumor', 'Die Lieferung galt als geklärt.\r\n');
 const other = make('Das blaue Siegel', 'rumor', 'Unabhängige offene Frage.\r\n');
 const background = Array.from({length:39},(_,i)=>make('Weitere Quelle '+i,'note','Unveränderte Hintergrundnotiz '+i+'.\r\n'));
-const overview = {...make('Die Aufzug-Verschwörung', 'quest', 'Die Übergabe beobachten.\r\n'), relations: [npc, other, ...background, clue].map(n => ({targetId: n.id, label: 'Quelle'}))};
+const inserted = Array.from({length:40},(_,i)=>make('Neu verknüpfte Quelle '+i,'note','Unveränderte zusätzliche Notiz '+i+'.\r\n'));
+const sourceText = notes => notes.map(n=>'['+n.title+'](dungeon-ref:note/'+n.id+')').join(' ');
+const overview = make('Die Aufzug-Verschwörung', 'quest', 'Die Übergabe beobachten.\r\n'+sourceText([npc,other,...background,clue]));
 const previousPlan = {version:1,id:randomUUID(),revision:1,name:'Abend 8 · Nachtwache',scenes:[{id:randomUUID(),title:'Die erste Lieferung',notes:'Historischer Plan bleibt erhalten.\r\n',locationId:null}]};
 const plan = {version: 1, id: randomUUID(), revision: 1, name: 'Abend 9 · Die Rückkehr', scenes: [{id: randomUUID(), title: 'Die Wache erneut befragen', notes: '  Bisherige Planung\r\n', locationId: null}]};
-for (const note of [npc, clue, other, ...background, overview]) store.changePreparation({...cmd(null), change: {kind: 'note', expectedRevision: null, note}});
+for (const note of [npc, clue, other, ...background, ...inserted, overview]) store.changePreparation({...cmd(null), change: {kind: 'note', expectedRevision: null, note}});
 store.changePreparation({...cmd(null), change: {kind: 'plan', expectedRevision: null, plan:previousPlan}});
 store.changePreparation({...cmd(null), change: {kind: 'plan', expectedRevision: null, plan}});
 const visit = store.session(w.token, plan.id).visits[0];
@@ -30,6 +32,17 @@ store.executeSession(cmd({kind: 'visit', planId: plan.id, expectedRevision: visi
 const narrative = store.narrative(w.token, clue.id);
 store.executeProgress(cmd({kind: 'narrative-state', state: {...narrative.state, status: 'closed'}, expectedRevision: narrative.state.revision, expectedNoteRevision: clue.revision}));
 store.tutorial('skipped'); store.close();
+let expectedOverview = overview;
+function resetOverview() {
+  // Reset only between closed native sessions, so both zooms exercise a real insertion.
+  const writer = new CampaignStore(file);
+  try {
+    const active = writer.activate(campaign.id);
+    const current = writer.preparation(active.token).notes.find(r => r.note.id === overview.id).note;
+    writer.changePreparation({commandId:randomUUID(),campaignId:campaign.id,token:active.token,change:{kind:'note',expectedRevision:current.revision,note:{...current,gmNotes:overview.gmNotes}}});
+    expectedOverview = writer.preparation(active.token).notes.find(r=>r.note.id===overview.id).note;
+  } finally { writer.close(); }
+}
 async function launch(scale) {
   page = await native.launch(scale);
   await page.locator('.campaign-card[data-campaign-id="' + campaign.id + '"]').getByRole('button', {name: /Öffnen|Fortsetzen/}).click();
@@ -69,6 +82,7 @@ async function back() {
       const current = reset.activate(campaign.id), narrative = reset.narrative(current.token, clue.id);
       if (narrative.state.status !== 'closed') reset.executeProgress({commandId:randomUUID(),campaignId:campaign.id,token:current.token,action:{kind:'narrative-state',state:{...narrative.state,status:'closed'},expectedRevision:narrative.state.revision,expectedNoteRevision:narrative.noteRevision}});
     } finally { reset.close(); }
+    if(scale===2) resetOverview();
     stage = 'reopen and update originals at ' + scale; await launch(scale);
     await page.locator('#note-thread-active').uncheck(); await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
     await page.getByRole('button',{name:'Quellenauswahl leeren',exact:true}).click();await allSources();await card(clue.id).waitFor();
@@ -127,11 +141,17 @@ async function back() {
     await allSources();
     await card(clue.id).waitFor();
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
+    await page.getByRole('button',{name:'Übersichtsnotiz bearbeiten…',exact:true}).click();
+    await page.waitForFunction(title=>document.querySelector('#note-thread-editor:not([hidden]) #note-title')?.value===title&&!document.getElementById('note-thread-return').disabled,overview.title);
+    const expandedText=sourceText(inserted)+'\n'+overview.gmNotes.replaceAll('\r\n','\n');
+    await page.locator('#note-gm').fill(expandedText);await back();
+    expectedOverview={...expectedOverview,revision:expectedOverview.revision+1,gmNotes:expandedText.replaceAll('\n','\r\n')};
     await page.locator('#note-thread-dialog').getByRole('button',{name:'Aktualisieren',exact:true}).click();
     await page.waitForFunction(()=>!document.getElementById('note-thread-active').disabled);
     await native.capture(page,'refreshed-selection-'+scale+'.png');
     assert.equal(await card(clue.id).count(),1,'refresh must retain the loaded later-page source');
     assert(await card(clue.id).locator('input[type=checkbox]').isChecked());
+    assert(!await card(inserted[0].id).locator('input[type=checkbox]').isChecked());
     await page.locator('#note-thread-plan').selectOption(plan.id); await page.locator('#note-thread-visit').selectOption(plan.scenes[0].id);
     await native.capture(page,'reopened-'+scale+'.png');
     await page.locator('#note-thread-use').click(); await page.locator('#note-thread-dialog').waitFor({state: 'hidden'});
@@ -148,15 +168,15 @@ async function back() {
     const check = new CampaignStore(file);
     try {
       const a = check.activate(campaign.id), prep = check.preparation(a.token), original = prep.notes.find(r => r.note.id === clue.id).note;
-      assert.equal(prep.notes.length, 4+background.length); assert.equal(prep.plans.length, 2); assert.deepEqual(prep.plans.find(p=>p.id===plan.id),plan);assert.deepEqual(prep.plans.find(p=>p.id===previousPlan.id),previousPlan);
+      assert.equal(prep.notes.length, 4+background.length+inserted.length); assert.equal(prep.plans.length, 2); assert.deepEqual(prep.plans.find(p=>p.id===plan.id),plan);assert.deepEqual(prep.plans.find(p=>p.id===previousPlan.id),previousPlan);
       assert.equal(original.gmNotes.replaceAll('\r\n', '\n'), clueText + '\nFür den nächsten Abend bestätigt.'); assert.equal(original.readAloud, clue.readAloud);
       const dossier = prep.notes.find(r => r.note.id === npc.id).note;
       assert.equal(dossier.gmNotes.replaceAll('\r\n', '\n'), npcText); assert.equal(dossier.readAloud, npc.readAloud);
-      for (const untouched of [overview, other, ...background]) assert.deepEqual(prep.notes.find(r => r.note.id === untouched.id).note, untouched);
+      for (const untouched of [expectedOverview, other, ...background, ...inserted]) assert.deepEqual(prep.notes.find(r => r.note.id === untouched.id).note, untouched);
       assert.equal(check.narrative(a.token, clue.id).state.status, 'open');
       assert.deepEqual(new Set(check.session(a.token, plan.id).visits[0].noteIds), new Set([other.id, overview.id, npc.id, clue.id]));
     } finally { check.close(); }
-    results.push({scale, reopenedOriginal: true, laterPageRestored:true,explicitRefreshRetained:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, boundedSourceChoices:sourceLayout, keyboardSourceSelection:true, freshEdit: true});
+    results.push({scale, reopenedOriginal: true, laterPageRestored:true,explicitRefreshRetained:true,reorderedSourcesRetained:true, sourceSelectionActions:2, existingPlanUpdated: true, historicalPlanUnchanged:true, dossierHandoff:true, boundedSourceChoices:sourceLayout, keyboardSourceSelection:true, freshEdit: true});
   }
   await native.finish({results});
   console.log(JSON.stringify({results, launches: native.launches}));

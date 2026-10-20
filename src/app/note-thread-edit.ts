@@ -1,5 +1,20 @@
 import type { Note } from './preparation-contracts';
-import { textReferences } from './text-references';
+import { documentReferences, textReferences } from './text-references';
+
+/** Canonical direct-source order: shared by storage cursors and reader restoration. */
+export function noteThreadMembers(root: Note) {
+  const ids = new Map<string, string[]>(),
+    add = (id: string, label: string) => {
+      if (id === root.id) return;
+      const labels = ids.get(id) ?? [];
+      if (!labels.includes(label)) labels.push(label);
+      ids.set(id, labels);
+    };
+  for (const r of root.relations) add(r.targetId, r.label);
+  for (const r of documentReferences(root, Number.MAX_SAFE_INTEGER))
+    if (r.ref.kind === "note") add(r.ref.id, "Textverweis: " + r.label);
+  return ids;
+}
 
 export interface NoteSourceLinks {
   relationships: string[];

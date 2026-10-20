@@ -1,6 +1,6 @@
 import {markdownView} from './markdown-view';
 import { mountNoteEditor } from "./note-editor-mount";
-import { noteSourceLinks, restoreNoteSource, type NoteSourceRecovery, type NoteSourceLinks } from "./note-thread-edit";
+import { noteThreadMembers, noteSourceLinks, restoreNoteSource, type NoteSourceRecovery, type NoteSourceLinks } from "./note-thread-edit";
 import type { Note } from "./preparation-contracts";
 import type { ManualPlan } from "../features/planner/manual-planner";
 import type {
@@ -70,7 +70,6 @@ interface NoteMapFrame {
   choices: Map<string, { stamp: string; selected: boolean }>;
   active: boolean;
   includeRoot: boolean;
-  autoSelectSources: boolean;
   planId: string;
   visitId: string;
   planName: string;
@@ -79,7 +78,7 @@ interface NoteMapFrame {
   searched: boolean;
   additions: Set<string>;
   collectOpen: boolean;
-  loaded: number;
+  loadedIds: string[];
   scroll: number;
   preparing: boolean;
 }
@@ -97,7 +96,6 @@ export class NoteThreadDialog {
   private active = node("input");
   private includeRoot = node("input");
   private clearSelection = node("button", "Quellenauswahl leeren");
-  private autoSelectSources = true;
   private more = node("button", "Weitere Quellen");
   private refresh = node("button", "Aktualisieren");
   private close = node("button", "Schließen");
@@ -123,7 +121,7 @@ export class NoteThreadDialog {
   private searchRequest = 0;
   private busy = false;
   private loading = false;
-  private reloadTarget = 0;
+  private reloadIds = new Set<string>();
   private stale = false;
   private next: number | null = null;
   private total = 0;
@@ -197,7 +195,6 @@ export class NoteThreadDialog {
     this.clearSelection.type = "button";
     this.clearSelection.onclick = () => {
       if (!this.dialog.open || !this.owner?.current() || this.owner.blocked() || this.busy || this.loading || this.stale || this.editing !== null) return;
-      this.autoSelectSources = false;
       for (const [id, choice] of this.choices) this.choices.set(id, { ...choice, selected: false });
       this.controls();
       this.status.textContent = "Quellenauswahl geleert. Weitere Quellen bleiben abgewählt.";
@@ -298,10 +295,10 @@ export class NoteThreadDialog {
       if (!this.busy) void this.closeContext();
     });
     this.refresh.onclick = () => {
-      if (!this.busy && !this.loading) void this.reload(this.entries.size);
+      if (!this.busy && !this.loading) void this.reload();
     };
     this.active.onchange = () => {
-      if (!this.busy && !this.loading) void this.reload(this.entries.size);
+      if (!this.busy && !this.loading) void this.reload();
     };
     this.includeRoot.onchange = () => this.controls();
     this.more.onclick = () => {
@@ -349,7 +346,7 @@ export class NoteThreadDialog {
     this.busy = false;
     this.loading = false;
     this.entries.clear();
-    this.reloadTarget = 0;
+    this.reloadIds.clear();
     this.choices.clear();
     this.sourceLinks.clear();
     this.additions.clear();
@@ -388,9 +385,8 @@ export class NoteThreadDialog {
   private async showMap(owner: NoteThreadSource, frame?: NoteMapFrame, preparing = false) {
     this.owner = owner;
     this.root = frame?.root ?? null;
-    this.entries.clear(); this.sourceLinks.clear(); this.reloadTarget = 0;
+    this.entries.clear(); this.sourceLinks.clear(); this.reloadIds.clear();
     this.choices = new Map(frame?.choices);
-    this.autoSelectSources = frame?.autoSelectSources ?? true;
     this.additions.clear();
     this.active.checked = frame?.active ?? true;
     this.includeRoot.checked = frame?.includeRoot ?? true;
@@ -414,7 +410,7 @@ export class NoteThreadDialog {
     this.drawVisits(frame ? frame.visitId : destination ? owner.destination?.visitId : undefined);
     if (frame) { this.planName.value = frame.planName; this.visitTitle.value = frame.visitTitle; }
     const epoch = this.epoch;
-    await this.reload(frame?.loaded);
+    await this.reload(frame?.loadedIds);
     if (!this.current(epoch)) return;
     if (frame?.searched && !this.stale) await this.search(frame.additions);
     if (!this.current(epoch)) return;
@@ -433,7 +429,7 @@ export class NoteThreadDialog {
       const owner = await this.options.prepare();
       if (!this.current(epoch) || this.editing !== id) return;
       if (!owner?.current() || owner.id !== id) throw Error("Eingabe noch nicht übernommen. Original bleibt geöffnet; Speicherstatus prüfen.");
-      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, autoSelectSources: this.autoSelectSources, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loaded: this.entries.size, scroll: this.readingScroll, preparing: this.preparing };
+      const parent: NoteMapFrame = { owner: this.owner!, root: this.root!, choices: new Map(this.choices), active: this.active.checked, includeRoot: this.includeRoot.checked, planId: this.plan.value, visitId: this.visit.value, planName: this.planName.value, visitTitle: this.visitTitle.value, query: this.query.value, searched: !!this.candidates.childNodes.length || !!this.searchStatus.textContent, additions: new Set(this.additions), collectOpen: this.collect.open, loadedIds: [...this.entries.keys()], scroll: this.readingScroll, preparing: this.preparing };
       this.restoreEditor?.(); this.restoreEditor = null; this.editing = null; this.inspection = null;
       this.parents.push(parent); this.epoch++; this.request++; this.searchRequest++; this.busy = false;
       await this.showMap(owner, undefined, preparing);
@@ -594,7 +590,7 @@ export class NoteThreadDialog {
               e.status !== "unknown"
             : previous
               ? previous.stamp === e.stamp && previous.selected
-              : this.autoSelectSources && !append && e.status !== "closed" && e.status !== "unknown");
+              : initial && !append && e.status !== "closed" && e.status !== "unknown");
         // Reading a page restores source order; later explicit selections append in choice order.
         this.choices.delete(e.id);
         this.choices.set(e.id, { stamp: e.stamp, selected });
@@ -623,14 +619,22 @@ export class NoteThreadDialog {
       }
     }
   }
-  private async reload(loaded = 0, reviewed?: { id: string; selected: boolean }) {
-    const epoch = this.epoch, target = Math.max(loaded, this.reloadTarget);
-    // A partial failure must not turn the next refresh into a first-page-only read.
-    this.reloadTarget = target;
+  private async reload(ids: Iterable<string> = this.entries.keys(), reviewed?: { id: string; selected: boolean }) {
+    const epoch = this.epoch;
+    // Retain identities across partial failures; a row count cannot survive reordering.
+    for (const id of ids) this.reloadIds.add(id);
     await this.load(false, reviewed);
-    while (this.current(epoch) && !this.stale && this.next !== null && this.entries.size < target)
+    if (!this.current(epoch) || this.stale || !this.root) return;
+    let target = 0, offset = 0;
+    for (const id of noteThreadMembers(this.root).keys()) {
+      offset++;
+      if (this.reloadIds.has(id)) target = offset;
+    }
+    // next counts scanned members, including filtered closed sources. Removed IDs
+    // have no target; a hidden source therefore cannot force an unrelated full read.
+    while (this.current(epoch) && !this.stale && this.next !== null && this.next < target)
       await this.load(true, reviewed);
-    if (this.current(epoch) && !this.stale) this.reloadTarget = 0;
+    if (this.current(epoch) && !this.stale) this.reloadIds.clear();
   }
   private drawSource(e: NoteThreadEntry, epoch: number) {
     const card = node("article"),
@@ -1024,7 +1028,7 @@ export class NoteThreadDialog {
       this.reading.hidden = false;
       this.busy = false;
       if (refresh) {
-        await this.reload(this.entries.size, { id, selected });
+        await this.reload(this.entries.keys(), { id, selected });
         if (!this.current(epoch)) return false;
         this.dialog.scrollTop = this.readingScroll;
         const card = [
