@@ -308,12 +308,18 @@ export function readLedgerInventory(db:any,cam:string,query:LedgerInventoryQuery
   if(!query||typeof query.characterId!=='string'||!query.characterId||query.characterId.length>1000)throw new Error('Ungültige Inventarfigur.');
   const cursor=checkedCursor(query.after);
   if(!db.prepare('SELECT 1 FROM roster_member WHERE campaign_id=? AND id=?').get(cam,query.characterId))throw new Error('Inventarfigur gehört nicht zu dieser Kampagne.');
-  const sql='SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=?'+(cursor===null?'':' AND rowid<?')+' ORDER BY rowid DESC LIMIT 51';
-  const rows=db.prepare(sql).all(cam,query.characterId,...(cursor===null?[]:[cursor])),page=rows.slice(0,50),items:LedgerItem[]=[],problems:LedgerPage['problems']=[];
-  for(const row of page)try{
-   const item=checkedLedgerRow(row);if(item.status!=='received'||item.quantity===0)continue;items.push(ledgerView(db,item));
-  }catch(error){problems.push({id:row.id,message:(error instanceof Error?error.message:'Beuteeintrag nicht verfügbar.').slice(0,1000)});}
-  return{items,problems,visited:page.length,next:rows.length>50?String(page[49].cursor):null};
+  const sql='SELECT rowid AS cursor,* FROM character_ledger WHERE campaign_id=? AND character_id=?'+(cursor===null?'':' AND rowid<?')+' ORDER BY rowid DESC';
+  const items:LedgerItem[]=[],problems:LedgerPage['problems']=[];let visited=0,next:string|null=null,hasMore=false;
+  // Page usable inventory and explicit problems, not empty stretches of trade
+  // history. Validate before filtering so damaged history remains visible.
+  for(const row of db.prepare(sql).iterate(cam,query.characterId,...(cursor===null?[]:[cursor]))){
+   let item:LedgerItem|undefined,problem:LedgerPage['problems'][number]|undefined;
+   try{item=checkedLedgerRow(row);if(item.status!=='received'||item.quantity===0){visited++;next=String(row.cursor);continue;}item=ledgerView(db,item);}
+   catch(error){problem={id:row.id,message:(error instanceof Error?error.message:'Beuteeintrag nicht verfügbar.').slice(0,1000)};}
+   if(items.length+problems.length===50){hasMore=true;break;}
+   visited++;next=String(row.cursor);if(problem)problems.push(problem);else items.push(item!);
+  }
+  return{items,problems,visited,next:hasMore?next:null};
  })();
 }
 export function readProgressHistory(db: any, cam: string, characterId: string, after: string | null) {
