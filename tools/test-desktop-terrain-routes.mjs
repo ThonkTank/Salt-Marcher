@@ -52,6 +52,7 @@ try{
  assert.deepEqual(records(),beforeSwitch,'Units must not persist previews');
  await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher');w.setSize(1440,1000);w.webContents.setZoomFactor(2);});await page.waitForFunction(()=>innerWidth<=720);
  await page.locator('#route-units').selectOption('metric');await capture('01b-route-metric-200');
+ const profileSize=await page.locator('#route-profile').evaluate(el=>({pixels:el.width,css:el.clientWidth,dpr:devicePixelRatio}));assert.equal(profileSize.pixels,Math.round(profileSize.css*profileSize.dpr));
  const box=await editor().evaluate(el=>({left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right,width:innerWidth,overflow:el.scrollWidth-el.clientWidth}));assert(box.left>=0&&box.right<=box.width&&box.overflow<=1,JSON.stringify(box));
  await page.locator('#route-units').selectOption('dnd');
  await action('tilt').click();await capture('02-road-tilted');assert(!records().some(r=>r.route),'preview must remain readonly');

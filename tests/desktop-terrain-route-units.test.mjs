@@ -11,7 +11,7 @@ test('route editor converts lengths and exact points while units remain passive 
  const values=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v){values.set(this,String(v));}});
  window.HTMLSelectElement.prototype.add=function(o){this.append(o);};
  window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};
- const context={clearRect(){},fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fillText(){}};
+ const context={setTransform(){},clearRect(){},fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fillText(){}};
  window.HTMLCanvasElement.prototype.getContext=()=>context;
  Object.assign(global,{document,window,Event:window.Event,Option:function(text,value){const o=document.createElement('option');o.textContent=text;o.value=value;return o;},ResizeObserver:class{observe(){}disconnect(){}},localStorage:{getItem(){return null;},setItem(){}}});
  const anchors=[{x:-180.123456789012,y:.123456789012},{x:0,y:40},{x:180,y:0}];
@@ -24,6 +24,7 @@ test('route editor converts lengths and exact points while units remain passive 
  try{
   api.initAtlasUnits(document);await api.openTerrainRoute(host);
   assert.equal(Number(api.atlasFieldValue(field('width'))),8);assert.match(field('width').closest('label').textContent,/ft/);
+  Object.defineProperty(field('profile'),'clientWidth',{value:360});Object.defineProperty(field('profile'),'clientHeight',{value:110});window.devicePixelRatio=2;api.setAtlasUnits('metric');assert.equal(field('profile').width,720);api.setAtlasUnits('dnd');
   assert.equal(field('grade').value,'12');assert.match(field('profile').getAttribute('aria-label'),/ft/);
   const before=calls.length;
   for(let i=0;i<20;i++){api.setAtlasUnits('metric');api.setAtlasUnits('dnd');}

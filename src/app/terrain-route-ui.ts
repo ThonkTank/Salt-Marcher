@@ -109,11 +109,13 @@ export async function openTerrainRoute(host:Host){
   const showProfile=(r:LandscapeRecord)=>{
     profileRecord=r;
     const target=field<HTMLCanvasElement>('profile'),ctx=target.getContext('2d')!,nodes=r.route!.nodes;
-    ctx.clearRect(0,0,800,110);ctx.fillStyle='#eee7d6';ctx.fillRect(0,0,800,110);if(!nodes.length){target.setAttribute('aria-label','Höhenprofil noch nicht berechnet');return;}
+    const width=target.clientWidth||800,height=target.clientHeight||110,dpr=window.devicePixelRatio||1;
+    target.width=Math.round(width*dpr);target.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,width,height);ctx.fillStyle='#eee7d6';ctx.fillRect(0,0,width,height);if(!nodes.length){target.setAttribute('aria-label','Höhenprofil noch nicht berechnet');return;}
     let length=0;const distances=nodes.map((p,i)=>{if(i)length+=Math.hypot(p.x-nodes[i-1]!.x,p.y-nodes[i-1]!.y);return length;});
     const min=Math.min(...nodes.map(p=>p.z)),max=Math.max(...nodes.map(p=>p.z)),range=Math.max(1,max-min);
     ctx.strokeStyle=host.kind==='river'?'#377f9e':'#856039';ctx.lineWidth=2;ctx.beginPath();
-    nodes.forEach((p,i)=>{const x=20+distances[i]!/(length||1)*760,y=85-(p.z-min)/range*55;if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);});ctx.stroke();
+    nodes.forEach((p,i)=>{const x=20+distances[i]!/(length||1)*Math.max(1,width-40),y=height-25-(p.z-min)/range*Math.max(1,height-55);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);});ctx.stroke();
     ctx.fillStyle='#332d25';ctx.font='13px sans-serif';const text=`${lengthLabel(length)} · Höhe ${lengthLabel(min)} – ${lengthLabel(max)}`;
     target.setAttribute('aria-label','Höhenprofil: '+text);ctx.fillText(text,20,18);
   };
@@ -207,7 +209,7 @@ export async function openTerrainRoute(host:Host){
   function close(){document.removeEventListener('atlas-units-changed',unitsChanged);closed=true;generation++;clearTimeout(timer);observer.disconnect();view.dispose();dialog.close();dialog.remove();host.navigate?.(box);}
   button('close').onclick=()=>{if(dirty||saving){status.textContent='Zuerst Entwurf übernehmen oder verwerfen.';return;}close();};
   dialog.oncancel=e=>{e.preventDefault();if(saving)return;if(dirty)reset();else close();};
-  const observer=new ResizeObserver(()=>{view.render();});observer.observe(canvas);
+  const observer=new ResizeObserver(()=>{view.render();if(profileRecord)showProfile(profileRecord);});observer.observe(canvas);
   canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();status.textContent='GPU-Kontext verloren. Entwurf bleibt erhalten; zur Karte zurückkehren.';button('save').disabled=true;});
   setFields();try{await load();if(record.route!.anchors.length>=2){dirty=!saved;await preview();}}catch(e){error(e);}
 }
