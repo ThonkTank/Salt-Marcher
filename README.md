@@ -18,7 +18,7 @@ SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwer
 - [Lieferfolge](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts): Abnahmefolge und fachliche Abhängigkeiten.
 - [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
-- [Architektur](ARCHITECTURE.md): technische Zielstruktur und Grenzen.
+- [Architektur](ARCHITECTURE.md#prozesse-und-verantwortlichkeiten): Prozesse, Fachbesitzer und Schutzgrenzen.
 
 
 ## Lokal entwickeln
