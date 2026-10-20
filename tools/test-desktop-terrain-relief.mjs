@@ -158,6 +158,7 @@ try {
   await openTerrainDisplay(page);
   const apply=async value=>{await openTerrainDisplay(page);console.log('Style',value);await page.locator('#land-relief-mode').selectOption(value);await page.locator('#land-relief-apply').click();await settled();assert.equal(mode(),value);assert.equal(maskBytes(),baseline);};
   await capture('01-region-drawn');await apply('shaded');await capture('02-region-shaded');
+  await page.keyboard.press('Escape');
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(mode(),'drawn');
   await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.equal(mode(),'shaded');
   await apply('height');await capture('03-region-analysis');
