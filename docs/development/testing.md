@@ -182,3 +182,31 @@ zurückgehaltenen aktuellen Antwort kein weiterer Schreibauftrag gesendet wird.
 Zuvor verdeckte die sofortige Antwortfreigabe einen fehlenden Schutz des neueren
 Flushes. Diese Fehlergegenprobe besteht mit dem alten Test und scheitert mit
 der zusätzlichen Assertion; fünf andere Fehler werden weiterhin erkannt.
+
+Die übrigen sechs Integritätsdateien behalten ihre 87 Fälle. Bei Encountertabellen
+prüft jede Feldvariante weiterhin den gemeinsamen `decodeTable`; die explizite
+Variante mit doppelten Kreaturen behält zusätzlich Speichern, Papierkorb und
+Fresh. Zehn zusätzliche Zeilenvergleiche entfallen, weil jeweils bereits die
+gesamte Quelldatenbank bytegleich bleiben muss. Der isolierte Zeilenvergleich bei
+absichtlich bearbeiteter anderer Kampagne bleibt bestehen.
+
+Beim Session-Beuteausgleich liegt `checkedLedgerRow` vor der Gold-/Magieaufteilung.
+Alle sechs beschädigten Felder bleiben geprüft; die Identitätsvariante prüft beide
+Einstiege. Einzel- und Sammelübernahme verwenden dieselbe
+`assertSessionRewardBasisCurrent`-Prüfung. Fünf wiederholte Sammelversuche mit nur
+einem Vorschlag entfallen; die echten Zweierbatches behalten Ablehnung vor dem
+ersten Write, Reihenfolge/Replay und Rückrollen nach dem ersten Gruppenwrite.
+Narrative Empfänger und Szenen bleiben direkt geprüft; nur die wiederholte
+Backupprüfung für Szenen entfällt. Die Empfängervariante schützt weiterhin den
+gemeinsamen `checkedAward`-Backupaufruf. Separate Draft-, Status- und
+Notizkontrollen im Backup bleiben erhalten.
+
+Insgesamt entfallen 52 wiederholte Assertions, 14 Tabellen-Schreibversuche,
+fünf Session-Schreibversuche, fünf Beuteausgleichsaufrufe, sieben Fresh-Verbindungen
+und eine Backup-Kopie. Dies reduziert keine Testfälle. Zehn isolierte Fehler
+werden vorher und nachher erkannt. Zwei weitere ausgelassene Einzelkontrollen
+werden durch den Tabellen-Ergebnisleser beziehungsweise den gemeinsamen
+Fortschrittsdecoder aufgefangen; deren Auslassung wird in beiden Testständen
+nicht erkannt. Die Gegenproben belegen keine allgemeine Mutationsabdeckung.
+Sessionkopie, Wetter und Legendary-Transfer behalten ihre unterschiedlichen
+Writer-, Owner-, Zeit-, Recovery- und Replayprüfungen unverändert.
