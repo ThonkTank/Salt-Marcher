@@ -18,7 +18,7 @@ type Definition = {meters:number;list?:boolean};
 const definitions=new Map<string,Definition>();
 const register=(ids:string,meters=1,list=false)=>ids.split(' ').forEach(id=>definitions.set(id,{meters,list}));
 register('land-height-target land-x land-y land-record-width land-radius land-width land-calibration-distance atlas-binding-x atlas-binding-y atlas-slice drawing-brush drawing-element-size drawing-light-radius drawing-grid drawing-slice-y drawing-dx drawing-dy drawing-ceiling drawing-floor-elevation drawing-width drawing-height drawing-z-offset drawing-vertical drawing-trigger-radius drawing-sound-range city-draw-width city-size city-reach city-unit-width city-x city-y city-house-width city-house-depth city-new-width city-new-height');
-register('room-group-width room-group-depth');
+register('room-group-width room-group-depth route-width route-corridor route-cut route-fill route-shoulder route-depth route-clearance');
 register('points drawing-element-points city-unit-points path-waypoints',1,true);
 register('volume-height volume-slice volume-brush-radius volume-box-x0 volume-box-x1 volume-box-y0 volume-box-y1 volume-box-z0 volume-box-z1 path-from-x path-from-y path-from-z path-to-x path-to-y path-to-z',1.524);
 register('path-widths path-heights',1.524,true);
@@ -34,8 +34,10 @@ function convert(text:string,factor:number,list=false,displayOnly=false):string 
 }
 function factor(d:Definition,system=units){return d.meters/(system==='dnd'?FOOT:1);}
 function caption(field:Field){
- const label=field.closest('label')??field.ownerDocument.querySelector<HTMLLabelElement>(`label[for="${field.id}"]`);if(!label)return;
  const suffix=units==='dnd'?'ft':'m';
+ const aria=field.getAttribute('aria-label');
+ if(aria&&field.dataset.atlasUnit==='meters')field.setAttribute('aria-label',aria.replace(/\s*\((?:ft|m)\)$/, '')+` (${suffix})`);
+ const label=field.closest('label')??field.ownerDocument.querySelector<HTMLLabelElement>(`label[for="${field.id}"]`);if(!label)return;
  for(const node of Array.from(label.childNodes))if(node.nodeType===3&&node.textContent?.trim()){
   const text=node.textContent.replace(/\s*\((?:ft|m)\)\s*$/, '').replace(/\s*(?:in )?(?:5-Fuß-Schritten|Rasterzellen|Metern|Meter|m|ft)(?=\s*(?:\(|$))/g,'').trim();
   node.textContent=text+` (${suffix}) `;break;
@@ -53,7 +55,7 @@ function display(field:Field,b:Bound){
 function bind(field:Field):Bound|undefined {
  if(!enabled)return undefined;
  const old=fields.get(field);if(old)return old;
- const definition=definitions.get(field.id);if(!definition)return undefined;
+ const definition=definitions.get(field.id)??(field.dataset.atlasUnit==='meters'?{meters:1}:undefined);if(!definition)return undefined;
  const input=field as HTMLInputElement,b={definition,canonical:field.value,shown:field.value,min:input.min??'',max:input.max??'',step:input.step||'any'};
  fields.set(field,b);display(field,b);return b;
 }

@@ -1,0 +1,45 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {parseHTML} from 'linkedom';
+await build({stdin:{contents:"export * from './src/app/terrain-route-ui';export * from './src/app/atlas-units';export * from './src/app/terrain-route';export * from './src/app/atlas-landscape';",resolveDir:process.cwd()},outfile:'.build/terrain-route-units.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'native-view-boundary',setup(b){b.onResolve({filter:/^\.\/vegetation-spatial$/},()=>({path:'view',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},()=>({contents:'export class VegetationSpatialView {showDraft(){} render(){} setData(){} dispose(){}}'}));}}]});
+const api=createRequire(import.meta.url)('../.build/terrain-route-units.cjs');
+test('route editor converts lengths and exact points while units remain passive through preview, commit and reopening',async()=>{
+ const {document,window}=parseHTML('<html><body></body></html>');
+ const globals=['document','window','Event','Option','ResizeObserver','localStorage'];const saved=Object.fromEntries(globals.map(k=>[k,global[k]]));
+ const values=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return values.get(this)??this.querySelector('option')?.value??'';},set(v){values.set(this,String(v));}});
+ window.HTMLSelectElement.prototype.add=function(o){this.append(o);};
+ window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};
+ const context={setTransform(){},clearRect(){},fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},fillText(){}};
+ window.HTMLCanvasElement.prototype.getContext=()=>context;
+ Object.assign(global,{document,window,Event:window.Event,Option:function(text,value){const o=document.createElement('option');o.textContent=text;o.value=value;return o;},ResizeObserver:class{observe(){}disconnect(){}},localStorage:{getItem(){return null;},setItem(){}}});
+ const anchors=[{x:-180.123456789012,y:.123456789012},{x:0,y:40},{x:180,y:0}];
+ let record={...api.emptyRecord('road'),name:'Passstraße',width:8,route:api.routeSpec('road',anchors)},calls=[],writes=[];
+ const scene=()=>({records:[structuredClone(record)],revision:3,fence:{}});
+ window.campaign={async atlasSpatialScene(token,box,scale,action){calls.push(action);const s=scene();if(action){s.records=[structuredClone(action.record)];s.records[0].route.nodes=s.records[0].route.anchors.map(p=>({...p,z:60,structure:'ground'}));}return{ok:true,value:s};}};
+ const host={token:'a',box:{x:-300,y:-100,width:600,height:400},kind:'road',record,write:async action=>{writes.push(action);record=structuredClone(action.record);record.revision=1;return true;}};
+ const field=id=>document.querySelector('#route-'+id),button=name=>document.querySelector(`[data-action="${name}"]`);
+ const settle=async()=>{for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));};
+ try{
+  api.initAtlasUnits(document);await api.openTerrainRoute(host);
+  assert.equal(Number(api.atlasFieldValue(field('width'))),8);assert.match(field('width').closest('label').textContent,/ft/);
+  Object.defineProperty(field('profile'),'clientWidth',{value:360});Object.defineProperty(field('profile'),'clientHeight',{value:110});window.devicePixelRatio=2;api.setAtlasUnits('metric');assert.equal(field('profile').width,720);api.setAtlasUnits('dnd');
+  assert.equal(field('grade').value,'12');assert.match(field('profile').getAttribute('aria-label'),/ft/);
+  const before=calls.length;
+  for(let i=0;i<20;i++){api.setAtlasUnits('metric');api.setAtlasUnits('dnd');}
+  assert.equal(calls.length,before);assert.equal(writes.length,0);assert.equal(field('units').value,'dnd');
+  assert.equal(Number(api.atlasFieldValue(field('point-x-0'))),anchors[0].x);
+  field('point-y-0').value='25';field('point-y-0').onchange();
+  field('width').value='40';field('width').dispatchEvent(new window.Event('change'));
+  api.setAtlasUnits('metric');assert.equal(field('width').value,'12.192');assert.equal(field('point-y-0').value,'7.62');assert.equal(field('grade').value,'12');
+  await new Promise(r=>setTimeout(r,280));await settle();
+  const preview=calls.filter(Boolean).at(-1).record;
+  assert.equal(preview.route.anchors[0].x,anchors[0].x,'editing Y must preserve unrounded X');assert.equal(preview.route.anchors[0].y,7.62);assert.equal(preview.width,12.192);
+  assert.match(field('profile').getAttribute('aria-label'),/ m/);
+  button('save').onclick();await settle();assert.equal(writes.length,1);assert.deepEqual(writes[0].record.route.anchors,preview.route.anchors);assert.equal(writes[0].record.width,preview.width);assert.equal(writes[0].record.route.nodes.length,3);
+  button('close').onclick();assert.equal(document.querySelector('dialog'),null);
+  api.setAtlasUnits('dnd');await api.openTerrainRoute({...host,record});assert.equal(field('width').value,'40');assert.equal(field('point-y-0').value,'25');
+  button('close').onclick();
+ }finally{Object.assign(global,saved);}
+});
