@@ -151,14 +151,21 @@ export class TerritoryWorkbench {
     });
     el(this.panel, "territory-vertex-delete").onclick = run(() => {
       const t = this.chosen();
-      if (t && this.vertex)
-        return this.commit({
+      if (t && this.vertex) {
+        const action: TerritoryAction = {
           kind: "territory-vertex",
           id: t.id,
           expectedRevision: t.revision,
           ...this.vertex,
           point: null,
-        });
+        };
+        try { territoryVertex(this.state, t.id, action); }
+        catch (error) {
+          this.say(error instanceof Error ? error.message : String(error));
+          return;
+        }
+        return this.commit(action);
+      }
     });
     el(this.panel, "territory-layer-new").onclick = run(() => {
       const id = crypto.randomUUID();
@@ -248,7 +255,7 @@ export class TerritoryWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         canvas.focus();
-        if (this.saving || this.hasDraft() || !this.host.current()) return;
+        if (this.saving || this.loading || this.hasDraft() || !this.host.current()) return;
         const t = this.chosen();
         if (!t) {
           this.say("Zuerst eine Region wählen oder anlegen.");
@@ -339,6 +346,9 @@ export class TerritoryWorkbench {
             );
             return;
           }
+          const selected = this.vertex as { polygon: number; ring: number; vertex: number },
+            polygon = t.polygons[selected.polygon]!;
+          this.points = [{ ...[polygon.outer, ...polygon.holes][selected.ring]![selected.vertex]! }];
         }
         canvas.setPointerCapture(e.pointerId);
         this.updatePreview();
@@ -474,6 +484,16 @@ export class TerritoryWorkbench {
     try {
       this.conflict = "";
       if (this.vertex) {
+        const polygon = t.polygons[this.vertex.polygon]!,
+          source = [polygon.outer, ...polygon.holes][this.vertex.ring]![this.vertex.vertex]!,
+          point = this.points[0]!;
+        if (point.x === source.x && point.y === source.y) {
+          this.pending = null;
+          this.preview = [];
+          this.say("Grenzpunkt ausgewählt. Ziehen zum Verschieben oder Punktaktion zum Entfernen.");
+          this.host.redraw();
+          return;
+        }
         this.pending = {
           kind: "territory-vertex",
           id: t.id,
@@ -566,6 +586,7 @@ export class TerritoryWorkbench {
       const result = await window.campaign.atlasTerritories(token);
       if (token !== this.token || generation !== this.generation) return;
       if (!result.ok) throw Error(result.error);
+      this.vertex = null;
       this.state = result.value;
       this.revision = data.revision;
       this.controls();

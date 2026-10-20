@@ -1,14 +1,18 @@
 // Actual Electron UI in a synthetic profile; canonical data checked after each gesture.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";
+import { randomUUID, createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import path from "node:path";
+import {tmpdir} from "node:os";
 import { atlasCanvasReady } from "./atlas-canvas-probe.mjs";
 const root = process.cwd(),
   require = createRequire(import.meta.url),
   { _electron } = require("playwright-core");
+const out = path.resolve(process.env.QA_EVIDENCE_DIR ?? ".build/cartography-native");
+await mkdir(out, { recursive: true });
+await rm(out + "/result.json", { force: true });
 require("esbuild").buildSync({
   entryPoints: ["src/app/storage/store.ts"],
   outfile: ".build/cartography-native-store.cjs",
@@ -20,11 +24,7 @@ require("esbuild").buildSync({
 const { CampaignStore } = require(
     root + "/.build/cartography-native-store.cjs",
   ),
-  dir = await mkdtemp("/tmp/saltmarcher-cartography-"),
-  out = path.resolve(
-    process.env.QA_EVIDENCE_DIR ?? ".build/cartography-native",
-  );
-await mkdir(out, { recursive: true });
+  dir = await mkdtemp(tmpdir()+"/saltmarcher-cartography-");
 const store = new CampaignStore(dir + "/workbench.sqlite"),
   cam = store.create("Regionswerkstatt"),
   active = store.activate(cam.id);
@@ -171,10 +171,26 @@ const result = {
     encoding: "utf8",
   }).trim(),
   profile: dir,
+  artifacts: {},
+  launches: [],
   checks: [],
   errors: [],
 };
+for (const file of ['main.cjs', 'preload.cjs', 'ui/renderer.js', 'ui/index.html', 'ui/app.css'])
+  result.artifacts[file] = createHash('sha256').update(await readFile('.build/desktop/' + file)).digest('hex');
 let app, page;
+async function closeNative() {
+  const process = app.process(), exit = new Promise(resolve => process.once('exit', (code, signal) => resolve({code, signal})));
+  let timer;
+  try {
+    await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).close());
+    const outcome = await Promise.race([exit, new Promise((_, reject) => timer = setTimeout(() => reject(Error('Normal native close timed out')), 10000))]);
+    assert.deepEqual(outcome, {code: 0, signal: null});
+    await assert.rejects(stat('/proc/' + process.pid), {code: 'ENOENT'});
+    Object.assign(result.launches.at(-1), {exit: outcome, pidAbsent: true});
+    app = null;
+  } finally { clearTimeout(timer); }
+}
 async function start() {
   app = await _electron.launch({
     executablePath: root + "/node_modules/electron/dist/electron",
@@ -186,11 +202,18 @@ async function start() {
     ],
     timeout: 60000,
   });
+  const pid = app.process().pid;
+  assert((await readFile('/proc/' + pid + '/cmdline', 'utf8')).includes(dir));
+  result.launches.push({pid});
   page = await app.firstWindow();
   page.on("pageerror", (e) => result.errors.push(e.stack ?? e.message));
   await page.waitForFunction(
     () => document.body.dataset.tutorialReady === "true",
   );
+  result.launches.at(-1).zoom = await app.evaluate(({BrowserWindow}) => {
+    const window = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html'));
+    window.show(); window.focus(); return window.webContents.getZoomFactor();
+  });
   await page
     .locator(".campaign-card")
     .filter({ hasText: "Regionswerkstatt" })
@@ -316,12 +339,37 @@ try {
   result.checks.push(
     "inserted boundary point remains selected for immediate deletion",
   );
+  const corner = await at(-100, -50), beforeCorner = records();
+  await page.mouse.click(corner.x, corner.y);
+  await page.waitForFunction(() => !document.querySelector('#territory-vertex-delete').disabled);
+  assert.deepEqual(records(), beforeCorner);
+  await page.locator('#atlas-undo').click();
+  await waitFor(rows => rows.find(r => r.id === 'Westmark').revision === 8);
+  await page.locator('#atlas-redo').click();
+  await waitFor(rows => rows.find(r => r.id === 'Westmark').revision === 9);
+  const afterHistory = records();
+  await page.locator('#territory-vertex-delete').click();
+  await page.waitForFunction(() => !document.querySelector('#territory-vertex-delete').disabled);
+  assert.deepEqual(records(), afterHistory, 'History changes must invalidate the old point selection');
+  result.checks.push('history changes invalidate the previous boundary point selection');
+  const beforeSelection = records(), junction = await at(0, -50);
+  await page.mouse.click(junction.x, junction.y);
+  await page.waitForFunction(() => !document.querySelector('#territory-vertex-delete').disabled);
+  assert.deepEqual(records(), beforeSelection, 'Selecting a boundary point must not write geometry or revisions');
+  result.checks.push('boundary point selection does not author a no-op change');
+  await page.locator('#territory-vertex-delete').click();
+  await page.waitForFunction(() => document.querySelector('#territory-status').textContent.includes('Verzweigten Grenzpunkt'));
+  assert.deepEqual(records(), beforeSelection);
+  result.checks.push('a branched boundary point cannot be deleted into an unassigned gap');
+  assert.equal(await page.locator('#territory-retry').isVisible(), false);
   await stroke([
-    [-100, -50],
-    [-95, -45],
+    [0, -50],
+    [-5, -45],
   ]);
-  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 8);
-  result.checks.push("point refinement after brush stroke");
+  await waitFor((rows) => rows.find((r) => r.id === "Westmark").revision === 10);
+  assert.equal(records().find(r => r.id === 'Ostmark').revision, 5);
+  assert(records().every(r => r.polygons[0].outer.some(p => Math.abs(p.x+5)<1e-6 && Math.abs(p.y+45)<1e-6)));
+  result.checks.push("shared point refinement after brush stroke");
   await page.locator("#territory-operation").selectOption("label");
   const point = await at(-65, 0);
   await page.mouse.click(point.x, point.y);
@@ -356,8 +404,7 @@ try {
     "custom layer and a new region created with ordinary controls and painted",
   );
   const saved = records();
-  await app.close();
-  app = null;
+  await closeNative();
   await start();
   assert.deepEqual(records(), saved);
   await shot("04-fresh");
@@ -393,12 +440,15 @@ try {
   await page.locator("#territory-region").selectOption("Westmark");
   await page.locator("#territory-focus").click();
   await atlasCanvasReady(page);
+  const beforeZoom = records();
   for (let i = 0; i < 4; i++)
     await page
       .getByRole("button", { name: "Verkleinern", exact: true })
       .click();
   await atlasCanvasReady(page);
   await shot("05-zoom");
+  assert.deepEqual(records(), beforeZoom);
+  result.checks.push('map zoom changes label presentation without authoring region data');
   await page.locator("#territory-focus").click();
   await atlasCanvasReady(page);
   await page.locator("#atlas-output-open").click();
@@ -431,12 +481,18 @@ try {
   if (page) await shot("failure").catch(() => {});
   throw e;
 } finally {
-  if (app) {
-    if (result.ok) {
-      await app.close();
-      result.normalExit = true;
-    } else await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
+  try {
+    if (app) {
+      if (result.ok) await closeNative();
+      else {
+        const process = app.process(), timer = setTimeout(() => process.kill('SIGKILL'), 5000);
+        try { await app.close().catch(() => {}); } finally { clearTimeout(timer); }
+      }
+    }
+  } catch (error) { result.ok = false; result.error = error.stack ?? String(error); throw error; }
+  finally {
+    result.normalExit = !!result.ok && result.launches.every(l => l.pidAbsent && l.exit.code === 0 && l.exit.signal === null);
+    db.close();
+    await writeFile(out + "/result.json", JSON.stringify(result, null, 2));
   }
-  db.close();
-  await writeFile(out + "/result.json", JSON.stringify(result, null, 2));
 }

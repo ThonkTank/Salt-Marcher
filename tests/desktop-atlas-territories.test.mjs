@@ -4,6 +4,7 @@ import { buildSync } from "esbuild";
 import { createRequire } from "node:module";
 import { mkdtempSync, rmSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
 const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
@@ -52,7 +53,7 @@ const territory = (id, polygons = [], parentId = null, rank = 5) => ({
   border: "solid",
 });
 function fixture(t) {
-  const dir = mkdtempSync("/tmp/atlas-territories-");
+  const dir = mkdtempSync(tmpdir()+"/atlas-territories-");
   let store = new CampaignStore(dir + "/world.sqlite");
   const cam = store.create("Atlas");
   let w = store.activate(cam.id);
@@ -755,4 +756,19 @@ test("unselected detail names obey zoom and footprint limits in navigation and e
     new MapLabelLayout().layout([a, b], box, 1, measure),
     new MapLabelLayout().layout([b, a], box, 1, measure),
   );
+});
+
+for (const junction of ['triple', 'outer']) test(`deleting a ${junction} boundary junction preserves canonical area and history`, t => {
+ const f=fixture(t);f.put(territory('west',square(0,0,100,200)));
+ if(junction==='triple'){f.put(territory('north',square(100,0,100)));f.put(territory('south',square(100,100,100)));}
+ else f.put(territory('north',square(100,0,100,200)));
+ const before=f.store.db.serialize();
+ assert.throws(()=>f.write({kind:'territory-vertex',id:'north',expectedRevision:1,polygon:0,ring:0,vertex:junction==='triple'?3:0,point:null}),/Verzweigten Grenzpunkt/);
+ assert.deepEqual(f.store.db.serialize(),before);f.fresh();assert.equal(f.state.territories.reduce((sum,r)=>sum+polygonArea(r.polygons),0),40000);
+});
+
+test('a bend between two regions can be deleted without losing area and undone together',t=>{
+ const f=fixture(t),west=territory('west',[{outer:[{x:0,y:0},{x:100,y:0},{x:120,y:50},{x:100,y:100},{x:0,y:100}],holes:[]}]),east=territory('east',[{outer:[{x:100,y:0},{x:200,y:0},{x:200,y:100},{x:100,y:100},{x:120,y:50}],holes:[]}]);f.put(west);f.put(east);const before=f.state.territories.map(r=>r.polygons);
+ f.write({kind:'territory-vertex',id:'west',expectedRevision:1,polygon:0,ring:0,vertex:2,point:null});assert.equal(f.state.territories.reduce((sum,r)=>sum+polygonArea(r.polygons),0),20000);assert(f.state.territories.every(r=>r.polygons[0].outer.length===4));
+ f.write({kind:'undo'});assert.deepEqual(f.state.territories.map(r=>r.polygons),before);f.fresh();assert.deepEqual(f.state.territories.map(r=>r.polygons),before);
 });

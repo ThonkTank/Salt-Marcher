@@ -329,6 +329,29 @@ export function territoryVertex(
         .flatMap((t) =>
           t.polygons.flatMap((p) => [p.outer, ...p.holes].flat()),
         );
+  if (edit.point === null) {
+    // Removing a branch would replace several incident boundaries with unrelated
+    // chords and silently unassign land. Ordinary two-branch bends remain editable.
+    const rays: Point[] = [];
+    for (const t of state.territories) {
+      if (t.layerId !== old.layerId || t.parentId !== old.parentId) continue;
+      for (const p of t.polygons)
+        for (const r of [p.outer, ...p.holes])
+          for (let i = 0; i < r.length; i++) {
+            const a = r[i]!, b = r[(i + 1) % r.length]!;
+            if (!onSegment(source, a, b, epsilon)) continue;
+            for (const v of [a, b]) {
+              const distance = Math.hypot(v.x - source.x, v.y - source.y);
+              if (distance <= epsilon) continue;
+              if (rays.some(q => distance < Math.hypot(q.x - source.x, q.y - source.y)
+                ? onSegment(v, source, q, epsilon) : onSegment(q, source, v, epsilon))) continue;
+              rays.push(v);
+              if (rays.length > 2)
+                throw Error("Verzweigten Grenzpunkt erhalten. Grenze durch Verschieben verfeinern.");
+            }
+          }
+    }
+  }
   for (const t of state.territories) {
     if (t.layerId !== old.layerId || t.parentId !== old.parentId) continue;
     const polygons = structuredClone(t.polygons);
