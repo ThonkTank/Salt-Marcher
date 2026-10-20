@@ -760,12 +760,16 @@ und Räume am bisherigen Bildschirmrand nicht verlieren.
 
 Native `isPointInPath`/`isPointInStroke` verwenden dieselben Pfade, Füllregeln,
 Linienmaße und inversen Gruppentransformationen wie die Zeichnung. Sie liefern
-nur passive semantische Griffe/Marker an den Anwender. Die vollständige
-Objektauswahl in Aggregaten bleibt die quellengebundene paginierte Main-Abfrage.
-Ein direkt getroffener Zeichnungsglyph öffnet wie zuvor dessen stabile ID über
-Main-Fokus und vollständigen Autorenread; auch Text-/Objektränder außerhalb
-des logischen Punkt-Pickradius bleiben damit auswählbar. Rasterpixel und
-Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
+nur passive semantische Griffe/Marker an den Anwender. Die Objektauswahl
+bleibt die quellengebundene paginierte Main-Abfrage. Ein direkt getroffener
+Zeichnungsglyph ergänzt sie mit seiner genauen Quellen-ID, vereinigt mit den
+übrigen geometrischen und Landschaftstreffern. So bleiben große Glyphen auch
+außerhalb des logischen Ankerradius erreichbar, ohne Überlappungen zu überspringen.
+Bei mehreren Treffern wird gewählt; nur ein vollständiger Einzeltreffer darf
+direkt öffnen. Worker/Main/Preload und Controller führen die optionale ID gemeinsam;
+Quelle, Floor-/Dach-/Bindingfilter, Seitengrenzen und Archivierung gelten weiter.
+Erst nach der Auswahl folgen Main-Fokus und vollständiger Autorenread.
+Rasterpixel und Darstellungskonturen werden nicht zur Schreibautorität. Hover-Namen von Markern/Zeichenobjekten stammen ebenfalls aus denselben Pfaden,
 auch ohne Autoren-Auswahl; sie werden bei Gesten/Framewechsel/Fehlern entfernt.
 CSS-Ränder, Kameraskalierung und Bitmap-DPI
 sind getrennt. Autorenhits und Hover verlangen nicht nur die neueste Szene,
@@ -951,13 +955,6 @@ und eine Auswahlumgehung:
   Canvas-API-/Ereignisfehler bei 100 % und 200 %, Navigation während Ausfall,
   aktuellen Zielstand, einen einzelnen Kamerazug und unveränderte Autoreninhalte.
   Das ist keine physische GPU-/Treiber-Resetqualifikation; diese bleibt offen.
-- Ein direkt getroffenes Zeichnungsglyph öffnet nicht mehr still sein Objekt.
-  Die vorhandene Kandidatenabfrage vereinigt seine genaue Quellen-ID mit den
-  übrigen geometrischen und Landschaftstreffern. Das erhält die Erreichbarkeit
-  großer Glyphen außerhalb des logischen Ankerradius, ohne Überlappungen zu
-  überspringen. Worker/Main/Preload und Controller führen die optionale ID
-  gemeinsam; Quelle, Floor-/Dach-/Bindingfilter, Seitengrenzen und Archivierung
-  gelten weiter. Detailpayloads werden erst nach der bewussten Auswahl gelesen.
 
 Eine zusätzliche Rasterprobe schließt den Ankerpunktfehler großer Objekte:
 Truhen/Betten und vergleichbare Rechteckobjekte werden gegen Breite, Höhe und
