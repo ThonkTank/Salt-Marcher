@@ -70,6 +70,8 @@ try{
  await setBrushWorldRadius(page,'land-radius',32);await hover(0,0);assert(await page.locator('#land-height-protection').isHidden());
  assert.equal(await page.locator('#land-brush-resolution').innerText(),'Pinselauflösung: 1 m');
  await stroke([[0,-100],[0,100]]);assert.equal(sample(0,0).heightM,-100);assert.equal(sample(-800,0).heightM,300);
+ await history('undo');assert.equal(sample(0,0).heightM,300);assert.equal(sample(0,500).heightM,-100);
+ await history('redo');assert.equal(sample(0,0).heightM,-100);assert.equal(sample(-800,0).heightM,300);
  checks.push('Island, fine peak and protected bridge; explicit resolution feedback leads to a fine cut without damaging the peak');
  const originalHeights=heights();
  await page.locator('[data-tool-group="water"]').click();await page.locator('#land-sea-options summary').click();await page.locator('#land-sea-level').fill('175');await page.locator('#land-sea-apply').click();await atlasCanvasReady(page);
