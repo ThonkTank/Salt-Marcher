@@ -30,8 +30,9 @@ const plans=()=>read(db=>db.prepare('SELECT payload FROM encounter_plan WHERE ca
 const loot=()=>read(db=>db.prepare('SELECT payload FROM treasure WHERE campaign_id=?').all(campaign.id).map(r=>JSON.parse(r.payload)));
 const combat=()=>read(db=>JSON.parse(db.prepare('SELECT payload FROM combat WHERE campaign_id=? ORDER BY ordinal DESC LIMIT 1').get(campaign.id).payload));
 async function capture(page,name,selector){
+ console.log('Native capture: '+name);
+ await app.evaluate(({BrowserWindow})=>{const window=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));window.show();window.focus();});
  if(selector)await page.locator(selector).scrollIntoViewIfNeeded();
- await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const pixels=Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG()));
  const png=require('pngjs').PNG.sync.read(pixels),colors=new Set();for(let i=0;i<png.data.length;i+=4*31)colors.add(png.data.readUInt32BE(i));
  assert(colors.size>8,'Native capture must contain rendered UI, not a blank frame');await writeFile(output+'/'+name+'.png',pixels);
@@ -51,7 +52,7 @@ try{
  await page.locator('#generation-tables input[value="'+tableId+'"]').check();await page.locator('#generation-title').fill('Späher am Waldweg');await page.locator('#generation-seed').fill('patrol');await page.locator('#generation-difficulty').selectOption('medium');await page.locator('#generation-form').getByRole('button',{name:'Vorschläge erzeugen',exact:true}).click();
  await page.locator('#generation-preview article button:enabled').first().waitFor();assert.match(await page.locator('#generation-party-context').innerText(),/Level 1.*Level 2.*Level 3/);
  proposal=read(db=>JSON.parse(db.prepare('SELECT payload FROM generation_run WHERE campaign_id=?').get(campaign.id).payload));assert.deepEqual(proposal.request.party.map(p=>p.level),[1,2,3]);assert(proposal.plans[0].entries.every(e=>e.creatureId==='goblin'));assert.equal(plans().length,0);
- await capture(page,'proposal-1','#generation-preview article');await page.getByRole('button',{name:'Verknüpfte Beute auswürfeln',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#loot-roll-result').textContent.includes('unverteilte Beute'));
+ await capture(page,'proposal-1','#generation-preview article:first-of-type');await page.getByRole('button',{name:'Verknüpfte Beute auswürfeln',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#loot-roll-result').textContent.includes('unverteilte Beute'));
  await page.locator('#generation-preview article button').first().click();await page.locator('#encounter-name').waitFor({state:'visible'});await page.locator('#encounter-name').fill('Goblinspäher – verhandlungsbereit');
  const row=page.locator('#encounter-entries .encounter-entry-row').first();await row.locator('input[type="number"]').fill('2');await row.locator('input[type="checkbox"]').check();
  await page.locator('#encounter-editor details').filter({has:page.locator('#encounter-notes')}).locator('summary').click();await page.locator('#encounter-notes').fill('Die Späher wollen reden. Nur bei Angriff kämpfen.');await nav(page,'live-tab');saved=plans()[0];assert.equal(saved.name,'Goblinspäher – verhandlungsbereit');assert.equal(saved.entries[0].count,2);assert.equal(saved.notes,'Die Späher wollen reden. Nur bei Angriff kämpfen.');await close();
