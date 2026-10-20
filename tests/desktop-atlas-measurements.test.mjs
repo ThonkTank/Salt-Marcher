@@ -24,9 +24,12 @@ test('DnD and metric labels preserve real-world dimensions and squared conversio
  for(const kind of ['wall','path','terrain','water','roof','door','stairs','object','text','light','feature'])assert(api.elementMeasures({kind,points:rectangle(10,8).outer,width:2,height:3,triggerRadius:4}).length,kind);
 });
 test('label stays in viewport in CSS pixels and is excluded from author/export hit targets',()=>{
- for(const mpp of [.001,1,100000])for(const width of [180,800]){
+ for(const mpp of [.001,1,100000])for(const width of [180,800])for(const lines of [
+  ['Fläche: 100 ft²','10 ft × 10 ft'],
+  ['Höhe: 300 m · Auflösung: 1 m','Pinselauflösung: 2 m','Feine Höhendetails (1 m) bleiben geschützt.','Radius verkleinern oder näher heranzoomen.'],
+ ]){
   const root=new api.AtlasPaint('group'),box={x:-1e6,y:2e6,width:width*mpp,height:400*mpp};
-  api.drawMeasurements(root,box,mpp,{x:box.x+box.width,y:box.y+box.height},['Fläche: 100 ft²','10 ft × 10 ft']);
+  api.drawMeasurements(root,box,mpp,{x:box.x+box.width,y:box.y+box.height},lines);
   const label=root.children[0],rect=label.children[0];assert.equal(label.data.editorOnly,'true');assert.equal(label.geometry.pointer,false);
   assert(label.geometry.matrix[4]/mpp+rect.geometry.width<=width);assert(label.geometry.matrix[5]/mpp+rect.geometry.height<=400);
   assert.equal(label.children[1].style.fontSize,12);
