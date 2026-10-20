@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-for(const entry of ['atlas-navigation-scale','atlas-reference-catalog','atlas-landscape-view','atlas-paint'])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/'+entry+'.cjs',bundle:true,platform:'node',format:'cjs'});
-const {gridMeters,travelHexSizes,automaticGrid,wheelZoomFactor,zoomBox,fitReference,scaleBar}=require('../.build/atlas-navigation-scale.cjs');
+for(const entry of ['atlas-navigation-scale','atlas-reference-catalog','atlas-landscape-view','atlas-paint','atlas-landscape'])buildSync({entryPoints:['src/app/'+entry+'.ts'],outfile:'.build/'+entry+'.cjs',bundle:true,platform:'node',format:'cjs'});
+const {gridMeters,travelHexSizes,automaticGrid,wheelZoomFactor,zoomBox,fitReference,scaleBar,distanceLabel}=require('../.build/atlas-navigation-scale.cjs');
 const {geographicReferences:refs}=require('../.build/atlas-reference-catalog.cjs');
 const {drawScale,drawLandscapeGrid}=require('../.build/atlas-landscape-view.cjs');
 const {AtlasPaint}=require('../.build/atlas-paint.cjs');
@@ -60,5 +60,13 @@ test('reference fitting contains the entire metric frame and preserves its cente
   const r=refs.find(r=>r.name===name),b={x:120,y:-900,width:r.width,height:r.height},fit=fitReference(b,aspect);
   assert(fit.x<b.x&&fit.y<b.y);assert(fit.x+fit.width>b.x+b.width&&fit.y+fit.height>b.y+b.height);
   assert(Math.abs(fit.width/fit.height-aspect)<1e-12);assert(Math.abs(fit.x+fit.width/2-(b.x+b.width/2))<1e-8);
+ }
+});
+
+
+test('measurement and scale labels retain fine distances and use the same locale and precision',()=>{
+ const {formatDistance}=require('../.build/atlas-landscape.cjs');
+ for(const [meters,expected]of [[.015,'0,015 m · 0,00000932 Meilen'],[1.524,'1,52 m · 0,000947 Meilen'],[4828.032,'4,83 km · 3 Meilen']]){
+  assert.equal(distanceLabel(meters),expected);assert.equal(formatDistance(meters),expected);
  }
 });

@@ -12,6 +12,16 @@ Gelände- und Wasserfarbe speichern `paint.version = 1` ohne Spielwerte: Ziel, F
 
 Pinselzüge schließen beim Loslassen ab. Punktfolgen schließen per Rechtsklick oder Enter ab. Escape verwirft, Backspace entfernt den letzten Entwurfspunkt; Texteingaben bleiben geschützt. Eine Transaktion bildet einen Undo-Schritt. Bei einem Schreibfehler bleiben Entwurf und einzelne Pinselzüge erhalten; ein erneuter Versuch verbindet getrennte Züge nicht miteinander.
 
+Streckenmessung, Maßstabsleiste und reale Größenvergleiche verwenden denselben
+Entfernungsformatierer: deutsche Zahlendarstellung und drei signifikante Stellen
+für Meter/Kilometer und Meilen. Kleine positive Strecken werden dadurch nicht
+auf null gerundet. Messung und Formatierung ändern keine Weltkoordinaten. Ein abgeschlossenes
+Messergebnis bleibt bis zum Verwerfen oder Werkzeugwechsel sichtbar; der
+automatische Hex-Hinweis überschreibt es nicht.
+`tools/test-desktop-atlas-distance.mjs` prüft den integrierten metrischen Ablauf
+mit Wegkorrektur, Messung, PNG-Ausgabe und Neustart. Die noch nicht integrierte
+DnD-/Metrik-Umschaltung und weitere Live-Geometriemaße sind davon nicht abgenommen.
+
 ## Implementierung und Grenzen
 
 `landscape-line.ts` erzeugt deterministische numerische Geometrie für Vorschau, Canvas, SVG-Adapter, Rasterübersicht, Export und genaue Abfragen. Bounds umfassen die erzeugte Kurve und ihre Breite. Datensätze ohne neue Optionen verwenden weiterhin ihre ursprünglichen Linien und Zeichenreihenfolgen. `landscape-brush.ts` speichert örtliche Polygonmasken; berechnet werden ausschließlich angeforderte Rasterkacheln. Es gibt keine weltgroße Farbfläche.

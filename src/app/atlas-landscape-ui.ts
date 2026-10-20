@@ -725,7 +725,7 @@ export class LandscapeWorkbench {
     return t<1;
   }
   private sayIfIdle(s: string) {
-    if (!(this.tool === "measure" && this.points.length) && !this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
+    if (!(this.tool === "measure" && (this.points.length || this.measurement.length)) && !this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
   recovered() {
     this.cancel();

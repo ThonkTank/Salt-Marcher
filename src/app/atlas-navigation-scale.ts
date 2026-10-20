@@ -1,5 +1,5 @@
 import type { CanvasBox } from './passive-map-canvas';
-import { hexSize } from './atlas-landscape';
+import { hexSize, formatDistance } from './atlas-landscape';
 
 export const travelHexSizes = [
   { id: 'hour', label: '1 Stunde', miles: 3 },
@@ -18,10 +18,7 @@ export function gridMeters(id: string | number): number {
   if (Number.isInteger(level) && level >= 0 && level <= 10) return hexSize(level);
   throw Error('Unbekannte Hexgröße.');
 }
-export const distanceLabel = (meters: number) => {
-  const n = (v: number) => v.toLocaleString('de-DE', { maximumSignificantDigits: 3 });
-  return `${meters < 1000 ? n(meters) + ' m' : n(meters / 1000) + ' km'} · ${n(meters / 1609.344)} Meilen`;
-};
+export const distanceLabel = formatDistance;
 export function scaleBar(metersPerPixel: number, viewportWidth: number) {
   const pixels = Math.min(160, viewportWidth / 3);
   return { pixels, meters: pixels * metersPerPixel, label: distanceLabel(pixels * metersPerPixel) };

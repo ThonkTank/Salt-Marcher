@@ -246,8 +246,10 @@ export function distance(points: Point[]) {
     0,
   );
 }
-export const formatDistance = (m: number) =>
-  `${m < 1000 ? m.toFixed(1) + " m" : (m / 1000).toFixed(2) + " km"} · ${(m / 1609.344).toFixed(3)} Meilen`;
+export const formatDistance = (meters: number) => {
+  const n = (value: number) => value.toLocaleString('de-DE', { maximumSignificantDigits: 3 });
+  return `${meters < 1000 ? n(meters) + ' m' : n(meters / 1000) + ' km'} · ${n(meters / 1609.344)} Meilen`;
+};
 export const emptyRecord = (
   kind: LandscapeRecord["kind"],
 ): LandscapeRecord => ({
