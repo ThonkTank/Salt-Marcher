@@ -316,6 +316,10 @@ export class AtlasWorkspaceLayout {
   this.sectionSelect.value=this.family;this.sectionSelect.disabled=this.changingTool;
   for(const b of this.groups.querySelectorAll<HTMLButtonElement>('button')){b.disabled=this.changingTool;b.setAttribute('aria-pressed',String(b.dataset.toolGroup===this.currentGroup()?.id));}
   const activeGroup=this.currentGroup();
+  const objectSelection=!navigating&&this.family==='terrain'&&tool.value==='select'&&activeGroup?.id==='objects';
+  el('vegetation-selection-filter').closest('label')!.hidden=navigating||this.family!=='terrain'||tool.value!=='select'||activeGroup?.id!=='vegetation';
+  el('vegetation-spatial').hidden=objectSelection;el('land-cursor-height').hidden=objectSelection;
+  if(this.family==='terrain'&&tool.value==='select')el('land-radius').closest('label')!.hidden=true;
   el('land-sea-options').hidden=navigating||this.family!=='terrain'||activeGroup?.id!=='water';
   for(const b of this.toolList.querySelectorAll<HTMLButtonElement>('button')){
    const entry=activeGroup?.tools.find(t=>t.id===b.dataset.atlasTool);b.disabled=this.changingTool||!!(entry&&el<HTMLSelectElement>(entry.control).disabled);
