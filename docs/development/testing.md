@@ -332,3 +332,20 @@ ignorierte History-Prüfsumme und eine fälschlich verfügbare Papierkorbquelle.
 Alle 16 unveränderten Kontrollläufe bestehen. Assertions und unterschiedliche
 Fälle bleiben erhalten; diese Kürzung belegt eingesparten Aufbau, keine native
 Abnahme und keinen aus einzelnen Laufzeiten abgeleiteten Geschwindigkeitsgewinn.
+
+Die Notizmappen-/Raumverwendungsphase behält alle 107 Fälle aus fünf Dateien.
+21 reine Lese-, Papierkorb- und Validierungsfälle erstellen keinen ungenutzten
+Spielabend mehr. Die zehn Fälle mit tatsächlichem Besuchs- oder Planwriter behalten
+den bestehenden Plan und beide Besuche. Fünf ungültige Seitenoffsets benötigen
+keine Kindnotizen. Gemessen sinken Notizschreibaufrufe von 532 auf 517 und
+Plan-Schreibaufrufe von 35 auf 14; die Zahlen schließen geprüfte Replayaufrufe ein.
+
+ID-, Revisions- und Löschstatusschäden bleiben jeweils in Mappe, Vorbereitung und
+Restore geprüft. Ihr gemeinsamer Zeilenvalidator wird im Backup einmal angebunden
+statt dreimal: zwei Backupaufrufe und vier wiederholte Assertions entfallen.
+Sieben isolierte Fehler bleiben vorher/nachher erkannt; alle 14 Kontrollläufe
+bestehen. Ohne Offsetvalidierung wurden früher zwei Fehler durch einen späteren
+Indexierungsfehler verdeckt. Die fünf Offsetfälle verlangen jetzt die beabsichtigte
+Validierungsfehlermeldung, sodass alle fünf die entfernte Prüfung erkennen.
+Unterschiedliche DOM-Besitzer, Fehlerzeitpunkte, Scan-/Seitengrenzen und beschädigte
+Raumquellen bleiben unverändert. Diese Phase liefert keinen neuen nativen Nachweis.
