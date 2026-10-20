@@ -18,6 +18,7 @@ type Definition = {meters:number;list?:boolean};
 const definitions=new Map<string,Definition>();
 const register=(ids:string,meters=1,list=false)=>ids.split(' ').forEach(id=>definitions.set(id,{meters,list}));
 register('land-height-target land-x land-y land-record-width land-radius land-width land-calibration-distance atlas-binding-x atlas-binding-y atlas-slice drawing-brush drawing-element-size drawing-light-radius drawing-grid drawing-slice-y drawing-dx drawing-dy drawing-ceiling drawing-floor-elevation drawing-width drawing-height drawing-z-offset drawing-vertical drawing-trigger-radius drawing-sound-range city-draw-width city-size city-reach city-unit-width city-x city-y city-house-width city-house-depth city-new-width city-new-height');
+register('room-group-width room-group-depth');
 register('points drawing-element-points city-unit-points path-waypoints',1,true);
 register('volume-height volume-slice volume-brush-radius volume-box-x0 volume-box-x1 volume-box-y0 volume-box-y1 volume-box-z0 volume-box-z1 path-from-x path-from-y path-from-z path-to-x path-to-y path-to-z',1.524);
 register('path-widths path-heights',1.524,true);

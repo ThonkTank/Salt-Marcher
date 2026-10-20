@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {parseHTML} from 'linkedom';
 import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:`export * from './src/app/atlas-units';export * from './src/app/atlas-measurements';export * from './src/app/atlas-navigation-scale';export * from './src/app/atlas-landscape-view';export * from './src/app/atlas-paint';export {linePoints,newLine} from './src/app/landscape-line';`,resolveDir:process.cwd()},outfile:'.build/atlas-measurements.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{contents:`export * from './src/app/atlas-units';export {chooseRoomGroup} from './src/app/room-group-ui';export * from './src/app/atlas-measurements';export * from './src/app/atlas-navigation-scale';export * from './src/app/atlas-landscape-view';export * from './src/app/atlas-paint';export {linePoints,newLine} from './src/app/landscape-line';`,resolveDir:process.cwd()},outfile:'.build/atlas-measurements.cjs',bundle:true,platform:'node',format:'cjs'});
 const api=require('../.build/atlas-measurements.cjs');
 const all=n=>[n,...n.children.flatMap(all)];
 const rectangle=(w,h)=>({outer:[{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}],holes:[]});
@@ -45,8 +45,9 @@ test('hex reference follows the actual grid, including historical levels and vis
  }
  const root=new api.AtlasPaint('group');api.drawScale(root,{x:0,y:0,width:1e9,height:1e9},1e6,'hour');assert(!all(root).some(n=>n.text?.includes('Richtzeit')));
 });
-test('unit switching converts real controls, keeps canonical values and draft snapshots exact, and rejects invalid input',()=>{
+test('unit switching converts real controls, keeps canonical values and draft snapshots exact, and rejects invalid input',async()=>{
  const {document,window}=parseHTML(readFileSync('src/app/index.html','utf8'));
+ const selects=new WeakMap();Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return selects.get(this)??this.querySelector('option')?.value??'';},set(v){selects.set(this,v);}});
  const saved={document:global.document,Event:global.Event,localStorage:global.localStorage};global.document=document;global.Event=window.Event;
  const storage=new Map();global.localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)};
  try{
@@ -60,5 +61,15 @@ test('unit switching converts real controls, keeps canonical values and draft sn
   api.setAtlasFieldValue(document.getElementById('volume-height'),'2');assert.equal(document.getElementById('volume-height').value,'10');
   points.value='bad, 10';assert.equal(api.atlasFieldValue(points),'bad, 3.048','invalid draft prose survives canonical reads');points.setCustomValidity=()=>{};points.reportValidity=()=>{};assert.equal(api.setAtlasUnits('metric'),false);assert.equal(api.atlasUnits(),'dnd');
   points.value='5, 10';assert(api.setAtlasUnits('metric'));assert.equal(points.value,'1.524, 3.048');assert.equal(storage.get('atlas-units-v1'),'metric');
+  api.setAtlasUnits('dnd');const proto=window.HTMLElement.prototype,show=proto.showModal;proto.showModal=function(){this.open=true;};
+  try{
+   const chosen=api.chooseRoomGroup({version:1,profile:'Wohnhaus',width:12,depth:8,seed:'exact-units'}),dialog=document.querySelector('.room-group-dialog'),width=dialog.querySelector('[name=width]'),depth=dialog.querySelector('[name=depth]');
+   assert.match(width.closest('label').textContent,/ft/);assert.equal(Number(api.atlasFieldValue(width)),12);assert.equal(Number(api.atlasFieldValue(depth)),8);
+   width.value='40';width.dispatchEvent(new window.Event('input',{bubbles:true}));assert.equal(Number(api.atlasFieldValue(width)),12.192);
+   for(let i=0;i<10;i++){api.setAtlasUnits('metric');assert.equal(width.value,'12.192');api.setAtlasUnits('dnd');assert.equal(width.value,'40');}
+   depth.value='25';depth.dispatchEvent(new window.Event('input',{bubbles:true}));dialog.returnValue='accept';dialog.dispatchEvent(new window.Event('close'));
+   const recipe=await chosen;assert(recipe,dialog.querySelector('[role=status]').textContent);assert.equal(recipe.width,12.192);assert.equal(recipe.depth,7.62);assert.equal(recipe.seed,'exact-units');
+  }finally{proto.showModal=show;}
+
  }finally{Object.assign(global,saved);}
 });
