@@ -59,7 +59,19 @@ Recovery, legt Verlust offen; nur Ambiguität braucht eine Auswahl.
 
 ### Copy-/Complete-Import-Remap und Ownerlieferung
 
-Der Desktop führt Remap und Veröffentlichung im [Campaign-Store](src/app/storage/campaign-data.ts) aus. Der ungenutzte alternative `stageCampaignRemap`-Modellpfad wurde entfernt; die folgenden Anforderungen bleiben verbindlich.
+Ein SQLite-Snapshot ist noch kein `.kwcampaign`-Archiv. Der Dateiweg beginnt in
+[`desktop/main.ts`](desktop/main.ts): `captureCampaign` verbindet den validierten
+Snapshot und die Medienliste aus
+[`CampaignStore.campaignSnapshot`](src/app/storage/store.ts) mit hashgebundenen
+Audio-/Bild- und Katalogdateien. [`campaign-files.ts`](desktop/campaign-files.ts)
+besitzt Manifestbindung und ZIP-Ein-/Ausgabe. Die direkte Kopie nutzt denselben
+Capture ohne ZIP.
+
+[`acceptPreparedCampaign`](desktop/campaign-accept.ts) prüft Medien und die aktuelle
+Konfliktbasis unmittelbar vor dem synchronen Storecommit. ID-Remap und atomare
+Veröffentlichung gehören weiterhin zu
+[`campaign-data.ts`](src/app/storage/campaign-data.ts); der Dateiadapter besitzt
+keine zweite DB-Schreibgrenze.
 
 Gemeinsame Definitionen werden bei Konfliktprüfung und Planung gestreamt; die
 jeweiligen ID-Abfragen werden pro Tabelle einmal vorbereitet. Die Veröffentlichung
