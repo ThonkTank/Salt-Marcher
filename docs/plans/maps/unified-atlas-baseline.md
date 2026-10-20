@@ -88,6 +88,10 @@ Region-ready-Zeiten und rAF-Abstände sind ausdrücklich keine Messung des erste
 veränderten Terrainpixels oder der Compositorpräsentation. Fremde Hostlast und
 OS-Caches sind unkontrolliert. Kein schmaler Probelauf belegt bereits 60 FPS.
 
+## Separater Speicherbefund: Hexzellen-Lookup
+
+Der kanonische Zellwriter sucht für jede Zelle nach Kampagne, Karte, Stufe, q und r in `sourceCell`. Ein partieller SQLite-Ausdrucksindex in `installLandscape` deckt diese vollständige Suche ab und wird beim Öffnen auch für bestehende Daten aufgebaut. Die [Regression](../../../tests/atlas-source-cell-index.test.mjs) prüft den tatsächlichen Queryplan sowie Aktualisieren ohne ID-Wechsel, Löschen und Wiederöffnen. Lokal bestanden; dies ist kein Leistungsnachweis der vollständigen 100.000-Hex-Welt und keine Voraussetzung für den Kameraanschluss.
+
 ## Offene P0-Arbeit
 
 - Große Variante: 40.000 × 20.000 km, 100.000 Hexes, 5.000 Orte,
@@ -99,4 +103,4 @@ OS-Caches sind unkontrolliert. Kein schmaler Probelauf belegt bereits 60 FPS.
 - Native Ausgangsmessungen mit den vollständigen Gesten, Pinseländerung und
   Wandänderung/Undo; 30 Minuten Ressourcenprüfung sowie tatsächliche Pixelreaktion.
 - Bestehende Testdateien inhaltlich den vollständigen Verbraucherfällen zuordnen.
-- Beide P1-Prototypen müssen anschließend dieselben Bestände und Abläufe verwenden.
+- Beide P1-Kandidaten verwenden dieselben vorhandenen Bestände und Abläufe. Große Fälle entstehen begleitend zu den jeweiligen Produktphasen; sie blockieren den frühen Kameraanschluss nicht.
