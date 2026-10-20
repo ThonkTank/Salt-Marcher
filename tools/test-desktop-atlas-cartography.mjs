@@ -1,19 +1,17 @@
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Actual Electron UI in a synthetic profile; canonical data checked after each gesture.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from "node:fs/promises";
-import { randomUUID, createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
+import { mkdir, readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import {createNativeSession} from "./native-session.mjs";
 import assert from "node:assert/strict";
 import path from "node:path";
-import {tmpdir} from "node:os";
 import { atlasCanvasReady } from "./atlas-canvas-probe.mjs";
 const root = process.cwd(),
-  require = createRequire(import.meta.url),
-  { _electron } = require("playwright-core");
+  require = createRequire(import.meta.url);
 const out = path.resolve(process.env.QA_EVIDENCE_DIR ?? ".build/cartography-native");
 await mkdir(out, { recursive: true });
-await rm(out + "/result.json", { force: true });
+const native=await createNativeSession({root,output:out,name:"atlas-cartography"});
 require("esbuild").buildSync({
   entryPoints: ["src/app/storage/store.ts"],
   outfile: ".build/cartography-native-store.cjs",
@@ -25,7 +23,7 @@ require("esbuild").buildSync({
 const { CampaignStore } = require(
     root + "/.build/cartography-native-store.cjs",
   ),
-  dir = await mkdtemp(tmpdir()+"/saltmarcher-cartography-");
+  dir = native.profile;
 const store = new CampaignStore(dir + "/workbench.sqlite"),
   cam = store.create("Regionswerkstatt"),
   active = store.activate(cam.id);
@@ -164,57 +162,11 @@ const records = () =>
     .prepare("SELECT payload FROM atlas_territory ORDER BY id")
     .all()
     .map((r) => JSON.parse(r.payload));
-const result = {
-  source: execFileSync("git", ["rev-parse", "HEAD"], {
-    encoding: "utf8",
-  }).trim(),
-  dirty: !!execFileSync("git", ["status", "--porcelain"], {
-    encoding: "utf8",
-  }).trim(),
-  profile: dir,
-  artifacts: {},
-  launches: [],
-  checks: [],
-  errors: [],
-};
-for (const file of ['main.cjs', 'preload.cjs', 'ui/renderer.js', 'ui/index.html', 'ui/app.css'])
-  result.artifacts[file] = createHash('sha256').update(await readFile('.build/desktop/' + file)).digest('hex');
-let app, page;
-async function closeNative() {
-  const process = app.process(), exit = new Promise(resolve => process.once('exit', (code, signal) => resolve({code, signal})));
-  let timer;
-  try {
-    await app.evaluate(({BrowserWindow}) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).close());
-    const outcome = await Promise.race([exit, new Promise((_, reject) => timer = setTimeout(() => reject(Error('Normal native close timed out')), 10000))]);
-    assert.deepEqual(outcome, {code: 0, signal: null});
-    await assert.rejects(stat('/proc/' + process.pid), {code: 'ENOENT'});
-    Object.assign(result.launches.at(-1), {exit: outcome, pidAbsent: true});
-    app = null;
-  } finally { clearTimeout(timer); }
-}
+const result={checks:[]};
+let app,page;
+async function closeNative(){await native.close();app=null;}
 async function start() {
-  app = await _electron.launch({
-    executablePath: root + "/node_modules/electron/dist/electron",
-    args: [
-      root + "/.build/desktop/main.cjs",
-      "--data-dir",
-      dir,
-      "--ozone-platform=x11",
-    ],
-    timeout: 60000,
-  });
-  const pid = app.process().pid;
-  assert((await readFile('/proc/' + pid + '/cmdline', 'utf8')).includes(dir));
-  result.launches.push({pid});
-  page = await app.firstWindow();
-  page.on("pageerror", (e) => result.errors.push(e.stack ?? e.message));
-  await page.waitForFunction(
-    () => document.body.dataset.tutorialReady === "true",
-  );
-  result.launches.at(-1).zoom = await app.evaluate(({BrowserWindow}) => {
-    const window = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html'));
-    window.show(); window.focus(); return window.webContents.getZoomFactor();
-  });
+  page=await native.launch();app=native.app;
   await page
     .locator(".campaign-card")
     .filter({ hasText: "Regionswerkstatt" })
@@ -224,6 +176,7 @@ async function start() {
     () =>
       document.body.classList.contains("has-workspace") &&
       !document.querySelector("main").inert,
+    null,{timeout:60000},
   );
   if (await page.locator("#campaign-atlas").isHidden()) {
     if (!(await page.locator("#atlas-tab").isVisible()))
@@ -275,11 +228,22 @@ async function waitFor(predicate) {
   throw Error("Canonical postcondition failed");
 }
 async function shot(name) {
-  await page.screenshot({ path: out + "/" + name + ".png" });
+  await native.capture(page,name);
 }
 try {
   await start();
   await shot("01-regions");
+  await page.locator('#territory-name').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#territory-name').fill('Westmark Nord');
+  await page.locator('#territory-layer-name').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#territory-layer-name').fill('Politische Reiche');
+  await page.locator('#territory-layer-save').click();
+  await page.waitForFunction(()=>document.querySelector('#territory-status').textContent.includes('Gespeichert'),null,{timeout:60000});
+  await shot('01b-layer-save-region-draft');
+  assert.equal(await page.locator('#territory-name').inputValue(),'Westmark Nord','Saving layer settings must retain the independent region draft');
+  assert.equal(records().find(r=>r.id==='Westmark').name,'Westmark');
+  await page.locator('#territory-cancel').click();
+  result.checks.push('saving the layer preserves the independent unsaved region name');
   await setBrushWorldRadius(page,'territory-radius',"12");
   await stroke([
     [-5, -15],
@@ -467,39 +431,53 @@ try {
   await app.evaluate(({ dialog }, file) => {
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: file });
   }, out + "/atlas.png");
+  const exportStarted = Date.now();
   await page.locator("#atlas-export-png").click();
-  await page.waitForFunction(
-    () =>
-      document.querySelector("#atlas-save-status").textContent ===
-      "Atlas-PNG gespeichert",
-    null,
-    { timeout: 60000 },
-  );
+  // Tiles are sequential; detect a stalled export separately from host contention.
+  result.exportProgress = [];
+  let exportStatus = "", lastProgress = exportStarted;
+  while (exportStatus !== "Atlas-PNG gespeichert") {
+    const status = await page.locator("#atlas-save-status").textContent();
+    if (status !== exportStatus) {
+      exportStatus = status;
+      lastProgress = Date.now();
+      const progress = { elapsedMs: lastProgress - exportStarted, status };
+      result.exportProgress.push(progress);
+      console.log("PNG export", JSON.stringify(progress));
+    }
+    if (exportStatus === "Atlas-PNG gespeichert") break;
+    assert.ok(Date.now() - lastProgress < 60000, `PNG export stalled: ${exportStatus}`);
+    assert.ok(Date.now() - exportStarted < 180000, `PNG export exceeded three minutes: ${exportStatus}`);
+    assert.equal(await page.locator("#atlas-export-png").isDisabled(), true,
+      `PNG export ended without saving: ${exportStatus}`);
+    await page.waitForTimeout(500);
+  }
   const png = require("pngjs").PNG.sync.read(
     await readFile(out + "/atlas.png"),
   );
   assert.equal(Math.max(png.width, png.height), 1600);
   result.checks.push("native tiled PNG export with global labels");
   await shot("06-export");
-  assert.deepEqual(result.errors, []);
-  result.ok = true;
-} catch (e) {
-  result.error = e.stack ?? String(e);
-  if (page) await shot("failure").catch(() => {});
-  throw e;
-} finally {
-  try {
-    if (app) {
-      if (result.ok) await closeNative();
-      else {
-        const process = app.process(), timer = setTimeout(() => process.kill('SIGKILL'), 5000);
-        try { await app.close().catch(() => {}); } finally { clearTimeout(timer); }
-      }
-    }
-  } catch (error) { result.ok = false; result.error = error.stack ?? String(error); throw error; }
-  finally {
-    result.normalExit = !!result.ok && result.launches.every(l => l.pidAbsent && l.exit.code === 0 && l.exit.signal === null);
-    db.close();
-    await writeFile(out + "/result.json", JSON.stringify(result, null, 2));
-  }
-}
+  await page.locator("#atlas-output-back").click();
+  await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher');w.setSize(1440,1000);w.webContents.setZoomFactor(2);});
+  await page.waitForFunction(()=>innerWidth<=720);
+  await atlasCanvasReady(page);
+  await page.locator('#territory-name').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#territory-name').fill('Westmark Nord');
+  await page.locator('#territory-layer-name').evaluate(n=>n.closest('details').open=true);
+  await page.locator('#territory-layer-name').fill('Handelsreiche');
+  await page.locator('#territory-save').click();
+  await page.waitForFunction(()=>document.querySelector('#territory-status').textContent.includes('Gespeichert'),null,{timeout:60000});
+  assert.equal(await page.locator('#territory-layer-name').inputValue(),'Handelsreiche');
+  assert.equal(records().find(r=>r.id==='Westmark').name,'Westmark Nord');
+  await page.locator('#territory-layer-name').scrollIntoViewIfNeeded();await shot('07-region-save-layer-draft-200');
+  await page.locator('#territory-layer-save').click();
+  await page.waitForFunction(()=>document.querySelector('#territory-status').textContent==='Gespeichert',null,{timeout:60000});
+  assert.equal(JSON.parse(db.prepare("SELECT payload FROM atlas_territory_layer WHERE id='politics'").get().payload).name,'Handelsreiche');
+  const finalRegions=records();await closeNative();await start();assert.deepEqual(records(),finalRegions);
+  assert.equal(await page.locator('#territory-name').inputValue(),'Westmark Nord');
+  assert.equal(await page.locator('#territory-layer-name').inputValue(),'Handelsreiche');
+  result.checks.push('200% property editing preserves the other form and both confirmed values survive restart');
+  await closeNative();await native.finish({complete:true,...result});
+} catch(error){await native.fail(error);throw error;}
+finally{db.close();await native.dispose();}
