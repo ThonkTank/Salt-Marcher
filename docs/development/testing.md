@@ -154,3 +154,15 @@ nach der Kürzung erkannt. Zwei weitere Gegenproben lassen jeweils nur die
 NPC-Record- oder NPC-Draft-Schleife aus; andere Entwurfs-/Recoveryprüfungen
 fangen die beschädigten Daten weiterhin ab. Diese beiden Gegenproben belegen
 deshalb keine Erkennung einer ausgelassenen Schleife.
+
+Bei Autonomieintervallen ersetzt die vorhandene Desktop-Matrix den doppelten
+Core-Fall für beschädigte historische Jobsteuerung. Der verbleibende Fall schützt
+ausdrücklich einen älteren Backupstand und zusätzlich den Kampagnenexport.
+Catch-up und Kopierprüfung verwenden beide `checkedIntervalRow`; unterschiedliche
+Intervallfehler bleiben direkt geprüft, die beiden Kopierwege jeweils einmal.
+Aktuelle Jobidentität und Revision bleiben über Lesen und Zeitbestätigung geprüft;
+die gespeicherten Steuerwerte prüfen weiterhin den gemeinsamen Backup-Einstieg.
+Die Byteprüfung nach fehlerhaftem Lesen ersetzt die bisherige bloße Längenprüfung.
+So entfallen ein ausgeführter Fall, 16 wiederholte Assertions und zwölf
+Datenbankkopien. Bewegung, Fallenreset, Schaden und Fehler nach dem ersten von
+mehreren Actors behalten ihre getrennten Rollback-/Wiederholungsprüfungen.

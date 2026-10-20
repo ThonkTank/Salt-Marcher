@@ -94,7 +94,8 @@ Bedienung und eine unterbrochene räumliche Dungeonroute bleiben eigene Abnahmen
 
 | Verhalten | Bestehende Prüfungen |
 | --- | --- |
-| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/core/autonomy-persistence-integrity.test.ts` |
+| Historische Jobs, Regeln, Positionen, Routen, Features und Dungeonstruktur; unveränderte Fakten und Backupschutz | `tests/core/autonomy-persistence-integrity.test.ts`, `tests/desktop-autonomy-interval-integrity.test.mjs` |
+| Aktuelle Jobidentität und Steuerwerte; Zeitbestätigung, Backup/Export und rein lesende Fallenangebote | `tests/desktop-autonomy-jobs-integrity.test.mjs` |
 | Unabhängige Sceneuhren, begrenzte Fortsetzung, persistente Pause und begründete Auflösung nach Fresh | `tests/core/autonomy-scene-time-boundary.test.ts`, `tests/core/autonomy-time-conflict-ui.test.ts` |
 | Bewegung, Trap-Reset und Konfliktwirkung mit spätem Logfehler; vollständiger Rollback, Retry und Replay | `tests/core/autonomy-owner-atomicity.test.ts` |
 | Inaktive Zeit übersprungen, Standard-/Custom-Needs bei Kopie erhalten, Einzel-/Gruppenreservierungen sowie Pending-Zeitkonflikte freigegeben; neue Buchung durch anderen NPC, spätes Log-Fault/Rollback und atomare Rasten | `tests/desktop-autonomy-disable-time.test.mjs` |
