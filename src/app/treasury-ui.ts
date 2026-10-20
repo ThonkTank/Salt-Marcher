@@ -342,7 +342,7 @@ async function execute(action: ProgressAction,failed?:(message:string)=>void) {
     } catch (e) {
       if (current()) {
         const message=(e as Error).message;
-        if(!confirmed)failed?.(message+(hasPendingCommit(command.campaignId)?" Schließen und den Buchungsstatus prüfen; keinen neuen Schreibversuch starten.":" Eingaben bleiben erhalten."));
+        if(!confirmed)failed?.(message+(hasPendingCommit(command.campaignId)?" Über „Schließen“ zum Buchungsstatus wechseln.":" Eingaben bleiben erhalten."));
         tell((confirmed ? "Schatzänderung gespeichert. Anzeige konnte nicht aktualisiert werden: " : "") + message, true);
       }
       return confirmed && current();
