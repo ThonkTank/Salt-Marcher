@@ -542,9 +542,63 @@ normalen App-Exits bestätigen die Position-/Zeitfakten und erhaltene Raumprosa.
 Die vollständige Indoor-/Plattform- und Langroutenqualifikation bleibt
 eigenständig offen.
 
+## Checkpoint und Wiederaufnahme auf der aktuellen Atlasfläche
+
+Der native Prüfweg `tools/test-desktop-travel-checkpoints.mjs` bedient die
+öffentliche Livekonsole: zwei Hexabschnitte mit ausdrücklich gesetzter
+Zweistundendauer, Unterbrechung nach dem ersten Abschnitt, normal schließen,
+frisch öffnen, ausdrücklich fortsetzen, ankommen und nochmals frisch öffnen.
+Er verwendet die vorhandene Atlaswurzel mit 3-Meilen-Hexen. Die frühere Probe
+`test-desktop-travel-target.mjs` verwendet dagegen eine zweite Karte und den
+inzwischen verborgenen Welttab; ihre historischen Ziel-/Labelbelege sind keine
+Qualifikation dieses aktuellen Ablaufs.
+
+Die neue Probe wartet zusätzlich auf die gezeichneten Canvaspixel: blauer
+Gruppenmarker am bestätigten Hex, Restweg ab diesem Hex und kein Restweg nach
+Ankunft. Nur auf den Konsolenstatus oder den abgeschlossenen Read zu warten,
+kann vor dem nächsten Zeichenframe noch ein altes Kartenbild erfassen. Keine
+SVG-Objektabfrage: der veröffentlichte Atlas ist inzwischen ein Canvas.
+Frische kanonische Reads prüfen genau einen Zeitschritt je erreichtem Hex,
+die unveränderte Reiseprosa, Position und Uhr sowie den terminalen Stand ohne
+weitere Zeitbuchung. Belege enthalten Source-SHA, Dirty-Status, fünf Runtimehashes,
+Profil, tatsächlichen Browserzoom und normale Prozessausgänge; fehlgeschlagene
+Läufe können keinen alten Erfolgsbeleg hinterlassen.
+
+**Offener Produktmangel: kausales Reise-Undo/Redo.** Die Originalanforderung
+[Program Capabilities, Travel](https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md#L364-L368)
+verlangt mehrere rücknehmbare Checkpoints samt ausschließlich durch sie erzeugten
+Folgen und Schutz späterer autoritativer Scene-Fakten. Dafür gibt es im aktuellen
+`WorldAction` und der Reisekonsole keinen Befehl. `scene_time_step`,
+`world_history` und Receipts erklären die Buchungen, bilden aber noch keinen
+kausalen Rücknahmestack. Rückwärts gesetzte Gruppenzeit, administrative
+Platzierung und Atlas-Autoren-Undo erfüllen diese Anforderung nicht.
+
+Die vollständige Lieferung muss beim bestehenden Checkpointwriter in
+`storage/world.ts` und `CampaignStore.consumeSceneTime` ansetzen: Positions-/
+Uhrwirkung, aufgedecktes Wissen, Restock, Dungeon-Reset, Autonomy und daraus
+abgeleitete Folgen benötigen ihre ursprüngliche Ursache und nachprüfbare
+Nachfolgebindungen. Die Wiederherstellung darf weder ganze Tabellen zurücksetzen
+noch nachträglich dieselben Zeitfolgen neu auswürfeln. Ein später von einer
+anderen Scene bestätigter gemeinsamer Fakt muss erhalten bleiben. Auftrag,
+Rücknahme und Wiederholung brauchen eigene idempotente Receipts; die
+ursprünglichen Belege bleiben unverändert. Persistenz, Validator, Archivtransfer
+und Salvage sind vor Einführung eines neuen Verlaufsformats gemeinsam anzupassen.
+Die bestehende Preload-/Maingrenze bleibt der einzige Schreibweg.
+
+Danach sind mehrstufige Rücknahme/Wiederholung, neuer Reisezweig, spätere fremde
+Scene, zwischenzeitliche Bearbeitung, verlorene Antwort, Restart und unabhängige
+Archivkopie bis in dieselbe Livekonsole zu prüfen. Die aktuelle native Probe
+qualifiziert ausschließlich Checkpoints und Wiederaufnahme und nennt Undo/Redo
+in ihrem Ergebnis ausdrücklich offen. `SMR-AC-08/09` und Ownerabnahme werden
+dadurch nicht geschlossen.
+
 ## Nächste ausführbare Lieferungen
 
-1. **Gemeinsamer Biomkatalog und größere Routen.** Die ursprüngliche Hexquelle
+1. **Kausales Reise-Undo/Redo.** Den oben beschriebenen vollständigen
+   Checkpointvertrag einschließlich Zeitfolgen, fremder Scene-Fakten,
+   Persistenz/Transfer und echter Livebedienung liefern. Der bestehende
+   administrative Zeit-/Platzierungsweg ist kein Ersatz.
+2. **Gemeinsamer Biomkatalog und größere Routen.** Die ursprüngliche Hexquelle
    verlangt installationseigene, im Editor verwaltete Biome und denselben
    Definitionsbestand für Kreaturfilterung. Die aktuelle Terrainmenge ist weiter
    fest; Custom-Biome, definierte Zuordnung der bisherigen Habitatstrings,
@@ -552,10 +606,10 @@ eigenständig offen.
    ist unabhängig davon und ersetzt diesen Umfang nicht. Die aktuelle
    Routensuche bleibt ein Rechenbudget mit erklärter Abschnittsteilung, keine
    Begrenzung der kontinuierlichen Kartenfläche.
-2. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
+3. **Präsentation weiter qualifizieren.** Die vorhandene Wiedergabe auf großen
    Routen und bei 200% prüfen. Pointerinterpolation ist nicht Bestandteil der
    autoritativen Checkpoints; jede zusätzliche Animation bleibt reine Darstellung.
-3. **Gemeinsame Bedienung weiter qualifizieren.** Vorhandene Drag-Platzierung,
+4. **Gemeinsame Bedienung weiter qualifizieren.** Vorhandene Drag-Platzierung,
    Tastaturalternative, Wegpunkte und Auswahl im selben Scene-/Mapkontext mit
    laufender Reise und verschachtelten Ortsmarkern bedienen.
    Die vorhandene dreiteilige Utilityauswertung mit kanonischen Biomen und
