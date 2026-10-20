@@ -170,40 +170,64 @@ Das kanonische World-NPC-Profil besitzt optionale Felder für Herkunft/Spezies, 
 
 Eine Stadt zählt diese Angaben ausschließlich für NPCs mit bestätigter Wohnbindung. Sie zeigt Gesamtzahl, Zahl gepflegter Profile sowie exakte Häufigkeiten je Textwert und Alter. Änderungen am World-NPC werden beim nächsten Stadtlesen sichtbar, ohne die Stadtrevision oder Stadt-History zu verändern. Namen, Freitext, Haushalt und Beruf werden nicht als demografische Merkmale interpretiert. Verteilungen für neu erzeugte Personen, Religion und Lebensstandard bleiben Teil der offenen CITY-06-Inventur.
 
-### Desktop-Arbeitsstand 0.109: Täglich wiederkehrende NSC-Pläne
-
-Das NPC-Weltprofil speichert bis zu 48 benannte Aktivitäten mit Beginn/Ende, Zielart Wohnhaus/Arbeitsplatz/frei und Autorenhinweisen. Normale Profilentwürfe bewahren auch unvollständige Uhrzeiten und Texte; erst NPC übernehmen bestätigt den Plan. Die bestehende NPC-Transaktion und Receiptprüfung tragen ihn mit dem restlichen Profil, ohne neue Tabelle oder zweite Schreibgrenze. Überlappungen sowie Zeiten außerhalb des aktuellen Kampagnentags werden beim Übernehmen abgewiesen. Ein Ende vor dem Beginn läuft über Mitternacht.
-
-Das Dossier projiziert den wiederkehrenden Plan auf die Uhr der gewählten Livegruppe und den gemeinsamen Kampagnenkalender. Es zeigt aktuelle geplante Aktivität, nächsten Beginn und die heutigen kanonischen Wohn-/Arbeitsbindungen; der aktuelle reale Aufenthaltsort bleibt gesondert sichtbar. Fehlende Hausbindungen und nach Kalenderänderung unpassende Pläne werden angezeigt. Eine neue Tagesplanung setzt keine Position, schreitet keine Uhr fort und aktiviert keine Autonomie. Wochentagsregeln, Ausnahmen/Ruhetage und automatische Ausführung bleiben offen.
-
-### Desktop-Arbeitsstand 0.112: Wochenplan und Datumsausnahmen
-
-Jede wiederkehrende Aktivität gilt täglich oder an ausdrücklich gewählten Wochentagen des Kampagnenkalenders. Der Filter bezieht sich auf den Beginn; nächtliche Aktivitäten können in den Folgetag reichen. Bis zu 64 Datumsausnahmen ersetzen den gesamten gewählten Kampagnentag, einschließlich Resten aus der vorherigen Nacht. Kampagnentag 1 bezeichnet den ersten Tag des Kalenders; die Oberfläche zeigt die zugehörige Kalenderbezeichnung. Eine leere Ausnahme ist ein Ruhetag. Entfernen einer Ausnahme stellt den normalen Wochenplan wieder her.
-
-Entwurfsrohtexte, der vorhandene NPC-Commit und seine Receiptprüfung tragen Wochentage und Ausnahmen. Überschneidungen werden auch an Wochengrenzen und um Ausnahmegrenzen geprüft. Das Dossier liest Tag, Wochentag, aktuelle Ausnahme, geplante Aktivität und nächsten Beginn mit vollständigem Datum aus derselben Gruppenzeit. Eine Kalenderänderung kann einen Plan ungültig machen; sie deutet dessen Wochentagsindizes nicht stillschweigend um. Der Ablauf erzeugt keine zweite Uhr, keine automatische Bewegung und keine Autonomiefreigabe.
-
 ### Desktop-Arbeitsstand 0.111: kanonische Stadtfraktionen
 
 Häuser und Viertel können nun eine vorhandene aktive World-Fraktion referenzieren. Die Stadt projiziert aus denselben IDs die Zahl bestätigter Bewohner, Beschäftigter und gebundener Elemente und bietet die Fraktion als Filter der World-NPC-Suche an. Archivierte Fraktionen bleiben an bestehenden Referenzen lesbar markiert, stehen aber nicht für neue Zuordnungen bereit. Eine Fraktionsbindung schützt Haus oder Viertel vor Regeneration; City-History, Neustart und Kampagnentransfer erhalten die Referenz. Regierung, Wachen und weitergehende Fraktionswirkungen bleiben offen, weil die sichtbaren Originalformulare ihre konkrete Semantik nicht ausreichend belegen.
 
-### Desktop-Arbeitsstand 0.115: Stadtaktivitäten zur Gruppenuhr
+## Tagespläne und geplante Ortsbesuche
 
-Die Stadtübersicht projiziert die Wochenpläne ihrer bestätigten Bewohner und Beschäftigten auf eine ausdrücklich gewählte bestehende Gruppenuhr. Ein Wechsel der Leseuhr ändert weder Gruppenfokus noch Zeit. Suche nach NSC/Plantext und ein Filter auf das ausgewählte Haus begrenzen die Liste; höchstens 40 kanonische Profile werden je Seite projiziert. Die Suche und Bindungsauswahl erfolgen vor der Profilprojektion, ohne vollständige Stadtgeschichte oder alle Kampagnenprofile in die Oberfläche zu laden.
+### Profil, Kalender und Bestätigung
 
-Geplante Aktivität, Hausziel und nächster Beginn stehen neben dem aktuellen World-Ort und gegebenenfalls Dungeonraum. Ruhetage und Kalenderprobleme bleiben sichtbar. Ziel-/Wohn-/Arbeitshaus öffnen den vorhandenen Stadtinspektor; Profil öffnen führt zur selben NPC-Identität und deren bestehendem Autoreneditor. Alle Angaben sind Leseprojektionen. Eine Wohn- oder Arbeitsbindung und ein Tagesplan beweisen keine tatsächliche Anwesenheit in einem Haus.
+Das kanonische World-NPC-Profil trägt bis zu 48 benannte Aktivitäten mit Beginn,
+Ende, Autorenhinweisen und Ziel Wohnhaus, Arbeitsplatz, freier Hinweis oder festem
+Kampagnenort. Rohentwürfe bewahren unvollständige Zeiten und Texte; erst „NPC
+übernehmen“ bestätigt den Plan über die bestehende NPC-Transaktion samt Receipt.
+Es gibt keine zusätzliche Tabelle oder Schreibgrenze. Neue feste Ziele benötigen
+einen aktiven Ort; archivierte Referenzen bleiben als nicht verfügbar lesbar.
+Kampagnenkopien binden auch Ortsziele in gesicherten Entwurfsrohfeldern neu.
 
-### Desktop-Arbeitsstand 0.118: Feste Ortsziele im Tagesplan
+Die [Zeitregeln](../../../src/app/npc-daily-plan.ts) gelten für Tages-, Wochen-
+und Ausnahmepläne gemeinsam:
 
-Aktivitäten des Wochenplans und der Datumsausnahmen können einen bestehenden Kampagnenort als festes Ziel referenzieren. Wohnhaus, Arbeitsplatz und freie Hinweise bleiben erhalten. Der normale Profilentwurf sichert die Auswahl; NPC übernehmen bestätigt sie mit dem gesamten Weltprofil. Bestehende Verweise auf archivierte Orte bleiben lesbar und sind als nicht verfügbar markiert; neue Ziele benötigen einen aktiven Ort.
+- Aktivitäten gelten täglich oder an ausgewählten Wochentagen; maßgeblich ist
+  ihr Beginn. Ein Ende vor dem Beginn läuft über Mitternacht.
+- Bis zu 64 Datumsausnahmen ersetzen den ganzen Kampagnentag einschließlich
+  Resten der vorherigen Nacht. Tag 1 ist der erste Kalendertag; die Oberfläche
+  zeigt seine Kalenderbezeichnung. Eine leere Ausnahme ist ein Ruhetag;
+  Entfernen stellt den Wochenplan wieder her.
+- Überlappungen, auch über Wochen-/Ausnahmegrenzen, und Zeiten außerhalb des
+  aktuellen Kampagnentags werden beim Übernehmen abgewiesen. Kalenderänderungen
+  können einen Plan ungültig machen; Wochentagsindizes werden nicht umgedeutet.
 
-Das NSC-Dossier und die Stadtaktivitäten zeigen das aktuelle geplante Ortsziel und öffnen dessen Ortsmappe. Der tatsächliche Standort bleibt getrennt. Wochenzeiten und Ausnahmewechsel folgen weiterhin der gewählten Gruppenuhr. Kampagnenkopien ordnen Ortsziele auch in gesicherten Entwurfsrohfeldern auf die neuen Ortsidentitäten um. Es entstehen keine automatische Bewegung und keine zweite Uhr.
+### Leseuhr und Aussagegrenze
 
-### Desktop-Arbeitsstand 0.117: veraltete Gruppenuhr sicher neu wählen
+Das Dossier liest die gewählte Livegruppenuhr und den gemeinsamen Kalender;
+Stadt- und Ortsübersicht verwenden ebenfalls eine gewählte bestehende Gruppenuhr.
+Ihre Wahl ändert weder Fokus noch Zeit. Verschwindet die gewählte Uhr, bleibt die
+Auswahl leer und verlangt eine neue Wahl, ohne auf Fokus- oder erste Gruppe
+zurückzufallen.
 
-Ist die in der Stadtansicht ausgewählte Gruppenuhr bei einer späteren Aktualisierung nicht mehr aktiv, liefert der Lesepfad einen ausdrücklichen leeren Auswahlzustand und die verbleibenden Gruppenuhren. Die Oberfläche entfernt die veraltete Auswahl und verlangt eine neue Wahl. Sie fällt nicht still auf die Fokusgruppe oder die erste sichtbare Gruppe zurück und zeigt bis zur Wahl keine Aktivitäten mit einer falschen Zeitbasis.
+Aktuelle Aktivität, nächster Beginn mit vollständigem Datum, Ruhetag,
+Kalenderprobleme und fehlende Hausbindungen bleiben sichtbar. Geplante Ziele
+stehen getrennt vom tatsächlichen World-Ort und Dungeonraum. Ein Plan oder eine
+Wohn-/Arbeitsbindung beweist keine Anwesenheit; Lesen und Planbestätigung bewegen
+niemanden, schreiten keine Uhr fort und aktivieren keine Autonomie. Automatische
+Ausführung bleibt offen. Profil und Haus öffnen dieselben kanonischen Identitäten;
+feste Ortsziele führen zur vorhandenen Ortsmappe.
 
-### Desktop-Arbeitsstand 0.119: Geplante Ortsbesuche in der Ortsmappe
+### Stadt- und Ortsprojektion
 
-Jede Ortsmappe besitzt eine aufklappbare Übersicht geplanter NSC-Besuche. Sie berücksichtigt feste Ortsziele und die bestehenden Wohn-/Arbeitsgebäude an diesem Ort. Die gewählte Livegruppenuhr projiziert aktuelle Aktivität und nächsten Besuch mit vollständigem Datum; ein anderer Termin an einem anderen Ort verdeckt den nächsten Besuch hier nicht. Wochenregeln, nächtliche Aktivitäten und vollständige Datumsausnahmen einschließlich Ruhetagen bleiben wirksam.
+Die [Stadtaktivitäten](../../../src/app/storage/city-activity.ts) berücksichtigen
+bestätigte Bewohner und Beschäftigte. Namens-/Plantextsuche und der Filter auf
+das gewählte Haus begrenzen die Auswahl vor der Projektion von höchstens 40
+Profilen je Seite; weder vollständige Stadtgeschichte noch alle Profile werden
+dafür in die Oberfläche geladen.
 
-Die Suche findet Namen und Aktivitätstexte mit diesem Ziel. SQL wählt 40 Profile je Seite vor der kanonischen Projektion; vergangene Ausnahmen können einen NSC ohne weiteren Besuch weiterhin als geplantes Ortsziel auffindbar machen. Tatsächlicher World-Ort und Dungeonraum stehen separat. Profil und geplantes Haus öffnen dieselben vorhandenen Identitäten. Lesen, Aktualisieren und Wahl einer Gruppenuhr schreiben keine Zeit oder Position. Die Übersicht meldet Kalenderprobleme und verlangt bei verschwundener Leseuhr eine neue Wahl.
+Die aufklappbaren [Ortsbesuche](../../../src/app/storage/location-activity.ts)
+berücksichtigen feste Ortsziele und Wohn-/Arbeitsgebäude an diesem Ort. Suche und
+SQL wählen 40 Profile je Seite vor der kanonischen Projektion. Die Suche findet
+Namen und Aktivitätstexte mit diesem Ziel; auch vergangene Ausnahmen können einen
+NPC ohne weiteren Besuch auffindbar halten. Ein Termin andernorts verdeckt den
+nächsten Besuch hier nicht. Wochenregeln und nächtliche Aktivitäten bleiben
+wirksam; auch leere Datumsausnahmen müssen beim Ortsfilter erhalten bleiben,
+weil sie den normalen Plan und den Überhang der vorherigen Nacht aufheben.
