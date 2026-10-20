@@ -907,3 +907,5 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 
 #combat-area-selection{min-width:0;max-width:18rem}
 @media(max-width:680px){#combat-area-selection{grid-column:1/-1;width:100%;max-width:none}}
+
+#chronicle-count{scroll-margin-top:calc(var(--workspace-content-offset,90px) + .75rem)}.chronicle-navigation{margin:.75rem 0}#chronicle-navigation-bottom{padding:.75rem 0;border-top:1px solid var(--line)}#chronicle-page-bottom{margin-right:auto}

@@ -18,6 +18,10 @@ Quellenhash: `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
   Ergebnisgrenze, sodass auch ältere passende Ereignisse gefunden werden.
   Partywechsel, Zeit, Besuchsergebnisse, narrative Statusänderungen und
   Todesrettungswürfe bleiben sichtbar; interne Records verdrängen sie nicht.
+- **Seiten lesen:** Seitentasten stehen oberhalb und am Ende der Liste. Nach dem
+  Blättern beginnt die neue Seite beim fokussierten Seitenstand; bei inzwischen
+  anderweitig gesetztem Eingabefokus wird dieser nicht übernommen. Beide
+  Tastensätze teilen Cursor, Lesestand und Lade-/Exportsperre.
 - **Ausgeben:** Die Oberfläche zeigt 100 passende Ereignisse pro Seite; die
   native Markdownausgabe liest sämtliche Treffer ihres eigenen festen Lesestands.
   Die separate Kurzview-API begrenzt weiterhin auf 2.000 passende Ereignisse und
