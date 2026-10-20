@@ -46,7 +46,7 @@ test('renamed rooms and hidden rooms are resolved from current campaign data',t=
 });
 test('another campaign, stale token, forged target identity and invalid pagination are rejected',t=>{
  const x=fixture(t);for(const offset of [-1,0.5,NaN,Infinity,1_000_001])assert.throws(()=>x.read(offset));
- const row=x.store.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(x.campaign.id,x.note.id),payload=JSON.stringify({...x.note,id:randomUUID()});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.campaign.id,x.note.id);assert.throws(()=>x.read(),/zugeordnet/);
+ const row=x.store.db.prepare('SELECT * FROM world_note WHERE campaign_id=? AND id=?').get(x.campaign.id,x.note.id),payload=JSON.stringify({...x.note,id:randomUUID()});x.store.db.prepare('UPDATE world_note SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,createHash('sha256').update(payload).digest('hex'),x.campaign.id,x.note.id);assert.throws(()=>x.read(),/Notizzuordnung/);
  const other=x.store.create('Andere Kampagne'),active=x.store.activate(other.id);assert.throws(()=>x.read());assert.throws(()=>x.store.noteRoomUses(active.token,x.note.id),/nicht verfügbar/);
 });
 

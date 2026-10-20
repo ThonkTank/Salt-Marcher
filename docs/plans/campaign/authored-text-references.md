@@ -34,6 +34,22 @@ IDs; Creature-/Itemziele behalten den zugehörigen Katalog-/Definitionsbezug.
 Quelle, Snapshot und opaque Erweiterungsbodies bleiben erhalten. NPC-Rohentwürfe
 und ungeklärte Commands folgen ihrem bestehenden Recoveryvertrag.
 
+## Papierkorboriginal im Zusammenhang wiederherstellen
+
+Eine lesbare Quelle im Papierkorb bleibt in der Notizmappe unter ihrer ID sichtbar,
+ist dort aber nicht für neue Verwendungen auswählbar. „Original im Papierkorb
+ansehen…“ öffnet denselben Notizeditor schreibgeschützt. Dessen vorhandener
+Wiederherstellungsauftrag gibt die Quelle für ihre bestehenden Raum- und
+Spielabendverweise wieder frei; er erzeugt keine Ersatznotiz nach Namen.
+
+`storage/world-note-row.ts` prüft für Vorbereitung, gezielten Inhaltsleser,
+Notizmappe, Quellensuche, Notizwriter und Backup dieselbe Originalzeile:
+Prüfsumme, Dokumentvertrag, ID, Revision und den unzulässigen Dokument-Löschstatus.
+Papierkorb ist ein eigener Zeilenzustand, den der jeweilige Aufrufer danach
+berücksichtigt. Widersprüchliche Originale bleiben samt Bytes gesperrt;
+Restore darf sie nicht durch eine neue Revision scheinbar reparieren.
+Es gibt keine Formatänderung oder Datenmigration.
+
 ## Vorhandene Quellen im Raum-Key verknüpfen
 
 Verknüpfte Notizen und Inhalte stehen direkt beim GM-Raumtext. Die ausklappbare

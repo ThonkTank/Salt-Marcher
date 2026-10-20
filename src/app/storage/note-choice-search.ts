@@ -1,5 +1,5 @@
-import {createHash,randomUUID} from 'node:crypto';
-import {worldNoteDocument} from '../../features/world/world-notes';
+import {randomUUID} from 'node:crypto';
+import {checkedWorldNoteRow} from './world-note-row';
 import {noteSearchQuery} from './note-search-query';
 import {noteSearchPreview} from './note-search-preview';
 import type {DeskEntry} from '../scene-desk-contracts';
@@ -12,8 +12,7 @@ export function searchNoteChoices(db:any,cam:string,search:string,offset:number,
  let damaged=0;
  const entries:DeskEntry[]=rows.slice(0,40).map((row:any)=>{
   try{
-   if(createHash('sha256').update(row.payload).digest('hex')!==row.checksum)throw Error('Prüfsumme');const note=worldNoteDocument(JSON.parse(row.payload));
-   if(note.deleted||note.id!==row.id||note.revision!==row.revision)throw Error('Notizzuordnung');
+   const note=checkedWorldNoteRow(row);
    const preview=noteSearchPreview(row.search_preview,note,marks);
    return{ref:{kind:'note',id:note.id},revision:note.revision,title:note.title,label:({note:'Notiz',npc:'NSC',faction:'Fraktion',quest:'Quest',rumor:'Gerücht',rule:'Regelreferenz'})[note.kind],...(preview?{preview}:{})};
   }catch{damaged++;return{ref:{kind:'note',id:row.id},title:'Notiz nicht lesbar',label:'Quelle prüfen',unavailable:true};}
