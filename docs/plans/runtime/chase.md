@@ -1,6 +1,6 @@
 # Verfolgung als laufende Scenemaske
 
-Stand: 13.10.2026. Ergänzt den [Party-/Livevertrag](smr03-live-scene-contract.md),
+Stand: 20.10.2026. Ergänzt den [Party-/Livevertrag](smr03-live-scene-contract.md),
 [Nachbereitung](combat-recovery.md#nachbereitung-und-bestehende-schätze) und den [Gesamtumfang](../../SCOPE.md).
 
 ## Quellen und aktueller Anschluss
@@ -18,8 +18,8 @@ zurzeit eine manuelle persistente Liste mit freien Teilnehmern, Abstand, Tempo,
 Erschöpfung, Komplikation, Runde und Abschluss. Abschluss schreibt einen
 Welthistorieneintrag. Die integrierte Auswahl erschließt zuletzt gespeicherte
 Masken derselben Scene; Pflichtfelder sperren verfrühte Aktionen. Vollständiger
-Actor-/Membershipabschluss, Zeitport,
-Workingdrafts und vollständige Datenclosure bleiben offen. Die inzwischen
+Actor-/Membershipabschluss und vollständige Datenclosure bleiben offen.
+Persistente Rohentwürfe und der echte Roundzeitport sind angeschlossen. Die inzwischen
 integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
 Der aktuelle Tracker ist daher eine Teillieferung.
 
@@ -45,7 +45,7 @@ Anlage nach abgeschlossenem Tracker sendet außerdem keine alte Chase-ID/Basis.
 mit verzögerten/ersetzten IPCantworten. Zusammen mit den betroffenen
 Szenensuche-/Reiseziel-, Codec-, Store-/Transfer- und Draftmigrationprüfungen
 bestanden 35 lokale Prüfungen und Desktop-Typecheck.
-Native Bedienung und reale Crossworkflow-/Speicher-/Maskenabnahme stehen aus.
+Dieser historische DOMbeleg ersetzt keine reale Crossworkflow-/Speicher-/Maskenabnahme.
 
 ## Integrierter Partyabgleich vom 14.10.2026
 
@@ -66,8 +66,8 @@ mit unverändertem Ergebnis-/Rewardstand: `retired` ist kein Abschluss. Der
 Shared-Health-Writer und Statusqueries konsumieren nur aktive Masken; alte
 Archivfakten werden nicht durch spätere HP-Änderungen neu geschrieben. Core-/
 SQLitebelege decken Split, erhaltene NPCs und fehlende abgeleitete Rewards ab.
-Provider-Pending, vollständiger Tombstone-/Archivabschluss, echter Roundzeitport
-und native Crossworkflowabnahme bleiben offen.
+Provider-Pending, vollständiger Tombstone-/Archivabschluss
+und vollständige native Crossworkflowabnahme bleiben offen.
 
 ## Nächste ausführbare Schritte
 
@@ -78,9 +78,10 @@ und native Crossworkflowabnahme bleiben offen.
    Maske/Runde/History. Die UI behält ihre Kontextprüfung auch an diesem Port.
    Commitkontrolländerungen sperren nur Controls und bauen keine Eingabefelder
    neu auf. Unbestätigte Werte bleiben dabei erhalten. Persistente Workingdrafts
-   mit Original-Scene-/Chasebasis fehlen weiterhin. Abnahme als nächster Schritt:
-   rohe ungültige Werte und Ausgangsklärung vor/nach Commit über Close/Fresh,
-   A/B/A und späteren Receiptread erhalten; kein blindes Retry oder neues Ziel.
+   binden inzwischen Rohfelder an Scene, Chase und Revision. Nur die bestätigte
+   Fassung wird atomar verbraucht. Store-/Controllerprüfungen decken rohe
+   ungültige Werte, A/B/A, CAS und späteren Receiptread ab; native Hard-Crash-
+   und vollständige Kontextwechselabnahme bleiben gesondert offen.
 2. **Datenabschluss vervollständigen.** Der integrierte Backupvalidator prüft
    Header/Shape und gespeicherte Belege. Zwei Legacygegenproben fanden allerdings
    Fehler bei Schema 38 ohne Chase bzw. ohne Receipttabelle; der Validator
@@ -102,13 +103,37 @@ und native Crossworkflowabnahme bleiben offen.
    bei Teilnahmecommands jedoch noch nicht vollständig. Bestehende Roster-/Worldactoridentitäten und
    die geprüften Combat-/Live-Membershipregeln konsumieren. Move/Split/Rejoin
    bereinigen betroffene Teilnahme atomar, ohne den Scenemove zu blockieren.
-   Roundcommand bindet den echten Sceneclockport; 6000 ms, Chasewirkung,
-   Worldfolgen und Receipt gehören in dieselbe bestätigte Wirkung. Keine zweite
-   Uhr und keine bloß angezeigten Sekunden. Abnahme: zwei Scenes, mehrere Masken,
-   verschobene Figur, Worldzeitfault und Replay ohne verlorene/doppelte Intervalle.
+   Der Roundcommand nutzt inzwischen den vorhandenen `executeLive`-Zeitwriter
+   innerhalb der Chase-Transaktion: sechs Sekunden, Entwurfverbrauch, Chase,
+   Worldfolgen und beide Belege werden gemeinsam bestätigt oder zurückgenommen.
+   Replay verlässt den Writer vor dem Zeitport; es repariert historische Runden
+   nicht nachträglich. Parallele Masken derselben Scene buchen nacheinander je
+   sechs Sekunden; fremde Scenes behalten ihre Uhr. Der bestehende Zeitweg
+   besitzt weiterhin Kalender, Autonomie, Restock und Dungeonfolgen.
+   `tests/desktop-chase-time.test.mjs` prüft zwei Scenes und drei Masken, Fresh,
+   lesende Statusklärung, Replay und atomare Rücknahme bei beschädigter
+   Kalenderbasis bzw. fehlgeschlagener Belegablage. Die Anzeige liest die aktuelle
+   Sceneuhr nach Bestätigung und Statusklärung; späte Reads dürfen weder eine
+   andere Scene noch eine höhere Uhrrevision ersetzen. Offen bleibt die
+   vollständige Actor-/Move-/Autonomieabnahme mit mehreren Maskentypen.
 4. **Mehrfachmasken und Anzeige bedienen.** Der neue Maskenstart ermöglicht
    mehrere laufende Masken; `recent` erschließt die letzten 30. Aktualisieren
-   behält die gewählte Maske mit den vorhandenen Kontextguards. Vollständige
-   Navigation über ältere Masken und native Rohwert-/Wechselabnahme fehlen. Aktive Actor-Art nur über die bestehende Publicprojektion freigeben.
+   behält die gewählte Maske mit den vorhandenen Kontextguards. Die begrenzte
+   native Wechsel-/Rohwertprobe ist `tools/test-desktop-chase-switch.mjs`;
+   vollständige Navigation über ältere Masken bleibt gesondert zu prüfen. Aktive Actor-Art nur über die bestehende Publicprojektion freigeben.
    Danach echter Desktopablauf mit paralleler Party, Scenewechsel, Replyverlust,
    normalem Fresh und erforderlicher Plattform-/Tastatur-/Skalierungsprüfung.
+
+## Begrenzte native Roundzeitprüfung
+
+`tools/test-desktop-chase-switch.mjs` öffnet die Kampagne über ihre sichtbare
+Karte, prüft zwei Verfolgungen, gesicherte Rundenentwürfe, fehlgeschlagene Reads
+mit Wiederaufnahme und eine verlorene Bestätigungsantwort. Die Statusklärung
+zeigt Runde 1 und `00:00:06`; ein separater Store bestätigt genau einen
+Zeitschritt und unveränderte Bytes der anderen Maske. Nach normalem Close
+folgen Wiederaufnahme und einmaliger Abschluss bei echtem Browserzoom 200 %.
+Die Probe protokolliert Quellrevision, Dirty-Status, fünf Runtimehashes,
+Zoomfaktoren und tatsächliche normale Prozessenden samt fehlender PID.
+Sie verwendet ein diskbasiertes `TMPDIR`, begrenzte Lebensdauer und frische
+native Fensteraufnahmen. Ihr Ergebnis ersetzt weder Paket-/Installationsprüfung
+noch vollständige Party-/World-/Mehrplattform- oder menschliche Abnahme.

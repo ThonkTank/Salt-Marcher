@@ -1000,7 +1000,12 @@ export class CampaignStore {
   keepChaseDraft(token:string,draft:import('../chase-draft-contracts').ChaseWorkingDraft,expected:string|null){return keepChaseDraft(this.db,this.guard(token),draft,expected);}
   maskHistory(token:string,sceneId:string,query:import('../mask-history-contracts').MaskHistoryQuery){return readMaskHistory(this.db,this.guard(token),sceneId,query);}
   chase(token:string,sceneId:string,id?:string){return readChase(this.db,this.guard(token),sceneId,id);}
-  executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId));}
+  executeChase(c:ChaseCommand){return executeChase(this.db,c,()=>this.guard(c.token,c.campaignId),chase=>{
+    // The Chase transaction owns both the round and the existing Scene-time writer.
+    // Receipt replay returns before this port; downstream World faults roll back both.
+    const scene=readLiveScene(this.db,c.campaignId,chase.sceneId);
+    this.executeLive({commandId:c.commandId+':clock',token:c.token,campaignId:c.campaignId,action:{kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:6,unit:'seconds',calendarVersion:'relative-v1',reason:'Verfolgung · '+chase.title+' · Runde '+chase.round}});
+  });}
   chroniclePage(token:string,category:import('../chronicle-contracts').ChronicleCategory|'all',search:string,cursor:import('../chronicle-contracts').ChronicleCursor|null){const cam=this.guard(token);if(!cursor){this.chronicleRead?.close();this.chronicleRead=new ChronicleReadSession(this.filename,cam);}if(!this.chronicleRead||this.chronicleRead.campaignId!==cam||cursor&&cursor.snapshotId!==this.chronicleRead.id)throw new Error('Chronik-Lesestand nicht mehr verfügbar. Aktualisieren.');return this.chronicleRead.read(category,search,cursor);}
   closeChroniclePage(token:string,id:string){this.guard(token);if(this.chronicleRead?.id===id){this.chronicleRead.close();this.chronicleRead=null;}}
   chronicleExportSnapshot(token:string){return new ChronicleReadSession(this.filename,this.guard(token));}
