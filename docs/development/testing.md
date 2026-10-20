@@ -137,3 +137,20 @@ Antwort mit höherer Revision: Mit einer niedrigeren Revision hatte der
 Revisionsschutz einen defekten Aktivierungsschutz verdeckt. Eine Gegenprobe mit
 reiner Identitätsprüfung besteht vor dieser Testkorrektur und scheitert danach.
 Die Zahl der Fälle bleibt gleich; dies ist keine weitere Testeinsparung.
+
+Die Integritätstests für Gruppen, Schatzentwürfe, NPCs und Szenentisch prüfen
+weiterhin jede beschädigte Feldvariante direkt. Leser und Backup verwenden dort
+dieselben Zeilenvalidatoren (`checkedDraftRow`, `checkedRow`, `recordRow`,
+`readNpcDraftRow`, `checkedState` beziehungsweise `checkedTreasureRow`).
+Eine explizit markierte Variante je Prüfpfad behält zusätzlich die vollständige
+Backup-Kopie und den Bytevergleich des bisherigen Backupziels. Fehlende Tabellen,
+NPC-Belege und die separate Gegenstandsauflösung bleiben eigenständige Prüfungen.
+
+Damit entfallen in diesen vier Dateien 31 wiederholte Backup-Paare: gemessen
+111 statt nun 49 Backup-Aufrufe bei unverändert 71 ausgeführten Fällen.
+62 wiederholte Assertions entfallen; Feld-, Quellbyte-, Schreib-, Kopier- und
+Wiederöffnungsprüfungen bleiben erhalten. Neun isolierte Fehler werden vor und
+nach der Kürzung erkannt. Zwei weitere Gegenproben lassen jeweils nur die
+NPC-Record- oder NPC-Draft-Schleife aus; andere Entwurfs-/Recoveryprüfungen
+fangen die beschädigten Daten weiterhin ab. Diese beiden Gegenproben belegen
+deshalb keine Erkennung einer ausgelassenen Schleife.

@@ -25,21 +25,23 @@ function fixture(t){
  return{root,file,store,cam,w,id,factionId,locationId,view,command,draft,base};
 }
 function damage(x,table,edit){const row=x.store.db.prepare('SELECT * FROM '+table).get(),v=JSON.parse(row.payload);edit(v);const p=JSON.stringify(v);x.store.db.prepare('UPDATE '+table+' SET payload=?,checksum=?').run(p,hash(p));}
-for(const [table,name,edit,read]of [
+// Reads and validateNpcRecords share recordRow/readNpcDraftRow. Keep every
+// field check, one backup per row reader, and both independent receipt checks.
+for(const [table,name,edit,read,backup=false]of [
  ['npc_record','identity',v=>v.id=randomUUID(),x=>x.store.npc(x.w.token,x.id)],
  ['npc_record','revision',v=>v.revision=99,x=>x.store.npc(x.w.token,x.id)],
- ['npc_record','modifier',v=>v.modifier='2',x=>x.store.npcs(x.w.token,{text:'',lifecycle:'all',factionId:null,locationId:null,offset:0})],
+ ['npc_record','modifier',v=>v.modifier='2',x=>x.store.npcs(x.w.token,{text:'',lifecycle:'all',factionId:null,locationId:null,offset:0}),true],
  ['npc_record','lifecycle',v=>v.lifecycle='deleted',x=>x.store.npc(x.w.token,x.id)],
  ['npc_record','faction',v=>v.factionId=randomUUID(),x=>x.store.npc(x.w.token,x.id)],
  ['npc_draft','identity',v=>v.id=randomUUID(),x=>x.store.npcDraft(x.w.token,x.id)],
- ['npc_draft','raw fields',v=>v.fields.hp=1,x=>x.store.npcDraft(x.w.token,x.id)],
+ ['npc_draft','raw fields',v=>v.fields.hp=1,x=>x.store.npcDraft(x.w.token,x.id),true],
  ['npc_draft','missing raw fields',v=>delete v.fields.history,x=>x.store.npcDraft(x.w.token,x.id)],
  ['npc_draft','future basis',v=>v.basis.noteRevision=99,x=>x.store.npcDraft(x.w.token,x.id)],
  ['npc_draft','health basis',v=>v.basis.health.hp=999,x=>x.store.npcDraft(x.w.token,x.id)],
- ['npc_receipt','result identity',v=>v.id=randomUUID(),null],
- ['npc_receipt','role',v=>v.role='hostile',x=>x.store.executeNpc(x.command)],
-])test(`checksummed NPC ${name} damage is rejected without replacing a safe backup (${table})`,async t=>{
- const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const original=readFileSync(safe);damage(x,table,edit);const bytes=x.store.db.serialize();if(read)assert.throws(()=>read(x));await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));assert.ok(x.store.db.serialize().equals(bytes));
+ ['npc_receipt','result identity',v=>v.id=randomUUID(),null,true],
+ ['npc_receipt','role',v=>v.role='hostile',x=>x.store.executeNpc(x.command),true],
+])test(`checksummed NPC ${name} damage is rejected without changing source${backup?" or replacing a safe backup":""} (${table})`,async t=>{
+ const x=fixture(t),safe=path.join(x.root,'safe.sqlite');const original=backup?(await x.store.backup(safe),readFileSync(safe)):null;damage(x,table,edit);const bytes=x.store.db.serialize();if(read)assert.throws(()=>read(x));if(backup){await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));}assert.ok(x.store.db.serialize().equals(bytes));
 });
 test('invalid raw draft and profile writes leave saved inputs and the database intact',t=>{
  const x=fixture(t);

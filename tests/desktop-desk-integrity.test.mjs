@@ -18,16 +18,18 @@ function fixture(t){
  t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});return{root,filename,store,cam,w,scene,note,ref,command};
 }
 function payload(x,refs){const p=JSON.stringify(refs);x.store.db.prepare('UPDATE scene_desk SET payload=?,checksum=?').run(p,hash(p));}
-for(const [name,damage]of [
+// sceneDesk/validateSceneDesk share checkedState. Keep every field check;
+// duplicate pins exercise the backup traversal and preservation of its target.
+for(const [name,damage,backup=false]of [
  ['negative revision',x=>x.store.db.exec('UPDATE scene_desk SET revision=-1')],
  ['unsafe revision',x=>x.store.db.exec('UPDATE scene_desk SET revision=9007199254740992')],
  ['non-list pins',x=>payload(x,{pins:[x.ref]})],
- ['duplicate pins',x=>payload(x,[x.ref,x.ref])],
+ ['duplicate pins',x=>payload(x,[x.ref,x.ref]),true],
  ['malformed reference',x=>payload(x,[{kind:'room',id:x.note.id}])],
  ['too many pins',x=>payload(x,Array.from({length:101},()=>({kind:'note',id:randomUUID()})))],
-])test(`damaged desk ${name} is rejected by reads and cannot replace a safe backup`,async t=>{
- const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const original=readFileSync(safe);damage(x);const bytes=x.store.db.serialize();
- assert.throws(()=>x.store.sceneDesk(x.w.token,x.scene.id));await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));assert.ok(x.store.db.serialize().equals(bytes));
+])test(`damaged desk ${name} is rejected by reads${backup?" and cannot replace a safe backup":""}`,async t=>{
+ const x=fixture(t),safe=path.join(x.root,'safe.sqlite');const original=backup?(await x.store.backup(safe),readFileSync(safe)):null;damage(x);const bytes=x.store.db.serialize();
+ assert.throws(()=>x.store.sceneDesk(x.w.token,x.scene.id));if(backup){await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));}assert.ok(x.store.db.serialize().equals(bytes));
 });
 test('a missing desk table cannot replace a safe backup',async t=>{
  const x=fixture(t),safe=path.join(x.root,'safe.sqlite');await x.store.backup(safe);const original=readFileSync(safe);x.store.db.exec('DROP TABLE scene_desk');const bytes=x.store.db.serialize();await assert.rejects(x.store.backup(safe));assert.ok(readFileSync(safe).equals(original));assert.ok(x.store.db.serialize().equals(bytes));
