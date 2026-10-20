@@ -87,15 +87,18 @@ zusätzlichen gespeicherten Auswahlstand.
 Im eingeblendeten Quelleneditor führt „Mit dieser Mappe zum Spielabend…“ über
 den vorhandenen Flush zur bereits geprüften Dossierauswahl und ihrem Ziel.
 Die eigene Mappe einer Quelle bleibt separat über „Notizmappe öffnen…“ erreichbar.
-Rückwege aus Quelleneditor und untergeordneter Mappe verwenden denselben
-Leseablauf für den bereits geladenen Umfang. Auch Quellen auf späteren Seiten
+Aktualisieren, Filterwechsel und Rückwege aus Quelleneditor oder untergeordneter
+Mappe verwenden denselben Leseablauf für den bereits geladenen Umfang. Auch Quellen auf späteren Seiten
 bleiben dadurch sichtbar und in der geprüften Auswahl; neue ungeprüfte
 Quellrevisionen bleiben abgewählt. Eine noch ausstehende oder fehlgeschlagene
-Seite gibt keine Übergabe frei, ein Kontextwechsel entwertet alte Antworten.
+Seite gibt keine Übergabe frei. Nach einem Lesefehler stellt Aktualisieren erneut
+den zuvor geladenen Umfang her; einzelnes Nachladen umgeht diese Prüfung nicht.
+Ein Kontextwechsel entwertet alte Antworten.
 [Native Wiederaufnahme und Obsidian-Gegenprobe](../../reference/gm-ux-qa/note-followup-20261016/README.md#abgeschlossene-spur-wieder-aufnehmen-und-denselben-abend-weiterverwenden).
 Der native Ablauf `tools/test-desktop-note-reopen.mjs` prüft Spur und NSC-Notiz,
 denselben vorhandenen Spielabend und weitere Bearbeitung nach regulärem
-Close/Fresh bei 100 und 200 %. Er prüft außerdem die begrenzte Quellenwahl
+Close/Fresh bei echtem Fensterzoom von 100 und 200 %. Auch explizites
+Aktualisieren erhält die ausgewählte Quelle auf Seite zwei. Er prüft außerdem die begrenzte Quellenwahl
 mit 42 Quellen, jeden Tab-Schritt bis zur letzten Quelle und den anschließenden
 Fokus auf dem Spielabendziel. Das ist keine vollständige SMR-AC-03-Abnahme.
 
