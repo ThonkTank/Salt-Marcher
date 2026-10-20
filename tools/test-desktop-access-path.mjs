@@ -1,18 +1,18 @@
 // Native access-path correction: original building, one bend, Undo/Redo, campaign package, PNG and Fresh.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, readFile, writeFile, stat, readdir } from "node:fs/promises";
-import { spawn, execFileSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import assert from "node:assert/strict";
+import { createNativeSession } from "./native-session.mjs";
 import { atlasCanvasReady, atlasCanvasPoint } from "./atlas-canvas-probe.mjs";
 const root = process.cwd(),
-  require = createRequire(root + "/package.json"),
-  { _electron } = require("playwright-core"),
-  Database = require("better-sqlite3"),
-  { PNG } = require("pngjs"),
   out = process.env.QA_EVIDENCE_DIR ?? (await mkdtemp(root + "/.build/access-path-evidence-"));
 await mkdir(out, { recursive: true });
-assert.equal((await readdir(out)).length, 0, "Use an empty evidence directory.");
+await rm(out + "/result.json", { force: true });
+const require = createRequire(root + "/package.json"),
+  Database = require("better-sqlite3"),
+  { PNG } = require("pngjs");
 require("esbuild").buildSync({
   stdin: {
     contents:
@@ -28,42 +28,14 @@ require("esbuild").buildSync({
 const { CampaignStore, newElement } = require(root + `/.build/access-path-store-${process.pid}.cjs`),
   source = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   dirty = !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(),
-  buildHashes = Object.fromEntries(
-    await Promise.all(
-      ["main.cjs", "ui/renderer.js", "ui/app.css"].map(async (f) => [
-        f,
-        createHash("sha256")
-          .update(await readFile(root + "/.build/desktop/" + f))
-          .digest("hex"),
-      ]),
-    ),
-  );
-const launches = [],
-  results = [];
-let app, page, proxy, db;
-async function close() {
-  const exited = new Promise((r) => app.process().once("exit", (code, signal) => r({ code, signal })));
-  await app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()
-      .find((w) => w.webContents.getURL().endsWith("/index.html"))
-      .close(),
-  );
-  let timer;
-  try {
-    const exit = await Promise.race([
-      exited,
-      new Promise((_, reject) => (timer = setTimeout(() => reject(Error("Normal close timed out")), 10000))),
-    ]);
-    assert.deepEqual(exit, { code: 0, signal: null });
-    launches.at(-1).exit = exit;
-    app = null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
+  workerArtifact = createHash("sha256").update(await readFile(root + "/.build/desktop/atlas-region-worker.cjs")).digest("hex");
+const launches = [], results = [];
+let app, page, native, db;
 try {
   for (const scale of [1, 2]) {
-    const profile = await mkdtemp("/tmp/access-path-"),
+    native = await createNativeSession({root, output:out+"/"+scale, name:"access-path"});
+    assert.equal(native.source, source);assert.equal(native.dirty, dirty);
+    const profile = native.profile,
       store = new CampaignStore(profile + "/workbench.sqlite"),
       room = {
         id: randomUUID(),
@@ -103,20 +75,6 @@ try {
     assert(binding && binding.x === 0 && binding.y === 0 && binding.angle === 0);
     store.tutorial("skipped");
     store.close();
-    const bus = profile + "/bus";
-    proxy = spawn(
-      "xdg-dbus-proxy",
-      [
-        process.env.DBUS_SESSION_BUS_ADDRESS,
-        bus,
-        "--filter",
-        "--talk=org.freedesktop.portal.Desktop",
-        "--talk=org.freedesktop.Notifications",
-      ],
-      { stdio: "ignore" },
-    );
-    for (let i = 0; i < 100 && !(await stat(bus).catch(() => null)); i++) await new Promise((r) => setTimeout(r, 20));
-    const errors = [];
     const choose = async () => {
       await page.locator("#atlas-search").fill("Zollhaus");
       await page.locator("#atlas-search-results button").filter({ hasText: "Zollhaus" }).click();
@@ -142,28 +100,14 @@ try {
       if (await page.locator('#atlas-secondary').isVisible()) await page.locator('#atlas-secondary-close').click();
     };
     async function launch() {
-      app = await _electron.launch({
-        executablePath: root + "/node_modules/electron/dist/electron",
-        args: [
-          root + "/.build/desktop/main.cjs",
-          "--ozone-platform=x11",
-          "--force-device-scale-factor=" + scale,
-          "--data-dir",
-          profile,
-        ],
-        env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: "unix:path=" + bus },
-      });
-      launches.push({ scale, pid: app.process().pid });
-      page = await app.firstWindow();
-      await page.waitForURL('**/index.html');
+      page = await native.launch(scale);app = native.app;
+      assert.equal(createHash("sha256").update(await readFile(root + "/.build/desktop/atlas-region-worker.cjs")).digest("hex"), workerArtifact);
       await app.evaluate(({ BrowserWindow }) => {
         const w = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().endsWith("/index.html"));
         w.unmaximize();
         w.setContentSize(1400, 1000);
       });
       await page.emulateMedia({reducedMotion:"reduce"});
-      page.setDefaultTimeout(15000);
-      page.on("pageerror", (e) => errors.push(e.stack));
       await page.waitForFunction(() => document.body.dataset.tutorialReady === "true");
       await page
         .locator('.campaign-card[data-campaign-id="' + campaign.id + '"]')
@@ -304,13 +248,11 @@ try {
     assert.deepEqual(readPath(), beforeBackup);
     assert.deepEqual(readRoom(), originalRoom);
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
-    const screenshot = await app.evaluate(async ({ BrowserWindow }) =>
-      (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));
-    await writeFile(out + "/" + scale + "-edited.png", Buffer.from(screenshot, 'base64'));
+    await native.capture(page, "edited");
     const savedPath = readPath();
     db.close();
     db = null;
-    await close();
+    await native.close();
     await launch();
     assert.equal(await page.locator("#drawing-element-points").isEnabled(), true);
     db = new Database(profile + "/workbench.sqlite", { readonly: true });
@@ -350,16 +292,46 @@ try {
     await page.mouse.move(from.x,from.y);await page.mouse.down();
     await page.mouse.move(to.x,to.y,{steps:8});await page.mouse.up();
     await until(()=>restoredPath().points[1].y === -12.192);
-    await page.waitForFunction(() => document.getElementById('drawing-element-points').value.includes('-12.192'));
+    await page.waitForFunction(() => document.getElementById('drawing-element-points').value.split('\n')[1]?.split(',')[1]?.trim() === '-40');
+    assert.deepEqual(await page.locator('#drawing-element-points').inputValue(), restoredPath().points.map(p=>[p.x,p.y].map(n=>Number((n/.3048).toPrecision(12))).join(', ')).join('\n'), 'Point controls display feet while canonical geometry remains metric');
     await atlasCanvasReady(page);
     assert.deepEqual(readPath(), savedPath, 'restored edits never overwrite the source campaign');
 
+    // Hold replies only after the real archive writer has finished.
+    await app.evaluate(({ipcMain})=>{
+      const original=ipcMain._invokeHandlers.get('campaign:export');globalThis.qaBackupReplies=[];
+      ipcMain.removeHandler('campaign:export');ipcMain.handle('campaign:export',async(e,...args)=>{const result=await original(e,...args);return new Promise(resolve=>globalThis.qaBackupReplies.push(()=>resolve(result)));});
+    });
+    const waitBackups=async n=>{for(let i=0;i<300;i++){if(await app.evaluate(()=>globalThis.qaBackupReplies.length)===n)return;await new Promise(r=>setTimeout(r,25));}assert.equal(await app.evaluate(()=>globalThis.qaBackupReplies.length),n);};
+    const startBackup=async file=>{
+      if(!await page.locator('#atlas-output').isVisible())await page.locator('#atlas-output-open').click();
+      await page.locator('#atlas-export-kind').selectOption('campaign');
+      assert(await page.locator('#atlas-panel').isHidden(),'output keeps the drawing tools out of its preview');
+      assert(await page.locator('#atlas-output-save-campaign').isEnabled());
+      await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},file);
+      await page.locator('#atlas-output-save-campaign').click();
+    };
+    const retiredFile=out+'/'+scale+'-retired.kwcampaign',currentFile=out+'/'+scale+'-current.kwcampaign';
+    await startBackup(retiredFile);await waitBackups(1);
+    await page.locator('#atlas-export-kind').selectOption('image');assert(await page.locator('#atlas-export-png').isDisabled(),'one output slot prevents an overlapping image export');
+    await page.locator('#atlas-navigation').click();await page.locator('#atlas-exit').click();
+    await page.locator('.campaign-card[data-campaign-id="'+campaign.id+'"]').getByRole('button',{name:/Öffnen|Fortsetzen/}).click();
+    await page.waitForFunction(()=>!document.querySelector('main').inert);await atlasCanvasReady(page);
+    assert(await page.locator('#atlas-output').isHidden(),'a new campaign closes the retired export panel');
+    await startBackup(currentFile);await waitBackups(2);await app.evaluate(()=>globalThis.qaBackupReplies.shift()());
+    await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+    assert(await page.locator('#atlas-output-save-campaign').isDisabled());
+    assert.equal(await page.locator('#atlas-output-save-status').textContent(),'Kampagne wird gesichert…');
+    await native.capture(page,'current-backup-pending');
+    await app.evaluate(()=>globalThis.qaBackupReplies.shift()());
+    await page.waitForFunction(()=>document.getElementById('atlas-output-save-status').textContent==='Bearbeitbare Kampagne gesichert.');
+    assert(await page.locator('#atlas-output-save-campaign').isEnabled());assert((await readFile(retiredFile)).length>100);assert((await readFile(currentFile)).length>100);
+    assert.deepEqual(readPath(),savedPath);assert.deepEqual(readRoom(),originalRoom);assert.equal(restoredPath().points[1].y,-12.192);
+
     db.close();
     db = null;
-    await close();
-    proxy.kill();
-    proxy = null;
-    assert.deepEqual(errors, []);
+    await native.close();
+    launches.push(...native.launches);
     results.push({
       scale,
       profile,
@@ -376,24 +348,17 @@ try {
       editingLayoutPreferenceRetained: true,
       backupIndependentOfPublicSettings: true,
       cancelledBackupReadonly: true,
+      retiredBackupReplyIgnored: true,
+      outputSlotShared: true,
       fresh: true,
     });
+    await native.finish({result:results.at(-1),workerArtifact});await native.dispose();native=null;
   }
-  await writeFile(out + "/result.json", JSON.stringify({ source, dirty, buildHashes, launches, results }, null, 2));
+  assert.equal(createHash("sha256").update(await readFile(root+"/.build/desktop/atlas-region-worker.cjs")).digest("hex"), workerArtifact);
+  await writeFile(out + "/result.json", JSON.stringify({ source, dirty, workerArtifact, launches, results }, null, 2));
   console.log(JSON.stringify({ source, launches, results }));
 } catch (e) {
-  if (page) await page.screenshot({ path: out + "/failure.png" }).catch(() => {});
-  throw e;
+  await native?.fail(e);throw e;
 } finally {
-  db?.close();
-  if (app) {
-    const proc = app.process(),
-      timer = setTimeout(() => proc.kill("SIGKILL"), 5000);
-    try {
-      await app.close().catch(() => {});
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-  proxy?.kill();
+  db?.close();await native?.dispose();
 }

@@ -165,10 +165,12 @@ bearbeitet. Der Bildexport liest die bestätigte Geometrie; er verändert keine
 Raum-, Tür- oder Keydaten. Kacheln, Quell-Fence, Bildgrößenlimit und die getrennte
 öffentliche Projektion bleiben die Exportgrenzen.
 
-Jeder Bildexport besitzt seinen eigenen Lauf samt Abbruchzustand. Eine
+Bildexport und bearbeitbare Kampagnensicherung teilen einen Atlas-Ausgabelauf.
+Dadurch kann nur eine Ausgabe zugleich starten. Eine
 Workspace-Aktivierung verwirft dessen UI-Zuständigkeit, auch bei Wiederverwendung
 desselben Workspace-Objekts. Späte Lese- und Speicherantworten können weder den
-neuen Export sperren/freigeben noch dort einen Erfolg anzeigen. Diese Fälle prüft
+neuen Export sperren/freigeben noch dort einen Erfolg oder Fehler anzeigen. Auch
+das Bestätigen offener Eingaben bleibt an dieselbe Aktivierung gebunden. Diese Fälle prüft
 `tests/desktop-atlas-canvas.test.mjs` mit kontrollierten Antworten.
 
 `python tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs`

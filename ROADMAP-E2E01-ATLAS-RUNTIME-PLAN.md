@@ -320,8 +320,17 @@ Korrekturen. Die Geste bindet einen unveränderten Ausgangssnapshot; ihre
 Vorschau kopiert nur die Punktliste und ersetzt beziehungsweise ergänzt den
 betroffenen Punkt. Ein zurückgezogener Punkt erzeugt keinen Historyeintrag.
 `tools/test-desktop-access-path.mjs` prüft den kreuzenden Zugangsweg bei 100/200 %
-über Korrektur, Undo/Redo, editierbare Dungeondaten, tatsächliche PNG-Pixel und
-Neustart. Gebäudeinhalt, Pfadidentität und Metadaten bleiben dabei erhalten.
+Browserzoom über Korrektur, Undo/Redo, tatsächlichen Kampagnenexport und -import,
+Weiterbearbeitung der unabhängigen Kopie, PNG-Pixel und Neustart. Gebäudeinhalt,
+Pfadidentität und Metadaten bleiben dabei erhalten. Der gemeinsame native
+Sitzungshelfer qualifiziert Aufnahmen, Runtimeartefakte und reguläre Prozessenden
+samt verschwundenen PIDs. Punktfelder zeigen Fuß an; die gespeicherten Koordinaten
+bleiben Meter. Zurückgehaltene Antworten nach dem tatsächlichen Archivschreiben
+prüfen den Kampagnenwechsel während zweier aufeinanderfolgender Sicherungen.
+Bildexport und Sicherung teilen einen Ausgabelauf; eine alte Antwort darf den
+neuen Lauf weder freigeben noch dessen Status ersetzen. Workspace-Aktivierung
+schließt das vorige Ausgabe-Panel samt Layoutzustand. Fehlerantworten und eine
+erneute Aktivierung desselben Workspace-Objekts bleiben gezielte DOM-Proben.
 Die Auswahl liest das genaue Zeichnungselement. Eine bereits geladene
 Zeichenbasis benötigt dafür keinen zweiten Raumstil-/Volumenread; nur Features
 laden ihren Laufzustand nach. Lesefehler beim Featurezustand und verspätete Antworten

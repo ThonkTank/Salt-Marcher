@@ -144,4 +144,6 @@ ihren Namen gewählt. Vor dem Ziehen schließt die Probe die verdeckende rechte 
 Seitentext statt eines Weggriffes ausgewählt. [Regionslauf](access-path-region-20261019.json).
 Installation, andere Plattformen und Owner-Abnahme wurden nicht geprüft.
 
-Wiederholen: `python3 tools/ui-session.py node tools/test-desktop-access-path.mjs`.
+Aktuellen Prüfweg wiederholen: `python3 tools/ui-session.py node tools/test-desktop-access-path.mjs`.
+Er verwendet den gemeinsamen Sitzungshelfer mit 100/200 Prozent Browserzoom und
+prüft zusätzlich verspätete Sicherungsantworten nach Kampagnenwechsel.
