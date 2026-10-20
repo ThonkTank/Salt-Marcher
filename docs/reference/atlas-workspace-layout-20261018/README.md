@@ -61,7 +61,7 @@ Einrahmen. [Weboberfläche](groundplan-scrawl-ui.jpg),
 [tatsächliche PNG](groundplan-scrawl.png). Keine Anmeldung, öffentliche
 Veröffentlichung oder Neustartqualifikation des Vergleichsprodukts.
 
-Wiederholen: `python3 tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs --moved-wall --dungeon-frame`.
+Aktuellen Prüfweg wiederholen: `python3 tools/ui-session.py node tools/test-desktop-dungeon-groundplan.mjs`. Die feste Probe enthält inzwischen auch den Ziehpunkt zwischen Rasterlinien und den Exportwechsel zwischen Kampagnen.
 95 gezielte Canvas-, Export-, Autorenüberlagerungs- und Entwurffälle bestanden
 lokal. Vier neue Fälle sichern Offscreen-/gedrehte Geschossgrenzen,
 Neuberechnung nach Vergrößerung, Maßstabsabstand und unverdeckte Vorschau.

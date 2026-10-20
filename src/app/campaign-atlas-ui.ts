@@ -109,8 +109,8 @@ export class CampaignAtlasWorkbench {
   private livePortal:LiveAtlasPortal|null=null;
   private liveVisible=false;
   private busy = false;
-  private exporting = false;
-  private exportCancelled = false;
+  private imageExport: {cancelled:boolean}|null = null;
+  private get exporting(){return this.imageExport!==null;}
   private exportOpen = false;
   private campaignSaving = false;
   private exportChoosing = false;
@@ -265,7 +265,7 @@ export class CampaignAtlasWorkbench {
     for(const id of ['atlas-export-size','atlas-export-scale'])get(id).addEventListener('change',()=>{
       if(this.exportOpen&&this.exportDungeon&&!this.exporting){const b=this.dungeonOutputBox();if(b)this.frameOutput(b);this.exportAreaStatus();this.render();}
     });
-    get("atlas-export-cancel").onclick=()=>{this.exportCancelled=true;if(this.owner){void window.campaign.cancelAtlasRegion(this.owner.token,'export');}};
+    get("atlas-export-cancel").onclick=()=>{if(this.imageExport&&this.owner){this.imageExport.cancelled=true;void window.campaign.cancelAtlasRegion(this.owner.token,'export');}};
     this.reference=new AtlasReferenceUI(this.svg,{
       view:()=>this.camera.view,point:e=>this.camera.point(e),set:box=>this.camera.set(box,true),redraw:()=>this.camera.redrawOverlay(),
       closed:()=>{this.layout?.comparison(false);get('atlas-reference-open').setAttribute('aria-expanded','false');}
@@ -654,6 +654,8 @@ export class CampaignAtlasWorkbench {
     this.entranceDraft = null;
     this.bindingDirty = false;
     this.exportBox=null;this.exportDungeon=false;this.exportDrag=null;this.exportCorner=null;this.exportChoosing=false;
+    if(this.imageExport)this.imageExport.cancelled=true;this.imageExport=null;
+    get<HTMLButtonElement>("atlas-export-png").disabled=false;get("atlas-export-cancel").hidden=true;
     this.spatial?.setActive(false);
     this.owner = w;
     this.searchRequest++;get('atlas-search-results').replaceChildren();
@@ -2358,13 +2360,15 @@ export class CampaignAtlasWorkbench {
   private async exportPNG() {
     if (!this.data || !this.owner || this.exporting) return;
     if(this.exportChoosing||this.exportDrag){this.exportAreaStatus();return;}
-    const owner = this.owner;
-    const status=(text:string)=>{get("atlas-save-status").textContent=text;get("atlas-output-area").textContent=text;};
-    this.exporting = true;this.exportCancelled=false;get("atlas-export-cancel").hidden=false;
+    const owner = this.owner,session={cancelled:false};
+    this.imageExport=session;
+    const current=()=>this.owner===owner&&this.imageExport===session&&!session.cancelled;
+    const status=(text:string)=>{if(this.imageExport!==session||this.owner!==owner)return;get("atlas-save-status").textContent=text;get("atlas-output-area").textContent=text;};
+    get("atlas-export-cancel").hidden=false;
     get<HTMLButtonElement>("atlas-export-png").disabled = true;
     status("Bild wird vorbereitet…");
     try {
-      if (!(await this.opts.flush()) || this.owner !== owner) return;
+      if (!(await this.opts.flush()) || !current()) return;
       const audience = get<HTMLSelectElement>("atlas-export-audience").value as
           | "gm"
           | "public",
@@ -2376,7 +2380,7 @@ export class CampaignAtlasWorkbench {
       if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));
       exportQuery.width=width;exportQuery.height=height;
-      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(this.owner!==owner||this.exportCancelled)return;
+      const fresh=await window.campaign.atlasRegion(owner.token,exportQuery,'export');if(!fresh.ok)throw new Error(fresh.error);if(!current())return;
       const snapshot=fresh.value;
       let source:AtlasPaint|AsyncIterable<AtlasExportTile>;
       if(audience==='public'){
@@ -2384,7 +2388,7 @@ export class CampaignAtlasWorkbench {
         else {
           const frame=await window.campaign.playerView(owner.token);
           if(!frame.ok)throw new Error(frame.error);
-          if(this.owner!==owner||this.exportCancelled)return;
+          if(!current())return;
           source=publicAtlasPaint(snapshot,box,frame.value.frame);
         }
       } else {
@@ -2401,11 +2405,11 @@ export class CampaignAtlasWorkbench {
           if(tile.region?.territories)drawTerritories(scene,tile.region.territories,part,part.width/w);
           paintMapLabels(scene,labels,part,box.width/width);
           return{ok:true,value:{campaignId:tile.campaignId,revision:tile.revision,box:tile.region.box,width:w,height:h,scene}};
-        },()=>this.owner===owner&&!this.exportCancelled,(done,total)=>{status(`Atlas wird ausgegeben: ${done}/${total}`);});
+        },current,(done,total)=>{status(`Atlas wird ausgegeben: ${done}/${total}`);});
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')status('Dichte Landschaft als Übersicht; Vorlagen als Umrisse.');
       }
-      const bytes = await atlasImage(source,width,height,box,format,()=>this.owner===owner&&!this.exportCancelled,scale?atlasExportScale(box,width,height,grid?level:undefined,units):undefined);
-      if (this.owner !== owner || this.exportCancelled) return;
+      const bytes = await atlasImage(source,width,height,box,format,current,scale?atlasExportScale(box,width,height,grid?level:undefined,units):undefined);
+      if (!current()) return;
       const r = await window.campaign.exportAtlasPNG(
         owner.token,
         bytes,
@@ -2413,18 +2417,21 @@ export class CampaignAtlasWorkbench {
         format,
         snapshot.region!.fence,
       );
+      if(!current())return;
       if (!r.ok) throw new Error(r.error);
       if (!r.value.cancelled) {
         this.opts.status("Atlas-"+format.toUpperCase()+" gespeichert.");
         status("Atlas-"+format.toUpperCase()+" gespeichert");
       }
     } catch (e) {
-      if (this.owner === owner && !this.exportCancelled) this.error(e);
+      if (current()) this.error(e);
     } finally {
-      if(this.exportCancelled&&this.owner===owner)status("Ausgabe abgebrochen");
-      get("atlas-export-cancel").hidden=true;
-      this.exporting = false;
-      get<HTMLButtonElement>("atlas-export-png").disabled = false;
+      if(this.imageExport===session){
+        if(session.cancelled&&this.owner===owner)status("Ausgabe abgebrochen");
+        this.imageExport=null;
+        get("atlas-export-cancel").hidden=true;
+        get<HTMLButtonElement>("atlas-export-png").disabled = false;
+      }
     }
   }
   private relativePoint(p: Point) {
