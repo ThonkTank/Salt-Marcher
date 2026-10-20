@@ -1,7 +1,8 @@
 import {readSourceUnlinks} from './note-source-history';
 import { createHash } from "node:crypto";
 import { checkedWorldNoteRow } from "./world-note-row";
-import { documentReferences, plainReferenceText } from "../text-references";
+import { plainReferenceText } from "../text-references";
+import { noteThreadMembers as links } from "../note-thread-edit";
 import { readNarrative } from "./narrative";
 import type { Note } from "../preparation-contracts";
 import type {
@@ -23,19 +24,6 @@ function note(db: any, cam: string, id: string): Note {
   const value = noteRecord(db, cam, id);
   if (value.trashed) throw Error("Die Notiz liegt im Papierkorb.");
   return value.note;
-}
-function links(root: Note) {
-  const ids = new Map<string, string[]>(),
-    add = (id: string, label: string) => {
-      if (id === root.id) return;
-      const labels = ids.get(id) ?? [];
-      if (!labels.includes(label)) labels.push(label);
-      ids.set(id, labels);
-    };
-  for (const r of root.relations) add(r.targetId, r.label);
-  for (const r of documentReferences(root, Number.MAX_SAFE_INTEGER))
-    if (r.ref.kind === "note") add(r.ref.id, "Textverweis: " + r.label);
-  return ids;
 }
 function entry(
   db: any,

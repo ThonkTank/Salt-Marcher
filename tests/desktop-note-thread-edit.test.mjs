@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 buildSync({entryPoints:['src/app/note-thread-edit.ts','src/app/text-references.ts'],outdir:'.build/note-thread-edit',bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'}});
-const require=createRequire(import.meta.url),{detachNoteSource,noteSourceLinks,restoreNoteSource}=require('../.build/note-thread-edit/note-thread-edit.cjs'),{referenceMarkdown,textReferences}=require('../.build/note-thread-edit/text-references.cjs');
+const require=createRequire(import.meta.url),{detachNoteSource,noteSourceLinks,restoreNoteSource,noteThreadMembers}=require('../.build/note-thread-edit/note-thread-edit.cjs'),{referenceMarkdown,textReferences}=require('../.build/note-thread-edit/text-references.cjs');
 const make=()=>({version:1,id:'overview',revision:7,title:'Übersicht',kind:'quest',readAloud:'',gmNotes:'',relations:[],creatureId:null,deleted:false});
 
 test('unlinking one source retains prose, CRLF, literal examples and every other relationship',()=>{
@@ -46,4 +46,10 @@ test('changed, ambiguous or newly fenced target passages fail without mutating a
  const link=referenceMarkdown({kind:'note',id:'target'},'Nera'),before={...make(),gmNotes:link+' wartet.\n'},after=detachNoteSource(before,'target').note,recovery={id:'H',sourceId:'target',title:'Nera',before,after};
  for(const gmNotes of ['Nera ist gegangen.\n',after.gmNotes+after.gmNotes,'```md\n'+after.gmNotes+'```\n']){const current={...after,gmNotes},snapshot=structuredClone(current);assert.throws(()=>restoreNoteSource(current,recovery),/geändert|mehrdeutig/);assert.deepEqual(current,snapshot);}
  assert.throws(()=>restoreNoteSource(after,{...recovery,after:{...after,title:'falsche Änderung'}}),/widersprüchlich/);
+});
+
+
+test('canonical member order excludes self and literal links while retaining labels and text-source order',()=>{
+ const root={...make(),relations:[{targetId:'overview',label:'Selbst'},{targetId:'B',label:'kennt'},{targetId:'A',label:'Quelle'},{targetId:'B',label:'kennt'}],readAloud:'[C](dungeon-ref:note/C) [B](dungeon-ref:note/B)',gmNotes:'[Selbst](dungeon-ref:note/overview) [D](dungeon-ref:note/D) `[Code](dungeon-ref:note/ignored)` [Ort](dungeon-ref:location/place)'},before=structuredClone(root);
+ assert.deepEqual([...noteThreadMembers(root)],[['B',['kennt','Textverweis: B']],['A',['Quelle']],['C',['Textverweis: C']],['D',['Textverweis: D']]]);assert.deepEqual(root,before);
 });
