@@ -13,6 +13,25 @@ import {
 } from "./atlas-territories";
 const el = <T extends HTMLElement>(root: ParentNode, id: string) =>
   root.querySelector<T>("#" + id)!;
+const propertyFields = {
+  region: [
+    "territory-name",
+    "territory-type",
+    "territory-rank",
+    "territory-parent",
+    "territory-location",
+    "territory-color",
+    "territory-opacity",
+    "territory-border",
+  ],
+  layer: [
+    "territory-visible",
+    "territory-layer-name",
+    "territory-layer-order",
+    "territory-types",
+  ],
+} as const;
+type PropertyOwner = keyof typeof propertyFields;
 export class TerritoryWorkbench {
   readonly panel = document.createElement("section");
   private state: TerritoryState = {
@@ -31,7 +50,7 @@ export class TerritoryWorkbench {
   private preview: AtlasTerritory[] = [];
   private conflict = "";
   private saving = false;
-  private dirty = false;
+  private dirty = new Set<PropertyOwner>();
   private spacePan = false;
   private cursor: Point | null = null;
   private vertex: { polygon: number; ring: number; vertex: number } | null =
@@ -80,9 +99,12 @@ export class TerritoryWorkbench {
     el(this.panel, "territory-new").onclick = run(async () => {
       if (this.pending || this.pointer !== null || this.saving)
         throw Error("Zug zuerst abschließen.");
+      if (this.selected && this.dirty.has("region"))
+        throw Error("Regionseigenschaften zuerst übernehmen oder verwerfen.");
       const name =
-          (this.dirty ? this.value("territory-name").trim() : "") ||
-          "Neue Region",
+          (this.dirty.has("region")
+            ? this.value("territory-name").trim()
+            : "") || "Neue Region",
         type = this.state.layers.find((l) => l.id === this.layer)!.types[0]!;
       const t: AtlasTerritory = {
         id: crypto.randomUUID(),
@@ -132,6 +154,8 @@ export class TerritoryWorkbench {
       );
     };
     el(this.panel, "territory-delete").onclick = run(() => {
+      if (this.hasDraft())
+        throw Error("Entwurf zuerst übernehmen oder verwerfen.");
       const t = this.chosen();
       if (t)
         return this.commit({
@@ -141,6 +165,8 @@ export class TerritoryWorkbench {
         });
     });
     el(this.panel, "territory-label-auto").onclick = run(() => {
+      if (this.hasDraft())
+        throw Error("Entwurf zuerst übernehmen oder verwerfen.");
       const t = this.chosen();
       if (t)
         return this.commit({
@@ -159,8 +185,9 @@ export class TerritoryWorkbench {
           ...this.vertex,
           point: null,
         };
-        try { territoryVertex(this.state, t.id, action); }
-        catch (error) {
+        try {
+          territoryVertex(this.state, t.id, action);
+        } catch (error) {
           this.say(error instanceof Error ? error.message : String(error));
           return;
         }
@@ -168,6 +195,13 @@ export class TerritoryWorkbench {
       }
     });
     el(this.panel, "territory-layer-new").onclick = run(() => {
+      if (
+        this.dirty.has("region") ||
+        this.pending ||
+        this.pointer !== null ||
+        this.saving
+      )
+        throw Error("Regionsentwurf zuerst übernehmen oder verwerfen.");
       const id = crypto.randomUUID();
       this.layer = id;
       this.selected = "";
@@ -227,7 +261,10 @@ export class TerritoryWorkbench {
     };
     this.panel.addEventListener("input", (e) => {
       if ((e.target as HTMLElement).closest("details")) {
-        this.dirty = true;
+        const id = (e.target as HTMLElement).id;
+        for (const owner of ["region", "layer"] as const)
+          if ((propertyFields[owner] as readonly string[]).includes(id))
+            this.dirty.add(owner);
         el(this.panel, "territory-cancel").hidden = false;
         this.say("Eigenschaften übernehmen oder verwerfen.");
       }
@@ -255,7 +292,13 @@ export class TerritoryWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         canvas.focus();
-        if (this.saving || this.loading || this.hasDraft() || !this.host.current()) return;
+        if (
+          this.saving ||
+          this.loading ||
+          this.hasDraft() ||
+          !this.host.current()
+        )
+          return;
         const t = this.chosen();
         if (!t) {
           this.say("Zuerst eine Region wählen oder anlegen.");
@@ -346,9 +389,19 @@ export class TerritoryWorkbench {
             );
             return;
           }
-          const selected = this.vertex as { polygon: number; ring: number; vertex: number },
+          const selected = this.vertex as {
+              polygon: number;
+              ring: number;
+              vertex: number;
+            },
             polygon = t.polygons[selected.polygon]!;
-          this.points = [{ ...[polygon.outer, ...polygon.holes][selected.ring]![selected.vertex]! }];
+          this.points = [
+            {
+              ...[polygon.outer, ...polygon.holes][selected.ring]![
+                selected.vertex
+              ]!,
+            },
+          ];
         }
         canvas.setPointerCapture(e.pointerId);
         this.updatePreview();
@@ -456,7 +509,12 @@ export class TerritoryWorkbench {
       : undefined;
   }
   hasDraft() {
-    return this.dirty || !!this.pending || this.pointer !== null || this.saving;
+    return (
+      this.dirty.size > 0 ||
+      !!this.pending ||
+      this.pointer !== null ||
+      this.saving
+    );
   }
   private say(s: string) {
     el(this.panel, "territory-status").textContent = s;
@@ -466,8 +524,8 @@ export class TerritoryWorkbench {
     el<HTMLSelectElement>(this.panel, "territory-region").value = this.selected;
     this.say("Zug zuerst speichern oder verwerfen.");
   }
-  private clear(message = true) {
-    this.dirty = false;
+  private clear(message = true, preserveProperties = false) {
+    if (!preserveProperties) this.dirty.clear();
     this.points = [];
     this.pointer = null;
     this.pending = null;
@@ -477,6 +535,7 @@ export class TerritoryWorkbench {
       this.panel,
       "territory-cancel",
     ).hidden = true;
+    el(this.panel, "territory-cancel").hidden = this.dirty.size === 0;
     if (message) this.say("Region wählen und Fläche malen.");
   }
   private updatePreview() {
@@ -485,12 +544,16 @@ export class TerritoryWorkbench {
       this.conflict = "";
       if (this.vertex) {
         const polygon = t.polygons[this.vertex.polygon]!,
-          source = [polygon.outer, ...polygon.holes][this.vertex.ring]![this.vertex.vertex]!,
+          source = [polygon.outer, ...polygon.holes][this.vertex.ring]![
+            this.vertex.vertex
+          ]!,
           point = this.points[0]!;
         if (point.x === source.x && point.y === source.y) {
           this.pending = null;
           this.preview = [];
-          this.say("Grenzpunkt ausgewählt. Ziehen zum Verschieben oder Punktaktion zum Entfernen.");
+          this.say(
+            "Grenzpunkt ausgewählt. Ziehen zum Verschieben oder Punktaktion zum Entfernen.",
+          );
           this.host.redraw();
           return;
         }
@@ -531,6 +594,8 @@ export class TerritoryWorkbench {
   }
   private async commit(action: TerritoryAction) {
     if (this.saving) return;
+    if (this.pending && this.pending !== action)
+      throw Error("Offenen Schreibentwurf zuerst klären oder verwerfen.");
     if (!this.host.current()) throw Error("Kartenausschnitt wird geladen.");
     this.saving = true;
     this.panel
@@ -541,7 +606,9 @@ export class TerritoryWorkbench {
       const result = await this.host.write(action);
       if (!result)
         throw Error("Speicherung nicht bestätigt. Entwurf bleibt erhalten.");
-      this.clear(false);
+      if (action.kind === "territory-put") this.dirty.delete("region");
+      if (action.kind === "territory-layer") this.dirty.delete("layer");
+      this.clear(false, true);
       this.revision = -1;
       await this.load();
       // Canonical noding may insert a neighbour junction before the old index.
@@ -558,7 +625,11 @@ export class TerritoryWorkbench {
           }),
         );
       }
-      this.say("Gespeichert");
+      this.say(
+        this.dirty.size
+          ? "Gespeichert · weitere Eigenschaften noch offen."
+          : "Gespeichert",
+      );
     } catch (e) {
       el(this.panel, "territory-retry").hidden = el(
         this.panel,
@@ -616,6 +687,14 @@ export class TerritoryWorkbench {
       void this.load().catch((e) => this.host.error(e));
   }
   private controls() {
+    // A canonical refresh belongs to both forms, but a save belongs to only one.
+    // Capture at render time so edits made while a read was pending survive too.
+    const drafts = [...this.dirty].flatMap((owner) =>
+      propertyFields[owner].map((id) => {
+        const input = el<HTMLInputElement>(this.panel, id);
+        return { id, value: input.value, checked: input.checked };
+      }),
+    );
     const options = (
       id: string,
       items: { id: string; name: string }[],
@@ -667,6 +746,11 @@ export class TerritoryWorkbench {
     el(this.panel, "territory-name").title = t?.locationId
       ? "Name wird vom verknüpften Ort übernommen."
       : "";
+    for (const draft of drafts) {
+      const input = el<HTMLInputElement>(this.panel, draft.id);
+      input.value = draft.value;
+      input.checked = draft.checked;
+    }
   }
   draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
     if (!this.active()) return;
