@@ -12,15 +12,15 @@ export class CombatAreaPanel{
  private combat:CombatState|null=null;private token:string|null=null;private blocked=true;private busy=false;
  private message:string|null=null;
  private draft:{revision:number;source?:AreaAction['source'];legendary?:AreaAction['legendary'];fixedType?:DamageType;rows:Row[]}|null=null;
- private title=node('h2');private amount=node('input');private type=node('select');private rows=node('div');private status=node('p');private hint=node('p');private apply=node('button','Schaden gemeinsam anwenden');private cancel=node('button','Abbrechen');private party=node('button','Party auswählen');
+ private title=node('h2');private amount=node('input');private type=node('select');private rows=node('div');private status=node('p');private hint=node('p');private apply=node('button','Schaden gemeinsam anwenden');private cancel=node('button','Abbrechen');private selection=node('select');
  private unavailable=node('p');private overrides=node('input');private overrideLabel=node('label');private defenseHeading=node('span','Abwehr');
  constructor(private root:HTMLElement,private execute:(action:CombatAction,revision:number)=>Promise<boolean>){
   root.className='combat-area';root.hidden=true;this.amount.type='number';this.amount.min='1';this.amount.max='1000000';this.amount.step='1';this.amount.id='combat-area-amount';this.type.id='combat-area-type';
   for(const [value,text]of [['','Schadensart wählen…'],...damageTypes.map(t=>[t,names[t]+' ('+t+')']),['manual','Schon berechneter Schaden']]){const o=node('option',text);o.value=value!;this.type.append(o);}
   const amountLabel=node('label','Gemeinsamer Schaden');amountLabel.htmlFor=this.amount.id;const typeLabel=node('label','Schadensart');typeLabel.htmlFor=this.type.id;
-  const tools=node('div');tools.className='combat-area-tools';const amountField=node('div'),typeField=node('div');amountField.append(amountLabel,this.amount);typeField.append(typeLabel,this.type);tools.append(amountField,typeField,this.party);
+  const tools=node('div');tools.className='combat-area-tools';const amountField=node('div'),typeField=node('div');amountField.append(amountLabel,this.amount);typeField.append(typeLabel,this.type);this.selection.id='combat-area-selection';this.selection.setAttribute('aria-label','Zielgruppe auswählen');tools.append(amountField,typeField,this.selection);
   const headings=node('div');headings.className='combat-area-row combat-area-head';headings.append(node('span','Ziel'),node('span','Rettungswurf / Anteil'),this.defenseHeading);
-  this.status.setAttribute('role','status');this.hint.className='caption';this.apply.id='combat-area-apply';this.cancel.id='combat-area-cancel';this.rows.id='combat-area-targets';this.apply.type=this.cancel.type=this.party.type='button';
+  this.status.setAttribute('role','status');this.hint.className='caption';this.apply.id='combat-area-apply';this.cancel.id='combat-area-cancel';this.rows.id='combat-area-targets';this.apply.type=this.cancel.type='button';
   this.unavailable.className='caption';this.unavailable.id='combat-area-unavailable';
   this.overrides.type='checkbox';this.overrides.id='combat-area-overrides';this.overrideLabel.className='check-label';this.overrideLabel.append(this.overrides,node('span','Abwehr manuell anpassen'));
   const footer=node('div'),actions=node('div');footer.className='combat-area-footer';actions.className='toolbar';actions.append(this.apply,this.cancel);footer.append(this.status,actions);
@@ -28,7 +28,7 @@ export class CombatAreaPanel{
   this.cancel.onclick=()=>{if(!this.busy)this.close();};root.addEventListener('cancel',e=>{e.preventDefault();if(!this.busy)this.close();});
   this.amount.oninput=()=>this.update();this.type.onchange=()=>{this.overrides.checked=false;for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
   this.overrides.onchange=()=>{if(!this.overrides.checked)for(const row of this.draft?.rows??[])row.defense.value=this.type.value==='manual'?'full':'auto';this.update();};
-  this.party.onclick=()=>{for(const row of this.draft?.rows??[])row.check.checked=!!row.actor.characterId&&row.actor.healthKnown!==false;this.update();};this.apply.onclick=()=>void this.commit();
+  this.selection.onchange=()=>{if(this.selection.disabled||!this.draft)return;const choice=this.selection.value;if(!choice)return;for(const row of this.draft.rows)row.check.checked=choice==='all'||choice==='party'&&!!row.actor.characterId||choice==='group:'+row.actor.groupId;this.update();};this.apply.onclick=()=>void this.commit();
  }
  private close(){this.draft=null;this.message=null;this.root.hidden=true;const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'&&typeof dialog.close==='function')dialog.close();else this.root.removeAttribute('open');}
  context(combat:CombatState|null,token:string|null,blocked:boolean){
@@ -46,7 +46,6 @@ export class CombatAreaPanel{
   this.rows.replaceChildren();this.overrides.checked=false;
   const unknown=combat.participants.filter(p=>p.healthKnown===false);
   this.unavailable.hidden=!unknown.length;this.unavailable.textContent=unknown.length?'HP offen – nicht als Schadensziel auswählbar: '+unknown.map(p=>p.name).join(', ')+'.':'';
-  this.party.hidden=!combat.participants.some(p=>p.characterId&&p.healthKnown!==false);
   // Bind the reviewed health and source; a new revision requires reopening.
   const sources=new Map<string,Creature>();
   combat.sources?.forEach(source=>{if(!sources.has(source.id))sources.set(source.id,source);});
@@ -56,8 +55,16 @@ export class CombatAreaPanel{
    save.dataset.role='save';save.setAttribute('aria-label','Rettungswurf für '+p.name);defense.dataset.role='defense';defense.setAttribute('aria-label','Abwehr für '+p.name);
    for(const [value,text]of [['full',dc?'Fehlgeschlagen · voll':'Voll'],['half',dc?'Bestanden · halb':'Halb (bestanden)'],['none','Kein Schaden']]){const o=node('option',text);o.value=value!;save.append(o);}
    for(const [value,text]of [['auto','Statblock'],['full','Voll (manuell)'],['half','Resistenz · halb'],['double','Verwundbar · doppelt'],['none','Immun · kein Schaden']]){const o=node('option',text);o.value=value!;defense.append(o);}
-   check.onchange=save.onchange=defense.onchange=()=>this.update();row.append(label,save,defense);this.rows.append(row);this.draft.rows.push({actor:p,source:sources.get(p.sourceId??''),check,save,defense,preview});
+   check.onchange=()=>{this.selection.value='';this.update();};save.onchange=defense.onchange=()=>this.update();row.append(label,save,defense);this.rows.append(row);this.draft.rows.push({actor:p,source:sources.get(p.sourceId??''),check,save,defense,preview});
   }
+  this.selection.replaceChildren();
+  const option=(value:string,text:string)=>{const o=node('option',text);o.value=value;this.selection.append(o);};
+  option('','Ziele auswählen…');
+  if(this.draft.rows.some(row=>row.actor.characterId))option('party','Party auswählen');
+  const groups=new Map<string,Row[]>();
+  for(const row of this.draft.rows){if(row.actor.characterId)continue;const group=groups.get(row.actor.groupId)??[];group.push(row);groups.set(row.actor.groupId,group);}
+  for(const [id,group]of groups)if(group.length>1){const first=group[0]!,title=first.actor.groupName?.trim()||first.source?.name||group.map(row=>row.actor.name).join(', ');option('group:'+id,title+' · '+group.length+' Ziele');}
+  option('all','Alle Teilnehmer auswählen');option('none','Auswahl aufheben');this.selection.value='';
   this.root.hidden=false;this.update();const dialog=this.root as HTMLDialogElement;if(this.root.tagName==='DIALOG'){if(typeof dialog.showModal==='function')dialog.showModal();else this.root.setAttribute('open','');}else this.root.scrollIntoView({block:'nearest'});
   this.amount.focus();this.amount.select?.();
  }
@@ -78,7 +85,7 @@ export class CombatAreaPanel{
    const hp=Math.max(0,actor.hp-Math.max(0,result.amount-actor.tempHp)),temp=Math.max(0,actor.tempHp-result.amount);
    preview.textContent=(save.value==='half'?'Rettungswurf: '+result.afterSave+' · ':'')+(manual?'Abwehr bereits eingerechnet':result.note)+' · '+result.amount+' Schaden → '+hp+'/'+actor.maxHp+' HP'+(temp?' + '+temp+' temp.':'');
   }
-  this.amount.disabled=this.party.disabled=disabled;this.type.disabled=disabled||!!draft.fixedType;this.cancel.disabled=this.busy;this.cancel.textContent=this.message?'Schließen und Status prüfen':'Abbrechen';
+  this.amount.disabled=this.selection.disabled=disabled;this.type.disabled=disabled||!!draft.fixedType;this.cancel.disabled=this.busy;this.cancel.textContent=this.message?'Schließen und Status prüfen':'Abbrechen';
   this.overrides.disabled=disabled||!count;this.overrideLabel.hidden=manual;this.overrideLabel.style.visibility=count?'visible':'hidden';this.defenseHeading.hidden=manual||!this.overrides.checked;this.root.classList.toggle('show-defenses',!manual&&this.overrides.checked);
   this.apply.disabled=disabled||!count||!valid||!this.amount.value||!Number.isSafeInteger(amount)||amount<1||amount>1000000;
   this.status.textContent=stale?'Kampfstand geändert. Abbrechen und die Aktion mit dem aktuellen Stand neu öffnen.':this.message??count+' Ziele · '+(valid?total+' wirksamer Schaden gesamt · ':'')+'eine Bestätigung, eine Rücknahme. Temporäre HP und Konzentration werden berücksichtigt.';

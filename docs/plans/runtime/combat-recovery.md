@@ -110,6 +110,11 @@ Eingabeabnahmen. Anlage-/Gegnerrohentwürfe und andere Anlagewege bleiben offen.
 
 ## Flächenschaden: eine gebundene Entscheidung
 
+Die Zielauswahl übernimmt auf Wunsch die Party, einen vorhandenen Trupp oder
+alle Teilnehmer; einzelne Ausnahmen bleiben direkt abwählbar. Die Auswahl ist
+ein Entwurf, bucht keinen Schaden und erhält bereits gewählte Rettungswürfe.
+Figuren mit unbekannten HP bleiben ausgeschlossen.
+
 Der Dialog bindet Teilnehmer, Statblock und Revision beim Öffnen. Seine Vorschau
 verwendet diese geprüfte Basis direkt; ein neuer Kampfstand sperrt die Übernahme
 bis zum ausdrücklichen Wiederöffnen. Alte Zeilenangaben werden nicht mit neuer HP

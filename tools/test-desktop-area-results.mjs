@@ -1,10 +1,12 @@
 import {createRequire} from 'node:module';
-import {mkdtemp,mkdir,stat,writeFile,readFile} from 'node:fs/promises';
+import {mkdtemp,mkdir,stat,writeFile,readFile,rm} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
 import {randomUUID,createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
-const output=process.env.QA_EVIDENCE_DIR??root+'/.build/area-results';await mkdir(output,{recursive:true});
+const output=process.env.QA_EVIDENCE_DIR??root+'/.build/area-results';await mkdir(output,{recursive:true});await rm(output+'/result.json',{force:true});
+const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),artifacts={};
+for(const name of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'])artifacts[name]=createHash('sha256').update(await readFile(root+'/.build/desktop/'+name)).digest('hex');
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/area-results-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=require(root+'/.build/area-results-store.cjs'),results=[];
 for(const recovery of [false,true])for(const scale of [1,2]){
@@ -36,15 +38,15 @@ for(const recovery of [false,true])for(const scale of [1,2]){
   await page.waitForFunction(()=>document.getElementById('combat-panel').getAttribute('aria-busy')==='false');return page;
  }
  async function close(){
-  const exit=new Promise(r=>app.process().once('exit',(code,signal)=>r({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
-  let timer;try{const result=await Promise.race([exit,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);assert.deepEqual(result,{code:0,signal:null});exits.push(result);app=null;}finally{clearTimeout(timer);}
+  const pid=app.process().pid,exit=new Promise(r=>app.process().once('exit',(code,signal)=>r({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
+  let timer;try{const result=await Promise.race([exit,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);assert.deepEqual(result,{code:0,signal:null});const pidAbsent=!await stat('/proc/'+pid).then(()=>true).catch(()=>false);assert(pidAbsent);exits.push({...result,pid,pidAbsent});app=null;}finally{clearTimeout(timer);}
  }
  async function shot(name){await app.firstWindow().then(p=>p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))));const png=await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG().toString('base64'));await writeFile(output+'/'+(recovery?'recovery-':'')+name+'-'+scale+'.png',Buffer.from(png,'base64'));}
  try{
   let page=await launch();assert.match(await page.locator('#combat-status').innerText(),/Runde 1.*Am Zug: Mira/);
   assert.equal(await page.locator('#combat-rows tr[data-participant-id]').count(),2,'baseline mob starts collapsed');
   await page.locator('#combat-area-open').click();await page.locator('#combat-area-amount').fill('21');await page.locator('#combat-area-type').selectOption('fire');
-  for(const name of ['Ogre A','Ogre B','Ogre C'])await page.getByRole('checkbox',{name:'Ziel '+name,exact:true}).check();
+  const selection=page.locator('#combat-area-selection');await selection.press('Home');await selection.press('ArrowDown');assert.equal(await page.locator('#combat-area-targets input:checked').count(),2);await selection.press('ArrowDown');assert.equal(await page.locator('#combat-area-targets input:checked').count(),4);await selection.selectOption('group:'+combat.participants.find(p=>p.sourceId==='ogre').groupId);await page.getByRole('checkbox',{name:'Ziel Ogre D',exact:true}).uncheck();assert.equal(await page.locator('#combat-area-targets input:checked').count(),3);assert.equal(await selection.inputValue(),'');
   for(const name of ['Ogre B','Ogre C'])await page.getByRole('combobox',{name:'Rettungswurf für '+name,exact:true}).selectOption('half');
   await shot('preview');let areaCommandId=null;
   if(recovery)await app.evaluate(({ipcMain})=>{
@@ -88,5 +90,4 @@ for(const recovery of [false,true])for(const scale of [1,2]){
   results.push({scale,recovery,areaCommandId,profile,exits,errors,participants:6,areaMessage,ogreHp:[38,49,49,59],unaffectedPartyHp:[20,18],turnIdBeforeArea:turnId});
  }finally{if(app)await app.close().catch(()=>{});proxy.kill();}
 }
-const artifacts={};for(const name of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css']){const bytes=await readFile(root+'/.build/desktop/'+name);artifacts[name]=createHash('sha256').update(bytes).digest('hex');}
-await writeFile(output+'/result.json',JSON.stringify({head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),artifacts,results},null,2));console.log(JSON.stringify({output,results}));
+await writeFile(output+'/result.json',JSON.stringify({head,dirty,artifacts,results},null,2));console.log(JSON.stringify({output,results}));
