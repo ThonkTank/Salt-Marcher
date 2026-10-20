@@ -32,6 +32,7 @@ export class AtlasSpatialScene {
         if (
           command.ancestry.some(
             (n) =>
+              n.data.vegetationInstance !== undefined ||
               n.data.spatialGround === "true" ||
               n.data.landscapeRaster === "true",
           )

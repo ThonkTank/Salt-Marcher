@@ -13,8 +13,8 @@ const dir=await mkdtemp(cache+'/vegetation-native-'),out=root+'/.build/vegetatio
 // Keep this probe's compiled application separate from other native probes.
 await writeFile(out+'/build.mjs',(await readFile('tools/build-desktop.mjs','utf8')).replaceAll('.build/desktop','.build/vegetation-desktop'));
 execFileSync(process.execPath,[out+'/build.mjs'],{cwd:root,stdio:'pipe'});
-buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export * from './src/app/vegetation';",resolveDir:root},outfile:out+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord,emptyRecord,vegetationSpec}=require(out+'/store.cjs'),Database=require('better-sqlite3');
+buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export * from './src/app/vegetation';export * from './src/app/terrain-spatial-model';",resolveDir:root},outfile:out+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,heightRecord,emptyRecord,vegetationSpec,TerrainSampler,projectTerrain}=require(out+'/store.cjs'),Database=require('better-sqlite3');
 const store=new CampaignStore(dir+'/workbench.sqlite'),cam=store.create('Vegetationsprobe'),active=store.activate(cam.id);
 const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action});
 const save=r=>write({kind:'landscape-put',record:r,expectedRevision:null});
@@ -31,7 +31,7 @@ const prototype=store.atlasVegetationScene(active.token,{x:-340,y:-240,width:680
 store.tutorial('skipped');store.close();
 const db=new Database(dir+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.vegetation') IS NOT NULL").all().map(r=>JSON.parse(r.payload));
 const result={profile:dir,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],errors:[],sourceHashes:{}};
-for(const file of ['src/app/vegetation.ts','src/app/vegetation-spatial.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+for(const file of ['src/app/vegetation.ts','src/app/atlas-spatial-vegetation.ts','src/app/terrain-spatial-view.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=s=>{result.checks.push(s);console.log(s);};
 let app,page;
 async function close(){
@@ -70,7 +70,12 @@ async function start(){
  await page.mouse.move(cx,cy);await page.mouse.down({button:'middle'});await page.mouse.move(cx+(c.view.x+c.view.width/2)*scale,cy+(c.view.y+c.view.height/2)*scale,{steps:10});await page.mouse.up({button:'middle'});await atlasCanvasReady(page);
 }
 const camera=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.dataset.atlasView),left:n.getBoundingClientRect().left,top:n.getBoundingClientRect().top,width:n.clientWidth,height:n.clientHeight}));
-async function at(x,y){return atlasCanvasPoint(page,{x,y},false);}
+async function at(x,y){
+ await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');
+ const view=await page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.terrainProjection)),rect=await page.locator('#campaign-map').boundingBox();
+ const sampler=new TerrainSampler(records()),p={x,y},q=projectTerrain(view,p,sampler.waterLevel(p)??sampler.sample(p).heightM);
+ return{x:rect.x+q.x*rect.width,y:rect.y+q.y*rect.height};
+}
 async function tool(id){await page.locator('[data-atlas-tool="'+id+'"]').click();await atlasCanvasReady(page);}
 async function settled(){await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled&&document.querySelector('#land-status').textContent==='Gespeichert');await atlasCanvasReady(page);}
 async function stroke(a,b){const x=await at(...a),y=await at(...b);await page.mouse.move(x.x,x.y);await page.mouse.down();await page.mouse.move(y.x,y.y,{steps:8});await page.mouse.up();await settled();}
@@ -92,37 +97,28 @@ try{
  const corrected=records().find(r=>r.id===painted.id).vegetation.overrides[0];assert.equal(corrected.size,8);assert.equal(corrected.x,165);assert(Math.abs(corrected.angle-33*Math.PI/180)<1e-9);
  mark('Sichtbaren Findling auswählen, verschieben, skalieren und drehen');
  await capture('04-object-edited');
- await page.locator('#vegetation-spatial').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas')?.getAttribute('aria-busy')==='false');
- assert((await page.locator('#vegetation-spatial-status').textContent()).includes('sichtbare Bestandsobjekte'));
- await capture('04-product-tilted');await page.locator('#vegetation-top-view').click();await capture('05-product-top');
- await page.locator('#vegetation-tilted-view').click();await page.locator('#vegetation-spatial-undo').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
+ const surface=await page.locator('#atlas-terrain-spatial').elementHandle();
+ const tilt=async()=>{await page.locator('#atlas-view').click();await page.locator('#atlas-terrain-tilt').click();await page.locator('#atlas-search').click();await atlasCanvasReady(page);};
+ await tilt();await capture('04-product-tilted');assert.equal(await page.locator('dialog[open]').count(),0);
+ assert(await surface.evaluate(n=>n===document.querySelector('#atlas-terrain-spatial')));
+ await page.locator('#atlas-undo').click();await atlasCanvasReady(page);
  assert.equal(records().find(r=>r.id===painted.id).vegetation.overrides[0].size,4);
- await page.locator('#vegetation-spatial-redo').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
+ await page.locator('#atlas-redo').click();await atlasCanvasReady(page);
  assert.deepEqual(records().find(r=>r.id===painted.id).vegetation.overrides[0],corrected);
- mark('Räumliche Ansicht teilt Atlas-Undo/Redo und denselben Bestand');
- await page.locator('#vegetation-top-view').click();await page.locator('#vegetation-spatial-tool').selectOption('paint');await page.locator('#spatial-vegetation-preset').selectOption('scrub');
- const canvasBox=await page.locator('#vegetation-spatial-canvas').boundingBox(),oldCount=records().length;
- await page.mouse.move(canvasBox.x+canvasBox.width*.64,canvasBox.y+canvasBox.height*.62);await page.mouse.down();await page.mouse.move(canvasBox.x+canvasBox.width*.72,canvasBox.y+canvasBox.height*.65,{steps:8});await page.mouse.up();
- await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
- assert.equal(records().length,oldCount+1);assert(records().some(r=>r.vegetation.preset.id==='scrub'&&r.points.length>1));
- mark('Direkt auf dem räumlichen Gelände gemalter Bestand wird im Atlas gespeichert');
- const clickSpatial=async(x,y)=>page.mouse.click(canvasBox.x+canvasBox.width*x,canvasBox.y+canvasBox.height*y);
- await page.locator('#vegetation-spatial-tool').selectOption('area');
- await clickSpatial(.55,.3);await clickSpatial(.65,.3);await clickSpatial(.6,.4);
- await page.locator('#vegetation-spatial-tool').selectOption('line');assert.equal(await page.locator('#vegetation-spatial-tool').inputValue(),'area');
- await page.locator('#vegetation-spatial-close').click();assert(await page.locator('#vegetation-spatial-canvas').isVisible());
- await page.locator('#vegetation-spatial-finish').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');assert.equal(records().length,oldCount+2);
- await clickSpatial(.55,.3);await page.locator('#vegetation-spatial-cancel').click();assert.equal(records().length,oldCount+2);
- await page.locator('#vegetation-spatial-tool').selectOption('line');await page.locator('#spatial-vegetation-preset').selectOption('conifer');
- await clickSpatial(.55,.23);await clickSpatial(.73,.23);await page.locator('#vegetation-spatial-finish').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
- assert(records().some(r=>r.vegetation.layout==='row'&&r.points.length===2));
- mark('Räumliche Flächen und Baumreihen; offene Entwürfe bleiben beim Werkzeugwechsel erhalten, Abbruch schreibt nichts');
- await page.locator('#vegetation-tilted-view').click();await capture('07-spatial-painted');
- await app.evaluate(({dialog},filename)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:filename});},out+'/spatial-export.png');
- await page.locator('#vegetation-spatial-export').click();await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-status').textContent.includes('als PNG gespeichert'));
- assert((await readFile(out+'/spatial-export.png')).length>10000);
- mark('Räumlicher PNG-Export über nativen Speicheranschluss');
- await page.locator('#vegetation-spatial-close').click();await atlasCanvasReady(page);
+ mark('Hauptkamera bleibt beim Neigen und Atlas-Undo/Redo dieselbe');
+ await tilt();await capture('05-product-top');
+ await tool('vegetation');await page.locator('#vegetation-preset').selectOption('scrub');
+ const oldCount=records().length;await stroke([-150,70],[-80,70]);
+ assert.equal(records().length,oldCount+1);assert(records().some(r=>r.vegetation?.preset.id==='scrub'&&r.points.length>1));
+ await tool('vegetation-area');
+ for(const point of [[-150,-20],[-80,-20],[-100,30]]){const p=await at(...point);await page.mouse.click(p.x,p.y);}
+ await page.locator('#land-finish').click();await settled();assert.equal(records().length,oldCount+2);
+ const cancelPoint=await at(-150,-20);await page.mouse.click(cancelPoint.x,cancelPoint.y);await page.locator('#land-cancel').click();assert.equal(records().length,oldCount+2);
+ await tool('vegetation-line');await page.locator('#vegetation-preset').selectOption('conifer');await page.locator('#vegetation-layout').selectOption('row');
+ for(const point of [[-150,120],[80,120]]){const p=await at(...point);await page.mouse.click(p.x,p.y);}
+ await page.locator('#land-finish').click();await settled();assert(records().some(r=>r.vegetation?.layout==='row'&&r.points.length===2));
+ mark('Flächen, Baumreihen und Abbruch laufen durch die bestehenden Atlaswerkzeuge');
+ await tilt();await capture('07-main-atlas-painted');assert(await surface.evaluate(n=>n===document.querySelector('#atlas-terrain-spatial')));
  const expected=records();await close();await start();assert.deepEqual(records(),expected);await capture('06-reopened');await close();
  mark('Frischer Electron-Prozess erhält Flächen und geschützte Korrekturen');
  assert.deepEqual(result.errors,[]);result.complete=true;

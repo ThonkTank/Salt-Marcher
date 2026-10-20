@@ -116,7 +116,7 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 | History, Main/Preload und Kampagnenkopie | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts` |
 | Kartenbild, Geländegrund und Bereichsprojektion | `src/app/vegetation-view.ts`, `src/app/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
 | Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas-landscape-ui.ts`, `src/app/vegetation-controls.ts` |
-| Räumliche Ansicht und isolierter Prototyp | `src/app/vegetation-spatial.ts`, `tools/vegetation-prototype/app.ts` |
+| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas-spatial-vegetation.ts`, `src/app/terrain-spatial-view.ts`, `tools/vegetation-prototype/app.ts` |
 | Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/spatial-terrain.ts` |
 | Datenregression, Auswahl und echte Desktop-Bedienung | `tests/vegetation.test.mjs`, `tests/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
 

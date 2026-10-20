@@ -181,3 +181,9 @@ Gemessen werden getrennt: kaltes/warmes Laden, Eingabe bis Bildänderung, tatsä
 Besondere Regressionen sind Kachelnähte, negative und weit entfernte Koordinaten, Wechsel zwischen Marker und Gebäude bei bestehender Auswahl, flackernde Namen, wandernde Höhenlinien, feine Details unter großen Pinseln, verdeckte Raumflächen, verzögerte Antworten, verlorene Speicherbestätigungen und Spielerfreigaben.
 
 Jede Phase erhält Funktions-, Leistungs- und visuelle Belege. Verfehlte Ziele bleiben offen; das vollständige Produkt ist erst nach P8 erreicht.
+
+### Abbau der verbleibenden zweiten Karte (20.10.2026)
+
+Der Straßen-/Flussdialog nutzte weiterhin den alten Landschaftsrenderer und umging damit die Hauptkamera. Dieser Weg ist jetzt im Implementierungsstand entfernt: Planung als Atlas-Seitenleiste, dieselben Punkt-/Navigationsfunktionen, Entwurf und Geländevorschau im Haupt-GPU-Worker, gemeinsame History. Der alte Landschafts-3D-Dialog samt `VegetationSpatialView` wurde gelöscht; instanzierter Bewuchs ist eine Ebene der gemeinsamen Szene. Auch isolierte Bildfixtures nutzen den Produktrenderer. Der normale Canvas bleibt Eingabe-/HUD-Fläche und Fehlerfallback, keine separat bedienbare Karte.
+
+Die bereits gespeicherten Qualifikationen des entfernten Dialogs sind historische Belege. Insbesondere `test-desktop-vegetation-qualification.mjs` und alte räumliche Pinselproben sind noch nicht vollständig auf den gemeinsamen Atlas übertragen; deren Detail-, Leistungs- und Exportaussagen gelten nicht als aktuelle Abnahme. Perspektivische Ausgabe und Spieleranzeige bleiben offene Roadmap-Arbeit.

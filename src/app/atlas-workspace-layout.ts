@@ -318,7 +318,7 @@ export class AtlasWorkspaceLayout {
   const activeGroup=this.currentGroup();
   const objectSelection=!navigating&&this.family==='terrain'&&tool.value==='select'&&activeGroup?.id==='objects';
   el('vegetation-selection-filter').closest('label')!.hidden=navigating||this.family!=='terrain'||tool.value!=='select'||activeGroup?.id!=='vegetation';
-  el('vegetation-spatial').hidden=objectSelection;el('land-cursor-height').hidden=objectSelection;
+  el('land-cursor-height').hidden=objectSelection;
   el('land-sea-options').hidden=navigating||this.family!=='terrain'||activeGroup?.id!=='water';
   for(const b of this.toolList.querySelectorAll<HTMLButtonElement>('button')){
    const entry=activeGroup?.tools.find(t=>t.id===b.dataset.atlasTool);b.disabled=this.changingTool||!!(entry&&el<HTMLSelectElement>(entry.control).disabled);

@@ -1,3 +1,5 @@
+import type {LandscapeRecord} from './atlas-landscape';
+import {AtlasSpatialVegetation} from './atlas-spatial-vegetation';
 import {ATLAS_CAMERA_FOV,atlasCameraEye,atlasPlanePoint} from './atlas-camera';
 import type {LandscapeBox} from './atlas-landscape';
 import {routeMeshes} from './terrain-route-view';
@@ -28,6 +30,16 @@ export class TerrainSpatialView {
   private overlayScene:AtlasSpatialScene|null=null;
   private publication:{scene:AtlasCanvasScene;origin:Point;images:ReadonlyMap<string,CanvasImageSource>}|null=null;
   private routeIds=new Set<string>();
+  private vegetation:AtlasSpatialVegetation|null=null;
+  private vegetationRecords:LandscapeRecord[]|null=null;
+  setVegetation(records:LandscapeRecord[]){
+    if(this.vegetationRecords===records)return;this.vegetationRecords=records;
+    if(this.grid){this.rebuildVegetation(records);this.render();}
+  }
+  private rebuildVegetation(records:LandscapeRecord[]){
+    if(this.vegetation){this.scene.remove(this.vegetation.group);this.vegetation.dispose();}
+    this.vegetation=new AtlasSpatialVegetation(records,this.surface(),this.grid!.view.frame.width/Math.max(1,this.canvas.clientWidth));this.scene.add(this.vegetation.group);
+  }
   private surface(){
     const g=this.grid!;
     return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:Math.min(g.view.box.width/(g.view.columns-1),g.view.box.height/(g.view.rows-1)),routeIds:this.routeIds};
@@ -51,7 +63,13 @@ export class TerrainSpatialView {
   }
   hitAt(clientX:number,clientY:number,keys:string[]):PaintHit|null{
     const ray=this.ray(clientX,clientY),terrainDistance=this.picker?ray.intersectObject(this.picker)[0]?.distance:undefined;
-    return this.overlayScene?.hit(ray,keys,terrainDistance)??this.atlas?.hit(ray,keys,terrainDistance)??null;
+    const overlay=this.overlayScene?.hit(ray,keys,terrainDistance);if(overlay)return overlay;
+    const plant=this.vegetation?.hit(ray,keys,terrainDistance);if(plant)return plant;
+    if(keys.includes('landscapeId')){
+      const route=ray.intersectObjects(this.routes,false).find(h=>terrainDistance===undefined||h.distance<=terrainDistance+.2);
+      if(route)return {data:{landscapeId:route.object.userData.landscapeId}};
+    }
+    return this.atlas?.hit(ray,keys,terrainDistance)??null;
   }
   private ray(clientX:number,clientY:number){
     const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();
@@ -60,6 +78,7 @@ export class TerrainSpatialView {
   constructor(readonly canvas:HTMLCanvasElement){
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
     this.renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
+    this.scene.add(new THREE.HemisphereLight('#fff7df','#686e53',2.4));const sun=new THREE.DirectionalLight('#fff7de',2.1);sun.position.set(-.6,.8,1.4);this.scene.add(sun);
   }
   setData(data:SpatialReply){
     this.removeLine(this.cursor);this.cursor=null;
@@ -83,6 +102,7 @@ export class TerrainSpatialView {
     for(const r of data.routes??[])for(const mesh of routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,Math.min(b.width/(v.columns-1),b.height/(v.rows-1))/2,data.protectedLimit!==undefined&&!!r.route?.protected)){
       this.routes.push(mesh);this.scene.add(mesh);
     }
+    this.rebuildVegetation(this.vegetationRecords??data.vegetation??[]);
     this.rebuildAtlas();this.render();
   }
   private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];}
@@ -126,7 +146,7 @@ export class TerrainSpatialView {
   showSelection(p:Point|null){this.removeLine(this.selection);this.selection=this.ring(p,(this.grid?.view.frame.width??0)*.008,'#e68a28');this.render();}
   dispose(){
     this.atlas?.dispose();this.overlayScene?.dispose();this.atlas=null;this.overlayScene=null;this.publication=null;
-    this.clearRoutes();
+    this.clearRoutes();this.vegetation?.dispose();this.vegetation=null;this.vegetationRecords=null;
     this.removeLine(this.cursor);this.removeLine(this.selection);this.cursor=null;this.selection=null;if(this.mesh){this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
     this.renderer.dispose();this.renderer.forceContextLoss();this.mesh=null;this.picker=null;this.grid=null;this.base=null;
   }

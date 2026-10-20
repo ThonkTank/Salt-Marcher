@@ -64,6 +64,11 @@ export class LandscapeWorkbench {
   private selectionRecords=new Map<string,LandscapeRecord>();
   private dragOrigin:Point|null=null;
   private hovering=false;
+  private routeSession:Awaited<ReturnType<typeof openTerrainRoute>>|undefined;
+  private routeOpening=false;
+  private routeGeneration=0;
+  private routeRecords:LandscapeRecord[]|undefined;
+  private routeAnchors:Point[]=[];
 
   readonly assets = new Map<string, string>();
   private unavailableAssets=new Set<string>();
@@ -108,10 +113,11 @@ export class LandscapeWorkbench {
   } | null = null;
   private lastPoint: Point = { x: 0, y: 0 };
   constructor(
-    svg: HTMLCanvasElement,
+    private svg: HTMLCanvasElement,
     private host: {
       box: () => LandscapeBox;
-      camera?:()=>void;
+      planning?:()=>void;
+      navigation?:(e:PointerEvent)=>boolean;
       visibility?:()=>import("./terrain-spatial-model").TerrainView|undefined;
       navigate?:(box:LandscapeBox)=>void;
       hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
@@ -142,7 +148,6 @@ export class LandscapeWorkbench {
     const asset=document.createElement('label');asset.textContent='Einzelobjekt';asset.innerHTML+='<select id="vegetation-asset"><option value="oak">Laubbaum</option><option value="pine">Nadelbaum</option><option value="rock">Felsen</option><option value="shrub">Strauch</option></select>';this.vegetationFields.append(asset);
     const selectionFilter=document.createElement('label');selectionFilter.textContent='Bewuchs auswählen';
     selectionFilter.innerHTML+='<select id="vegetation-selection-filter"><option value="all">Alle sichtbaren Objekte</option><option value="trees">Bäume</option><option value="rocks">Felsen unter Baumkronen</option><option value="undergrowth">Unterwuchs unter Baumkronen</option></select>';this.panel.append(selectionFilter);
-    const spatial=document.createElement('button');spatial.type='button';spatial.id='vegetation-spatial';spatial.textContent='Atlaskamera neigen';spatial.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}this.host.camera?.();};this.panel.append(spatial);
     this.inspectorRoot=this.panel.querySelector<HTMLElement>('#land-selection')!;
     html("atlas-tool-fields").after(this.panel);
     this.settings=new LandscapeToolSettings(this.panel,()=>{this.toolFields();this.host.redraw();},()=>{if(this.hasDraft()){this.say("Zuerst abschließen oder verwerfen.");return false;}return true;});
@@ -438,6 +443,7 @@ export class LandscapeWorkbench {
   get spatialTool(){return this.tool;}
   get spatialSelection(){return this.selected?.points[0]??this.selected?.polygons[0]?.outer[0]??null;}
   spatialDraft():import("./terrain-spatial-ui").TerrainDraft|null {
+    if(this.routeRecords)return {routeRecords:this.routeRecords};
     if(this.maskStroke)return {heightStroke:{...this.maskStroke,samples:[...this.maskStroke.samples,...(this.pointer!==null?[{...this.lastPoint,t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,performance.now()-this.maskStart))}]:[])]}};
     if(this.tool==="color"&&this.points.length)return {color:this.colorRecord(true)};
     return null;
@@ -539,8 +545,9 @@ export class LandscapeWorkbench {
     return this.points.length + this.brushStrokes.reduce((count, points) => count + points.length, 0);
   }
   get selectedLabel(){return this.selected?(this.selected.kind==='place'?'place:':'landscape:')+this.selected.id:undefined;}
-  hasDraft() {
+  hasDraft(includeRoute=true) {
     return (
+      includeRoute&&(this.routeOpening||!!this.routeSession?.hasDraft()) || !!this.routeSession?.gesturing() ||
       (this.tool !== "measure" && this.points.length > 0) ||
       this.dirty ||
       !!this.calibration ||
@@ -549,6 +556,7 @@ export class LandscapeWorkbench {
     );
   }
   cancel() {
+    this.routeGeneration++;this.routeSession?.close();this.routeSession=undefined;
     this.clearMask();
     this.points = [];
     this.brushStrokes = [];
@@ -565,8 +573,26 @@ export class LandscapeWorkbench {
     this.say("Zug verworfen.");
     this.host.redraw();
   }
-  planTerrainRoute(kind:'road'|'river',tilt=45){return openTerrainRoute({token:this.token,box:this.host.box(),kind,tilt,navigate:b=>this.host.navigate?.(b),write:a=>this.commit(a),changed:()=>this.host.refresh?.()??Promise.resolve()});}
-  private openRoute(record?:LandscapeRecord){return openTerrainRoute({token:this.token,box:this.host.box(),record,kind:record?.kind==='river'||this.tool==='river'?'river':'road',tilt:0,navigate:b=>this.host.navigate?.(b),write:a=>this.commit(a),changed:()=>this.host.refresh?.()??Promise.resolve()});}
+  get routeGesture(){return !!this.routeSession?.gesturing();}
+  routeHistory(kind:'undo'|'redo'){if(!this.routeSession)return false;this.routeSession.history(kind);return true;}
+  planTerrainRoute(kind:'road'|'river'){return this.openRoute(undefined,kind);}
+  private async openRoute(record?:LandscapeRecord,kind:'road'|'river'=record?.kind==='river'||this.tool==='river'?'river':'road'){
+    if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
+    this.routeSession?.close();this.selected=null;this.selectionRecords.clear();this.inspectorRoot.replaceChildren();
+    this.host.planning?.();this.routeOpening=true;
+    const generation=++this.routeGeneration;
+    try{
+      const session=openTerrainRoute({token:this.token,box:()=>this.host.box(),record,kind,
+        panel:this.panel,canvas:this.svg,point:e=>this.point(e),hit:(e,keys)=>this.hit(e,keys),
+        navigation:e=>this.host.navigation?.(e)??(e.button!==0||e.altKey||this.spacePan),current:()=>this.host.current?.()??true,
+        navigate:b=>this.host.navigate?.(b),write:a=>this.commit(a),changed:()=>this.host.refresh?.()??Promise.resolve(),
+        preview:(records,anchors)=>{if(generation!==this.routeGeneration)return;this.routeRecords=records;this.routeAnchors=anchors.map(p=>({...p}));this.host.redraw();},
+        closed:()=>{this.routeSession=undefined;this.routeRecords=undefined;this.routeAnchors=[];this.host.redraw();},
+      });
+      if(generation!==this.routeGeneration)session.close();else this.routeSession=session;
+      await session.ready;
+    }finally{this.routeOpening=false;}
+  }
   private toolFields() {
     const routePlan=document.getElementById('land-route-plan');if(routePlan)routePlan.hidden=this.tool!=='road'&&this.tool!=='river';
     this.settings.show(this.tool);
@@ -600,6 +626,7 @@ export class LandscapeWorkbench {
     }
   }
   setActive(active: boolean) {
+    if(!active&&this.active){this.routeGeneration++;this.routeSession?.close();}
     this.active = active;
     this.panel.hidden = !active;
     const palette = ["atlas-terrain", "atlas-hex-level"].flatMap(id => {
@@ -717,6 +744,11 @@ export class LandscapeWorkbench {
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
     }
     retained.append(node);root.append(retained);
+    if(this.routeAnchors.length){
+      const points=this.routeAnchors.map(p=>({x:p.x-box.x,y:p.y-box.y}));
+      root.append(atlasPaint('polyline',{points,pointer:false,style:{stroke:'#c77d32',fill:null,lineWidth:mpp*2},data:{editorOnly:'true'}}));
+      points.forEach((p,i)=>root.append(atlasPaint('circle',{...p,radius:mpp*6,style:{fill:'#fff1c9',stroke:'#a05a24',lineWidth:mpp*2},data:{routeAnchor:String(i),editorOnly:'true'}})));
+    }
     const pts =
       this.calibration?.points ??
       (this.points.length ? this.points : this.measurement);

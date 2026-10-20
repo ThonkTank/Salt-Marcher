@@ -286,7 +286,7 @@ export class CampaignAtlasWorkbench {
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
     this.territories=new TerritoryWorkbench(this.svg,{focus:b=>{const aspect=this.svg.clientWidth/Math.max(1,this.svg.clientHeight),width=Math.max(b.width,b.height*aspect,10)*1.2,height=width/aspect;this.camera.set({x:b.x+b.width/2-width/2,y:b.y+b.height/2-height/2,width,height},true);},data:()=>this.data,enabled:()=>this.family==='terrain'&&!this.exportOpen,point:e=>this.camera.point(e),box:()=>this.camera.view,current:()=>this.geometryCurrent()&&this.camera.ready,write:a=>this.write(a,false,true),redraw:()=>this.scheduleRender(),error:e=>this.error(e)});
-    this.landscape=new LandscapeWorkbench(this.svg,{selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),camera:()=>this.spatial?.setPose(45),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
+    this.landscape=new LandscapeWorkbench(this.svg,{selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),planning:()=>{this.selection=null;this.layout?.selectionChanged(null);this.layout?.showPane('tool');},navigation:e=>this.camera.navigationRequested(e),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.data,refresh:()=>this.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
     this.landscape.panel.append(this.territories.panel);
     get<HTMLSelectElement>('land-tool').add(new Option('Regionen','territory'));
     get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
@@ -548,7 +548,7 @@ export class CampaignAtlasWorkbench {
       if(control.wheel(e,this.svg.clientHeight))this.spatial?.refreshBrushCursor(e.clientX,e.clientY);
     },{capture:true,passive:false});
     this.spatial=new TerrainSpatialUI(this.svg,{
-      route:(kind,tilt)=>this.landscape.planTerrainRoute(kind,tilt),draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
+      route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
       tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
       redraw:()=>this.scheduleRender(),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
     });
@@ -840,6 +840,7 @@ export class CampaignAtlasWorkbench {
     }
   }
   private async history(kind: "undo" | "redo") {
+    if(this.landscape.routeHistory(kind))return;
     if (!(await this.opts.flush())) return;
     const result = await this.write({ kind }, true);
     if (result && this.cityId) await openCityReference(this.cityId,this.selection?.kind==='building'||this.selection?.kind==='city-unit'?this.selection.id:undefined,true,true);
@@ -2151,7 +2152,7 @@ export class CampaignAtlasWorkbench {
   }
   private brushControls=new Map<string,BrushSizeControl>();
   private cameraDraftPending(){
-    return !!(this.busy||this.landscape.hasDraft()||this.territories.hasDraft()||
+    return !!(this.busy||this.landscape.hasDraft(false)||this.territories.hasDraft()||
       this.draft.length||this.brushId!==null||this.drag||this.vertexDrag||this.pathDrag||
       this.roomDrag||this.partyDrag||this.entranceDraft||this.placeIntent||this.exportDrag||
       this.exportCorner||atlasCityState()||atlasDrawingHasDraft());
@@ -2159,14 +2160,12 @@ export class CampaignAtlasWorkbench {
   private brushDraftPending(){
     const land=!!this.landscape?.hasDraft()&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense','vegetation-line'].includes(get<HTMLSelectElement>('land-tool').value);
     const drawing=['interior','decoration'].includes(this.family)&&['room-cave','room-erase','scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)&&atlasDrawingDraft().path.length>0;
-    return land||!!this.territories?.hasDraft()||this.brushId!==null||drawing;
+    return land||!!this.landscape?.routeGesture||!!this.territories?.hasDraft()||this.brushId!==null||drawing;
   }
   private syncBrushSizes(){
     if(!this.camera)return;
     const b=this.camera.view,r=this.svg.getBoundingClientRect(),scale=Math.max(b.width/Math.max(1,r.width),b.height/Math.max(1,r.height)),locked=this.brushDraftPending();
     for(const [id,c]of this.brushControls){
-      // The spatial dialog temporarily owns the same land controls and its camera.
-      if(c.field.closest('dialog[open]'))continue;
       let tool=id==='drawing-brush'?get<HTMLSelectElement>('drawing-tool').value:id==='territory-radius'?'territory':get<HTMLSelectElement>('land-tool').value;
       if(id==='land-radius'&&tool==='color')tool+=':'+get<HTMLSelectElement>('land-color-target').value+':'+get<HTMLSelectElement>('land-color-operation').value;
       if(id==='land-radius'&&tool==='freshwater')tool+=':'+get<HTMLSelectElement>('land-freshwater-operation').value;

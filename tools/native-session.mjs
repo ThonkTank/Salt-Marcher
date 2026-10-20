@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,readFile,writeFile,rm,stat} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {tmpdir} from 'node:os';
+import {homedir} from 'node:os';
 import path from 'node:path';
 import {currentProcessGroup} from './process-group.mjs';
 
@@ -24,7 +24,8 @@ export async function createNativeSession({root=process.cwd(),output,name,result
  await mkdir(output,{recursive:true});
  // Remove success before fixture setup: even a setup failure must not leave an old pass.
  await rm(path.join(output,resultName),{force:true});await rm(path.join(output,'failure.json'),{force:true});
- const profile=await mkdtemp(path.join(tmpdir(),name+'-')),group=await currentProcessGroup();
+ const profiles=path.join(homedir(),'.cache/saltmarcher/ui');await mkdir(profiles,{recursive:true});
+ const profile=await mkdtemp(path.join(profiles,name+'-')),group=await currentProcessGroup();
  const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
  const dirty=!!execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim();
  const hashes=async()=>Object.fromEntries(await Promise.all(artifacts.map(async file=>[file,createHash('sha256').update(await readFile(path.join(root,'.build/desktop',file))).digest('hex')])));

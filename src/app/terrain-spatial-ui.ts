@@ -9,7 +9,7 @@ import {atlasFieldValue,lengthLabel} from './atlas-units';
 import {terrainSourceWindow,type TerrainSourceWindow} from './terrain-spatial-source';
 import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
-export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord}
+export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
 
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
 export class TerrainSpatialUI implements AtlasPresentation {
@@ -34,7 +34,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   constructor(private input:HTMLCanvasElement,private host:{
     draft:()=>TerrainDraft|null;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
     tool:()=>string;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
-    route?:(kind:'road'|'river',tilt:number)=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
+    route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
     this.toggle=document.createElement('button');this.toggle.id='atlas-terrain-tilt';this.toggle.textContent='Atlas kippen';this.toggle.type='button';
     this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=false;
@@ -42,7 +42,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.retry=document.createElement('button');this.retry.id='atlas-camera-retry';this.retry.type='button';this.retry.textContent='Atlaskamera erneut laden';this.retry.hidden=true;
     this.retry.onclick=()=>{if(this.host.hasDraft())return;this.failed=false;this.retry.hidden=true;this.setActive(true);};
     document.getElementById('atlas-view-popup')!.append(this.toggle,this.controls,this.retry);
-    for(const [kind,label]of [['road','Straße planen'],['river','Fluss planen']] as const){const button=document.createElement('button');button.id='terrain-plan-'+kind;button.textContent=label;button.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}void this.host.route?.(kind,this.tilt).catch(this.host.error);};this.controls.append(button);}
+    for(const [kind,label]of [['road','Straße planen'],['river','Fluss planen']] as const){const button=document.createElement('button');button.id='terrain-plan-'+kind;button.textContent=label;button.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}void this.host.route?.(kind).catch(this.host.error);};this.controls.append(button);}
     this.toggle.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(this.tilt===0?45:0,this.rotation);};
     this.controls.querySelector<HTMLButtonElement>('#terrain-top')!.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(0,0);};
     for(const id of ['tilt','rotation','exaggeration'] as const)this.controls.querySelector<HTMLInputElement>('#terrain-'+id)!.oninput=e=>{
@@ -117,7 +117,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.controls.hidden=this.failed;this.retry.disabled=this.host.hasDraft()||(document.getElementById('atlas-perception') as HTMLInputElement).checked;
     if(this.toggle.disabled&&this.active)this.setActive(false);
     if(this.toggle.disabled)return;
-    if(!this.active)this.setActive(true);if(!this.active)return;this.placeCanvas();this.setContours(contours);
+    if(!this.active)this.setActive(true);if(!this.active)return;this.placeCanvas();this.setContours(contours);this.view?.setVegetation(objects);
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
