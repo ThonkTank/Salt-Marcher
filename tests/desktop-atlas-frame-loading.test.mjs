@@ -219,3 +219,32 @@ test('unit changes reformat cached height and preview without another read or wr
  setAtlasUnits('dnd');f.ui.renderHeightPrecision();assert.equal(f.document.getElementById('land-cursor-height').textContent,'Höhe: 1.150 ft · Vorschau');assert.equal(reads,1);
  f.document.querySelector('canvas').dispatchEvent(new f.window.Event('pointerleave'));assert.equal(f.document.getElementById('land-cursor-height').textContent,'Höhe: –');
 });
+
+test('camera frames and read retries retain the complete unsubmitted relief form without writing',async t=>{
+ const f=fixture(t);f.set([]);await f.ui.load();
+ const field=id=>f.document.getElementById('land-relief-'+id);
+ const edited={mode:'height',land:'#243546',ink:'#aabbcc',light:'290',strength:'0.7'};
+ for(const [id,value]of Object.entries(edited))field(id).value=value;
+ f.host.write=async()=>{throw Error('Reading a camera frame must not write');};
+ f.set([]);await f.ui.load();await f.ui.load(true);
+ for(const [id,value]of Object.entries(edited))assert.equal(field(id).value,value,id);
+ f.set([]);f.host.data().region.landscape.state='error';await f.ui.load();
+ f.host.data().region.landscape=undefined;await f.ui.load();f.set([]);await f.ui.load();
+ for(const [id,value]of Object.entries(edited))assert.equal(field(id).value,value,id+' after failed read');
+});
+
+test('confirmed style changes including undo replace all relief fields, even the focused field',async t=>{
+ const f=fixture(t);f.set([]);await f.ui.load();
+ const field=id=>f.document.getElementById('land-relief-'+id);
+ field('light').value='290';Object.defineProperty(f.document,'activeElement',{configurable:true,value:field('light')});
+ const style={version:1,mode:'height',land:'#243546',ink:'#aabbcc',lightDegrees:80,strength:.4};
+ f.set([]);f.host.data().region.landscape.terrainStyle=style;await f.ui.load();
+ assert.equal(field('light').value,'80');assert.equal(field('mode').value,'height');assert.equal(field('strength').value,'0.4');
+ f.set([]);await f.ui.load();assert.equal(field('light').value,'315');assert.equal(field('mode').value,'drawn');
+});
+
+test('a different campaign resets unsubmitted relief choices even when both confirmed styles are default',async t=>{
+ const f=fixture(t);f.set([]);await f.ui.load();f.document.getElementById('land-relief-light').value='290';
+ f.ui.context('other-campaign');f.set([]);await f.ui.load();
+ assert.equal(f.document.getElementById('land-relief-light').value,'315');
+});

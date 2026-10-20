@@ -1,18 +1,15 @@
 import {setBrushWorldRadius,setHeightDirection,setTerrainContours,openTerrainDisplay} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
+import {createNativeSession} from "./native-session.mjs";
 import { RELIEF_STROKES } from "./terrain-relief-scene.mjs";
 import {randomUUID} from "node:crypto";
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import path from "node:path";
-import { homedir } from "node:os";
-import { atlasCanvasReady } from "./atlas-canvas-probe.mjs";
-const root = process.cwd(),
-  require = createRequire(root + "/package.json"),
-  { _electron } = require("playwright-core");
+import { atlasCanvasReady,atlasCanvasPoint } from "./atlas-canvas-probe.mjs";
+const root = process.cwd(), require = createRequire(root + "/package.json");
 require("esbuild").buildSync({
   stdin: {
     contents:
@@ -26,14 +23,14 @@ require("esbuild").buildSync({
   external: ["better-sqlite3"],
 });
 const { CampaignStore } = require(root + "/.build/relief-native-store.cjs");
-const profileRoot = path.join(homedir(), ".cache/saltmarcher/ui-profiles");
-await mkdir(profileRoot, { recursive: true });
-const dir = await mkdtemp(path.join(profileRoot, "landscape-")),
-  out = path.resolve(
-    process.env.QA_EVIDENCE_DIR ?? ".build/terrain-relief-native",
-  );
-await mkdir(out, { recursive: true });
-const store = new CampaignStore(dir + "/workbench.sqlite"),
+const output = path.resolve(process.env.QA_EVIDENCE_DIR ?? '.build/terrain-relief-native');
+await mkdir(output,{recursive:true});
+await rm(path.join(output,'result.json'),{force:true});
+for(const zoom of [1,2]){
+const out=path.join(output,String(zoom)),native=await createNativeSession({root,output:out,name:'terrain-relief'}),dir=native.profile;
+const result={checks:[]};
+try{
+const store = new CampaignStore(dir + "/workbench.sqlite",JSON.parse(await readFile(root+"/package.json","utf8")).version),
   room = {
     id: "watch",
     scopeId: "local",
@@ -72,87 +69,16 @@ const Database = require("better-sqlite3"),
       .prepare("SELECT payload FROM atlas_landscape")
       .all()
       .map((r) => JSON.parse(r.payload));
-const result = {
-  source: execFileSync("git", ["rev-parse", "HEAD"], {
-    encoding: "utf8",
-  }).trim(),
-  dirty: !!execFileSync(
-    "git",
-    ["status", "--porcelain", "--untracked-files=no"],
-    { encoding: "utf8" },
-  ).trim(),
-  profile: dir,
-  errors: [],
-  checks: [],
-};
-result.sourceHashes = {};
-for (const file of [
-  "src/app/terrain-height.ts",
-  "src/app/terrain-brush.ts",
-  "src/app/atlas-tool-catalog.ts",
-  "src/app/atlas-workspace-layout.ts",
-  "src/app/atlas-units.ts",
-  "tests/desktop-atlas-tool-hierarchy.test.mjs",
-  "src/app/campaign-atlas-ui.ts",
-  "tests/terrain-brush.test.mjs",
-  "src/app/landscape-color-surface.ts",
-  "src/app/landscape-tool-settings.ts",
-  "src/app/storage/campaign-atlas.ts",
-  "src/app/campaign-atlas-contracts.ts",
-  "src/app/atlas-region-contracts.ts",
-  "src/app/atlas-landscape-view.ts",
-  "tests/terrain-height.test.mjs",
-  "src/app/atlas-landscape.ts",
-  "src/app/atlas-brush-worker.ts",
-  "src/app/landscape-raster.ts",
-  "src/app/storage/atlas-landscape.ts",
-  "src/app/storage/landscape-brush-edit.ts",
-  "src/app/storage/atlas-landscape-region.ts",
-  "src/app/storage/store.ts",
-  "src/app/atlas-landscape-ui.ts",
-  "desktop/main.ts",
-  "desktop/preload.ts",
-  ".build/desktop/main.cjs",
-  ".build/desktop/ui/atlas-brush-worker.js",
-  ".build/desktop/ui/renderer.js",
-  ".build/desktop/atlas-region-worker.cjs",
-  "tools/test-desktop-terrain-relief.mjs",
-  "tools/terrain-relief-scene.mjs",
-  "src/app/terrain-relief.ts",
-])
-  result.sourceHashes[file] = createHash("sha256")
-    .update(await readFile(file))
-    .digest("hex");
 const mark = (text) => {
   result.checks.push(text);
   console.log(text);
 };
-let app, page;
+let page;
 async function start() {
-  const executable = process.env.ATLAS_PACKAGE
-    ? path.join(process.env.ATLAS_PACKAGE, "electron")
-    : root + "/node_modules/electron/dist/electron";
-  app = await _electron.launch({
-    executablePath: executable,
-    args: [
-      ...(process.env.ATLAS_PACKAGE ? [] : [root + "/.build/desktop/main.cjs"]),
-      "--data-dir",
-      dir,
-      "--ozone-platform=x11",
-    ],
-    timeout: 60000,
-  });
-  if (process.env.ATLAS_PACKAGE)
-    assert.equal(
-      await app.evaluate(({ app }) => app.getVersion()),
-      JSON.parse(await readFile(root + "/package.json", "utf8")).version,
-    );
-  page = await app.firstWindow();
-  console.log("Native window opened");
-  page.on("pageerror", (e) => result.errors.push(e.stack ?? e.message));
-  await page.waitForFunction(
-    () => document.body.dataset.tutorialReady === "true",
-  );
+  page=await native.launch(zoom);
+  await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).setSize(1600,1000));
+  assert.equal(await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.getZoomFactor()),zoom);
+  await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-6000,y:-5000,width:12000,height:10000})),cam.id);
   await page
     .locator(".campaign-card")
     .filter({ hasText: "Reliefprobe R4" })
@@ -164,19 +90,13 @@ async function start() {
       !document.querySelector("main").inert,
   );
   if (await page.locator("#campaign-atlas").isHidden()) {
-    if (!(await page.locator("#atlas-tab").isVisible()))
-      await page.locator("#workspace-nav-summary").click();
+    if (!(await page.locator("#atlas-tab").isVisible())) {
+      if(await page.locator("#atlas-navigation").isVisible())await page.locator("#atlas-navigation").click();
+      if(!(await page.locator("#atlas-tab").isVisible()))await page.locator("#workspace-nav-summary").click();
+    }
     await page.locator("#atlas-tab").click();
   }
   await atlasCanvasReady(page);
-  console.log("Atlas ready; finding the reference room");
-  await page.locator("#atlas-search").fill("Referenzhaus");
-  await page
-    .locator("#atlas-search-results button")
-    .filter({ hasText: "Referenzhaus" })
-    .click();
-  await atlasCanvasReady(page);
-  await page.locator("#atlas-search").fill("");
   await page.locator("#atlas-units").selectOption("metric");
   await page.locator("#atlas-section").selectOption("terrain");
   await atlasCanvasReady(page);
@@ -203,32 +123,8 @@ const camera = () =>
     width: n.getBoundingClientRect().width,
     height: n.getBoundingClientRect().height,
   }));
-async function at(x, y) {
-  const c = await camera();
-  return {
-    x: c.left + ((x - c.view.x) / c.view.width) * c.width,
-    y: c.top + ((y - c.view.y) / c.view.height) * c.height,
-  };
-}
-async function capture(name) {
-  await page.screenshot({ path: out + "/" + name + ".png" });
-}
-async function visibleColor(x, y) {
-  const p = await at(x, y),
-    png = require("pngjs").PNG.sync.read(await page.screenshot()),
-    i = (Math.round(p.y) * png.width + Math.round(p.x)) * 4;
-  return [...png.data.subarray(i, i + 3)];
-}
-async function stroke(points) {
-  const screen = await Promise.all(points.map((p) => at(...p)));
-  await page.mouse.move(screen[0].x, screen[0].y);
-  await page.mouse.down();
-  for (let i = 1; i < screen.length; i++) {
-    await page.mouse.move(screen[i].x, screen[i].y, { steps: 12 });
-    await page.waitForTimeout(80);
-  }
-  await page.mouse.up();
-}
+const at=(x,y)=>atlasCanvasPoint(page,{x,y});
+const capture=name=>native.capture(page,name);
 
 const maskBytes = () =>
   require("node:crypto")
@@ -252,20 +148,12 @@ async function settled() {
   );
   await atlasCanvasReady(page);
 }
-async function hold(x, y, ms) {
-  const p = await at(x, y);
-  await page.mouse.move(p.x, p.y);
-  await page.mouse.down();
-  await page.waitForTimeout(ms);
-  await page.mouse.up();
-  const started=Date.now();await settled();result.commitWaitMs??=[];result.commitWaitMs.push(Date.now()-started);
-}
 try {
   await start();await tool('height');
   assert.equal(await page.locator('[data-atlas-tool]').count(),3);
-  for(let i=0;i<17;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();
   await atlasCanvasReady(page);console.log('Region ready');await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.locator('#atlas-view').click();
   if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();await atlasCanvasReady(page);
+  const originals=JSON.stringify(records().filter(r=>!r.height&&!r.terrainSettings));
   const baseline=maskBytes(),mode=()=>records().find(r=>r.terrainSettings)?.terrainSettings.style?.mode??'drawn';
   await openTerrainDisplay(page);
   const apply=async value=>{await openTerrainDisplay(page);console.log('Style',value);await page.locator('#land-relief-mode').selectOption(value);await page.locator('#land-relief-apply').click();await settled();assert.equal(mode(),value);assert.equal(maskBytes(),baseline);};
@@ -273,7 +161,17 @@ try {
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(mode(),'drawn');
   await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.equal(mode(),'shaded');
   await apply('height');await capture('03-region-analysis');
-  await apply('drawn');await page.locator('#land-relief-light').fill('290');await page.locator('#land-relief-strength').fill('0.7');await page.locator('#land-relief-apply').click();await settled();
+  await apply('drawn');await page.locator('#land-relief-light').fill('290');await page.locator('#land-relief-strength').fill('0.7');
+  const beforeStyleRead=JSON.stringify(records());
+  await page.keyboard.press('Escape');
+  await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);
+  await openTerrainDisplay(page);
+  assert.equal(JSON.stringify(records()),beforeStyleRead,'Inspecting a style must not author terrain');
+  assert.equal(await page.locator('#land-relief-light').inputValue(),'290','Camera read must retain the unsubmitted lighting choice');
+  assert.equal(await page.locator('#land-relief-strength').inputValue(),'0.7','Camera read must retain the complete style form');
+  await page.locator('#land-relief-apply').click();await settled();
+  await page.keyboard.press('Escape');await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);
+
   assert.equal(records().find(r=>r.terrainSettings).terrainSettings.style.lightDegrees,290);assert.equal(maskBytes(),baseline);
   mark('Three land tools; shared style, analysis, lighting and undo preserve terrain and places');
   await page.keyboard.press('Escape');
@@ -282,35 +180,24 @@ try {
   const placeCamera=await camera();const center={x:placeCamera.view.x+placeCamera.view.width*.5,y:placeCamera.view.y+placeCamera.view.height*.5};
   await setHeightDirection(page,'raise');await setBrushWorldRadius(page,'land-radius','250');await page.locator('#land-height-strength').fill('350');
   await page.locator('#land-coast-roughness').fill('0.7');const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
-  await page.waitForFunction(()=>document.querySelector('#land-cursor-height').textContent.includes('Vorschau'));await capture('06-preview');await page.mouse.up();await settled();assert.notEqual(maskBytes(),baseline);
+  await page.waitForFunction(()=>document.querySelector('#land-cursor-height').textContent.includes('Vorschau'));await capture('06-preview');await page.mouse.up();await settled();const corrected=maskBytes();assert.notEqual(corrected,baseline);
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),baseline);
-  mark('Continent, region and local views; real brush preview and atomic undo');
+  await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),corrected);
+  mark('Continent, region and local views; real brush preview and atomic undo/redo retain the correction');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);
   await setTerrainContours(page,'100');await atlasCanvasReady(page);await capture('07-contours');
-  await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');
+  await native.app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');
   await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-size').fill('1024');await page.locator('#atlas-export-grid').uncheck();
   await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:60000});
-  const png=require('pngjs').PNG.sync.read(await readFile(out+'/region.png'));assert.equal(Math.max(png.width,png.height),1024);assert.equal(maskBytes(),baseline);
+  const png=require('pngjs').PNG.sync.read(await readFile(out+'/region.png'));assert.equal(Math.max(png.width,png.height),1024);assert(new Set(Array.from({length:png.width*png.height},(_,i)=>png.data.readUInt32BE(i*4))).size>32,'Export must contain actual relief detail');assert.equal(maskBytes(),corrected);assert.equal(JSON.stringify(records().filter(r=>!r.height&&!r.terrainSettings)),originals);
   mark('Relief, coast, labels, river and road survive native PNG export without height writes');
-  const persisted=JSON.stringify(records());await app.close();app=null;await start();assert.equal(JSON.stringify(records()),persisted);
+  const persisted=JSON.stringify(records());await native.close();await start();assert.equal(JSON.stringify(records()),persisted);
   assert.equal(await page.locator('#land-relief-light').inputValue(),'290');assert.equal(await page.locator('#land-relief-mode').inputValue(),'drawn');await capture('08-reopened');
   mark('Fresh process retains authored landscape, place positions and shared relief profile');
-  assert.deepEqual(result.errors,[]);result.ok=true;
-} catch (error) {
-  result.error = error.stack ?? String(error);
-  if (page) {
-    // A crashed/closed renderer must not replace the original failure with a diagnostic timeout.
-    result.landState=await page.evaluate(()=>({disabled:document.querySelector("#land-tool")?.disabled,status:document.querySelector("#land-status")?.textContent,saveStatus:document.querySelector("#atlas-save-status")?.textContent,region:document.querySelector("#campaign-atlas")?.dataset.regionState})).catch(error=>({diagnosticError:String(error)}));
-    await capture("failure").catch(() => {});
-  }
-  throw error;
-} finally {
-  if (app) {
-    if (result.ok) {
-      await app.close();
-      result.normalExit = true;
-    } else await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
-  }
-  db.close();
-  await writeFile(out + "/result.json", JSON.stringify(result, null, 2));
+  await native.close();await native.finish(result);
+} finally {db.close();}
+} catch(error){await native.fail(error);throw error;}
+finally{await native.dispose();}
 }
+const runs=await Promise.all([1,2].map(async zoom=>JSON.parse(await readFile(path.join(output,String(zoom),'result.json'),'utf8'))));
+await writeFile(path.join(output,'result.json'),JSON.stringify({runs},null,2));
