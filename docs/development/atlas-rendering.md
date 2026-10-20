@@ -56,6 +56,8 @@ verwenden dasselbe Layout. Alte Views ohne Verfeinerung bleiben gleichmäßig.
 Der Readonly-Worker sampelt bis zu neun reguläre Blöcke; lokale Invalidierung
 und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
 
+[Fokusnetz und Trefferprüfung](../reference/atlas-focus-grid-20261021/README.md) dokumentieren den nativen Entwicklungsstart, Regressionsfälle und begrenzte Messungen.
+
 Eine Textur von höchstens 512 Pixeln je Kante deckt den Kontext ab; die sichtbare
 Mitte erhält zusätzlich bis zu 1024 Pixel im passenden Seitenverhältnis.
 `TerrainDetailMaterial` mischt sie am Rand ein. Die perspektivische Ausgabe

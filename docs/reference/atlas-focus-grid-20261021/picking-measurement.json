@@ -1,0 +1,33 @@
+{
+  "source": "a3226c37325d6520a56de1937f2f47269a8c1ff8",
+  "runs": [
+    {
+      "name": "triangles",
+      "columns": 193,
+      "nodes": 37249,
+      "rays": 200,
+      "averageRayMs": 7.8031043
+    },
+    {
+      "name": "cells",
+      "columns": 193,
+      "nodes": 37249,
+      "rays": 200,
+      "averageRayMs": 0.0061147950000008675
+    },
+    {
+      "name": "triangles",
+      "columns": 257,
+      "nodes": 66049,
+      "rays": 200,
+      "averageRayMs": 13.34951527
+    },
+    {
+      "name": "cells",
+      "columns": 257,
+      "nodes": 66049,
+      "rays": 200,
+      "averageRayMs": 0.008491945000000669
+    }
+  ]
+}
