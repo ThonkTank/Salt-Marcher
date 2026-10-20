@@ -297,6 +297,8 @@ function restore(db: any, d: Delta, row: any) {
       nonKeys.map((k) => k + "=excluded." + k).join(","),
   ).run(...cols.map((k) => next[k]));
 }
+/** Used only inside an active Atlas capture, before secondary map/environment updates. */
+export function atlasCapturedChanges(db:any){return !!db.prepare('SELECT 1 FROM temp.atlas_delta WHERE before_json IS NOT after_json LIMIT 1').get();}
 export function atlasHistoryState(db: any, cam: string) {
   const root = atlasRoot(db, cam),
     max =
@@ -435,7 +437,7 @@ export function executeAtlasWrite(
   captureSetup(db);
   return db
     .transaction(() => {
-      const fingerprint = fp(c.action),
+      const fingerprint = fp(c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action),
         old = db
           .prepare("SELECT * FROM atlas_receipt WHERE command_id=?")
           .get(c.commandId);
@@ -444,7 +446,23 @@ export function executeAtlasWrite(
           throw new Error("Atlasbefehlskennung anders verwendet.");
         return null;
       }
-      atlasRoot(db, c.campaignId);
+      const rootBefore=atlasRoot(db,c.campaignId),stroke=c.terrainStroke;
+      let continuation:{ordinal:number;payload:string;label:string}|undefined;
+      if(stroke){
+        if(!['landscape-height-stroke','landscape-color-stroke'].includes(c.action.kind)||
+          typeof stroke.id!=='string'||!stroke.id||stroke.id.length>128||
+          !Number.isSafeInteger(stroke.expectedRevision)||stroke.expectedRevision!==rootBefore.revision||
+          typeof c.sourceFence!=='string'||Object.keys(stroke).some(k=>!['id','expectedRevision'].includes(k)))
+          throw Error('Geländezug inzwischen geändert. Neuen Pinselzug beginnen.');
+        continuation=db.prepare('SELECT ordinal,payload,label FROM atlas_command WHERE campaign_id=? AND command_id=?').get(c.campaignId,stroke.id);
+        if(continuation){
+          const last=db.prepare('SELECT max(ordinal) n FROM atlas_command WHERE campaign_id=?').get(c.campaignId).n;
+          if(continuation.ordinal!==rootBefore.cursor||last!==rootBefore.cursor||continuation.label!==c.action.kind)
+            throw Error('Geländezug bereits abgeschlossen. Neuen Pinselzug beginnen.');
+          for(const delta of JSON.parse(continuation.payload) as Delta[])if(fp(currentRow(db,delta))!==delta.guard)
+            throw Error('Gelände inzwischen anderweitig geändert. Neuen Pinselzug beginnen.');
+        }
+      }
       let result: unknown;
       if (c.action.kind === "undo" || c.action.kind === "redo") {
         history(db, c.campaignId, c.action.kind);
@@ -483,19 +501,17 @@ export function executeAtlasWrite(
         );
         if (meaningful.length) {
           const root = atlasRoot(db, c.campaignId);
-          db.prepare(
-            "DELETE FROM atlas_command WHERE campaign_id=? AND ordinal>?",
-          ).run(c.campaignId, root.cursor);
-          db.prepare("INSERT INTO atlas_command VALUES(?,?,?,?,?)").run(
-            c.campaignId,
-            root.cursor + 1,
-            c.commandId,
-            c.action.kind,
-            json(meaningful),
-          );
-          db.prepare(
-            "UPDATE campaign_atlas SET cursor=cursor+1 WHERE campaign_id=?",
-          ).run(c.campaignId);
+          if(continuation){
+            const combined=new Map<string,Delta>();
+            const key=(d:Delta)=>d.table+':'+json(d.key);
+            for(const delta of JSON.parse(continuation.payload) as Delta[])combined.set(key(delta),delta);
+            for(const delta of meaningful){const prior=combined.get(key(delta));combined.set(key(delta),{...delta,before:prior?prior.before:delta.before});}
+            db.prepare('UPDATE atlas_command SET payload=? WHERE campaign_id=? AND ordinal=?').run(json([...combined.values()]),c.campaignId,root.cursor);
+          }else{
+            db.prepare('DELETE FROM atlas_command WHERE campaign_id=? AND ordinal>?').run(c.campaignId,root.cursor);
+            db.prepare('INSERT INTO atlas_command VALUES(?,?,?,?,?)').run(c.campaignId,root.cursor+1,stroke?.id??c.commandId,c.action.kind,json(meaningful));
+            db.prepare('UPDATE campaign_atlas SET cursor=cursor+1 WHERE campaign_id=?').run(c.campaignId);
+          }
         }
         db.prepare("DELETE FROM atlas_delta").run();
       }
@@ -539,7 +555,7 @@ export function validateCampaignAtlases(db: any) {
   }
   if(schema>=49){
     if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.terrainSettings') IS NOT NULL GROUP BY campaign_id HAVING count(*)>1").get())throw Error('Doppelter Meeresspiegel.');
-    if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1").get())throw Error('Doppelte Höhenkachel.');
+    if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.version'),json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1").get())throw Error('Doppelte Höhenkachel.');
   }
   for (const root of db.prepare("SELECT * FROM campaign_atlas").iterate()) {
     const maps = db

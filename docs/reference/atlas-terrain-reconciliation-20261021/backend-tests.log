@@ -1,0 +1,383 @@
+TAP version 13
+# Subtest: source-cell index backfills an existing database and follows canonical updates, deletes and reopen
+ok 1 - source-cell index backfills an existing database and follows canonical updates, deletes and reopen
+  ---
+  duration_ms: 2483.863052
+  type: 'test'
+  ...
+# Subtest: source-cell index excludes malformed JSON during writes and reopening without deleting it
+ok 2 - source-cell index excludes malformed JSON during writes and reopening without deleting it
+  ---
+  duration_ms: 424.979974
+  type: 'test'
+  ...
+# Subtest: upgrading the earlier unguarded source index retains its valid source row
+ok 3 - upgrading the earlier unguarded source index retains its valid source row
+  ---
+  duration_ms: 3.30896
+  type: 'test'
+  ...
+# Subtest: trusted seeded surface is reused; successful local writes invalidate only affected blocks
+ok 4 - trusted seeded surface is reused; successful local writes invalidate only affected blocks
+  ---
+  duration_ms: 907.894677
+  type: 'test'
+  ...
+# Subtest: Undo, Redo, deletion, failed writes, outer rollback and unversioned writes cannot retain stale surfaces
+ok 5 - Undo, Redo, deletion, failed writes, outer rollback and unversioned writes cannot retain stale surfaces
+  ---
+  duration_ms: 654.738765
+  type: 'test'
+  ...
+# Subtest: derived indexes tolerate corrupt JSON while canonical reads fail closed; metadata plans use indexes
+ok 6 - derived indexes tolerate corrupt JSON while canonical reads fail closed; metadata plans use indexes
+  ---
+  duration_ms: 484.468674
+  type: 'test'
+  ...
+# Subtest: absent terrain categories perform no row queries; insertion and last deletion refresh each category
+ok 7 - absent terrain categories perform no row queries; insertion and last deletion refresh each category
+  ---
+  duration_ms: 566.495892
+  type: 'test'
+  ...
+# Subtest: replacement between categories and removal of only one instance do not leave a stale absence
+ok 8 - replacement between categories and removal of only one instance do not leave a stale absence
+  ---
+  duration_ms: 330.595854
+  type: 'test'
+  ...
+# Subtest: campaign switches and external source resets rebuild the category inventory
+ok 9 - campaign switches and external source resets rebuild the category inventory
+  ---
+  duration_ms: 334.449865
+  type: 'test'
+  ...
+# Subtest: first real height and lake appear in the image immediately, including Undo and Redo
+ok 10 - first real height and lake appear in the image immediately, including Undo and Redo
+  ---
+  duration_ms: 1681.377776
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 11 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 1287.645017
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 12 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 675.499441
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 13 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 653.178689
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 14 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 484.433614
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 15 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 669.394079
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 16 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 2405.13312
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 17 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 750.135514
+  type: 'test'
+  ...
+# Subtest: partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+ok 18 - partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+  ---
+  duration_ms: 16.968793
+  type: 'test'
+  ...
+# Subtest: missing, wrong, reset or incompatible bases receive full answers
+ok 19 - missing, wrong, reset or incompatible bases receive full answers
+  ---
+  duration_ms: 0.574436
+  type: 'test'
+  ...
+# Subtest: top-down deltas keep unchanged tile objects and replace only changed image bytes
+ok 20 - top-down deltas keep unchanged tile objects and replace only changed image bytes
+  ---
+  duration_ms: 0.874798
+  type: 'test'
+  ...
+# Subtest: derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+ok 21 - derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+  ---
+  duration_ms: 0.673428
+  type: 'test'
+  ...
+# Subtest: active detail pixels use their own delta, including full fallback when its footprint changes
+ok 22 - active detail pixels use their own delta, including full fallback when its footprint changes
+  ---
+  duration_ms: 23.295754
+  type: 'test'
+  ...
+# Subtest: fixed height codec preserves little-endian values, NaNs, signed zero and subnormals in Node and renderer bundles
+ok 23 - fixed height codec preserves little-endian values, NaNs, signed zero and subnormals in Node and renderer bundles
+  ---
+  duration_ms: 220.810396
+  type: 'test'
+  ...
+# Subtest: existing atob-compatible padding and whitespace retain their exact decoding behavior
+ok 24 - existing atob-compatible padding and whitespace retain their exact decoding behavior
+  ---
+  duration_ms: 242.078651
+  type: 'test'
+  ...
+# Subtest: malformed alphabet, lengths, padding and invalid height values still fail closed
+ok 25 - malformed alphabet, lengths, padding and invalid height values still fail closed
+  ---
+  duration_ms: 68.287952
+  type: 'test'
+  ...
+# Subtest: metres, negative coordinates and continuous interpolation across tile edges
+ok 26 - metres, negative coordinates and continuous interpolation across tile edges
+  ---
+  duration_ms: 20.570731
+  type: 'test'
+  ...
+# Subtest: coarse edits preserve fine authored details but not untouched parts of the same tile
+ok 27 - coarse edits preserve fine authored details but not untouched parts of the same tile
+  ---
+  duration_ms: 102.665289
+  type: 'test'
+  ...
+# Subtest: one gesture creates island and strait; preview matches persisted raster, history and reopened queries
+ok 28 - one gesture creates island and strait; preview matches persisted raster, history and reopened queries
+  ---
+  duration_ms: 1243.523176
+  type: 'test'
+  ...
+# Subtest: sea level and bounded lakes use terrain, survive archive remapping and remain editable
+ok 29 - sea level and bounded lakes use terrain, survive archive remapping and remain editable
+  ---
+  duration_ms: 1550.590399
+  type: 'test'
+  ...
+# Subtest: malformed height formats and write failures leave the transaction unchanged
+ok 30 - malformed height formats and write failures leave the transaction unchanged
+  ---
+  duration_ms: 383.629371
+  type: 'test'
+  ...
+# Subtest: height queries are read-only; explicit local reset releases height overrides and undo restores them
+ok 31 - height queries are read-only; explicit local reset releases height overrides and undo restores them
+  ---
+  duration_ms: 455.3454
+  type: 'test'
+  ...
+# Subtest: semantic water properties cannot create a second coast; colour footprint respects fine straits
+ok 32 - semantic water properties cannot create a second coast; colour footprint respects fine straits
+  ---
+  duration_ms: 1444.240194
+  type: 'test'
+  ...
+# Subtest: sea metadata has no map footprint; exposed uncharted ground accepts colour without height writes
+ok 33 - sea metadata has no map footprint; exposed uncharted ground accepts colour without height writes
+  ---
+  duration_ms: 278.41835
+  type: 'test'
+  ...
+# Subtest: changed node bounds include all four interpolation cells, sparse insertion/deletion and negative coordinates
+ok 34 - changed node bounds include all four interpolation cells, sparse insertion/deletion and negative coordinates
+  ---
+  duration_ms: 32.371976
+  type: 'test'
+  ...
+# Subtest: new fine tiles and successive local edits emit narrower bounds and match complete pixel/grid rebuilds
+ok 35 - new fine tiles and successive local edits emit narrower bounds and match complete pixel/grid rebuilds
+  ---
+  duration_ms: 5123.435624
+  type: 'test'
+  ...
+# Subtest: multiple journal entries for one tile union precise bounds; any raw or Undo mutation forces full-row fallback
+ok 36 - multiple journal entries for one tile union precise bounds; any raw or Undo mutation forces full-row fallback
+  ---
+  duration_ms: 3545.603956
+  type: 'test'
+  ...
+# Subtest: journal bounds roll back atomically; external changes and a lost journal suffix reset readers
+ok 37 - journal bounds roll back atomically; external changes and a lost journal suffix reset readers
+  ---
+  duration_ms: 5006.865217
+  type: 'test'
+  ...
+# Subtest: each live increment is persisted immediately; one undo/redo covers the complete gesture after restart
+ok 38 - each live increment is persisted immediately; one undo/redo covers the complete gesture after restart
+  ---
+  duration_ms: 1374.336323
+  type: 'test'
+  ...
+# Subtest: a failed later increment rolls back only that increment and retains a single undo for the saved prefix
+ok 39 - a failed later increment rolls back only that increment and retains a single undo for the saved prefix
+  ---
+  duration_ms: 562.853745
+  type: 'test'
+  ...
+# Subtest: idempotent receipts never repeat a delta and include the terrain grouping identity
+ok 40 - idempotent receipts never repeat a delta and include the terrain grouping identity
+  ---
+  duration_ms: 573.490223
+  type: 'test'
+  ...
+# Subtest: an intervening edit, undo branch, stale revision and tool-family change cannot be folded into an old gesture
+ok 41 - an intervening edit, undo branch, stale revision and tool-family change cannot be folded into an old gesture
+  ---
+  duration_ms: 588.829582
+  type: 'test'
+  ...
+# Subtest: no-op first increments do not consume an undo slot; later effects still form one gesture
+ok 42 - no-op first increments do not consume an undo slot; later effects still form one gesture
+  ---
+  duration_ms: 518.873536
+  type: 'test'
+  ...
+# Subtest: direct colour increments are canonical writes and undo as one gesture without changing heights
+ok 43 - direct colour increments are canonical writes and undo as one gesture without changing heights
+  ---
+  duration_ms: 884.528431
+  type: 'test'
+  ...
+# Subtest: smoothing uses one persisted history entry across increments and undo restores the original height
+ok 44 - smoothing uses one persisted history entry across increments and undo restores the original height
+  ---
+  duration_ms: 1144.807764
+  type: 'test'
+  ...
+# Subtest: the live writer feeds zero-based incremental durations into the real storage boundary
+ok 45 - the live writer feeds zero-based incremental durations into the real storage boundary
+  ---
+  duration_ms: 676.93084
+  type: 'test'
+  ...
+# Subtest: stationary sampling is requested when write capacity returns, not while a write is blocked
+ok 46 - stationary sampling is requested when write capacity returns, not while a write is blocked
+  ---
+  duration_ms: 12.989417
+  type: 'test'
+  ...
+# Subtest: coalesces input behind one write; advances revision/fence only from ACK and never repeats elapsed samples
+ok 47 - coalesces input behind one write; advances revision/fence only from ACK and never repeats elapsed samples
+  ---
+  duration_ms: 4.881528
+  type: 'test'
+  ...
+# Subtest: a rejected or unknown increment stops queued work and never retries
+ok 48 - a rejected or unknown increment stops queued work and never retries
+  ---
+  duration_ms: 2.278061
+  type: 'test'
+  ...
+# Subtest: a no-op ACK creates no Undo promise, while a saved prefix survives a later failure
+ok 49 - a no-op ACK creates no Undo promise, while a saved prefix survives a later failure
+  ---
+  duration_ms: 4.023891
+  type: 'test'
+  ...
+# Subtest: stop discards unsent tail but lets the one in-flight write settle
+ok 50 - stop discards unsent tail but lets the one in-flight write settle
+  ---
+  duration_ms: 1.000567
+  type: 'test'
+  ...
+# Subtest: color replaces the full cumulative same-id layer and coalesces pending snapshots
+ok 51 - color replaces the full cumulative same-id layer and coalesces pending snapshots
+  ---
+  duration_ms: 6.057714
+  type: 'test'
+  ...
+# Subtest: slow display keeps one read and latest successor, publishing actual snapshot identities
+ok 52 - slow display keeps one read and latest successor, publishing actual snapshot identities
+  ---
+  duration_ms: 11.943583
+  type: 'test'
+  ...
+# Subtest: stale queued snapshots yield to latest confirmed input; terminal failures remain visible
+ok 53 - stale queued snapshots yield to latest confirmed input; terminal failures remain visible
+  ---
+  duration_ms: 2.418979
+  type: 'test'
+  ...
+# Subtest: a reply older than requested cannot replace the shown frame
+ok 54 - a reply older than requested cannot replace the shown frame
+  ---
+  duration_ms: 1.535747
+  type: 'test'
+  ...
+# Subtest: snapshot delivery tolerates later commits and receipt-only writes but rejects unversioned or foreign changes
+ok 55 - snapshot delivery tolerates later commits and receipt-only writes but rejects unversioned or foreign changes
+  ---
+  duration_ms: 0.704206
+  type: 'test'
+  ...
+# Subtest: height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+ok 56 - height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+  ---
+  duration_ms: 13203.300781
+  type: 'test'
+  ...
+# {"measurement":"process includes store, test and scratch allocations; cache bytes are accounted separately","memoryBefore":{"rss":121278464,"heapTotal":22880256,"heapUsed":17617072,"external":2625707,"arrayBuffers":117899},"memoryAfter":{"rss":193708032,"heapTotal":31481856,"heapUsed":21437544,"external":31075744,"arrayBuffers":28538860},"peakRssKiB":198444,"cache":{"bytes":5629289,"limit":16777216,"hits":765,"misses":1626,"evictions":0},"coldRasterTiles":16,"editedRasterTiles":4}
+# Subtest: a small authored change missed by the overview lattice changes the active detail raster
+ok 57 - a small authored change missed by the overview lattice changes the active detail raster
+  ---
+  duration_ms: 1789.417625
+  type: 'test'
+  ...
+# Subtest: small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+ok 58 - small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+  ---
+  duration_ms: 2641.332725
+  type: 'test'
+  ...
+# Subtest: readonly worker prepares the real large brush; Main alone writes and replays the receipt
+ok 59 - readonly worker prepares the real large brush; Main alone writes and replays the receipt
+  ---
+  duration_ms: 1066.250033
+  type: 'test'
+  ...
+# Subtest: intervening writes reject computed patches; worker survives and accepts a new source
+ok 60 - intervening writes reject computed patches; worker survives and accepts a new source
+  ---
+  duration_ms: 1129.140659
+  type: 'test'
+  ...
+# Subtest: worker target/smoothing share the filtered legacy source across edits and undo
+ok 61 - worker target/smoothing share the filtered legacy source across edits and undo
+  ---
+  duration_ms: 2146.069567
+  type: 'test'
+  ...
+# Subtest: scale preparation yields to queued selection work and cancellation never authors a partial result
+ok 62 - scale preparation yields to queued selection work and cancellation never authors a partial result
+  ---
+  duration_ms: 876.001324
+  type: 'test'
+  ...
+1..62
+# tests 62
+# suites 0
+# pass 62
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41243.28461

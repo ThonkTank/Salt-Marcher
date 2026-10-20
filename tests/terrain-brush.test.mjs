@@ -26,9 +26,14 @@ test('smoothing preserves a plane, reduces spikes and is independent of record o
  const spike=plane((x,y)=>200+(x===0&&y===0?90:0)),a=edit(spike,s),b=edit([...spike].reverse(),s);
  assert(height(a)<290&&height(a)>=200);assert.equal(height(a),height(b));assert.equal(height(a,50),200);
 });
-test('all coarse brushes retain explicitly finer nodes',()=>{
+test('coarse additive brushes move fine detail and smooth only their selected scale',()=>{
  const fine=edit([],brush('level',{radius:16,feather:0,strength:1000}));
- for(const mode of ['raise','lower','smooth','level'])assert.equal(height(edit(fine,brush(mode,{radius:128,targetM:900}))),220);
+ assert.equal(height(edit(fine,brush('raise',{radius:128}))),520);
+ assert.equal(height(edit(fine,brush('lower',{radius:128}))),-80);
+ assert.equal(height(edit(fine,brush('smooth',{radius:128}))),220);
+ const capped=edit(fine,brush('level',{radius:128,targetM:900,strength:10000}));
+ assert.equal(height(capped),1220); // target 900 plus the preserved fine contribution 320
+ assert.deepEqual(capped.filter(r=>fine.some(f=>f.id===r.id)),fine);
 });
 test('gesture transaction, failed write, single undo/redo, restart and preview agree',t=>{
  const dir=mkdtempSync('/tmp/r2-brush-');let store=new CampaignStore(dir+'/world.sqlite');const cam=store.create('R2');let active=store.activate(cam.id);
@@ -112,4 +117,10 @@ test('the displayed brush resolution is the resolution actually authored at ever
   assert(records.length>0);assert(records.every(r=>r.height.pixel===resolution));
   assert.equal(new TerrainSampler(records).sample({x:0,y:0}).resolutionM,resolution);
  }
+});
+
+test('stationary holds combine dose without exhausting the moving-stroke work budget',()=>{
+ const held=brush('raise',{strength:1,samples:[{x:0,y:0,t:0},{x:0,y:0,t:300000}]}),dense={...held,samples:Array.from({length:2001},(_,i)=>({x:0,y:0,t:i*150}))};
+ const a=edit([],held),b=edit([],dense),short=edit([],brush('raise'));
+ for(const x of [0,4,16,32,48,64]){assert.equal(height(a,x),height(short,x));assert.equal(height(b,x),height(short,x));}
 });

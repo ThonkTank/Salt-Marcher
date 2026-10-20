@@ -36,6 +36,8 @@ async function start(){
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);
+ assert.equal(await page.locator('#campaign-map').getAttribute('data-renderer'),'webgl','The ordinary Atlas must use the integrated camera, not its fallback');
+ assert.equal(await page.locator('#atlas-terrain-spatial').count(),1);
 }
 async function close(){await native.close();app=null;}
 async function focus(name){await page.locator('#atlas-search').fill(name);await page.locator('#atlas-search-results button').filter({hasText:name}).first().click();await atlasCanvasReady(page);await page.locator('#atlas-search').fill('');}

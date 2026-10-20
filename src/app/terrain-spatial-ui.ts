@@ -1,5 +1,4 @@
 import {TerrainSpatialView} from './terrain-spatial-view';
-import {TerrainSampler} from './terrain-height';
 import {terrainSourceBounds,type TerrainView} from './terrain-spatial-model';
 import type {HeightStroke} from './terrain-brush';
 import type {SpatialJob,SpatialReply} from './terrain-spatial-worker';
@@ -18,6 +17,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private view:TerrainSpatialView|null=null;
   private worker:Worker|null=null;
   private records:LandscapeRecord[]=[];
+  private recordsSource='';private draftLoading=false;
   private params:TerrainView|null=null;
   private source='';private requested='';private generation=0;private busy=false;private queued=false;private lastDraft='';
   private baseline:SpatialReply|null=null;private lastSelection='';
@@ -140,23 +140,48 @@ export class TerrainSpatialUI implements AtlasPresentation {
     const frame={...this.sourceWindow!.frame},box={x:frame.x-frame.width,y:frame.y-frame.height,width:frame.width*3,height:frame.height*3},token=this.token,revision=this.revision;
     try{
       const view:TerrainView={projection:'perspective',box,frame,columns:193,rows:193,focusM:0,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};
-      const reply=await window.campaign.atlasMaskRegion(token,terrainSourceBounds(view,this.samplePad));
+      // Normal navigation reads a bounded derived field on the readonly worker.
+      // Canonical author records are requested only when a draft needs them.
+      const width=1024,height=Math.max(128,Math.min(1024,Math.round(width*box.height/box.width)));
+      const reply=await window.campaign.atlasTerrainProjection(token,{view,revision,width,height,contours:0,displayMpp:frame.width/this.sourceWindow!.pixelWidth});
       if(!this.active||this.requested!==source)return;
       if(!reply.ok)throw Error(reply.error);if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
-      this.records=[...new Map([...this.objects.filter(r=>r.kind!=='patch'),...reply.value.records].map(r=>[r.id,r])).values()];
-      const focusM=Math.max(new TerrainSampler(this.records).seaLevelM,new TerrainSampler(this.records).sample({x:frame.x+frame.width/2,y:frame.y+frame.height/2}).heightM);
-      this.params={projection:'perspective',box,frame:{...this.frame!},columns:193,rows:193,focusM,tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration};this.source=source;this.lastDraft='null';this.queue(contours,true);
+      this.records=[];this.recordsSource='';
+      this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
+      const data={...reply.value,source};this.baseline=data;this.publish(data);
+      this.setContours(contours);
+      if(this.host.draft()&&!this.host.writing())void this.queue(contours);
+
     }catch(error){if(this.active&&this.requested===source){this.fail(error);}}
   }
-  private queue(contours:number,baseOnly=false){
+  private publish(data:SpatialReply){
+    this.view!.setData(data);this.reframe(this.frame!);this.ready=true;
+    this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
+    this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
+    this.view!.showSelection(this.host.selection());this.host.redraw();
+  }
+  private async queue(contours:number,baseOnly=false){
     if(!this.params||!this.active)return;if(this.busy){this.queued=true;return;}
+    if(this.recordsSource!==this.source){
+      if(this.draftLoading){this.queued=true;return;}
+      this.draftLoading=true;const source=this.source,token=this.token,revision=this.revision;
+      try{
+        const reply=await window.campaign.atlasMaskRegion(token,terrainSourceBounds(this.params,this.samplePad));
+        if(!this.active||source!==this.source||source!==this.requested)return;
+        if(!reply.ok)throw Error(reply.error);
+        if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}
+        this.records=[...new Map([...this.objects.filter(r=>r.kind!=='patch'),...reply.value.records].map(r=>[r.id,r])).values()];this.recordsSource=source;
+      }catch(error){if(this.active&&source===this.requested)this.fail(error);return;}
+      finally{this.draftLoading=false;if(this.active&&this.ready&&this.source!==source&&this.host.draft())void this.queue(this.pendingContours);}
+      if(!this.host.draft())return;
+    }
     this.worker??=new Worker(new URL('terrain-spatial-worker.js',document.baseURI));this.busy=true;
     const generation=++this.generation,source=this.source,draft=baseOnly||this.host.writing()?null:this.host.draft();this.lastDraft=JSON.stringify(draft);
     this.worker.onmessage=(e:MessageEvent<SpatialReply&{error?:string}>)=>{
       if(!this.active||source!==this.source||source!==this.requested||generation!==this.generation||e.data.generation!==generation)return;this.busy=false;
       if(e.data.error){this.fail(Error(e.data.error));return;}
       if(e.data.draft&&!this.host.draft()){this.queue(contours,true);return;}
-      if(!e.data.draft)this.baseline=e.data;this.view!.setData(e.data);this.reframe(this.frame!);this.ready=true;this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(e.data.draft);this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
+      if(!e.data.draft)this.baseline=e.data;this.publish(e.data);
       if(e.data.protectedLimit!==undefined)document.getElementById('land-status')!.textContent='Pinselwirkung am geschützten Verlauf lokal begrenzt. Eingriffsgrenzen wären sonst überschritten.';
       if(e.data.heightM!==undefined)document.getElementById('land-cursor-height')!.textContent='Höhe: '+lengthLabel(e.data.heightM)+' · Vorschau';
       this.view!.showSelection(this.host.selection());this.host.redraw();

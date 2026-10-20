@@ -8,7 +8,7 @@ export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
 export const REGION_CACHE_BYTES=64*1024*1024;
 /** Geometry is display-only. In particular it is never a CityCommand upsert. */
-export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'footprint'|'outline'|'position'|'angle'|'width'|'interior'>;
+export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'footprint'|'outline'|'position'|'angle'|'width'|'interior'|'terrain'>&{floorElevations?:number[]};
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
@@ -46,7 +46,7 @@ export interface AtlasRegionCursor {epoch:string;sequence:number;shadow?:{epoch:
 export interface AtlasRegionSource {
  filename:string;campaignId:string;token:string;fence:string;revision:number;epoch:string;sequence:number;
  shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
- reset:boolean;changes:{table:string;id:string}[];
+ reset:boolean;changes:{table:string;id:string;terrainBounds?:LandscapeBox}[];
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {

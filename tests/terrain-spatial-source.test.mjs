@@ -23,7 +23,7 @@ function fixture(t){
  const prior={window:global.window,document:global.document,Worker:global.Worker};t.after(()=>Object.assign(global,prior));
  const {window,document}=parseHTML('<html><body><input id="atlas-perception"><input id="land-radius" value="10"><p id="land-status"></p></body></html>');Object.assign(global,{window,document});Object.defineProperty(document,'baseURI',{value:'https://atlas.invalid/'});
  const reads=[],jobs=[],published=[],errors=[];
- window.campaign={atlasMaskRegion:(token,box)=>new Promise(resolve=>reads.push({token,box,resolve}))};
+ window.campaign={atlasTerrainProjection:(token,query)=>new Promise(resolve=>reads.push({token,query,resolve})),atlasMaskRegion(){throw Error('Navigation must not load canonical author records');}};
  global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
  const input={clientWidth:1000,clientHeight:800,dataset:{}};
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
@@ -34,25 +34,22 @@ function fixture(t){
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
  const load=()=>ui.load(ui.requested,0);
- const resolveRead=(i=0,revision=1)=>reads[i].resolve({ok:true,value:{records:[],revision}});
- const reply=(index=jobs.length-1)=>{
-  const {worker,job}=jobs[index];worker.onmessage({data:{generation:job.generation,source:job.source,grid:{view:job.view,heights:new Float32Array(4),seaLevelM:0},pixels:new Uint8Array(16),width:2,height:2,draft:false}});
- };
- return {ui,input,reads,jobs,published,errors,sync,load,resolveRead,reply};
+ const resolveRead=(i=0,revision=1)=>reads[i].resolve({ok:true,value:{revision,fence:'source',generation:0,source:'source',grid:{view:reads[i].query.view,heights:new Float32Array(4),seaLevelM:0},pixels:new Uint8Array(16),width:2,height:2,draft:false}});
+
+ return {ui,input,reads,jobs,published,errors,sync,load,resolveRead};
 }
-test('pending IPC and worker survive small camera gestures; the result uses the latest pose',async t=>{
+test('pending bounded projection survives small camera gestures; the result uses the latest pose',async t=>{
  const f=fixture(t);f.sync();const key=f.ui.requested,loading=f.load();
  f.sync(zoom(.9));assert.equal(f.ui.requested,key);assert.equal(f.reads.length,1);
- f.resolveRead();await loading;assert.equal(f.jobs.length,1);assert.deepEqual(f.jobs[0].job.view.frame,zoom(.9));
- f.ui.tilt=75;f.sync({...zoom(.9),x:-170});f.reply();assert.equal(f.ui.ready,true);assert.equal(f.published.length,1);
+ f.ui.tilt=75;f.sync({...zoom(.9),x:-170});f.resolveRead();await loading;assert.equal(f.jobs.length,0);assert.equal(f.ui.ready,true);assert.equal(f.published.length,1);
  assert.equal(f.ui.visibility().tilt,75);assert.equal(f.ui.visibility().frame.x,-170);
  for(let i=0;i<50;i++)f.sync(zoom(.9+i*.001));
- assert.equal(f.jobs.length,1);assert.equal(f.reads.length,1);assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
+ assert.equal(f.jobs.length,0);assert.equal(f.reads.length,1);assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
 });
 test('detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse',async t=>{
- const f=fixture(t);f.sync();const first=f.load();f.resolveRead();await first;
- f.sync(zoom(.7));assert.equal(f.ui.ready,false);assert.equal(f.jobs[0].worker.terminated,true);f.reply(0);assert.equal(f.published.length,0);
- const second=f.load();f.resolveRead(1);await second;f.reply(1);assert.equal(f.ui.ready,true);
+ const f=fixture(t);f.sync();const first=f.load();
+ f.sync(zoom(.7));assert.equal(f.ui.ready,false);f.resolveRead();await first;assert.equal(f.published.length,0);
+ const second=f.load();f.resolveRead(1);await second;assert.equal(f.ui.ready,true);
  for(const [b,revision,token,contours] of [[zoom(.7),2,'campaign',0],[zoom(.7),2,'other',0],[{...zoom(.7),x:800},2,'other',50]]){
   const key=f.ui.requested;f.sync(b,revision,token,contours);assert.notEqual(f.ui.requested,key);assert.equal(f.ui.ready,false);
  }
@@ -66,7 +63,7 @@ test('source change during IPC discards the old campaign; record ordering does n
 });
 
 test('contour interval changes are immediate display changes without source reads or worker invalidation',async t=>{
- const f=fixture(t);f.sync();const loading=f.load();f.resolveRead();await loading;f.reply();
+ const f=fixture(t);f.sync();const loading=f.load();f.resolveRead();await loading;
  const key=f.ui.requested;f.sync(frame,1,'campaign',100);
- assert.equal(f.ui.view.interval,100);assert.equal(f.ui.requested,key);assert.equal(f.ui.ready,true);assert.equal(f.jobs.length,1);assert.equal(f.reads.length,1);
+ assert.equal(f.ui.view.interval,100);assert.equal(f.ui.requested,key);assert.equal(f.ui.ready,true);assert.equal(f.jobs.length,0);assert.equal(f.reads.length,1);
 });

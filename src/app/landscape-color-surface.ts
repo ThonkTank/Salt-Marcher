@@ -46,8 +46,9 @@ export function landSurface(records: LandscapeRecord[]): Polygon[] {
 export function colorSurface(
   record: LandscapeRecord,
   records: LandscapeRecord[],
+  canonicalVisibility?:import('./terrain-spatial-model').TerrainGrid,
 ): LandscapeRecord {
-  const r = visibleTerrainColor(structuredClone(record),records),
+  const r = visibleTerrainColor(structuredClone(record),records,canonicalVisibility),
     p = r.paint!;
   let land = landSurface(records);
   if(DEFAULT_HEIGHT_M>terrainSettings(records).seaLevelM){

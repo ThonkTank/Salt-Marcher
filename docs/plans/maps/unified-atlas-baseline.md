@@ -24,6 +24,41 @@ Dieser neuere Integrationsstand enthält bereits gemeinsame Raumgruppen und
 Regionen. Messungen beider Stände müssen ihre Quellen und Funktionen getrennt
 ausweisen. Vor der Integration ist erneut aktuelles `origin/main` maßgeblich.
 
+## Repository-Start und Zusammenführung (21.10.2026)
+
+Der Nutzer startet aus `/home/aaron/Schreibtisch/projects/SaltMarcher` mit
+`npm run start:desktop`. Dieser Checkout steht weiterhin auf `e80b3bfb7` mit
+uncommittierten Terrainarbeiten. Die Kameraänderungen auf
+`codex/unified-spatial-atlas` sind dort **noch nicht verfügbar**. Native Prüfungen
+im isolierten Branch belegen dessen App-Einstieg, nicht den Start aus diesem
+Projektordner. Ein Entwicklungsbild ist kein Nachweis der lokalen Übernahme.
+
+Die erneute Sicherung liegt unter
+`~/.cache/saltmarcher/unified-atlas/repository-start-20261020T215309Z/`:
+3.489 Dateien, SHA-256-Manifest und Git-Diff; identisch zur P0-Sicherung.
+Die Zusammenführung verwendet die vorhandene R7-Basis für den dreiseitigen
+Abgleich. Der Projektordner wird erst nach Prüfung der kombinierten Fassung
+gezielt aktualisiert; bestehende Quelländerungen und Daten bleiben erhalten.
+
+Übernommen sind zunächst die gestreamten Terrainfelder, begrenzten abgeleiteten
+Caches, lokale Invalidierung, additive Höhenbänder und die Vorbereitung großer
+Pinsel im Readonly-Worker. Die gemeinsame Kamera verwendet diese begrenzte
+Projektion bereits für normale Navigation. Kanonische Records werden erst bei
+einer Autoren-Vorschau geladen. Die GPU-Höhenlinien bleiben unmittelbar
+änderbar, ohne eine Textur erneut berechnen zu müssen.
+
+Die ursprünglichen großen Pinsel bewegen feine Geländeformen mit, statt deren
+Kacheln zu überschreiben. Submeter-Pinsel aus dem Kamerabranch bleiben möglich.
+Die gemeinsame Schema-Version bleibt 53 einschließlich Raumgruppen, Regionen
+und Reisehistory; eine ältere Schema-Erwartung aus dem Terrainstand darf diese
+Bestände nicht zurückstufen.
+
+Noch zusammenzuführen sind die Live-Pinselanzeige in derselben Hauptkamera,
+partielle GPU-Updates, Höhenanalyse, Objekt-Höhenbindung und perspektivische
+Ausgabe. Die bisherigen Ausgabetests und Proben der separaten Ansicht sind
+hierfür keine Qualifikation. Erst danach folgen Übernahme und Prüfung über den
+Repository-Start. Die drei abschließenden Produktaudits stehen weiterhin aus.
+
 ## Umfang und Quellenzuordnung
 
 Die einzelnen sichtbaren Werkzeuge stehen in

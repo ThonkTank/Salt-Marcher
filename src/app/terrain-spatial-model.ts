@@ -33,6 +33,15 @@ export function projectTerrain(view:TerrainView,p:Point,heightM:number){
 /** Exact line-of-sight against the displayed triangular grid, including occluders outside the brush.
  * Walk grid/diagonal crossings; heights along each interval are linear, so no narrow peak is skipped. */
 export function terrainVisible(g:TerrainGrid,p:Point){
+  return visibleTerrain(g,p,Infinity);
+}
+/** Prepare once for an immutable brush snapshot. A ray above the highest
+ * vertex cannot meet a later triangle, so distant empty cells need no walk. */
+export function terrainVisibility(g:TerrainGrid){
+  let ceiling=-Infinity;for(const height of g.heights)ceiling=Math.max(ceiling,height);
+  return(p:Point)=>visibleTerrain(g,p,ceiling);
+}
+function visibleTerrain(g:TerrainGrid,p:Point,ceiling:number){
   const v=g.view,b=v.box;if(p.x<b.x||p.y<b.y||p.x>b.x+b.width||p.y>b.y+b.height)return false;
   const z=gridHeight(g,p),screen=atlasProject(v,p,z);if((v.projection==='perspective'&&screen.depth<=0)||!Number.isFinite(screen.x)||!Number.isFinite(screen.y)||screen.x<0||screen.y<0||screen.x>1||screen.y>1)return false;
   if(v.tilt===0&&!v.projection)return true;
@@ -45,6 +54,7 @@ export function terrainVisible(g:TerrainGrid,p:Point){
   }
   let t=0;const epsilon=Math.min(sx,sy)*1e-7;
   for(let n=0;n<v.columns+v.rows+4;n++){
+    if(z+rise*t>=ceiling+Math.max(.0001,Math.abs(z)*1e-7))return true;
     const x=p.x+dx*(t+epsilon),y=p.y+dy*(t+epsilon);
     if(x<b.x||y<b.y||x>=b.x+b.width||y>=b.y+b.height)return true;
     const ix=Math.floor((x-b.x)/sx),iy=Math.floor((y-b.y)/sy);

@@ -1,0 +1,52 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {buildSync} from 'esbuild';
+import {createRequire} from 'node:module';
+import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
+import {homedir} from 'node:os';
+import {randomUUID} from 'node:crypto';
+const require=createRequire(import.meta.url);
+for(const [name,file]of [['store','src/app/storage/store.ts'],['service','desktop/atlas-region.ts'],['worker','desktop/atlas-region-worker.ts']])buildSync({entryPoints:[file],outfile:'.build/terrain-service-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore}=require('../.build/terrain-service-store.cjs'),{AtlasRegionService}=require('../.build/terrain-service-service.cjs');
+test('live frames use changed interpolation support and reject a source overtaken before snapshot creation',async t=>{
+ const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});
+ const dir=mkdtempSync(base+'/terrain-live-frame-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Live frame'),token=store.activateShell(campaign.id).token,service=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ t.after(async()=>{await service.close();store.close();rmSync(dir,{recursive:true,force:true});});
+ const box={x:-32,y:-32,width:64,height:64},query={kind:'top',query:{box,width:64,height:64,scopeId:null,floorId:'ground',slice:null,roofs:true}};
+ const source=()=>store.atlasRegionSource(token,service.cursor);
+ const first=await service.liveTerrain(source(),query);assert.equal(first.kind,'full');assert.equal(first.invalidation.reset,true);
+ const before=source(),stroke={mode:'raise',radius:4,strength:100,feather:0,samples:[{x:0,y:0,t:0},{x:0,y:0,t:1000}]};
+ store.executeAtlasCommit({commandId:randomUUID(),campaignId:campaign.id,token,sourceFence:before.fence,action:{kind:'landscape-height-stroke',stroke}});
+ await assert.rejects(service.liveTerrain(before,query),/inzwischen geändert/,'a queued old identity must not label new rows');
+ const current=source(),next=await service.liveTerrain(current,query);
+ assert.equal(next.target.revision,current.revision);assert.equal(next.target.fence,current.fence);assert.match(next.target.key,/^[a-f0-9]{64}$/);assert.equal(next.invalidation.reset,false);
+ const rows=store.db.prepare("SELECT min_x x,min_y y,max_x-min_x width,max_y-min_y height FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL").all();
+ assert(rows.length>0);
+ assert(next.invalidation.bounds.length>0);
+ for(const b of next.invalidation.bounds)assert(rows.some(r=>b.x>=r.x&&b.y>=r.y&&b.x+b.width<=r.x+r.width&&b.y+b.height<=r.y+r.height),'precise support stays inside the canonical row');
+ const coldService=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ try{const cold=await coldService.liveTerrain(store.atlasRegionSource(token),query);assert.deepEqual(next.layer,cold.layer,'partial invalidation equals an independent cold read');}finally{await coldService.close();}
+ const warm=await service.liveTerrain(source(),query);assert.deepEqual(warm.layer,next.layer);
+ assert.deepEqual(warm.invalidation,{reset:false,bounds:[]});
+ const delta=await service.liveTerrain(source(),query,warm.target);assert.equal(delta.kind,'delta');assert.equal(delta.tiles.length,0);
+ const detail=await service.liveTerrain(source(),{...query,detail:{x:-8,y:-8,width:16,height:16}},delta.target);
+ assert.equal(detail.kind,'full');assert(detail.layer.tiles.some(t=>t.box.width<=32&&t.width>=256),'top-down brush gets genuinely finer world sampling');
+ await assert.rejects(service.liveTerrain(source(),{...query,detail:{x:-1000,y:0,width:1,height:1}}),/Geländedetail/);
+
+ store.executeAtlasCommit({commandId:randomUUID(),campaignId:campaign.id,token,action:{kind:'undo'}});
+ const undone=await service.liveTerrain(source(),query);
+ for(const row of rows)assert(undone.invalidation.bounds.some(b=>JSON.stringify(b)===JSON.stringify(row)),'deleted rows retain their old invalidation bounds');
+ assert.deepEqual(undone.layer,first.layer,'cached landscape after deletion agrees with the original full frame');
+});
+test('terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse',async t=>{
+ const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const dir=mkdtempSync(base+'/terrain-service-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Service'),token=store.activateShell(campaign.id).token,service=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ t.after(async()=>{await service.close();store.close();rmSync(dir,{recursive:true,force:true});});
+ const box={x:0,y:0,width:100,height:100},view={box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:2},q={view,width:64,height:64,revision:store.atlasRegionSource(token).revision,contours:0,displayMpp:1},source=store.atlasRegionSource(token,service.cursor);
+ const camera=service.read(source,{box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true});
+ const old=service.terrain(source,q);const rejected=assert.rejects(old,/neuere Anfrage/);const next=service.terrain(source,{...q,width:128});
+ await camera;await rejected;const data=await next;assert.equal(data.width,128);assert(data.pixels instanceof Uint8Array);assert(data.grid.heights instanceof Float32Array);assert.equal(data.fence,source.fence);assert.equal(service.diagnostics.workerStarts,1);
+ const stale=store.atlasRegionSource(token,service.cursor);await assert.rejects(service.terrain(stale,{...q,fence:'obsolete'}),/inzwischen/);
+ const pending=service.terrain(stale,q),cancelled=assert.rejects(pending,/abgebrochen/);service.cancel();await cancelled;await service.cancelAndWait();
+ const fresh=await service.terrain(store.atlasRegionSource(token,service.cursor),q);assert.equal(fresh.width,64);assert.equal(service.diagnostics.workerStarts,2);
+ await service.close();await assert.rejects(service.terrain(stale,q),/abgebrochen/);
+});

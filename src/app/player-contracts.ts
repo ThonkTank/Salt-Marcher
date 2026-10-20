@@ -5,7 +5,7 @@ export interface PlayerSettings {revision:number;blank:boolean;windowOpen:boolea
 export interface PlayerObserver {characterId:string;enabled:boolean;rangeMeters:number;darkvisionMeters:number;eyeHeightMeters:number}
 export interface PlayerAsset {id:string;kind:'location'|'npc'|'custom';subjectId:string|null;title:string;sha256:string;extension:'.png';bytes:number}
 export type PlayerDungeon=Pick<DungeonDisplay,'position'|'known'|'visible'|'labels'>&{markers:Pick<DungeonDisplay['markers'][number],'point'|'kind'|'open'>[];tracks?:{from:DungeonDisplay['position'];to:DungeonDisplay['position']}[]};
-export interface PlayerFrame {mode:'blank'|'map'|'image'|'dungeon';dungeon?:PlayerDungeon;title:string;imageId?:string;map?:{hexMeters:number;position:{q:number;r:number};cells:{q:number;r:number;terrain:string;road:boolean|null;river:boolean|null;visible:boolean;label:string}[];markers:{q:number;r:number;label:string;visible:boolean}[]};reason?:string}
+export interface PlayerFrame {mode:'blank'|'map'|'image'|'dungeon';dungeon?:PlayerDungeon;title:string;imageId?:string;map?:{hexMeters:number;position:{q:number;r:number};cells:{q:number;r:number;terrain:string;elevationM?:number;road:boolean|null;river:boolean|null;visible:boolean;label:string}[];markers:{q:number;r:number;label:string;visible:boolean}[]};reason?:string}
 
 /** GM-only selection data; never part of PlayerFrame or the player bridge. */
 export interface PlayerMapCell {q:number;r:number;terrain:string;name:string;publicLabel:string;hidden:boolean;blocksSight:boolean;known:boolean}

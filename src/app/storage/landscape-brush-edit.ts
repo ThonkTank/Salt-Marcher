@@ -1,4 +1,5 @@
-import {terrainViewBounds} from '../terrain-spatial-model';
+import {readTerrainGrid} from './terrain-grid';
+import {readRouteTerrain} from './terrain-route';
 import {applyHeightStroke,TerrainSampler} from '../terrain-height';
 import {colorSurface} from '../landscape-color-surface';
 import {isLandMode,strokeBox,maskLandSpans} from '../land-mask';
@@ -9,7 +10,7 @@ import type {Polygon} from '../contracts';
 import {landscapeRegion,putLandscape,landMaskRegion} from './atlas-landscape';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */
-export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'landscape-brush'}>){
+export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'landscape-brush'}>,colorRevision:number|null=null,visibilityGrid?:import('../terrain-spatial-model').TerrainGrid){
   if(isLandMode(a.mode)){
     if(a.record?.paint)throw Error('Landpinsel darf keine Farbmaske enthalten.');
     const stroke={mode:a.mode,radius:a.radius,roughness:a.roughness,seed:a.seed,samples:a.samples??[]};
@@ -30,10 +31,10 @@ export function executeBrush(db:any,cam:string,a:Extract<LandscapeAction,{kind:'
     const mode=r.paint.operation==='erase'?'color-erase':r.paint.target==='water'?'water-color':'ground-color';
     if(a.mode!==mode||r.propertyOnly||r.mask||r.surface)throw Error('Farbauftrag prüfen.');
     if(a.fill&&db.prepare("SELECT count(*) n FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind')='patch'").get(cam).n>10000)throw Error('Zu viele Flächen zum Füllen.');
-    records=landscapeRegion(db,cam,a.fill?undefined:r.paint.visibility?terrainViewBounds(r.paint.visibility,box):box);
-    r=colorSurface(r,records);
+    records=r.paint.visibility?readRouteTerrain(db,cam,box,true):landscapeRegion(db,cam,a.fill?undefined:box);
+    r=colorSurface(r,records,visibilityGrid??(r.paint.visibility?readTerrainGrid(db,cam,r.paint.visibility):undefined));
     if(!r.polygons.length){if(a.fill)throw Error('Keine passende Fläche zum Füllen.');return;}
-    putLandscape(db,cam,r,null);return;
+    putLandscape(db,cam,r,colorRevision);return;
   }
   if(a.fill){
     // Filling is explicit, not a camera read. A bounded author set avoids unbounded global allocation.

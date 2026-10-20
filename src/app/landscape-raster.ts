@@ -1,5 +1,6 @@
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
-import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLight,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
+import type {TerrainField,TerrainLattice} from './terrain-field-stream';
+import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
 import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
@@ -34,6 +35,7 @@ export class LandscapeRasterizer {
   private maskPending=false;
   private coastPending=false;
   private elevations:Float32Array|null=null;
+  private field:Pick<TerrainField,'heights'|'water'>|null=null;
   private terrainStyle:Readonly<TerrainStyle>=DEFAULT_TERRAIN_STYLE;
   private seaLevelM=0;
   readonly sampleBox:LandscapeBox;
@@ -46,6 +48,20 @@ export class LandscapeRasterizer {
     this.samples=new Uint8Array(this.w*this.h*4);
     this.water=new Uint8Array(this.w*this.h).fill(1);
     this.pixels=new Uint8Array(width*height*4);
+  }
+  sampleLattice():TerrainLattice {
+    const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h;
+    return {x:this.sampleBox.x+dx/2,y:this.sampleBox.y+dy/2,dx,dy,columns:this.w,rows:this.h};
+  }
+  setTerrainField(field:TerrainField){
+    if(field.heights.length!==this.w*this.h||field.water.length!==this.w*this.h)throw Error('Geländerastergröße prüfen.');
+    this.field={heights:field.heights,water:field.water};this.maskPending=true;this.coastPending=true;
+  }
+  /** Reader supplies covers in display order after all base polygons, without retaining them. */
+  paintCover(record:LandscapeRecord){
+    this.applyMasks();if(!record.vegetation)return;
+    const rgb=[1,3,5].map(i=>parseInt(record.vegetation!.preset.ground.slice(i,i+2),16));
+    for(const polygon of record.polygons)this.polygon(polygon,rgb,.78,'ground');
   }
   paint(record: LandscapeRecord) {
     if(record.terrainSettings){this.terrainStyle=record.terrainSettings.style??DEFAULT_TERRAIN_STYLE;this.seaLevelM=record.terrainSettings.seaLevelM;}
@@ -75,7 +91,8 @@ export class LandscapeRasterizer {
       const m=r.mask!,size=256*m.pixel,x0=Math.max(0,Math.floor((m.x-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w,Math.ceil((m.x+size-this.sampleBox.x)/this.sampleBox.width*this.w)),y0=Math.max(0,Math.floor((m.y-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h,Math.ceil((m.y+size-this.sampleBox.y)/this.sampleBox.height*this.h));
       for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const v=maskAt(m,{x:this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,y:this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height});if(v!==undefined)this.water[y*this.w+x]=v<MASK_SEA_LEVEL?1:0;}
     }
-    if(this.heights.length){const sampler=new TerrainSampler([...this.heights,...this.fresh]);
+    if(this.field){this.water.set(this.field.water);this.elevations=this.field.heights;}
+    else if(this.heights.length){const sampler=new TerrainSampler([...this.heights,...this.fresh]);
       this.water.fill(DEFAULT_HEIGHT_M<=sampler.seaLevelM?1:0);
       this.elevations=new Float32Array(this.w*this.h).fill(DEFAULT_HEIGHT_M);
       // Only the union of authored supports needs sampling. Distant ocean stays implicit.
@@ -94,7 +111,7 @@ export class LandscapeRasterizer {
     for(let i=0;i<this.water.length;i++){
       const at=i*4;if(this.water[i]||!this.samples[at+3]||(this.samples[at]===127&&this.samples[at+1]===168&&this.samples[at+2]===189)){const rgb=this.water[i]?sea:land;for(let c=0;c<3;c++)this.samples[at+c]=rgb[c]!;this.samples[at+3]=255;}
     }
-    if(!this.heights.length)for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
+    if(!this.field&&!this.heights.length)for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
   }
   paintColor(record:LandscapeRecord){
     this.applyVegetation();
@@ -177,13 +194,13 @@ export class LandscapeRasterizer {
   }
   private applyRelief(){
     const z=this.elevations;if(!z)return;
-    const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink);
+    const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink),lighting=reliefLighting(style);
     // A small symmetric screen footprint suppresses bilinear-cell facets without changing heights or coasts.
     const step=4,stride=step*this.w;
     for(let y=step;y<this.h-step;y++)for(let x=step;x<this.w-step;x++){
       const i=y*this.w+x;if(this.water[i])continue;
       const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
-      const light=reliefLight(sx,sy,style);
+      const light=lighting(sx,sy);
       const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
       const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
       const delta=Math.hypot(zx,zy),interval=this.contours;

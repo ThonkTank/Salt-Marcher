@@ -1,3 +1,4 @@
+import {terrainTraceStart} from '../src/app/terrain-timing';
 import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
 import type {
@@ -6,13 +7,14 @@ import type {
 import { REGION_CACHE_BYTES } from '../src/app/atlas-region-contracts';
 
 type Queued = {
+  endQueue:()=>void;
   source: AtlasRegionSource;
   job: object;
   resolve: (value: any) => void;
   reject: (error: Error) => void;
 };
 
-/** One readonly worker/index; bounded successors for selection and camera, with selection first. */
+/** One readonly worker/index; bounded successors for selection, camera and terrain, with selection first. */
 export class AtlasRegionService {
   private worker: Worker | null = null;
   private identity = '';
@@ -21,7 +23,7 @@ export class AtlasRegionService {
   private generation = 0;
   private closed = false;
   private source: AtlasRegionSource | null = null;
-  private queued = new Map<"selection" | "camera", Queued>();
+  private queued = new Map<"selection" | "camera" | "terrain" | "author", Queued>();
   private draining = false;
   private starts = 0;
   private cache = new Map<string, { json: string; bytes: number }>();
@@ -29,7 +31,7 @@ export class AtlasRegionService {
 
   constructor(
     private workerFile = join(__dirname, 'atlas-region-worker.cjs'),
-    private cacheLimit = REGION_CACHE_BYTES,
+    private cacheLimit = REGION_CACHE_BYTES/4,
   ) {}
 
   get cursor() {
@@ -88,7 +90,7 @@ export class AtlasRegionService {
     this.cacheBytes = 0;
   }
 
-  private enqueue(source: AtlasRegionSource, job: object, lane: "selection" | "camera" = "selection") {
+  private enqueue(source: AtlasRegionSource, job: object, lane: "selection" | "camera" | "terrain" | "author" = "selection") {
     if (this.closed) {
       return Promise.reject(new Error('Kartenausschnitt abgebrochen.'));
     }
@@ -97,7 +99,7 @@ export class AtlasRegionService {
     }
     this.queued.get(lane)?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
     const promise = new Promise<any>((resolve, reject) => {
-      this.queued.set(lane, { source, job, resolve, reject });
+      this.queued.set(lane, { source, job, resolve, reject, endQueue:terrainTraceStart("region.queue",source.revision) });
     });
     void this.drain();
     return promise;
@@ -110,11 +112,15 @@ export class AtlasRegionService {
     this.draining = true;
     try {
       while (this.queued.size && !this.closed) {
-        const lane = this.queued.has("selection") ? "selection" : "camera",
+        const lane = this.queued.has("selection") ? "selection" : this.queued.has("camera") ? "camera" : this.queued.has("terrain") ? "terrain" : "author",
           request = this.queued.get(lane)!;
-        this.queued.delete(lane);
+        this.queued.delete(lane);request.endQueue();
         try {
-          request.resolve(await this.run(request.source, request.job));
+          const value=await this.run(request.source, request.job);
+          if(value?.terrainContinuation===true&&(request.job as {kind?:string}).kind==='terrain-stroke'){
+            if(this.queued.has('author'))request.reject(new Error('Geländeberechnung durch neueren Auftrag ersetzt.'));
+            else this.queued.set('author',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
+          }else request.resolve(value);
         } catch (e) {
           request.reject(e as Error);
         }
@@ -170,6 +176,7 @@ export class AtlasRegionService {
       // A successor captured before the first response has no cursor yet. Same source needs no rebuild.
       source = { ...source, reset: false, changes: [] };
     }
+    const endRoundtrip=terrainTraceStart("worker.roundtrip",source.revision);
     const value = await new Promise<any>((resolve, reject) => {
       this.pending = { resolve, reject };
       this.worker!.postMessage({ ...job, source });
@@ -177,7 +184,7 @@ export class AtlasRegionService {
     if (this.closed || generation !== this.generation) {
       throw new Error('Kartenausschnitt abgebrochen.');
     }
-    this.source = source;
+    endRoundtrip();this.source = source;
     return value;
   }
 
@@ -206,6 +213,12 @@ export class AtlasRegionService {
     }
     return value;
   }
+
+  prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
+
+  terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain');}
+
+  liveTerrain(source:AtlasRegionSource,query:import('../src/app/terrain-presentation').TerrainFrameQuery,base?:import('../src/app/terrain-frame').TerrainFrameIdentity):Promise<import('../src/app/terrain-presentation').TerrainFrame>{return this.enqueue(source,{kind:'terrain-live',query,base},'terrain');}
 
   focus(source: AtlasRegionSource, kind: 'room' | 'city' | 'building' | 'element' | 'scope', id: string): Promise<AtlasObjectFocus> {
     return this.enqueue(source, { kind: 'focus', objectKind: kind, id });

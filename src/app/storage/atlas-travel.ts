@@ -1,3 +1,4 @@
+import {validateTerrainAnchor} from '../terrain-objects';
 import {effectiveLandscape} from '../atlas-landscape';
 import { atlasPartyPoint } from "../atlas-runtime-model";
 import { createHash } from "node:crypto";
@@ -57,6 +58,7 @@ function saveJourney(db: any, cam: string, j: AtlasLocalJourney) {
   ).run(cam, j.sceneId, JSON.stringify(j), hash(j));
 }
 export function putAtlasEntrance(db: any, a: CampaignAtlas, e: AtlasEntrance) {
+  validateTerrainAnchor(e.terrain);
   const room = a.workspace.rooms.find(
       (r) =>
         r.id === e.roomId && r.scopeId === e.scopeId && r.floorId === e.floorId,

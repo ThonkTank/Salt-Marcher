@@ -1,6 +1,9 @@
 import {mapFootprintVisible,mapLineVisible,mapLineWidth} from '../atlas-scale-policy';
 import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerritories} from './atlas-territories';
+import {validateTerrainDetail} from '../terrain-detail';
+import {TerrainCache} from '../terrain-cache';
+import {terrainFrameDelta,terrainFrameBytes,type TerrainFullFrame,type TerrainFrameIdentity} from '../terrain-frame';
 import {AtlasLandscapeReader} from './atlas-landscape-region';
 import {roomMapStyle} from './drawing';
 import {readDungeonVolume} from './volume';
@@ -48,6 +51,7 @@ const bytes=(v:unknown)=>Buffer.byteLength(JSON.stringify(v));
 const pause=()=>new Promise<void>(resolve=>setImmediate(resolve));
 /** Rebuildable TEMP projections on a readonly source connection. No author data is written. */
 export class AtlasRegionReader {
+ private terrainBases=new TerrainCache<TerrainFullFrame>(8*1024*1024);
  private statements=new Map<string,any>();
  private landscape:AtlasLandscapeReader;
  private landscapeFailure=false;
@@ -71,6 +75,24 @@ export class AtlasRegionReader {
    CREATE TEMP TRIGGER region_shape_insert AFTER INSERT ON region_shape BEGIN INSERT INTO region_index VALUES(new.rowid,new.min_x,new.max_x,new.min_y,new.max_y);END;
    CREATE TEMP TRIGGER region_shape_delete AFTER DELETE ON region_shape BEGIN DELETE FROM region_index WHERE id=old.rowid;END;
    CREATE TEMP TRIGGER region_shape_update AFTER UPDATE ON region_shape BEGIN DELETE FROM region_index WHERE id=old.rowid;INSERT INTO region_index VALUES(new.rowid,new.min_x,new.max_x,new.min_y,new.max_y);END;`))();}catch{this.indexed=false;}
+ }
+ terrainVisibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.visibility(source,view);}
+ terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrain(source,q);}
+ liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{
+  if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');
+  const query=q.kind==='tilted'?{...q.query,revision:undefined,fence:undefined,view:{...q.query.view,focusM:0}}:q.query;
+  if(q.kind==='top')validateTerrainDetail(q.detail,q.query.box);
+  const key=digest(JSON.stringify([source.campaignId,q.kind,query,q.kind==='top'?q.detail:undefined])),previous=this.terrainBases.get(key);
+  const common={kind:'full' as const,target:{revision:source.revision,fence:source.fence,key},invalidation:this.landscape.invalidation};
+  const full:TerrainFullFrame=q.kind==='top'?{...common,view:'top',layer:this.landscape.read(source,q.query,q.detail?REGION_REPLY_BYTES*3/4:REGION_REPLY_BYTES)}:
+   {...common,view:'tilted',projection:this.landscape.terrain(source,{...q.query,revision:source.revision,fence:source.fence})};
+  if(q.kind==='top'&&q.detail&&full.view==='top'){
+   const detail=this.landscape.read(source,{...q.query,box:q.detail,width:256,height:256},REGION_REPLY_BYTES/4,true);
+   if(detail.state!=='ready')throw Error(detail.error??'Geländedetail nicht verfügbar.');
+   full.layer={...full.layer,tiles:[...full.layer.tiles,...detail.tiles.filter(t=>!full.layer.tiles.some(b=>JSON.stringify(b.box)===JSON.stringify(t.box)&&b.width>=t.width))]};
+  }
+  const result=terrainFrameDelta(previous,full,base),box=q.kind==='top'?q.query.box:q.query.view.box;
+  this.terrainBases.put(key,box,full,terrainFrameBytes(full));return result;
  }
  private source(table:string,id:string){return this.sql(`SELECT rowid sourceOrder,* FROM ${table} WHERE campaign_id=? AND id=?`).get(this.campaign,id);}
  private store(kind:string,owner:string,scope:string,floor:string,id:string,value:Shape,sourceOrder:number){
@@ -114,7 +136,7 @@ export class AtlasRegionReader {
  }
  async sync(source:AtlasRegionSource){
   this.campaign=source.campaignId;
-  try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();this.landscapeFailure=false;}
+  try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
   if(source.reset||!this.ready){
    this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem;');

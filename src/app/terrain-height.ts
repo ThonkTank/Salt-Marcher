@@ -12,7 +12,7 @@ import { validateStroke, strokeBox, type MaskStroke } from "./land-mask";
 
 /** Metres, independent of hexes and camera. NaN nodes inherit the coarser field. */
 export interface HeightTile {
-  version: 1;
+  version: 1 | 2;
   x: number;
   y: number;
   pixel: number;
@@ -27,6 +27,20 @@ export const HEIGHT_EDGE = 64,
   DEFAULT_HEIGHT_M = -100;
 export const TERRAIN_SETTINGS_ID = "terrain-settings";
 const cache = new WeakMap<HeightTile, Float32Array>();
+/** Node readers decode directly into bytes. The renderer retains the browser
+ * path; no Node import or capability is added to its bundle. Buffer is lenient,
+ * so an exact roundtrip proves the alphabet/padding; atob validates all others. */
+function heightBytes(data: string): Uint8Array {
+  if (typeof Buffer !== "undefined") {
+    const bytes = Buffer.from(data, "base64");
+    if (bytes.length === 16384 && bytes.toString("base64") === data) return bytes;
+  }
+  const raw = atob(data);
+  if (raw.length !== 16384) throw Error("Höhenkachel prüfen.");
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return bytes;
+}
 export function encodeHeights(values: Float32Array): string {
   const bytes = new Uint8Array(values.length * 4),
     view = new DataView(bytes.buffer);
@@ -38,7 +52,7 @@ export function decodeHeights(t: HeightTile): Float32Array {
   const old = cache.get(t);
   if (old) return old;
   if (
-    t.version !== 1 ||
+    (t.version !== 1 && t.version !== 2) ||
     ![t.x, t.y, t.pixel].every(Number.isFinite) ||
     t.pixel < 2 ** -24 ||
     t.pixel > 2 ** 24 ||
@@ -50,11 +64,8 @@ export function decodeHeights(t: HeightTile): Float32Array {
     t.data.length !== 21848
   )
     throw Error("Höhenkachel prüfen.");
-  const raw = atob(t.data);
-  if (raw.length !== 64 * 64 * 4) throw Error("Höhenkachel prüfen.");
-  const view = new DataView(
-      Uint8Array.from(raw, (c) => c.charCodeAt(0)).buffer,
-    ),
+  const bytes = heightBytes(t.data);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength),
     values = new Float32Array(4096);
   for (let i = 0; i < 4096; i++) {
     const v = view.getFloat32(i * 4, true);
@@ -103,9 +114,10 @@ export function heightRecord(
   y: number,
   pixel: number,
   values: Float32Array,
+  version: 1 | 2 = 1,
 ): LandscapeRecord {
   return {
-    id: `height:${Math.log2(pixel)}:${x / (pixel * 64)}:${y / (pixel * 64)}`,
+    id: `${version===2?"height-delta":"height"}:${Math.log2(pixel)}:${x / (pixel * 64)}:${y / (pixel * 64)}`,
     revision: 0,
     kind: "patch",
     name: "Geländehöhe",
@@ -114,7 +126,7 @@ export function heightRecord(
     width: 0,
     resolution: pixel,
     values: {},
-    height: { version: 1, x, y, pixel, data: encodeHeights(values) },
+    height: { version, x, y, pixel, data: encodeHeights(values) },
   };
 }
 export function validateTerrain(r: LandscapeRecord) {
@@ -165,23 +177,28 @@ export interface HeightSample {
   resolutionM: number | null;
   revision: number;
 }
-/** Bilinear hierarchical field. Fine authored nodes override coarse nodes, inherited nodes do not. */
+/** Legacy absolute levels compose coarse-to-fine; version 2 adds independent scale bands afterwards. */
 type SampleTile = { values: Float32Array; revision: number };
 type HeightGrid = Map<number, Map<number, SampleTile>>;
 export class TerrainSampler {
   readonly seaLevelM: number;
-  private levels: { pixel: number; tiles: HeightGrid }[] = [];
+  private levels: { pixel: number; tiles: HeightGrid; additive: boolean }[] = [];
   private lakes: LandscapeRecord[];
   private routes:RouteSurface;
+  private directHeight=false;
+  private cell:{gx:number;gy:number;values:number[];revisions:number[]}|null=null;
   constructor(records: LandscapeRecord[],effective=true) {
     this.routes=new RouteSurface(effective?records:[]);
+    this.directHeight=!effective||!records.some(r=>r.route?.nodes.length&&!r.route.conflict);
     this.seaLevelM = terrainSettings(records).seaLevelM;
-    const levels = new Map<number, HeightGrid>();
+    const levels = new Map<string, {pixel:number; tiles:HeightGrid; additive:boolean}>();
     for (const r of records)
       if (r.height) {
         const t = r.height;
-        let tiles = levels.get(t.pixel);
-        if (!tiles) levels.set(t.pixel, (tiles = new Map()));
+        const key=t.version+":"+t.pixel;
+        let level=levels.get(key);
+        if(!level)levels.set(key,level={pixel:t.pixel,tiles:new Map(),additive:t.version===2});
+        const tiles=level.tiles;
         const tx = t.x / (64 * t.pixel),
           ty = t.y / (64 * t.pixel);
         let column = tiles.get(tx);
@@ -189,18 +206,35 @@ export class TerrainSampler {
         if (column.has(ty)) throw Error("Doppelte Höhenkachel.");
         column.set(ty, { values: decodeHeights(t), revision: r.revision });
       }
-    this.levels = [...levels]
-      .sort((a, b) => b[0] - a[0])
-      .map(([pixel, tiles]) => ({ pixel, tiles }));
+    this.levels = [...levels.values()].sort((a,b)=>Number(a.additive)-Number(b.additive)||b.pixel-a.pixel);
     this.lakes = records.filter((r) => r.surface === "freshwater");
   }
   sample(p: Point): HeightSample {
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y))
       throw Error("Höhenpunkt prüfen.");
-    let heightM = DEFAULT_HEIGHT_M,
+    // Close-up rasters revisit the same bilinear cell hundreds of times. Reuse its
+    // four finite nodes; sparse/multilevel fields retain the full inheritance path.
+    if(this.directHeight&&this.levels.length===1&&!this.levels[0]!.additive){
+      const {pixel,tiles}=this.levels[0]!,gx=Math.floor(p.x/pixel),gy=Math.floor(p.y/pixel);
+      if(!this.cell||this.cell.gx!==gx||this.cell.gy!==gy){
+        const values:number[]=[],revisions:number[]=[];
+        for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
+          const nx=gx+dx,ny=gy+dy,tx=Math.floor(nx/64),ty=Math.floor(ny/64),tile=tiles.get(tx)?.get(ty);
+          values.push(tile?.values[(ny-ty*64)*64+nx-tx*64]??NaN);revisions.push(tile?.revision??0);
+        }
+        this.cell={gx,gy,values,revisions};
+      }
+      const {values:v,revisions:r}=this.cell;
+      if(v.every(Number.isFinite)){
+        const fx=p.x/pixel-gx,fy=p.y/pixel-gy;
+        return{heightM:(v[0]!*(1-fx)+v[1]!*fx)*(1-fy)+(v[2]!*(1-fx)+v[3]!*fx)*fy,
+          resolutionM:pixel,revision:Math.max(r[0]!,fx?r[1]!:0,fy?r[2]!:0,fx&&fy?r[3]!:0)};
+      }
+    }
+    let heightM = DEFAULT_HEIGHT_M, additiveM=0,
       resolutionM: number | null = null,
       revision = 0;
-    for (const { pixel, tiles } of this.levels) {
+    for (const { pixel, tiles, additive } of this.levels) {
       const gx = Math.floor(p.x / pixel),
         gy = Math.floor(p.y / pixel),
         fx = p.x / pixel - gx,
@@ -222,21 +256,22 @@ export class TerrainSampler {
           weight += w;
           total += v * w;
           revision = Math.max(revision, r.revision);
-          resolutionM = pixel;
+          resolutionM = Math.min(resolutionM??Infinity,pixel);
         }
-      heightM = heightM * (1 - weight) + total;
+      if(additive)additiveM+=total;else heightM = heightM * (1 - weight) + total;
     }
-    return { heightM:this.routes.at(p,heightM).height, resolutionM, revision };
+    heightM+=additiveM;
+    return { heightM:this.directHeight?heightM:this.routes.at(p,heightM).height, resolutionM, revision };
   }
   waterLevel(p:Point,z=this.sample(p).heightM):number|undefined {
-    const route=this.routes.at(p,z).water;
+    const route=this.directHeight?undefined:this.routes.at(p,z).water;
     let level:number|undefined=z<=this.seaLevelM?this.seaLevelM:undefined;
     for(const r of this.lakes)if(contains(p,r.polygons)&&z<=(r.waterLevelM??this.seaLevelM+1))level=Math.max(level??-Infinity,r.waterLevelM??this.seaLevelM+1);
     return route===undefined?level:Math.max(level??-Infinity,route);
   }
   water(p: Point, height = this.sample(p).heightM): boolean {
     return (
-      this.routes.at(p,height).water!==undefined || height <= this.seaLevelM ||
+      !this.directHeight&&this.routes.at(p,height).water!==undefined || height <= this.seaLevelM ||
       this.lakes.some(
         (r) =>
           height <= (r.waterLevelM ?? this.seaLevelM + 1) &&
@@ -270,6 +305,7 @@ export function editHeight(
   box: LandscapeBox,
   pixel: number,
   edit: (p: Point, old: number) => number | undefined,
+  version: 1 | 2 = 1,
 ): LandscapeRecord[] {
   const edge = 64 * pixel,
     x0 = Math.floor(box.x / edge),
@@ -286,7 +322,7 @@ export function editHeight(
     ) > 1e12
   )
     throw Error("Höhenbereich zu groß. In kürzeren Zügen bearbeiten.");
-  const sampler = new TerrainSampler(records,false),
+  const sampler = version===1?new TerrainSampler(records,false):undefined,
     result: LandscapeRecord[] = [];
   for (let ty = y0; ty <= y1; ty++)
     for (let tx = x0; tx <= x1; tx++) {
@@ -294,7 +330,7 @@ export function editHeight(
         y = ty * edge,
         old = records.find(
           (r) =>
-            r.height?.x === x && r.height.y === y && r.height.pixel === pixel,
+            r.height?.x === x && r.height.y === y && r.height.pixel === pixel && r.height.version === version,
         ),
         values = old
           ? decodeHeights(old.height!).slice()
@@ -312,7 +348,7 @@ export function editHeight(
             continue;
           const index = iy * 64 + ix,
             prior = values[index]!,
-            before = Number.isNaN(prior) ? sampler.sample(p).heightM : prior,
+            before = Number.isNaN(prior) ? sampler?.sample(p).heightM??0 : prior,
             value = edit(p, before);
           if (value === undefined || value === before) continue;
           values[index] = Math.max(-1e6, Math.min(1e6, value));
@@ -320,8 +356,8 @@ export function editHeight(
         }
       if (changed)
         result.push({
-          ...heightRecord(x, y, pixel, values),
-          id: old?.id ?? `height:${Math.log2(pixel)}:${tx}:${ty}`,
+          ...heightRecord(x, y, pixel, values, version),
+          ...(old?{id:old.id}:{}),
           revision: old?.revision ?? 0,
         });
     }
