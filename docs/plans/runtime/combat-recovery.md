@@ -46,10 +46,18 @@ warten weiterhin auf die ausdrückliche Klärung.
 Die Prüfung übernimmt den CON-Rettungswurf aus dem im Kampf gespeicherten
 Statblock, einschließlich eines dort angegebenen Rettungswurfbonus. Ohne
 gesonderten Bonus gilt der CON-Attributsmodifikator. Unbekannte Werte bleiben
-ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar. Die native
-Probe `tools/test-desktop-concentration.mjs` führt zwei getrennte Treffer,
-Bestanden/Verloren, Neustart mit offener Prüfung und Abschluss samt erneutem
-Öffnen bei 100/200 Prozent aus. Das ist keine menschliche Bedienabnahme.
+ausdrücklich zu prüfen; die Zahl ist für GM-Korrekturen editierbar. Eine Korrektur
+bleibt für die laufende Prüfung bei erneutem Lesen und zusätzlichen Treffern
+erhalten. Erst deren bestätigter Abschluss – auch nach einer verlorenen Antwort –
+gibt das Eingabefeld für die nächste Prüfung frei. Rücknahme beginnt ebenfalls
+mit dem passenden Statblockwert. Gleicher Schaden und SG sind
+keine Identität einer Prüfung; die Rückbindung verwendet die bestehende
+Buchungsbestätigung ohne neue gespeicherte Kennungen.
+Die native Probe `tools/test-desktop-concentration.mjs` führt zwei gleiche,
+getrennt gebuchte Treffer, Bestanden/Rücknahme/Verloren, weiteren Schaden ohne Konzentration,
+Neustart mit offener Warteschlange und Abschluss samt erneutem Öffnen bei
+100/200 Prozent Browserzoom aus. Der gemeinsame Sitzungshelfer prüft Buildbindung,
+frische Bilder und reguläres Prozessende. Das ist keine menschliche Bedienabnahme.
 
 ## Kampf wechseln und erneut laden
 

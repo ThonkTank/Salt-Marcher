@@ -85,6 +85,42 @@ test('pending concentration keeps its known save and manual override through red
   await until(()=>!x.el('fighter-damage').disabled);
  }finally{x.cleanup();}
 });
+for(const [queued,recovery] of [[false,false],[true,false],[true,true]])test(`identical concentration hits start with their own modifier (${queued?'queued':'sequential'}${recovery?' recovered':''})`,async()=>{
+ const x=await fixture();try{
+  x.el('combat-concentration-effect').scrollIntoView=()=>{};
+  let c=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;
+  const act=action=>c=x.store.executeCombat({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,combatId:c.id,expectedRevision:c.revision,action}).combat;
+  act({kind:'add-creature',creatureId:'archmage',count:1,grouped:false});const actor=c.participants.find(p=>p.sourceId==='archmage');
+  act({kind:'edit',participantId:actor.id,changes:{concentrating:true}});act({kind:'damage',participantId:actor.id,amount:7});if(queued)act({kind:'damage',participantId:actor.id,amount:7});
+  x.el('combat-refresh').onclick();await until(()=>!x.el('combat-concentration-effect').hidden&&!x.el('combat-concentration-pass').disabled);
+  assert.equal(x.el('combat-concentration-modifier').value,'1');x.el('combat-concentration-modifier').value='4';
+  x.el('combat-refresh').onclick();await until(()=>x.el('combat-panel').getAttribute('aria-busy')==='false');assert.equal(x.el('combat-concentration-modifier').value,'4');
+  if(!recovery){
+   x.el('combat-concentration-modifier').value='1.5';x.el('combat-concentration-roll').onclick();
+   await until(()=>x.messages.some(m=>m.includes('ganze Zahl'))&&!x.el('combat-concentration-roll').disabled);
+   assert.equal(x.el('combat-concentration-modifier').value,'1.5','A rejected check must retain its unfinished correction');x.el('combat-concentration-modifier').value='4';
+  }
+  let statusAvailable=false;
+  if(recovery){
+   const send=window.campaign.executeCombat;
+   window.campaign.executeCombat=async command=>{await send(command);return{ok:false,error:'Lost check reply'};};
+   window.campaign.commitStatus=async(...args)=>statusAvailable?{ok:true,value:x.store.commitStatus(...args)}:{ok:true,value:{outcome:'pending'}};
+  }
+  x.el('combat-concentration-pass').onclick();
+  if(recovery){await until(()=>x.messages.some(m=>m.includes('Buchungsantwort fehlt')));assert.equal(x.el('combat-concentration-modifier').value,'4');statusAvailable=true;await x.ui.checkPendingCommit();assert.equal(x.writes.filter(c=>c.action.kind==='concentration').length,1);}
+  await until(()=>!x.el('combat-refresh').disabled);
+  if(!queued){await until(()=>x.el('combat-concentration-effect').hidden);c=x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat;act({kind:'damage',participantId:actor.id,amount:7});x.el('combat-refresh').onclick();}
+  await until(()=>!x.el('combat-concentration-effect').hidden&&!x.el('combat-concentration-roll').disabled);
+  assert.equal(x.el('combat-concentration-modifier').value,'1','A completed check must not lend its override to an identical next hit');
+  assert.match(x.el('combat-concentration-result').textContent,/SG 10.*7 Schaden/);
+  if(queued&&!recovery){
+   x.el('combat-concentration-modifier').value='5';x.el('combat-undo').onclick();
+   await until(()=>!x.el('combat-refresh').disabled&&x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants.find(p=>p.id===actor.id).concentrationChecks?.length===2);
+   assert.equal(x.el('combat-concentration-modifier').value,'1','Undo restores a check, not the correction entered for its successor');
+  }
+ }finally{x.cleanup();}
+});
+
 test('visiting a finished encounter preserves the open encounter draft and blocks stale writes',async()=>{
  const x=await fixture({finished:true});try{await x.fighter();x.input('combat-edit-title','');x.input('combat-notes','Unfertig\r\n');assert(await x.ui.flushCombat());x.hold();x.choose(x.a.id);await until(()=>x.waiting.length===1);assert.equal(x.el('fighter-damage').disabled,true);x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await tick();assert.equal(x.writes.length,0);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,8);
  x.release();await until(()=>x.el('combat-title').textContent==='Torwache');x.choose(x.b.id);await until(()=>x.el('combat-title').textContent==='Keller'&&!x.el('combat-notes').disabled);await x.fighter();x.el('fighter-amount').value='1';x.el('fighter-damage').onclick();await until(()=>x.writes.length===1&&!x.el('fighter-hp').disabled);assert.equal(x.writes[0].combatId,x.b.id);assert.equal(x.store.combat(x.w.token,x.b.sceneId,x.b.id).combat.participants[0].hp,7);

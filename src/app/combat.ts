@@ -148,7 +148,7 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='initiative'&&workspace&&view?.combat?draftCache.values.get(combatDraftKey(workspace.campaign.id,view.combat.id,'initiative',view.combat.id)):action.kind==='notes'?notesDraft():editDraft;
   const priorDamageDeath=action.kind==='damage'||action.kind==='hit'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
-  const gen = generation;
+  const gen = generation,resetConcentration=['concentration','concentration-roll','undo'].includes(action.kind);
   const command: CombatCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token,
     combatId: action.kind === 'create' ? null : view?.combat?.id ?? null,
     expectedRevision: action.kind === 'create' ? null : expectedRevision??view?.combat?.revision ?? null, action,...(editorDraft?{draftWriteId:editorDraft.writeId}:{}) };
@@ -157,8 +157,9 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
     try {
       if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
       if(!stillCurrent())return false;
-      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,...(action.kind==='area-damage'?{areaTargetIds:action.targets.map(target=>target.participantId)}:{})});
+      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,resetConcentration,...(action.kind==='area-damage'?{areaTargetIds:action.targets.map(target=>target.participantId)}:{})});
       if (generation !== gen) return false;
+      if(resetConcentration)delete get('combat-concentration-modifier').dataset.checkKey;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(action.kind==='area-damage'&&result.combat)revealResultMembers(result.combat,action.targets.map(target=>target.participantId));
       if(['create','edit','damage','hit','area-damage','heal','revive','death','death-roll','concentration','concentration-roll','undo','finish','confirm-npc-losses','remove','add-party','add-prepared-group'].includes(action.kind)){await refreshProgress();if(afterSaved)await afterSaved();}
@@ -301,7 +302,7 @@ export function creatureConstitutionSave(source:Pick<Creature,'abilities'|'savin
   return Number.isFinite(source.abilities.con)?Math.floor((source.abilities.con-10)/2):null;
 }
 function renderConcentrationEffect(){
-  const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;return;}box.hidden=false;
+  const box=get('combat-concentration-effect'),combat=view?.combat,actor=combat?.participants.find(p=>p.concentrationChecks?.length),check=actor?.concentrationChecks?.[0];if(!combat||!actor||!check||!editableCombat(combat)){box.hidden=true;delete get('combat-concentration-modifier').dataset.checkKey;return;}box.hidden=false;
   const bonus=creatureConstitutionSave(combat.sources?.find(c=>c.id===actor.sourceId));
   get('combat-concentration-result').textContent=actor.name+' · Konzentration SG '+check.dc+' nach '+check.damage+' Schaden'+(bonus===null?' · CON-Modifikator prüfen':' · CON '+(bonus>=0?'+':'')+bonus+' laut Statblock')+(actor.concentrationChecks!.length>1?' · 1 von '+actor.concentrationChecks!.length+' offenen Prüfungen':'');
   const modifier=get<HTMLInputElement>('combat-concentration-modifier'),key=combat.id+':'+actor.id+':'+check.damage+':'+check.dc;if(modifier.dataset.checkKey!==key){modifier.dataset.checkKey=key;modifier.value=String(bonus??0);}for(const id of ['combat-concentration-roll','combat-concentration-pass','combat-concentration-fail'])get<HTMLButtonElement>(id).disabled=blocked();modifier.disabled=blocked();
@@ -551,8 +552,9 @@ function renderEditor() {
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
-  const token=workspace.token,gen=generation,result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;areaTargetIds?:string[]}|undefined;
+  const token=workspace.token,gen=generation,result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;areaTargetIds?:string[];resetConcentration?:boolean}|undefined;
   if(meta?.token===workspace.token&&meta.editorDraft){draftCache.consumed(workspace.campaign.id,meta.editorDraft);if(meta.editorDraft.kind==='initiative')initiativePanel?.accepted(meta.editorDraft);}
+  if(meta?.token===token&&meta.resetConcentration&&view?.combat?.id===result.combat?.id)delete get('combat-concentration-modifier').dataset.checkKey;
   const loaded=result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id)?await load(result.combat.id):false;
   await refreshProgress();if(afterSaved)await afterSaved();
   const current=view?.combat,targetIds=meta?.token===token?meta.areaTargetIds:undefined;
