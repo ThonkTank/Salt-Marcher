@@ -193,6 +193,7 @@ export class CampaignAtlasWorkbench {
       const legacy=get(id);legacy.dataset.sharedAtlas='true';legacy.replaceChildren();
     }
     this.root.id = "campaign-atlas";
+    this.root.dataset.family = this.family;
     this.root.hidden = true;
     this.root.innerHTML = `<div class="atlas-command-bar"><strong>Atlas</strong><button id="atlas-output-open">Bild ausgeben</button><button id="atlas-reference-open">Größe vergleichen</button><button id="atlas-overview">Weltübersicht</button><button id="atlas-to-party">Zur Gruppe</button><button id="atlas-region-retry" hidden>Ansicht erneut laden</button><label>Ort finden<input id="atlas-search" type="search" placeholder="Stadt, Haus oder Raum"></label><button id="atlas-recover" hidden>Speicherstand klären</button><button id="atlas-undo" disabled>↶ Rückgängig</button><button id="atlas-redo" disabled>↷ Wiederholen</button></div><div id="atlas-search-results"></div><dialog id="atlas-place-confirm"><h2>Gruppe versetzen</h2><p>Die Fokusgruppe wird an den gewählten Punkt gesetzt. Dabei vergeht keine Reisezeit.</p><div class="toolbar"><button id="atlas-place-accept">Platzieren</button><button id="atlas-place-cancel">Abbrechen</button></div></dialog><div class="atlas-layout"><div class="atlas-stage"><canvas id="campaign-map" tabindex="0" role="application" aria-label="Gemeinsamer Kampagnenatlas">Atlas: Auswahl und Navigation über Ortsuche und Objektliste.</canvas><p id="atlas-save-status" role="status"></p></div><aside id="atlas-panel"><div id="atlas-edit-panel"><nav id="atlas-families" aria-label="Atlaswerkzeuge"></nav><h2 id="atlas-selection-title">Deine Kampagnenwelt</h2><p id="atlas-hint" data-idle="true">Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.</p><section id="atlas-tool-fields"><label>Terrain<select id="atlas-terrain">${Object.entries(
       terrainNames,
@@ -957,6 +958,8 @@ export class CampaignAtlasWorkbench {
     this.creation=null;delete this.root.dataset.placing;this.root.dataset.panMode="false";
     this.layout?.beforeTool();
     this.family = f;
+    // Layout sync remembers matching tools; publish the accepted mode before it runs.
+    this.root.dataset.family = f;
     if(['city','interior','decoration'].includes(f))this.spatial?.setActive(false);
     this.landscape.setActive(!this.exportOpen&&f==="terrain");
     for (const b of get("atlas-families").querySelectorAll<HTMLButtonElement>(
@@ -966,7 +969,6 @@ export class CampaignAtlasWorkbench {
     get("atlas-tool-fields").dataset.family = f;
     this.dockDrawingTools(f === "interior" || f === "decoration" || (f === "navigation" && this.root.dataset.editorSection === "interior"));
     this.layout?.setFamily(f);
-    this.root.dataset.family = f;
     if(f==='interior'||f==='decoration')await reloadDrawing();
     if (f === "city" && this.cityId) await openCityReference(this.cityId,undefined,true);
     if (f === "travel") {

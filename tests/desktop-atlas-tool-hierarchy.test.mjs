@@ -69,12 +69,13 @@ test('global Dungeon selection reaches the existing author tool and respects a r
 
 test('the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush',async t=>{
  const {document,root}=fixture(t);for(const id of ['atlas-families','atlas-tool-fields']){const node=document.createElement('div');node.id=id;root.append(node);}
- const statuses=[],events=[];let allow=true;
- const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root,territories:{hasDraft:()=>false},family:'interior',draft:[],roomDrag:null,camera:{stopZoom(){}},reference:{active:false},opts:{flush:async()=>allow,status:message=>statuses.push(message)},landscape:{hasDraft:()=>false,setActive:value=>events.push(value)},layout:{beforeTool(){},setFamily(){}},dockDrawingTools(){},render(){},scheduleRegion(){}});
+ const statuses=[],events=[],layoutStates=[];let allow=true;
+ const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root,territories:{hasDraft:()=>false},family:'interior',draft:[],roomDrag:null,camera:{stopZoom(){}},reference:{active:false},opts:{flush:async()=>allow,status:message=>statuses.push(message)},landscape:{hasDraft:()=>false,setActive:value=>events.push(value)},layout:{beforeTool(){},setFamily:family=>layoutStates.push([family,root.dataset.family])},dockDrawingTools(){},render(){},scheduleRegion(){}});
  root.dataset.roomDraw='true';await editor.setFamily('navigation');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'navigation');
  root.dataset.roomDraw='true';editor.draft=[{x:1,y:2}];await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');assert.deepEqual(editor.draft,[{x:1,y:2}]);assert.equal(statuses.length,1);
  editor.draft=[];allow=false;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');
  allow=true;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'city');assert.equal(events.length,2);
+ assert.deepEqual(layoutStates,[['navigation','navigation'],['city','city']],'layout observes the accepted family, never a stale mode that can change the remembered group');
 });
 
 

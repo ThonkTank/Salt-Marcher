@@ -182,9 +182,13 @@ async function start() {
   }
   await atlasCanvasReady(page);
   console.log("Reference region ready");
+  assert.equal(await page.locator('#atlas-group-tools').getAttribute('data-group'),'land','Opening global navigation must not remember vegetation selection as a chosen tool group');
   await page.locator("#atlas-units").selectOption("metric");
   await page.locator("#atlas-section").selectOption("terrain");
   await atlasCanvasReady(page);
+  assert.equal(await page.locator('#atlas-group-tools').getAttribute('data-group'),'land');
+  assert.equal(await page.locator('#land-tool').inputValue(),'height');
+  await capture('00-land-entry');
 }
 const tool = async (value) => {
   await page.waitForFunction(
