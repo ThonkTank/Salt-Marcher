@@ -41,6 +41,26 @@ Umbenennungen einschließlich alter Links nachführen. Fehlende Zuordnung ist
 kein Grund zum Löschen. Eine automatisierte Prüfung belegt keine native
 Bedienabnahme oder Owner-Abnahme.
 
+## Gemeinsame native Sitzungen
+
+`tools/native-session.mjs` besitzt das isolierte Profil, den Busproxy, Start,
+echten Browserzoom, frische Fensteraufnahmen und reguläres Close/Fresh. Ein
+Ergebnis wird erst nach normalen Prozessenden, verschwundenen PIDs, fehlerfreiem
+Renderer und unveränderten fünf Runtimeartefakten veröffentlicht. Ein neuer
+Lauf entfernt vorherige Erfolgsdaten bereits vor dem Fixtureaufbau. Notfall-Cleanup
+ist kein normaler Prozessabschluss. Profile folgen `TMPDIR`; bei großen Fixtures
+ein eigenes Verzeichnis auf Disk statt eines RAM-Dateisystems verwenden.
+
+Vorbereitung/Generierung, narrative Beuteverteilung, Kampfverstärkung und manuelle
+Timeline teilen diesen Unterbau. Die Skripte behalten ihre tatsächlichen
+Bedienaktionen, Fehlerprovokationen und Fachassertionen. Aufruf weiterhin über
+`python tools/ui-session.py node tools/test-desktop-….mjs`; der äußere Wrapper
+räumt ausschließlich die eigenen, markierten UI-Prozesse auf. `QA_EVIDENCE_DIR`
+trennt Vergleichsläufe; `GM_QA_ZOOM=2` wiederholt manuelle Timeline und Verstärkung
+bei 200 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
+`tests/desktop-editor-transition.test.mjs`. Native Evidenz und menschliche
+Bedienabnahme bleiben getrennt.
+
 ## Bereinigung der historischen Tests
 
 Der [Stand vor der Bereinigung](https://github.com/ThonkTank/Salt-Marcher/tree/c359cc5c890c3a34bc3ef66273081015d11d9ce8/tests)

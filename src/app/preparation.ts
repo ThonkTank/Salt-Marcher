@@ -1,3 +1,4 @@
+import {acknowledgeFields,captureView} from './editor-transition';
 import {NoteMergeUI} from './note-merge-ui';
 import {registerPreparationPacketEditor,packetNoteFeedback} from './session-packet-ui';
 import {NoteThreadDialog} from './note-thread-ui';
@@ -248,20 +249,30 @@ function renderProblems() {
   get('preparation-problems').textContent = problems.join('\n');
   get('preparation-problems').hidden = !problems.length;
 }
+function acceptPlan(plan:ManualPlan|null,id:string){
+ if(plan&&plan.id!==id)throw new Error('Planantwort gehört nicht zum ursprünglichen Auftrag.');
+ const plans=data.plans.filter(row=>row.id!==id);if(plan)plans.push(plan);
+ plans.sort((a,b)=>a.name<b.name?-1:a.name>b.name?1:a.id<b.id?-1:a.id>b.id?1:0);
+ data={...data,plans};
+}
 async function change(change: PreparationChange, redraw = true, stillCurrent:()=>boolean=()=>true): Promise<boolean> {
   if (!context || blocked || !stillCurrent()) return false;
   if (changesPending.size) { tell('Vorherige Vorbereitung wird noch gespeichert.'); return false; }
-  const token = context.token, request = preparationLoad, current=()=>stillCurrent()&&context?.token===token&&preparationLoad===request;
+  const token = context.token, current=captureView(()=>[context?.token,preparationLoad],stillCurrent);
   const target = preparationTarget(change), key = draftKey(target.kind, target.id);
   const command: PreparationCommand = { commandId: crypto.randomUUID(), token, campaignId: context.campaign.id, draftWriteId: retained.get(key)?.writeId, change };
   tell('Wird gespeichert…');
   let complete!: () => void;
   const completion = new Promise<void>(resolve => { complete = resolve; }); changesPending.add(completion);
   try {
-    const result = unwrap(await window.campaign.changePreparation(command));
+    // A normal timeline edit confirms only its owner, not the whole world directory.
+    const result = command.change.kind==='plan'
+      ? unwrap(await window.campaign.changePreparationPlan(command))
+      : unwrap(await window.campaign.changePreparation(command));
     if (context?.token !== token || !current()) return false;
-    usePreparation(result);
-    if (value('world-search').trim()) await reloadNoteSearch(false);
+    if(command.change.kind==='plan')acceptPlan(result as ManualPlan,command.change.plan.id);
+    else usePreparation(result as Preparation);
+    if (command.change.kind!=='plan'&&value('world-search').trim()) await reloadNoteSearch(false);
     if (context?.token !== token || !current()) return false;
     retained.delete(key);
     if (command.change.kind === 'plan' && planDraft?.id === command.change.plan.id) {
@@ -269,7 +280,7 @@ async function change(change: PreparationChange, redraw = true, stillCurrent:()=
       const confirmed = data.plans.find(p => p.id === sent.id);
       if (confirmed) planDraft = preservePlanInput(confirmed, sent, planDraft);
     }
-    if (redraw) await Promise.all([renderNotes(), renderPlans(), renderLocations()]);
+    if(redraw){if(command.change.kind==='plan')await renderPlans();else await Promise.all([renderNotes(),renderPlans(),renderLocations()]);}
     if(!current())return false;renderProblems(); syncSaveControl(); tell('Gespeichert.'); return true;
   } catch (error) {
     if (context?.token !== token || !current()) return false;
@@ -437,10 +448,13 @@ function renderSceneList() {
   get('scene-search-clear').hidden=!query;
   get('scene-search-status').textContent=matches+' von '+(plan?.scenes.length??0)+' Besuchen'+(!matches?' · Keine passenden Besuche.':'')+(selectedScene&&!selectedVisible?' · Der ausgewählte Besuch bleibt im Editor geöffnet.':'');
 }
-async function renderPlans() {
+function renderPlanOptions(){
   const select = get<HTMLSelectElement>('plans'); select.replaceChildren();
   for (const plan of data.plans) { const option = document.createElement('option'); option.value = plan.id; option.textContent = plan.name || 'Unbenannter Plan'; select.append(option); }
   select.value = selectedPlan ?? '';
+}
+async function renderPlans() {
+  renderPlanOptions();
   if(sceneSearchPlan!==selectedPlan){sceneSearchPlan=selectedPlan;get<HTMLInputElement>('scene-search').value='';}
   const confirmed = originalPlan();
   const token = context?.token, target = selectedPlan, request = preparationLoad;
@@ -465,13 +479,12 @@ async function renderPlans() {
 }
 /** Preserve only the known editable fields entered after this exact plan command was sent. */
 function preservePlanInput(confirmed: ManualPlan, sent: ManualPlan, current: ManualPlan): ManualPlan {
-  return { ...confirmed, name: current.name !== sent.name ? current.name : confirmed.name,
+  const sentVisits=new Map(sent.scenes.map(scene=>[scene.id,scene])),currentVisits=new Map(current.scenes.map(scene=>[scene.id,scene]));
+  return { ...acknowledgeFields(confirmed,sent,current,['name']).value,
     scenes: confirmed.scenes.map(scene => {
-      const before = sent.scenes.find(s => s.id === scene.id), draft = current.scenes.find(s => s.id === scene.id);
+      const before = sentVisits.get(scene.id), draft = currentVisits.get(scene.id);
       if (!before || !draft) return scene;
-      return { ...scene, title: draft.title !== before.title ? draft.title : scene.title,
-        notes: draft.notes !== before.notes ? draft.notes : scene.notes,
-        locationId: draft.locationId !== before.locationId ? draft.locationId : scene.locationId };
+      return acknowledgeFields(scene,before,draft,['title','notes','locationId']).value;
     }) };
 }
 async function changeNoteRelations(relations:Note['relations']){
@@ -689,13 +702,14 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
     const owns=()=>context?.token===token&&preparationLoad===request;
     const current=()=>owns()&&failedCommand===command;
     try {
-      const result = unwrap(await window.campaign.reconcilePreparation(command, token));
+      const result = command.change.kind==='plan'?unwrap(await window.campaign.reconcilePreparationPlan(command,token)):unwrap(await window.campaign.reconcilePreparation(command,token));
       if(!current())return;
       if (result.targetChanged || result.outcome === 'conflict') {
         tell(result.outcome === 'applied' ? 'Speicherung bestätigt, aber der aktuelle Vorbereitungsstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.' : 'Vorbereitungskonflikt bestätigt. Entwurf bleibt offen; sichere den Text vor dem Verwerfen.', true); return;
       }
       const sourceBefore=command.change.kind==='note'&&command.change.excerpt?noteRow(command.change.excerpt.id)?.note:null;
-      usePreparation(result.data);
+      if('plan' in result&&command.change.kind==='plan')acceptPlan(result.plan,command.change.plan.id);
+      else if('data' in result)usePreparation(result.data);
       const change = command.change;
       const targetId = change.kind === 'note' ? change.note.id : change.kind === 'plan' ? change.plan.id : change.kind === 'location' ? change.document.id : change.id;
       const target = preparationTarget(change), key = draftKey(target.kind, target.id), saved = retained.get(key);
@@ -723,6 +737,7 @@ export function initPreparation(status: (text: string, error?: boolean) => void,
       blocked = false; failedCommand = null; get('preparation-reconcile').hidden = true; get('preparation-refresh').hidden = true;
       await retainOpenDrafts();
       if(!owns())return;
+      if(change.kind==='plan')renderSceneList();
       if(change.kind==='note'&&change.excerpt){if(selectedNote===targetId)await renderNotes();else{renderRelations();renderNoteList();}if(!owns())return;}
       if (change.kind === 'note-trash' && selectedNote === targetId && noteThread?.editorId === targetId) {
         get<HTMLInputElement>('world-trash').checked = !!noteRow(targetId)?.trashed;

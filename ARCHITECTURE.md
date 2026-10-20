@@ -288,6 +288,25 @@ erklärt Schließen/Escape und erhaltene Eingaben. Gezielte Prüfungen:
 [`desktop-chase-switch`](tests/desktop-chase-switch.test.mjs) für die gemeinsame
 Bestätigung und Rückbindung nach verlorener Antwort.
 
+### Gemeinsame Editor- und Dialogübergänge
+
+[`editor-transition.ts`](src/app/editor-transition.ts) bindet asynchrone Antworten
+an die ursprüngliche Aktivierung/Ansicht. `acknowledgeFields` übernimmt die
+bestätigte Basis und erhält ausschließlich ausdrücklich benannte editierbare
+Skalarfelder, die seit dem Senden verändert wurden. Planname/Besuchstexte und
+Rückblick/Übergabe verwenden diesen Weg; Identität, Revision und Reihenfolge
+bleiben Teil des Fachvertrags. Rohentwurfsspeicher und Konfliktentscheidung
+bleiben bei ihren bestehenden Besitzern.
+
+[`BookingDialog`](src/app/booking-dialog.ts) vereinheitlicht Beuteverteilung und
+Kampfverstärkung: ein laufender Aufruf pro Öffnung, lokale Fehlermeldung,
+Freigabe zum Schließen nach dem Aufruf und keine neue Buchung bei ungeklärtem
+Beleg. Eine neue Öffnung entwertet die alte Antwort. Der Dialog benutzt weiterhin
+die bestehende `writeConfirmed`-/Receiptgrenze; er speichert keine zweite
+Buchungswahrheit. [Gegenproben](tests/desktop-editor-transition.test.mjs) prüfen
+spätere Eingaben, neue Öffnungen und verlorene Antworten; die jeweiligen
+Store-/DOM- und nativen Abläufe prüfen die Fachwirkung.
+
 ## Runtime und gemeinsame Weltfolgen
 
 Der [Scene-Fachvertrag](docs/plans/runtime/smr03-live-scene-contract.md) besitzt

@@ -984,7 +984,7 @@ export class CampaignStore {
   sessionProgress(token:string,planId:string,sceneId?:string){return readSessionProgress(this.db,this.guard(token),planId,sceneId);}
   sessionPacket(token:string,planId:string){return readSessionPacket(this.db,this.guard(token),planId);}
   session(token: string,planId: string) { return readSession(this.db,this.guard(token),planId); }
-  executeSession(command: SessionCommand) { return executeSession(this.db,command,()=>{this.guard(command.token,command.campaignId);},(plan,expectedRevision)=>{this.changePreparation({commandId:command.commandId+'|timeline',campaignId:command.campaignId,token:command.token,change:{kind:'plan',plan,expectedRevision}});}); }
+  executeSession(command: SessionCommand) { return executeSession(this.db,command,()=>{this.guard(command.token,command.campaignId);},(plan,expectedRevision)=>{this.commitPreparation({commandId:command.commandId+'|timeline',campaignId:command.campaignId,token:command.token,change:{kind:'plan',plan,expectedRevision}});}); }
   generateSession(token: string,request: SessionGenerationRequest) { return generateSession(this.db,this.guard(token),request); }
   regenerateSessionReward(token:string,runId:string,index:number,seed:string){return regenerateSessionReward(this.db,this.guard(token),runId,index,seed);}
   regenerateSessionProposal(token: string,runId: string,index: number,seed: string) { return regenerateSessionProposal(this.db,this.guard(token),runId,index,seed); }
@@ -1321,7 +1321,7 @@ export class CampaignStore {
     const replay=!!this.db.prepare('SELECT 1 FROM live_receipt WHERE command_id=?').get(command.commandId);
     const basis=command.action.kind==='advance-clock'&&!replay?captureAutonomyBasis(this.db,command.campaignId):null,oldScene=command.action.kind==='advance-clock'||command.action.kind==='scene-content'&&!replay?readLiveScene(this.db,command.campaignId,command.action.sceneId):null;
     const ack = executeLive(this.db, command, () => {this.guard(command.token, command.campaignId);});
-    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.changePreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:1,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
+    if(!replay&&command.action.kind==='live-moment'&&command.action.followUp){const a=command.action,followUp=a.followUp!,noteId=campaignLocalId(followUp.id),scene=ack.scene;if(!scene||scene.id!==a.sceneId)throw new Error('Folgespur konnte nicht an die laufende Gruppe gebunden werden.');this.commitPreparation({commandId:command.commandId+'|follow-up',campaignId:command.campaignId,token:command.token,change:{kind:'note',expectedRevision:null,note:{version:1,id:noteId,revision:1,kind:followUp.kind,title:a.title.trim(),readAloud:'',gmNotes:a.summary,relations:[],creatureId:null,deleted:false}}});const locationId=scene.locationId&&this.db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(command.campaignId,scene.locationId)?scene.locationId:null,state={noteId,revision:1,status:'open' as const,locationId,contributors:scene.members,poolXp:0,items:[],awardId:null};validateNarrativeState(this.db,command.campaignId,state);saveNarrative(this.db,command.campaignId,state);}
     if(basis&&oldScene&&ack.scene)this.consumeSceneTime(command.campaignId,command.commandId,oldScene,ack.scene,basis);
     if(command.action.kind==='advance-clock'&&!replay)restockDue(this.db,command.campaignId,ack.scene!.clock.instantMs);
     if(!replay){
@@ -1348,6 +1348,29 @@ export class CampaignStore {
     return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
   }
   changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
+  changePreparationPlan(command:PreparationCommand):ManualPlan {
+    if(command.change.kind!=='plan')throw new Error('Gezielte Planänderung benötigt einen Spielabendplan.');
+    const id=command.change.plan.id;
+    return this.db.transaction(()=>{
+      this.commitPreparation(command);
+      return this.readPlan(this.guard(command.token),id);
+    }).immediate();
+  }
+  reconcilePreparationPlan(command:PreparationCommand,token=command.token):import('../preparation-contracts').PlanReconciliation {
+    if(command.change.kind!=='plan')throw new Error('Gezielte Planklärung benötigt einen Spielabendplan.');
+    const change=command.change;
+    return this.db.transaction(()=>{
+      const cam=this.guard(token,command.campaignId??this.active?.campaignId);
+      const prior=this.db.prepare('SELECT fingerprint,campaign_id,revision FROM receipt WHERE command_id=?').get(command.commandId);
+      if(prior&&(prior.campaign_id!==cam||!matchesReceipt(prior,command)))throw new Error('Änderungskennung bereits anders verwendet.');
+      if(!prior&&command.campaignId===undefined&&command.token!==token)throw new Error('Der alte Auftrag besitzt keine eindeutige Kampagnenbindung.');
+      const row=this.db.prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?').get(cam,change.plan.id);
+      const unchanged=change.expectedRevision===null?!row:row?.revision===change.expectedRevision;
+      let plan:ManualPlan|null=null;
+      if(row)try{plan=this.readPlan(cam,change.plan.id);}catch{/* Keep unreadable original bytes and the unresolved draft. */}
+      return{outcome:prior?'applied':unchanged?'not-applied':'conflict',targetChanged:(prior?row?.revision!==prior.revision:!unchanged)||!!row&&!plan,plan};
+    })();
+  }
   changePreparationContent(command:PreparationCommand){if(command.change.kind!=='note'&&command.change.kind!=='location')throw new Error('Gezielte Änderung benötigt Notiz oder Ort.');this.commitPreparation(command);const cam=this.guard(command.token);return deskContent(this.db,cam,command.change.kind==='note'?{kind:'note',id:command.change.note.id}:{kind:'location',id:command.change.document.id});}
   reconcilePreparationContent(command:PreparationCommand,token:string){const cam=this.guard(token,command.campaignId),target=preparationTarget(command.change),r=this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(command.commandId),table=target.kind==='note'?'world_note':target.kind==='location'?'location':'plan',current=this.db.prepare(`SELECT revision FROM ${table} WHERE campaign_id=? AND id=?`).get(cam,target.id);if(r){if(r.campaign_id!==cam||!matchesReceipt(r,command))throw new Error('Änderungskennung anders verwendet.');return{outcome:'applied' as const,targetChanged:current?.revision!==r.revision};}const changed=(current?.revision??null)!==command.change.expectedRevision;return{outcome:changed?'conflict' as const:'not-applied' as const,targetChanged:changed};}
   executeWorldRelationPair(command:WorldRelationPairCommand){return executeWorldRelationPair(this.db,command,()=>{this.guard(command.token,command.campaignId);});}
@@ -1456,19 +1479,23 @@ export class CampaignStore {
         const old = this.db.prepare('SELECT revision FROM plan WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision) throw new Error('Plankonflikt: Der gespeicherte Stand hat sich geändert.');
         const beforePlan = old ? this.readPlan(campaignId, targetId) : null;
+        const beforeVisits=new Map(beforePlan?.scenes.map(scene=>[scene.id,scene]));
+        const nextIds=new Set(change.plan.scenes.map(scene=>scene.id));
+        const locationState=this.db.prepare('SELECT trashed FROM location WHERE campaign_id=? AND id=?');
         for (const scene of change.plan.scenes) if (scene.locationId !== null) {
-          const location = this.db.prepare('SELECT trashed FROM location WHERE campaign_id=? AND id=?').get(campaignId, scene.locationId);
-          const retained = beforePlan?.scenes.some(s => s.id === scene.id && s.locationId === scene.locationId);
+          const location = locationState.get(campaignId, scene.locationId);
+          const retained = beforeVisits.get(scene.id)?.locationId === scene.locationId;
           if (!location || location.trashed && !retained) throw new Error('Szenenort ist nicht verfügbar. Wähle einen aktuellen Ort oder lasse die Szene ortlos.');
         }
         revision = (old?.revision ?? 0) + 1;
         this.db.prepare('INSERT INTO plan VALUES(?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,name=excluded.name').run(campaignId, targetId, revision, change.plan.name);
         const existing = this.db.prepare('SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=?').all(campaignId, targetId) as Row[];
-        for (const visit of existing) if (!change.plan.scenes.some(s => s.id === visit.id)) this.db.prepare('DELETE FROM planned_visit WHERE campaign_id=? AND id=?').run(campaignId, visit.id);
+        const existingVisits=new Map(existing.map(visit=>[visit.id,visit]));
+        for (const visit of existing) if (!nextIds.has(visit.id)) this.db.prepare('DELETE FROM planned_visit WHERE campaign_id=? AND id=?').run(campaignId, visit.id);
         change.plan.scenes.forEach((scene, ordinal) => {
           const foreign = this.db.prepare('SELECT plan_id FROM planned_visit WHERE campaign_id=? AND id=?').get(campaignId, scene.id);
           if (foreign && foreign.plan_id !== targetId) throw new Error('Szenenidentität gehört zu einem anderen Plan.');
-          const payload = json(scene), before = existing.find(s => s.id === scene.id);
+          const payload = json(scene), before = existingVisits.get(scene.id);
           if (!before || before.ordinal !== ordinal || before.payload !== payload) this.db.prepare('INSERT INTO planned_visit VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET ordinal=excluded.ordinal,payload=excluded.payload,checksum=excluded.checksum').run(campaignId, targetId, scene.id, ordinal, payload, hash(payload));
         });
       }

@@ -72,7 +72,7 @@ function releaseVisitGroups(db:any,cam:string,planId:string,visitId:string,group
   else db.prepare('DELETE FROM prepared_group WHERE campaign_id=? AND id=?').run(cam,id);
  }
 }
-export function cleanSessionVisits(db:any,cam:string,planId:string,visitIds:readonly string[]){for(const row of db.prepare('SELECT * FROM session_visit WHERE campaign_id=? AND plan_id=?').all(cam,planId)){if(!visitIds.includes(row.id)){releaseVisitGroups(db,cam,planId,row.id);db.prepare('DELETE FROM session_visit WHERE campaign_id=? AND id=?').run(cam,row.id);}else{const d=decoded<VisitDetail>(row);checkVisitPlanning(d);if(d.restAfter&&d.restAfter.beforeVisitId!==visitIds[visitIds.indexOf(row.id)+1]){delete d.restAfter;saveDetail(db,cam,planId,d);}}}}
+export function cleanSessionVisits(db:any,cam:string,planId:string,visitIds:readonly string[]){const positions=new Map(visitIds.map((id,index)=>[id,index]));for(const row of db.prepare('SELECT * FROM session_visit WHERE campaign_id=? AND plan_id=?').all(cam,planId)){if(!positions.has(row.id)){releaseVisitGroups(db,cam,planId,row.id);db.prepare('DELETE FROM session_visit WHERE campaign_id=? AND id=?').run(cam,row.id);}else{const d=decoded<VisitDetail>(row);checkVisitPlanning(d);if(d.restAfter&&d.restAfter.beforeVisitId!==visitIds[positions.get(row.id)!+1]){delete d.restAfter;saveDetail(db,cam,planId,d);}}}}
 export function captureVisitDetails(db:any,cam:string,planId:string,visitId:string,sceneId:string,adoptionId:string,locationId:string|null){
  const d=detail(db,cam,planId,visitId),plan=readPlan(db,cam,planId);captureVisitBinding(db,cam,adoptionId,sceneId,plan.name,d,plan.scenes.find(s=>s.id===visitId)?.title??'Besuch');
  writeSceneReadAloud(db,cam,sceneId,d.readAloud);

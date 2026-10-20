@@ -64,7 +64,7 @@ async function uiFixture(t){
  t.after(async()=>{ui.combatContext(null,null);await tick();Object.assign(globalThis,old);});return{...x,ui,el,writes,queries,messages};
 }
 test('runner offers the existing group directly and commits a single source-backed reinforcement',async t=>{
- const x=await uiFixture(t);assert.match(x.el('combat-creature-select').textContent,/Goblin.*vorhandene Initiative 9/);
+ const x=await uiFixture(t);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();assert.match(x.el('combat-creature-select').textContent,/Goblin.*vorhandene Initiative 9/);
  x.el('combat-creature-select').value='group:'+x.group;x.el('combat-creature-select').onchange();assert.equal(x.el('combat-creature-initiative').disabled,true);
  x.el('combat-creature-count').value='1';x.el('combat-creature-form').onsubmit({preventDefault(){}});
  await until(()=>x.writes.length===1&&!x.el('combat-creature-add').disabled);
@@ -105,7 +105,7 @@ test('reinforcement keeps same-creature troops distinct and preserves the select
  const x=await uiFixture(t);
  x.execute({kind:'add-creature',creatureId:x.creature.id,count:2,grouped:true,initiative:15});
  const c=x.execute({kind:'add-creature',creatureId:x.creature.id,count:1,grouped:false,initiative:6});
- await x.ui.openExistingCombat(c.id);
+ await x.ui.openExistingCombat(c.id);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();
  const select=x.el('combat-creature-select'),options=[...select.options];
  assert.equal(options.length,2);assert.match(options[0].textContent,/vorhandene Initiative 9 \(3\)/);assert.match(options[1].textContent,/vorhandene Initiative 15 \(2\)/);
  const secondGroup=c.participants[3].groupId;assert.equal(options[1].value,'group:'+secondGroup);select.value=options[1].value;
@@ -119,7 +119,7 @@ test('same-creature troops with equal initiative and quantity expose their membe
  const x=await uiFixture(t);
  const reinforced=x.execute({kind:'add-creature',creatureId:x.creature.id,count:3,grouped:true,initiative:9});
  const second=reinforced.participants.slice(3),secondGroup=second[0].groupId;
- const before=structuredClone(x.execute({kind:'edit',participantId:second[0].id,changes:{hp:4,conditions:'Liegend'}}));await x.ui.openExistingCombat(before.id);
+ const before=structuredClone(x.execute({kind:'edit',participantId:second[0].id,changes:{hp:4,conditions:'Liegend'}}));await x.ui.openExistingCombat(before.id);x.el('combat-add-open').onclick();x.el('combat-creature-source').value='group';x.el('combat-creature-source').onchange();
  const select=x.el('combat-creature-select'),options=[...select.options];
  assert.equal(options.length,2);assert.notEqual(options[0].textContent,options[1].textContent);
  assert.match(options[0].textContent,/Goblin A, Goblin B ….*vorhandene Initiative 9 \(3\)/);
@@ -394,10 +394,10 @@ test('invalid initial catalog data or a late receipt failure leaves no partial p
  }
  x.store.db.exec("CREATE TRIGGER owned_initial_receipt_failure BEFORE INSERT ON combat_receipt BEGIN SELECT RAISE(ABORT,'receipt unavailable');END;");const withTrigger=x.store.db.serialize(),retry=command(action);assert.throws(()=>x.store.executeCombat(retry),/receipt unavailable/);assert.ok(x.store.db.serialize().equals(withTrigger));x.store.db.exec('DROP TRIGGER owned_initial_receipt_failure');assert.equal(x.store.executeCombat(retry).combat.participants.length,2);
 });
-test('catalog handoff creates one complete preparation and resolves a lost reply from that single receipt',async t=>{
- const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);window.requestAnimationFrame=()=>0;
+for(const modal of [false,true])test('catalog handoff creates one complete preparation and resolves its single lost reply: '+(modal?'dialog':'catalog'),async t=>{
+ const x=await uiFixture(t);x.execute({kind:'finish',outcome:'Vorheriger Kampf beendet'});await x.ui.openExistingCombat(x.combat.id);let followed=0;window.requestAnimationFrame=()=>{followed++;return 0;};if(modal)x.el('combat-add-open').onclick();
  window.campaign.executeCombat=async command=>{x.writes.push(command);x.store.executeCombat(command);throw new Error('reply lost');};
- await x.ui.addCatalogCreature(x.creature.id,2,true);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.deepEqual(x.writes[0].action.catalogCreature,{creatureId:x.creature.id,count:2,grouped:true});
+ await x.ui.addCatalogCreature(x.creature.id,2,true);assert.equal(followed,1);assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.writes.length,1);assert.equal(x.writes[0].action.kind,'create');assert.deepEqual(x.writes[0].action.catalogCreature,{creatureId:x.creature.id,count:2,grouped:true});
  const current=x.store.combat(x.w.token,x.scene.id).combat;assert.notEqual(current.id,x.combat.id);assert.equal(current.revision,1);assert.equal(current.participants.length,2);assert.equal(x.el('combat-start').disabled,false);assert(!x.messages.some(m=>String(m[0]).includes('Buchungsantwort fehlt')));
 });
 test('failed initial catalog handoff preserves the selected finished combat instead of storing an empty replacement',async t=>{

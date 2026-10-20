@@ -1,3 +1,4 @@
+import {acknowledgeFields,captureView} from './editor-transition';
 import {preserveLiteralEdit} from './literal-text-edit';
 import {partySceneLabels} from './party-overview';
 import {bindSceneGroupDrag} from './combat-group-ui';
@@ -78,8 +79,9 @@ async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
  if(state.saving)return state.saving;
  if(!state.dirty)return true;
  if(state.readError)return false;
- const task=(async()=>{while(state.dirty){const text={...state.text};try{unwrap(await window.campaign.keepSessionRecapDraft(w.token,text,state.basis));}catch(error){try{const view=unwrap(await window.campaign.live(w.token)),saved=view.recapDraft;if(view.recapDraftError||!saved||!equal(saved,text))throw error;}catch{state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;if(context?.campaign.id===w.campaign.id)showRecapSave();return false;}}
- state.basis=text;state.error='';if(equal(state.text,text))state.dirty=false;if(context?.campaign.id===w.campaign.id)showRecapSave();}return true;})();
+ const current=captureView(()=>[context?.token,recapDrafts.get(w.campaign.id)]);
+ const task=(async()=>{while(state.dirty){const text={...state.text};try{unwrap(await window.campaign.keepSessionRecapDraft(w.token,text,state.basis));}catch(error){try{const view=unwrap(await window.campaign.live(w.token)),saved=view.recapDraft;if(view.recapDraftError||!saved||!equal(saved,text))throw error;}catch{state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;if(current())showRecapSave();return false;}}
+ const accepted=acknowledgeFields(text,text,state.text,['summary','handoff']);state.basis=accepted.basis;state.text=accepted.value;state.dirty=accepted.dirty;state.error='';if(current())showRecapSave();}return true;})();
  state.saving=task;try{return await task;}finally{if(state.saving===task)state.saving=undefined;}
 }
 let readAloudOwner: string | null = null;
