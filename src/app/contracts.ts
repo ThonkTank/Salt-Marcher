@@ -70,7 +70,7 @@ export interface Edit {
 }
 export interface RoomCommit { atlasRevision?:number; room: Room; token: string; canUndo: boolean; canRedo: boolean }
 export interface WorkingRoomDraft { room: Room; points: string; pointsChanged: boolean; failedEdit: Edit | null }
-export interface ImportPreview { ticket: string; name: string; roomCount: number; sourceHash: string; warnings: string[] }
+export interface DungeonImportPreview { ticket: string; name: string; roomCount: number; sourceHash: string; warnings: string[] }
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 export interface DesktopAPI extends UpdateAPI,importAtlasAPI,importAtlasTravelAPI,ItemReferenceAPI,NoteThreadAPI,KeyNoteCaptureAPI,LocationNotebookAPI, WorldLinksAPI,TimePlanAPI,importAgendaAPI, NarrativeJournalAPI,SessionPacketAPI,MaskHistoryAPI,NpcAPI,ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI, RuleReferenceAPI, SceneCheckAPI {
   commitStatus(ref:CommitReference,token:string):Promise<Result<CommitOutcome>>;
@@ -90,8 +90,8 @@ export interface DesktopAPI extends UpdateAPI,importAtlasAPI,importAtlasTravelAP
   roomDraft(token: string, roomId: string): Promise<Result<WorkingRoomDraft | null>>;
   keepRoomDraft(token: string, roomId: string, draft: WorkingRoomDraft | null): Promise<Result<void>>;
   history(token: string, direction: 'undo' | 'redo'): Promise<Result<Workspace>>;
-  previewImport(): Promise<Result<ImportPreview | null>>;
-  import(ticket: string): Promise<Result<Campaign>>;
+  previewDungeonImport(): Promise<Result<DungeonImportPreview | null>>;
+  createCampaignFromDungeon(ticket: string): Promise<Result<Campaign>>;
   closeReady(): void;
   onClose(callback: () => void): void;
   backupStatus(): Promise<Result<string | null>>;

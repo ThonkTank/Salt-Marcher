@@ -50,7 +50,7 @@ import {initCampaignManager} from './campaign-manager-ui';
 import {initMusic,activateMusic,openMusic,flushMusic,deactivateMusic} from './music-ui';
 import {initWorld,activateWorld,openWorld,flushWorld,setWorldSurface,stopWorldPlayback} from './world-ui';
 import {initItems,activateItems,openItems,openItemReference,createShopAtLocation,prepareShopLocation,flushItems} from './items-ui';
-import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type ImportPreview, type Edit, type CampaignRename } from './contracts';
+import { validateRoom, type Room, type RoomGeometry, type WorkspaceGeometry, type Result, type DungeonImportPreview, type Edit, type CampaignRename } from './contracts';
 import { activatePreparation, ensurePreparation, initPreparation, flushPreparation, leavePreparation, preparationHasDrafts, openPreparedLocation,openPreparedNote,createNarrativeAtLocation,prepareNoteLocation,openPreparedVisit,openPreparedPlan,prepareNextVisit,showDayPreparation } from './preparation';
 import {setNoteRoomNavigation} from './preparation';
 import { activateLive, initLive, flushLive,refreshScenePreparation,setGroupNavigation,setNpcNavigation,setTreasureNavigation, openLive,openLiveCharacterLoot,openPlannedVisitReview,prepareLiveEncounter, addLiveCreature,addLiveNpc,openLiveSoundboard,openTimeNavigator,openTravelRest,useLiveReferenceReadAloud } from './live';
@@ -94,7 +94,7 @@ let activating = false, activationFailed = false;
 let activationJob: Promise<void> | null = null, queuedActivation: {id:string;entryCommandId?:string} | null = null;
 let activationIntent = 0, campaignListRequest = 0;
 let pointer: { index: number; id: number; before: Room['polygons'] } | null = null;
-let importPreview: ImportPreview | null = null;
+let dungeonImportPreview: DungeonImportPreview | null = null;
 let renameBasis: Omit<CampaignRename, 'commandId' | 'name'> | null = null;
 const status = (text: string, error = false) => { el('status').textContent = text; el('status').dataset.error = String(error); };
 initExtensions(status);
@@ -639,9 +639,9 @@ el('import').onclick = () => {
   void (async () => {
     if (!owns() || !(await flushAll()) || !owns()) return;
     try {
-      const response = await api.previewImport();
+      const response = await api.previewDungeonImport();
       if (!owns()) return;
-      const preview = unwrap(response); importPreview = preview; if (!preview) return;
+      const preview = unwrap(response); dungeonImportPreview = preview; if (!preview) return;
       const detail = el('import-detail'); detail.replaceChildren();
       for (const line of [`${preview.name}: ${preview.roomCount} Räume${workspace?' werden in diese Kampagnenwelt eingefügt':' in einer neuen Kampagne'}.`, ...preview.warnings]) { const p = document.createElement('p'); p.textContent = line; detail.append(p); }
       el<HTMLDialogElement>('import-dialog').showModal();
@@ -649,18 +649,18 @@ el('import').onclick = () => {
   })();
 };
 el('workspace-import').onclick = () => el<HTMLButtonElement>('import').click();
-el('cancel-import').onclick = () => { importPreview = null; activationIntent++; el<HTMLDialogElement>('import-dialog').close(); };
+el('cancel-import').onclick = () => { dungeonImportPreview = null; activationIntent++; el<HTMLDialogElement>('import-dialog').close(); };
 el('confirm-import').onclick = () => {
-  const preview = importPreview; if (!preview || activationJob) return;
+  const preview = dungeonImportPreview; if (!preview || activationJob) return;
   const intent = ++activationIntent, token = workspace?.token;
   const owns = () => intent === activationIntent && token === workspace?.token && !activationJob;
   void (async () => {
     try {
-      if(workspace){const owner=workspace,response=await api.importAtlas({commandId:'atlas-import:'+preview.ticket,token:owner.token,campaignId:owner.campaign.id,ticket:preview.ticket,...(campaignAtlas?.insertionPoint??{x:0,y:0})});if(!owns())return;const result=unwrap(response);importPreview=null;el<HTMLDialogElement>('import-dialog').close();await activate(owner.campaign.id);showTab('atlas');if(result.roomId)await campaignAtlas?.navigate('room',result.roomId);return;}
-      const response = await api.import(preview.ticket);
+      if(workspace){const owner=workspace,response=await api.importAtlas({commandId:'atlas-import:'+preview.ticket,token:owner.token,campaignId:owner.campaign.id,ticket:preview.ticket,...(campaignAtlas?.insertionPoint??{x:0,y:0})});if(!owns())return;const result=unwrap(response);dungeonImportPreview=null;el<HTMLDialogElement>('import-dialog').close();await activate(owner.campaign.id);showTab('atlas');if(result.roomId)await campaignAtlas?.navigate('room',result.roomId);return;}
+      const response = await api.createCampaignFromDungeon(preview.ticket);
       if (!response.ok) { if (owns()) unwrap(response); return; }
       const campaign = response.value;
-      if (owns() && importPreview === preview) { importPreview = null; el<HTMLDialogElement>('import-dialog').close(); }
+      if (owns() && dungeonImportPreview === preview) { dungeonImportPreview = null; el<HTMLDialogElement>('import-dialog').close(); }
       await refreshCampaigns();
       if (owns()) await activate(campaign.id);
     } catch (error) { if (owns()) status((error as Error).message, true); }

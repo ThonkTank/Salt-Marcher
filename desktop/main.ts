@@ -26,7 +26,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CampaignStore } from '../src/app/storage/store';
 import { inspectDungeon } from '../src/app/import-dungeon';
-import type { Edit, ImportPreview, Result, Room, WorkingRoomDraft, CampaignRename } from '../src/app/contracts';
+import type { Edit, DungeonImportPreview, Result, Room, WorkingRoomDraft, CampaignRename } from '../src/app/contracts';
 import type { PreparationCommand, PreparationSelection, PreparationDraft, PreparationEdit } from '../src/app/preparation-contracts';
 import type { LiveCommand } from '../src/app/live-contracts';
 import type { CombatCommand } from '../src/app/combat-contracts';
@@ -473,7 +473,7 @@ else {
     handle('campaign:keep-preparation-drafts', (token: string, drafts: PreparationDraft[]) => store.keepPreparationDrafts(token, drafts));
     handle('campaign:discard-preparation-draft', (token: string, kind: PreparationEdit['kind'], id: string, writeId: string) => store.discardPreparationDraft(token, kind, id, writeId));
     handle('campaign:history', (token: string, direction: 'undo' | 'redo') => store.history(token, direction));
-    handle('campaign:preview-import', async (): Promise<ImportPreview | null> => {
+    handle('campaign:preview-import', async (): Promise<DungeonImportPreview | null> => {
       const chosen = await dialog.showOpenDialog(win, { title: 'Dungeon in die Kampagnenwelt einfügen', filters: [{ name: 'Dungeon', extensions: ['dungeon'] }], properties: ['openFile'] });
       if (chosen.canceled || !chosen.filePaths[0]) return null;
       const bytes = readFileSync(chosen.filePaths[0]);
