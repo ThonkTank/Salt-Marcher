@@ -1,13 +1,18 @@
 # Erweiterungen: Installation und Wiederaufnahme
 
-Stand: 14.10.2026. Ergänzt [SMR-10](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
+Stand: 20.10.2026. Ergänzt [SMR-10](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-10--zweites-display-extensions-und-vollständige-portabilität)
 und den [Gesamtumfang](../../SCOPE.md). Grundlage: Program Capabilities L754–773,
 Revision `9de85c1a26f526acbc1af332ac5962e185c0aab2`, SHA-256
 `714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e`.
 
 ## Aktueller Ablauf und Integritätsgrenze
 
-Die GM wählt ein Paket und bestätigt seine benannten Rechte ausdrücklich.
+Über **Einstellungen → Erweiterungen** wählt die GM ein Paket und bestätigt
+seine benannten Rechte ausdrücklich. Dafür muss keine Kampagne geöffnet werden.
+Der Einstieg bleibt bei einem laufenden Generatorpreset-Read erreichbar; die
+Erweiterungsverwaltung prüft ihre eigenen offenen Aufträge und Recoveryzustände.
+Pakete ohne angeforderte Rechte werden so bezeichnet. Nach erfolgtem Widerruf
+entfällt die wirkungslose erneute Widerrufsaktion; Entfernen bleibt möglich.
 `checkedExtensionCommand` prüft Command-/Aktionsstruktur, Ticket, Hash,
 Revision, Paketidentität und bekannte Rechte beim Read, Execute und Outcome.
 Der Registrywriter prüft zusätzlich Ticket-/Bytebindung, exakte Zustimmung und
@@ -31,7 +36,16 @@ Quarantäne gehört weder in Campaigntransfer noch in Packagecode.
 [desktop-extension-recovery.test.mjs](../../../tests/desktop-extension-recovery.test.mjs)
 prüft diese zehn Store-/DOMfälle einschließlich Originalerhalt, Storagefehlern,
 fehlender Liste, verändertem Vermerk und Receiptbestätigung ohne Writerreplay.
-Native Restart-/Tastaturabnahme und operativer Erweiterungszugriff bleiben offen.
+`python tools/ui-session.py node tools/test-desktop-extension-install.mjs` prüft
+den vollständigen Paketweg bei 100 und 200 Prozent Browserzoom: fehlerhaftes Paket,
+explizite Zustimmung, nach dem tatsächlichen Commit unterbrochene Antwort,
+Neustart und reine Ergebnisabfrage, Widerruf, Entfernen und Neuinstallation. Ein
+ungeöffneter Kampagnen-Record und seine opaque Zusatzdaten bleiben unverändert.
+Die Probe verwendet den gemeinsamen Sitzungshelfer, bindet zusätzlich das
+Settings-Stylesheet und bestätigt normale Prozessenden, verschwundene PIDs,
+Tastaturbedienung und Fokus-Rückgabe. Sie qualifiziert Paketverwaltung, keine
+Ausführung des Paketcodes. Operativer Erweiterungszugriff und die vollständige
+Rechteabnahme bleiben offen.
 
 ## Installation und Campaigndaten
 
