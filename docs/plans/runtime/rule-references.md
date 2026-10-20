@@ -1,6 +1,6 @@
 # GM-Referenzsuche und Regeln am Spieltisch
 
-Stand: 19.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
+Stand: 20.10.2026. Ergänzt [Katalog und Regeln](../../../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md),
 [Live-Scenes](smr03-live-scene-contract.md), [Katalogsuche und Filterlieferung](catalog-browsing.md)
 und [Gesamtumfang](../../SCOPE.md).
 
@@ -19,6 +19,14 @@ laufendes/künftiges Spiel und erhaltene historische Fakten. Quellenhash im Regi
   öffnen, Vorlesetext übernehmen oder Kreaturen/Begegnungen am Spieltisch vorbereiten.
   Lesen und Anheften verändern keine Zeit oder Belohnungen. Übergaben prüfen den
   angesehenen Quellenstand erneut nach dem Speichern offener Eingaben.
+- **Regel im Gruppenkontext verwenden:** Unter „Regeln und Proben am Tisch“
+  öffnet „Regel nachschlagen…“ die begrenzte Regelsuche in einer Leseansicht.
+  Nach ausdrücklich bestätigtem Anheften kehrt der Fokus zur neuen Gruppenregel
+  zurück. „Probe vorbereiten“ wählt deren Regelbezug und führt zur Bezeichnung;
+  vorhandene Eingaben bleiben erhalten. Erst „Würfeln und protokollieren“ würfelt.
+  Das letzte Ergebnis nennt seine gespeicherte Regelbasis und Revision auch nach
+  Gruppenwechsel und Neustart. Die Suchtreffer verdrängen keine Gruppenpins oder
+  Probenfelder mehr.
 - **Regelstand festhalten:** Der kampagnengebundene `rule`-Notiztyp lässt sich
   zusätzlich als eingefrorene Regelreferenz an eine Scene heften (maximal 50).
   Quellenrevision, Titel, Vorlesetext und GM-Notizen bleiben erhalten. Änderungen
