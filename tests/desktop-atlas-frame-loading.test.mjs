@@ -65,6 +65,19 @@ test('Hex fill previews every crossed cell and commits each released stroke exac
 });
 
 
+for(const tool of ['property','reset'])test(`${tool} strokes cover sparse samples and repeated points without bridging separate gestures`,async t=>{
+ const f=fixture(t);f.set([]);const writes=[];f.host.write=async action=>{writes.push(action);return true;};f.ui.setActive(true);
+ const input=f.document.querySelector('#land-tool');input.value=tool;input.onchange();
+ f.document.querySelector('#land-field').value='elevationM';f.document.querySelector('#land-value').value='321';f.document.querySelector('#land-radius').value='5';
+ f.ui.brushStrokes=[[{x:-100,y:-20},{x:-80,y:-20}]];f.ui.points=[{x:100,y:20},{x:100,y:20}];
+ await f.ui.finish();assert.equal(writes.length,1);const action=writes[0],polygons=tool==='property'?action.record.polygons:action.polygons;
+ for(const p of [{x:-100,y:-20},{x:-90,y:-16},{x:-80,y:-20},{x:100,y:24}])assert(contains(p,polygons),'Missing intended brush coverage '+JSON.stringify(p));
+ assert(!contains({x:0,y:0},polygons),'Independent gestures must not paint a connector');assert(!contains({x:100,y:26},polygons),'Brush radius remains bounded');
+ if(tool==='property'){assert.equal(action.kind,'landscape-put');assert.equal(action.record.propertyOnly,true);assert.deepEqual(action.record.values,{elevationM:321});assert(!action.record.mask&&!action.record.paint);}
+ else {assert.equal(action.kind,'landscape-reset');assert.equal(action.propertyOnly,true);assert.equal(action.field,'elevationM');}
+ assert.equal(f.ui.hasDraft(),false);assert.deepEqual(f.errors,[]);
+});
+
 test('automatic Hex grid follows the draft size through zoom and resumes after cancellation',t=>{
  const f=fixture(t);f.set([]);f.ui.setActive(true);
  f.document.querySelector('#land-auto-level').checked=true;

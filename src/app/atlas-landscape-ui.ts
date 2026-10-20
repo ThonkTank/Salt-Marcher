@@ -7,7 +7,6 @@ import {newLine,linePoints,translateLine,splitLine} from "./landscape-line";
 import { automaticGrid, gridMeters, travelHexSizes } from "./atlas-navigation-scale";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
-import polygonClipping from "polygon-clipping";
 import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
 import type { Point, Polygon } from "./contracts";
 import {
@@ -44,38 +43,6 @@ type Tool =
   | "road"
   | "place"
   | "measure";
-function strokePolygon(points: Point[], radius: number): Polygon[] {
-  const rings: Polygon[] = points.map((p) => ({
-    outer: Array.from({ length: 20 }, (_, i) => ({
-      x: p.x + radius * Math.cos((i * Math.PI) / 10),
-      y: p.y + radius * Math.sin((i * Math.PI) / 10),
-    })),
-    holes: [],
-  }));
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]!,
-      b = points[i]!,
-      l = Math.hypot(b.x - a.x, b.y - a.y) || 1,
-      x = (-(b.y - a.y) / l) * radius,
-      y = ((b.x - a.x) / l) * radius;
-    rings.push({
-      outer: [
-        { x: a.x + x, y: a.y + y },
-        { x: b.x + x, y: b.y + y },
-        { x: b.x - x, y: b.y - y },
-        { x: a.x - x, y: a.y - y },
-      ],
-      holes: [],
-    });
-  }
-  const [first, ...rest] = rings.map((p) => [
-    p.outer.map((p) => [p.x, p.y] as [number, number]),
-  ]);
-  return polygonClipping.union(first!, ...rest).map((p) => ({
-    outer: p[0]!.map(([x, y]) => ({ x, y })),
-    holes: p.slice(1).map((r) => r.map(([x, y]) => ({ x, y }))),
-  }));
-}
 export class LandscapeWorkbench {
   readonly panel = document.createElement("section");
   private inspectorRoot: HTMLElement;
@@ -904,9 +871,7 @@ export class LandscapeWorkbench {
         if (!Number.isFinite(radius) || radius <= 0)
           throw new Error("Pinselradius prüfen.");
         polygons = [...this.brushStrokes, this.points].flatMap(points =>
-          this.tool === 'freshwater'
-            ? brushFootprint(points, radius, 0, this.draftSeed)
-            : strokePolygon(points, radius));
+          brushFootprint(points, radius));
       }
       if (this.tool === 'freshwater') {
         const mode = this.settings.mode() as Exclude<BrushMode, 'terrain'>,
