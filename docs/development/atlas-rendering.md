@@ -39,6 +39,12 @@ Autorenhöhe. Main/SQLite bleiben kanonisch. Beim Verlassen werden Worker,
 Geometrien und Texturen freigegeben. Aktive Wissensmasken und der vorhandene
 Bildexport wechseln zur Draufsicht. Der vollständige Kameraanschluss sämtlicher Atlaswerkzeuge und die gemeinsame Ausgabe bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
 
+### Höhenlinien auf dem vorhandenen Geländenetz
+
+`terrain-contours.ts` zeichnet die gewählten Höhenintervalle im GPU-Material des räumlichen Atlas. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
+
+Intervallwechsel aktualisieren das Material unmittelbar, ohne Geländedaten oder Textur neu aufzubauen. Der bisherige Canvas2D-/Exportpfad verwendet weiterhin seine Rasterkonturen; automatische Intervallwahl und gemeinsame Kartografie aller Ansichten bleiben offen. Die Linien folgen dem angezeigten Dreiecksnetz, dessen begrenzte Auflösung bei weiterem Zoom durch LOD verbessert werden muss. Die native Pixelprobe liegt in `tools/terrain-contour-probe.mjs` und wird durch die vorhandene Kamera-/Autorenprobe aufgerufen.
+
 ## Welcher Frame darf Eingaben annehmen?
 
 Render, Trefferprüfung und Bildausgabe verwenden dieselben bestätigten

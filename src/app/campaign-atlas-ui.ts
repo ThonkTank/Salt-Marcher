@@ -205,7 +205,7 @@ export class CampaignAtlasWorkbench {
     document.getElementById("workspace-navigation")!.after(this.root);
     mountDungeonTravelConsole(get("atlas-local-console"));
     this.svg = this.root.querySelector("#campaign-map")!;
-    this.root.addEventListener("terrain-display-change",()=>void this.refresh());
+    this.root.addEventListener("terrain-display-change",()=>{this.spatial?.setContours(this.landscape.contours());void this.refresh();});
     this.camera = new AtlasCanvas(this.svg, {
       redraw:()=>this.render(),
       relative: true,

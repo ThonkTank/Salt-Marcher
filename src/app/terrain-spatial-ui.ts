@@ -87,6 +87,7 @@ export class TerrainSpatialUI {
   }
   point(e:MouseEvent){const hit=this.view?.hit(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
+  setContours(interval:number){this.view?.setContours(interval);}
   setActive(active:boolean){
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;this.controls.hidden=!active;this.toggle.textContent=active?'Draufsicht':'Atlas kippen';this.toggle.setAttribute('aria-pressed',String(active));
@@ -109,11 +110,11 @@ export class TerrainSpatialUI {
     this.token=token;this.reframe(frame);this.revision=revision;this.objects=objects;
     this.toggle.disabled=(document.getElementById('atlas-perception') as HTMLInputElement).checked;
     if(this.toggle.disabled&&this.active)this.setActive(false);
-    if(!this.active)return;this.placeCanvas();
+    if(!this.active)return;this.placeCanvas();this.setContours(contours);
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
-    const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,contours,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
+    const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
     if(source!==this.requested){this.requested=source;this.ready=false;this.input.dataset.terrainReady='loading';this.generation++;this.busy=false;this.queued=false;this.baseline=null;this.worker?.terminate();this.worker=null;this.scheduleLoad(contours);return;}
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);

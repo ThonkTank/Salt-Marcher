@@ -6,6 +6,8 @@ Stand: 20.10.2026. Im Gespräch vorgeschlagene und zur Umsetzung beauftragte Roa
 
 SaltMarcher erhält **eine gemeinsame Kartenfläche mit einer perspektivischen Kamera**. Sie schaut standardmäßig senkrecht nach unten und lässt sich jederzeit drehen und neigen. Welt, Landschaft, Stadt, Gebäude und Innenraum gehören zu derselben bearbeitbaren Welt.
 
+Der Atlas soll auf allen sinnvollen Maßstäben als flüssiger Editor und Map Explorer funktionieren. Lesbare, ansprechende Darstellung schließt ausdrücklich Wälder/Bäume und andere Geländeassets, Straßen- und Flussdarstellung samt Texturen sowie Gebäude und Regionen ein. Ihre Größe, Detailtiefe und Sichtbarkeit müssen sich sinnvoll mit der Zoomstufe ändern.
+
 Der Zoom verändert kontinuierlich die Darstellung und Informationsdichte: Küsten bleiben scharf, Höhenlinien werden sinnvoll ergänzt, Straßen und Flüsse bleiben lesbar, Namen wechseln nach Bedeutung und verfügbarem Platz. Städte erscheinen je nach Maßstab als Marker, Fläche oder Bebauung. Auswahl, Werkzeuge und History bleiben durchgehend erhalten.
 
 Festgelegt:
@@ -97,6 +99,8 @@ Caches bleiben begrenzt. Im Vergleich werden 64/128/256 MiB je relevanter Cachek
 **Abschluss:** Kalte und warme Navigation bleiben bedienbar; Weltgröße führt nicht zu vollständigen Weltlesungen. Nach wiederholten Reisen zwischen entfernten Orten werden ungenutzte Ressourcen freigegeben. Lokale Bearbeitung wird nicht wegen eines anderswo fehlenden Details gesperrt.
 
 ### P4 — Semantischen Zoom und kartografische Gestaltung vervollständigen
+
+Erster lokaler Teilschritt: [GPU-Höhenlinien mit konstanter Strichbreite und unmittelbarem Intervallwechsel](../../reference/atlas-gpu-contours-20261020/README.md). Automatische Intervalle, gemeinsame Ausgabe und die weiteren Objektklassen bleiben offen.
 
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 

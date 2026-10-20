@@ -1,3 +1,4 @@
+import {terrainContourPixels} from './terrain-contour-probe.mjs';
 import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
@@ -16,7 +17,7 @@ const root = process.cwd(),
 require("esbuild").buildSync({
   stdin: {
     contents:
-      "export * from './src/app/terrain-spatial-model';export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export {newLocation} from './src/features/location/location-schema';",
+      "export * from './src/app/terrain-spatial-model';export {wheelZoomFactor} from './src/app/atlas-navigation-scale';export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export {newLocation} from './src/features/location/location-schema';",
     resolveDir: root,
   },
   outfile: ".build/tilted-atlas-native-store.cjs",
@@ -25,7 +26,7 @@ require("esbuild").buildSync({
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore, TerrainSampler, terrainGrid, gridHeight, projectTerrain, terrainVisible } = require(root + "/.build/tilted-atlas-native-store.cjs");
+const { CampaignStore, TerrainSampler, terrainGrid, gridHeight, projectTerrain, terrainVisible, wheelZoomFactor } = require(root + "/.build/tilted-atlas-native-store.cjs");
 const profileRoot = path.join(homedir(), ".cache/saltmarcher/ui-profiles");
 await mkdir(profileRoot, { recursive: true });
 const dir = await mkdtemp(path.join(profileRoot, "landscape-")),
@@ -98,6 +99,8 @@ for (const file of [
   "src/app/terrain-spatial-model.ts",
   "src/app/atlas-camera.ts",
   "src/app/terrain-spatial-source.ts",
+  "src/app/terrain-contours.ts",
+  "tools/terrain-contour-probe.mjs",
   "src/app/terrain-color-visibility.ts",
   ".build/desktop/ui/terrain-spatial-worker.js",
 
@@ -163,6 +166,7 @@ async function start() {
   page = await app.firstWindow();
   console.log("Native window opened");
   page.on("pageerror", (e) => result.errors.push(e.stack ?? e.message));
+  page.on("console", message=>{if(message.type()==='error'&&/THREE|WebGL|shader/i.test(message.text()))result.errors.push(message.text());});
   await page.waitForFunction(
     () => document.body.dataset.tutorialReady === "true",
   );
@@ -215,6 +219,11 @@ const camera = () =>
     width: n.getBoundingClientRect().width,
     height: n.getBoundingClientRect().height,
   }));
+async function zoomReached(previous,deltaY){
+ const width=previous.view.width*wheelZoomFactor(deltaY,0,previous.height);
+ await page.waitForFunction(width=>Math.abs(JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width/width-1)<1e-8,width,{timeout:60000});
+ await atlasCanvasReady(page);
+}
 async function spatialReady(){
  await page.waitForFunction(()=>{const d=document.querySelector('#campaign-map').dataset;if(d.terrainReady==='error'||!d.terrainView)return true;if(d.terrainReady!=='ready'||!d.terrainProjection)return false;const v=JSON.parse(d.terrainProjection);const pad=document.querySelector('#land-tool').value==='smooth'?Number(document.querySelector('#land-radius').value)/2:0;return Number(d.terrainSamplePad)===pad&&['tilt','rotation','exaggeration'].every(k=>v[k]===Number(document.querySelector('#terrain-'+k).value));},null,{timeout:60000});
  assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready',await page.locator('#atlas-save-status').textContent());
@@ -287,7 +296,8 @@ async function hold(x, y, ms) {
   const started=Date.now();await settled();result.commitWaitMs??=[];result.commitWaitMs.push(Date.now()-started);
 }
 async function cameraMotion(){
-  result.scope='existing Atlas camera and surface reuse; not whole-product qualification';
+  result.scope='existing Atlas camera, surface reuse and GPU contours; not whole-product qualification';
+  result.contourPixels=await terrainContourPixels(page);
   const baseline=maskBytes();
   await page.evaluate(()=>{
     const post=Worker.prototype.postMessage;
@@ -301,6 +311,16 @@ async function cameraMotion(){
     };
   });
   const pixels=async()=>createHash('sha256').update(await page.locator('#atlas-terrain-spatial').evaluate(n=>n.toDataURL())).digest('hex');
+  await page.locator('#atlas-display').click();
+  const plainContours=await pixels();await page.locator('#land-contours').selectOption('100');
+  assert.notEqual(await pixels(),plainContours,'contour ink must change immediately on the uploaded mesh');
+  await page.keyboard.press('Escape');await capture('camera-sharp-contours');
+  await atlasCanvasReady(page);await spatialReady();
+  assert.equal(await page.evaluate(()=>window.cameraProbe.jobs),0,'contour interval must not rebuild terrain');
+  await page.locator('#atlas-display').click();await page.locator('#land-contours').selectOption('0');await page.keyboard.press('Escape');
+  await atlasCanvasReady(page);await spatialReady();
+
+  mark('GPU contour widths stay within one pixel across 4x zoom; fixed elevations, disabled and dense intervals, sea plateau and immediate native interval switching verified');
   const before=await pixels();
   await page.locator('#atlas-view').click();
   await page.locator('#terrain-rotation').focus();await page.keyboard.press('ArrowRight');
@@ -317,7 +337,7 @@ async function cameraMotion(){
   await page.keyboard.press('Escape');
   const small=await camera(),smallPixels=await pixels();
   await page.mouse.move(small.left+small.width*.5,small.top+small.height*.5);await page.mouse.wheel(0,-30);
-  await page.waitForFunction(width=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<width,small.view.width);
+  await zoomReached(small,-30);
   await atlasCanvasReady(page);await spatialReady();
   await page.mouse.down({button:'middle'});await page.mouse.move(small.left+small.width*.52,small.top+small.height*.52,{steps:4});await page.mouse.up({button:'middle'});
   await atlasCanvasReady(page);await spatialReady();
@@ -348,6 +368,7 @@ try {
   if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();
   await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.locator('#atlas-terrain-tilt').click();await page.keyboard.press('Escape');
   await spatialReady();await page.locator('#atlas-view').click();for(let i=0;i<4;i++)await page.locator('#terrain-exaggeration').press('ArrowLeft');await page.keyboard.press('Escape');await page.waitForFunction(()=>JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection).exaggeration===1&&document.querySelector('#campaign-map').dataset.terrainReady==='ready');await capture('01-tilted');
+  if(process.argv.includes('--contours')){await page.locator('#atlas-display').click();await page.locator('#land-contours').selectOption('100');await page.keyboard.press('Escape');await atlasCanvasReady(page);await spatialReady();result.contourInterval=100;}
   if(process.argv.includes('--camera-only'))await cameraMotion();else {
   const initialCamera=(await camera()).view,baseline=maskBytes(),sample=p=>new TerrainSampler(records()).query(p);
   result.gpu=await page.locator('#atlas-terrain-spatial').evaluate(c=>{const gl=c.getContext('webgl2'),e=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION)};});
@@ -390,7 +411,7 @@ try {
   await page.locator('#land-color-operation').selectOption('erase');await stroke([[p.x-20,p.y],[p.x+20,p.y]]);await settled();await page.mouse.move(20,20);assert.deepEqual(await visibleColor(pigmentPoint.x,pigmentPoint.y),pigmentBefore);assert.equal(maskBytes(),baseline);
   mark('Paint and erase visible land in the tilted view; pigment is frozen in world space and preserves every height');
   // Shared navigation stays bounded and releases the GPU canvas on return.
-  const nav=await camera();await page.mouse.move(nav.left+nav.width*.5,nav.top+nav.height*.5);await page.mouse.wheel(0,-120);await spatialReady();assert((await camera()).view.width<nav.view.width);
+  const nav=await camera();await page.mouse.move(nav.left+nav.width*.5,nav.top+nav.height*.5);await page.mouse.wheel(0,-120);await zoomReached(nav,-120);await spatialReady();assert((await camera()).view.width<nav.view.width);
   await page.mouse.down({button:'middle'});await page.mouse.move(nav.left+nav.width*.55,nav.top+nav.height*.55,{steps:6});await page.mouse.up({button:'middle'});await spatialReady();const panCamera=(await camera()).view;
   await page.locator('#atlas-view').click();await page.locator('#terrain-top').click();await page.keyboard.press('Escape');await atlasCanvasReady(page);assert.deepEqual((await camera()).view,panCamera);assert.equal(await page.locator('#atlas-terrain-spatial').count(),0);assert.equal(maskBytes(),baseline);
   mark('Wheel zoom and middle-button pan share the Atlas camera; returning disposes the spatial canvas');

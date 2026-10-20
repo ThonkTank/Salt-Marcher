@@ -30,7 +30,7 @@ function fixture(t){
   active:true,ready:false,input,host:{selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
   loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},canvas:null,
-  view:{reframe(){},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
+  view:{reframe(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
  const load=()=>ui.load(ui.requested,0);
@@ -49,11 +49,11 @@ test('pending IPC and worker survive small camera gestures; the result uses the 
  for(let i=0;i<50;i++)f.sync(zoom(.9+i*.001));
  assert.equal(f.jobs.length,1);assert.equal(f.reads.length,1);assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
 });
-test('detail/coverage changes invalidate pending replies while canonical revision, context and style always invalidate reuse',async t=>{
+test('detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse',async t=>{
  const f=fixture(t);f.sync();const first=f.load();f.resolveRead();await first;
  f.sync(zoom(.7));assert.equal(f.ui.ready,false);assert.equal(f.jobs[0].worker.terminated,true);f.reply(0);assert.equal(f.published.length,0);
  const second=f.load();f.resolveRead(1);await second;f.reply(1);assert.equal(f.ui.ready,true);
- for(const [b,revision,token,contours] of [[zoom(.7),2,'campaign',0],[zoom(.7),2,'other',0],[zoom(.7),2,'other',50],[{...zoom(.7),x:800},2,'other',50]]){
+ for(const [b,revision,token,contours] of [[zoom(.7),2,'campaign',0],[zoom(.7),2,'other',0],[{...zoom(.7),x:800},2,'other',50]]){
   const key=f.ui.requested;f.sync(b,revision,token,contours);assert.notEqual(f.ui.requested,key);assert.equal(f.ui.ready,false);
  }
 });
@@ -63,4 +63,10 @@ test('source change during IPC discards the old campaign; record ordering does n
  f.sync(frame,1,'other',0,objects);const key=f.ui.requested;
  f.sync(frame,1,'other',0,[...objects].reverse());assert.equal(f.ui.requested,key);
  f.sync(frame,1,'other',0,[{...objects[0],revision:1},objects[1]]);assert.notEqual(f.ui.requested,key);
+});
+
+test('contour interval changes are immediate display changes without source reads or worker invalidation',async t=>{
+ const f=fixture(t);f.sync();const loading=f.load();f.resolveRead();await loading;f.reply();
+ const key=f.ui.requested;f.sync(frame,1,'campaign',100);
+ assert.equal(f.ui.view.interval,100);assert.equal(f.ui.requested,key);assert.equal(f.ui.ready,true);assert.equal(f.jobs.length,1);assert.equal(f.reads.length,1);
 });

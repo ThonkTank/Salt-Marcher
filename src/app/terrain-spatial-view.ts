@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import {gridHeight,projectTerrain,terrainVisible,type TerrainGrid} from './terrain-spatial-model';
 import type {SpatialReply} from './terrain-spatial-worker';
 import type {Point} from './contracts';
+import {terrainContourMaterial,terrainContourUniforms} from './terrain-contours';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
@@ -20,6 +21,7 @@ export class TerrainSpatialView {
   private routes:THREE.Mesh[]=[];
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
+  private contours=terrainContourUniforms();
   constructor(readonly canvas:HTMLCanvasElement){
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
     this.renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
@@ -35,7 +37,12 @@ export class TerrainSpatialView {
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeBoundingSphere();
     const texture=new THREE.DataTexture(data.pixels,data.width,data.height,THREE.RGBAFormat);texture.colorSpace=THREE.SRGBColorSpace;texture.minFilter=THREE.LinearFilter;texture.magFilter=THREE.LinearFilter;texture.needsUpdate=true;
     if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
-    this.mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide}));this.scene.add(this.mesh);
+    geometry.setAttribute('terrainElevation',new THREE.BufferAttribute(g.heights,1));
+    this.contours??=terrainContourUniforms();
+    this.contours.terrainContourSea.value=g.seaLevelM;
+    this.contours.terrainContourInk.value.set(data.contourInk??'#685639');
+    const material=new THREE.MeshBasicMaterial({map:texture,side:THREE.FrontSide});terrainContourMaterial(material,this.contours);
+    this.mesh=new THREE.Mesh(geometry,material);this.scene.add(this.mesh);
     if(!data.draft){this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);}
     this.clearRoutes();
     for(const r of data.routes??[])for(const mesh of routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,Math.min(b.width/(v.columns-1),b.height/(v.rows-1))/2,data.protectedLimit!==undefined&&!!r.route?.protected)){
@@ -44,6 +51,10 @@ export class TerrainSpatialView {
     this.render();
   }
   private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];}
+  setContours(interval:number){
+    if(this.contours.terrainContourInterval.value===interval)return;
+    this.contours.terrainContourInterval.value=interval;this.render();
+  }
   /** Retain GPU geometry and textures while the camera moves or details load. */
   reframe(frame:LandscapeBox,tilt:number,rotation:number){
     const old=this.grid?.view;

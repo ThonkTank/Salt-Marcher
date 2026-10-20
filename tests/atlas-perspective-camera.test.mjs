@@ -245,3 +245,12 @@ test("zoom stays anchored on elevated terrain using the corresponding work-plane
         close(projected.y, screen.y);
       }
 });
+
+test('contour changes retain uploaded geometry, texture and picker and use unexaggerated metre heights',()=>{
+  const v={...pose(),exaggeration:4},heights=new Float32Array(v.columns*v.rows).fill(175),view=viewFor(v,heights);
+  const geometry=view.mesh.geometry,texture=view.mesh.material.map,picker=view.picker;
+  view.setContours(100);assert.equal(view.mesh.geometry,geometry);assert.equal(view.mesh.material.map,texture);assert.equal(view.picker,picker);
+  assert.equal(geometry.getAttribute('terrainElevation').getX(0),175);
+  assert.equal(geometry.getAttribute('position').getZ(0),(175-v.focusM)*4);
+  view.setContours(0);assert.equal(view.mesh.geometry,geometry);
+});
