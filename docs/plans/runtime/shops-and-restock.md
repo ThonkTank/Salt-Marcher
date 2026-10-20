@@ -86,15 +86,24 @@ Revisionen, Definitionen, Fälligkeiten, Receipts und Transaktion als Autorität
 Eine gültige Korrektur verwendet weiterhin die vollständige Buchungsbestätigung;
 während einer verzögerten Prüfsumme bleiben weitere Buchungen und der Wechsel
 gesperrt. Die frühe Ablehnung führt keinen eigenen Validierungsregelbestand ein.
+Preis- und Mengenfelder behalten fehlgeschlagene Umwandlungen als native
+Feldfehler bis zur ausdrücklichen Korrektur. `collectShop` prüft diese Fehler
+auch im während eines Wechsels gesperrten Fieldset vor jeder Buchung. Dadurch
+kann kein alter Preis anstelle einer noch ungültigen Texteingabe gespeichert
+werden. Unberührte gespeicherte Auffüllintervalle bleiben erhalten; allgemeine
+Browser-Mengen-/Schrittgrenzen deuten bestehende Fachwerte nicht um.
+
 
 `desktop-shop-switch.test.mjs` prüft unvollständigen Namen, negativen Bestand
 und unvollständige Auffülltabelle ohne Buchungsbeginn sowie eine gültige Korrektur
-bei gehaltener Prüfsumme. Die native Shopprobe führt den Namensablauf über echte
-IPC bei 100/200 Prozent und regulärem Neustart aus; CRLF-Notizen und fremde
+bei gehaltener Prüfsumme. Die native Shopprobe führt Namen-, Preis- und leere Mengeneingaben über echte
+IPC bei 100/200 Prozent Browserzoom und regulärem Neustart aus; CRLF-Notizen und fremde
 Ledgerbytes bleiben erhalten. Historische Schalter für absichtlich unsicheres
 Altverhalten entfallen aus dieser aktuellen Vertragsprobe. Metadaten einschließlich
 Buildhashes stehen auch bei Fehlern bereit; frische nichtleere Bilder, begrenztes
-reguläres Schließen und das anschließende Prozessende werden geprüft.
+reguläres Schließen und das anschließende Prozessende werden mit dem gemeinsamen
+nativen Sitzungshelfer geprüft. Die Preisprobe bestätigt auch beide korrigierten
+Werte nach Neustart; technische Garantien und Fachprüfung bleiben getrennt.
 
 `tools/test-desktop-shop-switch.mjs` prüft zusätzlich Kauf → Teilverkauf →
 regulärer Neustart mit Bestand und beiden Beträgen am selben Shop; die

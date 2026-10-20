@@ -1,3 +1,4 @@
+import {mockCustomValidity} from './helpers/input-validity.mjs';
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {setTimeout as pause} from 'node:timers/promises';
 import {mkdtempSync,readFileSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import path from 'node:path';import {randomUUID} from 'node:crypto';import {createRequire} from 'node:module';import {buildSync} from './helpers/build.mjs';import {parseHTML} from './helpers/dom.mjs';
@@ -16,12 +17,12 @@ async function fixture(){
  const definition=store.executeItemShop(command({kind:'definition',expectedRevision:null,definition:{id:randomUUID(),revision:0,name:'Seil',category:'equipment',magic:false,rarity:'',attunement:'no',unitCopper:'200',weightText:'',properties:[],description:'Original',source:{kind:'authored',label:'GM',license:null,url:null},trashed:false}})).definition,items=[];
  for(const c of heroes){const ack=store.executeProgress(command({kind:'manual-item',characterId:c.id,expectedMembershipRevision:store.live(w.token).roster.find(m=>m.id===c.id).membershipRevision,origin:'manual',item:{name:'Seil',quantity:4,valueGold:'2',category:'equipment',reference:{kind:'authored',definitionId:definition.id,revision:definition.revision}},note:'  Reise\r\n- Fund'}));items.push(store.ledgerItem(w.token,ack.ledgerIds[0]));}
  const shops=[];for(const[name,quantity]of [['Hafenladen',5],['Bergladen',7]]){const id=randomUUID();store.executeNpc({commandId:randomUUID(),campaignId:cam.id,token:w.token,expectedNoteRevision:null,expectedRecordRevision:0,expectedActorRevision:null,expectedPositionRevision:null,npc:{id,name:'Besitzer '+name,creatureId:null,readAloud:'',gmNotes:'',record:{id,revision:0,factionId:null,modifier:0,lifecycle:'active',appearance:'',behavior:'',history:''},locationId:null,health:null}});shops.push(store.executeItemShop(command({kind:'shop',expectedRevision:null,shop:{id:randomUUID(),revision:0,name,owner:{kind:'npc',id},notes:'  Markttag\r\n- Feste Preise',trashed:false,stock:[{id:randomUUID(),reference:{kind:'authored',definitionId:definition.id,revision:definition.revision},quantity,unique:false,instanceId:null,buyCopper:'200',sellCopper:'100',notes:'',restock:null}]}})).shop.shop);}
- const previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});const local=new Map();window.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
+ const previous={window:globalThis.window,document:globalThis.document},{window,document}=parseHTML(readFileSync('src/app/index.html','utf8'));Object.assign(globalThis,{window,document});const restoreValidity=mockCustomValidity(window);Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.__qaValue??this.options[0]?.value??'';},set(v){this.__qaValue=v;}});const local=new Map();window.localStorage={getItem:k=>local.get(k)??null,setItem:(k,v)=>local.set(k,v),removeItem:k=>local.delete(k)};
  const response=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}},writes=[],messages=[];window.campaign={};for(const key of ['preparation','progress','live','itemDefinitions','itemDefinition','shops','shop','ledgerInventory','commitStatus','shopHistory'])window.campaign[key]=async(...args)=>response(()=>store[key](...args));window.campaign.executeItemShop=async c=>{writes.push(c);return response(()=>store.executeItemShop(c));};
  delete require.cache[require.resolve('../.build/shop-switch-ui.cjs')];const ui=require('../.build/shop-switch-ui.cjs');ui.initItems(text=>messages.push(text),async()=>{});const el=id=>document.getElementById(id);for(const select of document.querySelectorAll('select'))Object.defineProperty(select,'value',{value:select.id==='item-sort'?'name':select.id==='item-direction'?'asc':'',writable:true});ui.activateItems(w);await ui.openItems();
  const choose=id=>[...el('shops-list').querySelectorAll('button')].find(b=>b.textContent.startsWith(shops.find(s=>s.id===id).name+' ·')).onclick();choose(shops[0].id);await until(()=>el('shop-name').value===shops[0].name&&!el('shop-fields').disabled);el('shop-seller').value=heroes[0].id;el('shop-seller').onchange();await until(()=>el('shop-sale-item').options.length===1&&!el('shop-sale-fields').disabled);el('shop-sale-item').value=items[0].id;
  const buy=()=>[...el('shop-stock').querySelectorAll('button')].find(b=>b.hasAttribute('data-purchase-available')).onclick(),sell=()=>{el('shop-sale-quantity').value='1';el('shop-sale-price').value='3';el('shop-sale-form').onsubmit({preventDefault(){}});},settle=async()=>{await tick();await ui.flushItems();await tick();};
- return{store,w,cam,heroes,items,shops,ui,el,choose,buy,sell,settle,writes,messages,async cleanup(){await settle();ui.activateItems(w);Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
+ return{store,w,cam,heroes,items,shops,ui,el,choose,buy,sell,settle,writes,messages,async cleanup(){await settle();ui.activateItems(w);restoreValidity();Object.assign(globalThis,previous);store.close();rmSync(root,{recursive:true,force:true});}};
 }
 test('shop context and trades use the live roster without an unrelated progress read',async()=>{
  const x=await fixture(),original=window.campaign.progress;let reads=0;
@@ -75,6 +76,31 @@ for(const incomplete of ['name','stock','restock'])test(`an incomplete shop ${in
   if(incomplete==='restock')assert.equal(saved.restockTables[0].name,'Marktlieferung');
   x.choose(x.shops[1].id);await until(()=>x.el('shop-name').value==='Bergladen'&&!x.el('shop-fields').disabled);
  }finally{window.campaign.commitStatus=status;await x.cleanup();}
+});
+
+for(const [label,raw,repaired] of [
+ ['Verkaufspreis pro Stück (GM)','2,345','2,34'],
+ ['Ankaufspreis pro Stück (GM)','1000000000000000','0,77'],
+ ['Bestand','','5'],
+])test(`raw invalid ${label} blocks navigation until its own correction`,async()=>{
+ const x=await fixture();try{
+  const input=[...x.el('shop-stock').querySelectorAll('label')].find(l=>l.firstChild.textContent===label).querySelector('input');
+  input.value=raw;input.onchange();x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();
+  const before=x.store.db.serialize();x.choose(x.shops[1].id);await until(()=>x.messages.some(m=>m.includes('Eingaben bleiben offen'))&&!x.el('shop-fields').disabled);
+  assert.equal(input.value,raw);assert.equal(x.el('shop-name').value,'Hafenladen korrigiert');assert.equal(x.writes.length,0);assert.deepEqual(x.store.db.serialize(),before);
+  input.value=repaired;input.onchange();x.choose(x.shops[1].id);await until(()=>x.el('shop-name').value==='Bergladen'&&!x.el('shop-fields').disabled);
+  const saved=x.store.shop(x.w.token,x.shops[0].id).shop;assert.equal(saved.name,'Hafenladen korrigiert');assert.equal(saved.notes,x.shops[0].notes);assert.equal(x.writes.length,1);
+  assert.equal(saved.stock[0].quantity,5);assert.equal(saved.stock[0].buyCopper,label.startsWith('Verkaufspreis')?'234':'200');assert.equal(saved.stock[0].sellCopper,label.startsWith('Ankaufspreis')?'77':'100');
+ }finally{await x.cleanup();}
+});
+
+test('untouched stored sub-day restock intervals do not block an unrelated shop rename',async()=>{
+ const x=await fixture();try{
+  const shop=x.store.shop(x.w.token,x.shops[0].id).shop;shop.stock[0].restock={mode:'add',quantity:1,intervalMs:'43200000',nextDueMs:'86400000'};
+  x.store.executeItemShop({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action:{kind:'shop',shop,expectedRevision:shop.revision}});
+  await x.ui.openItems(shop.id);x.el('shop-name').value='Hafenladen korrigiert';x.el('shop-form').oninput();assert(await x.ui.flushItems());
+  assert.deepEqual(x.store.shop(x.w.token,shop.id).shop.stock[0].restock,shop.stock[0].restock);
+ }finally{await x.cleanup();}
 });
 
 test('a valid shop draft keeps navigation locked while its booking fingerprint is delayed',async t=>{
