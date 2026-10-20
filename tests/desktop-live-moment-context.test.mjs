@@ -750,6 +750,7 @@ test('browser recap edits and cancelled review preserve literal draft and do not
 test('browser marker acknowledgement preserves later literal recap and opening edits without changing submitted history',async t=>{
  const x=await setup(t,true,true,JSON.stringify(literalRecap),true);x.el('live-session-end').click();await settle();const release=x.defer('session-marker');x.el('live-session-close-prepare').click();await settle();const area=x.el('live-session-close-handoff');area.value+='\nSpäterer Entwurf';area.dispatchEvent(new x.window.Event('input'));await settle();release();await settle();
  assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end').handoff,literalRecap.handoff);assert.deepEqual(x.store.live(x.w.token).recapDraft,{summary:'',handoff:literalRecap.handoff+'\r\nSpäterer Entwurf'});
+ assert.equal(x.el('live-session-draft-status').textContent,'Rückblickentwurf gespeichert.');
  const notes=x.el('handoff-visit-notes');notes.value+='\nEigene Vorbereitung';notes.dispatchEvent(new x.window.Event('input'));notes.value='Bearbeitet: '+notes.value;notes.dispatchEvent(new x.window.Event('input'));x.el('handoff-visit-form').onsubmit({preventDefault(){}});await settle();
  assert.equal(x.followUps[0][2].notes,'Bearbeitet: '+literalRecap.handoff+'\r\nEigene Vorbereitung');assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,1);
 });

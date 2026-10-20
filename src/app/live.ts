@@ -57,7 +57,7 @@ function recapFields(review=(document.getElementById('live-session-close-dialog'
 }
 function recapReadError(){return context&&recapDrafts.get(context.campaign.id)?.readError;}
 function showRecapSave(){
- const state=context&&recapDrafts.get(context.campaign.id),text=state?.readError||state?.error||(state?.dirty?'Rückblickentwurf wird gesichert…':state&&(state.text.summary||state.text.handoff)?'Rückblickentwurf gespeichert. Der Spielabend läuft weiter.':'');
+ const state=context&&recapDrafts.get(context.campaign.id),text=state?.readError||state?.error||(state?.dirty?'Rückblickentwurf wird gesichert…':state&&(state.text.summary||state.text.handoff)?'Rückblickentwurf gespeichert.':'');
  for(const id of ['live-session-draft-status','live-session-close-draft-status']){const label=document.getElementById(id);if(label)label.textContent=text;}
  for(const id of ['live-session-draft-retry','live-session-close-draft-retry']){const button=document.getElementById(id);if(button){button.hidden=!(state?.error||state?.readError);button.textContent=state?.readError?'Rückblick erneut laden':'Eigene Fassung erneut sichern…';}}
  for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff']){const field=document.getElementById(id) as HTMLTextAreaElement|null;if(field)field.readOnly=!state||!!state.readError;}
