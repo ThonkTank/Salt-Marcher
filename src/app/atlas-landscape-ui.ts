@@ -4,7 +4,7 @@ import {vegetationSpec,type VegetationInstance,type VegetationOverride} from './
 import {vegetationControls,vegetationInspector} from './vegetation-controls';
 import {openVegetationSpatial} from './vegetation-spatial';
 import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
-import {heightBrushBounds,type HeightStroke} from './terrain-brush';
+import {heightBrushBounds,heightBrushResolution,type HeightStroke} from './terrain-brush';
 import {drawMeasurements,areaMeasures,pathMeasures,radiusMeasures} from './atlas-measurements';
 import {atlasFieldValue,setAtlasFieldValue,setAtlasElevationField,lengthLabel} from './atlas-units';
 import {landscapeRasterBounds} from './landscape-raster';
@@ -211,6 +211,7 @@ export class LandscapeWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         this.lastPoint = this.point(e);
+        this.heightRead=null;
         if(this.settings.eyedropper){
           const b=svg.getBoundingClientRect(),pixel=svg.getContext('2d')?.getImageData(Math.floor((e.clientX-b.left)*svg.width/b.width),Math.floor((e.clientY-b.top)*svg.height/b.height),1,1).data;
           if(pixel)this.settings.sample('#'+[...pixel.slice(0,3)].map(v=>v.toString(16).padStart(2,'0')).join(''));this.releaseClick=true;return;
@@ -407,7 +408,7 @@ export class LandscapeWorkbench {
       },
       true,
     );
-    svg.addEventListener('pointerleave',()=>{this.hovering=false;html('land-cursor-height').textContent='Höhe: –';this.host.redraw();});
+    svg.addEventListener('pointerleave',()=>{this.hovering=false;this.heightRead=null;html('land-cursor-height').textContent='Höhe: –';this.renderHeightPrecision();this.host.redraw();});
     svg.addEventListener('contextmenu',e=>{if(this.active&&['river','road'].includes(this.tool)){e.preventDefault();e.stopImmediatePropagation();void this.finish().catch(e=>this.host.error(e));}});
     svg.addEventListener("keydown", (e) => {
       if (!this.active || (e.target as HTMLElement).closest?.('input,select,textarea,[contenteditable=true]')) return;
@@ -494,13 +495,31 @@ export class LandscapeWorkbench {
   private contourInterval=0;
   private heightTimer:ReturnType<typeof setTimeout>|undefined;
   contours(){return this.contourInterval;}
+  private heightRead:{point:Point;heightM:number;resolutionM:number|null;generation:number;request:number}|null=null;
+  private renderHeightPrecision(){
+    const radius=Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),brush=heightBrushResolution(radius);
+    const visible=this.active&&['height','smooth'].includes(this.tool)&&Number.isFinite(radius)&&radius>0;
+    const output=this.settings.precisionRoot.querySelector<HTMLOutputElement>('#land-brush-resolution')!,label=visible?'Pinselauflösung: '+lengthLabel(brush):'';
+    if(output.textContent!==label)output.textContent=label;
+    const read=this.heightRead,point=this.lastPoint;
+    const protectedPoint=visible&&this.hovering&&!this.maskStroke&&read&&read.generation===this.maskGeneration&&read.request===this.request&&read.point.x===point.x&&read.point.y===point.y&&read.resolutionM!==null&&read.resolutionM<brush;
+    const hint=this.settings.precisionRoot.querySelector<HTMLElement>('#land-height-protection')!;hint.hidden=!protectedPoint;
+    if(protectedPoint&&read.resolutionM!==null){
+      const fixed=(document.getElementById('land-radius-fixed') as HTMLInputElement|null)?.checked;
+      const text='Feine Höhendetails ('+lengthLabel(read.resolutionM)+') bleiben geschützt. Radius verkleinern'+(fixed?'':' oder näher heranzoomen')+'.';
+      if(hint.textContent!==text)hint.textContent=text;
+    }
+  }
   private cursorHeight(){
     if(this.heightTimer||this.maskStroke)return;
     this.heightTimer=setTimeout(async()=>{
-      const token=this.token,p={...this.lastPoint};
+      const token=this.token,p={...this.lastPoint},generation=this.maskGeneration,request=this.request;
       try{const r=await window.campaign.atlasHeight(token,p);
-        if(token===this.token&&!this.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok)
-          html('land-cursor-height').textContent='Höhe: '+lengthLabel(r.value.heightM)+(this.maskStroke?' · gespeichert':'');
+        if(token===this.token&&generation===this.maskGeneration&&request===this.request&&!this.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok){
+          this.heightRead={point:p,heightM:r.value.heightM,resolutionM:r.value.resolutionM,generation,request};
+          html('land-cursor-height').textContent='Höhe: '+lengthLabel(r.value.heightM)+(r.value.resolutionM===null?'':' · Auflösung: '+lengthLabel(r.value.resolutionM));
+          this.renderHeightPrecision();
+        }
       }catch{/* A stale point must not replace a current height. */}finally{this.heightTimer=undefined;}
     },100);
   }
@@ -589,6 +608,7 @@ export class LandscapeWorkbench {
   context(token: string) {
     if (this.token === token) return;
     this.token = token;
+    this.heightRead=null;html('land-cursor-height').textContent='Höhe: –';
     this.autoGrid=null;this.gridFade=null;
     this.cancel();
     this.records = [];this.background=null;
@@ -792,6 +812,7 @@ export class LandscapeWorkbench {
   private autoGrid: string | null = null;
   private gridFade: {from: string; to: string; start: number} | null = null;
   drawOverlay(root: AtlasPaint, box: LandscapeBox, mpp: number): boolean {
+    this.renderHeightPrecision();
     const input = html<HTMLSelectElement>('atlas-hex-level');
     const draft = this.hasDraft();
     html('land-finish').hidden = html('land-cancel').hidden = !draft;

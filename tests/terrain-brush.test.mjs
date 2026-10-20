@@ -6,7 +6,7 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/terrain-brush';export * from './src/app/terrain-height';export * from './src/app/atlas-brush-worker';export * from './src/app/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas-region-contracts';",resolveDir:process.cwd()},outfile:'.build/terrain-brush-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {applyTerrainBrush,TerrainSampler,heightRecord,LandscapeRasterizer,renderBrushPreview,CampaignStore,AtlasLandscapeReader,validateRegion}=require('../.build/terrain-brush-test.cjs');
+const {heightBrushResolution,applyTerrainBrush,TerrainSampler,heightRecord,LandscapeRasterizer,renderBrushPreview,CampaignStore,AtlasLandscapeReader,validateRegion}=require('../.build/terrain-brush-test.cjs');
 const brush=(mode,extra={})=>({mode,radius:64,strength:300,feather:1,...(mode==='level'?{targetM:220}:{}),samples:[{x:0,y:0,t:0},{x:0,y:0,t:1000}],...extra});
 const merge=(rs,tiles)=>[...rs.filter(r=>!tiles.some(t=>t.id===r.id)),...tiles];
 const edit=(rs,s)=>merge(rs,applyTerrainBrush(rs,s));
@@ -102,5 +102,14 @@ test('screen-sized brushes below one metre produce bounded, persistent fine geom
   const s=brush('raise',{radius,feather:0}),records=edit([],s);
   assert.equal(height(records),200);assert.equal(height(records,radius*2),-100);
   assert(records.length<=16);assert.deepEqual(height(JSON.parse(JSON.stringify(records))),200);
+ }
+});
+
+
+test('the displayed brush resolution is the resolution actually authored at every supported scale',()=>{
+ for(const radius of [.0001,.5,16,32,120,700]){
+  const records=applyTerrainBrush([],brush('raise',{radius})),resolution=heightBrushResolution(radius);
+  assert(records.length>0);assert(records.every(r=>r.height.pixel===resolution));
+  assert.equal(new TerrainSampler(records).sample({x:0,y:0}).resolutionM,resolution);
  }
 });
