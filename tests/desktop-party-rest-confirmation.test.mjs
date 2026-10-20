@@ -154,3 +154,18 @@ test('compact Party details and installation quick fields only change presentati
  assert.match(card().querySelector('.party-card-details').textContent,/Sprachenoffen/);card().querySelector('.party-member-toggle').onclick();assert.equal(card().querySelector('.party-card-details').hidden,true);
  assert.equal(x.digest(),bytes);assert.equal(x.commits.length,0);
 });
+
+for(const players of [['Nora','Noah'],['Nora','Nora'],[null,null]])test('rest choices and their confirmation distinguish namesakes: '+JSON.stringify(players),async t=>{
+ const x=fixture(t);let live=x.store.live(x.workspace.token),first=live.roster.find(c=>c.id===x.hero.id);
+ x.store.executeLive(x.command({kind:'profile',characterId:first.id,expectedRevision:first.profileRevision,profile:{...first.profile,...(players[0]?{playerName:players[0]}:{})}}));
+ const second=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Ada',...(players[1]?{playerName:players[1]}:{})}})).character;
+ live=x.store.live(x.workspace.token);x.store.executeLive(x.command({kind:'membership',characterId:second.id,expectedRevision:second.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));
+ const secondBefore=x.store.progress(x.workspace.token).characters.find(c=>c.characterId===second.id);
+ await x.openParty();const rows=[...x.get('rest-members').querySelectorAll('label')],label=id=>rows.find(row=>row.querySelector('input').value===id),firstLabel=label(first.id).textContent,secondLabel=label(second.id).textContent;
+ assert.notEqual(firstLabel,secondLabel);assert(firstLabel.includes(players[0]??'Spieler offen'));assert(secondLabel.includes(players[1]??'Spieler offen'));
+ const other=label(second.id).querySelector('input');other.checked=false;other.dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));
+ x.click('short');assert(x.get('rest-status').textContent.includes(firstLabel));assert(!x.get('rest-status').textContent.includes(secondLabel));assert.equal(x.commits.length,0);
+ x.click('short');await tick();assert.equal(x.commits.length,1);assert.deepEqual(x.commits[0].recipients.map(p=>p.characterId),[first.id]);assert.equal(x.p().rest.sections,1);
+ assert.deepEqual(x.store.progress(x.workspace.token).characters.find(c=>c.characterId===second.id),secondBefore);
+ const fresh=new CampaignStore(path.join(x.store.db.name));try{const w=fresh.activate(x.workspace.campaign.id);assert.deepEqual(fresh.progress(w.token).characters.find(c=>c.characterId===second.id),secondBefore);}finally{fresh.close();}
+});

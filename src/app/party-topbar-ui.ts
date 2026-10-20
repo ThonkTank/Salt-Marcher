@@ -1,7 +1,7 @@
 import {checkPendingCommit} from './commit-confirmation';
 import {PartyLootPanel} from './party-loot-ui';
 import {PartyRosterPanel} from './party-roster-ui';
-import {partyQuickFields,defaultPartyQuickFields,checkedPartyQuickFields,partyQuickFacts,partyRestOverview,characterRestHint,type PartyQuickField} from './party-overview';
+import {partyMemberLabels,partyQuickFields,defaultPartyQuickFields,checkedPartyQuickFields,partyQuickFacts,partyRestOverview,characterRestHint,type PartyQuickField} from './party-overview';
 import {bindAnchoredPopup} from './anchored-popup';
 import {workspaceShortcutAvailable} from './workspace-shortcuts';
 import {initPartyAwards,resetPartyAwards} from './party-award-ui';
@@ -73,7 +73,8 @@ function quickControls(){
  const root=el('party-quick-fields');root.replaceChildren();for(const [key,title]of partyQuickFields){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=key;input.checked=quickFields.includes(key);label.className='check-label';input.onchange=()=>{if(!input.isConnected||busy||loading)return;const next=partyQuickFields.filter(([key])=>[...root.querySelectorAll<HTMLInputElement>('input:checked')].some(i=>i.value===key)).map(([key])=>key);try{window.localStorage.setItem(quickKey,JSON.stringify(next));quickFields=next;render();message('',false,'party-quick-status');}catch{message('Schnellwerte konnten nicht gespeichert werden. Erneut versuchen.',true,'party-quick-status');quickControls();}};label.append(input,document.createTextNode(title));root.append(label);}
 }
 
-function render(){if(!live||!progress)return;renderAverage();el('party-archive-heading').textContent='Archivierte Figuren ('+(live.archivedRosterCount??0)+')';const active=el('party-active');active.replaceChildren();for(const c of live.roster.filter(c=>c.active&&(!live!.scene||c.sceneId===live!.focusId)))active.append(card(c,true));if(!active.childElementCount)active.textContent='Heute noch keine aktive Party.';el('party-focus').textContent=live.scene?'Im Fokus: '+(live.scene.title||'Unbenannte Gruppe')+' · '+live.scene.members.length+' Figuren':'Noch keine laufende Sitzung.';const picks=el('party-rest-members'),old=new Map([...picks.querySelectorAll<HTMLInputElement>('input')].map(i=>[i.value,i.checked]));picks.replaceChildren();for(const c of live.roster.filter(c=>c.active&&c.sceneId===live!.focusId)){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=c.id;input.checked=old.get(c.id)??true;label.className='check-label';label.append(input,document.createTextNode(c.profile.name));picks.append(label);}renderRoster();lock();}
+function restMembers(basis:LiveView){return basis.roster.filter(c=>c.active&&c.sceneId===basis.focusId);}
+function render(){if(!live||!progress)return;renderAverage();el('party-archive-heading').textContent='Archivierte Figuren ('+(live.archivedRosterCount??0)+')';const active=el('party-active');active.replaceChildren();for(const c of live.roster.filter(c=>c.active&&(!live!.scene||c.sceneId===live!.focusId)))active.append(card(c,true));if(!active.childElementCount)active.textContent='Heute noch keine aktive Party.';el('party-focus').textContent=live.scene?'Im Fokus: '+(live.scene.title||'Unbenannte Gruppe')+' · '+live.scene.members.length+' Figuren':'Noch keine laufende Sitzung.';const picks=el('party-rest-members'),old=new Map([...picks.querySelectorAll<HTMLInputElement>('input')].map(i=>[i.value,i.checked]));picks.replaceChildren();const members=restMembers(live),labels=partyMemberLabels(members);for(const c of members){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=c.id;input.checked=old.get(c.id)??true;label.className='check-label';label.title=c.id;label.append(input,document.createTextNode(labels.get(c.id)!));picks.append(label);}renderRoster();lock();}
 function renderRoster(){const root=el('party-roster');root.replaceChildren();const query=value('party-search').trim().toLocaleLowerCase('de-DE'),rows=live?.roster.filter(c=>!query||[c.id,...Object.values(c.profile).flat()].some(v=>(typeof v==='string'||typeof v==='number')&&String(v).toLocaleLowerCase('de-DE').includes(query)))??[];for(const c of rows.slice(0,limit))root.append(card(c,false));if(rows.length>limit)root.append(button('Weitere '+Math.min(40,rows.length-limit)+' Figuren',()=>{limit+=40;renderRoster();}));if(!rows.length)root.textContent='Keine passenden Figuren.';lock();}
 function rest(kind:'short'|'long'){
  if(!workspace||!live||!progress||busy||loading||!opened())return;
@@ -82,11 +83,11 @@ function rest(kind:'short'|'long'){
   if(!scene||basis.focusRevision===null)throw new Error('Keine laufende Gruppe im Fokus.');
   const ids=[...el('party-rest-members').querySelectorAll<HTMLInputElement>('input:checked')].map(i=>i.value);
   if(!ids.length)throw new Error('Figuren der Gruppe im Fokus auswählen.');
-  const names:string[]=[],recipients=ids.map(characterId=>{
+  const labels=partyMemberLabels(restMembers(basis)),names:string[]=[],recipients=ids.map(characterId=>{
    const member=basis.roster.find(c=>c.id===characterId),p=progress!.characters.find(p=>p.characterId===characterId);
    if(!member?.active||member.sceneId!==scene.id||!scene.members.includes(characterId))throw new Error('Rastgruppe geändert. Party aktualisieren.');
    if(!p)throw new Error('Fortschritt einer gewählten Figur fehlt. Party aktualisieren.');
-   names.push(member.profile.name);return{characterId,revision:p.revision};
+   names.push(labels.get(characterId)!);return{characterId,revision:p.revision};
   });
   const withTime=el<HTMLInputElement>('party-rest-time').checked,amount=Number(value('party-rest-'+kind)),restoreHp=kind==='long'&&el<HTMLInputElement>('party-rest-hp').checked;
   if(withTime&&(!Number.isSafeInteger(amount)||amount<=0))throw new Error('Positive ganze Dauer für die Rast eintragen.');

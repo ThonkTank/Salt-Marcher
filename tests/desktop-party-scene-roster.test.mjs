@@ -9,7 +9,7 @@ import { parseHTML } from './helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:
-      "export {CampaignStore} from './src/app/storage/store';export {PartyRosterPanel} from './src/app/party-roster-ui';export {partySceneLabels} from './src/app/party-overview';",
+      "export {CampaignStore} from './src/app/storage/store';export {PartyRosterPanel} from './src/app/party-roster-ui';export {partySceneLabels,partyMemberLabels} from './src/app/party-overview';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/party-scene-roster.cjs",
@@ -18,7 +18,7 @@ buildSync({
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore, PartyRosterPanel, partySceneLabels } = createRequire(
+const { CampaignStore, PartyRosterPanel, partySceneLabels, partyMemberLabels } = createRequire(
   import.meta.url,
 )("../.build/party-scene-roster.cjs");
 function fixture(t, count = 4) {
@@ -288,4 +288,12 @@ test('roster namesakes with colliding ID prefixes remain visibly distinct and ke
  assert.equal(short(ids[0]),ids[0]);assert.equal(short(ids[1]),ids[1]);assert.equal(short(ids[2]),ids[2].slice(0,8),'unrelated IDs stay compact');
  const search=root.querySelector('input[type=search]');search.value=ids[1];search.oninput();assert.equal(labels().get(ids[1]),all.get(ids[1]),'filter must not change the displayed identity');const box=root.querySelector('input[type=checkbox]');box.checked=true;box.onchange();search.value='Gleicher Spieler';search.oninput();assert.deepEqual(labels(),all);assert.match(root.querySelector('#party-membership-count').textContent,/1 ausgewählt/);root.querySelector('#party-membership-apply').onclick();await new Promise(r=>setImmediate(r));assert.deepEqual(saved.memberIds,[ids[1]]);assert.deepEqual(view,before);
  panel.open({...view,roster:[...view.roster].reverse()},()=>true);assert.deepEqual(labels(),new Map([...all].reverse()),'source order may change; prefixes must not');
+});
+
+
+test('rest identity labels distinguish canonically equal names and shared ID prefixes without rewriting profiles',()=>{
+ const members=[{id:'same-prefix',profile:{name:'Áda',playerName:'Nora'}},{id:'same-prefix-a',profile:{name:'A\u0301da',playerName:'Nora'}},{id:'same-prefix-ab',profile:{name:' Áda ',playerName:'Nora'}},{id:'unique-person',profile:{name:'Borin'}}],before=structuredClone(members),labels=partyMemberLabels(members);
+ assert.equal(new Set([...labels.values()].map(label=>label.normalize('NFC').replace(/\s+/gu,' ').trim())).size,4);
+ assert.equal(labels.get('unique-person'),'Borin');for(const member of members.slice(0,3))assert(labels.get(member.id).includes(member.id));
+ assert.deepEqual(partyMemberLabels([...members].reverse()),new Map([...labels].reverse()));assert.deepEqual(members,before);
 });

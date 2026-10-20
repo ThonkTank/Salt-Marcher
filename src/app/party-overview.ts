@@ -33,6 +33,15 @@ export function partyIdentityPrefixes(ids:readonly string[]){
  return new Map(ids.map(id=>[id,id.slice(0,widths.get(id))]));
 }
 
+/** Keep ordinary names compact; distinguish namesakes over the full choice set,
+ * so unchecking one never changes the identity shown in the confirmation. */
+export function partyMemberLabels(members:readonly Character[]){
+ const key=(name:string)=>name.normalize('NFC').replace(/\s+/gu,' ').trim(),counts=new Map<string,number>();
+ for(const member of members){const name=key(member.profile.name);counts.set(name,(counts.get(name)??0)+1);}
+ const prefixes=partyIdentityPrefixes(members.map(member=>member.id));
+ return new Map(members.map(member=>[member.id,member.profile.name+(counts.get(key(member.profile.name))!>1?' · '+(member.profile.playerName||'Spieler offen')+' · '+prefixes.get(member.id):'')]));
+}
+
 /** Place and present membership describe a destination without renaming stored scenes. */
 export function partySceneLabels(view:import('./live-contracts').LiveView){
  const labels=view.scenes.map(scene=>({id:scene.id,label:(scene.locationTitle||'Ohne Ort')+' · '+(view.roster.filter(c=>c.active&&c.sceneId===scene.id).map(c=>c.profile.name).join(', ')||'Keine Figuren')}));
