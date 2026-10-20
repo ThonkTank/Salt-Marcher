@@ -96,6 +96,7 @@ for (const file of [
   "src/app/terrain-spatial-view.ts",
   "src/app/terrain-spatial-worker.ts",
   "src/app/terrain-spatial-model.ts",
+  "src/app/atlas-camera.ts",
   "src/app/terrain-color-visibility.ts",
   ".build/desktop/ui/terrain-spatial-worker.js",
 
@@ -284,6 +285,49 @@ async function hold(x, y, ms) {
   await page.mouse.up();
   const started=Date.now();await settled();result.commitWaitMs??=[];result.commitWaitMs.push(Date.now()-started);
 }
+async function cameraMotion(){
+  result.scope='perspective camera only; not P1 engine or whole-product qualification';
+  const baseline=maskBytes();
+  await page.evaluate(()=>{
+    const post=Worker.prototype.postMessage;
+    window.cameraProbe={jobs:0,hold:false,pending:[]};
+    Worker.prototype.postMessage=function(...args){
+      if(args[0]?.view?.projection==='perspective'){
+        window.cameraProbe.jobs++;
+        if(window.cameraProbe.hold){window.cameraProbe.pending.push(()=>post.apply(this,args));return;}
+      }
+      return post.apply(this,args);
+    };
+  });
+  const pixels=()=>page.locator('#atlas-terrain-spatial').evaluate(n=>n.toDataURL());
+  const before=await pixels();
+  await page.locator('#atlas-view').click();
+  await page.locator('#terrain-rotation').focus();await page.keyboard.press('ArrowRight');
+  const rotated=await pixels();assert.notEqual(rotated,before);
+  await page.locator('#terrain-tilt').focus();await page.keyboard.press('End');
+  await spatialReady();assert.equal(await page.locator('#terrain-tilt').inputValue(),'75');
+  assert.notEqual(await pixels(),rotated);
+  assert.equal(await page.evaluate(()=>window.cameraProbe.jobs),0,'pose changes must reuse GPU buffers');
+  await capture('camera-75-degrees');
+  await page.keyboard.press('Escape');
+  const sky=await camera();await page.mouse.move(sky.left+sky.width*.85,sky.top+sky.height*.01);await page.mouse.down({button:'middle'});await page.mouse.move(sky.left+sky.width*.8,sky.top+sky.height*.02,{steps:3});await page.mouse.up({button:'middle'});
+  assert.deepEqual((await camera()).view,sky.view,'sky must not fall through to 2D panning');
+  await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').press('Home');
+  await page.keyboard.press('Escape');
+  await page.evaluate(()=>window.cameraProbe.hold=true);
+  const c=await camera(),prior=await pixels();await page.mouse.move(c.left+c.width*.55,c.top+c.height*.6);await page.mouse.wheel(0,-120);
+  await page.waitForFunction(width=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<width,c.view.width);
+  assert.notEqual(await pixels(),prior,'zoom must change actual pixels before worker completion');
+  await page.waitForFunction(()=>window.cameraProbe.pending.length>0,null,{timeout:60000});
+  const waiting=(await camera()).view,pixelsWaiting=await pixels();
+  await page.mouse.down({button:'middle'});await page.mouse.move(c.left+c.width*.6,c.top+c.height*.65,{steps:6});await page.mouse.up({button:'middle'});
+  assert.notDeepEqual((await camera()).view,waiting);assert.notEqual(await pixels(),pixelsWaiting,'panning must work with detail generation held');
+  await capture('camera-pending-pan');
+  await page.evaluate(()=>{window.cameraProbe.hold=false;for(const post of window.cameraProbe.pending)post();window.cameraProbe.pending=[];});
+  await spatialReady();assert.equal(maskBytes(),baseline);
+  result.cameraJobs=await page.evaluate(()=>window.cameraProbe.jobs);
+  mark('Perspective tilt to 75 degrees and rotation change actual canvas pixels without terrain jobs; zoom and pan remain visible while worker completion is held; canonical heights unchanged');
+}
 try {
   await start();await tool('height');
   assert.equal(await page.locator('[data-atlas-tool]').count(),3);
@@ -291,6 +335,7 @@ try {
   if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();
   await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.locator('#atlas-terrain-tilt').click();await page.keyboard.press('Escape');
   await spatialReady();await page.locator('#atlas-view').click();for(let i=0;i<4;i++)await page.locator('#terrain-exaggeration').press('ArrowLeft');await page.keyboard.press('Escape');await page.waitForFunction(()=>JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection).exaggeration===1&&document.querySelector('#campaign-map').dataset.terrainReady==='ready');await capture('01-tilted');
+  if(process.argv.includes('--camera-only'))await cameraMotion();else {
   const initialCamera=(await camera()).view,baseline=maskBytes(),sample=p=>new TerrainSampler(records()).query(p);
   result.gpu=await page.locator('#atlas-terrain-spatial').evaluate(c=>{const gl=c.getContext('webgl2'),e=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),version:gl.getParameter(gl.VERSION)};});
   // Use a visible pass on the seeded reference landscape, in world metres.
@@ -321,7 +366,7 @@ try {
   mark('Rotation, tilt and exaggeration preserve canonical metres; Escape restores the displayed base mesh');
   // Return to the normal oblique view with real range-key input.
   await page.locator('#atlas-view').click();
-  for(const [id,fraction]of [['rotation',.5],['tilt',30/65],['exaggeration',.75/7.75]]){const input=page.locator('#terrain-'+id),r=await input.boundingBox();await input.click({position:{x:8+(r.width-16)*fraction,y:r.height/2}});}
+  for(const [id,fraction]of [['rotation',.5],['tilt',30/75],['exaggeration',.75/7.75]]){const input=page.locator('#terrain-'+id),r=await input.boundingBox();await input.click({position:{x:8+(r.width-16)*fraction,y:r.height/2}});}
   await page.keyboard.press('Escape');await spatialReady();
   await tool('smooth');await setBrushWorldRadius(page,'land-radius','600');await page.locator('#land-height-strength').fill('1000');
   await hold(p.x,p.y,600);assert.notEqual(maskBytes(),baseline);await history('undo');await spatialReady();assert.equal(maskBytes(),baseline);
@@ -349,6 +394,7 @@ try {
   mark('Knowledge-mask change returns to the filtered top view and disables the unqualified spatial player view');
   const persisted=JSON.stringify(records());await app.close();app=null;await start();assert.equal(JSON.stringify(records()),persisted);await capture('07-reopened');
   mark('Fresh native process retains the exact authored terrain and pigment');
+  }
   assert.deepEqual(result.errors,[]);result.ok=true;
 } catch (error) {
   result.error = error.stack ?? String(error);
@@ -361,8 +407,10 @@ try {
 } finally {
   if (app) {
     if (result.ok) {
-      await app.close();
-      result.normalExit = true;
+      const proc=app.process(),ended=new Promise(resolve=>proc.once('exit',(code,signal)=>resolve({code,signal})));
+      await app.close();result.exit=await ended;
+      result.normalExit=result.exit.code===0&&result.exit.signal===null;
+      assert(result.normalExit,JSON.stringify(result.exit));
     } else await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
   }
   db.close();

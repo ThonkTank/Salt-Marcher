@@ -233,6 +233,7 @@ export class CampaignAtlasWorkbench {
         !!this.partyDrag ||
         this.brushId !== null,
       changed: () => {
+        this.spatial?.reframe(this.camera.view);
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
         this.scheduleRegion(true);if(this.exportOpen)this.exportAreaStatus();
       },
@@ -547,7 +548,7 @@ export class CampaignAtlasWorkbench {
     this.spatial=new TerrainSpatialUI(this.svg,{
       route:(kind,tilt)=>this.landscape.planTerrainRoute(kind,tilt),draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.landscape.hasDraft()||this.territories.hasDraft()||this.busy,cancel:()=>this.landscape.cancel(),
       tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',pan:()=>this.root.dataset.panMode==='true',
-      set:box=>this.camera.set(box,true),redraw:()=>this.scheduleRender(),choose:p=>this.chooseAt(p,'all'),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
+      set:box=>this.camera.set(box,true),zoom:(factor,anchor)=>this.camera.zoom(factor,anchor,true),stopZoom:()=>this.camera.stopZoom(),redraw:()=>this.scheduleRender(),choose:p=>this.chooseAt(p,'all'),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
     });
     this.updateHexLabels();
     this.svg.addEventListener("keydown", (e) => {

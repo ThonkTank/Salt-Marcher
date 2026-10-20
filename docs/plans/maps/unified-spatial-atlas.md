@@ -43,17 +43,30 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ## 3. Lieferphasen und Abschlusskriterien
 
+### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
+
+Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt und den Enginevergleich ausdrücklich beibehalten. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
+
+Als nächstes werden Kamera, Projektion, räumliche Treffer, Szenenaktualisierung und Ressourcenfreigabe hinter dem bestehenden Atlas angeschlossen. Der Three.js-Kandidat erweitert vorhandene Gelände-/Objektmodule; der MapLibre-Kandidat verwendet dieselben Daten und Gesten in derselben Hauptoberfläche und bindet räumliche Geometrie in den gemeinsamen GL-/Tiefenkontext ein. Es entstehen keine zwei neuen Anwendungen. Nach dem Vergleich bleibt ein Produktrenderer.
+
+Für den ersten sichtbaren Ausschnitt werden bestehende Kampagnen und Prüfwelten verwendet; die bereits angelegte kleine Prüfwelt ergänzt Lücken. Große Lastfälle entstehen bei den jeweiligen Umsetzungsschritten. Der gesondert zu prüfende Landschaftsindex blockiert den Kameraanschluss nicht. Laufende Änderungen im gemeinsamen Checkout bleiben erhalten; benötigte Terrainverbesserungen werden gezielt in den isolierten Arbeitsstand übernommen.
+
+Nach jedem Schritt: betroffene Typ-/Buildprüfungen und Regressionen, tatsächlicher nativer Ablauf, visuelle Kontrolle sowie je nach Änderung Speichern, Undo und frisches Öffnen. Gefundene Fehler werden vor abhängigen Schritten korrigiert. Die Reihenfolge P2–P8 und sämtliche Endkriterien bleiben verbindlich. P1 und der frühe Kameraanschluss aus P2 werden zusammen entwickelt; eine Engine wird erst nach dem gemeinsamen Funktions- und Leistungsvergleich ausgewählt.
+
+
 ### P0 — Umfang und vergleichbare Ausgangsbasis sichern
 
 Arbeitsstand: [gesicherte Quellen, Inventar und reproduzierbare Prüfwelt](unified-atlas-baseline.md). P0 ist in Arbeit; seine Abschlusskriterien sind noch offen.
 
 Alle vorhandenen Atlaswerkzeuge und Verbraucher inventarisieren und den zugehörigen Anforderungen zuordnen. Gemeinsamen Arbeitsstand einschließlich laufender Änderungen unverändert sichern; Implementierung später isoliert auf aktuellem `origin/main` beginnen und benötigte Änderungen gezielt übernehmen.
 
-Eine reproduzierbare Prüfwelt erstellen: Küste, Inseln, Gebirge, Tal, Fluss, Straßen, Wald, hierarchische Regionen, Stadt mit Stadtteilen, Dorf und mehrgeschossige Innenräume. Kleine und große Varianten verwenden dieselben Gestaltungselemente.
+Eine reproduzierbare Prüfwelt erstellen: Küste, Inseln, Gebirge, Tal, Fluss, Straßen, Wald, hierarchische Regionen, Stadt mit Stadtteilen, Dorf und mehrgeschossige Innenräume. Kleine und große Varianten verwenden dieselben Gestaltungselemente. Große Varianten begleiten P3–P8 und sind keine Voraussetzung für den ersten integrierten Kameraausschnitt.
 
 **Abschluss:** Werkzeugliste, feste Eingabefolgen, Screenshots und Messungen für den Ausgangsstand liegen vor. Die neue Roadmap ist mit `docs/INDEX.md`, den bestehenden Atlas-/Reliefplänen und den betroffenen Abnahme-IDs verbunden; ursprüngliche Quellenbindungen bleiben erhalten.
 
 ### P1 — Architektur mit einem vollständigen Ausschnitt entscheiden
+
+Erster lokaler Teilanschluss: [perspektivische Kamera und Navigation mit ausstehenden Detailaufträgen im vorhandenen Three.js-Atlas](../../reference/atlas-perspective-camera-20261020/README.md). Der Enginevergleich und P1 bleiben offen.
 
 Beide Kandidaten führen dieselbe kurze Aufgabe aus: Weltübersicht → Dorf → Gebäudeinnenraum, dabei drehen und neigen, Höhenlinien und Namen wechseln lassen, Gelände mit großem Pinsel bearbeiten, eine Wand ändern und beides rückgängig machen.
 

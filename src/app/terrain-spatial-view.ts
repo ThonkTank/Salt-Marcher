@@ -1,3 +1,5 @@
+import {ATLAS_CAMERA_FOV,atlasCameraEye,atlasPlanePoint} from './atlas-camera';
+import type {LandscapeBox} from './atlas-landscape';
 import {routeMeshes} from './terrain-route-view';
 import * as THREE from 'three';
 import {gridHeight,projectTerrain,terrainVisible,type TerrainGrid} from './terrain-spatial-model';
@@ -7,7 +9,7 @@ import type {Point} from './contracts';
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
   readonly renderer:THREE.WebGLRenderer;
-  readonly camera=new THREE.OrthographicCamera();
+  readonly camera=new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV);
   readonly scene=new THREE.Scene();
   private mesh:THREE.Mesh<THREE.BufferGeometry,THREE.MeshBasicMaterial>|null=null;
   private picker:THREE.Mesh|null=null;
@@ -17,12 +19,14 @@ export class TerrainSpatialView {
   private selection:THREE.Line|null=null;
   private routes:THREE.Mesh[]=[];
   private origin={x:0,y:0};
+  private renderWidth=0;private renderHeight=0;private heightRange=0;
   constructor(readonly canvas:HTMLCanvasElement){
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
     this.renderer.setPixelRatio(Math.min(1.5,window.devicePixelRatio));this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
   }
   setData(data:SpatialReply){
-    const {grid:g}=data,v=g.view,b=v.box;this.grid=g;this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+    this.removeLine(this.cursor);this.cursor=null;
+    const {grid:g}=data,v=g.view,b=v.box;this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
     const positions=new Float32Array(v.columns*v.rows*3),uv=new Float32Array(v.columns*v.rows*2),indices:number[]=[];
     for(let y=0;y<v.rows;y++)for(let x=0;x<v.columns;x++){
       const i=y*v.columns+x;positions.set([b.x+x*b.width/(v.columns-1)-this.origin.x,this.origin.y-b.y-y*b.height/(v.rows-1),(g.heights[i]!-v.focusM)*v.exaggeration],i*3);uv.set([x/(v.columns-1),y/(v.rows-1)],i*2);
@@ -40,14 +44,24 @@ export class TerrainSpatialView {
     this.render();
   }
   private clearRoutes(){for(const mesh of this.routes){this.scene.remove(mesh);mesh.geometry.dispose();for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material])material.dispose();}this.routes=[];}
+  /** Retain GPU geometry and textures while the camera moves or details load. */
+  reframe(frame:LandscapeBox,tilt:number,rotation:number){
+    for(const grid of new Set([this.grid,this.base]))if(grid)grid.view={...grid.view,frame:{...frame},tilt,rotation,projection:'perspective'};
+    this.render();
+  }
+  planePoint(clientX:number,clientY:number){
+    if(!this.grid)return null;const r=this.canvas.getBoundingClientRect();
+    return atlasPlanePoint(this.grid.view,{x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height});
+  }
   render(){
-    if(!this.grid)return;const v=this.grid.view,w=Math.max(1,this.canvas.clientWidth),h=Math.max(1,this.canvas.clientHeight);this.renderer.setSize(w,h,false);
-    this.camera.left=-v.frame.width/2;this.camera.right=v.frame.width/2;this.camera.top=v.frame.height/2;this.camera.bottom=-v.frame.height/2;
-    const distance=Math.max(v.box.width,v.box.height,this.grid.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)*v.exaggeration),1))*3,a=v.rotation*Math.PI/180,t=v.tilt*Math.PI/180;
-    this.camera.near=.001;this.camera.far=distance*3;this.camera.up.set(0,0,1);
-    this.camera.position.set(Math.sin(a)*Math.sin(t)*distance,-Math.cos(a)*Math.sin(t)*distance,Math.cos(t)*distance);
-    if(v.tilt===0)this.camera.up.set(-Math.sin(a),Math.cos(a),0);
-    this.camera.lookAt(0,0,0);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
+    if(!this.grid)return;const v=this.grid.view,w=Math.max(1,this.canvas.clientWidth),h=Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
+    this.camera.aspect=v.frame.width/v.frame.height;
+    const eye=atlasCameraEye(v),target=new THREE.Vector3(v.frame.x+v.frame.width/2-this.origin.x,this.origin.y-v.frame.y-v.frame.height/2,0);
+    const distance=Math.hypot(eye.x,eye.y,eye.z),extent=Math.max(v.box.width,v.box.height,this.heightRange*v.exaggeration);
+    this.camera.near=Math.max(1e-6,distance*1e-6);this.camera.far=Math.max(distance*8,extent*3);this.camera.up.set(0,0,1);
+    this.camera.position.copy(target).add(new THREE.Vector3(eye.x,-eye.y,eye.z));
+    if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
+    this.camera.lookAt(target);this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
   }
   hit(clientX:number,clientY:number,includeRoutes=false):Point|null{
     if(!this.picker)return null;const r=this.canvas.getBoundingClientRect(),ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2((clientX-r.left)/r.width*2-1,1-(clientY-r.top)/r.height*2),this.camera);

@@ -8,8 +8,9 @@ import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/terrain-spatial-worker';",resolveDir:process.cwd()},outfile:'.build/terrain-tilted-atlas-storage.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,heightRecord,renderTerrainSpatial}=require('../.build/terrain-tilted-atlas-storage.cjs');
-const v={box:{x:-96,y:-96,width:192,height:192},frame:{x:-64,y:-64,width:128,height:128},columns:97,rows:97,focusM:100,tilt:60,rotation:0,exaggeration:1};
-test('canonical spatial commit clips off-brush occluders, matches preview, and survives history/reopen',t=>{
+const globalView={box:{x:-96,y:-96,width:192,height:192},frame:{x:-64,y:-64,width:128,height:128},columns:97,rows:97,focusM:100,tilt:60,rotation:0,exaggeration:1};
+for(const projection of [undefined,'perspective'])test(`canonical ${projection??'orthographic'} commit clips occluders, matches preview, and survives history/reopen`,t=>{
+ const v={...globalView,...(projection?{projection}:{})};
  const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/spatial-');let store=new CampaignStore(dir+'/world.sqlite');const cam=store.create('Spatial');let active=store.activate(cam.id);
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
  const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action}),read=()=>store.atlasMaskRegion(active.token,v.box).records;
