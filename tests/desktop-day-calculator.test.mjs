@@ -177,3 +177,29 @@ test('every active figure remains reachable in paged current facts and XP projec
  assert.equal(current.querySelectorAll('td').length,40*4);assert.equal(factsMore.isConnected,false);
  factsMore.onclick();assert.equal(current.querySelectorAll('td').length,40*4,'revoked page controls cannot change the new answer');
 });
+
+
+test('rest-split source reuse checks every row revision and reloads changed or damaged sources on the next read',t=>{
+ const x=fixture(t);x.add('Ada',0);x.add('Borin',0);
+ const save=(plan,expectedRevision)=>x.store.saveEncounterPlan({...x.command(null),expectedRevision,plan});
+ let plan=save({id:randomUUID(),revision:0,name:'Wachpatrouille',notes:'Originaltext',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''},null);
+ const row=(revision=plan.revision,restBefore)=>({id:plan.id,revision,count:3,...(restBefore?{restBefore}:{})});
+ const read=encounters=>x.store.adventuringDay(x.w.token,{source:'active',rows:[],totalXp:0,encounters});
+ let before=x.store.db.serialize();
+ const valid=read([row(),row(plan.revision,'short'),row(plan.revision,'long')]);
+ assert.equal(valid.problem,null);assert.equal(valid.itinerary.totalLoadXp,684);
+ assert.deepEqual(valid.itinerary.stages.map(s=>s.restBefore),[undefined,'short','long']);
+ const wrongLaterRow=read([row(),row(plan.revision+1,'short')]);
+ assert.equal(wrongLaterRow.calculation,null);assert.match(wrongLaterRow.problem,/Vorlagen aktualisieren/);
+ assert.ok(x.store.db.serialize().equals(before));
+ const oldRevision=plan.revision;plan=save({...plan,name:'Zwei Wachen',entries:plan.entries.map(e=>({...e,count:2}))},plan.revision);
+ before=x.store.db.serialize();
+ assert.match(read([row(oldRevision)]).problem,/Vorlagen aktualisieren/);
+ const refreshed=read([row(),row(plan.revision,'short')]);
+ assert.equal(refreshed.problem,null);assert.equal(refreshed.itinerary.totalLoadXp,1200);
+ assert.deepEqual(refreshed.itinerary.stages.map(s=>s.name),['Zwei Wachen','Zwei Wachen']);
+ assert.ok(x.store.db.serialize().equals(before));
+ x.store.db.prepare('UPDATE encounter_plan SET checksum=? WHERE campaign_id=? AND id=?').run('damaged',x.cam.id,plan.id);
+ before=x.store.db.serialize();assert.match(read([row(),row(plan.revision,'long')]).problem,/beschädigt/);
+ assert.ok(x.store.db.serialize().equals(before));
+});

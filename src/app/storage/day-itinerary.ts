@@ -12,10 +12,14 @@ export function readDayItinerary(db:any,cam:string,entries:DayPlanEntry[],party:
  // Work on isolated Party facts. Custom level groups start with a fresh long rest.
  const initial=active??party.flatMap(p=>Array.from({length:p.count},(_,i)=>({characterId:p.id+':'+i,name:p.name,xp:levelXp[p.level!-1]!,revision:0,rest:{known:true,longXp:0,shortXp:0,baseline:0,sections:0},health:null})));
  const projected=initial.map(p=>({...p,rest:{...p.rest}}));
+ // A rest split reuses its source. Scope reuse to this read transaction only.
+ const sources=new Map<string,{plan:ReturnType<typeof readEncounterPlan>;assessment?:ReturnType<typeof assessEncounter>}>();
  for(const entry of entries){
-  const plan=readEncounterPlan(db,cam,entry.id);
+  let source=sources.get(entry.id);
+  if(!source){source={plan:readEncounterPlan(db,cam,entry.id)};sources.set(entry.id,source);}
+  const {plan}=source;
   if(plan.revision!==entry.revision)throw new Error('Vorlage „'+plan.name+'“ wurde geändert. Im Tagesplan „Vorlagen aktualisieren“ wählen.');
-  const assessment=assessEncounter(party,plan.entries.map(e=>({count:e.count,xp:plan.sources.find(c=>c.id===e.creatureId)?.xp})));
+  const assessment=source.assessment??=assessEncounter(party,plan.entries.map(e=>({count:e.count,xp:plan.sources.find(c=>c.id===e.creatureId)?.xp})));
   if(assessment.missingXp)throw new Error('Vorlage „'+plan.name+'“: XP fehlen für '+assessment.missingXp+' Kreaturen. Quelle im Encounter-Editor ergänzen.');
   if(!assessment.count)throw new Error('Vorlage „'+plan.name+'“ enthält keine Gegner.');
   const load=xpShare(assessment.adjustedXp,partySize),reward=xpShare(assessment.baseXp,partySize);

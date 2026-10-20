@@ -137,6 +137,15 @@ Kreatur-XP erzeugen keine scheinbar vollständige Nullsumme. Es werden weder Vor
 noch NPCs, Party, Kämpfe, Rasten, XP oder Uhren geändert. Keine neue IPC-Operation,
 Datenbank oder Migration.
 
+Mehrere Planzeilen dürfen dieselbe Quelle verwenden, etwa nach dem Teilen einer
+Wiederholungszeile an einer Rastmarke. Der Reader liest und validiert jede
+unterschiedliche Vorlage und bewertet sie nur einmal je Store-Aufruf. Jede
+Planzeile prüft weiterhin ihre eigene erwartete Revision; Reihenfolge,
+Wiederholungen, Rasten und Rundung bleiben zeilenbezogen. Die Wiederverwendung
+endet mit dem Read und hat keine Invalidierungs- oder Speicherregeln zwischen
+Aufrufen. Eine spätere Quellenänderung benötigt weiterhin ausdrückliches
+Aktualisieren; eine inzwischen beschädigte Quelle wird erneut abgewiesen.
+
 `assessEncounter` bewertet jede Vorlage mit derselben Rechnerparty. Angepasste XP
 bilden die Belastung, Basis-XP den Verdienst. `xpShare` rundet beide je Begegnung
 auf, bevor Wiederholungen und Planzeilen summiert werden. Beispiel mit drei Figuren:
@@ -190,6 +199,18 @@ SQLite bei 100/200 Prozent, Fehler und erneutes Öffnen sowie App-Neustart. Für
 gezielten Timingfall werden die DOM-Aktionen innerhalb eines Renderer-Tasks
 ausgelöst; das ist keine Messung menschlicher Klickgeschwindigkeit oder eine
 vollständige Leistungsabnahme.
+
+Die native Tagesplanprobe `tools/test-desktop-day-refresh.mjs` führt zusätzlich
+bei 100 und 200 Prozent die gespeicherte Wachpatrouille über 18 Begegnungen,
+die Teilung nach Begegnung 6, den Wechsel zur eigenen Party und zurück sowie
+die Wiederaufnahme der beiden Zeilen nach App-Neustart aus. Dabei bleiben
+1.368 verteilte Belastungs-XP und 900 Verdienst-XP erhalten; Party-, Fortschritts-,
+Scene- und Vorlagenrecords bleiben unverändert. Der sichtbare Vorlagenname und
+die Grenzen aller Zeilencontrols werden mitgeprüft. Planzeilen verwenden zwei
+flexible Eingabespalten mit Name und Aktionen über der gesamten Zeilenbreite;
+das verhindert die zuvor beobachteten Einzelbuchstaben im schmalen Eingabebereich,
+ohne eine Bildschirmbreiten-Sonderregel. Das ist eine gezielte Linuxprüfung,
+keine vollständige Layout-, Plattform- oder Produktabnahme.
 
 Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter
 Vorlagenparty, Wiederholungen, Rundung, eigener Sechserparty, unveränderten
