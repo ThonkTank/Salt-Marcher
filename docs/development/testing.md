@@ -166,3 +166,19 @@ Die Byteprüfung nach fehlerhaftem Lesen ersetzt die bisherige bloße Längenpr�
 So entfallen ein ausgeführter Fall, 16 wiederholte Assertions und zwölf
 Datenbankkopien. Bewegung, Fallenreset, Schaden und Fehler nach dem ersten von
 mehreren Actors behalten ihre getrennten Rollback-/Wiederholungsprüfungen.
+
+Die Autonomie-Kontextfixtures erzeugen eine zweite Kampagne nur für die drei
+Kampagnenwechsel-Szenarien. In den acht anderen UI-Fällen entfallen dadurch acht
+ungenutzte Kampagnen samt NPC-, Job- und Zeitaufbau: gemessen 22 → 14 Kampagnen
+und 48 Aufbauaufrufe weniger. Alle 43 Kontext-/Zeit-/Reihenfolgefälle bleiben.
+Zwei erneute Catch-up-Fehlerassertions nach unveränderten Backup-/Exportversuchen
+und ein redundanter Sprachvergleich entfallen: Quellbytes werden weiterhin
+verglichen, und beide Sprachen müssen jeweils denselben vollständigen Sollwert
+liefern. Unterschiedliche Aktivierungen, Requestreihenfolgen, Abbruchzeitpunkte,
+Clockowner und Reservierungsziele bleiben getrennte Prüfungen.
+
+Der bestehende Flush-Wechseltest prüft zusätzlich, dass vor der Freigabe einer
+zurückgehaltenen aktuellen Antwort kein weiterer Schreibauftrag gesendet wird.
+Zuvor verdeckte die sofortige Antwortfreigabe einen fehlenden Schutz des neueren
+Flushes. Diese Fehlergegenprobe besteht mit dem alten Test und scheitert mit
+der zusätzlichen Assertion; fünf andere Fehler werden weiterhin erkannt.
