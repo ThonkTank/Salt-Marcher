@@ -122,14 +122,14 @@ else {
     handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();imports.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
     const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,24*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,24*1024*1024);
-    let roomReadBarrier=0;
-    async function afterRoomReaders<T>(operation:()=>T):Promise<T>{
-      roomReadBarrier++;
+    let graphSourceReadBarrierDepth=0;
+    async function withGraphSourceReadBarrier<T>(operation:()=>T):Promise<T>{
+      graphSourceReadBarrierDepth++;
       try{await Promise.all([roomDirectory.cancelAndWait(),atlasRoomDirectory.cancelAndWait(),atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);return operation();}
-      finally{roomReadBarrier--;}
+      finally{graphSourceReadBarrierDepth--;}
     }
     handle('campaign:room-directory-cancel',(token:string,consumer:'atlas'|'directory'='directory')=>{store.roomReadSource(token);if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');(consumer==='atlas'?atlasRoomDirectory:roomDirectory).cancel();});
-    handle('campaign:room-directory',async(token:string,q:import('../src/app/contracts').RoomDirectoryQuery,consumer:'atlas'|'directory'='directory')=>{if(roomReadBarrier)throw new Error('Graphwechsel läuft. Raumsuche danach aktualisieren.');if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');const source=store.roomReadSource(token,q),result=await(consumer==='atlas'?atlasRoomDirectory:roomDirectory).read(source,q);if(store.roomReadSource(token).fence!==source.fence)throw new Error('Raumsuche inzwischen geändert. Suche erneut beginnen.');return result;});
+    handle('campaign:room-directory',async(token:string,q:import('../src/app/contracts').RoomDirectoryQuery,consumer:'atlas'|'directory'='directory')=>{if(graphSourceReadBarrierDepth)throw new Error('Graphwechsel läuft. Raumsuche danach aktualisieren.');if(!['atlas','directory'].includes(consumer))throw new Error('Raumsuche prüfen.');const source=store.roomReadSource(token,q),result=await(consumer==='atlas'?atlasRoomDirectory:roomDirectory).read(source,q);if(store.roomReadSource(token).fence!==source.fence)throw new Error('Raumsuche inzwischen geändert. Suche erneut beginnen.');return result;});
     handle('campaign:catalog-workspace',(id:string)=>store.campaignCatalogWorkspace(id));
     handle('campaign:list', () => store.list());
     handle('extensions:preview',async()=>{const selected=await dialog.showOpenDialog(win,{title:'Extensionpaket prüfen',properties:['openFile'],filters:[{name:'Extensionpaket (JSON)',extensions:['json']}]});if(selected.canceled||!selected.filePaths[0])return null;const file=await open(selected.filePaths[0],'r');try{if(!(await file.stat()).isFile())throw new Error('Eine Paketdatei wählen.');const bytes=Buffer.alloc(extensionPackageLimit+1);let length=0;while(length<bytes.length){const r=await file.read(bytes,length,bytes.length-length,length);if(!r.bytesRead)break;length+=r.bytesRead;}return store.extensionPreview(bytes.subarray(0,length));}finally{await file.close();}});
@@ -340,7 +340,7 @@ else {
     handle('campaign:discard-group-draft',(token:string,id:string,writeId:string)=>store.discardGroupDraft(token,id,writeId));
     handle('campaign:prepared-group',(token:string,id:string)=>store.preparedGroup(token,id));
     handle('graph:view',(token:string,scopeId:string)=>store.graph(token,scopeId));
-    handle('graph:execute',async(c:import('../src/app/graph-contracts').GraphCommand)=>{if(['restore','accept'].includes(c.action?.kind))return afterRoomReaders(()=>store.executeGraph(c));return store.executeGraph(c);});
+    handle('graph:execute',async(c:import('../src/app/graph-contracts').GraphCommand)=>{if(['restore','accept'].includes(c.action?.kind))return withGraphSourceReadBarrier(()=>store.executeGraph(c));return store.executeGraph(c);});
     handle('drawing:path-preview',(token:string,p:import('../src/app/path-contracts').DungeonPath)=>store.previewPath(token,p));
     handle('drawing:map',(token:string,roomId?:string,elementId?:string)=>store.drawingMap(token,roomId,elementId));
     handle('drawing:element',(token:string,id:string)=>store.drawingElement(token,id));
@@ -388,35 +388,35 @@ else {
     handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:drawing-commit',(command:import('../src/app/drawing-contracts').DrawingCommand)=>store.atlasDrawingCommit(command));
-    handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>c.action?.kind==='graph-accept'?afterRoomReaders(()=>store.executeAtlasCommit(c)):store.executeAtlasCommit(c));
+    handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>c.action?.kind==='graph-accept'?withGraphSourceReadBarrier(()=>store.executeAtlasCommit(c)):store.executeAtlasCommit(c));
     handle('campaign:workspace-initial',(token:string)=>store.workspaceInitial(token));
     handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancel();});
     handle('atlas:geometry-region',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,consumer:'view'|'export'='view')=>{
-      if(roomReadBarrier)throw new Error('Graphwechsel läuft. Ausschnitt danach aktualisieren.');validateRegion(query);
+      if(graphSourceReadBarrierDepth)throw new Error('Graphwechsel läuft. Ausschnitt danach aktualisieren.');validateRegion(query);
       if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');const reader=consumer==='view'?atlasRegions:atlasExportRegions;
       const source=store.atlasRegionSource(token,reader.cursor),region=await reader.read(source,query);
       return store.atlasRegionView(token,region,query.perception===true);
     });
     handle('atlas:focus',async(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string)=>{
-      if(roomReadBarrier||!['room','city','building','element','scope'].includes(kind)||typeof id!=='string'||!id)throw new Error('Kartenauswahl prüfen.');
+      if(graphSourceReadBarrierDepth||!['room','city','building','element','scope'].includes(kind)||typeof id!=='string'||!id)throw new Error('Kartenauswahl prüfen.');
       const source=store.atlasRegionSource(token,atlasRegions.cursor),value=await atlasRegions.focus(source,kind,id);
       if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Auswahl erneut öffnen.');return value;
     });
     handle('atlas:region-candidates',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string,offset=0,layer:'geometry'|'landscape'|'all'='geometry',visualElementId?:string)=>{
       if(visualElementId!==undefined&&(typeof visualElementId!=='string'||!visualElementId))throw new Error('Kartenauswahl prüfen.');
-      if(roomReadBarrier||!['geometry','landscape','all'].includes(layer)||!Number.isSafeInteger(offset)||offset<0)throw new Error('Kartenauswahl prüfen.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(graphSourceReadBarrierDepth||!['geometry','landscape','all'].includes(layer)||!Number.isSafeInteger(offset)||offset<0)throw new Error('Kartenauswahl prüfen.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
       if(source.fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
       const value=await atlasRegions.candidates(source,query,point,offset,layer,visualElementId);if(store.atlasRegionSource(token).fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
     handle('atlas:region-hit',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,point:import('../src/app/contracts').Point,fence:string)=>{
-      if(roomReadBarrier)throw new Error('Graphwechsel läuft.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(graphSourceReadBarrierDepth)throw new Error('Graphwechsel läuft.');validateRegion(query);const source=store.atlasRegionSource(token,atlasRegions.cursor);
       if(source.fence!==fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
       const value=await atlasRegions.hit(source,query,point);if(store.atlasRegionSource(token).fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
     handle('atlas:city-site',(token:string,cityId:string,id?:string)=>store.atlasCitySite(token,cityId,id));
     handle('atlas:render-view',(token:string)=>store.atlasRenderView(token));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
-    handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')return afterRoomReaders(()=>store.executeAtlas(c));return store.executeAtlas(c);});
+    handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')return withGraphSourceReadBarrier(()=>store.executeAtlas(c));return store.executeAtlas(c);});
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
     handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:c.action.kind==='undo'||c.action.kind==='redo'?{kind:c.action.kind}:{kind:'city',command:c}});return store.city(c.token,c.cityId);});
