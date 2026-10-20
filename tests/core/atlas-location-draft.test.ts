@@ -1,5 +1,5 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import test from "node:test";
 import {
   checkedAtlasDraft,
   parseAtlasDraft,
@@ -12,14 +12,12 @@ import {
   parseOverworld,
   serializeOverworld,
 } from "../../src/features/atlas/overworld";
+import { serializeTerrainChunk } from "../../src/features/atlas/terrain-schema";
 import {
   newLocation,
-  serializeLocationDocument,
   parseLocationDocument,
+  serializeLocationDocument,
 } from "../../src/features/location/location-schema";
-import { serializeTerrainChunk } from "../../src/features/atlas/terrain-schema";
-import { FileTransaction } from "../../src/features/atlas/file-transaction";
-import { FileConflict, type FileStore } from "../../src/persistence";
 
 const markdown = "# Ödhafen\r\n\r\n  **Text** → 日本語 🐉  \r\n\tEnde\r\n";
 const placement = (id: string, x = -40000) => ({
@@ -276,61 +274,4 @@ test("Current terrain V1 remains separate and strict instead of accepting a Loca
   assert.equal(parseAtlasDraft(serializeAtlasDraft(v1)).version, 1);
   assert.throws(() => checkedAtlasDraft({ ...v1, locations: [] }));
   assert.throws(() => checkedAtlasDraft({ ...fixture(), version: 1 }));
-});
-class Store implements FileStore {
-  files = new Map<string, string>();
-  fail?: string;
-  async read(path: string) {
-    return this.files.get(path) ?? null;
-  }
-  async compareAndWrite(
-    path: string,
-    before: string | null,
-    after: string | null,
-  ) {
-    if ((await this.read(path)) !== before) throw new FileConflict(path);
-    if (path === this.fail) {
-      this.fail = undefined;
-      throw new Error("interruption");
-    }
-    if (after === null) this.files.delete(path);
-    else this.files.set(path, after);
-  }
-}
-test("A V2 snapshot survives actual shared FileTransaction rollback at the world write and preserves both owner deltas for retry", async () => {
-  const f = fixture(),
-    store = new Store(),
-    root = "Welt.overworld",
-    draftPath = root + ".draft";
-  const raw = serializeAtlasDraft(f);
-  store.files.set(root, f.baselineWorld);
-  store.files.set(f.locations[0]!.path, beforeA);
-  store.files.set(draftPath, raw);
-  const before = new Map(store.files),
-    tx = new FileTransaction(store, root + ".journal", () => true);
-  const writes = [
-    { path: `Atlasdaten/world-a/${ref.file}`, before: null, after: terrain },
-    ...f.locations.map((l) => ({
-      path: l.path,
-      before: l.before,
-      after: l.after,
-    })),
-    { path: root, before: f.baselineWorld, after: f.currentWorld },
-    { path: draftPath, before: raw, after: null },
-  ];
-  store.fail = root;
-  await assert.rejects(tx.commit(writes), /interruption/);
-  assert.deepEqual(store.files, before);
-  const restored = parseAtlasDraft(store.files.get(draftPath)!);
-  assert.equal(restored.version, 2);
-  if (restored.version !== 2) throw new Error("Expected V2");
-  assert.equal(restored.locations[0]!.before, beforeA);
-  assert.equal(restored.locations[1]!.after, serializeLocationDocument(b));
-  await tx.commit(writes);
-  assert(!store.files.has(draftPath) && !store.files.has(root + ".journal"));
-  assert.equal(store.files.get(f.locations[0]!.path), afterA);
-  assert.equal(
-    store.files.get(f.locations[1]!.path),
-    serializeLocationDocument(b),
-  );
 });

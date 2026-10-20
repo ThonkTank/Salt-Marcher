@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { D_SECTION, dSectionSourceRows, validateDSectionSlice, validateDSectionPdfXml } from "../tools/items-srd51-d-section.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-d-section-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-d-section-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const root = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, root), "utf8"));
-const [inventory, transcript, schema] = await Promise.all([
-  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"), readJson("items-srd51-schema-v1.json"),
+const [inventory, transcript] = await Promise.all([
+  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"),
 ]);
 // Six-page snapshot does not prove the full 239-heading sequence. The opt-in
 // official-PDF source integration independently derives that complete stream.
@@ -42,10 +42,7 @@ test("D-section: original six-page XML identity/license and full heading oracle"
   assert.equal(inventory.complete, false);
 });
 
-test("captured item section, transcript and inventory satisfy their complete contracts", () => {
-  assert.equal(validateDSectionSlice(transcript, inventory).records, 15);
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
+
 
 for (const item of D_SECTION) {
   test(`${item.name}: full source identity/header/prose/table/statblock/page/schema golden`, () => {

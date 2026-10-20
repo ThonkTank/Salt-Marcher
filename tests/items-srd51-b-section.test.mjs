@@ -3,15 +3,15 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { B_SECTION, bSectionSourceRows, validateBSectionSlice, validateBSectionPdfXml } from "../tools/items-srd51-b-section.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
 
 const fixture = new URL("./fixtures/items-srd51-b-section-poppler-25.03.xml", import.meta.url);
 const xml = await readFile(fixture, "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-b-section-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, dataRoot), "utf8"));
-const [inventory, transcript, schema] = await Promise.all([
-  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"), readJson("items-srd51-schema-v1.json"),
+const [inventory, transcript] = await Promise.all([
+  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"),
 ]);
 // This three-page fixture cannot independently establish the full 239-heading
 // count. The opt-in full official PDF test derives that sequence separately.
@@ -35,10 +35,7 @@ test("remaining B-section: complete original three-page XML hash, attribution an
   assert.equal(transcript.complete, false);
 });
 
-test("captured item section, transcript and inventory satisfy their complete contracts", () => {
-  assert.equal(validateBSectionSlice(transcript, inventory).records, 15);
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
+
 
 for (const item of B_SECTION) {
   test(`${item.name}: complete header/prose/identity/page/rarity/schema golden`, () => {

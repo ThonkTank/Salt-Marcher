@@ -1,3 +1,4 @@
+import {tmpdir} from 'node:os';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {mkdtemp,mkdir,writeFile} from 'node:fs/promises';
@@ -8,7 +9,7 @@ import path from 'node:path';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 const require=createRequire(import.meta.url),{_electron}=require('playwright-core'),Database=require('better-sqlite3'),root=process.cwd();
 buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/room-groups-native.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore}=require(root+'/.build/room-groups-native.cjs'),profile=await mkdtemp('/tmp/salt-room-groups-ui-'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/room-groups-native');await mkdir(out,{recursive:true});
+const {CampaignStore}=require(root+'/.build/room-groups-native.cjs'),profile=await mkdtemp(path.join(tmpdir(),'salt-room-groups-ui-')),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/room-groups-native');await mkdir(out,{recursive:true});
 const store=new CampaignStore(profile+'/workbench.sqlite'),cam=store.create('Raumgruppenprobe'),w=store.activate(cam.id);store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:cam.id,action:{kind:'city-create',name:'Hafenprobe',x:0,y:0,width:500,height:500}});store.tutorial('skipped');store.close();
 const evidence={source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),profile,errors:[],checks:[]};let app;
 async function launch(){app=await _electron.launch({executablePath:root+'/node_modules/electron/dist/electron',args:[root+'/.build/desktop/main.cjs','--data-dir',profile,'--ozone-platform=x11'],timeout:60000});const page=await app.firstWindow();page.on('pageerror',e=>evidence.errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');await page.locator('.campaign-card').filter({hasText:'Raumgruppenprobe'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher');w.setContentSize(1280,800);});await atlasCanvasReady(page);return page;}

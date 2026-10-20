@@ -95,3 +95,37 @@ Die entfernten Implementierungen sind weder über `desktop/` noch über
 Auch die Planprojektion verwendet den gemeinsamen Storage-Build. Die native
 Kampfwechselprobe legt ihr Profil unter `TMPDIR` ab, damit ein Lauf auf diesem
 Host ausdrücklich ein Verzeichnis auf Disk verwenden kann.
+
+## Prüfung einzelner Fälle statt Bestandsschutz für Dateien
+
+Die vertiefte Bereinigung verwendet den
+[Ausgangsstand dieser zweiten Runde](https://github.com/ThonkTank/Salt-Marcher/tree/2ff783072c8f5cca26012b6cb005e606a49665ad/tests).
+Ein Import eines weiterhin genutzten Modells schützt nicht automatisch die
+Hosttests in derselben Datei. Die Prüfung beginnt bei den ausgeführten Aktionen
+und Assertions. Die konservative Abhängigkeitsprüfung umfasst alle Module unter
+`src/app/` und `desktop/`, einschließlich Typimports und dynamischer
+Imports mit literalem Pfad; sie ersetzt keine Prüfung externer Formatverträge.
+
+| Entfernte Prüfungen | Grund und erhaltene Grenze |
+| --- | --- |
+| Alte Campaign-Ownership-, Runtime-Manifest-, Save-Participant- und World-Notes-Commit-/Readerfälle | Sie führen die aufgegebenen Datei-/Vault-Besitzer aus. Die Snapshot-/Contextvalidierung bleibt direkt am gemeinsamen Vertrag erhalten. Aktuelle SQLite-, Archivtransfer-, Quellverweis- und Kampagnenkopietests bleiben bestehen. |
+| Alter Atlas-Capture, Navigation, gemeinsame In-Memory-History und Hostinteraktion | Repository-/Renderer-/Gestenaktionen gehören zum früheren Host. Die vorhandenen World-/City-/Dungeon-/Location-Codecs, Draftformate, Fixturehashes und räumlichen Bezugsmaße bleiben erhalten. Reine Fixtureprüfungen benötigen keinen Pixi-Host mehr. |
+| Alter City-Editor, Hit-/Renderer-/Gestenpfad, Location-Key-Panel und Katalog-Viewstate | Diese Implementierungen sind vom Desktop getrennt; insbesondere die alte Annahme von sechs nicht verfügbaren Katalogbereichen ist kein aktueller Produktvertrag. Desktopeditor-, Such-, Kontext- und Entwurfsfälle bleiben bestehen. |
+| Alte Auswahl-, Building-, Floor-/Resize-, Volume- und Sessionaktionen | Gemeinsame Modell-/Parserprüfungen sowie direkt geprüfte Berechnungen aus `src/compute.ts` bleiben erhalten. Gemischte Altfälle mit eigenständigen Import-/Text-/Draftbelegen bleiben vorsichtshalber bestehen, unter anderem V2-Draftmigration, V4-Markdown und paketgebundene Assetdaten. |
+| Unregistrierte Manifest-Consumer-Matrix | Die Datei war bereits kein Bestandteil von `npm test` und prüfte ausschließlich alte Manifest-/Atlasbesitzer. Ihre Entfernung wird nicht als eingesparter ausgeführter Test gezählt. |
+| Fünf positive Item-Abschnitts-/Schematests | Der bestehende vollständige Pakettest ruft dieselben Validatoren mit denselben Daten auf. Die Abschnittszahlen werden dort explizit geprüft. Alle einzelnen Quelldatensätze, XML-/Lizenzbelege und beschädigten Varianten bleiben bestehen. |
+
+Der vollständige Bestand wurde anhand der Testkörper, Imports, eingebundenen
+Quellen und Schleifen inventarisiert. Ähnliche Backup-, Besitzerwechsel- und
+verspätete-Antwort-Tests bleiben erhalten, wenn sie andere Tabellen, Writer oder
+Zeitpunkte prüfen. Bei den übrigen aktuellen Fällen wurde keine ausreichende
+Gleichwertigkeit für weitere Löschungen festgestellt. Das ist keine Behauptung,
+dass jeder verbleibende Fall minimal oder notwendig ist.
+
+Vier gezielte Fehler wurden in temporären Kopien bzw. virtuellen Builds vor und
+nach der Kürzung geprüft: Alphawert 256 zulassen, falsche D-Abschnittszahl melden,
+D-Datensatzvergleich auslassen und Schemaprüfung ausschalten. Beide Teststände
+weisen alle vier Fehler zurück; unveränderte Kontrollläufe bestehen. Dieser
+Nachweis gilt für diese Änderungen, nicht als allgemeiner Mutation-Score.
+Historische Fixtures und Abnahmebelege bleiben unverändert. Die betroffenen
+nativen Item- und Raumgruppenproben verwenden jetzt `TMPDIR` für ihre Profile.

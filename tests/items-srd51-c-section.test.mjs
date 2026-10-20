@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { C_SECTION, cSectionSourceRows, validateCSectionSlice, validateCSectionPdfXml } from "../tools/items-srd51-c-section.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-c-section-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-c-section-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, dataRoot), "utf8"));
-const [inventory, transcript, schema] = await Promise.all([
-  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"), readJson("items-srd51-schema-v1.json"),
+const [inventory, transcript] = await Promise.all([
+  readJson("items-srd51-inventory.json"), readJson("items-srd51-transcript.json"),
 ]);
 // Narrow fixture: full 239-heading sequence must independently be derived by
 // the separate opt-in official PDF integration, not claimed from three pages.
@@ -35,10 +35,7 @@ test("C-section: original full three-page XML hash/license/footer and complete h
   assert.equal(inventory.complete, false);
 });
 
-test("captured item section, transcript and inventory satisfy their complete contracts", () => {
-  assert.equal(validateCSectionSlice(transcript, inventory).records, 15);
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
+
 
 for (const item of C_SECTION) {
   test(`${item.name}: full source identity/header/prose/table/page/schema golden`, () => {

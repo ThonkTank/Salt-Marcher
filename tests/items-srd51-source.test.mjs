@@ -91,14 +91,18 @@ test("items source package is explicitly incomplete and fails closed by default"
   assert.equal(result.magicItemAzArmorOfInvulnerability.attunement, "required");
   assert.equal(result.magicItemAzArmorArrows.records, 4);
   assert.equal(result.magicItemAzArmorArrows.resistanceTableRows, 10);
+  assert.equal(result.magicItemAzBags.records, 4);
   assert.equal(result.magicItemAzBags.beansEffectRows, 12);
   assert.equal(result.magicItemAzBags.tricksCreatureRows, 24);
   assert.equal(result.magicItemAzBSection.records, 15);
   assert.equal(result.magicItemAzBSection.beltRarityChoices, 5);
+  assert.equal(result.magicItemAzCSection.records, 15);
   assert.equal(result.magicItemAzCSection.crystalBallChoices, 4);
   assert.equal(result.magicItemAzCSection.cubeFaceRows, 6);
+  assert.equal(result.magicItemAzDSection.records, 15);
   assert.equal(result.magicItemAzDSection.manyThingsCardRules, 22);
   assert.equal(result.magicItemAzDSection.embeddedAvatarStatblocks, 1);
+  assert.equal(result.magicItemAzESection.records, 8);
   assert.equal(result.magicItemAzESection.efreetiEffectRows, 3);
   assert.equal(result.magicItemAzESection.elementalGemRows, 4);
   assert.equal(result.potionHealingMerge.mergedRecords, 1);

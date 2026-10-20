@@ -3,14 +3,14 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { BAGS, bagsSourceRows, validateBagsSlice, validateBagsPdfXml } from "../tools/items-srd51-bags.mjs";
-import { normalizePdfText, validateJsonSchemas, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
+import { normalizePdfText, validateTranscriptData } from "../tools/items-srd51-source-verify.mjs";
 
 const xml = await readFile(new URL("./fixtures/items-srd51-bags-poppler-25.03.xml", import.meta.url), "utf8");
 const receipt = JSON.parse(await readFile(new URL("./fixtures/items-srd51-bags-poppler-25.03-receipt.json", import.meta.url), "utf8"));
 const dataRoot = new URL("../src/features/catalog/data/", import.meta.url);
 const readJson = async name => JSON.parse(await readFile(new URL(name, dataRoot), "utf8"));
-const [transcript, inventory, schema] = await Promise.all([
-  readJson("items-srd51-transcript.json"), readJson("items-srd51-inventory.json"), readJson("items-srd51-schema-v1.json"),
+const [transcript, inventory] = await Promise.all([
+  readJson("items-srd51-transcript.json"), readJson("items-srd51-inventory.json"),
 ]);
 // A narrow offline fixture does not contain all 239 headings. The full official
 // PDF integration in items-srd51-source.test.mjs independently derives them.
@@ -33,10 +33,7 @@ test("Bags fixture is original hash-bound official three-page XML, not synthetic
     scope: "complete-heading-bounded-stream-with-die-range-and-color-table-ownership" });
 });
 
-test("captured item section, transcript and inventory satisfy their complete contracts", () => {
-  assert.equal(validateBagsSlice(transcript, inventory).records, 4);
-  assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
-});
+
 
 for (const item of BAGS) {
   test(`${item.name}: complete ordinal/page/header/prose/table golden and schema`, () => {

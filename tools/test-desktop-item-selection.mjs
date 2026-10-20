@@ -1,3 +1,4 @@
+import {tmpdir} from 'node:os';
 import {currentProcessGroup} from './process-group.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
@@ -12,7 +13,7 @@ const group=await currentProcessGroup();await mkdir(output,{recursive:true});
 const checkout=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),hashes={};
 for(const name of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'])hashes[name]=createHash('sha256').update(await readFile(source+'/.build/desktop/'+name)).digest('hex');
 const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/desktop/item-selection-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/desktop/item-selection-store.cjs');
-const profile=await mkdtemp('/tmp/gm-item-selection-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Gegenstände vor dem Spiel verteilen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
+const profile=await mkdtemp(path.join(tmpdir(),'gm-item-selection-')),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Gegenstände vor dem Spiel verteilen'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),campaignId:campaign.id,token:w.token,action});
 const heroes=['Ada','Borin'].map(name=>store.executeLive(command({kind:'create-character',profile:{name}})).character),scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
 for(const c of heroes){const live=store.live(w.token);store.executeLive(command({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:scene.id,expectedFocusRevision:live.focusRevision}));}
 const defs=[];for(const [name,unitCopper]of [['Seil','200'],['Heiltrank','500']]){const definition={id:randomUUID(),revision:0,name,category:'equipment',magic:false,rarity:'',attunement:'no',unitCopper,weightText:'',properties:[],description:'  Handarbeit\r\n- Markt',source:{kind:'authored',label:'GM',license:null,url:null},trashed:false};defs.push(store.executeItemShop(command({kind:'definition',definition,expectedRevision:null})).definition);}
