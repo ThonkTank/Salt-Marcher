@@ -34,6 +34,21 @@ unbeteiligte Progressions-/Beuteleser sind keine Voraussetzung. Der Kampfwriter
 prüft Party-/Fokus- und Gruppenbasis vor Übernahme erneut. Verstärkung verwendet
 denselben Gruppenprüfweg; verworfene oder fremde Gruppen erzeugen keine Runtime.
 
+## Kampf wechseln und erneut laden
+
+Die Schnellauswahl und der ausgewählte Kampf verwenden dieselben Zeilen aus
+einem SQLite-Lesestand. Liegt die Auswahl unter den letzten 100 Kämpfen, wird
+ihre bereits geprüfte Zeile auch für die Liste verwendet. Nur ältere Ziele
+benötigen eine zusätzliche gezielte Abfrage. Alle übrigen Listeneinträge werden
+weiterhin auf Prüfsumme, Format und Zuordnung geprüft. Der Read verändert weder
+Kämpfe noch Rohentwürfe.
+
+Leseaufträge behalten ihre eigene laufende Nummer und den Szenen-/Kampagnenbezug.
+Während eines Wechsels sperrt die Oberfläche alte Schreibaktionen; nur die
+aktuelle Antwort darf Auswahl und Editor übernehmen. Ein Lesefehler erhält das
+angeforderte Ziel für einen ausdrücklichen Retry. Entwürfe bleiben ihrem Kampf
+zugeordnet, auch beim Besuch eines abgeschlossenen Kampfes.
+
 ## Spontane Katalogübernahme ohne Teilkampf
 
 Die spontane Auswahl öffnet am Spieltisch dieselbe Suche wie spätere Verstärkung.

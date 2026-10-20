@@ -15,3 +15,15 @@ test('matching corrupted bytes fail locally instead of becoming a selectable tru
 test('duplicate titles remain independently identifiable through summaries and stable ids',t=>{const x=fixture(t);for(const [i,notes]of [[0,'Nordtor'],[1,'Südtor']]){const c=x.combats[i];x.store.executeCombat({...x.base({kind:'notes',title:'Doppelte Wache',notes}),combatId:c.id,expectedRevision:c.revision});}const p=x.read('combat',{search:'Doppelte Wache'});assert.equal(p.items.length,2);assert.equal(new Set(p.items.map(i=>i.id)).size,2);assert.deepEqual(new Set(p.items.map(i=>i.summary)),new Set(['Nordtor','Südtor']));});
 
 test('finished combats show their result instead of identical preparation notes, without changing saved text',t=>{const x=fixture(t);const finishes=[];for(const [i,outcome]of [[105,'Nordtor befreit'],[106,'Südtor evakuiert']]){let c=x.combats[i];c=x.store.executeCombat({...x.base({kind:'notes',title:'Doppelte Wache',notes:'Identische Vorbereitung'}),combatId:c.id,expectedRevision:c.revision}).combat;c=x.store.executeCombat({...x.base({kind:'finish',outcome}),combatId:c.id,expectedRevision:c.revision}).combat;finishes.push(c);}const before=x.store.db.serialize(),page=x.read('combat',{search:'Doppelte Wache'});assert.deepEqual(new Set(page.items.map(i=>i.summary)),new Set(['Nordtor befreit','Südtor evakuiert']));assert.equal(x.read('combat',{search:'Identische Vorbereitung'}).total,2);assert.equal(x.read('combat',{search:'Südtor'}).items[0].summary,'Südtor evakuiert');assert(before.equals(x.store.db.serialize()));const ids=x.combats.slice(103,105).map(c=>c.id),numbers=()=>x.store.combat(x.w.token,x.scene.id,ids[0]).recent.filter(c=>ids.includes(c.id)).map(c=>c.sequence);const initial=numbers();assert.equal(new Set(initial).size,2);assert(initial.every(Number.isSafeInteger));x.store.executeCombat({...x.base({kind:'create',sceneId:x.scene.id,title:'Neu',includeParty:false,expectedMembershipRevision:0}),combatId:null,expectedRevision:null});assert.deepEqual(numbers(),initial);});
+
+
+test('opening an old combat outside the quick picker preserves bytes and still rejects a damaged recent mask',t=>{
+ const x=fixture(t),old=x.combats[0],before=x.store.db.serialize();
+ const view=x.store.combat(x.w.token,x.scene.id,old.id);
+ assert.equal(view.combat.id,old.id);assert.equal(view.combat.notes,old.notes);
+ assert.equal(view.recent.length,100);assert(!view.recent.some(c=>c.id===old.id));
+ assert(before.equals(x.store.db.serialize()));
+ x.store.db.prepare('UPDATE combat SET checksum=? WHERE id=?').run('damaged',view.recent[0].id);
+ const damaged=x.store.db.serialize();assert.throws(()=>x.store.combat(x.w.token,x.scene.id,old.id),/beschädigt/);
+ assert(damaged.equals(x.store.db.serialize()));
+});
