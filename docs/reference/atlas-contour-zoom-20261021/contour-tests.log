@@ -1,0 +1,113 @@
+TAP version 13
+# Subtest: metres per second, soft rim, exact target and resampled gestures
+ok 1 - metres per second, soft rim, exact target and resampled gestures
+  ---
+  duration_ms: 386.606121
+  type: 'test'
+  ...
+# Subtest: smoothing preserves a plane, reduces spikes and is independent of record order
+ok 2 - smoothing preserves a plane, reduces spikes and is independent of record order
+  ---
+  duration_ms: 1221.852807
+  type: 'test'
+  ...
+# Subtest: coarse additive brushes move fine detail and smooth only their selected scale
+ok 3 - coarse additive brushes move fine detail and smooth only their selected scale
+  ---
+  duration_ms: 269.403068
+  type: 'test'
+  ...
+# Subtest: gesture transaction, failed write, single undo/redo, restart and preview agree
+ok 4 - gesture transaction, failed write, single undo/redo, restart and preview agree
+  ---
+  duration_ms: 1216.188534
+  type: 'test'
+  ...
+# Subtest: shade and optional contours remain seamless across raster tiles and do not author data
+ok 5 - shade and optional contours remain seamless across raster tiles and do not author data
+  ---
+  duration_ms: 944.913148
+  type: 'test'
+  ...
+# Subtest: invalid controls and excessive work fail before any height is produced
+ok 6 - invalid controls and excessive work fail before any height is produced
+  ---
+  duration_ms: 1.623592
+  type: 'test'
+  ...
+# Subtest: region reader caches contour modes separately; display reads preserve the source fence
+ok 7 - region reader caches contour modes separately; display reads preserve the source fence
+  ---
+  duration_ms: 1680.939614
+  type: 'test'
+  ...
+# Subtest: optional directional target never overshoots or reverses existing terrain
+ok 8 - optional directional target never overshoots or reverses existing terrain
+  ---
+  duration_ms: 258.316973
+  type: 'test'
+  ...
+# Subtest: roughness is seeded, directional, time based and independent of sample density
+ok 9 - roughness is seeded, directional, time based and independent of sample density
+  ---
+  duration_ms: 1296.779229
+  type: 'test'
+  ...
+# Subtest: screen-sized brushes below one metre produce bounded, persistent fine geometry
+ok 10 - screen-sized brushes below one metre produce bounded, persistent fine geometry
+  ---
+  duration_ms: 41.27101
+  type: 'test'
+  ...
+# Subtest: the displayed brush resolution is the resolution actually authored at every supported scale
+ok 11 - the displayed brush resolution is the resolution actually authored at every supported scale
+  ---
+  duration_ms: 92.923383
+  type: 'test'
+  ...
+# Subtest: stationary holds combine dose without exhausting the moving-stroke work budget
+ok 12 - stationary holds combine dose without exhausting the moving-stroke work budget
+  ---
+  duration_ms: 52.792217
+  type: 'test'
+  ...
+# Subtest: automatic detail crossfades continuously through nested intervals without shifting elevations
+ok 13 - automatic detail crossfades continuously through nested intervals without shifting elevations
+  ---
+  duration_ms: 6.170706
+  type: 'test'
+  ...
+# Subtest: fixed intervals, disabled contours and water plateaus retain their meaning
+ok 14 - fixed intervals, disabled contours and water plateaus retain their meaning
+  ---
+  duration_ms: 0.918698
+  type: 'test'
+  ...
+# Subtest: height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+ok 15 - height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+  ---
+  duration_ms: 13372.055983
+  type: 'test'
+  ...
+# {"measurement":"process includes store, test and scratch allocations; cache bytes are accounted separately","memoryBefore":{"rss":119742464,"heapTotal":22622208,"heapUsed":17312336,"external":2625707,"arrayBuffers":117899},"memoryAfter":{"rss":175546368,"heapTotal":30437376,"heapUsed":15870504,"external":25437359,"arrayBuffers":22904044},"peakRssKiB":197692,"cache":{"bytes":5629289,"limit":16777216,"hits":765,"misses":1626,"evictions":0},"coldRasterTiles":16,"editedRasterTiles":4}
+# Subtest: a small authored change missed by the overview lattice changes the active detail raster
+ok 16 - a small authored change missed by the overview lattice changes the active detail raster
+  ---
+  duration_ms: 1820.48539
+  type: 'test'
+  ...
+# Subtest: small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+ok 17 - small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+  ---
+  duration_ms: 2840.064052
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28719.674472
