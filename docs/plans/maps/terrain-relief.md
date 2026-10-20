@@ -135,3 +135,5 @@ Der anschließende Nutzerauftrag ersetzt die reine Weltmaßbedienung: Atlas-Pins
 Meeresspiegel steht nur in der Wassergruppe. Das dauerhafte Kopfleistenmenü „Darstellung“ enthält den vorhandenen globalen Reliefstil und Höhenlinien. Das Stilprofil bleibt am bisherigen Kampagnendatensatz; vorhandene Höhen, räumliche Textur und Export verwenden es weiterhin. Die Symbolleiste links ist 48 Pixel breit, die Werkzeugoptionen standardmäßig 240 Pixel; beide zusammen geben gegenüber 424 Pixeln zuvor 136 Pixel Kartenbreite frei. Manuell gespeicherte Panelbreiten bleiben erhalten. Spieleranzeige und Größenvergleich liegen unter „Ansicht“.
 
 Lokale Implementierung und Prüfgrenzen: [Pinselbedienung und kompakte Kartenfläche](../../reference/atlas-brush-ux-20261020/README.md). Keine zusätzliche Nutzerabnahme behauptet.
+
+Shift + Mausrad beziehungsweise Touchpad-Zoomgeste ändert den aktiven Pinselradius statt des Kartenausschnitts. Das gilt auch in räumlichen Ansichten und im festen Größenmodus; laufende Entwürfe bleiben gesperrt. Der Tooltip am Radius nennt die Geste. [Prüfbeleg](../../reference/atlas-brush-wheel-20261020/README.md).

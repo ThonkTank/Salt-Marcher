@@ -76,6 +76,12 @@ export class TerrainSpatialUI {
     input.addEventListener('pointerleave',()=>this.view?.showCursor(null,0));
     new ResizeObserver(()=>{this.placeCanvas();this.view?.render();}).observe(input);
   }
+  refreshBrushCursor(x:number,y:number){
+    if(!this.active||!this.ready)return;
+    const hit=this.view?.hit(x,y);if(!hit)return;this.lastPoint=hit;
+    const field=document.getElementById('land-radius') as HTMLInputElement;
+    this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
+  }
   point(e:MouseEvent){const hit=this.view?.hit(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setActive(active:boolean){
