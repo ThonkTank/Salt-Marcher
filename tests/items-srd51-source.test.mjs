@@ -89,6 +89,7 @@ test("items source package is explicitly incomplete and fails closed by default"
   assert.equal(result.magicItemAzApparatusOfTheCrab.leverRows, 10);
   assert.equal(result.magicItemAzArmorPlusOneTwoThree.variableRarityChoices, 3);
   assert.equal(result.magicItemAzArmorOfInvulnerability.attunement, "required");
+  assert.equal(result.magicItemAzArmorArrows.records, 4);
   assert.equal(result.magicItemAzArmorArrows.resistanceTableRows, 10);
   assert.equal(result.magicItemAzBags.beansEffectRows, 12);
   assert.equal(result.magicItemAzBags.tricksCreatureRows, 24);
@@ -108,7 +109,6 @@ for (const item of ARMOR_ARROWS) {
   test(`${item.name} preserves complete source facts and rejects identity/fact drift`, async () => {
     const inventory = JSON.parse(await readFile(new URL("items-srd51-inventory.json", dataRoot)));
     const transcript = JSON.parse(await readFile(new URL("items-srd51-transcript.json", dataRoot)));
-    assert.equal(validateArmorArrowsSlice(transcript, inventory).records, 4);
     const id = `srd51:magic-item:magic-items-a-z:${item.ordinal}`;
     for (const mutate of [row => row.ordinal++, row => row.lastPdfPage++,
       row => row.mergeIntoId = "srd51:magic-item:magic-items-a-z:9",

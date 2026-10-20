@@ -78,3 +78,20 @@ werden durch die Bereinigung nicht umgeschrieben.
 
 Löschungen folgen dem tatsächlichen Prüfgegenstand, nicht einem Testzahlziel.
 Langsame aktuelle Produktfälle bleiben Teil des vollständigen Laufs.
+
+Die ergänzende Bereinigung vom 20. Oktober basiert auf
+[`cfd911bc1`](https://github.com/ThonkTank/Salt-Marcher/tree/cfd911bc1db934cd1b0ddc121c6c21fb0eaeaaa7/tests).
+Die entfernten Implementierungen sind weder über `desktop/` noch über
+`src/app/` erreichbar; ihre Produktanforderungen werden dadurch nicht aufgehoben.
+
+| Ergänzung | Grenze der Bereinigung |
+| --- | --- |
+| Acht alte Bedienlogik-Dateien entfernt: Materialfarbe/-alpha, Pfadbibliothek, Katalog-Debouncer, feste Kartengrößen, Objektgesten/-bibliothek und Session-Raum-Key-Suche | Diese Tests prüfen die früheren Obsidian-Werkzeuge. Aktuelle Desktop-Suche, Objektbearbeitung und Kartenbedienung behalten ihre eigenen Tests. |
+| Alte Grid-/Exportoptionen und Prefab-Forget-Tests entfernt | Ausschließlich Bedienhelfer des historischen Adapters. Rasterencoder, Universal-VTT, ARGB- und Import-/Codecprüfungen bleiben erhalten. |
+| Zwei alte City-History-/Draft-Dateien sowie neun Alt-Fälle aus Atlas-Grundlagen, Terrain und City-Fixture entfernt | Der aufgegebene In-Memory-History-Pfad wird nicht mehr als Desktop-Nachweis geführt. Die enthaltenen Format-, Chunk- und Fixtureprüfungen bleiben ausführbar. |
+| Positive Abschnittsvalidierung der Itemquellen einmal je Fixture | 56 wiederholte Validierungen unveränderter Daten entfallen. Jeder gegenstandsspezifische Vergleich und jede beschädigte Variante bleibt geprüft. |
+| Renderer-Browsergrenze auf `src/app/renderer.ts` umgestellt | Der alte Renderer-/Worker-Aufbau entfällt; die Prüfung gegen privilegierte Imports gilt dem aktuellen Desktop-Einstieg. |
+
+Auch die Planprojektion verwendet den gemeinsamen Storage-Build. Die native
+Kampfwechselprobe legt ihr Profil unter `TMPDIR` ab, damit ein Lauf auf diesem
+Host ausdrücklich ein Verzeichnis auf Disk verwenden kann.

@@ -33,13 +33,13 @@ test("Bags fixture is original hash-bound official three-page XML, not synthetic
     scope: "complete-heading-bounded-stream-with-die-range-and-color-table-ownership" });
 });
 
-test("captured item transcript and inventory satisfy their complete JSON schemas", () => {
+test("captured item section, transcript and inventory satisfy their complete contracts", () => {
+  assert.equal(validateBagsSlice(transcript, inventory).records, 4);
   assert.doesNotThrow(() => validateJsonSchemas(schema, transcript, inventory));
 });
 
 for (const item of BAGS) {
   test(`${item.name}: complete ordinal/page/header/prose/table golden and schema`, () => {
-    assert.equal(validateBagsSlice(transcript, inventory).records, 4);
     const row = bagsSourceRows().find(row => row.record.name === item.name);
     assert.equal(row.occurrence.id, `srd51:magic-item:magic-items-a-z:${item.ordinal}`);
     assert.equal(row.occurrence.mergeIntoId, null);
