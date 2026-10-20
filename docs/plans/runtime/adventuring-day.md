@@ -223,7 +223,12 @@ Scene- und Vorlagenrecords bleiben unverändert. Der sichtbare Vorlagenname und
 die Grenzen aller Zeilencontrols werden mitgeprüft. Planzeilen verwenden zwei
 flexible Eingabespalten mit Name und Aktionen über der gesamten Zeilenbreite;
 das verhindert die zuvor beobachteten Einzelbuchstaben im schmalen Eingabebereich,
-ohne eine Bildschirmbreiten-Sonderregel. Das ist eine gezielte Linuxprüfung,
+ohne eine Bildschirmbreiten-Sonderregel. Der Prüfweg verwendet jetzt echten
+Browserzoom statt einer erhöhten Geräte-Pixeldichte. Er prüft zusätzlich, dass
+Rastmarken beim Umordnen an ihrer Begegnungszeile bleiben und ausstehende
+Antworten frühere Ergebnisse unsichtbar halten, ohne die Formulargeometrie zu
+verschieben. Der gemeinsame native Sitzungsprüfer bindet Buildhashes, normale
+Prozessenden und PID-Abwesenheit an den vollständigen Ablauf. Das ist eine gezielte Linuxprüfung,
 keine vollständige Layout-, Plattform- oder Produktabnahme.
 
 Gezielte Prüfung: Storeablauf mit echter Vorlagenspeicherung, abweichender alter

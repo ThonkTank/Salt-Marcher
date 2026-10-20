@@ -1,16 +1,15 @@
 import {createRequire} from 'node:module';
-import {mkdtemp,mkdir,readFile,writeFile,stat} from 'node:fs/promises';
-import {spawn,execFileSync} from 'node:child_process';
-import {randomUUID,createHash} from 'node:crypto';
+import {createNativeSession} from './native-session.mjs';
+import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
 const source=process.cwd(),output=path.resolve(process.argv[2]??'.build/day-refresh-evidence');
-await mkdir(output,{recursive:true});
-const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');
+const native=await createNativeSession({root:source,output,name:'day-refresh'});
+const require=createRequire(source+'/package.json');
 require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/day-refresh-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore}=require(source+'/.build/day-refresh-store.cjs');
-const profile=await mkdtemp('/tmp/day-refresh-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Tagesplan und Vergleichsgruppe'),w=store.activate(campaign.id);
+const profile=native.profile,file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Tagesplan und Vergleichsgruppe'),w=store.activate(campaign.id);
 const command=action=>({campaignId:campaign.id,token:w.token,commandId:randomUUID(),action});
 store.executeLive(command({kind:'initialize',expectedRosterRevision:0}));
 for(let i=1;i<=2;i++){
@@ -21,29 +20,19 @@ for(let i=1;i<=2;i++){
 const facts=()=>['roster_member','character_progress','live_scene'].map(table=>store.db.prepare('SELECT * FROM '+table+' ORDER BY id').all());
 const plan=store.saveEncounterPlan({...command(null),expectedRevision:null,plan:{id:randomUUID(),revision:0,name:'Wachpatrouille',notes:'Unveränderte Quelle',party:[],entries:[{id:randomUUID(),creatureId:'goblin',count:1,grouped:false}],sources:[],catalogHash:''}});
 const sourceBefore=store.db.prepare('SELECT * FROM encounter_plan ORDER BY id').all(),before=facts();store.close();
-const busPath=profile+'/bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,busPath,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});
-for(let i=0;i<100;i++){if(await stat(busPath).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
-let app,pid,closed=true;const errors=[],results=[],launches=[],artifacts={};
-const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTree=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();
-for(const p of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'])artifacts[p]=createHash('sha256').update(await readFile('.build/desktop/'+p)).digest('hex');
-async function capture(page,name){
- await app.evaluate(({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));w.show();w.focus();});
- await page.evaluate(()=>new Promise((resolve,reject)=>{let frame;const timer=setTimeout(()=>{cancelAnimationFrame(frame);reject(Error('No fresh capture frames'));},2500);frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{clearTimeout(timer);resolve();});});}));
- const bytes=Buffer.from(await app.evaluate(async({BrowserWindow})=>(await BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.capturePage()).toPNG()));
- const png=require('pngjs').PNG.sync.read(bytes),colors=new Set();for(let i=0;i<png.data.length;i+=4*31)colors.add(png.data.readUInt32BE(i));assert(colors.size>8,'native capture contains visible content');await writeFile(path.join(output,name+'.png'),bytes);
-}
+let app;const results=[];
+const capture=(page,name)=>native.capture(page,name);
 try{
  for(const scale of [1,2]){
-  app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:[source+'/.build/desktop/main.cjs','--ozone-platform=x11','--force-device-scale-factor='+scale,'--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+busPath},timeout:30000});closed=false;pid=app.process().pid;launches.push({pid,scale});
-  const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.stack));page.setDefaultTimeout(15000);
-  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
+  const page=await native.launch(scale);app=native.app;
   if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();
   await app.evaluate(({ipcMain})=>{
-   globalThis.__dayReads=[];globalThis.__dayFailNext=false;
+   globalThis.__dayReads=[];globalThis.__dayFailNext=false;globalThis.__dayHold=false;globalThis.__dayRelease=null;
    const read=ipcMain._invokeHandlers.get('campaign:adventuring-day');
    ipcMain.removeHandler('campaign:adventuring-day');
    ipcMain.handle('campaign:adventuring-day',async(event,token,input)=>{
     globalThis.__dayReads.push(structuredClone(input));
+    if(globalThis.__dayHold)await new Promise(resolve=>{globalThis.__dayRelease=resolve;});
     if(globalThis.__dayFailNext){globalThis.__dayFailNext=false;return{ok:false,error:'Kontrollierter Tagesplan-Lesefehler'};}
     return read(event,token,input);
    });
@@ -68,6 +57,22 @@ try{
   }
   await page.locator('#day-active').click();await settled();
   await page.locator('#day-mode-progress').click();await page.locator('#day-total-xp').fill('600');await settled();
+  // Keep a real IPC read pending: old answers must be invisible without moving the form.
+  const answerHeight=await page.locator('#day-results').evaluate(n=>n.getBoundingClientRect().height);
+  await app.evaluate(()=>{globalThis.__dayHold=true;});
+  await page.locator('#day-total-xp').fill('601');
+  await page.waitForFunction(()=>document.querySelector('#day-popover').getAttribute('aria-busy')==='true');
+  assert.equal(await page.locator('#day-results').evaluate(n=>getComputedStyle(n).visibility),'hidden');
+  assert.equal(await page.locator('#day-results').evaluate(n=>n.getBoundingClientRect().height),answerHeight);
+  await capture(page,'pending-'+scale);
+  // A native screenshot gives the debounced read time to arrive; await the exact gate too.
+  for(let attempts=0;!await app.evaluate(()=>!!globalThis.__dayRelease);attempts++){
+   assert.ok(attempts<100,'the held read reached Main');await page.waitForTimeout(20);
+  }
+  await app.evaluate(()=>{globalThis.__dayHold=false;globalThis.__dayRelease();globalThis.__dayRelease=null;});
+  await settled();
+  assert.equal(await page.locator('#day-results').evaluate(n=>getComputedStyle(n).visibility),'visible');
+  await page.locator('#day-total-xp').fill('600');await settled();
   // Deliver both actions in one renderer task so this race test is independent
   // of automation/host speed. The actual DOM handlers, preload and SQLite read run.
   const before=await app.evaluate(()=>globalThis.__dayReads.length);
@@ -102,7 +107,7 @@ try{
   await page.getByRole('spinbutton',{name:'Anzahl Zeile 1',exact:true}).fill('2');await settled();
   // Give the debounced input its own read before restarting.
   await page.waitForFunction(()=>document.querySelector('#day-summary').textContent.includes('3.400 XP Tagesbudget'));
-  const devicePixelRatio=await page.evaluate(()=>window.devicePixelRatio);assert.equal(devicePixelRatio,scale);
+  const zoom=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).webContents.getZoomFactor());assert.equal(zoom,scale);
   await page.locator('#day-summary').scrollIntoViewIfNeeded();
   await capture(page,'recovered-'+scale);
   await page.locator('#day-active').click();await settled();
@@ -120,6 +125,13 @@ try{
   assert.equal(await page.locator('#day-total-xp').inputValue(),'1368');
   assert.equal(await page.locator('#day-reward-xp').inputValue(),'900');
   assert.match(await page.locator('#day-plan-result').innerText(),/1 kurze \/ 0 lange Rasten geplant/);
+  await page.getByRole('button',{name:'Wachpatrouille nach unten',exact:true}).first().click();await settled();
+  assert.deepEqual(await page.locator('#day-plan-selected input').evaluateAll(nodes=>nodes.map(n=>n.value)),['12','6']);
+  assert.deepEqual(await page.locator('#day-plan-selected select').evaluateAll(nodes=>nodes.map(n=>n.value)),['short','none']);
+  assert.equal(await page.locator('#day-total-xp').inputValue(),'1368');
+  await page.getByRole('button',{name:'Wachpatrouille nach oben',exact:true}).last().click();await settled();
+  assert.deepEqual(await page.locator('#day-plan-selected input').evaluateAll(nodes=>nodes.map(n=>n.value)),['6','12']);
+  assert.deepEqual(await page.locator('#day-plan-selected select').evaluateAll(nodes=>nodes.map(n=>n.value)),['none','short']);
   const planLayout=await page.locator('#day-plan-selected .day-plan-row').evaluateAll(rows=>rows.map(row=>{
    const title=row.querySelector('strong'),r=title.getBoundingClientRect(),size=parseFloat(getComputedStyle(title).fontSize),bounds=row.getBoundingClientRect();
    return{title:title.textContent,width:r.width,height:r.height,fontSize:size,controlsFit:[...row.querySelectorAll('input,select,button')].every(n=>{const b=n.getBoundingClientRect();return b.left>=bounds.left-1&&b.right<=bounds.right+1;})};
@@ -130,14 +142,11 @@ try{
   assert.equal(await page.getByRole('spinbutton',{name:'Level Zeile 1',exact:true}).inputValue(),'4');
   assert.equal(await page.locator('#day-total-xp').inputValue(),'1368');
   await page.locator('#day-active').click();await settled();
-  const ended=new Promise(resolve=>app.process().once('exit',(code,signal)=>resolve({code,signal})));
-  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
-  let timer;const exit=await Promise.race([ended,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]).finally(()=>clearTimeout(timer));assert.deepEqual(exit,{code:0,signal:null});await assert.rejects(stat('/proc/'+pid),{code:'ENOENT'});launches.at(-1).exit=exit;launches.at(-1).pidAbsent=true;closed=true;
-  results.push({scale,devicePixelRatio,partyReads:partyReads.length,failedReads:failedReads.length,planLayout,exit});
+  await native.close();
+  results.push({zoom,partyReads:partyReads.length,failedReads:failedReads.length,planLayout});
  }
  const checked=new CampaignStore(file);try{assert.deepEqual(checked.db.prepare('SELECT * FROM encounter_plan ORDER BY id').all(),sourceBefore);for(const [i,table]of ['roster_member','character_progress','live_scene'].entries())assert.deepEqual(checked.db.prepare('SELECT * FROM '+table+' ORDER BY id').all(),before[i]);}finally{checked.close();}
- assert.deepEqual(errors,[]);
- await writeFile(path.join(output,'result.json'),JSON.stringify({head,workingTree,profile,results,launches,errors,artifacts,partyFactsUnchanged:true,sourceUnchanged:true,splitPlanRestart:true},null,2));
+ await native.finish({complete:true,results,partyFactsUnchanged:true,sourceUnchanged:true,splitPlanRestart:true});
  console.log(JSON.stringify({results,partyFactsUnchanged:true}));
-}catch(error){await writeFile(path.join(output,'failure.json'),JSON.stringify({head,workingTree,artifacts,error:error.stack,profile,results,launches,errors},null,2));if(app&&!closed)try{await capture(await app.firstWindow({timeout:1000}),'failure');}catch{}throw error;}
-finally{if(app&&!closed){await Promise.race([app.close().catch(()=>{}),new Promise(r=>setTimeout(r,3000))]);if((await readFile(`/proc/${pid}/cmdline`,'utf8').catch(()=>'' )).includes(profile))process.kill(pid,'SIGKILL');}proxy.kill();}
+}catch(error){await native.fail(error);throw error;}
+finally{await native.dispose();}
