@@ -27,13 +27,13 @@ try{
  let page=await launch();assert.equal(await page.locator('#chronicle-list article').count(),100);results.initialCount=await page.locator('#chronicle-count').innerText();
  const first=await page.locator('#chronicle-list article').first().innerText();
  await page.locator('#chronicle-navigation-bottom').scrollIntoViewIfNeeded();
- results.pageEnd=await page.locator('#chronicle-next-bottom').evaluate(e=>{const r=e.getBoundingClientRect(),music=document.getElementById('music-mini').getBoundingClientRect();return {top:r.top,bottom:r.bottom,safeBottom:music.top,height:innerHeight};});
- assert(results.pageEnd.top>=0&&results.pageEnd.bottom<=results.pageEnd.safeBottom,'Next page must be reachable below the last event');
- await capture(page,path.join(output,'chronicle-page-end.png'));await page.locator('#chronicle-next-bottom').click();await ready(page);
+ results.pageEnd=await page.locator('#chronicle-next-bottom').evaluate(e=>{const r=e.getBoundingClientRect(),music=document.getElementById('music-mini').getBoundingClientRect();const hit=document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2);return {top:r.top,bottom:r.bottom,safeBottom:music.top,height:innerHeight,uncovered:e===hit||e.contains(hit)};});
+ assert(results.pageEnd.top>=0&&results.pageEnd.bottom<=results.pageEnd.safeBottom&&results.pageEnd.uncovered,'Next page must be reachable below the last event');
+ await capture(page,path.join(output,'chronicle-page-end.png'));if(zoom===2)await page.locator('#chronicle-next-bottom').press('Enter');else await page.locator('#chronicle-next-bottom').click();await ready(page);
  assert.match(await page.locator('#chronicle-count').innerText(),/^Seite 2/);assert.notEqual(await page.locator('#chronicle-list article').first().innerText(),first);
  await page.waitForFunction(()=>document.activeElement?.id==='chronicle-count');
- results.pageStart=await page.locator('#chronicle-count').evaluate(e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,headerBottom:document.querySelector('body>header').getBoundingClientRect().bottom,height:innerHeight};});
- assert(results.pageStart.top>=results.pageStart.headerBottom&&results.pageStart.bottom<results.pageStart.height);
+ results.pageStart=await page.locator('#chronicle-count').evaluate(e=>{const r=e.getBoundingClientRect();const hit=document.elementFromPoint((r.left+r.right)/2,(r.top+r.bottom)/2);return {top:r.top,bottom:r.bottom,height:innerHeight,uncovered:e===hit||e.contains(hit)};});
+ assert(results.pageStart.top>=0&&results.pageStart.bottom<results.pageStart.height&&results.pageStart.uncovered);
  await capture(page,path.join(output,'chronicle-next-page.png'));
  await page.locator('#chronicle-navigation-bottom').scrollIntoViewIfNeeded();await page.locator('#chronicle-previous-bottom').click();await ready(page);assert.equal(await page.locator('#chronicle-list article').first().innerText(),first);results.snapshotPaging=true;
  assert.equal(await page.locator('#chronicle-export').innerText(),'Gesamte Chronik als Markdown…');
