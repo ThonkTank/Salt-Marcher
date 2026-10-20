@@ -40,6 +40,9 @@ Node 22/npm. Vor Integration die sechs vom Nutzer vorgegebenen Checks
 relevante native Prüfungen nur bei betroffenen Wegen laden. Aktuelles AGENTS.md
 und echte Branchregeln beachten. Eigene fertige Änderungen auf aktuellem
 `origin/main`, lineare Integration, echte `Candidate · exact-SHA aggregate`-CI.
-Nach Fetch eigenen veröffentlichten Commit im entfernten Main nachweisen.
+Nach Fetch den integrierten eigenen Commit im entfernten Main nachweisen.
+Danach auch die eigene weitere Arbeitskopie auf aktuellen Main bringen und dort
+`git merge-base --is-ancestor origin/main HEAD` erfolgreich prüfen; vor jeder
+Wiederaufnahme erneut abgleichen. Ein alter Checkpoint-Branch ersetzt das nicht.
 Kein Force-Push oder Übernehmen fremder schmutziger Kopien. Installierte Skill-
 und Setupfassungen gezielt synchronisieren, fremde lokale Änderungen erhalten.

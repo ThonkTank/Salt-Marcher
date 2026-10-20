@@ -16,6 +16,10 @@ Beginne beim sichtbaren Endergebnis eines konkreten Nutzerablaufs. Dieser Ablauf
 3. **Nutzen wir diesen Weg? Wenn nicht, wieso nicht?** Vergleiche Ist und Soll. Prüfe jede Abweichung auf einen konkreten notwendigen Nutzen. Bestand, investierte Arbeit, historische Entscheidungen und bloße Planvorgaben sind keine Rechtfertigung. Behalte begründete Abweichungen nur, soweit der einfachere Weg die benötigte Wirkung tatsächlich nicht sicher erreicht.
 4. **Beseitige alle unnötigen Abweichungen von diesem Standardpfad.** Setze die Vereinfachung selbst um: streichen, zusammenführen, kürzen, korrigieren, umbauen oder ersetzen. Bevorzuge reine Subtraktion, wenn sie dieselbe Nutzerwirkung erhält. Ersetze auch Werkzeuge durch Dokumentation oder einfachere Abläufe, wenn dieselben Nutzerfähigkeiten erhalten bleiben. Prüfe anschließend denselben Nutzerablauf und sein sichtbares Ergebnis erneut.
 
+## Aktuellen Main als Arbeitsbasis verwenden
+
+Für SaltMarcher gilt vor jeder neuen Aufgabe oder Wiederaufnahme und nach der Veröffentlichung: aktuellen `origin/main` in die tatsächlich verwendete Arbeitskopie übernehmen und dort `git merge-base --is-ancestor origin/main HEAD` erfolgreich prüfen. Erst danach fachlich weiterarbeiten. Ein Push nach Main oder eine separate Integrationskopie aktualisiert diese Arbeitskopie nicht. Offene eigene Arbeit und fremde Änderungen nach den gemeinsamen Git-Regeln erhalten.
+
 ## Jeder zehnte Automationslauf: strukturell verbessern
 
 Meldet die Taktprüfung `strukturrueckblick=true`, hat dieser Auftrag Vorrang vor einer neuen Capability- oder Moduswahl:
