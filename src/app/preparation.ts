@@ -81,13 +81,13 @@ async function lookupExcerpt(){
    button.onclick=()=>{void(async()=>{
     if(excerptBusy||excerptReading||!current())return;excerptReading=true;excerptControls();
     try{
-     const [directory,pendingDraft]=await Promise.all([window.campaign.preparation(input.token,''),window.campaign.preparationDraft(input.token,'note',candidate.id)]);
-     const row=unwrap(directory).notes.find(r=>r.note.id===candidate.id),draft=unwrap(pendingDraft);
+     const [content,pendingDraft]=await Promise.all([window.campaign.deskContent(input.token,{kind:'note',id:candidate.id}),window.campaign.preparationDraft(input.token,'note',candidate.id)]);
+     const original=unwrap(content),note=original.note,draft=unwrap(pendingDraft);
      if(!current())return;
-     if(!row||row.trashed||row.note.revision!==candidate.revision)throw Error('Original wurde geändert. Namen erneut eingeben und Auswahl prüfen.');
+     if(original.unavailable||original.ref.kind!=='note'||original.ref.id!==candidate.id||!note||note.id!==candidate.id||original.revision!==candidate.revision||note.revision!==candidate.revision)throw Error('Original wurde geändert. Namen erneut eingeben und Auswahl prüfen.');
      if(draft||retained.get(draftKey('note',candidate.id))||draftProblems.has(draftKey('note',candidate.id)))throw Error('Dieses Original hat einen offenen Arbeitsentwurf. Erst im Originaleditor aufklären.');
-     excerptChosen=structuredClone(row.note);get<HTMLInputElement>('note-excerpt-title').value=row.note.title;get<HTMLSelectElement>('note-excerpt-kind').value=row.note.kind;
-     get('note-excerpt-choices').replaceChildren();get('note-excerpt-choices-status').textContent='Vorhandenes Original: '+row.note.title+' · frühere Texte und Verwendungen bleiben erhalten.';
+     excerptChosen=structuredClone(note);get<HTMLInputElement>('note-excerpt-title').value=note.title;get<HTMLSelectElement>('note-excerpt-kind').value=note.kind;
+     get('note-excerpt-choices').replaceChildren();get('note-excerpt-choices-status').textContent='Vorhandenes Original: '+note.title+' · frühere Texte und Verwendungen bleiben erhalten.';
     }catch(error){if(current())get('note-excerpt-choices-status').textContent=(error as Error).message;}
     finally{if(excerptCurrent(input)&&seq===excerptLookup){excerptReading=false;excerptControls();}}
    })();};get('note-excerpt-choices').append(button);

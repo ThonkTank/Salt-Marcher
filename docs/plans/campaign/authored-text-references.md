@@ -73,6 +73,16 @@ Die nativen Prüfungen `tools/test-desktop-note-excerpts.mjs` und
 Spielabendverwendung, normales Prozessende, frisches Wiederfinden und
 Weiterbearbeitung. `GM_QA_ZOOM=2` prüft denselben Ablauf vergrößert.
 
+Die Auswahl eines vorhandenen Originals liest nur dessen kanonischen Inhalt
+über den bestehenden `deskContent`-Port und dessen offenen Arbeitsentwurf.
+Identität, Revision und Papierkorb werden vor der Vorschau geprüft; ein Lesefehler
+lässt die Auswahl zur ausdrücklichen Wiederholung offen. Sie lädt nicht erneut
+alle Notizen, Pläne und Orte. Der native Protokollablauf prüft diese Readgrenze
+mit 250 unbeteiligten Notizen und einem gezielten Lesefehler. Die allgemeinen
+Initial-, Speicher- und Recoveryantworten der Vorbereitung enthalten weiterhin
+das vollständige Verzeichnis; die Einzelwahl macht deshalb keine Aussage über
+die Skalierung des gesamten Editors. Kein neues Schema, Cache oder Schreibport.
+
 Bei der Übergabe einer Notizmappe zählt nur ein tatsächlich geöffneter
 Planungskontext als Ziel. Ein im Hintergrund geladener erster Abend ist keine
 Nutzerauswahl. Ohne bekannten Kontext werden neue Ziele ausdrücklich benannt
