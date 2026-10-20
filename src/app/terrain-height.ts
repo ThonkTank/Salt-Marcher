@@ -40,7 +40,7 @@ export function decodeHeights(t: HeightTile): Float32Array {
   if (
     t.version !== 1 ||
     ![t.x, t.y, t.pixel].every(Number.isFinite) ||
-    t.pixel < 1 / 64 ||
+    t.pixel < 2 ** -24 ||
     t.pixel > 2 ** 24 ||
     !Number.isInteger(Math.log2(t.pixel)) ||
     !Number.isSafeInteger(t.x / (64 * t.pixel)) ||
@@ -333,7 +333,7 @@ export function applyHeightStroke(
   s: MaskStroke,
 ): LandscapeRecord[] {
   validateStroke(s);
-  const pixel = Math.max(1 / 64, 2 ** Math.floor(Math.log2(s.radius / 32))),
+  const pixel = Math.max(2 ** -24, 2 ** Math.floor(Math.log2(s.radius / 32))),
     sea = terrainSettings(records).seaLevelM;
   const box = strokeBox(s),
     edge = 64 * pixel;

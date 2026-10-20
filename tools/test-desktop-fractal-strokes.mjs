@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Timed native moving-stroke probe: records received timestamps and coalesced samples.
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
@@ -193,7 +194,7 @@ async function settled() {
 async function mode(value, radius) {
   await page.locator('#land-operation').selectOption(['land-erase','lower'].includes(value)?'erase':'add');
   await page.locator('#land-coast-roughness').fill(['raise','lower'].includes(value)?'2':'0');
-  await page.locator("#land-radius").fill(String(radius));
+  await setBrushWorldRadius(page,'land-radius',String(radius));
 }
 const core = require(root + "/.build/fractal-strokes-native-store.cjs");
 const rootRevision = () =>

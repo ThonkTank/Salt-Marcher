@@ -51,9 +51,9 @@ try {
             await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
             await page.locator('.campaign-card[data-campaign-id="' + cam.id + '"]').getByRole('button', { name: /Öffnen|Fortsetzen/ }).click();
             await page.waitForFunction(() => document.body.classList.contains('has-workspace') && !document.querySelector('main').inert);
-            if (await page.locator('#campaign-atlas').isVisible())
-                await page.locator('#atlas-player-open-controls').click();
-            else
+            if (await page.locator('#campaign-atlas').isVisible()) {
+                await page.locator('#atlas-view').click();await page.locator('#atlas-player-open-controls').click();
+            } else
                 await page.locator('#player-open-controls').click();
             await page.locator('#player-dialog').waitFor({ state: 'visible' });
         }

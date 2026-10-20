@@ -34,7 +34,7 @@ export function heightBrushBounds(s:HeightStroke){
 }
 export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void):LandscapeRecord[]{
   validateHeightStroke(s);
-  const box=strokeBox(s),pixel=Math.max(1/64,2**Math.floor(Math.log2(s.radius/32))),edge=64*pixel;
+  const box=strokeBox(s),pixel=Math.max(2**-24,2**Math.floor(Math.log2(s.radius/32))),edge=64*pixel;
   // Midpoint integration along the whole gesture, independent of event frequency.
   const dabs:{x:number;y:number;seconds:number}[]=[];
   for(let i=1;i<s.samples.length;i++){

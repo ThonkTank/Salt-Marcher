@@ -595,6 +595,7 @@ export class AtlasCanvas {
     let previous = this.zoomUpdatedAt;
     const tick = (now: number) => {
       if (generation !== this.zoomGeneration || !this.zoomTarget) return;
+      if(this.options.locked?.()){this.stopZoom();return;}
       this.zoomFrame = 0;
       const elapsed = Math.max(0, now - previous);
       previous = Math.max(previous, now);

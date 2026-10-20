@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Real Electron controls in a disposable profile. No author mutation via page.evaluate.
 import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,writeFile,readFile} from 'node:fs/promises';
@@ -75,11 +76,11 @@ async function settled(){await page.waitForFunction(()=>!document.querySelector(
 async function stroke(a,b){const x=await at(...a),y=await at(...b);await page.mouse.move(x.x,x.y);await page.mouse.down();await page.mouse.move(y.x,y.y,{steps:8});await page.mouse.up();await settled();}
 try{
  await prototypeRun();await start();await capture('02-product-before');
- await tool('vegetation');await page.locator('#vegetation-preset').selectOption('deciduous');await page.locator('#land-radius').fill('45');
+ await tool('vegetation');await page.locator('#vegetation-preset').selectOption('deciduous');await setBrushWorldRadius(page,'land-radius','45');
  const count=records().length;await stroke([80,-100],[220,-100]);assert.equal(records().length,count+1);const painted=records().find(r=>r.name==='Laubwald');assert(painted);assert.equal(painted.values.terrain,'forest');
  mark('Native Pinselgeste speichert Boden, Bewuchs und Geländeart gemeinsam');
  await capture('03-painted');
- await tool('vegetation-clear');await page.locator('#land-radius').fill('25');await stroke([130,-100],[150,-100]);assert(records().find(r=>r.id===painted.id).vegetation.edits.length>0);
+ await tool('vegetation-clear');await setBrushWorldRadius(page,'land-radius','25');await stroke([130,-100],[150,-100]);assert(records().find(r=>r.id===painted.id).vegetation.edits.length>0);
  mark('Dauerhafte Lichtung durch Freihalten');
  await tool('vegetation-object');await page.locator('#vegetation-asset').selectOption('rock');
  const p=await at(160,-110);await page.mouse.click(p.x,p.y);await page.locator('#land-finish').click();await settled();

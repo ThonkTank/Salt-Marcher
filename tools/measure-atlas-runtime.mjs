@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Native same-task Atlas benchmark. Run through tools/ui-session.py after build:desktop.
 // ATLAS_BASELINE_FIXTURES copies authored fixtures; ATLAS_RUNTIME_DIR freezes a baseline runtime.
 // ATLAS_CYCLES controls repeated navigation; ATLAS_COLLECT_GC records separate post-GC memory.
@@ -67,7 +68,7 @@ try{for(const kind of (process.env.ATLAS_CASES??'small,landscape,city,dungeon').
   const beforeHover=await app.evaluate(()=>globalThis.__atlasWorkerMetrics.jobs);
   for(let i=0;i<30;i++)await sample('hover',()=>page.mouse.move(p.x+Math.sin(i)*12,p.y+Math.cos(i)*8));
   assert.equal(await app.evaluate(()=>globalThis.__atlasWorkerMetrics.jobs),beforeHover,'Hover must not read SQLite');
-  await page.locator('#atlas-families [data-family=terrain]').click();await page.locator('#land-tool').selectOption('paint');await page.locator('#land-radius').fill('5');await settled();p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();
+  await page.locator('#atlas-families [data-family=terrain]').click();await page.locator('#land-tool').selectOption('paint');await setBrushWorldRadius(page,'land-radius','5');await settled();p=await center();await page.mouse.move(p.x,p.y);await page.mouse.down();
   for(let i=0;i<20;i++)await sample('preview',()=>page.mouse.move(p.x+i*.6,p.y+Math.sin(i/3)*3));await page.mouse.up();await page.locator('#land-cancel').click();await settled();
   const memory=[];const snapshot=async()=>{if(process.env.ATLAS_COLLECT_GC)await session.send('HeapProfiler.collectGarbage');memory.push({postGc:!!process.env.ATLAS_COLLECT_GC,renderer:await metrics(),native:await app.evaluate(({app})=>app.getAppMetrics()),canvas:await page.locator('#campaign-map').evaluate(c=>({...c.dataset})),workers:await app.evaluate(()=>globalThis.__atlasWorkerMetrics)});};
   await snapshot();

@@ -1,3 +1,4 @@
+import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
@@ -234,12 +235,12 @@ async function settled() {
 async function mode(value,radius){
   await page.locator('[data-atlas-tool="land-shape"]').click();
   const lower=['land-erase','lower'].includes(value);
-  await page.locator('#land-height-mode').selectOption(lower?'lower':'raise');
+  await setHeightDirection(page,lower?'lower':'raise');
   await page.locator('#land-height-strength').fill('100000');
   await page.locator('#land-height-feather').fill('0');
   await page.locator('#land-height-target-enabled').check();
   await page.locator('#land-height-target').fill(lower?'-100':'100');
-  await page.locator('#land-radius').fill(String(radius));
+  await setBrushWorldRadius(page,'land-radius',String(radius));
 }
 async function hold(x, y, ms) {
   const p = await at(x, y);
@@ -301,6 +302,7 @@ try {
   await page.mouse.up();
   assert.equal(maskBytes(), baseline);
   mark("Escape discards height preview");
+  await page.locator('[data-tool-group="water"]').click();
   await page
     .locator("#land-sea-level")
     .locator("..")

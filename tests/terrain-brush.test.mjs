@@ -96,3 +96,11 @@ test('roughness is seeded, directional, time based and independent of sample den
  assert.deepEqual(renderBrushPreview({generation:1,records:[],box,width:100,height:100,heightStroke:{...s,targetM:50}}),pixels(edit([],{...s,targetM:50}),box,100,100));
  const p=plane((x,y)=>200+x+y);assert.deepEqual(edit(p,brush('smooth')),edit(p,brush('smooth',{roughness:2,seed:123,targetM:999})));
 });
+
+test('screen-sized brushes below one metre produce bounded, persistent fine geometry',()=>{
+ for(const radius of [.5,.01,.0005]){
+  const s=brush('raise',{radius,feather:0}),records=edit([],s);
+  assert.equal(height(records),200);assert.equal(height(records,radius*2),-100);
+  assert(records.length<=16);assert.deepEqual(height(JSON.parse(JSON.stringify(records))),200);
+ }
+});

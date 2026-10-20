@@ -115,3 +115,21 @@ Die Gruppe Land enthält genau **Land formen**, **Land bemalen** und **Glätten*
 ### R5 Kippbare Ansicht · 20.10.2026
 
 [Vollständigkeitsprüfung und Zielabgleich](../../reference/terrain-tilted-atlas-r5-20261020/README.md): integrierte orthografische Geländeansicht unter **Ansicht → Atlas kippen**, gemeinsame Kamerabox, Auswahl, Landpinsel und History. Neigung, Drehung und rein visuelle Überhöhung; echte Welttreffer und kanonisch rekonstruierter Sichtschutz. Farbe wird in Weltkoordinaten festgeschrieben. Bereichsabfragen und Vorschauen werden gebündelt, alte Antworten verworfen, GPU-Ressourcen beim Verlassen freigegeben. 51 betroffene automatisierte Fälle und acht native Ablaufprüfungen bestanden, einschließlich Pass/Küste, Undo/Redo, Glätten, Farbe/Radierung, Navigation, Auswahl, Wissensmasken-Rückkehr und Neustart. Quell-/Bundlebindung und regulärer Prozessabschluss belegt. Die erste vollständige Pinselvorschau benötigte im qualifizierenden Lauf unter Hostlast 1961 ms; die R7-Leistungsziele sind nicht erfüllt beziehungsweise noch nicht qualifiziert. Nach Übernahme in die gemeinsame Arbeitskopie bestanden 58 betroffene Fälle, beide abschließenden Typprüfungen, Desktop-Build und Repository-Prüfung. Die nativen Belege gelten für den isolierten R5-Stand; zusätzliche parallele Weg-/Bewuchsänderungen sind damit nicht nativ qualifiziert. Keine Main-/Candidate-CI-, Paket- oder Installationsqualifikation. R6 folgt separat.
+
+### Gemeinsame Pinselbedienung und kompakter Atlas · 20.10.2026
+
+Der anschließende Nutzerauftrag ersetzt die reine Weltmaßbedienung: Atlas-Pinsel starten mit 48 CSS-Pixeln Radius (einstellbar 4–200). „Feste Kartengröße“ hält alternativ das Weltmaß; der Wechsel rechnet ohne Größensprung um. Größen werden pro Werkzeug, der Modus gemeinsam lokal gespeichert. Landschaft, Regionen, Bewuchs, Höhlen-, Radier- und Streupinsel sowie räumliche Landschaft verwenden denselben Größenadapter. Vorschau, Abstände und Auftrag lesen dessen Weltradius. Begonnene Entwürfe sperren Größe und Kamera. Objektgrößen, Linienbreiten und Lichtreichweiten bleiben eigenständige Maße.
+
+„Land formen“ zeigt Richtung als zwei Schaltflächen, logarithmische Stärke mit Zahleneingabe, Radius, festen Größenmodus, weichen Rand, Roughness, optionale Zielhöhe und fünf Vorlagen. Die Vorlagen ändern ausschließlich Pinselparameter und deaktivieren die Zielhöhenbegrenzung:
+
+| Vorlage | Richtung | Stärke m/s | Radius px | Weicher Rand | Roughness |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Hügel | Erhöhen | 100 | 40 | 85 % | 0,2 |
+| Berg | Erhöhen | 350 | 65 | 60 % | 0,8 |
+| Großer Berg | Erhöhen | 1000 | 100 | 50 % | 1,0 |
+| Tal | Absenken | 200 | 70 | 85 % | 0,1 |
+| Schlucht | Absenken | 700 | 20 | 15 % | 0,6 |
+
+Meeresspiegel steht nur in der Wassergruppe. Das dauerhafte Kopfleistenmenü „Darstellung“ enthält den vorhandenen globalen Reliefstil und Höhenlinien. Das Stilprofil bleibt am bisherigen Kampagnendatensatz; vorhandene Höhen, räumliche Textur und Export verwenden es weiterhin. Die Symbolleiste links ist 48 Pixel breit, die Werkzeugoptionen standardmäßig 240 Pixel; beide zusammen geben gegenüber 424 Pixeln zuvor 136 Pixel Kartenbreite frei. Manuell gespeicherte Panelbreiten bleiben erhalten. Spieleranzeige und Größenvergleich liegen unter „Ansicht“.
+
+Lokale Implementierung und Prüfgrenzen: [Pinselbedienung und kompakte Kartenfläche](../../reference/atlas-brush-ux-20261020/README.md). Keine zusätzliche Nutzerabnahme behauptet.

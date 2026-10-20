@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {createRequire} from 'node:module';
 import {mkdtemp,mkdir,writeFile,readFile,stat} from 'node:fs/promises';
@@ -46,7 +47,7 @@ try{
  await page.waitForFunction(before=>document.querySelector('#campaign-map').dataset.atlasView!==before,viewBeforePan);await atlasCanvasReady(page);assert.equal(await page.locator('#campaign-map').getAttribute('data-scene-version'),sceneBeforePan,'Small camera move reuses the compiled scene and buffered rasters');
  await page.mouse.down({button:'middle'});await page.mouse.move(pan.x+pan.width/2,pan.y+pan.height/2,{steps:5});await page.mouse.up({button:'middle'});results.bufferedPan=true;
  await app.evaluate(({ipcMain})=>{ipcMain.removeHandler('atlas:execute');ipcMain.handle('atlas:execute',()=>{throw new Error('Full atlas endpoint must not be used for terrain commit.');});});
- await page.locator('button[data-family="terrain"]').click();await page.locator('#land-tool').selectOption('paint');await page.locator('#land-radius').fill('200000');await page.locator('#atlas-terrain').selectOption('water');await page.locator('#land-auto-level').uncheck();await page.locator('#atlas-hex-level').selectOption('0');
+ await page.locator('button[data-family="terrain"]').click();await page.locator('#land-tool').selectOption('paint');await setBrushWorldRadius(page,'land-radius','200000');await page.locator('#atlas-terrain').selectOption('water');await page.locator('#land-auto-level').uncheck();await page.locator('#atlas-hex-level').selectOption('0');
  const box=await page.locator('#campaign-map').boundingBox();await page.mouse.click(box.x+box.width*.52,box.y+box.height*.52);await page.locator('#land-finish').click();
  await page.waitForFunction(()=>document.querySelector('#land-status').textContent==='Gespeichert',null,{timeout:30000});
  for(let i=0;i<200;i++){if((await pixels(page)).water>0)break;await page.waitForTimeout(100);}results.after=await pixels(page);assert(results.after.water>0);results.visibleAfter=await visiblePixels(page);assert(results.visibleAfter.water>0,'Water must be visible in the actual map');await page.screenshot({path:path.join(output,'world-after.png')});

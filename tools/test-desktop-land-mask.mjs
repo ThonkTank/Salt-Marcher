@@ -1,3 +1,4 @@
+import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
@@ -186,7 +187,7 @@ async function settled() {
 async function mode(value, radius) {
   await page.locator('#land-operation').selectOption(['land-erase','lower'].includes(value)?'erase':'add');
   await page.locator('#land-coast-roughness').fill(['raise','lower'].includes(value)?'2':'0');
-  await page.locator("#land-radius").fill(String(radius));
+  await setBrushWorldRadius(page,'land-radius',String(radius));
 }
 async function hold(x, y, ms) {
   const p = await at(x, y);
@@ -256,7 +257,7 @@ try {
   await tool('color');
   assert(await page.locator('#land-color-options').isVisible());
   assert(await page.locator('#land-shape-options').isHidden());
-  await page.locator('#land-radius').fill(String(r*.7));
+  await setBrushWorldRadius(page,'land-radius',String(r*.7));
   await page.locator('#land-tip').selectOption('round');
   await page.locator('#land-paint-color').fill('#22aa33');
   await stroke([[x-r,y],[x+r,y]]);await settled();
@@ -279,7 +280,7 @@ try {
   await page.mouse.move(cp.x,cp.y);await page.mouse.down();await page.waitForTimeout(400);await page.keyboard.press('Escape');await page.mouse.up();
   assert.equal(JSON.stringify(records()),beforeCancel);
   result.checks.push('Escape discards color preview');
-  await page.locator('#land-radius').fill(String(r*.35));
+  await setBrushWorldRadius(page,'land-radius',String(r*.35));
   const curve=Array.from({length:49},(_,i)=>[x-r+2*r*i/48,y+Math.sin(i/48*Math.PI*2)*r*.5]);
   await stroke(curve);await settled();
   const curveRecord=records().filter(v=>v.paint).sort((a,b)=>b.order-a.order)[0];
