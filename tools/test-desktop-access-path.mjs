@@ -97,7 +97,6 @@ try {
       await page.mouse.click(p.x, p.y);
       await page.waitForFunction(() => document.getElementById("campaign-atlas").dataset.elementSelected === "true" && document.getElementById("drawing-element-name").value === "Zugangsweg");
       await atlasCanvasReady(page);
-      if (await page.locator('#atlas-secondary').isVisible()) await page.locator('#atlas-secondary-close').click();
     };
     async function launch() {
       page = await native.launch(scale);app = native.app;
@@ -125,7 +124,6 @@ try {
       await choose();
     }
     await launch();
-    if (await page.locator("#atlas-secondary").isVisible()) await page.locator("#atlas-secondary-close").click();
     for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Verkleinern", exact: true }).click();
     await atlasCanvasReady(page);
     db = new Database(profile + "/workbench.sqlite", { readonly: true });
@@ -190,10 +188,23 @@ try {
       assert.equal(await page.evaluate(() => localStorage.getItem('atlas-editor-layout-v4')), layout, 'export does not overwrite the preferred editing layout');
       return pixels;
     }
+    assert(await page.locator('#atlas-secondary').isVisible(),'selection properties stay available during correction');
+    const selectedLayout=await page.evaluate(()=>{const root=document.querySelector('#campaign-atlas'),map=document.querySelector('#campaign-map').getBoundingClientRect();return{compact:root.dataset.compactSelection,width:root.clientWidth,mapWidth:map.width};});
+    assert(selectedLayout.mapWidth/selectedLayout.width>=.45,'map keeps enough room beside selected-object properties');
+    assert.equal(await page.locator('#atlas-tool-settings').isVisible(),scale===1);
+    await native.capture(page,'selected-path');
+    if(scale===2){
+      await page.locator('[data-tool-group=walls]').click();await page.waitForFunction(()=>!document.querySelector('#atlas-section').disabled);
+      assert(await page.locator('#atlas-tool-settings').isVisible());assert(await page.locator('#atlas-secondary').isHidden());
+      await page.locator('#atlas-select').click();await choose();
+      assert(await page.locator('#atlas-secondary').isVisible());assert(await page.locator('#atlas-tool-settings').isHidden());
+    }
     const before = await png("crossing");
     assert(before.old > 0);
     assert.equal(before.bend, 0);
-    if (await page.locator("#atlas-secondary").isVisible()) await page.locator("#atlas-secondary-close").click();
+    if(await page.locator('#atlas-secondary').isHidden())await page.locator('#atlas-context-toggle').click();
+    await atlasCanvasReady(page);
+    assert(await page.locator('#atlas-secondary').isVisible(),'the actual bend gesture uses the natural properties view');
     const start = await atlasCanvasPoint(page, { x: 6.096, y: 6.096 }, false),
       end = await atlasCanvasPoint(page, { x: 6.096, y: -9.144 }, false);
     await page.mouse.move(start.x, start.y);
@@ -213,6 +224,8 @@ try {
     await until(() => JSON.stringify(readPath().points) === JSON.stringify(corrected.points));
     assert.deepEqual(readRoom(), originalRoom);
     await atlasCanvasReady(page);
+    assert(await page.locator('#atlas-secondary').isVisible());
+    await native.capture(page,'corrected-with-properties');
     const after = await png("corrected");
     assert.equal(after.old, 0);
     assert(after.bend > 0);
@@ -344,6 +357,8 @@ try {
       editableExport: true,
       packageRestoredAndEdited: true,
       exportPreviewUncovered: true,
+      selectedPropertiesKeptOpen: true,
+      compactToolReturn: scale===2,
       exportFocusOnReopen: true,
       editingLayoutPreferenceRetained: true,
       backupIndependentOfPublicSettings: true,
