@@ -1,0 +1,163 @@
+{
+  "profile": "/home/aaron/.cache/saltmarcher/ui/world-navigation-giQy0E",
+  "method": "Three alternating runs; fresh readonly DB/metadata per variant; actual 100k-base-patch world; three representative tiles; identical colour hashes required.",
+  "tileCount": 48,
+  "results": [
+    {
+      "repeat": 0,
+      "indexed": false,
+      "syncMs": 1446.303856,
+      "tempBytes": 8949760,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 1584.458085,
+          "steps": 59,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 669.020528,
+          "steps": 37,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 602.3860329999998,
+          "steps": 34,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    },
+    {
+      "repeat": 0,
+      "indexed": true,
+      "syncMs": 1507.6842040000001,
+      "tempBytes": 8990720,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 1090.2949749999998,
+          "steps": 50,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 259.3228399999998,
+          "steps": 17,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 172.4803090000005,
+          "steps": 10,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "indexed": true,
+      "syncMs": 1416.2665850000003,
+      "tempBytes": 8990720,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 886.694684,
+          "steps": 40,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 228.28067999999985,
+          "steps": 13,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 178.6727039999987,
+          "steps": 9,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "indexed": false,
+      "syncMs": 1353.8413010000004,
+      "tempBytes": 8949760,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 1239.9009150000002,
+          "steps": 48,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 612.7926869999992,
+          "steps": 35,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 619.0852090000008,
+          "steps": 33,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "indexed": false,
+      "syncMs": 1405.0709559999996,
+      "tempBytes": 8949760,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 1229.3326349999988,
+          "steps": 47,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 640.8276839999999,
+          "steps": 36,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 595.3906320000024,
+          "steps": 33,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "indexed": true,
+      "syncMs": 1435.5787979999986,
+      "tempBytes": 8990720,
+      "tiles": [
+        {
+          "index": 0,
+          "ms": 814.902904999999,
+          "steps": 36,
+          "sha256": "08c3cb84c4aefba740255ef5b4399162054c3d3488c033c808cab62f2d00ba12"
+        },
+        {
+          "index": 24,
+          "ms": 210.96711900000082,
+          "steps": 13,
+          "sha256": "e0290d62de6676f4b6b11299fede4f97fbb73b8c828dbb7e0adcdce3361fcf2c"
+        },
+        {
+          "index": 47,
+          "ms": 185.91601399999854,
+          "steps": 10,
+          "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+        }
+      ]
+    }
+  ]
+}

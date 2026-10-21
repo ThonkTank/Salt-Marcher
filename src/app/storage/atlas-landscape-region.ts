@@ -33,6 +33,9 @@ export class AtlasLandscapeReader {
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
   db.exec(LANDSCAPE_COLOR_INDEX);db.exec(LANDSCAPE_COVER_INDEX);
+  // Each field block reads these sparse kinds. Keep its canonical order in a
+  // small partial index instead of scanning every base patch for every block.
+  for(const kind of ['height','route','lake'])db.exec(`CREATE INDEX temp.landscape_${kind}_order ON landscape_shape_bounds(resolution DESC,coalesce(paint_order,0),source_row) WHERE terrain_kind='${kind}'`);
   db.exec("CREATE INDEX temp.landscape_place_span ON landscape_shape_bounds(source_row) WHERE kind='place'");
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);
    CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds WHEN new.kind IS NOT 'patch' BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
@@ -62,7 +65,7 @@ export class AtlasLandscapeReader {
    }
    if(c.table!=='atlas_landscape')continue;
    const old=this.sql('SELECT kind,terrain_kind,min_x x,min_y y,max_x-min_x width,max_y-min_y height FROM temp.landscape_shape_bounds WHERE id=?').get(c.id);
-   const row=this.sql(`SELECT rowid source_row,id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END kind,${this.metadata},min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=? AND id=?`).get(source.campaignId,c.id);
+   const row=this.sql(`SELECT CAST(rowid AS TEXT) source_row,id,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END kind,${this.metadata},min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=? AND id=?`).get(source.campaignId,c.id);
    if(old?.terrain_kind!==row?.terrain_kind)kindsChanged=true;
    const current=row?{x:row.min_x,y:row.min_y,width:row.max_x-row.min_x,height:row.max_y-row.min_y}:null;
    const dirty=c.terrainBounds?[c.terrainBounds]:[old,current].filter((b):b is NonNullable<typeof b>=>!!b);

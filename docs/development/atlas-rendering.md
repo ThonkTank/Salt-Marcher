@@ -11,6 +11,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Grundflächen nach Farbsamples filtern](../reference/atlas-base-samples-20261021/README.md): Bildgleichheit und begrenzte Nutzdaten für die Weltübersicht; getrennte Phasenmessung und weiterhin fehlgeschlagene vollständige Detailverfeinerung.
 
+[Kleine Indizes für Geländelesungen](../reference/atlas-terrain-kind-index-20261021/README.md): partielle Metadatenindizes für Höhen, Trassen und Seen, exakte Zeilennummern bei lokalen Änderungen und erneuter Autorenweg bis zum Gebäude.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
