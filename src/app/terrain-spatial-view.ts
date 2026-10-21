@@ -129,13 +129,13 @@ export class TerrainSpatialView {
     this.routeState??=new Map();this.routeIds=new Set((data.routes??[]).map(r=>r.id));
     const dispose=(meshes:THREE.Mesh[])=>{for(const mesh of meshes){this.scene.remove(mesh);mesh.geometry.dispose();for(const m of Array.isArray(mesh.material)?mesh.material:[mesh.material])m.dispose();}};
     const step=terrainGridLayout(v).minimumStep,changed=next.rects.map(r=>terrainGridRect(v,r,1));
-    const transform=JSON.stringify([this.origin,v.focusM,v.exaggeration]);
+    const transform=JSON.stringify([this.origin,v.focusM,v.exaggeration,v.box,step]);
     for(const [id,state]of this.routeState)if(!this.routeIds.has(id)){dispose(state.meshes);this.routeState.delete(id);}
     for(const r of data.routes??[]){
       const key=JSON.stringify([r,transform,data.protectedLimit]),old=this.routeState.get(r.id);
       if(old?.key===key&&!changed.some(box=>terrainBoxesOverlap(box,bounds(r))))continue;
       if(old)dispose(old.meshes);
-      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,step/2,data.protectedLimit!==undefined&&!!r.route?.protected);
+      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,step/2,data.protectedLimit!==undefined&&!!r.route?.protected,v.box);
       for(const mesh of meshes)this.scene.add(mesh);this.routeState.set(r.id,{key,meshes});
     }
     this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);

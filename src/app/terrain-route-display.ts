@@ -1,0 +1,78 @@
+import * as THREE from 'three';
+import {LineSegments2} from 'three/examples/jsm/lines/LineSegments2.js';
+import {LineSegmentsGeometry} from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
+import {LineMaterial} from 'three/examples/jsm/lines/LineMaterial.js';
+import {MAP_LINE_MIN_PIXELS,mapLineThreshold} from './atlas-scale-policy';
+import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
+import type {Point} from './contracts';
+import {linePoints} from './landscape-line';
+import {nearestRoute} from './terrain-route';
+import {routeSegmentRange} from './terrain-route-clip';
+
+const smooth=(lo:number,hi:number,x:number)=>{const t=Math.max(0,Math.min(1,(x-lo)/(hi-lo)));return t*t*(3-2*t);};
+export function routeDisplayOpacity(pixels:number,threshold:number,overview:boolean,important=false){
+ return (important?1:smooth(threshold*.5,threshold*1.5,pixels))*(overview?1-smooth(.75,1.75,pixels):1);
+}
+
+/** Scale is evaluated by the camera on every draw, including while reads wait.
+ * The minimum-width overview fades into the unchanged physical ribbon. */
+export function routeDisplayMaterial(mesh:THREE.Mesh,r:LandscapeRecord,overview=false,important=false){
+ const material=mesh.material as THREE.Material,viewport={value:new THREE.Vector2(1,1)},
+  threshold=mapLineThreshold(r.kind==='river'?'river':'road',r.style==='path'||r.style==='stream'),
+  policy={value:new THREE.Vector4(r.width,threshold,Number(overview),Number(important))};
+ material.transparent=true;material.depthWrite=false;
+ material.onBeforeCompile=shader=>{
+  shader.uniforms.routeViewport=viewport;shader.uniforms.routePolicy=policy;
+  shader.vertexShader='uniform vec2 routeViewport; uniform vec4 routePolicy; varying vec2 routePerspective;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <fog_vertex>',`#include <fog_vertex>\nroutePerspective=vec2(-mvPosition.z,projectionMatrix[1][1]*routeViewport.y*.5);`);
+  shader.fragmentShader='varying vec2 routePerspective; uniform vec4 routePolicy;\n'+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <tonemapping_fragment>',`
+   float routePixels=routePolicy.x*routePerspective.y/max(.000001,routePerspective.x);
+   gl_FragColor.a *= mix(smoothstep(routePolicy.y*.5,routePolicy.y*1.5,routePixels),1.0,routePolicy.w)*(1.0-routePolicy.z*smoothstep(.75,1.75,routePixels));
+   if(gl_FragColor.a<.001)discard;
+   #include <tonemapping_fragment>`);
+ };
+ material.customProgramCacheKey=()=> 'route-scale-v1';
+ mesh.onBeforeRender=renderer=>{
+  renderer.getSize(viewport.value);
+  if(material instanceof LineMaterial)material.resolution.copy(viewport.value);
+ };
+ // Screen-width geometry must pick its visible pixels, not an invisible old
+ // world-width stripe. Hidden/faded routes cannot block terrain or other objects.
+ const cast=mesh.raycast.bind(mesh),point=new THREE.Vector3();
+ mesh.raycast=(ray,hits)=>{
+  const camera=ray.camera;if(!camera)return;
+  const candidates:THREE.Intersection[]=[];cast(ray,candidates);
+  for(const hit of candidates){
+   point.copy(hit.point).applyMatrix4(camera.matrixWorldInverse);
+   const pixels=r.width*camera.projectionMatrix.elements[5]!*viewport.value.y*.5/Math.max(.000001,-point.z);
+   if(routeDisplayOpacity(pixels,threshold,overview,important)>.05)hits.push(hit);
+  }
+ };
+}
+
+/** A simplified cartographic centreline at small scales. Tunnel gaps and bridge
+ * elevations are preserved. Detailed dash/rail/worn styles remain in the ribbon. */
+export function routeOverview(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,important=false,box?:LandscapeBox){
+ const points=linePoints(r),positions:number[]=[],nodes=r.route?.nodes;
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1]!,b=points[i]!,range=routeSegmentRange(a,b,box);if(!range)continue;
+  const length=Math.hypot(b.x-a.x,b.y-a.y),count=Math.max(1,Math.ceil(length*(range[1]-range[0])/Math.max(.1,step)));
+  if(!length||count>10000)continue;
+  for(let j=0;j<count;j++){
+   const at=(f:number)=>{const t=range[0]+(range[1]-range[0])*f;return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};};
+   const middle=nodes?.length?nearestRoute(nodes,at((j+.5)/count)):undefined;
+   if(middle?.structure==='tunnel'&&!r.route?.conflict)continue;
+   for(const t of [j/count,(j+1)/count]){
+    const p=at(t),profile=nodes?.length?nearestRoute(nodes,p):undefined,
+     z=profile&&!r.route?.conflict&&(r.kind==='river'||profile.structure==='bridge')?profile.z:height(p);
+    positions.push(p.x-origin.x,origin.y-p.y,(z-origin.z)*exaggeration+.025);
+   }
+  }
+ }
+ if(!positions.length)return;
+ const geometry=new LineSegmentsGeometry();geometry.setPositions(positions);
+ const material=new LineMaterial({color:r.route?.conflict?'#bf503d':important?'#dc9a2d':r.line?.color??(r.kind==='river'?'#629ebc':'#a37e51'),linewidth:MAP_LINE_MIN_PIXELS,worldUnits:false,depthTest:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+ const mesh=new LineSegments2(geometry,material);mesh.userData.landscapeId=r.id;mesh.userData.routeOverview=true;
+ routeDisplayMaterial(mesh,r,true,important);return mesh;
+}

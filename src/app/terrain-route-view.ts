@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 import type {Point} from './contracts';
-import type {LandscapeRecord} from './atlas-landscape';
+import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
 import {lineParts,linePoints} from './landscape-line';
 import {nearestRoute} from './terrain-route';
+import {routeDisplayMaterial,routeOverview} from './terrain-route-display';
+import {routeSegmentRange} from './terrain-route-clip';
 
-export function routeMeshes(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,selected=false):THREE.Mesh[]{
+export function routeMeshes(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,selected=false,coverage?:LandscapeBox):THREE.Mesh[]{
   const meshes:THREE.Mesh[]=[],curve=linePoints(r),nodes=r.route?.nodes;
+  const box=coverage?{x:coverage.x-r.width*2,y:coverage.y-r.width*2,width:coverage.width+r.width*4,height:coverage.height+r.width*4}:undefined;
   const position=(p:Point,z:number)=>[p.x-origin.x,origin.y-p.y,(z-origin.z)*exaggeration+.025];
   const add=(vertices:number[],color:string,opacity=1)=>{
     if(!vertices.length)return;
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();
     const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color,opacity,transparent:opacity<1,depthWrite:opacity>=1,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));
-    mesh.userData.landscapeId=r.id;meshes.push(mesh);
+    mesh.userData.landscapeId=r.id;routeDisplayMaterial(mesh,r,false,selected||!!r.route?.conflict);meshes.push(mesh);
   };
   const parts=lineParts(r);
   // Taper polygons use the same centreline, with a varying cross section.
@@ -20,10 +23,11 @@ export function routeMeshes(r:LandscapeRecord,height:(p:Point)=>number,origin:{x
     let travel=r.line?.continuity?.distanceOffset??0;
     for(let i=1;i<points.length;i++){
       const a=points[i-1]!,b=points[i]!,dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy);if(!length)continue;
-      const subdivisions=Math.max(1,Math.ceil(length/Math.max(.1,Math.min(step,r.width||step))));
-      if(subdivisions>10000)continue;
+      const range=routeSegmentRange(a,b,box);if(!range){travel+=length;continue;}
+      const subdivisions=Math.max(1,Math.ceil(length*(range[1]-range[0])/Math.max(.1,Math.min(step,r.width||step))));
+      if(subdivisions>10000){travel+=length;continue;}
       for(let j=0;j<subdivisions;j++){
-        const t0=j/subdivisions,t1=(j+1)/subdivisions;
+        const t0=range[0]+(range[1]-range[0])*j/subdivisions,t1=range[0]+(range[1]-range[0])*(j+1)/subdivisions;
         const centre={x:a.x+dx*(t0+t1)/2,y:a.y+dy*(t0+t1)/2};
         const hit=nodes?.length?nearestRoute(nodes,centre):undefined;
         if(hit?.structure==='tunnel'&&!r.route?.conflict)continue;
@@ -61,10 +65,11 @@ export function routeMeshes(r:LandscapeRecord,height:(p:Point)=>number,origin:{x
   if(nodes)for(let i=1;i<nodes.length;i++){
     const a=nodes[i-1]!,b=nodes[i]!;
     if((a.structure==='tunnel')===(b.structure==='tunnel'))continue;
-    const p=a.structure==='tunnel'?b:a,angle=Math.atan2(-(b.y-a.y),b.x-a.x);
+    const p=a.structure==='tunnel'?b:a;if(!routeSegmentRange(p,p,box))continue;const angle=Math.atan2(-(b.y-a.y),b.x-a.x);
     const g=new THREE.TorusGeometry(Math.max(1,r.width/2),Math.max(.2,r.width*.08),5,16,Math.PI);
     g.rotateX(Math.PI/2);g.rotateZ(angle+Math.PI/2);g.translate(p.x-origin.x,origin.y-p.y,(p.z-origin.z)*exaggeration);
     const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:'#7c7567',side:THREE.DoubleSide}));mesh.userData.landscapeId=r.id;meshes.push(mesh);
   }
+  const overview=routeOverview(r,height,origin,exaggeration,step,selected||!!r.route?.conflict,box);if(overview)meshes.push(overview);
   return meshes;
 }
