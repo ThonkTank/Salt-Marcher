@@ -6,8 +6,8 @@ import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/terrain-height';",resolveDir:process.cwd()},outfile:'.build/terrain-author-cache-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,readTerrainGrid,heightRecord,installLandscape,readRouteTerrain}=require('../.build/terrain-author-cache-test.cjs');
+buildSync({stdin:{contents:"export {terrainGridLayout} from './src/app/terrain-grid-layout';export * from './src/app/storage/store';export * from './src/app/storage/terrain-grid';export * from './src/app/storage/atlas-landscape';export * from './src/app/storage/terrain-route';export * from './src/app/terrain-height';",resolveDir:process.cwd()},outfile:'.build/terrain-author-cache-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {terrainGridLayout,CampaignStore,readTerrainGrid,heightRecord,installLandscape,readRouteTerrain}=require('../.build/terrain-author-cache-test.cjs');
 function fixture(t){
  const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const dir=mkdtempSync(base+'/author-cache-'),store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('Cache'),token=store.activateShell(cam.id).token;
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
@@ -31,10 +31,10 @@ test('trusted seeded surface is reused; successful local writes invalidate only 
  assert.deepEqual(f.read(),f.canonical());assert(f.read().heights.every(x=>x>=150));
  assert(stats.bytes<=8*1024*1024);
 });
-test('focused sampling seeds all nine canonical bands and keeps local brush invalidation exact',t=>{
+test('focused sampling seeds all canonical bands and keeps local brush invalidation exact',t=>{
  const f=fixture(t);f.view.refinement={x:-64,y:-64,width:256,height:256};f.seed();
  const stats=f.cache.cache.tiles,misses=stats.misses,hits=stats.hits;
- assert.deepEqual(f.read(),f.canonical());assert.equal(stats.misses,misses);assert.equal(stats.hits-hits,9);
+ assert.deepEqual(f.read(),f.canonical());assert.equal(stats.misses,misses);assert.equal(stats.hits-hits,terrainGridLayout(f.view).blocks.length);
  f.write({kind:'landscape-height-stroke',stroke:{mode:'raise',radius:8,strength:120,feather:.8,visibility:f.view,samples:[{x:32,y:32,t:0},{x:32,y:32,t:100}]}});
  assert.deepEqual(f.read(),f.canonical());assert.equal(stats.misses,misses);assert(stats.bytes<=8*1024*1024);
  f.write({kind:'undo'});assert.deepEqual(f.read(),f.canonical());

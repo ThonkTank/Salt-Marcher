@@ -13,13 +13,13 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
  const old={document:global.document,window:global.window,CustomEvent:global.CustomEvent},status={dataset:{}},shown=[];
  global.CustomEvent=class extends Event {constructor(name,options){super(name);this.detail=options.detail;}};
  global.document={getElementById:()=>status,dispatchEvent(){}};
- let writes=0,refreshes=0;
+ let writes=0,refreshes=0,finishes=0;
  global.window={campaign:{executeAtlasCommit:async c=>({ok:true,value:{commandId:c.commandId,campaignId:'c',revision:++writes+10,sourceFence:'f'+writes,canUndo:true,canRedo:false}})}};
  t.after(()=>Object.assign(global,old));
  const atlas={revision:10,region:{revision:10,fence:'original'}},owner={token:'token',campaign:{id:'c'}};
  const ui=Object.assign(Object.defineProperty(Object.create(CampaignAtlasWorkbench.prototype),'data',{value:atlas,writable:true}),{
    owner,data:atlas,svg:{dataset:{}},busy:false,opts:{status(){}},playback:{stop(){}},render(){},
-   terrainPresentation:{update:s=>shown.push(s),stop(){}},spatial:{gesture(){}},
+   terrainPresentation:{update:s=>shown.push(s),async finish(){finishes++;},stop(){}},spatial:{gesture(){}},
    async refresh(){refreshes++;},error:e=>{throw e;},
  });
  const action={kind:'landscape-height-stroke',stroke:{}};
@@ -28,7 +28,7 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
  const second=await ui.write(action,false,true,{id:'g',expectedRevision:11,sourceFence:'f1'});
  assert.equal(second.ack.revision,12);assert.deepEqual(shown,[{revision:11,fence:'f1'},{revision:12,fence:'f2'}]);
  assert.equal(ui.data.revision,10);assert.equal(ui.busy,false);
- await ui.terrainGesture(false);assert.equal(refreshes,1);assert.equal(ui.terrainPresentation,null);
+ await ui.terrainGesture(false);assert.equal(finishes,1);assert.equal(refreshes,1);assert.equal(ui.terrainPresentation,null);
 });
 
 test('a failed final display refresh releases the brush lock and preserves the saved-prefix status',async()=>{
