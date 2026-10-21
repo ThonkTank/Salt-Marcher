@@ -1,0 +1,208 @@
+TAP version 13
+# Subtest: hard land is a neutral filled disk; terrain/climate properties change queries without changing heights or pixels
+ok 1 - hard land is a neutral filled disk; terrain/climate properties change queries without changing heights or pixels
+  ---
+  duration_ms: 1210.933463
+  type: 'test'
+  ...
+# Subtest: painting and soft/partial erasing affect pigment only, one undo per operation, preserved after reopening
+ok 2 - painting and soft/partial erasing affect pigment only, one undo per operation, preserved after reopening
+  ---
+  duration_ms: 3152.815206
+  type: 'test'
+  ...
+# Subtest: all three color tips differ, opacity caps coverage and a soft eraser feathers
+ok 3 - all three color tips differ, opacity caps coverage and a soft eraser feathers
+  ---
+  duration_ms: 1822.312646
+  type: 'test'
+  ...
+# Subtest: color over sea does not color later land; erased and restored colored land retains pigment
+ok 4 - color over sea does not color later land; erased and restored colored land retains pigment
+  ---
+  duration_ms: 1742.084259
+  type: 'test'
+  ...
+# Subtest: ground/water erase targets stay independent and restore original base
+ok 5 - ground/water erase targets stay independent and restore original base
+  ---
+  duration_ms: 1003.316125
+  type: 'test'
+  ...
+# Subtest: connected fill covers a whole island across tile seams; all fills detached land; water fills only closed lakes
+ok 6 - connected fill covers a whole island across tile seams; all fills detached land; water fills only closed lakes
+  ---
+  duration_ms: 3735.902202
+  type: 'test'
+  ...
+# Subtest: worker preview matches committed raster, including color erase and authoring-time clipping
+ok 7 - worker preview matches committed raster, including color erase and authoring-time clipping
+  ---
+  duration_ms: 1037.802764
+  type: 'test'
+  ...
+# Subtest: typed boundary rejects mixed land/color/property operations atomically
+ok 8 - typed boundary rejects mixed land/color/property operations atomically
+  ---
+  duration_ms: 442.849468
+  type: 'test'
+  ...
+# Subtest: format 47 upgrade preserves history and records; format 48 archive carries pigment/erasers/properties
+ok 9 - format 47 upgrade preserves history and records; format 48 archive carries pigment/erasers/properties
+  ---
+  duration_ms: 3585.637974
+  type: 'test'
+  ...
+# Subtest: legacy fine/coarse color stacking survives new chronological pigment and erasing
+ok 10 - legacy fine/coarse color stacking survives new chronological pigment and erasing
+  ---
+  duration_ms: 1122.381048
+  type: 'test'
+  ...
+# Subtest: colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+ok 11 - colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+  ---
+  duration_ms: 2035.607929
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 12 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 7.67584
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 13 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 2108.074649
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 14 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 93.271788
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 15 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 7.536954
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 16 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 4.968795
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 17 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 2144.7017
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 18 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 951.93422
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 19 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 964.822931
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 20 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 627.720315
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 21 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 775.684148
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 22 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 2745.491588
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 23 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 1120.448325
+  type: 'test'
+  ...
+# Subtest: level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+ok 24 - level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+  ---
+  duration_ms: 171.747636
+  type: 'test'
+  ...
+# Subtest: yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+ok 25 - yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+  ---
+  duration_ms: 63.651439
+  type: 'test'
+  ...
+# Subtest: compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+ok 26 - compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+  ---
+  duration_ms: 86.571424
+  type: 'test'
+  ...
+# Subtest: direct and streamed rasters agree at authored edges and on route-only ground
+ok 27 - direct and streamed rasters agree at authored edges and on route-only ground
+  ---
+  duration_ms: 180.839421
+  type: 'test'
+  ...
+# Subtest: small mixed-resolution inland worlds retain exact fallback pixels with block sampling
+ok 28 - small mixed-resolution inland worlds retain exact fallback pixels with block sampling
+  ---
+  duration_ms: 1309.446229
+  type: 'test'
+  ...
+# Subtest: cached bilinear cells match sparse inheritance across negative coordinates, tile boundaries and repeated queries
+ok 29 - cached bilinear cells match sparse inheritance across negative coordinates, tile boundaries and repeated queries
+  ---
+  duration_ms: 60.050115
+  type: 'test'
+  ...
+# Subtest: house edits reuse pure terrain rasters while a height change still refreshes their pixels
+ok 30 - house edits reuse pure terrain rasters while a height change still refreshes their pixels
+  ---
+  duration_ms: 1206.550187
+  type: 'test'
+  ...
+# Subtest: world-aligned half-open extents do not allocate extra tiles along exact far edges
+ok 31 - world-aligned half-open extents do not allocate extra tiles along exact far edges
+  ---
+  duration_ms: 937.400317
+  type: 'test'
+  ...
+# Subtest: raster slices keep the world pixel lattice and cover thin, negative and distant intersections
+ok 32 - raster slices keep the world pixel lattice and cover thin, negative and distant intersections
+  ---
+  duration_ms: 1.701451
+  type: 'test'
+  ...
+# Subtest: cropped fallback matches full-tile coast, automatic contours and thin pigment, and reuses nearby pans
+ok 33 - cropped fallback matches full-tile coast, automatic contours and thin pigment, and reuses nearby pans
+  ---
+  duration_ms: 6751.782476
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 47399.913014

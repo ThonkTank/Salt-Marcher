@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+ok 1 - history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+  ---
+  duration_ms: 5.217542
+  type: 'test'
+  ...
+# Subtest: a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+ok 2 - a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+  ---
+  duration_ms: 57.542462
+  type: 'test'
+  ...
+# Subtest: unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+ok 3 - unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+  ---
+  duration_ms: 59.105002
+  type: 'test'
+  ...
+# Subtest: a pending old tile cannot fill the rebased cache even if its caller still reports current
+ok 4 - a pending old tile cannot fill the rebased cache even if its caller still reports current
+  ---
+  duration_ms: 6.805907
+  type: 'test'
+  ...
+# Subtest: fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded
+ok 5 - fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded
+  ---
+  duration_ms: 101.261238
+  type: 'test'
+  ...
+# Subtest: the projection colour base accepts only a concrete source identity
+ok 6 - the projection colour base accepts only a concrete source identity
+  ---
+  duration_ms: 1.81606
+  type: 'test'
+  ...
+# Subtest: coarse brush pixels use linear sampling with clamped edges, including negative world origins
+ok 7 - coarse brush pixels use linear sampling with clamped edges, including negative world origins
+  ---
+  duration_ms: 0.752963
+  type: 'test'
+  ...
+# Subtest: colour jobs with 0 pigment layers yield to selection, share pixels and reject stale revisions
+ok 8 - colour jobs with 0 pigment layers yield to selection, share pixels and reject stale revisions
+  ---
+  duration_ms: 1749.67377
+  type: 'test'
+  ...
+# Subtest: colour jobs with 12 pigment layers yield to selection, share pixels and reject stale revisions
+ok 9 - colour jobs with 12 pigment layers yield to selection, share pixels and reject stale revisions
+  ---
+  duration_ms: 3806.173662
+  type: 'test'
+  ...
+# Subtest: paged pigment reads preserve canonical order and exact rowids, without an open SQL statement between records
+ok 10 - paged pigment reads preserve canonical order and exact rowids, without an open SQL statement between records
+  ---
+  duration_ms: 529.702047
+  type: 'test'
+  ...
+# Subtest: interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+ok 11 - interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+  ---
+  duration_ms: 1583.004956
+  type: 'test'
+  ...
+# Subtest: live frames use changed interpolation support and reject a source overtaken before snapshot creation
+ok 12 - live frames use changed interpolation support and reject a source overtaken before snapshot creation
+  ---
+  duration_ms: 2534.938264
+  type: 'test'
+  ...
+# Subtest: terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+ok 13 - terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+  ---
+  duration_ms: 1511.68928
+  type: 'test'
+  ...
+# Subtest: colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse
+ok 14 - colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse
+  ---
+  duration_ms: 2457.712613
+  type: 'test'
+  ...
+# Subtest: selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+ok 15 - selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+  ---
+  duration_ms: 1077.959687
+  type: 'test'
+  ...
+# Subtest: a commit between slices rejects the old projection and fresh output agrees with a cold worker
+ok 16 - a commit between slices rejects the old projection and fresh output agrees with a cold worker
+  ---
+  duration_ms: 1754.665255
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22462.653139

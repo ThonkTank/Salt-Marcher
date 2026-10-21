@@ -115,7 +115,14 @@ Die [Warteschlangenprüfung](../reference/atlas-scheduling-20261021/README.md) h
 Die eigenständigen 256er-Farbkacheln verwenden 128er-Pakete, um den wiederholt
 abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
 zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
-und der Reliefschattierung frei. Kein SQL-Iterator überlebt einen Haltepunkt.
+und der Reliefschattierung frei. `LandscapeRasterizer.paintColorSteps` unterbricht
+auch Pigmentmasken und kumulative Farbkomposition. `landscape-record-stream.ts`
+liest dazu begrenzte Seiten aus einem partiellen Farbindex und anschließend
+jeweils einen Payload mit abgeschlossener SQL-Abfrage. Kein SQL-Iterator
+überlebt einen Haltepunkt. Füllflächen benötigen keine Pinselstempel; konstante
+Pigmentfarben bleiben außerhalb des Maskenpuffers.
+[Pixelorakel, Worker-Vergleich und native Gegenprobe](../reference/atlas-pigment-scheduling-20261021/README.md)
+trennen geringere Auswahlwartezeit von weiterhin hoher vollständiger Ladezeit.
 Höhenstufen verwenden wiederverwendete Achsenkoordinaten; unsichtbare Ränder
 liefern weiterhin Ableitungen und Küstenabstände, erhalten aber keine unnötige
 Schattierung. [Pixelvergleich und gepaarte Worker-/UI-Prüfung](../reference/atlas-color-cost-20261021/README.md)
