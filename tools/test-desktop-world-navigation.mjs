@@ -82,10 +82,10 @@ try{
     if(changed>=4){window.__worldPixels.push({time:performance.now(),delayMs:performance.now()-pixelStart,changed});pixelBefore=null;}
    }requestAnimationFrame(pixels);
   };requestAnimationFrame(pixels);
-  document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelBefore=sample();pixelStart=performance.now();}},true);
+  document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelStart=e.timeStamp;pixelBefore=sample();}},true);
   document.addEventListener('pointerup',()=>{pixelBefore=null;},true);
   new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-draft']});
-  for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:performance.now()});},true);
+  for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:e.timeStamp});},true);
  });
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
  async function measure(name,fn){

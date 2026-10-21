@@ -45,8 +45,11 @@ PID 2980566 beendete sich normal mit Code 0; Abwesenheit anschließend geprüft.
 GPU: Intel UHD 620, Host i5-8365U; nicht der angegebene Pentium-Laptop.
 
 - Erste geänderte GPU-Pixel im 32 × 32-Pixel-Bereich in der Pinselmitte:
-  **201,3 ms** nach Pointerdown (mindestens vier Pixel mit Kanaländerung ≥3).
-  Das ist ein einzelner instrumentierter Lauf, keine p95-Latenzverteilung und
+  **201,3 ms** ab dem Referenzlesen bei Pointerdown (mindestens vier Pixel mit
+  Kanaländerung ≥3). Der erste Lesevorgang war noch nicht in dieser Zeit enthalten;
+  der Wert ist deshalb nur eine Untergrenze der Eingabe-bis-Bild-Latenz. Das
+  Messwerkzeug verwendet inzwischen den Eingabezeitstempel einschließlich dieses
+  Lesevorgangs. Dies ist ein einzelner instrumentierter Lauf, keine p95-Verteilung und
   kein physischer Bildschirmnachweis. Frühere Revisionsmessungen sind eine
   andere Metrik und kein direkter Vorher-Nachher-Pixelvergleich.
 - RAF-Abstände: Navigation p95 **33,4 ms**, Maximum **266,6 ms**;
