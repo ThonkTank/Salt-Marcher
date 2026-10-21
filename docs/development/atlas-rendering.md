@@ -189,6 +189,13 @@ trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarb
 
 `TerrainDetailTiles` besitzt Cache, Quellenkennung und das gehaltene Detailbild. Nur eine bestätigte Änderungskette innerhalb derselben Kampagne und Trassendarstellung erlaubt die Übernahme. Betroffene Kacheln einschließlich des gemeinsamen Rasterhalos werden entfernt und im gehaltenen Bild transparent; unveränderte Kacheln bleiben schon unter dem ersten Übersichtsschritt sichtbar. Live-Frames verwenden denselben Besitzer. Ihre frisch bestätigte Pinseltextur liegt als kleine, linear gefilterte GPU-Textur unter den weiterhin gültigen feinen Kacheln. Die UI vergrößert sie nicht mehr per CPU in das gehaltene Weltbild. Diese Zwischenfarbe ersetzt keine feine Kachel im Cache und wird nach dem Live-Frame wieder freigegeben. Alte Antworten dürfen den übernommenen Cache weder füllen noch zeichnen. Beim Loslassen endet zuerst die Schreibspur; die Anzeigespur übernimmt noch ihren letzten bestätigten Nachfolger, bevor sie geschlossen wird. Atlaswechsel widerruft sie weiterhin sofort. Ohne aktuelle Pinseltextur ersetzt die Übersicht geänderte Pixel, bis ihre feinen Kacheln eintreffen.
 
+Eine Veröffentlichung von Gelände, Pose, Höhenlinien und Auswahl verwendet
+`TerrainSpatialView.batch`: Zwischenstände verändern die Szene, reichen aber
+keine weiteren vollständigen GPU-Zeichnungen ein. Nach der synchronen Gruppe
+stimmen Kamera und Treffer mit dem veröffentlichten Stand überein. Explizite
+Exportkacheln zeichnen weiterhin unmittelbar; fehlerhafte Gruppen malen keinen
+halbfertigen Zwischenstand. Das ist keine zeitliche Entkopplung des Workers.
+
 `terrainDetailBox` begrenzt die Arbeitsfläche auf höchstens drei Pinselradien
 je Achse. Ihr gerasterter Weltanker bleibt bei kleinen Bewegungen stabil; der
 gesamte Pinsel liegt vor dem weichen Texturrand. Die echte `TerrainSpatialView`

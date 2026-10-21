@@ -181,11 +181,22 @@ export class TerrainSpatialView {
     return atlasPlanePoint(this.grid.view,{x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height},plane?atlasWorkplaneHeight(plane,this.surface()):undefined);
   }
   private outputTile:{width:number;height:number;x:number;y:number;w:number;h:number}|null=null;
+  private drawBatch:{depth:number;pending:boolean}|undefined;
+  /** Publish one coherent surface/camera/selection update with one draw.
+   * Input and explicit image output remain synchronous after the batch. */
+  batch(update:()=>void){
+    const state=this.drawBatch??={depth:0,pending:false};state.depth++;let complete=false;
+    try{update();complete=true;}finally{
+      state.depth--;
+      if(state.depth===0){const pending=state.pending;state.pending=false;if(complete&&pending)this.render();}
+    }
+  }
   /** Perspective sub-frusta retain the exact main-camera pose across bounded GPU tiles. */
   renderTile(width:number,height:number,x:number,y:number,w:number,h:number){
     this.outputTile={width,height,x,y,w,h};try{this.render();}finally{this.outputTile=null;this.camera.clearViewOffset();}
   }
   render(){
+    if(this.drawBatch?.depth&&!this.outputTile){this.drawBatch.pending=true;return;}
     if(!this.grid)return;const v=this.grid.view,horizon=terrainHorizon(v);
     const fog=(this.scene.fog??=new THREE.Fog(TERRAIN_SKY_COLOR,1e29,1e30)) as THREE.Fog;fog.near=horizon.near;fog.far=horizon.far;
     const w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}

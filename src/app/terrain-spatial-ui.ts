@@ -221,7 +221,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
         const retained=this.colorTiles.reconcile({token,...reply.value},reply.value.colorChange);
         const detail=retained??reply.value.detail;this.colorTiles.detail=detail;
         const data={...reply.value,detail,source};
-        this.baseline=data;this.publish(data);this.setContours(this.pendingContours);
+        this.baseline=data;this.publish(data);
         if(stage===1)this.retry.hidden=true;
       }
     }catch(error){
@@ -248,11 +248,14 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.fail(error);
   }
   private publish(data:SpatialReply){
-    this.view!.setData(data);this.reframe(this.frame!);this.ready=true;
+    this.view!.batch(()=>{
+      this.view!.setData(data);this.reframe(this.frame!);this.view!.setContours(this.pendingContours);
+      this.view!.showSelection(this.host.selection());
+    });this.ready=true;
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
     this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
     if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}
-    this.view!.showSelection(this.host.selection());this.host.redraw();
+    this.host.redraw();
   }
   private async queue(contours:number,baseOnly=false){
     if(!this.params||!this.active)return;if(this.busy){this.queued=true;return;}
@@ -279,7 +282,6 @@ export class TerrainSpatialUI implements AtlasPresentation {
       if(e.data.protectedLimit!==undefined)document.getElementById('land-status')!.textContent='Pinselwirkung am geschützten Verlauf lokal begrenzt. Eingriffsgrenzen wären sonst überschritten.';
       if(e.data.heightM!==undefined)document.getElementById('land-cursor-height')!.textContent='Höhe: '+lengthLabel(e.data.heightM)+' · Vorschau';
       if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}
-    this.view!.showSelection(this.host.selection());this.host.redraw();
       if(this.queued||!e.data.draft&&this.host.draft()&&!this.host.writing()){this.queued=false;this.queue(contours);}
     };
     this.worker.onerror=()=>this.fail(Error('Atlaskamera konnte nicht geladen werden. Im Ansichtsmenü erneut versuchen.'));
