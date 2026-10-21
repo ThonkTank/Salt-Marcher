@@ -1,0 +1,190 @@
+TAP version 13
+# Subtest: every native tool has a route, with global selection and a dedicated vegetation filter
+ok 1 - every native tool has a route, with global selection and a dedicated vegetation filter
+  ---
+  duration_ms: 294.705772
+  type: 'test'
+  ...
+# Subtest: switching to a different group recalls its last tool; rejected switches preserve both memories and controls
+ok 2 - switching to a different group recalls its last tool; rejected switches preserve both memories and controls
+  ---
+  duration_ms: 179.697481
+  type: 'test'
+  ...
+# Subtest: section return restores the last group and tool without disturbing option values
+ok 3 - section return restores the last group and tool without disturbing option values
+  ---
+  duration_ms: 96.783782
+  type: 'test'
+  ...
+# Subtest: three land tools and water routes apply their complete operation only after acceptance
+ok 4 - three land tools and water routes apply their complete operation only after acceptance
+  ---
+  duration_ms: 135.46014
+  type: 'test'
+  ...
+# Subtest: only an accepted explicit tool action opens a library; repeated render does not reopen it
+ok 5 - only an accepted explicit tool action opens a library; repeated render does not reopen it
+  ---
+  duration_ms: 92.331815
+  type: 'test'
+  ...
+# Subtest: a second click cannot race a pending section change
+ok 6 - a second click cannot race a pending section change
+  ---
+  duration_ms: 92.428628
+  type: 'test'
+  ...
+# Subtest: global Dungeon selection reaches the existing author tool and respects a rejected switch
+ok 7 - global Dungeon selection reaches the existing author tool and respects a rejected switch
+  ---
+  duration_ms: 53.692825
+  type: 'test'
+  ...
+# Subtest: the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush
+ok 8 - the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush
+  ---
+  duration_ms: 124.891977
+  type: 'test'
+  ...
+# Subtest: a room created while drawing records its selection without opening an obstructing inspector
+ok 9 - a room created while drawing records its selection without opening an obstructing inspector
+  ---
+  duration_ms: 108.23208
+  type: 'test'
+  ...
+# Subtest: entering rectangle drawing hides existing properties only after the tool switch succeeds
+ok 10 - entering rectangle drawing hides existing properties only after the tool switch succeeds
+  ---
+  duration_ms: 64.839633
+  type: 'test'
+  ...
+# Subtest: land settings retain independent size and strength, optional target and color eraser
+ok 11 - land settings retain independent size and strength, optional target and color eraser
+  ---
+  duration_ms: 175.440164
+  type: 'test'
+  ...
+# Subtest: a found place selects the generic object context while vegetation retains its dedicated tools
+ok 12 - a found place selects the generic object context while vegetation retains its dedicated tools
+  ---
+  duration_ms: 85.219806
+  type: 'test'
+  ...
+# Subtest: narrow selected-object properties share space with the map and restore the preferred palette on close or resize
+ok 13 - narrow selected-object properties share space with the map and restore the preferred palette on close or resize
+  ---
+  duration_ms: 59.168448
+  type: 'test'
+  ...
+# Subtest: only an accepted explicit tool switch restores tools from compact selection
+ok 14 - only an accepted explicit tool switch restores tools from compact selection
+  ---
+  duration_ms: 188.847979
+  type: 'test'
+  ...
+# Subtest: main-camera pose is locked during room, city and output gestures, and released after cancellation
+ok 15 - main-camera pose is locked during room, city and output gestures, and released after cancellation
+  ---
+  duration_ms: 1.533968
+  type: 'test'
+  ...
+# Subtest: graphics recovery clears only the failure that belongs to the recovered presentation
+ok 16 - graphics recovery clears only the failure that belongs to the recovered presentation
+  ---
+  duration_ms: 60.843056
+  type: 'test'
+  ...
+# Subtest: metres per second, soft rim, exact target and resampled gestures
+ok 17 - metres per second, soft rim, exact target and resampled gestures
+  ---
+  duration_ms: 240.42418
+  type: 'test'
+  ...
+# Subtest: smoothing preserves a plane, reduces spikes and is independent of record order
+ok 18 - smoothing preserves a plane, reduces spikes and is independent of record order
+  ---
+  duration_ms: 2795.715029
+  type: 'test'
+  ...
+# Subtest: coarse additive brushes move fine detail and smooth only their selected scale
+ok 19 - coarse additive brushes move fine detail and smooth only their selected scale
+  ---
+  duration_ms: 188.190911
+  type: 'test'
+  ...
+# Subtest: gesture transaction, failed write, single undo/redo, restart and preview agree
+ok 20 - gesture transaction, failed write, single undo/redo, restart and preview agree
+  ---
+  duration_ms: 1072.244771
+  type: 'test'
+  ...
+# Subtest: shade and optional contours remain seamless across raster tiles and do not author data
+ok 21 - shade and optional contours remain seamless across raster tiles and do not author data
+  ---
+  duration_ms: 825.620886
+  type: 'test'
+  ...
+# Subtest: invalid controls and excessive work fail before any height is produced
+ok 22 - invalid controls and excessive work fail before any height is produced
+  ---
+  duration_ms: 1.607731
+  type: 'test'
+  ...
+# Subtest: region reader caches contour modes separately; display reads preserve the source fence
+ok 23 - region reader caches contour modes separately; display reads preserve the source fence
+  ---
+  duration_ms: 657.853591
+  type: 'test'
+  ...
+# Subtest: optional directional target never overshoots or reverses existing terrain
+ok 24 - optional directional target never overshoots or reverses existing terrain
+  ---
+  duration_ms: 460.739499
+  type: 'test'
+  ...
+# Subtest: roughness is seeded, directional, time based and independent of sample density
+ok 25 - roughness is seeded, directional, time based and independent of sample density
+  ---
+  duration_ms: 2681.758787
+  type: 'test'
+  ...
+# Subtest: screen-sized brushes below one metre produce bounded, persistent fine geometry
+ok 26 - screen-sized brushes below one metre produce bounded, persistent fine geometry
+  ---
+  duration_ms: 40.70865
+  type: 'test'
+  ...
+# Subtest: the displayed brush resolution is the resolution actually authored at every supported scale
+ok 27 - the displayed brush resolution is the resolution actually authored at every supported scale
+  ---
+  duration_ms: 84.770421
+  type: 'test'
+  ...
+# Subtest: stationary holds combine dose without exhausting the moving-stroke work budget
+ok 28 - stationary holds combine dose without exhausting the moving-stroke work budget
+  ---
+  duration_ms: 50.100668
+  type: 'test'
+  ...
+# Subtest: roughen creates deterministic peaks and hollows with soft edges and preserved fine bands
+ok 29 - roughen creates deterministic peaks and hollows with soft edges and preserved fine bands
+  ---
+  duration_ms: 439.397453
+  type: 'test'
+  ...
+# Subtest: roughen canonical writer matches preview and survives undo, redo and fresh opening
+ok 30 - roughen canonical writer matches preview and survives undo, redo and fresh opening
+  ---
+  duration_ms: 890.165778
+  type: 'test'
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14490.423314

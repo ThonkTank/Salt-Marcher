@@ -29,7 +29,7 @@ Einordnung: [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md), [bisherige Relief-Ro
 
 Google Maps ist das technische Ziel: unmittelbare Navigation vom Weltmaßstab bis zum Gebäude, während Details, Linienbreiten und Namen maßstabsabhängig wechseln. Die gestalterische Referenz sind konventionelle Fantasykarten, insbesondere publizierte D&D-Karten. Wälder müssen als zusammenhängende Landschaft auf Weltmaßstab und als zunehmend detaillierte Baumgruppen auf Dorfmaßstab lesbar sein. Straßen, Flüsse, Gebäude und Regionen folgen derselben Informationshierarchie. Die [offizielle Schwertküstenkarte (Wizards, 2015)](https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_HighRes.jpg) wurde am 21.10.2026 als erste Referenz gesichtet: zusammenhängende Waldflächen mit klaren Rändern, feine Kronenstruktur, zurückhaltende Bodenfarben und kontrastierende Küsten-/Gewässerlinien. Das sind gestalterische Beobachtungen, keine Übernahme ihrer Bilddateien in das Produkt. Dorf-/Gebäudereferenzen und der direkte Vergleich mit SaltMarcher über mehrere Maßstäbe stehen noch aus; technische Prüfungen ersetzen diese Bewertung nicht.
 
-Geprüfte Zwischenstände werden regelmäßig über die vorgeschriebene Candidate-CI nach `main` integriert. Die vollständige Produktabnahme bleibt davon getrennt.
+Geprüfte Zwischenstände werden regelmäßig über die vorgeschriebene Candidate-CI nach `main` integriert. Sobald genügend Fortschritt für einen sinnvollen Nutzertest vorliegt, wird eine neue testbare Version veröffentlicht; zusätzlich gilt der verbindliche Release-Rhythmus des Repositories. Die vollständige Produktabnahme bleibt davon getrennt.
 
 ### Verbindlicher Landschaftswerkzeugumfang (21.10.2026)
 
@@ -197,6 +197,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 [Vegetation an der Hauptkamera](../../reference/atlas-vegetation-camera-20261021/README.md): Regionale Bestände sind verschachtelte Teilmengen stabiler lokaler Kandidaten. Kronenbreite und Ausblenden reagieren unmittelbar auf die Kameratiefe; Treffer verwenden dieselben Regeln, geschützte Objekte bleiben maßhaltig. 26 Regressionen, der native Bearbeitungs-/Undo-/Neustartablauf und GPU-/Exportpixel sind geprüft. Noch fehlende feinere Kandidaten, große dichte Bestände und die Geländeabdeckung bei starker Neigung bleiben offen.
 
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
+
+[Aufrauen als eigene Sculpt-Wirkung](../../reference/atlas-sculpt-roughen-20261021/README.md): positive und negative Unebenheiten im bestehenden direkten Höhenpinsel, mit gemeinsamen Höhenbändern, History und Hauptkamera. Lokale und native Prüfungen umfassen Undo/Redo und frisches Öffnen. Das vervollständigt noch nicht die Feature-Werkzeuge oder die allgemeine Leistungs-/Gestaltungsabnahme.
 
 Land formen, Glätten und Bemalen verändern während der Eingabe unmittelbar eine lokale Arbeitsfassung derselben Karte. Dafür gibt es keinen separaten Vorschaumodus und keinen Übernehmen-Knopf. Bestätigte Teilstücke werden weiterhin automatisch gespeichert.
 

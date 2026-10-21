@@ -2,7 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-import {mkdtempSync,rmSync} from 'node:fs';
+import {mkdtempSync,rmSync,mkdirSync} from 'node:fs';
+import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/terrain-brush';export * from './src/app/terrain-height';export * from './src/app/atlas-brush-worker';export * from './src/app/landscape-raster';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {validateRegion} from './src/app/atlas-region-contracts';",resolveDir:process.cwd()},outfile:'.build/terrain-brush-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
@@ -125,4 +126,30 @@ test('stationary holds combine dose without exhausting the moving-stroke work bu
  const held=brush('raise',{strength:1,samples:[{x:0,y:0,t:0},{x:0,y:0,t:300000}]}),dense={...held,samples:Array.from({length:2001},(_,i)=>({x:0,y:0,t:i*150}))};
  const a=edit([],held),b=edit([],dense),short=edit([],brush('raise'));
  for(const x of [0,4,16,32,48,64]){assert.equal(height(a,x),height(short,x));assert.equal(height(b,x),height(short,x));}
+});
+
+
+test('roughen creates deterministic peaks and hollows with soft edges and preserved fine bands',()=>{
+ const s=brush('roughen',{seed:987}),a=edit([],s),sampler=new TerrainSampler(a);
+ const offsets=[];for(let y=-48;y<=48;y+=4)for(let x=-48;x<=48;x+=4)offsets.push(sampler.sample({x,y}).heightM+100);
+ assert(Math.min(...offsets)<-10);assert(Math.max(...offsets)>10);
+ assert.equal(height(a,80),-100);assert.deepEqual(a,edit([],s));assert.notDeepEqual(a,edit([],{...s,seed:321}));
+ const doubled=edit([],{...s,samples:[{x:0,y:0,t:0},{x:0,y:0,t:2000}]});assert(Math.abs((height(doubled)+100)-2*(height(a)+100))<.001);
+ const sparse={...s,samples:[{x:-80,y:0,t:0},{x:80,y:0,t:1000}]},dense={...sparse,samples:Array.from({length:31},(_,i)=>({x:-80+i*160/30,y:0,t:i*1000/30}))};
+ const one=edit([],sparse),many=edit([],dense);for(let x=-80;x<=80;x+=8)assert(Math.abs(height(one,x)-height(many,x))<.1);
+ const fine=edit([],brush('raise',{radius:16})),coarse=edit(fine,{...s,radius:128});assert.deepEqual(coarse.filter(r=>fine.some(f=>f.id===r.id)),fine);
+ const box={x:-100,y:-100,width:200,height:200};assert.deepEqual(renderBrushPreview({generation:1,records:[],box,width:100,height:100,heightStroke:s}),pixels(a,box,100,100));
+ assert.throws(()=>edit([], {...s,targetM:0}),/Höhenpinsel/);
+});
+
+test('roughen canonical writer matches preview and survives undo, redo and fresh opening',t=>{
+ const cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});const dir=mkdtempSync(cache+'/roughen-store-');let store=new CampaignStore(dir+'/world.sqlite');const cam=store.create('Aufrauen');let active=store.activate(cam.id);
+ t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+ const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action});
+ const box={x:-100,y:-100,width:200,height:200},records=()=>store.atlasMaskRegion(active.token,box).records,s=brush('roughen',{seed:987});
+ write({kind:'landscape-height-stroke',stroke:s});const saved=records();
+ assert.deepEqual(pixels(saved,box,100,100),pixels(edit([],s),box,100,100));
+ write({kind:'undo'});assert.equal(records().length,0);write({kind:'redo'});const restored=records();
+ const contents=rs=>rs.map(({revision,...r})=>r);assert.deepEqual(contents(restored),contents(saved));assert(restored.every((r,i)=>r.revision>saved[i].revision));
+ store.close();store=new CampaignStore(dir+'/world.sqlite');active=store.activate(cam.id);assert.deepEqual(records(),restored);
 });

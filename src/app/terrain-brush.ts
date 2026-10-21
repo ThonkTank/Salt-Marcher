@@ -7,18 +7,19 @@ import {editHeight,TerrainSampler} from './terrain-height';
 
 /** Strength is metres per second, feather is the soft fraction of the radius. */
 export interface HeightStroke {
-  mode:'raise'|'lower'|'smooth'|'level';
+  mode:'raise'|'lower'|'roughen'|'smooth'|'level';
   radius:number; strength:number; feather:number; targetM?:number;
   roughness?:number; seed?:number;
   samples:MaskSample[];
   visibility?:TerrainView;
 }
 export function validateHeightStroke(s:HeightStroke){
-  if(!s||!['raise','lower','smooth','level'].includes(s.mode)||
+  if(!s||!['raise','lower','roughen','smooth','level'].includes(s.mode)||
     !Number.isFinite(s.strength)||s.strength<=0||s.strength>100000||
     !Number.isFinite(s.feather)||s.feather<0||s.feather>1||
     (s.targetM!==undefined&&(!Number.isFinite(s.targetM)||Math.abs(s.targetM)>1e6))||
     (s.mode==='level'&&s.targetM===undefined)||
+    (s.mode==='roughen'&&s.targetM!==undefined)||
     (s.roughness!==undefined&&(!Number.isFinite(s.roughness)||s.roughness<0||s.roughness>2))||
     (s.seed!==undefined&&(!Number.isInteger(s.seed)||s.seed<0||s.seed>0xffffffff))||
     Object.keys(s).some(k=>!['mode','radius','strength','feather','targetM','roughness','seed','samples','visibility'].includes(k)))
@@ -74,6 +75,9 @@ export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limit
     if(!dose||visible&&!visible(p))return undefined;
     const old=source?.(p)??0;
     let amount=s.strength*dose;
+    // Signed, world-anchored noise adds peaks and hollows without changing
+    // the existing directional modulation. Preview and commit use the same seed.
+    if(s.mode==='roughen')return prior+amount*(2*terrainRoughness(p.x/s.radius,p.y/s.radius,s.seed??0)-1);
     if(s.mode==='raise'||s.mode==='lower'){
       // World-anchored modulation stays fixed throughout preview, retry and commit.
       // Its positive factor preserves direction even at maximum roughness.
