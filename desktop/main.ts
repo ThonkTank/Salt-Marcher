@@ -63,7 +63,7 @@ else {
   let backupRunning = false;
   let backupError: string | null = null;
   async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});store.finishCampaignErasure(id);}
-  const imports = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
+  const dungeonImportPreviews = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
   const root = path.join(__dirname, 'ui');
   const origin = 'campaign://app/index.html';
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
@@ -116,10 +116,10 @@ else {
       });
     }
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
-    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')imports.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishPendingCampaignErasure(c.id);}return result;});
+    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')dungeonImportPreviews.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishPendingCampaignErasure(c.id);}return result;});
     handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase')await finishPendingCampaignErasure(result.campaignId);return result;});
     handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
-    handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();imports.clear();return store.activateShell(id);});
+    handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();dungeonImportPreviews.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
     const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,24*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,24*1024*1024);
     let graphSourceReadBarrierDepth=0;
@@ -139,7 +139,7 @@ else {
 
     handle('campaign:create', (name: string) => store.create(name));
     handle('campaign:rename', (command: CampaignRename) => store.renameCampaign(command));
-    handle('campaign:activate', (id: string) => { imports.clear(); return store.activate(id); });
+    handle('campaign:activate', (id: string) => { dungeonImportPreviews.clear(); return store.activate(id); });
     handle('campaign:select', (token: string, id: string) => store.select(token, id));
     handle('campaign:add-room', (token: string) => store.addRoom(token));
     handle('campaign:edit', (edit: Edit) => store.edit(edit));
@@ -376,7 +376,7 @@ else {
     });
     handle('atlas:reference-import',async(token:string)=>{store.atlasIdentity(token);const pick=await dialog.showOpenDialog(win,{title:'Nachzeichenvorlage wählen',properties:['openFile'],filters:[{name:'Bild',extensions:['png','jpg','jpeg','webp']}]});if(pick.canceled||!pick.filePaths[0])return null;const file=pick.filePaths[0];if((await stat(file)).size>32*1024*1024)throw new Error('Vorlage ist größer als 32 MiB.');const image=nativeImage.createFromPath(file),size=image.getSize();if(image.isEmpty()||size.width>16384||size.height>16384)throw new Error('Bildmaße prüfen (bis 16384 Pixel).');const bytes=image.toPNG(),id=store.registerReference(token,'image/png',bytes);return{id,...size};});
     handle('atlas:export-png',async(token:string,bytes:Uint8Array,audience:'gm'|'public',format:'png'|'jpeg'='png',sourceFence?:string)=>{const fence=store.atlasRegionSource(token).fence;if(sourceFence!==undefined&&sourceFence!==fence)throw new Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');if(!['gm','public'].includes(audience)||!(bytes instanceof Uint8Array)||bytes.length>64*1024*1024||bytes.length<8)throw new Error('Ungültige PNG-Ausgabe.');const buffer=Buffer.from(bytes);if(format!=='png'&&format!=='jpeg')throw new Error('Bildformat prüfen.');if(format==='png'?buffer.subarray(0,8).toString('hex')!=='89504e470d0a1a0a':buffer.subarray(0,2).toString('hex')!=='ffd8')throw new Error('Bildsignatur fehlt.');const selection=await dialog.showSaveDialog(win,{title:'Atlas ausgeben',defaultPath:(audience==='public'?'Atlas-Spieler.':'Atlas-GM.')+(format==='jpeg'?'jpg':'png'),filters:[{name:format.toUpperCase(),extensions:[format==='jpeg'?'jpg':'png']}]});if(selection.canceled||!selection.filePath)return{cancelled:true};if(store.atlasRegionSource(token).fence!==fence)throw new Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');await writeFile(selection.filePath,buffer);return{cancelled:false};});
-    handle('atlas:import',(c:{commandId:string;token:string;campaignId:string;ticket:string;x:number;y:number})=>{const pending=imports.get(c.ticket);if(!pending)throw new Error('Importvorschau abgelaufen. Datei erneut wählen.');const result=store.executeAtlas({...c,action:{kind:'drawing-import',name:pending.name,rooms:pending.rooms,source:pending.bytes.toString('utf8'),x:c.x,y:c.y}});return{atlas:result.atlas,roomId:(result.result as {roomId:string|null}|null)?.roomId??null};});
+    handle('atlas:import',(c:{commandId:string;token:string;campaignId:string;ticket:string;x:number;y:number})=>{const pending=dungeonImportPreviews.get(c.ticket);if(!pending)throw new Error('Importvorschau abgelaufen. Datei erneut wählen.');const result=store.executeAtlas({...c,action:{kind:'drawing-import',name:pending.name,rooms:pending.rooms,source:pending.bytes.toString('utf8'),x:c.x,y:c.y}});return{atlas:result.atlas,roomId:(result.result as {roomId:string|null}|null)?.roomId??null};});
     handle('atlas:territories',(token:string,box?:import('../src/app/atlas-landscape').LandscapeBox)=>store.atlasTerritories(token,box));
     handle('atlas:overview',(token:string)=>store.atlasOverview(token));
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
@@ -485,12 +485,12 @@ else {
       const bytes = readFileSync(chosen.filePaths[0]);
       if (bytes.length > 64 * 1024 * 1024) throw new Error('Dieser erste Import kann Dateien bis 64 MiB prüfen.');
       const inspected = inspectDungeon(bytes.toString('utf8')), ticket = randomUUID();
-      imports.clear(); imports.set(ticket, { bytes, name: inspected.name, rooms: inspected.rooms });
+      dungeonImportPreviews.clear(); dungeonImportPreviews.set(ticket, { bytes, name: inspected.name, rooms: inspected.rooms });
       return { ticket, name: inspected.name, roomCount: inspected.rooms.length, sourceHash: createHash('sha256').update(bytes).digest('hex'), warnings: inspected.warnings };
     });
     handle('campaign:import', (ticket: string) => {
-      const pending = imports.get(ticket); if (!pending) throw new Error('Importvorschau abgelaufen. Bitte Datei erneut auswählen.');
-      const result = store.create(pending.name, pending.rooms, pending.bytes); imports.delete(ticket); return result;
+      const pending = dungeonImportPreviews.get(ticket); if (!pending) throw new Error('Importvorschau abgelaufen. Bitte Datei erneut auswählen.');
+      const result = store.create(pending.name, pending.rooms, pending.bytes); dungeonImportPreviews.delete(ticket); return result;
     });
     handle('campaign:backup-status', () => backupError);
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
