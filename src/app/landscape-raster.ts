@@ -216,7 +216,8 @@ export class LandscapeRasterizer {
         const light=lighting(sx,sy);
         const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
         const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
-        const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
+        // Height derivatives use the 2x sample grid; contour spacing is in output pixels.
+        const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM,2);
         const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
         for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
       }

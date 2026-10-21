@@ -170,6 +170,7 @@ export class TerrainSpatialView {
   }
   render(){
     if(!this.grid)return;const v=this.grid.view,w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
+    this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
     this.camera.aspect=v.frame.width/v.frame.height;
     const eye=atlasCameraEye(v),target=new THREE.Vector3(v.frame.x+v.frame.width/2-this.origin.x,this.origin.y-v.frame.y-v.frame.height/2,0);
     const distance=Math.hypot(eye.x,eye.y,eye.z),extent=Math.max(v.box.width,v.box.height,this.heightRange*v.exaggeration);

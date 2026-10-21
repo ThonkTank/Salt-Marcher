@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
-import {CONTOUR_BASE_METRES,CONTOUR_SPACING_PIXELS} from './terrain-contour-style';
+import {CONTOUR_BASE_METRES,CONTOUR_SPACING_PIXELS,CONTOUR_INK} from './terrain-contour-style';
 
 /** Display-only ink on the same triangular surface used for visible brush hits.
  * Derivatives express metres per actual screen pixel, keeping lines sharp as the
  * camera moves. Dense intervals fade before they alias; their heights never move. */
 export function terrainContourUniforms(){
-  return {terrainContourInterval:{value:0},terrainContourSea:{value:0},terrainContourInk:{value:new THREE.Color(DEFAULT_TERRAIN_STYLE.ink)}};
+  return {terrainContourInterval:{value:0},terrainContourSea:{value:0},terrainContourPixelRatio:{value:1},terrainContourInk:{value:new THREE.Color(DEFAULT_TERRAIN_STYLE.ink)}};
 }
 export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms:ReturnType<typeof terrainContourUniforms>){
   material.onBeforeCompile=shader=>{
@@ -16,6 +16,7 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
     shader.fragmentShader=`
       uniform float terrainContourInterval;
       uniform float terrainContourSea;
+      uniform float terrainContourPixelRatio;
       uniform vec3 terrainContourInk;
       varying float terrainContourHeight;
       float terrainContour(float interval, float gradient, float halfWidth){
@@ -25,11 +26,12 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
         if(level<=terrainContourSea)return 0.0;
         float distanceM=abs(mod(terrainContourHeight+interval*.5,interval)-interval*.5);
         float distancePx=distanceM/max(gradient,0.00001);
-        float spacingFade=1.0-smoothstep(interval*.15,interval*.4,gradient);
-        return (1.0-smoothstep(max(0.0,halfWidth-.5),halfWidth+.5,distancePx))*spacingFade;
+        float spacingFade=1.0-smoothstep(interval*.15,interval*.4,gradient*terrainContourPixelRatio);
+        float width=halfWidth*terrainContourPixelRatio;
+        return (1.0-smoothstep(max(0.0,width-.5),width+.5,distancePx))*spacingFade;
       }
       float terrainContourBand(float interval,float gradient){
-        return max(terrainContour(interval,gradient,.45)*.38,terrainContour(interval*5.0,gradient,.75)*.52);
+        return max(terrainContour(interval,gradient,${CONTOUR_INK.minorWidth.toFixed(2)})*${CONTOUR_INK.minorAlpha.toFixed(2)},terrainContour(interval*5.0,gradient,${CONTOUR_INK.majorWidth.toFixed(2)})*${CONTOUR_INK.majorAlpha.toFixed(2)});
       }
     `+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
@@ -38,7 +40,7 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
         float interval=terrainContourInterval;
         float blend=0.0;
         if(interval<0.0){
-          float level=max(0.0,log2(terrainGradient*${CONTOUR_SPACING_PIXELS.toFixed(1)}/${CONTOUR_BASE_METRES.toFixed(1)}));
+          float level=max(0.0,log2(terrainGradient*terrainContourPixelRatio*${CONTOUR_SPACING_PIXELS.toFixed(1)}/${CONTOUR_BASE_METRES.toFixed(1)}));
           interval=${CONTOUR_BASE_METRES.toFixed(1)}*exp2(floor(level));
           blend=smoothstep(0.0,1.0,fract(level));
         }
@@ -48,5 +50,5 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
       }
     `);
   };
-  material.customProgramCacheKey=()=> 'terrain-contours-v2';
+  material.customProgramCacheKey=()=> 'terrain-contours-v3';
 }

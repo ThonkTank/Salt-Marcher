@@ -37,7 +37,7 @@ test('display tessellation follows source resolution and camera scale with a str
  const small={x:0,y:0,width:16,height:16};assert(spatialTerrainSurface(fine,small,.01).grid.columns>spatialTerrainSurface(coarse,small,1).grid.columns);
  assert(spatialTerrainSurface(fine,{x:0,y:0,width:1000,height:1000},.01).grid.columns<=257);
 });
-function mockView(scene){const view=Object.create(TerrainSpatialView.prototype);Object.assign(view,{camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),canvas:{clientWidth:1000,clientHeight:800,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:800})},renderer:{setSize(){},render(scene){scene.updateMatrixWorld(true);}},routes:[]});view.setData(atlasPreviewScene(scene));return view;}
+function mockView(scene){const view=Object.create(TerrainSpatialView.prototype);Object.assign(view,{camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),canvas:{clientWidth:1000,clientHeight:800,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:800})},renderer:{getPixelRatio(){return 1;},setSize(){},render(scene){scene.updateMatrixWorld(true);}},routes:[]});view.setData(atlasPreviewScene(scene));return view;}
 const screen=(view,p)=>{const s=view.project(p);return {x:s.x*1000,y:s.y*800};};
 function flatScene(x=0,y=0){return{revision:1,box:{x:x-200,y:y-200,width:400,height:400},records:[],instances:[],buildings:[],grid:{columns:5,rows:5,heights:Array(25).fill(60),colors:Array(25).fill('#ffffff')}};}
 test('projected world hits survive tilt, rotation, exaggeration and very distant coordinates',()=>{

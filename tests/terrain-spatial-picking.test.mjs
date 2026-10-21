@@ -9,7 +9,7 @@ function fixture(){
  const box={x:101100,y:458304,width:1894950,height:1180544},frame={x:732751,y:851819,width:631650,height:393515};
  const v={box,frame,columns:33,rows:33,focusM:120,tilt:45,rotation:0,exaggeration:2};
  const data={grid:{view:v,heights:new Float32Array(33*33).fill(120),seaLevelM:0},width:16,height:16,pixels:new Uint8Array(1024),draft:false};
- const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{setSize(){},dispose(){},forceContextLoss(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
+ const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{getPixelRatio(){return 1;},setSize(){},dispose(){},forceContextLoss(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
 }
 for(const pan of [0,100000])test(`preview retains the frozen world hit after camera translation ${pan}`,()=>{
  const {state,data}=fixture();const frame={...data.grid.view.frame,x:data.grid.view.frame.x+pan};state.reframe(frame,45,0);

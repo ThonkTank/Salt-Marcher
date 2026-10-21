@@ -38,6 +38,18 @@ export async function terrainContourPixels(page){
           });
           return {width,inkPixels:colors.filter(v=>v<250).length,maxError:Math.max(...colors.map((v,i)=>Math.abs(v-expected[i])))};
         });
+        const highDpi=[];
+        for(const ratio of [1,1.5,2])for(const width of [250,1000]){
+          renderer.setPixelRatio(ratio);renderer.setSize(512,512);uniforms.terrainContourPixelRatio.value=ratio;
+          camera.left=-width/2;camera.right=width/2;camera.top=width/2;camera.bottom=-width/2;camera.updateProjectionMatrix();
+          renderer.render(scene,camera);const size=512*ratio,values=new Uint8Array(size*4);gl.readPixels(0,size/2,size,1,gl.RGBA,gl.UNSIGNED_BYTE,values);
+          let maxError=0;for(let i=0;i<size;i++){
+            const ink=terrainContourInk(((i+.5)/size-.5)*width,width/size,-1,-10000,ratio),expected=Math.round(new THREE.Color(1-ink,1-ink,1-ink).convertLinearToSRGB().r*255);
+            maxError=Math.max(maxError,Math.abs(values[i*4]-expected));
+          }
+          highDpi.push({ratio,width,maxError});
+        }
+        renderer.setPixelRatio(1);renderer.setSize(512,512);uniforms.terrainContourPixelRatio.value=1;
         const full=row(1000,-1),tiled=[];
         for(let tile=0;tile<2;tile++){
           renderer.setSize(256,512);camera.setViewOffset(512,512,tile*256,0,256,512);renderer.render(scene,camera);
@@ -49,7 +61,7 @@ export async function terrainContourPixels(page){
         elevations.forEach((v,i)=>elevations[i]=Math.max(0,v));geometry.attributes.terrainElevation.needsUpdate=true;uniforms.terrainContourSea.value=0;
         const coast=row(1000,100),seaMinimum=Math.min(...coast.slice(0,262));
         const automaticSeaMinimum=Math.min(...row(1000,-1).slice(0,256));
-        return {measurements,automatic,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum};
+        return {measurements,automatic,highDpi,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum};
       }finally{geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();}
     }
   `},bundle:true,format:'iife',globalName:'ContourPixelProbe',write:false}).outputFiles[0].text;
@@ -58,6 +70,7 @@ export async function terrainContourPixels(page){
   assert(Math.max(...result.measurements.map(m=>m.inkPixels))-Math.min(...result.measurements.map(m=>m.inkPixels))<=1);
   assert.equal(result.disabledMin,255);assert.equal(result.denseMin,255);assert.equal(result.seaMinimum,255,'the sea plateau must never become a contour');
   for(const m of result.automatic){assert(m.inkPixels>0&&m.inkPixels<=170,JSON.stringify(m));assert(m.maxError<=2,JSON.stringify(m));}
+  for(const m of result.highDpi)assert(m.maxError<=2,JSON.stringify(m));
   assert(result.tileError<=1,'export tiles must preserve the full-image intervals and blending');assert.equal(result.automaticSeaMinimum,255);
   return result;
 }
