@@ -1333,8 +1333,11 @@ export class LandscapeWorkbench {
   }
   private async linkVegetation(r:LandscapeRecord,o:VegetationOverride){
     const doc=newLocation(crypto.randomUUID(),r.name+' · '+(o.asset==='rock'?'Felsen':'Baum'),'poi',[crypto.randomUUID(),crypto.randomUUID()]);
-    o.locationId=doc.id;const v=r.vegetation!;v.overrides=v.overrides.filter(x=>x.id!==o.id);v.overrides.push(o);
-    return this.commit({kind:'landscape-place',record:r,point:{x:o.x,y:o.y},document:doc,expectedLocationRevision:null,expectedRevision:r.revision});
+    // The proposed location belongs to the command until it is acknowledged.
+    // A failed creation must leave the editable object free of phantom links.
+    const record=structuredClone(r),v=record.vegetation!;
+    v.overrides=v.overrides.filter(x=>x.id!==o.id);v.overrides.push({...o,locationId:doc.id});
+    return this.commit({kind:'landscape-place',record,point:{x:o.x,y:o.y},document:doc,expectedLocationRevision:null,expectedRevision:r.revision});
   }
   private async finishVegetation(){
     const radius=Number(atlasFieldValue(html<HTMLInputElement>('land-radius')));

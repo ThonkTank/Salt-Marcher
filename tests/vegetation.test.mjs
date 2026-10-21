@@ -231,6 +231,11 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
    density.value='0.33';density.oninput();validateVegetation(draft);
    assert.equal(draft.vegetation.preset.density,.33,'canonical fractional values must not fall back to the old preset');
  }
+ const failedLink=structuredClone(original),object={id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0};
+ failedLink.vegetation.preset.density=1.25;failedLink.vegetation.overrides.push({...object});
+ const beforeLink=structuredClone(failedLink),linkWorkbench=Object.create(LandscapeWorkbench.prototype);
+ await assert.rejects(()=>linkWorkbench.linkVegetation(failedLink,failedLink.vegetation.overrides[0]),/Bewuchs/);
+ assert.deepEqual(failedLink,beforeLink,'a rejected place creation must not leave a nonexistent location in the editable object');
  const draft=structuredClone(original),root=document.createElement('div');let edits=0;
  vegetationInspector(root,draft,{id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0},()=>edits++,()=>{},()=>{});
  for(const [key,value]of [['x','0'],['y','0'],['size','4'],['angle','0']]){

@@ -99,6 +99,10 @@ try{
  await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error==='true'&&!document.querySelector('#land-tool').disabled);
  assert.deepEqual(records(),beforeInvalid,'empty object size must not save its previous value');
  assert.equal(await page.locator('#vegetation-object-size').inputValue(),'');
+ const locationCount=db.prepare('SELECT count(*) n FROM location').get().n;
+ await page.getByRole('button',{name:'Als besonderen Ort anlegen',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error==='true'&&!document.querySelector('#land-tool').disabled);
+ assert.equal(db.prepare('SELECT count(*) n FROM location').get().n,locationCount);assert.deepEqual(records(),beforeInvalid);
  mark('Ungültige sichtbare Zahlen verhindern Speichern und erhalten den Entwurf');
  await page.locator('#vegetation-object-size').fill('8');await page.locator('#vegetation-object-angle').fill('33');await page.locator('#vegetation-object-x').fill('165');
  await page.getByRole('button',{name:'Landschaftsänderung speichern',exact:true}).click();await settled();
@@ -143,6 +147,11 @@ try{
  assert((await readFile(out+'/spatial-export.png')).length>10000);
  mark('Räumlicher PNG-Export über nativen Speicheranschluss');
  await page.locator('#vegetation-spatial-close').click();await atlasCanvasReady(page);
+ await page.locator('#atlas-select').click();await page.locator('#vegetation-selection-filter').selectOption('rocks');const linkPoint=await at(corrected.x,corrected.y);await page.mouse.click(linkPoint.x,linkPoint.y);
+ await page.getByRole('button',{name:'Als besonderen Ort anlegen',exact:true}).click();await settled();
+ const linked=records().find(r=>r.id===painted.id).vegetation.overrides.find(o=>o.id===corrected.id);
+ assert(linked.locationId);assert(db.prepare('SELECT id FROM location WHERE id=?').get(linked.locationId));
+ mark('Abgewiesene Ortsanlage hinterlässt keinen Phantomverweis; gültige Anlage wird gemeinsam gespeichert');
  const expected=records();await close();await start();assert.deepEqual(records(),expected);await capture('06-reopened');await close();
  mark('Frischer Electron-Prozess erhält Flächen und geschützte Korrekturen');
  for(const [file,hash] of Object.entries(result.sourceHashes))assert.equal(createHash('sha256').update(await readFile(file)).digest('hex'),hash,'Source or bundle changed during native workflow: '+file);
