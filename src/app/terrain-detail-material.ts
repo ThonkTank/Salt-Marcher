@@ -5,6 +5,10 @@ import type {SpatialReply} from './terrain-spatial-worker';
 export class TerrainDetailMaterial {
   private coverageTexture:THREE.DataTexture|null=null;
   private detailTexture:THREE.DataTexture|null=null;
+  // CPU-only source: never bind it for rendering, or Three would copy old GPU
+  // data instead of the newly received pixels. It shares the assembled buffer.
+  private uploadSource:THREE.DataTexture|null=null;
+  constructor(private readonly renderer?:THREE.WebGLRenderer){}
   update(material:THREE.MeshBasicMaterial,data:Pick<SpatialReply,'grid'|'detail'>,rects:import('./terrain-frame').TerrainRect[]|undefined){
     let uniforms=material.userData.terrainDetail as {detailMap:{value:THREE.Texture};detailBox:{value:THREE.Vector4};detailEnabled:{value:boolean};coverageMap:{value:THREE.Texture};coverageEnabled:{value:boolean}}|undefined;
     if(!uniforms){
@@ -45,17 +49,23 @@ export class TerrainDetailMaterial {
       uniforms.coverageMap.value=this.coverageTexture;uniforms.coverageEnabled.value=coverage.values.some(value=>value!==255);
     }else{this.coverageTexture?.dispose();this.coverageTexture=null;uniforms.coverageEnabled.value=false;uniforms.coverageMap.value=material.map!;}
 
-    if(!detail){this.detailTexture?.dispose();this.detailTexture=null;uniforms.detailEnabled.value=false;uniforms.detailMap.value=material.map!;return;}
+    if(!detail){this.detailTexture?.dispose();this.detailTexture=null;this.uploadSource?.dispose();this.uploadSource=null;uniforms.detailEnabled.value=false;uniforms.detailMap.value=material.map!;return;}
     const compatible=this.detailTexture?.image.width===detail.width&&this.detailTexture?.image.height===detail.height;
     if(!compatible){
       this.detailTexture?.dispose();this.detailTexture=new THREE.DataTexture(detail.pixels,detail.width,detail.height,THREE.RGBAFormat);
       this.detailTexture.colorSpace=THREE.SRGBColorSpace;this.detailTexture.minFilter=THREE.LinearFilter;this.detailTexture.magFilter=THREE.LinearFilter;
     }
     const texture=this.detailTexture!;texture.image.data=detail.pixels;texture.clearUpdateRanges();
-    const changed=compatible&&rects?rects:[{x:0,y:0,width:detail.width,height:detail.height}];
-    for(const r of changed)for(let y=r.y;y<r.y+r.height;y++)texture.addUpdateRange((y*detail.width+r.x)*4,r.width*4);
-    if(changed.length)texture.needsUpdate=true;
+    if(compatible&&rects){
+      if(this.renderer){
+        this.uploadSource??=new THREE.DataTexture();this.uploadSource.image=texture.image;
+        for(const r of rects)this.renderer.copyTextureToTexture(this.uploadSource,texture,new THREE.Box2(new THREE.Vector2(r.x,r.y),new THREE.Vector2(r.x+r.width,r.y+r.height)),new THREE.Vector2(r.x,r.y));
+      }else{
+        for(const r of rects)for(let y=r.y;y<r.y+r.height;y++)texture.addUpdateRange((y*detail.width+r.x)*4,r.width*4);
+        if(rects.length)texture.needsUpdate=true;
+      }
+    }else texture.needsUpdate=true; // One full upload, not one call per row.
     const b=data.grid.view.box,d=detail.box;uniforms.detailMap.value=texture;uniforms.detailBox.value.set((d.x-b.x)/b.width,(d.y-b.y)/b.height,d.width/b.width,d.height/b.height);uniforms.detailEnabled.value=true;
   }
-  dispose(){this.detailTexture?.dispose();this.detailTexture=null;this.coverageTexture?.dispose();this.coverageTexture=null;}
+  dispose(){this.detailTexture?.dispose();this.detailTexture=null;this.coverageTexture?.dispose();this.coverageTexture=null;this.uploadSource?.dispose();this.uploadSource=null;}
 }

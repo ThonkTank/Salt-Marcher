@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {terrainContourPixels} from './terrain-contour-probe.mjs';
+import {terrainDetailPixels} from './terrain-detail-probe.mjs';
 const root=process.cwd(),require=createRequire(root+'/package.json'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-development-start');
 await mkdir(out,{recursive:true});const base=path.join(homedir(),'.cache/saltmarcher/ui');await mkdir(base,{recursive:true});const profile=await mkdtemp(base+'/atlas-development-');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';"},outfile:'.build/atlas-development-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
@@ -61,6 +62,7 @@ try{
  await page.screenshot({path:out+'/01-repository-atlas.png'});
  assert.equal(await page.locator('#land-contours').inputValue(),'-1','automatic contours are the default');
  result.contours=await terrainContourPixels(page);
+ result.detailUploads=await terrainDetailPixels(page);
  await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').fill('45');await page.locator('#terrain-tilt').dispatchEvent('input');await page.locator('#terrain-rotation').fill('25');await page.locator('#terrain-rotation').dispatchEvent('input');await page.keyboard.press('Escape');await ready();
  assert(await surface.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
  const before=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),bounds=await page.locator('#campaign-map').boundingBox();

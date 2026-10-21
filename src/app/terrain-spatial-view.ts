@@ -100,7 +100,7 @@ export class TerrainSpatialView {
   /** Colour progress must not rebuild terrain picking, routes or building meshes. */
   setDetail(detail:import('./terrain-detail').TerrainDetail,rects?:import('./terrain-frame').TerrainRect[]){
     if(!this.mesh||!this.grid)return;
-    this.detail??=new TerrainDetailMaterial();this.detail.update(this.mesh.material,{grid:this.grid,detail},rects);this.render();
+    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{grid:this.grid,detail},rects);this.render();
   }
   setData(data:SpatialReply){
     this.removeLine(this.cursor);this.cursor=null;
@@ -114,7 +114,7 @@ export class TerrainSpatialView {
       if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
       this.mesh=next.mesh;this.scene.add(this.mesh);
     }
-    this.detail??=new TerrainDetailMaterial();this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
+    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
     const geometry=this.mesh.geometry;
     if(!data.draft&&!this.frozenPick){
       this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
