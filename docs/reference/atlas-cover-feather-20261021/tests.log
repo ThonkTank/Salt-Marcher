@@ -1,0 +1,202 @@
+TAP version 13
+# Subtest: forest colour fades inside outer edges and clearings without painting outside or over water
+ok 1 - forest colour fades inside outer edges and clearings without painting outside or over water
+  ---
+  duration_ms: 204.298635
+  type: 'test'
+  ...
+# Subtest: real world boundaries retain exact output across adjacent tiles and far origins
+ok 2 - real world boundaries retain exact output across adjacent tiles and far origins
+  ---
+  duration_ms: 335.092287
+  type: 'test'
+  ...
+# Subtest: overlapping parts have one continuous surface and interruptible paint matches synchronous paint
+ok 3 - overlapping parts have one continuous surface and interruptible paint matches synchronous paint
+  ---
+  duration_ms: 281.27127
+  type: 'test'
+  ...
+# Subtest: clipping continent-length edges bounds work to the requested raster
+ok 4 - clipping continent-length edges bounds work to the requested raster
+  ---
+  duration_ms: 1.643108
+  type: 'test'
+  ...
+# Subtest: scanline capsules match exact distances for diagonal, reversed and degenerate edges
+ok 5 - scanline capsules match exact distances for diagonal, reversed and degenerate edges
+  ---
+  duration_ms: 52.205804
+  type: 'test'
+  ...
+# Subtest: sub-sample contour simplification preserves source rings and bounds its visible error
+ok 6 - sub-sample contour simplification preserves source rings and bounds its visible error
+  ---
+  duration_ms: 167.756162
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin 0
+ok 7 - stroke coverage keeps pre-change pixels at world origin 0
+  ---
+  duration_ms: 288.647564
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin -1000000000
+ok 8 - stroke coverage keeps pre-change pixels at world origin -1000000000
+  ---
+  duration_ms: 207.831171
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin 1000000000
+ok 9 - stroke coverage keeps pre-change pixels at world origin 1000000000
+  ---
+  duration_ms: 203.035838
+  type: 'test'
+  ...
+# Subtest: paged color reads preserve canonical order and exact rowids, without an open SQL statement between records
+ok 10 - paged color reads preserve canonical order and exact rowids, without an open SQL statement between records
+  ---
+  duration_ms: 450.789692
+  type: 'test'
+  ...
+# Subtest: paged cover reads preserve canonical order and exact rowids, without an open SQL statement between records
+ok 11 - paged cover reads preserve canonical order and exact rowids, without an open SQL statement between records
+  ---
+  duration_ms: 424.520666
+  type: 'test'
+  ...
+# Subtest: interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+ok 12 - interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+  ---
+  duration_ms: 938.852082
+  type: 'test'
+  ...
+# Subtest: stable candidate identity across tiles, cameras, density changes and restart inputs
+ok 13 - stable candidate identity across tiles, cameras, density changes and restart inputs
+  ---
+  duration_ms: 202.924797
+  type: 'test'
+  ...
+# Subtest: water, roads, buildings and excessive slopes reject generated candidates
+ok 14 - water, roads, buildings and excessive slopes reject generated candidates
+  ---
+  duration_ms: 151.723178
+  type: 'test'
+  ...
+# Subtest: protected corrections and deletion tombstones survive clearing and flooding
+ok 15 - protected corrections and deletion tombstones survive clearing and flooding
+  ---
+  duration_ms: 78.659065
+  type: 'test'
+  ...
+# Subtest: fine authored cover dominates a coarse repaint and keeps its own distribution
+ok 16 - fine authored cover dominates a coarse repaint and keeps its own distribution
+  ---
+  duration_ms: 52.625224
+  type: 'test'
+  ...
+# Subtest: area history, one-step correction, failure rollback, reopen and source fence
+ok 17 - area history, one-step correction, failure rollback, reopen and source fence
+  ---
+  duration_ms: 1063.655016
+  type: 'test'
+  ...
+# Subtest: render projection, exact area hits and ground raster retain semantic cover
+ok 18 - render projection, exact area hits and ground raster retain semantic cover
+  ---
+  duration_ms: 1275.044692
+  type: 'test'
+  ...
+# Subtest: invalid snapshots and forged display fields fail at canonical writer
+ok 19 - invalid snapshots and forged display fields fail at canonical writer
+  ---
+  duration_ms: 450.985403
+  type: 'test'
+  ...
+# Subtest: rows use metre spacing and fixed candidate IDs; all six presets are bounded
+ok 20 - rows use metre spacing and fixed candidate IDs; all six presets are bounded
+  ---
+  duration_ms: 200.625411
+  type: 'test'
+  ...
+# Subtest: coarse rock representations retain the positions and sizes of their local candidates
+ok 21 - coarse rock representations retain the positions and sizes of their local candidates
+  ---
+  duration_ms: 39.59583
+  type: 'test'
+  ...
+# Subtest: regional levels are nested subsets, preserving canonical candidate fields
+ok 22 - regional levels are nested subsets, preserving canonical candidate fields
+  ---
+  duration_ms: 74.768087
+  type: 'test'
+  ...
+# Subtest: spatial lakes use their water level and suppress the same generated candidates
+ok 23 - spatial lakes use their water level and suppress the same generated candidates
+  ---
+  duration_ms: 565.556507
+  type: 'test'
+  ...
+# Subtest: live height edits regenerate automatic vegetation without moving protected author decisions
+ok 24 - live height edits regenerate automatic vegetation without moving protected author decisions
+  ---
+  duration_ms: 618.16467
+  type: 'test'
+  ...
+# Subtest: rotated city buildings exclude vegetation in their world footprint and removal restores candidates
+ok 25 - rotated city buildings exclude vegetation in their world footprint and removal restores candidates
+  ---
+  duration_ms: 2000.025759
+  type: 'test'
+  ...
+# Subtest: campaign transfer remaps locations while preserving procedural identities and snapshots
+ok 26 - campaign transfer remaps locations while preserving procedural identities and snapshots
+  ---
+  duration_ms: 2751.700104
+  type: 'test'
+  ...
+# Subtest: adding and removing a road changes only affected candidates and reports protected conflicts
+ok 27 - adding and removing a road changes only affected candidates and reports protected conflicts
+  ---
+  duration_ms: 760.764758
+  type: 'test'
+  ...
+# Subtest: three display scales preserve candidate coordinates, template snapshots and authored clearings
+ok 28 - three display scales preserve candidate coordinates, template snapshots and authored clearings
+  ---
+  duration_ms: 113.14926
+  type: 'test'
+  ...
+# Subtest: dense raster fallback stays bounded at the two metre detail boundary and retains protected picking
+ok 29 - dense raster fallback stays bounded at the two metre detail boundary and retains protected picking
+  ---
+  duration_ms: 2894.048186
+  type: 'test'
+  ...
+# Subtest: visible invalid vegetation numbers reach canonical rejection; recovery saves the entered value
+ok 30 - visible invalid vegetation numbers reach canonical rejection; recovery saves the entered value
+  ---
+  duration_ms: 723.815742
+  type: 'test'
+  ...
+# Subtest: continent forest survives buffered village detail and keeps local and protected identities
+ok 31 - continent forest survives buffered village detail and keeps local and protected identities
+  ---
+  duration_ms: 1385.63541
+  type: 'test'
+  ...
+# Subtest: compact display keeps the larger perspective export in the same individual forest detail
+ok 32 - compact display keeps the larger perspective export in the same individual forest detail
+  ---
+  duration_ms: 1726.428065
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23767.266319

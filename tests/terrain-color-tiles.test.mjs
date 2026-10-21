@@ -4,8 +4,8 @@ import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-color';export * from './src/app/terrain-detail-material';export {MeshBasicMaterial,DataTexture} from 'three';export * from './src/app/terrain-detail-tiles';export * from './src/app/storage/terrain-color';export * from './src/app/storage/terrain-projection';export * from './src/app/terrain-projection-cache';export * from './src/app/terrain-height';"},outfile:'.build/terrain-color-tiles-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainDetailMaterial,MeshBasicMaterial,DataTexture,validateTerrainColor,terrainDetailTiles,TerrainDetailTiles,readTerrainColorSteps,readTerrainProjection,TerrainProjectionCache,heightRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-color';export * from './src/app/terrain-detail-material';export {MeshBasicMaterial,DataTexture} from 'three';export * from './src/app/terrain-detail-tiles';export * from './src/app/storage/terrain-color';export * from './src/app/storage/terrain-projection';export * from './src/app/terrain-projection-cache';export * from './src/app/terrain-height';export {vegetationSpec} from './src/app/vegetation';export {emptyRecord} from './src/app/atlas-landscape';"},outfile:'.build/terrain-color-tiles-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {vegetationSpec,emptyRecord,TerrainDetailMaterial,MeshBasicMaterial,DataTexture,validateTerrainColor,terrainDetailTiles,TerrainDetailTiles,readTerrainColorSteps,readTerrainProjection,TerrainProjectionCache,heightRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs');
 const drain=g=>{for(;;){const r=g.next();if(r.done)return r.value;}};
 const identity={revision:1,fence:'one'},query={...identity,routeContext:{x:-1024,y:-1024,width:2048,height:2048},contours:0};
 const colour=q=>({...q,pixels:new Uint8Array(q.width*q.height*4).fill(255)});
@@ -31,7 +31,7 @@ test('world tiles are bounded and aligned across portrait, negative origins and 
  assert.throws(()=>validateTerrainColor({...query,box:query.routeContext,width:256,height:256,displayMpp:1,heightStroke:{}}),/Geländefarbe/);
 });
 test('independently rendered neighbouring tiles equal the complete projection including their shared edge',()=>{
- const records=[heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>40+20*Math.sin(i%64/7)*Math.cos(Math.floor(i/64)/9)))],stream=kind=>kind==='height'?records:[];
+ const records=[heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>40+20*Math.sin(i%64/7)*Math.cos(Math.floor(i/64)/9)))],cover={...emptyRecord('vegetation'),id:'forest',vegetation:vegetationSpec(),values:{terrain:'forest'},polygons:[{outer:[{x:80,y:90},{x:530,y:75},{x:550,y:300},{x:100,y:290}],holes:[[{x:280,y:150},{x:370,y:160},{x:350,y:220},{x:270,y:230}]]}]},stream=kind=>kind==='height'?records:kind==='cover'?[cover]:[];
  const db={prepare(){return {get(){}};}},source={campaignId:'test',...identity},box={x:64,y:64,width:512,height:256},view={box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1};
  for(const contours of [0,10]){
   const expected=readTerrainProjection(db,source,{view,width:512,height:256,contours,displayMpp:1,revision:1},stream,new TerrainProjectionCache()),assembled=new Uint8Array(expected.pixels.length);

@@ -196,6 +196,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 [Vegetation an der Hauptkamera](../../reference/atlas-vegetation-camera-20261021/README.md): Regionale Bestände sind verschachtelte Teilmengen stabiler lokaler Kandidaten. Kronenbreite und Ausblenden reagieren unmittelbar auf die Kameratiefe; Treffer verwenden dieselben Regeln, geschützte Objekte bleiben maßhaltig. 26 Regressionen, der native Bearbeitungs-/Undo-/Neustartablauf und GPU-/Exportpixel sind geprüft. Noch fehlende feinere Kandidaten, große dichte Bestände und die Geländeabdeckung bei starker Neigung bleiben offen.
 
+[Weiche Bodenfarbe an Bewuchsrändern](../../reference/atlas-cover-feather-20261021/README.md): vorhandene Randbreiten wirken auch auf Bodenfarbe und Lichtungen, mit gemeinsamem Kachelraster und unterbrechbarer Workerberechnung. Native Hauptansicht und PNG sind geprüft. Die zusätzliche CPU-Arbeit ist gemessen; Waldtextur, Kronenformen und allgemeine Ladeleistung bleiben offen.
+
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
 [Aufrauen als eigene Sculpt-Wirkung](../../reference/atlas-sculpt-roughen-20261021/README.md): positive und negative Unebenheiten im bestehenden direkten Höhenpinsel, mit gemeinsamen Höhenbändern, History und Hauptkamera. Lokale und native Prüfungen umfassen Undo/Redo und frisches Öffnen. Das vervollständigt noch nicht die Feature-Werkzeuge oder die allgemeine Leistungs-/Gestaltungsabnahme.

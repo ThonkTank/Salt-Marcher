@@ -21,7 +21,7 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
    const fieldEnd=terrainTraceStart('projection.field',revision);
    try{image.setTerrainField(yield* streamTerrainFieldSteps(image.sampleLattice(),sea,stream,false,checkpoint));}finally{fieldEnd();}
    for(const r of stream('base',image.sampleBox))image.paint(r);
-   for(const r of stream('cover',image.sampleBox))image.paintCover(r);
+   for(const r of stream('cover',image.sampleBox))yield* image.paintCoverSteps(r,checkpoint);
    // The colour stream releases its SQL statements before each owned record.
    for(const r of stream('color',image.sampleBox))yield* image.paintColorSteps(r,checkpoint);
    yield* image.prepareSurfaceSteps(checkpoint);
