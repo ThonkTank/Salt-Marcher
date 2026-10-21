@@ -394,7 +394,8 @@ function lock() {
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
   const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
   get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLButtonElement>('combat-history-open').disabled=contextBlocked||loadPending;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
-  const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?'Begegnung konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
+  const retry=get<HTMLButtonElement>('combat-load-retry');retry.hidden=!loadError;retry.disabled=contextBlocked||loadPending;
+  const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?(title?'„'+title+'“':'Begegnung')+' konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
   if(candidateLoading)for(const c of get('combat-party-form').querySelectorAll<HTMLButtonElement|HTMLSelectElement|HTMLInputElement>('select,button,input'))c.disabled=true;
   get<HTMLButtonElement>('combat-undo').disabled = !view?.canUndo || blocked();
   if(editorLoading||!!fighterKey()&&draftCache.readFailures.has(fighterKey()!))for(const c of get('combat-participant').querySelectorAll<HTMLInputElement|HTMLButtonElement>('#combat-participant-form input,#combat-participant-form button'))c.disabled=true;
@@ -585,7 +586,7 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-resume').onclick=()=>get('combat-panel').scrollIntoView({block:'start'});
   get('combat-scene').onclick=()=>get('running-editor').scrollIntoView({block:'start'});
-  get('combat-refresh').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
+  get('combat-refresh').onclick = get('combat-load-retry').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
   get('combat-preparation-initiative').onclick=()=>{if(blocked()||reinforcementBusy||view?.combat?.phase!=='preparing')return;closeReinforcements();void initiativePanel?.open();};
