@@ -74,7 +74,7 @@ const camera=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.d
 async function at(x,y){
  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');
  const view=await page.locator('#campaign-map').evaluate(n=>JSON.parse(n.dataset.terrainProjection)),rect=await page.locator('#campaign-map').boundingBox();
- const sampler=new TerrainSampler(records()),p={x,y},q=projectTerrain(view,p,sampler.waterLevel(p)??sampler.sample(p).heightM);
+ const sampler=new TerrainSampler(db.prepare('SELECT payload FROM atlas_landscape').all().map(r=>JSON.parse(r.payload))),p={x,y},q=projectTerrain(view,p,sampler.waterLevel(p)??sampler.sample(p).heightM);
  return{x:rect.x+q.x*rect.width,y:rect.y+q.y*rect.height};
 }
 async function tool(id){await page.locator('[data-atlas-tool="'+id+'"]').click();await atlasCanvasReady(page);}

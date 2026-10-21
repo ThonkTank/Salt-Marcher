@@ -54,6 +54,8 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
 
+[Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen.
+
 Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
 
 Die jüngste Nutzerkorrektur priorisiert jetzt den Anschluss an die **normale Atlasfläche**: Kippen darf keine separate Geländeansicht aktivieren und ein Werkzeugwechsel darf die Kamera nicht zurücksetzen. Der bisherige Kamera-/Konturen-PR bleibt bis zum belegten Anschluss ein Entwurf.
