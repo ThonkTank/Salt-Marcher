@@ -2,7 +2,30 @@ import type {LandscapeBox} from './atlas-landscape';
 import type {TerrainDetail} from './terrain-detail';
 import type {TerrainRect} from './terrain-frame';
 import type {TerrainColorRequest,TerrainColorTile} from './terrain-color';
-import {TerrainCache} from './terrain-cache';
+import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
+import {landscapeRasterBounds} from './landscape-raster';
+import {equalTerrainSource,type TerrainColorChange} from './terrain-change-history';
+import type {TerrainIdentity,TerrainInvalidation} from './terrain-frame';
+
+export interface TerrainColorSource extends TerrainIdentity {token:string;rasterRouteKey?:string}
+export const terrainColorIdentity=(s:TerrainColorSource)=>JSON.stringify([s.token,s.revision,s.fence,s.rasterRouteKey]);
+
+/** Drop only affected tiles, including the shared raster's lighting/coast halo.
+ * Pixels and availability belong to a published frame: never mutate them. */
+export function invalidateTerrainDetail(detail:TerrainDetail,changes:TerrainInvalidation):TerrainDetail|undefined{
+ if(changes.reset)return;
+ const columns=detail.coverage?.columns??1,rows=detail.coverage?.rows??1,
+  width=detail.width/columns,height=detail.height/rows;
+ let next:TerrainDetail|undefined;
+ for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){
+  const box={x:detail.box.x+column*detail.box.width/columns,y:detail.box.y+row*detail.box.height/rows,width:detail.box.width/columns,height:detail.box.height/rows};
+  if(!changes.bounds.some(b=>terrainBoxesOverlap(landscapeRasterBounds(box,width,height),b)))continue;
+  next??={...detail,pixels:detail.pixels.slice(),coverage:{columns,rows,values:detail.coverage?.values.slice()??new Uint8Array(columns*rows).fill(255)}};
+  next.coverage!.values[row*columns+column]=0;
+  for(let y=row*height;y<(row+1)*height;y++)next.pixels.fill(0,(y*detail.width+column*width)*4,(y*detail.width+(column+1)*width)*4);
+ }
+ return next??detail;
+}
 
 const TILE_PIXELS=256;
 /** A common power-of-two world lattice survives pans and small zoom changes.
@@ -30,11 +53,28 @@ function retainPrevious(target:TerrainDetail,previous:TerrainDetail){
  }
 }
 /** Renderer-only derived cache: 32 MiB plus one bounded assembled detail image.
- * Revision/fence changes discard it; aborted requests cannot publish or fill it. */
+ * Cross-revision reuse requires worker-confirmed, complete change history. */
 export class TerrainDetailTiles {
  private cache=new TerrainCache<Uint8Array>(32*1024*1024);
  private identity='';
- clear(){this.identity='';this.cache.clear();}
+ private source:TerrainColorSource|undefined;
+ detail:TerrainDetail|undefined;
+ clear(){this.identity='';this.source=undefined;this.detail=undefined;this.cache.clear();}
+ base(token:string):TerrainIdentity|undefined{
+  return this.source?.token===token?{revision:this.source.revision,fence:this.source.fence}:undefined;
+ }
+ reconcile(source:TerrainColorSource,change?:TerrainColorChange){
+  const identity=terrainColorIdentity(source);
+  if(identity!==this.identity){
+   if(change&&this.source?.token===source.token&&this.source.rasterRouteKey===source.rasterRouteKey&&
+      equalTerrainSource(this.source,change.base)&&!change.invalidation.reset){
+    this.cache.invalidate(change.invalidation.bounds);
+    if(this.detail)this.detail=invalidateTerrainDetail(this.detail,change.invalidation);
+   }else this.clear();
+   this.source={token:source.token,revision:source.revision,fence:source.fence,rasterRouteKey:source.rasterRouteKey};this.identity=identity;
+  }
+  return this.detail;
+ }
  async load(identity:string,area:LandscapeBox,query:Omit<TerrainColorRequest,'box'|'width'|'height'|'displayMpp'>,
    read:(q:TerrainColorRequest)=>Promise<TerrainColorTile>,current:()=>boolean,
    publish:(detail:TerrainDetail,rect:TerrainRect|undefined,done:number,total:number)=>void,previous?:TerrainDetail){
@@ -60,7 +100,7 @@ export class TerrainDetailTiles {
    if(!current()||identity!==this.identity)return false;
    if(value.revision!==query.revision||query.fence!==undefined&&value.fence!==query.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
    if(JSON.stringify(value.box)!==JSON.stringify(tile.box)||value.width!==tile.width||value.height!==tile.height||value.pixels.length!==tile.width*tile.height*4)throw Error('Geländefarbe passt nicht zum angeforderten Ausschnitt.');
-   this.cache.put(key,tile.box,value.pixels,value.pixels.byteLength);copy(detail,tile,value.pixels);mark(tile);done++;
+   this.cache.put(key,landscapeRasterBounds(tile.box,tile.width,tile.height),value.pixels,value.pixels.byteLength);copy(detail,tile,value.pixels);mark(tile);done++;
    // The first upload initializes the full transparent image; later uploads are local.
    publish(detail,first?undefined:tile,done,plan.tiles.length);first=false;
   }

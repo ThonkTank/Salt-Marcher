@@ -59,6 +59,26 @@ async function slicedFixture(t){
  return {store,campaign,token,service,source,q,region:{box,width:64,height:64,scopeId:null,floorId:'ground',slice:null,roofs:true}};
 }
 async function yielded(service,after=0){const end=Date.now()+10000;while(service.diagnostics.terrainYields<=after){assert(Date.now()<end,'worker did not yield');await new Promise(r=>setTimeout(r,2));}}
+test('colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse',async t=>{
+ const f=await slicedFixture(t),{service,store,token,campaign}=f;
+ const source=()=>store.atlasRegionSource(token,service.cursor);
+ const projection=async colorBase=>{const s=source();return service.terrain(s,{...f.q,width:32,height:32,detail:undefined,detailResolution:undefined,revision:s.revision,colorBase});};
+ const first=await projection(),base={revision:first.revision,fence:first.fence};
+ for(const x of [-120,120]){
+  store.executeAtlasCommit({commandId:randomUUID(),campaignId:campaign.id,token,action:{kind:'landscape-height-stroke',stroke:{mode:'raise',radius:8,strength:100,feather:0,samples:[{x,y:0,t:0},{x,y:0,t:1000}]}}});
+  await service.read(source(),f.region); // Consumes the worker cursor before the colour request.
+ }
+ const changed=await projection(base);assert.equal(changed.colorChange.invalidation.reset,false);
+ const bounds=changed.colorChange.invalidation.bounds;
+ for(const x of [-120,120])assert(bounds.some(b=>x>=b.x&&x<=b.x+b.width&&b.y<=0&&b.y+b.height>=0));
+ const warm=await projection(base);assert.deepEqual(warm.colorChange,changed.colorChange,'empty synchronizations cannot erase intervening edits');
+ const nextBase={revision:changed.revision,fence:changed.fence};
+ store.executeAtlasCommit({commandId:randomUUID(),campaignId:campaign.id,token,action:{kind:'undo'}});
+ const undone=await projection(nextBase);assert.equal(undone.colorChange.invalidation.reset,false);assert(undone.colorChange.invalidation.bounds.length>0);
+ const live=await service.liveTerrain(source(),{kind:'tilted',query:{...f.q,width:32,height:32,detail:undefined,detailResolution:undefined,revision:undone.revision,colorBase:nextBase}});
+ assert.deepEqual(live.projection.colorChange,undone.colorChange,'live and navigation share the same history');
+ await service.cancelAndWait();const restarted=await projection(nextBase);assert.equal(restarted.colorChange.invalidation.reset,true);
+});
 test('selection preempts detail without cancelling it; a newer camera replaces it and retains the worker',async t=>{
  const f=await slicedFixture(t),{service,source,q}=f;let done=false;
  const outcome=service.terrain(source,q).then(value=>{done=true;return{value};},error=>{done=true;return{error};});

@@ -82,7 +82,7 @@ export class AtlasRegionReader {
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrainSteps(source,q);}
  liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{
   if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');
-  const query=q.kind==='tilted'?{...q.query,revision:undefined,fence:undefined,view:{...q.query.view,focusM:0}}:q.query;
+  const query=q.kind==='tilted'?{...q.query,revision:undefined,fence:undefined,colorBase:undefined,view:{...q.query.view,focusM:0}}:q.query;
   if(q.kind==='top')validateTerrainDetail(q.detail,q.query.box);
   const key=digest(JSON.stringify([source.campaignId,q.kind,query,q.kind==='top'?q.detail:undefined])),previous=this.terrainBases.get(key);
   const common={kind:'full' as const,target:{revision:source.revision,fence:source.fence,key},invalidation:this.landscape.invalidation};

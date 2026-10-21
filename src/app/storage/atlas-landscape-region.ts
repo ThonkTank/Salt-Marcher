@@ -1,3 +1,4 @@
+import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerrainGrid} from './terrain-grid';
@@ -19,6 +20,7 @@ const visual=(r:LandscapeRecord):LandscapeRecord=>{const {label,route,id,revisio
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  invalidation:import("../terrain-presentation").TerrainInvalidation={reset:true,bounds:[]};
+ private colorHistory=new TerrainChangeHistory();
  readonly projectionCache=new TerrainProjectionCache();
  private statements=new Map<string,any>();
  private cache=new Map<string,{box:LandscapeBox;json:string;bytes:number}>();private bytes=0;private identity='';
@@ -81,6 +83,7 @@ export class AtlasLandscapeReader {
   this.canonicalTerrain=!!settings||this.terrainKinds.has('height')||this.terrainKinds.has('route');
   this.projectionCache.invalidate(this.invalidation.bounds,this.invalidation.reset);
   this.identity=identity;
+  this.colorHistory.record(source,this.invalidation);
  }
 
  visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,(kind,box)=>this.rows(source,box,true,0,0,kind),this.projectionCache);}
@@ -122,9 +125,16 @@ export class AtlasLandscapeReader {
   if(ids.length)yield*readPage(ids);
  }
  private *lines(source:AtlasRegionSource,box:LandscapeBox){for(const r of this.rows(source,box,false))if(r.kind==='road'||r.kind==='river')yield r;}
- terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){
+  const projection=readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);
+  return {...projection,colorChange:q.colorBase?this.colorHistory.since(q.colorBase):undefined};
+ }
  colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
- terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ *terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
+  const colorChange=q.colorBase?this.colorHistory.since(q.colorBase):undefined;
+  const projection=yield* readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);
+  return {...projection,colorChange};
+ }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{
   const terrain=q.terrainRaster!==false||q.perception===true;
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);

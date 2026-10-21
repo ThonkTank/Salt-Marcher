@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {parseHTML} from 'linkedom';
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-source';export * from './src/app/terrain-spatial-ui';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-source-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {terrainSourceWindow,TerrainSpatialUI}=createRequire(import.meta.url)('../.build/terrain-spatial-source-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-source';export * from './src/app/terrain-spatial-ui';export * from './src/app/terrain-detail-tiles';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-source-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {terrainSourceWindow,TerrainSpatialUI,TerrainDetailTiles}=createRequire(import.meta.url)('../.build/terrain-spatial-source-test.cjs');
 const frame={x:-200,y:-160,width:400,height:320};
 const zoom=(factor,b=frame)=>({x:b.x+b.width*(1-factor)/2,y:b.y+b.height*(1-factor)/2,width:b.width*factor,height:b.height*factor});
 test('one source lattice covers bounded pan/zoom, not a separate surface for every camera frame',()=>{
@@ -27,14 +27,14 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
  const input={clientWidth:1000,clientHeight:800,dataset:{}};
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
-  active:true,ready:false,input,host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
+  active:true,ready:false,input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
   loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
   view:{setDetail:(detail,rects)=>tiles.push({detail,rects}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
  const load=()=>ui.load(ui.requested,0);
- const resolveRead=(i=0,revision=1)=>reads[i].resolve({ok:true,value:{revision,fence:'source',generation:0,source:'source',grid:{view:reads[i].query.view,heights:new Float32Array(4),seaLevelM:0},pixels:new Uint8Array(16),width:2,height:2,draft:false}});
+ const resolveRead=(i=0,revision=reads[i].query.revision,extra={})=>reads[i].resolve({ok:true,value:{revision,fence:'source',generation:0,source:'source',grid:{view:reads[i].query.view,heights:new Float32Array(4),seaLevelM:0},pixels:new Uint8Array(16),width:2,height:2,draft:false,...extra}});
 
  const resolveColor=i=>{const q=colors[i].query;colors[i].resolve({ok:true,value:{...q,fence:q.fence??'source',pixels:new Uint8Array(q.width*q.height*4).fill(255)}});};
  return {ui,input,reads,colors,tiles,jobs,published,errors,sync,load,resolveRead,resolveColor};
@@ -101,14 +101,13 @@ test('detail failure retains usable geometry and stops retries until an explicit
  assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainQuality,'refining');assert.equal(f.published.length,1);assert.equal(f.ui.retry.hidden,false);assert.equal(f.ui.needsLoad(),false);assert.equal(f.errors.length,1);
 });
 
-test('navigation retains sharp world-anchored colour, but edits and campaign changes discard it',async t=>{
+test('navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it',async t=>{
  const f=fixture(t,{manualDetail:true});f.sync();const first=f.load();f.resolveRead();await new Promise(setImmediate);
- const detail={box:{x:-300,y:-240,width:600,height:480},width:2,height:2,pixels:new Uint8Array(16).fill(88)};
- f.reads[1].resolve({ok:true,value:{revision:1,grid:{view:f.reads[1].query.view},detail}});await first;
+ f.resolveRead(1);await first;const detail=f.ui.colorTiles.detail;
  f.sync(zoom(.6));const next=f.load();f.resolveRead(2);await new Promise(setImmediate);
  assert.equal(f.published.at(-1).detail,detail,'keep the same world texture while new detail is pending');f.resolveRead(3);await next;
  f.sync(zoom(.6),2);const edited=f.load();f.resolveRead(4,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).detail,undefined,'old pigment cannot cover a changed revision');f.resolveRead(5,2);await edited;
- f.ui.retainedDetail={token:'campaign',revision:2,detail};f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).detail,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
+ f.ui.colorTiles.detail=detail;f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).detail,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
 });
 
 test('expected worker preemption resumes missing detail without fallback or an error banner',async t=>{
@@ -153,4 +152,20 @@ test('a failed colour tile keeps earlier tiles usable and explicit retry starts 
  assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainQuality,'refining');assert.equal(f.tiles.length,1);assert.equal(f.ui.retry.hidden,false);assert.equal(f.ui.needsLoad(),false);
  f.ui.detailSource='';const retry=f.load();await new Promise(setImmediate);assert.equal(f.colors.length,3);assert.deepEqual(f.colors[2].query.box,f.colors[1].query.box,'retry requests the failed tile, not the completed first tile');
  f.ui.gesture(true);f.resolveColor(2);await retry;assert.equal(f.errors.length,1);
+});
+
+
+test('post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive',async t=>{
+ const f=fixture(t,{manualDetail:true});f.sync();const first=f.load();f.resolveRead();await new Promise(setImmediate);f.resolveRead(1);await first;
+ const before=f.published.at(-1).detail,original=before.pixels.slice(),base={revision:1,fence:'source'};
+ const bounds=[{x:before.box.x+before.box.width/2,y:before.box.y+before.box.height/2,width:1,height:1}];
+ f.sync(frame,2);const second=f.load();assert.deepEqual(f.reads[2].query.colorBase,base);
+ f.resolveRead(2,2,{colorChange:{base,invalidation:{reset:false,bounds}}});await new Promise(setImmediate);
+ const early=f.published[2].detail;
+ assert(early,'the overview must already carry retained sharp pixels');assert.notEqual(early,before);
+ assert(early.coverage.values.some(v=>v===0));assert(early.coverage.values.some(v=>v===255));assert.deepEqual(before.pixels,original);
+ f.resolveRead(3,2);await second;
+ const retained=f.ui.colorTiles.detail;
+ f.ui.presentLive({...f.ui.baseline,revision:3,fence:'live',colorChange:{base:{revision:2,fence:'source'},invalidation:{reset:false,bounds:[]}},detail:undefined});
+ assert.equal(f.published.at(-1).detail,retained,'a live frame cannot drop unchanged viewport detail');
 });

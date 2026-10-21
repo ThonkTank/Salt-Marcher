@@ -132,6 +132,14 @@ Wiederanlauf wechselt zurück. Wahrnehmung und öffentliche Ausgabe behalten den
 vollständigen Bodenpfad. [Messung und native Gegenproben](../reference/atlas-ground-raster-20261021/README.md)
 trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarbe.
 
+### Farbkacheln nach Terrainänderungen
+
+`TerrainChangeHistory` hält im Readonly-Worker höchstens 64 Quellenstände und 2048 Änderungsrechtecke. Eine Projektion kann die genaue Revision und Fence ihrer bisherigen Farbe angeben. Der Worker bestätigt alle seitdem betroffenen Flächen, auch wenn zwischenzeitliche Regionen- oder Live-Abfragen seinen normalen Cursor weitergeschaltet haben. Fehlende Historie, Neustart und globale Einstellungen verlangen eine vollständige Erneuerung.
+
+`TerrainDetailTiles` besitzt Cache, Quellenkennung und das gehaltene Detailbild. Nur eine bestätigte Änderungskette innerhalb derselben Kampagne und Trassendarstellung erlaubt die Übernahme. Betroffene Kacheln einschließlich des gemeinsamen Rasterhalos werden entfernt und im gehaltenen Bild transparent; unveränderte Kacheln bleiben schon unter dem ersten Übersichtsschritt sichtbar. Live-Frames verwenden denselben Besitzer. Alte Antworten dürfen den übernommenen Cache weder füllen noch zeichnen. Geänderte Pixel werden weiterhin durch die aktuelle Übersicht ersetzt, bis ihre feinen Kacheln eintreffen.
+
+[Regressionen](../../tests/terrain-color-retention.test.mjs), [Worker mit echten Änderungen und Undo](../../tests/terrain-projection-service.test.mjs) und [Präsentationsfolge](../../tests/terrain-spatial-source.test.mjs) prüfen diese Grenzen. Die übrige Leistungs- und Großweltqualifikation bleibt offen.
+
 ### Küstenzeichnung
 
 `terrain-coast.ts` zeichnet nach der Reliefschattierung eine schmale Kontur aus den kanonischen Wasserentscheidungen des gemeinsamen zweifachen Rasters. Es hält kein zusätzliches Distanzfeld und verändert weder Höhen noch Wasserflächen. Nur Ausgabesamples werden gefärbt; deren Halo liefert die Nachbarn für nahtlose Einzelkacheln. Die Schleife gibt zwischen Zeilenpaketen den Worker frei. [Stilvergleich und Hauptatlas](../reference/atlas-coast-ink-20261021/README.md) halten den sichtbaren Gewinn und die verbleibende Vergrößerung grober Farbtexturen getrennt fest. Die Konturbreite ist bisher an Rasterpixel gebunden, nicht unter jeder Perspektive an logische Bildschirmpixel.

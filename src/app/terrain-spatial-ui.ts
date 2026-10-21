@@ -1,4 +1,4 @@
-import {TerrainDetailTiles} from './terrain-detail-tiles';
+import {TerrainDetailTiles,terrainColorIdentity} from './terrain-detail-tiles';
 import {terrainObjectSources,type TerrainObjectSource} from './terrain-objects';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
 import {TerrainSpatialView} from './terrain-spatial-view';
@@ -28,7 +28,6 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private baseline:(SpatialReply & {fence?:string})|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
-  private retainedDetail:{token:string;revision:number;detail:import('./terrain-detail').TerrainDetail}|null=null;
   private samplePad=0;
   private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
@@ -36,7 +35,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private controls:HTMLElement;
   private toggle:HTMLButtonElement;
   private failed=false;private retrySource='';
-  private colorTiles?:TerrainDetailTiles;
+  private colorTiles=new TerrainDetailTiles();
   private regionSource:object|undefined;
   private sourceRefresh:{region:object|undefined;pending:boolean}|null=null;
   private retry:HTMLButtonElement;
@@ -108,12 +107,16 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   liveQuery(detail?:(box:LandscapeBox)=>LandscapeBox|undefined):import('./terrain-presentation').TerrainFrameQuery|null{
     if(!this.active||!this.params||!this.frame)return null;
-    return {kind:'tilted',query:{detail:detail?.(this.params.box),view:this.params,revision:this.revision,
+    return {kind:'tilted',query:{colorBase:this.colorTiles.base(this.token),detail:detail?.(this.params.box),view:this.params,revision:this.revision,
       objects:this.objectSources,width:this.baseline?.width??1024,height:this.baseline?.height??1024,contours:0,
       displayMpp:this.sourceWindow!.frame.width/this.sourceWindow!.pixelWidth}};
   }
   presentLive(data:import('./terrain-projection').TerrainProjection){
-    if(!this.active)return;this.baseline={...data,source:this.source};this.publish(this.baseline);
+    if(!this.active)return;
+    const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange)??data.detail;
+    this.colorTiles.detail=detail;
+    // The retained image has different tile rectangles from the live brush patch.
+    this.baseline={...data,detail,update:data.update?{...data.update,detail:undefined}:undefined,source:this.source};this.publish(this.baseline);
   }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setContours(interval:number){this.pendingContours=interval;this.view?.setContours(interval);}
@@ -126,7 +129,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
-    if(!active){this.colorTiles?.clear();this.retainedDetail=null;this.sourceRefresh=null;this.regionSource=undefined;}
+    if(!active){this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;delete this.input.dataset.terrainTiles;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
@@ -177,7 +180,6 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   private async load(source:string){
     const token=this.token,revision=this.revision,generation=this.generation;
-    if(this.retainedDetail&&(this.retainedDetail.token!==token||this.retainedDetail.revision!==revision))this.retainedDetail=null;
     const current=()=>this.active&&!this.sourceRefresh&&this.requested===source&&this.generation===generation&&!this.host.live()&&!this.host.hasDraft()&&!this.host.writing();
     try{
       const stages=terrainNavigationPlan(this.sourceWindow!,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources);
@@ -187,30 +189,30 @@ export class TerrainSpatialUI implements AtlasPresentation {
         if(!current())return;
         const query=stages[stage]!;
         if(stage===1){
-          const base=this.baseline!,colors=this.colorTiles??=new TerrainDetailTiles();
-          const complete=await colors.load(JSON.stringify([token,revision,base.fence,base.rasterRouteKey]),query.detail!,
+          const base=this.baseline!,colors=this.colorTiles;
+          const complete=await colors.load(terrainColorIdentity({token,revision,fence:base.fence!,rasterRouteKey:base.rasterRouteKey}),query.detail!,
             {revision,fence:base.fence,routeContext:query.view.box,contours:0},
             async q=>{const r=await window.campaign.atlasTerrainColor(token,q);if(!r.ok)throw Error(r.error);return r.value;},current,
             (detail,rect,done,total)=>{
               if(!current())return;
-              this.retainedDetail={token,revision,detail};this.baseline={...this.baseline!,detail};
+              colors.detail=detail;this.baseline={...this.baseline!,detail};
               this.view!.setDetail(detail,rect?[rect]:undefined);this.input.dataset.terrainQuality='refining';
               this.input.dataset.terrainTiles=done+'/'+total;
-            },this.retainedDetail?.detail);
+            },colors.detail);
           if(!complete||!current())return;
         }
         // Detail tiles are already visible; refine the wider context last.
-        const reply=await window.campaign.atlasTerrainProjection(token,stage===1?{...query,detail:undefined,detailResolution:undefined}:query);
+        const request={...query,colorBase:this.colorTiles.base(token)};
+        const reply=await window.campaign.atlasTerrainProjection(token,stage===1?{...request,detail:undefined,detailResolution:undefined}:request);
         if(!current())return;
         if(!reply.ok)throw Error(reply.error);
         if(reply.value.revision!==revision){this.ready=false;this.requested='';this.host.redraw();return;}
         this.records=[];this.recordsSource='';
         this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
         this.detailSource=stage===1?source:'';this.input.dataset.terrainQuality=stage===1?'detail':'overview';
-        if(stage===1&&reply.value.detail)this.retainedDetail={token,revision,detail:reply.value.detail};
-        // Same revision: retain sharp world-anchored colour where it still
-        // overlaps, while the new overview fills newly exposed surroundings.
-        const data={...reply.value,detail:reply.value.detail??this.retainedDetail?.detail,source};
+        const retained=this.colorTiles.reconcile({token,...reply.value},reply.value.colorChange);
+        const detail=retained??reply.value.detail;this.colorTiles.detail=detail;
+        const data={...reply.value,detail,source};
         this.baseline=data;this.publish(data);this.setContours(this.pendingContours);
         if(stage===1)this.retry.hidden=true;
       }
