@@ -1,5 +1,5 @@
 import {compactVegetation} from '../vegetation-projection';
-import {LANDSCAPE_COLOR_INDEX,landscapeColorRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
+import {LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,landscapeColorRecords,landscapeCoverRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
 import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
@@ -32,7 +32,7 @@ export class AtlasLandscapeReader {
  constructor(private db:any,private cacheLimit=8*1024*1024){
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
-  db.exec(LANDSCAPE_COLOR_INDEX);
+  db.exec(LANDSCAPE_COLOR_INDEX);db.exec(LANDSCAPE_COVER_INDEX);
   db.exec("CREATE INDEX temp.landscape_place_span ON landscape_shape_bounds(source_row) WHERE kind='place'");
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);
    CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds WHEN new.kind IS NOT 'patch' BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
@@ -98,6 +98,7 @@ export class AtlasLandscapeReader {
   // A patch whose bounds contain no supersample center cannot change this tile.
   // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
   const sampleFilter=landscapeSampleFilter(box,pixels,patches&&this.sampleMath);
+  if(kind==='cover'){yield* landscapeCoverRecords(text=>this.sql(text),source.campaignId,search,sampleFilter);return;}
   if(kind==='color'){yield* landscapeColorRecords(text=>this.sql(text),source.campaignId,search,sampleFilter);return;}
   const filter=kind?"m.terrain_kind='"+kind+"'":"m.terrain_kind IS NOT NULL";
   const sql=patches
