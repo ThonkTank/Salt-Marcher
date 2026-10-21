@@ -46,7 +46,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Reise und Gruppenzeit | [Laufzustand und Datenregeln](plans/maps/hex-travel.md#vorhandener-ablauf-und-datenregeln), [Checkpoint, Rücknahme und Restart](plans/maps/hex-travel.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) |
 | Agenda, Fantasy-Datum und Fristen | [Kalenderplanung und ausdrücklicher Zeitsprung](plans/runtime/campaign-agenda.md#ausführbarer-anschluss) |
 | Scene-Wetter und GM-Override | [Datenvertrag, lokaler Nachweis und nächste Abnahmen](plans/runtime/weather.md) |
-| Musik und Ambience-Wiederaufnahme | [Fehlerfreigabe, GM-Vorrang und nächste Abnahmen](plans/runtime/music-recovery.md) |
+| Musik, Ambience und Audiofehler | [GM-Stopp](plans/runtime/music-recovery.md#gm-stopp-und-verspätete-antworten), [Schichtfreigabe und Fehlerklärung](plans/runtime/music-recovery.md#audio-schichten-und-fehlerklärung), [Nachweise und offene Prüfungen](plans/runtime/music-recovery.md#nachweise-und-nächste-arbeit) |
 | Verknüpfte Raum- und GM-Notizen | [Direkter Vergleich mit Logseq: Notizen neben dem Raum-Key bearbeiten](reference/gm-ux-qa/key-note-context-20261015/README.md) |
 | Notizorganisation und Raum-Key-Suche | [Direkter Vergleich mit TiddlyWiki: Vorlagen und NSC-Verweise wiederfinden](reference/gm-ux-qa/key-lookup-20261015/README.md) |
 | Raum-Keys bis zum Folgeabend | [Tatsächlicher Obsidian-Vergleich: vorhandenen Plan öffnen und zum Raum zurückkehren](reference/gm-ux-qa/connected-room-prep-20261017/README.md) |

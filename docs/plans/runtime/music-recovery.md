@@ -11,6 +11,8 @@ Der GM verwendet lokale Songs mit Mood-/Intensitäts-/Vibe-/Genre-Metadaten und
 Ambience der fokussierten Running Scene. Manuelle Auswahl, Queue, Stop, Skip,
 Back, Loop und deaktiviertes Autoplay haben Vorrang vor Automatik.
 
+### GM-Stopp und verspätete Antworten
+
 „Stopp“ in Konsole, Miniplayer und Soundboard benötigt keine vorherige
 Speicherung offener Beschreibungen, keinen Positions-Checkpoint und keine
 vorgeschaltete Musikabfrage. Eine ausstehende Leseantwort hält Stop nicht auf.
@@ -28,12 +30,14 @@ Bearbeiten bleiben unveränderte Notizen einschließlich ihrer Zeilenenden
 erhalten. `desktop-music-stop.test.mjs` und die native Szenenprüfung decken
 diesen Weg auch bei ausgefallener Positionsspeicherung ab.
 
-- `storage/music.ts` besitzt Bibliothek, Asset-/Scene-/Subjectmetadaten,
+### Audio-Schichten und Fehlerklärung
+
+- [storage/music.ts](../../../src/app/storage/music.ts) besitzt Bibliothek, Asset-/Scene-/Subjectmetadaten,
   Wiedergabestand, Positionen und Receipts. Kontext verwendet die fokussierte
   Scenezeit, ihren Ort und ihre Wetter-/Umweltmerkmale. Fehlende Umweltinputs
   werden erklärt und ersetzen keine bestätigte Automatikauswahl.
-- `music-ui.ts` bindet Antworten und Commands an den Workspace.
-  `LocalAudioPlayer` hält zwei Songslots und einzelne Ambience-Elemente.
+- [music-ui.ts](../../../src/app/music-ui.ts) bindet Antworten und Commands an den Workspace.
+  [LocalAudioPlayer](../../../src/app/music-player.ts) hält zwei Songslots und einzelne Ambience-Elemente.
   Gespeicherte Auswahl autorisiert nach Aktivierung keine lokale Wiedergabe.
   Die Freigabe für Song beziehungsweise gesamte Ambience folgt direkt daraus, ob
   ihre bestätigte Revision neuer als die letzte Stop-Revision ist. Zwei
@@ -63,6 +67,7 @@ ausdrückliche Einzel- und Automatikfreigabe. Native Decoder, laufende
 Audioelemente und die ausgeglichene Elementlautstärke werden geprüft; Medien-
 und Wetterrecords sowie Gruppenuhren bleiben erhalten. Das qualifiziert keine
 hörbare Hardwareausgabe oder beliebige Wetter-/Scenewechsel.
+### Soundboard und Titelhistorie
 
 Das Live-Soundboard verwendet denselben Musikstand und Writer für Transport,
 Favoriten, gemeinsame Queueauswahl und Ambience. Seine paginierte Bibliothek
@@ -82,6 +87,8 @@ seinen vorhandenen Receipt erkannt und verbraucht keinen weiteren Rückschritt.
 erneuten Vorwärtsweg nach einem Rückschritt. Gespeicherte ältere Historien
 werden erhalten; es gibt keine neue Historientabelle oder Schemaänderung.
 
+### Atlasnavigation und native Prüfung
+
 Der Einstieg aus dem Atlas verwendet dieselbe Arbeitsbereichsnavigation wie
 die übrige Anwendung. Ein offener Atlaszug blockiert weiterhin den Wechsel;
 nach Abschließen oder Verwerfen sind Musik und Live-Spiel ohne Rückweg über
@@ -94,6 +101,16 @@ manuelle Auswahl bei aktivierter Automatik über Fokuswechsel erhalten, Stop,
 Atlas-Rückkehr, stillen Neustart und ausdrückliches Play mit nativer Dekodierung.
 Szenenprosa und Medienmetadaten bleiben dabei unverändert. Dieser Teilbeleg
 ersetzt weder hörbare Hardwareprüfung noch Wetter-/Ambience- und Race-Abnahmen.
+
+### Bibliotheksintegrität
+
+Bibliothekssuche, automatische Song-/Ambienceauswahl und Bibliotheksexport
+verwenden die bereits gelesenen Assetzeilen direkt. Derselbe Zeilenleser wie
+bei einer Einzelauswahl prüft Identität, Revision, Prüfsumme und aktuelle
+Dateigröße; es gibt keinen Mediencache. Beschädigte Treffer werden in der Suche
+gemeldet und in der Automatik ausgelassen; beim Export bricht die Prüfung ab.
+`music-record-integrity.test.ts` prüft außerdem Seitengrenzen trotz beschädigter
+Treffer sowie entfernte, wiederhergestellte und veränderte Mediendateien.
 
 ## Nachweise und nächste Arbeit
 
@@ -116,11 +133,3 @@ Decoder, hörbare Ausgabe oder freigegebenen nativen RAM.
    lokale Metadaten und historische Auswahlbindungen erhalten.
 4. Große Bibliotheken, Queues und häufige Schichtwechsel messen. Nur benötigte
    Asset-/Kontextdaten lesen; keine zweite Queue oder Musikpersistenz einführen.
-
-Bibliothekssuche, automatische Song-/Ambienceauswahl und Bibliotheksexport
-verwenden die bereits gelesenen Assetzeilen direkt. Derselbe Zeilenleser wie
-bei einer Einzelauswahl prüft Identität, Revision, Prüfsumme und aktuelle
-Dateigröße; es gibt keinen Mediencache. Beschädigte Treffer werden in der Suche
-gemeldet und in der Automatik ausgelassen; beim Export bricht die Prüfung ab.
-`music-record-integrity.test.ts` prüft außerdem Seitengrenzen trotz beschädigter
-Treffer sowie entfernte, wiederhergestellte und veränderte Mediendateien.
