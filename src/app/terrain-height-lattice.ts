@@ -1,4 +1,4 @@
-import {heightPatch,interpolateHeight} from './terrain-interpolation';
+import {heightRow,interpolateHeight} from './terrain-interpolation';
 import {decodeHeights,type HeightTile} from './terrain-height';
 import type {LandscapeRecord} from './atlas-landscape';
 
@@ -58,7 +58,17 @@ class HeightLevel {
    const index=row*columns+col,base=y.starts[row]!*x.nodes.length+x.starts[col]!,fx=x.fractions[col]!,fy=y.fractions[row]!;
    const at=y.starts[row]!*columns+col;
    if(absolute){const a=absolute[at]!,b=absolute[at+columns]!,c=absolute[at+2*columns]!,d=absolute[at+3*columns]!;
-    ground[index]=Number.isNaN(a)||Number.isNaN(b)||Number.isNaN(c)||Number.isNaN(d)?heightPatch(this.absolute!,fx,fy,ground[index]!,base,x.nodes.length):interpolateHeight(a,b,c,d,fy);
+    // Only rows containing holes depend on this point's coarse value. Reuse
+    // every complete row even when another row in the neighbourhood is sparse.
+    if(!Number.isNaN(a+b+c+d)){ground[index]=interpolateHeight(a,b,c,d,fy);}
+    else {
+     const fill=ground[index]!,stride=x.nodes.length;
+     ground[index]=interpolateHeight(
+     Number.isNaN(a)?heightRow(this.absolute!,base,fx,fill):a,
+     Number.isNaN(b)?heightRow(this.absolute!,base+stride,fx,fill):b,
+     Number.isNaN(c)?heightRow(this.absolute!,base+2*stride,fx,fill):c,
+     Number.isNaN(d)?heightRow(this.absolute!,base+3*stride,fx,fill):d,fy);
+    }
    }
    if(additive)additions[index]=additions[index]!+interpolateHeight(additive[at]!,additive[at+columns]!,additive[at+2*columns]!,additive[at+3*columns]!,fy);
   }

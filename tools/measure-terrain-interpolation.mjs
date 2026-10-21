@@ -2,7 +2,8 @@
 import {build} from 'esbuild';
 import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {interpolationStreamPlugin,INTERPOLATION_BASELINE,LATTICE_BASELINE} from './terrain-interpolation-build.mjs';
 import {installInterpolation,monotone} from './terrain-interpolation-probe.mjs';
@@ -15,6 +16,8 @@ const {heightRecord}=base,fixtures=[
  {name:'sparse-bands',rows:[8,2,.5].flatMap(p=>[1,2].flatMap(v=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*p,y*64*p,p,Float32Array.from({length:4096},(_,i)=>i%7===0?NaN:(v===1?40:0)+Math.sin(i)*17),v)))))},
 ];
 const result={baseline:INTERPOLATION_BASELINE,bilinearLattice:LATTICE_BASELINE,candidate:'current production bounded cubic',productSource:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],measurements:[]};
+result.dirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();
+result.sourceHashes={};for(const file of ['src/app/terrain-height.ts','src/app/terrain-height-lattice.ts','src/app/terrain-interpolation.ts','src/app/terrain-field-stream.ts','tools/measure-terrain-interpolation.mjs','tools/terrain-interpolation-build.mjs','tools/terrain-interpolation-probe.mjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const point={x:.5,y:7.125},rows=[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64,y*64,1,Float32Array.from({length:4096},(_,i)=>40+2*(x*64+i%64)+.25*(y*64+Math.floor(i/64)))))),inside=(r,halo)=>{const t=r.height;return point.x>=t.x-halo*t.pixel&&point.x<=t.x+(63+halo)*t.pixel&&point.y>=t.y-halo*t.pixel&&point.y<=t.y+(63+halo)*t.pixel;};
 const height=rows=>new candidate.TerrainSampler(rows,false).sample(point).heightM;
 result.neighbourRead={point,all:height(rows),oldBounds:height(rows.filter(r=>inside(r,1))),expandedBounds:height(rows.filter(r=>inside(r,2)))};

@@ -134,7 +134,7 @@ trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarb
 
 ### Höhenabtastung ohne wiederholtes Einsammeln
 
-`terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.
+`terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Nur Zeilen mit Lücken werden mit dem geerbten Wert am jeweiligen Abfragepunkt neu ausgewertet; vollständige Nachbarzeilen bleiben auch in gemischten Zellen wiederverwendbar. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.
 
 `terrain-interpolation.ts` besitzt die gemeinsame begrenzte kubische Rekonstruktion für `TerrainSampler` und Feldstream. Die Kurve erhält Knoten, plateauförmige Extrema und affine Innenbereiche. Fehlende absolute Knoten erben den gröberen Wert am Abfragepunkt; additive Lücken bleiben null. Die Reihenfolge ist immer x, dann y. Geometrie, Farbe, Wasserentscheidung und kanonische Abfragen verwenden denselben Kernel; sichtbare Treffer bleiben an die tatsächlich gezeichneten Netzdreiecke gebunden.
 
