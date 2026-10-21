@@ -57,6 +57,28 @@ Queues rekonstruiert. Ein verfügbarer Resumezustand bedeutet keinen versteckten
 automatischen Sessionstart. Beschädigung wählt die neueste eindeutig sichere
 Recovery, legt Verlust offen; nur Ambiguität braucht eine Auswahl.
 
+### Kampagnenauswahl und Papierkorb prüfen
+
+Die Originalanforderung erlaubt gleiche Anzeigenamen. Auswahl, Umbenennung,
+Papierkorb und Wiederherstellung müssen deshalb an der sichtbaren Kampagnenkennung
+hängen. Wiederherstellen erhält Identität und Autoreninhalte, ändert weder den
+aktiven Zeiger noch den Zeitpunkt der letzten Öffnung. Erst ausdrückliches Öffnen
+oder Fortsetzen aktiviert die Kampagne; der nächste Appstart zeigt erneut die
+Auswahl.
+
+[Store-/DOM-Regressionsfälle](tests/desktop-campaign-catalog.test.mjs) prüfen
+Befehlsquittungen, unklare Antworten, lokale Auftragsvermerke und Kontextwechsel.
+Die [native Dialogprobe](tools/test-desktop-campaign-trash.mjs) ergänzt zwei
+gleichnamige Kampagnen mit unterschiedlichen Raum-Keys: Namensentwurf abbrechen,
+aktive Identität gezielt suchen und in den Papierkorb legen, falsche permanente
+Löschbestätigung abweisen, wiederherstellen, andere Identität umbenennen und nach
+Neustart den ursprünglichen Raum ausdrücklich wieder öffnen. Sie vergleicht die
+vollständigen Raumzeilen und Öffnungszeitpunkte und verlangt reguläre Prozessenden.
+Ausführen nach `npm run build:desktop` mit
+`node tools/test-desktop-campaign-trash.mjs`; `QA_EVIDENCE_DIR` legt das Ziel für
+Bilder und das Ergebnis mit Commit-/Artefaktbindung fest. Die Probe bestätigt weder
+eine erfolgreiche permanente Löschung noch Paketinstallation oder Ownerabnahme.
+
 ### Copy-/Complete-Import-Remap und Ownerlieferung
 
 Ein SQLite-Snapshot ist noch kein `.kwcampaign`-Archiv. Der Dateiweg beginnt in
