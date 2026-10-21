@@ -3,6 +3,9 @@ import type {TerrainInvalidation} from './terrain-frame';
 import {terrainBoxesOverlap} from './terrain-cache';
 import {landscapeRasterBounds} from './landscape-raster';
 
+const linearSample=(p:Uint8Array,a:number,b:number,c:number,d:number,fx:number,fy:number,channel:number)=>
+ Math.round((p[a+channel]!*(1-fx)+p[b+channel]!*fx)*(1-fy)+(p[c+channel]!*(1-fx)+p[d+channel]!*fx)*fy);
+
 /** Drop only affected tiles, including the shared raster's lighting/coast halo.
  * Pixels and availability belong to a published frame: never mutate them. */
 export function invalidateTerrainDetail(detail:TerrainDetail,changes:TerrainInvalidation):TerrainDetail|undefined{
@@ -32,15 +35,19 @@ export function fillTerrainDetail(detail:TerrainDetail,fresh:TerrainDetail):Terr
   bottom=Math.min(detail.height,Math.ceil((fresh.box.y+fresh.box.height-detail.box.y)/detail.box.height*detail.height-.5));
  let next:TerrainDetail|undefined;
  for(let y=top;y<bottom;y++){
-  const sy=Math.floor((detail.box.y+(y+.5)*detail.box.height/detail.height-fresh.box.y)/fresh.box.height*fresh.height);
-  if(sy<0||sy>=fresh.height)continue;
+  // Match the source texture's linear filter instead of magnifying each brush
+  // texel into a hard square. RGBA is interpolated together at transparent edges.
+  const sy=(detail.box.y+(y+.5)*detail.box.height/detail.height-fresh.box.y)/fresh.box.height*fresh.height-.5,
+   iy=Math.floor(sy),fy=sy-iy,y0=Math.max(0,iy),y1=Math.min(fresh.height-1,iy+1);
   for(let x=left;x<right;x++){
    const at=(y*detail.width+x)*4;if(detail.pixels[at+3]!==0)continue;
-   const sx=Math.floor((detail.box.x+(x+.5)*detail.box.width/detail.width-fresh.box.x)/fresh.box.width*fresh.width);
-   if(sx<0||sx>=fresh.width)continue;
-   const from=(sy*fresh.width+sx)*4;if(!fresh.pixels[from+3])continue;
+   const sx=(detail.box.x+(x+.5)*detail.box.width/detail.width-fresh.box.x)/fresh.box.width*fresh.width-.5,
+    ix=Math.floor(sx),fx=sx-ix,x0=Math.max(0,ix),x1=Math.min(fresh.width-1,ix+1),
+    a=(y0*fresh.width+x0)*4,b=(y0*fresh.width+x1)*4,c=(y1*fresh.width+x0)*4,d=(y1*fresh.width+x1)*4;
+   const alpha=linearSample(fresh.pixels,a,b,c,d,fx,fy,3);if(!alpha)continue;
    next??={...detail,pixels:detail.pixels.slice(),coverage:{columns,rows,values:detail.coverage?.values.slice()??new Uint8Array(columns*rows).fill(255)}};
-   for(let c=0;c<4;c++)next.pixels[at+c]=fresh.pixels[from+c]!;
+   for(let channel=0;channel<3;channel++)next.pixels[at+channel]=linearSample(fresh.pixels,a,b,c,d,fx,fy,channel);
+   next.pixels[at+3]=alpha;
    touched.add(Math.floor(y/tileHeight)*columns+Math.floor(x/tileWidth));
   }
  }

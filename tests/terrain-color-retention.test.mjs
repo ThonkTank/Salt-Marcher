@@ -2,8 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainChangeHistory,TerrainDetailTiles,terrainColorIdentity,terrainDetailTiles,validateTerrainProjection}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-detail-retention';export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {fillTerrainDetail,TerrainChangeHistory,TerrainDetailTiles,terrainColorIdentity,terrainDetailTiles,validateTerrainProjection}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
 const source=revision=>({revision,fence:'f'+revision,token:'campaign',rasterRouteKey:'null'});
 const identity=revision=>({revision,fence:'f'+revision});
 const change=(base,bounds=[],reset=false)=>({base:identity(base),invalidation:{bounds,reset}});
@@ -71,4 +71,15 @@ test('the projection colour base accepts only a concrete source identity',()=>{
  const q={view:{box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1},width:64,height:64,contours:0,displayMpp:1,revision:2};
  validateTerrainProjection({...q,colorBase:identity(1)});
  for(const colorBase of [{revision:-1,fence:'x'},{revision:1,fence:2},{...identity(1),bounds:[box]}])assert.throws(()=>validateTerrainProjection({...q,colorBase}),/farbbasis/);
+});
+
+
+test('coarse brush pixels use linear sampling with clamped edges, including negative world origins',()=>{
+ const area={x:-10,y:-20,width:4,height:4};
+ const fresh={box:area,width:2,height:2,pixels:new Uint8Array([0,0,0,255,200,0,0,255,0,200,0,255,200,200,0,255])};
+ const target={box:area,width:4,height:4,pixels:new Uint8Array(64)},result=fillTerrainDetail(target,fresh);
+ const pixel=(x,y)=>[...result.pixels.slice((y*4+x)*4,(y*4+x+1)*4)];
+ assert.deepEqual(pixel(0,0),[0,0,0,255]);assert.deepEqual(pixel(1,1),[50,50,0,255]);
+ assert.deepEqual(pixel(2,2),[150,150,0,255]);assert.deepEqual(pixel(3,3),[200,200,0,255]);
+ assert(target.pixels.every(v=>v===0));assert.equal(fillTerrainDetail(result,fresh),result,'already current pixels are never resampled');
 });
