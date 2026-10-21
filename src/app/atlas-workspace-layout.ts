@@ -176,12 +176,20 @@ export class AtlasWorkspaceLayout {
   document.dispatchEvent(new Event('workspace-layout-changed'));
  }
  private applyWidth(){
-  this.root.style.setProperty('--atlas-dock-width',this.width+'px');this.root.style.setProperty('--atlas-details-width',this.detailWidth+'px');
-  this.root.dataset.toolsOpen=String(this.toolSettingsVisible);this.toolSettings.hidden=!this.toolSettingsVisible;
   const output=this.auxiliary==='output'&&this.contextVisible;
-  const left=output||this.root.dataset.collapsed==='true'?0:48+(this.toolSettingsVisible?this.width:0);this.root.style.setProperty('--atlas-left-space',left+'px');
+  const collapsed=this.root.dataset.collapsed==='true';
+  const preferredLeft=output||collapsed?0:48+(this.toolSettingsVisible?this.width:0);
+  // A selection needs its geometry beside its properties, not a second tool palette.
+  const compact=this.contextVisible&&this.auxiliary==='selection'&&this.root.clientWidth>0&&this.root.clientWidth-preferredLeft-this.detailWidth<560;
+  const toolsOpen=this.toolSettingsVisible&&!compact;
+  const left=output||collapsed?0:48+(toolsOpen?this.width:0);
+  const details=compact?Math.min(this.detailWidth,Math.max(280,Math.floor(this.root.clientWidth*.45))):this.detailWidth;
+  this.root.style.setProperty('--atlas-dock-width',this.width+'px');this.root.style.setProperty('--atlas-details-width',details+'px');
+  this.root.dataset.compactSelection=String(compact);
+  this.root.dataset.toolsOpen=String(toolsOpen);this.toolSettings.hidden=!toolsOpen;
+  this.root.style.setProperty('--atlas-left-space',left+'px');
   this.root.dataset.secondary=String(this.contextVisible);
-  this.root.dataset.overlay=String(this.root.clientWidth-left-this.detailWidth<560);
+  this.root.dataset.overlay=String(!compact&&this.root.clientWidth-left-details<560);
   this.secondary.hidden=!this.contextVisible;
   const toggle=el<HTMLButtonElement>('atlas-context-toggle');if(toggle){toggle.disabled=!this.auxiliary&&!this.selectionKey;toggle.setAttribute('aria-expanded',String(this.contextVisible));toggle.setAttribute('aria-label',this.contextVisible?'Details ausblenden':'Details einblenden');toggle.title=toggle.getAttribute('aria-label')!;}
   el('atlas-panel-width')?.setAttribute('aria-valuenow',String(this.width));el('atlas-details-width')?.setAttribute('aria-valuenow',String(this.detailWidth));
@@ -278,7 +286,7 @@ export class AtlasWorkspaceLayout {
   try{
    if(!await this.host.tool(section,tool.control,tool.value,tool.settings))return;
    if(group){this.groupMemory.set(section,group);this.toolMemory.set(section+':'+group,tool.id);}
-   if(section==='interior'&&tool.id==='room-rectangle'&&this.auxiliary==='selection')this.hideContext();
+   if(this.auxiliary==='selection'&&(this.root.dataset.compactSelection==='true'||section==='interior'&&tool.id==='room-rectangle'))this.hideContext();
    this.renderGroups();this.showToolSettings(true);
    if(tool.panel==='library')await this.requestContext('library','Objekte wählen',[el('drawing-tool-options')]);
    if(tool.panel==='generation')await this.openGeneration();

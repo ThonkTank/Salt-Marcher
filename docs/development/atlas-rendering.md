@@ -65,6 +65,15 @@ Auswahl sowie eine falsche Leermeldung. Rechteck-/Ellipsentreffer benutzen
 tatsächliche Ausdehnung und Drehung; eine Indexhülle ist nur Kandidatensuche.
 Horizontale Wände benutzen ihre Breite, nicht ihre vertikale Höhe als Dicke.
 
+Bei ausgewählten Objekten hält das Layout auf schmaler Fläche die Eigenschaften
+neben der Karte und blendet die breite Werkzeugpalette vorübergehend aus.
+Die Werkzeuggruppen bleiben erreichbar; ein akzeptierter Werkzeugwechsel bringt
+die Palette zurück. Schließen der Eigenschaften oder mehr Fensterbreite stellt
+die bevorzugten Breiten wieder her. Diese Platzanpassung ändert weder Auswahl,
+Geometrie noch gespeicherte Layoutvorlieben. Die native Zugangswegprobe lässt
+beim Ziehen, Undo/Redo und Wiederöffnen die Eigenschaften ausdrücklich offen;
+sie prüft zusätzlich den direkten Rückweg zu den Werkzeugen bei 200 Prozent.
+
 ## Wann bleibt ein Quellenstand gültig?
 
 Abgewiesene Schreibversuche dürfen einen bestätigten Kartenstand oder eine
