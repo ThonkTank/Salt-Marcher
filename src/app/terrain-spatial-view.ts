@@ -109,7 +109,7 @@ export class TerrainSpatialView {
     this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
     this.contours??=terrainContourUniforms();
     const partial=data.update&&sameTerrainIdentity(this.identity,data.update.base)?data.update:undefined;
-    const next=updateTerrainMesh(this.mesh,{...data,grid:g},previous,oldOrigin,this.origin,partial,this.contours);
+    const next=updateTerrainMesh(this.mesh,{...data,grid:g},previous,oldOrigin,this.origin,partial,this.contours,this.renderer);
     if(this.mesh!==next.mesh){
       if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
       this.mesh=next.mesh;this.scene.add(this.mesh);

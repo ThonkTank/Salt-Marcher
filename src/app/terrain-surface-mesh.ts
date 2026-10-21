@@ -5,11 +5,12 @@ import type {SpatialReply} from './terrain-spatial-worker';
 import type {TerrainRect} from './terrain-frame';
 import {terrainContourMaterial,terrainContourUniforms} from './terrain-contours';
 import {terrainGridLayout} from './terrain-grid-layout';
+import {uploadTerrainTexture} from './terrain-texture-upload';
 
 type Mesh=THREE.Mesh<THREE.BufferGeometry,THREE.MeshBasicMaterial>;
 /** Retain compatible GPU buffers; apply only source-confirmed changed rectangles. */
 export function updateTerrainMesh(mesh:Mesh|null,data:SpatialReply,previous:TerrainGrid|null,oldOrigin:Point,origin:Point,
-  partial:SpatialReply['update'],contours:ReturnType<typeof terrainContourUniforms>){
+  partial:SpatialReply['update'],contours:ReturnType<typeof terrainContourUniforms>,renderer?:THREE.WebGLRenderer){
   const g=data.grid,v=g.view,b=v.box,l=terrainGridLayout(v),texture=mesh?.material.map as THREE.DataTexture|undefined;
   const compatible=!!mesh&&!!previous&&previous.view.columns===v.columns&&previous.view.rows===v.rows&&
     JSON.stringify([previous.view.box,previous.view.refinement])===JSON.stringify([b,v.refinement])&&texture?.image.width===data.width&&texture?.image.height===data.height;
@@ -29,10 +30,7 @@ export function updateTerrainMesh(mesh:Mesh|null,data:SpatialReply,previous:Terr
       elevation.addUpdateRange(y*v.columns+r.x,r.width);
     }
     if(rects.length){position.needsUpdate=true;elevation.needsUpdate=true;geometry.computeBoundingSphere();}
-    texture!.image.data=data.pixels;texture!.clearUpdateRanges();
-    const pixels=partial?.pixels??[{x:0,y:0,width:data.width,height:data.height}];
-    for(const r of pixels)for(let y=r.y;y<r.y+r.height;y++)texture!.addUpdateRange((y*data.width+r.x)*4,r.width*4);
-    if(pixels.length)texture!.needsUpdate=true;
+    texture!.image.data=data.pixels;uploadTerrainTexture(texture!,partial?.pixels,renderer);
   }else{
     const uv=new Float32Array(v.columns*v.rows*2),indices:number[]=[];
     for(let y=0;y<v.rows;y++)for(let x=0;x<v.columns;x++){
