@@ -6,7 +6,7 @@ import {RouteSurface} from './terrain-route';
 /** A fixed display lattice. Readers must yield unique height tiles from coarse to fine.
  * Only the bounded source neighbourhood survives a tile read; no author record is retained. */
 export interface TerrainLattice {x:number;y:number;dx:number;dy:number;columns:number;rows:number}
-export interface TerrainField {heights:Float32Array;water:Uint8Array;surface?:Float32Array}
+export interface TerrainField {heights:Float32Array;water:Uint8Array;surface?:Float32Array;levels?:Float32Array}
 /** Uniform sample centres inside the query box, including its half-cell border. */
 export interface TerrainSamples {columns:number;rows:number}
 export type TerrainStream=(kind:'height'|'route'|'lake',box:LandscapeBox,samples?:TerrainSamples)=>Iterable<LandscapeRecord>;
@@ -29,13 +29,13 @@ export function* streamTerrainFieldSteps(lattice:TerrainLattice,seaLevelM:number
   const {x,y,dx,dy,columns,rows}=lattice,n=columns*rows;
   if(![x,y,dx,dy,seaLevelM,x+dx*(columns-1),y+dy*(rows-1)].every(Number.isFinite)||dx<=0||dy<=0||!Number.isSafeInteger(columns)||!Number.isSafeInteger(rows)||columns<1||rows<1||n>4_460_544||!Number.isSafeInteger(maxSamples)||maxSamples<columns||maxSamples>65536)throw Error('Geländeraster prüfen.');
   // A scanline band bounds scratch space independently of texture size and author count.
-  const heights=new Float32Array(n),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined,bandRows=Math.floor(maxSamples/columns);
+  const heights=new Float32Array(n),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined,levels=withSurface?new Float32Array(n):undefined,bandRows=Math.floor(maxSamples/columns);
   for(let row=0;row<rows;row+=bandRows){
     const count=Math.min(bandRows,rows-row),band=terrainBand({...lattice,rows:count},row,seaLevelM,records,withSurface),offset=row*columns;
-    heights.set(band.heights,offset);water.set(band.water,offset);if(surface)surface.set(band.surface!,offset);
+    heights.set(band.heights,offset);water.set(band.water,offset);if(surface){surface.set(band.surface!,offset);levels!.set(band.levels!,offset);}
     yield* checkpoint();
   }
-  return{heights,water,surface};
+  return{heights,water,surface,levels};
 }
 function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,records:TerrainStream,withSurface:boolean,startColumn=0):TerrainField{
   const {x,y,dx,dy,columns,rows}=lattice,n=columns*rows,atX=(column:number)=>x+(startColumn+column)*dx,atY=(row:number)=>y+(startRow+row)*dy;
@@ -50,6 +50,7 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
   accumulateHeightLattice(Float64Array.from({length:columns},(_,i)=>atX(i)),Float64Array.from({length:rows},(_,i)=>atY(i)),records('height',query,{columns,rows}),ground,additions);
   for(let i=0;i<n;i++)ground[i]=ground[i]!+additions[i]!;
   let weighted:Float64Array|undefined,total:Float64Array|undefined,strength:Float64Array|undefined,levels:Float64Array|undefined;
+  let lakeLevels:Float64Array|undefined;
   for(const r of records('route',query)){
     if(!r.route?.nodes.length||r.route.conflict)continue;
     const surface=new RouteSurface([r]);
@@ -67,12 +68,15 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
   // are combined afterwards, using the final effective ground, as TerrainSampler does.
   for(const r of records('lake',query)){
     const level=r.waterLevelM??seaLevelM+1;
-    each(bounds(r),(i,px,py)=>{if(ground[i]!<=level&&contains({x:px,y:py},r.polygons)){levels??=new Float64Array(n).fill(-Infinity);levels[i]=Math.max(levels[i]!,level);}});
+    each(bounds(r),(i,px,py)=>{if(contains({x:px,y:py},r.polygons)){lakeLevels??=new Float64Array(n).fill(-Infinity);lakeLevels[i]=Math.max(lakeLevels[i]!,level);}});
   }
-  const heights=new Float32Array(ground),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined;
+  const heights=new Float32Array(ground),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined,waterLevels=withSurface?new Float32Array(n):undefined;
   for(let i=0;i<n;i++){
-    let level=levels?.[i]??-Infinity;if(ground[i]!<=seaLevelM)level=Math.max(level,seaLevelM);
+    let level=levels?.[i]??-Infinity;
+    if(waterLevels)waterLevels[i]=Math.max(seaLevelM,level,lakeLevels?.[i]??-Infinity);
+    if(ground[i]!<=(lakeLevels?.[i]??-Infinity))level=Math.max(level,lakeLevels![i]!);
+    if(ground[i]!<=seaLevelM)level=Math.max(level,seaLevelM);
     water[i]=level!==-Infinity?1:0;if(surface)surface[i]=Math.max(ground[i]!,level,seaLevelM);
   }
-  return{heights,water,surface};
+  return{heights,water,surface,levels:waterLevels};
 }

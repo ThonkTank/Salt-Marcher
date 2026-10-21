@@ -1,3 +1,5 @@
+import {TerrainBrushDraft} from './terrain-brush-draft';
+import {TerrainDraftMaterial} from './terrain-draft-material';
 import {atlasWorkplaneHeight,type AtlasWorkplane} from './atlas-workplane';
 import {terrainHorizon,TERRAIN_SKY_COLOR} from './terrain-coverage';
 import {AtlasSpatialLabels} from './atlas-spatial-labels';
@@ -35,6 +37,8 @@ export class TerrainSpatialView {
   private frozenPick:{camera:THREE.PerspectiveCamera;origin:Point;farDepth:number}|null=null;
   freezePicking(active:boolean){this.frozenPick=active?{camera:this.camera.clone(),origin:{...this.origin},farDepth:(this.scene.fog as THREE.Fog|null)?.far??Infinity}:null;}
   private grid:TerrainGrid|null=null;
+  private brushDraft:TerrainBrushDraft|null=null;
+  private draftMaterial:TerrainDraftMaterial|null=null;
   private identity:TerrainFrameIdentity|undefined;
   private detail:TerrainDetailMaterial|null=null;
   private base:TerrainGrid|null=null;
@@ -117,7 +121,17 @@ export class TerrainSpatialView {
     if(!this.mesh||!this.grid)return;
     this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{grid:this.grid,detail},rects);this.render();
   }
+  previewHeight(stroke:import('./terrain-brush').HeightStroke){
+    if(!this.mesh||!this.grid?.editing)return false;
+    this.brushDraft??=new TerrainBrushDraft(this.grid);
+    if(!this.brushDraft.update(stroke))return false;
+    this.draftMaterial!.update(this.mesh,this.brushDraft.grid,this.brushDraft.ground,this.brushDraft.changedRect);
+    this.grid=this.brushDraft.grid;this.contourSlope=Math.max(this.contourSlope,terrainContourSlope(this.grid,this.brushDraft.changedRect));
+    this.heightRange=Math.max(this.heightRange,this.brushDraft.maximumHeight);
+    this.render();return true;
+  }
   setData(data:SpatialReply){
+    this.brushDraft=null;
     this.removeLine(this.cursor);this.cursor=null;
     const previous=this.grid,oldOrigin=this.origin;
     const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view;
@@ -132,6 +146,7 @@ export class TerrainSpatialView {
     }
     this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
     this.hexGrid.attach(this.mesh.material);
+    this.draftMaterial??=new TerrainDraftMaterial();this.draftMaterial.attach(this.mesh,g,data.landColor);
     const geometry=this.mesh.geometry;
     if(!data.draft&&!this.frozenPick){
       this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}

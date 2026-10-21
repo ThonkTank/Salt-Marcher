@@ -49,3 +49,12 @@ test('active detail pixels use their own delta, including full fallback when its
  const full=applyTerrainFrame(before,delta);assert.deepEqual(full.projection.detail,after.projection.detail);assert.equal(before.projection.detail.pixels[90*128*4+70*4],0);
  after.projection.detail.box={...box,x:0};assert.equal(terrainFrameDelta(before,after,before.target).kind,'full');
 });
+
+test('raw ground and water deltas survive a surface that remains unchanged under water',()=>{
+ const before=tilted(1),after=tilted(2),n=65*65;
+ before.projection.grid.editing={ground:new Float32Array(n).fill(-100),water:new Float32Array(n)};
+ after.projection.grid.editing=structuredClone(before.projection.grid.editing);after.projection.grid.editing.ground[100]=-50;after.projection.grid.editing.water[200]=30;
+ const delta=terrainFrameDelta(before,after,before.target);assert.equal(delta.kind,'delta');assert.equal(delta.heights.length,0);assert.equal(delta.editing.ground.length,1);assert.equal(delta.editing.water.length,1);
+ assert.deepEqual(applyTerrainFrame(before,delta).projection.grid,after.projection.grid);assert.equal(before.projection.grid.editing.ground[100],-100);
+ delete before.projection.grid.editing;assert.equal(terrainFrameDelta(before,after,before.target).kind,'full');
+});

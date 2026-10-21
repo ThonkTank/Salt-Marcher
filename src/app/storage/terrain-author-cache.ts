@@ -16,9 +16,11 @@ export class TerrainAuthorCache {
  seed(cam:string,grid:TerrainGrid,fence:string){
   this.observe(cam,fence);const v=grid.view;
   for(const {x,y,lattice}of terrainGridLayout(v).blocks){
-   const heights=new Float32Array(lattice.columns*lattice.rows);
-   for(let row=0;row<lattice.rows;row++)heights.set(grid.heights.subarray((y+row)*v.columns+x,(y+row)*v.columns+x+lattice.columns),row*lattice.columns);
-   this.cache.seedGrid(lattice,grid.seaLevelM,heights);
+   const heights=new Float32Array(lattice.columns*lattice.rows),ground=grid.editing?new Float32Array(heights.length):undefined,water=ground?new Float32Array(heights.length):undefined;
+   for(let row=0;row<lattice.rows;row++){const start=(y+row)*v.columns+x,end=start+lattice.columns,offset=row*lattice.columns;
+    heights.set(grid.heights.subarray(start,end),offset);ground?.set(grid.editing!.ground.subarray(start,end),offset);water?.set(grid.editing!.water.subarray(start,end),offset);
+   }
+   this.cache.seedGrid(lattice,grid.seaLevelM,heights,ground,water);
   }
  }
  advance(before:string,after:string,change:TerrainInvalidation){

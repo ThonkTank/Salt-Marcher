@@ -65,3 +65,17 @@ test('joined dirty rectangles cover every dirty sample once, preserve holes and 
   for(let y=0;y<rows;y++)for(let x=0;x<columns;x++)assert.equal(seen[y*columns+x],dirty[Math.floor(y/edge)*across+Math.floor(x/edge)]);
  }
 });
+
+test('editable cache retains raw ground and potential water without an extra source pass',()=>{
+ const s=source(),cache=new TerrainProjectionCache(),first=cache.gridData(lattice,150,s.stream);
+ assert.equal(first.surface[0],150);assert.equal(first.ground[0],100);assert.equal(first.levels[0],150);
+ const snapshot=structuredClone(first);first.ground.fill(999);first.levels.fill(888);s.calls.length=0;
+ assert.deepEqual(cache.gridData(lattice,150,s.stream),snapshot);assert.equal(s.calls.length,0);
+ const box={x:lattice.x,y:lattice.y,width:lattice.dx*3,height:lattice.dy*3};cache.invalidate([box]);
+ const changed=cache.gridData(lattice,150,s.stream),cold=streamTerrainField(lattice,150,s.stream);
+ assert.deepEqual(changed.ground,cold.heights);assert.deepEqual(changed.levels,cold.levels);assert.deepEqual(changed.surface,cold.surface);
+ assert.equal(cache.tiles.bytes,JSON.stringify(['surface',lattice,150]).length*2+19*17*12+5*5+128);
+ // Old trusted surface-only seeds must not be misrepresented as ground.
+ cache.seedGrid(lattice,150,snapshot.surface);s.calls.length=0;
+ assert.deepEqual(cache.gridData(lattice,150,s.stream),snapshot);assert(s.calls.length>0);
+});

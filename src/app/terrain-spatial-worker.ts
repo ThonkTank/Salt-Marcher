@@ -8,7 +8,7 @@ import {orderedColors} from './landscape-brush';
 import {terrainColors} from './world-model';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
 export interface SpatialJob extends BrushPreviewJob {view:TerrainView;source:string;objectSources?:TerrainObjectSource[];routeRecords?:LandscapeRecord[]}
-export interface SpatialReply {rasterRouteKey?:string;detail?:import("./terrain-detail").TerrainDetail;identity?:import("./terrain-frame").TerrainFrameIdentity;update?:{base:import("./terrain-frame").TerrainFrameIdentity;heights:import("./terrain-frame").TerrainRect[];pixels:import("./terrain-frame").TerrainRect[];detail?:import("./terrain-frame").TerrainRect[]};objects?:import("./terrain-objects").TerrainObject[];generation:number;source:string;grid:TerrainGrid;pixels:Uint8Array;width:number;height:number;draft:boolean;routes?:LandscapeRecord[];vegetation?:LandscapeRecord[];protectedLimit?:number;heightM?:number;contourInk?:string;
+export interface SpatialReply {rasterRouteKey?:string;detail?:import("./terrain-detail").TerrainDetail;identity?:import("./terrain-frame").TerrainFrameIdentity;update?:{base:import("./terrain-frame").TerrainFrameIdentity;heights:import("./terrain-frame").TerrainRect[];pixels:import("./terrain-frame").TerrainRect[];detail?:import("./terrain-frame").TerrainRect[]};objects?:import("./terrain-objects").TerrainObject[];generation:number;source:string;grid:TerrainGrid;pixels:Uint8Array;width:number;height:number;draft:boolean;routes?:LandscapeRecord[];vegetation?:LandscapeRecord[];protectedLimit?:number;heightM?:number;contourInk?:string;landColor?:string;
  /** Renderer composition only: confirmed local colour under retained fine tiles. */
  brushDetail?:import('./terrain-detail').TerrainDetail;
 }

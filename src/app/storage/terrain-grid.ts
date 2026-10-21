@@ -18,10 +18,12 @@ export function readTerrainGrid(db:any,cam:string,view:TerrainView,stream?:Terra
   const get=db.prepare('SELECT payload FROM atlas_landscape WHERE rowid=?');
   for(const row of rows)yield JSON.parse(get.get(row.rowid).payload) as LandscapeRecord;
  };
- const heights=new Float32Array(view.columns*view.rows);
+ const heights=new Float32Array(view.columns*view.rows),ground=new Float32Array(heights.length),water=new Float32Array(heights.length);
  for(const {x,y,lattice}of terrainGridLayout(view).blocks){
-  const part=cache?cache.grid(lattice,seaLevelM,records):streamTerrainField(lattice,seaLevelM,records).surface!;
-  for(let row=0;row<lattice.rows;row++)heights.set(part.subarray(row*lattice.columns,(row+1)*lattice.columns),(y+row)*view.columns+x);
+  const field=cache?cache.gridData(lattice,seaLevelM,records):(()=>{const f=streamTerrainField(lattice,seaLevelM,records);return {surface:f.surface!,ground:f.heights,levels:f.levels};})();
+  for(let row=0;row<lattice.rows;row++){const start=row*lattice.columns,end=(row+1)*lattice.columns,offset=(y+row)*view.columns+x;
+   heights.set(field.surface.subarray(start,end),offset);ground.set(field.ground!.subarray(start,end),offset);water.set(field.levels!.subarray(start,end),offset);
+  }
  }
- return{view,heights,seaLevelM};
+ return{view,heights,seaLevelM,editing:{ground,water}};
 }

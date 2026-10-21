@@ -6,16 +6,15 @@ import {terrainGridLayout} from './terrain-grid-layout';
 
 /** One slope reference for the loaded focus region, independent of individual
  * fragments. Choosing a level per pixel made equal-elevation lines break up. */
-export function terrainContourSlope(grid:TerrainGrid){
+export function terrainContourSlope(grid:TerrainGrid,rect?:{x:number;y:number;width:number;height:number}){
   const v=grid.view,l=terrainGridLayout(v),b=v.refinement??v.box;let slope=0;
-  for(let y=0;y<v.rows-1;y++)for(let x=0;x<v.columns-1;x++){
+  const left=Math.max(0,(rect?.x??1)-1),top=Math.max(0,(rect?.y??1)-1),right=Math.min(v.columns-1,rect?rect.x+rect.width:v.columns-1),bottom=Math.min(v.rows-1,rect?rect.y+rect.height:v.rows-1);
+  for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){
     if(l.x.values[x]!<b.x||l.x.values[x]!>b.x+b.width||l.y.values[y]!<b.y||l.y.values[y]!>b.y+b.height)continue;
     const i=y*v.columns+x,h=grid.heights;
-    for(const far of [false,true]){
-      const dx=(far?h[i+v.columns+1]!-h[i+v.columns]!:h[i+1]!-h[i]!)/(l.x.values[x+1]!-l.x.values[x]!);
-      const dy=(far?h[i+v.columns+1]!-h[i+1]!:h[i+v.columns]!-h[i]!)/(l.y.values[y+1]!-l.y.values[y]!);
-      slope=Math.max(slope,Math.hypot(dx,dy));
-    }
+    const dx=l.x.values[x+1]!-l.x.values[x]!,dy=l.y.values[y+1]!-l.y.values[y]!;
+    slope=Math.max(slope,Math.hypot((h[i+1]!-h[i]!)/dx,(h[i+v.columns]!-h[i]!)/dy),
+      Math.hypot((h[i+v.columns+1]!-h[i+v.columns]!)/dx,(h[i+v.columns+1]!-h[i+1]!)/dy));
   }
   return slope;
 }

@@ -2,7 +2,7 @@ import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
 import {streamTerrainField,streamTerrainFieldRows,streamTerrainFieldBlock,type TerrainField,type TerrainLattice,type TerrainStream} from './terrain-field-stream';
 import type {LandscapeBox} from './atlas-landscape';
 import {terrainDirtyRects} from './terrain-dirty-rects';
-type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;dirty:Uint8Array};
+type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;ground?:Float32Array;levels?:Float32Array;dirty:Uint8Array};
 type Tile=Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
 /** 16 MiB of the consumer's 64 MiB derived-cache budget.
  * Other shares: landscape PNGs 8, response bases 8, Main's replies 16 canonical surface blocks 8 and scale pyramid 8 (64 MiB total).
@@ -25,7 +25,7 @@ export class TerrainProjectionCache {
     if(hit?.kind==='field')return hit.field;
     const field=band?streamTerrainFieldRows(lattice,band.first,band.count,sea,stream,surface):streamTerrainField(lattice,sea,stream,surface);
     const box={x:lattice.x-lattice.dx/2,y:lattice.y+(band?.first??0)*lattice.dy-lattice.dy/2,width:lattice.columns*lattice.dx,height:(band?.count??lattice.rows)*lattice.dy};
-    this.tiles.put(key,box,{kind:'field',field},key.length*2+field.heights.byteLength+field.water.byteLength+(field.surface?.byteLength??0));
+    this.tiles.put(key,box,{kind:'field',field},key.length*2+field.heights.byteLength+field.water.byteLength+(field.surface?.byteLength??0)+(field.levels?.byteLength??0));
     return field;
   }
   private *blocks(lattice:TerrainLattice){
@@ -38,31 +38,37 @@ export class TerrainProjectionCache {
       yield {rect,index:index++,box};
     }
   }
-  seedGrid(lattice:TerrainLattice,sea:number,heights:Float32Array){
-    if(heights.length!==lattice.columns*lattice.rows)throw Error('Geländerastergröße prüfen.');
+  seedGrid(lattice:TerrainLattice,sea:number,heights:Float32Array,ground?:Float32Array,levels?:Float32Array){
+    if(heights.length!==lattice.columns*lattice.rows||ground&&ground.length!==heights.length||levels&&levels.length!==heights.length||!!ground!==!!levels)throw Error('Geländerastergröße prüfen.');
     const key=JSON.stringify(['surface',lattice,sea]),dirty=new Uint8Array(Math.ceil(lattice.columns/4)*Math.ceil(lattice.rows/4));
     const box={x:lattice.x-lattice.dx/2,y:lattice.y-lattice.dy/2,width:lattice.columns*lattice.dx,height:lattice.rows*lattice.dy};
     // A single contiguous raster avoids thousands of key lookups and row copies.
     // Own the arrays: a returned frame or trusted worker seed must never alias it.
-    this.tiles.put(key,box,{kind:'surface',lattice:{...lattice},heights:heights.slice(),dirty},key.length*2+heights.byteLength+dirty.byteLength+128);
+    this.tiles.put(key,box,{kind:'surface',lattice:{...lattice},heights:heights.slice(),ground:ground?.slice(),levels:levels?.slice(),dirty},key.length*2+heights.byteLength+(ground?.byteLength??0)+(levels?.byteLength??0)+dirty.byteLength+128);
   }
-  grid(lattice:TerrainLattice,sea:number,stream:TerrainStream){
+  grid(lattice:TerrainLattice,sea:number,stream:TerrainStream){return this.gridData(lattice,sea,stream,false).surface;}
+  /** Editable ground and potential water levels share the surface's reads and invalidation. */
+  gridData(lattice:TerrainLattice,sea:number,stream:TerrainStream,editable=true):{surface:Float32Array;ground?:Float32Array;levels?:Float32Array}{
     const key=JSON.stringify(['surface',lattice,sea]),hit=this.tiles.get(key);
     // Cold/reset views stream each source through a few bands, not hundreds of
     // tiny queries/decodes. Subsequent local edits rebuild only dirty blocks.
-    if(hit?.kind!=='surface'||hit.dirty.reduce((sum,v)=>sum+v,0)>hit.dirty.length/2){
-      const full=streamTerrainField(lattice,sea,stream).surface!;this.seedGrid(lattice,sea,full);return full;
+    if(hit?.kind!=='surface'||editable&&!hit.ground||hit.dirty.reduce((sum,v)=>sum+v,0)>hit.dirty.length/2){
+      const full=streamTerrainField(lattice,sea,stream);
+      const ground=editable?full.heights:undefined,levels=editable?full.levels:undefined;
+      this.seedGrid(lattice,sea,full.surface!,ground,levels);return {surface:full.surface!,ground,levels};
     }
-    const heights=hit.heights.slice();
-    if(!hit.dirty.some(Boolean))return heights;
+    const heights=hit.heights.slice(),ground=hit.ground?.slice(),levels=hit.levels?.slice();
+    if(!hit.dirty.some(Boolean))return {surface:heights,ground,levels};
     for(const r of terrainDirtyRects(hit.dirty,lattice.columns,lattice.rows,4)){
-      const part=streamTerrainFieldBlock(lattice,r,sea,stream).surface!;
-      for(let y=0;y<r.height;y++)heights.set(part.subarray(y*r.width,(y+1)*r.width),(r.y+y)*lattice.columns+r.x);
+      const part=streamTerrainFieldBlock(lattice,r,sea,stream);
+      for(let y=0;y<r.height;y++){const start=y*r.width,end=(y+1)*r.width,offset=(r.y+y)*lattice.columns+r.x;
+        heights.set(part.surface!.subarray(start,end),offset);ground?.set(part.heights.subarray(start,end),offset);levels?.set(part.levels!.subarray(start,end),offset);
+      }
     }
     // Publish only after every dirty block succeeded. A failed source read leaves
     // the old grid dirty, and previously returned frames remain immutable.
-    hit.heights.set(heights);hit.dirty.fill(0);
-    return heights;
+    hit.heights.set(heights);if(ground)hit.ground!.set(ground);if(levels)hit.levels!.set(levels);hit.dirty.fill(0);
+    return {surface:heights,ground,levels};
   }
   pixels(key:string,box:LandscapeBox,create:()=>Uint8Array){
     const hit=this.cachedPixels(key);if(hit)return hit;

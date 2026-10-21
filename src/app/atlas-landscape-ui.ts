@@ -131,6 +131,7 @@ export class LandscapeWorkbench {
       current?:()=>boolean;
       redraw: () => void;
       write: (a: AtlasAction) => Promise<unknown>;
+      previewHeight?:(stroke:HeightStroke)=>void;
       terrainGesture:(active:boolean)=>void|Promise<void>;
       writeTerrain:(a:TerrainLiveAction,c:TerrainLiveContext)=>Promise<import("./campaign-atlas-contracts").AtlasCommitAck>;
       error: (e: unknown) => void;
@@ -458,10 +459,23 @@ export class LandscapeWorkbench {
     // Sample the first real elapsed frame, just like subsequent stationary
     // samples. A near-zero pointerdown dose can commit without changing a pixel.
     // Releasing before that frame still flushes the actual elapsed input below.
-    this.scheduleLive();
+    this.scheduleLive();this.scheduleHeightPreview();
+  }
+  private previewFrame:number|undefined;
+  private scheduleHeightPreview(){
+    if(!this.live||!this.maskStroke||this.pointer===null||this.previewFrame!==undefined)return;
+    this.previewFrame=requestAnimationFrame(()=>{
+      this.previewFrame=undefined;this.sampleHeight();
+      if(this.maskStroke)this.host.previewHeight?.(this.maskStroke);
+      this.scheduleHeightPreview();
+    });
+  }
+  private sampleHeight(){
+    if(this.maskStroke&&this.pointer!==null&&this.maskStroke.samples.length<20000){const last=this.maskStroke.samples.at(-1)!;this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(last.t,performance.now()-this.maskStart))});}
   }
   private sampleLive(){
-    if(this.maskStroke&&this.pointer!==null&&this.maskStroke.samples.length<20000){const last=this.maskStroke.samples.at(-1)!;this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(last.t,performance.now()-this.maskStart))});}
+    this.sampleHeight();
+    if(this.maskStroke)this.host.previewHeight?.(this.maskStroke);
     if(!this.live)return;
     if(this.maskStroke)this.live.update({kind:'landscape-height-stroke',stroke:this.maskStroke});
     else if(this.points.length!==this.liveColorCount){const record=this.colorRecord();record.id=this.liveId;this.liveColorCount=this.points.length;this.live.update({kind:'landscape-color-stroke',record});}
@@ -475,6 +489,7 @@ export class LandscapeWorkbench {
     this.liveFrame=requestAnimationFrame(()=>this.tickLive());
   }
   private endLiveInput(){
+    if(this.previewFrame!==undefined)cancelAnimationFrame(this.previewFrame);this.previewFrame=undefined;
     if(this.liveFrame!==undefined)cancelAnimationFrame(this.liveFrame);this.liveFrame=undefined;
     if(this.maskStroke&&this.pointer!==null)this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,performance.now()-this.maskStart))});
     this.pointer=null;clearTimeout(this.maskTimer);

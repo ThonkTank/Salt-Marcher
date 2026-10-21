@@ -23,3 +23,19 @@ test('late navigation reads cannot replace the live authored frame',async t=>{
  Object.assign(state,{active:true,colorTiles:new TerrainDetailTiles(),sourceWindow:{frame:box,pixelWidth:1000},frame:box,objectSources:[],token:'t',revision:1,requested:'view',host:{live:()=>live,hasDraft:()=>false,writing:()=>false},publish:()=>published++,sourceFailed:()=>assert.fail('obsolete live reply must be ignored')});
  const pending=state.load('view',0);live=true;resolve({ok:true,value:{revision:1,grid:{view:{}}}});await pending;assert.equal(published,0);
 });
+
+test('draft stays anchored while confirmed prefixes arrive; finish replaces it exactly once',()=>{
+ const shown=[],frozen=[],state=Object.create(TerrainSpatialUI.prototype),original={identity:{revision:1},grid:{heights:new Float32Array([0])}};
+ Object.assign(state,{active:true,ready:true,token:'t',source:'s',revision:1,input:{dataset:{}},baseline:original,view:{freezePicking:a=>frozen.push(a),previewHeight:()=>true},colorTiles:{reconcile:()=>undefined},publish:d=>shown.push(d),needsLoad:()=>false});
+ state.gesture(true);state.previewHeight({});assert.equal(state.input.dataset.terrainDraft,'height');
+ const confirmed={...original,identity:{revision:2},grid:{heights:new Float32Array([120])},update:{base:original.identity,heights:[],pixels:[]}};
+ assert.equal(state.presentLive(confirmed,false),false);assert.equal(shown.length,0);assert.equal(state.input.dataset.terrainRevision,undefined);
+ state.gesture(false);assert.equal(shown.length,1);assert.equal(shown[0].grid,confirmed.grid);assert.equal(shown[0].update,undefined,'draft buffers need a complete restoration, not a delta against the old confirmed mesh');
+ assert.equal(state.input.dataset.terrainRevision,'2');assert.equal(state.input.dataset.terrainDraft,undefined);assert.deepEqual(frozen,[true,false]);
+});
+test('a draft with no acknowledged result restores its starting surface',()=>{
+ const shown=[],state=Object.create(TerrainSpatialUI.prototype),original={identity:{revision:1},grid:{heights:new Float32Array([0])}};
+ Object.assign(state,{active:true,ready:true,input:{dataset:{terrainQuality:'overview'}},baseline:original,view:{freezePicking(){},previewHeight:()=>true},publish:d=>shown.push(d),needsLoad:()=>false});
+ state.gesture(true);state.previewHeight({});state.gesture(false);
+ assert.equal(shown.length,1);assert.equal(shown[0].grid,original.grid);assert.equal(state.input.dataset.terrainRevision,'1');assert.equal(state.input.dataset.terrainQuality,'overview');
+});

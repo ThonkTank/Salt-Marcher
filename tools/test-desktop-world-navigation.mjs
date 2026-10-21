@@ -1,4 +1,5 @@
 // Sparse world map, real main Atlas, and a 2,500-mile brush. No user profile.
+import {buildDraftProbe,terrainDraftPixels} from './terrain-draft-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
@@ -29,11 +30,28 @@ if(populated){
   save({...emptyRecord('road'),id:'road:'+x+':'+y,width:8,points:[{x:px,y:py},{x:px+1000000,y:py+900000}]});
  }})();
 }
+const large=process.env.WORLD_LARGE==='1';
+if(large){
+const putLarge=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+const saveLarge=record=>{const b=bounds(record);putLarge.run(campaign.id,record.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(record));};
+store.db.transaction(()=>{
+ for(let i=0;i<100000;i++){
+  const x=-20000000+(i%500)*80000,y=-10000000+Math.floor(i/500)*100000;
+  saveLarge({...emptyRecord('patch'),id:'world-patch:'+i,name:'Waldfläche '+i,values:{terrain:'forest'},polygons:[{outer:[{x,y},{x:x+60000,y},{x:x+60000,y:y+80000},{x,y:y+80000}],holes:[]}]});
+ }
+ for(let i=0;i<5000;i++){
+  const x=-20000000+(i%100)*400000,y=-10000000+Math.floor(i/100)*400000;
+  saveLarge({...emptyRecord('place'),id:'world-place:'+i,name:'Ort '+i,points:[{x,y}]});
+ }
+})();
+}
+const recordCount=store.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(campaign.id).n;
 store.tutorial('skipped');store.close();
-const result={radius,records:records.length+(populated?3072:0),populated,metrics:[],errors:[]};let page;
+const result={radius,records:recordCount,populated,large,metrics:[],errors:[]};let page;
 const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
+const draftProbe=buildDraftProbe();
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  page=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
@@ -51,12 +69,22 @@ try{
  const layoutTrace=[];if(process.env.WORLD_LAYOUT_TRACE==='1')cdp.on('Tracing.dataCollected',e=>layoutTrace.push(...e.value));
  await page.evaluate(()=>{
   window.__saltTerrainTrace={events:[],dropped:0};
-  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];
+  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];window.__worldPixels=[];
   const gl=document.querySelector('#atlas-terrain-spatial').getContext('webgl2'),clear=gl.clear.bind(gl);
   gl.clear=(...args)=>{window.__worldDraws.push(performance.now());return clear(...args);};
   let previous=performance.now();const frame=now=>{window.__worldFrames.push({time:now,gap:now-previous});previous=now;requestAnimationFrame(frame);};requestAnimationFrame(frame);
   new PerformanceObserver(list=>window.__worldLong.push(...list.getEntries().map(e=>({time:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:false});
-  const map=document.querySelector('#campaign-map');new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality']});
+  const map=document.querySelector('#campaign-map');
+  const canvas=document.querySelector('#atlas-terrain-spatial');let pixelBefore=null,pixelStart=0;
+  const sample=()=>{const values=new Uint8Array(32*32*4);gl.readPixels(Math.floor(canvas.width/2)-16,Math.floor(canvas.height/2)-16,32,32,gl.RGBA,gl.UNSIGNED_BYTE,values);return values;};
+  const pixels=()=>{
+   if(pixelBefore){const values=sample();let changed=0;for(let i=0;i<values.length;i+=4)if(Math.max(Math.abs(values[i]-pixelBefore[i]),Math.abs(values[i+1]-pixelBefore[i+1]),Math.abs(values[i+2]-pixelBefore[i+2]))>=3)changed++;
+    if(changed>=4){window.__worldPixels.push({time:performance.now(),delayMs:performance.now()-pixelStart,changed});pixelBefore=null;}
+   }requestAnimationFrame(pixels);
+  };requestAnimationFrame(pixels);
+  document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelBefore=sample();pixelStart=performance.now();}},true);
+  document.addEventListener('pointerup',()=>{pixelBefore=null;},true);
+  new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-draft']});
   for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:performance.now()});},true);
  });
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
@@ -64,9 +92,9 @@ try{
   await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];});await cdp.send('Profiler.start');
   const start=performance.now();await fn();await wait(1000);
   const {profile}=await cdp.send('Profiler.stop');await writeFile(out+'/'+name+'.cpuprofile',JSON.stringify(profile));
-  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,draws:window.__worldDraws,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,pixels:window.__worldPixels,draws:window.__worldDraws,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
   const down=data.pointer.find(e=>e.type==='pointerdown'),up=data.pointer.find(e=>e.type==='pointerup');
-  if(down){const confirmed=data.changes.filter(e=>Number(e.terrain)>records.length&&e.time>=down.time);data.brushFeedback={firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
+  if(down){const confirmed=data.changes.filter(e=>Number(e.terrain)>records.length&&e.time>=down.time);data.brushFeedback={firstPixelMs:data.pixels[0]?.delayMs??null,firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
   const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),...data});
   await writeFile(out+'/progress.json',JSON.stringify(result,null,2));console.log(name,JSON.stringify({p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),longTasks:data.longTasks.length}));
  }
@@ -83,15 +111,20 @@ try{
  await page.locator('#atlas-section').selectOption('terrain');await atlasCanvasReady(page);await page.locator('#atlas-units').selectOption('metric');await page.locator('[data-tool-group="land"]').click();
  await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();await setBrushWorldRadius(page,'land-radius',radius);await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('500');
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
- await measure('sculpt',async()=>{await page.mouse.move(x,y);await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);await page.mouse.up();});
+ await measure('sculpt',async()=>{await page.mouse.move(x,y);await wait(100);await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);await page.mouse.up();});
  await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
  if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
  await native.capture(page,'world-sculpt');
  result.sculptStatus=await page.evaluate(()=>({text:document.querySelector('#land-status').textContent,revision:document.querySelector('#campaign-map').dataset.terrainRevision,quality:document.querySelector('#campaign-map').dataset.terrainQuality}));
  result.presentationChanges=await page.evaluate(()=>window.__worldChanges);
  if(process.env.WORLD_PROGRESSIVE==='1'){
-  assert(result.presentationChanges.some(c=>c.quality==='interactive'),'coherent first pass must be displayed');
+  assert(result.presentationChanges.some(c=>c.draft==='height'||c.quality==='interactive'),'draft or coherent first pass must be displayed');
   assert(result.presentationChanges.some(c=>c.quality==='detail'),'fine output must replace the interactive pass after the stroke');
+ }
+ if(process.env.WORLD_DRAFT==='1'){
+  assert(result.presentationChanges.some(c=>c.draft==='height'),'direct grid draft must be visible during the gesture');
+  assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'draft must be replaced when the gesture finishes');
+  assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback.firstPixelMs!==null,'actual terrain pixels must change while holding the brush');
  }
  result.timing=await page.evaluate(()=>window.__saltTerrainTrace);
  if(process.env.SALTMARCHER_TERRAIN_TRACE==='1')result.backendTiming=await native.app.evaluate(()=>({main:global.__saltTerrainTrace,worker:global.__worldWorkerTrace}));
@@ -101,5 +134,6 @@ try{
  assert.equal(result.hexPixels.centreMin,255);assert(result.hexPixels.edgeMax<250);assert(result.hexPixels.periodicError<=1);assert(result.hexPixels.tileError<=1);assert.equal(result.hexPixels.hiddenMin,255);assert.equal(result.hexPixels.gridObjects,0);
  result.contourPixels=await terrainContourPixels(page,contourProbe);
  result.detailPixels=await terrainDetailPixels(page,detailProbe);
+ result.draftPixels=await terrainDraftPixels(page,draftProbe);
  assert.deepEqual(result.errors,[]);await native.close();await native.finish(result);
 }catch(error){await writeFile(out+'/progress.json',JSON.stringify(result,null,2));await native.fail(error);throw error;}finally{await native.dispose();}
