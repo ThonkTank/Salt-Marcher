@@ -1,4 +1,4 @@
-import {invalidateTerrainDetail,fillTerrainDetail} from './terrain-detail-retention';
+import {invalidateTerrainDetail} from './terrain-detail-retention';
 import type {LandscapeBox} from './atlas-landscape';
 import type {TerrainDetail} from './terrain-detail';
 import type {TerrainRect} from './terrain-frame';
@@ -48,7 +48,7 @@ export class TerrainDetailTiles {
  base(token:string):TerrainIdentity|undefined{
   return this.source?.token===token?{revision:this.source.revision,fence:this.source.fence}:undefined;
  }
- reconcile(source:TerrainColorSource,change?:TerrainColorChange,fresh?:TerrainDetail){
+ reconcile(source:TerrainColorSource,change?:TerrainColorChange){
   const identity=terrainColorIdentity(source);
   if(identity!==this.identity){
    if(change&&this.source?.token===source.token&&this.source.rasterRouteKey===source.rasterRouteKey&&
@@ -58,7 +58,6 @@ export class TerrainDetailTiles {
    }else this.clear();
    this.source={token:source.token,revision:source.revision,fence:source.fence,rasterRouteKey:source.rasterRouteKey};this.identity=identity;
   }
-  if(fresh)this.detail=this.detail?fillTerrainDetail(this.detail,fresh):fresh;
   return this.detail;
  }
  async load(identity:string,area:LandscapeBox,query:Omit<TerrainColorRequest,'box'|'width'|'height'|'displayMpp'>,

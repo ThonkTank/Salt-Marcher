@@ -168,6 +168,14 @@ test('post-edit overview and live frames preserve confirmed distant detail befor
  const retained=f.ui.colorTiles.detail;
  f.ui.presentLive({...f.ui.baseline,revision:3,fence:'live',colorChange:{base:{revision:2,fence:'source'},invalidation:{reset:false,bounds:[]}},detail:undefined});
  assert.equal(f.published.at(-1).detail,retained,'a live frame cannot drop unchanged viewport detail');
+ const fresh={box:bounds[0],width:16,height:16,pixels:new Uint8Array(16*16*4).fill(127)},originalRetained=retained.pixels.slice();
+ f.ui.presentLive({...f.ui.baseline,revision:4,fence:'next',colorChange:{base:{revision:3,fence:'live'},invalidation:{reset:false,bounds}},detail:fresh});
+ const live=f.published.at(-1);
+ assert.equal(live.brushDetail,fresh,'small confirmed patch goes directly to GPU composition');
+ assert(live.detail.coverage.values.some(v=>v===0),'invalid fine pixels are not faked as loaded by CPU upsampling');
+ assert(live.detail.coverage.values.some(v=>v===255),'distant current detail stays sharp');
+ assert.deepEqual(retained.pixels,originalRetained,'earlier frames are immutable');
+ assert.notEqual(live.detail,fresh,'brush pixels never replace the retained world image');
 });
 
 test('steep tilt replaces narrow pending coverage but later rotations retain the widened source',async t=>{

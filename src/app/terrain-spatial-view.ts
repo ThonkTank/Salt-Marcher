@@ -36,7 +36,7 @@ export class TerrainSpatialView {
   freezePicking(active:boolean){this.frozenPick=active?{camera:this.camera.clone(),origin:{...this.origin},farDepth:(this.scene.fog as THREE.Fog|null)?.far??Infinity}:null;}
   private grid:TerrainGrid|null=null;
   private identity:TerrainFrameIdentity|undefined;
-  private detail=new TerrainDetailMaterial();
+  private detail:TerrainDetailMaterial|null=null;
   private base:TerrainGrid|null=null;
   private cursor:THREE.Line|null=null;
   private selection:THREE.Line|null=null;

@@ -13,8 +13,11 @@ export function terrainDetailDimensions(box:LandscapeBox,resolution?:number){
 }
 export function terrainDetailBox(point:Point,radius:number,view:LandscapeBox):LandscapeBox|undefined{
   if(!Number.isFinite(radius)||radius<=0)return;
-  const step=2**Math.ceil(Math.log2(radius))*2,x=Math.round(point.x/step)*step,y=Math.round(point.y/step)*step;
-  const left=Math.max(view.x,x-step*2),top=Math.max(view.y,y-step*2),right=Math.min(view.x+view.width,x+step*2),bottom=Math.min(view.y+view.height,y+step*2);
+  // Stable half-radius cells retain the patch across small cursor moves. One
+  // extra cell covers rounding and the soft texture edge without rasterizing
+  // a continent-sized square for a much smaller circular brush.
+  const step=2**Math.ceil(Math.log2(radius/4)),x=Math.round(point.x/step)*step,y=Math.round(point.y/step)*step,pad=radius+step;
+  const left=Math.max(view.x,x-pad),top=Math.max(view.y,y-pad),right=Math.min(view.x+view.width,x+pad),bottom=Math.min(view.y+view.height,y+pad);
   if(right<=left||bottom<=top)return;
   return {x:left,y:top,width:right-left,height:bottom-top};
 }
