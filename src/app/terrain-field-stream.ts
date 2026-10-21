@@ -18,13 +18,19 @@ export function streamTerrainFieldBlock(lattice:TerrainLattice,rect:{x:number;y:
   return terrainBand({...lattice,columns:rect.width,rows:rect.height},rect.y,sea,records,surface,rect.x);
 }
 export function streamTerrainField(lattice:TerrainLattice,seaLevelM:number,records:TerrainStream,withSurface=true):TerrainField{
+  const steps=streamTerrainFieldSteps(lattice,seaLevelM,records,withSurface,function*(){},65536);
+  for(;;){const step=steps.next();if(step.done)return step.value;}
+}
+/** Yield only after complete row bands: no SQL iterator survives a checkpoint. */
+export function* streamTerrainFieldSteps(lattice:TerrainLattice,seaLevelM:number,records:TerrainStream,withSurface:boolean,checkpoint:()=>Generator<void>,maxSamples=16384):Generator<void,TerrainField>{
   const {x,y,dx,dy,columns,rows}=lattice,n=columns*rows;
-  if(![x,y,dx,dy,seaLevelM,x+dx*(columns-1),y+dy*(rows-1)].every(Number.isFinite)||dx<=0||dy<=0||!Number.isSafeInteger(columns)||!Number.isSafeInteger(rows)||columns<1||rows<1||n>4_460_544)throw Error('Geländeraster prüfen.');
+  if(![x,y,dx,dy,seaLevelM,x+dx*(columns-1),y+dy*(rows-1)].every(Number.isFinite)||dx<=0||dy<=0||!Number.isSafeInteger(columns)||!Number.isSafeInteger(rows)||columns<1||rows<1||n>4_460_544||!Number.isSafeInteger(maxSamples)||maxSamples<columns||maxSamples>65536)throw Error('Geländeraster prüfen.');
   // A scanline band bounds scratch space independently of texture size and author count.
-  const heights=new Float32Array(n),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined,bandRows=Math.max(1,Math.floor(65536/columns));
+  const heights=new Float32Array(n),water=new Uint8Array(n),surface=withSurface?new Float32Array(n):undefined,bandRows=Math.floor(maxSamples/columns);
   for(let row=0;row<rows;row+=bandRows){
     const count=Math.min(bandRows,rows-row),band=terrainBand({...lattice,rows:count},row,seaLevelM,records,withSurface),offset=row*columns;
     heights.set(band.heights,offset);water.set(band.water,offset);if(surface)surface.set(band.surface!,offset);
+    yield* checkpoint();
   }
   return{heights,water,surface};
 }
@@ -40,9 +46,17 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
   // This also preserves zero-weight nodes and NaN inheritance at exact tile boundaries.
   {
     const nodes=new Float32Array(n*8),mask=new Uint8Array(n),dirty=new Int32Array(n);let used=0,pixel=Infinity;
+    // A level shares its x/y coordinates across every sample and contributing
+    // tile. Keep Float64 indices: distant worlds can exceed signed 32-bit cells.
+    const cellX=new Float64Array(columns),cellY=new Float64Array(rows),fractionX=new Float64Array(columns),fractionY=new Float64Array(rows);
+    const level=(size:number)=>{
+      pixel=size;
+      for(let c=0;c<columns;c++){const v=atX(c)/pixel;cellX[c]=Math.floor(v);fractionX[c]=v-cellX[c]!;}
+      for(let r=0;r<rows;r++){const v=atY(r)/pixel;cellY[r]=Math.floor(v);fractionY[r]=v-cellY[r]!;}
+    };
     const flush=()=>{
       for(let j=0;j<used;j++){
-        const i=dirty[j]!,px=atX(i%columns),py=atY(Math.floor(i/columns)),fx=px/pixel-Math.floor(px/pixel),fy=py/pixel-Math.floor(py/pixel);
+        const i=dirty[j]!,fx=fractionX[i%columns]!,fy=fractionY[Math.floor(i/columns)]!;
         let weight=0,total=0,delta=0;
         for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){
           const corner=oy*2+ox,w=(ox?fx:1-fx)*(oy?fy:1-fy);
@@ -56,10 +70,10 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
     for(const r of records('height',query)){
       const t=r.height!;if(!t)throw Error('Höhenkachel fehlt.');
       if(t.pixel>pixel)throw Error('Höhenkacheln müssen von grob nach fein gelesen werden.');
-      if(t.pixel!==pixel){flush();pixel=t.pixel;}
+      if(t.pixel!==pixel){flush();level(t.pixel);}
       const data=decodeHeights(t),tx=t.x/pixel,ty=t.y/pixel;
-      each({x:t.x-pixel,y:t.y-pixel,width:65*pixel,height:65*pixel},(i,px,py)=>{
-        const gx=Math.floor(px/pixel),gy=Math.floor(py/pixel);
+      each({x:t.x-pixel,y:t.y-pixel,width:65*pixel,height:65*pixel},i=>{
+        const gx=cellX[i%columns]!,gy=cellY[Math.floor(i/columns)]!;
         for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){
           const col=gx+ox-tx,row=gy+oy-ty;if(col<0||col>=64||row<0||row>=64)continue;
           const v=data[row*64+col]!;if(Number.isNaN(v))continue;

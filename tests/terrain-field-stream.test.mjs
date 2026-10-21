@@ -6,7 +6,7 @@ import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/terrain-field-stream';export * from './src/app/terrain-height';export * from './src/app/terrain-route';export * from './src/app/landscape-raster';export * from './src/app/landscape-brush';export * from './src/app/atlas-landscape';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/store';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-field-stream-test.cjs'});
-const {streamTerrainField,streamTerrainFieldBlock,TerrainSampler,heightRecord,settingsRecord,routeSpec,LandscapeRasterizer,orderedColors,bounds,AtlasLandscapeReader,CampaignStore}=require('../.build/terrain-field-stream-test.cjs');
+const {streamTerrainField,streamTerrainFieldSteps,streamTerrainFieldBlock,TerrainSampler,heightRecord,settingsRecord,routeSpec,LandscapeRasterizer,orderedColors,bounds,AtlasLandscapeReader,CampaignStore}=require('../.build/terrain-field-stream-test.cjs');
 const rectangle=(x,y,w,h)=>[{outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]}];
 const stream=records=>(kind)=>records.filter(r=>kind==='height'?r.height:kind==='route'?r.route:r.surface==='freshwater').sort((a,b)=>b.resolution-a.resolution);
 const ground=()=>[4,1].flatMap(pixel=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*pixel,y*64*pixel,pixel,Float32Array.from({length:4096},(_,i)=>pixel===1&&i%3===0?NaN:10+(x*64+i%64)*pixel*.25+(y*64+Math.floor(i/64))*pixel*.1)))));
@@ -62,4 +62,20 @@ test('database raster streams colors in their canonical order, including erase a
 test('additive bands compose after the full legacy field at shared addresses, holes and negative seams',()=>{
  const base=ground(),bands=[8,4,1].flatMap(pixel=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*pixel,y*64*pixel,pixel,Float32Array.from({length:4096},(_,i)=>i%7===0?NaN:Math.sin(i)*17),2))));
  check([...base,...bands],{x:-90.125,y:-80.375,dx:.5,dy:.5,columns:361,rows:321},3);
+});
+
+test('level coordinate reuse preserves fractional samples beyond 32-bit cell indices',()=>{
+ for(const origin of [2**35,-(2**35)]){
+  const records=[8,.25].flatMap(pixel=>[1,2].flatMap(version=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(origin+x*64*pixel,origin+y*64*pixel,pixel,Float32Array.from({length:4096},(_,i)=>i%11===0?NaN:(version===2?3:40)+Math.sin(i)*17),version)))));
+  check(records,{x:origin-5.125,y:origin-4.375,dx:.125,dy:.375,columns:97,rows:37},3);
+ }
+});
+
+test('yielded height bands preserve pixels and close all record iterators before yielding or cancellation',()=>{
+ const records=ground(),lattice={x:-64.1,y:-63.7,dx:.7,dy:.3,columns:193,rows:137},expected=streamTerrainField(lattice,3,stream(records));let active=0,yields=0;
+ function* read(kind){active++;try{yield* stream(records)(kind);}finally{active--;}}
+ const steps=streamTerrainFieldSteps(lattice,3,read,true,function*(){yield;});
+ for(;;){const step=steps.next();assert.equal(active,0,'SQLite-style iterators must not cross a snapshot checkpoint');if(step.done){assert.deepEqual(step.value,expected);break;}yields++;}
+ assert(yields>1);
+ const cancelled=streamTerrainFieldSteps(lattice,3,read,false,function*(){yield;});assert.equal(cancelled.next().done,false);cancelled.return();assert.equal(active,0);
 });

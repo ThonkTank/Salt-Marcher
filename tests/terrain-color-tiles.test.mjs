@@ -2,11 +2,24 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-color';export * from './src/app/terrain-detail-material';export {MeshBasicMaterial,DataTexture} from 'three';export * from './src/app/terrain-detail-tiles';export * from './src/app/storage/terrain-color';export * from './src/app/storage/terrain-projection';export * from './src/app/terrain-projection-cache';export * from './src/app/terrain-height';"},outfile:'.build/terrain-color-tiles-test.cjs',bundle:true,platform:'node',format:'cjs'});
 const {TerrainDetailMaterial,MeshBasicMaterial,DataTexture,validateTerrainColor,terrainDetailTiles,TerrainDetailTiles,readTerrainColorSteps,readTerrainProjection,TerrainProjectionCache,heightRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs');
 const drain=g=>{for(;;){const r=g.next();if(r.done)return r.value;}};
 const identity={revision:1,fence:'one'},query={...identity,routeContext:{x:-1024,y:-1024,width:2048,height:2048},contours:0};
 const colour=q=>({...q,pixels:new Uint8Array(q.width*q.height*4).fill(255)});
+test('optimised colour preserves baseline coast, relief and contour pixels in all three terrain styles',()=>{
+ const golden=JSON.parse(readFileSync(new URL('./fixtures/terrain-color-goldens.json',import.meta.url),'utf8'));
+ const {settingsRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs'),records=[];
+ for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)records.push(heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>80*Math.sin((x*1024+i%64*16)/150)+30*Math.cos((y*1024+Math.floor(i/64)*16)/75))));
+ for(const {mode,contours,mpp,sha256}of golden.cases){
+  const settings=settingsRecord(0);settings.terrainSettings.style={version:1,mode,land:'#eee5cf',ink:'#685639',strength:.65,lightDegrees:315};
+  const db={prepare(){return{get(){return{payload:JSON.stringify(settings)};}};}},box={x:-144.25,y:-128.5,width:256*mpp,height:256*mpp};
+  const value=drain(readTerrainColorSteps(db,{campaignId:'fixture',...identity},{...query,box,routeContext:box,width:256,height:256,displayMpp:mpp,contours},kind=>kind==='height'?records:[],new TerrainProjectionCache()));
+  assert.equal(createHash('sha256').update(value.pixels).digest('hex'),sha256,`${mode}, ${contours}, ${mpp}; baseline ${golden.source}`);
+ }
+});
 test('world tiles are bounded and aligned across portrait, negative origins and scale changes',()=>{
  for(const scale of [.001,1,1e6])for(const ratio of [.1,1,10]){
   const area={x:-337*scale,y:19*scale,width:1000*scale,height:1000*scale*ratio},plan=terrainDetailTiles(area);

@@ -169,10 +169,14 @@ export class LandscapeRasterizer {
     }
   }
   private applyCoast(){
+    for(const _ of this.prepareSurfaceSteps(function*(){})){}
+  }
+  /** Complete ground shading before lines; yield only with owned in-memory data. */
+  *prepareSurfaceSteps(checkpoint:()=>Generator<void>):Generator<void>{
     this.applyVegetation();
     if(!this.coastPending)return;
     this.coastPending=false;
-    this.applyRelief();
+    yield* this.applyReliefSteps(checkpoint);
     const w=this.w,h=this.h,water=this.water;
     // A homogeneous tile has no shoreline. Avoid distance passes and scratch
     // allocation on the common all-land / all-ocean viewport refinements.
@@ -197,20 +201,26 @@ export class LandscapeRasterizer {
       this.samples[at+3]=Math.round(total*255);
     }
   }
-  private applyRelief(){
+  private *applyReliefSteps(checkpoint:()=>Generator<void>):Generator<void>{
     const z=this.elevations;if(!z)return;
     const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink),lighting=reliefLighting(style);
     // A small symmetric screen footprint suppresses bilinear-cell facets without changing heights or coasts.
     const step=4,stride=step*this.w;
-    for(let y=step;y<this.h-step;y++)for(let x=step;x<this.w-step;x++){
-      const i=y*this.w+x;if(this.water[i])continue;
-      const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
-      const light=lighting(sx,sy);
-      const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
-      const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
-      const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
-      const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
-      for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
+    // The halo supplies height derivatives, shore distances and mark anchors;
+    // its own shaded colours are never read by a neighbouring output pixel.
+    const pad=LANDSCAPE_RASTER_PAD*2;
+    for(let y=pad;y<this.h-pad;y++){
+      for(let x=pad;x<this.w-pad;x++){
+        const i=y*this.w+x;if(this.water[i])continue;
+        const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
+        const light=lighting(sx,sy);
+        const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
+        const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
+        const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM);
+        const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
+        for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
+      }
+      if((y-pad+1)%16===0)yield* checkpoint();
     }
     if(style.mode!=='drawn'||!style.strength)return;
     const sample=(p:{x:number;y:number})=>{
