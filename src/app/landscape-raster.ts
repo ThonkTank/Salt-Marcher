@@ -19,6 +19,17 @@ export function landscapeRasterBounds(box:LandscapeBox,width:number,height:numbe
   return {x:box.x-dx,y:box.y-dy,width:box.width+2*dx,height:box.height+2*dy};
 }
 
+/** Keep the source pixel lattice, but omit unseen parts of a large world tile.
+ * Block-aligned edges retain reuse for small pans and the raster's own halo
+ * supplies shading/coast neighbours. This changes coverage, never resolution. */
+export function landscapeRasterSlice(tile:LandscapeBox,pixels:number,view:LandscapeBox){
+  const block=Math.min(128,pixels),dx=tile.width/pixels,dy=tile.height/pixels;
+  const left=Math.max(0,Math.floor((view.x-tile.x)/dx/block)*block),top=Math.max(0,Math.floor((view.y-tile.y)/dy/block)*block);
+  const right=Math.min(pixels,Math.ceil((view.x+view.width-tile.x)/dx/block)*block),bottom=Math.min(pixels,Math.ceil((view.y+view.height-tile.y)/dy/block)*block);
+  if(right<=left||bottom<=top)throw Error('Landschaftsausschnitt ohne Rasterüberdeckung.');
+  return {box:{x:tile.x+left*dx,y:tile.y+top*dy,width:(right-left)*dx,height:(bottom-top)*dy},width:right-left,height:bottom-top};
+}
+
 /** Display-only supersampled raster. Exact queries always use author geometry. */
 export class LandscapeRasterizer {
   readonly pixels: Uint8Array;
@@ -190,6 +201,10 @@ export class LandscapeRasterizer {
     for(let y=pad;y<this.h-pad;y++){
       for(let x=pad;x<this.w-pad;x++){
         const i=y*this.w+x;if(this.water[i])continue;
+        // Uniform terrain has unit lighting, no ridge and no contour ink.
+        // Keep its existing pigment untouched instead of shading every sample.
+        const height=z[i]!;
+        if(style.mode!=='height'&&height===z[i-1]&&height===z[i+1]&&height===z[i-this.w]&&height===z[i+this.w]&&height===z[i-step]&&height===z[i+step]&&height===z[i-stride]&&height===z[i+stride])continue;
         const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
         const light=lighting(sx,sy);
         const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));

@@ -12,7 +12,7 @@ import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
 import type {Point} from '../contracts';
 import {contains,bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox} from '../atlas-landscape';
-import {LandscapeRasterizer,LANDSCAPE_RASTER_PAD,landscapeRasterBounds,type LandscapeRaster} from '../landscape-raster';
+import {LandscapeRasterizer,LANDSCAPE_RASTER_PAD,landscapeRasterBounds,landscapeRasterSlice,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
 const visual=(r:LandscapeRecord):LandscapeRecord=>{const {label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation}=r;return{label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation,values:vegetation?{terrain:vegetation.preset.terrain}:{}};};
@@ -86,7 +86,7 @@ export class AtlasLandscapeReader {
  }
 
  visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,(kind,box)=>this.rows(source,box,true,0,0,kind),this.projectionCache);}
- private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
+ private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:number|{width:number;height:number}=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
   if(kind&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
   // Terrain already has canonical bounded columns. Index only sparse objects:
@@ -94,7 +94,8 @@ export class AtlasLandscapeReader {
   const indexed=this.indexed&&!patches;
   // A patch whose bounds contain no supersample center cannot change this tile.
   // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
-  const sampling=patches&&pixels>0&&this.sampleMath;
+  const samples=typeof pixels==='number'?{width:pixels,height:pixels}:pixels;
+  const sampling=patches&&samples.width>0&&samples.height>0&&this.sampleMath;
   const sampleClause=sampling?` AND ceil((max(a.min_x,?)-?)/?*?-.5000001)<=floor((min(a.max_x,?)-?)/?*?-.4999999) AND ceil((max(a.min_y,?)-?)/?*?-.5000001)<=floor((min(a.max_y,?)-?)/?*?-.4999999)`:'';
   const filter=kind?"m.terrain_kind='"+kind+"'":"m.terrain_kind IS NOT NULL";
   const colorOrder="CASE WHEN m.paint_version=1 THEN 0 ELSE 1 END,CASE WHEN m.paint_version=1 THEN m.resolution ELSE 0 END DESC,coalesce(m.paint_order,1e999),m.resolution DESC,m.source_row";
@@ -117,7 +118,7 @@ export class AtlasLandscapeReader {
   };
   let ids:string[]=[];
   const args:any[]=[...(patches?[]:[source.campaignId]),search.x,search.x+search.width,search.y,search.y+search.height];
-  if(sampling)for(const [origin,length]of [[box.x,box.width],[box.y,box.height]] as const)args.push(origin,origin,length,pixels*2,origin+length,origin,length,pixels*2);
+  if(sampling)for(const [origin,length,count]of [[box.x,box.width,samples.width],[box.y,box.height,samples.height]] as const)args.push(origin,origin,length,count*2,origin+length,origin,length,count*2);
   for(const row of this.sql(sql).iterate(...args)){
    ids.push(row.source_row);if(ids.length===128){yield*readPage(ids);ids=[];}
   }
@@ -165,14 +166,15 @@ export class AtlasLandscapeReader {
   let regions=boxes();while(regions.length>4){edge*=2;regions=boxes();}
   for(let pixels=Math.min(1024,2**Math.ceil(Math.log2(Math.max(256,edge/(q.box.width/q.width)))));pixels>=16;pixels/=2){
    layer.tiles=[];
-   for(const box of regions){
-    const key=JSON.stringify([source.campaignId,box,pixels,dense,terrain,q.box.width/q.width,q.references!==false,exactReferences,q.contours??0]),hit=this.cache.get(key);
+   for(const region of regions){
+    const {box,width,height}=landscapeRasterSlice(region,pixels,q.box);
+    const key=JSON.stringify([source.campaignId,box,width,height,dense,terrain,q.box.width/q.width,q.references!==false,exactReferences,q.contours??0]),hit=this.cache.get(key);
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
-     const image=new LandscapeRasterizer(box,pixels,pixels,terrain?q.contours:0,q.box.width/q.width);
+     const image=new LandscapeRasterizer(box,width,height,terrain?q.contours:0,q.box.width/q.width);
      if(terrain){
-      if(setting)image.paint(JSON.parse(setting.payload));const samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;
+      if(setting)image.paint(JSON.parse(setting.payload));const samplePixels={width:width+2*LANDSCAPE_RASTER_PAD,height:height+2*LANDSCAPE_RASTER_PAD};
       if(this.canonicalTerrain){
        // Small source files can still cover millions of output samples. Share
        // the bounded lattice sampler with the spatial projection at every size.
@@ -197,9 +199,9 @@ export class AtlasLandscapeReader {
       else if(r.kind==='place'&&mapRecordVisible(r,q.box.width/q.width))image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
       else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
-     const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');
-     json=JSON.stringify({...(!terrain?{content:'objects'}:{}),campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
-     const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(landscapeRasterBounds(box,pixels,pixels),Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
+     const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
+     json=JSON.stringify({...(!terrain?{content:'objects'}:{}),campaignId:source.campaignId,revision:source.revision,box,width,height,data:'data:image/png;base64,'+data});
+     const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(landscapeRasterBounds(box,width,height),Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
     }
     const tile=JSON.parse(json) as LandscapeRaster;tile.revision=source.revision;layer.tiles.push(tile);
    }
