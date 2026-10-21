@@ -1,3 +1,4 @@
+import {compactVegetation} from '../vegetation-projection';
 import {LANDSCAPE_COLOR_INDEX,landscapeColorRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
 import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
@@ -142,18 +143,29 @@ export class AtlasLandscapeReader {
   let labelCandidates:MapLabelCandidate[]=[];
   let vegetationContext:ReturnType<typeof readVegetationEnvironment>|undefined;
   const environment=()=>vegetationContext??=readVegetationEnvironment(this.db,source.campaignId,q.box);
+  const vectorBudget=Math.min(512*1024,budget/3);
   let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    if(q.references===false&&r.kind==='reference')continue;
    if(!q.perception&&(q.terrainRaster===false||mapRecordVisible(r,q.box.width/q.width)))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
-   const record=visual(r);if(r.vegetation)record.vegetationView=generateVegetation(r,environment().env,q.box,q.box.width/q.width);const size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
-   if(record.vegetationView?.instances.some(i=>i.protected)){
-    const protectedRecord={...record,vegetationView:{...record.vegetationView,instances:record.vegetationView.instances.filter(i=>i.protected)}},
+   const record=visual(r),vegetation=r.vegetation?generateVegetation(r,environment().env,q.box,q.box.width/q.width):undefined;
+   if(vegetation)record.vegetationView=vegetation;
+   let size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
+   if(vegetation?.instances.some(i=>i.protected)){
+    const protectedRecord={...record,vegetationView:{...vegetation,instances:vegetation.instances.filter(i=>i.protected)}},
       bytes=Buffer.byteLength(JSON.stringify(protectedRecord));
     if(protectedBytes+bytes<=Math.min(128*1024,budget/8)){protectedCovers.push(protectedRecord);protectedBytes+=bytes;}
    }
-   if(layer.coverage.objects>500||layer.coverage.references>16||used+size>Math.min(512*1024,budget/3)){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
+   // Preserve the inexpensive ordinary path while it fits. Compact only when
+   // the accumulated layer would otherwise lose individual geometry to raster.
+   if(!dense&&layer.coverage.objects<=500&&layer.coverage.references<=16&&used+size>vectorBudget){
+    for(const previous of layer.records)if(previous.vegetationView&&'instances' in previous.vegetationView)previous.vegetationView=compactVegetation(previous.vegetationView);
+    used=layer.records.reduce((sum,r)=>sum+Buffer.byteLength(JSON.stringify(r)),0);
+    if(vegetation)record.vegetationView=compactVegetation(vegetation);
+    size=Buffer.byteLength(JSON.stringify(record));
+   }
+   if(layer.coverage.objects>500||layer.coverage.references>16||used+size>vectorBudget){dense=true;layer.records=[];}else if(!dense){used+=size;layer.records.push(record);}
   }
   layer.labels=boundedLabels(labelCandidates,q.box);
   layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=[...(exactReferences?references:[]),...protectedCovers];

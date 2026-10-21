@@ -1,3 +1,4 @@
+import {vegetationInstances} from './vegetation-projection';
 import {vegetationOpacity,vegetationScaleLimit} from './vegetation-lod';
 import {atlasPaint,type AtlasPaint} from './atlas-paint';
 import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
@@ -9,7 +10,7 @@ export function drawVegetation(root:AtlasPaint,r:LandscapeRecord,box:LandscapeBo
   // The transparent footprint participates in picking without covering water or
   // the canonical terrain-aware surface raster.
   root.append(atlasPaint('polygons',{polygons:r.polygons.map(p=>({outer:p.outer.map(v=>({x:v.x-box.x,y:v.y-box.y})),holes:p.holes.map(h=>h.map(v=>({x:v.x-box.x,y:v.y-box.y})))})),style:{fill:'#000000',fillOpacity:.001},data:{landscapeId:r.id}}));
-  for(const i of r.vegetationView?.instances??[])drawVegetationInstance(root,i,r.id,box,mpp,r.vegetationView?.mode==='canopy',vegetationOpacity(mpp,vegetationScaleLimit(i,r.vegetation)));
+  for(const i of vegetationInstances(r.vegetationView))drawVegetationInstance(root,i,r.id,box,mpp,r.vegetationView?.mode==='canopy',vegetationOpacity(mpp,vegetationScaleLimit(i,r.vegetation)));
 }
 export function drawVegetationInstance(root:AtlasPaint,i:VegetationInstance,areaId:string,box:LandscapeBox,mpp:number,canopy=false,opacity=1) {
   if(opacity<.001)return;

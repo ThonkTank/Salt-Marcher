@@ -32,7 +32,7 @@ const prototype=store.atlasVegetationScene(active.token,{x:-340,y:-240,width:680
 store.tutorial('skipped');store.close();
 const db=new Database(dir+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.vegetation') IS NOT NULL").all().map(r=>JSON.parse(r.payload));
 const result={profile:dir,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),checks:[],errors:[],sourceHashes:{}};
-for(const file of ['src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/vegetation-display.ts','src/app/atlas-spatial-vegetation.ts','src/app/terrain-spatial-view.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+for(const file of ['src/app/vegetation-projection.ts','src/app/storage/atlas-landscape-region.ts','src/app/campaign-atlas-ui.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/vegetation-display.ts','src/app/atlas-spatial-vegetation.ts','src/app/terrain-spatial-view.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=s=>{result.checks.push(s);console.log(s);};
 let app,page;
 async function close(){

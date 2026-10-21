@@ -1,3 +1,4 @@
+import {vegetationInstances} from './vegetation-projection';
 import {vegetationDisplay,type VegetationDisplay} from './vegetation-display';
 import {vegetationScaleLimit} from './vegetation-lod';
 import * as THREE from 'three';
@@ -20,7 +21,7 @@ export class AtlasSpatialVegetation {
       else{g=new THREE.IcosahedronGeometry(.5,0);g.scale(1,1,asset==='grass'?.25:.7);g.translate(0,0,.25);}
       return g;
     };
-    const allInstances=records.flatMap(r=>(r.vegetationView?.instances??[]).map(i=>({...i,areaId:r.id,limit:vegetationScaleLimit(i,r.vegetation)})));
+    const allInstances=records.flatMap(r=>vegetationInstances(r.vegetationView).map(i=>({...i,areaId:r.id,limit:vegetationScaleLimit(i,r.vegetation)})));
     for(const asset of ['oak','pine','rock','shrub','grass'] as const){
       const instances=allInstances.filter(i=>i.asset===asset);if(!instances.length)continue;
       for(const part of asset==='oak'||asset==='pine'?['trunk','crown'] as const:['crown'] as const){

@@ -1,3 +1,4 @@
+import {vegetationInstances} from './vegetation-projection';
 import {mapLabelEditor,readMapLabelEditor} from './map-label-editor';
 import {AUTO_CONTOURS} from './terrain-contour-style';
 import {terrainDetailBox} from './terrain-detail';
@@ -239,7 +240,7 @@ export class LandscapeWorkbench {
         if (this.tool === "select") {
           const filter=html<HTMLSelectElement>('vegetation-selection-filter').value;
           const plant=this.hit(e,[filter==='all'?'vegetationInstance':'vegetation-'+filter]);
-          if(plant?.data.vegetationInstance&&plant.data.landscapeId){const record=this.records.find(r=>r.id===plant.data.landscapeId),instance=record?.vegetationView?.instances.find(i=>i.id===plant.data.vegetationInstance);if(instance){void this.selectVegetation(record!.id,instance).catch(e=>this.host.error(e));return;}}
+          if(plant?.data.vegetationInstance&&plant.data.landscapeId){const record=this.records.find(r=>r.id===plant.data.landscapeId),instance=vegetationInstances(record?.vegetationView).find(i=>i.id===plant.data.vegetationInstance);if(instance){void this.selectVegetation(record!.id,instance).catch(e=>this.host.error(e));return;}}
           if(filter!=='all'){this.say('Kein Objekt des gewählten Typs an dieser Stelle.');return;}
           const id=this.hit(e,['landscapeId'])?.data.landscapeId;
           if(e.shiftKey&&id){void this.selectAdditional(id).catch(e=>this.host.error(e));return;}
