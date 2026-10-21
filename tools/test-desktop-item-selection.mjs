@@ -63,7 +63,7 @@ await page.locator('#item-load-retry').click();
 await page.waitForFunction(()=>document.querySelector('#item-name').value==='Seil'&&!document.querySelector('#item-name').disabled);
 results.failedReadRetry=true;
 await choose('Zaubertrank');
- await page.locator('#item-editor').scrollIntoViewIfNeeded();await native.capture(page,'item-selection-after','#item-name');await native.close();const fresh=new CampaignStore(file);try{const active=fresh.activate(campaign.id),ledger=fresh.ledger(active.token,{characterId:heroes[0].id,after:null,search:'',status:''});results.awards=ledger.items.map(i=>({name:i.name,quantity:i.quantity,definitionId:i.reference.definitionId}));results.prosePreserved=fresh.itemDefinition(b.id).description===b.description;results.withoutShop.awardCount=ledger.items.filter(i=>i.reference.definitionId===a.id).reduce((n,i)=>n+i.quantity,0);assert.deepEqual(fresh.db.prepare('SELECT * FROM item_definition WHERE id=?').get(a.id),initialA);
+ await page.locator('#item-editor').scrollIntoViewIfNeeded();assert.equal(await page.locator('#item-reference-title').textContent(),'Zaubertrank');await native.capture(page,'item-selection-after','#item-reference-title');await native.close();const fresh=new CampaignStore(file);try{const active=fresh.activate(campaign.id),ledger=fresh.ledger(active.token,{characterId:heroes[0].id,after:null,search:'',status:''});results.awards=ledger.items.map(i=>({name:i.name,quantity:i.quantity,definitionId:i.reference.definitionId}));results.prosePreserved=fresh.itemDefinition(b.id).description===b.description;results.withoutShop.awardCount=ledger.items.filter(i=>i.reference.definitionId===a.id).reduce((n,i)=>n+i.quantity,0);assert.deepEqual(fresh.db.prepare('SELECT * FROM item_definition WHERE id=?').get(a.id),initialA);
 assert.equal(ledger.items.filter(i=>i.reference.definitionId===a.id).length,1);
 assert.equal(ledger.items.filter(i=>i.reference.definitionId===b.id).length,1);
 assert.equal(ledger.items.length,2);
@@ -78,7 +78,7 @@ assert.equal(ledger.items.find(i=>i.reference.definitionId===b.id).unitCopper,'5
 results.definitionAddedToShop=true;
 results.otherDefinitionAndCharacterUnchanged=true;}finally{fresh.close();}
  {page=await launch();
-await choose('Zaubertrank');assert.equal(await page.locator('#item-reference-description').textContent(),b.description);await native.capture(page,'reopened-corrected-definition','#item-name');results.correctedDraftRestart=true;
+await choose('Zaubertrank');assert.equal(await page.locator('#item-reference-description').textContent(),b.description);assert.equal(await page.locator('#item-reference-title').textContent(),'Zaubertrank');await native.capture(page,'reopened-corrected-definition','#item-reference-title');results.correctedDraftRestart=true;
 await page.locator('#item-copy').click();
 await page.waitForFunction(()=>document.querySelector('#item-name').value==='Zaubertrank – Kopie');
 await page.locator('#item-save').click();
