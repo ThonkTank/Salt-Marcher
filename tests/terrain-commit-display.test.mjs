@@ -4,6 +4,28 @@ import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({stdin:{contents:"export * from './src/app/campaign-atlas-ui';export * from './src/app/atlas-landscape-ui';",resolveDir:process.cwd()},outfile:'.build/terrain-commit-display-test.cjs',bundle:true,platform:'node',format:'cjs',external:['obsidian']});
 const {CampaignAtlasWorkbench,LandscapeWorkbench}=createRequire(import.meta.url)('../.build/terrain-commit-display-test.cjs');
+test('released direct strokes retain their author fence while releasing camera input',()=>{
+ const ui=Object.assign(Object.create(LandscapeWorkbench.prototype),{
+  live:{},pointer:7,saving:false,tool:'height',points:[{x:0,y:0}],dirty:false,calibration:null,
+ });
+ assert.equal(ui.blocksNavigation(),true);assert.equal(ui.hasDraft(),true);
+ ui.pointer=null;ui.saving=true;
+ assert.equal(ui.blocksNavigation(),false);assert.equal(ui.hasDraft(),true);
+ ui.live=null;
+ assert.equal(ui.blocksNavigation(),true,'ordinary unfinished author drafts stay protected');
+ ui.saving=false;ui.points=[];assert.equal(ui.blocksNavigation(),false);
+ ui.routeOpening=true;assert.equal(ui.blocksNavigation(),true);assert.equal(ui.blocksNavigation(false),false);
+});
+test('hand mode during released direct writes preserves the author owner and bypasses draft flush',async()=>{
+ let flushed=0,synced=0;
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{
+  root:{dataset:{family:'terrain'}},landscape:{livePainting:true,blocksNavigation:()=>false,setActive(active){assert.equal(active,false);}},camera:{redrawOverlay(){}},
+  flush:async()=>{flushed++;return false;},layout:{sync(){synced++;}},
+ });
+ await ui.setNavigationMode(true);assert.equal(ui.root.dataset.panMode,'true');assert.equal(ui.root.dataset.family,'terrain');
+ assert.equal(flushed,0);assert.equal(synced,1);
+ ui.landscape.blocksNavigation=()=>true;await ui.setNavigationMode(true);assert.equal(flushed,1);
+});
 test('external refresh requests cannot read the full Atlas in the middle of a direct gesture',async()=>{
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{landscape:{livePainting:true},terrainPresentation:{}});
  assert.equal(await ui.refresh(),false);

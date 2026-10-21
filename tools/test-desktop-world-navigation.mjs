@@ -136,6 +136,13 @@ try{
    if(before){const during=await scene();result.brushStrokeScene={before,during};assert.equal(during.scene,before.scene,'a live GPU stroke must keep the author scene through pointer and save-state updates');}
    await page.mouse.up();
   });
+  if(process.env.WORLD_PENDING_NAVIGATION==='1'){
+   const state=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.dataset.atlasView),pending:document.querySelector('#land-tool').disabled,time:performance.now()}));
+   const before=await state();assert(before.pending,'world stroke must still be settling for this navigation check');
+   await page.mouse.wheel(0,-120);await wait(250);const after=await state();
+   assert.notDeepEqual(after.view,before.view,'world camera must move while the released stroke is settling');
+   (result.pendingNavigation??=[]).push({name,before,after});
+  }
   await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
   if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
    const map=document.querySelector('#campaign-map'),[done,total]=(map.dataset.terrainTiles??'').split('/').map(Number),up=window.__worldPointer.find(e=>e.type==='pointerup');

@@ -308,7 +308,7 @@ export class AtlasWorkspaceLayout {
   if(this.family!=='terrain')name.hidden=(this.family==='city'&&this.root.dataset.citySelected==='true'&&!this.root.dataset.placing)||(this.family==='interior'&&!this.root.dataset.placing);
   if(this.family==='city'){const tool=el<HTMLSelectElement>('city-tool').value;el('city-draw-width').closest('label')!.hidden=!['road','wall'].includes(tool);const count=Number(el('city-path-hint').textContent?.match(/^(\d+) Punkte/)?.[1]??0);el('city-finish').hidden=!count;el('city-cancel-path').hidden=!count;}
   if(this.family!=='terrain'){el('atlas-terrain').closest('label')!.hidden=true;if(this.auxiliary!=='grid')el('atlas-hex-level').closest('label')!.hidden=true;}
-  const navigating=this.root.dataset.family==='navigation';
+  const navigating=this.root.dataset.family==='navigation'||this.root.dataset.panMode==='true';
   this.tools.hidden=navigating&&!this.root.dataset.placing;
   const selectId=this.family==='terrain'?'land-tool':this.family==='city'?'city-tool':'drawing-tool';
   const tool=el<HTMLSelectElement>(selectId);

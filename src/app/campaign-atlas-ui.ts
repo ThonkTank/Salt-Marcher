@@ -224,16 +224,13 @@ export class CampaignAtlasWorkbench {
       initial: { x: -15000, y: -10000, width: 30000, height: 20000 },
       minWidth: 0.1,
       maxWidth: () => earthView(this.svg.clientWidth / Math.max(1,this.svg.clientHeight)).width * 1.1,
-      pan: (e) =>
-        e.button === 1 ||
-        (e.button === 0 &&
-          (this.root.dataset.panMode==="true" || this.spacePan || e.altKey ||
-            (this.family === "navigation" && !this.reference?.active && !this.exportOpen && !this.pointToolActive() &&
-              (!this.camera.hitAt(e, ["atlasObject"]) ||
-                this.camera.hitAt(e, ["atlasObject"])
-                  ?.data.kind === "city")))),
+      pan: (e) => {
+        if(e.button===1 || e.button===0 && (this.root.dataset.panMode==="true" || this.spacePan || e.altKey))return "explicit";
+        return e.button===0 && this.family==="navigation" && !this.reference?.active && !this.exportOpen && !this.pointToolActive() &&
+          (!this.camera.hitAt(e,["atlasObject"]) || this.camera.hitAt(e,["atlasObject"])?.data.kind==="city");
+      },
       locked: () =>
-        this.brushDraftPending() ||
+        this.brushDraftPending(true) ||
         !!this.reference?.dragging ||
         !!this.drag ||
         !!this.vertexDrag ||
@@ -528,7 +525,7 @@ export class CampaignAtlasWorkbench {
       exit:async()=>{if(this.opts.exit)await this.opts.exit();else get('campaign-screen-open').click();},
       prepare:async()=>await this.flush()&&await this.opts.flush(),
       error:e=>this.error(e),
-      navigation:async pan=>{if(!await this.flush()||!await this.opts.flush())return;await this.setFamily('navigation',false);this.root.dataset.panMode=String(pan);this.layout.sync();},
+      navigation:pan=>this.setNavigationMode(pan),
       tool:async(family,id,value,settings)=>{
         if(!await this.flush()||!await this.opts.flush())return false;
         if(this.exportOpen)await this.setOutput(false);
@@ -557,7 +554,7 @@ export class CampaignAtlasWorkbench {
       if(control.wheel(e,this.svg.clientHeight))this.spatial?.refreshBrushCursor(e.clientX,e.clientY);
     },{capture:true,passive:false});
     this.spatial=new TerrainSpatialUI(this.svg,{
-      route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
+      route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),navigationLocked:()=>this.cameraDraftPending(true),cancel:()=>{this.landscape.cancel();this.cancel();},
       workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
       refresh:()=>this.refresh(),redraw:()=>{
@@ -1050,6 +1047,16 @@ export class CampaignAtlasWorkbench {
       : `${this.exportDungeon?'Dungeon-Grundriss · '+floor:this.exportBox?'Gewählter Bereich':'Aktuelle Ansicht'} · ${lengthLabel(b.width)} × ${lengthLabel(b.height)}`;
   }
   private exportRectangle(a:Point,b:Point):CanvasBox{return{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),width:Math.abs(a.x-b.x),height:Math.abs(a.y-b.y)};}
+  private async setNavigationMode(pan:boolean){
+    // Hand mode only changes camera input. The released stroke retains its writer
+    // and tool until settlement; changing author families still requires flush.
+    if(pan && this.landscape.livePainting && !this.landscape.blocksNavigation()){
+      this.root.dataset.panMode='true';this.landscape.setActive(false);this.layout.sync();this.camera.redrawOverlay();return;
+    }
+    if(!await this.flush()||!await this.opts.flush())return;
+    await this.setFamily('navigation',false);
+    this.root.dataset.panMode=String(pan);this.layout.sync();
+  }
   private async setFamily(f: Family, flush = true) {
     this.camera.stopZoom();
     if(this.reference.active)this.reference.close();
@@ -2243,14 +2250,15 @@ export class CampaignAtlasWorkbench {
     if(points.length)drawMeasurements(root,box,mpp,localToAtlas(points.at(-1)!,frame),lines,project);
   }
   private brushControls=new Map<string,BrushSizeControl>();
-  private cameraDraftPending(){
-    return !!(this.busy||this.landscape.hasDraft(false)||this.territories.hasDraft()||
+  private cameraDraftPending(navigation=false){
+    const land=navigation?this.landscape.blocksNavigation(false):this.landscape.hasDraft(false);
+    return !!(this.busy&&!(navigation&&this.landscape.livePainting)||land||this.territories.hasDraft()||
       this.draft.length||this.brushId!==null||this.drag||this.vertexDrag||this.pathDrag||
       this.roomDrag||this.partyDrag||this.entranceDraft||this.placeIntent||this.exportDrag||
       this.exportCorner||atlasCityState()||atlasDrawingHasDraft());
   }
-  private brushDraftPending(){
-    const land=!!this.landscape?.hasDraft()&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense','vegetation-line'].includes(get<HTMLSelectElement>('land-tool').value);
+  private brushDraftPending(navigation=false){
+    const land=!!(navigation?this.landscape?.blocksNavigation():this.landscape?.hasDraft())&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense','vegetation-line'].includes(get<HTMLSelectElement>('land-tool').value);
     const drawing=['interior','decoration'].includes(this.family)&&['room-cave','room-erase','scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)&&atlasDrawingDraft().path.length>0;
     return land||!!this.landscape?.routeGesture||!!this.territories?.hasDraft()||this.brushId!==null||drawing;
   }

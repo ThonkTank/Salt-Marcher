@@ -470,6 +470,19 @@ test("a pending frame is not interpreted as empty space for left-drag navigation
   f.pointer("pointerup",15,25,1);f.flush();assert.equal(f.canvas.ready,true);
 });
 
+test('explicit primary-button navigation works during loading without granting author hits',async t=>{
+ const f=fixture(t);f.canvas.options.pan=()=>"explicit";
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();
+ f.canvas.pan(10,0);assert.equal(f.canvas.ready,false);
+ assert.equal(f.canvas.hitAt({clientX:15,clientY:25}),null);
+ f.pointer('pointerdown',15,25,0);assert.equal(f.canvas.panning,true);
+ f.pointer('pointermove',40,25,0);assert.equal(f.canvas.ready,false);
+ assert.equal(f.canvas.hitAt({clientX:40,clientY:25}),null);
+ f.pointer('pointerup',40,25,0);f.flush();assert.equal(f.canvas.ready,true);
+ f.canvas.options.locked=()=>true;f.canvas.pan(10,0);
+ f.pointer('pointerdown',15,25,0);assert.equal(f.canvas.panning,false,'active author input still owns the camera');
+});
+
 test('an unreadable optional reference stays local while required terrain and exact hits remain usable',async t=>{
  const f=fixture(t);let broken=true;
  const draw=root=>root.append(rect('room'),atlasPaint('image',{source:broken?'bad':'reference-ok',width:2,height:2,optionalImage:true}),atlasPaint('image',{source:'terrain',width:10,height:10}));
