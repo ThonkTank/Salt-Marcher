@@ -325,6 +325,13 @@ sichtbar gesperrt, auch vor Ereigniszustellung oder bei Verlust während Paint.
 Kamera, Listener und Daten werden nicht neu angelegt. Fehler einer alten Szene
 sperren keine gesunde neue Quelle. Das ist vom WebGL-Ausfallweg zu unterscheiden.
 
+Bildkacheln in `AtlasSpatialScene` verwenden UVs mit Ursprung oben und
+ungespiegelten Upload (`flipY=false`). Der gemeinsame Decoder liefert
+`ImageBitmap`; diese Quellen ignorieren WebGLs Upload-Spiegelung. Eine
+quellabhängige Mischung von UV-Konventionen spiegelt deshalb Karteninhalte.
+[Asymmetrische native Pixelregression](../reference/atlas-image-orientation-20261021/README.md)
+prüft Canvas, HTML-Bild und Bitmap bei senkrechter und geneigter Kamera.
+
 Optionale Bildvorlagen erhalten bei fehlenden Bytes einen transformierten Umriss,
 bei Decodefehler einen Umriss mit Kreuz. Gesunde Bilder und genaue Treffer bleiben
 verfügbar; Retry leert auch den Fehlercache. Gleiche Asset-ID unter neuer Quelle
@@ -365,6 +372,14 @@ weder Raumnamen noch ändern sie deren Platzierungsentscheidung. Geometriekachel
 verwenden weiterhin die tatsächliche Ausgabeauflösung. Die Canvasregression
 prüft Hoch-/Querformat und konkurrierende Namen; die native Grundrissprobe
 vergleicht die tatsächlichen PNGs bei 1536 und 3072 Pixeln.
+
+Die perspektivische GM-Ausgabe übernimmt Landschaftskacheln mit
+`content=objects`: Dichte Bestände enthalten ihre automatischen Bäume dort statt
+in Einzelrecords. Nur Bodenraster entfallen zugunsten der Terrainprojektion.
+Ein vollständiger Layer und unveränderter Quellenzaun bleiben Voraussetzung.
+Die [Regression](../../tests/atlas-terrain-export.test.mjs) und der
+[native PNG-Vergleich](../reference/atlas-image-orientation-20261021/README.md#folgekorrektur-automatischer-bewuchs-in-png)
+belegen den Erhalt des Bestands, noch keine gleiche räumliche Detailstufe.
 
 GM-Ausgabe und öffentliche Datenfreigabe bleiben getrennt. Öffentliche Ausgabe
 verwendet freigegebene Sicht-/Erinnerungsprojektionen, keine aktuellen GM-Flächen

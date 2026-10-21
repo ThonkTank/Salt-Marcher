@@ -55,7 +55,15 @@ try{
  await native.app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/export.png');
  await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-size').fill('1024');await page.locator('#atlas-export-grid').uncheck();await page.locator('#atlas-export-png').click();
  await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:90000});
- assert((await readFile(out+'/export.png')).length>10000);
+ const png=require('pngjs').PNG.sync.read(await readFile(out+'/export.png'));
+ let exportedForestPixels=0;
+ // The protected oak is in the left half. Automatic forest must also survive
+ // in the right half; file existence alone missed its previous disappearance.
+ for(let y=0;y<png.height;y++)for(let x=Math.floor(png.width/2);x<png.width;x++){
+  const i=(y*png.width+x)*4,r=png.data[i],g=png.data[i+1],b=png.data[i+2];
+  if(g>r*1.1&&g>b*1.1&&g<140)exportedForestPixels++;
+ }
+ assert(exportedForestPixels>100,'Automatic forest missing from PNG: '+exportedForestPixels);
  checks.push('World, region, village and crown detail share the normal Atlas canvas; tilted output is saved through the native export.');
  await native.close();
  const fresh=new CampaignStore(native.profile+'/workbench.sqlite');try{assert.equal(fresh.atlasLandscapeObject(fresh.activateShell(cam.id).token,'oak-wood').vegetation.overrides[0].id,'ancient-oak');}finally{fresh.close();}
@@ -63,6 +71,6 @@ try{
  const Database=require('better-sqlite3'),db=new Database(native.profile+'/workbench.sqlite',{readonly:true});
  try{assert.deepEqual(db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all(),before);}finally{db.close();}
  checks.push('Navigation and export preserve all authored landscape rows and protected identities.');
- const hashes={};for(const file of ['src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
- await native.finish({checks,views,hashes});
+ const hashes={};for(const file of ['src/app/atlas-terrain-export.ts','src/app/atlas-spatial-scene.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+ await native.finish({checks,views,hashes,exportedForestPixels});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

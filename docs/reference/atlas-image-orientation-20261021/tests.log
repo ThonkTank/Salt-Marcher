@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+ok 1 - Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+  ---
+  duration_ms: 17.779681
+  type: 'test'
+  ...
+# Subtest: Far-world local room detail retains transform precision and follows terrain elevation
+ok 2 - Far-world local room detail retains transform precision and follows terrain elevation
+  ---
+  duration_ms: 1.537319
+  type: 'test'
+  ...
+# Subtest: Draped areas sample interior terrain and preserve author IDs
+ok 3 - Draped areas sample interior terrain and preserve author IDs
+  ---
+  duration_ms: 7.012048
+  type: 'test'
+  ...
+# Subtest: HUD and terrain-owned rasters are not duplicated; masked content fails closed
+ok 4 - HUD and terrain-owned rasters are not duplicated; masked content fails closed
+  ---
+  duration_ms: 2.070051
+  type: 'test'
+  ...
+# Subtest: Dash phase persists around a corner and zero gaps do not hang
+ok 5 - Dash phase persists around a corner and zero gaps do not hang
+  ---
+  duration_ms: 3.627599
+  type: 'test'
+  ...
+# Subtest: Atlas alpha colors preserve translucent previews in GPU materials
+ok 6 - Atlas alpha colors preserve translucent previews in GPU materials
+  ---
+  duration_ms: 0.933286
+  type: 'test'
+  ...
+# Subtest: dense landscape images are draped above terrain while duplicate full ground stays omitted
+ok 7 - dense landscape images are draped above terrain while duplicate full ground stays omitted
+  ---
+  duration_ms: 4.146195
+  type: 'test'
+  ...
+# Subtest: room faces, author grips and drafts share a horizontal floor over uneven ground
+ok 8 - room faces, author grips and drafts share a horizontal floor over uneven ground
+  ---
+  duration_ms: 11.117241
+  type: 'test'
+  ...
+# Subtest: perspective export preserves dense forest and road object tiles at world positions without repainting ground
+ok 9 - perspective export preserves dense forest and road object tiles at world positions without repainting ground
+  ---
+  duration_ms: 9.429011
+  type: 'test'
+  ...
+# Subtest: incomplete layers and changed projection fences cannot produce a partial forest export
+ok 10 - incomplete layers and changed projection fences cannot produce a partial forest export
+  ---
+  duration_ms: 1.95389
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 812.773528

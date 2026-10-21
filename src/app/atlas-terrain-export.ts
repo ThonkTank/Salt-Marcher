@@ -31,7 +31,9 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   }
   // Ground and 3D routes come from the projection; existing vector author objects stay crisp.
   const records=layer.records.filter(r=>!['patch','road','river'].includes(r.kind));
-  const scene=atlasRegionPaint(snapshot,records,view.box,width*view.box.width/view.frame.width,assets,{...options,rasters:[],automaticLabels:true});
+  // Dense layers carry automatic vegetation in object tiles rather than vector
+  // records. Keep those tiles; only the ground raster belongs to the projection.
+  const scene=atlasRegionPaint(snapshot,records,view.box,width*view.box.width/view.frame.width,assets,{...options,rasters:layer.tiles.filter(tile=>tile.content==='objects'),automaticLabels:true});
   const raster=snapshot.region?.territoryRaster;if(raster)scene.append(atlasPaint('image',{source:raster.data,x:raster.box.x-view.box.x,y:raster.box.y-view.box.y,width:raster.box.width,height:raster.box.height,pointer:false}));
   if(snapshot.region?.territories)drawTerritories(scene,snapshot.region.territories,view.box,view.frame.width/width);
   const candidates=[...(snapshot.region?.labels??[]),...(layer.labels??[])];
