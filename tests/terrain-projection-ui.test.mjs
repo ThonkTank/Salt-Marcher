@@ -9,12 +9,13 @@ test('commit transition retains the main surface until a matching region arrives
  const box={x:0,y:0,width:10,height:10};state.sync('token',box,2,[],0,{region:{revision:1,fence:'old'}});assert.equal(state.ready,true);
  state.host.writing=()=>false;state.sync('token',box,2,[],0,{region:{revision:1,fence:'old'}});assert.equal(state.ready,true);
 });
-test('stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback',()=>{
+test('stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback',async()=>{
  let refreshes=0,failures=0,writing=false,live=false;
- const state=Object.create(TerrainSpatialUI.prototype);Object.assign(state,{active:true,ready:true,requested:'view',retrySource:'',host:{writing:()=>writing,live:()=>live,refresh:async()=>refreshes++},fail:()=>failures++});
+ const state=Object.create(TerrainSpatialUI.prototype);Object.assign(state,{active:true,ready:true,requested:'view',retrySource:'',host:{writing:()=>writing,live:()=>live,hasDraft:()=>false,refresh:async()=>{refreshes++;return true;}},scheduleLoad(){},fail:()=>failures++});
  const error=Error('Gelände inzwischen geändert');state.sourceFailed('old',error);writing=true;state.sourceFailed('view',error);writing=false;live=true;state.sourceFailed('view',error);live=false;
  assert.equal(refreshes,0);assert.equal(failures,0);state.sourceFailed('view',error);assert.equal(refreshes,1);assert.equal(state.ready,false);
- state.sourceFailed('view',error);assert.equal(refreshes,1);assert.equal(failures,1,'repeated stale state does not loop forever');
+ state.sourceFailed('view',error);assert.equal(failures,0,'no second retry while refresh is pending');
+ await new Promise(setImmediate);state.sourceFailed('view',error);assert.equal(refreshes,1);assert.equal(failures,1,'repeated stale state after refresh does not loop forever');
 });
 test('late navigation reads cannot replace the live authored frame',async t=>{
  const old=global.window;let resolve;global.window={campaign:{atlasTerrainProjection:()=>new Promise(r=>resolve=r)}};t.after(()=>{global.window=old;});

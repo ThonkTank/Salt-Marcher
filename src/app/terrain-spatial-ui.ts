@@ -35,12 +35,14 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private controls:HTMLElement;
   private toggle:HTMLButtonElement;
   private failed=false;private retrySource='';
+  private regionSource:object|undefined;
+  private sourceRefresh:{region:object|undefined;pending:boolean}|null=null;
   private retry:HTMLButtonElement;
   private tilt=0;private rotation=0;private exaggeration=1;
   constructor(private input:HTMLCanvasElement,private host:{
     draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
     tool:()=>string;objectPicking?:()=>boolean;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
-    refresh?:()=>Promise<unknown>;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
+    refresh?:()=>Promise<boolean|undefined>;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
     this.toggle=document.createElement('button');this.toggle.id='atlas-terrain-tilt';this.toggle.textContent='Atlas kippen';this.toggle.type='button';
     this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=false;
@@ -120,7 +122,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
-    if(!active)this.retainedDetail=null;
+    if(!active){this.retainedDetail=null;this.sourceRefresh=null;this.regionSource=undefined;}
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
@@ -140,6 +142,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.token=token;this.reframe(frame);this.revision=revision;this.objects=objects;
     // A commit may advance the root before its corresponding region arrives.
     if(this.host.writing()||atlas?.region&&atlas.region.revision!==revision)return;
+    if(this.sourceRefresh&&!this.sourceRefresh.pending&&atlas?.region&&atlas.region!==this.sourceRefresh.region)this.sourceRefresh=null;
+    this.regionSource=atlas?.region;
     this.toggle.disabled=this.failed||(document.getElementById('atlas-perception') as HTMLInputElement).checked;
     this.controls.hidden=this.failed;this.retry.disabled=this.host.hasDraft()||(document.getElementById('atlas-perception') as HTMLInputElement).checked;
     if(this.toggle.disabled&&this.active)this.setActive(false);
@@ -157,20 +161,20 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
     if(this.needsLoad()&&!this.loadBusy&&this.loadTimer===undefined)this.scheduleLoad(contours);
   }
-  private needsLoad(){return this.active&&(!this.ready||this.detailSource!==this.requested)&&!this.host.hasDraft()&&!this.host.live()&&!this.host.writing();}
+  private needsLoad(){return this.active&&!this.sourceRefresh&&(!this.ready||this.detailSource!==this.requested)&&!this.host.hasDraft()&&!this.host.live()&&!this.host.writing();}
   /** Coalesce camera motion before IPC; discard obsolete replies without accumulating main-thread reads. */
   private scheduleLoad(contours:number){
     this.pendingContours=contours;clearTimeout(this.loadTimer);this.loadTimer=undefined;
-    if(this.loadBusy||!this.active||this.host.hasDraft()||this.host.live())return;
+    if(this.loadBusy||!this.active||this.sourceRefresh||this.host.hasDraft()||this.host.live())return;
     this.loadTimer=setTimeout(()=>{
-      this.loadTimer=undefined;if(!this.active)return;const source=this.requested;this.loadBusy=true;
+      this.loadTimer=undefined;if(!this.active||this.sourceRefresh)return;const source=this.requested;this.loadBusy=true;
       void this.load(source).finally(()=>{this.loadBusy=false;if(this.active&&(this.requested!==source||this.needsLoad()))this.scheduleLoad(this.pendingContours);});
     },100);
   }
   private async load(source:string){
     const token=this.token,revision=this.revision,generation=this.generation;
     if(this.retainedDetail&&(this.retainedDetail.token!==token||this.retainedDetail.revision!==revision))this.retainedDetail=null;
-    const current=()=>this.active&&this.requested===source&&this.generation===generation&&!this.host.live()&&!this.host.hasDraft()&&!this.host.writing();
+    const current=()=>this.active&&!this.sourceRefresh&&this.requested===source&&this.generation===generation&&!this.host.live()&&!this.host.hasDraft()&&!this.host.writing();
     try{
       const stages=terrainNavigationPlan(this.sourceWindow!,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources);
       // An interrupted refinement resumes from the already usable surface.
@@ -200,9 +204,17 @@ export class TerrainSpatialUI implements AtlasPresentation {
     }
   }
   private sourceFailed(source:string,error:unknown){
-    if(!this.active||this.requested!==source||this.host.writing()||this.host.live())return;
+    if(!this.active||this.requested!==source||this.sourceRefresh||this.host.writing()||this.host.live())return;
     if(String(error).includes('inzwischen geändert')&&this.retrySource!==source&&this.host.refresh){
-      this.retrySource=source;this.ready=false;void this.host.refresh().catch(e=>this.fail(e));return;
+      this.retrySource=source;this.ready=false;const refresh={region:this.regionSource,pending:true};this.sourceRefresh=refresh;let completed=false;
+      void this.host.refresh().then(value=>{completed=value===true;}).catch(e=>{if(this.active&&this.sourceRefresh===refresh)this.fail(e);}).finally(()=>{
+        if(this.sourceRefresh!==refresh)return;refresh.pending=false;
+        // An overtaken/failed region read has not confirmed a usable source.
+        // Wait for its successor's sync instead of retrying the old revision.
+        if(!completed&&this.regionSource===refresh.region)return;
+        this.sourceRefresh=null;
+        if(this.needsLoad())this.scheduleLoad(this.pendingContours);
+      });return;
     }
     this.fail(error);
   }

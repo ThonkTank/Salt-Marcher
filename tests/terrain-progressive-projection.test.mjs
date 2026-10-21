@@ -25,8 +25,12 @@ test('coarse colour and final colour have byte-identical terrain geometry; stage
 test('yielding raster batches reproduce the complete projection byte for byte',()=>{
  const records=[heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>20+60*Math.sin(i%64/10)*Math.cos(Math.floor(i/64)/9)))];
  const db={prepare(){return{get(){}};}},source={campaignId:'test',revision:1,fence:'one'},stream=kind=>kind==='height'?records:[];
- const q=terrainNavigationPlan({frame:{x:0,y:0,width:900,height:600},pixelWidth:1000,pixelHeight:667},1,{tilt:45,rotation:0,exaggeration:1},[])[1];q.width=256;q.height=192;q.detailResolution=256;
- const expected=readTerrainProjection(db,source,q,stream,new TerrainProjectionCache()),steps=readTerrainProjectionSteps(db,source,q,stream,new TerrainProjectionCache());
- let yields=0;for(;;){const step=steps.next();if(step.done){assert.deepEqual(step.value,expected);break;}yields++;}
- assert(yields>1,'the cold projection must offer scheduling boundaries');
+ const base=terrainNavigationPlan({frame:{x:0,y:0,width:900,height:600},pixelWidth:1000,pixelHeight:667},1,{tilt:45,rotation:0,exaggeration:1},[])[1];
+ for(const odd of [false,true]){
+  const q={...base,width:odd?259:256,height:odd?191:192,detailResolution:odd?257:256,contours:odd?10:0,
+   view:odd?{...base.view,box:{...base.view.box,x:base.view.box.x+.13,width:base.view.box.width+.7}}:base.view};
+  const expected=readTerrainProjection(db,source,q,stream,new TerrainProjectionCache()),steps=readTerrainProjectionSteps(db,source,q,stream,new TerrainProjectionCache());
+  let yields=0;for(;;){const step=steps.next();if(step.done){assert.deepEqual(step.value,expected);break;}yields++;}
+  assert(yields>1,'the cold projection must offer scheduling boundaries');
+ }
 });

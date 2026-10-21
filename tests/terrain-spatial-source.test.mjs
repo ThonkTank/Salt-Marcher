@@ -116,3 +116,22 @@ test('expected worker preemption resumes missing detail without fallback or an e
  assert.equal(f.ui.ready,true);assert.equal(f.ui.needsLoad(),true);assert.deepEqual(f.errors,[]);
  const resumed=f.load();assert(f.reads[2].query.detail);f.resolveRead(2);await resumed;assert.equal(f.ui.needsLoad(),false);
 });
+
+test('stale source refresh blocks premature reads and then loads the latest revision',async t=>{
+ const f=fixture(t,{manualDetail:true});let release,refreshes=0,scheduled=0;
+ f.ui.host.refresh=()=>{refreshes++;return new Promise(resolve=>release=resolve);};f.ui.scheduleLoad=()=>scheduled++;
+ f.sync();const loading=f.load();f.reads[0].resolve({ok:false,error:'Gelände inzwischen geändert. Ausschnitt erneut laden.'});await loading;
+ assert.equal(refreshes,1);assert.equal(f.ui.needsLoad(),false);assert.equal(f.ui.ready,false);
+ TerrainSpatialUI.prototype.scheduleLoad.call(f.ui,0);assert.equal(f.ui.loadTimer,undefined,'no old-source timer during refresh');
+ f.sync(frame,2);const before=scheduled;assert.equal(f.ui.needsLoad(),false);
+ release(true);await new Promise(setImmediate);assert.equal(scheduled,before+1);assert.equal(f.ui.needsLoad(),true);
+ const current=f.load();assert.equal(f.reads[1].query.revision,2);f.resolveRead(1,2);await Promise.resolve();f.resolveRead(2,2);await current;assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
+});
+
+test('an overtaken refresh waits for its confirmed successor rather than re-reading old geometry',async t=>{
+ const f=fixture(t,{manualDetail:true});f.ui.host.refresh=async()=>undefined;f.sync();
+ const old=f.load();f.reads[0].resolve({ok:false,error:'Gelände inzwischen geändert.'});await old;await new Promise(setImmediate);
+ assert.equal(f.ui.needsLoad(),false);TerrainSpatialUI.prototype.scheduleLoad.call(f.ui,0);assert.equal(f.ui.loadTimer,undefined);
+ f.ui.sync('campaign',frame,2,[],0,{cities:[],entrances:[],bindings:[],region:{revision:2}});assert.equal(f.ui.needsLoad(),true);
+ const latest=f.load();assert.equal(f.reads[1].query.revision,2);f.resolveRead(1,2);await Promise.resolve();f.resolveRead(2,2);await latest;assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
+});
