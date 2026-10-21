@@ -5,7 +5,8 @@ import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 
-const namesakes=process.env.GM_QA_NAMESAKES==='1';
+const namesakes=process.env.GM_QA_NAMESAKES==='1',longRest=process.env.GM_QA_LONG_REST==='1';
+const restButton=longRest?'#party-long-rest':'#party-short-rest';
 const source=process.cwd(),output=path.resolve(process.argv[2]??'.build/scene-selection-evidence');
 const native=await createNativeSession({root:source,output,name:'scene-encounter-selection'});
 const require=createRequire(source+'/package.json'),Database=require('better-sqlite3');
@@ -17,6 +18,10 @@ function fixture(){
  let live=x.store.live(x.w.token);x.store.executeLive(x.cmd({kind:'initialize',expectedRosterRevision:live.rosterRevision}));
  for(const hero of x.heroes.slice(0,3)){live=x.store.live(x.w.token);const c=live.roster.find(c=>c.id===hero.id);x.store.executeLive(x.cmd({kind:'membership',characterId:c.id,expectedRevision:c.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:live.scene.id,expectedFocusRevision:live.focusRevision}));}
  for(const hero of x.heroes){const p=x.store.progress(x.w.token).characters.find(p=>p.characterId===hero.id);x.store.executeProgress(x.cmd({kind:'xp',characterId:hero.id,expectedRevision:p.revision,mode:'set',amount:hero===x.heroes[3]?355000:900,reason:'Start'}));}
+ if(longRest)for(const [i,hero]of x.heroes.slice(0,3).entries()){
+  const p=x.store.progress(x.w.token).characters.find(p=>p.characterId===hero.id);
+  x.store.executeProgress(x.cmd({kind:'health',characterId:hero.id,expectedRevision:p.revision,operation:'set',reason:'Vor der langen Rast',health:{hp:[5,0,7][i],maxHp:20,tempHp:0,conditions:'Vergiftet',concentrating:false}}));
+ }
  live=x.store.live(x.w.token);const progress=x.store.progress(x.w.token);
  x.store.executeProgress(x.cmd({kind:'party-award',expectedRosterRevision:live.rosterRevision,poolXp:0,loadXp:720,reason:'Belastung vor der Rast',participants:live.roster.filter(c=>c.active).map(c=>({characterId:c.id,revision:progress.characters.find(p=>p.characterId===c.id).revision,membershipRevision:c.membershipRevision,receiveXp:false,receiveLoad:true}))}));
  x.planId=randomUUID();const visitId=randomUUID();x.store.changePreparation({...x.cmd(null),change:{kind:'plan',expectedRevision:null,plan:{version:1,id:x.planId,revision:1,name:'Tor',scenes:[{id:visitId,title:'Torkampf',notes:'',locationId:null}]}}});
@@ -36,14 +41,25 @@ async function restWithAbsentMember(page){
  const active=page.locator('#party-active [data-character-id="'+absent+'"]');await active.locator('.party-member-toggle').click();await active.getByRole('button',{name:'Aus Party',exact:true}).click();
  await page.waitForFunction(()=>document.querySelectorAll('#party-active .party-card').length===2&&!document.querySelector('#party-short-rest').disabled);
  await page.locator('#party-rest > summary').click();assert.equal(await page.locator('#party-rest-members input').count(),2);
- if(namesakes){await page.locator('#party-rest-members').scrollIntoViewIfNeeded();await native.capture(page,'rest-namesakes.png');const labels=await page.locator('#party-rest-members label').allTextContents();assert.match(labels[0],/Nora/);assert.match(labels[1],/Noah/);assert.notEqual(labels[0],labels[1]);await page.locator('#party-rest-members input').nth(1).uncheck();}
- const before=facts();await page.locator('#party-short-rest').click();const preview=await page.locator('#party-rest-status').innerText();if(namesakes){assert.match(preview,/Nora/);assert(!preview.includes('Noah'));}else assert.match(preview,/Ada, Borin/);assert(!await page.locator('#party-rest-status').innerText().then(t=>t.includes('Cora')));assert.deepEqual(facts(),before,'the first rest click is read-only');
+ if(longRest)await page.locator('#party-rest-hp').check();
+ if(namesakes){await page.locator('#party-rest-members').scrollIntoViewIfNeeded();await native.capture(page,'rest-namesakes.png');const labels=await page.locator('#party-rest-members label').allTextContents();assert.match(labels[0],/Nora/);assert.match(labels[1],/Noah/);assert.notEqual(labels[0],labels[1]);if(!longRest)await page.locator('#party-rest-members input').nth(1).uncheck();}
+ const before=facts();await page.locator(restButton).click();const preview=await page.locator('#party-rest-status').innerText();if(namesakes){assert.match(preview,/Nora/);assert.equal(preview.includes('Noah'),longRest);}else assert.match(preview,/Ada, Borin/);assert(!await page.locator('#party-rest-status').innerText().then(t=>t.includes('Cora')));assert.deepEqual(facts(),before,'the first rest click is read-only');
  await page.locator('#party-rest-status').scrollIntoViewIfNeeded();await native.capture(page,'rest-confirmation-1.png');
- await page.locator('#party-short-rest').click();await until(()=>facts().clock.instant_ms!==before.clock.instant_ms);await page.waitForFunction(()=>!document.querySelector('#party-short-rest').disabled);
- await page.waitForFunction(()=>document.querySelector('#party-rest-status').textContent.startsWith('Gebucht:'));const receipt=await page.locator('#party-rest-status').innerText();assert.match(receipt,/60 Minuten Szenenzeit · HP unverändert/);assert(!receipt.includes('Cora'));if(namesakes){assert.match(receipt,/Nora/);assert(!receipt.includes('Noah'));}else assert.match(receipt,/Ada, Borin/);await page.locator('#party-rest-status').scrollIntoViewIfNeeded();await native.capture(page,'rest-receipt-'+Number(process.env.GM_QA_ZOOM??1)+'.png');
- const rested=facts();assert.equal(BigInt(rested.clock.instant_ms)-BigInt(before.clock.instant_ms),3600000n);assert.deepEqual(state(rested),state(original),'the absent figure receives no rest');
- if(namesakes)assert.equal(rested.progress.find(p=>p.id===x.heroes[1].id).payload,before.progress.find(p=>p.id===x.heroes[1].id).payload,'unchecked namesake remains unchanged');
- for(const hero of x.heroes.slice(0,namesakes?1:2)){const p=JSON.parse(rested.progress.find(p=>p.id===hero.id).payload);assert.equal(p.rest.baseline,240);assert.equal(p.rest.sections,1);assert.equal(p.rest.shortXp,0);}
+ await page.locator(restButton).click();await until(()=>facts().clock.instant_ms!==before.clock.instant_ms);await page.waitForFunction(()=>!document.querySelector('#party-short-rest').disabled);
+ await page.waitForFunction(()=>document.querySelector('#party-rest-status').textContent.startsWith('Gebucht:'));const receipt=await page.locator('#party-rest-status').innerText();assert.match(receipt,longRest?/8 Stunden Szenenzeit · bekannte positive HP vollständig geheilt/:/60 Minuten Szenenzeit · HP unverändert/);assert(!receipt.includes('Cora'));if(namesakes){assert.match(receipt,/Nora/);assert.equal(receipt.includes('Noah'),longRest);}else assert.match(receipt,/Ada, Borin/);await page.locator('#party-rest-status').scrollIntoViewIfNeeded();await native.capture(page,'rest-receipt-'+Number(process.env.GM_QA_ZOOM??1)+'.png');
+ if(longRest){
+  const labels=await page.locator('#party-rest-members label').allTextContents();
+  assert(receipt.includes(labels[0]+': 20/20 HP'));assert(receipt.includes(labels[1]+': 0/20 HP'));
+ }
+ const rested=facts();
+ if(longRest){
+  const health=id=>JSON.parse(rested.progress.find(p=>p.id===id).payload).health;
+  assert.deepEqual(health(x.heroes[0].id),{hp:20,maxHp:20,tempHp:0,conditions:'Vergiftet',concentrating:false});
+  assert.equal(health(x.heroes[1].id).hp,0);assert.equal(health(x.heroes[2].id).hp,7);
+ }
+ assert.equal(BigInt(rested.clock.instant_ms)-BigInt(before.clock.instant_ms),longRest?28800000n:3600000n);assert.deepEqual(state(rested),state(original),'the absent figure receives no rest');
+ if(namesakes&&!longRest)assert.equal(rested.progress.find(p=>p.id===x.heroes[1].id).payload,before.progress.find(p=>p.id===x.heroes[1].id).payload,'unchecked namesake remains unchanged');
+ for(const hero of x.heroes.slice(0,namesakes&&!longRest?1:2)){const p=JSON.parse(rested.progress.find(p=>p.id===hero.id).payload);assert.equal(p.rest.baseline,longRest?0:240);assert.equal(p.rest.sections,longRest?0:1);assert.equal(p.rest.shortXp,0);}
  await page.locator('#party-roster-panel > summary').click();await page.locator('#party-search').fill('Cora');const card=page.locator('#party-roster [data-character-id="'+absent+'"]');await card.locator('.party-member-toggle').click();await card.getByRole('button',{name:'Zur Party',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('#party-active .party-card').length===3&&!document.querySelector('#party-short-rest').disabled);
  assert.deepEqual(facts(),rested,'rejoining does not change progress, rest or time');await page.locator('#party-popover').evaluate(node=>{node.scrollTop=0;});await native.capture(page,'rest-return-1.png');await page.locator('#party-close').click();
 }
@@ -124,6 +140,7 @@ try{
   assert.equal(combat.title,'Wachen am Tor');assert.equal(combat.phase,'finished');assert.equal(combat.participants.length,6);assert.equal(combat.outcome,'Torwache befriedet');
   for(const hero of x.heroes.slice(0,3))assert.equal(fresh.progress(token).characters.find(p=>p.characterId===hero.id).xp,940);assert.equal(fresh.progress(token).characters.find(p=>p.characterId===x.heroes[3].id).xp,355000);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat WHERE campaign_id=?').get(campaign.id).n,1);assert.equal(fresh.db.prepare('SELECT count(*) n FROM combat_award WHERE campaign_id=?').get(campaign.id).n,1);
   assert.deepEqual(fresh.scenePreparation(token,scene.id).groups.map(g=>fresh.groupView(token,g.id)),originalGroups);
+  if(longRest)assert.deepEqual(x.heroes.slice(0,3).map(hero=>fresh.progress(token).characters.find(p=>p.characterId===hero.id).health.hp),[20,0,7]);
  }finally{fresh.close();}
- await native.finish({results,namesakes,groupFactsUnchanged:true});console.log(JSON.stringify({results,namesakes,groupFactsUnchanged:true}));
+ await native.finish({results,namesakes,longRest,groupFactsUnchanged:true});console.log(JSON.stringify({results,namesakes,longRest,groupFactsUnchanged:true}));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

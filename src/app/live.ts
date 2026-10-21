@@ -1041,7 +1041,9 @@ export async function runPartyProgress(token:string,action:import('./progression
  if(!data)await openLive();
  if(!stillCurrent()||context?.token!==token||!data)throw new Error('Party nicht verfügbar oder Auswahl inzwischen geschlossen.');
  progressionContext(context,data,selected);
- if(!await executePartyProgress(action,stillCurrent))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
+ let receipt:import('./progression').ProgressAck|undefined;
+ if(!await executePartyProgress(action,stillCurrent,result=>{receipt=result;}))throw new Error('Buchung nicht bestätigt. Statusmeldung und Buchungsbeleg prüfen; Eingabe bleibt erhalten.');
+ return receipt;
 }
 
 async function previewPlannedVisit(planId:string,visitId:string,stillCurrent:()=>boolean=()=>true){

@@ -46,7 +46,7 @@ function fixture(t){
   get('popover').matches=()=>open;get('popover').showPopover=()=>toggle('open');get('popover').hidePopover=()=>toggle('closed');
   Object.defineProperty(get('level'),'value',{value:'',writable:true});
   dom.window.campaign={live:async token=>({ok:true,value:store.live(token)}),progress:async token=>({ok:true,value:store.progress(token)})};
-  dom.window.commitPartyProgress=async(token,action)=>{commits.push(structuredClone(action));store.executeProgress(command(action));};
+  dom.window.commitPartyProgress=async(token,action)=>{commits.push(structuredClone(action));return store.executeProgress(command(action));};
   delete require.cache[require.resolve('../'+base+'/ui.cjs')];
   const ui=require('../'+base+'/ui.cjs');ui.initPartyTopbar(()=>{});ui.activatePartyTopbar(workspace);
   t.after(()=>{ui.activatePartyTopbar(null);Object.assign(globalThis,prior);store.close();rmSync(root,{recursive:true,force:true});});
@@ -75,6 +75,36 @@ test('a rest receipt clears on a new selection and is never shown for an unconfi
   x.dom.window.commitPartyProgress=async()=>{throw Error('Buchung nicht bestätigt. Originalbeleg prüfen.');};
   const before=x.digest();x.click('short');x.click('short');await tick();
   assert.equal(x.digest(),before);assert.match(x.get('rest-status').textContent,/^Buchung nicht bestätigt/);assert(!x.get('rest-status').textContent.includes('Gebucht:'));
+});
+test('a confirmed long rest shows actual HP for namesakes, zero HP and unknown HP in the rest panel',async t=>{
+  const x=fixture(t);let live=x.store.live(x.workspace.token),first=live.roster.find(c=>c.id===x.hero.id);
+  x.store.executeLive(x.command({kind:'profile',characterId:first.id,expectedRevision:first.profileRevision,profile:{name:'Ada',playerName:'Nora'}}));
+  const second=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Ada',playerName:'Noah'}})).character;
+  const unknown=x.store.executeLive(x.command({kind:'create-character',profile:{name:'Bela'}})).character;
+  for(const hero of [second,unknown]){live=x.store.live(x.workspace.token);x.store.executeLive(x.command({kind:'membership',characterId:hero.id,expectedRevision:hero.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:x.scene.id,expectedFocusRevision:live.focusRevision}));}
+  for(const [hero,hp] of [[first,5],[second,0]]){const p=x.store.progress(x.workspace.token).characters.find(c=>c.characterId===hero.id);x.store.executeProgress(x.command({kind:'health',characterId:hero.id,expectedRevision:p.revision,operation:'set',reason:'Vor der Rast',health:{hp,maxHp:20,tempHp:0,conditions:'',concentrating:false}}));}
+  await x.openParty();const labels=new Map([...x.get('rest-members').querySelectorAll('label')].map(l=>[l.querySelector('input').value,l.textContent]));
+  x.get('rest-hp').checked=true;x.click('long');assert(!x.get('rest-status').textContent.includes('HP nach der Rast:'));
+  x.click('long');await tick();assert.equal(x.commits.length,1);
+  const result=x.get('rest-status').textContent;
+  assert(result.includes(labels.get(first.id)+': 20/20 HP'));
+  assert(result.includes(labels.get(second.id)+': 0/20 HP'));
+  assert(result.includes(labels.get(unknown.id)+': HP offen'));
+  x.get('rest-hp').checked=false;x.get('rest-hp').dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));
+  assert.equal(x.get('rest-status').textContent,'');
+});
+test('the rest HP result comes from the receipt even when a later progress read has changed',async t=>{
+  const x=fixture(t),health={hp:5,maxHp:20,tempHp:0,conditions:'',concentrating:false};
+  x.store.executeProgress(x.command({kind:'health',characterId:x.hero.id,expectedRevision:x.p().revision,operation:'set',reason:'Vor der Rast',health}));
+  const write=x.dom.window.commitPartyProgress;
+  x.dom.window.commitPartyProgress=async(...args)=>{
+    const receipt=await write(...args);
+    x.store.executeProgress(x.command({kind:'health',characterId:x.hero.id,expectedRevision:x.p().revision,operation:'damage',amount:3,reason:'Nach der Rast'}));
+    return receipt;
+  };
+  await x.openParty();x.get('rest-hp').checked=true;x.click('long');x.click('long');await tick();
+  assert.equal(x.p().health.hp,17);assert.match(x.get('active').textContent,/HP 17 \/ 20/);
+  assert.match(x.get('rest-status').textContent,/HP nach der Rast: Ada: 20\/20 HP/);
 });
 for(const change of ['dismiss','reopen','collapse','collapse and reopen','campaign'])test('a late rest confirmation cannot publish a receipt after '+change,async t=>{
   const x=fixture(t);await x.openParty();let release;

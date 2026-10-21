@@ -104,6 +104,15 @@ Schließen/Wiederöffnen oder Kampagnenwechsel nicht in einen neuen Kontext setz
 Der vorhandene native Ablauf prüft die Meldung vor Rückkehr der abwesenden Figur
 und führt Begegnung, XP-Abschluss und Neustart weiterhin vollständig aus.
 
+Bei gewählter HP-Heilung nennt der Rastbereich außerdem den bestätigten HP-Stand
+jeder gewählten Figur. Der Progresswriter gibt dafür denselben bestätigten
+`ProgressAck` über die bestehende Partybrücke zurück. Die Anzeige verwendet dessen
+HP-Fakten und die eindeutigen Empfängerbezeichnungen; sie berechnet keine eigene
+Heilungsregel und liest keinen späteren Stand als angebliches Buchungsergebnis.
+0 HP und unbekannte HP bleiben damit direkt am Ergebnis erkennbar. Die native
+Probe unterstützt mit `GM_QA_LONG_REST=1` die vollständige lange Rast mit positiver
+HP-Heilung, unveränderten 0 HP, abwesender Figur, Rückkehr und Kampfabschluss.
+
 Die Rastgrenze verwendet die bereits validierte fokussierte Scene aus demselben
 Live-Read. Sind Fokus und Primary identisch, liest dieser deren vollständigen
 Inhalt nur einmal; eine andere Primary wird weiterhin separat geprüft.

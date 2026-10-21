@@ -109,9 +109,16 @@ function rest(kind:'short'|'long'){
    return;
   }
   const token=workspace.token,windowRevision=partyWindowRevision,inputRevision=restInputRevision;
-  clearRestConfirmation();void act(async owner=>{await runPartyProgress(owner.token,action);},'party-rest-status').then(saved=>{
+  let healthResult='';
+  clearRestConfirmation();void act(async owner=>{
+   const receipt=await runPartyProgress(owner.token,action);
+   if(restoreHp&&receipt)healthResult=' HP nach der Rast: '+recipients.map(({characterId})=>{
+    const state=receipt.characters.find(p=>p.characterId===characterId);
+    return labels.get(characterId)+': '+(!state?'HP-Stand nicht verfügbar':state.health?state.health.hp+'/'+state.health.maxHp+' HP':'HP offen');
+   }).join(' · ')+'.';
+  },'party-rest-status').then(saved=>{
    if(saved&&workspace?.token===token&&windowRevision===partyWindowRevision&&inputRevision===restInputRevision&&opened()&&el<HTMLDetailsElement>('party-rest').open&&live?.scene?.id===scene.id)
-    message('Gebucht: '+restFacts+(restoreHp?' · bekannte positive HP vollständig geheilt':' · HP unverändert')+'.',false,'party-rest-status');
+    message('Gebucht: '+restFacts+(restoreHp?' · bekannte positive HP vollständig geheilt':' · HP unverändert')+'.'+healthResult,false,'party-rest-status');
   });
  }catch(error){clearRestConfirmation();message((error as Error).message,true,'party-rest-status');}
 }

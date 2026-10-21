@@ -53,16 +53,16 @@ export async function refreshProgress(deliverNotices=true) {
   try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
   catch (error) { if (gen === generation) tell((error as Error).message, true); }
 }
-export async function executePartyProgress(action: ProgressAction, stillCurrent:()=>boolean=()=>true){
-  if(action.kind!=='ledger')return stillCurrent()&&execute(action);
+export async function executePartyProgress(action: ProgressAction, stillCurrent:()=>boolean=()=>true,confirmed?:(result:ProgressAck)=>void){
+  if(action.kind!=='ledger')return stillCurrent()&&execute(action,undefined,confirmed);
   // The Party owns its item selection; do not require the hidden Live ledger selection.
   const token=workspace?.token,gen=generation;
   if(!token||!stillCurrent()||action.operation!=='correct')return false;
   const item=unwrap(await window.campaign.ledgerItem(token,action.entryId));
   if(!stillCurrent()||workspace?.token!==token||gen!==generation||item.id!==action.entryId||item.revision!==action.expectedRevision)return false;
-  return execute(action,item);
+  return execute(action,item,confirmed);
 }
-async function execute(action: ProgressAction, partyItem?:LedgerItem): Promise<boolean> {
+async function execute(action: ProgressAction, partyItem?:LedgerItem,confirmed?:(result:ProgressAck)=>void): Promise<boolean> {
   if (!workspace || pending||hasPendingCommit(workspace.campaign.id)) return false;
   if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && !(action.kind==='ledger'&&action.operation==='correct'&&partyItem?.id===action.entryId&&partyItem.revision===action.expectedRevision) && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;
   loadNumber++; // Pending reads cannot replace the receipt of this confirmed write.
@@ -71,6 +71,7 @@ async function execute(action: ProgressAction, partyItem?:LedgerItem): Promise<b
   const task=Promise.resolve().then(async () => {
     try {
       const result = await writeConfirmed<ProgressAck>('progress',command,()=>window.campaign.executeProgress(command),()=>workspace?.token===command.token&&gen===generation,meta); if (gen !== generation) return false;
+      confirmed?.(result);
       view = result;if(result.restScene)restSaved?.(result.restScene);publishProgress();tell(action.kind==='party-award'&&result.partyAward?'XP-Abrechnung gespeichert: '+result.partyAward.shareXp+' XP je Empfänger · '+result.partyAward.shareLoad+' Tagesbelastung je beteiligter Figur.':action.kind==='rest'?'Rast gespeichert'+(result.restScene?' · '+formatInstant(result.restScene.clock.instantMs):'')+(result.restWarnings?.length?' · '+result.restWarnings.join(' · '):'')+'.':action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
       if (['treasure','allocate','manual-item','ledger','ledger-split','ledger-merge','ledger-transfer','narrative-award'].includes(action.kind)) {
         try {
