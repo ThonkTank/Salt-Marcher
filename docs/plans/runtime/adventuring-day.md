@@ -95,6 +95,15 @@ Die historischen Commands ganz ohne Scene bleiben für ihre bestehenden Aufrufer
 unterstützt und erhalten damit keine nachträglich erfundene Szenenbindung.
 Keine Datenmigration oder zusätzliche persistente Vormerkung.
 
+Nach bestätigter Buchung zeigt derselbe Rastbereich „Gebucht“ mit den tatsächlich
+gewählten Figuren, der Zeitoption und der HP-Wirkung. Der zweite Klick endet damit
+nicht mehr ohne sichtbare Rückmeldung. Eingaben, Reads, Einklappen und Schließen
+räumen diese vorübergehende Meldung ab. Eine fehlgeschlagene oder unbestätigte
+Buchung erzeugt keine Erfolgsmeldung; eine verspätete Antwort darf sie nach
+Schließen/Wiederöffnen oder Kampagnenwechsel nicht in einen neuen Kontext setzen.
+Der vorhandene native Ablauf prüft die Meldung vor Rückkehr der abwesenden Figur
+und führt Begegnung, XP-Abschluss und Neustart weiterhin vollständig aus.
+
 Die Rastgrenze verwendet die bereits validierte fokussierte Scene aus demselben
 Live-Read. Sind Fokus und Primary identisch, liest dieser deren vollständigen
 Inhalt nur einmal; eine andere Primary wird weiterhin separat geprüft.

@@ -32,10 +32,10 @@ function clearRestConfirmation(){
  el('party-short-rest').textContent='Kurze Rast';el('party-long-rest').textContent='Lange Rast';
  el('party-rest-cancel').hidden=true;message('',false,'party-rest-status');
 }
-function invalidateRestConfirmation(){if(restConfirmation!==null)clearRestConfirmation();}
+function invalidateRestConfirmation(){clearRestConfirmation();}
 function lock(){for(const b of el('party-popover').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('button,input,select'))b.disabled=busy||loading||b.dataset.readonly==='true';for(const b of el('party-xp-form').querySelectorAll<HTMLButtonElement>('.party-xp-actions button'))b.disabled=busy||loading||!xpBasis();rosterPanel?.lock(busy||loading);}
 async function refresh(){const owner=workspace,request=++generation;if(!owner)return;clearRestConfirmation();loading=true;lock();previewXp();message('Party wird geladen…');try{const [l,p]=await Promise.all([window.campaign.live(owner.token),window.campaign.progress(owner.token)]);if(workspace?.token!==owner.token||request!==generation)return;live=unwrap(l);progress=unwrap(p);render();message('');if((el('party-archive') as HTMLDetailsElement).open)void loadArchive();}catch(e){if(workspace?.token===owner.token&&request===generation){el('party-rest-average').replaceChildren();live=null;progress=null;el('party-active').replaceChildren();el('party-roster').replaceChildren();message((e as Error).message,true);}}finally{if(workspace?.token===owner.token&&request===generation){loading=false;previewXp();lock();}}}
-async function act(task:(owner:WorkspaceGeometry)=>Promise<void>,target='party-status'){const owner=workspace;if(!owner||busy||loading)return;clearRestConfirmation();busy=true;generation++;lock();message('Wird gespeichert…',false,target);try{await task(owner);if(workspace?.token!==owner.token)return;await refresh();message('',false,target);}catch(e){if(workspace?.token===owner.token)message((e as Error).message,true,target);}finally{if(workspace?.token===owner.token){busy=false;lock();}}}
+async function act(task:(owner:WorkspaceGeometry)=>Promise<void>,target='party-status'){const owner=workspace;if(!owner||busy||loading)return false;clearRestConfirmation();busy=true;generation++;lock();message('Wird gespeichert…',false,target);try{await task(owner);if(workspace?.token!==owner.token)return false;await refresh();message('',false,target);return true;}catch(e){if(workspace?.token===owner.token)message((e as Error).message,true,target);return false;}finally{if(workspace?.token===owner.token){busy=false;lock();}}}
 function button(text:string,run:()=>void){const b=document.createElement('button');b.type='button';b.textContent=text;b.onclick=run;return b;}
 function edit(c:Character|null){editor=c?structuredClone(c):null;el('party-editor').hidden=false;el('party-editor-title').textContent=c?'Profil · '+c.id:'Neue Figur · zunächst inaktiv';el<HTMLInputElement>('party-name').value=c?.profile.name??'';for(const [key]of fields){const v=c?.profile[key];el<HTMLInputElement>('party-field-'+key).value=Array.isArray(v)?v.join(', '):String(v??'');}message('',false,'party-editor-status');el('party-editor').scrollIntoView({block:'nearest'});el('party-name').focus();}
 function closeXp(){el('party-xp-editor').hidden=true;el('party-popover').classList.remove('party-editing-xp');el('party-shortcut').focus();}
@@ -99,14 +99,20 @@ function rest(kind:'short'|'long'){
   const scope={id:scene.id,expectedClockRevision:scene.clock.revision,expectedMembershipRevision:scene.membershipRevision,expectedFocusRevision:basis.focusRevision};
   const action:Extract<ProgressAction,{kind:'rest'}>={kind:'rest',rest:kind,recipients,restoreHp,scene:withTime?{...scope,amount,unit:kind==='short'?'minutes':'hours'}:scope};
   const key=JSON.stringify({token:workspace.token,action});
+  const restFacts=(kind==='short'?'Kurze':'Lange')+' Rast für '+names.join(', ')+' · '+(withTime?amount+(kind==='short'?' Minuten':' Stunden')+' Szenenzeit':'ohne Zeitfortschreibung');
+  const description=restFacts+(restoreHp?' · bekannte positive HP vollständig heilen':' · HP unverändert');
   if(restConfirmation!==key){
    clearRestConfirmation();restConfirmation=key;
    el('party-'+kind+'-rest').textContent=(kind==='short'?'Kurze':'Lange')+' Rast bestätigen';
    el('party-rest-cancel').hidden=false;
-   message((kind==='short'?'Kurze':'Lange')+' Rast für '+names.join(', ')+' · '+(withTime?amount+(kind==='short'?' Minuten':' Stunden')+' Szenenzeit':'ohne Zeitfortschreibung')+(restoreHp?' · bekannte positive HP vollständig heilen':' · HP unverändert')+'. Zum Buchen dieselbe Rast erneut klicken.',false,'party-rest-status');
+   message(description+'. Zum Buchen dieselbe Rast erneut klicken.',false,'party-rest-status');
    return;
   }
-  clearRestConfirmation();void act(async owner=>{await runPartyProgress(owner.token,action);},'party-rest-status');
+  const token=workspace.token,windowRevision=partyWindowRevision;
+  clearRestConfirmation();void act(async owner=>{await runPartyProgress(owner.token,action);},'party-rest-status').then(saved=>{
+   if(saved&&workspace?.token===token&&windowRevision===partyWindowRevision&&opened()&&el<HTMLDetailsElement>('party-rest').open&&live?.scene?.id===scene.id)
+    message('Gebucht: '+restFacts+(restoreHp?' · bekannte positive HP vollständig geheilt':' · HP unverändert')+'.',false,'party-rest-status');
+  });
  }catch(error){clearRestConfirmation();message((error as Error).message,true,'party-rest-status');}
 }
 export async function openPartyRest(sceneId:string){const owner=workspace;if(!owner||busy||loading)throw new Error('Party zunächst laden oder laufende Buchung abschließen.');await refresh();if(workspace?.token!==owner.token)return;if(live?.scene?.id!==sceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');if(!progress)throw new Error('Partyfortschritt nicht verfügbar.');if(!opened())el('party-popover').showPopover();el<HTMLDetailsElement>('party-rest').open=true;el('party-rest').scrollIntoView({block:'nearest'});el<HTMLInputElement>('party-rest-short').focus({preventScroll:true});}

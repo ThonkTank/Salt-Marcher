@@ -64,6 +64,27 @@ test('first rest click is read-only; second identical click commits the displaye
   assert.equal(x.p().rest.baseline,240);assert.equal(x.p().rest.sections,1);
   assert.equal(x.store.live(x.workspace.token).scene.clock.instantMs-clock,3600000);
   assert.equal(x.get('rest-cancel').hidden,true);
+  assert.match(x.get('rest-status').textContent,/^Gebucht: Kurze Rast für Ada · 60 Minuten Szenenzeit · HP unverändert\.$/);
+});
+test('a rest receipt clears on a new selection and is never shown for an unconfirmed write',async t=>{
+  const x=fixture(t);await x.openParty();x.click('short');x.click('short');await tick();
+  assert.match(x.get('rest-status').textContent,/^Gebucht:/);
+  const pick=x.get('rest-members').querySelector('input');pick.checked=false;pick.dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));
+  assert.equal(x.get('rest-status').textContent,'');
+  pick.checked=true;pick.dispatchEvent(new x.dom.window.Event('change',{bubbles:true}));
+  x.dom.window.commitPartyProgress=async()=>{throw Error('Buchung nicht bestätigt. Originalbeleg prüfen.');};
+  const before=x.digest();x.click('short');x.click('short');await tick();
+  assert.equal(x.digest(),before);assert.match(x.get('rest-status').textContent,/^Buchung nicht bestätigt/);assert(!x.get('rest-status').textContent.includes('Gebucht:'));
+});
+for(const change of ['dismiss','reopen','collapse','campaign'])test('a late rest confirmation cannot publish a receipt after '+change,async t=>{
+  const x=fixture(t);await x.openParty();let release;
+  const write=x.dom.window.commitPartyProgress;
+  x.dom.window.commitPartyProgress=async(...args)=>{await new Promise(resolve=>release=resolve);await write(...args);};
+  x.click('short');x.click('short');
+  if(change==='collapse'){x.get('rest').open=false;x.get('rest').dispatchEvent(new x.dom.window.Event('toggle'));}
+  else if(change==='campaign')x.ui.activatePartyTopbar(null);
+  else{x.get('popover').hidePopover();if(change==='reopen')await x.openParty();}
+  release();await tick();assert.equal(x.commits.length,1);assert(!x.get('rest-status').textContent.includes('Gebucht:'));
 });
 for(const invalidate of ['selection ABA','duration ABA','time option','HP option','other rest type','cancel','dismiss','refresh','revision','clock revision','reactivate'])test('rest confirmation is invalidated by '+invalidate,async t=>{
   const x=fixture(t);await x.openParty();x.click('short');
@@ -91,6 +112,7 @@ test('guard-only rest does not advance time or emit a clock receipt; replay rema
   const before=x.store.live(x.workspace.token).scene.clock;
   x.click('long');await tick();assert.equal(x.commits.length,0);assert.match(x.get('rest-status').textContent,/ohne Zeitfortschreibung/);
   x.click('long');await tick();assert.equal(x.commits.length,1);assert.ok(x.commits[0].scene);
+  assert.match(x.get('rest-status').textContent,/^Gebucht: Lange Rast für Ada · ohne Zeitfortschreibung · HP unverändert\.$/);
   assert.deepEqual(x.store.live(x.workspace.token).scene.clock,before);
   assert.deepEqual(x.p().rest,{known:true,longXp:0,shortXp:0,baseline:0,sections:0});
   assert.equal(x.store.db.prepare("SELECT count(*) AS n FROM live_receipt WHERE command_id LIKE '%|rest-clock'").get().n,0);
