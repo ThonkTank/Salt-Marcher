@@ -58,23 +58,39 @@ und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
 
 [Fokusnetz und Trefferprüfung](../reference/atlas-focus-grid-20261021/README.md) dokumentieren den nativen Entwicklungsstart, Regressionsfälle und begrenzte Messungen.
 
-Eine Textur von höchstens 512 Pixeln je Kante deckt den Kontext ab; die sichtbare
-Mitte erhält zusätzlich bis zu 1024 Pixel im passenden Seitenverhältnis.
-`TerrainDetailMaterial` mischt sie am Rand ein. Die perspektivische Ausgabe
-fordert dieselbe Verfeinerung an. Synchrone Rasteraufrufe verwenden größere 512er-Batches; normale Hintergrundprojektionen
-verwenden die unten beschriebenen kleineren Pakete. Der Cache ersetzt weiterhin
-32er-Stücke lokal. Das ist ein
-begrenzter Schritt zur Detailverteilung, noch kein weltweites Kachel-LOD.
-Die [native Prüfung und Messung](../reference/atlas-progressive-20261021/README.md) belegen die frühe Übersicht und Navigation während der Verfeinerung.
-`terrain-navigation-plan.ts` liefert zuerst dieselbe vollständige Geometrie mit
-höchstens 128×128 Farbpixeln, danach die feinen Texturen. Die erste Antwort gibt
-die Hauptfläche frei; Verfeinerung ändert keine Höhen oder Trefferkoordinaten.
-Bei Navigation behalten vorhandene Detailfarben ihre Weltkoordinaten und bleiben
-in der Überlappung sichtbar. Dieser einzelne gehaltene Ausschnitt wird bei
-Kampagnen- oder Revisionswechsel verworfen; alte Farben verdecken keine Edits.
-`TerrainSpatialUI` verwirft Antworten nach Quellen- oder Gestenwechsel und setzt
-unterbrochene Verfeinerung nach der Geste fort. Ein Fehler nur der Detailstufe
-behält die nutzbare Übersicht und bietet den vorhandenen Kamerawiederanlauf an.
+Die Hauptkamera veröffentlicht zuerst die vollständige Geometrie mit höchstens
+128×128 Farbpixeln. Danach lädt `TerrainDetailTiles` weltfest ausgerichtete
+256×256-Farbkacheln von der Mitte nach außen und veröffentlicht jede fertige
+Kachel über `TerrainSpatialView.setDetail`. Das verändert weder Höhen noch
+Treffer, Objekte oder deren GPU-Puffer. Zuletzt wird die weite Kontexttextur auf
+höchstens 512×512 Pixel verfeinert. `terrain-navigation-plan.ts` bleibt Besitzer
+der beiden Geometrie-/Kontextanfragen; die feine Farbe dazwischen verwendet
+`atlas:terrain-color` und den gemeinsamen Rasterkern in `terrain-color-raster.ts`.
+Live-Pinsel und perspektivische Ausgabe verwenden weiterhin vollständige
+Projektionen mit ihrer jeweiligen Detailauflösung.
+
+Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
+unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
+Randkacheln entstehen höchstens 9×9 Kacheln beziehungsweise 2304×2304 Pixel.
+Ein 32-MiB-LRU hält abgeleitete Kachelpixel. Zusammengesetzte aktuelle und
+gegebenenfalls vorherige Detailbilder sowie GPU-Texturen benötigen zusätzlichen
+Speicher; die LRU-Grenze ist keine Gesamt-RAM-Garantie. Identität umfasst
+Kampagnentoken, Revision, Quellenfence und die Auswahl rasterisierter Trassen.
+Pan und kleine Zoomänderungen nutzen passende Kacheln wieder; Quellenänderungen
+verwerfen den Renderer-Cache. Die örtliche Backend-Invalidierung bleibt erhalten.
+
+`TerrainDetailMaterial` mischt fehlende Kacheln mit der Übersicht. Eine kleine
+Verfügbarkeitsmaske blendet Ränder zu noch fehlenden Nachbarn weich ein; bei
+vollständiger Belegung entfällt diese zusätzliche Mischung. Vorhandene Farben
+bleiben bei Navigation an ihren Weltkoordinaten erhalten. Antworten nach Quellen-
+oder Gestenwechsel dürfen weder malen noch den Cache füllen. Unterbrochene
+Verfeinerung setzt nach der Geste fort. Ein Fehler nur der Detailstufe behält
+Übersicht und fertige Kacheln; der ausdrückliche Wiederanlauf nutzt diese erneut.
+
+Die [Prüfung der Farbkacheln](../reference/atlas-color-tiles-20261021/README.md)
+trennt frühe erste Details, vollständige Ladezeit, Bildübergänge und Regressionen.
+Diese Farbverteilung ist ein Teilschritt; weltweites Geometrie-LOD und die
+Leistungsziele sind damit nicht qualifiziert.
 Die [Warteschlangenprüfung](../reference/atlas-scheduling-20261021/README.md) hält die Auswahlwartezeit und die höheren kalten Rasterkosten getrennt fest.
 `readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen
 mit kooperativen Haltepunkten nach abgeschlossenen SQL-Lesevorgängen. Der Worker

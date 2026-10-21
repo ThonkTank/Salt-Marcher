@@ -20,6 +20,8 @@ try{
  await atlasCanvasReady(page);
  await page.waitForFunction(()=>{const n=document.querySelector('#campaign-map').dataset.terrainTiles?.split('/').map(Number);return n&&n[0]>0&&n[0]<n[1];});
  await native.capture(page,'01-partial-coast.png');
+ await page.waitForFunction(()=>{const n=document.querySelector('#campaign-map').dataset.terrainTiles?.split('/').map(Number);return n&&n[0]>=n[1]/2;});
+ await native.capture(page,'04-middle-coast.png');
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
  await native.capture(page,'02-complete-coast.png');
  const stages=await page.evaluate(()=>window.__colourStages);assert(stages.length>1);const [done,total]=stages.at(-1).tiles.split('/').map(Number);assert.equal(done,total);
