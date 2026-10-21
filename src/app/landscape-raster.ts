@@ -125,52 +125,62 @@ export class LandscapeRasterizer {
     if(!this.field&&!this.heights.length)for(const r of this.fresh)for(const p of r.polygons)this.polygon(p,sea,1,undefined,true);
   }
   paintColor(record:LandscapeRecord){
-    this.applyVegetation();
+    for(const _ of this.paintColorSteps(record,function*(){})){}
+  }
+  /** Same pigment composition for synchronous previews and interruptible tiles. */
+  *paintColorSteps(record:LandscapeRecord,checkpoint:()=>Generator<void>):Generator<void>{
+    this.applyVegetation();yield* checkpoint();
     const p=record.paint;if(!p)return;
     this.colorBase??=this.samples.slice();this.colorLayer??=new Uint8Array(this.samples.length);
     const pigment=new LandscapeRasterizer(this.box,this.width,this.height);
-    if(p.version===1){for(const part of colorParts(record))pigment.paintPolygons(part.polygons,part.color,part.opacity);}
+    let coverage:Float32Array|undefined,color:number[]|undefined;
+    if(p.version===1){for(const part of colorParts(record))yield* pigment.paintPolygonsSteps(part.polygons,part.color,part.opacity,checkpoint);}
     else {
       // A bounded raster coverage mask avoids polygon clipping for every soft dab.
-      pigment.paintPolygons(record.polygons,'#ffffff');
-      const coverage=new Float32Array(this.water.length);
-      const stamps:{x:number;y:number}[]=[];
-      for(const stroke of p.strokes??[record.points]){
-        if(!stroke.length)continue;stamps.push(stroke[0]!);
-        for(let n=1;n<stroke.length;n++){
-          const a=stroke[n-1]!,b=stroke[n]!,steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/(p.radius*.5)));
-          for(let j=1;j<=steps;j++)stamps.push({x:a.x+(b.x-a.x)*j/steps,y:a.y+(b.y-a.y)*j/steps});
-        }
-      }
-      if(p.fill)coverage.fill(1);
-      else for(const c of stamps){
-        const x0=Math.max(0,Math.floor((c.x-p.radius-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w-1,Math.ceil((c.x+p.radius-this.sampleBox.x)/this.sampleBox.width*this.w));
-        const y0=Math.max(0,Math.floor((c.y-p.radius-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h-1,Math.ceil((c.y+p.radius-this.sampleBox.y)/this.sampleBox.height*this.h));
-        for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-          const i=y*this.w+x;if(!pigment.samples[i*4+3])continue;
-          const px=this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,py=this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height;
-          const r2=((px-c.x)**2+(py-c.y)**2)/p.radius**2;if(r2>1)continue;
-          let strength=p.tip==='round'?1:(1-r2)**2;
-          if(p.tip==='textured'){
-            const nx=Math.floor(px/p.radius*24),ny=Math.floor(py/p.radius*24);
-            let n=Math.imul(nx,374761393)^Math.imul(ny,668265263)^p.seed;n=Math.imul(n^(n>>>13),1274126177);
-            strength*=.15+.85*((n^(n>>>16))>>>0)/4294967295;
+      yield* pigment.paintPolygonsSteps(record.polygons,'#ffffff',1,checkpoint);
+      color=[1,3,5].map(i=>parseInt(p.color.slice(i,i+2),16));
+      if(!p.fill){
+        coverage=new Float32Array(this.water.length);
+        const stamps:{x:number;y:number}[]=[];
+        for(const stroke of p.strokes??[record.points]){
+          if(!stroke.length)continue;stamps.push(stroke[0]!);
+          for(let n=1;n<stroke.length;n++){
+            const a=stroke[n-1]!,b=stroke[n]!,steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/(p.radius*.5)));
+            for(let j=1;j<=steps;j++){stamps.push({x:a.x+(b.x-a.x)*j/steps,y:a.y+(b.y-a.y)*j/steps});if(j%1024===0)yield* checkpoint();}
           }
-          coverage[i]=1-(1-coverage[i]!)*(1-p.flow*strength);
+        }
+        for(const c of stamps){
+          const x0=Math.max(0,Math.floor((c.x-p.radius-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w-1,Math.ceil((c.x+p.radius-this.sampleBox.x)/this.sampleBox.width*this.w));
+          const y0=Math.max(0,Math.floor((c.y-p.radius-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h-1,Math.ceil((c.y+p.radius-this.sampleBox.y)/this.sampleBox.height*this.h));
+          for(let y=y0;y<=y1;y++){
+          if((y-y0)%16===0)yield* checkpoint();
+          for(let x=x0;x<=x1;x++){
+            const i=y*this.w+x;if(!pigment.samples[i*4+3])continue;
+            const px=this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,py=this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height;
+            const r2=((px-c.x)**2+(py-c.y)**2)/p.radius**2;if(r2>1)continue;
+            let strength=p.tip==='round'?1:(1-r2)**2;
+            if(p.tip==='textured'){
+              const nx=Math.floor(px/p.radius*24),ny=Math.floor(py/p.radius*24);
+              let n=Math.imul(nx,374761393)^Math.imul(ny,668265263)^p.seed;n=Math.imul(n^(n>>>13),1274126177);
+              strength*=.15+.85*((n^(n>>>16))>>>0)/4294967295;
+            }
+            coverage[i]=1-(1-coverage[i]!)*(1-p.flow*strength);
+          }}
         }
       }
-      const rgb=[1,3,5].map(i=>parseInt(p.color.slice(i,i+2),16));
-      for(let i=0;i<coverage.length;i++){const at=i*4;for(let c=0;c<3;c++)pigment.samples[at+c]=rgb[c]!;pigment.samples[at+3]=Math.round(pigment.samples[at+3]!*coverage[i]!);}
+      // Keep constant pigment RGB outside the mask. Filled areas need neither
+      // dab coverage nor an extra full-pixel colour conversion pass.
     }
     const layer=this.colorLayer,base=this.colorBase;
     for(let i=0;i<this.water.length;i++){
+      if(i%8192===0)yield* checkpoint();
       if((p.target==='water')!==!!this.water[i])continue;
-      const at=i*4,alpha=pigment.samples[at+3]!/255*p.opacity;if(!alpha)continue;
+      const at=i*4,mask=pigment.samples[at+3]!,alpha=(coverage?Math.round(mask*coverage[i]!):mask)/255*p.opacity;if(!alpha)continue;
       const old=layer[at+3]!/255;
       if(p.version===2&&p.operation==='erase')layer[at+3]=Math.round(old*(1-alpha)*255);
       else {
         const combined=alpha+old*(1-alpha);
-        for(let c=0;c<3;c++)layer[at+c]=Math.round((pigment.samples[at+c]!*alpha+layer[at+c]!*old*(1-alpha))/(combined||1));
+        for(let c=0;c<3;c++)layer[at+c]=Math.round(((color?color[c]!:pigment.samples[at+c]!)*alpha+layer[at+c]!*old*(1-alpha))/(combined||1));
         layer[at+3]=Math.round(combined*255);
       }
       const paintAlpha=layer[at+3]!/255,baseAlpha=base[at+3]!/255,total=paintAlpha+baseAlpha*(1-paintAlpha);
@@ -268,8 +278,11 @@ export class LandscapeRasterizer {
     for(let i=0;i<coverage.length;i++)if(coverage[i]){const at=i*4,alpha=opacity*coverage[i]!/255,old=this.samples[at+3]!/255,combined=alpha+old*(1-alpha);for(let c=0;c<3;c++)this.samples[at+c]=Math.round((rgb[c]!*alpha+this.samples[at+c]!*old*(1-alpha))/combined);this.samples[at+3]=Math.round(combined*255);}
   }
   paintPolygons(polygons:Polygon[],color:string,opacity=1){
+    for(const _ of this.paintPolygonsSteps(polygons,color,opacity,function*(){})){}
+  }
+  private *paintPolygonsSteps(polygons:Polygon[],color:string,opacity:number,checkpoint:()=>Generator<void>):Generator<void>{
     if(!/^#[a-f0-9]{6}$/i.test(color))throw new Error('Darstellungsfarbe fehlt.');
-    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));for(const p of polygons)this.polygon(p,rgb,opacity);
+    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));for(const p of polygons)yield* this.polygonSteps(p,rgb,opacity,undefined,undefined,checkpoint);
   }
   paintLine(points:{x:number;y:number}[],width:number,color:string,opacity=1){
     this.applyCoast();
@@ -281,10 +294,14 @@ export class LandscapeRasterizer {
     }
   }
   private polygon(p: Polygon, rgb: number[], alpha=1, target?:'ground'|'water', water?:boolean) {
+    for(const _ of this.polygonSteps(p,rgb,alpha,target,water,function*(){})){}
+  }
+  private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>):Generator<void>{
     const rings=[p.outer,...p.holes].map(r=>r.map(v=>({x:(v.x-this.sampleBox.x)/this.sampleBox.width*this.w,y:(v.y-this.sampleBox.y)/this.sampleBox.height*this.h})));
     let minY=this.h,maxY=-1;
     for(const ring of rings)for(const v of ring){minY=Math.min(minY,v.y);maxY=Math.max(maxY,v.y);}
     for(let y=Math.max(0,Math.ceil(minY-.5));y<=Math.min(this.h-1,Math.floor(maxY-.5));y++){
+      if(y%16===0)yield* checkpoint();
       const intersections:number[]=[],scan=y+.5;
       for(const ring of rings)for(let i=0,j=ring.length-1;i<ring.length;j=i++){
         const a=ring[j]!,b=ring[i]!;

@@ -1,3 +1,4 @@
+import {LANDSCAPE_COLOR_INDEX,landscapeColorRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
 import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
@@ -30,6 +31,7 @@ export class AtlasLandscapeReader {
  constructor(private db:any,private cacheLimit=8*1024*1024){
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
+  db.exec(LANDSCAPE_COLOR_INDEX);
   db.exec("CREATE INDEX temp.landscape_place_span ON landscape_shape_bounds(source_row) WHERE kind='place'");
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);
    CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds WHEN new.kind IS NOT 'patch' BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
@@ -86,7 +88,7 @@ export class AtlasLandscapeReader {
  }
 
  visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,(kind,box)=>this.rows(source,box,true,0,0,kind),this.projectionCache);}
- private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:number|{width:number;height:number}=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
+ private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
   if(kind&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
   // Terrain already has canonical bounded columns. Index only sparse objects:
@@ -94,13 +96,11 @@ export class AtlasLandscapeReader {
   const indexed=this.indexed&&!patches;
   // A patch whose bounds contain no supersample center cannot change this tile.
   // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
-  const samples=typeof pixels==='number'?{width:pixels,height:pixels}:pixels;
-  const sampling=patches&&samples.width>0&&samples.height>0&&this.sampleMath;
-  const sampleClause=sampling?` AND ceil((max(a.min_x,?)-?)/?*?-.5000001)<=floor((min(a.max_x,?)-?)/?*?-.4999999) AND ceil((max(a.min_y,?)-?)/?*?-.5000001)<=floor((min(a.max_y,?)-?)/?*?-.4999999)`:'';
+  const sampleFilter=landscapeSampleFilter(box,pixels,patches&&this.sampleMath);
+  if(kind==='color'){yield* landscapeColorRecords(text=>this.sql(text),source.campaignId,search,sampleFilter);return;}
   const filter=kind?"m.terrain_kind='"+kind+"'":"m.terrain_kind IS NOT NULL";
-  const colorOrder="CASE WHEN m.paint_version=1 THEN 0 ELSE 1 END,CASE WHEN m.paint_version=1 THEN m.resolution ELSE 0 END DESC,coalesce(m.paint_order,1e999),m.resolution DESC,m.source_row";
   const sql=patches
-   ?`SELECT CAST(m.source_row AS TEXT) source_row FROM temp.landscape_shape_bounds m WHERE m.max_x>=? AND m.min_x<=? AND m.max_y>=? AND m.min_y<=? ${sampleClause.replaceAll('a.','m.')} AND ${filter} ORDER BY ${kind==='color'?colorOrder:'m.resolution DESC,coalesce(m.paint_order,0),m.source_row'}`
+   ?`SELECT CAST(m.source_row AS TEXT) source_row FROM temp.landscape_shape_bounds m WHERE m.max_x>=? AND m.min_x<=? AND m.max_y>=? AND m.min_y<=? ${sampleFilter.sql} AND ${filter} ORDER BY m.resolution DESC,coalesce(m.paint_order,0),m.source_row`
    :`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? AND json_extract(a.payload,'$.kind')!='patch' ORDER BY CASE WHEN json_extract(a.payload,'$.kind')='reference' THEN 0 WHEN json_extract(a.payload,'$.line.overSymbols')=1 THEN 3 WHEN json_extract(a.payload,'$.line') IS NOT NULL THEN 1 ELSE 2 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid`;
   // Sort narrow keys, then read complete bounded pages. Sorting full payloads
   // spills authors' large contours/prose into SQLite temporary files.
@@ -118,7 +118,7 @@ export class AtlasLandscapeReader {
   };
   let ids:string[]=[];
   const args:any[]=[...(patches?[]:[source.campaignId]),search.x,search.x+search.width,search.y,search.y+search.height];
-  if(sampling)for(const [origin,length,count]of [[box.x,box.width,samples.width],[box.y,box.height,samples.height]] as const)args.push(origin,origin,length,count*2,origin+length,origin,length,count*2);
+  args.push(...sampleFilter.args);
   for(const row of this.sql(sql).iterate(...args)){
    ids.push(row.source_row);if(ids.length===128){yield*readPage(ids);ids=[];}
   }

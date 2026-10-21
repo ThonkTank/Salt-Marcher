@@ -23,7 +23,7 @@ export function readTerrainProjection(db:any,source:AtlasRegionSource,q:TerrainP
 }
 /** Each yield occurs after complete SQL reads and cache writes. The worker may
  * release its WAL snapshot here and must revalidate the source before resuming. */
-export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:TerrainProjectionRequest,records:ProjectionStream,cache?:TerrainProjectionCache,batchEdge=64):Generator<void,TerrainProjection>{
+export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:TerrainProjectionRequest,records:ProjectionStream,cache?:TerrainProjectionCache,batchEdge=128):Generator<void,TerrainProjection>{
  let sliceStart=performance.now();
  function* checkpoint(){if(performance.now()-sliceStart>=8){yield;sliceStart=performance.now();}}
  validateTerrainProjection(q);if(q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');

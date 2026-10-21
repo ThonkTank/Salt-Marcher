@@ -30,7 +30,7 @@ test('live frames use changed interpolation support and reject a source overtake
  assert.deepEqual(warm.invalidation,{reset:false,bounds:[]});
  const delta=await service.liveTerrain(source(),query,warm.target);assert.equal(delta.kind,'delta');assert.equal(delta.tiles.length,0);
  const detail=await service.liveTerrain(source(),{...query,detail:{x:-8,y:-8,width:16,height:16}},delta.target);
- assert.equal(detail.kind,'full');assert(detail.layer.tiles.some(t=>t.box.width<=32&&t.width>=256),'top-down brush gets genuinely finer world sampling');
+ assert.equal(detail.kind,'full');assert(detail.layer.tiles.some(t=>t.box.width/t.width<=32/256&&t.box.height/t.height<=32/256),'top-down brush gets genuinely finer world sampling');
  await assert.rejects(service.liveTerrain(source(),{...query,detail:{x:-1000,y:0,width:1,height:1}}),/Geländedetail/);
 
  store.executeAtlasCommit({commandId:randomUUID(),campaignId:campaign.id,token,action:{kind:'undo'}});

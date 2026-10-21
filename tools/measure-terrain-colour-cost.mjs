@@ -18,6 +18,12 @@ buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/sto
 const {CampaignStore,heightRecord,terrainNavigationPlan,terrainDetailTiles}=require(out+'/fixture.cjs'),base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const profile=mkdtempSync(base+'/colour-cost-');
 const store=new CampaignStore(profile+'/world.sqlite'),campaign=store.create('Colour cost'),token=store.activate(campaign.id).token;
 for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>80*Math.sin((x*1024+i%64*16)/150)+30*Math.cos((y*1024+Math.floor(i/64)*16)/75)))}});
+const paintCount=process.env.TERRAIN_PIGMENT_PROBE==='1'?12:0;
+const insert=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+for(let i=0;i<paintCount;i++){
+ const record={id:'pigment'+i,revision:1,kind:'patch',name:'',width:0,resolution:1,order:i,points:[{x:0,y:0}],polygons:[{outer:[{x:-2048,y:-2048},{x:2048,y:-2048},{x:2048,y:2048},{x:-2048,y:2048}],holes:[]}],values:{},paint:{version:2,operation:'paint',target:'ground',color:i%2?'#967755':'#778866',opacity:.15,flow:1,tip:'round',radius:128,seed:i,fill:true}};
+ insert.run(campaign.id,record.id,1,-2048,2048,-2048,2048,JSON.stringify(record));
+}
 const source=store.atlasRegionSource(token),frame={x:-450,y:-300,width:900,height:600},stages=terrainNavigationPlan({frame,pixelWidth:1000,pixelHeight:667},source.revision,{tilt:45,rotation:25,exaggeration:1},[]),plan=terrainDetailTiles(stages[1].detail),runs=[];let expected;
 try{
  for(const name of ['baseline','current','current','baseline']){
@@ -44,4 +50,4 @@ try{
    const sorted=slices.slice().sort((a,b)=>a-b),row={name,tiles:plan.tiles.length,firstTileMs:tiles[0],completeMs:tiles.at(-1),selection:select,maxSliceMs:sorted.at(-1),p95SliceMs:sorted[Math.ceil(sorted.length*.95)-1],slices:slices.length,workerStarts:service.diagnostics.workerStarts,digest};runs.push(row);console.log(JSON.stringify(row));
   }finally{await service.close();}
  }
-}finally{store.close();writeFileSync(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),baseline,profile,runs},null,2));}
+}finally{store.close();writeFileSync(out+'/result.json',JSON.stringify({source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),baseline,profile,paintCount,runs},null,2));}

@@ -22,7 +22,8 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
    try{image.setTerrainField(yield* streamTerrainFieldSteps(image.sampleLattice(),sea,stream,false,checkpoint));}finally{fieldEnd();}
    for(const r of stream('base',image.sampleBox))image.paint(r);
    for(const r of stream('cover',image.sampleBox))image.paintCover(r);
-   for(const r of stream('color',image.sampleBox))image.paintColor(r);
+   // The colour stream releases its SQL statements before each owned record.
+   for(const r of stream('color',image.sampleBox))yield* image.paintColorSteps(r,checkpoint);
    yield* image.prepareSurfaceSteps(checkpoint);
    if(denseRoutes)for(const r of stream('line',image.sampleBox))if(!retainedRoutes.has(r.id)){
     if(r.route?.nodes.length){const nodes=r.route.nodes;for(let i=1;i<nodes.length;i++)if(nodes[i-1]!.structure!=='tunnel'&&nodes[i]!.structure!=='tunnel')image.paintRecordLine({...r,route:undefined,points:[nodes[i-1]!,nodes[i]!]},displayMpp);}
