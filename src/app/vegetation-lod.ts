@@ -16,6 +16,20 @@ export function vegetationRepresentative(seed:number,x:number,y:number,stride:nu
 export function vegetationStride(spacing:number,mpp:number){
   return mpp<=2?1:2**Math.max(0,Math.ceil(Math.log2(Math.max(1,mpp*7/spacing))));
 }
+/** Bound work before sampling terrain. A buffered viewport can cross the local
+ * detail threshold with far more cells than fit in one read. Choose a parent
+ * level of the same world-addressed hierarchy instead of rejecting the layer. */
+export function vegetationGrid(spacing:number,mpp:number,box:{x:number;y:number;right:number;bottom:number}){
+  let stride=vegetationStride(spacing,mpp);
+  const x1=Math.ceil(box.right/spacing),y1=Math.ceil(box.bottom/spacing);
+  const grid=()=>({stride,x0:Math.floor(box.x/spacing/stride)*stride,y0:Math.floor(box.y/spacing/stride)*stride,x1,y1});
+  if(box.right<box.x||box.bottom<box.y)return {stride,x0:1,y0:1,x1:0,y1:0};
+  for(;;){
+    const g=grid(),columns=Math.floor((x1-g.x0)/stride)+1,rows=Math.floor((y1-g.y0)/stride)+1;
+    if(columns*rows<=24000)return g;
+    stride*=2;
+  }
+}
 /** Last scale at which this automatic candidate belongs to the hierarchy.
  * No per-instance display fields are stored or sent through the bridge. */
 export function vegetationScaleLimit(i:VegetationInstance,spec?:VegetationSpec){

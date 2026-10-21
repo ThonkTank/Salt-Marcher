@@ -54,7 +54,7 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
 
-[Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen.
+[Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen. [Folgekorrektur für große Wälder beim Detailzoom](../../reference/forest-detail-20261021/README.md): begrenzte Kandidatenauswahl statt Ausfall der Landschaftsschicht, nativ über vier Maßstäbe geprüft. Die Raster- und Kronengestaltung bleibt offen.
 
 Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
 

@@ -100,6 +100,10 @@ Bildschirmgröße; ihre Höhe bleibt maßhaltig. Vor dem nächsten Quellwechsel
 blenden nicht mehr benötigte Kandidaten weich aus. Größen- und
 Sichtbarkeitsänderungen benötigen weder einen Bereichsread noch neue
 Instanzmatrizen. Die CPU-Trefferprüfung verwendet dieselben Regeln.
+Große gepufferte Ausschnitte wählen nötigenfalls eine gröbere Stufe derselben
+Hierarchie, bevor mehr als 24.000 natürliche Kandidaten geprüft würden.
+Unterwuchs entfällt in diesen zusammengefassten Stufen; die Autorenbestände
+bleiben unverändert. [Detailzoom-Regression](../../reference/forest-detail-20261021/README.md).
 Geschützte Einzelobjekte behalten ihre Maße und bleiben erhalten. Der
 Canvas-Fallback verwendet dieselben Ausblendschwellen. Die Hauptansicht verwendet
 instanzierte, geometrisch erzeugte Low-Poly-Meshes. Gras und Unterwuchs sind

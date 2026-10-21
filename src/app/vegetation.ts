@@ -1,4 +1,4 @@
-import {vegetationRandom,vegetationRepresentative,vegetationStride} from './vegetation-lod';
+import {vegetationRandom,vegetationRepresentative,vegetationStride,vegetationGrid} from './vegetation-lod';
 export {vegetationRandom} from './vegetation-lod';
 import type {Point, Polygon} from './contracts';
 import {contains, segmentDistance, bounds, type LandscapeRecord, type LandscapeBox} from './atlas-landscape';
@@ -110,12 +110,13 @@ const inBox=(p:Point,b:LandscapeBox,pad=0)=>p.x>=b.x-pad&&p.y>=b.y-pad&&p.x<=b.x
 export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,box:LandscapeBox,mpp:number):VegetationView {
   const v=r.vegetation!;
   if(!v)return{instances:[],mode:'surface'};
-  const detail=mpp<=2,mode=mpp>80?'surface':detail?'individual':'canopy';
   const instances:VegetationInstance[]=[],p=v.preset,overrides=new Map(v.overrides.map(o=>[o.id,o]));
-  const base=v.spacing, stride=vegetationStride(base,mpp);
+  const base=v.spacing;
   const extent=bounds(r),pad=60;
   const clipped={x:Math.max(box.x-pad,extent.x),y:Math.max(box.y-pad,extent.y),
     right:Math.min(box.x+box.width+pad,extent.x+extent.width),bottom:Math.min(box.y+box.height+pad,extent.y+extent.height)};
+  const grid=vegetationGrid(base,mpp,clipped),stride=v.layout==='row'?vegetationStride(base,mpp):grid.stride;
+  const detail=mpp<=2&&stride===1,mode=mpp>80?'surface':detail?'individual':'canopy';
   const emit=(id:string,at:Point,asset:PlantAsset,size:number,angle:number,chance:number,random:number)=>{
     if(overrides.has(id)||!inBox(at,box,pad)||vegetationOwner(env,at)?.id!==r.id)return;
     const surface=env.terrain.query(at);
@@ -149,9 +150,7 @@ export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,b
         index+=count;next=start+count*base;travel=end;
       }
     }else{
-      const x0=Math.floor(clipped.x/base/stride)*stride,y0=Math.floor(clipped.y/base/stride)*stride,
-        x1=Math.ceil(clipped.right/base),y1=Math.ceil(clipped.bottom/base);
-      if(Math.max(0,(x1-x0)/stride)*Math.max(0,(y1-y0)/stride)>24000)throw Error('Bewuchsdetail zu groß. Weiter herauszoomen.');
+      const {x0,y0,x1,y1}=grid;
       for(let row=y0;row<=y1;row+=stride)for(let column=x0;column<=x1;column+=stride){
         // Coarser levels retain a nested subset of the same local candidates.
         const {x,y}=vegetationRepresentative(v.seed,column,row,stride);
