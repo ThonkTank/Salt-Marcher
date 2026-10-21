@@ -97,3 +97,9 @@ test("Spatial publication retains all candidates while flat output keeps its pla
   assert.equal(root.children.length, 1);
   assert.equal(root.children[0].text, "near");
 });
+
+test('Expensive anchor visibility runs after collision rejection without reserving hidden slots',()=>{
+ const candidates=Array.from({length:100},(_,i)=>label(String(i),{x:0,y:0},i===0?5:2));let calls=0;
+ const result=new MapLabelLayout().layout(candidates,box,1,measure,undefined,false,()=>projected({x:400,y:300}),c=>{calls++;return c.id!=='0';});
+ assert.equal(result.length,1);assert.notEqual(result[0].candidate.id,'0');assert.equal(calls,2);
+});

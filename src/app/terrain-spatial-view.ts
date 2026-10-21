@@ -183,10 +183,11 @@ export class TerrainSpatialView {
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
     this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
+    const direction=new THREE.Vector3();
     this.labels.update(this.camera,this.outputTile?.width??w,this.outputTile?.height??h,anchor=>{
       const x=anchor.x+this.origin.x,y=this.origin.y-anchor.y;
       if(x<v.box.x||y<v.box.y||x>v.box.x+v.box.width||y>v.box.y+v.box.height)return false;
-      const eye=this.camera.position,direction=anchor.clone().sub(eye),distance=direction.length();direction.normalize();
+      const eye=this.camera.position;direction.copy(anchor).sub(eye);const distance=direction.length();direction.normalize();
       return terrainRaycast(this.grid!,{x:eye.x+this.origin.x,y:this.origin.y-eye.y,z:v.focusM+eye.z/v.exaggeration},{x:direction.x,y:-direction.y,z:direction.z/v.exaggeration},0,Math.max(0,distance-Math.max(1e-6,distance*1e-8)))===null;
     });
     if(this.outputTile){const t=this.outputTile;this.camera.setViewOffset(t.width,t.height,t.x,t.y,t.w,t.h);}

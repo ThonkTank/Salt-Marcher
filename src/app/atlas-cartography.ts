@@ -356,6 +356,7 @@ export class MapLabelLayout {
     selected?: string,
     animate = false,
     project?: (candidate: MapLabelCandidate) => MapLabelProjection | null,
+    visible?: (candidate: MapLabelCandidate) => boolean,
   ): PlacedMapLabel[] {
     const now = performance.now();
     this.animating = false;
@@ -483,6 +484,7 @@ export class MapLabelLayout {
           )
         )
           continue;
+        if (visible && !visible(c)) continue;
         for (const k of cells) {
           const list = occupied.get(k) ?? [];
           list.push(r);

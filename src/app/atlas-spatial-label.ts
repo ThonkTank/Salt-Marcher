@@ -40,6 +40,7 @@ export function atlasTextSprite(
   ctx.textBaseline = "alphabetic";
   if (s.stroke) {
     ctx.strokeStyle = s.stroke;
+    ctx.lineJoin = s.lineJoin ?? "miter";
     ctx.lineWidth = ((s.lineWidth ?? 1) / font) * pixelFont;
     ctx.globalAlpha = s.strokeOpacity ?? 1;
     ctx.strokeText(text, padding, 56);
