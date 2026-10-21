@@ -97,6 +97,11 @@ export class TerrainSpatialView {
     this.renderer.setPixelRatio(pixelRatio);this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.setClearColor('#7fa8bd');
     this.scene.add(new THREE.HemisphereLight('#fff7df','#686e53',2.4));const sun=new THREE.DirectionalLight('#fff7de',2.1);sun.position.set(-.6,.8,1.4);this.scene.add(sun);
   }
+  /** Colour progress must not rebuild terrain picking, routes or building meshes. */
+  setDetail(detail:import('./terrain-detail').TerrainDetail,rects?:import('./terrain-frame').TerrainRect[]){
+    if(!this.mesh||!this.grid)return;
+    this.detail??=new TerrainDetailMaterial();this.detail.update(this.mesh.material,{grid:this.grid,detail},rects);this.render();
+  }
   setData(data:SpatialReply){
     this.removeLine(this.cursor);this.cursor=null;
     const previous=this.grid,oldOrigin=this.origin;

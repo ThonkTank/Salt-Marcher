@@ -125,7 +125,7 @@ export class AtlasRegionService {
         this.queued.delete(lane);request.endQueue();
         try {
           const value=await this.run(request.source, request.job);
-          if(value?.terrainProjectionContinuation===true&&(request.job as {kind?:string}).kind==='terrain'){
+          if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color'].includes((request.job as {kind:string}).kind)){
             this.terrainYields++;
             if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
             else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
@@ -228,6 +228,7 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
 
+  terrainColor(source:AtlasRegionSource,query:import('../src/app/terrain-color').TerrainColorRequest):Promise<import('../src/app/terrain-color').TerrainColorTile>{return this.enqueue(source,{kind:'terrain-color',query},'terrain');}
   terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain');}
 
   liveTerrain(source:AtlasRegionSource,query:import('../src/app/terrain-presentation').TerrainFrameQuery,base?:import('../src/app/terrain-frame').TerrainFrameIdentity):Promise<import('../src/app/terrain-presentation').TerrainFrame>{return this.enqueue(source,{kind:'terrain-live',query,base},'live');}

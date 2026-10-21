@@ -30,13 +30,14 @@ try{
  page=browser.contexts()[0].pages().find(p=>p.url().endsWith('/index.html'));assert(page,'Real desktop index window missing');page.setDefaultTimeout(20000);page.on('pageerror',e=>result.errors.push(e.stack));
  await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
  await page.evaluate(()=>{
-  window.__terrainLoads=[];
+  window.__terrainLoads=[];window.__terrainTileLoads=[];
   new MutationObserver(()=>{
    const el=document.querySelector('#campaign-map'),quality=el?.dataset.terrainQuality;
    if(!quality||el.dataset.terrainReady!=='ready')return;
+   const tiles=el.dataset.terrainTiles,tileRows=window.__terrainTileLoads;if(tiles&&tileRows.at(-1)?.tiles!==tiles)tileRows.push({tiles,time:performance.now()});
    const rows=window.__terrainLoads,last=rows.at(-1);
    if(last?.quality!==quality)rows.push({quality,time:performance.now(),view:JSON.parse(el.dataset.terrainProjection)});
-  }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-terrain-ready','data-terrain-quality']});
+  }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-terrain-ready','data-terrain-quality','data-terrain-tiles']});
  });
  await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-450,y:-300,width:900,height:600})),campaign.id);
  await page.locator('.campaign-card').filter({hasText:'Repository-Start'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
@@ -49,12 +50,14 @@ try{
  await page.mouse.move(area.x+area.width/2,area.y+area.height/2);await page.mouse.wheel(0,-60);
  await page.waitForFunction(w=>JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width<w,early.width);
  const cameraQuality=await page.locator('#campaign-map').getAttribute('data-terrain-quality');
+ await page.waitForFunction(()=>{const parts=document.querySelector('#campaign-map').dataset.terrainTiles?.split('/').map(Number);return parts&&parts[0]>0&&parts[0]<parts[1];});
+ await page.screenshot({path:out+'/06-first-color-tiles.png'});
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail');
- result.loading={stages:await page.evaluate(()=>window.__terrainLoads),cameraQuality};
- assert.deepEqual(result.loading.stages.slice(0,2).map(r=>r.quality),['overview','detail']);
- assert.equal(cameraQuality,'overview','camera must respond while detail is still pending');
+ result.loading={stages:await page.evaluate(()=>window.__terrainLoads),cameraQuality,tiles:await page.evaluate(()=>window.__terrainTileLoads)};
+ assert.equal(result.loading.stages[0].quality,'overview');assert(result.loading.stages.some(r=>r.quality==='refining'));assert.equal(result.loading.stages.at(-1).quality,'detail');assert(result.loading.tiles.some(r=>{const [done,total]=r.tiles.split('/').map(Number);return done>0&&done<total;}));
+ assert(['overview','refining'].includes(cameraQuality),'camera must respond while detail is still pending');
  assert(await surface.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
- result.checks.push('Overview geometry becomes usable before fine colour; wheel navigation responds during refinement on the same canvas.');
+ result.checks.push('Overview geometry becomes usable before fine colour; center-first colour tiles appear incrementally and wheel navigation responds during refinement on the same canvas.');
  await page.screenshot({path:out+'/01-repository-atlas.png'});
  assert.equal(await page.locator('#land-contours').inputValue(),'-1','automatic contours are the default');
  result.contours=await terrainContourPixels(page);

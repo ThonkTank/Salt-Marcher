@@ -4,7 +4,7 @@ import type {SpatialReply} from './terrain-spatial-worker';
 /** Viewport or local brush detail composes with the main material and GPU contours. */
 export class TerrainDetailMaterial {
   private detailTexture:THREE.DataTexture|null=null;
-  update(material:THREE.MeshBasicMaterial,data:SpatialReply,rects:import('./terrain-frame').TerrainRect[]|undefined){
+  update(material:THREE.MeshBasicMaterial,data:Pick<SpatialReply,'grid'|'detail'>,rects:import('./terrain-frame').TerrainRect[]|undefined){
     let uniforms=material.userData.terrainDetail as {detailMap:{value:THREE.Texture};detailBox:{value:THREE.Vector4};detailEnabled:{value:boolean}}|undefined;
     if(!uniforms){
       uniforms={detailMap:{value:material.map!},detailBox:{value:new THREE.Vector4()},detailEnabled:{value:false}};
@@ -21,13 +21,17 @@ export class TerrainDetailMaterial {
               vec2 fineUV=(vMapUv-detailBox.xy)/detailBox.zw;
               if(all(greaterThanEqual(fineUV,vec2(0.0)))&&all(lessThanEqual(fineUV,vec2(1.0)))){
                 float edge=min(min(fineUV.x,fineUV.y),min(1.0-fineUV.x,1.0-fineUV.y));
-                terrainColor=mix(terrainColor,texture2D(detailMap,fineUV),smoothstep(0.0,0.08,edge));
+                vec4 fine=texture2D(detailMap,fineUV);
+                // Pending tiles are transparent. Normalise the filtered edge to
+                // avoid a dark fringe against an as-yet-unloaded neighbour.
+                vec3 color=fine.rgb/max(fine.a,0.00001);
+                terrainColor.rgb=mix(terrainColor.rgb,color,smoothstep(0.0,0.08,edge)*fine.a);
               }
             }
             diffuseColor*=terrainColor;
           #endif`);
       };
-      material.customProgramCacheKey=()=>key()+'+terrain-detail-v1';material.needsUpdate=true;
+      material.customProgramCacheKey=()=>key()+'+terrain-detail-v2';material.needsUpdate=true;
     }
     const detail=data.detail;
     if(!detail){this.detailTexture?.dispose();this.detailTexture=null;uniforms.detailEnabled.value=false;uniforms.detailMap.value=material.map!;return;}

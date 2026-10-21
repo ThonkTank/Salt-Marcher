@@ -2,6 +2,7 @@ import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerrainGrid} from './terrain-grid';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
+import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
 import {settingsRecord} from '../terrain-height';
 import {readVegetationEnvironment} from './vegetation';
@@ -122,6 +123,7 @@ export class AtlasLandscapeReader {
  }
  private *lines(source:AtlasRegionSource,box:LandscapeBox){for(const r of this.rows(source,box,false))if(r.kind==='road'||r.kind==='river')yield r;}
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{
   const terrain=q.terrainRaster!==false||q.perception===true;

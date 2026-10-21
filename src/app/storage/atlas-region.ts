@@ -78,6 +78,7 @@ export class AtlasRegionReader {
  }
  terrainVisibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.visibility(source,view);}
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrain(source,q);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.colorSteps(source,q);}
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrainSteps(source,q);}
  liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{
   if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');

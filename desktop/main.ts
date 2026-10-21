@@ -1,6 +1,7 @@
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
 import {terrainSnapshotStillValid} from '../src/app/terrain-presentation';
+import {validateTerrainColor} from '../src/app/terrain-color';
 import {validateTerrainProjection} from '../src/app/terrain-projection';
 import {spatialRoutePreview} from './terrain-route-service';
 import {AtlasRegionService} from './atlas-region';
@@ -399,6 +400,13 @@ else {
       // Unversioned journal changes, workspace/preview changes and rollbacks fail closed.
       if(!terrainSnapshotStillValid(source,current))throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
       return value;
+    });
+    handle('atlas:terrain-color',async(token:string,q:import('../src/app/terrain-color').TerrainColorRequest)=>{
+      if(roomReadBarrier)throw Error('Graphwechsel läuft.');validateTerrainColor(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      const value=await atlasRegions.terrainColor(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
     handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{
       if(roomReadBarrier)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
