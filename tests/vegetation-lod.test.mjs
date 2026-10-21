@@ -4,7 +4,7 @@ import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-lod';export * from './src/app/atlas-spatial-vegetation';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/vegetation-lod-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {vegetationSpec,vegetationRepresentative,vegetationStride,vegetationScaleLimit,vegetationOpacity,AtlasSpatialVegetation,THREE}=require('../.build/vegetation-lod-test.cjs');
+const {vegetationSpec,vegetationRepresentative,vegetationStride,vegetationGrid,vegetationScaleLimit,vegetationOpacity,AtlasSpatialVegetation,THREE}=require('../.build/vegetation-lod-test.cjs');
 test('every coarse representative survives from its child, including negative cells and multiple seeds',()=>{
  for(const seed of [0,1,123,4294967295])for(const stride of [2,4,8,16,64,256])for(let x=-4*stride;x<=4*stride;x+=stride)for(let y=-4*stride;y<=4*stride;y+=stride){
   const p=vegetationRepresentative(seed,x,y,stride),half=stride/2;
@@ -60,4 +60,16 @@ test('protected crowns retain physical size and remain pickable beyond automatic
  const {vegetation,pick}=fixture(true);
  try{assert.equal(pick(1.5,4.2),null);assert.equal(pick(100,0)?.data.vegetationInstance,'row:1');}
  finally{vegetation.dispose();}
+});
+
+test('buffered forest grids bound actual inclusive candidates with stable parent cells',()=>{
+ for(const spacing of [2,12,60])for(const mpp of [.5,1.9,2.01,20])for(const offset of [-60000,-1200,0,37]){
+  const b={x:offset,y:offset-100,right:offset+2400,bottom:offset+1944},g=vegetationGrid(spacing,mpp,b);
+  const count=(Math.floor((g.x1-g.x0)/g.stride)+1)*(Math.floor((g.y1-g.y0)/g.stride)+1);
+  assert(count<=24000);assert(g.stride>=vegetationStride(spacing,mpp));
+  assert.equal(Math.log2(g.stride)%1,0);
+  const p=vegetationRepresentative(123,g.x0,g.y0,g.stride);
+  assert.deepEqual(p,vegetationRepresentative(123,Math.floor(p.x/Math.min(2,g.stride))*Math.min(2,g.stride),Math.floor(p.y/Math.min(2,g.stride))*Math.min(2,g.stride),Math.min(2,g.stride)));
+ }
+ const empty=vegetationGrid(12,1,{x:100,y:100,right:-100,bottom:-100});assert(empty.x0>empty.x1);
 });

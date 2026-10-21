@@ -258,3 +258,25 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
  assert.equal(edits,8);f.save(draft);f.reopen();
  assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id).vegetation.overrides,[{id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0}]);
 });
+
+test('continent forest survives buffered village detail and keeps local and protected identities',t=>{
+ const f=setup(t),r=area();r.polygons=[rectangle(-30000,-30000,60000,60000)];
+ r.vegetation.overrides=[{id:'old-oak',x:0,y:0,asset:'oak',size:22,angle:.5}];
+ for(const y of [-1,0])for(const x of [-1,0])f.save(heightRecord(x*131072,y*131072,2048,new Float32Array(4096).fill(50)));
+ f.save(r);const before=f.store.atlasLandscapeObject(f.token,r.id),source=f.store.atlasRegionSource(f.token);
+ const env=vegetationEnvironment([...plane(),r]);
+ const large={x:-1200,y:-972,width:2400,height:1944};
+ const grouped=generateVegetation(r,env,large,1.21);assert.equal(grouped.mode,'canopy');
+ const detail=generateVegetation(r,env,box,.3);
+ assert(grouped.instances.some(i=>!i.protected));
+ for(const i of grouped.instances.filter(i=>Math.abs(i.x)<90&&Math.abs(i.y)<90))assert.deepEqual(i,detail.instances.find(d=>d.id===i.id));
+ assert(grouped.instances.some(i=>i.id==='old-oak'&&i.protected));
+ const Database=require('better-sqlite3'),db=new Database(f.dir+'/world.sqlite',{readonly:true}),reader=new AtlasLandscapeReader(db);t.after(()=>db.close());reader.sync(source);
+ const q={box:large,width:1984,height:1608,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false};
+ const view=reader.read(source,q,2*1024*1024);
+ assert.equal(view.state,'ready');assert.equal(view.coverage.complete,true);
+ assert(view.records.some(r=>r.vegetationView?.instances.some(i=>i.id==='old-oak')));
+ assert(view.tiles.length>0||view.records.some(r=>r.vegetationView?.instances.some(i=>!i.protected)));
+ assert(Buffer.byteLength(JSON.stringify(view))<=2*1024*1024);
+ assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),before);assert.equal(f.store.atlasRegionSource(f.token).fence,source.fence);
+});
