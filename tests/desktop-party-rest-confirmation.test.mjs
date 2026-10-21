@@ -76,12 +76,12 @@ test('a rest receipt clears on a new selection and is never shown for an unconfi
   const before=x.digest();x.click('short');x.click('short');await tick();
   assert.equal(x.digest(),before);assert.match(x.get('rest-status').textContent,/^Buchung nicht bestätigt/);assert(!x.get('rest-status').textContent.includes('Gebucht:'));
 });
-for(const change of ['dismiss','reopen','collapse','campaign'])test('a late rest confirmation cannot publish a receipt after '+change,async t=>{
+for(const change of ['dismiss','reopen','collapse','collapse and reopen','campaign'])test('a late rest confirmation cannot publish a receipt after '+change,async t=>{
   const x=fixture(t);await x.openParty();let release;
   const write=x.dom.window.commitPartyProgress;
   x.dom.window.commitPartyProgress=async(...args)=>{await new Promise(resolve=>release=resolve);await write(...args);};
   x.click('short');x.click('short');
-  if(change==='collapse'){x.get('rest').open=false;x.get('rest').dispatchEvent(new x.dom.window.Event('toggle'));}
+  if(change.startsWith('collapse')){x.get('rest').open=false;x.get('rest').dispatchEvent(new x.dom.window.Event('toggle'));if(change==='collapse and reopen')x.get('rest').open=true;}
   else if(change==='campaign')x.ui.activatePartyTopbar(null);
   else{x.get('popover').hidePopover();if(change==='reopen')await x.openParty();}
   release();await tick();assert.equal(x.commits.length,1);assert(!x.get('rest-status').textContent.includes('Gebucht:'));

@@ -22,7 +22,7 @@ let editor:Character|null=null,xpCharacterId:string|null=null;
 let openLive:()=>void,archiveOwner:Character|null=null,archived:Character[]=[],archiveNext:string|null=null,archiveRequest=0,archiveTimer:ReturnType<typeof setTimeout>|null=null;
 let lootPanel:PartyLootPanel|null=null;
 let rosterPanel:PartyRosterPanel|null=null,partyWindowRevision=0,rosterOpenRequest=0;
-let restConfirmation:string|null=null;
+let restConfirmation:string|null=null,restInputRevision=0;
 let quickFields:PartyQuickField[]=[...defaultPartyQuickFields];
 const expanded=new Set<string>(),quickKey='party-quick-fields-v1';
 const opened=()=>el('party-popover').matches(':popover-open');
@@ -32,7 +32,7 @@ function clearRestConfirmation(){
  el('party-short-rest').textContent='Kurze Rast';el('party-long-rest').textContent='Lange Rast';
  el('party-rest-cancel').hidden=true;message('',false,'party-rest-status');
 }
-function invalidateRestConfirmation(){clearRestConfirmation();}
+function invalidateRestConfirmation(){restInputRevision++;clearRestConfirmation();}
 function lock(){for(const b of el('party-popover').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement>('button,input,select'))b.disabled=busy||loading||b.dataset.readonly==='true';for(const b of el('party-xp-form').querySelectorAll<HTMLButtonElement>('.party-xp-actions button'))b.disabled=busy||loading||!xpBasis();rosterPanel?.lock(busy||loading);}
 async function refresh(){const owner=workspace,request=++generation;if(!owner)return;clearRestConfirmation();loading=true;lock();previewXp();message('Party wird geladen…');try{const [l,p]=await Promise.all([window.campaign.live(owner.token),window.campaign.progress(owner.token)]);if(workspace?.token!==owner.token||request!==generation)return;live=unwrap(l);progress=unwrap(p);render();message('');if((el('party-archive') as HTMLDetailsElement).open)void loadArchive();}catch(e){if(workspace?.token===owner.token&&request===generation){el('party-rest-average').replaceChildren();live=null;progress=null;el('party-active').replaceChildren();el('party-roster').replaceChildren();message((e as Error).message,true);}}finally{if(workspace?.token===owner.token&&request===generation){loading=false;previewXp();lock();}}}
 async function act(task:(owner:WorkspaceGeometry)=>Promise<void>,target='party-status'){const owner=workspace;if(!owner||busy||loading)return false;clearRestConfirmation();busy=true;generation++;lock();message('Wird gespeichert…',false,target);try{await task(owner);if(workspace?.token!==owner.token)return false;await refresh();message('',false,target);return true;}catch(e){if(workspace?.token===owner.token)message((e as Error).message,true,target);return false;}finally{if(workspace?.token===owner.token){busy=false;lock();}}}
@@ -108,9 +108,9 @@ function rest(kind:'short'|'long'){
    message(description+'. Zum Buchen dieselbe Rast erneut klicken.',false,'party-rest-status');
    return;
   }
-  const token=workspace.token,windowRevision=partyWindowRevision;
+  const token=workspace.token,windowRevision=partyWindowRevision,inputRevision=restInputRevision;
   clearRestConfirmation();void act(async owner=>{await runPartyProgress(owner.token,action);},'party-rest-status').then(saved=>{
-   if(saved&&workspace?.token===token&&windowRevision===partyWindowRevision&&opened()&&el<HTMLDetailsElement>('party-rest').open&&live?.scene?.id===scene.id)
+   if(saved&&workspace?.token===token&&windowRevision===partyWindowRevision&&inputRevision===restInputRevision&&opened()&&el<HTMLDetailsElement>('party-rest').open&&live?.scene?.id===scene.id)
     message('Gebucht: '+restFacts+(restoreHp?' · bekannte positive HP vollständig geheilt':' · HP unverändert')+'.',false,'party-rest-status');
   });
  }catch(error){clearRestConfirmation();message((error as Error).message,true,'party-rest-status');}
