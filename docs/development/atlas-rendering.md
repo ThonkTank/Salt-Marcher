@@ -120,7 +120,10 @@ auch Pigmentmasken und kumulative Farbkomposition. `landscape-record-stream.ts`
 liest dazu begrenzte Seiten aus einem partiellen Farbindex und anschließend
 jeweils einen Payload mit abgeschlossener SQL-Abfrage. Kein SQL-Iterator
 überlebt einen Haltepunkt. Füllflächen benötigen keine Pinselstempel; konstante
-Pigmentfarben bleiben außerhalb des Maskenpuffers.
+Pigmentfarben bleiben außerhalb des Maskenpuffers. Deckende, ungefilterte
+Polygonabschnitte setzen ihre RGBA-Bytes direkt; Transparenz und Land-/Wasserfilter
+behalten die bisherige Komposition. [Randfallprüfung und gepaarte Farbmessung](../reference/atlas-opaque-spans-20261021/README.md)
+belegen pixelgleiche Ausgabe mit weniger Rasterarbeit.
 [Pixelorakel, Worker-Vergleich und native Gegenprobe](../reference/atlas-pigment-scheduling-20261021/README.md)
 trennen geringere Auswahlwartezeit von weiterhin hoher vollständiger Ladezeit.
 Höhenstufen verwenden wiederverwendete Achsenkoordinaten; unsichtbare Ränder
