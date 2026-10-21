@@ -7,7 +7,7 @@ import {readTerrainGrid} from './terrain-grid';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
 import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
-import {readVegetationEnvironment} from './vegetation';
+import {vegetationEnvironmentReader} from './vegetation';
 import {generateVegetation} from '../vegetation';
 import {streamTerrainField} from '../terrain-field-stream';
 import { lineContains } from "../landscape-line";
@@ -142,15 +142,14 @@ export class AtlasLandscapeReader {
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
   const layer:AtlasLandscapeLayer={...(setting&&JSON.parse(setting.payload).terrainSettings.style?{terrainStyle:JSON.parse(setting.payload).terrainSettings.style}:{}),seaLevelM:setting?JSON.parse(setting.payload).terrainSettings.seaLevelM:0,state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
   let labelCandidates:MapLabelCandidate[]=[];
-  let vegetationContext:ReturnType<typeof readVegetationEnvironment>|undefined;
-  const environment=()=>vegetationContext??=readVegetationEnvironment(this.db,source.campaignId,q.box);
+  const environment=vegetationEnvironmentReader(this.db,source.campaignId,q.box,q.box.width/q.width);
   const vectorBudget=Math.min(512*1024,budget/3);
   let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    if(q.references===false&&r.kind==='reference')continue;
    if(!q.perception&&(q.terrainRaster===false||mapRecordVisible(r,q.box.width/q.width)))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
-   const record=visual(r),vegetation=r.vegetation?generateVegetation(r,environment().env,q.box,q.box.width/q.width):undefined;
+   const record=visual(r),vegetation=r.vegetation?generateVegetation(r,environment,q.box,q.box.width/q.width):undefined;
    if(vegetation)record.vegetationView=vegetation;
    let size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(vegetation?.instances.some(i=>i.protected)){
@@ -198,13 +197,15 @@ export class AtlasLandscapeReader {
       // Order in SQL, then paint one record at a time. No spread/sort of the author corpus.
       for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'color'))image.paintColor(r);
      }
-     let tileEnvironment:ReturnType<typeof readVegetationEnvironment>|undefined;
+     let tileEnvironment:ReturnType<typeof vegetationEnvironmentReader>|undefined;
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
       if(r.vegetation){
        // A raster fallback represents groups, even when its tile happens to be
        // sampled at exactly 2 m/px. Generating every local blade on a padded
        // 2048 m tile can otherwise exceed the candidate budget and blank the map.
-       const view=generateVegetation(r,(tileEnvironment??=readVegetationEnvironment(this.db,source.campaignId,box)).env,box,Math.max(2.01,q.box.width/q.width,edge/pixels)),
+       const displayMpp=Math.max(2.01,q.box.width/q.width,edge/pixels),
+         environment=tileEnvironment??=vegetationEnvironmentReader(this.db,source.campaignId,box,displayMpp),
+         view=generateVegetation(r,environment,box,displayMpp),
          overlay=protectedCovers.some(c=>c.id===r.id);
        for(const i of view.instances)if(!overlay||!i.protected)image.paintLine([i],Math.max(i.size*.6,edge/pixels*2),i.asset==='rock'?'#807967':'#4e6c48');
       }

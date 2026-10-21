@@ -63,6 +63,8 @@ export interface PaintOptions {
 export class AtlasPaint {
   readonly children: AtlasPaint[] = [];
   mapLabels?: MapLabelSource;
+  /** Same world grid for vector consumers and the terrain shader. */
+  mapGrid?: {size:number};
   readonly style: PaintStyle;
   readonly data: Record<string, string>;
   title: string;

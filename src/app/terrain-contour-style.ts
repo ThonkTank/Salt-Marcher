@@ -15,10 +15,10 @@ const band=(height:number,gradient:number,step:number,sea:number,ratio:number)=>
 /** Screen derivative in metres per physical sample pixel; pixelRatio converts
  * to logical display pixels. Crossfade nested, world-anchored intervals; never
  * interpolate a contour's elevation while the camera moves. */
-export function terrainContourInk(height:number,gradient:number,interval:number,sea:number,pixelRatio=1){
+export function terrainContourInk(height:number,gradient:number,interval:number,sea:number,pixelRatio=1,automaticStep=gradient*pixelRatio*CONTOUR_SPACING_PIXELS){
   if(interval===0||gradient<=.00001)return 0;
   if(interval>0)return band(height,gradient,interval,sea,pixelRatio);
-  const level=Math.max(0,Math.log2(gradient*pixelRatio*CONTOUR_SPACING_PIXELS/CONTOUR_BASE_METRES));
+  const level=Math.max(0,Math.log2(automaticStep/CONTOUR_BASE_METRES));
   const step=CONTOUR_BASE_METRES*2**Math.floor(level),blend=smooth(0,1,level%1);
   return band(height,gradient,step,sea,pixelRatio)*(1-blend)+band(height,gradient,step*2,sea,pixelRatio)*blend;
 }

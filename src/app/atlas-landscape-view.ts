@@ -104,17 +104,20 @@ export function drawLandscapeGrid(
   b: LandscapeBox,
   level: number | string,
   mpp: number,
+  procedural = false,
 ) {
   const landscapeNode=atlasPaint;
   const size = gridMeters(level),
     r = Math.ceil(Math.max(b.width, b.height) / size) + 2;
   if (r > 45) return;
+  root.mapGrid={size};
+  if(procedural)return;
   const cr = Math.round((b.y + b.height / 2) / ((size * Math.sqrt(3)) / 2)),
     cq = Math.round((b.x + b.width / 2) / size - cr / 2);
   for (let q = cq - r; q <= cq + r; q++)
     for (let y = cr - r; y <= cr + r; y++)
       root.append(
-        landscapeNode("polygon", {points: hexPolygon(q, y, size).outer.map(v=>({x:v.x-b.x,y:v.y-b.y})), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: String("true")}}),
+        landscapeNode("polygon", {points: hexPolygon(q, y, size).outer.map(v=>({x:v.x-b.x,y:v.y-b.y})), pointer: false, style: {fill: null, stroke: "#36564444", lineWidth: mpp * 0.7}, data: {landscapeGrid: 'true',landscapeGridSize:String(size)}}),
       );
 }
 export function gridVisible(b:LandscapeBox,level:number|string){return Math.ceil(Math.max(b.width,b.height)/gridMeters(level))+2<=45;}

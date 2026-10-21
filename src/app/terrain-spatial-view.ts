@@ -18,9 +18,12 @@ import type {SpatialReply} from './terrain-spatial-worker';
 import type {Point} from './contracts';
 import {AtlasSpatialScene} from './atlas-spatial-scene';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
-import {terrainContourUniforms} from './terrain-contours';
+import {terrainContourUniforms,terrainContourSlope} from './terrain-contours';
+import {CONTOUR_SPACING_PIXELS} from './terrain-contour-style';
 import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
 import {terrainRaycast} from './terrain-ray';
+import {TerrainHexGrid} from './terrain-hex-grid';
+import {routeDisplayVisible} from './terrain-route-display';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
 export class TerrainSpatialView {
@@ -43,6 +46,8 @@ export class TerrainSpatialView {
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
   private contours=terrainContourUniforms();
+  private contourSlope=0;
+  private hexGrid=new TerrainHexGrid();
   private labels=new AtlasSpatialLabels();
   private atlas:AtlasSpatialScene|null=null;
   private overlayScene:AtlasSpatialScene|null=null;
@@ -65,6 +70,7 @@ export class TerrainSpatialView {
   }
   publish(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){
     if(this.publication?.scene===scene)return;
+    this.hexGrid.set(scene);
     this.publication={scene,origin:{...origin},images};this.rebuildAtlas();this.render();
   }
   private rebuildAtlas(){
@@ -77,6 +83,7 @@ export class TerrainSpatialView {
   }
   overlay(scene:AtlasCanvasScene,origin:Point){
     if(!this.grid)return;
+    this.hexGrid.set(scene,true);
     const next=new AtlasSpatialScene(scene,origin,new Map(),this.surface());
     next.group.renderOrder=100000;
     if(this.overlayScene){this.scene.remove(this.overlayScene.group);this.overlayScene.dispose();}
@@ -115,6 +122,7 @@ export class TerrainSpatialView {
     const previous=this.grid,oldOrigin=this.origin;
     const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view;
     this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+    this.contourSlope=terrainContourSlope(g);
     this.contours??=terrainContourUniforms();
     const partial=data.update&&sameTerrainIdentity(this.identity,data.update.base)?data.update:undefined;
     const next=updateTerrainMesh(this.mesh,{...data,grid:g},previous,oldOrigin,this.origin,partial,this.contours,this.renderer);
@@ -123,6 +131,7 @@ export class TerrainSpatialView {
       this.mesh=next.mesh;this.scene.add(this.mesh);
     }
     this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
+    this.hexGrid.attach(this.mesh.material);
     const geometry=this.mesh.geometry;
     if(!data.draft&&!this.frozenPick){
       this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
@@ -181,6 +190,8 @@ export class TerrainSpatialView {
     const fog=(this.scene.fog??=new THREE.Fog(TERRAIN_SKY_COLOR,1e29,1e30)) as THREE.Fog;fog.near=horizon.near;fog.far=horizon.far;
     const w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
     this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
+    this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
+    this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
     this.camera.aspect=v.frame.width/v.frame.height;
     const eye=atlasCameraEye(v),target=new THREE.Vector3(v.frame.x+v.frame.width/2-this.origin.x,this.origin.y-v.frame.y-v.frame.height/2,0);
     const distance=Math.hypot(eye.x,eye.y,eye.z),extent=Math.max(v.box.width,v.box.height,this.heightRange*v.exaggeration);
@@ -189,6 +200,7 @@ export class TerrainSpatialView {
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
     this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
+    for(const route of this.routes)route.visible=routeDisplayVisible(route,this.camera,this.outputTile?.height??h);
     const direction=new THREE.Vector3();
     const cameraMatrix=this.camera.matrixWorldInverse.elements;
     this.labels.update(this.camera,this.outputTile?.width??w,this.outputTile?.height??h,anchor=>{

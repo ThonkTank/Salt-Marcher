@@ -41,3 +41,10 @@ test('fixed intervals, disabled contours and water plateaus retain their meaning
  }
  assert.equal(ink(100,0,-1,0),0);
 });
+test('one automatic interval retains a continuous elevation across changing slopes',()=>{
+ for(const step of [1,8,128,1024])for(const gradient of [.001,.01,.025].map(n=>n*step)){
+  assert(ink(step*3,gradient,-1,0,1,step)>.3,'same minor contour must survive gentle and steep sections');
+  assert.equal(ink(step*3.5,gradient,-1,0,1,step),0,'slope must not introduce another elevation');
+ }
+ for(let i=1;i<100;i++)assert(Math.abs(ink(80,.1,-1,0,1,8*(1-i*1e-8))-ink(80,.1,-1,0,1,8*(1+i*1e-8)))<1e-4);
+});

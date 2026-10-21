@@ -37,6 +37,16 @@ Die GPU-Anbindung hat getrennte Zuständigkeiten:
 
 `terrain-route-display.ts` ergänzt den maßhaltigen Straßen-/Flussbändern eine schmale Bildschirmdarstellung. Gemeinsame Schwellen aus `atlas-scale-policy.ts` steuern weiche Sichtbarkeit; die aktuelle Kameraprojektion steuert das Material auf jeder Zeichnung. Sichtbarkeit und Trefferauswahl verwenden dieselbe Regel. `terrain-route-clip.ts` begrenzt die Unterteilung auf den geladenen Bereich, ohne Streckenparameter oder Autorenpunkte zu verändern. [Native Zoom- und GPU-Prüfung](../reference/atlas-route-scale-20261021/README.md); zuständige Regression: `tests/terrain-route-display.test.mjs`.
 
+`terrain-hex-grid.ts` zeichnet das maßstabsabhängige Hexgitter im Bodenmaterial.
+Die Hauptkamera liefert nur Weltanker, Größe und Überblendung der Gitterstufen;
+sie baut dafür keine projizierten Pfade pro Kamerabild mehr. Canvas-Fallback
+und Vektorausgabe behalten ihre bisherigen Pfade. Automatische Höhenlinien
+verwenden eine gemeinsame Steigungsreferenz des geladenen Fokusbereichs, damit
+dieselbe Höhenlinie nicht an einem Wechsel der örtlichen Steigung endet.
+Unsichtbare Trassen werden konservativ vor der GPU-Einreichung ausgesondert.
+Waldübersichten erzeugen ihre Höhenumgebung erst bei tatsächlich sichtbaren
+Einzelobjekten. [Weltprobe, Ursachen und verbleibende Pinselblockade](../reference/atlas-world-response-20261021/README.md).
+
 Die bestehenden Stadt-, Raum- und Landschaftswerkzeuge bleiben die Autorenbesitzer. Weder Zeichenkommandos noch GPU-Treffer erhalten Schreibautorität; Main/SQLite validieren und speichern weiterhin. Der frühere Landschafts-3D-Dialog und sein eigener Renderer sind entfernt. Neigen und Drehen stehen ausschließlich im normalen Ansichtsmenü. Auch die Straßen-/Flussplanung besitzt keine Kartenfläche oder Kamera mehr: `terrain-route-ui.ts` hält die Bedienelemente und Entwürfe in der Atlas-Seitenleiste. Punkte, Vorschau, Geländeform, Navigation und History verwenden den normalen Atlas. Nur das Höhenprofil bleibt ein kleines Diagramm. `atlas-spatial-vegetation.ts` liefert instanzierte Bäume und Felsen in dieselbe Szene, ohne eigenen Renderer. Die alten isolierten Bildfixtures verwenden ebenfalls den Produktrenderer.
 
 **Städte haben keine Papierfläche im Atlas.** `cityObjectsPaint` liefert Straßen, Häuser und weitere angelegte Objekte ohne rechteckigen Hintergrund oder lokalen Canvasrahmen. Hauptkarte und Atlasexport verwenden diesen gemeinsamen Objektaufbau; auch der dichte Bereichsraster zeichnet kein `city-paper` mehr. Nur der historische eigenständige Dokumentserializer besitzt noch seine Papierausgabe. Alte Bindings dienen vorerst ausschließlich der Koordinatenumrechnung vorhandener Daten. Sie erzeugen weder eine Stadtidentität auf der Karte noch Marker, Namen oder Sichtbarkeitsgrenzen. Gemalte Gebiete sind unabhängige Overlays; sie besitzen keine enthaltenen Objekte. Leere Zeichnungskontexte erzeugen ebenfalls keine Marker, Namen oder Kartentreffer. Ihr Fokus und ihre Koordinaten bleiben zum Zeichnen erreichbar; fehlende Geometrie wird nicht als Null-Rechteck ausgegeben.
@@ -149,6 +159,13 @@ eine pausierte Projektion im Worker.
 Synchrone Live-Frames, Geometrie-Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
 Zeitgrenze. Bei starker Neigung kann die begrenzte Abdeckung am Horizont weiterhin
 sichtbar werden.
+
+`terrain-dirty-rects.ts` fasst benachbarte invalidierte Blöcke zu Rechtecken
+zusammen. Höhenabfragen bleiben innerhalb von 65.536 Samples; saubere Löcher
+werden dabei nicht neu gelesen. Der Farbcache verwendet dieselbe Zusammenfassung
+vor der Rasterung, hält aber weiterhin seine kleinen Invalidierungs-/Speicherblöcke.
+So teilen große Änderungen ihre Quellabtastung und Beleuchtungsränder. Dies
+begrenzt weder die gesamte Live-Latenz noch ersetzt es zeitlich aufgeteilte Farbarbeit.
 
 Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2D. Weitere Neuzeichnungen starten den gescheiterten Renderer nicht erneut. „Atlaskamera erneut laden“ im Ansichtsmenü ist der ausdrückliche Wiederanlauf. Laufende Raum-, Stadt-, Landschafts- und Bereichsgesten sperren Poseänderungen.
 

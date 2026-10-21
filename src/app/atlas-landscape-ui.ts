@@ -903,12 +903,13 @@ export class LandscapeWorkbench {
     const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     const t = this.gridFade && !reduced ? Math.min(1,(performance.now()-this.gridFade.start)/180) : 1;
     if (html<HTMLInputElement>('land-grid').checked) {
+      const procedural=!!this.host.visibility?.();
       if (this.gridFade && t < 1) {
         const old = atlasPaint('group',{opacity:1-t});
-        drawLandscapeGrid(old,box,this.gridFade.from,mpp);root.append(old);
+        drawLandscapeGrid(old,box,this.gridFade.from,mpp,procedural);root.append(old);
       }
       const current = atlasPaint('group',{opacity:t});
-      drawLandscapeGrid(current,box,level,mpp);root.append(current);
+      drawLandscapeGrid(current,box,level,mpp,procedural);root.append(current);
     }
     drawScale(root,box,mpp,html<HTMLInputElement>('land-grid').checked?level:undefined);
     if(this.active && auto) {
