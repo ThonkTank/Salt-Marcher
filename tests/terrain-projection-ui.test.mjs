@@ -39,3 +39,11 @@ test('a draft with no acknowledged result restores its starting surface',()=>{
  state.gesture(true);state.previewHeight({});state.gesture(false);
  assert.equal(shown.length,1);assert.equal(shown[0].grid,original.grid);assert.equal(state.input.dataset.terrainRevision,'1');assert.equal(state.input.dataset.terrainQuality,'overview');
 });
+
+test('a coarse confirmed no-op frame resumes normal detail loading after the gesture releases',()=>{
+ let live=true,scheduled=0;const state=Object.assign(Object.create(TerrainSpatialUI.prototype),{firstSurface:new Set()});
+ const confirmed={identity:{revision:1},revision:1,grid:{heights:new Float32Array([12])}};
+ Object.assign(state,{active:true,ready:true,token:'t',source:'same',requested:'same',detailSource:'same',revision:1,input:{dataset:{}},baseline:confirmed,view:{freezePicking(){}},colorTiles:{reconcile:()=>undefined},host:{live:()=>live,hasDraft:()=>false,writing:()=>false},publish(){},scheduleLoad(){scheduled++;}});
+ assert.equal(state.needsLoad(),false);state.presentLive(confirmed,false);assert.equal(state.needsLoad(),false,'live editing still suppresses navigation refinement');
+ live=false;assert.equal(state.needsLoad(),true,'same revision must not leave coarse colour permanently marked complete');state.gesture(false);assert.equal(scheduled,1);
+});

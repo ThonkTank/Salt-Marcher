@@ -24,7 +24,8 @@ export function terrainSnapshotStillValid(source:AtlasRegionSource,current:Atlas
     JSON.stringify(current.shadow)===JSON.stringify(source.shadow)&&
     (current.revision>source.revision||current.revision===source.revision&&current.sequence===source.sequence);
 }
-/** Independent display lane: one read and one latest confirmed successor.
+/** Independent display lane: one full-height read and one latest confirmed successor.
+ * Disposable fine colour may finish independently; the service preempts it.
  * An older completed snapshot can be shown while newer writes continue.
  * It is never relabelled with the requested revision.
  */
@@ -32,12 +33,15 @@ export class TerrainPresentation {
   private wanted:TerrainIdentity|null=null;
   private running:Promise<void>|null=null;
   private stopped=false;
+  private finishing=false;
+  private requested=-1;
   private shown=-1;
   private frame:TerrainFullFrame|undefined;
   constructor(private read:(identity:TerrainIdentity,base?:TerrainFrameIdentity,refinement?:boolean)=>Promise<TerrainFrame>,
     private present:(frame:TerrainFullFrame,refined?:boolean)=>void,private failed:(error:unknown)=>void,private refine=false){}
   update(identity:TerrainIdentity){
     if(this.stopped)return;
+    this.requested=Math.max(this.requested,identity.revision);
     this.wanted=identity;
     this.start();
   }
@@ -46,29 +50,20 @@ export class TerrainPresentation {
   }
   private async pump(){
     while(this.wanted&&!this.stopped){
-      const source=this.wanted;this.wanted=null;
+      const source=this.wanted,base=this.frame;this.wanted=null;
       try{
-        const frame=await this.read(source,this.frame?.target);
+        const frame=await this.read(source,base?.target);
         const accepted=!this.stopped&&frame.target.revision>=source.revision&&frame.target.revision>this.shown;
         if(accepted){
-          this.frame=applyTerrainFrame(this.frame,frame);this.present(this.frame,!this.refine);this.shown=frame.target.revision;
+          // A fine reply can arrive during this read. Apply deltas to the exact
+          // base we requested, not to the subsequently refined display frame.
+          this.frame=applyTerrainFrame(base,frame);this.present(this.frame,!this.refine);this.shown=frame.target.revision;
         }
         const successor=this.wanted as TerrainIdentity|null; // update() may run while read() is awaited.
         if(successor&&successor.revision<=this.shown)this.wanted=null;
-        if(accepted&&this.refine&&!this.stopped&&!this.wanted&&this.frame){
-          try{
-            // Refinement uses a separate disposable response base and low-priority
-            // worker slices. An author request can replace it before a new commit.
-            const detail=await this.read(this.frame.target,undefined,true);
-            const latest=this.wanted as TerrainIdentity|null;
-            if(!this.stopped&&detail.target.revision>=this.shown&&(!latest||latest.revision<=detail.target.revision)){
-              this.frame=applyTerrainFrame(undefined,detail);this.present(this.frame,true);this.shown=detail.target.revision;
-              if(latest&&latest.revision<=this.shown)this.wanted=null;
-            }
-          }catch(error){
-            if(!this.stopped&&!/inzwischen geändert|neuere Anfrage/.test(String(error)))this.failed(error);
-          }
-        }
+        // Fine colour must not hold up a newer confirmed frame or gesture
+        // completion. The service preempts this low-priority read for either.
+        if(accepted&&this.refine&&!this.finishing&&!this.stopped&&!this.wanted&&this.frame)void this.refineFrame(this.frame);
       }catch(error){
         // A write can win the race before a worker opens its snapshot. A newer
         // confirmed successor retries that read; author commands are never retried.
@@ -76,8 +71,19 @@ export class TerrainPresentation {
       }
     }
   }
-  /** Writers have finished. Keep their already requested final snapshot visible
-   * before releasing the gesture; cancellation still uses stop() immediately. */
-  async finish(){while(this.running)await this.running;this.stop();}
+  private async refineFrame(base:TerrainFullFrame){
+    try{
+      const detail=await this.read(base.target,undefined,true);
+      if(!this.stopped&&this.frame===base&&detail.target.revision>=this.requested&&detail.target.revision>=this.shown){
+        this.frame=applyTerrainFrame(undefined,detail);this.present(this.frame,true);this.shown=detail.target.revision;
+        if(this.wanted&&this.wanted.revision<=this.shown)this.wanted=null;
+      }
+    }catch(error){
+      if(!this.stopped&&this.frame===base&&base.target.revision>=this.requested&&!/inzwischen geändert|neuere Anfrage/.test(String(error)))this.failed(error);
+    }
+  }
+  /** Writers have finished. Present their final full heights before releasing
+   * the gesture; disposable fine colour never holds author tools closed. */
+  async finish(){this.finishing=true;while(this.running)await this.running;this.stop();}
   stop(){this.stopped=true;this.wanted=null;this.frame=undefined;}
 }

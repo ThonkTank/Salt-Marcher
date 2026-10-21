@@ -133,6 +133,14 @@ das erste Bild ersetzen, eine inzwischen überholte Antwort nicht. Die
 perspektivische Ausgabe behält ihre jeweilige Detailauflösung.
 [Native Teilmessung und offene Leistungsgrenze](../reference/atlas-progressive-brush-20261021/README.md).
 
+Der Pinselabschluss wartet auf die letzte bestätigte vollständige Höhenübersicht,
+aber nicht mehr auf deren feine Farben. Neue bestätigte Übersichten können
+ältere Verfeinerung ersetzen. Teilantworten behalten ihre angeforderte Basis,
+auch wenn zwischenzeitlich ein Detailbild erscheint. Nach Abschluss lädt der
+normale Atlas die ausstehende Detailstufe weiter, einschließlich unveränderter
+Quellenrevisionen. Objektaktualisierung und Terrainbereitschaft bleiben für
+den nächsten Zug erforderlich. [Diagnose, Schutzregeln und echter Folgezug](../reference/atlas-brush-finish-20261022/README.md).
+
 Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
 unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
 Randkacheln entstehen höchstens 9×9 Kacheln beziehungsweise 2304×2304 Pixel.

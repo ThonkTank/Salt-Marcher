@@ -145,6 +145,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   presentLive(data:import('./terrain-projection').TerrainProjection,refined=true){
     if(!this.active)return;
+    // Gesture completion may release author tools after full heights and coarse
+    // colour. Resume ordinary detail loading even for a receipt-only/no-op write.
+    if(!refined)this.detailSource='';
     const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange);
     this.colorTiles.detail=detail;
     // The retained image has different tile rectangles from the live brush patch.

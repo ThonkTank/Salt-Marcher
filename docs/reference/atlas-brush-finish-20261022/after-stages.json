@@ -1,0 +1,436 @@
+{
+  "source": "43f6429cbc5a5fd496fe3c9ebbc98426ec61b035",
+  "dirty": true,
+  "artifacts": {
+    "main.cjs": "daaaf828884340b82c646274a7561a2c6ef8b61ca63e25fb47789def5249dab1",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "b7789f9230141ad3298a978a7a74ef7f052cde12910c10067d9ef9667fd2db98",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "e4dc53cb17e274eeb151a2b6fde334275ef828f53d12bb5fd1a30e6385cac92a",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3349080,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "raw": {
+    "path": ".build/brush-finish-traced/result.json",
+    "sha256": "c343dc0211d0539ec49e13afd1ec223010898f444ab79981cb30f6a0f8e361ae"
+  },
+  "note": "Main-clock packet round trips and markers are comparable. Worker/renderer stage durations use their own clocks. Nested stage durations overlap and must not be summed. Instrumented diagnosis, not input latency or p95.",
+  "releaseToReadyMs": 4297.726734,
+  "events": [
+    {
+      "name": "open",
+      "time": 4309.004853,
+      "mainTime": 2495.563501
+    },
+    {
+      "name": "ready",
+      "time": 15246.825944,
+      "mainTime": 13432.973864
+    },
+    {
+      "name": "down",
+      "time": 17385.579342,
+      "mainTime": 15571.437381
+    },
+    {
+      "name": "released",
+      "time": 21806.188112,
+      "mainTime": 19992.280639
+    },
+    {
+      "name": "wheel-send",
+      "time": 22811.486721,
+      "mainTime": 20998.739985
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22846.649556,
+      "mainTime": 21032.473043
+    },
+    {
+      "name": "state-returned",
+      "time": 23172.704033,
+      "mainTime": 21358.739614
+    },
+    {
+      "name": "settled",
+      "time": 26103.914846,
+      "mainTime": 24289.994239
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+    "pending": true,
+    "time": 20239.80000001192
+  },
+  "dropped": {
+    "packets": 0,
+    "workerEvents": 0,
+    "main": 0,
+    "renderer": 0
+  },
+  "groups": {
+    "terrain-color:4": {
+      "requests": 7,
+      "roundtripMs": 95.66368099999818,
+      "maxRoundtripMs": 23.92495400000007,
+      "firstPostedAfterReleaseMs": -4423.095652,
+      "lastReceivedAfterReleaseMs": -4326.941485000001,
+      "stages": {
+        "region.sync": 6.561942000000272,
+        "region.read": 77.1520780000028,
+        "projection.finish": 2.0052919999998267,
+        "projection.base": 12.848842000001241
+      }
+    },
+    "terrain-stroke:4": {
+      "requests": 1,
+      "roundtripMs": 452.7746129999996,
+      "maxRoundtripMs": 452.7746129999996,
+      "firstPostedAfterReleaseMs": -4326.786774,
+      "lastReceivedAfterReleaseMs": -3874.0121610000006,
+      "stages": {
+        "region.sync": 0.7625009999992471,
+        "region.read": 449.90081199999986
+      }
+    },
+    "terrain-live:5": {
+      "requests": 1,
+      "roundtripMs": 876.2553449999996,
+      "maxRoundtripMs": 876.2553449999996,
+      "firstPostedAfterReleaseMs": -3663.599056000001,
+      "lastReceivedAfterReleaseMs": -2787.3437110000013,
+      "stages": {
+        "region.sync": 15.26067300000068,
+        "projection.grid": 71.89095400000042,
+        "projection.field": 416.65695100000084,
+        "projection.base": 140.87143999999898,
+        "projection.finish": 1.2930860000014945,
+        "region.read": 848.4832499999993
+      }
+    },
+    "terrain-stroke:5": {
+      "requests": 1,
+      "roundtripMs": 271.8084830000007,
+      "maxRoundtripMs": 271.8084830000007,
+      "firstPostedAfterReleaseMs": -2787.270934,
+      "lastReceivedAfterReleaseMs": -2515.4624509999994,
+      "stages": {
+        "region.sync": 1.5321169999988342,
+        "region.read": 268.59652899999855
+      }
+    },
+    "terrain-refine:5": {
+      "requests": 2,
+      "roundtripMs": 77.2485740000011,
+      "maxRoundtripMs": 71.69514300000083,
+      "firstPostedAfterReleaseMs": -2515.371288000002,
+      "lastReceivedAfterReleaseMs": -2437.6414079999995,
+      "stages": {
+        "region.sync": 1.1390839999985474,
+        "region.read": 9.167596000002959
+      }
+    },
+    "terrain-live:6": {
+      "requests": 1,
+      "roundtripMs": 753.5745210000023,
+      "maxRoundtripMs": 753.5745210000023,
+      "firstPostedAfterReleaseMs": -2437.5719820000013,
+      "lastReceivedAfterReleaseMs": -1683.997460999999,
+      "stages": {
+        "region.sync": 14.931694999999308,
+        "projection.grid": 36.99526999999944,
+        "projection.field": 349.969172000001,
+        "projection.base": 125.02976800000033,
+        "projection.finish": 1.1983300000028976,
+        "region.read": 731.0812650000007
+      }
+    },
+    "terrain-stroke:6": {
+      "requests": 1,
+      "roundtripMs": 297.17304800000056,
+      "maxRoundtripMs": 297.17304800000056,
+      "firstPostedAfterReleaseMs": -1683.9396110000016,
+      "lastReceivedAfterReleaseMs": -1386.766563000001,
+      "stages": {
+        "region.sync": 1.3168389999991632,
+        "region.read": 293.94965199999933
+      }
+    },
+    "terrain-refine:6": {
+      "requests": 2,
+      "roundtripMs": 86.44433899999785,
+      "maxRoundtripMs": 83.25782899999831,
+      "firstPostedAfterReleaseMs": -1386.6885839999995,
+      "lastReceivedAfterReleaseMs": -1300.0490090000021,
+      "stages": {
+        "region.sync": 3.6260349999975006,
+        "region.read": 11.1476619999994
+      }
+    },
+    "terrain-live:7": {
+      "requests": 1,
+      "roundtripMs": 735.882794000001,
+      "maxRoundtripMs": 735.882794000001,
+      "firstPostedAfterReleaseMs": -1292.3423360000015,
+      "lastReceivedAfterReleaseMs": -556.4595420000005,
+      "stages": {
+        "region.sync": 8.061947999998665,
+        "projection.grid": 42.472358000002714,
+        "projection.field": 371.722517000002,
+        "projection.base": 120.70755400000053,
+        "projection.finish": 0.7560099999973318,
+        "region.read": 720.3524509999988
+      }
+    },
+    "terrain-stroke:7": {
+      "requests": 1,
+      "roundtripMs": 231.1523879999986,
+      "maxRoundtripMs": 231.1523879999986,
+      "firstPostedAfterReleaseMs": -556.3900570000005,
+      "lastReceivedAfterReleaseMs": -325.2376690000019,
+      "stages": {
+        "region.sync": 0.9217069999976957,
+        "region.read": 228.22358299999905
+      }
+    },
+    "terrain-refine:7": {
+      "requests": 2,
+      "roundtripMs": 91.47305699999924,
+      "maxRoundtripMs": 80.68636100000003,
+      "firstPostedAfterReleaseMs": -325.1710490000005,
+      "lastReceivedAfterReleaseMs": -233.63582700000188,
+      "stages": {
+        "region.sync": 0.9863100000002305,
+        "region.read": 9.075039999999717
+      }
+    },
+    "terrain-live:8": {
+      "requests": 1,
+      "roundtripMs": 721.1626529999994,
+      "maxRoundtripMs": 721.1626529999994,
+      "firstPostedAfterReleaseMs": -233.56980399999884,
+      "lastReceivedAfterReleaseMs": 487.59284900000057,
+      "stages": {
+        "region.sync": 44.890151999999944,
+        "projection.grid": 60.166355000001204,
+        "projection.field": 365.3931069999999,
+        "projection.base": 86.65408399999797,
+        "projection.finish": 0.9956569999994827,
+        "region.read": 666.8973430000005
+      }
+    },
+    "terrain-stroke:8": {
+      "requests": 1,
+      "roundtripMs": 165.76886899999954,
+      "maxRoundtripMs": 165.76886899999954,
+      "firstPostedAfterReleaseMs": 487.7146939999984,
+      "lastReceivedAfterReleaseMs": 653.483562999998,
+      "stages": {
+        "region.sync": 1.0165700000034121,
+        "region.read": 163.3596980000002
+      }
+    },
+    "terrain-refine:8": {
+      "requests": 2,
+      "roundtripMs": 88.28433300000324,
+      "maxRoundtripMs": 85.74834800000099,
+      "firstPostedAfterReleaseMs": 653.5611250000002,
+      "lastReceivedAfterReleaseMs": 741.9160100000008,
+      "stages": {
+        "region.sync": 0.9206510000003618,
+        "projection.grid": 5.813243999997212,
+        "region.read": 19.48451799999748
+      }
+    },
+    "terrain-live:9": {
+      "requests": 1,
+      "roundtripMs": 691.4983030000003,
+      "maxRoundtripMs": 691.4983030000003,
+      "firstPostedAfterReleaseMs": 744.584769000001,
+      "lastReceivedAfterReleaseMs": 1436.0830720000013,
+      "stages": {
+        "region.sync": 37.556242999999085,
+        "projection.grid": 46.11519599999883,
+        "projection.field": 309.30538700000034,
+        "projection.base": 132.96835099999953,
+        "projection.finish": 1.0270540000019537,
+        "region.read": 648.7227219999986
+      }
+    },
+    "terrain-stroke:9": {
+      "requests": 1,
+      "roundtripMs": 141.9700780000021,
+      "maxRoundtripMs": 141.9700780000021,
+      "firstPostedAfterReleaseMs": 1436.1479169999984,
+      "lastReceivedAfterReleaseMs": 1578.1179950000005,
+      "stages": {
+        "region.sync": 0.6512970000003406,
+        "region.read": 140.15655000000334
+      }
+    },
+    "terrain-refine:9": {
+      "requests": 2,
+      "roundtripMs": 69.7515990000029,
+      "maxRoundtripMs": 66.29891800000041,
+      "firstPostedAfterReleaseMs": 1578.1703249999991,
+      "lastReceivedAfterReleaseMs": 1647.9829800000007,
+      "stages": {
+        "region.sync": 1.4311479999996664,
+        "region.read": 8.348445999999967
+      }
+    },
+    "terrain-live:10": {
+      "requests": 1,
+      "roundtripMs": 613.4539069999992,
+      "maxRoundtripMs": 613.4539069999992,
+      "firstPostedAfterReleaseMs": 1648.0373819999986,
+      "lastReceivedAfterReleaseMs": 2261.491288999998,
+      "stages": {
+        "region.sync": 7.3208490000033635,
+        "projection.grid": 43.971191000000545,
+        "projection.field": 305.52694599999813,
+        "projection.base": 102.84330800000316,
+        "projection.finish": 1.0160399999949732,
+        "region.read": 598.3490129999991
+      }
+    },
+    "region:10": {
+      "requests": 1,
+      "roundtripMs": 1326.7903320000005,
+      "maxRoundtripMs": 1326.7903320000005,
+      "firstPostedAfterReleaseMs": 2309.1918210000003,
+      "lastReceivedAfterReleaseMs": 3635.982153000001,
+      "stages": {
+        "region.sync": 1.5349410000017087,
+        "region.read": 1320.9082639999979
+      }
+    }
+  },
+  "rendererIntervals": [
+    {
+      "stage": "commit.roundtrip",
+      "start": 14549.5,
+      "duration": 660.1999999880791,
+      "revision": 4
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 15211.5,
+      "duration": 901.3000000119209
+    },
+    {
+      "stage": "commit.roundtrip",
+      "start": 15264.100000023842,
+      "duration": 1172.3999999761581,
+      "revision": 5
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 16129.399999976158,
+      "duration": 323
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 16438.399999976158,
+      "duration": 784.2000000476837
+    },
+    {
+      "stage": "commit.roundtrip",
+      "start": 16490.69999998808,
+      "duration": 1090,
+      "revision": 6
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 17241.30000001192,
+      "duration": 356.30000001192093
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 17582.100000023842,
+      "duration": 761.0999999642372
+    },
+    {
+      "stage": "commit.roundtrip",
+      "start": 17639.19999998808,
+      "duration": 996.5,
+      "revision": 7
+    },
+    {
+      "stage": "brush.queue",
+      "start": 17847.399999976158,
+      "duration": 803.3000000119209
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 18362.30000001192,
+      "duration": 318.69999998807907
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 18636.899999976158,
+      "duration": 751.6000000238419
+    },
+    {
+      "stage": "commit.roundtrip",
+      "start": 18651,
+      "duration": 967.8999999761581,
+      "revision": 8
+    },
+    {
+      "stage": "brush.queue",
+      "start": 18871.30000001192,
+      "duration": 759.6999999880791
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 19402.600000023842,
+      "duration": 229.0999999642372
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 19620.19999998808,
+      "duration": 710.4000000357628
+    },
+    {
+      "stage": "commit.roundtrip",
+      "start": 19631.19999998808,
+      "duration": 892.9000000357628,
+      "revision": 9
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 20345.399999976158,
+      "duration": 193
+    },
+    {
+      "stage": "terrain.frame",
+      "start": 20525.30000001192,
+      "duration": 630.5
+    },
+    {
+      "stage": "atlas.refresh",
+      "start": 21165.5,
+      "duration": 1650.699999988079,
+      "revision": 10
+    }
+  ]
+}

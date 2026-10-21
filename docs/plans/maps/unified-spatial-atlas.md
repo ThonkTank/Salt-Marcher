@@ -343,3 +343,14 @@ Auswahl vor Abschluss des Gitters und setzte anschließend korrekt fort.
 Die gesamte Öffnungszeit und der große Pinselabschluss sind dadurch nicht
 nachweislich verkürzt. Quellenaufbau, verbliebene lange Rasterabschnitte und
 Ende-zu-Ende-Reaktion auf dem Zielgerät bleiben offen.
+
+### Pinselabschluss ohne Warten auf feine Farben (22.10.2026)
+
+Die native Diagnose zeigte rund 1,7 Sekunden abschließende Farbverfeinerung vor
+der Objektaktualisierung. Der Abschluss wartet jetzt weiter auf die letzte
+vollständige Höhenantwort, während feine Farben unabhängig fortgesetzt werden.
+[Schutzregeln, Gegenproben und tatsächlicher Folgezug](../../reference/atlas-brush-finish-20261022/README.md).
+Die Bedienelemente wurden lokal nach 3,6–3,8 statt 5,9 Sekunden freigegeben.
+Für einen tatsächlich angenommenen Folgezug war die normale Terrainquelle
+jedoch erst nach rund 5,1 Sekunden wieder bereit. Diese erneute Ladephase und
+die Gesamtlatenzziele bleiben ausdrücklich offen.
