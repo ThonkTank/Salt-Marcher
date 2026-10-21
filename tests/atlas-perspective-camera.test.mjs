@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
+      "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-perspective-camera-test.cjs",
@@ -23,6 +23,7 @@ const {
   gridHeight,
   validateTerrainView,
   TerrainSpatialView,
+  TerrainHexGrid,
   AtlasSpatialLabels,
   THREE,
   ATLAS_CAMERA_FOV,
@@ -54,6 +55,7 @@ function viewFor(v, heights = new Float32Array(v.columns * v.rows).fill(60)) {
   const view = Object.create(TerrainSpatialView.prototype);
   Object.assign(view, {
     labels: new AtlasSpatialLabels(),
+    hexGrid: new TerrainHexGrid(),
     camera: new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),
     scene: new THREE.Scene(),
     canvas: {

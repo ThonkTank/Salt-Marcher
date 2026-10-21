@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export * from './src/app/atlas-workplane';export {atlasProject} from './src/app/atlas-camera';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainSpatialView,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV,atlasProject,atlasWorkplaneHeight}=require('../.build/terrain-spatial-picking-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export * from './src/app/atlas-workplane';export {atlasProject} from './src/app/atlas-camera';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {TerrainSpatialView,TerrainHexGrid,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV,atlasProject,atlasWorkplaneHeight}=require('../.build/terrain-spatial-picking-test.cjs');
 function fixture(){
  const box={x:101100,y:458304,width:1894950,height:1180544},frame={x:732751,y:851819,width:631650,height:393515};
  const v={box,frame,columns:33,rows:33,focusM:120,tilt:45,rotation:0,exaggeration:2};
  const data={grid:{view:v,heights:new Float32Array(33*33).fill(120),seaLevelM:0},width:16,height:16,pixels:new Uint8Array(1024),draft:false};
- const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{labels:new AtlasSpatialLabels(),canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{copies:[],copyTextureToTexture(source,target,box,position){this.copies.push({source,target,box,position});},getPixelRatio(){return 1;},setSize(){},dispose(){},forceContextLoss(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
+ const state=Object.create(TerrainSpatialView.prototype);Object.assign(state,{labels:new AtlasSpatialLabels(),hexGrid:new TerrainHexGrid(),canvas:{clientWidth:1496,clientHeight:932,getBoundingClientRect:()=>({left:424,top:48,width:1496,height:932})},renderer:{copies:[],copyTextureToTexture(source,target,box,position){this.copies.push({source,target,box,position});},getPixelRatio(){return 1;},setSize(){},dispose(){},forceContextLoss(){},render(scene){scene.updateMatrixWorld(true);}},camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),routes:[]});state.setData(data);return{state,data};
 }
 for(const pan of [0,100000])test(`preview retains the frozen world hit after camera translation ${pan}`,()=>{
  const {state,data}=fixture();const frame={...data.grid.view.frame,x:data.grid.view.frame.x+pan};state.reframe(frame,45,0);
