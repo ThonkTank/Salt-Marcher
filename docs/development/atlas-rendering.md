@@ -373,6 +373,14 @@ verwenden weiterhin die tatsächliche Ausgabeauflösung. Die Canvasregression
 prüft Hoch-/Querformat und konkurrierende Namen; die native Grundrissprobe
 vergleicht die tatsächlichen PNGs bei 1536 und 3072 Pixeln.
 
+Die perspektivische GM-Ausgabe übernimmt Landschaftskacheln mit
+`content=objects`: Dichte Bestände enthalten ihre automatischen Bäume dort statt
+in Einzelrecords. Nur Bodenraster entfallen zugunsten der Terrainprojektion.
+Ein vollständiger Layer und unveränderter Quellenzaun bleiben Voraussetzung.
+Die [Regression](../../tests/atlas-terrain-export.test.mjs) und der
+[native PNG-Vergleich](../reference/atlas-image-orientation-20261021/README.md#folgekorrektur-automatischer-bewuchs-in-png)
+belegen den Erhalt des Bestands, noch keine gleiche räumliche Detailstufe.
+
 GM-Ausgabe und öffentliche Datenfreigabe bleiben getrennt. Öffentliche Ausgabe
 verwendet freigegebene Sicht-/Erinnerungsprojektionen, keine aktuellen GM-Flächen
 oder GM-Raster über bloß erinnerten Hexes. Feinere öffentliche Küsten/Wege

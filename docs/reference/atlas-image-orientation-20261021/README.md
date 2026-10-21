@@ -27,7 +27,7 @@ HTML-Bilder, Canvas und ImageBitmap, ohne quellabhängige Sondergeometrie.
   Bitmapquellen vertauscht; [nachher](pixel-probe.json) stimmen alle sechs
   Fälle. [Bild vorher](before-bitmap.png), [Bild nachher](after-bitmap.png).
   Die Probe ist ein ergänzender Renderertest, keine neue Produktansicht.
-- [Acht Szenenregressionen](tests.log) bestanden, ebenso beide TypeScript-
+- [Zehn Szenen-/Exportregressionen](tests.log) bestanden, ebenso beide TypeScript-
   Prüfungen und der Desktopbuild.
 
 - [Native Hauptatlas-Wiederholung](main-atlas.json): 80 km, 6 km, 1,2 km,
@@ -38,12 +38,29 @@ HTML-Bilder, Canvas und ImageBitmap, ohne quellabhängige Sondergeometrie.
   [Geneigter Hauptatlas](tilted.png). Quellstand war `7072c46b027d6650ab95bf6e26c665b86213b240`
   mit der lokalen Texturkorrektur; Quell- und Artefakthashes sind enthalten.
 
-**Neue offene Lücke beim visuellen Exportvergleich:** Die
-[gespeicherte PNG](export-gap.png) enthält den geschützten Baum, aber nicht den
-im Fenster sichtbaren automatischen Bestand. Die Speicheraktion und die
-Datenprüfung bestanden; vollständige Bildgleichheit ist damit ausdrücklich
-nicht qualifiziert. Der Vegetationsread für perspektivische Ausgabe muss
-nachgebessert und gegen sichtbare Baumgeometrie geprüft werden.
+## Folgekorrektur: automatischer Bewuchs in PNG
 
-Kronenform, Waldtextur und stufenloser Informationswechsel bleiben ebenfalls
-offen. Keine Paket- oder Nutzerabnahme, keine abgeschlossene Gesamtprüfung.
+Der visuelle Exportvergleich zeigte zusätzlich, dass die perspektivische
+Ausgabe sämtliche Landschaftsraster verwarf. Bei dichten Bereichen liegen die
+automatischen Bäume jedoch in Objektkacheln. Im [Zwischenstand](export-gap.png)
+blieb deshalb allein der geschützte Einzelbaum sichtbar.
+
+Die Ausgabe übernimmt jetzt Kacheln mit `content=objects`; den Boden liefert
+weiterhin die Terrainprojektion. Der [Exporttest](../../../tests/atlas-terrain-export.test.mjs)
+prüft Wald-/Wegkacheln, Weltpositionen und unveränderte Quellen sowie Ablehnung
+unvollständiger Layer und gewechselter Quellenzäune.
+
+Die [erneute Hauptatlas-Probe](export-native.json) speichert über den normalen
+Ausgabedialog. Die rechte Bildhälfte, außerhalb des geschützten Einzelbaums,
+enthält jetzt 24.961 dunkle Bewuchspixel statt vorher 0. Die
+[PNG danach](export-fixed.png) wurde zusätzlich visuell geprüft. Normaler
+Exit 0, PID beendet, keine Rendererfehler, unveränderte Landschaftszeilen beim
+frischen Lesen. Geprüfter Basiscommit `fff2daa7982de8b43261212570e5484189b1d83b`
+mit lokaler Exportkorrektur; Quell- und Artefakthashes sind beigefügt.
+
+**Verbleibende Grenze:** Die Ausgabe verwendet bei dieser dichten Szene noch
+Rasterpunkte statt der im Fenster sichtbaren räumlichen Einzelkronen. Sie
+verliert den Bestand nicht mehr vollständig, erreicht aber noch keine gleiche
+Detaildarstellung. Rasterauflösung, Kronenform, Waldtextur und stufenloser
+Informationswechsel bleiben offen. Keine Paket- oder Nutzerabnahme, keine
+abgeschlossene Gesamtprüfung.
