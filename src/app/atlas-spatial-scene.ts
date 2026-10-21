@@ -121,6 +121,9 @@ export class AtlasSpatialScene {
       const image = images.get(g.source ?? "");
       if (!image) return;
       const texture = this.own(new THREE.Texture(image as TexImageSource));
+      // ImageBitmap ignores WebGL's unpack flip. Use top-origin UVs and an
+      // unflipped upload for every source type, including Canvas2D's bitmaps.
+      texture.flipY = false;
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       const x = g.x ?? 0,
@@ -157,7 +160,7 @@ export class AtlasSpatialScene {
       geometry.setAttribute(
         "uv",
         new THREE.Float32BufferAttribute(
-          [0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0],
+          [0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1],
           2,
         ),
       );

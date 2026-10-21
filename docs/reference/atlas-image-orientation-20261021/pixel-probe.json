@@ -1,0 +1,207 @@
+{
+  "samples": [
+    {
+      "kind": "canvas",
+      "tilt": 0,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    },
+    {
+      "kind": "canvas",
+      "tilt": 45,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    },
+    {
+      "kind": "image",
+      "tilt": 0,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    },
+    {
+      "kind": "image",
+      "tilt": 45,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    },
+    {
+      "kind": "bitmap",
+      "tilt": 0,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    },
+    {
+      "kind": "bitmap",
+      "tilt": 45,
+      "samples": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          255,
+          204,
+          0,
+          255
+        ]
+      ]
+    }
+  ],
+  "source": "7072c46b027d6650ab95bf6e26c665b86213b240",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-image-orientation-8o5Tjg",
+  "artifacts": {
+    "main.cjs": "da420e4f5ed411d8ffe3a061361f0a0a42d99c8ac22b96a8a4a05d30e20b8713",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "09e9663e1999f23c2d082343e8d2ee00499d6e45bf37c0177189dec663e85eda",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 2756177,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

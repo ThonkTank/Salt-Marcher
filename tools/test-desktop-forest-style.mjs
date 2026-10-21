@@ -63,6 +63,6 @@ try{
  const Database=require('better-sqlite3'),db=new Database(native.profile+'/workbench.sqlite',{readonly:true});
  try{assert.deepEqual(db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all(),before);}finally{db.close();}
  checks.push('Navigation and export preserve all authored landscape rows and protected identities.');
- const hashes={};for(const file of ['src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+ const hashes={};for(const file of ['src/app/atlas-spatial-scene.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
  await native.finish({checks,views,hashes});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}
