@@ -74,9 +74,16 @@ Kampagnen- oder Revisionswechsel verworfen; alte Farben verdecken keine Edits.
 `TerrainSpatialUI` verwirft Antworten nach Quellen- oder Gestenwechsel und setzt
 unterbrochene Verfeinerung nach der Geste fort. Ein Fehler nur der Detailstufe
 behält die nutzbare Übersicht und bietet den vorhandenen Kamerawiederanlauf an.
-Es gibt noch keine unterbrechbaren Detailkacheln: Ein bereits laufender großer
-Readonly-Auftrag kann den nächsten Auftrag weiter verzögern. Bei starker
-Neigung kann die begrenzte Abdeckung am Horizont weiterhin sichtbar werden.
+`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 128er-Paketen
+mit kooperativen Haltepunkten nach abgeschlossenen SQL-Lesevorgängen. Der Worker
+beendet dort seinen WAL-Schnappschuss und prüft die Revision vor jeder Fortsetzung.
+Auswahl kann zwischen diesen Schritten laufen. Kamera-, Live- und Autorenaufträge
+ersetzen ausstehende normale Detailarbeit; brauchbare Cacheteile bleiben erhalten.
+Die UI behandelt diese Verdrängung als erwarteten Ablauf und fordert bei Bedarf
+die fehlenden Details nach. Es bleibt höchstens eine pausierte Projektion im Worker.
+Synchrone Live-Frames, Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
+Zeitgrenze. Bei starker Neigung kann die begrenzte Abdeckung am Horizont weiterhin
+sichtbar werden.
 
 Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2D. Weitere Neuzeichnungen starten den gescheiterten Renderer nicht erneut. „Atlaskamera erneut laden“ im Ansichtsmenü ist der ausdrückliche Wiederanlauf. Laufende Raum-, Stadt-, Landschafts- und Bereichsgesten sperren Poseänderungen.
 

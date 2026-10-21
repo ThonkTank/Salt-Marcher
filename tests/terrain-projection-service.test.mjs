@@ -50,3 +50,29 @@ test('terrain lane supersedes only its pending projection and remains cancellabl
  const fresh=await service.terrain(store.atlasRegionSource(token,service.cursor),q);assert.equal(fresh.width,64);assert.equal(service.diagnostics.workerStarts,2);
  await service.close();await assert.rejects(service.terrain(stale,q),/abgebrochen/);
 });
+
+async function slicedFixture(t){
+ const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const dir=mkdtempSync(base+'/terrain-sliced-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Sliced'),token=store.activateShell(campaign.id).token,service=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ t.after(async()=>{await service.close();store.close();rmSync(dir,{recursive:true,force:true});});
+ const box={x:-500,y:-500,width:1000,height:1000},view={box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1};
+ const source=store.atlasRegionSource(token),q={view,width:512,height:512,revision:source.revision,contours:0,displayMpp:1,detail:{x:-250,y:-250,width:500,height:500},detailResolution:1024};
+ return {store,campaign,token,service,source,q,region:{box,width:64,height:64,scopeId:null,floorId:'ground',slice:null,roofs:true}};
+}
+async function yielded(service,after=0){const end=Date.now()+10000;while(service.diagnostics.terrainYields<=after){assert(Date.now()<end,'worker did not yield');await new Promise(r=>setTimeout(r,2));}}
+test('selection preempts detail without cancelling it; a newer camera replaces it and retains the worker',async t=>{
+ const f=await slicedFixture(t),{service,source,q}=f;let done=false;
+ const outcome=service.terrain(source,q).then(value=>{done=true;return{value};},error=>{done=true;return{error};});
+ await yielded(service);assert.equal(done,false);
+ const hits=await service.candidates(source,f.region,{x:0,y:0});assert.equal(hits.total,0);assert.equal(done,false,'selection completes before the pending detail');
+ const camera=service.read(source,f.region);assert.match(String((await outcome).error),/neuere Anfrage/);await camera;
+ const latest=await service.terrain(f.store.atlasRegionSource(f.token,service.cursor),{...q,width:64,height:64,detail:undefined,detailResolution:undefined});assert.equal(latest.width,64);assert.equal(service.diagnostics.workerStarts,1);
+});
+test('a commit between slices rejects the old projection and fresh output agrees with a cold worker',async t=>{
+ const f=await slicedFixture(t),{service,source,q}=f;
+ const outcome=service.terrain(source,q).then(value=>({value}),error=>({error}));await yielded(service);
+ f.store.executeAtlasCommit({campaignId:f.campaign.id,token:f.token,commandId:randomUUID(),action:{kind:'landscape-height-stroke',stroke:{mode:'raise',radius:8,strength:100,feather:0,samples:[{x:0,y:0,t:0},{x:0,y:0,t:1000}]}}});
+ assert.match(String((await outcome).error),/inzwischen geändert/);
+ const current=f.store.atlasRegionSource(f.token,service.cursor),query={...q,revision:current.revision,width:128,height:128,detail:undefined,detailResolution:undefined},actual=await service.terrain(current,query);
+ const cold=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ try{assert.deepEqual(actual,await cold.terrain(f.store.atlasRegionSource(f.token),query));}finally{await cold.close();}
+});

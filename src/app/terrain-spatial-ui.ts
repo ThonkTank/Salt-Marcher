@@ -193,6 +193,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
       }
     }catch(error){
       if(!current())return;
+      if(String(error).includes('neuere Anfrage'))return; // Expected worker preemption; resume after the higher-priority job.
       if(this.ready&&this.source===source&&!String(error).includes('inzwischen geändert')){
         this.detailSource=source;this.retry.hidden=false;this.host.error(error); // Keep the usable overview; explicit retry, no loop.
       }else this.sourceFailed(source,error);

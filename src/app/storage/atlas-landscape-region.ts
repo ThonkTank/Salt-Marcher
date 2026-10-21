@@ -2,7 +2,7 @@ import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerrainGrid} from './terrain-grid';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
-import {readTerrainProjection} from './terrain-projection';
+import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
 import {settingsRecord} from '../terrain-height';
 import {readVegetationEnvironment} from './vegetation';
 import {generateVegetation} from '../vegetation';
@@ -122,6 +122,7 @@ export class AtlasLandscapeReader {
  }
  private *lines(source:AtlasRegionSource,box:LandscapeBox){for(const r of this.rows(source,box,false))if(r.kind==='road'||r.kind==='river')yield r;}
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
   const layer:AtlasLandscapeLayer={...(setting&&JSON.parse(setting.payload).terrainSettings.style?{terrainStyle:JSON.parse(setting.payload).terrainSettings.style}:{}),seaLevelM:setting?JSON.parse(setting.payload).terrainSettings.seaLevelM:0,state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};

@@ -13,6 +13,8 @@ type Queued = {
   resolve: (value: any) => void;
   reject: (error: Error) => void;
 };
+type Lane='selection'|'camera'|'terrain'|'author'|'live';
+const LANE_PRIORITY:readonly Lane[]=['selection','live','camera','author','terrain'];
 
 /** One readonly worker/index; bounded successors for selection, camera and terrain, with selection first. */
 export class AtlasRegionService {
@@ -23,9 +25,10 @@ export class AtlasRegionService {
   private generation = 0;
   private closed = false;
   private source: AtlasRegionSource | null = null;
-  private queued = new Map<"selection" | "camera" | "terrain" | "author", Queued>();
+  private queued = new Map<Lane, Queued>();
   private draining = false;
   private starts = 0;
+  private terrainYields=0;
   private cache = new Map<string, { json: string; bytes: number }>();
   private cacheBytes = 0;
 
@@ -50,6 +53,7 @@ export class AtlasRegionService {
       active: !!this.pending,
       queued: this.queued.size > 0,
       cacheBytes: this.cacheBytes,
+      terrainYields:this.terrainYields,
     };
   }
 
@@ -90,12 +94,16 @@ export class AtlasRegionService {
     this.cacheBytes = 0;
   }
 
-  private enqueue(source: AtlasRegionSource, job: object, lane: "selection" | "camera" | "terrain" | "author" = "selection") {
+  private enqueue(source: AtlasRegionSource, job: object, lane: Lane = "selection") {
     if (this.closed) {
       return Promise.reject(new Error('Kartenausschnitt abgebrochen.'));
     }
     if (this.worker && this.sourceIdentity(source) !== this.identity) {
       this.cancel();
+    }
+    if(lane==='camera'||lane==='live'||lane==='author'){
+      this.queued.get('terrain')?.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
+      this.queued.delete('terrain');
     }
     this.queued.get(lane)?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
     const promise = new Promise<any>((resolve, reject) => {
@@ -112,12 +120,16 @@ export class AtlasRegionService {
     this.draining = true;
     try {
       while (this.queued.size && !this.closed) {
-        const lane = this.queued.has("selection") ? "selection" : this.queued.has("camera") ? "camera" : this.queued.has("terrain") ? "terrain" : "author",
+        const lane = LANE_PRIORITY.find(lane=>this.queued.has(lane))!,
           request = this.queued.get(lane)!;
         this.queued.delete(lane);request.endQueue();
         try {
           const value=await this.run(request.source, request.job);
-          if(value?.terrainContinuation===true&&(request.job as {kind?:string}).kind==='terrain-stroke'){
+          if(value?.terrainProjectionContinuation===true&&(request.job as {kind?:string}).kind==='terrain'){
+            this.terrainYields++;
+            if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
+            else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
+          }else if(value?.terrainContinuation===true&&(request.job as {kind?:string}).kind==='terrain-stroke'){
             if(this.queued.has('author'))request.reject(new Error('Geländeberechnung durch neueren Auftrag ersetzt.'));
             else this.queued.set('author',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
           }else request.resolve(value);
@@ -218,7 +230,7 @@ export class AtlasRegionService {
 
   terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain');}
 
-  liveTerrain(source:AtlasRegionSource,query:import('../src/app/terrain-presentation').TerrainFrameQuery,base?:import('../src/app/terrain-frame').TerrainFrameIdentity):Promise<import('../src/app/terrain-presentation').TerrainFrame>{return this.enqueue(source,{kind:'terrain-live',query,base},'terrain');}
+  liveTerrain(source:AtlasRegionSource,query:import('../src/app/terrain-presentation').TerrainFrameQuery,base?:import('../src/app/terrain-frame').TerrainFrameIdentity):Promise<import('../src/app/terrain-presentation').TerrainFrame>{return this.enqueue(source,{kind:'terrain-live',query,base},'live');}
 
   focus(source: AtlasRegionSource, kind: 'room' | 'city' | 'building' | 'element' | 'scope', id: string): Promise<AtlasObjectFocus> {
     return this.enqueue(source, { kind: 'focus', objectKind: kind, id });

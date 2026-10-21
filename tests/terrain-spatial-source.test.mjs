@@ -109,3 +109,10 @@ test('navigation retains sharp world-anchored colour, but edits and campaign cha
  f.sync(zoom(.6),2);const edited=f.load();f.resolveRead(4,2);await Promise.resolve();assert.equal(f.published.at(-1).detail,undefined,'old pigment cannot cover a changed revision');f.resolveRead(5,2);await edited;
  f.ui.retainedDetail={token:'campaign',revision:2,detail};f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await Promise.resolve();assert.equal(f.published.at(-1).detail,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
 });
+
+test('expected worker preemption resumes missing detail without fallback or an error banner',async t=>{
+ const f=fixture(t,{manualDetail:true});f.sync();const loading=f.load();f.resolveRead();await Promise.resolve();
+ f.reads[1].resolve({ok:false,error:'Geländeberechnung durch neuere Anfrage ersetzt.'});await loading;
+ assert.equal(f.ui.ready,true);assert.equal(f.ui.needsLoad(),true);assert.deepEqual(f.errors,[]);
+ const resumed=f.load();assert(f.reads[2].query.detail);f.resolveRead(2);await resumed;assert.equal(f.ui.needsLoad(),false);
+});
