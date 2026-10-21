@@ -1,6 +1,6 @@
 import {mapLabelEditor,readMapLabelEditor} from './map-label-editor';
 import {openTerrainRoute} from './terrain-route-ui';
-import {vegetationSpec,type VegetationInstance,type VegetationOverride} from './vegetation';
+import {validateVegetation,vegetationSpec,type VegetationInstance,type VegetationOverride} from './vegetation';
 import {vegetationControls,vegetationInspector} from './vegetation-controls';
 import {openVegetationSpatial} from './vegetation-spatial';
 import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
@@ -882,6 +882,10 @@ export class LandscapeWorkbench {
       .forEach((n) => (n.disabled = value));
   }
   private async commit(a: AtlasAction) {
+    // Reject invalid visible drafts before journaling or taking a source fence.
+    // Main repeats this same domain validation at the canonical write boundary.
+    if(a.kind==='landscape-put'||a.kind==='landscape-place')validateVegetation(a.record);
+    else if(a.kind==='landscape-batch')for(const {record} of a.records)validateVegetation(record);
     const token = this.token,
       keep = this.tool === 'select' && a.kind === 'landscape-put' &&
         (a.record.kind === 'road' || a.record.kind === 'river')

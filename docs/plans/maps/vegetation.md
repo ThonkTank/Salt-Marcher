@@ -42,6 +42,12 @@ Unter **Landschaft → Bewuchs & Felsen** stehen sechs Vorlagen zur Verfügung:
 Laubwald, Nadelwald, Wiese, Buschland, Geröllfeld und felsiger Boden.
 Baumart, Dichte, Höhe, Unterwuchs, Steinanteil, Gruppierung, Rand und maximale
 Hangneigung lassen sich vor dem Malen oder an einer bestehenden Fläche ändern.
+Zahlenfelder übernehmen auch leere oder ungültige Eingaben in den Entwurf;
+Speichern verwendet niemals stillschweigend den letzten gültigen Wert.
+Karte, Einzelinspektor und räumliche Ansicht prüfen vor dem Autorenauftrag
+denselben fachlichen Vertrag wie Main. Nach einer Korrektur lässt sich der
+erhaltene Entwurf abschließen. Gültige Dezimalwerte sind innerhalb der
+Fachgrenzen frei wählbar, beispielsweise eine Baumdichte von `0,33`.
 
 | Werkzeug | Wirkung |
 | --- | --- |
