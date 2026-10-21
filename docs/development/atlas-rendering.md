@@ -160,6 +160,22 @@ trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarb
 
 `terrain-coast.ts` zeichnet nach der Reliefschattierung eine schmale Kontur aus den kanonischen Wasserentscheidungen des gemeinsamen zweifachen Rasters. Es hält kein zusätzliches Distanzfeld und verändert weder Höhen noch Wasserflächen. Nur Ausgabesamples werden gefärbt; deren Halo liefert die Nachbarn für nahtlose Einzelkacheln. Die Schleife gibt zwischen Zeilenpaketen den Worker frei. [Stilvergleich und Hauptatlas](../reference/atlas-coast-ink-20261021/README.md) halten den sichtbaren Gewinn und die verbleibende Vergrößerung grober Farbtexturen getrennt fest. Die Konturbreite ist bisher an Rasterpixel gebunden, nicht unter jeder Perspektive an logische Bildschirmpixel.
 
+### Begrenzte Rasterabdeckung
+
+Der Canvas-/Bereichsraster verwendet weiterhin höchstens vier Weltkacheln.
+`landscapeRasterSlice` schneidet jede auf die angeforderte Abdeckung zu,
+auf 128-Pixel-Blöcke derselben Weltauflösung gerundet. Der gemeinsame
+Rasterhalo bleibt erhalten; Bilddaten und Cache-Invalidierung kennen
+Breite und Höhe separat. Kleine Panbewegungen innerhalb derselben
+Blockgrenzen verwenden dieselben Ausschnitte. Die SQL-Sampleauswahl
+berücksichtigt rechteckige Raster auch bei sehr dünnen Farbflächen.
+
+Völlig ebene Nachbarschaften benötigen weder Licht- noch Konturrechnung;
+vorhandene Farben bleiben unverändert. Die Höhenanalyse wird weiterhin
+berechnet. Diese Entlastung gilt auch für die normalen GPU-Farbtiles.
+[Pixelvergleich, Messung und native Wiederherstellung](../reference/atlas-raster-slices-20261021/README.md)
+belegen die Teilverbesserung; vollständige Lade-/Navigationsziele bleiben offen.
+
 ### Höhenabtastung ohne wiederholtes Einsammeln
 
 `terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Nur Zeilen mit Lücken werden mit dem geerbten Wert am jeweiligen Abfragepunkt neu ausgewertet; vollständige Nachbarzeilen bleiben auch in gemischten Zellen wiederverwendbar. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.

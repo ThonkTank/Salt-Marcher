@@ -1,0 +1,66 @@
+{
+  "source": "0ec2466cc55bf8d759f9d3cb42bd060baceb3491",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/landscape-MueADn",
+  "errors": [],
+  "checks": [
+    "Three land tools; shared style, analysis, lighting and undo preserve terrain and places",
+    "Continent, region and local views; live saved brush and atomic undo",
+    "Relief, coast, labels, river and road survive native PNG export without height writes",
+    "Fresh process retains authored landscape, place positions and shared relief profile"
+  ],
+  "launches": [
+    {
+      "pid": 2557523,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 2559283,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "sourceHashes": {
+    "src/app/terrain-height.ts": "0cb9dacd1bebe8fb171ceead493a0ad231dd34894bfe8c172d711ea82e3ca379",
+    "src/app/terrain-brush.ts": "1c919f31c27dff8a6834cc70ebe086fbb5be1d6be53a8f9e4d9d9a0a68967611",
+    "src/app/atlas-tool-catalog.ts": "380a4bf616a760660ce53a048f7851a42a2b15bdd20122b83c2960294ce98cab",
+    "src/app/atlas-workspace-layout.ts": "4c36c5784b1f79a6f3057ba745185b929cae46c0b36f15257693ead1c2a1e666",
+    "src/app/atlas-units.ts": "20bf6ce41040c827fc8e9f0dc97a139d880aad3e21511546e6513bc29bcdc27a",
+    "tests/desktop-atlas-tool-hierarchy.test.mjs": "d7b297cf9f846e719be43c8204a0490e6a3d48464f75612bd99485cd3bb1eaf6",
+    "src/app/campaign-atlas-ui.ts": "df48df9677a56e5f130d20e6fa7367c79697c41bc9cd45364353d1d674559a63",
+    "tests/terrain-brush.test.mjs": "3daf5a4392a1c0f7a38a1244a15145189cbd82e3478aa2e12327cf6bbeda82c5",
+    "src/app/landscape-color-surface.ts": "a4e3c5e3ab74e5bf6441aa0c67ccf7f68042a3eac9c0a158ffe0312b02c0b606",
+    "src/app/landscape-tool-settings.ts": "2bcd327c5c2e996380259b24681d46dece853677e5806d6e4387b3b76fff0f8e",
+    "src/app/storage/campaign-atlas.ts": "15bfb0d45c1c7e579e8e5957dcc94f9254eb9c64d11729c87aa760b1b5835a31",
+    "src/app/campaign-atlas-contracts.ts": "28e7c6c402ed31f1c68c7eec00ff169b143cd20bd20c6a6cca11bb0ce9777893",
+    "src/app/atlas-region-contracts.ts": "e9882588d8236558ae79bb7d537d1eb66b328da405ccf0180441b2adfd945064",
+    "src/app/atlas-landscape-view.ts": "62b726267441feee9ab12a152bc5fdf9296e8faffe4dab7f4faf583a96e4f065",
+    "tests/terrain-height.test.mjs": "2e020cbb1b2b4f242c495ac3fca4aceeb056b176f7960debda56a05576276410",
+    "src/app/atlas-landscape.ts": "34e866598e157a834d4d388093b350d217ef6b3e31a6a888837abb2480ce4a38",
+    "src/app/atlas-brush-worker.ts": "ccdb9dfeef86163da5610263fcd17ee30a6c2479f029db9796e7a0c02854d0bd",
+    "src/app/landscape-raster.ts": "0378835137812bf44bb7aa351939e1c77288a670fe05ae06e4152efaff90331c",
+    "src/app/storage/atlas-landscape.ts": "5acd492a81b246acfdb36998b6b06b27485fe678e6ba2ca104b28d9965f4b191",
+    "src/app/storage/landscape-brush-edit.ts": "07ebc1d5bfdf97732a295bb7dc07e4711a49595c720c471658d17ba8519c2081",
+    "src/app/storage/atlas-landscape-region.ts": "d1b8de8a4f0702a2c1715534bc691d03fd93414dea7f644becf2da0f3b18defd",
+    "src/app/storage/store.ts": "ed7efbd3001a4da45ca18ca6cdeb14acc48a5da624a97847fd13934ee43fb7c0",
+    "src/app/atlas-landscape-ui.ts": "51917e260988ca5493d3a909f5de67201978c9a8c10334a0c6acf5facc9da9a5",
+    "desktop/main.ts": "c5f813111ee1d9442cca88f1d40f4833f63acd24c7ea8f69571d83a49995167a",
+    "desktop/preload.ts": "8d88dc9eae000e8c10208c7090d20641ecf0d6d7d901965e48d5f1169a70e12c",
+    ".build/desktop/main.cjs": "e0eaf963efe2615bdb85a4a724625613f1eef1ca5bac3014f743ef39932d7162",
+    ".build/desktop/ui/atlas-brush-worker.js": "9932d0672e14f2048cf687b833eae9b94c44a6a4fca63215fd1e07ef4f117622",
+    ".build/desktop/ui/renderer.js": "530a6a2a6d3430731b1b49d0e692882387d3b6db10e92008aed68fe884110daa",
+    ".build/desktop/atlas-region-worker.cjs": "fae50e9cdabb86397fca0da8ca669d87e8229402fe6f672b339a15865c11e8cb",
+    "tools/test-desktop-terrain-relief.mjs": "4511a163cf9b01d1ec85c2fc7d9c4c7250c260a2d7a4ddee18e1025eac72dd90",
+    "tools/terrain-relief-scene.mjs": "b8b856df247430156c4e3fe6d5524a9df35471655b593496015ee1bbd51346c3",
+    "src/app/terrain-relief.ts": "78058f75f555c2a258933aa880c7168895660073d4c910eb0d2d1013d88ac0bd"
+  },
+  "ok": true,
+  "normalExit": true
+}

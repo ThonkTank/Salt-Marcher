@@ -1,7 +1,7 @@
 import {setBrushWorldRadius,setHeightDirection,setTerrainContours,openTerrainDisplay} from './atlas-brush-probe.mjs';
 // Actual Electron window and an isolated synthetic campaign. Never opens the user's profile.
 import { createRequire } from "node:module";
-import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, readFile, stat } from "node:fs/promises";
 import { RELIEF_STROKES } from "./terrain-relief-scene.mjs";
 import {randomUUID} from "node:crypto";
 import { createHash } from "node:crypto";
@@ -84,6 +84,7 @@ const result = {
   profile: dir,
   errors: [],
   checks: [],
+  launches: [],
 };
 result.sourceHashes = {};
 for (const file of [
@@ -128,6 +129,11 @@ const mark = (text) => {
   console.log(text);
 };
 let app, page;
+async function close(){
+  const child=app.process(),pid=child.pid;await app.close();app=null;
+  const exit={code:child.exitCode,signal:child.signalCode};assert.deepEqual(exit,{code:0,signal:null});
+  await assert.rejects(stat('/proc/'+pid),{code:'ENOENT'});result.launches.push({pid,exit,pidAbsent:true});
+}
 async function start() {
   const executable = process.env.ATLAS_PACKAGE
     ? path.join(process.env.ATLAS_PACKAGE, "electron")
@@ -281,10 +287,10 @@ try {
   for(let i=0;i<6;i++)await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);await capture('05-place');
   const placeCamera=await camera();const center={x:placeCamera.view.x+placeCamera.view.width*.5,y:placeCamera.view.y+placeCamera.view.height*.5};
   await setHeightDirection(page,'raise');await setBrushWorldRadius(page,'land-radius','250');await page.locator('#land-height-strength').fill('350');
-  await page.locator('#land-coast-roughness').fill('0.7');const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
-  await page.waitForFunction(()=>document.querySelector('#land-cursor-height').textContent.includes('Vorschau'));await capture('06-preview');await page.mouse.up();await settled();assert.notEqual(maskBytes(),baseline);
+  await page.locator('#land-coast-roughness').fill('0.7');await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');const revision=Number(await page.locator('#campaign-map').getAttribute('data-terrain-revision'));const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
+  await page.waitForFunction(r=>Number(document.querySelector('#campaign-map').dataset.terrainRevision)>r,revision,{timeout:60000});assert.notEqual(maskBytes(),baseline,'height writes must be visible before release');await capture('06-live-brush');await page.mouse.up();await settled();assert.notEqual(maskBytes(),baseline);
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),baseline);
-  mark('Continent, region and local views; real brush preview and atomic undo');
+  mark('Continent, region and local views; live saved brush and atomic undo');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);
   await setTerrainContours(page,'100');await atlasCanvasReady(page);await capture('07-contours');
   await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');
@@ -292,7 +298,7 @@ try {
   await page.locator('#atlas-export-png').click();await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:60000});
   const png=require('pngjs').PNG.sync.read(await readFile(out+'/region.png'));assert.equal(Math.max(png.width,png.height),1024);assert.equal(maskBytes(),baseline);
   mark('Relief, coast, labels, river and road survive native PNG export without height writes');
-  const persisted=JSON.stringify(records());await app.close();app=null;await start();assert.equal(JSON.stringify(records()),persisted);
+  const persisted=JSON.stringify(records());await close();await start();assert.equal(JSON.stringify(records()),persisted);
   assert.equal(await page.locator('#land-relief-light').inputValue(),'290');assert.equal(await page.locator('#land-relief-mode').inputValue(),'drawn');await capture('08-reopened');
   mark('Fresh process retains authored landscape, place positions and shared relief profile');
   assert.deepEqual(result.errors,[]);result.ok=true;
@@ -307,7 +313,7 @@ try {
 } finally {
   if (app) {
     if (result.ok) {
-      await app.close();
+      await close();
       result.normalExit = true;
     } else await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
   }

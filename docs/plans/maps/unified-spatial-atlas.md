@@ -97,6 +97,8 @@ Zoom bleibt am anvisierten Weltpunkt verankert. Fenstergrößenwechsel, Suchspr�
 
 ### P3 — Weltweites Streaming und Detailstufen aufbauen
 
+[Weniger unnötige Rasterarbeit](../../reference/atlas-raster-slices-20261021/README.md): Der vorhandene Fallback zeichnet nur angeforderte Teile seiner Weltkacheln, bei gleicher Auflösung und gleichem Halo. Ebene Flächen überspringen überflüssige Schattierung auch in normalen Farbtiles. Der gepaarte Binnenlandfall ist pixelgleich und deutlich schneller; das ersetzt weder sofortige Wiederherstellung noch die allgemeine Kaltlade-/Großweltqualifikation.
+
 [Neigungsabhängige Abdeckung und Horizont](../../reference/atlas-terrain-coverage-20261021/README.md): Die normale Hauptkamera fordert beim Neigen weiteren Kontext an. Ein begrenztes Netz behält seine feine Mitte und verwendet gröbere Außenbänder; Straßen und Flüsse folgen derselben Abtastung. Eine gemeinsame atmosphärische Grenze gilt für Bild, Treffer und Pinsel. Das schließt die rechteckigen Lücken des bisherigen festen Ausschnitts, ersetzt aber noch kein weltweites Kachel-LOD. Grafik-Fallback, kaltes Laden, dichte Objekte und lange Sitzungen bleiben offen.
 
 Erster lokaler Teilschritt: [bestehende Geländeausschnitte bei kleinen Kameraänderungen wiederverwenden](../../reference/atlas-surface-reuse-20261020/README.md). Dies beseitigt unnötige Neuaufträge, ersetzt aber noch kein Kachel-LOD und keine Leistungsabnahme.
