@@ -1,0 +1,37 @@
+{
+  "pid": 2818882,
+  "errors": [],
+  "views": [
+    {
+      "tilt": 0,
+      "stats": [
+        {
+          "calls": 5,
+          "triangles": 29960
+        },
+        {
+          "calls": 5,
+          "triangles": 132800
+        }
+      ]
+    },
+    {
+      "tilt": 45,
+      "stats": [
+        {
+          "calls": 5,
+          "triangles": 29960
+        },
+        {
+          "calls": 5,
+          "triangles": 132800
+        }
+      ]
+    }
+  ],
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "pidAbsent": true
+}

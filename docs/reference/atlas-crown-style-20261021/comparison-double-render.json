@@ -1,0 +1,71 @@
+{
+  "pid": 2825445,
+  "errors": [],
+  "views": [
+    {
+      "tilt": 0,
+      "stats": [
+        {
+          "calls": 5,
+          "triangles": 338690
+        },
+        {
+          "calls": 5,
+          "triangles": 771020
+        }
+      ]
+    },
+    {
+      "tilt": 45,
+      "stats": [
+        {
+          "calls": 5,
+          "triangles": 338690
+        },
+        {
+          "calls": 5,
+          "triangles": 771020
+        }
+      ]
+    }
+  ],
+  "performance": [
+    {
+      "index": 0,
+      "instances": 4953,
+      "frames": 79,
+      "frameP95": 23.400000005960464,
+      "renderP95": 2.0999999940395355,
+      "fps": 55.27954656800048
+    },
+    {
+      "index": 1,
+      "instances": 4953,
+      "frames": 79,
+      "frameP95": 22.30000001192093,
+      "renderP95": 1.9000000059604645,
+      "fps": 53.595658073270016
+    },
+    {
+      "index": 1,
+      "instances": 4953,
+      "frames": 79,
+      "frameP95": 22.200000017881393,
+      "renderP95": 1.2999999821186066,
+      "fps": 54.09476855633907
+    },
+    {
+      "index": 0,
+      "instances": 4953,
+      "frames": 79,
+      "frameP95": 22.30000001192093,
+      "renderP95": 1,
+      "fps": 52.505649342225816
+    }
+  ],
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "pidAbsent": true
+}

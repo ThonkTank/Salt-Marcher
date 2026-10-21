@@ -176,6 +176,8 @@ Weiterer lokaler Teilschritt: [Höhenlinienlesbarkeit bei 100/200 %](../../refer
 
 Der [isolierte Interpolationsversuch](../../reference/atlas-height-lattice-20261021/README.md#glattere-rekonstruktion-noch-nicht-integriert) ist inzwischen als [gemeinsame begrenzte Höhenrekonstruktion](../../reference/atlas-height-reconstruction-20261021/README.md) angeschlossen: kanonische Punktabfrage und Stream verwenden denselben Kernel; Lesebereiche, Invalidierung, Bestand und History berücksichtigen den zweiten Nachbarknoten. Knotenwerte und additive Bänder bleiben erhalten. Das beseitigt die linearen Knicke zwischen groben Höhenknoten; vollständige Kartengestaltung, Küstenschärfe und Leistungsqualifikation bleiben offen.
 
+Für die verschiedenen Zoom- und Detailstufen passende Darstellungen wählen: zusammenhängende, strukturierte Waldflächen in der Weltübersicht, lesbare Kronengruppen im Regionalmaßstab und maßhaltige Einzelobjekte im Nahbereich. Daten und Identitäten bleiben gemeinsam; die Darstellung darf je Stufe wechseln und soll kontinuierlich überblenden. Ein detaillierteres Nahmodell allein erfüllt die Übersicht nicht.
+
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 - Küsten bleiben eigene scharfe Konturen; Relief und Bodenfarben werden getrennt gestaltet.
@@ -197,6 +199,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 [Vegetation an der Hauptkamera](../../reference/atlas-vegetation-camera-20261021/README.md): Regionale Bestände sind verschachtelte Teilmengen stabiler lokaler Kandidaten. Kronenbreite und Ausblenden reagieren unmittelbar auf die Kameratiefe; Treffer verwenden dieselben Regeln, geschützte Objekte bleiben maßhaltig. 26 Regressionen, der native Bearbeitungs-/Undo-/Neustartablauf und GPU-/Exportpixel sind geprüft. Noch fehlende feinere Kandidaten, große dichte Bestände und die Geländeabdeckung bei starker Neigung bleiben offen.
 
 [Weiche Bodenfarbe an Bewuchsrändern](../../reference/atlas-cover-feather-20261021/README.md): vorhandene Randbreiten wirken auch auf Bodenfarbe und Lichtungen, mit gemeinsamem Kachelraster und unterbrechbarer Workerberechnung. Native Hauptansicht und PNG sind geprüft. Die zusätzliche CPU-Arbeit ist gemessen; Waldtextur, Kronenformen und allgemeine Ladeleistung bleiben offen.
+
+[Lesbarere Baumkronen](../../reference/atlas-crown-style-20261021/README.md): gelappte Laubkronen, Aststufen bei Nadelbäumen und stabile Farbvariation im bestehenden instanzierten Hauptatlas. Native Maßstabs-/Kipp-/PNG-Probe und GPU-Treffer-/Kachelprüfungen liegen vor. Die teurere erste Geometrie wurde verworfen; der begrenzte Folgeentwurf bleibt ein Nah-/Regionaldetail, keine Waldgestaltung für die Weltübersicht.
 
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 

@@ -1,0 +1,151 @@
+{
+  "vegetation": {
+    "samples": [
+      {
+        "mpp": 0.5,
+        "dpr": 1,
+        "tilt": 0,
+        "auto": {
+          "width": 6,
+          "ink": 26
+        },
+        "protected": {
+          "width": 6,
+          "ink": 27
+        },
+        "minor": {
+          "width": 6,
+          "ink": 26
+        }
+      },
+      {
+        "mpp": 1,
+        "dpr": 1,
+        "tilt": 0,
+        "auto": {
+          "width": 6,
+          "ink": 25
+        },
+        "protected": {
+          "width": 3,
+          "ink": 7
+        },
+        "minor": {
+          "width": 6,
+          "ink": 25
+        }
+      },
+      {
+        "mpp": 1.75,
+        "dpr": 1,
+        "tilt": 0,
+        "auto": {
+          "width": 6,
+          "ink": 25
+        },
+        "protected": {
+          "width": 1,
+          "ink": 2
+        },
+        "minor": {
+          "width": 5,
+          "ink": 18
+        }
+      },
+      {
+        "mpp": 2.1,
+        "dpr": 1,
+        "tilt": 0,
+        "auto": {
+          "width": 5,
+          "ink": 25
+        },
+        "protected": {
+          "width": 1,
+          "ink": 2
+        },
+        "minor": {
+          "width": 0,
+          "ink": 0
+        }
+      },
+      {
+        "mpp": 4,
+        "dpr": 1,
+        "tilt": 0,
+        "auto": {
+          "width": 6,
+          "ink": 27
+        },
+        "protected": {
+          "width": 0,
+          "ink": 0
+        },
+        "minor": {
+          "width": 0,
+          "ink": 0
+        }
+      },
+      {
+        "mpp": 4,
+        "dpr": 2,
+        "tilt": 0,
+        "auto": {
+          "width": 5.5,
+          "ink": 24
+        },
+        "protected": {
+          "width": 0.5,
+          "ink": 0.5
+        },
+        "minor": {
+          "width": 0,
+          "ink": 0
+        }
+      },
+      {
+        "mpp": 4,
+        "dpr": 1,
+        "tilt": 60,
+        "auto": {
+          "width": 6,
+          "ink": 14
+        },
+        "protected": {
+          "width": 0,
+          "ink": 0
+        },
+        "minor": {
+          "width": 0,
+          "ink": 0
+        }
+      }
+    ],
+    "mismatch": 0,
+    "unchanged": true,
+    "programs": 3
+  },
+  "source": "9a5b4ccc3022cab78eef9adcfdd6c57b9a9376c1",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/vegetation-camera-DGqFN0",
+  "artifacts": {
+    "main.cjs": "20771ea4bf52f215d0e1279c1bea01448321c03d92229e4132907adaaf3ffcc8",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "564dbd7fc199ffc243626eba636272a7751cdb362a82fb159f3954cc3b2b3cf3",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 2825788,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

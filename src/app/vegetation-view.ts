@@ -1,3 +1,4 @@
+import {crownRadius,crownTone} from './vegetation-shape';
 import {vegetationInstances} from './vegetation-projection';
 import {vegetationOpacity,vegetationScaleLimit} from './vegetation-lod';
 import {atlasPaint,type AtlasPaint} from './atlas-paint';
@@ -15,13 +16,13 @@ export function drawVegetation(root:AtlasPaint,r:LandscapeRecord,box:LandscapeBo
 export function drawVegetationInstance(root:AtlasPaint,i:VegetationInstance,areaId:string,box:LandscapeBox,mpp:number,canopy=false,opacity=1) {
   if(opacity<.001)return;
   const tree=i.asset==='oak'||i.asset==='pine',radius=Math.max(i.size*(tree?.32:.5),canopy&&!i.protected&&tree?mpp*3:0),
-    x=i.x-box.x,y=i.y-box.y,color=vegetationColors[i.asset];
+    x=i.x-box.x,y=i.y-box.y,base=vegetationColors[i.asset],tone=crownTone(i.id),color=tree?'#'+[1,3,5].map(n=>Math.min(255,Math.round(parseInt(base.slice(n,n+2),16)*tone)).toString(16).padStart(2,'0')).join(''):base;
   const category=tree?'trees':i.asset==='rock'?'rocks':'undergrowth';
   const group=atlasPaint('group',{opacity,data:{landscapeId:areaId,vegetationInstance:i.id,['vegetation-'+category]:i.id},title:i.conflict?'Geschütztes Objekt: Konflikt mit Gelände oder Bebauung':i.protected?'Geschütztes Einzelobjekt':i.asset==='rock'?'Felsen':'Bewuchs'});
   group.append(atlasPaint('circle',{x:x+radius*.2,y:y+radius*.3,radius,opacity:.18,style:{fill:'#354738'},pointer:false}));
-  const sides=i.asset==='rock'?6:i.asset==='pine'?10:12;
+  const sides=i.asset==='rock'?6:i.asset==='pine'?12:16;
   const points=Array.from({length:sides},(_,n)=>{
-    const a=n/sides*Math.PI*2+i.angle,rad=radius*(i.asset==='pine'&&n%2?.65:1);
+    const local=n/sides*Math.PI*2,a=local+i.angle,rad=radius*(tree?crownRadius(i.asset as 'oak'|'pine',local):1);
     return{x:x+Math.cos(a)*rad,y:y+Math.sin(a)*rad};
   });
   group.append(atlasPaint('polygon',{points,style:{fill:color,stroke:i.conflict?'#b95828':'#334c3e',lineWidth:Math.min(radius*.12,mpp*.7)}}));
