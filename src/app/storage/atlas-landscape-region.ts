@@ -5,7 +5,6 @@ import {readTerrainGrid} from './terrain-grid';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
 import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
-import {settingsRecord} from '../terrain-height';
 import {readVegetationEnvironment} from './vegetation';
 import {generateVegetation} from '../vegetation';
 import {streamTerrainField} from '../terrain-field-stream';
@@ -175,13 +174,9 @@ export class AtlasLandscapeReader {
      if(terrain){
       if(setting)image.paint(JSON.parse(setting.payload));const samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;
       if(this.canonicalTerrain){
-       const b=image.sampleBox,fieldBytes=this.sql("SELECT coalesce(sum(payload_bytes),0) n FROM temp.landscape_shape_bounds WHERE terrain_kind IN ('height','route','lake') AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?").get(b.x,b.x+b.width,b.y,b.y+b.height).n;
-       // Small local fields keep the fast sampler. Its retained input is explicitly
-       // capped; the world-sized path always folds records into bounded scanlines.
-       if(fieldBytes<=1024*1024){
-        if(!setting)image.paint(settingsRecord(layer.seaLevelM??0));
-        for(const kind of ['height','route','lake'] as const)for(const r of this.rows(source,b,true,0,0,kind))image.paint(r);
-       }else image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>this.rows(source,band,true,0,0,kind),false));
+       // Small source files can still cover millions of output samples. Share
+       // the bounded lattice sampler with the spatial projection at every size.
+       image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>this.rows(source,band,true,0,0,kind),false));
        for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'base'))image.paint(r);
       }else for(const r of this.rows(source,image.sampleBox,true,samplePixels))if(!r.paint&&!r.vegetation)image.paint(r);
       for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'cover'))image.paintCover(r);

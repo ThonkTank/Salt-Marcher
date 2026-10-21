@@ -99,3 +99,14 @@ test('direct and streamed rasters agree at authored edges and on route-only grou
   assert(field.heights.some(z=>z>-100),'fixture must reach actual height/route influence');assert.deepEqual(a.finish(),b.finish());
  }
 });
+
+test('small mixed-resolution inland worlds retain exact fallback pixels with block sampling',t=>{
+ const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/fallback-inland-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Inland'),token=store.activate(campaign.id).token;
+ t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+ const records=[1024,16].flatMap(pixel=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*pixel,y*64*pixel,pixel,Float32Array.from({length:4096},(_,i)=>pixel===1024?20:i%11===0?NaN:20+90*Math.exp(-((x*1024+i%64*16)**2+(y*1024+Math.floor(i/64)*16)**2)/40000))))));
+ const insert=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');store.db.transaction(()=>{for(const r of records){const b=bounds(r);insert.run(campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));}})();
+ const db=new (require('better-sqlite3'))(store.filename,{readonly:true});t.after(()=>db.close());const reader=new AtlasLandscapeReader(db),source=store.atlasRegionSource(token);reader.sync(source);
+ const layer=reader.read(source,{box:{x:0,y:0,width:512,height:512},width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:true,contours:-1},2*1024*1024);
+ assert.equal(layer.state,'ready');assert.equal(layer.tiles.length,1);
+ for(const tile of layer.tiles){const expected=new LandscapeRasterizer(tile.box,tile.width,tile.height,-1,2);for(const r of records)expected.paint(r);const actual=require('pngjs').PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64'));assert.deepEqual(new Uint8Array(actual.data),expected.finish());}
+});
