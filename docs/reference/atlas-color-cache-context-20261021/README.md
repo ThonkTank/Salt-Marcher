@@ -79,6 +79,11 @@ nicht veröffentlichte Ausgangsrevision bleibt ausdrücklich `null`.
 | Erster Zug | 38,5 / 157,0 ms | 387,4 ms | 36.263,2 ms |
 | Zweiter Zug | 33,3 / 133,4 ms | 813,3 ms | 15.846,1 ms |
 
+Nachtrag: Diese Pixelwerte erfassen ausschließlich die 32×32-Pinselmitte.
+Die [nachfolgende Messprüfung](../atlas-brush-response-measurement-20261021/README.md)
+zeigt frühere Änderungen an den Pinselflanken. Die Werte oben werden deshalb
+nicht als erste sichtbare Änderung im ganzen Pinsel interpretiert.
+
 Gespeicherte Revisionen 8 und 12, jeweils Qualität `detail`, 48/48 Kacheln.
 Alle GPU-Gegenproben einschließlich Cursorvergleich bestanden. Prozess 3063162
 endete normal mit Code 0, PID verschwunden, keine Rendererfehler. Keine anderen

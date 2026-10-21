@@ -1,6 +1,7 @@
 // Sparse world map, real main Atlas, and a 2,500-mile brush. No user profile.
 import {buildDraftProbe,terrainDraftPixels} from './terrain-draft-probe.mjs';
 import {buildRenderReuseProbe,terrainRenderReusePixels} from './terrain-render-reuse-probe.mjs';
+import {terrainPixelReadbackPixels} from './terrain-pixel-readback-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
@@ -14,6 +15,8 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 const root=process.cwd(),require=createRequire(root+'/package.json');
 const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/world-navigation');
+const readbackMode=process.env.WORLD_READBACK??'legacy',profileEnabled=process.env.WORLD_PROFILE===undefined?readbackMode==='legacy':process.env.WORLD_PROFILE==='1';
+assert(['legacy','sync','async'].includes(readbackMode),'Unknown pixel readback mode');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {CampaignStore} from './src/app/storage/store';export {applyTerrainBrush} from './src/app/terrain-brush';export {heightRecord} from './src/app/terrain-height';export {emptyRecord,bounds} from './src/app/atlas-landscape';export {vegetationSpec} from './src/app/vegetation';"},outfile:'.build/world-navigation-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,applyTerrainBrush,heightRecord,emptyRecord,bounds,vegetationSpec}=require(root+'/.build/world-navigation-store.cjs');
 const native=await createNativeSession({root,output:out,name:'world-navigation'}),store=new CampaignStore(native.profile+'/workbench.sqlite');
@@ -48,12 +51,13 @@ store.db.transaction(()=>{
 }
 const recordCount=store.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(campaign.id).n;
 store.tutorial('skipped');store.close();
-const result={radius,records:recordCount,populated,large,metrics:[],errors:[]};let page;
+const result={radius,records:recordCount,populated,large,measurement:{readbackMode,profileEnabled},metrics:[],errors:[]};let page;
 const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
 const draftProbe=buildDraftProbe();
 const renderReuseProbe=buildRenderReuseProbe();
+const responseProbe=readbackMode==='legacy'?null:require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {installTerrainResponseProbe} from './tools/terrain-pixel-readback.mjs';"},bundle:true,format:'iife',globalName:'TerrainResponseProbe',write:false}).outputFiles[0].text;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  page=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
@@ -67,16 +71,18 @@ try{
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
- const cdp=await page.context().newCDPSession(page);await cdp.send('Profiler.enable');
+ const cdp=await page.context().newCDPSession(page);if(profileEnabled){await cdp.send('Profiler.enable');await cdp.send('Performance.enable');}
  const layoutTrace=[];if(process.env.WORLD_LAYOUT_TRACE==='1')cdp.on('Tracing.dataCollected',e=>layoutTrace.push(...e.value));
- await page.evaluate(()=>{
+ await page.evaluate(legacyPixels=>{
   window.__saltTerrainTrace={events:[],dropped:0};
   window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];window.__worldPixels=[];
   const gl=document.querySelector('#atlas-terrain-spatial').getContext('webgl2'),clear=gl.clear.bind(gl);
   gl.clear=(...args)=>{window.__worldDraws.push(performance.now());return clear(...args);};
   let previous=performance.now();const frame=now=>{window.__worldFrames.push({time:now,gap:now-previous});previous=now;requestAnimationFrame(frame);};requestAnimationFrame(frame);
+  window.__worldReset=now=>{previous=now;window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];window.__worldPixels=[];window.__worldResponse?.reset();};
   new PerformanceObserver(list=>window.__worldLong.push(...list.getEntries().map(e=>({time:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:false});
   const map=document.querySelector('#campaign-map');
+  if(legacyPixels){
   const canvas=document.querySelector('#atlas-terrain-spatial');let pixelBefore=null,pixelStart=0;
   const sample=()=>{const values=new Uint8Array(32*32*4);gl.readPixels(Math.floor(canvas.width/2)-16,Math.floor(canvas.height/2)-16,32,32,gl.RGBA,gl.UNSIGNED_BYTE,values);return values;};
   const pixels=()=>{
@@ -86,18 +92,26 @@ try{
   };requestAnimationFrame(pixels);
   document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelStart=e.timeStamp;pixelBefore=sample();}},true);
   document.addEventListener('pointerup',()=>{pixelBefore=null;},true);
+  }
   new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,tiles:map.dataset.terrainTiles,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-tiles','data-terrain-draft']});
   for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:e.timeStamp});},true);
- });
+ },readbackMode==='legacy');
+ if(responseProbe)await page.evaluate('(()=>{'+responseProbe+';TerrainResponseProbe.installTerrainResponseProbe('+JSON.stringify(readbackMode)+');})()');
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
  async function measure(name,fn){
-  const baseRevision=await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];window.__worldPixels=[];const revision=Number(document.querySelector('#campaign-map').dataset.terrainRevision);return Number.isFinite(revision)?revision:null;});await cdp.send('Profiler.start');
+  if(profileEnabled)await cdp.send('Profiler.start');
+  // Bracket the CDP monotonic timestamp with renderer clock samples. This
+  // allows CPU samples to be located relative to input, with explicit error.
+  let profileClock;
+  if(profileEnabled){const before=await page.evaluate(()=>performance.now()),metrics=await cdp.send('Performance.getMetrics'),after=await page.evaluate(()=>performance.now());profileClock={before,after,timestamp:metrics.metrics.find(m=>m.name==='Timestamp')?.value};}
+  const baseRevision=await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(now=>{window.__worldReset(now);const revision=Number(document.querySelector('#campaign-map').dataset.terrainRevision);resolve(Number.isFinite(revision)?revision:null); })));
   const start=performance.now();await fn();await wait(1000);
-  const {profile}=await cdp.send('Profiler.stop');await writeFile(out+'/'+name+'.cpuprofile',JSON.stringify(profile));
-  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,pixels:window.__worldPixels,draws:window.__worldDraws,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  if(profileEnabled){const {profile}=await cdp.send('Profiler.stop');await writeFile(out+'/'+name+'.cpuprofile',JSON.stringify(profile));}
+  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,pixels:window.__worldPixels,response:window.__worldResponse?.snapshot(),draws:window.__worldDraws,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  if(data.response)assert.deepEqual(data.response.errors,[],'pixel readback errors invalidate this measurement');
   const down=data.pointer.find(e=>e.type==='pointerdown'),up=data.pointer.find(e=>e.type==='pointerup');
-  if(down){const confirmed=data.changes.filter(e=>baseRevision!==null&&Number(e.terrain)>baseRevision&&e.time>=down.time);data.brushFeedback={firstPixelMs:data.pixels[0]?.delayMs??null,firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
-  const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,baseRevision,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),...data});
+  if(down){const confirmed=data.changes.filter(e=>baseRevision!==null&&Number(e.terrain)>baseRevision&&e.time>=down.time);data.brushFeedback={firstPixelMs:data.response?data.response.runs[0]?.firstCenter?.readyMs??null:data.pixels[0]?.delayMs??null,firstBrushPixelMs:data.response?.runs[0]?.firstBrush?.readyMs??null,firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
+  const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,baseRevision,profileClock,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],p99Ms:gaps[Math.floor(gaps.length*.99)],maxMs:gaps.at(-1),...data});
   await writeFile(out+'/progress.json',JSON.stringify(result,null,2));console.log(name,JSON.stringify({p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),longTasks:data.longTasks.length}));
  }
  if(process.env.WORLD_LAYOUT_TRACE==='1')await cdp.send('Tracing.start',{categories:'devtools.timeline,disabled-by-default-devtools.timeline.stack',transferMode:'ReportEvents'});
@@ -135,18 +149,19 @@ try{
  if(process.env.WORLD_DRAFT==='1'){
   assert(result.presentationChanges.some(c=>c.draft==='height'),'direct grid draft must be visible during the gesture');
   assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'draft must be replaced when the gesture finishes');
-  assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback.firstPixelMs!==null,'actual terrain pixels must change while holding the brush');
+  assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'actual terrain pixels must change while holding the brush');
  }
  if(process.env.WORLD_REPEAT==='1'){
   result.repeatSculpt=await sculpt('sculpt-repeat');
   assert(Number(result.repeatSculpt.status.revision)>Number(result.sculptStatus.revision),'the warm-world stroke must commit another revision');
   assert(!result.repeatSculpt.status.text.includes('gestoppt'));
-  assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback.firstPixelMs!==null,'the warm-world stroke must change actual pixels');
+  assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'the warm-world stroke must change actual pixels');
   assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'the repeated draft must finish');
  }
  result.timing=await page.evaluate(()=>window.__saltTerrainTrace);
  if(process.env.SALTMARCHER_TERRAIN_TRACE==='1')result.backendTiming=await native.app.evaluate(()=>({main:global.__saltTerrainTrace,worker:global.__worldWorkerTrace}));
  assert(Number(result.sculptStatus.revision)>records.length,'confirmed terrain must actually appear after the brush');assert(!result.sculptStatus.text.includes('gestoppt'),'brush failure is not successful editing');
+ await page.evaluate(()=>window.__worldResponse?.dispose());
  result.gpu=await page.locator('#atlas-terrain-spatial').evaluate(n=>{const gl=n.getContext('webgl2'),ext=gl.getExtension('WEBGL_debug_renderer_info');return {renderer:ext&&gl.getParameter(ext.UNMASKED_RENDERER_WEBGL),ratio:devicePixelRatio};});
  result.hexPixels=await page.evaluate('(()=>{'+hexProbe+';return HexGridProbe.run();})()');
  assert.equal(result.hexPixels.centreMin,255);assert(result.hexPixels.edgeMax<250);assert(result.hexPixels.periodicError<=1);assert(result.hexPixels.tileError<=1);assert.equal(result.hexPixels.hiddenMin,255);assert.equal(result.hexPixels.gridObjects,0);
@@ -154,5 +169,6 @@ try{
  result.detailPixels=await terrainDetailPixels(page,detailProbe);
  result.draftPixels=await terrainDraftPixels(page,draftProbe);
  result.renderReusePixels=await terrainRenderReusePixels(page,renderReuseProbe);
+ if(readbackMode!=='legacy')result.readbackPixels=await terrainPixelReadbackPixels(page);
  assert.deepEqual(result.errors,[]);await native.close();await native.finish(result);
 }catch(error){await writeFile(out+'/progress.json',JSON.stringify(result,null,2));await native.fail(error);throw error;}finally{await native.dispose();}

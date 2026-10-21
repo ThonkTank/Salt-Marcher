@@ -17,6 +17,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Farbkacheln im vorhandenen Cache halten](../reference/atlas-color-cache-context-20261021/README.md): kompakte Stil-/Straßenidentität statt wiederholter Metadaten je Pixelstück; Bildgleichheit, Cache-Druck und vollständige Weltansicht.
 
+[Sichtbare Pinselreaktion messen](../reference/atlas-brush-response-measurement-20261021/README.md): Vergleich der Pinselinnenfläche zusätzlich zur kleinen Mitte, begrenztes asynchrones GPU-Auslesen und getrennte Profilingläufe. Die unmittelbare Reaktion der vollen Welt bleibt offen.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
