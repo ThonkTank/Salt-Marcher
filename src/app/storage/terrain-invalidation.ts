@@ -5,7 +5,7 @@ export function unionTerrainBounds(a:LandscapeBox,b:LandscapeBox):LandscapeBox{
  const x=Math.min(a.x,b.x),y=Math.min(a.y,b.y);
  return{x,y,width:Math.max(a.x+a.width,b.x+b.width)-x,height:Math.max(a.y+a.height,b.y+b.height)-y};
 }
-/** A changed node affects its four adjacent bilinear cells, including inherited
+/** A changed node affects two adjacent cells in each direction, including inherited
  * fine/coarse samples. Unknown metadata changes retain full-row invalidation.
  * This is derived from canonical transaction rows, never from a brush request. */
 export function changedHeightBounds(before?:LandscapeRecord,after?:LandscapeRecord):LandscapeBox|undefined{
@@ -26,6 +26,6 @@ export function changedHeightBounds(before?:LandscapeRecord,after?:LandscapeReco
    left=Math.min(left,i%64);right=Math.max(right,i%64);top=Math.min(top,Math.floor(i/64));bottom=Math.max(bottom,Math.floor(i/64));
   }
   if(right<0)return;
-  return{x:tile.x+(left-1)*tile.pixel,y:tile.y+(top-1)*tile.pixel,width:(right-left+2)*tile.pixel,height:(bottom-top+2)*tile.pixel};
+  return{x:tile.x+(left-2)*tile.pixel,y:tile.y+(top-2)*tile.pixel,width:(right-left+4)*tile.pixel,height:(bottom-top+4)*tile.pixel};
  }catch{return;}
 }

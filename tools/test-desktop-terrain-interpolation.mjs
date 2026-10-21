@@ -6,7 +6,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {createNativeSession} from './native-session.mjs';
 import {sculptRelief,RELIEF_VIEWS} from './terrain-relief-scene.mjs';
-import {catmull,monotone,installInterpolation} from './terrain-interpolation-probe.mjs';
+import {catmull,linear,installInterpolation} from './terrain-interpolation-probe.mjs';
 const root=process.cwd(),require=createRequire(root+'/package.json'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-interpolation');
 buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/terrain-spatial-worker';export * from './src/app/terrain-navigation-plan';"},outfile:'.build/terrain-interpolation.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,TerrainSampler,heightRecord,applyTerrainBrush,renderTerrainSpatial,terrainNavigationPlan}=require(root+'/.build/terrain-interpolation.cjs');
@@ -21,7 +21,7 @@ const cases=[
 ];
 const encoded=[],metrics=[];
 try{
- for(const [name,kernel]of [['bilinear',null],['catmull',catmull],['monotone',monotone]]){
+ for(const [name,kernel]of [['bilinear',linear],['catmull',catmull],['monotone',null]]){
   const restore=kernel?installInterpolation(TerrainSampler,kernel):()=>{};
   try{
    const sampler=new TerrainSampler(hill,false);let square=0,maximum=0,n=0;

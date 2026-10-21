@@ -4,17 +4,17 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {mkdir,writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import {interpolationStreamPlugin,INTERPOLATION_BASELINE} from './terrain-interpolation-build.mjs';
+import {interpolationStreamPlugin,INTERPOLATION_BASELINE,LATTICE_BASELINE} from './terrain-interpolation-build.mjs';
 import {installInterpolation,monotone} from './terrain-interpolation-probe.mjs';
 const out=process.env.QA_EVIDENCE_DIR??'.build/terrain-interpolation/kernel';await mkdir(out,{recursive:true});
 const require=createRequire(import.meta.url),contents="export * from './src/app/terrain-field-stream';export * from './src/app/terrain-height';";
-for(const name of ['baseline','monotone','lattice','monotone-lattice'])await build({stdin:{resolveDir:process.cwd(),contents},outfile:'.build/terrain-interpolation-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',plugins:name==='lattice'?[]:[interpolationStreamPlugin(name)]});
+for(const name of ['baseline','monotone','lattice','monotone-lattice'])await build({stdin:{resolveDir:process.cwd(),contents},outfile:'.build/terrain-interpolation-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',plugins:name==='monotone-lattice'?[]:[interpolationStreamPlugin(name)]});
 const base=require('../.build/terrain-interpolation-baseline.cjs'),candidate=require('../.build/terrain-interpolation-monotone.cjs'),latticeModule=require('../.build/terrain-interpolation-lattice.cjs'),sharedMonotone=require('../.build/terrain-interpolation-monotone-lattice.cjs');installInterpolation(candidate.TerrainSampler,monotone);
 const {heightRecord}=base,fixtures=[
  {name:'hill',rows:[16].flatMap(p=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*p,y*64*p,p,Float32Array.from({length:4096},(_,i)=>20+90*Math.exp(-((x*64*p+i%64*p)**2+(y*64*p+Math.floor(i/64)*p)**2)/40000))))))},
  {name:'sparse-bands',rows:[8,2,.5].flatMap(p=>[1,2].flatMap(v=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*p,y*64*p,p,Float32Array.from({length:4096},(_,i)=>i%7===0?NaN:(v===1?40:0)+Math.sin(i)*17),v)))))},
 ];
-const result={baseline:INTERPOLATION_BASELINE,productSource:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],measurements:[]};
+const result={baseline:INTERPOLATION_BASELINE,bilinearLattice:LATTICE_BASELINE,candidate:'current production bounded cubic',productSource:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],measurements:[]};
 const point={x:.5,y:7.125},rows=[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64,y*64,1,Float32Array.from({length:4096},(_,i)=>40+2*(x*64+i%64)+.25*(y*64+Math.floor(i/64)))))),inside=(r,halo)=>{const t=r.height;return point.x>=t.x-halo*t.pixel&&point.x<=t.x+(63+halo)*t.pixel&&point.y>=t.y-halo*t.pixel&&point.y<=t.y+(63+halo)*t.pixel;};
 const height=rows=>new candidate.TerrainSampler(rows,false).sample(point).heightM;
 result.neighbourRead={point,all:height(rows),oldBounds:height(rows.filter(r=>inside(r,1))),expandedBounds:height(rows.filter(r=>inside(r,2)))};

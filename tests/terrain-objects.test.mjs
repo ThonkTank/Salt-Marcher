@@ -62,7 +62,7 @@ test('canonical house/entrance bindings survive history and reopen; region input
  const original=resolved().find(o=>o.id==='house');assert.equal(original.baseM,117);assert.equal(original.topM,125);
  const originalRooms=JSON.stringify(store.campaignAtlas(active.token).workspace.rooms),originalFloors=JSON.stringify(store.campaignAtlas(active.token).geometry.floors),entry=resolved().find(o=>o.kind==='entrance');
  write({kind:'landscape-put',record:heights(20),expectedRevision:1});
- assert.equal(resolved().find(o=>o.id==='house').baseM-original.baseM,20);assert.equal(resolved().find(o=>o.kind==='entrance').baseM-entry.baseM,20);
+ assert.equal(resolved().find(o=>o.id==='house').baseM-original.baseM,20);assert(Math.abs(resolved().find(o=>o.kind==='entrance').baseM-entry.baseM-20)<1e-10,'fractional entrance height translates within floating-point precision');
  assert.equal(JSON.stringify(store.campaignAtlas(active.token).workspace.rooms),originalRooms);assert.equal(JSON.stringify(store.campaignAtlas(active.token).geometry.floors),originalFloors);write({kind:'undo'});
  saveHouse({...house,terrain:{...house.terrain,mode:'fixed',offsetM:80}});
  assert.equal(resolved().find(o=>o.id==='house').baseM,80);write({kind:'undo'});assert.equal(resolved().find(o=>o.id==='house').baseM,117);write({kind:'redo'});

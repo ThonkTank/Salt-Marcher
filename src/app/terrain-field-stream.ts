@@ -4,7 +4,7 @@ import {accumulateHeightLattice} from './terrain-height-lattice';
 import {RouteSurface} from './terrain-route';
 
 /** A fixed display lattice. Readers must yield unique height tiles from coarse to fine.
- * Only four node values per sample survive a tile read; no author record is retained. */
+ * Only the bounded source neighbourhood survives a tile read; no author record is retained. */
 export interface TerrainLattice {x:number;y:number;dx:number;dy:number;columns:number;rows:number}
 export interface TerrainField {heights:Float32Array;water:Uint8Array;surface?:Float32Array}
 export type TerrainStream=(kind:'height'|'route'|'lake',box:LandscapeBox)=>Iterable<LandscapeRecord>;
@@ -43,8 +43,8 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
     const left=Math.max(0,Math.ceil((box.x-x)/dx)-startColumn),right=Math.min(columns-1,Math.floor((box.x+box.width-x)/dx)-startColumn),top=Math.max(0,Math.ceil((box.y-y)/dy)-startRow),bottom=Math.min(rows-1,Math.floor((box.y+box.height-y)/dy)-startRow);
     for(let r=top;r<=bottom;r++)for(let c=left;c<=right;c++)visit(r*columns+c,atX(c),atY(r));
   };
-  // Reuse source nodes before interpolation, rather than copying the same four
-  // corners into a separate scratch record for every output pixel.
+  // Reuse source nodes before interpolation, rather than copying the same
+  // neighbourhood into a separate scratch record for every output pixel.
   accumulateHeightLattice(Float64Array.from({length:columns},(_,i)=>atX(i)),Float64Array.from({length:rows},(_,i)=>atY(i)),records('height',query),ground,additions);
   for(let i=0;i<n;i++)ground[i]=ground[i]!+additions[i]!;
   let weighted:Float64Array|undefined,total:Float64Array|undefined,strength:Float64Array|undefined,levels:Float64Array|undefined;

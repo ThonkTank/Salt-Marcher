@@ -81,7 +81,7 @@ export class TerrainScalePyramid {
   }
   sampler(db:any,cam:string,box:LandscapeBox,pixel:number){
     const edge=64*pixel,records:LandscapeRecord[]=[];
-    const left=Math.floor((box.x-pixel)/edge),right=Math.floor((box.x+box.width+pixel)/edge),top=Math.floor((box.y-pixel)/edge),bottom=Math.floor((box.y+box.height+pixel)/edge);
+    const left=Math.floor((box.x-2*pixel)/edge),right=Math.floor((box.x+box.width+2*pixel)/edge),top=Math.floor((box.y-2*pixel)/edge),bottom=Math.floor((box.y+box.height+2*pixel)/edge);
     if((right-left+1)*(bottom-top+1)>256)throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
     for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)records.push(heightRecord(x*edge,y*edge,pixel,this.tile(db,cam,x*edge,y*edge,pixel)));
     return new TerrainSampler(records,false);

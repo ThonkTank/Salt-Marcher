@@ -134,9 +134,12 @@ trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarb
 
 ### Höhenabtastung ohne wiederholtes Einsammeln
 
-`terrain-height-lattice.ts` sammelt pro Auflösung nur die tatsächlich benötigten Quellknoten. Viele Ausgabepixel in derselben Höhenzelle teilen deren Werte; weiter auseinanderliegende Samples erzeugen eine dünn besetzte Menge von Quellkoordinaten. Jedes Band hält höchstens vier Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. Die bisherige bilineare Summenreihenfolge, Nullgewichte und NaN-Vererbung bleiben exakt erhalten. `terrain-field-stream.ts` besitzt weiterhin Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser. [Gepaarte Kernmessungen, Pixelregressionen und Hauptatlas](../reference/atlas-height-lattice-20261021/README.md) belegen den Anschluss.
+`terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.
 
-Der dortige kubische Vergleich ist ein isolierter Folgeversuch, kein Produktmodus. Seine Einbindung erfordert denselben Kernel in Punktabfrage und Stream, größere Nachbarschaftslesebereiche samt Invalidierung sowie eine geprüfte Behandlung bestehender Speicher-/History-Grenzen.
+`terrain-interpolation.ts` besitzt die gemeinsame begrenzte kubische Rekonstruktion für `TerrainSampler` und Feldstream. Die Kurve erhält Knoten, plateauförmige Extrema und affine Innenbereiche. Fehlende absolute Knoten erben den gröberen Wert am Abfragepunkt; additive Lücken bleiben null. Die Reihenfolge ist immer x, dann y. Geometrie, Farbe, Wasserentscheidung und kanonische Abfragen verwenden denselben Kernel; sichtbare Treffer bleiben an die tatsächlich gezeichneten Netzdreiecke gebunden.
+
+Ein Höhenknoten beeinflusst zwei Zellen in jeder Richtung. `bounds` liefert daher die abgeleitete 67-Pixel-Suchfläche; das gespeicherte 65-Pixel-Autorenpolygon und die Höhenwerte bleiben erhalten. Präzise Invalidierung und die geglättete Basispyramide berücksichtigen dieselbe Nachbarschaft. Schema 54 erweitert beim Öffnen alte Suchgrenzen und History-Zeilen atomar. Nur bekannte Fingerabdrücke werden angepasst; bestehende Undo-Konflikte bleiben Konflikte. Paketvorschau liest das Original, Übernahme migriert die temporäre Kopie. [Numerik, Migration und Anschlussprüfung](../reference/atlas-height-reconstruction-20261021/README.md) dokumentieren die Änderung.
+
 
 ### Höhenlinien auf dem vorhandenen Geländenetz
 

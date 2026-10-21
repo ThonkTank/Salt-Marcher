@@ -1,3 +1,4 @@
+import {heightInfluenceBounds} from './terrain-interpolation';
 import {routeBounds} from './terrain-route';
 import {TerrainSampler} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
@@ -230,6 +231,7 @@ export function effectiveLandscape(
   return out;
 }
 export function bounds(record: LandscapeRecord): LandscapeBox {
+  if(record.height)return heightInfluenceBounds(record.height);
   if(record.route)return routeBounds(record);
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   const include=(p:Point)=>{minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x);maxY=Math.max(maxY,p.y);};

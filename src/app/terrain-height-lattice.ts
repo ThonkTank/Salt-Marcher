@@ -1,3 +1,4 @@
+import {heightPatch,interpolateHeight} from './terrain-interpolation';
 import {decodeHeights,type HeightTile} from './terrain-height';
 import type {LandscapeRecord} from './atlas-landscape';
 
@@ -7,9 +8,9 @@ interface Axis {nodes:Float64Array;starts:Uint32Array;fractions:Float64Array}
 function sourceAxis(points:Float64Array,pixel:number):Axis{
  const nodes:number[]=[],starts=new Uint32Array(points.length),fractions=new Float64Array(points.length);let start=0;
  for(let i=0;i<points.length;i++){
-  const value=points[i]!/pixel,cell=Math.floor(value);fractions[i]=value-cell;
+  const value=points[i]!/pixel,cell=Math.floor(value)-1;fractions[i]=value-Math.floor(value);
   while(start<nodes.length&&nodes[start]!<cell)start++;
-  for(let offset=0;offset<2;offset++)if(start+offset===nodes.length)nodes.push(cell+offset);
+  for(let offset=0;offset<4;offset++)if(start+offset===nodes.length)nodes.push(cell+offset);
   starts[i]=start;
  }
  return{nodes:Float64Array.from(nodes),starts,fractions};
@@ -18,7 +19,7 @@ function lowerBound(values:Float64Array,value:number){
  let left=0,right=values.length;while(left<right){const mid=(left+right)>>>1;if(values[mid]!<value)left=mid+1;else right=mid;}return left;
 }
 /** A bounded Cartesian set of required source nodes, independent of author count.
- * At most four nodes per output sample and per absolute/additive layer survive.
+ * At most sixteen nodes per output sample and per absolute/additive layer survive.
  * No complete decoded author tile is retained. */
 class HeightLevel {
  private x:Axis;
@@ -42,17 +43,24 @@ class HeightLevel {
  apply(ground:Float64Array,additions:Float64Array){
   if(!this.absolute&&!this.additive)return;
   const x=this.x,y=this.y,columns=x.starts.length;
+  const horizontal=(values:Float32Array|undefined,inherit:boolean)=>{
+   if(!values)return;
+   const out=new Float64Array(y.nodes.length*columns);
+   for(let row=0;row<y.nodes.length;row++)for(let col=0;col<columns;col++){
+    const at=row*x.nodes.length+x.starts[col]!,a=values[at]!,b=values[at+1]!,c=values[at+2]!,d=values[at+3]!;
+    const hole=Number.isNaN(a)||Number.isNaN(b)||Number.isNaN(c)||Number.isNaN(d);
+    out[row*columns+col]=inherit&&hole?NaN:interpolateHeight(Number.isNaN(a)?0:a,Number.isNaN(b)?0:b,Number.isNaN(c)?0:c,Number.isNaN(d)?0:d,x.fractions[col]!);
+   }
+   return out;
+  };
+  const absolute=horizontal(this.absolute,true),additive=horizontal(this.additive,false);
   for(let row=0;row<y.starts.length;row++)for(let col=0;col<columns;col++){
    const index=row*columns+col,base=y.starts[row]!*x.nodes.length+x.starts[col]!,fx=x.fractions[col]!,fy=y.fractions[row]!;
-   let weight=0,total=0,delta=0;
-   // Preserve canonical dy/dx arithmetic and zero-weight/NaN inheritance exactly.
-   for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){
-    const w=(ox?fx:1-fx)*(oy?fy:1-fy);if(!w)continue;
-    const node=base+oy*x.nodes.length+ox,a=this.absolute?.[node],b=this.additive?.[node];
-    if(a!==undefined&&!Number.isNaN(a)){weight+=w;total+=a*w;}
-    if(b!==undefined&&!Number.isNaN(b))delta+=b*w;
+   const at=y.starts[row]!*columns+col;
+   if(absolute){const a=absolute[at]!,b=absolute[at+columns]!,c=absolute[at+2*columns]!,d=absolute[at+3*columns]!;
+    ground[index]=Number.isNaN(a)||Number.isNaN(b)||Number.isNaN(c)||Number.isNaN(d)?heightPatch(this.absolute!,fx,fy,ground[index]!,base,x.nodes.length):interpolateHeight(a,b,c,d,fy);
    }
-   ground[index]=ground[index]!*(1-weight)+total;additions[index]=additions[index]!+delta;
+   if(additive)additions[index]=additions[index]!+interpolateHeight(additive[at]!,additive[at+columns]!,additive[at+2*columns]!,additive[at+3*columns]!,fy);
   }
  }
 }

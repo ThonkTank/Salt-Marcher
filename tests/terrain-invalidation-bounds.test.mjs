@@ -8,14 +8,14 @@ import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/storage/terrain-invalidation';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/terrain-projection';export * from './src/app/terrain-height';",resolveDir:process.cwd()},outfile:'.build/terrain-invalidation-bounds.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,changedHeightBounds,heightRecord,AtlasLandscapeReader,readTerrainProjection}=require('../.build/terrain-invalidation-bounds.cjs');
-test('changed node bounds include all four interpolation cells, sparse insertion/deletion and negative coordinates',()=>{
+test('changed node bounds include all sixteen interpolation cells, sparse insertion/deletion and negative coordinates',()=>{
  const a=new Float32Array(4096).fill(NaN);a[0]=100;a[63*64+63]=200;
- const record=heightRecord(-32,-64,.5,a),expected={x:-32.5,y:-64.5,width:32.5,height:32.5};
+ const record=heightRecord(-32,-64,.5,a),expected={x:-33,y:-65,width:33.5,height:33.5};
  assert.deepEqual(changedHeightBounds(undefined,record),expected);assert.deepEqual(changedHeightBounds(record,undefined),expected);
- const b=a.slice();b[0]=101;assert.deepEqual(changedHeightBounds(record,heightRecord(-32,-64,.5,b)),{x:-32.5,y:-64.5,width:1,height:1});
- b[0]=NaN;assert.deepEqual(changedHeightBounds(record,heightRecord(-32,-64,.5,b)),{x:-32.5,y:-64.5,width:1,height:1});
+ const b=a.slice();b[0]=101;assert.deepEqual(changedHeightBounds(record,heightRecord(-32,-64,.5,b)),{x:-33,y:-65,width:2,height:2});
+ b[0]=NaN;assert.deepEqual(changedHeightBounds(record,heightRecord(-32,-64,.5,b)),{x:-33,y:-65,width:2,height:2});
  assert.equal(changedHeightBounds(record,{...record,revision:2}),undefined);
- assert.deepEqual(changedHeightBounds(record,{...heightRecord(-32,-64,.5,b),order:900}),{x:-32.5,y:-64.5,width:1,height:1});
+ assert.deepEqual(changedHeightBounds(record,{...heightRecord(-32,-64,.5,b),order:900}),{x:-33,y:-65,width:2,height:2});
  assert.equal(changedHeightBounds(record,{...heightRecord(-32,-64,.5,b),name:'changed metadata'}),undefined);
  assert.equal(changedHeightBounds(record,{...record,height:{...record.height,x:0}}),undefined);
  assert.equal(changedHeightBounds(record,{...record,height:{...record.height,data:'broken'}}),undefined);

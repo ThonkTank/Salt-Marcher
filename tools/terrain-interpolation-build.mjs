@@ -1,36 +1,13 @@
-// Experimental streaming counterpart. Exact replacements fail closed if production changes.
-import {readFile} from 'node:fs/promises';
+// Historical bilinear kernels and the rejected naive cubic experiment.
+// Production cubic needs no plugin; old comparisons remain pinned and reproducible.
 import {execFileSync} from 'node:child_process';
 export const INTERPOLATION_BASELINE='ba32afaed086977fdb8ba8db7dd491b3b4e12679';
+export const LATTICE_BASELINE='06e8dd03f85567ac8dead4c5c147b99d5737337f';
 export function interpolationStreamPlugin(mode='monotone'){return {name:'monotone-stream-experiment',setup(build){
  build.onLoad({filter:/(terrain-field-stream|terrain-height-lattice)\.ts$/},async({path})=>{
-  if(mode==='monotone-lattice'){
+  if(mode==='lattice'){
    if(!path.endsWith('terrain-height-lattice.ts'))return;
-   let source=await readFile(path,'utf8');
-   const replace=(from,to)=>{if(source.split(from).length!==2)throw Error('Shared interpolation experiment no longer matches '+from);source=source.replace(from,to);};
-   source="import {reconstruct,monotone} from '../../tools/terrain-interpolation-probe.mjs';\n"+source;
-   replace('cell=Math.floor(value);fractions[i]=value-cell;', 'cell=Math.floor(value)-1;fractions[i]=value-Math.floor(value);');
-   replace('offset<2;offset++','offset<4;offset++');
-   replace('  for(let row=0;row<y.starts.length;row++)for(let col=0;col<columns;col++){', `  const horizontal=(values:Float32Array|undefined,inherit:boolean)=>{
-   if(!values)return;
-   const out=new Float64Array(y.nodes.length*columns);
-   for(let row=0;row<y.nodes.length;row++)for(let col=0;col<columns;col++){
-    const at=row*x.nodes.length+x.starts[col]!,a=values[at]!,b=values[at+1]!,c=values[at+2]!,d=values[at+3]!;
-    const hole=Number.isNaN(a)||Number.isNaN(b)||Number.isNaN(c)||Number.isNaN(d);
-    out[row*columns+col]=inherit&&hole?NaN:monotone(Number.isNaN(a)?0:a,Number.isNaN(b)?0:b,Number.isNaN(c)?0:c,Number.isNaN(d)?0:d,x.fractions[col]!);
-   }
-   return out;
-  };
-  const absolute=horizontal(this.absolute,true),additive=horizontal(this.additive,false);
-  for(let row=0;row<y.starts.length;row++)for(let col=0;col<columns;col++){`);
-   const start=source.indexOf('   let weight=0,total=0,delta=0;'),end=source.indexOf('\n  }\n }\n}',start);
-   if(start<0||end<start)throw Error('Shared interpolation apply not found');
-   source=source.slice(0,start)+`   const at=y.starts[row]!*columns+col;
-   if(absolute){const a=absolute[at]!,b=absolute[at+columns]!,c=absolute[at+2*columns]!,d=absolute[at+3*columns]!;
-    ground[index]=Number.isNaN(a)||Number.isNaN(b)||Number.isNaN(c)||Number.isNaN(d)?reconstruct(this.absolute!,fx,fy,ground[index]!,undefined,base,x.nodes.length):monotone(a,b,c,d,fy);
-   }
-   if(additive)additions[index]=additions[index]!+monotone(additive[at]!,additive[at+columns]!,additive[at+2*columns]!,additive[at+3*columns]!,fy);`+source.slice(end);
-   return {contents:source,loader:'ts'};
+   return {contents:execFileSync('git',['show',LATTICE_BASELINE+':src/app/terrain-height-lattice.ts'],{encoding:'utf8'}),loader:'ts'};
   }
   if(!path.endsWith('terrain-field-stream.ts'))return;
   let source=execFileSync('git',['show',INTERPOLATION_BASELINE+':src/app/terrain-field-stream.ts'],{encoding:'utf8'});

@@ -1,3 +1,4 @@
+import {heightPatch} from './terrain-interpolation';
 import {RouteSurface} from './terrain-route';
 import {
   bounds,
@@ -149,7 +150,7 @@ export function validateTerrain(r: LandscapeRecord) {
   if (r.height) {
     decodeHeights(r.height);
     const t = r.height,
-      b = bounds(r);
+      b = bounds({...r,height:undefined});
     if (
       r.kind !== "patch" ||
       r.resolution !== t.pixel ||
@@ -182,11 +183,10 @@ type SampleTile = { values: Float32Array; revision: number };
 type HeightGrid = Map<number, Map<number, SampleTile>>;
 export class TerrainSampler {
   readonly seaLevelM: number;
-  private levels: { pixel: number; tiles: HeightGrid; additive: boolean }[] = [];
+  private levels: { pixel: number; tiles: HeightGrid; additive: boolean; cell?: {gx:number;gy:number;values:Float64Array;revisions:number[];revision:number} }[] = [];
   private lakes: LandscapeRecord[];
   private routes:RouteSurface;
   private directHeight=false;
-  private cell:{gx:number;gy:number;values:number[];revisions:number[]}|null=null;
   constructor(records: LandscapeRecord[],effective=true) {
     this.routes=new RouteSurface(effective?records:[]);
     this.directHeight=!effective||!records.some(r=>r.route?.nodes.length&&!r.route.conflict);
@@ -212,53 +212,26 @@ export class TerrainSampler {
   sample(p: Point): HeightSample {
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y))
       throw Error("Höhenpunkt prüfen.");
-    // Close-up rasters revisit the same bilinear cell hundreds of times. Reuse its
-    // four finite nodes; sparse/multilevel fields retain the full inheritance path.
-    if(this.directHeight&&this.levels.length===1&&!this.levels[0]!.additive){
-      const {pixel,tiles}=this.levels[0]!,gx=Math.floor(p.x/pixel),gy=Math.floor(p.y/pixel);
-      if(!this.cell||this.cell.gx!==gx||this.cell.gy!==gy){
-        const values:number[]=[],revisions:number[]=[];
-        for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
-          const nx=gx+dx,ny=gy+dy,tx=Math.floor(nx/64),ty=Math.floor(ny/64),tile=tiles.get(tx)?.get(ty);
-          values.push(tile?.values[(ny-ty*64)*64+nx-tx*64]??NaN);revisions.push(tile?.revision??0);
+    let heightM=DEFAULT_HEIGHT_M,additiveM=0,resolutionM:number|null=null,revision=0;
+    for(const level of this.levels){
+      const {pixel,tiles,additive}=level,xx=p.x/pixel,yy=p.y/pixel,gx=Math.floor(xx),gy=Math.floor(yy),fx=xx-gx,fy=yy-gy;
+      // Reuse the full neighbourhood while successive samples share a cell.
+      let cell=level.cell;
+      if(!cell||cell.gx!==gx||cell.gy!==gy){
+        const values=new Float64Array(16),revisions:number[]=[];let revision=0;
+        for(let y=0;y<4;y++)for(let x=0;x<4;x++){
+          const nx=gx+x-1,ny=gy+y-1,tx=Math.floor(nx/64),ty=Math.floor(ny/64),tile=tiles.get(tx)?.get(ty);
+          const value=tile?.values[(ny-ty*64)*64+nx-tx*64]??NaN;
+          values[y*4+x]=value;revisions.push(tile?.revision??0);if(!Number.isNaN(value))revision=Math.max(revision,tile?.revision??0);
         }
-        this.cell={gx,gy,values,revisions};
+        level.cell=cell={gx,gy,values,revisions,revision};
       }
-      const {values:v,revisions:r}=this.cell;
-      if(v.every(Number.isFinite)){
-        const fx=p.x/pixel-gx,fy=p.y/pixel-gy;
-        return{heightM:(v[0]!*(1-fx)+v[1]!*fx)*(1-fy)+(v[2]!*(1-fx)+v[3]!*fx)*fy,
-          resolutionM:pixel,revision:Math.max(r[0]!,fx?r[1]!:0,fy?r[2]!:0,fx&&fy?r[3]!:0)};
+      const value=heightPatch(cell.values,fx,fy,additive?0:heightM);
+      if(additive)additiveM+=value;else heightM=value;
+      for(let y=0;y<2;y++)for(let x=0;x<2;x++)if((x?fx:1-fx)*(y?fy:1-fy)&&!Number.isNaN(cell.values[(y+1)*4+x+1]!)){
+        resolutionM=Math.min(resolutionM??Infinity,pixel);
+        revision=Math.max(revision,fx||fy?cell.revision:cell.revisions[5]!);
       }
-    }
-    let heightM = DEFAULT_HEIGHT_M, additiveM=0,
-      resolutionM: number | null = null,
-      revision = 0;
-    for (const { pixel, tiles, additive } of this.levels) {
-      const gx = Math.floor(p.x / pixel),
-        gy = Math.floor(p.y / pixel),
-        fx = p.x / pixel - gx,
-        fy = p.y / pixel - gy;
-      let weight = 0,
-        total = 0;
-      for (let dy = 0; dy < 2; dy++)
-        for (let dx = 0; dx < 2; dx++) {
-          const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-          if (!w) continue;
-          const nx = gx + dx,
-            ny = gy + dy,
-            tx = Math.floor(nx / 64),
-            ty = Math.floor(ny / 64),
-            r = tiles.get(tx)?.get(ty);
-          if (!r) continue;
-          const v = r.values[(ny - ty * 64) * 64 + nx - tx * 64]!;
-          if (Number.isNaN(v)) continue;
-          weight += w;
-          total += v * w;
-          revision = Math.max(revision, r.revision);
-          resolutionM = Math.min(resolutionM??Infinity,pixel);
-        }
-      if(additive)additiveM+=total;else heightM = heightM * (1 - weight) + total;
     }
     heightM+=additiveM;
     return { heightM:this.directHeight?heightM:this.routes.at(p,heightM).height, resolutionM, revision };

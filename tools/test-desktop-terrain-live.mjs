@@ -9,9 +9,9 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 const root=process.cwd(),require=createRequire(root+'/package.json'),{buildSync}=require('esbuild');
-buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';",resolveDir:root},outfile:'.build/terrain-live-interactions-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export {bounds} from './src/app/atlas-landscape';",resolveDir:root},outfile:'.build/terrain-live-interactions-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const worldProbe=process.env.TERRAIN_WORLD_PROBE==='1',worldEdge=2**21,coveredProbe=process.env.TERRAIN_COVERED_PROBE==='1';
-const {CampaignStore,heightRecord}=require(root+'/.build/terrain-live-interactions-store.cjs');
+const {CampaignStore,heightRecord,bounds}=require(root+'/.build/terrain-live-interactions-store.cjs');
 const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-live-interactions');
 const native=await createNativeSession({root,output:out,name:'atlas-live'}),dir=native.profile;
 const store=new CampaignStore(dir+'/workbench.sqlite'),campaign=store.create('R7 Ausgabe'),token=store.activate(campaign.id).token;
@@ -20,7 +20,7 @@ if(worldProbe){
  const templates=Array.from({length:7},(_,i)=>heightRecord(0,0,512,new Float32Array(4096).fill(100+i*5))),put=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
  store.db.transaction(()=>{for(let y=0;y<64;y++)for(let x=0;x<64;x++){
   const px=x*32768,py=y*32768,template=templates[x%7],record={...template,id:`height:9:${x}:${y}`,height:{...template.height,x:px,y:py},polygons:[{outer:[{x:px-512,y:py-512},{x:px+32768,y:py-512},{x:px+32768,y:py+32768},{x:px-512,y:py+32768}],holes:[]}]};
-  put.run(campaign.id,record.id,1,px-512,px+32768,py-512,py+32768,JSON.stringify(record));
+  const b=bounds(record);put.run(campaign.id,record.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(record));
  }})();
 }else for(let y=coveredProbe?-2:-1;y<=(coveredProbe?1:0);y++)for(let x=coveredProbe?-2:-1;x<=(coveredProbe?1:0);x++)store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>{const px=x*1024+(i%64)*16,py=y*1024+Math.floor(i/64)*16;return 20+120*Math.exp(-((px-150)**2+py**2)/40000)+100*Math.exp(-((px+150)**2+(py+100)**2)/25000);} ))}});
 store.close();
