@@ -280,3 +280,11 @@ test('contour changes retain uploaded geometry, texture and picker and use unexa
   assert.equal(geometry.getAttribute('position').getZ(0),(175-v.focusM)*4);
   view.setContours(0);assert.equal(view.mesh.geometry,geometry);
 });
+
+test('a village at a distant world coordinate remains pickable after the inspector narrows the viewport',()=>{
+ const v={projection:'perspective',box:{x:-8482891.601510288,y:-942153.0598735651,width:625.5642291648526,height:625.5642291648526},frame:{x:-8482678.185231794,y:-941944.5384638435,width:198.7316721760017,height:208.52140972161752},refinement:{x:-8482727.868149837,y:-941996.6688162739,width:298.09750826400256,height:312.7821145824263},columns:257,rows:257,focusM:129.79577636718778,tilt:0,rotation:0,exaggeration:1};
+ const view=viewFor(v,new Float32Array(v.columns*v.rows).fill(129.7957763671875));
+ view.canvas.clientWidth=812;view.canvas.clientHeight=852;
+ view.canvas.getBoundingClientRect=()=>({left:288,top:48,width:812,height:852});view.render();
+ for(const [x,y]of [[.55,.35],[.61,.6],[.43,.44]])assert(view.hit(288+812*x,48+852*y),`visible ground at ${x},${y}`);
+});
