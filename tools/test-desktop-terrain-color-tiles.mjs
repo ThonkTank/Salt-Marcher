@@ -1,6 +1,7 @@
 // Inspect progressive colour on a non-uniform coast through the ordinary Atlas entry.
 import {createNativeSession} from './native-session.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
+import {terrainDetailPixels} from './terrain-detail-probe.mjs';
 import {createRequire} from 'node:module';
 import {randomUUID} from 'node:crypto';
 import assert from 'node:assert/strict';
@@ -27,5 +28,6 @@ try{
  const stages=await page.evaluate(()=>window.__colourStages);assert(stages.length>1);const [done,total]=stages.at(-1).tiles.split('/').map(Number);assert.equal(done,total);
  const canvas=await page.locator('#atlas-terrain-spatial').elementHandle();
  await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').fill('45');await page.locator('#terrain-tilt').dispatchEvent('input');await page.keyboard.press('Escape');await atlasCanvasReady(page);assert(await canvas.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));await native.capture(page,'03-tilted-coast.png');
- await native.close();await native.finish({stages,checks:['Non-uniform coast refines incrementally on the main Atlas; all tiles complete and the same canvas tilts.']});
+ const detailUploads=await terrainDetailPixels(page);
+ await native.close();await native.finish({stages,detailUploads,checks:['Non-uniform coast refines incrementally on the main Atlas; all tiles complete and the same canvas tilts.','Rectangular opaque and transparent uploads match full GPU output for ground and detail.']});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

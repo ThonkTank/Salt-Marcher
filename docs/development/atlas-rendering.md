@@ -61,7 +61,10 @@ und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
 Die Hauptkamera veröffentlicht zuerst die vollständige Geometrie mit höchstens
 128×128 Farbpixeln. Danach lädt `TerrainDetailTiles` weltfest ausgerichtete
 256×256-Farbkacheln von der Mitte nach außen und veröffentlicht jede fertige
-Kachel über `TerrainSpatialView.setDetail`. Das verändert weder Höhen noch
+Kachel über `TerrainSpatialView.setDetail`. `terrain-texture-upload.ts` überträgt
+bestätigte Rechtecke mit jeweils einer GPU-Kopie und vollständige Bilder mit
+einem Upload; Boden, Detail und Live-Pinsel teilen diesen Weg. Die CPU-Quelle
+teilt die vorhandenen Pixel und belegt keine zusätzliche GPU-Textur. Das verändert weder Höhen noch
 Treffer, Objekte oder deren GPU-Puffer. Zuletzt wird die weite Kontexttextur auf
 höchstens 512×512 Pixel verfeinert. `terrain-navigation-plan.ts` bleibt Besitzer
 der beiden Geometrie-/Kontextanfragen; die feine Farbe dazwischen verwendet
@@ -92,8 +95,15 @@ trennt frühe erste Details, vollständige Ladezeit, Bildübergänge und Regress
 Diese Farbverteilung ist ein Teilschritt; weltweites Geometrie-LOD und die
 Leistungsziele sind damit nicht qualifiziert.
 Die [Warteschlangenprüfung](../reference/atlas-scheduling-20261021/README.md) hält die Auswahlwartezeit und die höheren kalten Rasterkosten getrennt fest.
-`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen
-mit kooperativen Haltepunkten nach abgeschlossenen SQL-Lesevorgängen. Der Worker
+`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen.
+Die eigenständigen 256er-Farbkacheln verwenden 128er-Pakete, um den wiederholt
+abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
+zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
+und der Reliefschattierung frei. Kein SQL-Iterator überlebt einen Haltepunkt.
+Höhenstufen verwenden wiederverwendete Achsenkoordinaten; unsichtbare Ränder
+liefern weiterhin Ableitungen und Küstenabstände, erhalten aber keine unnötige
+Schattierung. [Pixelvergleich und gepaarte Worker-/UI-Prüfung](../reference/atlas-color-cost-20261021/README.md)
+belegen diesen begrenzten Kostenschritt. Der Worker
 beendet dort seinen WAL-Schnappschuss und prüft die Revision vor jeder Fortsetzung.
 Auswahl kann zwischen diesen Schritten laufen. Kamera-, Live- und Autorenaufträge
 ersetzen ausstehende normale Detailarbeit; brauchbare Cacheteile bleiben erhalten.
@@ -102,7 +112,7 @@ die fehlenden Details nach. Nach einer veralteten Revision sperrt sie Wiederholu
 bis das Nachladen der Region einen aktuellen Stand bestätigt. Überholte Nachladeaufträge
 geben diese Sperre erst mit dem bestätigten Nachfolger frei. Es bleibt höchstens
 eine pausierte Projektion im Worker.
-Synchrone Live-Frames, Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
+Synchrone Live-Frames, Geometrie-Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
 Zeitgrenze. Bei starker Neigung kann die begrenzte Abdeckung am Horizont weiterhin
 sichtbar werden.
 

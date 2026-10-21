@@ -25,7 +25,7 @@ export async function terrainDetailPixels(page){
      update();renderer.render(scene,camera);const before=read(),textureCount=renderer.info.memory.textures;
      const patches=[];
      for(const r of [{x:128,y:128,width:256,height:256},{x:3,y:401,width:31,height:17}]){
-      for(let y=r.y;y<r.y+r.height;y++)for(let x=r.x;x<r.x+r.width;x++)pixels.set([x%256,y%256,35,255],(y*512+x)*4);
+      for(let y=r.y;y<r.y+r.height;y++)for(let x=r.x;x<r.x+r.width;x++)pixels.set([x%256,y%256,35,r.height===17?[0,128,255][(x+y)%3]:255],(y*512+x)*4);
       uploads=[];const start=performance.now();update([r]);renderer.render(scene,camera);gl.finish();const ms=performance.now()-start,calls=uploads.slice(),partial=read();
       update();renderer.render(scene,camera);const full=read();let mismatch=0,changed=0;for(let i=0;i<full.length;i++){if(partial[i]!==full[i])mismatch++;if(partial[i]!==before[i])changed++;}
       patches.push({rect:r,ms,calls,mismatch,changed,textureCount:renderer.info.memory.textures});
