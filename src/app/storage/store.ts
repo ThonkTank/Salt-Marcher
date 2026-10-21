@@ -513,7 +513,7 @@ export class CampaignStore {
         if(c.terrainStroke&&!atlasCapturedChanges(this.db)){landscapeEnvironment=false;return;}
         if(a.kind==='landscape-place'){const root=atlasRoot(this.db,cam),m=JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),old=this.db.prepare('SELECT revision FROM atlas_place WHERE campaign_id=? AND location_id=?').get(cam,a.document.id);this.executeWorld({commandId:c.commandId+':place',token:c.token,campaignId:cam,action:{kind:'place',mapId:m.id,locationId:a.document.id,expectedRevision:old?.revision??null,hex:atlasHexAt(a.point??a.record.points[0]!,m.hexMeters)}});}
 
-        const row=this.db.prepare("SELECT * FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,atlasRoot(this.db,cam).map_id),m=JSON.parse(row.payload);m.revision++;const payload=json(m);this.db.prepare("UPDATE world_record SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND kind='map' AND id=?").run(m.revision,payload,hash(payload),cam,m.id);return;
+        return;
       }
       if(a.kind==='room-default')return this.addRoom(c.token,true);
       if(a.kind==='drawing-import'){

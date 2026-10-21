@@ -370,3 +370,22 @@ test('schema 52 opens without invented historical checkpoints; schema 53 cannot 
   x.store.db.exec('DROP TABLE travel_checkpoint');x.store.close();assert.throws(()=>new CampaignStore(x.filename),/Reisecheckpoint/);
  }finally{x.cleanup();}
 });
+
+test('terrain edits invalidate accepted and unaccepted travel without rewriting the map, including undo/redo and fresh reopening',async t=>{
+ const x=setup();t.after(()=>x.cleanup());
+ const write=action=>x.store.executeAtlasCommit(x.command(action));
+ const edit={kind:'landscape-height-stroke',stroke:{mode:'raise',radius:16,strength:100,feather:0,samples:[{x:100000,y:100000,t:0},{x:100000,y:100000,t:500}]}};
+ const initial=x.preview(),mapRevision=initial.mapRevision,accepted=x.accept();
+ const position=x.state().position,clock=x.state().scene.clock;
+ write(edit);assert.equal(x.preview().mapRevision,mapRevision);assert.notEqual(x.preview().environmentBasis,initial.environmentBasis);
+ assert.equal(x.state().journey.status,'paused');assert.deepEqual(x.state().position,position);assert.deepEqual(x.state().scene.clock,clock);
+ const rejectsOld=()=>{
+  assert.throws(()=>x.world({kind:'journey',preview:initial}),/Reisebasis/);
+  const j=x.state().journey;assert.equal(j.id,accepted.id);
+  assert.throws(()=>x.world({kind:'journey-state',id:j.id,expectedRevision:j.revision,state:'active'}),/Reisebasis/);
+ };
+ rejectsOld();const changed=x.preview();write({kind:'undo'});rejectsOld();assert.notEqual(x.preview().environmentBasis,changed.environmentBasis);
+ write({kind:'redo'});rejectsOld();x.reopen();rejectsOld();
+ await x.store.backup(path.join(x.root,'terrain-backup.sqlite'));
+ const j=x.accept();const moved=x.world({kind:'journey-step',id:j.id,expectedRevision:j.revision,maxSteps:1});assert.equal(moved.scene.position.q,1);
+});

@@ -640,3 +640,7 @@ allgemeine Ownerabnahme sind dadurch nicht umfassend qualifiziert.
    Antwort. Reiseansicht allein erzwingt keinen anderen Arbeitskontext.
    Native Abnahme mit Kartenwechsel, langen Routen,200%, Fehlerantwort,
    Prozessunterbrechung, Fokuswechsel und finalem Interrupt ohne Doppelbuchung.
+
+### Geländeänderungen ohne Quellenkartenkopie (21.10.2026)
+
+Die Reisebasis bindet zusätzlich eine optionale dauerhafte `terrain-environment`-Revision aus `world_record`. Der Atlas erhöht sie atomar bei tatsächlichen Landschaftsänderungen sowie Undo/Redo. Dadurch muss die unveränderte, möglicherweise große Quellenkarte nicht mehr für jeden Pinselauftrag neu geschrieben und in die History kopiert werden. Vorhandene Bestände ohne diesen Datensatz behalten ihre bisherige Reisebasis bis zur ersten Terrainänderung. Die Revision wird bei unabhängigen Kampagnenkopien mit der Kartenzuordnung übernommen und bei Sicherung/Import geprüft. [Gegenproben und Grenzen](../../reference/atlas-bounded-terrain-history-20261021/README.md).
