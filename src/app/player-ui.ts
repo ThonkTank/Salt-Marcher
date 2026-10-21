@@ -76,7 +76,7 @@ function submit(action:PlayerAction,openWindow=false){
   const result=await window.campaign.executePlayer(command);if(!owns(o))return;
   const confirmed=unwrap(result);publish(o,confirmed,request);
   if(!openWindow&&owns(o)&&intent===actions)await reload(o);
-  if(openWindow&&intent===actions){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return;await reload(o);}
+  if(openWindow&&intent===actions){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return;}
   if(owns(o)&&intent===actions){const message=action.kind==='discover'?'Kenntnis und öffentliche Beschriftung gespeichert.'+(confirmed.settings.blank?' Die Anzeige ist weiterhin ausgeblendet.':''):action.kind==='forget'?'Kenntnis entfernt. Aktuelle Sicht kann das Hex weiterhin zeigen.':'Spieleranzeige aktualisiert.';el('player-feedback').textContent=message;el('player-feedback').hidden=false;tell(message);}
  });
 }
@@ -90,7 +90,7 @@ export async function cuePlayer(mode:'follow'|'blank',focus:Pick<PlayerView,'foc
   const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest?.settings.revision??0,expectedFocusId:focus?.focusId??latest?.focusId??null,expectedFocusRevision:focus?.focusRevision??latest?.focusRevision??null,expectedFocusMembershipRevision:focus?.focusMembershipRevision??latest?.focusMembershipRevision??null,expectedFocusLocationId:focus?.focusLocationId??latest?.focusLocationId??null,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;
   publish(o,confirmed,request);
-  if(mode!=='blank'){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);}
+  if(mode!=='blank'){unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;}
   if(owns(o)&&intent===actions)tell(mode==='blank'?'Spieleranzeige geleert.':'Spieleranzeige aktualisiert.');
   return owns(o)&&intent===actions;
  }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}
@@ -113,7 +113,7 @@ export async function cuePlayerImage(kind:'location'|'npc'|'custom',subjectId:st
   const action:PlayerAction={kind:'settings',settings:{blank:false,mode:'image',imageId:asset.id,title:'',labels:latest.settings.labels,light:latest.settings.light,displayId:latest.settings.displayId,fullscreen:latest.settings.fullscreen}};
   const command:PlayerCommand={commandId:crypto.randomUUID(),token:o.token,campaignId:o.id,expectedRevision:latest.settings.revision,expectedFocusId:focus.focusId,expectedFocusRevision:focus.focusRevision,expectedFocusMembershipRevision:focus.focusMembershipRevision,expectedFocusLocationId:focus.focusLocationId,action};
   const confirmed=unwrap(await window.campaign.executePlayer(command));if(!owns(o)||intent!==actions)return false;publish(o,confirmed,request);
-  unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;await reload(o);
+  unwrap(await window.campaign.playerWindow(o.token,true));if(!owns(o)||intent!==actions)return false;
   if(owns(o)&&intent===actions)tell(kind==='location'?'Ortsbild auf der Spieleranzeige geöffnet.':kind==='npc'?'NSC-Bild auf der Spieleranzeige geöffnet.':'Handout auf der Spieleranzeige geöffnet.');
   return owns(o)&&intent===actions;
  }catch(error){if(owns(o)&&intent===actions)tell((error as Error).message,true);return false;}

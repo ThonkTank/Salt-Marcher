@@ -87,3 +87,20 @@ test('a delayed older show cannot undo a confirmed direct blank',async()=>{const
 test('live handout never publishes when its fresh view belongs to another group',async()=>{const x=await uiFixture();try{const origin={focusId:x.primary,focusRevision:0,focusMembershipRevision:x.basis().expectedFocusMembershipRevision,focusLocationId:x.basis().expectedFocusLocationId};x.focus(x.secondary);let picks=0;window.campaign.pickPlayerArt=async()=>{picks++;throw Error('Must not pick');};assert.equal(await x.ui.cuePlayerImage('custom',null,origin),false);assert.equal(picks,0);assert.equal(x.writes.length,0);}finally{x.cleanup();}});
 
 test('automatic hex search cannot adopt a changed focus without explicit review',async()=>{const x=await uiFixture();try{const original=x.el('player-target').textContent;x.focus(x.secondary);x.el('player-map-search').value='Tor';x.el('player-map-search').oninput();await until(()=>!x.el('player-feedback').hidden);assert.match(x.el('player-feedback').textContent,/Fokussierte Gruppe geändert/);assert.equal(x.el('player-target').textContent,original);assert.equal(x.writes.length,0);x.el('player-show-image').onclick();await until(()=>x.writes.length===1);await tick();assert.equal(x.writes[0].expectedFocusId,x.primary);assert.equal(x.store.currentPlayerFrame().mode,'blank');x.el('player-refresh').onclick();await until(()=>x.el('player-target').textContent.includes('Borin'));assert.doesNotMatch(x.el('player-target').textContent,/Ada/);}finally{x.cleanup();}});
+
+for(const kind of ['follow','image'])for(const fault of ['failed','pending'])test(`confirmed ${kind} cue succeeds without a ${fault} redundant preview read`,async()=>{const x=await uiFixture();try{
+ const read=window.campaign.playerView;let reads=0,opened=0;window.campaign.playerView=async(...args)=>++reads===1?read(...args):fault==='failed'?{ok:false,error:'Later preview unavailable'}:new Promise(()=>{});window.campaign.playerWindow=async()=>{opened++;return{ok:true,value:undefined};};
+ if(kind==='image')window.campaign.pickPlayerArt=async()=>({ok:true,value:pickedArt(x,randomUUID())});
+ let done=false,result;const focus=reviewedFocus(x);void(kind==='image'?x.ui.cuePlayerImage('custom',null,focus):x.ui.cuePlayer('follow',focus)).then(v=>{result=v;done=true;});
+ await until(()=>done);assert.equal(result,true);assert.equal(reads,1);assert.equal(opened,1);assert.equal(x.writes.length,1);assert.equal(x.store.playerView(x.w.token).settings.blank,false);assert.ok(x.messages.some(m=>!m.error&&/Spieleranzeige/.test(m.text)));
+}finally{x.cleanup();}});
+
+for(const kind of ['follow','image'])test(`confirmed ${kind} control uses its write response and preserves later edits`,async()=>{const x=await uiFixture();try{
+ let reads=0,opened=0;window.campaign.playerView=async()=>{reads++;return{ok:false,error:'Redundant read unavailable'};};window.campaign.playerWindow=async()=>{opened++;return{ok:true,value:undefined};};
+ x.hold();x.el(kind==='image'?'player-show-image':'player-show-follow').onclick();await until(()=>x.waiting.length===1);x.el('player-title').value='  Neuer privater Entwurf  ';x.release();await until(()=>x.messages.some(m=>!m.error&&m.text==='Spieleranzeige aktualisiert.'));
+ assert.equal(reads,0);assert.equal(opened,1);assert.equal(x.writes.length,1);assert.equal(x.el('player-title').value,'  Neuer privater Entwurf  ');assert.equal(x.store.playerView(x.w.token).settings.blank,false);assert.ok(!x.messages.some(m=>m.error));
+}finally{x.cleanup();}});
+test('a rejected image cue does not open a window or announce success',async()=>{const x=await uiFixture();try{
+ window.campaign.pickPlayerArt=async()=>({ok:true,value:pickedArt(x,randomUUID())});let opened=0;window.campaign.playerWindow=async()=>{opened++;return{ok:true,value:undefined};};window.campaign.executePlayer=async()=>({ok:false,error:'Publication rejected'});
+ assert.equal(await x.ui.cuePlayerImage('custom',null,reviewedFocus(x)),false);assert.equal(opened,0);assert.equal(x.store.playerView(x.w.token).settings.blank,true);assert.ok(x.messages.some(m=>m.error&&m.text==='Publication rejected'));
+}finally{x.cleanup();}});

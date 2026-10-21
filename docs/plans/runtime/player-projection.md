@@ -86,7 +86,11 @@ Live-Cues öffnen Ortsart, NPC-Porträts oder ein
 spontanes Handout direkt für die geprüfte Gruppe. Im geöffneten NSC-Dossier
 am Szenentisch stehen „Porträt für Spieler zeigen“ und „Anzeige leeren“ direkt
 neben den privaten Angaben. Das Zeigen verwendet den geöffneten NSC und die
-geprüfte Fokusgruppe; offene Angaben werden vor der Freigabe gesichert. Blank
+geprüfte Fokusgruppe; offene Angaben werden vor der Freigabe gesichert.
+Die bestätigte Schreibantwort aktualisiert Vorschau und Rückmeldung unmittelbar;
+ein zweiter Previewread nach der Freigabe ist dafür nicht erforderlich. Ein
+fehlgeschlagener oder hängender zusätzlicher Read darf eine bereits bestätigte
+Anzeige nicht als fehlgeschlagen melden. Blank
 wartet nicht auf diese Speicherung und widerruft einen noch offenen Bildauftrag.
 Ein ausgeblendetes Bild bleibt nach Neustart ausgeblendet, bis es erneut bewusst
 gezeigt wird. Die native Ablaufprüfung liegt in
