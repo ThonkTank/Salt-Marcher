@@ -175,6 +175,15 @@ SVG-Zwischenbild. PNG/JPEG-Bytes gehen über die vorhandene IPC-Dateigrenze.
 Ausgabegröße und Kachelung stehen bei `exportPNG`; Bereichs-/Geometriecaches
 besitzen eigene Grenzen und ersetzen keine Bild-/GPU-Speicherqualifikation.
 
+Automatische GM-Beschriftungen werden bis 1024 Pixel längster Bildkante in
+Ausgabepixeln angeordnet; darüber bleibt diese Referenzkomposition erhalten.
+Schrift, Halo, Abstände und Kollisionsprüfung verwenden denselben Maßstab und
+wachsen gemeinsam mit der Bildauflösung. Zusätzliche Pixel verkleinern dadurch
+weder Raumnamen noch ändern sie deren Platzierungsentscheidung. Geometriekacheln
+verwenden weiterhin die tatsächliche Ausgabeauflösung. Die Canvasregression
+prüft Hoch-/Querformat und konkurrierende Namen; die native Grundrissprobe
+vergleicht die tatsächlichen PNGs bei 1536 und 3072 Pixeln.
+
 GM-Ausgabe und öffentliche Datenfreigabe bleiben getrennt. Öffentliche Ausgabe
 verwendet freigegebene Sicht-/Erinnerungsprojektionen, keine aktuellen GM-Flächen
 oder GM-Raster über bloß erinnerten Hexes. Feinere öffentliche Küsten/Wege

@@ -2436,7 +2436,9 @@ export class CampaignAtlasWorkbench {
           source=publicAtlasPaint(snapshot,box,frame.value.frame);
         }
       } else {
-        const labels=new MapLabelLayout().layout([...(snapshot.region?.labels??[]),...(snapshot.region?.landscape?.labels??[])],box,box.width/width,measureMapText);
+        // Higher image resolution sharpens one composition instead of shrinking its labels.
+        const labelMpp=Math.max(box.width,box.height)/Math.min(size,1024);
+        const labels=new MapLabelLayout().layout([...(snapshot.region?.labels??[]),...(snapshot.region?.landscape?.labels??[])],box,labelMpp,measureMapText);
         source=atlasExportTiles(box,width,height,snapshot.campaignId,snapshot.revision,async(part,w,h)=>{
           const response=await window.campaign.atlasRegion(owner.token,{...exportQuery,box:part,width:w,height:h,revision:snapshot.revision,fence:snapshot.region!.fence,references},'export');if(!response.ok)return response;
           const tile=response.value,layer=tile.region.landscape;
@@ -2447,7 +2449,7 @@ export class CampaignAtlasWorkbench {
           const scene=atlasRegionPaint(tile,layer.records,part,w,assets,{automaticLabels:true,rasters:layer.tiles,grid,level,references,floorId:exportQuery.floorId,roofs:exportQuery.roofs});
           const raster=tile.region?.territoryRaster;if(raster)scene.append(shape('image',{source:raster.data,x:raster.box.x-part.x,y:raster.box.y-part.y,width:raster.box.width,height:raster.box.height,pointer:false}));
           if(tile.region?.territories)drawTerritories(scene,tile.region.territories,part,part.width/w);
-          paintMapLabels(scene,labels,part,box.width/width);
+          paintMapLabels(scene,labels,part,labelMpp);
           return{ok:true,value:{campaignId:tile.campaignId,revision:tile.revision,box:tile.region.box,width:w,height:h,scene}};
         },current,(done,total)=>{status(`Atlas wird ausgegeben: ${done}/${total}`);});
         if(references&&snapshot.region?.landscape?.coverage.mode==='raster')status('Dichte Landschaft als Übersicht; Vorlagen als Umrisse.');
