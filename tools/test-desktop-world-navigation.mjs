@@ -4,6 +4,7 @@ import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {buildHexGridProbe} from './terrain-hex-grid-probe.mjs';
 import {buildContourProbe,terrainContourPixels} from './terrain-contour-probe.mjs';
+import {buildDetailProbe,terrainDetailPixels} from './terrain-detail-probe.mjs';
 import {createRequire} from 'node:module';
 import {writeFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
@@ -32,6 +33,7 @@ store.tutorial('skipped');store.close();
 const result={radius,records:records.length+(populated?3072:0),populated,metrics:[],errors:[]};let page;
 const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
+const detailProbe=buildDetailProbe();
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  page=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
@@ -48,17 +50,20 @@ try{
  const cdp=await page.context().newCDPSession(page);await cdp.send('Profiler.enable');
  await page.evaluate(()=>{
   window.__saltTerrainTrace={events:[],dropped:0};
-  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];
+  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];
   let previous=performance.now();const frame=now=>{window.__worldFrames.push({time:now,gap:now-previous});previous=now;requestAnimationFrame(frame);};requestAnimationFrame(frame);
   new PerformanceObserver(list=>window.__worldLong.push(...list.getEntries().map(e=>({time:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:false});
   const map=document.querySelector('#campaign-map');new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision']});
+  for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:performance.now()});},true);
  });
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
  async function measure(name,fn){
-  await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];});await cdp.send('Profiler.start');
+  await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];});await cdp.send('Profiler.start');
   const start=performance.now();await fn();await wait(1000);
   const {profile}=await cdp.send('Profiler.stop');await writeFile(out+'/'+name+'.cpuprofile',JSON.stringify(profile));
-  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  const down=data.pointer.find(e=>e.type==='pointerdown'),up=data.pointer.find(e=>e.type==='pointerup');
+  if(down){const confirmed=data.changes.filter(e=>Number(e.terrain)>records.length&&e.time>=down.time);data.brushFeedback={firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
   const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),...data});
   await writeFile(out+'/progress.json',JSON.stringify(result,null,2));console.log(name,JSON.stringify({p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),longTasks:data.longTasks.length}));
  }
@@ -80,5 +85,6 @@ try{
  result.hexPixels=await page.evaluate('(()=>{'+hexProbe+';return HexGridProbe.run();})()');
  assert.equal(result.hexPixels.centreMin,255);assert(result.hexPixels.edgeMax<250);assert(result.hexPixels.periodicError<=1);assert(result.hexPixels.tileError<=1);assert.equal(result.hexPixels.hiddenMin,255);assert.equal(result.hexPixels.gridObjects,0);
  result.contourPixels=await terrainContourPixels(page,contourProbe);
+ result.detailPixels=await terrainDetailPixels(page,detailProbe);
  assert.deepEqual(result.errors,[]);await native.close();await native.finish(result);
 }catch(error){await writeFile(out+'/progress.json',JSON.stringify(result,null,2));await native.fail(error);throw error;}finally{await native.dispose();}

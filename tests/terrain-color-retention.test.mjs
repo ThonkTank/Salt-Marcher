@@ -2,8 +2,8 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-detail-retention';export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {fillTerrainDetail,TerrainChangeHistory,TerrainDetailTiles,terrainColorIdentity,terrainDetailTiles,validateTerrainProjection}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-detail-retention';export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';export * from './src/app/terrain-detail';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {TerrainChangeHistory,TerrainDetailTiles,terrainColorIdentity,terrainDetailTiles,validateTerrainProjection,terrainDetailBox}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
 const source=revision=>({revision,fence:'f'+revision,token:'campaign',rasterRouteKey:'null'});
 const identity=revision=>({revision,fence:'f'+revision});
 const change=(base,bounds=[],reset=false)=>({base:identity(base),invalidation:{bounds,reset}});
@@ -56,17 +56,6 @@ test('a pending old tile cannot fill the rebased cache even if its caller still 
  let reads=0;await tiles.load(terrainColorIdentity(source(2)),box,{...identity(2),contours:0,routeContext:box},async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4)};},()=>true,()=>{});
  assert.equal(reads,terrainDetailTiles(box).tiles.length);
 });
-test('fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded',async()=>{
- const {tiles,load,reads}=await loaded(),before=tiles.detail,count=reads();
- const fresh={box:{x:0,y:0,width:128,height:64},width:32,height:16,pixels:new Uint8Array(32*16*4)};
- for(let i=0;i<fresh.pixels.length;i+=4)fresh.pixels.set([23,45,67,255],i);
- const detail=tiles.reconcile(source(2),change(1,[{x:65,y:30,width:1,height:1}]),fresh);
- assert.deepEqual([...detail.pixels.slice((120*detail.width+120)*4,(120*detail.width+120)*4+4)],[23,45,67,255]);
- assert.equal(detail.pixels[(800*detail.width+800)*4],255,'unaffected fine colour remains original');
- assert.equal(before.pixels[(120*detail.width+120)*4],255,'the prior frame is immutable');
- assert(detail.coverage.values.every(v=>v===255),'complete current brush pixels are immediately visible');
- await load(2);assert.equal(reads()-count,2,'coarser live pixels cannot masquerade as cached fine tiles');
-});
 test('the projection colour base accepts only a concrete source identity',()=>{
  const q={view:{box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1},width:64,height:64,contours:0,displayMpp:1,revision:2};
  validateTerrainProjection({...q,colorBase:identity(1)});
@@ -74,12 +63,16 @@ test('the projection colour base accepts only a concrete source identity',()=>{
 });
 
 
-test('coarse brush pixels use linear sampling with clamped edges, including negative world origins',()=>{
- const area={x:-10,y:-20,width:4,height:4};
- const fresh={box:area,width:2,height:2,pixels:new Uint8Array([0,0,0,255,200,0,0,255,0,200,0,255,200,200,0,255])};
- const target={box:area,width:4,height:4,pixels:new Uint8Array(64)},result=fillTerrainDetail(target,fresh);
- const pixel=(x,y)=>[...result.pixels.slice((y*4+x)*4,(y*4+x+1)*4)];
- assert.deepEqual(pixel(0,0),[0,0,0,255]);assert.deepEqual(pixel(1,1),[50,50,0,255]);
- assert.deepEqual(pixel(2,2),[150,150,0,255]);assert.deepEqual(pixel(3,3),[200,200,0,255]);
- assert(target.pixels.every(v=>v===0));assert.equal(fillTerrainDetail(result,fresh),result,'already current pixels are never resampled');
+test('live brush patches cover the full disc inside their unfaded interior without continent-sized padding',()=>{
+ for(const radius of [0.01,8,257,4023360])for(const factor of [-3.4,-.5,0,.24,.5,1.5]){
+  const point={x:factor*radius,y:-factor*radius},view={x:-100*radius,y:-100*radius,width:200*radius,height:200*radius};
+  const b=terrainDetailBox(point,radius,view);
+  assert(b.width<=3*radius&&b.height<=3*radius,'rasterized area is bounded by brush size');
+  assert(b.x+b.width*.04<=point.x-radius);assert(b.x+b.width*.96>=point.x+radius);
+  assert(b.y+b.height*.04<=point.y-radius);assert(b.y+b.height*.96>=point.y+radius);
+  assert.deepEqual(terrainDetailBox(point,radius,view),b);
+ }
+ const edge=terrainDetailBox({x:0,y:0},8,{x:0,y:0,width:10,height:10});
+ assert.deepEqual(edge,{x:0,y:0,width:10,height:10});
+ assert.equal(terrainDetailBox({x:100,y:100},8,{x:0,y:0,width:10,height:10}),undefined);
 });

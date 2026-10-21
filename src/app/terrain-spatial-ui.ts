@@ -120,10 +120,10 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   presentLive(data:import('./terrain-projection').TerrainProjection){
     if(!this.active)return;
-    const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange,data.detail);
+    const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange);
     this.colorTiles.detail=detail;
     // The retained image has different tile rectangles from the live brush patch.
-    this.baseline={...data,detail,update:data.update?{...data.update,detail:undefined}:undefined,source:this.source};this.publish(this.baseline);
+    this.baseline={...data,detail,brushDetail:data.detail,update:data.update?{...data.update,detail:undefined}:undefined,source:this.source};this.publish(this.baseline);
   }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setContours(interval:number){this.pendingContours=interval;this.view?.setContours(interval);}
