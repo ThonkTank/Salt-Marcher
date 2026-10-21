@@ -13,6 +13,7 @@ Für schreibende Vorlagen, Tabellen und Generatoren: [Encounterplanung](encounte
 | --- | --- |
 | Monsterquery, Detail, Quellenmetadaten | [catalog-ui.ts](../../../src/app/catalog-ui.ts), [encounters.ts](../../../src/app/storage/encounters.ts), [CreatureCatalog](../../../src/features/catalog/creature-catalog.ts); [Query-/Kontexttests](../../../tests/desktop-catalog-query-context.test.mjs) |
 | SRD-Itemquelle und Inhaltswechsel | [item-reference.ts](../../../src/app/storage/item-reference.ts), [item-reference-ui.ts](../../../src/app/item-reference-ui.ts); [Provider-/DOMtests](../../../tests/desktop-item-reference.test.mjs), [native Auswahlprobe](../../../tools/test-desktop-item-selection.mjs) |
+| Eigene Gegenstandsdefinition: Auswahl, Speichern, Antwortklärung | [items-ui.ts](../../../src/app/items-ui.ts): `selectDefinition`, `flushDrafts`, `recoveredItems`; [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop`; [Auswahl-/Schreibtests](../../../tests/desktop-item-selection.test.mjs) |
 | Gemeinsame Filter im Generator | [generation-ui.ts](../../../src/app/generation-ui.ts); [Generierungskontext](../../../tests/desktop-generation-context.test.mjs) |
 
 Obsidian-Catalogviewtests qualifizieren den Desktopcontroller nicht automatisch.
@@ -76,13 +77,16 @@ normalen Weg wieder frei, ohne neue Persistenz.
 
 Eigene Definitionen werden in „Gegenstände und Shops“ bearbeitet. Die öffentliche
 SRD-Referenz bleibt read-only; eine eigene Kopie besitzt ihre eigene Identität.
-`item-definition-validation.ts` enthält die gemeinsame Strukturprüfung und die
-Konstruktion des nächsten eigenen Definitionsstands. Renderer und Writer verwenden
+[item-definition-validation.ts](../../../src/app/item-definition-validation.ts)
+enthält die gemeinsame Strukturprüfung und die Konstruktion des nächsten eigenen
+Definitionsstands. Renderer und Writer verwenden
 denselben reinen Code. Ein leerer Name oder eine Beschreibung über 100.000 Zeichen
 bleibt vor Prüfsumme, Buchungsmarker und IPC im bisherigen Editor korrigierbar.
-Der Writer prüft weiterhin aktuellen Stand, SRD-Schreibschutz und historische
-Versionen innerhalb seiner Transaktion. Keine Migration oder Änderung vorhandener
-Definitionsbytes; gültige Korrekturen nutzen die bestehende Buchungsbestätigung.
+[saveItemDefinition](../../../src/app/storage/item-definitions.ts) prüft aktuellen
+Stand, SRD-Schreibschutz und historische Versionen innerhalb der Transaktion.
+Keine Migration oder Änderung vorhandener
+Definitionsbytes; gültige Korrekturen nutzen die bestehende
+[Buchungsbestätigung](../../../ARCHITECTURE.md#buchungsantworten-klären).
 
 `desktop-item-selection.test.mjs` prüft frühe Ablehnung ohne Buchungsbeginn und
 DBänderung, genau eine korrigierte Buchung sowie einen gültigen Entwurf bei
