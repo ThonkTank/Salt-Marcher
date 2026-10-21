@@ -103,3 +103,9 @@ test('Expensive anchor visibility runs after collision rejection without reservi
  const result=new MapLabelLayout().layout(candidates,box,1,measure,undefined,false,()=>projected({x:400,y:300}),c=>{calls++;return c.id!=='0';});
  assert.equal(result.length,1);assert.notEqual(result[0].candidate.id,'0');assert.equal(calls,2);
 });
+
+test('Prefetched line names still obey physical line readability and selected exceptions',()=>{
+ const candidate={...label('thin',{x:0,y:0},5),maxMpp:2.5},layout=new MapLabelLayout();
+ const at=(mpp,selected)=>layout.layout([candidate],box,1,measure,selected,false,()=>projected({x:400,y:300},mpp));
+ assert.equal(at(4).length,0);assert(at(2).length===1);assert.equal(at(4,'thin')[0].opacity,1);
+});

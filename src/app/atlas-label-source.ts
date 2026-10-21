@@ -18,6 +18,8 @@ export interface MapLabelCandidate {
   angle?: number;
   available?: number;
   height?: number;
+  /** Physical line readability can be stricter than name prominence. */
+  maxMpp?: number;
   locationId?: string;
 }
 

@@ -1,3 +1,4 @@
+import { mapLineThreshold } from "./atlas-scale-policy";
 import type { MapLabelStyle } from "./map-label-style";
 import { atlasPaint, type AtlasPaint, type PaintStyle } from "./atlas-paint";
 import type { Point, Polygon } from "./contracts";
@@ -216,7 +217,15 @@ export function landscapeLabels(
       linePoints(r),
       r.width >= 100 ? 4 : r.width >= 20 ? 3 : r.width >= 5 ? 2 : 1,
       box,
-    );
+    ).map((c) => ({
+      ...c,
+      maxMpp:
+        r.width /
+        mapLineThreshold(
+          r.kind === "river" ? "river" : "road",
+          r.style === "path" || r.style === "stream",
+        ),
+    }));
   if (r.kind === "patch" && r.surface === "freshwater" && r.name) {
     const c = labelFromPolygon("water:" + r.id, r.name, "area", r.polygons, 3);
     if (c) labels = [c];
@@ -412,11 +421,9 @@ export class MapLabelLayout {
           (c.height === undefined ? undefined : c.height / localMpp);
       const was = this.previous.has(c.id),
         isSelected = important(c),
-        font = mapLabelFont(c);
-      if (
-        !isSelected &&
-        localMpp > labelScaleLimits[c.rank]! * (projected || was ? 1.15 : 1)
-      )
+        font = mapLabelFont(c),
+        scaleLimit = Math.min(labelScaleLimits[c.rank]!, c.maxMpp ?? Infinity);
+      if (!isSelected && localMpp > scaleLimit * (projected || was ? 1.15 : 1))
         continue;
       const width = measure(c.text, font) + 8,
         height = font + 6;
@@ -498,7 +505,7 @@ export class MapLabelLayout {
         };
         const scaleOpacity =
           projected && !isSelected
-            ? ease((1.15 - localMpp / labelScaleLimits[c.rank]!) / 0.3) *
+            ? ease((1.15 - localMpp / scaleLimit) / 0.3) *
               (available === undefined
                 ? 1
                 : ease((available / width - 0.9) / 0.2))
