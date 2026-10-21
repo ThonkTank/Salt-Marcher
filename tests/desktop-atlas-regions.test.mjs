@@ -293,3 +293,85 @@ test('the empty initial drawing keeps its author frame without inventing a map l
  f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'room-create',scopeId:'local',floorId:'ground',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:3,y:0},{x:3,y:3},{x:0,y:3}],holes:[]}]}});
  const coarse=await f.read(query({x:-5000,y:-5000,width:10000,height:10000}));assert(coarse.labels.some(l=>l.id==='scope:local'));assert(f.reader.candidatesAt(f.source,query({x:-5000,y:-5000,width:10000,height:10000}),{x:1.5,y:1.5},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
 });
+
+test('rejected writes preserve published frames and search cursors; corrected drafts commit without reloading',async t=>{
+ const f=fixture(t,3),token=f.shell.token,cam=f.campaign.id;
+ const write=(action,sourceFence)=>f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,sourceFence,action});
+ for(const id of ['road-a','road-b'])write({kind:'landscape-put',record:road(id),expectedRevision:null});
+ const before=['road-a','road-b'].map(id=>f.store.atlasLandscapeObject(token,id));
+ const region=await f.read(),source=f.source,roomSource=f.store.roomReadSource(token),q={kind:'room',text:'',limit:1},page=f.store.atlasObjects(token,q);
+ const root=f.store.atlasIdentity(token),receipts=f.store.db.prepare('SELECT count(*) n FROM atlas_receipt').get().n;
+ const stable=()=>{
+  assert.equal(f.store.atlasRegionSource(token).fence,source.fence);
+  assert.equal(f.store.roomReadSource(token).fence,roomSource.fence);
+  assert.equal(f.store.atlasObjects(token,{...q,cursor:page.next}).items.length,1);
+  assert.doesNotThrow(()=>f.store.atlasRegionView(token,region));
+  assert.deepEqual(['road-a','road-b'].map(id=>f.store.atlasLandscapeObject(token,id)),before);
+  assert.deepEqual(f.store.atlasIdentity(token),root);
+  assert.equal(f.store.db.prepare('SELECT count(*) n FROM atlas_receipt').get().n,receipts);
+ };
+ assert.throws(()=>write({kind:'landscape-put',record:{...before[0],width:-2},expectedRevision:before[0].revision},source.fence));stable();
+ // The first member really writes before the second member aborts the transaction.
+ assert.throws(()=>write({kind:'landscape-batch',records:[{record:{...before[0],width:6},expectedRevision:before[0].revision},{record:before[1],expectedRevision:0}]},source.fence),/inzwischen/);stable();
+ f.store.db.exec('CREATE TEMP TABLE source_scratch(x);INSERT INTO source_scratch VALUES(1);DROP TABLE source_scratch');stable();
+ const command={commandId:randomUUID(),token,campaignId:cam,sourceFence:source.fence,action:{kind:'landscape-put',record:{...before[0],width:6},expectedRevision:before[0].revision}};
+ const ack=f.store.executeAtlasCommit(command);assert.equal(f.store.atlasLandscapeObject(token,'road-a').width,6);
+ assert.notEqual(f.store.atlasRegionSource(token).fence,source.fence);
+ assert.throws(()=>f.store.atlasObjects(token,{...q,cursor:page.next}),/inzwischen/);
+ assert.throws(()=>f.store.atlasRegionView(token,region),/inzwischen/);
+ assert.equal(f.store.executeAtlasCommit(command).revision,ack.revision,'exact receipt replay survives its own commit');
+});
+
+test('source fences cover committed metadata outside the spatial journal and external connections',t=>{
+ const f=fixture(t,2),token=f.shell.token,q={kind:'room',text:'',limit:1};
+ for(const external of [false,true]){
+  const source=f.store.atlasRegionSource(token),rooms=f.store.roomReadSource(token),page=f.store.atlasObjects(token,q),db=external?new Database(f.store.filename):f.store.db;
+  try{
+   assert.throws(()=>db.transaction(()=>{db.prepare('UPDATE campaign SET name=? WHERE id=?').run('rollback',f.campaign.id);throw Error('rollback');})(),/rollback/);
+   assert.equal(f.store.atlasRegionSource(token).fence,source.fence);assert.equal(f.store.roomReadSource(token).fence,rooms.fence);
+   db.prepare('UPDATE campaign SET name=? WHERE id=?').run('Committed '+external,f.campaign.id);
+  }finally{if(external)db.close();}
+  assert.notEqual(f.store.atlasRegionSource(token).fence,source.fence);assert.notEqual(f.store.roomReadSource(token).fence,rooms.fence);
+  assert.throws(()=>f.store.atlasObjects(token,{...q,cursor:page.next}),/inzwischen/);
+ }
+});
+
+test('graph preview source revisions survive rollback and release observers on restore, accept and close',t=>{
+ const f=fixture(t,2),token=f.shell.token,command=kind=>({commandId:randomUUID(),token,campaignId:f.campaign.id,scopeId:'local',action:{kind}});
+ for(const finish of ['restore','accept']){
+  f.store.executeGraph(command('raster'));const source=f.store.atlasRegionSource(token),shadow=f.store.graphShadow.db;
+  assert.throws(()=>shadow.transaction(()=>{shadow.prepare('UPDATE room SET name=? WHERE id=?').run('rollback','r0');throw Error('rollback');})(),/rollback/);
+  assert.equal(f.store.atlasRegionSource(token).fence,source.fence);
+  shadow.prepare('UPDATE room SET name=? WHERE id=?').run('preview','r0');assert.notEqual(f.store.atlasRegionSource(token).fence,source.fence);
+  const observer=f.store.committedSources.readers.get(shadow).db;
+  f.store.executeGraph(command(finish));assert.equal(observer.open,false);assert.equal(shadow.open,false);
+ }
+ const observer=f.store.committedSources.readers.get(f.store.db).db;
+ f.store.committedSources.close();assert.equal(observer.open,false);
+});
+
+test('external commits during a source or search read cannot label an old snapshot as current',t=>{
+ const f=fixture(t,3),token=f.shell.token,external=new Database(f.store.filename);t.after(()=>external.close());
+ for(const target of ['source','search']){
+  f.store.atlasRegionSource(token);const prepare=f.store.db.prepare.bind(f.store.db);let changed=false;
+  f.store.db.prepare=sql=>{
+   const statement=prepare(sql);
+   if(!changed&&sql.startsWith(target==='source'?'SELECT coalesce(min(sequence)':'SELECT r.id,r.name,r.number')){
+    changed=true;external.prepare('UPDATE room SET name=? WHERE id=?').run('external '+target,'r0');
+   }
+   return statement;
+  };
+  try{assert.throws(()=>target==='source'?f.store.atlasRegionSource(token):f.store.atlasObjects(token,{kind:'room',text:'',limit:1}),/inzwischen geändert/);assert(changed);}
+  finally{f.store.db.prepare=prepare;}
+ }
+});
+
+test('closing the Store closes main and active graph source observers',()=>{
+ const dir=mkdtempSync(tmpdir()+'/source-lifecycle-'),store=new CampaignStore(dir+'/campaign.sqlite');
+ try{
+  const cam=store.create('Lifecycle',[room(0)]),w=store.activateShell(cam.id);
+  store.executeGraph({commandId:randomUUID(),token:w.token,campaignId:cam.id,scopeId:'local',action:{kind:'raster'}});
+  store.atlasRegionSource(w.token);const readers=[...store.committedSources.readers.values()].map(r=>r.db);assert.equal(readers.length,2);
+  store.close();assert(readers.every(db=>!db.open));
+ }finally{if(store.db.open)store.close();rmSync(dir,{recursive:true,force:true});}
+});

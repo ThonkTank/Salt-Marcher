@@ -10,6 +10,7 @@ import {noteMergeWork} from './note-merge';
 import {REGION_ACTIVE_BYTES} from '../atlas-region-contracts';
 import {readAtlasScene} from './world';
 import {atlasReadChanges} from './atlas-read-journal';
+import {CommittedSources} from './committed-sources';
 import type {AtlasRegionGeometry,AtlasRegionSource,AtlasRegionView} from '../atlas-region-contracts';
 import {drawingElement,drawingRoom} from './drawing';
 import {dungeonMapView} from './dungeon-play';
@@ -159,6 +160,7 @@ function snapshotDigest(filename:string){const fd=openSnapshot(filename,'r'),has
 export class CampaignStore {
   private chronicleRead:ChronicleReadSession|null=null;
   private db: any;
+  private committedSources=new CommittedSources();
   private shellFirstRoom=new WeakMap<object,{campaignId:string;stamp:string;id:string|null}>();
   private graphShadow:GraphShadow|null=null;
   private graphRouting=false;
@@ -342,14 +344,17 @@ export class CampaignStore {
   atlasObjects(token:string,q:import('../campaign-atlas-contracts').AtlasObjectQuery):import('../campaign-atlas-contracts').AtlasObjectPage {
     const cam=this.guard(token);
     if(!q||!['room','city','landscape','scope'].includes(q.kind)||typeof q.text!=='string'||q.text.length>200||!Number.isSafeInteger(q.limit)||q.limit<1||q.limit>200)throw new Error('Atlassuche prüfen.');
-    return this.db.transaction(()=>{
-      const revision=atlasRoot(this.db,cam).revision,c=q.cursor,fence=this.db.prepare('SELECT total_changes() changes').get().changes; // includes metadata edits outside Atlas commands
+    const fence=this.committedSources.version(this.db);
+    const page=this.db.transaction(()=>{
+      const revision=atlasRoot(this.db,cam).revision,c=q.cursor;
       if(c&&(c.token!==token||c.fence!==fence||!Number.isSafeInteger(c.revision)||c.revision!==revision||c.kind!==q.kind||c.text!==q.text||typeof c.after!=='string'))throw new Error('Atlassuche inzwischen geändert. Suche erneut beginnen.');
       const text=q.text.normalize('NFC').toLocaleLowerCase('de'), room=q.kind==='room';
       const sql=q.kind==='scope'?`SELECT id,name,0 revision FROM scope WHERE campaign_id=? AND id>? AND instr(atlas_lower(name),?)>0 ORDER BY id LIMIT ?`:q.kind==='landscape'?`SELECT a.id,a.revision,coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name')) name FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.id>? AND json_extract(a.payload,'$.kind')!='patch' AND coalesce(l.trashed,0)=0 AND instr(atlas_lower(coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name'))),?)>0 ORDER BY a.id LIMIT ?`:room?`SELECT r.id,r.name,r.number,r.revision,r.scope_id scopeId,r.floor_id floorId FROM room r WHERE r.campaign_id=? AND r.id>? AND instr(atlas_lower(r.name||' '||r.number),?)>0 AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY r.id LIMIT ?`:`SELECT id,json_extract(payload,'$.name') name,revision FROM city_document WHERE campaign_id=? AND id>? AND instr(atlas_lower(json_extract(payload,'$.name')),?)>0 ORDER BY id LIMIT ?`;
       const items=this.db.prepare(sql).all(cam,c?.after??'',text,q.limit+1),more=items.length>q.limit;items.length=Math.min(q.limit,items.length);
       return{campaignId:cam,token,revision,items,next:more?{token,fence,revision,after:items.at(-1)!.id,kind:q.kind,text:q.text}:null};
     })();
+    if(this.committedSources.version(this.db)!==fence)throw new Error('Atlassuche inzwischen geändert. Suche erneut beginnen.');
+    return page;
   }
   atlasLandscapeObject(token:string,id:string):import('../atlas-landscape').LandscapeRecord {
     const cam=this.guard(token);
@@ -382,11 +387,14 @@ export class CampaignStore {
     return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
   }
   atlasRegionSource(token:string,cursor?:import('../atlas-region-contracts').AtlasRegionCursor):AtlasRegionSource {
-    const campaignId=this.guard(token),changes=atlasReadChanges(this.db,campaignId,cursor),preview=this.graphShadow;
+    const campaignId=this.guard(token),preview=this.graphShadow,version=this.committedSources.version(this.db),shadowVersion=preview?this.committedSources.version(preview.db):undefined;
+    const changes=atlasReadChanges(this.db,campaignId,cursor);
     const shadowChanges=preview?atlasReadChanges(preview.db,campaignId,cursor?.shadow):undefined;
     const shadow=preview&&shadowChanges?{filename:preview.db.name,scopeId:preview.scopeId,epoch:shadowChanges.epoch,sequence:shadowChanges.sequence}:undefined;
-    const fingerprint=[this.db.name,this.db.prepare('SELECT total_changes() n').get().n,changes.epoch,changes.sequence,shadow,preview?.db.prepare('SELECT total_changes() n').get().n,preview?.state()];
-    return{filename:this.db.name,campaignId,token,...changes,shadow,reset:changes.reset||!!shadowChanges?.reset,changes:[...changes.changes,...(shadowChanges?.changes??[])],fence:hash(JSON.stringify(fingerprint)),revision:atlasRoot(this.db,campaignId).revision};
+    const fingerprint=[this.db.name,version,changes.epoch,changes.sequence,shadow,shadowVersion,preview?.state()];
+    const revision=atlasRoot(this.db,campaignId).revision;
+    if(this.committedSources.version(this.db)!==version||preview&&this.committedSources.version(preview.db)!==shadowVersion)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
+    return{filename:this.db.name,campaignId,token,...changes,shadow,reset:changes.reset||!!shadowChanges?.reset,changes:[...changes.changes,...(shadowChanges?.changes??[])],fence:hash(JSON.stringify(fingerprint)),revision};
   }
   atlasCitySite(token:string,cityId:string,id?:string):import('../atlas-region-contracts').AtlasCitySite{return this.db.transaction(()=>{
     const cam=this.guard(token),site=id?readCitySite(this.db,cam,cityId,id):{header:readCityHeader(this.db,cam,cityId),unit:null};
@@ -561,7 +569,7 @@ export class CampaignStore {
   extensions(after:string|null){return this.extensionRegistry.list(after);}
   executeExtension(command:ExtensionCommand){return this.extensionRegistry.execute(command);}
   extensionOutcome(command:ExtensionCommand){return this.extensionRegistry.outcome(command);}
-  close() {this.chronicleRead?.close();this.chronicleRead=null; this.extensionRegistry.dispose();this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
+  close() {this.chronicleRead?.close();this.chronicleRead=null; this.extensionRegistry.dispose();this.committedSources.close();this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
   list(): { campaigns: Campaign[]; activeId: string | null } {
     return { campaigns: this.db.prepare('SELECT c.id,c.name,c.revision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE l.trashed=0 ORDER BY c.name,c.id').all(), activeId: this.db.prepare("SELECT value FROM settings WHERE key='active'").get()?.value ?? null };
   }
@@ -698,6 +706,7 @@ export class CampaignStore {
       const valid=this.db.prepare(`SELECT r.id FROM room r WHERE ${visibleRoomWhere} AND r.id=?`).get(campaignId,campaign.selected_id);
       let first=valid;
       if(!first){
+        // This internal cache also runs inside write transactions and must see uncommitted edits.
         const stamp=JSON.stringify([this.db.prepare('SELECT total_changes() n').get().n,this.db.pragma('data_version',{simple:true})]),cached=this.shellFirstRoom.get(this.db);
         if(cached?.campaignId===campaignId&&cached.stamp===stamp)first=cached.id?{id:cached.id}:null;
         else{for(const row of this.db.prepare(`SELECT r.id,r.number FROM room r WHERE ${visibleRoomWhere}`).iterate(campaignId))if(!first||roomOrder(row,first)<0)first=row;this.shellFirstRoom.set(this.db,{campaignId,stamp,id:first?.id??null});}
@@ -715,7 +724,7 @@ export class CampaignStore {
   roomReadSource(token:string,q?:RoomDirectoryQuery):{filename:string;campaignId:string;token:string;fence:string}{
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.roomReadSource(token,q));
     const campaignId=this.guard(token),filename=this.db.name;
-    const fence=hash(JSON.stringify([filename,this.db.prepare('SELECT total_changes() n').get().n,this.graphShadow?.state()??null]));
+    const fence=hash(JSON.stringify([filename,this.committedSources.version(this.db),this.graphShadow?.state()??null]));
     if(q){roomDirectoryQuery(q);if(q.cursor&&(q.cursor.token!==token||q.cursor.fence!==fence))throw new Error('Raumsuche inzwischen geändert. Suche erneut beginnen.');}
     return{filename,campaignId,token,fence};
   }
@@ -1110,8 +1119,8 @@ export class CampaignStore {
   graph(token:string,scopeId:string):GraphView{const cam=this.guard(token);if(this.graphShadow&&(this.graphShadow.campaignId!==cam||this.graphShadow.scopeId!==scopeId))throw new Error('Zuerst die offene Graphvorschau übernehmen oder wiederherstellen.');const view=graphView(this.graphShadow?.db??this.db,cam,scopeId,this.graphShadow?.state()??null);return{...view,budget:dungeonBudgetView(this.db,cam,scopeId,view)};}
   executeGraph(c:GraphCommand):{workspace:Workspace;view:GraphView}{const cam=this.guard(c.token,c.campaignId);if(this.graphShadow&&(this.graphShadow.campaignId!==cam||this.graphShadow.scopeId!==c.scopeId))throw new Error('Eine Dungeonvorschau gleichzeitig bearbeiten.');const a=c.action;
     if(a.kind==='select'){this.select(c.token,a.roomId);return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
-    if(a.kind==='restore'){this.graphShadow?.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
-    if(a.kind==='accept'){const shadow=this.graphShadow;if(!shadow||shadow.phase!=='raster')throw new Error('Zur Rastervorschau wechseln, dort korrigieren und anschließend übernehmen.');const changes=shadow.changes(),selected=shadow.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id;this.db.transaction(()=>{if(changes.length)executeDrawing(this.db,{commandId:c.commandId,token:c.token,campaignId:cam,action:{kind:'graph-commit',changes}},()=>{this.guard(c.token,cam);});if(selected&&selected!==this.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id)this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(selected,cam);}).immediate();shadow.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
+    if(a.kind==='restore'){if(this.graphShadow)this.committedSources.forget(this.graphShadow.db);this.graphShadow?.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
+    if(a.kind==='accept'){const shadow=this.graphShadow;if(!shadow||shadow.phase!=='raster')throw new Error('Zur Rastervorschau wechseln, dort korrigieren und anschließend übernehmen.');const changes=shadow.changes(),selected=shadow.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id;this.db.transaction(()=>{if(changes.length)executeDrawing(this.db,{commandId:c.commandId,token:c.token,campaignId:cam,action:{kind:'graph-commit',changes}},()=>{this.guard(c.token,cam);});if(selected&&selected!==this.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id)this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(selected,cam);}).immediate();this.committedSources.forget(shadow.db);shadow.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
     if(!this.graphShadow)this.graphShadow=new GraphShadow(this.db,cam,c.scopeId);const shadow=this.graphShadow;
     const draw=(action:DrawingCommand['action'])=>this.withGraph(()=>{executeDrawing(this.db,{commandId:randomUUID(),token:c.token,campaignId:cam,action},()=>{this.guard(c.token,cam);});});
     const saveLayout=(layout:import('../graph-contracts').GraphLayout)=>{const current=shadow.db.prepare('SELECT revision FROM dungeon_graph_layout WHERE campaign_id=? AND id=?').get(cam,c.scopeId);draw({kind:'graph-layout',layout,expectedRevision:current?.revision??null});};
