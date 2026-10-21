@@ -41,12 +41,20 @@ export async function atlasCameraLabelPixels(page,out){
    const denseRoot=atlasPaint('group');denseRoot.mapLabels={candidates:Array.from({length:1200},(_,i)=>({id:'dense'+i,text:'Ort '+i,kind:'place',rank:3,point:{x:(i%40-20)*20,y:(Math.floor(i/40)-15)*20}}))};
    const denseScene=new AtlasCanvasScene(denseRoot);view.publish(denseScene,{x:0,y:0},new Map());sample(800,45,0);
    const timings=[];for(let i=0;i<30;i++){const start=performance.now();sample(800,45,i*.2);timings.push(performance.now()-start);}timings.sort((a,b)=>a-b);
-   const dense={candidates:1200,visible:sample(800,45,6).filter(r=>r.visible).length,medianMs:timings[15],p95Ms:timings[28]};denseScene.dispose();
+   const dense={candidates:1200,visible:sample(800,45,6).filter(r=>r.visible).length,medianMs:timings[15],p95Ms:timings[28]};
+   const frames=[],layouts=[],update=view.labels.update.bind(view.labels);view.labels.update=(...args)=>{const start=performance.now();update(...args);layouts.push(performance.now()-start);};
+   for(let i=0;i<30;i++){const start=performance.now();view.reframe({x:-400,y:-300,width:800,height:600},45,6+i*.2);frames.push(performance.now()-start);}frames.sort((a,b)=>a-b);layouts.sort((a,b)=>a-b);
+   dense.frameMedianMs=frames[15];dense.frameP95Ms=frames[28];dense.layoutMedianMs=layouts[Math.floor(layouts.length/2)];dense.layoutP95Ms=layouts[Math.floor(layouts.length*.95)];denseScene.dispose();
    hiddenScene.dispose();second.dispose();return {near,closer,far,tilted,retained,mismatch,ink,screenshot,clear,blocked,highDpi,dense};
   }finally{compiled.dispose();view.dispose();canvas.remove();}
  }
  `},bundle:true,format:'iife',globalName:'CameraLabelProbe',write:false}).outputFiles[0].text;
- const result=await page.evaluate(`(()=>{${source}\nreturn CameraLabelProbe.run();})()`);
+ const profiler=process.env.LABEL_CPU_PROFILE==='1'?await page.context().newCDPSession(page):null;
+ if(profiler){await profiler.send('Profiler.enable');await profiler.send('Profiler.start');}
+ let result;
+ try{result=await page.evaluate(`(()=>{${source}\nreturn CameraLabelProbe.run();})()`);}
+ finally{if(profiler){const {profile}=await profiler.send('Profiler.stop');await writeFile(out+'/labels.cpuprofile',JSON.stringify(profile));await profiler.detach();}}
+
  await writeFile(out+'/label-camera.png',Buffer.from(result.screenshot.split(',')[1],'base64'));delete result.screenshot;
  await writeFile(out+'/label-camera-result.json',JSON.stringify(result,null,2));
  const at=(rows,id)=>rows.find(r=>r.id===id);

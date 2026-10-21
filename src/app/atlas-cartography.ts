@@ -1,3 +1,7 @@
+import {
+  MapLabelCollisions,
+  type MapLabelRect as Rect,
+} from "./map-label-collisions";
 import { mapLineThreshold } from "./atlas-scale-policy";
 import type { MapLabelStyle } from "./map-label-style";
 import { atlasPaint, type AtlasPaint, type PaintStyle } from "./atlas-paint";
@@ -337,7 +341,6 @@ export function drawTerritories(
             }
       }
 }
-type Rect = { x: number; y: number; w: number; h: number };
 export interface PlacedMapLabel {
   candidate: MapLabelCandidate;
   point: Point;
@@ -370,21 +373,11 @@ export class MapLabelLayout {
     const now = performance.now();
     this.animating = false;
     const placed: PlacedMapLabel[] = [],
-      occupied = new Map<string, Rect[]>(),
+      occupied = new MapLabelCollisions(box.width / mpp),
       next = new Map<string, number>(),
       locations = new Set<string>(),
       objects = new Set<string>();
-    const keys = (r: Rect) => {
-      const out: string[] = [];
-      for (let x = Math.floor(r.x / 64); x <= Math.floor((r.x + r.w) / 64); x++)
-        for (
-          let y = Math.floor(r.y / 64);
-          y <= Math.floor((r.y + r.h) / 64);
-          y++
-        )
-          out.push(x + "," + y);
-      return out;
-    };
+    const rect: Rect = { x: 0, y: 0, w: 0, h: 0 };
     const important = (c: MapLabelCandidate) =>
       selected !== undefined && (c.id === selected || c.objectId === selected);
     const kindPriority: Record<MapLabelKind, number> = {
@@ -453,24 +446,22 @@ export class MapLabelLayout {
           ...(first === undefined ? [] : [first]),
           ...options.map((_, i) => i).filter((i) => i !== first),
         ];
+      const angle = projected?.angle ?? c.angle ?? 0,
+        w =
+          Math.abs(Math.cos(angle)) * width +
+          Math.abs(Math.sin(angle)) * height,
+        h =
+          Math.abs(Math.sin(angle)) * width +
+          Math.abs(Math.cos(angle)) * height;
       for (const index of order) {
         const [dx, dy] = options[index]!,
-          p = projected
-            ? { x: projected.point.x + dx!, y: projected.point.y + dy! }
-            : { x: c.point.x + dx! * mpp, y: c.point.y + dy! * mpp },
-          angle = projected?.angle ?? c.angle ?? 0,
-          w =
-            Math.abs(Math.cos(angle)) * width +
-            Math.abs(Math.sin(angle)) * height,
-          h =
-            Math.abs(Math.sin(angle)) * width +
-            Math.abs(Math.cos(angle)) * height,
-          r = {
-            x: (projected ? p.x : (p.x - box.x) / mpp) - w / 2,
-            y: (projected ? p.y : (p.y - box.y) / mpp) - h / 2,
-            w,
-            h,
-          };
+          px = projected ? projected.point.x + dx! : c.point.x + dx! * mpp,
+          py = projected ? projected.point.y + dy! : c.point.y + dy! * mpp,
+          r = rect;
+        r.x = (projected ? px : (px - box.x) / mpp) - w / 2;
+        r.y = (projected ? py : (py - box.y) / mpp) - h / 2;
+        r.w = w;
+        r.h = h;
         if (
           r.x < 2 ||
           r.y < 2 ||
@@ -478,25 +469,10 @@ export class MapLabelLayout {
           r.y + h > box.height / mpp - 2
         )
           continue;
-        const cells = keys(r);
-        if (
-          cells.some((k) =>
-            (occupied.get(k) ?? []).some(
-              (b) =>
-                r.x < b.x + b.w &&
-                r.x + r.w > b.x &&
-                r.y < b.y + b.h &&
-                r.y + r.h > b.y,
-            ),
-          )
-        )
-          continue;
+        if (occupied.overlaps(r)) continue;
         if (visible && !visible(c)) continue;
-        for (const k of cells) {
-          const list = occupied.get(k) ?? [];
-          list.push(r);
-          occupied.set(k, list);
-        }
+        const placedBox = { ...r };
+        occupied.add(placedBox);
         const started = this.appeared.get(c.id) ?? now;
         this.appeared.set(c.id, started);
         const ease = (x: number) => {
@@ -515,9 +491,9 @@ export class MapLabelLayout {
         this.animating ||= animate && now - started < 160;
         placed.push({
           candidate: c,
-          point: p,
+          point: { x: px, y: py },
           font,
-          box: r,
+          box: placedBox,
           opacity,
           ...(projected ? { angle } : {}),
         });
