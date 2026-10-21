@@ -59,3 +59,20 @@ finally {
     Object.assign(globalThis, old);
 } });
 test('canonical migrated landscape remains selectable and distant names are searched in bounded replies', t => { const x = fixture(t), map = x.store.world(x.w.token).maps[0]; x.store.executeWorld({ commandId: randomUUID(), token: x.w.token, campaignId: x.cam.id, action: { kind: 'cell', mapId: map.id, expectedRevision: map.revision, cell: { ...map.cells[0], q: 1000, label: 'Fernhafen' } } }); require('../.build/player-map-reveal-landscape.cjs').installLandscape(x.store.db); assert.equal(x.store.world(x.w.token).maps[0].cells.length, 0); let v = x.store.playerView(x.w.token); assert(v.maps[0].cells.some(c => c.name === 'Eichenfurt'), JSON.stringify(v.maps[0].cells)); assert(!v.maps[0].cells.some(c => c.name === 'Fernhafen')); v = x.store.playerView(x.w.token, { mapId: map.id, q: 0, r: 0, search: 'Fernhafen' }); const far = v.maps[0].cells.find(c => c.name === 'Fernhafen'); assert(far); assert.equal(far.q, 1000); assert(v.maps[0].cells.length <= 82); v = x.store.playerView(x.w.token, { mapId: map.id, q: 1000, r: 0, search: '' }); assert(v.maps[0].cells.some(c => c.name === 'Fernhafen')); assert(v.maps[0].cells.length <= 61); });
+
+test('map focus survives redraw, arrows only move focus, and Tab leaves one map entry',()=>{
+ const {document}=parseHTML('<div id="map"></div><input id="label">'),previous=globalThis.document;globalThis.document=document;
+ const root=document.getElementById('map'),cells=[{q:0,r:0},{q:1,r:0},{q:0,r:1}].map(cell=>({...cell,terrain:'plains',name:'Ort',known:false,hidden:false}));
+ let active=document.getElementById('label'),selected={q:0,r:0},choices=0;Object.defineProperty(document,'activeElement',{get:()=>active,configurable:true});
+ const prototype=Object.getPrototypeOf(document.createElementNS('http://www.w3.org/2000/svg','g')),oldFocus=prototype.focus;
+ prototype.focus=function(){active=this;this.onfocus?.();};
+ const draw=()=>renderPlayerMapPicker(root,cells,selected,cell=>{choices++;selected=cell;draw();});
+ const key=(node,key)=>node.onkeydown({key,preventDefault(){}});
+ try{
+  draw();assert.equal(active.id,'label');assert.equal(root.querySelectorAll('[tabindex="0"]').length,1);
+  root.querySelector('[data-player-cell="0,0"]').focus();key(active,'ArrowRight');assert.equal(active.dataset.playerCell,'1,0');assert.equal(choices,0);
+  key(active,'Enter');assert.equal(choices,1);assert.equal(selected.q,1);assert.equal(active.dataset.playerCell,'1,0');assert.equal(active.isConnected,true);assert.equal(root.querySelectorAll('[tabindex="0"]').length,1);
+  key(active,'ArrowDown');assert.equal(active.dataset.playerCell,'0,1');assert.equal(choices,1);draw();assert.equal(active.dataset.playerCell,'0,1');
+  active=document.getElementById('label');draw();assert.equal(active.id,'label');
+ }finally{if(oldFocus)prototype.focus=oldFocus;else delete prototype.focus;globalThis.document=previous;}
+});

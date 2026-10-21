@@ -1,27 +1,28 @@
 // Real GM controls -> passive native window -> blank -> normal restart -> explicit resume.
 import { createRequire } from 'node:module';
-import { mkdtemp, mkdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
 import { spawn, execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
+const sourceRevision=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sourceDirty=!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();
 const root = process.cwd(), require = createRequire(root + '/package.json'), { _electron } = require('playwright-core'), Database = require('better-sqlite3');
 require('esbuild').buildSync({ entryPoints: ['src/app/storage/store.ts'], outfile: '.build/native-player-map-store.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['better-sqlite3'] });
-const { CampaignStore } = require(root + '/.build/native-player-map-store.cjs'), out = root + '/.build/player-map-reveal';
-await mkdir(out, { recursive: true });
-const artifacts = Object.fromEntries(await Promise.all(['main.cjs', 'preload.cjs', 'atlas-region-worker.cjs', 'ui/renderer.js', 'ui/index.html'].map(async (file) => [file, createHash('sha256').update(await readFile(root + '/.build/desktop/' + file)).digest('hex')]))), launches = [], results = [];
+const { CampaignStore } = require(root + '/.build/native-player-map-store.cjs'), out = process.env.QA_EVIDENCE_DIR??root + '/.build/player-map-reveal';
+await mkdir(out, { recursive: true });await rm(out+'/result.json',{force:true});
+const artifacts = Object.fromEntries(await Promise.all(['main.cjs', 'preload.cjs', 'atlas-region-worker.cjs', 'ui/renderer.js', 'ui/index.html','ui/app.css','ui/player.css'].map(async (file) => [file, createHash('sha256').update(await readFile(root + '/.build/desktop/' + file)).digest('hex')]))), launches = [], results = [];
 let app, page, proxy, db;
 async function until(check) { const end = Date.now() + 15000; while (!check() && Date.now() < end)
     await new Promise(r => setTimeout(r, 25)); assert(check(), 'Expected confirmed application state'); }
 async function close() { const exit = new Promise(r => app.process().once('exit', (code, signal) => r({ code, signal }))); await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith('/index.html')).close()); let timer; try {
     const result = await Promise.race([exit, new Promise((_, reject) => timer = setTimeout(() => reject(Error('Normal close timed out')), 10000))]);
     assert.deepEqual(result, { code: 0, signal: null });
-    launches.at(-1).exit = result;
+    launches.at(-1).exit = result;launches.at(-1).pidAbsent=!await stat('/proc/'+launches.at(-1).pid).then(()=>true).catch(()=>false);assert(launches.at(-1).pidAbsent);
     app = null;
 }
 finally {
     clearTimeout(timer);
 } }
-async function shot(file, player = false) { await writeFile(out + '/' + file, Buffer.from(await app.evaluate(async ({ BrowserWindow }, player) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith(player ? '/player-display.html' : '/index.html')).webContents.capturePage()).toPNG().toString('base64'), player), 'base64')); }
+async function shot(file, player = false) { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))); await writeFile(out + '/' + file, Buffer.from(await app.evaluate(async ({ BrowserWindow }, player) => (await BrowserWindow.getAllWindows().find(w => w.webContents.getURL().endsWith(player ? '/player-display.html' : '/index.html')).webContents.capturePage()).toPNG().toString('base64'), player), 'base64')); }
 try {
     for (const scale of [1, 2]) {
         const profile = await mkdtemp('/tmp/native-player-map-'), store = new CampaignStore(profile + '/workbench.sqlite'), cam = store.create('Spielerkarte am Nordpass'), w = store.activate(cam.id), command = action => ({ commandId: randomUUID(), token: w.token, campaignId: cam.id, action }), hero = store.executeLive(command({ kind: 'create-character', profile: { name: 'Mira' } })).character, scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 1 })).scene;
@@ -66,7 +67,30 @@ try {
         const revision = settings().revision;
         await page.locator('#player-labels').check();
         await until(() => settings().revision > revision);
-        const discover = async (q, name) => { await page.locator('[data-player-cell="' + q + ',0"]').click(); assert.equal(await page.locator('#player-public-label').inputValue(), ''); await page.locator('#player-copy-label').click(); assert.equal(await page.locator('#player-public-label').inputValue(), name); const before = settings().revision; await page.locator('#player-discover').click(); await until(() => settings().revision > before); await page.waitForFunction(() => document.querySelector('#player-feedback').textContent.includes('Kenntnis und öffentliche Beschriftung gespeichert.')); };
+        const discover = async (q,name)=>{
+            const before=settings().revision;
+            if(q===0)await page.locator('[data-player-cell="0,0"]').press('Enter');
+            else{
+                await page.locator('[data-player-cell="0,0"]').press('ArrowRight');
+                assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('data-player-cell')),'1,0');
+                assert.equal(await page.locator('#player-q').inputValue(),'0');
+                assert.equal(settings().revision,before);
+                await page.keyboard.press('Enter');
+            }
+            await page.waitForFunction(key=>document.activeElement?.getAttribute('data-player-cell')===key,q+',0');
+            await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+            assert.equal(await page.locator('#player-map-picker [tabindex="0"]').count(),1);
+            assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('data-player-cell')),q+',0');
+            assert.equal(await page.locator('#player-public-label').inputValue(),'');
+            assert.equal(settings().revision,before);
+            await shot('keyboard-'+scale+'-'+q+'.png');
+            await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.id),'player-public-label');
+            await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.id),'player-copy-label');
+            await page.keyboard.press('Enter');await page.waitForFunction(name=>document.querySelector('#player-public-label').value===name,name);
+            assert.equal(settings().revision,before);
+            await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement?.id),'player-discover');await page.keyboard.press('Enter');
+            await until(()=>settings().revision>before);await page.waitForFunction(()=>document.querySelector('#player-feedback').textContent.includes('Kenntnis und öffentliche Beschriftung gespeichert.'));
+        };
         await discover(0, 'Eichenfurt');
         assert.equal(settings().blank, true);
         await page.locator('#player-show-follow').click();
@@ -109,9 +133,9 @@ try {
         proxy.kill();
         proxy = null;
         assert.deepEqual(errors, []);
-        results.push({ scale, profile, knownHexes: 2, secretHidden: true, publicLabelsAtomic: true, privateSourcePreserved: true, blankPersisted: true, explicitResume: true });
+        results.push({ scale, profile, knownHexes: 2, secretHidden: true, publicLabelsAtomic: true, privateSourcePreserved: true, blankPersisted: true, explicitResume: true,keyboardSelections:2,oneMapTabStop:true,arrowDoesNotPublish:true,tabToLabel:true });
     }
-    await writeFile(out + '/result.json', JSON.stringify({ source: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), dirty: !!execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim(), artifacts, launches, results }, null, 2));
+    await writeFile(out + '/result.json', JSON.stringify({ source:sourceRevision,dirty:sourceDirty, artifacts, launches, results }, null, 2));
     console.log(JSON.stringify({ launches, results }));
 }
 catch (e) {

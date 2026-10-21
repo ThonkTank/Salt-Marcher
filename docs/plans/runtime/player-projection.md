@@ -56,7 +56,10 @@ Scene-/Combat-/Chaseframe darf daher weder Inhalt noch Kopfzeile zeichnen.
 Die GM-Steuerung ist direkt im Atlas und im Arbeitsflächenkopf erreichbar.
 Sie stellt die Hexfreigabe neben die tatsächliche Ausgabe: eine private GM-Karte
 zeigt höchstens 61 ausgearbeitete Nachbarhexe; Namens-/Koordinatensuche führt
-auch zu entfernten Hexen. Auswahl allein veröffentlicht nichts. GM-Namen werden
+auch zu entfernten Hexen. Auswahl allein veröffentlicht nichts. Die private Hexkarte ist ein Tabstopp;
+Pfeiltasten bewegen nur den Fokus, Enter oder Leertaste wählen das Hex. Der
+Fokus bleibt bei Neuzeichnungen auf demselben Hex; Tab führt zur öffentlichen
+Beschriftung, ohne durch sämtliche Nachbarhexe zurückzugehen. GM-Namen werden
 nur durch ausdrückliches Übernehmen zu öffentlichen Beschriftungen. Eine
 Hexentdeckung ohne Ortsbindung speichert den bestätigten Namen atomar mit der
 Charakterkenntnis und erhält vorhandene Hidden-/Sichtblockerflags. Ortsgebundene

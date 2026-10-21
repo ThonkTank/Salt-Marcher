@@ -3,6 +3,7 @@ import { hexDistance, hexPoint, terrainColors } from './world-model';
 import type { Hex, Terrain } from './world-contracts';
 /** A bounded GM-only neighbourhood. Searching selects distant hexes without a huge SVG. */
 export function renderPlayerMapPicker(root: HTMLElement, cells: PlayerMapCell[], selected: Hex, choose: (cell: PlayerMapCell) => void) {
+    const active=document.activeElement,focused=active&&root.contains(active)?active.getAttribute('data-player-cell'):null;
     root.replaceChildren();
     const nearby = cells.filter(c => hexDistance(c, selected) <= 4);
     if (!nearby.length) {
@@ -22,10 +23,16 @@ export function renderPlayerMapPicker(root: HTMLElement, cells: PlayerMapCell[],
         maxY = Math.max(maxY, p.y + 65);
     }
     svg.setAttribute('viewBox', `${minX} ${minY} ${Math.max(130, maxX - minX)} ${Math.max(130, maxY - minY)}`);
+    const tileKey=(cell:Hex)=>cell.q+','+cell.r;
+    const entryIndex=Math.max(0,nearby.findIndex(cell=>focused?tileKey(cell)===focused:cell.q===selected.q&&cell.r===selected.r));
+    const tiles:SVGGElement[]=[];
+    const focusTile=(index:number)=>{for(const [i,tile]of tiles.entries())tile.setAttribute('tabindex',i===index?'0':'-1');tiles[index]?.focus({preventScroll:true});};
     for (const [index, cell] of nearby.entries()) {
         const p = points[index]!, group = document.createElementNS(ns, 'g'), polygon = document.createElementNS(ns, 'polygon'), label = document.createElementNS(ns, 'text'), state = document.createElementNS(ns, 'text');
         group.setAttribute('role', 'button');
-        group.setAttribute('tabindex', '0');
+        group.setAttribute('tabindex',index===entryIndex?'0':'-1');
+        tiles.push(group);
+        group.onfocus=()=>{for(const tile of tiles)tile.setAttribute('tabindex',tile===group?'0':'-1');};
         group.setAttribute('aria-label', `${cell.name || cell.terrain} · Hex ${cell.q}, ${cell.r}`);
         group.setAttribute('aria-pressed', String(cell.q === selected.q && cell.r === selected.r));
         group.dataset.playerCell = cell.q + ',' + cell.r;
@@ -50,11 +57,20 @@ export function renderPlayerMapPicker(root: HTMLElement, cells: PlayerMapCell[],
         label.textContent = (cell.name || `${cell.q}, ${cell.r}`).slice(0, 17);
         state.textContent = cell.hidden ? 'Verdeckt' : cell.known ? 'Bekannt' : 'Unbekannt';
         group.onclick = () => choose(cell);
-        group.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') {
+        group.onkeydown = event => {
+            if(event.altKey||event.ctrlKey||event.metaKey)return;
+            if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(cell);return;}
+            if(event.key==='Home'||event.key==='End'){event.preventDefault();focusTile(event.key==='Home'?0:tiles.length-1);return;}
+            const direction=({ArrowRight:[1,0],ArrowLeft:[-1,0],ArrowDown:[0,1],ArrowUp:[0,-1]} as Record<string,number[]>)[event.key];
+            if(!direction)return;
             event.preventDefault();
-            choose(cell);
-        } };
+            const candidates=points.map((point,i)=>({index:i,dx:point.x-p.x,dy:point.y-p.y}))
+                .filter(c=>c.dx*direction[0]!+c.dy*direction[1]!>1)
+                .sort((a,b)=>{const distance=Math.hypot(a.dx,a.dy)-Math.hypot(b.dx,b.dy);return Math.abs(distance)>1e-6?distance:Math.abs(a.dx*direction[1]!-a.dy*direction[0]!)-Math.abs(b.dx*direction[1]!-b.dy*direction[0]!);});
+            if(candidates[0])focusTile(candidates[0].index);
+        };
         svg.append(group);
     }
     root.append(svg);
+    if(focused&&tiles[entryIndex]?.getAttribute('data-player-cell')===focused)focusTile(entryIndex);
 }
