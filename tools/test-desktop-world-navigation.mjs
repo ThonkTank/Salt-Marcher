@@ -48,6 +48,7 @@ try{
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
  const cdp=await page.context().newCDPSession(page);await cdp.send('Profiler.enable');
+ const layoutTrace=[];if(process.env.WORLD_LAYOUT_TRACE==='1')cdp.on('Tracing.dataCollected',e=>layoutTrace.push(...e.value));
  await page.evaluate(()=>{
   window.__saltTerrainTrace={events:[],dropped:0};
   window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];
@@ -69,10 +70,15 @@ try{
   const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),...data});
   await writeFile(out+'/progress.json',JSON.stringify(result,null,2));console.log(name,JSON.stringify({p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),longTasks:data.longTasks.length}));
  }
+ if(process.env.WORLD_LAYOUT_TRACE==='1')await cdp.send('Tracing.start',{categories:'devtools.timeline,disabled-by-default-devtools.timeline.stack',transferMode:'ReportEvents'});
  await measure('navigation',async()=>{
   await page.mouse.move(x,y);for(let i=0;i<12;i++){await page.mouse.wheel(0,i<6?-100:100);await wait(60);}
   await page.mouse.down({button:'middle'});for(let i=0;i<12;i++){await page.mouse.move(x+150*Math.sin(i/3),y+50*Math.cos(i/3));await wait(40);}await page.mouse.up({button:'middle'});
  });
+ if(process.env.WORLD_LAYOUT_TRACE==='1'){
+  const completed=new Promise(resolve=>cdp.once('Tracing.tracingComplete',resolve));await cdp.send('Tracing.end');result.traceComplete=await completed;
+  assert.equal(result.traceComplete.dataLossOccurred,false);await writeFile(out+'/layout-trace.json',JSON.stringify(layoutTrace));
+ }
  await native.capture(page,'world-contours');
  await page.locator('#atlas-section').selectOption('terrain');await atlasCanvasReady(page);await page.locator('#atlas-units').selectOption('metric');await page.locator('[data-tool-group="land"]').click();
  await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();await setBrushWorldRadius(page,'land-radius',radius);await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('500');

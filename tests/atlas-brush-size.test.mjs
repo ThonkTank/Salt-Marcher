@@ -101,3 +101,21 @@ test('Shift wheel sizes the active brush in either mode, normalizes devices and 
   control.sync('wheel-height',20,false);wheel(80);assert(Math.abs(Number(atlasFieldValue(field))-480)<1e-9);
   assert(manual>0);
 });
+
+
+test('camera synchronization retains caption nodes while real unit changes update their text',t=>{
+ const {document,window}=parseHTML('<html><body><label>Radius<input id="stable-radius" value="500"></label></body></html>');
+ const old={document:global.document,Event:global.Event};global.document=document;global.Event=window.Event;t.after(()=>Object.assign(global,old));
+ initAtlasUnits(document);setAtlasUnits('metric');
+ const control=new BrushSizeControl(document.getElementById('stable-radius'),()=>{});t.after(()=>control.dispose());
+ control.sync('stable-caption',10,false);
+ const caption=control.root.firstChild,unit=caption.querySelector('small'),text=caption.firstChild;
+ for(const scale of [10,20,2,5000,5000]){
+  control.sync('stable-caption',scale,false);
+  assert.equal(control.root.firstChild,caption);assert.equal(caption.firstChild,text);assert.equal(caption.querySelector('small'),unit);
+ }
+ const fixed=document.getElementById('stable-radius-fixed');fixed.checked=true;fixed.dispatchEvent(new Event('change'));
+ assert.equal(unit.textContent,'m');setAtlasUnits('dnd');control.sync('stable-caption',5000,false);assert.equal(unit.textContent,'ft');
+ assert.equal(caption.querySelector('small'),unit);
+ fixed.checked=false;fixed.dispatchEvent(new Event('change'));assert.equal(unit.textContent,'px');
+});

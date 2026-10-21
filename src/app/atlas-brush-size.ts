@@ -51,6 +51,7 @@ export function brushSizeControl(field:HTMLInputElement){return bindings.get(fie
 export class BrushSizeControl {
   readonly root:HTMLLabelElement;
   private caption=document.createElement('span');
+  private unit=document.createElement('small');
   private slider=document.createElement('input');
   private number=document.createElement('input');
   private fixed=document.createElement('input');
@@ -59,6 +60,7 @@ export class BrushSizeControl {
   private locked=false;
   constructor(readonly field:HTMLInputElement,private changed:()=>void) {
     this.root=field.closest('label')!;this.root.classList.add('atlas-brush-range','atlas-brush-size');
+    this.caption.append(document.createTextNode('Radius '),this.unit);
     this.root.replaceChildren(this.caption,field,this.slider,this.number);
     field.hidden=true;
     this.root.title='Pinselradius: Shift + Mausrad über der Karte';
@@ -110,7 +112,10 @@ export class BrushSizeControl {
   private render(){
     if(!this.key)return;
     const m=model(),s=m.size(this.key,this.scale),world=m.mode==='world',factor=world&&atlasUnits()==='dnd'?FOOT:1;
-    this.caption.textContent='Radius ';const unit=document.createElement('small');unit.textContent=world?(atlasUnits()==='dnd'?'ft':'m'):'px';this.caption.append(unit);
+    // Camera frames synchronize every brush. Keep caption nodes stable so a
+    // later viewport read does not force style work for newly inserted controls.
+    const unit=world?(atlasUnits()==='dnd'?'ft':'m'):'px';
+    if(this.unit.textContent!==unit)this.unit.textContent=unit;
     this.slider.min=world?String(Math.min(-3,Math.log10(s.world))):String(Math.min(4,s.screen));
     this.slider.max=world?String(Math.max(8,Math.log10(s.world))):String(Math.max(200,s.screen));
     this.slider.step=world?'0.01':'1';
