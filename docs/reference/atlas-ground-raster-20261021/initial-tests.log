@@ -1,0 +1,684 @@
+TAP version 13
+# Subtest: Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+ok 1 - Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+  ---
+  duration_ms: 14.029672
+  type: 'test'
+  ...
+# Subtest: Far-world local room detail retains transform precision and follows terrain elevation
+ok 2 - Far-world local room detail retains transform precision and follows terrain elevation
+  ---
+  duration_ms: 1.437333
+  type: 'test'
+  ...
+# Subtest: Draped areas sample interior terrain and preserve author IDs
+ok 3 - Draped areas sample interior terrain and preserve author IDs
+  ---
+  duration_ms: 4.557205
+  type: 'test'
+  ...
+# Subtest: HUD and terrain-owned rasters are not duplicated; masked content fails closed
+ok 4 - HUD and terrain-owned rasters are not duplicated; masked content fails closed
+  ---
+  duration_ms: 1.596116
+  type: 'test'
+  ...
+# Subtest: Dash phase persists around a corner and zero gaps do not hang
+ok 5 - Dash phase persists around a corner and zero gaps do not hang
+  ---
+  duration_ms: 2.115952
+  type: 'test'
+  ...
+# Subtest: Atlas alpha colors preserve translucent previews in GPU materials
+ok 6 - Atlas alpha colors preserve translucent previews in GPU materials
+  ---
+  duration_ms: 0.453145
+  type: 'test'
+  ...
+# Subtest: retained commands inherit style and transforms, preserve painter order and explicit semantic ancestry
+ok 7 - retained commands inherit style and transforms, preserve painter order and explicit semantic ancestry
+  ---
+  duration_ms: 22.492574
+  type: 'test'
+  ...
+# Subtest: Canvas publication has no per-object DOM and panning reuses paths and image buffers
+ok 8 - Canvas publication has no per-object DOM and panning reuses paths and image buffers
+  ---
+  duration_ms: 65.816585
+  type: 'test'
+  ...
+# Subtest: world conversion includes CSS border and independent backing resolution; zoom is anchored
+ok 9 - world conversion includes CSS border and independent backing resolution; zoom is anchored
+  ---
+  duration_ms: 6.422857
+  type: 'test'
+  ...
+# Subtest: one decoder and one replaceable successor discard superseded image frames and stale hits
+ok 10 - one decoder and one replaceable successor discard superseded image frames and stale hits
+  ---
+  duration_ms: 7.399484
+  type: 'test'
+  ...
+# Subtest: derived landscape images retain their 1024-pixel coast detail while reference previews stay bounded
+ok 11 - derived landscape images retain their 1024-pixel coast detail while reference previews stay bounded
+  ---
+  duration_ms: 7.306565
+  type: 'test'
+  ...
+# Subtest: decoding failure revokes hits and retry keeps the same surface, camera and listeners
+ok 12 - decoding failure revokes hits and retry keeps the same surface, camera and listeners
+  ---
+  duration_ms: 8.912492
+  type: 'test'
+  ...
+# Subtest: unavailable context shows recoverable initialization state instead of failing the workspace
+ok 13 - unavailable context shows recoverable initialization state instead of failing the workspace
+  ---
+  duration_ms: 8.598058
+  type: 'test'
+  ...
+# Subtest: lost/restored context releases bitmaps and reuses the canonical scene builder
+ok 14 - lost/restored context releases bitmaps and reuses the canonical scene builder
+  ---
+  duration_ms: 6.48629
+  type: 'test'
+  ...
+# Subtest: backing stores respect the pixel budget at high DPI and repeated paint preserves allocations
+ok 15 - backing stores respect the pixel budget at high DPI and repeated paint preserves allocations
+  ---
+  duration_ms: 5.929925
+  type: 'test'
+  ...
+# Subtest: switching map context revokes old commands and decoded media before new source data arrives
+ok 16 - switching map context revokes old commands and decoded media before new source data arrives
+  ---
+  duration_ms: 5.504175
+  type: 'test'
+  ...
+# Subtest: marker titles survive outside semantic selection and the surface clears hover on a new gesture
+ok 17 - marker titles survive outside semantic selection and the surface clears hover on a new gesture
+  ---
+  duration_ms: 4.708225
+  type: 'test'
+  ...
+# Subtest: camera changes revoke hits and hover until the matching bitmap is actually painted
+ok 18 - camera changes revoke hits and hover until the matching bitmap is actually painted
+  ---
+  duration_ms: 5.609719
+  type: 'test'
+  ...
+# Subtest: a resized surface cannot use old pixels with its new client-coordinate transform
+ok 19 - a resized surface cannot use old pixels with its new client-coordinate transform
+  ---
+  duration_ms: 5.562278
+  type: 'test'
+  ...
+# Subtest: a scene compiled while hidden is not ready after showing until that scene is painted
+ok 20 - a scene compiled while hidden is not ready after showing until that scene is painted
+  ---
+  duration_ms: 5.349862
+  type: 'test'
+  ...
+# Subtest: a pending frame is not interpreted as empty space for left-drag navigation
+ok 21 - a pending frame is not interpreted as empty space for left-drag navigation
+  ---
+  duration_ms: 6.316495
+  type: 'test'
+  ...
+# Subtest: an unreadable optional reference stays local while required terrain and exact hits remain usable
+ok 22 - an unreadable optional reference stays local while required terrain and exact hits remain usable
+  ---
+  duration_ms: 6.414876
+  type: 'test'
+  ...
+# Subtest: hits resolve the nearest semantic owner without a DOM or selector parser
+ok 23 - hits resolve the nearest semantic owner without a DOM or selector parser
+  ---
+  duration_ms: 1.931163
+  type: 'test'
+  ...
+# Subtest: PNG and JPEG exports execute native commands without SVG serialization, and release the surface
+ok 24 - PNG and JPEG exports execute native commands without SVG serialization, and release the surface
+  ---
+  duration_ms: 6.873619
+  type: 'test'
+  ...
+# Subtest: drawing failure clears incomplete pixels and revokes hits before retry
+ok 25 - drawing failure clears incomplete pixels and revokes hits before retry
+  ---
+  duration_ms: 9.186127
+  type: 'test'
+  ...
+# Subtest: tiled export reuses one tile canvas, composites exact pixel rectangles and encodes only the result
+ok 26 - tiled export reuses one tile canvas, composites exact pixel rectangles and encodes only the result
+  ---
+  duration_ms: 10.484216
+  type: 'test'
+  ...
+# Subtest: export cancellation during image decode or encoding discards pixels, releases surfaces and reads no successor
+ok 27 - export cancellation during image decode or encoding discards pixels, releases surfaces and reads no successor
+  ---
+  duration_ms: 10.858777
+  type: 'test'
+  ...
+# Subtest: oversized encoded output is rejected before reading or sending bytes
+ok 28 - oversized encoded output is rejected before reading or sending bytes
+  ---
+  duration_ms: 11.541701
+  type: 'test'
+  ...
+# Subtest: one GM export freezes floor, grid, scale, reference, box, size and format before asynchronous reads
+ok 29 - one GM export freezes floor, grid, scale, reference, box, size and format before asynchronous reads
+  ---
+  duration_ms: 28.797419
+  type: 'test'
+  ...
+# Subtest: explicitly retained local paths survive rebase; dynamic paths and context caches remain independent
+ok 30 - explicitly retained local paths survive rebase; dynamic paths and context caches remain independent
+  ---
+  duration_ms: 2.898161
+  type: 'test'
+  ...
+# Subtest: numeric contours and mask holes compile once into reusable native paths without path text
+ok 31 - numeric contours and mask holes compile once into reusable native paths without path text
+  ---
+  duration_ms: 3.953944
+  type: 'test'
+  ...
+# Subtest: host recovery waits for its current confirmed frame instead of replaying a stale builder
+ok 32 - host recovery waits for its current confirmed frame instead of replaying a stale builder
+  ---
+  duration_ms: 15.177117
+  type: 'test'
+  ...
+# Subtest: a new source recovers from the previous scene failure without hiding an unavailable-device retry
+ok 33 - a new source recovers from the previous scene failure without hiding an unavailable-device retry
+  ---
+  duration_ms: 5.553316
+  type: 'test'
+  ...
+# Subtest: changing source with no Canvas context preserves a visible working retry
+ok 34 - changing source with no Canvas context preserves a visible working retry
+  ---
+  duration_ms: 3.699751
+  type: 'test'
+  ...
+# Subtest: a cropped room keeps its complete key centered, independently of polygon winding and export tile boundaries
+not ok 35 - a cropped room keeps its complete key centered, independently of polygon winding and export tile boundaries
+  ---
+  duration_ms: 1.757304
+  type: 'test'
+  location: '/home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-canvas.test.mjs:608:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'find')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    atlasRegionPaint (/home/aaron/Schreibtisch/projects/SaltMarcher/.build/atlas-canvas-test.cjs:10622:83)
+    TestContext.<anonymous> (file:///home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-canvas.test.mjs:613:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: output range commits on release, preserves author data, supports two corners and cancels only its unfinished selection
+ok 36 - output range commits on release, preserves author data, supports two corners and cancels only its unfinished selection
+  ---
+  duration_ms: 54.873403
+  type: 'test'
+  ...
+# Subtest: Canvas2D context loss must allow browser restoration and retry cannot authorize a still-lost context
+ok 37 - Canvas2D context loss must allow browser restoration and retry cannot authorize a still-lost context
+  ---
+  duration_ms: 20.609459
+  type: 'test'
+  ...
+# Subtest: a context lost before its event is delivered cannot publish pixels or authorize hits
+ok 38 - a context lost before its event is delivered cannot publish pixels or authorize hits
+  ---
+  duration_ms: 7.024826
+  type: 'test'
+  ...
+# Subtest: context acquisition exceptions remain locally recoverable at startup
+ok 39 - context acquisition exceptions remain locally recoverable at startup
+  ---
+  duration_ms: 4.945376
+  type: 'test'
+  ...
+# Subtest: context acquisition exceptions remain locally recoverable during retry/restoration
+ok 40 - context acquisition exceptions remain locally recoverable during retry/restoration
+  ---
+  duration_ms: 13.538763
+  type: 'test'
+  ...
+# Subtest: loss during a draw cannot publish a successful frame before the loss event arrives
+ok 41 - loss during a draw cannot publish a successful frame before the loss event arrives
+  ---
+  duration_ms: 4.79867
+  type: 'test'
+  ...
+# Subtest: detailed Atlas and PNG surfaces use the saved room colors and the same canonical contour
+not ok 42 - detailed Atlas and PNG surfaces use the saved room colors and the same canonical contour
+  ---
+  duration_ms: 2.590046
+  type: 'test'
+  location: '/home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-canvas.test.mjs:662:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'find')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    atlasRegionPaint (/home/aaron/Schreibtisch/projects/SaltMarcher/.build/atlas-canvas-test.cjs:10622:83)
+    TestContext.<anonymous> (file:///home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-canvas.test.mjs:667:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: export scale uses world meters and is drawn once after streamed tiles without clearing their pixels
+ok 43 - export scale uses world meters and is drawn once after streamed tiles without clearing their pixels
+  ---
+  duration_ms: 6.211771
+  type: 'test'
+  ...
+# Subtest: smooth wheel gestures preserve anchors, coalesce history and cancel on navigation
+ok 44 - smooth wheel gestures preserve anchors, coalesce history and cancel on navigation
+  ---
+  duration_ms: 11.900629
+  type: 'test'
+  ...
+# Subtest: camera overlay repaints the current metric view while new scene images are still loading
+ok 45 - camera overlay repaints the current metric view while new scene images are still loading
+  ---
+  duration_ms: 12.956329
+  type: 'test'
+  ...
+# Subtest: panel resizing preserves world centre and CSS-pixel scale without adding history
+ok 46 - panel resizing preserves world centre and CSS-pixel scale without adding history
+  ---
+  duration_ms: 3.776109
+  type: 'test'
+  ...
+# Subtest: touchpad scroll stays monotonic with early frame timestamps and moving input
+ok 47 - touchpad scroll stays monotonic with early frame timestamps and moving input
+  ---
+  duration_ms: 8.760133
+  type: 'test'
+  ...
+# Subtest: touchpad pinch stays monotonic with early frame timestamps and moving input
+ok 48 - touchpad pinch stays monotonic with early frame timestamps and moving input
+  ---
+  duration_ms: 6.11826
+  type: 'test'
+  ...
+# Subtest: a direction reversal does not finish an outstanding zoom in the old direction
+ok 49 - a direction reversal does not finish an outstanding zoom in the old direction
+  ---
+  duration_ms: 2.734713
+  type: 'test'
+  ...
+# Subtest: dungeon export frames source-indexed whole-floor geometry, not visible rooms, through the resolved rotated binding
+ok 50 - dungeon export frames source-indexed whole-floor geometry, not visible rooms, through the resolved rotated binding
+  ---
+  duration_ms: 1.181572
+  type: 'test'
+  ...
+# Subtest: chosen dungeon framing follows later confirmed enlargement and refuses stale scope or floor metadata
+ok 51 - chosen dungeon framing follows later confirmed enlargement and refuses stale scope or floor metadata
+  ---
+  duration_ms: 2.966618
+  type: 'test'
+  ...
+# Subtest: automatic ground-plan framing reserves a scale strip even at small output sizes
+ok 52 - automatic ground-plan framing reserves a scale strip even at small output sizes
+  ---
+  duration_ms: 1.02302
+  type: 'test'
+  ...
+# Subtest: ground-plan preview fits the unobscured canvas when the export panel overlays it
+ok 53 - ground-plan preview fits the unobscured canvas when the export panel overlays it
+  ---
+  duration_ms: 2.733801
+  type: 'test'
+  ...
+# Subtest: a retired PNG export cannot block or finish the current campaign export (read, same token=false)
+ok 54 - a retired PNG export cannot block or finish the current campaign export (read, same token=false)
+  ---
+  duration_ms: 20.571293
+  type: 'test'
+  ...
+# Subtest: a retired PNG export cannot block or finish the current campaign export (save, same token=false)
+ok 55 - a retired PNG export cannot block or finish the current campaign export (save, same token=false)
+  ---
+  duration_ms: 6.791598
+  type: 'test'
+  ...
+# Subtest: a retired PNG export cannot block or finish the current campaign export (read, same token=true)
+ok 56 - a retired PNG export cannot block or finish the current campaign export (read, same token=true)
+  ---
+  duration_ms: 6.159236
+  type: 'test'
+  ...
+# Subtest: a retired PNG export cannot block or finish the current campaign export (save, same token=true)
+ok 57 - a retired PNG export cannot block or finish the current campaign export (save, same token=true)
+  ---
+  duration_ms: 6.45699
+  type: 'test'
+  ...
+# Subtest: a retired editable campaign export cannot block or finish the current export (same owner=false, failed reply=false)
+ok 58 - a retired editable campaign export cannot block or finish the current export (same owner=false, failed reply=false)
+  ---
+  duration_ms: 9.060154
+  type: 'test'
+  ...
+# Subtest: a retired editable campaign export cannot block or finish the current export (same owner=false, failed reply=true)
+ok 59 - a retired editable campaign export cannot block or finish the current export (same owner=false, failed reply=true)
+  ---
+  duration_ms: 8.723983
+  type: 'test'
+  ...
+# Subtest: a retired editable campaign export cannot block or finish the current export (same owner=true, failed reply=false)
+ok 60 - a retired editable campaign export cannot block or finish the current export (same owner=true, failed reply=false)
+  ---
+  duration_ms: 16.379768
+  type: 'test'
+  ...
+# Subtest: a retired editable campaign export cannot block or finish the current export (same owner=true, failed reply=true)
+ok 61 - a retired editable campaign export cannot block or finish the current export (same owner=true, failed reply=true)
+  ---
+  duration_ms: 13.475732
+  type: 'test'
+  ...
+# Subtest: an editable campaign export and an image export share one output slot
+ok 62 - an editable campaign export and an image export share one output slot
+  ---
+  duration_ms: 11.487244
+  type: 'test'
+  ...
+# Subtest: an editable campaign export retires before flushing inputs in a new activation
+ok 63 - an editable campaign export retires before flushing inputs in a new activation
+  ---
+  duration_ms: 6.377932
+  type: 'test'
+  ...
+# Subtest: a current editable campaign export reports failure and releases both output controls
+ok 64 - a current editable campaign export reports failure and releases both output controls
+  ---
+  duration_ms: 11.391566
+  type: 'test'
+  ...
+# Subtest: spatial presentation shares normal input, scene publication, HUD and pan without a second navigation handler
+ok 65 - spatial presentation shares normal input, scene publication, HUD and pan without a second navigation handler
+  ---
+  duration_ms: 23.900725
+  type: 'test'
+  ...
+# Subtest: 4000 rooms: opening reads one selected room; region excludes offscreen prose and geometry
+ok 66 - 4000 rooms: opening reads one selected room; region excludes offscreen prose and geometry
+  ---
+  duration_ms: 1883.781046
+  type: 'test'
+  ...
+# Subtest: incremental projections follow exact edits, rollback, hidden rooms, undo and fresh rebuild
+ok 67 - incremental projections follow exact edits, rollback, hidden rooms, undo and fresh rebuild
+  ---
+  duration_ms: 411.952321
+  type: 'test'
+  ...
+# Subtest: rotated city with 5000 buildings: resolved roads, targeted author details and embedded dungeon frames
+ok 68 - rotated city with 5000 buildings: resolved roads, targeted author details and embedded dungeon frames
+  ---
+  duration_ms: 2994.757391
+  type: 'test'
+  ...
+# Subtest: dense region is a bounded raster; exact hit honors holes and source fence
+ok 69 - dense region is a bounded raster; exact hit honors holes and source fence
+  ---
+  duration_ms: 12767.667192
+  type: 'test'
+  ...
+# Subtest: worker lifecycle, warm index reuse, cancellation and invalid requests
+ok 70 - worker lifecycle, warm index reuse, cancellation and invalid requests
+  ---
+  duration_ms: 917.777403
+  type: 'test'
+  ...
+# Subtest: Rtree unavailable falls back atomically; slices retain upper volume contours
+ok 71 - Rtree unavailable falls back atomically; slices retain upper volume contours
+  ---
+  duration_ms: 269.927177
+  type: 'test'
+  ...
+# Subtest: external source writes cannot hit an older cached region; journal overflow rebuilds
+ok 72 - external source writes cannot hit an older cached region; journal overflow rebuilds
+  ---
+  duration_ms: 677.191925
+  type: 'test'
+  ...
+# Subtest: bad city headers are explicit incomplete coverage, not a fabricated empty city
+ok 73 - bad city headers are explicit incomplete coverage, not a fabricated empty city
+  ---
+  duration_ms: 278.258117
+  type: 'test'
+  ...
+# Subtest: text-only edits retain source overlap order and exact hit target
+ok 74 - text-only edits retain source overlap order and exact hit target
+  ---
+  duration_ms: 237.186012
+  type: 'test'
+  ...
+# Subtest: compact travel receipt is idempotent and does not build a post-write full display
+ok 75 - compact travel receipt is idempotent and does not build a post-write full display
+  ---
+  duration_ms: 405.027358
+  type: 'test'
+  ...
+# Subtest: unknown compact write recovers exactly the same command and clears pending after receipt
+ok 76 - unknown compact write recovers exactly the same command and clears pending after receipt
+  ---
+  duration_ms: 163.766261
+  type: 'test'
+  ...
+# Subtest: external binding IDs are own keys and derived secret styles retain absent author revision
+ok 77 - external binding IDs are own keys and derived secret styles retain absent author revision
+  ---
+  duration_ms: 307.204103
+  type: 'test'
+  ...
+# Subtest: content anchors resolve from the canonical volume and refresh after a room move
+ok 78 - content anchors resolve from the canonical volume and refresh after a room move
+  ---
+  duration_ms: 436.865704
+  type: 'test'
+  ...
+# Subtest: a displayed source fence rejects stale geometry writes but permits exact receipt recovery
+ok 79 - a displayed source fence rejects stale geometry writes but permits exact receipt recovery
+  ---
+  duration_ms: 286.356251
+  type: 'test'
+  ...
+# Subtest: older landscape vector display fails explicitly at its byte budget; exact reader preserves all source points
+ok 80 - older landscape vector display fails explicitly at its byte budget; exact reader preserves all source points
+  ---
+  duration_ms: 458.645058
+  type: 'test'
+  ...
+# Subtest: default Room metadata is cached for warm reads and invalidated by local and external ordering changes
+ok 81 - default Room metadata is cached for warm reads and invalidated by local and external ordering changes
+  ---
+  duration_ms: 247.22126
+  type: 'test'
+  ...
+# Subtest: Graph preview overlays only its scope, keeps City context and joins before preview disposal
+ok 82 - Graph preview overlays only its scope, keeps City context and joins before preview disposal
+  ---
+  duration_ms: 802.240715
+  type: 'test'
+  ...
+# Subtest: dense room contours remain visible while empty city ground stays transparent
+ok 83 - dense room contours remain visible while empty city ground stays transparent
+  ---
+  duration_ms: 3656.73678
+  type: 'test'
+  ...
+# Subtest: dense City roofs remain above roads, matching the vector City layer order
+ok 84 - dense City roofs remain above roads, matching the vector City layer order
+  ---
+  duration_ms: 946.082426
+  type: 'test'
+  ...
+# Subtest: targeted City editing preserves an unavailable faction reference during an unrelated name edit
+ok 85 - targeted City editing preserves an unavailable faction reference during an unrelated name edit
+  ---
+  duration_ms: 371.926332
+  type: 'test'
+  ...
+# Subtest: one source-bound frame preserves dense landscape and paginates exact overlapping choices without author details
+ok 86 - one source-bound frame preserves dense landscape and paginates exact overlapping choices without author details
+  ---
+  duration_ms: 2182.198857
+  type: 'test'
+  ...
+# Subtest: landscape cache invalidates both moved and removed bounds, while thin display cannot overwrite original values
+ok 87 - landscape cache invalidates both moved and removed bounds, while thin display cannot overwrite original values
+  ---
+  duration_ms: 274.104643
+  type: 'test'
+  ...
+# Subtest: broken landscape is a local layer error and never removes usable Room geometry
+ok 88 - broken landscape is a local layer error and never removes usable Room geometry
+  ---
+  duration_ms: 230.858301
+  type: 'test'
+  ...
+# Subtest: camera request burst retains one worker/index with one replaceable successor
+ok 89 - camera request burst retains one worker/index with one replaceable successor
+  ---
+  duration_ms: 523.357002
+  type: 'test'
+  ...
+# Subtest: terrain tile cache follows local move/delete and preserves coarse/fine holes in source order
+ok 90 - terrain tile cache follows local move/delete and preserves coarse/fine holes in source order
+  ---
+  duration_ms: 2837.83143
+  type: 'test'
+  ...
+# Subtest: dense reference bounds remain selectable; hidden references and export omission remain explicit
+ok 91 - dense reference bounds remain selectable; hidden references and export omission remain explicit
+  ---
+  duration_ms: 1001.06861
+  type: 'test'
+  ...
+# Subtest: dense roads do not demote a bounded image template to an outline
+ok 92 - dense roads do not demote a bounded image template to an outline
+  ---
+  duration_ms: 7827.084164
+  type: 'test'
+  ...
+# Subtest: unavailable landscape reads and index builds never turn intact Room hits into an empty world
+ok 93 - unavailable landscape reads and index builds never turn intact Room hits into an empty world
+  ---
+  duration_ms: 629.874918
+  type: 'test'
+  ...
+# Subtest: sample-grid rejection is pixel-identical to the full source stream across pages, negative coordinates and holes
+ok 94 - sample-grid rejection is pixel-identical to the full source stream across pages, negative coordinates and holes
+  ---
+  duration_ms: 5082.134139
+  type: 'test'
+  ...
+# Subtest: exact glyph union preserves overlapping hits, paging, source fence and floor/archive filters
+ok 95 - exact glyph union preserves overlapping hits, paging, source fence and floor/archive filters
+  ---
+  duration_ms: 327.906332
+  type: 'test'
+  ...
+# Subtest: camera successors cannot replace queued object selection; both lanes remain bounded and cancellable
+ok 96 - camera successors cannot replace queued object selection; both lanes remain bounded and cancellable
+  ---
+  duration_ms: 769.277098
+  type: 'test'
+  ...
+# Subtest: dense raster picks a rotated object against its exact rectangle away from the anchor
+ok 97 - dense raster picks a rotated object against its exact rectangle away from the anchor
+  ---
+  duration_ms: 3238.842705
+  type: 'test'
+  ...
+# Subtest: an interior containing only authored objects is visible outside the origin and picks filled areas and narrow walls precisely
+ok 98 - an interior containing only authored objects is visible outside the origin and picks filled areas and narrow walls precisely
+  ---
+  duration_ms: 318.739014
+  type: 'test'
+  ...
+# Subtest: authored room colors follow their target identity through selected reads, region projection and Undo/Redo
+ok 99 - authored room colors follow their target identity through selected reads, region projection and Undo/Redo
+  ---
+  duration_ms: 286.562043
+  type: 'test'
+  ...
+# Subtest: empty author frames remain focusable but never create map labels or hit targets
+ok 100 - empty author frames remain focusable but never create map labels or hit targets
+  ---
+  duration_ms: 378.365606
+  type: 'test'
+  ...
+# Subtest: objects ignore legacy city sheets; painted areas neither own nor mutate their geometry
+ok 101 - objects ignore legacy city sheets; painted areas neither own nor mutate their geometry
+  ---
+  duration_ms: 414.376381
+  type: 'test'
+  ...
+# Subtest: projected terrain omits duplicate ground but retains dense transparent objects and cache separation
+not ok 102 - projected terrain omits duplicate ground but retains dense transparent objects and cache separation
+  ---
+  duration_ms: 279.373145
+  type: 'test'
+  location: '/home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-regions.test.mjs:309:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The expression evaluated to a falsy value:
+    
+      assert(full.landscape.tiles.length>0)
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///home/aaron/Schreibtisch/projects/SaltMarcher/tests/desktop-atlas-regions.test.mjs:313:29)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: commit transition retains the main surface until a matching region arrives
+ok 103 - commit transition retains the main surface until a matching region arrives
+  ---
+  duration_ms: 1.649024
+  type: 'test'
+  ...
+# Subtest: stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+ok 104 - stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+  ---
+  duration_ms: 6.740464
+  type: 'test'
+  ...
+# Subtest: late navigation reads cannot replace the live authored frame
+ok 105 - late navigation reads cannot replace the live authored frame
+  ---
+  duration_ms: 1.852476
+  type: 'test'
+  ...
+1..105
+# tests 105
+# suites 0
+# pass 102
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59400.882974

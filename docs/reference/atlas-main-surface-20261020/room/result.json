@@ -1,0 +1,36 @@
+{
+  "source": "5d91cedda0b08c3c54fef086ada0fc4a75a72580",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/atlas-main-Dr5AeL",
+  "errors": [],
+  "checks": [
+    "Normal room and object selection work with the main camera tilted and rotated",
+    "Room draft, vertex edit and one undo/redo retain the same camera and main surface",
+    "Top view keeps the renderer; a fresh native process retains canonical edits"
+  ],
+  "exits": [
+    {
+      "code": 0,
+      "signal": null
+    },
+    {
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "hashes": {
+    "src/app/atlas-presentation.ts": "56aaacc9e9e599ef8b9ed39a42ba89dc8009854b1ef33fab62cbab98863537fc",
+    "src/app/atlas-spatial-geometry.ts": "971181876b98368f0ec7405d9d3266500b11e91e4881331087eb6a7429a8a3bd",
+    "src/app/atlas-spatial-scene.ts": "686cac2588ce25ce59a935489f45a24b5fdf203253e18442422f1c80335b5478",
+    "src/app/atlas-canvas.ts": "98d97480a21274afb2a5ce9ee04f3f98893c6168e0abdc85c10053cd32ff5415",
+    "src/app/terrain-spatial-view.ts": "20360be4453e8f582522ba307bd5512f3581c29f1058cb5ceb04d52acdf64132",
+    "src/app/terrain-spatial-ui.ts": "1ffd4dda845ae79bf1947c8227a3b692a7bccb62e8603c09f2fb2fec48fe7e7a",
+    "src/app/campaign-atlas-ui.ts": "9842ce89e5d409cb42bbdeeb1573d3e92a279063dc1430d7a9edc399e23bdc5f",
+    ".build/desktop/ui/renderer.js": "47a2ef8aca3e399d6d3972479e114f65bb86dac62b8368588099e9bb5ef57a83"
+  },
+  "savedVertex": {
+    "x": 94.99999756502893,
+    "y": -0.0000021131577057076356
+  },
+  "ok": true
+}

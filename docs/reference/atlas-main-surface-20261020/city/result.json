@@ -1,0 +1,45 @@
+{
+  "source": "5d91cedda0b08c3c54fef086ada0fc4a75a72580",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/atlas-main-adVOUU",
+  "errors": [],
+  "checks": [
+    "City objects sit on landscape in the main camera; GPU context loss falls back once and explicit retry recovers"
+  ],
+  "exits": [
+    {
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "hashes": {
+    "src/app/atlas-presentation.ts": "56aaacc9e9e599ef8b9ed39a42ba89dc8009854b1ef33fab62cbab98863537fc",
+    "src/app/atlas-spatial-geometry.ts": "971181876b98368f0ec7405d9d3266500b11e91e4881331087eb6a7429a8a3bd",
+    "src/app/atlas-spatial-surface.ts": "b86fd632e50aa1f0fc3c37dac4bb993da662e9a4fb2323cd0428d1106167ff4a",
+    "src/app/atlas-spatial-label.ts": "08c8871767fd012bce5bd28574d67815d047ae447e533d6fae8d75e5757af71f",
+    "src/app/atlas-spatial-color.ts": "1a879589572028f9fea837bd6a6e430e4946e5c5d9fd2de6f361920d257250b7",
+    "src/app/terrain-spatial-worker.ts": "b385493ab0adbaca7fab3aa67f80835c9f149f9c9ad6afbe30450eda168c99e3",
+    "src/app/city-model.ts": "3e9afe706c888108f22496f4262f51a497d31a46de8c1a9b31ee385ee764abee",
+    "src/app/storage/atlas-region.ts": "654f56df68f6ec0a0e8bb9e46673a628baf18dc800fa97354a73da171224d4ce",
+    "src/app/atlas-spatial-scene.ts": "20f9ee033df2bfcaa923e93876ccbdb2fa0d14f1cb0633147516aa54ab398fbf",
+    "src/app/atlas-canvas.ts": "ff52b43cad6812b45942a5bc876f16be95723bf667cb07ffbd99052b184d2c0d",
+    "src/app/terrain-spatial-view.ts": "20360be4453e8f582522ba307bd5512f3581c29f1058cb5ceb04d52acdf64132",
+    "src/app/terrain-spatial-ui.ts": "7c8dd3ca079da7b8e99253923081165d0a98f7e461459729e9f2e7e5b66387fd",
+    "src/app/campaign-atlas-ui.ts": "9af689946e4f7e02aba674563c3f5eb57e73df3cfc9bd1f05aedfbaefcd03536",
+    ".build/desktop/ui/renderer.js": "f764ddc32138ab427c793061ef6bd4197b91aa5414a9b55e55b64ebc613b3307"
+  },
+  "city": {
+    "top": {
+      "paper": 0,
+      "roof": 7401,
+      "land": 514925
+    },
+    "tilted": {
+      "paper": 0,
+      "roof": 5174,
+      "land": 517338
+    },
+    "contextRecovery": true
+  },
+  "ok": true
+}

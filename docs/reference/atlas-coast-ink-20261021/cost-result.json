@@ -1,0 +1,68 @@
+{
+  "baseline": "32c7f49184d59b30e9dabc9756f159543fcf3f56",
+  "source": "2e8cdd400edbfce62e2db5348819da55d4c309d7",
+  "dirty": true,
+  "sourceHashes": {
+    "src/app/landscape-raster.ts": "4ed35ae5e389f846c329a2392c2b75cf3c433989e29cf55d86d39ca9bbb7b84b",
+    "src/app/terrain-coast.ts": "9d5538d98127d68f1043d6c4f41142600efc5a63b6b0b98286733036a06fa6b9",
+    "tools/measure-terrain-coast.mjs": "1680526cc44a9cf83b90071529031c4a049ebbbad4459259cc6b51cd9ebbb35a"
+  },
+  "measurements": [
+    {
+      "fixture": "coast",
+      "mode": "baseline",
+      "ms": 1293.422372,
+      "pixels": 786432,
+      "digest": "a56910cf7309b0aa7a0695f43e4d4468209e6804820830326d5cd49c343ec28d"
+    },
+    {
+      "fixture": "coast",
+      "mode": "current",
+      "ms": 755.5916860000002,
+      "pixels": 786432,
+      "digest": "c367006c914f2bfa58769708b852dfd3af886b8cbc720c2b117eece8cdf366f3"
+    },
+    {
+      "fixture": "coast",
+      "mode": "current",
+      "ms": 701.6981180000002,
+      "pixels": 786432,
+      "digest": "c367006c914f2bfa58769708b852dfd3af886b8cbc720c2b117eece8cdf366f3"
+    },
+    {
+      "fixture": "coast",
+      "mode": "baseline",
+      "ms": 747.709906,
+      "pixels": 786432,
+      "digest": "a56910cf7309b0aa7a0695f43e4d4468209e6804820830326d5cd49c343ec28d"
+    },
+    {
+      "fixture": "land",
+      "mode": "baseline",
+      "ms": 685.190184,
+      "pixels": 786432,
+      "digest": "99d9bcef72f08acb68ba64340f48fab28ea4f577510af34ee08ab44ad18ef869"
+    },
+    {
+      "fixture": "land",
+      "mode": "current",
+      "ms": 772.1365650000007,
+      "pixels": 786432,
+      "digest": "99d9bcef72f08acb68ba64340f48fab28ea4f577510af34ee08ab44ad18ef869"
+    },
+    {
+      "fixture": "land",
+      "mode": "current",
+      "ms": 700.1490510000003,
+      "pixels": 786432,
+      "digest": "99d9bcef72f08acb68ba64340f48fab28ea4f577510af34ee08ab44ad18ef869"
+    },
+    {
+      "fixture": "land",
+      "mode": "baseline",
+      "ms": 625.6762029999991,
+      "pixels": 786432,
+      "digest": "99d9bcef72f08acb68ba64340f48fab28ea4f577510af34ee08ab44ad18ef869"
+    }
+  ]
+}

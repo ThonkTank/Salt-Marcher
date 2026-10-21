@@ -16,7 +16,7 @@ function polygonPath(polygons: Polygon[]) {
 export interface PaintHit {
   data: Record<string, string>;
 }
-type Command = {
+export type AtlasPaintCommand = {
   node: AtlasPaint;
   matrix: DOMMatrix;
   path?: Path2D;
@@ -72,12 +72,12 @@ function pathFor(n: AtlasPaint) {
   }
   return p;
 }
-export type AtlasPathCache = WeakMap<AtlasPaint, {path?:Path2D;cuts?:Command["cuts"]}>;
+export type AtlasPathCache = WeakMap<AtlasPaint, {path?:Path2D;cuts?:AtlasPaintCommand["cuts"]}>;
 export class AtlasCanvasScene {
   pathBuilds=0;
   pathReuses=0;
   private maskSurface: HTMLCanvasElement | null = null;
-  readonly commands: Command[] = [];
+  readonly commands: AtlasPaintCommand[] = [];
   readonly images = new Set<string>();
   readonly requiredImages = new Set<string>();
   readonly landscapeImages = new Set<string>();
@@ -149,8 +149,10 @@ export class AtlasCanvasScene {
     view: DOMMatrix,
     images: Map<string, CanvasImageSource>,
     hudOffset: { x: number; y: number },
+    accept: (command:AtlasPaintCommand)=>boolean = ()=>true,
   ) {
     for (const c of this.commands) {
+      if(!accept(c))continue;
       const n = c.node,
         g = n.geometry,
         s = c.style;
@@ -248,7 +250,7 @@ export class AtlasCanvasScene {
   tooltip(ctx: CanvasRenderingContext2D, p: { x: number; y: number }) {
     return this.commandAt(ctx, p, () => true)?.title ?? "";
   }
-  private strokeStyle(ctx: CanvasRenderingContext2D, c: Command) {
+  private strokeStyle(ctx: CanvasRenderingContext2D, c: AtlasPaintCommand) {
     const s = c.style;
     ctx.lineWidth = s.lineWidth ?? 1;
     ctx.lineCap = s.lineCap ?? "butt";
@@ -259,7 +261,7 @@ export class AtlasCanvasScene {
   private commandAt(
     ctx: CanvasRenderingContext2D,
     p: { x: number; y: number },
-    accept: (c: Command) => boolean,
+    accept: (c: AtlasPaintCommand) => boolean,
   ) {
     ctx.save();
     ctx.resetTransform();

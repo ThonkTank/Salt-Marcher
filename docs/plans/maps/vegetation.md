@@ -17,8 +17,9 @@ Arbeitsfolge aus dem bestätigten Vegetationsplan dieses Tasks. Der vollständig
 ursprüngliche Entwurf ist vorübergehend in
 `.build/vegetation-roadmap-original.md` gesichert. Die Relief-Roadmap beschreibt
 eine eigene Entwicklung; deren R5–R7 sind keine Vegetationsphasen.
-Pro Durchlauf wird eine Vegetationsphase bearbeitet und gegen ihren Umfang
-geprüft. Die folgenden Statusangaben beziehen sich auf lokale Arbeit.
+Die folgende Tabelle dokumentiert die frühere lokale Phasenqualifikation.
+Für die weitere Umsetzung gilt die [gemeinsame Atlas-Roadmap](unified-spatial-atlas.md);
+insbesondere ersetzt sie die damals getrennten Ansichten durch die Hauptkamera.
 
 | Phase | Umfang und notwendiger Beleg | Stand |
 | --- | --- | --- |
@@ -63,16 +64,14 @@ Fachgrenzen frei wählbar, beispielsweise eine Baumdichte von `0,33`.
 Kampagnenort. Ortsprosa und Bewuchs bleiben getrennte Datensätze; eine
 Kampagnenkopie übernimmt beide mit neuen Ortskennungen.
 
-**Räumliche Landschaft** öffnet denselben Ausschnitt als kippbare,
-orthografische Ansicht mit Gelände, Bewuchs, Wegen und einfachen Gebäudekörpern.
-Draufsicht, Kippen, Neigung und Drehung sind Ansichtsänderungen. Verschieben
-und Mausrad ändern den Ausschnitt; die Rückkehr überträgt ihn an die Karte.
-Weitere Kameragesten bleiben beim Nachladen möglich; übernommen wird der
-zuletzt gewünschte Ausschnitt. Bearbeitung ist nach dem Laden seiner Daten
-wieder möglich.
+Neigen und Drehen stehen im Ansichtsmenü des normalen Atlas. Dieselbe
+perspektivische Hauptkamera zeigt Gelände, Bewuchs, Wege und Gebäude; der
+frühere Dialog **Räumliche Landschaft** ist entfernt. Verschieben, Mausrad
+und weitere Kameragesten bleiben beim Nachladen möglich. Bearbeitung verlangt
+einen bestätigten Frame des aktuellen Ausschnitts.
 Malen, Flächen, Reihen und lokale Dichtekorrekturen treffen das Gelände per
 Raycast und verwenden dieselben Autorenbefehle. Auswahl öffnet den gemeinsamen
-Inspektor. Undo/Redo gehören zum Atlas. **PNG dieser Ansicht** verwendet den
+Inspektor. Undo/Redo gehören zum Atlas. Die perspektivische PNG-Ausgabe verwendet den
 nativen Speicheranschluss und prüft den Quellenstand.
 
 ## Daten und Darstellung
@@ -93,10 +92,16 @@ Konflikt markiert und nicht automatisch entfernt.
 Die Kartenansicht zeigt bei mehr als 80 m/Pixel vorwiegend Bodenflächen,
 zwischen 2 und 80 m/Pixel eine ausgedünnte Kronendarstellung und bis
 2 m/Pixel die lokalen Einzelobjekte. Die Übersicht wählt ihre Vertreter
-aus verschiedenen Positionen innerhalb weltfester Zellen; dadurch entsteht
-kein regelmäßiges Punktraster. Regional werden automatische Baumkronen
-für die Lesbarkeit breiter dargestellt. Kanonische Positionen, Größen und
-geschützte Objekte bleiben unverändert. Die räumliche Ansicht verwendet dieselben Kandidaten als
+als verschachtelte Teilmengen weltfester Zellen. Ein gröberer Vertreter ist
+immer ein bereits vorhandener Vertreter der feineren Stufe. Identität,
+Position, Größe und Eignungsprüfung bleiben die der lokalen Kandidaten.
+Automatische Kronen wachsen anhand der aktuellen Kameratiefe auf eine kleine
+Bildschirmgröße; ihre Höhe bleibt maßhaltig. Vor dem nächsten Quellwechsel
+blenden nicht mehr benötigte Kandidaten weich aus. Größen- und
+Sichtbarkeitsänderungen benötigen weder einen Bereichsread noch neue
+Instanzmatrizen. Die CPU-Trefferprüfung verwendet dieselben Regeln.
+Geschützte Einzelobjekte behalten ihre Maße und bleiben erhalten. Der
+Canvas-Fallback verwendet dieselben Ausblendschwellen. Die Hauptansicht verwendet
 instanzierte, geometrisch erzeugte Low-Poly-Meshes. Gras und Unterwuchs sind
 kleine geometrische Büschel. Es gibt keine importierten Fremdassets und keine
 Wachstums- oder Ökosystemsimulation.
@@ -117,12 +122,12 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 
 | Verantwortung | Einstieg |
 | --- | --- |
-| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse | `src/app/vegetation.ts` |
+| Vorlagen, Validierung, stabile Kandidaten und Ausschlüsse | `src/app/vegetation.ts`; verschachtelte Detailstufen: `src/app/vegetation-lod.ts` |
 | Kanonische Befehle und räumliche Datenprojektion | `src/app/storage/atlas-landscape.ts`, `src/app/storage/vegetation.ts` |
 | History, Main/Preload und Kampagnenkopie | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts` |
 | Kartenbild, Geländegrund und Bereichsprojektion | `src/app/vegetation-view.ts`, `src/app/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
 | Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas-landscape-ui.ts`, `src/app/vegetation-controls.ts` |
-| Räumliche Ansicht und isolierter Prototyp | `src/app/vegetation-spatial.ts`, `tools/vegetation-prototype/app.ts` |
+| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas-spatial-vegetation.ts`, `src/app/vegetation-display.ts`, `src/app/terrain-spatial-view.ts`, `tools/vegetation-prototype/app.ts` |
 | Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/spatial-terrain.ts` |
 | Datenregression, Auswahl und echte Desktop-Bedienung | `tests/vegetation.test.mjs`, `tests/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
 

@@ -1,0 +1,49 @@
+{
+  "source": "5a791e6fc55ef50b4edaae4c3a09b0dcbf7a4c02",
+  "profile": "/home/aaron/.cache/saltmarcher/tests/ground-measure-see9Ww",
+  "query": {
+    "box": {
+      "x": -900,
+      "y": -600,
+      "width": 1800,
+      "height": 1200
+    },
+    "width": 2000,
+    "height": 1334,
+    "scopeId": null,
+    "floorId": "ground",
+    "slice": null,
+    "roofs": true,
+    "contours": 0
+  },
+  "runs": [
+    {
+      "terrainRaster": true,
+      "ms": 5142.4670160000005,
+      "tiles": 4,
+      "bytes": 143853,
+      "workerStarts": 1
+    },
+    {
+      "terrainRaster": false,
+      "ms": 2.271788999999444,
+      "tiles": 0,
+      "bytes": 1386,
+      "workerStarts": 1
+    },
+    {
+      "terrainRaster": false,
+      "ms": 2.0346490000001722,
+      "tiles": 0,
+      "bytes": 1386,
+      "workerStarts": 1
+    },
+    {
+      "terrainRaster": true,
+      "ms": 3739.1069339999995,
+      "tiles": 4,
+      "bytes": 143853,
+      "workerStarts": 1
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "checks": [
+    "The ordinary Atlas keeps one canvas when tilted.",
+    "Tiled perspective PNG exports through the main renderer without author changes.",
+    "Visible roof selects the canonical building; height edits retain its room geometry and main canvas.",
+    "Fresh native process reopens the same object heights and rooms."
+  ],
+  "source": "5a791e6fc55ef50b4edaae4c3a09b0dcbf7a4c02",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-objects-main-PS7qRz",
+  "artifacts": {
+    "main.cjs": "65ac8a69582a376ccaee0e611b72d517e8ac9c1fcbdad74548b6306428e6f20b",
+    "preload.cjs": "307e72edac55765f1730ffed551bdda65dfce41145c54fa3cffd6369c433a3c3",
+    "ui/renderer.js": "a836cb454ee2fd1afc48a5ef8c7978940d4d0dc8692aa9247832f728e6c96c8d",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2185577,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 2186576,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

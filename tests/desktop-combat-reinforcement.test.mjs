@@ -471,7 +471,7 @@ test('schema 50 upgrades without changing records and missing schema 51 scene li
  const root=mkdtempSync(tmpdir()+'/scene-opponent-upgrade-'),file=root+'/workbench.sqlite';let store=new CampaignStore(file);t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
  const cam=store.create('Bestehende Kampagne'),w=store.activate(cam.id);store.executeLive({commandId:randomUUID(),campaignId:cam.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});
  store.db.exec('DROP TABLE scene_opponent_group;PRAGMA user_version=50');const before=store.db.prepare('SELECT * FROM live_scene').all();store.close();store=new CampaignStore(file);
- assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),53);
+ assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),54);
  store.db.exec('DROP TABLE scene_opponent_group');store.close();assert.throws(()=>new CampaignStore(file),/Szenengegner-Zuordnung fehlt/);
 });
 

@@ -647,6 +647,13 @@ export class TerritoryWorkbench {
       this.host.redraw();
     }
   }
+  async select(id:string){
+    if(this.hasDraft())throw Error('Gebietszug zuerst abschließen oder verwerfen.');
+    const token=this.token;await this.load();if(this.token!==token)return;
+    const area=this.state.territories.find(t=>t.id===id);if(!area)throw Error('Gebiet nicht mehr vorhanden.');
+    this.layer=area.layerId;this.selected=id;this.vertex=null;this.controls();
+    if(area.polygons.length)this.host.focus(territoryBounds(area.polygons));this.host.redraw();
+  }
   private async load() {
     const data = this.host.data();
     if (!data || !this.token) return;

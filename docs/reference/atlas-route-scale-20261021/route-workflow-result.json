@@ -1,0 +1,45 @@
+{
+  "complete": true,
+  "checks": [
+    "Straße aus bestehender Linie planen, Neigen derselben Hauptkamera und atomare Übernahme",
+    "Fluss mit echten Punktklicks und Koordinatenkorrektur, abfließendes Profil und verbundenes Bett",
+    "Schutz ist pro Verlauf schaltbar und gespeichert",
+    "Löschen und Atlas-Undo stellen Verlauf samt Geländeform wieder her",
+    "Gemeinsamer gekippter Atlas zeigt dieselben gespeicherten Verläufe",
+    "Echter Geländepinselzug erhält geschützte Verläufe; ein Undo nimmt Gelände und Profile zurück",
+    "Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz"
+  ],
+  "source": "66f3f21ca1e6f42a15010721babc85c480f41cdc",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/terrain-routes-1VqQlo",
+  "artifacts": {
+    "main.cjs": "a5e9075e2b73fd89424417e95cff1fdb1a961973881bfe7eb7806f1940733359",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "9fe7db9d9b16ae577a3b2ede9612775da91679559136a6fdd02bff26f1860960",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2422872,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 2425697,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

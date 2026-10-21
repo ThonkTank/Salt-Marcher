@@ -1,0 +1,275 @@
+TAP version 13
+# Subtest: Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+ok 1 - Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+  ---
+  duration_ms: 34.411211
+  type: 'test'
+  ...
+# Subtest: Far-world local room detail retains transform precision and follows terrain elevation
+ok 2 - Far-world local room detail retains transform precision and follows terrain elevation
+  ---
+  duration_ms: 2.044226
+  type: 'test'
+  ...
+# Subtest: Draped areas sample interior terrain and preserve author IDs
+ok 3 - Draped areas sample interior terrain and preserve author IDs
+  ---
+  duration_ms: 13.641475
+  type: 'test'
+  ...
+# Subtest: HUD and terrain-owned rasters are not duplicated; masked content fails closed
+ok 4 - HUD and terrain-owned rasters are not duplicated; masked content fails closed
+  ---
+  duration_ms: 1.860878
+  type: 'test'
+  ...
+# Subtest: Dash phase persists around a corner and zero gaps do not hang
+ok 5 - Dash phase persists around a corner and zero gaps do not hang
+  ---
+  duration_ms: 3.443209
+  type: 'test'
+  ...
+# Subtest: Atlas alpha colors preserve translucent previews in GPU materials
+ok 6 - Atlas alpha colors preserve translucent previews in GPU materials
+  ---
+  duration_ms: 0.915078
+  type: 'test'
+  ...
+# Subtest: 3 miles across flats, factor three and an Earth-size overview at all window aspects
+ok 7 - 3 miles across flats, factor three and an Earth-size overview at all window aspects
+  ---
+  duration_ms: 46.377005
+  type: 'test'
+  ...
+# Subtest: property inheritance, partial reset, shared undo/redo and Fresh preserve fine work
+ok 8 - property inheritance, partial reset, shared undo/redo and Fresh preserve fine work
+  ---
+  duration_ms: 1854.280235
+  type: 'test'
+  ...
+# Subtest: continuous rivers, road intersections and point edits persist as one atomic command
+ok 9 - continuous rivers, road intersections and point edits persist as one atomic command
+  ---
+  duration_ms: 535.921981
+  type: 'test'
+  ...
+# Subtest: ordered place keys, calibrated assets and an independent campaign copy remain connected
+ok 10 - ordered place keys, calibrated assets and an independent campaign copy remain connected
+  ---
+  duration_ms: 2101.076556
+  type: 'test'
+  ...
+# Subtest: schema45 landscape migrates original factor-two footprints without moving coordinates
+ok 11 - schema45 landscape migrates original factor-two footprints without moving coordinates
+  ---
+  duration_ms: 442.582278
+  type: 'test'
+  ...
+# Subtest: schema45 campaign packages are previewed read-only and imported through an upgraded copy
+ok 12 - schema45 campaign packages are previewed read-only and imported through an upgraded copy
+  ---
+  duration_ms: 2556.023233
+  type: 'test'
+  ...
+# Subtest: overview and paged search do not load complete room/city/runtime views
+ok 13 - overview and paged search do not load complete room/city/runtime views
+  ---
+  duration_ms: 1391.395102
+  type: 'test'
+  ...
+# Subtest: compact landscape commit is durable and idempotent without full atlas reads; stale pages rejected
+ok 14 - compact landscape commit is durable and idempotent without full atlas reads; stale pages rejected
+  ---
+  duration_ms: 615.999161
+  type: 'test'
+  ...
+# Subtest: connection-local landscape index tracks movement, undo/redo, deletion and restart
+ok 15 - connection-local landscape index tracks movement, undo/redo, deletion and restart
+  ---
+  duration_ms: 1126.569086
+  type: 'test'
+  ...
+# Subtest: atlas reads reject stale activation and cross-campaign IDs
+ok 16 - atlas reads reject stale activation and cross-campaign IDs
+  ---
+  duration_ms: 248.718264
+  type: 'test'
+  ...
+# Subtest: large signed addresses preserve local millimeters, normalized boundaries and explicit range failures
+ok 17 - large signed addresses preserve local millimeters, normalized boundaries and explicit range failures
+  ---
+  duration_ms: 1.922505
+  type: 'test'
+  ...
+# Subtest: overview raster preserves fine forest, holes and terrain overrides; elevation-only edits inherit terrain
+ok 18 - overview raster preserves fine forest, holes and terrain overrides; elevation-only edits inherit terrain
+  ---
+  duration_ms: 206.269145
+  type: 'test'
+  ...
+# Atlas spatial cache unavailable; using canonical bounds.
+# Subtest: the common region worker streams 100000 patches into bounded overview tiles without changing author data
+ok 19 - the common region worker streams 100000 patches into bounded overview tiles without changing author data
+  ---
+  duration_ms: 13578.65535
+  type: 'test'
+  ...
+# Subtest: a landscape edit pauses an active local trip without changing confirmed position or time
+ok 20 - a landscape edit pauses an active local trip without changing confirmed position or time
+  ---
+  duration_ms: 515.117471
+  type: 'test'
+  ...
+# Subtest: large authored polygon bounds do not depend on the JavaScript argument limit
+ok 21 - large authored polygon bounds do not depend on the JavaScript argument limit
+  ---
+  duration_ms: 963.267707
+  type: 'test'
+  ...
+# Subtest: landscape search pages beyond 100 without copying geometry, then loads one exact object
+ok 22 - landscape search pages beyond 100 without copying geometry, then loads one exact object
+  ---
+  duration_ms: 211.402818
+  type: 'test'
+  ...
+# Subtest: an unavailable derived index cannot prevent opening an unrelated healthy campaign
+ok 23 - an unavailable derived index cannot prevent opening an unrelated healthy campaign
+  ---
+  duration_ms: 477.179584
+  type: 'test'
+  ...
+# Subtest: GM scenes stream with exact pixel placement, source identity and cancellation
+ok 24 - GM scenes stream with exact pixel placement, source identity and cancellation
+  ---
+  duration_ms: 5.837494
+  type: 'test'
+  ...
+# Subtest: public export uses remembered public terrain, never current hidden GM geometry
+ok 25 - public export uses remembered public terrain, never current hidden GM geometry
+  ---
+  duration_ms: 388.999978
+  type: 'test'
+  ...
+# Subtest: unknown or incomplete author commands cannot receive a successful compact commit receipt
+ok 26 - unknown or incomplete author commands cannot receive a successful compact commit receipt
+  ---
+  duration_ms: 239.017562
+  type: 'test'
+  ...
+# Subtest: targeted reads and page cursors preserve existing opaque IDs without a new length restriction
+ok 27 - targeted reads and page cursors preserve existing opaque IDs without a new length restriction
+  ---
+  duration_ms: 375.501957
+  type: 'test'
+  ...
+# Subtest: opening a store does not build an unused writer landscape index; the first bounded legacy read builds it once
+ok 28 - opening a store does not build an unused writer landscape index; the first bounded legacy read builds it once
+  ---
+  duration_ms: 316.164677
+  type: 'test'
+  ...
+# Subtest: shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+ok 29 - shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+  ---
+  duration_ms: 27.804852
+  type: 'test'
+  ...
+# Subtest: object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+ok 30 - object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+  ---
+  duration_ms: 6.944168
+  type: 'test'
+  ...
+# Subtest: object hits keep normal Atlas identity and respect nearer terrain
+ok 31 - object hits keep normal Atlas identity and respect nearer terrain
+  ---
+  duration_ms: 8.588027
+  type: 'test'
+  ...
+# Subtest: projection validation checks all footprint rings and rejects malformed geometry
+ok 32 - projection validation checks all footprint rings and rejects malformed geometry
+  ---
+  duration_ms: 4.002509
+  type: 'test'
+  ...
+# Subtest: streamed spatial display matches existing geometry, sea and object heights on a local field
+ok 33 - streamed spatial display matches existing geometry, sea and object heights on a local field
+  ---
+  duration_ms: 1074.920683
+  type: 'test'
+  ...
+# Subtest: world above raw record budget remains drawable and locally sculptable, smoothable and paintable
+ok 34 - world above raw record budget remains drawable and locally sculptable, smoothable and paintable
+  ---
+  duration_ms: 8666.198572
+  type: 'test'
+  ...
+# Subtest: canonical streamed visibility preserves occlusion independently of local author records
+ok 35 - canonical streamed visibility preserves occlusion independently of local author records
+  ---
+  duration_ms: 675.70364
+  type: 'test'
+  ...
+# Subtest: projection bounds reject unbounded buffers, unknown fields and renderer-supplied source heights
+ok 36 - projection bounds reject unbounded buffers, unknown fields and renderer-supplied source heights
+  ---
+  duration_ms: 1.109737
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 37 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 88.358146
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 38 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 44.100264
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 39 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 45.75965
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 40 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 16.508132
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 41 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 11.634117
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 42 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 9.968403
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 43 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 221.559478
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 44 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 14.074386
+  type: 'test'
+  ...
+1..44
+# tests 44
+# suites 0
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23818.838109

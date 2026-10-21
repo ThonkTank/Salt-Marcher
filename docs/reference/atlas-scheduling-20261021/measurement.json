@@ -1,0 +1,47 @@
+{
+  "source": "7c90fa3f2857e2eaefd757f9fca35e281b0c7148",
+  "baseline": "/home/aaron/.cache/saltmarcher/atlas-scheduling/baseline-source",
+  "profile": "/home/aaron/.cache/saltmarcher/tests/schedule-measure-YUrKOf",
+  "runs": [
+    {
+      "name": "baseline",
+      "selectionMs": 2504.60531,
+      "selectionBeforeFull": false,
+      "fullMs": 2522.9119760000003,
+      "slices": 1,
+      "maxSliceMs": 2521.6995819999997,
+      "p95SliceMs": 2521.6995819999997,
+      "workerStarts": 1
+    },
+    {
+      "name": "sliced",
+      "selectionMs": 27.386483000000226,
+      "selectionBeforeFull": true,
+      "fullMs": 3544.8283789999996,
+      "slices": 219,
+      "maxSliceMs": 50.93504200000007,
+      "p95SliceMs": 24.199517000000014,
+      "workerStarts": 1
+    },
+    {
+      "name": "sliced",
+      "selectionMs": 10.454725999999937,
+      "selectionBeforeFull": true,
+      "fullMs": 3511.1163309999993,
+      "slices": 218,
+      "maxSliceMs": 50.3595290000012,
+      "p95SliceMs": 22.575310000000172,
+      "workerStarts": 1
+    },
+    {
+      "name": "baseline",
+      "selectionMs": 2166.4198140000008,
+      "selectionBeforeFull": false,
+      "fullMs": 2182.3964319999995,
+      "slices": 1,
+      "maxSliceMs": 2181.443598,
+      "p95SliceMs": 2181.443598,
+      "workerStarts": 1
+    }
+  ]
+}

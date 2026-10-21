@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: each live increment is persisted immediately; one undo/redo covers the complete gesture after restart
+ok 1 - each live increment is persisted immediately; one undo/redo covers the complete gesture after restart
+  ---
+  duration_ms: 1312.793374
+  type: 'test'
+  ...
+# Subtest: a failed later increment rolls back only that increment and retains a single undo for the saved prefix
+ok 2 - a failed later increment rolls back only that increment and retains a single undo for the saved prefix
+  ---
+  duration_ms: 561.461071
+  type: 'test'
+  ...
+# Subtest: idempotent receipts never repeat a delta and include the terrain grouping identity
+ok 3 - idempotent receipts never repeat a delta and include the terrain grouping identity
+  ---
+  duration_ms: 587.023005
+  type: 'test'
+  ...
+# Subtest: an intervening edit, undo branch, stale revision and tool-family change cannot be folded into an old gesture
+ok 4 - an intervening edit, undo branch, stale revision and tool-family change cannot be folded into an old gesture
+  ---
+  duration_ms: 519.228248
+  type: 'test'
+  ...
+# Subtest: no-op first increments do not consume an undo slot; later effects still form one gesture
+ok 5 - no-op first increments do not consume an undo slot; later effects still form one gesture
+  ---
+  duration_ms: 499.178432
+  type: 'test'
+  ...
+# Subtest: direct colour increments are canonical writes and undo as one gesture without changing heights
+ok 6 - direct colour increments are canonical writes and undo as one gesture without changing heights
+  ---
+  duration_ms: 765.444372
+  type: 'test'
+  ...
+# Subtest: smoothing uses one persisted history entry across increments and undo restores the original height
+ok 7 - smoothing uses one persisted history entry across increments and undo restores the original height
+  ---
+  duration_ms: 1020.920294
+  type: 'test'
+  ...
+# Subtest: the live writer feeds zero-based incremental durations into the real storage boundary
+ok 8 - the live writer feeds zero-based incremental durations into the real storage boundary
+  ---
+  duration_ms: 574.746875
+  type: 'test'
+  ...
+# Subtest: bounded visibility rays agree with complete triangle walks across ridges, rotations, sea and world scales
+ok 9 - bounded visibility rays agree with complete triangle walks across ridges, rotations, sea and world scales
+  ---
+  duration_ms: 351.488879
+  type: 'test'
+  ...
+# Subtest: color clipping dissolves adjacent visibility rows before intersecting a round stroke near axis zero
+ok 10 - color clipping dissolves adjacent visibility rows before intersecting a round stroke near axis zero
+  ---
+  duration_ms: 246.357853
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6783.165152

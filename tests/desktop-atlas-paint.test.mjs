@@ -4,8 +4,8 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 import {DOMParser} from 'linkedom';
-buildSync({stdin:{contents:"export * from './src/app/drawing-model';export {cityPaint,citySvg} from './src/app/city-model';export * from './src/app/atlas-paint-svg';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',outfile:'.build/atlas-paint-test.cjs'});
-const {elementPaint,elementSvg,cityPaint,citySvg,paintElement}=createRequire(import.meta.url)('../.build/atlas-paint-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/drawing-model';export {cityPaint,cityObjectsPaint,citySvg} from './src/app/city-model';export * from './src/app/atlas-paint-svg';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',outfile:'.build/atlas-paint-test.cjs'});
+const {elementPaint,elementSvg,cityPaint,cityObjectsPaint,citySvg,paintElement}=createRequire(import.meta.url)('../.build/atlas-paint-test.cjs');
 const baseline=JSON.parse(readFileSync(new URL('./fixtures/atlas-paint-baseline.json',import.meta.url),'utf8'));
 function tree(node){
  const attrs=Object.fromEntries([...node.attributes].map(a=>[a.name,a.value]));
@@ -44,4 +44,13 @@ test('Legacy SVG adapter builds safe nodes from the same geometry without parsin
  assert.deepEqual(tree(element),tree(parsed(elementSvg(c.element,baseline.rooms,[]))));
  assert.equal(element.querySelector('script'),null);
  assert.equal(element.querySelector('text').textContent,c.element.name);
+});
+
+test('Atlas cities contain only authored objects, with no paper sheet or local canvas bounds',()=>{
+ const view=baseline.city,objects=cityObjectsPaint(view,false,.2),standalone=cityPaint(view,false,.2);
+ assert.equal(objects.geometry.size,undefined);
+ assert.equal(objects.children.some(n=>n.kind==='rect'&&n.geometry.width===view.header.width&&n.geometry.height===view.header.height),false);
+ assert.equal(standalone.children[0].kind,'rect');
+ assert.deepEqual(objects.children,standalone.children.slice(1),'roads, water, districts and buildings share the existing object builder');
+ assert(objects.children.some(n=>n.data.cityUnit));
 });

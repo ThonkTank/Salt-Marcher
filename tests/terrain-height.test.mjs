@@ -242,7 +242,7 @@ test("malformed height formats and write failures leave the transaction unchange
   const f = fixture(t),
     before = f.records();
   const bad = heightRecord(0, 0, 1, new Float32Array(4096));
-  bad.height.version = 2;
+  bad.height.version = 3;
   assert.throws(
     () =>
       f.write({ kind: "landscape-put", record: bad, expectedRevision: null }),

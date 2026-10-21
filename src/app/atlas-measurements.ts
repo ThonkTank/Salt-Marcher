@@ -13,14 +13,15 @@ export function wrapMeasurementLines(lines:readonly string[],maxCharacters:numbe
  const out:string[]=[];for(const line of lines){let row='';for(const word of line.split(' ')){if(row&&row.length+1+word.length>maxCharacters){out.push(row);row=word;}else row+=(row?' ':'')+word;}if(row)out.push(row);}return out;
 }
 /** Screen-space label, positioned from a world-space anchor. Never a hit target. */
-export function drawMeasurements(root:AtlasPaint,box:CanvasBox,mpp:number,anchor:Point,lines:readonly string[]){
+export function drawMeasurements(root:AtlasPaint,box:CanvasBox,mpp:number,anchor:Point,lines:readonly string[],project?:(p:Point)=>Point){
  if(!lines.length||lines.some(line=>/NaN|Infinity/.test(line))||!Number.isFinite(anchor.x+anchor.y)||mpp<=0)return;
+ anchor=project?.(anchor)??anchor;
  const maxWidth=Math.max(40,box.width/mpp-16);
  const wrapped=wrapMeasurementLines(lines,Math.max(4,Math.floor((maxWidth-20)/7)));
  const width=Math.min(maxWidth,Math.max(...wrapped.map(l=>l.length))*7+20),height=wrapped.length*18+12;
  const x=Math.max(8,Math.min(box.width/mpp-width-8,(anchor.x-box.x)/mpp+18));
  let y=(anchor.y-box.y)/mpp+22;if(y+height>box.height/mpp-8)y=(anchor.y-box.y)/mpp-height-22;y=Math.max(8,y);
- const group=atlasPaint('group',{matrix:[mpp,0,0,mpp,x*mpp,y*mpp],pointer:false,data:{editorOnly:'true',atlasMeasurement:'true'}});
+ const group=atlasPaint('group',{hud:true,matrix:[mpp,0,0,mpp,x*mpp,y*mpp],pointer:false,data:{editorOnly:'true',atlasMeasurement:'true'}});
  group.append(atlasPaint('rect',{width,height,style:{fill:'#fffaf0',fillOpacity:.96,stroke:'#8b785e',lineWidth:1},pointer:false}));
  wrapped.forEach((line,i)=>group.append(atlasPaint('text',{x:10,y:20+i*18,style:{fontSize:12,fill:'#26382e'},pointer:false},line)));
  root.append(group);

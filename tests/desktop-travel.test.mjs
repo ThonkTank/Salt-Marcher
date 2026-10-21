@@ -366,7 +366,7 @@ for(const damage of ['checksum','duplicate effect','foreign owner','original cau
 });
 test('schema 52 opens without invented historical checkpoints; schema 53 cannot silently recreate a missing owner',()=>{
  const x=setup();try{
-  x.store.executeWorld(x.step(x.accept(),3));x.store.db.exec('DROP TABLE travel_checkpoint; PRAGMA user_version=52');x.reopen();assert.deepEqual(x.state().travelHistory,{undo:null,redo:null});assert.equal(x.state().position.q,3);assert.equal(x.store.db.pragma('user_version',{simple:true}),53);
+  x.store.executeWorld(x.step(x.accept(),3));x.store.db.exec('DROP TABLE travel_checkpoint; PRAGMA user_version=52');x.reopen();assert.deepEqual(x.state().travelHistory,{undo:null,redo:null});assert.equal(x.state().position.q,3);assert.equal(x.store.db.pragma('user_version',{simple:true}),54);
   x.store.db.exec('DROP TABLE travel_checkpoint');x.store.close();assert.throws(()=>new CampaignStore(x.filename),/Reisecheckpoint/);
  }finally{x.cleanup();}
 });

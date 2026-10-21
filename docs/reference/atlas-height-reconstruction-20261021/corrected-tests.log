@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: colour preserves bounded cubic terrain and density-aware contour pixels in all three styles
+ok 1 - colour preserves bounded cubic terrain and density-aware contour pixels in all three styles
+  ---
+  duration_ms: 1680.662024
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 2 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 7.691162
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 3 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 1474.944216
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 4 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 57.641338
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 5 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 4.222454
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 6 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 2.385138
+  type: 'test'
+  ...
+# Subtest: terrain anchored buildings translate as a whole and keep exact floors and footprint; fixed buildings stay fixed
+ok 7 - terrain anchored buildings translate as a whole and keep exact floors and footprint; fixed buildings stay fixed
+  ---
+  duration_ms: 19.009276
+  type: 'test'
+  ...
+# Subtest: concave building roofs use footprint triangulation, not a fan extending outside the footprint
+ok 8 - concave building roofs use footprint triangulation, not a fan extending outside the footprint
+  ---
+  duration_ms: 4.972241
+  type: 'test'
+  ...
+# Subtest: profile samples known slopes, bends, ascent and descent without changing author data
+ok 9 - profile samples known slopes, bends, ascent and descent without changing author data
+  ---
+  duration_ms: 21.538194
+  type: 'test'
+  ...
+# Subtest: canonical house/entrance bindings survive history and reopen; region inputs and terrain query share height
+ok 10 - canonical house/entrance bindings survive history and reopen; region inputs and terrain query share height
+  ---
+  duration_ms: 6020.433594
+  type: 'test'
+  ...
+# Subtest: weather and the existing hex sight rule consume the same canonical terrain after a ridge edit
+ok 11 - weather and the existing hex sight rule consume the same canonical terrain after a ridge edit
+  ---
+  duration_ms: 463.275534
+  type: 'test'
+  ...
+# Subtest: bounded lake and sea surfaces share canonical water levels in the tilted view
+ok 12 - bounded lake and sea surfaces share canonical water levels in the tilted view
+  ---
+  duration_ms: 11.59076
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10972.945759

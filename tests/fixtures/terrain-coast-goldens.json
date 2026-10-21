@@ -1,0 +1,59 @@
+{
+  "source": "Bounded cubic terrain with narrow coast ink 2026-10-21; authored nodes and 24 logical px contour density unchanged. Historical bilinear and cubic coast baselines retained separately.",
+  "cases": [
+    {
+      "mode": "drawn",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "shaded",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "height",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "drawn",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "3c61439c277308660deec0c496bbdfd973ccdd11c4bd81ae1cc537c882ae131d"
+    },
+    {
+      "mode": "drawn",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "6274642f26bbde9f924065b468780a9a5fb91e9b43accc03bbab2ecd2e3b7860"
+    },
+    {
+      "mode": "shaded",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "081ada66b324624b3279bbc87ba4ad500715a0b3d7a23425c7a34546e8ad98bf"
+    },
+    {
+      "mode": "shaded",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "0a5ba1ca5db3cd593ae4867865ce84f5c86049519a8f5a3871a2a0b3d4764dc5"
+    },
+    {
+      "mode": "height",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "323ed93f72d357ae857fe2c423f9d4eb6bfae4596cf10d40b0806b05df93140b"
+    },
+    {
+      "mode": "height",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "08b4989799e329f4cd05e799cd7cd79733fa52b32607a677fa77d2a3ab9a470a"
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: colour jobs yield to selection, share pixel semantics and reject stale revisions
+ok 1 - colour jobs yield to selection, share pixel semantics and reject stale revisions
+  ---
+  duration_ms: 1251.880793
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 2 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 5.237196
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 3 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 2539.355247
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 4 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 43.009263
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 5 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 4.742743
+  type: 'test'
+  ...
+# Subtest: navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+ok 6 - navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+  ---
+  duration_ms: 4.655242
+  type: 'test'
+  ...
+# Subtest: coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+ok 7 - coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+  ---
+  duration_ms: 372.013454
+  type: 'test'
+  ...
+# Subtest: yielding raster batches reproduce the complete projection byte for byte
+ok 8 - yielding raster batches reproduce the complete projection byte for byte
+  ---
+  duration_ms: 1168.379957
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 9 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 2.756971
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 10 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 13.978693
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 11 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 9.091233
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 12 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 1.661996
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 13 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 5.175565
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 14 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 6.872383
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 15 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 18.726347
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 16 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 25.158127
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 17 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 26.413421
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 18 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 5.214507
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but edits and campaign changes discard it
+ok 19 - navigation retains sharp world-anchored colour, but edits and campaign changes discard it
+  ---
+  duration_ms: 43.734963
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 20 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 14.95715
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 21 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 4.608313
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 22 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 7.06783
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 23 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 6.367898
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7336.584617

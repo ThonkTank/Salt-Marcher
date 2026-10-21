@@ -1,0 +1,202 @@
+TAP version 13
+# Subtest: history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+ok 1 - history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+  ---
+  duration_ms: 6.294988
+  type: 'test'
+  ...
+# Subtest: a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+ok 2 - a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+  ---
+  duration_ms: 81.348303
+  type: 'test'
+  ...
+# Subtest: unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+ok 3 - unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+  ---
+  duration_ms: 58.997967
+  type: 'test'
+  ...
+# Subtest: a pending old tile cannot fill the rebased cache even if its caller still reports current
+ok 4 - a pending old tile cannot fill the rebased cache even if its caller still reports current
+  ---
+  duration_ms: 9.717817
+  type: 'test'
+  ...
+# Subtest: fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded
+ok 5 - fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded
+  ---
+  duration_ms: 88.330472
+  type: 'test'
+  ...
+# Subtest: the projection colour base accepts only a concrete source identity
+ok 6 - the projection colour base accepts only a concrete source identity
+  ---
+  duration_ms: 2.592167
+  type: 'test'
+  ...
+# Subtest: colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+ok 7 - colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+  ---
+  duration_ms: 2194.626553
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 8 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 6.839522
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 9 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 1997.924284
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 10 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 87.996745
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 11 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 7.234784
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 12 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 3.842686
+  type: 'test'
+  ...
+# Subtest: commit transition retains the main surface until a matching region arrives
+ok 13 - commit transition retains the main surface until a matching region arrives
+  ---
+  duration_ms: 3.184255
+  type: 'test'
+  ...
+# Subtest: stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+ok 14 - stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+  ---
+  duration_ms: 14.70923
+  type: 'test'
+  ...
+# Subtest: late navigation reads cannot replace the live authored frame
+ok 15 - late navigation reads cannot replace the live authored frame
+  ---
+  duration_ms: 4.679686
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 16 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 3.317227
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 17 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 25.553021
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 18 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 44.318856
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 19 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 3.568756
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 20 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 18.787157
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 21 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 18.576887
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 22 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 40.487149
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 23 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 99.805609
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 24 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 209.251012
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 25 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 22.744252
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+ok 26 - navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+  ---
+  duration_ms: 189.83709
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 27 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 81.656751
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 28 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 26.542625
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 29 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 27.52056
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 30 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 13.106207
+  type: 'test'
+  ...
+# Subtest: a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+ok 31 - a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+  ---
+  duration_ms: 53.246339
+  type: 'test'
+  ...
+# Subtest: post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+ok 32 - post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+  ---
+  duration_ms: 115.958199
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8306.317802

@@ -1,3 +1,5 @@
+import {vegetationRandom,vegetationRepresentative,vegetationStride} from './vegetation-lod';
+export {vegetationRandom} from './vegetation-lod';
 import type {Point, Polygon} from './contracts';
 import {contains, segmentDistance, bounds, type LandscapeRecord, type LandscapeBox} from './atlas-landscape';
 import type {Terrain} from './world-contracts';
@@ -83,10 +85,6 @@ export function validateVegetation(r:LandscapeRecord) {
 }
 // World-addressed randomness: camera, tile boundaries, density and unrelated edits
 // do not enter a candidate's identity or position.
-export function vegetationRandom(seed:number,x:number,y:number,salt=0) {
-  let h=(seed^Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(salt,2246822519))>>>0;
-  h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;
-}
 function edgeDistance(p:Point,polygons:Polygon[]) {
   let d=Infinity;
   for(const poly of polygons)for(const ring of [poly.outer,...poly.holes])for(let i=0;i<ring.length;i++)d=Math.min(d,segmentDistance(p,ring[i]!,ring[(i+1)%ring.length]!));
@@ -114,7 +112,7 @@ export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,b
   if(!v)return{instances:[],mode:'surface'};
   const detail=mpp<=2,mode=mpp>80?'surface':detail?'individual':'canopy';
   const instances:VegetationInstance[]=[],p=v.preset,overrides=new Map(v.overrides.map(o=>[o.id,o]));
-  const base=v.spacing, stride=detail?1:2**Math.max(0,Math.ceil(Math.log2(Math.max(1,mpp*7/base))));
+  const base=v.spacing, stride=vegetationStride(base,mpp);
   const extent=bounds(r),pad=60;
   const clipped={x:Math.max(box.x-pad,extent.x),y:Math.max(box.y-pad,extent.y),
     right:Math.min(box.x+box.width+pad,extent.x+extent.width),bottom:Math.min(box.y+box.height+pad,extent.y+extent.height)};
@@ -155,12 +153,8 @@ export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,b
         x1=Math.ceil(clipped.right/base),y1=Math.ceil(clipped.bottom/base);
       if(Math.max(0,(x1-x0)/stride)*Math.max(0,(y1-y0)/stride)>24000)throw Error('Bewuchsdetail zu groß. Weiter herauszoomen.');
       for(let row=y0;row<=y1;row+=stride)for(let column=x0;column<=x1;column+=stride){
-        // Overview representatives come from throughout each coarse cell,
-        // rather than always its lower-left corner (a visible dot lattice).
-        // They still are exact local candidates: identity, position, size and
-        // eligibility are evaluated with the same fine-cell coordinates.
-        const x=column+Math.floor(vegetationRandom(v.seed,column,row,91)*stride),
-          y=row+Math.floor(vegetationRandom(v.seed,column,row,92)*stride);
+        // Coarser levels retain a nested subset of the same local candidates.
+        const {x,y}=vegetationRepresentative(v.seed,column,row,stride);
         const rand=(salt:number)=>vegetationRandom(v.seed,x,y,salt);
         const at={x:(x+.2+rand(1)*.6)*base,y:(y+.2+rand(2)*.6)*base},
           cluster=1-p.grouping+p.grouping*(.2+.8*vegetationRandom(v.seed,Math.floor(x/8),Math.floor(y/8),42));

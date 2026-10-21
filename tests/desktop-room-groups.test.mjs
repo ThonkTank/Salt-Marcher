@@ -70,3 +70,17 @@ test('splitting a furnished tavern room keeps boundary doors at the same world c
  const ends=(e,rooms)=>anchored(e,rooms).map(p=>({x:Math.round(p.x*1e6),y:Math.round(p.y*1e6)})).sort((a,b)=>a.x-b.x||a.y-b.y);
  for(const door of before.geometry.drawing.elements.filter(e=>e.kind==='door'))assert.deepEqual(ends(after.geometry.drawing.elements.find(e=>e.id===door.id),after.workspace.rooms),ends(door,before.workspace.rooms),door.id);
 });
+
+test('the shared drawing command adds an exact free room to a building and updates its derived hull through history',t=>{
+ const x=fixture(t),city=x.write({kind:'city-create',name:'Ablage',x:0,y:0,width:100,height:100}).atlas.cities[0],id=randomUUID();
+ const unit={id,kind:'building',name:'Werkstatt',protected:false,position:{x:20,y:30},angle:0,outline:[{x:-6,y:-6},{x:6,y:-6},{x:6,y:6},{x:-6,y:6}],use:'Werkstatt',notes:'',groupRecipe:{...recipe('Werkstatt'),width:12,depth:12,floors:1,basement:false}};
+ x.write({kind:'city',command:{commandId:randomUUID(),token:x.w.token,campaignId:x.cam.id,cityId:city.header.id,expectedRevision:city.header.revision,action:{kind:'change',upsert:[unit],remove:[],label:'Werkstatt'}}});
+ const house=()=>x.read().cities[0].units.find(u=>u.id===id),before=structuredClone(house().footprint),polygons=[{outer:[{x:5.5,y:1.125},{x:9.125,y:1.75},{x:5.5,y:4.375}],holes:[]}];
+ x.write({kind:'drawing',command:{commandId:randomUUID(),token:x.w.token,campaignId:x.cam.id,action:{kind:'create-room',scopeId:id,floorId:'ground',name:'Freier Anbau',polygons}}});
+ const added=x.read().workspace.rooms.find(r=>r.name==='Freier Anbau');assert(added);assert.deepEqual(added.polygons,polygons);
+ assert.equal(Math.max(...house().footprint.flatMap(p=>p.outer.map(p=>p.x))),9.125);assert(house().protected);
+ assert(!x.read().geometry.drawing.volumes.some(v=>v.roomId===added.id));
+ x.write({kind:'undo'});assert.deepEqual(house().footprint,before);assert(!x.read().workspace.rooms.some(r=>r.id===added.id));
+ x.write({kind:'redo'});x.fresh();assert.deepEqual(x.read().workspace.rooms.find(r=>r.id===added.id).polygons,polygons);
+ assert.equal(Math.max(...house().footprint.flatMap(p=>p.outer.map(p=>p.x))),9.125);
+});

@@ -110,6 +110,17 @@ test('coarse rock representations retain the positions and sizes of their local 
  const coarse=generateVegetation(r,env,box,4).instances;assert(coarse.length>0);
  for(const i of coarse)assert.deepEqual(i,fine.find(p=>p.id===i.id));
 });
+test('regional levels are nested subsets, preserving canonical candidate fields',()=>{
+ for(const preset of ['conifer','scree']){
+  const r=area('nested',preset),env=vegetationEnvironment([...plane(),r]);
+  let previous=generateVegetation(r,env,box,1).instances;
+  for(const mpp of [2.01,4,8,16,32,64,81]){
+   const next=generateVegetation(r,env,box,mpp).instances;
+   for(const i of next)assert.deepEqual(i,previous.find(p=>p.id===i.id));
+   previous=next;
+  }
+ }
+});
 test('spatial lakes use their water level and suppress the same generated candidates',t=>{
  const f=setup(t);f.save(area());
  f.save({...emptyRecord('patch'),polygons:[rectangle(-40,-40,80,80)],values:{terrain:'water'},surface:'freshwater',waterLevelM:70});

@@ -1,0 +1,1480 @@
+{
+  "root": "/home/aaron/Schreibtisch/projects/SaltMarcher",
+  "command": [
+    "npm",
+    "run",
+    "start:desktop",
+    "--",
+    "--remote-debugging-address=127.0.0.1",
+    "--remote-debugging-port=46031",
+    "--data-dir",
+    "/home/aaron/.cache/saltmarcher/ui/atlas-development-7UqqFG"
+  ],
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-development-7UqqFG",
+  "source": "1b5acdd393a15edf519efb40f8368c6555b996f8",
+  "checks": [
+    "Overview geometry becomes usable before fine colour; center-first colour tiles appear incrementally and wheel navigation responds during refinement on the same canvas.",
+    "npm run start:desktop launches this repository; campaign navigation opens the main Atlas.",
+    "Tilt, rotation and wheel zoom retain the same main canvas.",
+    "Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.",
+    "Main view omits duplicate ground images; actual GPU loss reloads complete Canvas terrain and explicit retry restores the main camera."
+  ],
+  "errors": [],
+  "loading": {
+    "stages": [
+      {
+        "quality": "overview",
+        "time": 1994.199999988079,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -900,
+            "width": 2700,
+            "height": 1800
+          },
+          "frame": {
+            "x": -450,
+            "y": -364.71774193548384,
+            "width": 900,
+            "height": 729.4354838709677
+          },
+          "refinement": {
+            "x": -675,
+            "y": -450,
+            "width": 1350,
+            "height": 900
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      },
+      {
+        "quality": "refining",
+        "time": 2351.0999999940395,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -900,
+            "width": 2700,
+            "height": 1800
+          },
+          "frame": {
+            "x": -450,
+            "y": -364.71774193548384,
+            "width": 900,
+            "height": 729.4354838709677
+          },
+          "refinement": {
+            "x": -675,
+            "y": -450,
+            "width": 1350,
+            "height": 900
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      },
+      {
+        "quality": "detail",
+        "time": 8314.59999999404,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -900,
+            "width": 2700,
+            "height": 1800
+          },
+          "frame": {
+            "x": -399.1141965227209,
+            "y": -323.47561895591485,
+            "width": 798.2283930454417,
+            "height": 646.9512379118297
+          },
+          "refinement": {
+            "x": -675,
+            "y": -450,
+            "width": 1350,
+            "height": 900
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      }
+    ],
+    "cameraQuality": "refining",
+    "tiles": [
+      {
+        "tiles": "1/24",
+        "time": 2351.0999999940395
+      },
+      {
+        "tiles": "2/24",
+        "time": 2781.699999988079
+      },
+      {
+        "tiles": "3/24",
+        "time": 3277.699999988079
+      },
+      {
+        "tiles": "4/24",
+        "time": 4210.899999976158
+      },
+      {
+        "tiles": "5/24",
+        "time": 4460.199999988079
+      },
+      {
+        "tiles": "6/24",
+        "time": 4658.799999982119
+      },
+      {
+        "tiles": "7/24",
+        "time": 5068
+      },
+      {
+        "tiles": "8/24",
+        "time": 5225.5999999940395
+      },
+      {
+        "tiles": "9/24",
+        "time": 5382.5
+      },
+      {
+        "tiles": "10/24",
+        "time": 5558
+      },
+      {
+        "tiles": "11/24",
+        "time": 5745.899999976158
+      },
+      {
+        "tiles": "12/24",
+        "time": 5916.699999988079
+      },
+      {
+        "tiles": "13/24",
+        "time": 6076.299999982119
+      },
+      {
+        "tiles": "14/24",
+        "time": 6217.5999999940395
+      },
+      {
+        "tiles": "15/24",
+        "time": 6362.5
+      },
+      {
+        "tiles": "16/24",
+        "time": 6535.5
+      },
+      {
+        "tiles": "17/24",
+        "time": 6684.799999982119
+      },
+      {
+        "tiles": "18/24",
+        "time": 6840.799999982119
+      },
+      {
+        "tiles": "19/24",
+        "time": 6985.699999988079
+      },
+      {
+        "tiles": "20/24",
+        "time": 7138.799999982119
+      },
+      {
+        "tiles": "21/24",
+        "time": 7281.899999976158
+      },
+      {
+        "tiles": "22/24",
+        "time": 7427.199999988079
+      },
+      {
+        "tiles": "23/24",
+        "time": 7573
+      },
+      {
+        "tiles": "24/24",
+        "time": 7717.0999999940395
+      }
+    ]
+  },
+  "contours": {
+    "measurements": [
+      {
+        "width": 1000,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 219
+      },
+      {
+        "width": 500,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 208
+      },
+      {
+        "width": 250,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 219
+      }
+    ],
+    "automatic": [
+      {
+        "width": 0.25,
+        "inkPixels": 2,
+        "maxError": 0
+      },
+      {
+        "width": 4,
+        "inkPixels": 8,
+        "maxError": 1
+      },
+      {
+        "width": 64,
+        "inkPixels": 128,
+        "maxError": 0
+      },
+      {
+        "width": 1000,
+        "inkPixels": 90,
+        "maxError": 0
+      }
+    ],
+    "tileError": 0,
+    "disabledMin": 255,
+    "denseMin": 255,
+    "seaMinimum": 255,
+    "automaticSeaMinimum": 255
+  },
+  "detailUploads": [
+    {
+      "mode": "rows",
+      "textureCount": 2,
+      "patches": [
+        {
+          "rect": {
+            "x": 128,
+            "y": 128,
+            "width": 256,
+            "height": 256
+          },
+          "ms": 2.7000000178813934,
+          "calls": [
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            },
+            {
+              "width": 256,
+              "height": 1
+            }
+          ],
+          "mismatch": 0,
+          "changed": 49024,
+          "textureCount": 2
+        },
+        {
+          "rect": {
+            "x": 3,
+            "y": 401,
+            "width": 31,
+            "height": 17
+          },
+          "ms": 0.7000000178813934,
+          "calls": [
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            },
+            {
+              "width": 31,
+              "height": 1
+            }
+          ],
+          "mismatch": 0,
+          "changed": 49422,
+          "textureCount": 2
+        }
+      ]
+    },
+    {
+      "mode": "rectangles",
+      "textureCount": 2,
+      "patches": [
+        {
+          "rect": {
+            "x": 128,
+            "y": 128,
+            "width": 256,
+            "height": 256
+          },
+          "ms": 1.300000011920929,
+          "calls": [
+            {
+              "width": 256,
+              "height": 256
+            }
+          ],
+          "mismatch": 0,
+          "changed": 49024,
+          "textureCount": 2
+        },
+        {
+          "rect": {
+            "x": 3,
+            "y": 401,
+            "width": 31,
+            "height": 17
+          },
+          "ms": 0.5,
+          "calls": [
+            {
+              "width": 31,
+              "height": 17
+            }
+          ],
+          "mismatch": 0,
+          "changed": 49422,
+          "textureCount": 2
+        }
+      ]
+    }
+  ],
+  "camera": {
+    "projection": "perspective",
+    "box": {
+      "x": -657.1155455459616,
+      "y": -532.5815510271703,
+      "width": 1314.2310910919232,
+      "height": 1065.1631020543407
+    },
+    "frame": {
+      "x": -219.03851518198718,
+      "y": -177.52718367572345,
+      "width": 438.07703036397436,
+      "height": 355.0543673514469
+    },
+    "refinement": {
+      "x": -328.5577727729808,
+      "y": -266.2907755135852,
+      "width": 657.1155455459616,
+      "height": 532.5815510271703
+    },
+    "columns": 257,
+    "rows": 257,
+    "focusM": 110,
+    "tilt": 45,
+    "rotation": 25,
+    "exaggeration": 1
+  },
+  "refinementCapture": {
+    "before": "refining",
+    "after": "refining"
+  },
+  "artifacts": {
+    "main.cjs": "1ae30859d73f3044475fadf2c5539215695f22041832b08b8065c23a0f4d8c9a",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "a4c870399d405bae9d7868caadc33fd4f2a81281e018ba31eec40a390f43c018",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4"
+  },
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "pidAbsent": true
+}

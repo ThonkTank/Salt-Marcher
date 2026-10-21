@@ -18,10 +18,10 @@ export interface BrushPreviewJob {
   displayMpp?:number;
   color?: LandscapeRecord;
 }
-export function brushPreviewRecords(job:BrushPreviewJob,limited?:(factor:number)=>void):LandscapeRecord[]{
+export function brushPreviewRecords(job:BrushPreviewJob,limited?:(factor:number)=>void,visibility?:import('./terrain-spatial-model').TerrainGrid):LandscapeRecord[]{
   let records = job.records;
   if (job.stroke||job.heightStroke) {
-    const tiles = job.heightStroke?applyTerrainBrush(records,job.heightStroke,limited):applyHeightStroke(records, job.stroke!),
+    const tiles = job.heightStroke?applyTerrainBrush(records,job.heightStroke,limited,visibility):applyHeightStroke(records, job.stroke!),
       ids = new Set(tiles.map((r) => r.id));
     records = [...records.filter((r) => !ids.has(r.id)), ...tiles];
   }
@@ -32,7 +32,7 @@ export function brushPreviewRecords(job:BrushPreviewJob,limited?:(factor:number)
       color.polygons = (color.paint!.strokes ?? [color.points]).flatMap((ps) =>
         brushFootprint(ps, color.paint!.radius),
       );
-    const r = colorSurface(color, records);
+    const r = colorSurface(color, records,visibility);
     if (r.polygons.length) records = [...records, r];
   }
   return records;

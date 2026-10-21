@@ -71,3 +71,14 @@ test('wide smoothing reads neighbouring tiles beyond the displayed mesh without 
  const read=records.filter(r=>r.height.x+64>=b.x&&r.height.x-1<=b.x+b.width&&r.height.y+64>=b.y&&r.height.y-1<=b.y+b.height),next=merged(records,applyTerrainBrush(read,s)),sampler=new TerrainSampler(next);
  assert.equal(sampler.sample({x:61,y:1}).heightM,200);assert.equal(sampler.sample({x:69,y:1}).heightM,400);
 });
+
+test('spatial contour ink is drawn at display time, not baked into background pixels',()=>{
+ const records=mountain(),v=view(),job={source:'contours',generation:1,records,view:v,box:v.box,width:64,height:64};
+ const plain=renderTerrainSpatial({...job,contours:0}),ink=renderTerrainSpatial({...job,contours:50});
+ assert.deepEqual(plain.pixels,ink.pixels);assert.deepEqual(plain.grid.heights,ink.grid.heights);assert.equal(ink.contourInk,'#685639');
+});
+
+test('main Atlas empty terrain is opaque ocean behind ordinary map objects',()=>{
+ const v=view({focusM:0,tilt:0}),r=renderTerrainSpatial({generation:1,source:'empty',view:v,records:[],box:v.box,width:16,height:16,contours:0});
+ for(let i=0;i<r.pixels.length;i+=4)assert.deepEqual([...r.pixels.slice(i,i+4)],[127,168,189,255]);
+});

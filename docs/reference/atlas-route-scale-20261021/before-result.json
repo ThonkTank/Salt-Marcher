@@ -1,0 +1,170 @@
+{
+  "samples": [
+    {
+      "name": "01-regional",
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -18000,
+          "y": -12000,
+          "width": 36000,
+          "height": 24000
+        },
+        "frame": {
+          "x": -6000,
+          "y": -4862.903225806452,
+          "width": 12000,
+          "height": 9725.806451612903
+        },
+        "refinement": {
+          "x": -9000,
+          "y": -6000,
+          "width": 18000,
+          "height": 12000
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 50,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      },
+      "quality": "detail",
+      "css": {
+        "width": 992,
+        "height": 804
+      }
+    },
+    {
+      "name": "02-local",
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -2075.8521786851256,
+          "y": -1682.4447093375416,
+          "width": 4151.704357370251,
+          "height": 3364.889418675083
+        },
+        "frame": {
+          "x": -691.9507262283752,
+          "y": -560.8149031125139,
+          "width": 1383.9014524567503,
+          "height": 1121.6298062250278
+        },
+        "refinement": {
+          "x": -1037.9260893425628,
+          "y": -841.2223546687708,
+          "width": 2075.8521786851256,
+          "height": 1682.4447093375416
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 50,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      },
+      "quality": "refining",
+      "css": {
+        "width": 992,
+        "height": 804
+      }
+    },
+    {
+      "name": "03-streets",
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -491.82700405126616,
+          "y": -398.6178540899376,
+          "width": 983.6540081025323,
+          "height": 797.2357081798752
+        },
+        "frame": {
+          "x": -163.94233468375538,
+          "y": -132.8726180299792,
+          "width": 327.88466936751075,
+          "height": 265.7452360599584
+        },
+        "refinement": {
+          "x": -245.91350202563308,
+          "y": -199.3089270449688,
+          "width": 491.82700405126616,
+          "height": 398.6178540899376
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 50,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      },
+      "quality": "refining",
+      "css": {
+        "width": 992,
+        "height": 804
+      }
+    },
+    {
+      "name": "04-tilted",
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -491.82700405126616,
+          "y": -398.6178540899376,
+          "width": 983.6540081025323,
+          "height": 797.2357081798752
+        },
+        "frame": {
+          "x": -163.94233468375538,
+          "y": -132.8726180299792,
+          "width": 327.88466936751075,
+          "height": 265.7452360599584
+        },
+        "refinement": {
+          "x": -245.91350202563308,
+          "y": -199.3089270449688,
+          "width": 491.82700405126616,
+          "height": 398.6178540899376
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 50,
+        "tilt": 60,
+        "rotation": 0,
+        "exaggeration": 1
+      },
+      "quality": "refining",
+      "css": {
+        "width": 992,
+        "height": 804
+      }
+    }
+  ],
+  "checks": [
+    "One main Atlas canvas survives regional-to-street wheel zoom and tilt with unchanged canonical road/river geometry."
+  ],
+  "source": "df10ade64d8f57b2cd35e1139d8c995b752fc2ba",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-line-scales-F9IHKk",
+  "artifacts": {
+    "main.cjs": "8fe06b1571fdcd5a14a0e5297075865fa936061302cf02e35ae9d8365721722b",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "b454af2906be272c5911b5344cd4526416d16a0d0350059f47fdd003132e62f5",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2401286,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

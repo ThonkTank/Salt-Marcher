@@ -85,7 +85,10 @@ export function executeDrawing(db:any,c:DrawingCommand,guard:()=>void){return db
  else if(a.kind==='key-content'||a.kind==='key-batch'||a.kind==='key-copy'){executeKeyAction(db,cam,a,{apply,room,roomRow});}
  else if(a.kind==='path-publish'||a.kind==='path-convert'||a.kind==='path-hide'||a.kind==='passage'){executePathAction(db,cam,a,dungeonGeometry(db,cam),{apply,room,create,hide,element:storeElement,roomRow});}
  else if(a.kind==='volume-initialize'||a.kind==='volume-edit'){executeVolumeAction(db,cam,a,{apply,room,create,hide,element:storeElement,roomRow});}
- else if(a.kind==='create-room'){const r=create(a.scopeId,a.floorId,a.name,a.polygons);executeVolumeAction(db,cam,{kind:'volume-initialize',roomId:r.id,expectedRoomRevision:r.revision,expectedVolumeRevision:null,heightSteps:2},{apply,room,create,hide,element:storeElement,roomRow});
+ else if(a.kind==='create-room'){
+  if(!db.prepare('SELECT 1 FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(cam,a.scopeId,a.floorId))throw new Error('Geschoss fehlt.');
+  // Free contours remain canonical. Only an explicit volume command quantizes them.
+  create(a.scopeId,a.floorId,a.name,a.polygons);
  }else if(a.kind==='shape'||a.kind==='merge'){const ids=a.kind==='shape'?[a.roomId]:a.roomIds,rs=ids.map(room);if(!rs.length||rs.some(r=>r.scopeId!==rs[0]!.scopeId||r.floorId!==rs[0]!.floorId))throw new Error('Räume desselben Geschosses auswählen.');for(let i=0;i<rs.length;i++)if(rs[i]!.revision!==(a.kind==='shape'?a.expectedRevision:a.expectedRevisions[i]))throw new Error('Konturstand geändert. Vorschau aktualisieren.');const target={...rs[0]!,polygons:a.kind==='shape'?a.polygons:combineRooms(rs.map(r=>r.polygons))};validateRoom(target);
  const preserveBoundary=a.kind==='shape'&&a.preserveBoundaryAnchors===true;
  if(a.kind==='shape'&&a.preserveBoundaryAnchors!==undefined&&typeof a.preserveBoundaryAnchors!=='boolean')throw new Error('Wandanker-Zuordnung prüfen.');

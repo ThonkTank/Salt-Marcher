@@ -1,6 +1,6 @@
 import { wheelZoomFactor, zoomBox } from "./atlas-navigation-scale";
 import { AtlasPaint, AtlasCanvasScene } from "./atlas-canvas-scene";
-/** Atlas presentation only. One Canvas2D surface, retained paths and bounded decoded images. */
+/** Shared Atlas camera/input, retained paint commands and bounded decoded images. */
 import type { CanvasBox } from "./passive-map-canvas";
 export type CameraReason = "pan" | "zoom" | "reset" | "set" | "history";
 type SavedView = {
@@ -24,6 +24,7 @@ export class AtlasCanvas {
     start: DOMPoint;
     box: CanvasBox;
     moved: boolean;
+    anchor?: {x:number;y:number};
   } | null = null;
   private suppressClick = false;
   private readonly panel: HTMLDivElement;
@@ -68,6 +69,7 @@ export class AtlasCanvas {
     readonly root: HTMLCanvasElement,
     private options: {
       relative?: boolean;
+      presentation?: () => import("./atlas-presentation").AtlasPresentation | null;
       initial: CanvasBox;
       minWidth?: number;
       maxWidth?: number | (() => number);
@@ -147,13 +149,15 @@ export class AtlasCanvas {
           this.drag ||
           this.options.locked?.() ||
           (!this.ready && e.button === 0 && !e.altKey) ||
-          !(this.options.pan?.(e) ?? e.button === 1)
+          !this.navigationRequested(e)
         )
           return;
         const matrix = this.screenMatrix();
         if (!matrix) return;
-        const inverse = matrix.inverse();
+        const inverse = matrix.inverse(),presentation=this.options.presentation?.(),anchor=presentation?.navigationPoint(e);
+        if(presentation&&!anchor)return;
         this.drag = {
+          anchor:anchor??undefined,
           id: e.pointerId,
           inverse,
           start: new DOMPoint(e.clientX, e.clientY).matrixTransform(inverse),
@@ -184,18 +188,13 @@ export class AtlasCanvas {
         drag.moved = true;
         this.suppressClick = true;
         root.setPointerCapture(e.pointerId);
-        const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
-          drag.inverse,
-        );
-        this.set(
-          {
-            ...drag.box,
-            x: drag.box.x - (p.x - drag.start.x),
-            y: drag.box.y - (p.y - drag.start.y),
-          },
-          true,
-          "pan",
-        );
+        if(drag.anchor){
+          const at=this.options.presentation?.()?.navigationPoint(e);
+          if(at)this.set({...this.box,x:this.box.x+drag.anchor.x-at.x,y:this.box.y+drag.anchor.y-at.y},true,"pan");
+        }else{
+          const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(drag.inverse);
+          this.set({...drag.box,x:drag.box.x-(p.x-drag.start.x),y:drag.box.y-(p.y-drag.start.y)},true,"pan");
+        }
         e.preventDefault();
         e.stopImmediatePropagation();
       },
@@ -235,6 +234,7 @@ export class AtlasCanvas {
         e.preventDefault();
         e.stopImmediatePropagation();
         if (this.failed || this.options.locked?.() || this.drag) return;
+        const presentation=this.options.presentation?.(),anchor=presentation?.navigationPoint(e);
         const matrix = this.screenMatrix();
         const p = matrix
           ? new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse())
@@ -242,7 +242,7 @@ export class AtlasCanvas {
         const burst = Date.now() - this.wheelAt < 300;
         this.zoom(
           wheelZoomFactor(e.deltaY, e.deltaMode, root.clientHeight),
-          p && this.options.relative
+          presentation?anchor??undefined:p && this.options.relative
             ? { x: p.x + this.box.x, y: p.y + this.box.y }
             : p,
           burst,
@@ -302,6 +302,7 @@ export class AtlasCanvas {
   }
   get ready() {
     return (
+      (this.options.presentation?.()?.ready ?? true) &&
       !!this.compiled &&
       !!this.ctx && !this.ctx.isContextLost?.() &&
       !this.failed &&
@@ -321,6 +322,7 @@ export class AtlasCanvas {
   get destination() {
     return { ...(this.zoomTarget ?? this.box) };
   }
+  navigationRequested(e:PointerEvent){return this.options.pan?.(e)??e.button===1;}
   get panning() {
     return !!this.drag;
   }
@@ -341,6 +343,8 @@ export class AtlasCanvas {
   }
 
   point(e: { clientX: number; clientY: number }) {
+    const presentation=this.options.presentation?.();
+    if(presentation)return presentation.point(e);
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(
       this.screenMatrix().inverse(),
     );
@@ -432,16 +436,18 @@ export class AtlasCanvas {
           this.sceneOrigin.x - this.box.x,
           this.sceneOrigin.y - this.box.y,
         );
+    const presentation=this.options.presentation?.();
+    presentation?.paint(this.compiled,this.sceneOrigin,this.decoded);
     this.compiled.draw(ctx, matrix, this.decoded, {
       x: this.box.x - this.sceneOrigin.x,
       y: this.box.y - this.sceneOrigin.y,
-    });
+    },presentation?c=>c.hud:undefined);
     if (this.options.overlay) {
       const overlay = new AtlasPaint("group");
       const mpp = Math.max(this.box.width / rect.width, this.box.height / rect.height);
       const again = this.options.overlay(overlay, this.view, mpp);
       const scene = new AtlasCanvasScene(overlay);
-      try { scene.draw(ctx, new DOMMatrix().translate((w-this.box.width*scale)/2,(h-this.box.height*scale)/2).scale(scale), new Map(), {x:0,y:0}); }
+      try { presentation?.overlay(scene,{x:this.box.x,y:this.box.y}); scene.draw(ctx, new DOMMatrix().translate((w-this.box.width*scale)/2,(h-this.box.height*scale)/2).scale(scale), new Map(), {x:0,y:0},presentation?c=>c.hud:undefined); }
       finally { scene.dispose(); }
       if (again) this.redrawOverlay();
     }
@@ -763,6 +769,8 @@ export class AtlasCanvas {
     keys = ["atlasObject"],
   ) {
     if (!this.ready || !this.compiled) return null;
+    const presentation=this.options.presentation?.();
+    if(presentation)return presentation.hitAt(e,keys);
     const p = this.point(e);
     return this.compiled.hit(
       this.ctx!,

@@ -1,0 +1,190 @@
+TAP version 13
+# Subtest: Camera projection, not flat-world spacing, owns label collisions and readable angle
+ok 1 - Camera projection, not flat-world spacing, owns label collisions and readable angle
+  ---
+  duration_ms: 21.196287
+  type: 'test'
+  ...
+# Subtest: Local projected scale smoothly hides names without new data and selected names remain
+ok 2 - Local projected scale smoothly hides names without new data and selected names remain
+  ---
+  duration_ms: 1.48033
+  type: 'test'
+  ...
+# Subtest: Occluded labels cannot reserve collision slots and screen-space place offsets stay small
+ok 3 - Occluded labels cannot reserve collision slots and screen-space place offsets stay small
+  ---
+  duration_ms: 1.576589
+  type: 'test'
+  ...
+# Subtest: Spatial publication retains all candidates while flat output keeps its placed labels
+ok 4 - Spatial publication retains all candidates while flat output keeps its placed labels
+  ---
+  duration_ms: 1.847763
+  type: 'test'
+  ...
+# Subtest: Expensive anchor visibility runs after collision rejection without reserving hidden slots
+ok 5 - Expensive anchor visibility runs after collision rejection without reserving hidden slots
+  ---
+  duration_ms: 1.924086
+  type: 'test'
+  ...
+# Subtest: Prefetched line names still obey physical line readability and selected exceptions
+ok 6 - Prefetched line names still obey physical line readability and selected exceptions
+  ---
+  duration_ms: 0.769757
+  type: 'test'
+  ...
+# Subtest: Screen-cell collisions agree with a direct rectangle oracle across cell boundaries
+ok 7 - Screen-cell collisions agree with a direct rectangle oracle across cell boundaries
+  ---
+  duration_ms: 21.626623
+  type: 'test'
+  ...
+# Subtest: Main camera receives bounded name candidates before their flat scale threshold; public reads stay empty
+ok 8 - Main camera receives bounded name candidates before their flat scale threshold; public reads stay empty
+  ---
+  duration_ms: 930.942314
+  type: 'test'
+  ...
+# Subtest: brush transfers neighbouring land atomically and undo/redo survive reopening
+ok 9 - brush transfers neighbouring land atomically and undo/redo survive reopening
+  ---
+  duration_ms: 895.165051
+  type: 'test'
+  ...
+# Subtest: subregions stay within parent and erasure leaves unassigned parent land
+ok 10 - subregions stay within parent and erasure leaves unassigned parent land
+  ---
+  duration_ms: 541.674748
+  type: 'test'
+  ...
+# Subtest: parent edits and transfers cannot silently strand children; conflicts preserve every row
+ok 11 - parent edits and transfers cannot silently strand children; conflicts preserve every row
+  ---
+  duration_ms: 579.566025
+  type: 'test'
+  ...
+# Subtest: layers and hierarchy validate cycles, foreign owners and deletion
+ok 12 - layers and hierarchy validate cycles, foreign owners and deletion
+  ---
+  duration_ms: 712.064398
+  type: 'test'
+  ...
+# Subtest: labels choose clear interior anchors, priority and readable screen size
+ok 13 - labels choose clear interior anchors, priority and readable screen size
+  ---
+  duration_ms: 12.273017
+  type: 'test'
+  ...
+# Subtest: line names remain upright and insufficient lengths are suppressed
+ok 14 - line names remain upright and insufficient lengths are suppressed
+  ---
+  duration_ms: 0.893459
+  type: 'test'
+  ...
+# Subtest: dense landscape raster retains bounded geographically distributed name candidates
+ok 15 - dense landscape raster retains bounded geographically distributed name candidates
+  ---
+  duration_ms: 1806.775445
+  type: 'test'
+  ...
+# Subtest: shared vertices and triple junctions move without gaps, including neighbour edge interiors
+ok 16 - shared vertices and triple junctions move without gaps, including neighbour edge interiors
+  ---
+  duration_ms: 635.772807
+  type: 'test'
+  ...
+# Subtest: insert/delete on a shared edge and invalid point edits are atomic
+ok 17 - insert/delete on a shared edge and invalid point edits are atomic
+  ---
+  duration_ms: 619.573184
+  type: 'test'
+  ...
+# Subtest: archives preserve default/custom layers, their types and parent references under new campaign IDs
+ok 18 - archives preserve default/custom layers, their types and parent references under new campaign IDs
+  ---
+  duration_ms: 2802.673354
+  type: 'test'
+  ...
+# Subtest: schema 48 opens without changing existing geometry and schema 50 refuses missing storage
+ok 19 - schema 48 opens without changing existing geometry and schema 50 refuses missing storage
+  ---
+  duration_ms: 628.022155
+  type: 'test'
+  ...
+# Subtest: large-coordinate area keeps metre-scale regions measurable
+ok 20 - large-coordinate area keeps metre-scale regions measurable
+  ---
+  duration_ms: 6.345464
+  type: 'test'
+  ...
+# Subtest: one line chooses its longest fitting segment and manual style survives reload
+ok 21 - one line chooses its longest fitting segment and manual style survives reload
+  ---
+  duration_ms: 684.683227
+  type: 'test'
+  ...
+# Subtest: global export layout stays fixed across tile offsets and preserves Unicode
+ok 22 - global export layout stays fixed across tile offsets and preserves Unicode
+  ---
+  duration_ms: 7.419974
+  type: 'test'
+  ...
+# Subtest: city label corrections follow the city frame and private labels stay out of public reads
+ok 23 - city label corrections follow the city frame and private labels stay out of public reads
+  ---
+  duration_ms: 793.25778
+  type: 'test'
+  ...
+# Subtest: a long road can be named in a viewport far from its original midpoint
+ok 24 - a long road can be named in a viewport far from its original midpoint
+  ---
+  duration_ms: 2.791353
+  type: 'test'
+  ...
+# Subtest: canonical creation rejects a self-crossing region before writing
+ok 25 - canonical creation rejects a self-crossing region before writing
+  ---
+  duration_ms: 618.344663
+  type: 'test'
+  ...
+# Subtest: moving an end of a partly shared edge retains the intermediate neighbour junction
+ok 26 - moving an end of a partly shared edge retains the intermediate neighbour junction
+  ---
+  duration_ms: 583.279365
+  type: 'test'
+  ...
+# Subtest: unselected detail names obey zoom and footprint limits in navigation and export
+ok 27 - unselected detail names obey zoom and footprint limits in navigation and export
+  ---
+  duration_ms: 0.964677
+  type: 'test'
+  ...
+# Subtest: deleting a triple boundary junction preserves canonical area and history
+ok 28 - deleting a triple boundary junction preserves canonical area and history
+  ---
+  duration_ms: 1089.099025
+  type: 'test'
+  ...
+# Subtest: deleting a outer boundary junction preserves canonical area and history
+ok 29 - deleting a outer boundary junction preserves canonical area and history
+  ---
+  duration_ms: 1655.111513
+  type: 'test'
+  ...
+# Subtest: a bend between two regions can be deleted without losing area and undone together
+ok 30 - a bend between two regions can be deleted without losing area and undone together
+  ---
+  duration_ms: 1263.601753
+  type: 'test'
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19003.94032

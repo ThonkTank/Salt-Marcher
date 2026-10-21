@@ -81,8 +81,9 @@ export class RouteSurface {
     }}
   }
   at(p:Point,base:number){
+    if(!this.cells.size)return {height:base,water:undefined,weighted:0,total:0,strength:0};
     const candidates=this.cells.get(Math.floor(p.x/this.step)+':'+Math.floor(p.y/this.step));
-    if(!candidates)return {height:base,water:undefined};
+    if(!candidates)return {height:base,water:undefined,weighted:0,total:0,strength:0};
     const nearest=new Map<string,{r:LandscapeRecord;hit:NonNullable<ReturnType<typeof nearestRoute>>}>();
     for(const {r,nodes,offset}of candidates){
       const hit=nearestRoute(nodes,p)!;hit.station+=offset;
@@ -100,6 +101,6 @@ export class RouteSurface {
       const bounded=Math.max(base-s.limits.cut,Math.min(base+s.limits.fill,target));
       weighted+=bounded*weight;total+=weight;strength=Math.max(strength,weight);
     }
-    return {height:total?base+(weighted/total-base)*strength:base,water};
+    return {height:total?base+(weighted/total-base)*strength:base,water,weighted,total,strength};
   }
 }

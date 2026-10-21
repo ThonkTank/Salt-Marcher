@@ -8,10 +8,12 @@ export const REGION_REPLY_BYTES=2*1024*1024;
 export const REGION_ACTIVE_BYTES=16*1024*1024;
 export const REGION_CACHE_BYTES=64*1024*1024;
 /** Geometry is display-only. In particular it is never a CityCommand upsert. */
-export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'footprint'|'outline'|'position'|'angle'|'width'|'interior'>;
+export type CityUnitGeometry=Pick<CityUnit,'label'|'id'|'kind'|'name'|'protected'|'point'|'footprint'|'outline'|'position'|'angle'|'width'|'interior'|'terrain'>&{floorElevations?:number[]};
 export interface CityGeometry {header:CityHeader;units:CityUnitGeometry[]}
 export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
+ /** False when the consumer projects terrain itself; dense object overlays remain. */
+ terrainRaster?:boolean;
  slice:number|null;roofs:boolean;contours?:number;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
@@ -46,7 +48,7 @@ export interface AtlasRegionCursor {epoch:string;sequence:number;shadow?:{epoch:
 export interface AtlasRegionSource {
  filename:string;campaignId:string;token:string;fence:string;revision:number;epoch:string;sequence:number;
  shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
- reset:boolean;changes:{table:string;id:string}[];
+ reset:boolean;changes:{table:string;id:string;terrainBounds?:LandscapeBox}[];
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
@@ -59,7 +61,7 @@ export interface AtlasRegionAPI {
 }
 export const emptyDrawing=():DrawingMapView=>({elements:[],styles:[],hiddenRooms:[],hiddenFloors:[],features:[]});
 export function validateRegion(q:AtlasRegionQuery){
- if(!q||q.contours!==undefined&&(!Number.isFinite(q.contours)||q.contours<0||q.contours>1e6)||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.references!==undefined&&typeof q.references!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
+ if(!q||q.terrainRaster!==undefined&&typeof q.terrainRaster!=='boolean'||q.contours!==undefined&&(!Number.isFinite(q.contours)||q.contours<0&&q.contours!==-1||q.contours>1e6)||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.references!==undefined&&typeof q.references!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
 }
 
 /** Structured-clone turns null-prototype records into ordinary objects. */

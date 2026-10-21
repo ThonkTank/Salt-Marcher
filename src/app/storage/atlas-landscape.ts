@@ -1,8 +1,10 @@
+import {installSourceCellIndex} from './atlas-source-cell';
 import {validateMapLabelStyle} from '../map-label-style';
+import {terrainTraceMeasure} from '../terrain-timing';
 import {readRouteTerrain,routeProposal} from './terrain-route';
 import {validateRoute} from '../terrain-route';
 import {validateVegetation} from '../vegetation';
-import {applyTerrainBrush,heightBrushBounds} from '../terrain-brush';
+import {computeTerrainStroke} from './terrain-scale';
 import {applyHeightArea,resetHeightArea,decodeHeights,validateTerrain,settingsRecord} from '../terrain-height';
 import {validateMask} from '../land-mask';
 import {executeBrush} from "./landscape-brush-edit";
@@ -34,12 +36,24 @@ const unclip = (a: ReturnType<typeof polygonClipping.difference>): Polygon[] =>
     holes: p.slice(1).map((r) => r.map(([x, y]) => ({ x, y }))),
   }));
 export function installLandscape(db: any) {
+  // Cell imports/updates look up their existing footprint once per cell.
+  // Index the complete source key so map writes do not scan all prior cells.
   db.exec(`
  CREATE TABLE IF NOT EXISTS atlas_landscape(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,revision INTEGER NOT NULL,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE INDEX IF NOT EXISTS landscape_area ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y);
+ -- These rebuildable access paths avoid parsing every height payload for small metadata lookups.
+ CREATE INDEX IF NOT EXISTS landscape_invalid_fast ON atlas_landscape(campaign_id) WHERE NOT json_valid(payload);
+ CREATE INDEX IF NOT EXISTS landscape_settings_fast ON atlas_landscape(campaign_id) WHERE json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL;
+ CREATE INDEX IF NOT EXISTS landscape_height_address ON atlas_landscape(campaign_id,json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y'),json_extract(payload,'$.height.pixel')) WHERE json_valid(payload);
+ CREATE INDEX IF NOT EXISTS landscape_height_scale ON atlas_landscape(campaign_id,json_extract(payload,'$.height.version'),CAST(json_extract(payload,'$.height.pixel') AS REAL),min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.height') IS NOT NULL;
+ CREATE INDEX IF NOT EXISTS landscape_order_fast ON atlas_landscape(campaign_id,json_extract(payload,'$.order')) WHERE json_valid(payload);
+ CREATE INDEX IF NOT EXISTS landscape_route_fast ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.route') IS NOT NULL;
+ CREATE INDEX IF NOT EXISTS landscape_height_scan ON atlas_landscape(campaign_id,CAST(json_extract(payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(payload,'$.order'),0),min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.height') IS NOT NULL;
+ CREATE INDEX IF NOT EXISTS landscape_lake_scan ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.surface')='freshwater';
  CREATE TABLE IF NOT EXISTS atlas_reference_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,mime TEXT NOT NULL,bytes BLOB NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS atlas_landscape_migration(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id)) STRICT;
  `);
+  installSourceCellIndex(db);
   for (const root of db
     .prepare(
       "SELECT * FROM campaign_atlas WHERE campaign_id NOT IN(SELECT campaign_id FROM atlas_landscape_migration)",
@@ -207,7 +221,7 @@ export function landscapeRegion(
     ? ` AND ${indexed ? 's' : 'a'}.max_x>=? AND ${indexed ? 's' : 'a'}.min_x<=? AND ${indexed ? 's' : 'a'}.max_y>=? AND ${indexed ? 's' : 'a'}.min_y<=? AND ((a.max_x=a.min_x AND a.max_y=a.min_y) OR a.max_x-a.min_x>=? OR a.max_y-a.min_y>=?) ORDER BY a.rowid`
     : " ORDER BY a.rowid"));
   const parameters=box?[cam,box.x,box.x+box.width,box.y,box.y+box.height,metersPerPixel/2,metersPerPixel/2]:[cam];
-  const settings=includePatches?db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(cam):undefined;
+  const settings=includePatches?db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(cam):undefined;
   const records:LandscapeRecord[]=settings?[JSON.parse(settings.payload)]:[];let used=2;
   for(const r of statement.iterate(...parameters) as Iterable<any>){
     if(r.trashed||box&&!(r.max_x>=box.x&&r.min_x<=box.x+box.width&&r.max_y>=box.y&&r.min_y<=box.y+box.height))continue;
@@ -245,7 +259,7 @@ export function putLandscape(
   if(r.vegetation)for(const o of r.vegetation.overrides)if(o.locationId&&!db.prepare("SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0").get(cam,o.locationId))throw Error("Verknüpfter Ort fehlt.");
   validateMask(r);
   validateTerrain(r);
-  if(r.height&&db.prepare("SELECT id FROM atlas_landscape WHERE campaign_id=? AND id!=? AND json_extract(payload,'$.height.x')=? AND json_extract(payload,'$.height.y')=? AND json_extract(payload,'$.height.pixel')=?").get(cam,r.id,r.height.x,r.height.y,r.height.pixel))throw Error('Doppelte Höhenkachel.');
+  if(r.height&&db.prepare("SELECT id FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND id!=? AND json_extract(payload,'$.height.x')=? AND json_extract(payload,'$.height.y')=? AND json_extract(payload,'$.height.pixel')=? AND json_extract(payload,'$.height.version')=?").get(cam,r.id,r.height.x,r.height.y,r.height.pixel,r.height.version))throw Error('Doppelte Höhenkachel.');
   validateLine(r);
   validateColor(r);
   const pts = [
@@ -303,6 +317,10 @@ export function putLandscape(
     .get(cam, r.id);
   if ((old?.revision ?? null) !== expected)
     throw new Error("Landschaft inzwischen geändert. Neu laden.");
+  if(old){
+    const prior:LandscapeRecord=JSON.parse(old.payload);
+    if(prior.height&&(!r.height||prior.height.version!==r.height.version||prior.height.x!==r.height.x||prior.height.y!==r.height.y||prior.height.pixel!==r.height.pixel))throw Error('Höhenkacheladresse ist unveränderlich.');
+  }
   const b = bounds(r),
     next = {
       ...r,
@@ -311,7 +329,7 @@ export function putLandscape(
         r.order ??
         db
           .prepare(
-            "SELECT coalesce(max(json_extract(payload,'$.order')),0)+1 n FROM atlas_landscape WHERE campaign_id=?",
+            "SELECT coalesce(max(json_extract(payload,'$.order')),0)+1 n FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload)",
           )
           .get(cam).n,
       revision: (expected ?? 0) + 1,
@@ -345,7 +363,7 @@ function writeTerrainHeight(db:any,cam:string,r:LandscapeRecord){
   const records=landMaskRegion(db,cam,bounds(r));
   for(const tile of applyHeightArea(records,r))putLandscape(db,cam,tile,tile.revision||null);
 }
-export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
+export function executeLandscape(db: any, cam: string, a: LandscapeAction, liveColorRevision:number|null=null,visibilityGrid?:import('../terrain-spatial-model').TerrainGrid,prepared?:import('./terrain-scale').PreparedTerrainStroke) {
   if(a.kind==='landscape-route'){
     if(db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(cam).revision!==a.sourceRevision)throw Error('Gelände inzwischen geändert. Vorschau erneut berechnen.');
     const proposal=routeProposal(db,cam,a.record);
@@ -364,15 +382,15 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
   }
 
   if(a.kind==='landscape-sea-level'||a.kind==='landscape-terrain-style'){
-    const old=db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(cam);
+    const old=db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(cam);
     const record:LandscapeRecord=old?JSON.parse(old.payload):settingsRecord(0);
     if(a.kind==='landscape-sea-level')record.terrainSettings!.seaLevelM=a.seaLevelM;
     else record.terrainSettings!.style=a.style;
     return putLandscape(db,cam,record,old?record.revision:null);
   }
   if(a.kind==='landscape-height-stroke'){
-    const box=heightBrushBounds(a.stroke),records=terrainRegion(db,cam,box);
-    for(const tile of applyTerrainBrush(records,a.stroke))putLandscape(db,cam,tile,tile.revision||null);
+    const edited=prepared?.records??terrainTraceMeasure("author.brush",()=>computeTerrainStroke(db,cam,a.stroke,undefined,visibilityGrid));
+    for(const tile of edited)putLandscape(db,cam,tile,tile.revision||null);
     return;
   }
   if(a.kind==='landscape-land-stroke'){
@@ -382,7 +400,7 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction) {
   if(a.kind==='landscape-color-stroke'){
     const p=a.record?.paint;
     if(!p||p.version!==2||a.record.propertyOnly||a.record.mask||a.record.surface||Object.keys(a.record.values).length)throw Error('Farbauftrag prüfen.');
-    return executeBrush(db,cam,{kind:'landscape-brush',record:a.record,mode:p.operation==='erase'?'color-erase':p.target==='water'?'water-color':'ground-color',radius:p.radius,roughness:0,seed:p.seed,fill:p.fill});
+    return executeBrush(db,cam,{kind:'landscape-brush',record:a.record,mode:p.operation==='erase'?'color-erase':p.target==='water'?'water-color':'ground-color',radius:p.radius,roughness:0,seed:p.seed,fill:p.fill},liveColorRevision,visibilityGrid);
   }
   if(a.kind==="landscape-brush")return executeBrush(db,cam,a);
   if((a.kind==='landscape-put'||a.kind==='landscape-place')&&(a.record.mask||a.record.terrainSettings)||a.kind==='landscape-batch'&&a.records.some(x=>x.record.mask||x.record.terrainSettings))throw Error('Landmasken sind nicht mehr schreibbar. Landwerkzeug verwenden.');

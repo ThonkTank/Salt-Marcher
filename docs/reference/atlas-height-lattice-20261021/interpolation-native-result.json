@@ -1,0 +1,66 @@
+{
+  "metrics": [
+    {
+      "name": "bilinear",
+      "hillRmse": 0.16344282436459864,
+      "hillMaximumError": 0.2847004948982317,
+      "plateauMin": -20,
+      "plateauMax": 100
+    },
+    {
+      "name": "catmull",
+      "hillRmse": 0.0019528410400425924,
+      "hillMaximumError": 0.004892514244815516,
+      "plateauMin": -28.88848304748535,
+      "plateauMax": 108.88848304748535
+    },
+    {
+      "name": "monotone",
+      "hillRmse": 0.021703544870498425,
+      "hillMaximumError": 0.08387609070447866,
+      "plateauMin": -20,
+      "plateauMax": 100
+    }
+  ],
+  "images": [
+    "hill-close-bilinear.png",
+    "hill-tilted-bilinear.png",
+    "painted-region-bilinear.png",
+    "plateau-coast-bilinear.png",
+    "hill-close-catmull.png",
+    "hill-tilted-catmull.png",
+    "painted-region-catmull.png",
+    "plateau-coast-catmull.png",
+    "hill-close-monotone.png",
+    "hill-tilted-monotone.png",
+    "painted-region-monotone.png",
+    "plateau-coast-monotone.png"
+  ],
+  "checks": [
+    "Reconstruction candidates use identical authored nodes and camera; geometry and raster share each candidate.",
+    "Monotone interpolation retains plateau/sea extrema and reduces Gaussian reconstruction error."
+  ],
+  "source": "ba32afaed086977fdb8ba8db7dd491b3b4e12679",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/terrain-interpolation-Olnuw3",
+  "artifacts": {
+    "main.cjs": "08726e4296959f19a5798fe9c00ec204dce247bf5d242eacca6e352e47e951d9",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "964a3a35b14be104c16125cb02668f633cff6b77310aa5722ea5ae77c09e5c34",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2283088,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
