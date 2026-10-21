@@ -137,6 +137,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 [Lesbare Vektorverläufe](../../reference/atlas-route-scale-20261021/README.md): Straßen und Flüsse erhalten eine schmale Bildschirmdarstellung, die unmittelbar mit der Kamera skaliert und weich in die maßhaltigen Bänder übergeht. Sichtbare Linienränder bleiben auswählbar; Tunnelunterbrechungen und Autorenmeter bleiben erhalten. Die Unterteilung langer Verläufe beschränkt sich auf den geladenen Bereich. Native Zoom-/Neigungsprobe und GPU-Pixelprüfungen bei DPR 1/2 liegen vor. Dichte Rasterverläufe, Namen und übrige Objektklassen bleiben offen.
 
+[Namen an der tatsächlichen Hauptkamera anordnen](../../reference/atlas-camera-labels-20261021/README.md): Wiederverwendete Namenskandidaten, Texturen und Textmaße reagieren ohne Terrain-Neulesung auf Zoom, Neigung und Drehung. Logische Schriftgröße, projizierte Linienwinkel, Bildschirmkollisionen und Verdeckung am Geländeanker gelten auch für die gekachelte perspektivische Ausgabe. Manuelle Anker und öffentliche Freigabe bleiben erhalten. Native Zoom-/Regions-/Exportproben sind belegt; dichte Namensszenen überschreiten weiterhin das Navigationsziel, insbesondere durch Ausreißer und kalte Glyphenarbeit. P4 und die Leistungsabnahme bleiben offen.
+
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
 Land formen, Glätten und Bemalen verändern während der Eingabe unmittelbar eine lokale Arbeitsfassung derselben Karte. Dafür gibt es keinen separaten Vorschaumodus und keinen Übernehmen-Knopf. Bestätigte Teilstücke werden weiterhin automatisch gespeichert.

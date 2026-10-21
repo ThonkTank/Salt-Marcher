@@ -16,11 +16,13 @@ Bei ausgewählten Straßen, Flüssen, Orten und Stadtelementen enthält der Bere
 
 ## Darstellung und Speicher
 
-`atlas-scale-policy.ts` bestimmt die Mindestbreite sichtbarer Wege/Flüsse und ihre lesbare Bildschirmbreite. Der vorhandene Wechsel von Stadtgrundrissen zu Ortsmarkern bleibt erhalten; sehr kleine Gebäudegrundrisse entfallen. Die Autorengeometrie und genaue Objektabfragen werden durch diese Darstellung nicht verändert.
+`atlas-scale-policy.ts` bestimmt die Mindestbreite sichtbarer Wege/Flüsse und ihre lesbare Bildschirmbreite. Unabhängige Gebäudegrundrisse erhalten eigene Detailstufen. Alte Stadtdokumente erzeugen keine Ortsmarker, Namen oder Papierflächen; benannte Gebiete bleiben unabhängig von den darunterliegenden Objekten. Die Autorengeometrie und genaue Objektabfragen werden durch diese Darstellung nicht verändert.
 
 `atlas-cartography.ts` erzeugt und platziert Kandidaten mit Bildschirm-Schriftgrößen, Halo, Kollisionsprüfung und Priorität. Flächen verwenden innere Anker unter Berücksichtigung von Löchern, Linien ausreichend lange, leserichtig gedrehte Abschnitte. Bedeutung, verfügbare Fläche und Maßstab bestimmen die Sichtbarkeit. Eine stabile Platzierungswahl, Hysterese und kurzes Einblenden vermindern Sprünge; reduzierte Bewegung wird respektiert. Mehrere Kandidaten derselben Straße und mehrere Darstellungen desselben Orts konkurrieren um eine gemeinsame Beschriftung.
 
-Bereichsleser liefern Namen unabhängig von Vektor-/Rastergeometrie mit begrenztem Kandidatenbudget. Große Regionskonturen erhalten eine Rasterdarstellung; die exakten Konturen bleiben für die Bearbeitung gespeichert. Die öffentliche Ausgabe verwendet ihre bestehende Freigabeprojektion und erhält diese Autorenbeschriftungen nicht. Der PNG-/JPEG-Export berechnet die Beschriftungsanordnung einmal für das gesamte Bild und verwendet sie in allen Kacheln.
+Der Hauptatlas hält die Namenskandidaten in `AtlasPaint.mapLabels` und ordnet sie durch `AtlasSpatialLabels` bei Kameraänderungen neu an. Schriftgrößen bleiben logische Bildschirmpixel. Gemeinsame Prioritäts- und Kollisionsregeln aus `MapLabelLayout` verwenden die tatsächliche Perspektive, lokale Maßstäbe und projizierte Linienwinkel. Namen blenden über Maßstabsbereiche ein und aus; ausgewählte Namen bleiben auffindbar. Gelände-Verdeckung wird am Anker geprüft, damit die geneigte Oberfläche keine halben Buchstaben abschneidet. Texttexturen und gemessene Breiten bleiben bei Navigation erhalten. Die flache Darstellung und ihre vorhandene Animation bleiben der Grafikfallback.
+
+Bereichsleser liefern Namen unabhängig von Vektor-/Rastergeometrie mit begrenztem Kandidatenbudget. Große Regionskonturen erhalten eine Rasterdarstellung; die exakten Konturen bleiben für die Bearbeitung gespeichert. Die öffentliche Ausgabe verwendet ihre bestehende Freigabeprojektion und erhält diese Autorenbeschriftungen nicht. Der PNG-/JPEG-Export verwendet eine gemeinsame Beschriftungsanordnung für das gesamte Bild und alle Kacheln; die perspektivische Ausgabe benutzt dieselbe Kameraanordnung wie der Hauptatlas.
 
 SQLite-Format 49 ergänzt `atlas_territory_layer` und `atlas_territory`. Alte Karten erhalten keine erfundenen Regionen. Die vorhandene Main-Schreibgrenze, Quellen-Fences, Receipts, Autorhistorie und Bereichsinvalidierung bleiben zuständig. Kampagnenkopien remappen eigene Ebenen und Oberregionen; die beiden vorgegebenen Ebenen und lokale Typkennungen bleiben stabil. Fehlende Tabellen eines bereits migrierten Speichers werden als Beschädigung abgewiesen.
 
@@ -29,6 +31,7 @@ Bearbeitung begrenzt einzelne Regionsgrenzen auf 100.000 Punkte, Pinselzüge auf
 ## Nachweise und Abnahmegrenzen
 
 - [Automatische Regression](../../../tests/desktop-atlas-territories.test.mjs): Nachbartransfer, Oberregionen, Löcher, Dreiländerecken, Einfügen/Entfernen, Transaktionsabbruch, Undo/Redo, Neustart, Archivkopie, Migration, Beschriftungspriorität, Unicode und gemeinsame Exportkoordinaten.
+- [Kamerabeschriftungsregression](../../../tests/atlas-camera-labels.test.mjs): projizierte Kollisionen, Maßstabsübergänge, physische Linienlesbarkeit, ausgewählte Namen und verzögerte Sichtprüfung. [GPU-Prüfung](../../../tools/atlas-camera-label-probe.mjs): Schriftgrößen, Winkel, Texturwiederverwendung, Verdeckung, DPR 1/2 und gemeinsame Exportkacheln.
 - [Native Electron-Probe](../../../tools/test-desktop-atlas-cartography.mjs): isolierte Kampagne, tatsächliche Gesten, gemeinsame Änderungen, Neustart und gekachelter PNG-Export. Ergebnis und Fensterbilder liegen unter `QA_EVIDENCE_DIR` beziehungsweise `.build/cartography-native`.
 - Bestehende Bereichs-, Raster-, Karten- und Landschaftstests prüfen zusätzlich die Integration in kleine und dichte Ausschnitte.
 

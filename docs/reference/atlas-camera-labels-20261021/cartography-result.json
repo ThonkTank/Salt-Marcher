@@ -1,0 +1,51 @@
+{
+  "source": "e8540a6f0bcc276f5c575dcf2316191b3d8c21aa",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/saltmarcher-cartography-pQed9H",
+  "artifacts": {
+    "main.cjs": "f83ae27f152670df5dd241fb9190a4efb7396171bb9aae543ce741de3dd0866f",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "3419c726732175b89f1b8f4d333ef2666127d590e9741e31e6eac53c687acc94",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2459596,
+      "zoom": 1,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 2460453,
+      "zoom": 1,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "checks": [
+    "brush release atomically changes both neighbouring regions",
+    "native undo and redo restore complete neighbour geometry",
+    "erasure does not give land to neighbour",
+    "inserted boundary point remains selected for immediate deletion",
+    "history changes invalidate the previous boundary point selection",
+    "boundary point selection does not author a no-op change",
+    "a branched boundary point cannot be deleted into an unassigned gap",
+    "shared point refinement after brush stroke",
+    "object-bound manual region label anchor",
+    "custom layer and a new region created with ordinary controls and painted",
+    "fresh process retains region geometry, style and label anchor",
+    "building label prominence edited and committed through native inspector",
+    "map zoom changes label presentation without authoring region data",
+    "native tiled PNG export with global labels"
+  ],
+  "errors": [],
+  "ok": true,
+  "normalExit": true
+}

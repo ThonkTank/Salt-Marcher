@@ -1,0 +1,226 @@
+TAP version 13
+# Subtest: Camera projection, not flat-world spacing, owns label collisions and readable angle
+ok 1 - Camera projection, not flat-world spacing, owns label collisions and readable angle
+  ---
+  duration_ms: 39.029117
+  type: 'test'
+  ...
+# Subtest: Local projected scale smoothly hides names without new data and selected names remain
+ok 2 - Local projected scale smoothly hides names without new data and selected names remain
+  ---
+  duration_ms: 1.723725
+  type: 'test'
+  ...
+# Subtest: Occluded labels cannot reserve collision slots and screen-space place offsets stay small
+ok 3 - Occluded labels cannot reserve collision slots and screen-space place offsets stay small
+  ---
+  duration_ms: 2.155681
+  type: 'test'
+  ...
+# Subtest: Spatial publication retains all candidates while flat output keeps its placed labels
+ok 4 - Spatial publication retains all candidates while flat output keeps its placed labels
+  ---
+  duration_ms: 1.356159
+  type: 'test'
+  ...
+# Subtest: Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+ok 5 - Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+  ---
+  duration_ms: 58.955804
+  type: 'test'
+  ...
+# Subtest: Far-world local room detail retains transform precision and follows terrain elevation
+ok 6 - Far-world local room detail retains transform precision and follows terrain elevation
+  ---
+  duration_ms: 14.238514
+  type: 'test'
+  ...
+# Subtest: Draped areas sample interior terrain and preserve author IDs
+ok 7 - Draped areas sample interior terrain and preserve author IDs
+  ---
+  duration_ms: 10.163831
+  type: 'test'
+  ...
+# Subtest: HUD and terrain-owned rasters are not duplicated; masked content fails closed
+ok 8 - HUD and terrain-owned rasters are not duplicated; masked content fails closed
+  ---
+  duration_ms: 4.466379
+  type: 'test'
+  ...
+# Subtest: Dash phase persists around a corner and zero gaps do not hang
+ok 9 - Dash phase persists around a corner and zero gaps do not hang
+  ---
+  duration_ms: 5.007999
+  type: 'test'
+  ...
+# Subtest: Atlas alpha colors preserve translucent previews in GPU materials
+ok 10 - Atlas alpha colors preserve translucent previews in GPU materials
+  ---
+  duration_ms: 1.090284
+  type: 'test'
+  ...
+# Subtest: dense landscape images are draped above terrain while duplicate full ground stays omitted
+ok 11 - dense landscape images are draped above terrain while duplicate full ground stays omitted
+  ---
+  duration_ms: 3.951881
+  type: 'test'
+  ...
+# Subtest: Main camera receives bounded name candidates before their flat scale threshold; public reads stay empty
+ok 12 - Main camera receives bounded name candidates before their flat scale threshold; public reads stay empty
+  ---
+  duration_ms: 785.069544
+  type: 'test'
+  ...
+# Subtest: brush transfers neighbouring land atomically and undo/redo survive reopening
+ok 13 - brush transfers neighbouring land atomically and undo/redo survive reopening
+  ---
+  duration_ms: 916.811816
+  type: 'test'
+  ...
+# Subtest: subregions stay within parent and erasure leaves unassigned parent land
+ok 14 - subregions stay within parent and erasure leaves unassigned parent land
+  ---
+  duration_ms: 494.837463
+  type: 'test'
+  ...
+# Subtest: parent edits and transfers cannot silently strand children; conflicts preserve every row
+ok 15 - parent edits and transfers cannot silently strand children; conflicts preserve every row
+  ---
+  duration_ms: 474.483514
+  type: 'test'
+  ...
+# Subtest: layers and hierarchy validate cycles, foreign owners and deletion
+ok 16 - layers and hierarchy validate cycles, foreign owners and deletion
+  ---
+  duration_ms: 604.487647
+  type: 'test'
+  ...
+# Subtest: labels choose clear interior anchors, priority and readable screen size
+ok 17 - labels choose clear interior anchors, priority and readable screen size
+  ---
+  duration_ms: 10.723337
+  type: 'test'
+  ...
+# Subtest: line names remain upright and insufficient lengths are suppressed
+ok 18 - line names remain upright and insufficient lengths are suppressed
+  ---
+  duration_ms: 0.624951
+  type: 'test'
+  ...
+# Subtest: dense landscape raster retains bounded geographically distributed name candidates
+ok 19 - dense landscape raster retains bounded geographically distributed name candidates
+  ---
+  duration_ms: 1611.099516
+  type: 'test'
+  ...
+# Subtest: shared vertices and triple junctions move without gaps, including neighbour edge interiors
+ok 20 - shared vertices and triple junctions move without gaps, including neighbour edge interiors
+  ---
+  duration_ms: 515.83542
+  type: 'test'
+  ...
+# Subtest: insert/delete on a shared edge and invalid point edits are atomic
+ok 21 - insert/delete on a shared edge and invalid point edits are atomic
+  ---
+  duration_ms: 499.506228
+  type: 'test'
+  ...
+# Subtest: archives preserve default/custom layers, their types and parent references under new campaign IDs
+ok 22 - archives preserve default/custom layers, their types and parent references under new campaign IDs
+  ---
+  duration_ms: 2289.528927
+  type: 'test'
+  ...
+# Subtest: schema 48 opens without changing existing geometry and schema 50 refuses missing storage
+ok 23 - schema 48 opens without changing existing geometry and schema 50 refuses missing storage
+  ---
+  duration_ms: 491.629313
+  type: 'test'
+  ...
+# Subtest: large-coordinate area keeps metre-scale regions measurable
+ok 24 - large-coordinate area keeps metre-scale regions measurable
+  ---
+  duration_ms: 0.349882
+  type: 'test'
+  ...
+# Subtest: one line chooses its longest fitting segment and manual style survives reload
+ok 25 - one line chooses its longest fitting segment and manual style survives reload
+  ---
+  duration_ms: 595.203788
+  type: 'test'
+  ...
+# Subtest: global export layout stays fixed across tile offsets and preserves Unicode
+ok 26 - global export layout stays fixed across tile offsets and preserves Unicode
+  ---
+  duration_ms: 2.273641
+  type: 'test'
+  ...
+# Subtest: city label corrections follow the city frame and private labels stay out of public reads
+ok 27 - city label corrections follow the city frame and private labels stay out of public reads
+  ---
+  duration_ms: 679.082265
+  type: 'test'
+  ...
+# Subtest: a long road can be named in a viewport far from its original midpoint
+ok 28 - a long road can be named in a viewport far from its original midpoint
+  ---
+  duration_ms: 1.437929
+  type: 'test'
+  ...
+# Subtest: canonical creation rejects a self-crossing region before writing
+ok 29 - canonical creation rejects a self-crossing region before writing
+  ---
+  duration_ms: 433.549019
+  type: 'test'
+  ...
+# Subtest: moving an end of a partly shared edge retains the intermediate neighbour junction
+ok 30 - moving an end of a partly shared edge retains the intermediate neighbour junction
+  ---
+  duration_ms: 539.322347
+  type: 'test'
+  ...
+# Subtest: unselected detail names obey zoom and footprint limits in navigation and export
+ok 31 - unselected detail names obey zoom and footprint limits in navigation and export
+  ---
+  duration_ms: 0.869859
+  type: 'test'
+  ...
+# Subtest: deleting a triple boundary junction preserves canonical area and history
+ok 32 - deleting a triple boundary junction preserves canonical area and history
+  ---
+  duration_ms: 801.426699
+  type: 'test'
+  ...
+# Subtest: deleting a outer boundary junction preserves canonical area and history
+ok 33 - deleting a outer boundary junction preserves canonical area and history
+  ---
+  duration_ms: 727.583377
+  type: 'test'
+  ...
+# Subtest: a bend between two regions can be deleted without losing area and undone together
+ok 34 - a bend between two regions can be deleted without losing area and undone together
+  ---
+  duration_ms: 781.267188
+  type: 'test'
+  ...
+# Subtest: player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+ok 35 - player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+  ---
+  duration_ms: 1146.711564
+  type: 'test'
+  ...
+# Subtest: cancelled, obsolete and failed output jobs release their worker without publishing pixels
+ok 36 - cancelled, obsolete and failed output jobs release their worker without publishing pixels
+  ---
+  duration_ms: 55.906142
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20306.573282
