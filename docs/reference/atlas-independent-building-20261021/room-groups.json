@@ -1,0 +1,23 @@
+{
+  "source": "89e83e580c625cb35a75887d947c15d4df79fa2b",
+  "profile": "/home/aaron/.cache/saltmarcher/native-tmp/salt-room-groups-ui-QPX3yV",
+  "errors": [],
+  "checks": [
+    "house is an independent furnished room group without city context",
+    "crypt generated through same dialog",
+    "whole house scaled, undo/redo, selected room split and undone in common inspector",
+    "room renamed, normal exit, new process, same identities"
+  ],
+  "launches": [
+    {
+      "pid": 2935555,
+      "code": 0,
+      "signal": null
+    },
+    {
+      "pid": 2935868,
+      "code": 0,
+      "signal": null
+    }
+  ]
+}
