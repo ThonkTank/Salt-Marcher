@@ -1,6 +1,7 @@
 import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
 import {streamTerrainField,streamTerrainFieldRows,streamTerrainFieldBlock,type TerrainField,type TerrainLattice,type TerrainStream} from './terrain-field-stream';
 import type {LandscapeBox} from './atlas-landscape';
+import {terrainDirtyRects} from './terrain-dirty-rects';
 type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;dirty:Uint8Array};
 type Tile=Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
 /** 16 MiB of the consumer's 64 MiB derived-cache budget.
@@ -54,8 +55,7 @@ export class TerrainProjectionCache {
     }
     const heights=hit.heights.slice();
     if(!hit.dirty.some(Boolean))return heights;
-    for(const {rect:r,index}of this.blocks(lattice)){
-      if(!hit.dirty[index])continue;
+    for(const r of terrainDirtyRects(hit.dirty,lattice.columns,lattice.rows,4)){
       const part=streamTerrainFieldBlock(lattice,r,sea,stream).surface!;
       for(let y=0;y<r.height;y++)heights.set(part.subarray(y*r.width,(y+1)*r.width),(r.y+y)*lattice.columns+r.x);
     }

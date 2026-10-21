@@ -2,8 +2,8 @@ import {buildSync} from 'esbuild';
 import assert from 'node:assert/strict';
 
 /** Real GPU pixels in the existing isolated Electron window; no product hooks. */
-export async function terrainContourPixels(page){
-  const source=buildSync({stdin:{resolveDir:process.cwd(),contents:`
+export function buildContourProbe(){
+  return buildSync({stdin:{resolveDir:process.cwd(),contents:`
     import * as THREE from 'three';
     import {terrainContourMaterial,terrainContourUniforms} from './src/app/terrain-contours';
     import {terrainContourInk} from './src/app/terrain-contour-style';
@@ -20,7 +20,7 @@ export async function terrainContourPixels(page){
       const gl=renderer.getContext(),pixels=new Uint8Array(512*4);
       const row=(width,interval)=>{
         camera.left=-width/2;camera.right=width/2;camera.top=width/2;camera.bottom=-width/2;camera.updateProjectionMatrix();
-        uniforms.terrainContourInterval.value=interval;renderer.render(scene,camera);gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+        uniforms.terrainContourInterval.value=interval;uniforms.terrainContourAutomaticStep.value=width/512*24;renderer.render(scene,camera);gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
         if(gl.getError()!==gl.NO_ERROR)throw Error('Contour GPU read failed');
         return Array.from({length:512},(_,i)=>pixels[i*4]);
       };
@@ -42,6 +42,7 @@ export async function terrainContourPixels(page){
         for(const ratio of [1,1.5,2])for(const width of [250,1000]){
           renderer.setPixelRatio(ratio);renderer.setSize(512,512);uniforms.terrainContourPixelRatio.value=ratio;
           camera.left=-width/2;camera.right=width/2;camera.top=width/2;camera.bottom=-width/2;camera.updateProjectionMatrix();
+          uniforms.terrainContourAutomaticStep.value=width/512*24;
           renderer.render(scene,camera);const size=512*ratio,values=new Uint8Array(size*4);gl.readPixels(0,size/2,size,1,gl.RGBA,gl.UNSIGNED_BYTE,values);
           let maxError=0;for(let i=0;i<size;i++){
             const ink=terrainContourInk(((i+.5)/size-.5)*width,width/size,-1,-10000,ratio),expected=Math.round(new THREE.Color(1-ink,1-ink,1-ink).convertLinearToSRGB().r*255);
@@ -61,10 +62,16 @@ export async function terrainContourPixels(page){
         elevations.forEach((v,i)=>elevations[i]=Math.max(0,v));geometry.attributes.terrainElevation.needsUpdate=true;uniforms.terrainContourSea.value=0;
         const coast=row(1000,100),seaMinimum=Math.min(...coast.slice(0,262));
         const automaticSeaMinimum=Math.min(...row(1000,-1).slice(0,256));
-        return {measurements,automatic,highDpi,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum};
+        const varying=new THREE.PlaneGeometry(1000,1000,32,2),position=varying.attributes.position;
+        varying.setAttribute('terrainElevation',new THREE.BufferAttribute(Float32Array.from({length:position.count},(_,i)=>144+position.getY(i)*(.05+1.35*(position.getX(i)+500)/1000)),1));
+        scene.children[0].geometry=varying;uniforms.terrainContourAutomaticStep.value=16;uniforms.terrainContourInterval.value=-1;renderer.render(scene,camera);
+        gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);const continuousMax=Math.max(...Array.from({length:508},(_,i)=>pixels[(i+2)*4]));varying.dispose();scene.children[0].geometry=geometry;
+        return {measurements,automatic,highDpi,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum,continuousMax};
       }finally{geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();}
     }
   `},bundle:true,format:'iife',globalName:'ContourPixelProbe',write:false}).outputFiles[0].text;
+}
+export async function terrainContourPixels(page,source=buildContourProbe()){
   const result=await page.evaluate(`(()=>{${source}\nreturn ContourPixelProbe.run();})()`);
   for(const m of result.measurements){assert(m.inkPixels>=1&&m.inkPixels<=3,JSON.stringify(m));assert(m.centerMinimum<230);assert(m.height100Minimum<250,'fixed 100 m contour must retain its world height');}
   assert(Math.max(...result.measurements.map(m=>m.inkPixels))-Math.min(...result.measurements.map(m=>m.inkPixels))<=1);
@@ -72,5 +79,6 @@ export async function terrainContourPixels(page){
   for(const m of result.automatic){assert(m.inkPixels>0&&m.inkPixels<=170,JSON.stringify(m));assert(m.maxError<=2,JSON.stringify(m));}
   for(const m of result.highDpi)assert(m.maxError<=2,JSON.stringify(m));
   assert(result.tileError<=1,'export tiles must preserve the full-image intervals and blending');assert.equal(result.automaticSeaMinimum,255);
+  assert(result.continuousMax<250,'the same 144 m contour must cross gentle and steep slopes without ending');
   return result;
 }

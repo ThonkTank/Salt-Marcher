@@ -33,6 +33,7 @@ export function routeDisplayMaterial(mesh:THREE.Mesh,r:LandscapeRecord,overview=
    #include <tonemapping_fragment>`);
  };
  material.customProgramCacheKey=()=> 'route-scale-v1';
+ mesh.userData.routeDisplay={width:r.width,threshold,overview,important};
  mesh.onBeforeRender=renderer=>{
   renderer.getSize(viewport.value);
   if(material instanceof LineMaterial)material.resolution.copy(viewport.value);
@@ -49,6 +50,20 @@ export function routeDisplayMaterial(mesh:THREE.Mesh,r:LandscapeRecord,overview=
    if(routeDisplayOpacity(pixels,threshold,overview,important)>.05)hits.push(hit);
   }
  };
+}
+
+/** Skip draw submission when even the nearest point of the bounding sphere
+ * has zero shader opacity. Retained geometry becomes visible immediately on
+ * zoom-in; no worker round trip is needed. The shader still owns the fade. */
+export function routeDisplayVisible(mesh:THREE.Mesh,camera:THREE.Camera,height:number){
+ const policy=mesh.userData.routeDisplay as {width:number;threshold:number;overview:boolean;important:boolean}|undefined;
+ if(!policy)return true;
+ if(!mesh.geometry.boundingSphere)mesh.geometry.computeBoundingSphere();
+ const sphere=mesh.geometry.boundingSphere;if(!sphere)return true;
+ const center=sphere.center.clone().applyMatrix4(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse),radius=sphere.radius*mesh.matrixWorld.getMaxScaleOnAxis();
+ const scale=policy.width*camera.projectionMatrix.elements[5]!*height*.5,nearest=Math.max(1e-6,-center.z-radius),farthest=Math.max(1e-6,-center.z+radius);
+ if(!policy.important&&scale/nearest<=policy.threshold*.5)return false;
+ return !policy.overview||scale/farthest<1.75;
 }
 
 /** A simplified cartographic centreline at small scales. Tunnel gaps and bridge

@@ -107,7 +107,9 @@ export function vegetationBlocked(env:VegetationEnvironment,p:Point,radius=0) {
   return contains(p,env.buildings)||radius>0&&edgeDistance(p,env.buildings)<radius;
 }
 const inBox=(p:Point,b:LandscapeBox,pad=0)=>p.x>=b.x-pad&&p.y>=b.y-pad&&p.x<=b.x+b.width+pad&&p.y<=b.y+b.height+pad;
-export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,box:LandscapeBox,mpp:number):VegetationView {
+export const VEGETATION_SURFACE_MPP=80;
+export function generateVegetation(r:LandscapeRecord,environment:VegetationEnvironment|((point:Point,radius:number)=>VegetationEnvironment),box:LandscapeBox,mpp:number):VegetationView {
+  const sourceAt=(point:Point,radius:number)=>typeof environment==='function'?environment(point,radius):environment;
   const v=r.vegetation!;
   if(!v)return{instances:[],mode:'surface'};
   const instances:VegetationInstance[]=[],p=v.preset,overrides=new Map(v.overrides.map(o=>[o.id,o]));
@@ -116,8 +118,9 @@ export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,b
   const clipped={x:Math.max(box.x-pad,extent.x),y:Math.max(box.y-pad,extent.y),
     right:Math.min(box.x+box.width+pad,extent.x+extent.width),bottom:Math.min(box.y+box.height+pad,extent.y+extent.height)};
   const grid=vegetationGrid(base,mpp,clipped),stride=v.layout==='row'?vegetationStride(base,mpp):grid.stride;
-  const detail=mpp<=2&&stride===1,mode=mpp>80?'surface':detail?'individual':'canopy';
+  const detail=mpp<=2&&stride===1,mode=mpp>VEGETATION_SURFACE_MPP?'surface':detail?'individual':'canopy';
   const emit=(id:string,at:Point,asset:PlantAsset,size:number,angle:number,chance:number,random:number)=>{
+    const env=sourceAt(at,size*.25);
     if(overrides.has(id)||!inBox(at,box,pad)||vegetationOwner(env,at)?.id!==r.id)return;
     const surface=env.terrain.query(at);
     if(surface.water||surface.slopeDegrees>p.slope||vegetationBlocked(env,at,asset==='rock'?size*.25:size*.12))return;
@@ -169,6 +172,7 @@ export function generateVegetation(r:LandscapeRecord,env:VegetationEnvironment,b
   // Protected objects remain visible even when their original candidate becomes
   // unsuitable. Conflicts are reported; author decisions are never deleted.
   for(const o of overrides.values())if(!o.removed&&inBox(o,box,pad)){
+    const env=sourceAt(o,o.size*.15);
     const surface=env.terrain.query(o);
     instances.push({...o,z:surface.heightM,normal:surface.normal,protected:true,
       conflict:vegetationBlocked(env,o,o.size*.15)||surface.slopeDegrees>p.slope});

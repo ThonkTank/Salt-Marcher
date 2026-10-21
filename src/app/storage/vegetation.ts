@@ -2,10 +2,20 @@ import {readRouteTerrain} from './terrain-route';
 import type {Point,Polygon} from '../contracts';
 import {bounds,contains,type LandscapeBox,type LandscapeRecord} from '../atlas-landscape';
 import {posed,roadPoints} from '../city-model';
-import {generateVegetation,vegetationEnvironment,vegetationOwner,type VegetationScene} from '../vegetation';
+import {generateVegetation,vegetationEnvironment,vegetationOwner,VEGETATION_SURFACE_MPP,type VegetationScene} from '../vegetation';
 import {previewSpatialTerrain,spatialDraftBounds,spatialTerrainSurface,type SpatialTerrainDraft} from '../spatial-terrain';
 
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
+/** World overview contains no automatic trees. Resolve only actual candidates;
+ * protected world objects need their local terrain, never the whole continent. */
+export function vegetationEnvironmentReader(db:any,cam:string,box:LandscapeBox,mpp:number){
+  let cached:ReturnType<typeof readVegetationEnvironment>|undefined;
+  return(point:Point,radius:number)=>{
+    if(mpp<=VEGETATION_SURFACE_MPP)return(cached??=readVegetationEnvironment(db,cam,box)).env;
+    const pad=Math.max(100,radius);
+    return readVegetationEnvironment(db,cam,{x:point.x-pad,y:point.y-pad,width:pad*2,height:pad*2}).env;
+  };
+}
 /** Bounded read on both Main and readonly region workers. Never builds an index
  * or changes the source fence during a projection. */
 export function readVegetationEnvironment(db:any,cam:string,box:LandscapeBox) {

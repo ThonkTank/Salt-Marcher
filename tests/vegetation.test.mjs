@@ -14,6 +14,25 @@ const box={x:-100,y:-100,width:200,height:200};
 const rectangle=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const plane=(height=50)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*256,y*256,4,new Float32Array(4096).fill(height))));
 const area=(id='wood',preset='conifer')=>({...emptyRecord('vegetation'),id,order:1,name:'Testwald',points:[],polygons:[rectangle(-100,-100,200,200)],resolution:3,values:{terrain:vegetationPresets.find(p=>p.id===preset).terrain},vegetation:vegetationSpec(preset,123)});
+test('world vegetation resolves terrain only for protected objects, with their actual footprint',()=>{
+ const r=area(),world={x:-2e7,y:-1e7,width:4e7,height:2e7};let reads=0;
+ assert.deepEqual(generateVegetation(r,()=>{throw Error('World overview must not read all author heights');},world,40000),{instances:[],mode:'surface'});
+ r.vegetation.overrides=[{id:'landmark',x:0,y:0,asset:'oak',size:22,angle:0}];
+ const result=generateVegetation(r,(p,radius)=>{reads++;assert.deepEqual(p,r.vegetation.overrides[0]);assert.equal(radius,3.3);return vegetationEnvironment([...plane(),r]);},world,40000);
+ assert.equal(reads,1);assert.equal(result.instances[0].id,'landmark');assert.equal(result.instances[0].z,50);
+});
+test('world reader retains a protected tree without loading the continent height corpus',t=>{
+ const f=setup(t),r=area();r.vegetation.overrides=[{id:'old-oak',x:0,y:0,asset:'oak',size:22,angle:0}];f.save(r);
+ const insert=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');let bytes=0;
+ f.store.db.transaction(()=>{for(let i=0;i<800;i++){
+  const x=(i%30+1)*1048576,y=(Math.floor(i/30)+1)*1048576,record=heightRecord(x,y,16384,new Float32Array(4096).fill(50)),json=JSON.stringify(record);bytes+=Buffer.byteLength(json);
+  insert.run(f.cam.id,record.id,1,x-16384,x+1048576,y-16384,y+1048576,json);
+ }})();assert(bytes>16*1024*1024);
+ const db=new(require('better-sqlite3'))(f.dir+'/world.sqlite',{readonly:true}),reader=new AtlasLandscapeReader(db);t.after(()=>db.close());const source=f.store.atlasRegionSource(f.token);reader.sync(source);
+ const layer=reader.read(source,{box:{x:-1e6,y:-1e6,width:4e7,height:4e7},width:1024,height:1024,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
+ assert.equal(layer.state,'ready');const view=layer.records.find(record=>record.id===r.id).vegetationView;
+ assert.equal(view.mode,'surface');assert.equal(view.instances.length,1);assert.equal(view.instances[0].id,'old-oak');assert.equal(view.instances[0].z,50);
+});
 function setup(t){
  const dir=mkdtempSync(cache+'/vegetation-test-');let store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('Landschaft'),active=store.activate(cam.id);
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});

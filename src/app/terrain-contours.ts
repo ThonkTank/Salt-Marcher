@@ -1,12 +1,30 @@
 import * as THREE from 'three';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
-import {CONTOUR_BASE_METRES,CONTOUR_SPACING_PIXELS,CONTOUR_INK} from './terrain-contour-style';
+import {CONTOUR_BASE_METRES,CONTOUR_INK} from './terrain-contour-style';
+import type {TerrainGrid} from './terrain-spatial-model';
+import {terrainGridLayout} from './terrain-grid-layout';
+
+/** One slope reference for the loaded focus region, independent of individual
+ * fragments. Choosing a level per pixel made equal-elevation lines break up. */
+export function terrainContourSlope(grid:TerrainGrid){
+  const v=grid.view,l=terrainGridLayout(v),b=v.refinement??v.box;let slope=0;
+  for(let y=0;y<v.rows-1;y++)for(let x=0;x<v.columns-1;x++){
+    if(l.x.values[x]!<b.x||l.x.values[x]!>b.x+b.width||l.y.values[y]!<b.y||l.y.values[y]!>b.y+b.height)continue;
+    const i=y*v.columns+x,h=grid.heights;
+    for(const far of [false,true]){
+      const dx=(far?h[i+v.columns+1]!-h[i+v.columns]!:h[i+1]!-h[i]!)/(l.x.values[x+1]!-l.x.values[x]!);
+      const dy=(far?h[i+v.columns+1]!-h[i+1]!:h[i+v.columns]!-h[i]!)/(l.y.values[y+1]!-l.y.values[y]!);
+      slope=Math.max(slope,Math.hypot(dx,dy));
+    }
+  }
+  return slope;
+}
 
 /** Display-only ink on the same triangular surface used for visible brush hits.
  * Derivatives express metres per actual screen pixel, keeping lines sharp as the
  * camera moves. Dense intervals fade before they alias; their heights never move. */
 export function terrainContourUniforms(){
-  return {terrainContourInterval:{value:0},terrainContourSea:{value:0},terrainContourPixelRatio:{value:1},terrainContourInk:{value:new THREE.Color(DEFAULT_TERRAIN_STYLE.ink)}};
+  return {terrainContourInterval:{value:0},terrainContourAutomaticStep:{value:1},terrainContourSea:{value:0},terrainContourPixelRatio:{value:1},terrainContourInk:{value:new THREE.Color(DEFAULT_TERRAIN_STYLE.ink)}};
 }
 export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms:ReturnType<typeof terrainContourUniforms>){
   material.onBeforeCompile=shader=>{
@@ -15,6 +33,7 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nterrainContourHeight=terrainElevation;');
     shader.fragmentShader=`
       uniform float terrainContourInterval;
+      uniform float terrainContourAutomaticStep;
       uniform float terrainContourSea;
       uniform float terrainContourPixelRatio;
       uniform vec3 terrainContourInk;
@@ -40,7 +59,7 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
         float interval=terrainContourInterval;
         float blend=0.0;
         if(interval<0.0){
-          float level=max(0.0,log2(terrainGradient*terrainContourPixelRatio*${CONTOUR_SPACING_PIXELS.toFixed(1)}/${CONTOUR_BASE_METRES.toFixed(1)}));
+          float level=max(0.0,log2(terrainContourAutomaticStep/${CONTOUR_BASE_METRES.toFixed(1)}));
           interval=${CONTOUR_BASE_METRES.toFixed(1)}*exp2(floor(level));
           blend=smoothstep(0.0,1.0,fract(level));
         }
@@ -50,5 +69,5 @@ export function terrainContourMaterial(material:THREE.MeshBasicMaterial,uniforms
       }
     `);
   };
-  material.customProgramCacheKey=()=> 'terrain-contours-v3';
+  material.customProgramCacheKey=()=> 'terrain-contours-v4';
 }

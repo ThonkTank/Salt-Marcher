@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-route-display';export * from './src/app/terrain-route-view';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-route';export {PerspectiveCamera,Raycaster,Vector2} from 'three';"},outfile:'.build/terrain-route-display-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {routeDisplayOpacity,routeMeshes,emptyRecord,newLine,routeSpec,PerspectiveCamera,Raycaster,Vector2}=createRequire(import.meta.url)('../.build/terrain-route-display-test.cjs');
+const {routeDisplayVisible,routeDisplayOpacity,routeMeshes,emptyRecord,newLine,routeSpec,PerspectiveCamera,Raycaster,Vector2}=createRequire(import.meta.url)('../.build/terrain-route-display-test.cjs');
 const road=()=>({...emptyRecord('road'),id:'road',width:2,line:{...newLine('road'),style:'solid',curve:'linear',roughness:0},points:[{x:-100,y:0},{x:100,y:0}]});
 const dispose=meshes=>meshes.forEach(m=>{m.geometry.dispose();m.material.dispose();});
 test('semantic visibility and overview handoff vary continuously and keep important routes available',()=>{
@@ -42,4 +42,12 @@ test('long world roads only sample their loaded terrain coverage, with unchanged
  const meshes=routeMeshes(r,p=>{samples++;assert(Math.abs(p.x)<=105&&Math.abs(p.y)<=5);return 0;},{x:0,y:0,z:0},1,2,false,box);
  assert(meshes.length>=2,'a crossing world segment remains visible');assert(samples>0&&samples<1000,`bounded local samples: ${samples}`);
  assert.equal(JSON.stringify(r),before);dispose(meshes);
+});
+test('world-scale invisible routes skip draw calls and reappear without rebuilding geometry',()=>{
+ const r=road(),meshes=routeMeshes(r,()=>0,{x:0,y:0,z:0},1,10),camera=new PerspectiveCamera(45,1,.001,1e9),geometries=meshes.map(m=>m.geometry);
+ const at=distance=>{camera.position.set(0,0,distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();camera.updateProjectionMatrix();return meshes.map(m=>routeDisplayVisible(m,camera,1000));};
+ assert(at(1e8).every(v=>!v),'zero-alpha geometry must not enter the draw list');assert(at(1000).some(Boolean));assert.deepEqual(meshes.map(m=>m.geometry),geometries);
+ const selected=routeMeshes(r,()=>0,{x:0,y:0,z:0},1,10,true);at(1e8);assert(selected.some(m=>routeDisplayVisible(m,camera,1000)),'selected routes remain visible');
+ // A long route can extend much nearer than its centre. Culling must use its bound.
+ const mesh=meshes.find(m=>m.userData.routeOverview);mesh.geometry.boundingSphere.radius=1e8;assert(routeDisplayVisible(mesh,camera,1000));dispose(meshes);dispose(selected);
 });

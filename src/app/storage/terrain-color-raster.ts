@@ -4,6 +4,7 @@ import type {LandscapeBox,LandscapeRecord} from '../atlas-landscape';
 import {LandscapeRasterizer,landscapeRasterBounds} from '../landscape-raster';
 import {streamTerrainFieldSteps} from '../terrain-field-stream';
 import type {TerrainProjectionCache} from '../terrain-projection-cache';
+import {terrainDirtyRects} from '../terrain-dirty-rects';
 export type ProjectionStream=(kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox)=>Iterable<LandscapeRecord>;
 export interface TerrainColorOptions {
  settings:LandscapeRecord;stream:ProjectionStream;cache?:TerrainProjectionCache;batchEdge:number;
@@ -43,14 +44,19 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
   }
   // Cold tiles are sampled together; a local edit resamples only its small
   // missing pieces, including each piece's lighting/contour halo.
-  const batch=parts.filter(p=>!p.pixels).length>parts.length/2?(yield* draw(box,width,height)):undefined;
-  for(const part of parts){
-   if(!part.pixels){
-    if(batch){part.pixels=new Uint8Array(part.width*part.height*4);for(let row=0;row<part.height;row++)part.pixels.set(batch.subarray(((part.y+row)*width+part.x)*4,((part.y+row)*width+part.x+part.width)*4),row*part.width*4);}
-    else part.pixels=yield* draw(part.box,part.width,part.height);
+  const missing=Uint8Array.from(parts,p=>p.pixels?0:1);
+  const batches=parts.filter(p=>!p.pixels).length>parts.length/2?[{x:0,y:0,width,height}]:terrainDirtyRects(missing,width,height,32,1024*1024);
+  for(const batch of batches){
+   const image=yield* draw(pixelBox(x+batch.x,y+batch.y,batch.width,batch.height),batch.width,batch.height);
+   for(const part of parts){
+    if(part.pixels||part.x<batch.x||part.y<batch.y||part.x+part.width>batch.x+batch.width||part.y+part.height>batch.y+batch.height)continue;
+    part.pixels=new Uint8Array(part.width*part.height*4);
+    for(let row=0;row<part.height;row++){const at=((part.y-batch.y+row)*batch.width+part.x-batch.x)*4;part.pixels.set(image.subarray(at,at+part.width*4),row*part.width*4);}
     cache.rememberPixels(part.key,landscapeRasterBounds(part.box,part.width,part.height),part.pixels);
    }
-   for(let row=0;row<part.height;row++)pixels.set(part.pixels.subarray(row*part.width*4,(row+1)*part.width*4),((y+part.y+row)*pixelWidth+x+part.x)*4);
+  }
+  for(const part of parts){
+   for(let row=0;row<part.height;row++)pixels.set(part.pixels!.subarray(row*part.width*4,(row+1)*part.width*4),((y+part.y+row)*pixelWidth+x+part.x)*4);
   }
   yield* checkpoint();
  }

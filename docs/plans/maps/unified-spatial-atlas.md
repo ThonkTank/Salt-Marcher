@@ -248,6 +248,24 @@ Betroffene Capability-Einträge mit tatsächlichen Testdateien verbinden und Pr�
 
 ## 4. Verbindliche Abnahme und Testfälle
 
+Nutzerbefund vom 21.10.2026: Version **0.178.0** zeigt auf einem Intel Pentium
+Gold 7505 (2 Kerne/4 Threads) mit integrierter Intel UHD (Tiger Lake-LP GT2)
+sekundenlange Navigation im Weltmaßstab, abreißende Höhenlinien und noch langsamere
+Bearbeitung mit 2.500 Meilen Pinselradius (4.023.360 m). **Unmittelbare Bedienung
+gilt ausdrücklich auch für eine vollständig gefüllte Welt**, nicht nur für
+kleine oder leere Fixtures. Kamera und Eingaben müssen unabhängig von
+Nachladeaufträgen bleiben; Darstellung und Detailarbeit richten sich nach dem
+sichtbaren Ausschnitt und Maßstab. Die folgenden Zielwerte sind durch frühere
+kleinräumige Proben nicht qualifiziert.
+
+Regelmäßige Autorenprüfung aus Nutzersicht, zusätzlich zu technischen Lastproben:
+im normalen Atlas eine Fantasywelt mit Kontinenten beginnen, einen Kontinent
+ausarbeiten, darin ein Königreich gestalten, anschließend Straßen und Gebäude
+einer Stadt und zuletzt ein einzelnes Gebäude bearbeiten. Gebiete bleiben
+unabhängige gemalte Overlays. Jeden Übergang mit Zoom, Navigation, tatsächlicher
+Bearbeitung und Wiederaufnahme prüfen. Isolierte Ansichten und automatisch
+eingespielte Lastdaten ersetzen diesen Ablauf nicht.
+
 | Bereich | Ziel |
 | --- | --- |
 | Gewöhnliche Navigation | 60-FPS-Ziel auf dem Laptop des Nutzers bei 1080p; Bildintervalle p95 ≤16,7 ms, p99 ≤33,3 ms |

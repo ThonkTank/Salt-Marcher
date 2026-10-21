@@ -29,6 +29,9 @@ export class AtlasSpatialScene {
   ) {
     try {
       for (const [order, command] of source.commands.entries()) {
+        // The terrain material draws the travelling hex grid without rebuilding
+        // thousands of draped triangles on every camera/brush frame.
+        if(command.node.data.landscapeGridSize)continue;
         if(source.root?.mapLabels && command.node.data.mapLabel)continue;
         if (command.hud) continue; // Screen furniture remains on the main Canvas overlay.
         if (
