@@ -297,6 +297,10 @@ export class LandscapeRasterizer {
     for(const _ of this.polygonSteps(p,rgb,alpha,target,water,function*(){})){}
   }
   private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>):Generator<void>{
+    // Opaque spans overwrite their background. Use the platform's packed byte
+    // order, and retain per-pixel blending for alpha or land/water clipping.
+    const opaque=alpha===1&&!target?new Uint32Array(this.samples.buffer):null;
+    const packed=opaque?new Uint32Array(Uint8Array.of(...rgb.map(Math.round),255).buffer)[0]!:0;
     const rings=[p.outer,...p.holes].map(r=>r.map(v=>({x:(v.x-this.sampleBox.x)/this.sampleBox.width*this.w,y:(v.y-this.sampleBox.y)/this.sampleBox.height*this.h})));
     let minY=this.h,maxY=-1;
     for(const ring of rings)for(const v of ring){minY=Math.min(minY,v.y);maxY=Math.max(maxY,v.y);}
@@ -310,6 +314,12 @@ export class LandscapeRasterizer {
       intersections.sort((a,b)=>a-b);
       for(let i=0;i+1<intersections.length;i+=2){
         const from=Math.max(0,Math.ceil(intersections[i]!-.5)),to=Math.min(this.w-1,Math.floor(intersections[i+1]!-.5));
+        if(to<from)continue;
+        if(opaque){
+          const start=y*this.w+from,end=y*this.w+to+1;opaque.fill(packed,start,end);
+          if(water!==undefined)this.water.fill(water?1:0,start,end);
+          continue;
+        }
         for(let x=from;x<=to;x++){
           const pixel=y*this.w+x,at=pixel*4;
           if(target&&(target==='water')!==!!this.water[pixel])continue;
