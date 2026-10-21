@@ -240,8 +240,9 @@ export class CampaignAtlasWorkbench {
         !!this.partyDrag ||
         this.brushId !== null,
       changed: () => {
-        // Keep navigation rays current; AtlasCanvas paints map and overlay together.
-        this.spatial?.reframe(this.camera.view,false);
+        // Until object geometry arrives, terrain draws its own camera updates.
+        // Complete scenes keep map and overlay in the shared AtlasCanvas frame.
+        this.spatial?.reframe(this.camera.view,!this.data);
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
         this.scheduleRegion(true);if(this.exportOpen)this.exportAreaStatus();
       },
@@ -630,7 +631,9 @@ export class CampaignAtlasWorkbench {
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
+  private openingSurface:{owner:WorkspaceGeometry;revision?:number}|null=null;
   private scheduleRegion(camera=false){
+    if(this.openingSurface&&!this.data){this.scheduleRender();return;}
     if(this.root.hidden||!this.owner)return;
     if(this.geometryCurrent()){
       if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
@@ -680,6 +683,7 @@ export class CampaignAtlasWorkbench {
     },factor=>this.camera.zoom(factor),mounted=>{if(mounted)void openDungeon().catch(error=>this.error(error));else stopDungeonPlayback();});
   }
   hide() {
+    this.openingSurface=null;
     this.terrainAnalysis?.cancel();
     this.terrainPresentation?.stop();this.terrainPresentation=null;
     this.spatial?.setActive(false);
@@ -693,6 +697,7 @@ export class CampaignAtlasWorkbench {
     this.layout?.setActive(false);
   }
   activate(w: WorkspaceGeometry) {
+    this.openingSurface=null;
     this.terrainPresentation?.stop();this.terrainPresentation=null;this.terrainAuthor=null;
     this.hitVersion++;this.hitDialog.close();this.travelReadState = "loading";this.loadedRegionQuery=null;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
     this.previewRequest++;
@@ -745,9 +750,24 @@ export class CampaignAtlasWorkbench {
     if(!this.liveDocked&&this.family==='travel')this.family='terrain';
     this.root.hidden=false;this.layout?.setActive(!this.liveDocked);const owner=this.owner;if(!owner)return;
     if(this.opening?.owner===owner)return this.opening.task;
-    const task=(async()=>{await this.refresh();if(this.owner!==owner||this.root.hidden)return;await this.setFamily(this.family,false);})();
+    const task=(async()=>{await this.openTerrain(owner);if(this.owner!==owner||this.root.hidden)return;await this.refresh();if(this.owner!==owner||this.root.hidden)return;await this.setFamily(this.family,false);})();
     this.opening={owner,task};
     try{await task;}finally{if(this.opening?.task===task)this.opening=null;}
+  }
+  private async openTerrain(owner:WorkspaceGeometry){
+    if(this.data||!this.spatial||this.spatial.needsTerrainRaster||!window.campaign.atlasTerrainSource)return;
+    const opening={owner,revision:undefined as number|undefined};this.openingSurface=opening;
+    if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}
+    get('atlas-save-status').textContent='Gelände wird geladen…';
+    try{
+      const reply=await window.campaign.atlasTerrainSource(owner.token);
+      if(this.openingSurface!==opening||this.owner!==owner||this.root.hidden)return;
+      if(!reply.ok)return; // The complete region owns the final loading/error result.
+      opening.revision=reply.value.revision;
+      await this.spatial.openSurface(owner.token,this.camera.view,reply.value.revision,this.landscape.contours());
+    }catch{
+      // Bootstrap is optional. The complete region request reports any durable error.
+    }finally{if(this.openingSurface===opening)this.openingSurface=null;}
   }
   async refresh(keepScene=false) {
     if(this.landscape.livePainting&&this.terrainPresentation)return false;
@@ -2275,7 +2295,12 @@ export class CampaignAtlasWorkbench {
   private render(preview=false) {
     this.syncBrushSizes();
     const data=this.data;
-    if(!data||this.root.hidden)return;
+    if(this.root.hidden)return;
+    if(!data){
+      const opening=this.openingSurface;
+      if(opening?.owner===this.owner&&opening.revision!==undefined)this.spatial?.sync(this.owner!.token,this.camera.view,opening.revision,[],this.landscape.contours());
+      return;
+    }
     this.renderPanel(data);this.renderTravel();this.layout?.sync();this.territories.sync(this.owner?.token??'');
     // During a direct GPU gesture TerrainPresentation owns confirmed frames
     // and the spatial view owns the draft. Save-state notifications only need

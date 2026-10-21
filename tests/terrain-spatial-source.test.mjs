@@ -27,7 +27,7 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
  const input={clientWidth:1000,clientHeight:800,dataset:{}};
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
-  active:true,ready:false,input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
+  active:true,ready:false,firstSurface:new Set(),input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
   loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
   view:{batch:update=>update(),setDetail:(detail,rects)=>tiles.push({detail,rects}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
@@ -203,4 +203,30 @@ test('a confirmed new frame reports graphics recovery once and never before publ
  const f=fixture(t),recovered=[];f.ui.failureMessage='graphics';f.ui.host.recovered=m=>recovered.push(m);
  f.sync();const loading=f.load();assert.deepEqual(recovered,[]);f.resolveRead();await loading;
  assert.deepEqual(recovered,['graphics']);assert.equal(f.ui.failureMessage,null);
+});
+
+test('opening waits only for the first usable terrain, not colour/detail or object geometry',async t=>{
+ const f=fixture(t,{manualColor:true});let resolved=false;
+ const opening=f.ui.openSurface('campaign',frame,1,0).then(value=>{resolved=value;});
+ const loading=f.load();await new Promise(setImmediate);assert.equal(resolved,false);
+ f.resolveRead();await opening;assert.equal(resolved,true);assert.equal(f.published.length,1);assert.equal(f.colors.length,1);
+ assert.equal(f.ui.firstSurface.size,0);assert.equal(await f.ui.openSurface('campaign',frame,1,0),true);
+ f.ui.gesture(true);f.resolveColor(0);await loading;
+});
+test('stale bootstrap hands back to the full region without recursively awaiting refresh',async t=>{
+ const f=fixture(t);f.ui.host.refresh=()=>{throw Error('bootstrap must not recurse');};
+ const opening=f.ui.openSurface('campaign',frame,1,0),loading=f.load();
+ f.reads[0].resolve({ok:false,error:'Gelände inzwischen geändert. Ausschnitt erneut laden.'});
+ assert.equal(await opening,false);await loading;assert.deepEqual(f.errors,[]);assert.equal(f.ui.firstSurface.size,0);assert.equal(f.ui.needsLoad(),false);
+ f.ui.sync('campaign',frame,2,[],0,{cities:[],entrances:[],bindings:[],region:{revision:2}});assert.equal(f.ui.needsLoad(),true);
+});
+test('leaving the Atlas resolves bootstrap and a late terrain reply cannot publish',async t=>{
+ const f=fixture(t);f.input.style={};f.ui.view.dispose=()=>{};
+ const opening=f.ui.openSurface('campaign',frame,1,0),loading=f.load();f.ui.setActive(false);
+ assert.equal(await opening,false);f.resolveRead();await loading;assert.equal(f.published.length,0);
+});
+test('bootstrap exceptions remove their waiter and rejected modes do not start a read',async t=>{
+ const f=fixture(t);f.ui.sync=()=>{throw Error('init failure');};
+ await assert.rejects(f.ui.openSurface('campaign',frame,1,0),/init failure/);assert.equal(f.ui.firstSurface.size,0);
+ f.ui.failed=true;assert.equal(await f.ui.openSurface('campaign',frame,1,0),false);assert.equal(f.reads.length,0);
 });

@@ -1,3 +1,4 @@
+import {AtlasDeferredGeometry} from './atlas-deferred-geometry';
 import {atlasShapeSource} from './atlas-shape-source';
 import type {AtlasRegionCache} from './atlas-region-cache';
 import {mapFootprintVisible,mapLineVisible,mapLineWidth} from '../atlas-scale-policy';
@@ -57,9 +58,11 @@ export class AtlasRegionReader {
  // Only nearby derived shapes are retained; the full-world index holds bounds.
  private shapePayloads=new TerrainCache<string>(4*1024*1024);
  private buildingIndex=false;
+ private geometryChanges=new AtlasDeferredGeometry();
  private statements=new Map<string,any>();
  private landscape:AtlasLandscapeReader;
  private landscapeFailure=false;
+ private landscapeSyncChanged=true;
  private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(text);this.statements.set(text,s);}return s;}
  private readFaults=0;private countFaults=true;private ready=false;private indexed=true;private campaign='';private count=0;
  constructor(private db:any,shadow?:{filename:string;scopeId:string},private cache?:AtlasRegionCache){
@@ -163,13 +166,23 @@ export class AtlasRegionReader {
   const row=this.source(table,id);if(row)try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run(key,id);}
   if(++this.count%128===0)await pause();
  }
- async sync(source:AtlasRegionSource){
+ /** A rolled-back worker snapshot also rolls back TEMP tables, not JS state. */
+ rollback(geometry=true){
+  if(geometry){this.ready=false;this.geometryChanges.invalidate();this.shapePayloads.clear();}
+  if(this.landscapeSyncChanged)this.landscapeFailure=true;
+ }
+ async sync(source:AtlasRegionSource,geometry=true){
   if(source.shapeVersion!==undefined&&source.shapeVersion!==atlasShapeSource(this.db,source.campaignId))throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   this.campaign=source.campaignId;
-  const rebuild=source.reset||!this.ready;
-  let restored=false;
+  this.geometryChanges.observe(source);
+  // An invalid query on an unchanged snapshot must not discard precise terrain invalidation.
+  this.landscapeSyncChanged=this.landscapeFailure||source.reset||source.changes.length>0;
   try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
+  if(!geometry)return;
+  source=this.geometryChanges.source(source);
+  const rebuild=source.reset||!this.ready;
+  let restored=false;
   if(source.reset||!this.ready||source.changes.some(c=>['city_document','city_unit','room','drawing_element','dungeon_volume'].includes(c.table)))this.shapePayloads.clear();
   if(source.reset||!this.ready){
    this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem; DELETE FROM temp.region_extent;');
@@ -209,7 +222,7 @@ export class AtlasRegionReader {
   // Do not serialize a full-world cache on interactive object edits. Its source
   // version becomes stale; the next cold rebuild replaces it once.
   if(!restored&&rebuild)await this.cache?.save(this.db,source);
-  this.ready=true;
+  this.ready=true;this.geometryChanges.accepted();
  }
  private binding(row:any):AtlasBinding{return{id:row.id,kind:row.kind,ownerId:row.owner_id,parent:row.parent,parentId:row.parent_id,x:row.x,y:row.y,angle:row.angle,revision:row.revision};}
  private frame(b:AtlasBinding):Frame{

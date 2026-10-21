@@ -54,6 +54,8 @@ export interface AtlasRegionSource {
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
+ /** Cheap terrain bootstrap; no object index or geometry response is implied. */
+ atlasTerrainSource(token:string):Promise<import('./contracts').Result<{revision:number}>>;
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;
  atlasObjectFocus(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<import('./contracts').Result<AtlasObjectFocus>>;
  atlasRegionCandidates(token:string,query:AtlasRegionQuery,point:Point,fence:string,offset?:number,layer?:'geometry'|'landscape'|'all',visualElementId?:string):Promise<import('./contracts').Result<AtlasHitPage>>;

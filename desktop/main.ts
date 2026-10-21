@@ -413,6 +413,7 @@ else {
       const value=await atlasRegions.terrainColor(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
+    handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:store.atlasRegionSource(token).revision};});
     handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
       const reader=consumer==='view'?atlasRegions:atlasExportRegions,source=store.atlasRegionSource(token,reader.cursor);

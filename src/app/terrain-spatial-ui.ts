@@ -19,6 +19,18 @@ export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
 export class TerrainSpatialUI implements AtlasPresentation {
   active=false;ready=false;
+  private firstSurface=new Set<(ready:boolean)=>void>();
+  private settleFirstSurface(ready:boolean){for(const resolve of this.firstSurface)resolve(ready);this.firstSurface.clear();}
+  /** The regular Atlas surface can load before object geometry is available. */
+  openSurface(token:string,frame:LandscapeBox,revision:number,contours:number):Promise<boolean>{
+    if(this.needsTerrainRaster)return Promise.resolve(false);
+    return new Promise(resolve=>{
+      this.firstSurface.add(resolve);
+      try{this.sync(token,frame,revision,[],contours);}
+      catch(error){this.firstSurface.delete(resolve);throw error;}
+      if(!this.active)this.settleFirstSurface(false);else if(this.ready)this.settleFirstSurface(true);
+    });
+  }
   private canvas:HTMLCanvasElement|null=null;
   private view:TerrainSpatialView|null=null;
   private worker:Worker|null=null;
@@ -152,7 +164,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
-    if(!active){this.liveHeight=false;delete this.input.dataset.terrainDraft;this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
+    if(!active){this.settleFirstSurface(false);this.liveHeight=false;delete this.input.dataset.terrainDraft;this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;delete this.input.dataset.terrainTiles;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
@@ -249,6 +261,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   private sourceFailed(source:string,error:unknown){
     if(!this.active||this.requested!==source||this.sourceRefresh||this.host.writing()||this.host.live())return;
+    if(this.firstSurface.size&&String(error).includes('inzwischen geändert')){
+      this.sourceRefresh={region:this.regionSource,pending:false};this.settleFirstSurface(false);return;
+    }
     if(String(error).includes('inzwischen geändert')&&this.retrySource!==source&&this.host.refresh){
       this.retrySource=source;this.ready=false;const refresh={region:this.regionSource,pending:true};this.sourceRefresh=refresh;let completed=false;
       void this.host.refresh().then(value=>{completed=value===true;}).catch(e=>{if(this.active&&this.sourceRefresh===refresh)this.fail(e);}).finally(()=>{
@@ -266,7 +281,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.view!.batch(()=>{
       this.view!.setData(data);this.reframe(this.frame!);this.view!.setContours(this.pendingContours);
       this.view!.showSelection(this.host.selection());
-    });this.ready=true;
+    });this.ready=true;this.settleFirstSurface(true);
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
     this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
     if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}

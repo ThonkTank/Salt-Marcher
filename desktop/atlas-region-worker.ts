@@ -14,6 +14,8 @@ let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['te
 
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
+  const geometry=['region','focus','candidates','hit'].includes(job.kind);
+  let syncStarted=false;
   try {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
@@ -23,7 +25,7 @@ parentPort!.on('message', async (job: any) => {
       if(root?.revision!==job.source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
     }
     const endSync=terrainTraceStart("region.sync",job.source.revision);
-    await reader.sync(job.source);pyramid.sync(db,job.source);endSync();
+    syncStarted=true;await reader.sync(job.source,geometry);pyramid.sync(db,job.source);endSync();
     if(job.kind==='terrain-stroke'){
       const stroke=JSON.stringify(job.stroke);
       if(!job.continuation)preparation={fence:job.source.fence,stroke,steps:pyramid.warm(db,job.source.campaignId,job.stroke)};
@@ -57,7 +59,7 @@ parentPort!.on('message', async (job: any) => {
     if(job.kind==='terrain-stroke')preparation=undefined;
     if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine')projection=undefined;
     if (db.inTransaction) {
-      db.exec('ROLLBACK');
+      db.exec('ROLLBACK');if(syncStarted)reader.rollback(geometry);
     }
     const terrainTrace=takeTerrainTrace();
     parentPort!.postMessage({ error: (error as Error).message,...(terrainTrace?{terrainTrace}:{} ) });

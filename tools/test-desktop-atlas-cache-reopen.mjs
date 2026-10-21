@@ -15,10 +15,12 @@ try{
   const page=await native.launch();page.setDefaultTimeout(90000);await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
   await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-20000000,y:-12500000,width:40000000,height:25000000})),id);
   const start=performance.now();await page.locator('.campaign-card').getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert,null,{timeout:90000});
-  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:90000});
+  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:90000});
   const firstTerrainMs=performance.now()-start,state=await page.locator('#campaign-map').evaluate(n=>({view:n.dataset.atlasView,revision:n.dataset.terrainRevision,quality:n.dataset.terrainQuality}));
+  const firstRegionState=await page.locator('#campaign-atlas').getAttribute('data-region-state');
+  await atlasCanvasReady(page);const regionReadyMs=performance.now()-start;
   await native.capture(page,label);await native.close();const files=[];for(const name of await readdir(native.profile+'/atlas-region-cache')){const info=await stat(native.profile+'/atlas-region-cache/'+name);files.push({name,bytes:info.size,mtimeMs:info.mtimeMs});}
-  const run={label,firstTerrainMs,state,files};runs.push(run);console.log(JSON.stringify(run));
+  const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,files};runs.push(run);console.log(JSON.stringify(run));
  }
  assert.equal(runs[0].files.length,1);assert.deepEqual(runs[1].files,runs[0].files,'unchanged restart must reuse the cache without rewriting it');assert.deepEqual(runs[1].state,runs[0].state);
  await native.finish({runs});
