@@ -123,3 +123,20 @@ test('a found place selects the generic object context while vegetation retains 
  assert.equal(layout.groupMemory.get('terrain'),'objects');assert.equal(layout.toolList.dataset.group,'objects');assert.deepEqual([...layout.toolList.querySelectorAll('button')].map(b=>b.textContent.replace(/\s+/g,' ').trim()),['↖Objekt auswählen','⚑Ort platzieren']);
  assert.deepEqual(opened,['landscape:ferry']);layout.landscapeSelectionChanged('wood','vegetation');assert.equal(layout.groupMemory.get('terrain'),'vegetation');assert.equal(layout.toolList.dataset.group,'vegetation');
 });
+
+test('narrow selected-object properties share space with the map and restore the preferred palette on close or resize',t=>{
+ const {layout,root,document}=fixture(t);let width=700;Object.defineProperty(root,'clientWidth',{get:()=>width});
+ Object.assign(layout,{toolSettings:document.createElement('aside'),secondary:document.createElement('aside'),width:240,detailWidth:340,toolSettingsVisible:true,contextVisible:true,auxiliary:'selection',selectionKey:'path:access'});
+ layout.applyWidth();assert.equal(root.dataset.compactSelection,'true');assert.equal(root.style.getPropertyValue('--atlas-left-space'),'48px');assert.equal(root.style.getPropertyValue('--atlas-details-width'),'315px');assert.equal(root.dataset.overlay,'false');assert(layout.toolSettings.hidden);assert(!layout.secondary.hidden);
+ width=1400;layout.applyWidth();assert.equal(root.dataset.compactSelection,'false');assert.equal(root.style.getPropertyValue('--atlas-left-space'),'288px');assert.equal(root.style.getPropertyValue('--atlas-details-width'),'340px');assert(!layout.toolSettings.hidden);
+ width=700;layout.applyWidth();layout.hideContext();assert(!layout.toolSettings.hidden);assert(layout.secondary.hidden);assert.equal(layout.selectionKey,'path:access');assert.equal(layout.detailWidth,340);assert.equal(layout.width,240);assert(layout.toolSettingsVisible);
+});
+
+test('only an accepted explicit tool switch restores tools from compact selection',async t=>{
+ const x=fixture(t);Object.defineProperty(x.root,'clientWidth',{get:()=>700});Object.assign(x.layout,{toolSettings:x.document.createElement('aside'),secondary:x.document.createElement('aside'),width:240,detailWidth:340,toolSettingsVisible:true,contextVisible:true,auxiliary:'selection',selectionKey:'path:access'});delete x.layout.showToolSettings;
+ x.layout.applyWidth();const wall=atlasToolGroups.interior.find(g=>g.id==='walls').tools[0];x.allow(false);await x.layout.activateTool('interior','walls',wall);assert(x.layout.contextVisible);assert(x.layout.toolSettings.hidden);
+ x.allow(true);await x.layout.activateTool('interior','walls',wall);assert(!x.layout.contextVisible);assert(!x.layout.toolSettings.hidden);assert.equal(x.layout.selectionKey,'path:access');
+ const heading=x.document.createElement('strong');heading.id='atlas-secondary-title';x.root.append(heading);x.layout.selection=x.document.createElement('section');
+ x.layout.openSelection();assert(x.layout.contextVisible);assert(x.layout.toolSettings.hidden);
+ x.layout.showPane('tool');assert(x.layout.contextVisible,'ordinary domain redraw must not dismiss selected properties');assert(x.layout.toolSettings.hidden);
+});
