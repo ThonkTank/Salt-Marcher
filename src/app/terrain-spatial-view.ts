@@ -55,7 +55,7 @@ export class TerrainSpatialView {
   }
   private rebuildVegetation(records:LandscapeRecord[]){
     if(this.vegetation){this.scene.remove(this.vegetation.group);this.vegetation.dispose();}
-    this.vegetation=new AtlasSpatialVegetation(records,this.surface(),this.grid!.view.frame.width/Math.max(1,this.canvas.clientWidth));this.scene.add(this.vegetation.group);
+    this.vegetation=new AtlasSpatialVegetation(records,this.surface());this.scene.add(this.vegetation.group);
   }
   private surface(){
     const g=this.grid!;

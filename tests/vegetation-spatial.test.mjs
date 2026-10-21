@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * from './tools/atlas-preview-scene';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/vegetation-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainSpatialView,atlasPreviewScene,ATLAS_CAMERA_FOV,THREE}=require('../.build/vegetation-picking-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * from './tools/atlas-preview-scene';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/vegetation-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {AtlasSpatialLabels,TerrainSpatialView,atlasPreviewScene,ATLAS_CAMERA_FOV,THREE}=require('../.build/vegetation-picking-test.cjs');
 const instance=(id,asset,size,z=40)=>({id,areaId:'wood',asset,size,x:0,y:0,z,angle:0,normal:{x:0,y:0,z:1}});
 function view(instances){
  const v=Object.create(TerrainSpatialView.prototype);
- Object.assign(v,{camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),canvas:{clientWidth:1000,clientHeight:800,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:800})},
-   renderer:{setSize(){},render(scene){scene.updateMatrixWorld(true);}},routes:[]});
+ Object.assign(v,{labels:new AtlasSpatialLabels(),camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),canvas:{clientWidth:1000,clientHeight:800,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:800})},
+   renderer:{setSize(){},getPixelRatio(){return 1;},getSize(v){return v.set(1000,800);},render(scene){scene.updateMatrixWorld(true);scene.traverse(o=>{if(o.isMesh)o.onBeforeRender(this);});}},routes:[]});
  const scene={revision:1,box:{x:-100,y:-100,width:200,height:200},records:[],instances,buildings:[],grid:{columns:3,rows:3,heights:Array(9).fill(40),colors:Array(9).fill('#ffffff')}};
  v.setData(atlasPreviewScene(scene,0));v.fixture=scene;return v;
 }

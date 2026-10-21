@@ -1,3 +1,4 @@
+import {vegetationCameraPixels} from './vegetation-camera-probe.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 // Real Electron controls in a disposable profile. No author mutation via page.evaluate.
 import {createRequire} from 'node:module';
@@ -31,7 +32,7 @@ const prototype=store.atlasVegetationScene(active.token,{x:-340,y:-240,width:680
 store.tutorial('skipped');store.close();
 const db=new Database(dir+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.vegetation') IS NOT NULL").all().map(r=>JSON.parse(r.payload));
 const result={profile:dir,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],errors:[],sourceHashes:{}};
-for(const file of ['src/app/vegetation.ts','src/app/atlas-spatial-vegetation.ts','src/app/terrain-spatial-view.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+for(const file of ['src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/vegetation-display.ts','src/app/atlas-spatial-vegetation.ts','src/app/terrain-spatial-view.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=s=>{result.checks.push(s);console.log(s);};
 let app,page;
 async function close(){
@@ -81,6 +82,7 @@ async function settled(){await page.waitForFunction(()=>!document.querySelector(
 async function stroke(a,b){const x=await at(...a),y=await at(...b);await page.mouse.move(x.x,x.y);await page.mouse.down();await page.mouse.move(y.x,y.y,{steps:8});await page.mouse.up();await settled();}
 try{
  await prototypeRun();await start();await capture('02-product-before');
+ result.cameraPixels=await vegetationCameraPixels(page,out);
  await tool('vegetation');await page.locator('#vegetation-preset').selectOption('deciduous');await setBrushWorldRadius(page,'land-radius','45');
  const count=records().length;await stroke([80,-100],[220,-100]);assert.equal(records().length,count+1);const painted=records().find(r=>r.name==='Laubwald');assert(painted);assert.equal(painted.values.terrain,'forest');
  mark('Native Pinselgeste speichert Boden, Bewuchs und Geländeart gemeinsam');
