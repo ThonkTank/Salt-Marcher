@@ -65,6 +65,31 @@ Auswahl sowie eine falsche Leermeldung. Rechteck-/Ellipsentreffer benutzen
 tatsächliche Ausdehnung und Drehung; eine Indexhülle ist nur Kandidatensuche.
 Horizontale Wände benutzen ihre Breite, nicht ihre vertikale Höhe als Dicke.
 
+## Wann bleibt ein Quellenstand gültig?
+
+Abgewiesene Schreibversuche dürfen einen bestätigten Kartenstand oder eine
+laufende Suche nicht veralten lassen. Atlasframes, Atlas-Suchseiten und
+Raumverzeichnis verwenden dafür [CommittedSources](../../src/app/storage/committed-sources.ts):
+eine langlebige lesende Verbindung je kanonischer Datenbank beziehungsweise
+Graphvorschau beobachtet deren `PRAGMA data_version`. Sie hält keine Lesetransaktion
+offen. Damit zählen bestätigte Änderungen auch außerhalb der räumlichen Tabellen
+und aus anderen Verbindungen; Rollbacks und TEMP-Hilfsdaten zählen nicht.
+Die Beobachter werden beim Verwerfen/Übernehmen der Vorschau und beim Schließen
+des Stores geschlossen. Dateiformat und Archiv bleiben unverändert.
+
+Das transaktionale Atlasjournal liefert weiterhin gezielte Indexänderungen;
+Quellenkennung, Journal und fachliche Revisionen erfüllen verschiedene Aufgaben.
+`total_changes()` bleibt nur für den internen Erstraumcache erhalten: Dieser wird
+auch innerhalb laufender Schreibtransaktionen benutzt und muss deren noch nicht
+bestätigte Änderungen sehen. Er darf keine veröffentlichte Quellenkennung liefern.
+Eine Änderung während der Quellen- oder Suchabfrage bricht deren Ergebnis ab,
+damit ein alter Lesesnapshot keine neue Quellenkennung erhält.
+Echte Änderungen sperren alte Frames und Suchcursor weiterhin; die genaue
+Wiederholung eines bereits quittierten Befehls bleibt möglich.
+
+Gegenproben: [Rollback, Suchcursor, Metadaten und Graphvorschau](../../tests/desktop-atlas-regions.test.mjs),
+[native Fehlerkorrektur mit Undo/Redo und Neustart](../../tools/test-desktop-atlas-rejected-edit.mjs).
+
 ## Was bleibt bei Rasterwechsel und Pan erhalten?
 
 Die Autorenebene liegt genau einmal über dem Detail-/Rasterhintergrund. Offene
