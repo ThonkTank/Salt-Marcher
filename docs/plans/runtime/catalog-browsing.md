@@ -12,8 +12,8 @@ Für schreibende Vorlagen, Tabellen und Generatoren: [Encounterplanung](encounte
 | Anliegen | Besitzer / vorhandene Prüfung |
 | --- | --- |
 | Monsterquery, Detail, Quellenmetadaten | [catalog-ui.ts](../../../src/app/catalog-ui.ts), [encounters.ts](../../../src/app/storage/encounters.ts), [CreatureCatalog](../../../src/features/catalog/creature-catalog.ts); [Query-/Kontexttests](../../../tests/desktop-catalog-query-context.test.mjs) |
-| SRD-Itemquelle und Inhaltswechsel | [item-reference.ts](../../../src/app/storage/item-reference.ts), [item-reference-ui.ts](../../../src/app/item-reference-ui.ts); [Provider-/DOMtests](../../../tests/desktop-item-reference.test.mjs), [native Auswahlprobe](../../../tools/test-desktop-item-selection.mjs) |
-| Eigene Gegenstandsdefinition: Auswahl, Speichern, Antwortklärung | [items-ui.ts](../../../src/app/items-ui.ts): `selectDefinition`, `flushDrafts`, `recoveredItems`; [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop`; [Auswahl-/Schreibtests](../../../tests/desktop-item-selection.test.mjs) |
+| SRD-Itemquelle und Inhaltswechsel | [item-reference.ts](../../../src/app/storage/item-reference.ts), [item-reference-ui.ts](../../../src/app/item-reference-ui.ts); [Provider-/DOMtests](../../../tests/desktop-item-reference.test.mjs) |
+| Eigene Gegenstandsdefinition: Auswahl, Speichern, Antwortklärung | [items-ui.ts](../../../src/app/items-ui.ts): `selectDefinition`, `flushDrafts`, `recoveredItems`; [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop`; [Auswahl-/Schreibtests](../../../tests/desktop-item-selection.test.mjs), [native Auswahl-/Schreibprobe](../../../tools/test-desktop-item-selection.mjs) |
 | Gemeinsame Filter im Generator | [generation-ui.ts](../../../src/app/generation-ui.ts); [Generierungskontext](../../../tests/desktop-generation-context.test.mjs) |
 
 Obsidian-Catalogviewtests qualifizieren den Desktopcontroller nicht automatisch.
