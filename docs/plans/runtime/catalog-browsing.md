@@ -91,8 +91,10 @@ führt Namenskorrektur, blockierten Wechsel, Freigabe, Neustart und unabhängige
 bei 100/200 Prozent aus. Unberührte CRLF-Prosa, andere Definitionen und die zweite
 Figur bleiben erhalten; Vergabe, Schatz und Shopübernahme behalten ihre eigenen
 Checks. Die Probe benutzt aktuelle Kampagnenkarten, Bereichsschalter und
-Detailbereiche, zeichnet Buildhashes auch bei Fehlern auf und prüft frische
-nichtleere Bilder, begrenzte normale Exits und verschwundene Prozess-IDs.
+Detailbereiche. Start, isoliertes Profil, Buildhashes, frische nichtleere Bilder,
+normale Exits und verschwundene Prozess-IDs übernimmt der gemeinsame
+`native-session.mjs`-Helfer. `GM_QA_ZOOM=1` bzw. `2` prüft den tatsächlichen
+Anwendungszoom; Pixeldichte wird nicht als Zoomnachweis gewertet.
 Historische Schalter für unsicheres Altverhalten entfallen. Diese Linuxprobe ist
 keine vollständige Plattform-, Tastatur- oder Owner-Abnahme.
 
