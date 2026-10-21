@@ -1,31 +1,16 @@
+import {invalidateTerrainDetail,fillTerrainDetail} from './terrain-detail-retention';
 import type {LandscapeBox} from './atlas-landscape';
 import type {TerrainDetail} from './terrain-detail';
 import type {TerrainRect} from './terrain-frame';
 import type {TerrainColorRequest,TerrainColorTile} from './terrain-color';
-import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
+import {TerrainCache} from './terrain-cache';
 import {landscapeRasterBounds} from './landscape-raster';
 import {equalTerrainSource,type TerrainColorChange} from './terrain-change-history';
-import type {TerrainIdentity,TerrainInvalidation} from './terrain-frame';
+import type {TerrainIdentity} from './terrain-frame';
 
 export interface TerrainColorSource extends TerrainIdentity {token:string;rasterRouteKey?:string}
 export const terrainColorIdentity=(s:TerrainColorSource)=>JSON.stringify([s.token,s.revision,s.fence,s.rasterRouteKey]);
 
-/** Drop only affected tiles, including the shared raster's lighting/coast halo.
- * Pixels and availability belong to a published frame: never mutate them. */
-export function invalidateTerrainDetail(detail:TerrainDetail,changes:TerrainInvalidation):TerrainDetail|undefined{
- if(changes.reset)return;
- const columns=detail.coverage?.columns??1,rows=detail.coverage?.rows??1,
-  width=detail.width/columns,height=detail.height/rows;
- let next:TerrainDetail|undefined;
- for(let row=0;row<rows;row++)for(let column=0;column<columns;column++){
-  const box={x:detail.box.x+column*detail.box.width/columns,y:detail.box.y+row*detail.box.height/rows,width:detail.box.width/columns,height:detail.box.height/rows};
-  if(!changes.bounds.some(b=>terrainBoxesOverlap(landscapeRasterBounds(box,width,height),b)))continue;
-  next??={...detail,pixels:detail.pixels.slice(),coverage:{columns,rows,values:detail.coverage?.values.slice()??new Uint8Array(columns*rows).fill(255)}};
-  next.coverage!.values[row*columns+column]=0;
-  for(let y=row*height;y<(row+1)*height;y++)next.pixels.fill(0,(y*detail.width+column*width)*4,(y*detail.width+(column+1)*width)*4);
- }
- return next??detail;
-}
 
 const TILE_PIXELS=256;
 /** A common power-of-two world lattice survives pans and small zoom changes.
@@ -63,7 +48,7 @@ export class TerrainDetailTiles {
  base(token:string):TerrainIdentity|undefined{
   return this.source?.token===token?{revision:this.source.revision,fence:this.source.fence}:undefined;
  }
- reconcile(source:TerrainColorSource,change?:TerrainColorChange){
+ reconcile(source:TerrainColorSource,change?:TerrainColorChange,fresh?:TerrainDetail){
   const identity=terrainColorIdentity(source);
   if(identity!==this.identity){
    if(change&&this.source?.token===source.token&&this.source.rasterRouteKey===source.rasterRouteKey&&
@@ -73,6 +58,7 @@ export class TerrainDetailTiles {
    }else this.clear();
    this.source={token:source.token,revision:source.revision,fence:source.fence,rasterRouteKey:source.rasterRouteKey};this.identity=identity;
   }
+  if(fresh)this.detail=this.detail?fillTerrainDetail(this.detail,fresh):fresh;
   return this.detail;
  }
  async load(identity:string,area:LandscapeBox,query:Omit<TerrainColorRequest,'box'|'width'|'height'|'displayMpp'>,

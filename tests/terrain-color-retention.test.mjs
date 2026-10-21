@@ -56,6 +56,17 @@ test('a pending old tile cannot fill the rebased cache even if its caller still 
  let reads=0;await tiles.load(terrainColorIdentity(source(2)),box,{...identity(2),contours:0,routeContext:box},async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4)};},()=>true,()=>{});
  assert.equal(reads,terrainDetailTiles(box).tiles.length);
 });
+test('fresh brush colour fills invalidated pixels without replacing sharper neighbours or pretending tiles were loaded',async()=>{
+ const {tiles,load,reads}=await loaded(),before=tiles.detail,count=reads();
+ const fresh={box:{x:0,y:0,width:128,height:64},width:32,height:16,pixels:new Uint8Array(32*16*4)};
+ for(let i=0;i<fresh.pixels.length;i+=4)fresh.pixels.set([23,45,67,255],i);
+ const detail=tiles.reconcile(source(2),change(1,[{x:65,y:30,width:1,height:1}]),fresh);
+ assert.deepEqual([...detail.pixels.slice((120*detail.width+120)*4,(120*detail.width+120)*4+4)],[23,45,67,255]);
+ assert.equal(detail.pixels[(800*detail.width+800)*4],255,'unaffected fine colour remains original');
+ assert.equal(before.pixels[(120*detail.width+120)*4],255,'the prior frame is immutable');
+ assert(detail.coverage.values.every(v=>v===255),'complete current brush pixels are immediately visible');
+ await load(2);assert.equal(reads()-count,2,'coarser live pixels cannot masquerade as cached fine tiles');
+});
 test('the projection colour base accepts only a concrete source identity',()=>{
  const q={view:{box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1},width:64,height:64,contours:0,displayMpp:1,revision:2};
  validateTerrainProjection({...q,colorBase:identity(1)});
