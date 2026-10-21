@@ -27,6 +27,8 @@ async function open(zoom=1){
   await page.locator('#atlas-search-results button').filter({hasText:'Pinselreferenz'}).click();
   await atlasCanvasReady(page);
   await page.locator('#atlas-search').fill('');
+  // At enlarged browser zoom the room inspector occupies the tool drawer.
+  if(await page.locator('#atlas-secondary-close').isVisible())await page.locator('#atlas-secondary-close').click();
   await page.locator('#atlas-section').selectOption('terrain');
   await page.locator('[data-tool-group="land"]').click();
   await page.locator('[data-atlas-tool="land-shape"]').click();

@@ -19,6 +19,9 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 | [Kippbares Gelände und Dreieckstreffer](#draufsicht-und-geländeprojektion) | [TerrainSpatialUI](../../src/app/terrain-spatial-ui.ts), [Vorschauworker](../../src/app/terrain-spatial-worker.ts), [TerrainSpatialView](../../src/app/terrain-spatial-view.ts) | [Projektionsfälle](../../tests/terrain-tilted-atlas.test.mjs), [Speicherfälle](../../tests/terrain-tilted-atlas-storage.test.mjs), [native Geländeprobe](../../tools/test-desktop-terrain-tilted-atlas.mjs) |
 
 Leisten, Werkzeuge und Navigation: [Atlasoberfläche ändern](../../ARCHITECTURE.md#atlasoberfläche-ändern).
+Pinselgrößen werden bei Kamerabildern synchronisiert. Ihre Beschriftungsknoten
+bleiben dabei bestehen; nur echte Einheitenwechsel ändern den Text.
+[Native Stil-/Navigationsmessung](../reference/atlas-brush-controls-20261021/README.md).
 Testvorbereitung und native Sitzungen: [Testanleitung](testing.md).
 Die aufgeführten Prüfwege sind keine neue Ausführung oder Produktabnahme.
 
