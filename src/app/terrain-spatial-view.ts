@@ -66,7 +66,7 @@ export class TerrainSpatialView {
   }
   private surface(){
     const g=this.grid!;
-    return {origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:terrainGridLayout(g.view).minimumStep,routeIds:this.routeIds,closedObjectIds:this.objectLayer?.closedIds,objectHeights:this.objectLayer?.heights,scopeBases:this.objectLayer?.scopeBases};
+    return {bounds:g.view.box,origin:this.origin,focusM:g.view.focusM,exaggeration:g.view.exaggeration,height:(p:Point)=>gridHeight(g,p),segment:terrainGridLayout(g.view).minimumStep,routeIds:this.routeIds,closedObjectIds:this.objectLayer?.closedIds,objectHeights:this.objectLayer?.heights,scopeBases:this.objectLayer?.scopeBases};
   }
   publish(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){
     if(this.publication?.scene===scene)return;

@@ -1,0 +1,93 @@
+[
+  {
+    "case": "before",
+    "source": "46531ce8ccb42949a141909dae0ab67b3828ad89",
+    "dirty": true,
+    "artifacts": {
+      "main.cjs": "39f5757e1f13898b4dd1a13c9398f8e63074d34d0999266330e03281515841b9",
+      "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+      "ui/renderer.js": "34e9abcd5757a5e8a23e38d12131449a69b9003f768847dee269bf26c922600c",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 2910459,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope"
+      }
+    ],
+    "error": "Error: Normal close timed out\n    at Timeout.<anonymous> (file:///home/aaron/Schreibtisch/projects/SaltMarcher/tools/native-session.mjs:13:104)\n    at listOnTimeout (node:internal/timers:588:17)\n    at process.processTimers (node:internal/timers:523:7)",
+    "sampledMs": 52917.362,
+    "selfMs": {
+      "remove": 29618.571,
+      "(garbage collector)": 2493.094,
+      "Float32BufferAttribute": 2290.238,
+      "_Object3D": 1855.613,
+      "(idle)": 1706.271,
+      "world2": 1153.566,
+      "generateUUID": 882.074,
+      "BufferAttribute": 791.227,
+      "(program)": 771.65,
+      "_BufferGeometry": 729.889,
+      "triangle": 577.536,
+      "retainPrevious": 444.053,
+      "regionQuery": 418.377,
+      "getParameters": 379.977,
+      "updateMatrixWorld": 344.588,
+      "Mesh": 332.525,
+      "projectObject": 329.439,
+      "terrainGridCoordinate": 309.55,
+      "at3": 307.257,
+      "onFirstUse": 273.368
+    }
+  },
+  {
+    "case": "after",
+    "source": "46531ce8ccb42949a141909dae0ab67b3828ad89",
+    "dirty": true,
+    "artifacts": {
+      "main.cjs": "39f5757e1f13898b4dd1a13c9398f8e63074d34d0999266330e03281515841b9",
+      "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+      "ui/renderer.js": "7bda57cf4da2283411be399bc88433aecb60ecbddacef731a4b4bbc7d4d69f75",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 2914342,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "error": null,
+    "sampledMs": 10796.299,
+    "selfMs": {
+      "(idle)": 2526.649,
+      "retainPrevious": 905.074,
+      "(program)": 870.248,
+      "regionQuery": 715.357,
+      "getParameters": 385.278,
+      "render": 329.624,
+      "onFirstUse": 286.137,
+      "(garbage collector)": 251.628,
+      "triangle": 248.632,
+      "updateTerrainMesh": 232.529,
+      "load": 217.503,
+      "query": 197.294,
+      "hasOption": 186.939,
+      "": 175.683,
+      "getBoundingClientRect": 165.498,
+      "Float32BufferAttribute": 122.892,
+      "terrainContourSlope": 102.777,
+      "number": 87.35,
+      "terrainGridCoordinate": 76.288,
+      "gridHeight": 73.454
+    }
+  }
+]

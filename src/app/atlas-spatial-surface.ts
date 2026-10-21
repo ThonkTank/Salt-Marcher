@@ -10,6 +10,8 @@ export interface AtlasSpatialSurface {
   height: (point: Point) => number;
   /** Maximum world edge length for draped vector triangles. */
   segment: number;
+  /** Loaded terrain coverage, including the camera margin. */
+  bounds?:import("./atlas-landscape").LandscapeBox;
 }
 
 /** Refine local vector triangles against the shared terrain without changing source geometry.

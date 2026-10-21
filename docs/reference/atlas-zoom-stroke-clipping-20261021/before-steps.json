@@ -1,0 +1,51 @@
+[
+  {
+    "n": 0,
+    "view": "{\"x\":-9430930.04062321,\"y\":-1944252.2645080332,\"width\":2710747.907209819,\"height\":2004823.9730405954}",
+    "map": "loaded",
+    "region": "ready",
+    "quality": "refining",
+    "status": "Kartenausschnitt geladen"
+  },
+  {
+    "n": 1,
+    "view": "{\"x\":-8768258.695115522,\"y\":-1243760.9662790615,\"width\":816461.5796047128,\"height\":603841.3765826521}",
+    "map": "loaded",
+    "region": "ready",
+    "quality": "overview",
+    "status": "Kartenausschnitt geladen"
+  },
+  {
+    "n": 2,
+    "view": "{\"x\":-8568665.921448536,\"y\":-1032777.041757631,\"width\":245913.50202563315,\"height\":181873.5275397912}",
+    "map": "loaded",
+    "region": "ready",
+    "quality": "overview",
+    "status": "Kartenausschnitt geladen"
+  },
+  {
+    "n": 3,
+    "view": "{\"x\":-8508549.733280534,\"y\":-969229.904885255,\"width\":74067.7234411803,\"height\":54779.253795039585}",
+    "map": "loaded",
+    "region": "ready",
+    "quality": "refining",
+    "status": "Kartenausschnitt geladen"
+  },
+  {
+    "n": 4,
+    "view": "{\"x\":-8490443.085362108,\"y\":-950089.875075703,\"width\":22308.76958999724,\"height\":16499.194175935456}",
+    "map": "loaded",
+    "region": "ready",
+    "quality": "refining",
+    "status": "Kartenausschnitt geladen"
+  },
+  {
+    "n": 5,
+    "view": "{\"x\":-8484989.467811946,\"y\":-944325.0088812389,\"width\":6719.272275390119,\"height\":4969.461787007275}",
+    "map": "loading",
+    "region": "ready",
+    "quality": "refining",
+    "status": "Kartenausschnitt geladen",
+    "failure": "page.waitForFunction: Timeout 12000ms exceeded."
+  }
+]

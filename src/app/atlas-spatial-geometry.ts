@@ -114,12 +114,34 @@ export function atlasSpatialPaths(node: AtlasPaint): {
   return { shapes, lines };
 }
 
+type StrokeWindow=(a:THREE.Vector2,b:THREE.Vector2)=>[number,number]|undefined;
+/** Clip before expanding a world-length line into screen-sized dashes. Keep
+ * original travelled distances, so zoom/crop does not restart the dash phase. */
+function clippedStrokePaths(points:THREE.Vector2[],window:StrokeWindow){
+  const paths:{points:THREE.Vector2[];distance:number}[]=[];
+  let part:THREE.Vector2[]=[],distance=0,start=0;
+  const flush=()=>{if(part.length>1)paths.push({points:part,distance:start});part=[];};
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1]!,b=points[i]!,length=a.distanceTo(b);if(!length)continue;
+    const range=window(a,b);
+    if(!range){flush();distance+=length;continue;}
+    const [lo,hi]=range;
+    if(lo>0)flush();
+    if(!part.length){start=distance+lo*length;part.push(a.clone().lerp(b,lo));}
+    part.push(a.clone().lerp(b,hi));
+    if(hi<1)flush();distance+=length;
+  }
+  flush();return paths;
+}
+
 /** Split dashes in local coordinates, preserving phase across every segment. */
 export function atlasStrokeParts(
   points: THREE.Vector2[],
   dash: number[] = [],
   offset = 0,
-) {
+  window?:StrokeWindow,
+):THREE.Vector2[][] {
+  if(window)return clippedStrokePaths(points,window).flatMap(path=>atlasStrokeParts(path.points,dash,offset+path.distance));
   let pattern = dash.filter((n) => Number.isFinite(n) && n >= 0);
   if (pattern.length % 2) pattern = [...pattern, ...pattern];
   const period = pattern.reduce((a, b) => a + b, 0);
