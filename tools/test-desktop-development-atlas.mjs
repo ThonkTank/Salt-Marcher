@@ -13,8 +13,9 @@ import {terrainContourPixels} from './terrain-contour-probe.mjs';
 import {terrainDetailPixels} from './terrain-detail-probe.mjs';
 const root=process.cwd(),require=createRequire(root+'/package.json'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-development-start');
 await mkdir(out,{recursive:true});const base=path.join(homedir(),'.cache/saltmarcher/ui');await mkdir(base,{recursive:true});const profile=await mkdtemp(base+'/atlas-development-');
-require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';"},outfile:'.build/atlas-development-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord}=require(root+'/.build/atlas-development-store.cjs'),store=new CampaignStore(profile+'/workbench.sqlite'),campaign=store.create('Repository-Start'),token=store.activate(campaign.id).token;
+require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';export {terrainHorizon} from './src/app/terrain-coverage';"},outfile:'.build/atlas-development-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,heightRecord,terrainHorizon}=require(root+'/.build/atlas-development-store.cjs'),store=new CampaignStore(profile+'/workbench.sqlite'),campaign=store.create('Repository-Start'),token=store.activate(campaign.id).token;
+if(process.env.TERRAIN_COVERAGE_PROBE==='1')for(let y=-1;y<1;y++)for(let x=-1;x<1;x++)store.executeAtlasCommit({token,campaignId:campaign.id,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(x*65536,y*65536,1024,new Float32Array(4096).fill(20))}});
 for(let y=-1;y<1;y++)for(let x=-1;x<1;x++)store.executeAtlasCommit({token,campaignId:campaign.id,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>{const px=x*1024+i%64*16,py=y*1024+Math.floor(i/64)*16;return 20+90*Math.exp(-(px*px+py*py)/40000);}))}});
 store.tutorial('skipped');store.close();
 const server=createServer();await new Promise(r=>server.listen(0,'127.0.0.1',r));const port=server.address().port;await new Promise(r=>server.close(r));
@@ -84,12 +85,21 @@ try{
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='false');assert.equal(await page.locator('#campaign-map').getAttribute('data-renderer'),'webgl');
  await page.screenshot({path:out+'/05-camera-recovered.png'});result.checks.push('Main view omits duplicate ground images; actual GPU loss reloads complete Canvas terrain and explicit retry restores the main camera.');
  if(process.env.TERRAIN_COVERAGE_PROBE==='1'){
+  await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error!=='true'&&document.querySelector('#status').dataset.error!=='true');
   const canvas=await page.locator('#atlas-terrain-spatial').elementHandle();
   await page.locator('#atlas-view').click();
   await page.locator('#terrain-tilt').evaluate(n=>{n.value='75';n.dispatchEvent(new Event('input',{bubbles:true}));});
   await page.keyboard.press('Escape');await ready();
   await page.waitForFunction(()=>{const v=JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection);return v.tilt===75&&v.box.width/Math.max(v.frame.width,v.frame.height)>50;});
   const wide=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));
+  result.coverageGpu=await page.locator('#atlas-terrain-spatial').evaluate(n=>{
+   const gl=n.getContext('webgl2'),program=gl.getParameter(gl.CURRENT_PROGRAM),uniforms={};
+   for(const name of ['fogNear','fogFar']){const location=gl.getUniformLocation(program,name);uniforms[name]=location?gl.getUniform(program,location):null;}
+   const c=document.createElement('canvas');c.width=n.width;c.height=n.height;c.getContext('2d').drawImage(n,0,0);const pixels=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let sky=0;
+   for(let i=0;i<pixels.length;i+=4)if(Math.abs(pixels[i]-197)<2&&Math.abs(pixels[i+1]-215)<2&&Math.abs(pixels[i+2]-223)<2)sky++;
+   return {uniforms,skyFraction:sky/(c.width*c.height),status:['status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error})),retryHidden:document.getElementById('atlas-camera-retry')?.hidden};
+  });
+  const horizon=terrainHorizon(wide);assert(Math.abs(result.coverageGpu.uniforms.fogFar-horizon.far)<horizon.far*1e-5);assert(result.coverageGpu.skyFraction<.2,'only the actual sky above the horizon may remain in the inland fixture');
   await page.screenshot({path:out+'/07-wide-horizon.png'});
   await page.locator('#atlas-view').click();await page.locator('#terrain-rotation').evaluate(n=>{n.value='110';n.dispatchEvent(new Event('input',{bubbles:true}));});await page.keyboard.press('Escape');await ready();
   const rotated=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));

@@ -19,7 +19,7 @@ export async function terrainCoveragePixels(page,out){
     const heights=Float32Array.from({length:257*257},(_,i)=>20+80*Math.exp(-(l.x.values[i%257]**2+l.y.values[Math.floor(i/257)]**2)/40000));
     view.setData({generation:1,source:'coverage',draft:false,grid:{view:v,heights,seaLevelM:0},width:2,height:2,pixels:Uint8Array.from({length:16},(_,i)=>[238,229,207,255][i%4])});view.renderTile(800,600,0,0,800,600);
     const c=picture(),p=c.getContext('2d').getImageData(0,0,800,600).data;let sky=0;
-    for(let i=0;i<p.length;i+=4)if(Math.abs(p[i]-127)<2&&Math.abs(p[i+1]-168)<2&&Math.abs(p[i+2]-189)<2)sky++;
+    for(let i=0;i<p.length;i+=4)if(Math.abs(p[i]-197)<2&&Math.abs(p[i+1]-215)<2&&Math.abs(p[i+2]-223)<2)sky++;
     const sample={tilt,widened,sky,box:v.box,blocks:l.blocks.length,fog:terrainHorizon(v),screenshot:c.toDataURL()};
     if(tilt===75&&widened){
      const tiled=document.createElement('canvas');tiled.width=800;tiled.height=600;

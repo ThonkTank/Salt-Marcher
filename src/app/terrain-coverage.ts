@@ -25,4 +25,4 @@ export function terrainHorizon(view:TerrainView){
   const far=Math.max(Math.hypot(eye.x,eye.y,eye.z)*1.1,radius*coneCos*.95)/strength;
   return{near:far*.65,far};
 }
-export const TERRAIN_SKY_COLOR='#7fa8bd';
+export const TERRAIN_SKY_COLOR='#c5d7df';

@@ -35,7 +35,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private lastPoint:Point={x:0,y:0};private blockedGesture=false;
   private controls:HTMLElement;
   private toggle:HTMLButtonElement;
-  private failed=false;private retrySource='';
+  private failed=false;private retrySource='';private failureMessage:string|null=null;
   private colorTiles=new TerrainDetailTiles();
   private regionSource:object|undefined;
   private sourceRefresh:{region:object|undefined;pending:boolean}|null=null;
@@ -44,7 +44,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   constructor(private input:HTMLCanvasElement,private host:{
     draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
     tool:()=>string;objectPicking?:()=>boolean;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
-    refresh?:()=>Promise<boolean|undefined>;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
+    refresh?:()=>Promise<boolean|undefined>;recovered?:(message:string)=>void;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
     this.toggle=document.createElement('button');this.toggle.id='atlas-terrain-tilt';this.toggle.textContent='Atlas kippen';this.toggle.type='button';
     this.controls=document.createElement('div');this.controls.id='atlas-terrain-view';this.controls.hidden=false;
@@ -125,6 +125,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   /** Includes initial loading: the first region need not rasterize the future GPU ground. */
   get needsTerrainRaster(){return this.failed||(document.getElementById('atlas-perception') as HTMLInputElement).checked;}
   private fail(error:unknown){
+    this.failureMessage=(error as Error).message??String(error);
     this.failed=true;this.retry.hidden=false;this.host.cancel();this.setActive(false);this.host.error(error);
   }
   setActive(active:boolean){
@@ -245,6 +246,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.view!.setData(data);this.reframe(this.frame!);this.ready=true;
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
     this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
+    if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}
     this.view!.showSelection(this.host.selection());this.host.redraw();
   }
   private async queue(contours:number,baseOnly=false){
@@ -271,7 +273,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
       if(!e.data.draft)this.baseline=e.data;this.publish(e.data);
       if(e.data.protectedLimit!==undefined)document.getElementById('land-status')!.textContent='Pinselwirkung am geschützten Verlauf lokal begrenzt. Eingriffsgrenzen wären sonst überschritten.';
       if(e.data.heightM!==undefined)document.getElementById('land-cursor-height')!.textContent='Höhe: '+lengthLabel(e.data.heightM)+' · Vorschau';
-      this.view!.showSelection(this.host.selection());this.host.redraw();
+      if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}
+    this.view!.showSelection(this.host.selection());this.host.redraw();
       if(this.queued||!e.data.draft&&this.host.draft()&&!this.host.writing()){this.queued=false;this.queue(contours);}
     };
     this.worker.onerror=()=>this.fail(Error('Atlaskamera konnte nicht geladen werden. Im Ansichtsmenü erneut versuchen.'));

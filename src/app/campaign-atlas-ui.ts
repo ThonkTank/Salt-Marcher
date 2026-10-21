@@ -561,7 +561,7 @@ export class CampaignAtlasWorkbench {
         this.scheduleRender();
         // A lost/retried graphics context changes the required region contents.
         if(this.data&&this.loadedRegionQuery?.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
-      },error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
+      },error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
     });
     this.terrainAnalysis=new TerrainAnalysisUI(this.svg,{
       token:()=>this.owner?.token,revision:()=>this.data?.revision??-1,hasDraft:()=>this.cameraDraftPending(),
@@ -612,6 +612,12 @@ export class CampaignAtlasWorkbench {
         void this.refresh();
       }, 100);
     });
+  }
+  private recoverPresentation(message:string){
+    // A recovered renderer owns only its own failure, never an unrelated write.
+    const local=get('atlas-save-status'),global=get('status'),text='Atlaskamera wieder verfügbar';
+    if(local.dataset.error==='true'&&local.textContent===message){local.textContent=text;local.dataset.error='false';}
+    if(global.dataset.error==='true'&&global.textContent===message)this.opts.status(text,false);
   }
   private error(e: unknown) {
     const text = (e as Error).message;

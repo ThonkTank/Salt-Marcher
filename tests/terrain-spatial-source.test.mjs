@@ -178,3 +178,9 @@ test('steep tilt replaces narrow pending coverage but later rotations retain the
  f.resolveRead(1);await wide;assert.equal(f.ui.ready,true);assert.equal(f.ui.visibility().rotation,120);
  f.ui.tilt=15;f.sync();assert.equal(f.ui.requested,key,'tilting back keeps the already available source');
 });
+
+test('a confirmed new frame reports graphics recovery once and never before publication',async t=>{
+ const f=fixture(t),recovered=[];f.ui.failureMessage='graphics';f.ui.host.recovered=m=>recovered.push(m);
+ f.sync();const loading=f.load();assert.deepEqual(recovered,[]);f.resolveRead();await loading;
+ assert.deepEqual(recovered,['graphics']);assert.equal(f.ui.failureMessage,null);
+});
