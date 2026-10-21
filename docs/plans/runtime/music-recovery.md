@@ -3,7 +3,7 @@
 Ergänzt [SMR-08](../../../ROADMAP-SALTMARCHER-REPLACEMENT.md#smr-08--shops-wetter-und-musik)
 und [Scene-Wetter](weather.md). Fachquelle sind die im
 [Quellenregister](../../scope-sources.json) gebundenen Program Capabilities,
-L175–190 und L270–287.
+L263–269 und L423–450.
 
 ## Nutzerablauf und Vertrag
 
@@ -47,6 +47,22 @@ diesen Weg auch bei ausgefallener Positionsspeicherung ab.
 - Erst ausdrückliche Fehlerklärung und berechtigte erneute Auswahl erzeugen eine
   neue Wiedergabe. Alte Fehlercallbacks beeinflussen sie nicht. `retry-asset`
   klärt den aufgezeichneten Fehler; es ersetzt keine fehlenden Medienbytes.
+
+Unterdrückte Ambience-Schichten zeigen ihren aktuellen Bibliotheksnamen direkt
+bei „Wieder freigeben“; der zugängliche Knopfname nennt ebenfalls die Datei.
+Der vorhandene Musikread bezieht dafür dieselben bereits referenzierten Assets
+über denselben geprüften Leser. Es gibt keine zusätzliche Bibliothekssuche,
+keinen Namenscache und keinen zweiten Unterdrückungsbestand. Ein unlesbarer
+Eintrag bleibt mit seiner Kennung und dem Lesefehler sichtbar; Lesen repariert
+oder entfernt weder den Eintrag noch die gespeicherte Unterdrückung.
+
+`tools/test-desktop-ambience-mix.mjs` prüft nativ bei 100/200 Prozent Browserzoom:
+zwei Wetterlayer, manueller Zusatz, zwei namentliche Unterdrückungen und gezielte
+Freigabe einer Schicht, stiller Neustart mit erhaltenen Entscheidungen sowie
+ausdrückliche Einzel- und Automatikfreigabe. Native Decoder, laufende
+Audioelemente und die ausgeglichene Elementlautstärke werden geprüft; Medien-
+und Wetterrecords sowie Gruppenuhren bleiben erhalten. Das qualifiziert keine
+hörbare Hardwareausgabe oder beliebige Wetter-/Scenewechsel.
 
 Das Live-Soundboard verwendet denselben Musikstand und Writer für Transport,
 Favoriten, gemeinsame Queueauswahl und Ambience. Seine paginierte Bibliothek

@@ -123,3 +123,29 @@ test('a sound choice waiting on an older checkpoint cannot undo a newer Stop',as
   assert.equal(x.audible().length,0);assert.equal(x.store.music(x.w.token).state.current.positionSeconds,0);
  }finally{if(release)release();await tick();await x.cleanup();}
 });
+
+test('muted sounds retain their names and allow releasing exactly one without library lookups',async()=>{
+ const x=await fixture();try{
+  for(const a of [x.wind,x.rain])x.execute({kind:'ambience',operation:'mute',assetId:a.id});
+  await x.ui.refreshMusic();const view=x.store.music(x.w.token);
+  assert.deepEqual(new Set(view.assets.map(a=>a.id)),new Set([x.wind.id,x.rain.id]));
+  const root=x.document.getElementById('music-layers');assert.match(root.textContent,/Wind.*Unterdrückt/);assert.match(root.textContent,/Regen.*Unterdrückt/);
+  window.campaign.audioAsset=async()=>assert.fail('No individual library request is needed for an already visible muted sound');
+  window.campaign.audioAssets=async()=>assert.fail('No library search is needed for an already visible muted sound');
+  const before=x.store.db.prepare('SELECT * FROM audio_asset ORDER BY id').all();
+  root.querySelector('button[aria-label="Wind wieder freigeben"]').click();
+  await until(()=>!x.store.music(x.w.token).state.mutedAmbience.includes(x.wind.id));
+  assert.deepEqual(x.store.music(x.w.token).state.mutedAmbience,[x.rain.id]);assert.match(root.textContent,/Regen.*Unterdrückt/);
+  assert.deepEqual(x.store.db.prepare('SELECT * FROM audio_asset ORDER BY id').all(),before);
+ }finally{await x.cleanup();}
+});
+test('a damaged muted sound is isolated and remains explicitly identifiable without rewriting it',async()=>{
+ const x=await fixture();try{
+  for(const a of [x.wind,x.rain])x.execute({kind:'ambience',operation:'mute',assetId:a.id});
+  x.store.db.prepare('UPDATE audio_asset SET checksum=? WHERE id=?').run('damaged',x.wind.id);
+  const before=x.store.db.prepare('SELECT * FROM audio_asset WHERE id=?').get(x.wind.id);
+  await x.ui.refreshMusic();const root=x.document.getElementById('music-layers');
+  assert.match(root.textContent,/Regen.*Unterdrückt/);assert(root.textContent.includes(x.wind.id));assert.match(x.document.getElementById('music-error').textContent,/Prüfsumme|Checksum|Integrität|beschädigt/i);
+  assert.deepEqual(x.store.db.prepare('SELECT * FROM audio_asset WHERE id=?').get(x.wind.id),before);assert.deepEqual(x.store.music(x.w.token).state.mutedAmbience,[x.wind.id,x.rain.id]);
+ }finally{await x.cleanup();}
+});
