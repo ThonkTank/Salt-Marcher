@@ -15,6 +15,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Cursor und Trassen wiederverwenden](../reference/atlas-render-reuse-20261021/README.md): dauerhafte Cursorressourcen, unveränderte Trassenmatrizen und Sichtbarkeitsprüfung nur bei geänderter Kamera; GPU-Bildvergleich und große Weltprobe.
 
+[Farbkacheln im vorhandenen Cache halten](../reference/atlas-color-cache-context-20261021/README.md): kompakte Stil-/Straßenidentität statt wiederholter Metadaten je Pixelstück; Bildgleichheit, Cache-Druck und vollständige Weltansicht.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |

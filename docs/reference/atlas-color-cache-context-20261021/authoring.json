@@ -1,0 +1,2072 @@
+{
+  "campaignId": "b18819a5-f13a-4f9a-b0a3-01e097fc9266",
+  "stages": [
+    {
+      "name": "01-western-continent",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 103,
+        "heights": 11,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "103",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-20000000",
+        "atlasOriginY": "-14791666.666666666",
+        "pathBuilds": "2",
+        "pathReuses": "0",
+        "sceneVersion": "25",
+        "paintCommands": "2",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332},\"refinement\":{\"x\":-30000000,\"y\":-18750000,\"width\":60000000,\"height\":37500000},\"columns\":257,\"rows\":257,\"focusM\":0,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "103",
+        "terrainRevision": "103",
+        "terrainTiles": "38/48"
+      }
+    },
+    {
+      "name": "02-continents",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 206,
+        "heights": 45,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "206",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-20000000",
+        "atlasOriginY": "-14791666.666666666",
+        "pathBuilds": "2",
+        "pathReuses": "0",
+        "sceneVersion": "63",
+        "paintCommands": "2",
+        "terrainQuality": "detail",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332},\"refinement\":{\"x\":-30000000,\"y\":-18750000,\"width\":60000000,\"height\":37500000},\"columns\":257,\"rows\":257,\"focusM\":0,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "206",
+        "terrainRevision": "206",
+        "terrainTiles": "48/48"
+      }
+    },
+    {
+      "name": "03-continental-relief",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 268,
+        "heights": 67,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "268",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-11631076.389055887",
+        "atlasOriginY": "-4269965.277987735",
+        "pathBuilds": "2",
+        "pathReuses": "0",
+        "sceneVersion": "89",
+        "paintCommands": "2",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-20730423.079194658,\"y\":-14556805.381460395,\"width\":27234683.637523405,\"height\":27234683.637523405},\"frame\":{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-13921752.169813808,\"y\":-5975043.089428281,\"width\":13617341.818761703,\"height\":10071159.053459179},\"columns\":257,\"rows\":257,\"focusM\":794.985107421875,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "268",
+        "terrainRevision": "268",
+        "terrainTiles": "18/35"
+      }
+    },
+    {
+      "name": "04-continental-forest",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 269,
+        "heights": 67,
+        "vegetation": 1,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "269",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-11631076.389055887",
+        "atlasOriginY": "-4269965.277987735",
+        "pathBuilds": "2",
+        "pathReuses": "1",
+        "sceneVersion": "139",
+        "paintCommands": "3",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-20730423.079194658,\"y\":-14556805.381460395,\"width\":27234683.637523405,\"height\":27234683.637523405},\"frame\":{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-13921752.169813808,\"y\":-5975043.089428281,\"width\":13617341.818761703,\"height\":10071159.053459179},\"columns\":257,\"rows\":257,\"focusM\":794.985107421875,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "268",
+        "terrainRevision": "268",
+        "terrainTiles": "35/35"
+      }
+    },
+    {
+      "name": "05-kingdom",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 271,
+        "heights": 67,
+        "vegetation": 1,
+        "regions": [
+          {
+            "id": "1294fb77-848d-436b-9442-ea30e97cf089",
+            "revision": 2,
+            "name": "Königreich Aster",
+            "layerId": "politics",
+            "parentId": null,
+            "typeId": "kingdom",
+            "rank": 5,
+            "polygons": [
+              {
+                "outer": [
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1415071.4722025245
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -1608016.2361205076
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -1773701.6610697457
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -1900836.5591480585
+                  },
+                  {
+                    "x": -7518081.467797279,
+                    "y": -1980756.8971517626
+                  },
+                  {
+                    "x": -7311026.231715263,
+                    "y": -2008016.2361205078
+                  },
+                  {
+                    "x": -7166849.227820402,
+                    "y": -1989034.9734630818
+                  },
+                  {
+                    "x": -7165799.031953055,
+                    "y": -1994723.9712097389
+                  },
+                  {
+                    "x": -6949849.56878524,
+                    "y": -1954859.4390242803
+                  },
+                  {
+                    "x": -6950899.764652587,
+                    "y": -1949170.4412776232
+                  },
+                  {
+                    "x": -6950744.196983154,
+                    "y": -1949149.9604053984
+                  },
+                  {
+                    "x": -6949694.353543246,
+                    "y": -1954830.7702686754
+                  },
+                  {
+                    "x": -6733674.053719249,
+                    "y": -1914909.0865448257
+                  },
+                  {
+                    "x": -6734723.897159156,
+                    "y": -1909228.276681549
+                  },
+                  {
+                    "x": -6734654.892324751,
+                    "y": -1909219.1920227539
+                  },
+                  {
+                    "x": -6733605.208038678,
+                    "y": -1914896.36038676
+                  },
+                  {
+                    "x": -6517587.92935748,
+                    "y": -1874955.684258604
+                  },
+                  {
+                    "x": -6518637.613643553,
+                    "y": -1869278.5158945976
+                  },
+                  {
+                    "x": -6455983.953960235,
+                    "y": -1861030.0051142983
+                  },
+                  {
+                    "x": -6263039.190042252,
+                    "y": -1781109.6671105942
+                  },
+                  {
+                    "x": -6097353.765093014,
+                    "y": -1653974.7690322818
+                  },
+                  {
+                    "x": -5970218.867014701,
+                    "y": -1488289.3440830437
+                  },
+                  {
+                    "x": -5890298.529010997,
+                    "y": -1295344.5801650607
+                  },
+                  {
+                    "x": -5863039.190042252,
+                    "y": -1088289.3440830435
+                  },
+                  {
+                    "x": -5881586.492093542,
+                    "y": -947408.5982469996
+                  },
+                  {
+                    "x": -5875731.074623518,
+                    "y": -946352.9801878083
+                  },
+                  {
+                    "x": -5911733.71596637,
+                    "y": -746649.5995470287
+                  },
+                  {
+                    "x": -5917589.133436395,
+                    "y": -747705.2176062202
+                  },
+                  {
+                    "x": -5926301.17035385,
+                    "y": -681530.7273602473
+                  },
+                  {
+                    "x": -6006221.508357554,
+                    "y": -488585.96344226395
+                  },
+                  {
+                    "x": -6007009.528308618,
+                    "y": -487558.9958477322
+                  },
+                  {
+                    "x": -6006864.229976285,
+                    "y": -487474.79667183704
+                  },
+                  {
+                    "x": -6114874.807857267,
+                    "y": -301086.31158827915
+                  },
+                  {
+                    "x": -6115020.106189599,
+                    "y": -301170.5107641743
+                  },
+                  {
+                    "x": -6241366.984316848,
+                    "y": -136512.05340946803
+                  },
+                  {
+                    "x": -6407052.409266086,
+                    "y": -9377.155331155169
+                  },
+                  {
+                    "x": -6599997.17318407,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -6807052.409266086,
+                    "y": 97802.521641294
+                  },
+                  {
+                    "x": -7014107.645348103,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -7207052.409266086,
+                    "y": -9377.155331155052
+                  },
+                  {
+                    "x": -7372737.834215324,
+                    "y": -136512.05340946792
+                  },
+                  {
+                    "x": -7499872.7322936375,
+                    "y": -302197.47835870605
+                  },
+                  {
+                    "x": -7562640.6280592745,
+                    "y": -453732.5835977277
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -515195.9130929569
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -642330.8111712699
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -808016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1000961.000038491
+                  },
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  }
+                ],
+                "holes": []
+              }
+            ],
+            "color": "#b58445",
+            "opacity": 0.15,
+            "border": "solid"
+          }
+        ]
+      },
+      "view": {
+        "atlasView": "{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "271",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-11631076.389055887",
+        "atlasOriginY": "-4269965.277987735",
+        "pathBuilds": "52",
+        "pathReuses": "1",
+        "sceneVersion": "182",
+        "paintCommands": "54",
+        "terrainQuality": "detail",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-20730423.079194658,\"y\":-14556805.381460395,\"width\":27234683.637523405,\"height\":27234683.637523405},\"frame\":{\"x\":-11631076.389055887,\"y\":-4269965.277987735,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-13921752.169813808,\"y\":-5975043.089428281,\"width\":13617341.818761703,\"height\":10071159.053459179},\"columns\":257,\"rows\":257,\"focusM\":794.985107421875,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "268",
+        "terrainRevision": "268",
+        "terrainTiles": "35/35"
+      }
+    },
+    {
+      "name": "06-settlement",
+      "inventory": {
+        "groups": 3,
+        "rooms": [
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:15",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:21",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:27",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:3",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:33",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:39",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:45",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:53",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:59",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:65",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:71",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:77",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:83",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:89",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:9",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:95",
+            "name": "Büro"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:103",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:105",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:111",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:117",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:122",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:128",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:134",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:140",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:145",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:53",
+            "name": "Schankraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:60",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:66",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:72",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:78",
+            "name": "Schankraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:85",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:91",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:97",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:101",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:107",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:113",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:119",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:125",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:131",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:137",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:143",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:53",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:60",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:65",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:70",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:76",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:83",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:88",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:93",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:99",
+            "name": "Flur"
+          }
+        ],
+        "cityDocuments": 0,
+        "roads": 1,
+        "revision": 275,
+        "heights": 67,
+        "vegetation": 1,
+        "regions": [
+          {
+            "id": "1294fb77-848d-436b-9442-ea30e97cf089",
+            "revision": 2,
+            "name": "Königreich Aster",
+            "layerId": "politics",
+            "parentId": null,
+            "typeId": "kingdom",
+            "rank": 5,
+            "polygons": [
+              {
+                "outer": [
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1415071.4722025245
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -1608016.2361205076
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -1773701.6610697457
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -1900836.5591480585
+                  },
+                  {
+                    "x": -7518081.467797279,
+                    "y": -1980756.8971517626
+                  },
+                  {
+                    "x": -7311026.231715263,
+                    "y": -2008016.2361205078
+                  },
+                  {
+                    "x": -7166849.227820402,
+                    "y": -1989034.9734630818
+                  },
+                  {
+                    "x": -7165799.031953055,
+                    "y": -1994723.9712097389
+                  },
+                  {
+                    "x": -6949849.56878524,
+                    "y": -1954859.4390242803
+                  },
+                  {
+                    "x": -6950899.764652587,
+                    "y": -1949170.4412776232
+                  },
+                  {
+                    "x": -6950744.196983154,
+                    "y": -1949149.9604053984
+                  },
+                  {
+                    "x": -6949694.353543246,
+                    "y": -1954830.7702686754
+                  },
+                  {
+                    "x": -6733674.053719249,
+                    "y": -1914909.0865448257
+                  },
+                  {
+                    "x": -6734723.897159156,
+                    "y": -1909228.276681549
+                  },
+                  {
+                    "x": -6734654.892324751,
+                    "y": -1909219.1920227539
+                  },
+                  {
+                    "x": -6733605.208038678,
+                    "y": -1914896.36038676
+                  },
+                  {
+                    "x": -6517587.92935748,
+                    "y": -1874955.684258604
+                  },
+                  {
+                    "x": -6518637.613643553,
+                    "y": -1869278.5158945976
+                  },
+                  {
+                    "x": -6455983.953960235,
+                    "y": -1861030.0051142983
+                  },
+                  {
+                    "x": -6263039.190042252,
+                    "y": -1781109.6671105942
+                  },
+                  {
+                    "x": -6097353.765093014,
+                    "y": -1653974.7690322818
+                  },
+                  {
+                    "x": -5970218.867014701,
+                    "y": -1488289.3440830437
+                  },
+                  {
+                    "x": -5890298.529010997,
+                    "y": -1295344.5801650607
+                  },
+                  {
+                    "x": -5863039.190042252,
+                    "y": -1088289.3440830435
+                  },
+                  {
+                    "x": -5881586.492093542,
+                    "y": -947408.5982469996
+                  },
+                  {
+                    "x": -5875731.074623518,
+                    "y": -946352.9801878083
+                  },
+                  {
+                    "x": -5911733.71596637,
+                    "y": -746649.5995470287
+                  },
+                  {
+                    "x": -5917589.133436395,
+                    "y": -747705.2176062202
+                  },
+                  {
+                    "x": -5926301.17035385,
+                    "y": -681530.7273602473
+                  },
+                  {
+                    "x": -6006221.508357554,
+                    "y": -488585.96344226395
+                  },
+                  {
+                    "x": -6007009.528308618,
+                    "y": -487558.9958477322
+                  },
+                  {
+                    "x": -6006864.229976285,
+                    "y": -487474.79667183704
+                  },
+                  {
+                    "x": -6114874.807857267,
+                    "y": -301086.31158827915
+                  },
+                  {
+                    "x": -6115020.106189599,
+                    "y": -301170.5107641743
+                  },
+                  {
+                    "x": -6241366.984316848,
+                    "y": -136512.05340946803
+                  },
+                  {
+                    "x": -6407052.409266086,
+                    "y": -9377.155331155169
+                  },
+                  {
+                    "x": -6599997.17318407,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -6807052.409266086,
+                    "y": 97802.521641294
+                  },
+                  {
+                    "x": -7014107.645348103,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -7207052.409266086,
+                    "y": -9377.155331155052
+                  },
+                  {
+                    "x": -7372737.834215324,
+                    "y": -136512.05340946792
+                  },
+                  {
+                    "x": -7499872.7322936375,
+                    "y": -302197.47835870605
+                  },
+                  {
+                    "x": -7562640.6280592745,
+                    "y": -453732.5835977277
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -515195.9130929569
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -642330.8111712699
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -808016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1000961.000038491
+                  },
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  }
+                ],
+                "holes": []
+              }
+            ],
+            "color": "#b58445",
+            "opacity": 0.15,
+            "border": "solid"
+          }
+        ]
+      },
+      "view": {
+        "atlasView": "{\"x\":-8482719.791616369,\"y\":-941988.1944240083,\"width\":281.9444413137364,\"height\":295.83333004840324}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "275",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-8482719.791616369",
+        "atlasOriginY": "-941988.1944240083",
+        "pathBuilds": "7",
+        "pathReuses": "311",
+        "sceneVersion": "260",
+        "paintCommands": "318",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-8483022.569390785,\"y\":-942284.0277540566,\"width\":887.4999901452097,\"height\":887.4999901452097},\"frame\":{\"x\":-8482719.791616369,\"y\":-941988.1944240083,\"width\":281.9444413137364,\"height\":295.83333004840324},\"refinement\":{\"x\":-8482790.277726697,\"y\":-942062.1527565203,\"width\":422.91666197060454,\"height\":443.74999507260486},\"columns\":257,\"rows\":257,\"focusM\":302.03225708007824,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "268",
+        "terrainRevision": "268",
+        "terrainTiles": "11/64"
+      }
+    },
+    {
+      "name": "07-building-room",
+      "inventory": {
+        "groups": 3,
+        "rooms": [
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:15",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:21",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:27",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:3",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:33",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:39",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:45",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:53",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:59",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:65",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:71",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:77",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:83",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:89",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:9",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:95",
+            "name": "Büro"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:103",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:105",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:111",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:117",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:122",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:128",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:134",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:140",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:145",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:53",
+            "name": "Zum Silbernen Stern"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:60",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:66",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:72",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:78",
+            "name": "Schankraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:85",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:91",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:97",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:101",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:107",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:113",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:119",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:125",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:131",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:137",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:143",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:53",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:60",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:65",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:70",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:76",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:83",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:88",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:93",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:99",
+            "name": "Flur"
+          }
+        ],
+        "cityDocuments": 0,
+        "roads": 1,
+        "revision": 276,
+        "heights": 67,
+        "vegetation": 1,
+        "regions": [
+          {
+            "id": "1294fb77-848d-436b-9442-ea30e97cf089",
+            "revision": 2,
+            "name": "Königreich Aster",
+            "layerId": "politics",
+            "parentId": null,
+            "typeId": "kingdom",
+            "rank": 5,
+            "polygons": [
+              {
+                "outer": [
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1415071.4722025245
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -1608016.2361205076
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -1773701.6610697457
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -1900836.5591480585
+                  },
+                  {
+                    "x": -7518081.467797279,
+                    "y": -1980756.8971517626
+                  },
+                  {
+                    "x": -7311026.231715263,
+                    "y": -2008016.2361205078
+                  },
+                  {
+                    "x": -7166849.227820402,
+                    "y": -1989034.9734630818
+                  },
+                  {
+                    "x": -7165799.031953055,
+                    "y": -1994723.9712097389
+                  },
+                  {
+                    "x": -6949849.56878524,
+                    "y": -1954859.4390242803
+                  },
+                  {
+                    "x": -6950899.764652587,
+                    "y": -1949170.4412776232
+                  },
+                  {
+                    "x": -6950744.196983154,
+                    "y": -1949149.9604053984
+                  },
+                  {
+                    "x": -6949694.353543246,
+                    "y": -1954830.7702686754
+                  },
+                  {
+                    "x": -6733674.053719249,
+                    "y": -1914909.0865448257
+                  },
+                  {
+                    "x": -6734723.897159156,
+                    "y": -1909228.276681549
+                  },
+                  {
+                    "x": -6734654.892324751,
+                    "y": -1909219.1920227539
+                  },
+                  {
+                    "x": -6733605.208038678,
+                    "y": -1914896.36038676
+                  },
+                  {
+                    "x": -6517587.92935748,
+                    "y": -1874955.684258604
+                  },
+                  {
+                    "x": -6518637.613643553,
+                    "y": -1869278.5158945976
+                  },
+                  {
+                    "x": -6455983.953960235,
+                    "y": -1861030.0051142983
+                  },
+                  {
+                    "x": -6263039.190042252,
+                    "y": -1781109.6671105942
+                  },
+                  {
+                    "x": -6097353.765093014,
+                    "y": -1653974.7690322818
+                  },
+                  {
+                    "x": -5970218.867014701,
+                    "y": -1488289.3440830437
+                  },
+                  {
+                    "x": -5890298.529010997,
+                    "y": -1295344.5801650607
+                  },
+                  {
+                    "x": -5863039.190042252,
+                    "y": -1088289.3440830435
+                  },
+                  {
+                    "x": -5881586.492093542,
+                    "y": -947408.5982469996
+                  },
+                  {
+                    "x": -5875731.074623518,
+                    "y": -946352.9801878083
+                  },
+                  {
+                    "x": -5911733.71596637,
+                    "y": -746649.5995470287
+                  },
+                  {
+                    "x": -5917589.133436395,
+                    "y": -747705.2176062202
+                  },
+                  {
+                    "x": -5926301.17035385,
+                    "y": -681530.7273602473
+                  },
+                  {
+                    "x": -6006221.508357554,
+                    "y": -488585.96344226395
+                  },
+                  {
+                    "x": -6007009.528308618,
+                    "y": -487558.9958477322
+                  },
+                  {
+                    "x": -6006864.229976285,
+                    "y": -487474.79667183704
+                  },
+                  {
+                    "x": -6114874.807857267,
+                    "y": -301086.31158827915
+                  },
+                  {
+                    "x": -6115020.106189599,
+                    "y": -301170.5107641743
+                  },
+                  {
+                    "x": -6241366.984316848,
+                    "y": -136512.05340946803
+                  },
+                  {
+                    "x": -6407052.409266086,
+                    "y": -9377.155331155169
+                  },
+                  {
+                    "x": -6599997.17318407,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -6807052.409266086,
+                    "y": 97802.521641294
+                  },
+                  {
+                    "x": -7014107.645348103,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -7207052.409266086,
+                    "y": -9377.155331155052
+                  },
+                  {
+                    "x": -7372737.834215324,
+                    "y": -136512.05340946792
+                  },
+                  {
+                    "x": -7499872.7322936375,
+                    "y": -302197.47835870605
+                  },
+                  {
+                    "x": -7562640.6280592745,
+                    "y": -453732.5835977277
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -515195.9130929569
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -642330.8111712699
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -808016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1000961.000038491
+                  },
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  }
+                ],
+                "holes": []
+              }
+            ],
+            "color": "#b58445",
+            "opacity": 0.15,
+            "border": "solid"
+          }
+        ]
+      },
+      "view": {
+        "atlasView": "{\"x\":-8482621.965545041,\"y\":-941876.2624929528,\"width\":21.145833333333336,\"height\":22.1875}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "276",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-8482621.965545041",
+        "atlasOriginY": "-941876.2624929528",
+        "pathBuilds": "12",
+        "pathReuses": "106",
+        "sceneVersion": "267",
+        "paintCommands": "124",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-8482644.673878375,\"y\":-941898.4499929528,\"width\":66.5625,\"height\":66.5625},\"frame\":{\"x\":-8482621.965545041,\"y\":-941876.2624929528,\"width\":21.145833333333336,\"height\":22.1875},\"refinement\":{\"x\":-8482627.252003375,\"y\":-941881.8093679528,\"width\":31.718750000000004,\"height\":33.28125},\"columns\":257,\"rows\":257,\"focusM\":302.0655517578125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainAuthorRevision": "268",
+        "terrainRevision": "268",
+        "terrainTiles": "13/25"
+      }
+    },
+    {
+      "name": "08-reopened",
+      "inventory": {
+        "groups": 3,
+        "rooms": [
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:15",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:21",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:27",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:3",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:33",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:39",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:45",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:53",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:59",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:65",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:71",
+            "name": "Büro"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:77",
+            "name": "Werkstatt"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:83",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:89",
+            "name": "Verkaufsraum"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:9",
+            "name": "Materiallager"
+          },
+          {
+            "id": "53ddb518-c4b3-4c6d-b99e-c18437b42a5d:1ppngjm:room:95",
+            "name": "Büro"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:103",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:105",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:111",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:117",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:122",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:128",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:134",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:140",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:145",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:53",
+            "name": "Zum Silbernen Stern"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:60",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:66",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:72",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:78",
+            "name": "Schankraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:85",
+            "name": "Küche"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:91",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "5977375b-6a20-4688-9737-599a1f34d8b1:1p5o95o:room:97",
+            "name": "Gästezimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:1",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:101",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:107",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:113",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:119",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:125",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:131",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:137",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:143",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:15",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:21",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:27",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:3",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:33",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:39",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:45",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:51",
+            "name": "Flur"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:53",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:60",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:65",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:70",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:76",
+            "name": "Wohnküche"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:83",
+            "name": "Schlafzimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:88",
+            "name": "Kammer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:9",
+            "name": "Vorratsraum"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:93",
+            "name": "Arbeitszimmer"
+          },
+          {
+            "id": "e2383a18-9df0-44e4-a595-a4fe0e5bc8d2:1pfnuun:room:99",
+            "name": "Flur"
+          }
+        ],
+        "cityDocuments": 0,
+        "roads": 1,
+        "revision": 276,
+        "heights": 67,
+        "vegetation": 1,
+        "regions": [
+          {
+            "id": "1294fb77-848d-436b-9442-ea30e97cf089",
+            "revision": 2,
+            "name": "Königreich Aster",
+            "layerId": "politics",
+            "parentId": null,
+            "typeId": "kingdom",
+            "rank": 5,
+            "polygons": [
+              {
+                "outer": [
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1415071.4722025245
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -1608016.2361205076
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -1773701.6610697457
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -1900836.5591480585
+                  },
+                  {
+                    "x": -7518081.467797279,
+                    "y": -1980756.8971517626
+                  },
+                  {
+                    "x": -7311026.231715263,
+                    "y": -2008016.2361205078
+                  },
+                  {
+                    "x": -7166849.227820402,
+                    "y": -1989034.9734630818
+                  },
+                  {
+                    "x": -7165799.031953055,
+                    "y": -1994723.9712097389
+                  },
+                  {
+                    "x": -6949849.56878524,
+                    "y": -1954859.4390242803
+                  },
+                  {
+                    "x": -6950899.764652587,
+                    "y": -1949170.4412776232
+                  },
+                  {
+                    "x": -6950744.196983154,
+                    "y": -1949149.9604053984
+                  },
+                  {
+                    "x": -6949694.353543246,
+                    "y": -1954830.7702686754
+                  },
+                  {
+                    "x": -6733674.053719249,
+                    "y": -1914909.0865448257
+                  },
+                  {
+                    "x": -6734723.897159156,
+                    "y": -1909228.276681549
+                  },
+                  {
+                    "x": -6734654.892324751,
+                    "y": -1909219.1920227539
+                  },
+                  {
+                    "x": -6733605.208038678,
+                    "y": -1914896.36038676
+                  },
+                  {
+                    "x": -6517587.92935748,
+                    "y": -1874955.684258604
+                  },
+                  {
+                    "x": -6518637.613643553,
+                    "y": -1869278.5158945976
+                  },
+                  {
+                    "x": -6455983.953960235,
+                    "y": -1861030.0051142983
+                  },
+                  {
+                    "x": -6263039.190042252,
+                    "y": -1781109.6671105942
+                  },
+                  {
+                    "x": -6097353.765093014,
+                    "y": -1653974.7690322818
+                  },
+                  {
+                    "x": -5970218.867014701,
+                    "y": -1488289.3440830437
+                  },
+                  {
+                    "x": -5890298.529010997,
+                    "y": -1295344.5801650607
+                  },
+                  {
+                    "x": -5863039.190042252,
+                    "y": -1088289.3440830435
+                  },
+                  {
+                    "x": -5881586.492093542,
+                    "y": -947408.5982469996
+                  },
+                  {
+                    "x": -5875731.074623518,
+                    "y": -946352.9801878083
+                  },
+                  {
+                    "x": -5911733.71596637,
+                    "y": -746649.5995470287
+                  },
+                  {
+                    "x": -5917589.133436395,
+                    "y": -747705.2176062202
+                  },
+                  {
+                    "x": -5926301.17035385,
+                    "y": -681530.7273602473
+                  },
+                  {
+                    "x": -6006221.508357554,
+                    "y": -488585.96344226395
+                  },
+                  {
+                    "x": -6007009.528308618,
+                    "y": -487558.9958477322
+                  },
+                  {
+                    "x": -6006864.229976285,
+                    "y": -487474.79667183704
+                  },
+                  {
+                    "x": -6114874.807857267,
+                    "y": -301086.31158827915
+                  },
+                  {
+                    "x": -6115020.106189599,
+                    "y": -301170.5107641743
+                  },
+                  {
+                    "x": -6241366.984316848,
+                    "y": -136512.05340946803
+                  },
+                  {
+                    "x": -6407052.409266086,
+                    "y": -9377.155331155169
+                  },
+                  {
+                    "x": -6599997.17318407,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -6807052.409266086,
+                    "y": 97802.521641294
+                  },
+                  {
+                    "x": -7014107.645348103,
+                    "y": 70543.18267254869
+                  },
+                  {
+                    "x": -7207052.409266086,
+                    "y": -9377.155331155052
+                  },
+                  {
+                    "x": -7372737.834215324,
+                    "y": -136512.05340946792
+                  },
+                  {
+                    "x": -7499872.7322936375,
+                    "y": -302197.47835870605
+                  },
+                  {
+                    "x": -7562640.6280592745,
+                    "y": -453732.5835977277
+                  },
+                  {
+                    "x": -7711026.231715263,
+                    "y": -515195.9130929569
+                  },
+                  {
+                    "x": -7876711.656664501,
+                    "y": -642330.8111712699
+                  },
+                  {
+                    "x": -8003846.554742814,
+                    "y": -808016.2361205078
+                  },
+                  {
+                    "x": -8083766.892746517,
+                    "y": -1000961.000038491
+                  },
+                  {
+                    "x": -8111026.231715263,
+                    "y": -1208016.2361205078
+                  }
+                ],
+                "holes": []
+              }
+            ],
+            "color": "#b58445",
+            "opacity": 0.15,
+            "border": "solid"
+          }
+        ]
+      },
+      "view": {
+        "atlasView": "{\"x\":-8482621.965545041,\"y\":-941872.9882959041,\"width\":21.145833333333336,\"height\":15.639105902777779}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasRegionRevision": "276",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "atlasOriginX": "-8482621.965545041",
+        "atlasOriginY": "-941872.9882959041",
+        "pathBuilds": "3",
+        "pathReuses": "107",
+        "sceneVersion": "5",
+        "paintCommands": "115",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-8482643.111378375,\"y\":-941896.8874929528,\"width\":63.43750000000001,\"height\":63.43750000000001},\"frame\":{\"x\":-8482621.965545041,\"y\":-941872.9882959041,\"width\":21.145833333333336,\"height\":15.639105902777779},\"refinement\":{\"x\":-8482627.252003375,\"y\":-941876.8980723799,\"width\":31.718750000000004,\"height\":23.458658854166668},\"columns\":257,\"rows\":257,\"focusM\":302.06555175781256,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "terrainTiles": "10/63"
+      }
+    }
+  ],
+  "scope": "continents, continental relief, independent kingdom area, streets, buildings and a room; functional author journey, not visual or performance acceptance",
+  "source": "d6233f32ebb4ebef86f9ccfda8ef0477c43a0e4b",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/world-authoring-gTc6mQ",
+  "artifacts": {
+    "main.cjs": "545a3a57c35cfd8e1d9121809e8fee91deb3c7a9aad03df4a14881fa7a545226",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "5ec7ec2858684287a3054f802beb5b256f7931cd769515ba62e6780544d5f634",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3064456,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3065556,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
