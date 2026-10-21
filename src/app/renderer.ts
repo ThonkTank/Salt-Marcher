@@ -196,7 +196,15 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
   const owner = workspace, intent = activationIntent, scrollY = showTab(tab, restored), request = viewRequest;
   switch (tab) {
     case 'live': await openLive(); break;
-    case 'atlas': await campaignAtlas?.open();break;
+    case 'atlas':
+      // The Atlas owns its loading/error state and author-hit fence. Its first
+      // region can take much longer than opening the workspace shell; do not
+      // keep the campaign screen and all camera input inert until it arrives.
+      void campaignAtlas?.open().catch(error=>{
+        if(workspace===owner&&activationIntent===intent&&viewRequest===request)
+          status((error as Error).message,true);
+      });
+      break;
     case 'groups': await openGroups(); await openNpcs(); break;
     case 'treasury': await openTreasury(); break;
     case 'chronicle': await openChronicle(); break;

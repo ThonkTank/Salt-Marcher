@@ -231,6 +231,23 @@ export function landscapeRegion(
   }
   return records;
 }
+// Keep only four prepared programs per connection, never row values. Repeated
+// tile writes otherwise allocate a new native SQLite program for every query;
+// its memory is not reflected in V8's small JavaScript statement wrapper.
+const writeStatements = new WeakMap<object, ReturnType<typeof prepareWrites>>();
+function prepareWrites(db:any) {
+  return {
+    prior:db.prepare('SELECT revision,payload FROM atlas_landscape WHERE campaign_id=? AND id=?'),
+    order:db.prepare("SELECT coalesce(max(json_extract(payload,'$.order')),0)+1 n FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload)"),
+    height:db.prepare("SELECT id FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND id!=? AND json_extract(payload,'$.height.x')=? AND json_extract(payload,'$.height.y')=? AND json_extract(payload,'$.height.pixel')=? AND json_extract(payload,'$.height.version')=?"),
+    put:db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,min_x=excluded.min_x,max_x=excluded.max_x,min_y=excluded.min_y,max_y=excluded.max_y,payload=excluded.payload'),
+  };
+}
+function writes(db:any) {
+  let statements=writeStatements.get(db);
+  if(!statements){statements=prepareWrites(db);writeStatements.set(db,statements);}
+  return statements;
+}
 export function putLandscape(
   db: any,
   cam: string,
@@ -259,7 +276,7 @@ export function putLandscape(
   if(r.vegetation)for(const o of r.vegetation.overrides)if(o.locationId&&!db.prepare("SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0").get(cam,o.locationId))throw Error("Verknüpfter Ort fehlt.");
   validateMask(r);
   validateTerrain(r);
-  if(r.height&&db.prepare("SELECT id FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND id!=? AND json_extract(payload,'$.height.x')=? AND json_extract(payload,'$.height.y')=? AND json_extract(payload,'$.height.pixel')=? AND json_extract(payload,'$.height.version')=?").get(cam,r.id,r.height.x,r.height.y,r.height.pixel,r.height.version))throw Error('Doppelte Höhenkachel.');
+  if(r.height&&writes(db).height.get(cam,r.id,r.height.x,r.height.y,r.height.pixel,r.height.version))throw Error('Doppelte Höhenkachel.');
   validateLine(r);
   validateColor(r);
   const pts = [
@@ -310,11 +327,7 @@ export function putLandscape(
       r.opacity! > 1)
   )
     throw new Error("Bildkalibrierung prüfen.");
-  const old = db
-    .prepare(
-      "SELECT revision,payload FROM atlas_landscape WHERE campaign_id=? AND id=?",
-    )
-    .get(cam, r.id);
+  const statements=writes(db),old=statements.prior.get(cam,r.id);
   if ((old?.revision ?? null) !== expected)
     throw new Error("Landschaft inzwischen geändert. Neu laden.");
   if(old){
@@ -327,16 +340,10 @@ export function putLandscape(
       ...(r.kind==='patch'&&r.values.terrain&&!r.propertyOnly&&!r.mask&&!r.height&&r.surface!=='freshwater'?{maskManaged:true}:{}),
       order:
         r.order ??
-        db
-          .prepare(
-            "SELECT coalesce(max(json_extract(payload,'$.order')),0)+1 n FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload)",
-          )
-          .get(cam).n,
+        statements.order.get(cam).n,
       revision: (expected ?? 0) + 1,
     };
-  db.prepare(
-    "INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET revision=excluded.revision,min_x=excluded.min_x,max_x=excluded.max_x,min_y=excluded.min_y,max_y=excluded.max_y,payload=excluded.payload",
-  ).run(
+  statements.put.run(
     cam,
     r.id,
     next.revision,

@@ -6,6 +6,7 @@ import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {installCameraFrameProbe} from './atlas-camera-frame-probe.mjs';
+import {populateMixedWorld,mixedWorldInventory} from './atlas-mixed-world-fixture.mjs';
 import {buildHexGridProbe} from './terrain-hex-grid-probe.mjs';
 import {buildContourProbe,terrainContourPixels} from './terrain-contour-probe.mjs';
 import {buildDetailProbe,terrainDetailPixels} from './terrain-detail-probe.mjs';
@@ -38,11 +39,13 @@ if(populated){
  }})();
 }
 const large=process.env.WORLD_LARGE==='1';
+const mixed=process.env.WORLD_MIXED==='1';
+assert(!mixed||large,'Mixed world includes the large-world place inventory');
 if(large){
 const putLarge=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
 const saveLarge=record=>{const b=bounds(record);putLarge.run(campaign.id,record.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(record));};
 store.db.transaction(()=>{
- for(let i=0;i<100000;i++){
+ for(let i=0;i<(mixed?0:100000);i++){
   const x=-20000000+(i%500)*80000,y=-10000000+Math.floor(i/500)*100000;
   saveLarge({...emptyRecord('patch'),id:'world-patch:'+i,name:'Waldfläche '+i,values:{terrain:'forest'},polygons:[{outer:[{x,y},{x:x+60000,y},{x:x+60000,y:y+80000},{x,y:y+80000}],holes:[]}]});
  }
@@ -52,9 +55,13 @@ store.db.transaction(()=>{
  }
 })();
 }
+let mixedFixture;
+if(mixed)try{mixedFixture=populateMixedWorld(store,campaign);await writeFile(out+'/setup.json',JSON.stringify(mixedFixture,null,2));console.log('mixed-world setup',JSON.stringify(mixedFixture));}
+catch(error){store.close();await native.fail(error);await native.dispose();throw error;}
 const recordCount=store.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(campaign.id).n;
 store.tutorial('skipped');store.close();
-const result={radius,records:recordCount,populated,large,measurement:{readbackMode,profileEnabled},metrics:[],errors:[]};let page;
+if(mixed){const fresh=new CampaignStore(native.profile+'/workbench.sqlite');try{assert.deepEqual(mixedWorldInventory(fresh.db,campaign.id),mixedFixture.inventory);}finally{fresh.close();}}
+const result={radius,records:recordCount,populated,large,mixedFixture,measurement:{readbackMode,profileEnabled},metrics:[],errors:[]};let page;
 const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
@@ -70,10 +77,20 @@ try{
  });
  page.on('pageerror',e=>result.errors.push(e.stack));
  await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-20000000,y:-12500000,width:40000000,height:25000000})),campaign.id);
+ const openStart=performance.now();
  await page.locator('.campaign-card').filter({hasText:'Sparse world navigation'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
+ result.opening={workspaceMs:performance.now()-openStart};
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
+ if(mixed){
+  const state=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.dataset.atlasView),canvas:n.dataset.canvasState,region:document.querySelector('#campaign-atlas').dataset.regionState}));
+  const before=await state(),box=await page.locator('#campaign-map').boundingBox();
+  await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,-100);await wait(250);const after=await state();
+  assert.notDeepEqual(after.view,before.view,'opening the mixed world must release camera input before detail work finishes');
+  result.opening.navigation={before,after};await writeFile(out+'/progress.json',JSON.stringify(result,null,2));
+ }
  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
+ result.opening.terrainReadyMs=performance.now()-openStart;
  const cdp=await page.context().newCDPSession(page);if(profileEnabled){await cdp.send('Profiler.enable');await cdp.send('Performance.enable');}
  const layoutTrace=[];if(process.env.WORLD_LAYOUT_TRACE==='1')cdp.on('Tracing.dataCollected',e=>layoutTrace.push(...e.value));
  await page.evaluate(legacyPixels=>{
@@ -148,9 +165,10 @@ try{
   if(process.env.WORLD_PENDING_NAVIGATION==='1'){
    const state=()=>page.locator('#campaign-map').evaluate(n=>({view:JSON.parse(n.dataset.atlasView),pending:document.querySelector('#land-tool').disabled,time:performance.now()}));
    const before=await state();assert(before.pending,'world stroke must still be settling for this navigation check');
+   const navigation={name,before};(result.pendingNavigation??=[]).push(navigation);
    await page.mouse.wheel(0,-120);await wait(250);const after=await state();
    assert.notDeepEqual(after.view,before.view,'world camera must move while the released stroke is settling');
-   (result.pendingNavigation??=[]).push({name,before,after});
+   navigation.after=after;
   }
   await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
   if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
