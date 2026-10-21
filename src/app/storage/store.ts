@@ -1,3 +1,5 @@
+import {decodeRoom,checkedRoomHistory,decodeRoomDraft,decodePreparationDraft,preparationDraftTable,decodeLocation,readStoredPlan} from './stored-records';
+import {validateDatabase,validateBackupCandidate} from './snapshot-validation';
 import {readSessionRecapDraft,keepSessionRecapDraft} from './session-recap';
 import {installTerrainReconstruction} from './terrain-reconstruction';
 import {profileBounds,terrainProfile} from '../terrain-profile';
@@ -22,10 +24,10 @@ import {drawingElement,drawingRoom} from './drawing';
 import {dungeonMapView} from './dungeon-play';
 import {roomGeometries,visibleRoomWhere,roomDirectoryQuery,roomOrder} from './room-reads';
 import type {WorkspaceShell,WorkspaceGeometry,RoomDirectoryQuery} from '../contracts';
-import {keepLiveMomentDraft as keepMomentDraft,readLiveMomentDraft} from './live-moment-drafts';
+import {keepLiveMomentDraft as keepMomentDraft} from './live-moment-drafts';
 import {atlasPartyPoint} from '../atlas-runtime-model';
 import {installLandscape,landscapeRegion,executeLandscape,terrainRegion} from './atlas-landscape';
-import {rememberSourceUnlink,validateNoteSourceHistory} from './note-source-history';
+import {rememberSourceUnlink} from './note-source-history';
 import {readNoteThread,checkNoteThread} from './note-thread';
 import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices,hasNoteTitle} from './key-note-capture';
 import {appendNoteExcerpt} from '../note-excerpt';
@@ -34,21 +36,21 @@ import {readNoteRoomUses} from './note-room-uses';
 import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
 import {atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
-import {installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,atlasCapturedChanges,bindAtlas,executeAtlasWrite,validateCampaignAtlases} from './campaign-atlas';
+import {installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,atlasCapturedChanges,bindAtlas,executeAtlasWrite} from './campaign-atlas';
 import type {AtlasCommand,CampaignAtlas} from '../campaign-atlas-contracts';
 import {catalogOutcome,catalogCommand,catalogReceipt,noteCampaignCreated,noteCampaignOpened} from './campaign-catalog';
 import type {CampaignCatalogCommand,CampaignCatalogReceipt} from '../campaign-contracts';
 const roomNumberOrder=new Intl.Collator('de',{numeric:true});
 import {readCombatResolution} from './combat-resolution';
 import {ChronicleReadSession} from './chronicle-pages';
-import {checkedSessionRecapDraft} from '../live-contracts';
+
 import {readLocationActivities} from './location-activity';
 import {readCityActivities} from './city-activity';
 import {readWorldCalendar as readNpcPlanCalendar} from './world';
 import {readNpcPlaces,readNpcBuildingChoices} from './npc-places';
 import {readLocationMaterials} from './location-notebook';
 import {readWorldLinks} from './world-links';
-import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,readWorldRelationPairHistory,executeWorldRelationPairHistory,reconcileWorldRelationPairHistory,validateWorldRelationPairs} from './world-relation-pair';
+import {installWorldRelationPairs,executeWorldRelationPair,reconcileWorldRelationPair,readWorldRelationPairDraft,keepWorldRelationPairDraft,discardWorldRelationPairDraft,readWorldRelationPairHistory,executeWorldRelationPairHistory,reconcileWorldRelationPairHistory} from './world-relation-pair';
 import type {WorldRelationPairCommand,WorldRelationPairDraft,WorldRelationPairHistoryCommand} from '../world-relation-pair-contracts';
 import {readNpcCast,readNpcDossier} from './npc-cast';
 import {previewSceneTime} from './time-plan';
@@ -58,24 +60,24 @@ import {readNarrativeJournal} from './narrative-journal';
 import {readSessionProgress} from './visit-outcomes';
 import {readSessionPacket} from './session-packet';
 import {readMaskHistory,installMaskHistoryIndexes} from './mask-history';
-import {keepChaseDraft,validateChaseDrafts} from './chase-drafts';
+import {keepChaseDraft} from './chase-drafts';
 import {readDay} from './adventuring-day';
-import {installNpcRecords,validateNpcRecords} from './npc-record';
-import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc,validateNpcRecovery} from './npcs';
+import {installNpcRecords} from './npc-record';
+import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
 import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
-import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft,validateGroups} from './groups';
-import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory,validateTreasuryDrafts} from './treasury';
-import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,validateSceneDesk,applySceneCreation,readSceneCreationDraft,keepSceneCreationDraft} from './scene-desk';
-import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft,validateFinishDrafts} from './finish-drafts';
-import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft,validateNarrativeBackup} from './narrative';
+import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
+import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
+import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,applySceneCreation,readSceneCreationDraft,keepSceneCreationDraft} from './scene-desk';
+import {installFinishDrafts,readFinishDraft,keepFinishDraft,discardFinishDraft} from './finish-drafts';
+import {installNarrative,readNarrative,saveNarrative,validateNarrativeState,keepNarrativeDraft,discardNarrativeDraft} from './narrative';
 import {readPreparedGroup} from './session';
-import {installCombatDraftSchema,validateCombatDrafts,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
+import {installCombatDraftSchema,readCombatDraft,combatDrafts,keepCombatDraft,discardCombatDraft} from './combat-drafts';
 import type {CombatDraftKind,CombatWorkingDraft} from '../combat-draft-contracts';
 import {installContentRuntime} from './content-runtime';
 import {installTriggers,createTriggerEvents} from './triggers';
-import {ExtensionRegistry,validateExtensionSettings} from './extensions';
+import {ExtensionRegistry} from './extensions';
 import type {ExtensionCommand} from '../extension-contracts';
 import {dungeonBudgetView,validateDungeonPlacement} from './dungeon-budget';
 import type {CommitOutcome} from '../commit-receipt';
@@ -95,20 +97,20 @@ import {installNpcDungeonSchema} from './npc-dungeon';
 import {installAutonomyDungeonSchema} from './autonomy-dungeon';
 import {installDungeonPlaySchema,dungeonCommandState,dungeonDisplay,dungeonView,previewDungeon,executeDungeon,validateDungeonPlay,dungeonGeometry,dungeonGeometryBasis} from './dungeon-play';
 import type {DungeonCommand,DungeonRequest} from '../dungeon-contracts';
-import {installDrawingSchema,roomMapStyle,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateDrawing,validateFeatureStates} from './drawing';
+import {installDrawingSchema,roomMapStyle,drawingView,executeDrawing,drawingHistory,rebaseDrawingRoomHistory,activateDungeonFeature,advanceDungeonFeatures,validateFeatureStates} from './drawing';
 import type {DrawingCommand} from '../drawing-contracts';
 import {installNpcWorldSchema} from './npc-world';
 import {installAutonomySchema,autonomyView,autonomyDecision,executeAutonomy,captureAutonomyBasis,recordAutonomyTime,catchUpAutonomy,validateAutonomy} from './autonomy';
 import type {AutonomyCommand} from '../autonomy-contracts';
 import {installPlayerSchema,playerObservers,playerSettings,playerView,projectPlayer,executePlayer,savePlayerAsset,playerAssets,playerMediaFiles,setPlayerWindow,validatePlayer} from './player';
 import type {PlayerCommand,PlayerAsset,PlayerFrame} from '../player-contracts';
-import {installCitySchema,cityOverview,readCity,executeCity,validateCities,readCityBuildingChoices,readCitySite,readCityHeader} from './city';
+import {installCitySchema,cityOverview,readCity,executeCity,readCityBuildingChoices,readCitySite,readCityHeader} from './city';
 import type {CityCommand} from '../city-contracts';
-import {installCampaignSchema,validateCampaignOrigins,validateCapabilityBytes,validateCampaignSnapshotSettings,campaignOverview,pruneCampaignSnapshot,snapshotCounts,definitionConflicts,sharedPlan,archiveSourceChoices,remapSnapshot,publishSnapshot,trashCampaign,eraseCampaignRows} from './campaign-data';
+import {installCampaignSchema,validateCampaignSnapshotSettings,campaignOverview,pruneCampaignSnapshot,snapshotCounts,definitionConflicts,sharedPlan,archiveSourceChoices,remapSnapshot,publishSnapshot,trashCampaign,eraseCampaignRows} from './campaign-data';
 import {openSync as openSnapshot, readSync, closeSync as closeSnapshot} from 'node:fs';
 import type {ConflictChoice} from '../campaign-contracts';
 import {canonicalJson} from '../generation/canonical-json';
-import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,validateMusicBackup,audioMediaFiles} from './music';
+import {installMusicSchema,readAudioAssets,readAudioAsset,readMusic,readMusicFavorites,readMusicSubject,executeMusic,saveMusicPosition,refreshMusicContext,ingestAudio,audioLibrarySnapshot,mergeAudioLibrary,audioFile,audioMediaFiles} from './music';
 import type {MusicView,AudioQuery,MusicSubject,MusicCommand,AudioAsset} from '../music-contracts';
 import {installWorldSchema,readWorld,readSceneWorld,previewTravel,executeWorld,reconcileWorld,syncSceneWorld,inheritScenePosition,validateWorldBackup,travelEnvironmentBasis} from './world';
 import type {TravelRequest,WorldCommand} from '../world-contracts';
@@ -121,35 +123,35 @@ import { noteSearchPreview } from './note-search-preview';
 import { mkdirSync, mkdtempSync, copyFileSync, openSync, closeSync, fsyncSync, renameSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
-import { validateRoom, validateRoomDraftContent, type Campaign, type CampaignRename, type Edit, type Room, type RoomCommit, type WorkingRoomDraft, type Workspace } from '../contracts';
+import {validateRoom,type Campaign,type CampaignRename,type Edit,type Room,type RoomCommit,type WorkingRoomDraft,type Workspace} from '../contracts';
 import { validatePreparation, checkedPreparationDraft, preparationTarget, type PreparationDraft, type PreparationEdit, type Preparation, type PreparationCommand, type PreparationChange, type PreparationSelection, type Note } from '../preparation-contracts';
-import { manualPlan, type ManualPlan } from '../../features/planner/manual-planner';
+import {type ManualPlan} from '../../features/planner/manual-planner';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
-import { checkedLocationDocument } from '../../features/location/location-schema';
+
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
 import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
-import { installCombatSchema, readCombat, executeCombat, validateCombatBackup } from './combat';
+import {installCombatSchema,readCombat,executeCombat} from './combat';
 
 
-import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants,validateChaseBackup} from './chase';
-import {installMaskReconciliationSchema,validateMaskReconciliations} from './mask-reconciliation';
-import {installRuleReferenceSchema,readSceneRules,executeSceneRule,validateRuleReferences} from './rule-references';
+import {installChaseSchema,readChase,executeChase,reconcileChaseParticipants} from './chase';
+import {installMaskReconciliationSchema} from './mask-reconciliation';
+import {installRuleReferenceSchema,readSceneRules,executeSceneRule} from './rule-references';
 import type {SceneRuleCommand} from '../rule-reference-contracts';
-import {installSceneCheckSchema,readSceneChecks,executeSceneCheck,validateSceneChecks} from './scene-checks';
+import {installSceneCheckSchema,readSceneChecks,executeSceneCheck} from './scene-checks';
 import type {SceneCheckCommand} from '../scene-check-contracts';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
-import { installProgressSchema, createProgress, migrateProgress, readProgress, readProgressHistory, readLootBalance, readTreasures, readTreasure, readLedger, readLedgerInventory, readLedgerDetail, executeProgress, validateProgressBackup } from './progression';
+import {installProgressSchema,createProgress,migrateProgress,readProgress,readProgressHistory,readLootBalance,readTreasures,readTreasure,readLedger,readLedgerInventory,readLedgerDetail,executeProgress} from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
 import type { EncounterPlanCommand } from '../encounter-contracts';
 import { readPresetRegistry,executePresetCommand,readPresetOutcome } from './preset-registry';
-import { installGenerationSchema, readEncounterTables, readLootTables, readGeneratorRegistry, executeGeneration, generateEncounters, acceptGeneration, readGenerationRuns, readGenerationRun, rollLoot, validateGenerationBackup } from './generation';
+import {installGenerationSchema,readEncounterTables,readLootTables,readGeneratorRegistry,executeGeneration,generateEncounters,acceptGeneration,readGenerationRuns,readGenerationRun,rollLoot} from './generation';
 import type { GenerationCommand, GenerationRequest, LootRollCommand } from '../generation-contracts';
-import { installSessionSchema, readSession, executeSession, generateSession, regenerateSessionProposal,regenerateSessionReward, readSessionRuns, readSessionRun, validateSessionRuns, readWorldActor, scenePreparation, cleanSessionVisits } from './session';
+import {installSessionSchema,readSession,executeSession,generateSession,regenerateSessionProposal,regenerateSessionReward,readSessionRuns,readSessionRun,readWorldActor,scenePreparation,cleanSessionVisits} from './session';
 import type { SessionCommand, SessionGenerationRequest } from '../session-contracts';
 
 const noteTitleOrder = new Intl.Collator('de', {numeric: true, sensitivity: 'base'});
@@ -386,7 +388,7 @@ export class CampaignStore {
     if(typeof id!=='string'||!id)throw new Error('Raumkennung prüfen.');
     const row=this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,id);
     if(!row)throw new Error('Raum nicht gefunden.');
-    return this.decode(row);
+    return decodeRoom(row);
   }
   atlasRoomCommit(edit:Edit):import('../contracts').RoomCommit {
     this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit}});
@@ -666,89 +668,42 @@ export class CampaignStore {
     if(!this.db.prepare('SELECT campaign_id FROM campaign_lifecycle WHERE campaign_id=? AND trashed=0').get(this.active.campaignId))throw new Error('Kampagne befindet sich im Papierkorb.');
     return this.active.campaignId;
   }
-  private decode(row: Row): Room {
-    if (hash(row.payload) !== row.checksum) throw new Error(`Raum ${row.number}: Datenprüfung fehlgeschlagen. Originaldaten bleiben erhalten.`);
-    const content = JSON.parse(row.payload);
-    if (!content || typeof content !== 'object' || Array.isArray(content) || Object.keys(content).length !== 2 || !Object.hasOwn(content, 'polygons') || !Object.hasOwn(content, 'sections')) throw new Error('Raumpayload hat ein unbekanntes Format. Originaldaten bleiben erhalten.');
-    validateRoom({ name: row.name, ...content });
-    return { id: row.id, scopeId: row.scope_id, floorId: row.floor_id, number: row.number, name: row.name, revision: row.revision, ...content };
-  }
-  private checkedHistory(entry: Row, room: Pick<Room, 'id' | 'scopeId' | 'floorId' | 'number'>): { before: Room; after: Room } {
-    if (!entry || entry.room_id !== room.id || !Number.isSafeInteger(entry.ordinal) || entry.ordinal < 1 || !Number.isSafeInteger(entry.guard_revision) || entry.guard_revision < 0) throw new Error('Raumhistory ist beschädigt. Originaldaten bleiben erhalten.');
-    const before = JSON.parse(entry.before_json) as Room, after = JSON.parse(entry.after_json) as Room;
-    for (const value of [before, after]) {
-      // Display keys may change independently of this geometry/text snapshot.
-      // Identity belongs to the room ID and its scope, never its current number.
-      if (!value || value.id !== room.id || value.scopeId !== room.scopeId || value.floorId !== room.floorId || typeof value.number !== 'string' || !Number.isSafeInteger(value.revision) || value.revision < 0) throw new Error('Raumhistory zeigt nicht auf ihren ursprünglichen Raum. Originaldaten bleiben erhalten.');
-      validateRoom(value);
-    }
-    if (after.revision !== before.revision + 1) throw new Error('Raumhistory besitzt keine gültige Revisionsfolge.');
-    return { before, after };
-  }
-  private decodeRoomDraft(row: Row): WorkingRoomDraft {
-    if (hash(row.payload) !== row.checksum) throw new Error('Arbeitsentwurf ist beschädigt. Originalbytes bleiben erhalten.');
-    const draft = JSON.parse(row.payload) as WorkingRoomDraft;
-    if (!draft || draft.room?.id !== row.room_id || typeof draft.room.scopeId !== 'string' || typeof draft.room.floorId !== 'string' || typeof draft.room.number !== 'string' || !Number.isSafeInteger(draft.room.revision) || draft.room.revision < 0 || typeof draft.room.name !== 'string' || !Array.isArray(draft.room.polygons) || !Array.isArray(draft.room.sections) || typeof draft.points !== 'string' || typeof draft.pointsChanged !== 'boolean' || !Object.hasOwn(draft, 'failedEdit')) throw new Error('Arbeitsentwurf hat einen ungültigen Ziel-/Feldvertrag. Originalbytes bleiben erhalten.');
-    if (draft.failedEdit !== null && (!draft.failedEdit || draft.failedEdit.campaignId !== row.campaign_id || draft.failedEdit.roomId !== row.room_id || typeof draft.failedEdit.commandId !== 'string' || !draft.failedEdit.commandId || !Number.isSafeInteger(draft.failedEdit.expectedRevision) || draft.failedEdit.expectedRevision < 0)) throw new Error('Arbeitsentwurf enthält einen fremden Änderungsauftrag.');
-    try {
-      validateRoomDraftContent(draft.room);
-      if (draft.failedEdit !== null) {
-        if (typeof draft.failedEdit.token !== 'string') throw new Error('Aktivierungsbindung fehlt.');
-        validateRoom(draft.failedEdit);
-      }
-    } catch (error) { throw new Error('Arbeitsentwurf enthält ungültige Raumdaten. Originalbytes bleiben erhalten: ' + (error as Error).message); }
-    return draft;
-  }
-  private decodePreparationDraft(row: Row): PreparationDraft {
-    if (hash(row.payload) !== row.checksum) throw new Error('Vorbereitungsentwurf ist beschädigt. Originalbytes bleiben erhalten.');
-    const draft = checkedPreparationDraft(JSON.parse(row.payload)), target = preparationTarget(draft.change);
-    if (target.kind !== row.kind || target.id !== row.target_id || draft.failedCommand && draft.failedCommand.campaignId !== row.campaign_id) throw new Error('Vorbereitungsentwurf gehört zu einem anderen Ziel.');
-    return draft;
-  }
-  private preparationDraftTable(kind: PreparationEdit['kind']) {
-    if (!['note', 'plan', 'location'].includes(kind)) throw new Error('Unbekanntes Entwurfsziel.');
-    return kind === 'note' ? 'world_note' : kind;
-  }
+
+
   preparationDraft(token: string, kind: PreparationEdit['kind'], id: string): PreparationDraft | null {
-    const campaignId = this.guard(token); this.preparationDraftTable(kind);
+    const campaignId = this.guard(token); preparationDraftTable(kind);
     const row = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, kind, id);
-    return row ? this.decodePreparationDraft(row) : null;
+    return row ? decodePreparationDraft(row) : null;
   }
   keepPreparationDrafts(token: string, drafts: PreparationDraft[]) {
     if (!Array.isArray(drafts)) throw new Error('Ungültige Entwurfsliste.');
     this.db.transaction(() => {
       const campaignId = this.guard(token), targets = new Set<string>();
       for (const value of drafts) {
-        const draft = checkedPreparationDraft(value), target = preparationTarget(draft.change), table = this.preparationDraftTable(target.kind);
+        const draft = checkedPreparationDraft(value), target = preparationTarget(draft.change), table = preparationDraftTable(target.kind);
         const key = json(target);
         if (targets.has(key)) throw new Error('Doppeltes Entwurfsziel.'); targets.add(key);
         if (!this.db.prepare(`SELECT 1 FROM ${table} WHERE campaign_id=? AND id=?`).get(campaignId, target.id)) throw new Error('Entwurfsziel nicht vorhanden.');
         const old = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
         if (old) {
-          const existing = this.decodePreparationDraft(old);
+          const existing = decodePreparationDraft(old);
           if(draft.change.kind==='note'&&draft.change.excerpt&&existing.writeId!==draft.writeId&&(!draft.failedCommand||existing.failedCommand?.commandId!==draft.failedCommand.commandId))throw new Error('Ein anderer Arbeitsentwurf dieses Originals bleibt erhalten.');
           if (existing.writeId === draft.writeId && json(existing) !== json(draft)) throw new Error('Entwurfskennung bereits anders verwendet.');
         }
         const payload = json(draft), checksum = hash(payload);
-        this.decodePreparationDraft({ campaign_id: campaignId, kind: target.kind, target_id: target.id, payload, checksum });
+        decodePreparationDraft({ campaign_id: campaignId, kind: target.kind, target_id: target.id, payload, checksum });
         this.db.prepare('INSERT INTO preparation_draft(campaign_id,kind,target_id,payload,checksum) VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,kind,target_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(campaignId, target.kind, target.id, payload, checksum);
       }
     }).immediate();
   }
   discardPreparationDraft(token: string, kind: PreparationEdit['kind'], id: string, writeId: string) {
     this.db.transaction(() => {
-      const campaignId = this.guard(token); this.preparationDraftTable(kind);
+      const campaignId = this.guard(token); preparationDraftTable(kind);
       const row = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, kind, id);
       if (!row) return;
-      if (typeof writeId !== 'string' || this.decodePreparationDraft(row).writeId !== writeId) throw new Error('Der Entwurf wurde inzwischen geändert.');
+      if (typeof writeId !== 'string' || decodePreparationDraft(row).writeId !== writeId) throw new Error('Der Entwurf wurde inzwischen geändert.');
       this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, kind, id);
     }).immediate();
-  }
-  private decodeLocation(row: Row, checksumError = 'Ortsprüfung fehlgeschlagen.') {
-    if (hash(row.payload) !== row.checksum) throw new Error(checksumError);
-    const document=checkedLocationDocument(JSON.parse(row.payload));
-    if(document.id!==row.id||!Number.isSafeInteger(row.revision)||row.revision<1)throw new Error("Ortszuordnung widersprüchlich.");
-    return document;
   }
   workspaceShell():WorkspaceShell {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspaceShell());
@@ -789,7 +744,7 @@ export class CampaignStore {
       const campaign = this.db.prepare('SELECT * FROM campaign WHERE id=?').get(active.campaignId);
       const rooms: Room[] = [], problems: Workspace['problems'] = [];
       for (const row of this.db.prepare(`SELECT r.* FROM room r WHERE r.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY number,id`).all(active.campaignId)) {
-        try { rooms.push(this.decode(row)); } catch (error) { problems.push({ id: row.id, number: row.number, message: (error as Error).message }); }
+        try { rooms.push(decodeRoom(row)); } catch (error) { problems.push({ id: row.id, number: row.number, message: (error as Error).message }); }
       }
       rooms.sort((a,b)=>roomNumberOrder.compare(a.number,b.number)||a.id.localeCompare(b.id));
       const floors = this.db.prepare(`SELECT f.id,f.scope_id AS scopeId,f.name,f.source_elevation AS sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`).all(active.campaignId);
@@ -834,7 +789,7 @@ export class CampaignStore {
       const campaignId = this.guard(edit.token, edit.campaignId);
       const receipt = this.db.prepare('SELECT * FROM receipt WHERE command_id=?').get(edit.commandId);
       if (receipt) { if (receipt.campaign_id !== campaignId || !matchesReceipt(receipt, edit)) throw new Error('Änderungskennung bereits anders verwendet.'); return; }
-      const before = this.decode(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId) ?? {});
+      const before = decodeRoom(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId) ?? {});
       if (before.revision !== edit.expectedRevision) throw new Error('Konflikt: Der Raum wurde inzwischen geändert. Entwurf bleibt offen.');
       if (json(before.sections.map(s => [s.id, s.kind, s.doorId])) !== json(edit.sections.map(s => [s.id, s.kind, s.doorId]))) throw new Error('Abschnittsbindungen dürfen bei Textbearbeitung nicht geändert werden.');
       const after = { ...before, name: edit.name, polygons: edit.polygons, sections: edit.sections, revision: before.revision + 1 };
@@ -848,7 +803,7 @@ export class CampaignStore {
     }).immediate();
     return this.db.transaction(() => {
       const campaignId = this.guard(edit.token, edit.campaignId), cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
-      return { room: this.decode(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId)), token: edit.token,
+      return { room: decodeRoom(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId)), token: edit.token,
         canUndo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId, cursor),
         canRedo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId, cursor + 1) };
     })();
@@ -868,9 +823,9 @@ export class CampaignStore {
       if(drawingHistory(this.db,campaignId,ordinal,direction)){this.db.prepare('UPDATE campaign SET cursor=? WHERE id=?').run(direction==='undo'?cursor-1:cursor+1,campaignId);return;}
       const row = this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, entry.room_id);
       if (!row) throw new Error('Raumhistory enthält ein fehlendes Ziel. Originaldaten bleiben erhalten.');
-      const current = this.decode(row);
+      const current = decodeRoom(row);
       if (current.revision !== entry.guard_revision) throw new Error('Undo-Konflikt: Raumrevision stimmt nicht mehr.');
-      const values = this.checkedHistory(entry, current);
+      const values = checkedRoomHistory(entry, current);
       const target = direction === 'undo' ? values.before : values.after;
       validateRoom(target); target.revision = current.revision + 1; this.writeRoom(campaignId, target);
       this.db.prepare('UPDATE history SET guard_revision=? WHERE campaign_id=? AND ordinal=?').run(target.revision, campaignId, ordinal);
@@ -882,74 +837,12 @@ export class CampaignStore {
     }).immediate();
     return this.workspace();
   }
-  private validateDatabase(db: any) {
-    if(db.pragma('user_version',{simple:true})>=51&&!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_opponent_group'").get())throw Error('Szenengegner-Zuordnung fehlt.');
-    validateCampaignAtlases(db);
-    for(const row of db.prepare("SELECT value FROM settings WHERE key LIKE 'session-recap:%'").iterate())checkedSessionRecapDraft(JSON.parse(row.value));
-    for(const row of db.prepare('SELECT campaign_id,scene_id FROM live_moment_draft').iterate())readLiveMomentDraft(db,row.campaign_id,row.scene_id);
-    validateExtensionSettings(db);
-    validateCapabilityBytes(db);
-    validateCampaignOrigins(db);
-    if (db.pragma('integrity_check', { simple: true }) !== 'ok' || db.pragma('foreign_key_check').length) throw new Error('Wiederherstellungskopie ist strukturell beschädigt.');
-    for (const row of db.prepare('SELECT * FROM room').iterate()) this.decode(row);
-    const headers = new Map<string, Pick<Room, 'id' | 'scopeId' | 'floorId' | 'number'>>();
-    for (const entry of db.prepare('SELECT * FROM history').iterate()) {
-      if(db.prepare('SELECT 1 FROM drawing_history WHERE campaign_id=? AND ordinal=?').get(entry.campaign_id,entry.ordinal))continue;
-      const key = json([entry.campaign_id, entry.room_id]);
-      let header = headers.get(key);
-      if (!header) {
-        const row = db.prepare('SELECT id,scope_id AS scopeId,floor_id AS floorId,number FROM room WHERE campaign_id=? AND id=?').get(entry.campaign_id, entry.room_id);
-        if (!row) throw new Error('Raumhistory enthält ein fehlendes Ziel.');
-        header = row; headers.set(key, header!);
-      }
-      this.checkedHistory(entry, header!);
-    }
-    for (const row of db.prepare('SELECT * FROM room_draft').iterate()) this.decodeRoomDraft(row);
-    for (const row of db.prepare('SELECT * FROM preparation_draft').iterate()) {
-      const draft = this.decodePreparationDraft(row), target = preparationTarget(draft.change), table = this.preparationDraftTable(target.kind);
-      if (!db.prepare(`SELECT 1 FROM ${table} WHERE campaign_id=? AND id=?`).get(row.campaign_id, target.id)) throw new Error('Vorbereitungsentwurf hat ein fehlendes Ziel.');
-    }
-    validateNoteSourceHistory(db);
-    for (const row of db.prepare('SELECT * FROM world_note').iterate()) checkedWorldNoteRow(row, 'Beschädigte Notiz im Backupkandidaten.');
-    for (const row of db.prepare('SELECT * FROM location').iterate()) this.decodeLocation(row, 'Beschädigter Ort im Backupkandidaten.');
-    for (const row of db.prepare('SELECT campaign_id,id FROM plan').iterate()) this.readPlan(row.campaign_id, row.id, db);
-    for (const row of db.prepare('SELECT id FROM campaign').all()) validateLiveBackup(db, row.id);
-    validateCombatBackup(db);validateCombatDrafts(db);validateChaseBackup(db);validateChaseDrafts(db);validateMaskReconciliations(db);validateRuleReferences(db);validateSceneChecks(db);
-    validateProgressBackup(db);validateNarrativeBackup(db);validateFinishDrafts(db);validateSceneDesk(db);validateTreasuryDrafts(db);validateGroups(db);validateNpcRecords(db);validateNpcRecovery(db);
-    validateItemsBackup(db);
-    validateWorldBackup(db);validateWorldRelationPairs(db);
-    validateCities(db);
-    validatePlayer(db);
-    validateDungeonPlay(db);
-    validateAutonomy(db);
-    validateDrawing(db);
-    validateMusicBackup(db);
-    validateGenerationBackup(db);validateSessionRuns(db);
-    for (const row of db.prepare('SELECT payload,checksum FROM live_receipt').iterate()) if (hash(row.payload) !== row.checksum) throw new Error('Beschädigtes Live-Commitreceipt im Backupkandidaten.');
-    for (const row of db.prepare('SELECT * FROM source').iterate()) if (hash(row.bytes) !== row.checksum) throw new Error('Beschädigte Quellbytes im Backupkandidaten.');
-    // Every stored payload envelope receives the same byte/JSON check.
-    // Domain decoders above additionally verify their semantic invariants.
-    // New feature tables cannot silently fall outside backup integrity.
-    for (const { name } of db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all()) {
-      const columns = db.prepare('SELECT name,type FROM pragma_table_info(?)').all(name);
-      const payloadColumn = columns.find((column: Row) => column.name === 'payload');
-      if (!payloadColumn || !columns.some((column: Row) => column.name === 'checksum')) continue;
-      const table = '"' + name.replace(/"/g, '""') + '"';
-      for (const row of db.prepare(`SELECT payload,checksum FROM ${table}`).iterate()) {
-        if (hash(row.payload) !== row.checksum) throw new Error(`Beschädigte Nutzdaten im Backup: ${name}.`);
-        if (payloadColumn.type === 'TEXT') JSON.parse(row.payload);
-      }
-    }
-  }
-  async backup(filename:string){
+  async backup(filename:string, validateCandidate?: (filename:string)=>Promise<void>){
     const epoch=this.backupEpoch,candidate = filename + '.candidate-' + randomUUID();
     try {
       await this.db.backup(candidate);
-      const db = new Database(candidate, { readonly: true, fileMustExist: true });
-      try {
-        this.validateDatabase(db);
-        if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);
-      } finally { db.close(); }
+      if(validateCandidate)await validateCandidate(candidate);
+      else validateBackupCandidate(candidate);
       const fd = openSync(candidate, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       if(epoch!==this.backupEpoch)throw new Error('Wiederherstellungskopie durch Löschung überholt.');
       renameSync(candidate, filename);
@@ -1018,7 +911,7 @@ export class CampaignStore {
       const locations: Preparation['locations'] = [];
       for (const row of this.db.prepare('SELECT * FROM location WHERE campaign_id=? ORDER BY id').all(campaignId)) {
         try {
-          locations.push({ document: this.decodeLocation(row), revision: row.revision, trashed: !!row.trashed });
+          locations.push({ document: decodeLocation(row), revision: row.revision, trashed: !!row.trashed });
         } catch { problems.push(`Ort ${row.id} ist gesperrt. Originalbytes bleiben erhalten.`); }
       }
       let selection: PreparationSelection = { noteId: null, planId: null, sceneId: null };
@@ -1247,7 +1140,7 @@ export class CampaignStore {
       await this.db.backup(candidate);this.campaignFence(id,fence);
       const db=new Database(candidate,{fileMustExist:true});let snapshot;
       try{
-        db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);this.validateDatabase(db);
+        db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);validateDatabase(db);
         const c:Pick<Campaign,'id'|'name'>=db.prepare('SELECT id,name FROM campaign').get();
         snapshot={...c,fence,schema:db.pragma('user_version',{simple:true}),counts:snapshotCounts(db),media:[...audioMediaFiles(db),...playerMediaFiles(db,id)]};
       }finally{db.close();}
@@ -1262,7 +1155,7 @@ export class CampaignStore {
     if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==51&&schema!==52&&schema!==53&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
 
     if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
-    this.validateDatabase(db);
+    validateDatabase(db);
     if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
@@ -1294,7 +1187,7 @@ export class CampaignStore {
 
       if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
       if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installRoomGroups(source);installSessionSchema(source);installTravelHistory(source);installTerrainReconstruction(source);source.pragma('user_version=54');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);this.validateDatabase(source);
+      installRoomGroups(source);installSessionSchema(source);installTravelHistory(source);installTerrainReconstruction(source);source.pragma('user_version=54');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }
@@ -1403,15 +1296,7 @@ export class CampaignStore {
     return ack;
   }).immediate(); }
   liveStatus(command: LiveCommand, token: string) { this.guard(token, command.campaignId); return liveStatus(this.db, command); }
-  private readPlan(campaignId: string, id: string, db = this.db): ManualPlan {
-    const row = db.prepare('SELECT * FROM plan WHERE campaign_id=? AND id=?').get(campaignId, id);
-    if (!row) throw new Error('Plan nicht gefunden.');
-    const scenes = db.prepare('SELECT * FROM planned_visit WHERE campaign_id=? AND plan_id=? ORDER BY ordinal').all(campaignId, id).map((visit: Row) => {
-      if (hash(visit.payload) !== visit.checksum) throw new Error('Szenenprüfung fehlgeschlagen.');
-      return JSON.parse(visit.payload);
-    });
-    return manualPlan({ version: 1, id: row.id, revision: row.revision, name: row.name, scenes });
-  }
+  private readPlan(campaignId:string,id:string,db=this.db):ManualPlan { return readStoredPlan(db,campaignId,id); }
   changePreparation(command: PreparationCommand): Preparation {this.commitPreparation(command);return this.preparation(command.token);}
   changePreparationPlan(command:PreparationCommand):ManualPlan {
     if(command.change.kind!=='plan')throw new Error('Gezielte Planänderung benötigt einen Spielabendplan.');
@@ -1521,7 +1406,7 @@ export class CampaignStore {
         targetId = change.document.id;
         const old = this.db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (change.expectedRevision === null ? !!old : !old || old.revision !== change.expectedRevision || old.trashed) throw new Error('Ortskonflikt: Der gespeicherte Stand hat sich geändert.');
-        if (old) this.decodeLocation(old, 'Beschädigter Ort darf nicht überschrieben werden.');
+        if (old) decodeLocation(old, 'Beschädigter Ort darf nicht überschrieben werden.');
         for (const map of change.document.detailMaps) {
           if (map.kind !== 'dungeon' || !this.db.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(campaignId, map.documentId)) throw new Error('Die gewählte Karte gehört nicht zu dieser Kampagne.');
           const bound = this.db.prepare('SELECT location_id FROM location_map WHERE campaign_id=? AND scope_id=?').get(campaignId, map.documentId);
@@ -1536,7 +1421,7 @@ export class CampaignStore {
         targetId = change.id;
         const old = this.db.prepare('SELECT * FROM location WHERE campaign_id=? AND id=?').get(campaignId, targetId);
         if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed) throw new Error('Orts-Papierkorbkonflikt: Stand hat sich geändert.');
-        this.decodeLocation(old, 'Beschädigter Ort bleibt gesperrt.');
+        decodeLocation(old, 'Beschädigter Ort bleibt gesperrt.');
         revision = old.revision + 1;
         this.db.prepare('UPDATE location SET trashed=?,revision=? WHERE campaign_id=? AND id=?').run(Number(change.trashed), revision, campaignId, targetId);
       } else {
@@ -1571,7 +1456,7 @@ export class CampaignStore {
       applySceneCreation(this.db,campaignId,command);
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint, campaignId, targetId, revision);
       const target = preparationTarget(command.change), savedDraft = this.db.prepare('SELECT * FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').get(campaignId, target.kind, target.id);
-      if (savedDraft && this.decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);
+      if (savedDraft && decodePreparationDraft(savedDraft).writeId === command.draftWriteId) this.db.prepare('DELETE FROM preparation_draft WHERE campaign_id=? AND kind=? AND target_id=?').run(campaignId, target.kind, target.id);
     }).immediate();
   }
   selectPreparation(token: string, selection: PreparationSelection): void {
@@ -1614,19 +1499,19 @@ export class CampaignStore {
     if (draft === null) { this.db.prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?').run(campaignId, roomId); return; }
     if (!this.db.prepare('SELECT 1 FROM room WHERE campaign_id=? AND id=?').get(campaignId, roomId)) throw new Error('Entwurf gehört nicht zum aktuellen Raum.');
     const existing = this.db.prepare('SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?').get(campaignId, roomId);
-    if (existing) this.decodeRoomDraft(existing);
+    if (existing) decodeRoomDraft(existing);
     const payload = json(draft);
     if (payload.length > 64 * 1024 * 1024) throw new Error('Dieser Entwurf ist für den ersten Anschluss zu groß.');
     const checksum = hash(payload);
     // Validate the persisted envelope without treating unfinished text as author truth.
-    this.decodeRoomDraft({ campaign_id: campaignId, room_id: roomId, payload, checksum });
+    decodeRoomDraft({ campaign_id: campaignId, room_id: roomId, payload, checksum });
     this.db.prepare('INSERT INTO room_draft VALUES(?,?,?,?) ON CONFLICT(campaign_id,room_id) DO UPDATE SET payload=excluded.payload,checksum=excluded.checksum').run(campaignId, roomId, payload, checksum);
   }
   roomDraft(token: string, roomId: string): WorkingRoomDraft | null {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.roomDraft(token,roomId));
     const campaignId = this.guard(token), row = this.db.prepare('SELECT * FROM room_draft WHERE campaign_id=? AND room_id=?').get(campaignId, roomId);
     if (!row) return null;
-    return this.decodeRoomDraft(row);
+    return decodeRoomDraft(row);
   }
   tutorial(state?: 'shown' | 'finished' | 'skipped'): TutorialRun {
     if (state !== undefined && !['shown', 'finished', 'skipped'].includes(state)) throw new Error('Ungültiger Tutorialstatus.');

@@ -264,7 +264,10 @@ ausarbeiten, darin ein Königreich gestalten, anschließend Straßen und Gebäud
 einer Stadt und zuletzt ein einzelnes Gebäude bearbeiten. Gebiete bleiben
 unabhängige gemalte Overlays. Jeden Übergang mit Zoom, Navigation, tatsächlicher
 Bearbeitung und Wiederaufnahme prüfen. Isolierte Ansichten und automatisch
-eingespielte Lastdaten ersetzen diesen Ablauf nicht.
+eingespielte Lastdaten ersetzen diesen Ablauf nicht. Zusätzlich zu Leistung werden
+Bedienhürden, widersprüchliche Maßstabswechsel und unstimmige Darstellung
+festgehalten. Ein funktional bestandener Autorenweg ist noch keine gestalterische
+Abnahme einer tatsächlich spielbaren, ansprechenden Fantasykarte.
 
 | Bereich | Ziel |
 | --- | --- |

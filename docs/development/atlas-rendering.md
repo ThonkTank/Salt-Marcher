@@ -29,6 +29,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Landschaftsschreiben und gemischte Welt](../reference/atlas-landscape-write-cost-20261021/README.md): vier vorbereitete SQL-Programme je Verbindung begrenzen wiederholte Allokationen im Writer. Beim Öffnen wartet die Arbeitsfläche nicht mehr auf das erste Atlasbild; Autorentreffer behalten ihre eigene Freigabe. Die gemischte Probe enthält 100.000 Geländezuordnungen, 5.000 eingerichtete Gebäude und einen großen Dungeon. Sie legt weiterhin langsames erstes Terrain und eine Pause nach dem großen Pinselzug offen; sie ist keine vollständige Leistungsabnahme.
 
+[Sicherungsprüfung im Hintergrund](../reference/atlas-backup-worker-20261021/README.md): die große Weltprobe identifizierte über eine Minute synchrone Snapshotprüfung im Hauptprozess. Die vollständige Prüfung läuft nun in einem Readonly-Worker; kanonische Schreib-/Historyarbeit bleibt ein gemessener Engpass.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
