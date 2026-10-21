@@ -1,0 +1,103 @@
+{
+  "checks": [
+    "All coast styles use identical canonical heights, camera, land and water; only coast ink changes."
+  ],
+  "images": [
+    {
+      "name": "region",
+      "variant": "baseline",
+      "tilt": 0,
+      "file": "region-baseline-0.png"
+    },
+    {
+      "name": "region",
+      "variant": "baseline",
+      "tilt": 55,
+      "file": "region-baseline-55.png"
+    },
+    {
+      "name": "close",
+      "variant": "baseline",
+      "tilt": 0,
+      "file": "close-baseline-0.png"
+    },
+    {
+      "name": "close",
+      "variant": "baseline",
+      "tilt": 55,
+      "file": "close-baseline-55.png"
+    },
+    {
+      "name": "region",
+      "variant": "clean",
+      "tilt": 0,
+      "file": "region-clean-0.png"
+    },
+    {
+      "name": "region",
+      "variant": "clean",
+      "tilt": 55,
+      "file": "region-clean-55.png"
+    },
+    {
+      "name": "close",
+      "variant": "clean",
+      "tilt": 0,
+      "file": "close-clean-0.png"
+    },
+    {
+      "name": "close",
+      "variant": "clean",
+      "tilt": 55,
+      "file": "close-clean-55.png"
+    },
+    {
+      "name": "region",
+      "variant": "light",
+      "tilt": 0,
+      "file": "region-light-0.png"
+    },
+    {
+      "name": "region",
+      "variant": "light",
+      "tilt": 55,
+      "file": "region-light-55.png"
+    },
+    {
+      "name": "close",
+      "variant": "light",
+      "tilt": 0,
+      "file": "close-light-0.png"
+    },
+    {
+      "name": "close",
+      "variant": "light",
+      "tilt": 55,
+      "file": "close-light-55.png"
+    }
+  ],
+  "coastSource": "bdfb79b729e84ea601083bc6b1a79adb4563716e967cc464e0e3482603293ca6",
+  "source": "32c7f49184d59b30e9dabc9756f159543fcf3f56",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/coast-readability-bMWWgj",
+  "artifacts": {
+    "main.cjs": "111a9f608dc0f01126d72817354c8c7bf4e1b89eafcf6490d1fa6db4b7c2bfd6",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "0ad5c57c80165e0dea6ad8323ac17cb4ad4dcbb58cdf944f0a3fbfbca1fda48f",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2349765,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
