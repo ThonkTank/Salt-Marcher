@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: additional rooms stay on the selected dungeon floor, avoid occupied geometry and preserve prior rooms on restart
+ok 1 - additional rooms stay on the selected dungeon floor, avoid occupied geometry and preserve prior rooms on restart
+  ---
+  duration_ms: 758.204255
+  type: 'test'
+  ...
+# Subtest: three default rooms are separate usable rectangles instead of a stack at the origin
+ok 2 - three default rooms are separate usable rectangles instead of a stack at the origin
+  ---
+  duration_ms: 460.853921
+  type: 'test'
+  ...
+# Subtest: reference search links the chosen original once, survives room changes, and rejects retired results
+ok 3 - reference search links the chosen original once, survives room changes, and rejects retired results
+  ---
+  duration_ms: 1186.146997
+  type: 'test'
+  ...
+# Subtest: a key-first author creates the next room without closing, saves public/GM prose, and clears filters hiding the new room
+ok 4 - a key-first author creates the next room without closing, saves public/GM prose, and clears filters hiding the new room
+  ---
+  duration_ms: 823.920248
+  type: 'test'
+  ...
+# Subtest: a rejected key draft cannot create an extra room
+ok 5 - a rejected key draft cannot create an extra room
+  ---
+  duration_ms: 611.135772
+  type: 'test'
+  ...
+# Subtest: key autosaves remove block after its control is replaced
+ok 6 - key autosaves remove block after its control is replaced
+  ---
+  duration_ms: 1254.558974
+  type: 'test'
+  ...
+# Subtest: key autosaves reorder blocks after its control is replaced
+ok 7 - key autosaves reorder blocks after its control is replaced
+  ---
+  duration_ms: 1207.993124
+  type: 'test'
+  ...
+# Subtest: key autosaves change block kind after its control is replaced
+ok 8 - key autosaves change block kind after its control is replaced
+  ---
+  duration_ms: 1041.897398
+  type: 'test'
+  ...
+# Subtest: key autosaves remove reference after its control is replaced
+ok 9 - key autosaves remove reference after its control is replaced
+  ---
+  duration_ms: 1165.927387
+  type: 'test'
+  ...
+# Subtest: floor overview includes separate room extents and large sparse contours without changing source geometry
+ok 10 - floor overview includes separate room extents and large sparse contours without changing source geometry
+  ---
+  duration_ms: 185.899836
+  type: 'test'
+  ...
+# Subtest: a new empty room contributes no invented GM heading to the live key
+ok 11 - a new empty room contributes no invented GM heading to the live key
+  ---
+  duration_ms: 391.413256
+  type: 'test'
+  ...
+# Subtest: ordinary new rooms retain free contours through undo, redo and fresh open without implicit voxels
+ok 12 - ordinary new rooms retain free contours through undo, redo and fresh open without implicit voxels
+  ---
+  duration_ms: 538.252924
+  type: 'test'
+  ...
+# Subtest: connecting existing contours previews complete rooms and a route without changing confirmed truth
+ok 13 - connecting existing contours previews complete rooms and a route without changing confirmed truth
+  ---
+  duration_ms: 617.284838
+  type: 'test'
+  ...
+# Subtest: a rejected self connection leaves no partially initialized room in its preview
+ok 14 - a rejected self connection leaves no partially initialized room in its preview
+  ---
+  duration_ms: 277.635012
+  type: 'test'
+  ...
+# Subtest: connection feedback distinguishes translated, changed and rejected endpoints beside the action
+ok 15 - connection feedback distinguishes translated, changed and rejected endpoints beside the action
+  ---
+  duration_ms: 705.252377
+  type: 'test'
+  ...
+# Subtest: map room numbers remain in reading order once connections reach two digits
+ok 16 - map room numbers remain in reading order once connections reach two digits
+  ---
+  duration_ms: 316.748387
+  type: 'test'
+  ...
+# Subtest: captured general note returns to its room after the capture command retires (reuse false)
+ok 17 - captured general note returns to its room after the capture command retires (reuse false)
+  ---
+  duration_ms: 515.093298
+  type: 'test'
+  ...
+# Subtest: captured general note returns to its room after the capture command retires (reuse true)
+ok 18 - captured general note returns to its room after the capture command retires (reuse true)
+  ---
+  duration_ms: 597.196897
+  type: 'test'
+  ...
+# Subtest: a selected-only map does not turn other authored rooms into missing geometry or block their map action
+ok 19 - a selected-only map does not turn other authored rooms into missing geometry or block their map action
+  ---
+  duration_ms: 673.060531
+  type: 'test'
+  ...
+# Subtest: a failed authoring refresh never invents absent geometry, retains saved text, and reload restores map navigation
+ok 20 - a failed authoring refresh never invents absent geometry, retains saved text, and reload restores map navigation
+  ---
+  duration_ms: 675.996341
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17075.626127

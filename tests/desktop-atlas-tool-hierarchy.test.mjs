@@ -140,3 +140,28 @@ test('only an accepted explicit tool switch restores tools from compact selectio
  x.layout.openSelection();assert(x.layout.contextVisible);assert(x.layout.toolSettings.hidden);
  x.layout.showPane('tool');assert(x.layout.contextVisible,'ordinary domain redraw must not dismiss selected properties');assert(x.layout.toolSettings.hidden);
 });
+
+test('main-camera pose is locked during room, city and output gestures, and released after cancellation',()=>{
+ const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{
+  busy:false,landscape:{hasDraft:()=>false},territories:{hasDraft:()=>false},draft:[],brushId:null,
+  drag:null,vertexDrag:null,pathDrag:null,roomDrag:null,partyDrag:null,entranceDraft:null,
+  placeIntent:null,exportDrag:null,exportCorner:null,
+ });
+ assert.equal(editor.cameraDraftPending(),false);
+ for(const key of ['drag','vertexDrag','pathDrag','roomDrag','partyDrag','entranceDraft','placeIntent','exportDrag','exportCorner']){
+  editor[key]={};assert.equal(editor.cameraDraftPending(),true,key);editor[key]=null;
+ }
+ editor.draft=[{x:1,y:2}];assert.equal(editor.cameraDraftPending(),true);editor.draft=[];
+ assert.equal(editor.cameraDraftPending(),false);
+});
+
+test('graphics recovery clears only the failure that belongs to the recovered presentation',t=>{
+ const {document}=fixture(t),local=document.createElement('p');local.id='atlas-save-status';document.body.append(local);
+ const global=document.getElementById('status'),calls=[],workbench=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{opts:{status(text,error){calls.push({text,error});global.textContent=text;global.dataset.error=String(error);}}});
+ for(const [a,b]of [['graphics','graphics'],['write pending','graphics'],['graphics','other failure']]){
+  local.textContent=a;global.textContent=b;local.dataset.error=global.dataset.error='true';calls.length=0;
+  workbench.recoverPresentation('graphics');
+  assert.equal(local.dataset.error,a==='graphics'?'false':'true');assert.equal(global.dataset.error,b==='graphics'?'false':'true');assert.equal(calls.length,b==='graphics'?1:0);
+  if(a!=='graphics')assert.equal(local.textContent,a);if(b!=='graphics')assert.equal(global.textContent,b);
+ }
+});

@@ -91,8 +91,12 @@ test("unpainted mask land has a neutral base, separate from the travel terrain a
 test("coasts are narrow dark contours at the land/water threshold, including erased inland water", () => {
   const records = land(),
     pixels = render(records);
-  assert(pixel(pixels, 31, 16)[0] < 150);
-  assert(pixel(pixels, 32, 16)[0] < 150);
+  // The selected narrow coast covers one of the two supersample columns on
+  // each side; the neighbouring output pixels retain their exact base colour.
+  assert.deepEqual(pixel(pixels, 31, 16), [181, 168, 144, 255]);
+  assert.deepEqual(pixel(pixels, 32, 16), [117, 133, 133, 255]);
+  assert.deepEqual(pixel(pixels, 30, 16), [238, 229, 207, 255]);
+  assert.deepEqual(pixel(pixels, 33, 16), [127, 168, 189, 255]);
   assert.deepEqual(pixel(pixels, 37, 16), [127, 168, 189, 255]);
   assert.deepEqual(pixel(pixels, 24, 16), [238, 229, 207, 255]);
   const changes = applyMaskStroke(records, {
@@ -105,8 +109,9 @@ test("coasts are narrow dark contours at the land/water threshold, including era
     ids = new Set(changes.map((r) => r.id));
   const lake = render([...records.filter((r) => !ids.has(r.id)), ...changes]);
   assert.deepEqual(pixel(lake, 16, 16), [127, 168, 189, 255]);
-  assert(pixel(lake, 10, 16)[0] < 170);
-  assert(pixel(lake, 22, 16)[0] < 170);
+  assert.deepEqual(pixel(lake, 10, 16), [117, 133, 133, 255]);
+  assert.deepEqual(pixel(lake, 22, 16), [181, 168, 144, 255]);
+  assert.deepEqual(pixel(lake, 23, 16), [238, 229, 207, 255]);
 });
 test("adjacent render tiles have exactly the same coasts as a single frame, without false tile-border lines", () => {
   for (const offset of [-10, 0, 10]) {
@@ -152,10 +157,10 @@ test("coast outline stays above pigment but below a crossing river", () => {
     "#123456",
   );
   assert.deepEqual(pixel(image.finish(), 31, 16), [18, 52, 86, 255]);
-  assert(
-    pixel(image.finish(), 31, 8)[0] < 170,
-    "Coast ink remains visible over painted land",
-  );
+  assert.deepEqual(pixel(image.finish(), 31, 8), [191, 37, 24, 255],
+    "Narrow coast ink remains visible over painted land");
+  assert.deepEqual(pixel(image.finish(), 30, 8), [255, 0, 0, 255],
+    "Coast ink does not spread into adjacent pigment");
   assert.deepEqual(
     image.finish(),
     image.finish(),

@@ -1,5 +1,8 @@
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
+import {terrainSnapshotStillValid} from '../src/app/terrain-presentation';
+import {validateTerrainColor} from '../src/app/terrain-color';
+import {validateTerrainProjection} from '../src/app/terrain-projection';
 import {spatialRoutePreview} from './terrain-route-service';
 import {AtlasRegionService} from './atlas-region';
 import {validateRegion} from '../src/app/atlas-region-contracts';
@@ -121,7 +124,7 @@ else {
     handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
     handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();dungeonImportPreviews.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
-    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,24*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,24*1024*1024);
+    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,16*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,16*1024*1024);
     let graphSourceReadBarrierDepth=0;
     async function withGraphSourceReadBarrier<T>(operation:()=>T):Promise<T>{
       graphSourceReadBarrierDepth++;
@@ -382,13 +385,48 @@ else {
     handle('atlas:objects',(token:string,q:import('../src/app/campaign-atlas-contracts').AtlasObjectQuery)=>store.atlasObjects(token,q));
     handle('atlas:vegetation-scene',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,mpp:number)=>store.atlasVegetationScene(token,box,mpp));
     handle('atlas:spatial-scene',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox,mpp:number,draft?:import('../src/app/spatial-terrain').SpatialTerrainDraft,fence?:string)=>draft?spatialRoutePreview(store,token,box,mpp,draft,fence):store.atlasSpatialScene(token,box,mpp,draft,fence));
+    handle('atlas:terrain-profile',(token:string,points:import('../src/app/contracts').Point[])=>store.atlasTerrainProfile(token,points));
     handle('atlas:height',(token:string,point:import('../src/app/contracts').Point)=>store.atlasHeight(token,point));
+    handle('atlas:terrain-frame',async(token:string,request:import('../src/app/terrain-presentation').TerrainFrameRequest)=>{
+      const q=request?.frame;
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
+      if(q?.kind==='top')validateRegion(q.query);
+      else if(q?.kind==='tilted'){validateTerrainProjection(q.query);if(q.query.color||q.query.heightStroke)throw Error('Nur gespeichertes Gelände.');}
+      else throw Error('Geländeansicht prüfen.');
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(request.source?.revision!==source.revision||request.source?.fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      const value=await atlasRegions.liveTerrain(source,q,request.base),current=store.atlasRegionSource(token);
+      // A completed, versioned snapshot remains useful during later Atlas writes.
+      // Unversioned journal changes, workspace/preview changes and rollbacks fail closed.
+      if(!terrainSnapshotStillValid(source,current))throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      return value;
+    });
+    handle('atlas:terrain-color',async(token:string,q:import('../src/app/terrain-color').TerrainColorRequest)=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainColor(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      const value=await atlasRegions.terrainColor(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
+    });
+    handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
+      const reader=consumer==='view'?atlasRegions:atlasExportRegions,source=store.atlasRegionSource(token,reader.cursor);
+      if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      const value=await reader.terrain(source,q);if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');if(!value.draft)store.rememberTerrainGrid(token,source.fence,value.grid);return value;
+    });
     handle('atlas:mask-region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox)=>store.atlasMaskRegion(token,box));
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
     handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
     handle('atlas:drawing-commit',(command:import('../src/app/drawing-contracts').DrawingCommand)=>store.atlasDrawingCommit(command));
-    handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>c.action?.kind==='graph-accept'?withGraphSourceReadBarrier(()=>store.executeAtlasCommit(c)):store.executeAtlasCommit(c));
+    handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{
+      if(c.action?.kind==='graph-accept')return withGraphSourceReadBarrier(()=>store.executeAtlasCommit(c));
+      if(c.action?.kind==='landscape-height-stroke'){
+        const source=store.terrainStrokeSource(c,atlasRegions.cursor);
+        if(source){const prepared=await atlasRegions.prepareTerrainStroke(source,c.action.stroke);return store.executeAtlasCommit(c,prepared);}
+      }
+      return store.executeAtlasCommit(c);
+    });
     handle('campaign:workspace-initial',(token:string)=>store.workspaceInitial(token));
     handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancel();});
     handle('atlas:geometry-region',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,consumer:'view'|'export'='view')=>{

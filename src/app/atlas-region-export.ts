@@ -1,10 +1,11 @@
+import {atlasWorkplaneData} from './atlas-workplane';
 import { atlasPaint as landscapeNode } from "./atlas-paint";
 import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { LandscapeRecord, LandscapeBox } from "./atlas-landscape";
 import { drawLandscape, drawLandscapeGrid } from "./atlas-landscape-view";
 import { atlasFrame, frameMatrix } from "./campaign-atlas-model";
-import { cityPaint } from "./city-model";
+import { cityObjectsPaint } from "./city-model";
 import { centerInRoom } from "./dungeon-model";
 import { elementPaint, roomFacePaint } from "./drawing-model";
 export function atlasRegionPaint(
@@ -29,7 +30,7 @@ export function atlasRegionPaint(
     landscapeNode("rect", {
       width: box.width,
       height: box.height,
-      style: { fill: "#7fa8bd" },
+      style: { fill: "#7fa8bd" },data:{spatialGround:"true"},
     }),
   );
   drawLandscape(
@@ -64,17 +65,8 @@ export function atlasRegionPaint(
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
       });
-    if (city.header.width / mpp < 20) {
-      g.append(
-        landscapeNode("circle", {
-          x: city.header.width / 2,
-          y: city.header.height / 2,
-          radius: mpp * 3,
-          style: { fill: "#5b4338" },
-        }),
-      );
-    } else {
-      const cityScene = cityPaint(city,!options.automaticLabels,mpp);
+    {
+      const cityScene = cityObjectsPaint(city,!options.automaticLabels,mpp);
       for (const element of cityScene.children) {
         const id = element.data.cityUnit,
           interior = id && regionValue(data.region?.interiors, id);
@@ -83,7 +75,7 @@ export function atlasRegionPaint(
           (!options.roofs || mpp <= 0.4 || interior === data.region?.scopeId)
         )
           for (const polygon of element.children.filter(
-            (n) => n.kind === "polygon",
+            (n) => ["polygon","polygons"].includes(n.kind),
           )) {
             polygon.style.fill = null;
             if (
@@ -113,6 +105,7 @@ export function atlasRegionPaint(
     const f = atlasFrame(data, b),
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
+        data:atlasWorkplaneData({scopeId:b.ownerId,elevationM:data.geometry.floors.find(f=>f.scopeId===b.ownerId&&f.id===floor)?.elevation??0,anchor:{x:f.x,y:f.y}}),
       });
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,

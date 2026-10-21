@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+ok 1 - navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+  ---
+  duration_ms: 3.857043
+  type: 'test'
+  ...
+# Subtest: coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+ok 2 - coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+  ---
+  duration_ms: 434.617507
+  type: 'test'
+  ...
+# Subtest: yielding raster batches reproduce the complete projection byte for byte
+ok 3 - yielding raster batches reproduce the complete projection byte for byte
+  ---
+  duration_ms: 691.749505
+  type: 'test'
+  ...
+# Subtest: live frames use changed interpolation support and reject a source overtaken before snapshot creation
+ok 4 - live frames use changed interpolation support and reject a source overtaken before snapshot creation
+  ---
+  duration_ms: 1873.858474
+  type: 'test'
+  ...
+# Subtest: terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+ok 5 - terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+  ---
+  duration_ms: 795.64316
+  type: 'test'
+  ...
+# Subtest: selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+ok 6 - selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+  ---
+  duration_ms: 454.525533
+  type: 'test'
+  ...
+# Subtest: a commit between slices rejects the old projection and fresh output agrees with a cold worker
+ok 7 - a commit between slices rejects the old projection and fresh output agrees with a cold worker
+  ---
+  duration_ms: 757.263828
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6225.70347

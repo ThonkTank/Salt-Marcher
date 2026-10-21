@@ -1,5 +1,7 @@
 # Atlasdarstellung, Auswahl und Bildausgabe
 
+Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Der Anschluss nutzt die vorhandenen Atlaswerkzeuge; die folgenden Teilbelege ersetzen noch keine vollständige Produktabnahme.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
@@ -22,21 +24,192 @@ Die aufgeführten Prüfwege sind keine neue Ausführung oder Produktabnahme.
 
 ## Draufsicht und Geländeprojektion
 
-Die gemeinsame Draufsicht zeichnet numerische Kommandos direkt auf Canvas2D.
-Kartenobjekte erzeugen weder verbundene SVG-/DOM-Elemente noch einen versteckten
-zweiten Kartenhost. Fachfelder und Status bleiben DOM-Controls. `cityPaint` und
-`elementPaint` erzeugen passive Geometrie; historische SVG-Schnittstellen behalten
-ihren Serializer samt Maskierung am Ausgaberand. Es entsteht kein zweites
-Autorenmodell oder Datenformat.
+Der normale Atlas veröffentlicht seine vorhandenen numerischen `AtlasPaint`-Kommandos über `AtlasPresentation`. `AtlasCanvas` bleibt Besitzer von Navigation, Szenengeneration, Bilddecodierung und Trefferfreigabe. Seine Eingaben verwenden die Weltpunkte und Treffer des aktiven Präsentationsadapters. Neigen, Drehen, senkrechtes Ausrichten und Werkzeugwechsel behalten denselben WebGL-Renderer; Canvas2D zeichnet darüber nur Bildschirmhilfen wie den Maßstab. Andere bestehende Canvasverbraucher und die Rasterausgabe verwenden denselben unveränderten Zeichenvertrag.
 
-**Atlas kippen** verwendet Three.js/WebGL mit orthografischer Kamera. Der
-Vorschauworker leitet Höhennetz und Farbtextur aus Bereichsdaten ab; Eingabe,
-Kamerabox, Auswahl, Landpinsel und History bleiben mit dem Atlas verbunden.
-Dreieckstreffer werden in Weltmeter zurückgeführt; Überhöhung ändert keine
-Autorenhöhe. Main/SQLite bleiben kanonisch. Beim Verlassen werden Worker,
-Geometrien und Texturen freigegeben. Aktive Wissensmasken und der vorhandene
-Bildexport wechseln zur Draufsicht. Perspektivische Ausgabe und weitere
-Geländelieferungen gehören zur [Relief-Roadmap](../plans/maps/terrain-relief.md).
+Die GPU-Anbindung hat getrennte Zuständigkeiten:
+
+- `atlas-spatial-geometry.ts`: numerische Flächen/Pfade, Löcher und gestrichelte Linien; nur gespeicherte Symbolpfade werden als SVG-Literal gelesen.
+- `atlas-spatial-surface.ts`: Geländeanpassung und lokale, kameranahe Koordinaten.
+- `atlas-spatial-label.ts` und `atlas-spatial-color.ts`: Textressourcen und CSS-Farbtransparenz. `atlas-spatial-labels.ts` hält Kartenname-Texturen und ordnet die begrenzten Kandidaten aus `AtlasPaint.mapLabels` mit der aktuellen Kamera an. `MapLabelLayout` teilt Priorität und Kollisionsregeln mit der flachen Ausgabe.
+- `atlas-spatial-vegetation.ts`: instanzierter Bewuchs und gefilterte Auswahl mit Verdeckung durch Gelände. `vegetation-lod.ts` teilt verschachtelte Kandidaten und Skalenregeln zwischen Erzeugung, Darstellung und Fallback; `vegetation-display.ts` verwendet die aktuelle Kameratiefe für Kronenbreite, Ausblenden und Treffer. Kamerafahrten verändern keine Instanzmatrizen. [Native und GPU-Belege](../reference/atlas-vegetation-camera-20261021/README.md).
+- `atlas-spatial-scene.ts`: GPU-Ressourcen, Zeichenreihenfolge und ursprüngliche Auswahl-IDs.
+- `terrain-spatial-view.ts`: gemeinsame Kamera, Gelände, Trassen und Atlasobjekte; `terrain-spatial-ui.ts`: Kameraeinstellungen und gebündelte Terrainaufträge.
+
+`terrain-route-display.ts` ergänzt den maßhaltigen Straßen-/Flussbändern eine schmale Bildschirmdarstellung. Gemeinsame Schwellen aus `atlas-scale-policy.ts` steuern weiche Sichtbarkeit; die aktuelle Kameraprojektion steuert das Material auf jeder Zeichnung. Sichtbarkeit und Trefferauswahl verwenden dieselbe Regel. `terrain-route-clip.ts` begrenzt die Unterteilung auf den geladenen Bereich, ohne Streckenparameter oder Autorenpunkte zu verändern. [Native Zoom- und GPU-Prüfung](../reference/atlas-route-scale-20261021/README.md); zuständige Regression: `tests/terrain-route-display.test.mjs`.
+
+Die bestehenden Stadt-, Raum- und Landschaftswerkzeuge bleiben die Autorenbesitzer. Weder Zeichenkommandos noch GPU-Treffer erhalten Schreibautorität; Main/SQLite validieren und speichern weiterhin. Der frühere Landschafts-3D-Dialog und sein eigener Renderer sind entfernt. Neigen und Drehen stehen ausschließlich im normalen Ansichtsmenü. Auch die Straßen-/Flussplanung besitzt keine Kartenfläche oder Kamera mehr: `terrain-route-ui.ts` hält die Bedienelemente und Entwürfe in der Atlas-Seitenleiste. Punkte, Vorschau, Geländeform, Navigation und History verwenden den normalen Atlas. Nur das Höhenprofil bleibt ein kleines Diagramm. `atlas-spatial-vegetation.ts` liefert instanzierte Bäume und Felsen in dieselbe Szene, ohne eigenen Renderer. Die alten isolierten Bildfixtures verwenden ebenfalls den Produktrenderer.
+
+**Städte haben keine Papierfläche im Atlas.** `cityObjectsPaint` liefert Straßen, Häuser und weitere angelegte Objekte ohne rechteckigen Hintergrund oder lokalen Canvasrahmen. Hauptkarte und Atlasexport verwenden diesen gemeinsamen Objektaufbau; auch der dichte Bereichsraster zeichnet kein `city-paper` mehr. Nur der historische eigenständige Dokumentserializer besitzt noch seine Papierausgabe. Alte Bindings dienen vorerst ausschließlich der Koordinatenumrechnung vorhandener Daten. Sie erzeugen weder eine Stadtidentität auf der Karte noch Marker, Namen oder Sichtbarkeitsgrenzen. Gemalte Gebiete sind unabhängige Overlays; sie besitzen keine enthaltenen Objekte. Leere Zeichnungskontexte erzeugen ebenfalls keine Marker, Namen oder Kartentreffer. Ihr Fokus und ihre Koordinaten bleiben zum Zeichnen erreichbar; fehlende Geometrie wird nicht als Null-Rechteck ausgegeben.
+
+Die [Terrain-Zusammenführung](../reference/atlas-terrain-reconciliation-20261021/README.md) verbindet diese Kamera mit der gestreamten Projektion im Readonly-Worker. Normale Navigation überträgt ein begrenztes Höhen-/Farbfeld, keine vollständigen Autorenrecords. Abgeleitete Blöcke werden bei lokalen Änderungen invalidiert. Additive Höhenbänder erhalten kleine Geländeformen bei großen Pinseloperationen. Die [Live-Anzeige](../reference/atlas-live-main-camera-20261021/README.md) verwendet eine feste Trefferfläche pro Pinselzug und bestätigte Teilstände mit partiellen GPU-Uploads. Erst der Abschluss synchronisiert den ganzen Atlasbereich. Messkästchen bleiben im Bildschirmraum; Höhenprofile lesen über Main von derselben Kartenfläche. Der [Repository-Entwicklungsstart](../reference/atlas-objects-main-20261021/repository-start.md) verwendet jetzt ebenfalls diese Hauptkamera.
+
+`atlas-workplane.ts` verbindet die Geschosshöhe und den Weltanker mit Fundament-/Geländehöhen. Innenraumflächen, Autorenkonturen, Maßprojektion, Raumnamen und Zeigerstrahlen verwenden denselben Bezug. Geländewerkzeuge bleiben an der Geländeoberfläche. [Prüfungen und offene Grenzen](../reference/atlas-workplanes-20261021/README.md).
+
+`atlas-camera.ts` definiert die Meterprojektion für Kamera, Arbeitsebenen und kanonische Pinselverdeckung. Poseänderungen bewegen vorhandene GPU-Puffer unmittelbar. `terrain-spatial-source.ts` hält einen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Ältere orthografische Pinselschnappschüsse bleiben lesbar; Überhöhung verändert keine gespeicherten Meterwerte.
+
+`terrain-grid-layout.ts` verteilt die Knoten eines gemeinsamen Geländenetzes:
+Ein optionales `TerrainView.refinement` erhält drei Viertel der Intervalle je
+Achse, die äußeren Ränder den Rest. Die Hauptkamera verwendet 257×257 Knoten
+mit einer Verfeinerung über der anderthalbfachen Ausschnittsbreite. Alle Bänder
+teilen ihre Randknoten; es gibt keine überlappenden Geländeebenen.
+`terrain-ray.ts` schneidet nur die durchquerten Rasterzellen statt alle Dreiecke
+bei jeder Zeigerbewegung. Das Ergebnis bleibt der erste sichtbare Fronttreffer;
+Neigung, Überhöhung und die eingefrorene Pinsel-Trefferfläche bleiben wirksam. Renderer,
+Dreieckshöhen, kanonische Sichtprüfung, Spieler-Höhenprojektion und Main-Cache
+verwenden dasselbe Layout. Alte Views ohne Verfeinerung bleiben gleichmäßig.
+Der Readonly-Worker sampelt bis zu neun reguläre Blöcke bei kompakten Rändern
+und bis zu 81 bei großer Fernabdeckung. Die Zahl der Knoten bleibt gleich;
+pro äußerem Rand wachsen bis zu vier Bänder nach außen, damit nahe Übergänge
+keine großen Dreiecke erhalten. Lokale Invalidierung und eingefrorene
+Trefferflächen während Pinselzügen bleiben erhalten.
+
+`terrain-coverage.ts` bestimmt die quadratische, drehungsunabhängige Abdeckung
+aus der Neigung (3-, 6-, 10-, 24- oder 64-fache längste Ausschnittsseite).
+Stärkeres Neigen fordert eine größere Quelle an; die Kamera bewegt vorhandene
+Daten sofort. Ab 60° blendet ein kontinuierlicher atmosphärischer Horizont
+fernes Gelände aus. Renderer, Beschriftungsverdeckung, Treffer und kanonische
+Pinselprüfung verwenden dieselbe Grenze, auch bei gekachelter Bildausgabe.
+Himmel und Meer haben unterschiedliche Farben. Straßen und Flüsse werden
+entlang dieser Rasterbänder adaptiv abgetastet; nahe Trassen erhalten Vorrang
+im begrenzten Vektorbudget. [Abdeckung und native Prüfungen](../reference/atlas-terrain-coverage-20261021/README.md)
+halten die Teilverbesserung und verbleibende Ladegrenzen fest.
+
+[Fokusnetz und Trefferprüfung](../reference/atlas-focus-grid-20261021/README.md) dokumentieren den nativen Entwicklungsstart, Regressionsfälle und begrenzte Messungen.
+
+Die Hauptkamera veröffentlicht zuerst die vollständige Geometrie mit höchstens
+128×128 Farbpixeln. Danach lädt `TerrainDetailTiles` weltfest ausgerichtete
+256×256-Farbkacheln von der Mitte nach außen und veröffentlicht jede fertige
+Kachel über `TerrainSpatialView.setDetail`. `terrain-texture-upload.ts` überträgt
+bestätigte Rechtecke mit jeweils einer GPU-Kopie und vollständige Bilder mit
+einem Upload; Boden, Detail und Live-Pinsel teilen diesen Weg. Die CPU-Quelle
+teilt die vorhandenen Pixel und belegt keine zusätzliche GPU-Textur. Das verändert weder Höhen noch
+Treffer, Objekte oder deren GPU-Puffer. Zuletzt wird die weite Kontexttextur auf
+höchstens 512×512 Pixel verfeinert. `terrain-navigation-plan.ts` bleibt Besitzer
+der beiden Geometrie-/Kontextanfragen; die feine Farbe dazwischen verwendet
+`atlas:terrain-color` und den gemeinsamen Rasterkern in `terrain-color-raster.ts`.
+Live-Pinsel und perspektivische Ausgabe verwenden weiterhin vollständige
+Projektionen mit ihrer jeweiligen Detailauflösung.
+
+Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
+unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
+Randkacheln entstehen höchstens 9×9 Kacheln beziehungsweise 2304×2304 Pixel.
+Ein 32-MiB-LRU hält abgeleitete Kachelpixel. Zusammengesetzte aktuelle und
+gegebenenfalls vorherige Detailbilder sowie GPU-Texturen benötigen zusätzlichen
+Speicher; die LRU-Grenze ist keine Gesamt-RAM-Garantie. Identität umfasst
+Kampagnentoken, Revision, Quellenfence und die Auswahl rasterisierter Trassen.
+Pan und kleine Zoomänderungen nutzen passende Kacheln wieder; Quellenänderungen
+verwerfen den Renderer-Cache. Die örtliche Backend-Invalidierung bleibt erhalten.
+
+`TerrainDetailMaterial` mischt fehlende Kacheln mit der Übersicht. Eine kleine
+Verfügbarkeitsmaske blendet Ränder zu noch fehlenden Nachbarn weich ein; bei
+vollständiger Belegung entfällt diese zusätzliche Mischung. Vorhandene Farben
+bleiben bei Navigation an ihren Weltkoordinaten erhalten. Antworten nach Quellen-
+oder Gestenwechsel dürfen weder malen noch den Cache füllen. Unterbrochene
+Verfeinerung setzt nach der Geste fort. Ein Fehler nur der Detailstufe behält
+Übersicht und fertige Kacheln; der ausdrückliche Wiederanlauf nutzt diese erneut.
+
+Die [Prüfung der Farbkacheln](../reference/atlas-color-tiles-20261021/README.md)
+trennt frühe erste Details, vollständige Ladezeit, Bildübergänge und Regressionen.
+Diese Farbverteilung ist ein Teilschritt; weltweites Geometrie-LOD und die
+Leistungsziele sind damit nicht qualifiziert.
+Die [Warteschlangenprüfung](../reference/atlas-scheduling-20261021/README.md) hält die Auswahlwartezeit und die höheren kalten Rasterkosten getrennt fest.
+`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen.
+Die eigenständigen 256er-Farbkacheln verwenden 128er-Pakete, um den wiederholt
+abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
+zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
+und der Reliefschattierung frei. `LandscapeRasterizer.paintColorSteps` unterbricht
+auch Pigmentmasken und kumulative Farbkomposition.
+[landscape-pigment-coverage.ts](../../src/app/landscape-pigment-coverage.ts)
+teilt Weltachsen, quadratische Achsabstände und Texturanteile zwischen
+überlappenden Abdrücken eines Strichs. Float64-Weltkoordinaten und die bisherige
+Float32-Akkumulation erhalten auch entfernte Texturen und Radierer.
+[Pixelorakel und gepaarte Pinselprüfung](../reference/atlas-brush-coverage-20261021/README.md)
+belegen diesen Kostenschritt. `landscape-record-stream.ts`
+liest dazu begrenzte Seiten aus einem partiellen Farbindex und anschließend
+jeweils einen Payload mit abgeschlossener SQL-Abfrage. Kein SQL-Iterator
+überlebt einen Haltepunkt. Füllflächen benötigen keine Pinselstempel; konstante
+Pigmentfarben bleiben außerhalb des Maskenpuffers. Deckende, ungefilterte
+Polygonabschnitte setzen ihre RGBA-Bytes direkt; Transparenz und Land-/Wasserfilter
+behalten die bisherige Komposition. [Randfallprüfung und gepaarte Farbmessung](../reference/atlas-opaque-spans-20261021/README.md)
+belegen pixelgleiche Ausgabe mit weniger Rasterarbeit.
+[Pixelorakel, Worker-Vergleich und native Gegenprobe](../reference/atlas-pigment-scheduling-20261021/README.md)
+trennen geringere Auswahlwartezeit von weiterhin hoher vollständiger Ladezeit.
+Höhenstufen verwenden wiederverwendete Achsenkoordinaten; unsichtbare Ränder
+liefern weiterhin Ableitungen und Küstenabstände, erhalten aber keine unnötige
+Schattierung. [Pixelvergleich und gepaarte Worker-/UI-Prüfung](../reference/atlas-color-cost-20261021/README.md)
+belegen diesen begrenzten Kostenschritt. Der Worker
+beendet dort seinen WAL-Schnappschuss und prüft die Revision vor jeder Fortsetzung.
+Auswahl kann zwischen diesen Schritten laufen. Kamera-, Live- und Autorenaufträge
+ersetzen ausstehende normale Detailarbeit; brauchbare Cacheteile bleiben erhalten.
+Die UI behandelt diese Verdrängung als erwarteten Ablauf und fordert bei Bedarf
+die fehlenden Details nach. Nach einer veralteten Revision sperrt sie Wiederholungen,
+bis das Nachladen der Region einen aktuellen Stand bestätigt. Überholte Nachladeaufträge
+geben diese Sperre erst mit dem bestätigten Nachfolger frei. Es bleibt höchstens
+eine pausierte Projektion im Worker.
+Synchrone Live-Frames, Geometrie-Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
+Zeitgrenze. Bei starker Neigung kann die begrenzte Abdeckung am Horizont weiterhin
+sichtbar werden.
+
+Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2D. Weitere Neuzeichnungen starten den gescheiterten Renderer nicht erneut. „Atlaskamera erneut laden“ im Ansichtsmenü ist der ausdrückliche Wiederanlauf. Laufende Raum-, Stadt-, Landschafts- und Bereichsgesten sperren Poseänderungen.
+
+**Offene Grenzen:** Der neue Anschluss überträgt zunächst vorhandene Flächen, Symbole, Texte und Griffe auf die Terrainoberfläche. Gebäudevolumen aus Raumgrundrissen und perspektivische Bildausgabe sind [angeschlossen und lokal geprüft](../reference/atlas-objects-main-20261021/README.md). Vollständige Geschoss-Arbeitsebenen, semantische Detailstufen und Maskierung bleiben offen. Bei aktiver Wissensmaske bleibt der qualifizierte gefilterte Canvasweg maßgeblich. Bildexport verwendet denselben Kamerarenderer; die laufende Spieleranzeige ist noch separat zu qualifizieren. Die vollständigen Abnahmekriterien bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
+
+### Ein Boden pro Darstellung
+
+Der Hauptatlas und die perspektivische GM-Ausgabe fordern `terrainRaster=false`
+an. Der Readonly-Reader überspringt dann Boden-PNGs, die die GPU bereits aus der
+Terrainprojektion zeichnet. Dichte Landschaftsobjekte bleiben als transparente
+`LandscapeRaster.content=objects` erhalten und werden über dem Gelände gezeichnet.
+Die Rasterart gehört zum Cache-Schlüssel und zum bestätigten Regionenvergleich.
+Grafikverlust lädt vollständige Bodenbilder für Canvas nach; ausdrücklicher
+Wiederanlauf wechselt zurück. Wahrnehmung und öffentliche Ausgabe behalten den
+vollständigen Bodenpfad. [Messung und native Gegenproben](../reference/atlas-ground-raster-20261021/README.md)
+trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarbe.
+
+### Farbkacheln nach Terrainänderungen
+
+`TerrainChangeHistory` hält im Readonly-Worker höchstens 64 Quellenstände und 2048 Änderungsrechtecke. Eine Projektion kann die genaue Revision und Fence ihrer bisherigen Farbe angeben. Der Worker bestätigt alle seitdem betroffenen Flächen, auch wenn zwischenzeitliche Regionen- oder Live-Abfragen seinen normalen Cursor weitergeschaltet haben. Fehlende Historie, Neustart und globale Einstellungen verlangen eine vollständige Erneuerung.
+
+`TerrainDetailTiles` besitzt Cache, Quellenkennung und das gehaltene Detailbild. Nur eine bestätigte Änderungskette innerhalb derselben Kampagne und Trassendarstellung erlaubt die Übernahme. Betroffene Kacheln einschließlich des gemeinsamen Rasterhalos werden entfernt und im gehaltenen Bild transparent; unveränderte Kacheln bleiben schon unter dem ersten Übersichtsschritt sichtbar. Live-Frames verwenden denselben Besitzer und füllen die entstandenen Lücken mit ihrer frisch bestätigten Pinseltextur. Die gröbere Pinseltextur wird dabei linear eingepasst; ihre Pixel erzeugen keine vergrößerten Quadrate. Diese Zwischenfarbe ersetzt keine feine Kachel im Cache. Alte Antworten dürfen den übernommenen Cache weder füllen noch zeichnen. Beim Loslassen endet zuerst die Schreibspur; die Anzeigespur übernimmt noch ihren letzten bestätigten Nachfolger, bevor sie geschlossen wird. Atlaswechsel widerruft sie weiterhin sofort. Ohne aktuelle Pinseltextur ersetzt die Übersicht geänderte Pixel, bis ihre feinen Kacheln eintreffen.
+
+[Regressionen](../../tests/terrain-color-retention.test.mjs), [Worker mit echten Änderungen und Undo](../../tests/terrain-projection-service.test.mjs) und [Präsentationsfolge](../../tests/terrain-spatial-source.test.mjs) prüfen diese Grenzen. Die übrige Leistungs- und Großweltqualifikation bleibt offen.
+
+### Küstenzeichnung
+
+`terrain-coast.ts` zeichnet nach der Reliefschattierung eine schmale Kontur aus den kanonischen Wasserentscheidungen des gemeinsamen zweifachen Rasters. Es hält kein zusätzliches Distanzfeld und verändert weder Höhen noch Wasserflächen. Nur Ausgabesamples werden gefärbt; deren Halo liefert die Nachbarn für nahtlose Einzelkacheln. Die Schleife gibt zwischen Zeilenpaketen den Worker frei. [Stilvergleich und Hauptatlas](../reference/atlas-coast-ink-20261021/README.md) halten den sichtbaren Gewinn und die verbleibende Vergrößerung grober Farbtexturen getrennt fest. Die Konturbreite ist bisher an Rasterpixel gebunden, nicht unter jeder Perspektive an logische Bildschirmpixel.
+
+### Begrenzte Rasterabdeckung
+
+Der Canvas-/Bereichsraster verwendet weiterhin höchstens vier Weltkacheln.
+`landscapeRasterSlice` schneidet jede auf die angeforderte Abdeckung zu,
+auf 128-Pixel-Blöcke derselben Weltauflösung gerundet. Der gemeinsame
+Rasterhalo bleibt erhalten; Bilddaten und Cache-Invalidierung kennen
+Breite und Höhe separat. Kleine Panbewegungen innerhalb derselben
+Blockgrenzen verwenden dieselben Ausschnitte. Die SQL-Sampleauswahl
+berücksichtigt rechteckige Raster auch bei sehr dünnen Farbflächen.
+
+Völlig ebene Nachbarschaften benötigen weder Licht- noch Konturrechnung;
+vorhandene Farben bleiben unverändert. Die Höhenanalyse wird weiterhin
+berechnet. Diese Entlastung gilt auch für die normalen GPU-Farbtiles.
+[Pixelvergleich, Messung und native Wiederherstellung](../reference/atlas-raster-slices-20261021/README.md)
+belegen die Teilverbesserung; vollständige Lade-/Navigationsziele bleiben offen.
+
+### Höhenabtastung ohne wiederholtes Einsammeln
+
+`terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Nur Zeilen mit Lücken werden mit dem geerbten Wert am jeweiligen Abfragepunkt neu ausgewertet; vollständige Nachbarzeilen bleiben auch in gemischten Zellen wiederverwendbar. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.
+
+`terrain-interpolation.ts` besitzt die gemeinsame begrenzte kubische Rekonstruktion für `TerrainSampler` und Feldstream. Die Kurve erhält Knoten, plateauförmige Extrema und affine Innenbereiche. Fehlende absolute Knoten erben den gröberen Wert am Abfragepunkt; additive Lücken bleiben null. Die Reihenfolge ist immer x, dann y. Geometrie, Farbe, Wasserentscheidung und kanonische Abfragen verwenden denselben Kernel; sichtbare Treffer bleiben an die tatsächlich gezeichneten Netzdreiecke gebunden.
+
+Ein Höhenknoten beeinflusst zwei Zellen in jeder Richtung. `bounds` liefert daher die abgeleitete 67-Pixel-Suchfläche; das gespeicherte 65-Pixel-Autorenpolygon und die Höhenwerte bleiben erhalten. Präzise Invalidierung und die geglättete Basispyramide berücksichtigen dieselbe Nachbarschaft. Schema 54 erweitert beim Öffnen alte Suchgrenzen und History-Zeilen atomar. Nur bekannte Fingerabdrücke werden angepasst; bestehende Undo-Konflikte bleiben Konflikte. Paketvorschau liest das Original, Übernahme migriert die temporäre Kopie. [Numerik, Migration und Anschlussprüfung](../reference/atlas-height-reconstruction-20261021/README.md) dokumentieren die Änderung.
+
+
+### Höhenlinien auf dem vorhandenen Geländenetz
+
+`terrain-contours.ts` zeichnet Höhenlinien im GPU-Material der gemeinsamen Atlasoberfläche. Standard ist „Automatisch“ (`-1`); `0` schaltet sie aus, positive Werte wählen feste Meterintervalle. Im Automatikmodus werden ineinander enthaltene Zweierintervalle ab einem Meter anhand der lokalen Bildschirmableitung überblendet. Linien bleiben auf ihren ursprünglichen Höhen, auch bei Neigung und unterschiedlicher Entfernung zur Kamera. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
+
+Die Dichte richtet sich nach logischen Anzeigepixeln: Zielabstand 24 px, die verschachtelten Intervalle liegen je nach Überblendung etwa 12–24 px auseinander. Das Material erhält die tatsächliche Renderer-Pixeldichte; der CPU-Rasterkern berücksichtigt seine zweifache Abtastdichte je Achse. Strichbreiten und Deckkräfte stehen gemeinsam in `terrain-contour-style.ts`. Kantenglättung bleibt auf physische Pixel bezogen. Die Ausgabe mit eigener Auflösung verwendet Pixeldichte 1. [Lesbarkeitsvergleich und Hauptatlas bei 100/200 %](../reference/atlas-contour-readability-20261021/README.md) prüfen die Auswahl und den Anschluss. Grobe kanonische Höhen erzeugen weiterhin eckige Konturen; ihre Geometrie wird hier nicht geglättet.
+
+Intervallwechsel aktualisieren das Material unmittelbar, ohne Bereichsread, Geländedaten oder Textur neu aufzubauen. Verspätete Terrainantworten erhalten die aktuelle Anzeigeeinstellung. Perspektivische Bildausgabe verwendet dasselbe Material; View-Offsets erhalten über Kachelgrenzen denselben Pixelmaßstab. Der Canvas2D-Fallback verwendet dieselbe Intervall- und Überblendungsregel aus `terrain-contour-style.ts`. Die Linien folgen dem angezeigten Dreiecksnetz, dessen begrenzte Auflösung bei weiterem Zoom durch LOD verbessert werden muss. Die native Pixelprobe liegt in `tools/terrain-contour-probe.mjs`; der [Repository-Startnachweis](../reference/atlas-contour-zoom-20261021/README.md) prüft automatische Intervalle, feste Linien und Exportkachelgrenzen.
 
 ## Welcher Frame darf Eingaben annehmen?
 

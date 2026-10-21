@@ -1,4 +1,6 @@
 import type { LandscapeRecord } from "./atlas-landscape";
+export const MAP_LINE_MIN_PIXELS=1.4;
+export const mapLineThreshold=(kind:'road'|'river',minor=false)=>minor?.4:kind==='river'?.12:.18;
 /** Display widths are screen based; canonical dimensions and hit tests stay exact. */
 export function mapLineVisible(
   kind: "road" | "river",
@@ -7,11 +9,11 @@ export function mapLineVisible(
   minor = false,
 ) {
   return (
-    mpp <= 0 || width / mpp >= (minor ? 0.4 : kind === "river" ? 0.12 : 0.18)
+    mpp <= 0 || width / mpp >= mapLineThreshold(kind,minor)
   );
 }
 export function mapLineWidth(width: number, mpp: number) {
-  return mpp <= 0 ? width : Math.max(width, mpp * 1.4);
+  return mpp <= 0 ? width : Math.max(width, mpp * MAP_LINE_MIN_PIXELS);
 }
 export function mapRecordVisible(r: LandscapeRecord, mpp: number) {
   return r.kind === "road" || r.kind === "river"

@@ -632,7 +632,7 @@ test('changing source with no Canvas context preserves a visible working retry',
 test('a cropped room keeps its complete key centered, independently of polygon winding and export tile boundaries',()=>{
  const outer=[{x:12,y:6},{x:0,y:6},{x:0,y:0},{x:12,y:0}],options={grid:false,level:0,references:false,floorId:'ground',roofs:false};
  for(const points of [outer,[...outer].reverse()]){
-  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[{id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:points,holes:[]}]}]},geometry:{drawing:{elements:[]}}};
+  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[{id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:points,holes:[]}]}]},geometry:{floors:[],drawing:{elements:[]}}};
   for(const box of [{x:-1,y:-1,width:14,height:8},{x:5,y:-1,width:7,height:8}]){
    const scene=atlasRegionPaint(data,[],box,512,new Map(),options),labels=scene.children.flatMap(n=>n.children).filter(n=>n.kind==='text');
    assert.equal(labels.length,1);assert.equal(labels[0].text,'1 · Zollhaus');
@@ -686,10 +686,11 @@ test('loss during a draw cannot publish a successful frame before the loss event
 test('detailed Atlas and PNG surfaces use the saved room colors and the same canonical contour',()=>{
  const room={id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:12,y:0},{x:12,y:6},{x:0,y:6}],holes:[]}]},style={id:'r',fill:'#3f7c9e',wall:'#8b2e4b'};
  for(const styles of [[],[style]])for(const selected of [false,true]){
-  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[room]},geometry:{drawing:{elements:[],styles}}};
+  const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[room]},geometry:{floors:[],drawing:{elements:[],styles}}};
   const live=atlasPaint('group'),ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,selection:selected?{id:'r'}:null,label(){}});ui.drawRoomFace(live,room,0.1);
   const output=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),{grid:false,level:0,references:false,floorId:'ground',roofs:false}),face=output.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
   assert.deepEqual(live.children[0].geometry.polygons,room.polygons);assert.deepEqual(face.geometry.polygons,room.polygons);
+  assert.deepEqual(output.children.find(n=>n.data.spatialScope==='local').data,{spatialScope:'local',spatialFloor:'0',spatialAnchorX:'0',spatialAnchorY:'0'});
   assert.equal(live.children[0].style.fill,styles.length?style.fill:selected?'#e8d8ac':'#e2dac4');assert.equal(face.style.fill,styles.length?style.fill:'#e2dac4');
   assert.equal(live.children[0].style.stroke,styles.length?style.wall:'#3d4b45');assert.equal(face.style.stroke,live.children[0].style.stroke);assert.equal(face.style.lineWidth,live.children[0].style.lineWidth);
  }
@@ -878,4 +879,30 @@ test('an editable campaign export retires before flushing inputs in a new activa
 test('a current editable campaign export reports failure and releases both output controls',async t=>{
  const f=editableExportFixture(t),saving=f.ui.saveEditableCampaign();await f.until(()=>f.held.length===1);f.held.shift()({ok:false,error:'No disk space'});await saving;
  assert.equal(f.get('atlas-output-save-status').textContent,'Sicherung fehlgeschlagen: No disk space');assert.deepEqual(f.errors,['No disk space']);assert.equal(f.get('atlas-export-png').disabled,false);assert.equal(f.get('atlas-output-save-campaign').disabled,false);
+});
+
+test("spatial presentation shares normal input, scene publication, HUD and pan without a second navigation handler",async t=>{
+ const f=fixture(t),calls=[],spatial={ready:true,
+  paint:(scene,origin)=>calls.push({kind:'paint',scene,origin}),
+  overlay:scene=>calls.push({kind:'overlay',scene}),
+  point:()=>({x:17,y:23}),hitAt:(_e,keys)=>({data:{id:'spatial',key:keys[0]}}),
+  navigationPoint:e=>({x:f.canvas.view.x+e.clientY*2,y:f.canvas.view.y-e.clientX*2})};
+ f.canvas.options.presentation=()=>spatial;
+ f.canvas.options.overlay=root=>{root.append(atlasPaint('rect',{width:10,height:10,hud:true,style:{fill:'green'}}));};
+ f.canvas.render(root=>root.append(rect('world')));await settle();
+ assert.equal(calls[0].scene.commands[0].node.data.id,'world');assert(calls.some(c=>c.kind==='overlay'));
+ assert.deepEqual(f.canvas.point({clientX:9,clientY:8}),{x:17,y:23});
+ assert.deepEqual(f.canvas.hitAt({clientX:9,clientY:8},['atlasVertex']),{data:{id:'spatial',key:'atlasVertex'}});
+ const before=f.canvas.view;f.pointer('pointerdown',100,100);f.pointer('pointermove',120,130);f.pointer('pointerup',120,130);f.flush();
+ assert.equal(f.canvas.view.x,before.x-60);assert.equal(f.canvas.view.y,before.y+40);assert.equal(f.changes.length,1);
+ spatial.ready=false;assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:9,clientY:8}),null);
+});
+
+
+test('initial spatial read and graphics fallback require different confirmed region sources',t=>{
+ const f=fixture(t);for(const id of ['atlas-slice-enabled','atlas-roofs','atlas-perception']){const input=f.document.createElement('input');input.id=id;input.checked=false;f.document.body.append(input);}
+ const box={x:0,y:0,width:40,height:20},ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{svg:f.root,camera:{view:box,destination:box},scopeId:null,floorId:'ground',landscape:{contours:()=>-1},spatial:{active:false,needsTerrainRaster:false}});
+ const first=ui.regionQuery();assert.equal(first.terrainRaster,false,'do not wait for GPU activation to suppress ground work');assert.equal(first.contours,0);ui.loadedRegionQuery=first;assert(ui.geometryCoversView());
+ ui.spatial.needsTerrainRaster=true;assert.equal(ui.regionQuery().contours,-1);assert.equal(ui.geometryCoversView(),false,'old groundless region cannot serve fallback');ui.loadedRegionQuery=ui.regionQuery();assert(ui.geometryCoversView());
+ ui.spatial.needsTerrainRaster=false;assert.equal(ui.geometryCoversView(),false,'explicit camera retry replaces the fallback source');
 });

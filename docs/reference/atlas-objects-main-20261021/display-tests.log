@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: external refresh requests cannot read the full Atlas in the middle of a direct gesture
+ok 1 - external refresh requests cannot read the full Atlas in the middle of a direct gesture
+  ---
+  duration_ms: 2.829177
+  type: 'test'
+  ...
+# Subtest: commits advance author identity without relabelling the Atlas or awaiting display; finish refreshes once
+ok 2 - commits advance author identity without relabelling the Atlas or awaiting display; finish refreshes once
+  ---
+  duration_ms: 6.769148
+  type: 'test'
+  ...
+# Subtest: a failed final display refresh releases the brush lock and preserves the saved-prefix status
+ok 3 - a failed final display refresh releases the brush lock and preserves the saved-prefix status
+  ---
+  duration_ms: 2.977832
+  type: 'test'
+  ...
+# Subtest: shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+ok 4 - shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+  ---
+  duration_ms: 18.974379
+  type: 'test'
+  ...
+# Subtest: object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+ok 5 - object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+  ---
+  duration_ms: 4.589957
+  type: 'test'
+  ...
+# Subtest: object hits keep normal Atlas identity and respect nearer terrain
+ok 6 - object hits keep normal Atlas identity and respect nearer terrain
+  ---
+  duration_ms: 6.382458
+  type: 'test'
+  ...
+# Subtest: projection validation checks all footprint rings and rejects malformed geometry
+ok 7 - projection validation checks all footprint rings and rejects malformed geometry
+  ---
+  duration_ms: 3.207127
+  type: 'test'
+  ...
+# Subtest: commit transition retains the main surface until a matching region arrives
+ok 8 - commit transition retains the main surface until a matching region arrives
+  ---
+  duration_ms: 2.898971
+  type: 'test'
+  ...
+# Subtest: stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+ok 9 - stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+  ---
+  duration_ms: 0.863367
+  type: 'test'
+  ...
+# Subtest: late navigation reads cannot replace the live authored frame
+ok 10 - late navigation reads cannot replace the live authored frame
+  ---
+  duration_ms: 2.630287
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 11 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 54.868587
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 12 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 9.322718
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 13 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 15.191205
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 14 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 12.011393
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 15 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 9.448668
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 16 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 8.165597
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 17 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 107.059116
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 18 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 3.535914
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1552.385397

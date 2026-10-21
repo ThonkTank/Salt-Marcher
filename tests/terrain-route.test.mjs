@@ -65,7 +65,7 @@ test('legacy curved styles and terrain edge heights survive 3D meshing',()=>{
  const r=route();delete r.route;r.points=[{x:-60,y:0},{x:0,y:30},{x:60,y:0}];r.line.style='dashed';r.line.roughness=0;
  const meshes=routeMeshes(r,p=>p.x*.1+p.y*.5,{x:0,y:0,z:0},1,2);
  assert(meshes.length);let vertices=0;
- for(const mesh of meshes){const pos=mesh.geometry.getAttribute('position');vertices+=pos.count;for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-(pos.getX(i)*.1-pos.getY(i)*.5+.025))<1e-4);}
+ for(const mesh of meshes.filter(m=>!m.userData.routeOverview)){const pos=mesh.geometry.getAttribute('position');vertices+=pos.count;for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-(pos.getX(i)*.1-pos.getY(i)*.5+.025))<1e-4);}
  assert(vertices>12);assert(meshes.every(m=>m.userData.landscapeId===r.id));
 });
 function fixture(t){

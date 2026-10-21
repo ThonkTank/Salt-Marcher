@@ -1,0 +1,116 @@
+{
+  "baseline": "ba32afaed086977fdb8ba8db7dd491b3b4e12679",
+  "productSource": "06e8dd03f85567ac8dead4c5c147b99d5737337f",
+  "checks": [
+    "Cubic reconstruction requires expanded reader and invalidation support; old one-cell footprints demonstrably under-read neighbouring heights.",
+    "hill: bounded stream, canonical experiment and partial blocks agree at fractional origins and negative tile seams",
+    "sparse-bands: bounded stream, canonical experiment and partial blocks agree at fractional origins and negative tile seams"
+  ],
+  "measurements": [
+    {
+      "fixture": "hill",
+      "name": "baseline",
+      "samples": 1048576,
+      "ms": 340.093559
+    },
+    {
+      "fixture": "hill",
+      "name": "lattice",
+      "samples": 1048576,
+      "ms": 118.47970799999996
+    },
+    {
+      "fixture": "hill",
+      "name": "monotone",
+      "samples": 1048576,
+      "ms": 1151.971294
+    },
+    {
+      "fixture": "hill",
+      "name": "monotone-lattice",
+      "samples": 1048576,
+      "ms": 73.47326799999973
+    },
+    {
+      "fixture": "hill",
+      "name": "monotone-lattice",
+      "samples": 1048576,
+      "ms": 55.07214799999974
+    },
+    {
+      "fixture": "hill",
+      "name": "monotone",
+      "samples": 1048576,
+      "ms": 1098.415512
+    },
+    {
+      "fixture": "hill",
+      "name": "lattice",
+      "samples": 1048576,
+      "ms": 88.95965799999976
+    },
+    {
+      "fixture": "hill",
+      "name": "baseline",
+      "samples": 1048576,
+      "ms": 252.96006100000022
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "baseline",
+      "samples": 1048576,
+      "ms": 863.5457540000007
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "lattice",
+      "samples": 1048576,
+      "ms": 297.99441600000046
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "monotone",
+      "samples": 1048576,
+      "ms": 4078.39099
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "monotone-lattice",
+      "samples": 1048576,
+      "ms": 1170.807981
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "monotone-lattice",
+      "samples": 1048576,
+      "ms": 1235.7639909999998
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "monotone",
+      "samples": 1048576,
+      "ms": 3887.7718589999986
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "lattice",
+      "samples": 1048576,
+      "ms": 321.00781200000165
+    },
+    {
+      "fixture": "sparse-bands",
+      "name": "baseline",
+      "samples": 1048576,
+      "ms": 762.009535000001
+    }
+  ],
+  "neighbourRead": {
+    "point": {
+      "x": 0.5,
+      "y": 7.125
+    },
+    "all": 42.78125,
+    "oldBounds": 43.02429499022253,
+    "expandedBounds": 42.78125
+  }
+}

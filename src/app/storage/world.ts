@@ -1,3 +1,4 @@
+import {sourceCellLookup} from './atlas-source-cell';
 import {installTravelHistory,captureTravelEffects,recordTravelCheckpoint,travelHistory,applyTravelHistory,validateTravelHistory} from './travel-history';
 import {checkedCalendarEventRow} from './calendar-events';
 import {hexPolygon} from '../atlas-landscape';
@@ -161,7 +162,7 @@ export interface WorldTimePort<T> {
  validateHistory?(sceneId:string,tables:string[]):void;
 }
 function cellLandscape(db:any,cam:string,mapId:string,cell:import('../world-contracts').AtlasCell){
- return db.prepare("SELECT id,revision FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.sourceCell.mapId')=? AND json_extract(payload,'$.sourceCell.level')=? AND json_extract(payload,'$.sourceCell.q')=? AND json_extract(payload,'$.sourceCell.r')=?").get(cam,mapId,cell.level,cell.q,cell.r);
+ return db.prepare(sourceCellLookup).get(cam,mapId,cell.level,cell.q,cell.r);
 }
 function writeCellLandscape(db:any,cam:string,m:AtlasMap,cell:import('../world-contracts').AtlasCell){
  const {q,r,level}=cell,old=cellLandscape(db,cam,m.id,cell),id=old?.id??randomUUID(),revision=old?.revision??null;

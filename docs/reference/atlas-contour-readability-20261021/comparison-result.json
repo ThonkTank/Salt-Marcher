@@ -1,0 +1,174 @@
+{
+  "results": [
+    {
+      "case": "hill",
+      "spacing": 12,
+      "tilt": 0,
+      "file": "hill-12-0.png"
+    },
+    {
+      "case": "hill",
+      "spacing": 12,
+      "tilt": 45,
+      "file": "hill-12-45.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 12,
+      "tilt": 0,
+      "file": "close-coarse-12-0.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 12,
+      "tilt": 45,
+      "file": "close-coarse-12-45.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 12,
+      "tilt": 0,
+      "file": "close-fine-12-0.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 12,
+      "tilt": 45,
+      "file": "close-fine-12-45.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 12,
+      "tilt": 0,
+      "file": "painted-region-12-0.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 12,
+      "tilt": 45,
+      "file": "painted-region-12-45.png"
+    },
+    {
+      "case": "hill",
+      "spacing": 24,
+      "tilt": 0,
+      "file": "hill-24-0.png"
+    },
+    {
+      "case": "hill",
+      "spacing": 24,
+      "tilt": 45,
+      "file": "hill-24-45.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 24,
+      "tilt": 0,
+      "file": "close-coarse-24-0.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 24,
+      "tilt": 45,
+      "file": "close-coarse-24-45.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 24,
+      "tilt": 0,
+      "file": "close-fine-24-0.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 24,
+      "tilt": 45,
+      "file": "close-fine-24-45.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 24,
+      "tilt": 0,
+      "file": "painted-region-24-0.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 24,
+      "tilt": 45,
+      "file": "painted-region-24-45.png"
+    },
+    {
+      "case": "hill",
+      "spacing": 36,
+      "tilt": 0,
+      "file": "hill-36-0.png"
+    },
+    {
+      "case": "hill",
+      "spacing": 36,
+      "tilt": 45,
+      "file": "hill-36-45.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 36,
+      "tilt": 0,
+      "file": "close-coarse-36-0.png"
+    },
+    {
+      "case": "close-coarse",
+      "spacing": 36,
+      "tilt": 45,
+      "file": "close-coarse-36-45.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 36,
+      "tilt": 0,
+      "file": "close-fine-36-0.png"
+    },
+    {
+      "case": "close-fine",
+      "spacing": 36,
+      "tilt": 45,
+      "file": "close-fine-36-45.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 36,
+      "tilt": 0,
+      "file": "painted-region-36-0.png"
+    },
+    {
+      "case": "painted-region",
+      "spacing": 36,
+      "tilt": 45,
+      "file": "painted-region-36-45.png"
+    }
+  ],
+  "checks": [
+    "Same production geometry, colour and camera across isolated contour-spacing variants; no product or author changes."
+  ],
+  "source": "88b3a5ee9cf9644dc80f5b8a9473be762b35945f",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/contour-readability-9kDOYX",
+  "artifacts": {
+    "main.cjs": "1ae30859d73f3044475fadf2c5539215695f22041832b08b8065c23a0f4d8c9a",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "093a480d83920864e547c367db09809e5dda3925f6e9534cb1406297d7d1d1a9",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2260180,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

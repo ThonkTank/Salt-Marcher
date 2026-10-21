@@ -1,0 +1,38 @@
+{
+  "source": "2a30f25f36e14b54ed8b1a2869349bc26b227996",
+  "profile": "/home/aaron/.cache/saltmarcher/tests/progressive-measure-QkIINj",
+  "runs": [
+    {
+      "mode": "full",
+      "firstUsableMs": 2523.2606859999996,
+      "fullMs": 2523.2606859999996,
+      "geometryEqual": true,
+      "overviewTextureBytes": 0,
+      "cacheBytes": 4005127
+    },
+    {
+      "mode": "staged",
+      "firstUsableMs": 167.99734500000022,
+      "fullMs": 2109.1308080000003,
+      "geometryEqual": true,
+      "overviewTextureBytes": 43520,
+      "cacheBytes": 4051541
+    },
+    {
+      "mode": "staged",
+      "firstUsableMs": 50.67439599999943,
+      "fullMs": 1846.0309339999994,
+      "geometryEqual": true,
+      "overviewTextureBytes": 43520,
+      "cacheBytes": 4051541
+    },
+    {
+      "mode": "full",
+      "firstUsableMs": 1796.0181570000004,
+      "fullMs": 1796.0181570000004,
+      "geometryEqual": true,
+      "overviewTextureBytes": 0,
+      "cacheBytes": 4005127
+    }
+  ]
+}

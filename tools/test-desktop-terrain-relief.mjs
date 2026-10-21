@@ -180,11 +180,11 @@ try {
   for(let i=0;i<6;i++)await page.getByRole('button',{name:'Vergrößern',exact:true}).click();await atlasCanvasReady(page);await capture('05-place');
   const placeCamera=await camera();const center={x:placeCamera.view.x+placeCamera.view.width*.5,y:placeCamera.view.y+placeCamera.view.height*.5};
   await setHeightDirection(page,'raise');await setBrushWorldRadius(page,'land-radius','250');await page.locator('#land-height-strength').fill('350');
-  await page.locator('#land-coast-roughness').fill('0.7');const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
-  await page.waitForFunction(()=>document.querySelector('#land-cursor-height').textContent.includes('Vorschau'));await capture('06-preview');await page.mouse.up();await settled();const corrected=maskBytes();assert.notEqual(corrected,baseline);
+  await page.locator('#land-coast-roughness').fill('0.7');await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');const revision=Number(await page.locator('#campaign-map').getAttribute('data-terrain-revision'));const p=await at(center.x,center.y);await page.mouse.move(p.x,p.y);await page.mouse.down();
+  await page.waitForFunction(r=>Number(document.querySelector('#campaign-map').dataset.terrainRevision)>r,revision,{timeout:60000});assert.notEqual(maskBytes(),baseline,'height writes must be visible before release');await capture('06-live-brush');await page.mouse.up();await settled();const corrected=maskBytes();assert.notEqual(corrected,baseline);
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),baseline);
   await page.locator('#atlas-redo').click();await atlasCanvasReady(page);assert.equal(maskBytes(),corrected);
-  mark('Continent, region and local views; real brush preview and atomic undo/redo retain the correction');
+  mark('Continent, region and local views; live saved brush and atomic undo/redo');
   for(let i=0;i<3;i++)await page.getByRole('button',{name:'Verkleinern',exact:true}).click();await atlasCanvasReady(page);
   await setTerrainContours(page,'100');await atlasCanvasReady(page);await capture('07-contours');
   await native.app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/region.png');

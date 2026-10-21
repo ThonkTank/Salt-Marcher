@@ -146,12 +146,12 @@ export function coupleRouteEdits(before:LandscapeRecord[],tiles:LandscapeRecord[
         const p={x:t.x+(i%64)*t.pixel,y:t.y+Math.floor(i/64)*t.pixel};let weight=0;
         for(const r of routes.filter(r=>r.route!.protected)){
           const hit=nearestRoute(r.route!.nodes,p);if(!hit)continue;
-          const core=r.width/2+r.route!.limits.shoulder,edge=Math.max(core,r.route!.limits.corridor);
+          const core=r.width/2+r.route!.limits.shoulder+(t.version===2?t.pixel*Math.SQRT2:0),edge=Math.max(core,r.route!.limits.corridor);
           weight=Math.max(weight,hit.distance<=core?1:Math.max(0,1-(hit.distance-core)/edge));
         }
-        const old=base.sample(p).heightM;values[i]=old+(values[i]!-old)*(1-weight*(1-factor));
+        const old=t.version===2?(priorValues?.[i]??0):base.sample(p).heightM;values[i]=(Number.isNaN(old)?0:old)+(values[i]!-(Number.isNaN(old)?0:old))*(1-weight*(1-factor));
       }
-      return{...heightRecord(t.x,t.y,t.pixel,values),id:tile.id,revision:tile.revision};
+      return{...heightRecord(t.x,t.y,t.pixel,values,t.version),id:tile.id,revision:tile.revision};
     });
     try{result=replanRoutes(replace(adjusted));if(factor<1)limited?.(factor);break;}catch(e){if(factor===0)throw e;}
   }

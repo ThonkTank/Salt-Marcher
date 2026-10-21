@@ -1,0 +1,41 @@
+{
+  "source": "Contour readability 2026-10-21: 24 logical px automatic spacing, 2x raster sampling; previous baseline retained in terrain-color-goldens.json",
+  "cases": [
+    {
+      "mode": "drawn",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "3194606c673a6338e7cfc28f72ed729dcf6b58e6ef19a30111d1808d0fb2dc24"
+    },
+    {
+      "mode": "drawn",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "83c16e3d89bf857f6856277cabd1853c65959a59148d41b31bd59c439b9dec4d"
+    },
+    {
+      "mode": "shaded",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "ce47a30ac6ff662ac5b53f5e528a594fc08dae9ecb6587a9d0180762ef58f6b2"
+    },
+    {
+      "mode": "shaded",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "2e6d29e295307f1ec6efe730ffe6cd6b3ee2b8933008591f58dc008179b76266"
+    },
+    {
+      "mode": "height",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "55ffd51bff578c0148f8b453ed57b4744d4a20f35d6d6166fe78bd902ecd9ecb"
+    },
+    {
+      "mode": "height",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "4160f676174bccaa9aafde532572fdc828f8fed3f449f497f93029991af28d37"
+    }
+  ]
+}

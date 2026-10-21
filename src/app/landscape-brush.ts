@@ -11,6 +11,8 @@ export interface LandscapeColor {
 }
 export const clipPolygons=(ps:Polygon[])=>ps.map(p=>[p.outer,...p.holes].map(r=>r.map(p=>[p.x,p.y] as [number,number])));
 export const unclipPolygons=(ps:ReturnType<typeof polygonClipping.union>):Polygon[]=>ps.map(p=>({outer:p[0]!.map(([x,y])=>({x,y})),holes:p.slice(1).map(r=>r.map(([x,y])=>({x,y})))}));
+/** Dissolve shared edges before intersecting generated adjacent coverage spans. */
+export const mergePolygons=(polygons:Polygon[])=>polygons.length?unclipPolygons(polygonClipping.union(clipPolygons(polygons))):[];
 export const intersectPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.intersection(clipPolygons(a),clipPolygons(b))):[];
 export const subtractPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.difference(clipPolygons(a),clipPolygons(b))):a;
 export const unionPolygons=(a:Polygon[],b:Polygon[])=>!a.length?b:!b.length?a:unclipPolygons(polygonClipping.union(clipPolygons(a),clipPolygons(b)));

@@ -1,0 +1,370 @@
+TAP version 13
+# Subtest: coast is confined to one supersample on either side, preserves water decisions and skips the halo
+ok 1 - coast is confined to one supersample on either side, preserves water decisions and skips the halo
+  ---
+  duration_ms: 6.209378
+  type: 'test'
+  ...
+# Subtest: direct neighbours reproduce selected prototype pixels for oblique shores, islands, holes and transparent maps
+ok 2 - direct neighbours reproduce selected prototype pixels for oblique shores, islands, holes and transparent maps
+  ---
+  duration_ms: 53.047684
+  type: 'test'
+  ...
+# Subtest: homogeneous tiles do no work; mixed coast work yields with only owned arrays
+ok 3 - homogeneous tiles do no work; mixed coast work yields with only owned arrays
+  ---
+  duration_ms: 15.507154
+  type: 'test'
+  ...
+# Subtest: history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+ok 4 - history accumulates skipped reads, survives same-source reads, and fails closed on reset or eviction
+  ---
+  duration_ms: 5.842772
+  type: 'test'
+  ...
+# Subtest: a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+ok 5 - a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo
+  ---
+  duration_ms: 77.248446
+  type: 'test'
+  ...
+# Subtest: unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+ok 6 - unknown base, source reset, another campaign and route-context changes cannot reuse pigment
+  ---
+  duration_ms: 89.98382
+  type: 'test'
+  ...
+# Subtest: a pending old tile cannot fill the rebased cache even if its caller still reports current
+ok 7 - a pending old tile cannot fill the rebased cache even if its caller still reports current
+  ---
+  duration_ms: 6.036248
+  type: 'test'
+  ...
+# Subtest: the projection colour base accepts only a concrete source identity
+ok 8 - the projection colour base accepts only a concrete source identity
+  ---
+  duration_ms: 2.564459
+  type: 'test'
+  ...
+# Subtest: colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+ok 9 - colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+  ---
+  duration_ms: 3625.799376
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 10 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 7.989651
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 11 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 2087.333754
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 12 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 72.171917
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 13 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 5.446389
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 14 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 3.2838
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 15 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 2355.529668
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 16 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 1001.484231
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 17 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 861.090034
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 18 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 780.698259
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 19 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 1193.691298
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 20 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 4474.551087
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 21 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 1458.604121
+  type: 'test'
+  ...
+# Subtest: level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+ok 22 - level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+  ---
+  duration_ms: 249.748805
+  type: 'test'
+  ...
+# Subtest: yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+ok 23 - yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+  ---
+  duration_ms: 71.562676
+  type: 'test'
+  ...
+# Subtest: compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+ok 24 - compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+  ---
+  duration_ms: 86.18135
+  type: 'test'
+  ...
+# Subtest: direct and streamed rasters agree at authored edges and on route-only ground
+ok 25 - direct and streamed rasters agree at authored edges and on route-only ground
+  ---
+  duration_ms: 287.145438
+  type: 'test'
+  ...
+# Subtest: partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+ok 26 - partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+  ---
+  duration_ms: 25.387763
+  type: 'test'
+  ...
+# Subtest: missing, wrong, reset or incompatible bases receive full answers
+ok 27 - missing, wrong, reset or incompatible bases receive full answers
+  ---
+  duration_ms: 0.838487
+  type: 'test'
+  ...
+# Subtest: top-down deltas keep unchanged tile objects and replace only changed image bytes
+ok 28 - top-down deltas keep unchanged tile objects and replace only changed image bytes
+  ---
+  duration_ms: 1.262545
+  type: 'test'
+  ...
+# Subtest: derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+ok 29 - derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+  ---
+  duration_ms: 0.774334
+  type: 'test'
+  ...
+# Subtest: active detail pixels use their own delta, including full fallback when its footprint changes
+ok 30 - active detail pixels use their own delta, including full fallback when its footprint changes
+  ---
+  duration_ms: 22.515011
+  type: 'test'
+  ...
+# Subtest: player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+ok 31 - player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+  ---
+  duration_ms: 1446.346218
+  type: 'test'
+  ...
+# Subtest: cancelled, obsolete and failed output jobs release their worker without publishing pixels
+ok 32 - cancelled, obsolete and failed output jobs release their worker without publishing pixels
+  ---
+  duration_ms: 58.71211
+  type: 'test'
+  ...
+# Subtest: navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+ok 33 - navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+  ---
+  duration_ms: 5.343514
+  type: 'test'
+  ...
+# Subtest: coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+ok 34 - coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+  ---
+  duration_ms: 662.462783
+  type: 'test'
+  ...
+# Subtest: yielding raster batches reproduce the complete projection byte for byte
+ok 35 - yielding raster batches reproduce the complete projection byte for byte
+  ---
+  duration_ms: 1719.281118
+  type: 'test'
+  ...
+# Subtest: live frames use changed interpolation support and reject a source overtaken before snapshot creation
+ok 36 - live frames use changed interpolation support and reject a source overtaken before snapshot creation
+  ---
+  duration_ms: 3113.174738
+  type: 'test'
+  ...
+# Subtest: terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+ok 37 - terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse
+  ---
+  duration_ms: 1139.775352
+  type: 'test'
+  ...
+# Subtest: colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse
+ok 38 - colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse
+  ---
+  duration_ms: 1846.521936
+  type: 'test'
+  ...
+# Subtest: selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+ok 39 - selection preempts detail without cancelling it; a newer camera replaces it and retains the worker
+  ---
+  duration_ms: 819.294376
+  type: 'test'
+  ...
+# Subtest: a commit between slices rejects the old projection and fresh output agrees with a cold worker
+ok 40 - a commit between slices rejects the old projection and fresh output agrees with a cold worker
+  ---
+  duration_ms: 1524.498788
+  type: 'test'
+  ...
+# Subtest: commit transition retains the main surface until a matching region arrives
+ok 41 - commit transition retains the main surface until a matching region arrives
+  ---
+  duration_ms: 3.24758
+  type: 'test'
+  ...
+# Subtest: stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+ok 42 - stale projection refreshes once; obsolete, live and committing replies cannot trigger fallback
+  ---
+  duration_ms: 27.612539
+  type: 'test'
+  ...
+# Subtest: late navigation reads cannot replace the live authored frame
+ok 43 - late navigation reads cannot replace the live authored frame
+  ---
+  duration_ms: 5.286882
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 44 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 4.011029
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 45 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 36.156609
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 46 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 56.712076
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 47 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 2.776034
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 48 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 18.655057
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 49 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 24.713674
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 50 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 55.796356
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 51 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 99.342706
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 52 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 165.593666
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 53 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 25.670717
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+ok 54 - navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+  ---
+  duration_ms: 211.914063
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 55 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 84.707065
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 56 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 28.29951
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 57 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 30.940923
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 58 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 5.40166
+  type: 'test'
+  ...
+# Subtest: a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+ok 59 - a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+  ---
+  duration_ms: 59.516097
+  type: 'test'
+  ...
+# Subtest: post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+ok 60 - post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+  ---
+  duration_ms: 104.75429
+  type: 'test'
+  ...
+1..60
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 41305.8384

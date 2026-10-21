@@ -20,10 +20,11 @@ export function validateTerrainStyle(s:TerrainStyle){
     Object.keys(s).some(k=>!['version','mode','land','ink','lightDegrees','strength'].includes(k)))throw Error('Reliefstil prüfen.');
 }
 export const reliefRgb=(hex:string)=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
-export function reliefLight(sx:number,sy:number,style:TerrainStyle){
-  const a=style.lightDegrees*Math.PI/180;
-  return 1+style.strength*.55*((-sx*Math.sin(a)+sy*Math.cos(a)+1)/Math.hypot(sx,sy,1)-1);
+export function reliefLighting(style:TerrainStyle){
+  const angle=style.lightDegrees*Math.PI/180,sin=Math.sin(angle),cos=Math.cos(angle),strength=style.strength*.55;
+  return (sx:number,sy:number)=>1+strength*((-sx*sin+sy*cos+1)/Math.hypot(sx,sy,1)-1);
 }
+export function reliefLight(sx:number,sy:number,style:TerrainStyle){return reliefLighting(style)(sx,sy);}
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
 /** Explicit analysis mode, relative to sea level. No snow or terrain-type writes. */
 export function elevationColor(heightM:number,seaLevelM:number){

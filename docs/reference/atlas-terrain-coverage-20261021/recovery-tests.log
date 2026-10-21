@@ -1,0 +1,244 @@
+TAP version 13
+# Subtest: every native tool has a route, with global selection and a dedicated vegetation filter
+ok 1 - every native tool has a route, with global selection and a dedicated vegetation filter
+  ---
+  duration_ms: 432.492288
+  type: 'test'
+  ...
+# Subtest: switching to a different group recalls its last tool; rejected switches preserve both memories and controls
+ok 2 - switching to a different group recalls its last tool; rejected switches preserve both memories and controls
+  ---
+  duration_ms: 347.300467
+  type: 'test'
+  ...
+# Subtest: section return restores the last group and tool without disturbing option values
+ok 3 - section return restores the last group and tool without disturbing option values
+  ---
+  duration_ms: 129.22258
+  type: 'test'
+  ...
+# Subtest: three land tools and water routes apply their complete operation only after acceptance
+ok 4 - three land tools and water routes apply their complete operation only after acceptance
+  ---
+  duration_ms: 231.122894
+  type: 'test'
+  ...
+# Subtest: only an accepted explicit tool action opens a library; repeated render does not reopen it
+ok 5 - only an accepted explicit tool action opens a library; repeated render does not reopen it
+  ---
+  duration_ms: 179.970585
+  type: 'test'
+  ...
+# Subtest: a second click cannot race a pending section change
+ok 6 - a second click cannot race a pending section change
+  ---
+  duration_ms: 191.184675
+  type: 'test'
+  ...
+# Subtest: global Dungeon selection reaches the existing author tool and respects a rejected switch
+ok 7 - global Dungeon selection reaches the existing author tool and respects a rejected switch
+  ---
+  duration_ms: 136.709278
+  type: 'test'
+  ...
+# Subtest: the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush
+ok 8 - the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush
+  ---
+  duration_ms: 230.829709
+  type: 'test'
+  ...
+# Subtest: a room created while drawing records its selection without opening an obstructing inspector
+ok 9 - a room created while drawing records its selection without opening an obstructing inspector
+  ---
+  duration_ms: 172.087941
+  type: 'test'
+  ...
+# Subtest: entering rectangle drawing hides existing properties only after the tool switch succeeds
+ok 10 - entering rectangle drawing hides existing properties only after the tool switch succeeds
+  ---
+  duration_ms: 74.133255
+  type: 'test'
+  ...
+# Subtest: land settings retain independent size and strength, optional target and color eraser
+ok 11 - land settings retain independent size and strength, optional target and color eraser
+  ---
+  duration_ms: 350.420689
+  type: 'test'
+  ...
+# Subtest: a found place selects the generic object context while vegetation retains its dedicated tools
+ok 12 - a found place selects the generic object context while vegetation retains its dedicated tools
+  ---
+  duration_ms: 191.842853
+  type: 'test'
+  ...
+# Subtest: main-camera pose is locked during room, city and output gestures, and released after cancellation
+ok 13 - main-camera pose is locked during room, city and output gestures, and released after cancellation
+  ---
+  duration_ms: 1.349807
+  type: 'test'
+  ...
+# Subtest: graphics recovery clears only the failure that belongs to the recovered presentation
+ok 14 - graphics recovery clears only the failure that belongs to the recovered presentation
+  ---
+  duration_ms: 157.599131
+  type: 'test'
+  ...
+# Subtest: tilted coverage includes visible ground across portrait, landscape, rotation and retained gestures
+ok 15 - tilted coverage includes visible ground across portrait, landscape, rotation and retained gestures
+  ---
+  duration_ms: 610.000391
+  type: 'test'
+  ...
+# Subtest: coverage tier expansion invalidates a pending narrow window; smaller poses reuse its lattice
+ok 16 - coverage tier expansion invalidates a pending narrow window; smaller poses reuse its lattice
+  ---
+  duration_ms: 0.66629
+  type: 'test'
+  ...
+# Subtest: wide surroundings retain centre resolution and bounded, continuous sampling bands
+ok 17 - wide surroundings retain centre resolution and bounded, continuous sampling bands
+  ---
+  duration_ms: 4.282452
+  type: 'test'
+  ...
+# Subtest: a world-spanning route retains fine central geometry without oversampling the horizon
+ok 18 - a world-spanning route retains fine central geometry without oversampling the horizon
+  ---
+  duration_ms: 58.183953
+  type: 'test'
+  ...
+# Subtest: distant routes cannot evict nearby author vectors from the bounded retained set
+ok 19 - distant routes cannot evict nearby author vectors from the bounded retained set
+  ---
+  duration_ms: 2.567203
+  type: 'test'
+  ...
+# Subtest: ground beyond the atmospheric horizon is not an author-visible brush target
+ok 20 - ground beyond the atmospheric horizon is not an author-visible brush target
+  ---
+  duration_ms: 1.982044
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 21 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 6.289253
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 22 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 41.303437
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 23 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 67.544554
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 24 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 4.465649
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 25 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 22.61088
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 26 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 19.449103
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 27 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 77.577155
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 28 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 113.438074
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 29 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 170.491284
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 30 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 28.074657
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+ok 31 - navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+  ---
+  duration_ms: 226.673214
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 32 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 109.534204
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 33 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 23.088122
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 34 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 50.096013
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 35 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 9.019776
+  type: 'test'
+  ...
+# Subtest: a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+ok 36 - a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+  ---
+  duration_ms: 75.665291
+  type: 'test'
+  ...
+# Subtest: post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+ok 37 - post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+  ---
+  duration_ms: 164.301013
+  type: 'test'
+  ...
+# Subtest: steep tilt replaces narrow pending coverage but later rotations retain the widened source
+ok 38 - steep tilt replaces narrow pending coverage but later rotations retain the widened source
+  ---
+  duration_ms: 23.498303
+  type: 'test'
+  ...
+# Subtest: a confirmed new frame reports graphics recovery once and never before publication
+ok 39 - a confirmed new frame reports graphics recovery once and never before publication
+  ---
+  duration_ms: 41.261404
+  type: 'test'
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9602.798498

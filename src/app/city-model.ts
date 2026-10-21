@@ -33,9 +33,10 @@ export async function generateCity(view:CityView,r:CityRecipe,cancel:()=>boolean
  }
  return{cityId:view.header.id,baseRevision:view.header.revision,recipe:{...r},buildings,replaceIds,attempts};
 }
-export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,labels=true,mpp=0){
- const pts=(p:P[])=>p,h=v.header,root=atlasPaint("group", {size:{width:h.width,height:h.height}});
- root.title=h.name;root.append(atlasPaint("rect", {width: h.width, height: h.height, style: {fill: h.paper}}));
+/** City objects share the Atlas landscape; document paper is not world geometry. */
+export function cityObjectsPaint(v:import("./atlas-region-contracts").CityGeometry,labels=true,mpp=0){
+ const pts=(p:P[])=>p,h=v.header,root=atlasPaint("group");
+ // The legacy document is only a storage frame, never a map object or label.
  for(const u of v.units.filter(u=>['district','water','plaza'].includes(u.kind)))root.append(atlasPaint("polygon", {points: pts(u.outline??[]), style: {fill: u.kind==='water'?'#8eafb9':u.kind==='plaza'?'#d9c6a4':'#e0d2b9', stroke: '#a69071', lineWidth: .7}}),atlasPaint("text", {x: u.outline?.[0]?.x??0, y: u.outline?.[0]?.y??0, style: {fontSize: 8, fill: '#52452e'},hidden:!labels}, u.name));
  for(const u of v.units.filter(u=>(u.kind==='road'||u.kind==='wall')&&mapLineVisible('road',u.width??6,mpp)))root.append(atlasPaint("polyline", {points: pts(roadPoints(u,v.units)), style: {fill: null, stroke: u.kind==='wall'?'#625e52':'#c1ae8b', lineWidth: mapLineWidth(u.width??6,mpp), lineJoin: 'round', lineCap: 'round'}}));
  for(const u of v.units.filter(u=>u.kind==='building')){
@@ -43,6 +44,12 @@ export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,labe
   const group=atlasPaint("group", {data: {cityUnit: String(u.id)}});group.append(atlasPaint(u.footprint?"polygons":"polygon", {...(u.footprint?{polygons: posedFootprint(u)}:{points:posed(u)}), style: {fill: h.roof, stroke: '#624337', lineWidth: Math.max(.2,Math.min(.8,mpp||.8))}}));
   if(labels&&u.name)group.append(atlasPaint("text", {x: u.position!.x, y: u.position!.y, style: {fontSize: 6, textAlign: 'center', fill: '#352822'}}, u.name));root.append(group);
  }
+ return root;
+}
+/** Historical standalone document/export boundary owns its optional paper sheet. */
+export function cityPaint(v:import("./atlas-region-contracts").CityGeometry,labels=true,mpp=0){
+ const h=v.header,root=atlasPaint("group",{size:{width:h.width,height:h.height}});root.title=h.name;
+ root.append(atlasPaint("rect",{width:h.width,height:h.height,style:{fill:h.paper}}),...cityObjectsPaint(v,labels,mpp).children);
  return root;
 }
 export function citySvg(v:import("./atlas-region-contracts").CityGeometry){return paintMarkup(cityPaint(v));}

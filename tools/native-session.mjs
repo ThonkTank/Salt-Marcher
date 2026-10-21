@@ -3,7 +3,7 @@ import {createRequire} from 'node:module';
 import {mkdir,mkdtemp,readFile,writeFile,rm,stat} from 'node:fs/promises';
 import {spawn,execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {tmpdir} from 'node:os';
+import {homedir} from 'node:os';
 import path from 'node:path';
 import {currentProcessGroup} from './process-group.mjs';
 
@@ -24,11 +24,12 @@ export async function createNativeSession({root=process.cwd(),output,name,result
  await mkdir(output,{recursive:true});
  // Remove success before fixture setup: even a setup failure must not leave an old pass.
  await rm(path.join(output,resultName),{force:true});await rm(path.join(output,'failure.json'),{force:true});
- const profile=await mkdtemp(path.join(tmpdir(),name+'-')),group=await currentProcessGroup();
+ const profiles=path.join(homedir(),'.cache/saltmarcher/ui');await mkdir(profiles,{recursive:true});
+ const profile=await mkdtemp(path.join(profiles,name+'-')),group=await currentProcessGroup();
  const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
  const dirty=!!execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim();
  const hashes=async()=>Object.fromEntries(await Promise.all(artifacts.map(async file=>[file,createHash('sha256').update(await readFile(path.join(root,'.build/desktop',file))).digest('hex')])));
- const build=await hashes(),launches=[],errors=[];let app=null,proxy=null,proxyError=null;
+ const build=await hashes(),launches=[],errors=[];let app=null,processHandle=null,proxy=null,proxyError=null;
  const bus=path.join(profile,'bus');
  const evidence=()=>({source,dirty,profile,artifacts:build,launches,errors});
  async function startBus(){
@@ -43,7 +44,7 @@ export async function createNativeSession({root=process.cwd(),output,name,result
   assert.equal(app,null,'Close the previous native process before restarting');
   assert.deepEqual(await hashes(),build,'Native artifacts changed during this workflow');await startBus();
   app=await require('playwright-core')._electron.launch({executablePath:path.join(root,'node_modules/electron/dist/electron'),args:[path.join(root,'.build/desktop/main.cjs'),'--ozone-platform=x11','--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:20000});
-  const pid=app.process().pid,entry={pid,zoom,cgroup:group};launches.push(entry);
+  processHandle=app.process();const pid=processHandle.pid,entry={pid,zoom,cgroup:group};launches.push(entry);
   app.process().once('exit',(code,signal)=>{entry.exit={code,signal};});
   assert((await readFile('/proc/'+pid+'/cmdline','utf8')).includes(profile),'Native profile ownership missing');
   assert.equal((await readFile('/proc/'+pid+'/cgroup','utf8')).trim().split('::')[1],group);
@@ -58,7 +59,7 @@ export async function createNativeSession({root=process.cwd(),output,name,result
   const exited=new Promise(resolve=>child.once('exit',(code,signal)=>resolve({code,signal})));
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html')).close());
   assert.deepEqual(await bounded(exited,10000,'Normal close timed out'),{code:0,signal:null});
-  await assert.rejects(stat('/proc/'+child.pid),{code:'ENOENT'});entry.pidAbsent=true;app=null;
+  await assert.rejects(stat('/proc/'+child.pid),{code:'ENOENT'});entry.pidAbsent=true;app=null;processHandle=null;
  }
  async function capture(page,name,selector){
   assert(app,'Native capture requires an open application');
@@ -80,7 +81,7 @@ export async function createNativeSession({root=process.cwd(),output,name,result
  }
  async function dispose(){
   // Emergency cleanup is never counted as normal completion.
-  if(app){const child=app.process();try{await bounded(app.close(),3000,'Emergency close timed out');}catch{}finally{if(child.exitCode===null&&(await readFile('/proc/'+child.pid+'/cmdline','utf8').catch(()=>'' )).includes(profile))child.kill('SIGKILL');app=null;}}
+  if(app){const child=processHandle;try{await bounded(app.close(),3000,'Emergency close timed out');}catch{}finally{if(child&&child.exitCode===null&&(await readFile('/proc/'+child.pid+'/cmdline','utf8').catch(()=>'' )).includes(profile))child.kill('SIGKILL');app=null;processHandle=null;}}
   if(proxy){proxy.kill();proxy=null;}
  }
  return{profile,source,dirty,artifacts:build,launches,errors,get app(){return app;},launch,close,capture,finish,fail,dispose};

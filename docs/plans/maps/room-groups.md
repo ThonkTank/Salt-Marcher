@@ -22,6 +22,10 @@ Gästezimmer enthalten Betten, Küchen Herd und Arbeitsfläche, Grabkammern
 Sarkophage. Einrichtung bleibt einzeln auswählbar und veränderbar. Der Generator
 ist lokal und reproduzierbar; er erzeugt keine Encounter oder Bewohnergeschichten.
 
+Freie Raumneuanlagen erhalten die gezeichneten Punkte und Löcher exakt.
+Die Neuanlage erzeugt kein Volumenraster; dessen ausdrückliche Initialisierung
+oder Bearbeitung bleibt eine eigene, rücknehmbare Aktion. [Prüfung](../../reference/atlas-free-room-contours-20261021/README.md).
+
 Räume bearbeiten, Türen und Gegenstände versetzen, Raumtexte schreiben und
 Geschosse wechseln funktionieren für beide Arten gleich. Raumteilung erhält
 Identität und Texte auf der größeren Seite; der neue Teil erhält einen leeren

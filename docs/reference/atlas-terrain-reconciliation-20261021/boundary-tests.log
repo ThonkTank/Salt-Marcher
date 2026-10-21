@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: hex discovery publishes the explicit label atomically and never the GM name
+ok 1 - hex discovery publishes the explicit label atomically and never the GM name
+  ---
+  duration_ms: 520.997969
+  type: 'test'
+  ...
+# Subtest: discovery preserves hidden and sight-blocking masks and receipt replay
+ok 2 - discovery preserves hidden and sight-blocking masks and receipt replay
+  ---
+  duration_ms: 348.101408
+  type: 'test'
+  ...
+# Subtest: invalid recipients roll back the public label with the entire discovery
+ok 3 - invalid recipients roll back the public label with the entire discovery
+  ---
+  duration_ms: 234.122816
+  type: 'test'
+  ...
+# Subtest: GM map stays bounded and keyboard selection works at distant coordinates
+ok 4 - GM map stays bounded and keyboard selection works at distant coordinates
+  ---
+  duration_ms: 23.610036
+  type: 'test'
+  ...
+# Subtest: UI selection keeps GM names private until explicit copy and sends one discovery
+ok 5 - UI selection keeps GM names private until explicit copy and sends one discovery
+  ---
+  duration_ms: 410.79387
+  type: 'test'
+  ...
+# Subtest: canonical migrated landscape remains selectable and distant names are searched in bounded replies
+ok 6 - canonical migrated landscape remains selectable and distant names are searched in bounded replies
+  ---
+  duration_ms: 380.280369
+  type: 'test'
+  ...
+# Subtest: disabled timing retains nothing; enabled timing is bounded and cannot swallow author failures
+ok 7 - disabled timing retains nothing; enabled timing is bounded and cannot swallow author failures
+  ---
+  duration_ms: 16.62212
+  type: 'test'
+  ...
+# Subtest: bounded visibility rays agree with complete triangle walks across ridges, rotations, sea and world scales
+ok 8 - bounded visibility rays agree with complete triangle walks across ridges, rotations, sea and world scales
+  ---
+  duration_ms: 209.501068
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2583.314982

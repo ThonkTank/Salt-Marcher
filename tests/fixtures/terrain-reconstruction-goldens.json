@@ -1,0 +1,59 @@
+{
+  "source": "Bounded cubic reconstruction 2026-10-21; authored nodes and 24 logical px contour density unchanged. Historical bilinear baselines retained separately.",
+  "cases": [
+    {
+      "mode": "drawn",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "shaded",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "height",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "drawn",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "2152962336064639e8377760a4ef11332d658c76e09369d80b63020fb7e3d778"
+    },
+    {
+      "mode": "drawn",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "e8fe21ea1724ee0740d38c1fd74bb103617d4b49fb4bd7d848503eff74cf0577"
+    },
+    {
+      "mode": "shaded",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "836a8b6be466cfb24ed5fe5125225e35df7b551e1bfd140d91e5c9953ac78396"
+    },
+    {
+      "mode": "shaded",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "58a57fb207f43d5be4800108c5037f519cb01f257a12527901d7eef2efb7a6c7"
+    },
+    {
+      "mode": "height",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "9c0629bf339417df5f4a12916630ef0fe1d8ca2a978b799dcd1ecbf04b834a4d"
+    },
+    {
+      "mode": "height",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "c0eff8ae6e70d8278d3507b0f5a3509639f762c8f26462e9d8c2fb05ca62e9a2"
+    }
+  ]
+}

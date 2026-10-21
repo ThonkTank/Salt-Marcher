@@ -1,0 +1,8 @@
+{
+  "wrapperExitCode": 130,
+  "requestedDeadlineSeconds": 180,
+  "cleanup": "explicit SIGTERM to owning ui-session.py after deadline overrun",
+  "ownedSession": 1597994,
+  "remainingOwnedProcesses": [],
+  "complete": false
+}

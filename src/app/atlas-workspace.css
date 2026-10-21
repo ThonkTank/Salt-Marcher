@@ -162,31 +162,21 @@ body.atlas-workspace #atlas-status-popup :is(#status,#commit-pending,#error-acti
 body.atlas-workspace .atlas-units-control { display:flex; flex-direction:row; align-items:center; gap:4px; white-space:nowrap; margin:0; font-size:12px; }
 body.atlas-workspace .atlas-units-control select { width:auto; min-width:0; padding:4px; }
 
-/* Terrain-bound vegetation shares the Atlas source and author history. */
-.vegetation-dialog {width:94vw;max-width:1600px;height:90vh;max-height:94vh;padding:14px;background:#eee9dc;color:#283a2e;border:1px solid #8c947f;border-radius:10px;}
-.vegetation-dialog::backdrop {background:#1c2829a8;}
-.vegetation-top {display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
-.vegetation-top strong {margin-right:auto;}
-.vegetation-body {display:grid;grid-template-columns:240px minmax(0,1fr);height:calc(100% - 100px);gap:12px;}
-.vegetation-body aside {overflow:auto;padding:8px;background:#faf6ec;}
-.vegetation-body label {display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
-.vegetation-body canvas {width:100%;height:100%;min-height:300px;touch-action:none;border:1px solid #b4b6a5;border-radius:6px;}
+/* Route planning is a tool panel; the main Atlas owns its only map viewport. */
 #vegetation-options[hidden] {display:none;}
-@media(max-width:700px){.vegetation-body{grid-template-columns:180px minmax(0,1fr)}.vegetation-dialog{width:98vw;}}
-
-/* Fixed viewport tracks prevent WebGL's intrinsic canvas size from growing a dialog. */
-#terrain-route-editor[open] {display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;}
-#terrain-route-editor .vegetation-body {height:auto;min-height:0;}
-#terrain-route-editor .vegetation-body > aside {min-height:0;}
-#terrain-route-editor .route-viewports {display:grid;grid-template-rows:minmax(0,1fr) 110px;min-height:0;min-width:0;overflow:hidden;}
-#terrain-route-editor .route-viewports canvas {min-height:0;height:100%;width:100%;display:block;}
+.route-planning > :not(#terrain-route-editor) {display:none!important;}
+#terrain-route-editor {min-width:0;max-width:100%;}
+#terrain-route-editor .toolbar {display:flex;flex-wrap:wrap;gap:6px;}
+#terrain-route-editor label {display:flex;flex-direction:column;gap:4px;margin-bottom:10px;}
+#terrain-route-editor input,#terrain-route-editor select {max-width:100%;min-width:0;}
+#terrain-route-editor #route-profile {width:100%;height:110px;display:block;}
 #terrain-route-editor #route-points {padding-left:22px;}
-#terrain-route-editor #route-points li {padding-bottom:8px;}
+#terrain-route-editor #route-points li {padding-bottom:8px;display:flex;flex-wrap:wrap;gap:4px;}
 #terrain-route-editor #route-protected,#terrain-route-editor #route-fade {width:auto;align-self:flex-start;}
 #terrain-route-editor #route-status {margin:8px 0 0;}
 
 /* Consistent brush rows: label/value above a full-width slider. */
-#campaign-atlas #atlas-panel .atlas-brush-range:not([hidden]),.vegetation-dialog .atlas-brush-range{display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;align-items:center;gap:4px 8px!important;margin:10px 0!important;font-size:12px}
+#campaign-atlas #atlas-panel .atlas-brush-range:not([hidden]){display:grid!important;grid-template-columns:minmax(0,1fr) 76px!important;align-items:center;gap:4px 8px!important;margin:10px 0!important;font-size:12px}
 .atlas-brush-range>span:first-child{grid-column:1;grid-row:1;font-weight:600}
 .atlas-brush-range small{font-size:11px;font-weight:400;color:#62717c;margin-left:4px}
 .atlas-brush-range>input[type=number]:not([hidden]),.atlas-brush-range>output{grid-column:2;grid-row:1;text-align:right;font-variant-numeric:tabular-nums;min-width:0}

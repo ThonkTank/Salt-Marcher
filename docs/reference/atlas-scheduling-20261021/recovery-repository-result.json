@@ -1,0 +1,180 @@
+{
+  "root": "/home/aaron/Schreibtisch/projects/SaltMarcher",
+  "command": [
+    "npm",
+    "run",
+    "start:desktop",
+    "--",
+    "--remote-debugging-address=127.0.0.1",
+    "--remote-debugging-port=43761",
+    "--data-dir",
+    "/home/aaron/.cache/saltmarcher/ui/atlas-development-oQ9Fjt"
+  ],
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-development-oQ9Fjt",
+  "source": "941ce9fdbe650adb11ba41966f5cdd25442ac5d7",
+  "checks": [
+    "Overview geometry becomes usable before fine colour; wheel navigation responds during refinement on the same canvas.",
+    "npm run start:desktop launches this repository; campaign navigation opens the main Atlas.",
+    "Tilt, rotation and wheel zoom retain the same main canvas.",
+    "Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels."
+  ],
+  "errors": [],
+  "loading": {
+    "stages": [
+      {
+        "quality": "overview",
+        "time": 14390.5,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -900,
+            "width": 2700,
+            "height": 1800
+          },
+          "frame": {
+            "x": -450,
+            "y": -364.71774193548384,
+            "width": 900,
+            "height": 729.4354838709677
+          },
+          "refinement": {
+            "x": -675,
+            "y": -450,
+            "width": 1350,
+            "height": 900
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      },
+      {
+        "quality": "detail",
+        "time": 21661.69999998808,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -900,
+            "width": 2700,
+            "height": 1800
+          },
+          "frame": {
+            "x": -399.1141965227209,
+            "y": -323.4756189559149,
+            "width": 798.2283930454417,
+            "height": 646.9512379118298
+          },
+          "refinement": {
+            "x": -675,
+            "y": -450,
+            "width": 1350,
+            "height": 900
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      }
+    ],
+    "cameraQuality": "overview"
+  },
+  "contours": {
+    "measurements": [
+      {
+        "width": 1000,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 219
+      },
+      {
+        "width": 500,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 208
+      },
+      {
+        "width": 250,
+        "inkPixels": 2,
+        "centerMinimum": 197,
+        "height100Minimum": 219
+      }
+    ],
+    "automatic": [
+      {
+        "width": 0.25,
+        "inkPixels": 2,
+        "maxError": 0
+      },
+      {
+        "width": 4,
+        "inkPixels": 8,
+        "maxError": 1
+      },
+      {
+        "width": 64,
+        "inkPixels": 128,
+        "maxError": 0
+      },
+      {
+        "width": 1000,
+        "inkPixels": 90,
+        "maxError": 0
+      }
+    ],
+    "tileError": 0,
+    "disabledMin": 255,
+    "denseMin": 255,
+    "seaMinimum": 255,
+    "automaticSeaMinimum": 255
+  },
+  "camera": {
+    "projection": "perspective",
+    "box": {
+      "x": -657.1155455459616,
+      "y": -532.5815510271706,
+      "width": 1314.2310910919232,
+      "height": 1065.1631020543412
+    },
+    "frame": {
+      "x": -219.0385151819872,
+      "y": -177.52718367572353,
+      "width": 438.0770303639744,
+      "height": 355.05436735144707
+    },
+    "refinement": {
+      "x": -328.5577727729808,
+      "y": -266.2907755135853,
+      "width": 657.1155455459616,
+      "height": 532.5815510271706
+    },
+    "columns": 257,
+    "rows": 257,
+    "focusM": 110,
+    "tilt": 45,
+    "rotation": 25,
+    "exaggeration": 1
+  },
+  "refinementCapture": {
+    "before": "overview",
+    "after": "overview"
+  },
+  "artifacts": {
+    "main.cjs": "11870635deacff949b553b5acd7a314e6db106aecd61e82e1bed833a2202ed40",
+    "preload.cjs": "307e72edac55765f1730ffed551bdda65dfce41145c54fa3cffd6369c433a3c3",
+    "ui/renderer.js": "d0a48b354fdf9b1c7be5897a746270cf8b096cffc2b593cf85ba3a3805d8fa03",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4"
+  },
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "pidAbsent": true
+}

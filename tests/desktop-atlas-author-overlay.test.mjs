@@ -6,14 +6,14 @@ import {parseHTML} from './helpers/dom.mjs';
 // Real workbench render/author layer. Only the independently owned drawing tool
 // is replaced, to supply a draft without mounting its complete inspector.
 await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
-export function atlasDrawingMeasurement(){return null;}export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
+export function atlasDrawingHasDraft(){return false;}export function atlasDrawingMeasurement(){return null;}export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
 export const atlasDrawingSnapPoint=p=>globalThis.atlasSnap?globalThis.atlasSnap(p):p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
 export const selectedDrawingElementId=()=>null,selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},atlasDrawingUndoPoint=()=>{},reloadDrawing=()=>{};`}));}}]});
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
  const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode,atlasAuthorPoints:global.atlasAuthorPoints};t.after(()=>Object.assign(global,previous));
- const ids=['recover','placement','binding-pose','group-size','split-controls','scale','undo','redo','connect-entrance','local-console','create-tools','create-city','create-dungeon','floor-field','selection-title','room-draw'];
+ const ids=['entrance-height','recover','placement','binding-pose','group-size','split-controls','scale','undo','redo','connect-entrance','local-console','create-tools','create-city','create-dungeon','floor-field','selection-title','room-draw'];
  const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select><select id="drawing-tool"><option value="room-polygon">Polygon</option></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0,atlasAuthorPoints:[]});
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(value){this.setAttribute('data-value',value);}});
  const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
@@ -242,4 +242,24 @@ test('room grip movement uses the drawing tool snap policy in local coordinates'
  const seen=[];globalThis.atlasSnap=p=>{seen.push(p);return{x:Math.round(p.x/2)*2,y:Math.round(p.y/2)*2};};
  Object.assign(f.ui,{point:()=>({x:12.1,y:3.9}),frame:()=>({x:0,y:0,angle:0}),render(){},vertexDrag:{id:9,room:f.original,point:{x:9,y:2}}});
  f.ui.move({pointerId:9});assert.deepEqual(seen,[{x:12.1,y:3.9}]);assert.deepEqual(f.ui.vertexDrag.point,{x:12,y:4});
+});
+
+// The final region refresh occurs while the brush is still closing. Releasing
+// that lock must invalidate the panel even when the source object is unchanged.
+test('finishing a live terrain stroke re-enables history without another region read',t=>{
+ const f=fixture(t);f.ui.landscape.livePainting=true;f.render();
+ assert.equal(f.document.getElementById('atlas-undo').disabled,true);
+ const data=f.ui.data;f.ui.landscape.livePainting=false;f.render();
+ assert.equal(f.ui.data,data);assert.equal(f.document.getElementById('atlas-undo').disabled,false);
+ assert.equal(f.document.getElementById('atlas-redo').disabled,true);
+});
+
+test('floor changes give author handles and live drafts the same scope, height and anchor',t=>{
+ const f=fixture(t);f.ui.data.geometry.floors=[{scopeId:'local',id:'ground',elevation:12}];
+ const author=all(f.render()).find(n=>n.data.editorOnly==='true'&&n.data.spatialScope==='local');
+ assert(author);assert.equal(author.data.spatialFloor,'12');assert.equal(author.data.spatialAnchorX,'-100');assert.equal(author.data.spatialAnchorY,'50');
+ assert(author.children.includes(atlasDraftNode));assert(all(author).some(n=>n.data.atlasVertex==='1'));
+ f.ui.data.geometry.floors[0].elevation=24;
+ const changed=all(f.render()).find(n=>n.data.editorOnly==='true'&&n.data.spatialScope==='local');
+ assert.equal(changed.data.spatialFloor,'24');
 });

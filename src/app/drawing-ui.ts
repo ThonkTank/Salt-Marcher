@@ -2,11 +2,10 @@ import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import {appendPaint,paintElement,type PaintTarget} from './atlas-paint-svg';
 import {drawingGeometryOnly} from './atlas-render-view';
-import {atlasDrawingWrite,writeAtlas} from './campaign-atlas-author';
+import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room,RoomGeometry,Point,Polygon,Result} from './contracts';import type {DrawingMapView,DrawingElement,DrawingAction,RoomStyle} from './drawing-contracts';import {newElement,elementPaint,nearestAnchor,carveRoom} from './drawing-model';import {drawingToolControls} from './drawing-tool-controls';import {paint} from '../compute';
 let draftRevision=0;
 function clearDraft(){draftRevision++;path=[];preview=null;stroke=null;}
-let atlasFreeScope:string|null=null;export function atlasDrawingScope(scopeId:string|null){atlasFreeScope=scopeId;}
 const el=<T extends Element=HTMLElement>(id:string)=>document.getElementById(id) as unknown as T,field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id)),unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let context:()=>WorkspaceGeometry|null,selectedRoom:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,redraw:()=>void,tell:(s:string,error?:boolean)=>void,data:DrawingMapView|null=null,element:DrawingElement|null=null,path:Point[]=[],preview:Polygon[]|null=null,stroke:number|null=null,busy=false,dirty=false,styleDirty=false,loadGeneration=0;
 let styleBasis:{id:string;revision:number|null}|null=null,pendingStyle:{token:string;generation:number;id:string;task:Promise<boolean>}|null=null;
@@ -41,7 +40,7 @@ async function execute(action:DrawingAction){
  const command={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action};
  if(!await prepare())throw new Error('Vorherige Eingabe abschließen.');
  if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
- readRequest++;const response=action.kind==='create-room'&&action.scopeId===atlasFreeScope?await(async()=>{const r=await writeAtlas({...command,action:{kind:'room-create',scopeId:action.scopeId,floorId:action.floorId,name:action.name,polygons:action.polygons}});return r.ok?{ok:true as const,value:{workspace:r.value.atlas.workspace,view:r.value.atlas.geometry.drawing}}:r;})():await atlasDrawingWrite(command);
+ readRequest++;const response=await atlasDrawingWrite(command);
  if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
  const result=unwrap(response);readRequest++;data=drawingGeometryOnly(result.view);if(!(action.kind==='element'&&action.element.kind==='door'&&value('drawing-tool')==='door'&&!path.length))clearDraft();
  await changed(result.workspace);if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
@@ -151,6 +150,7 @@ export function atlasDrawingMeasurement(hover?:Point){
  if(draft&&tool!=='select'){if(kind==='light')draft.width=Number(value('drawing-light-radius'));if(kind==='object')draft.width=draft.height=Number(value('drawing-element-size'));}
  return {tool,points,polygons,element:draft,radius:Number(value('drawing-brush')),floor:floor()};
 }
+export function atlasDrawingHasDraft(){return busy||dirty||styleDirty||!!pendingElement||!!pendingStyle||path.length>0||preview!==null;}
 export function atlasDrawingDraft(){return{polygons:preview,path:[...path],floor:floor(),element:!dirty&&!pendingElement&&value('drawing-tool')==='select'?element:null};}
 /** The Atlas drag adapter shares the same name, grid, append rules and writer as point tools. */
 export function atlasDrawingSnapPoint(p:Point):Point {

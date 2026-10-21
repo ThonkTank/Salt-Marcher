@@ -1,4 +1,5 @@
-import {VegetationSpatialView} from '../src/app/vegetation-spatial';
+import {TerrainSpatialView} from '../src/app/terrain-spatial-view';
+import {atlasPreviewScene} from './atlas-preview-scene';
 import {heightRecord} from '../src/app/terrain-height';
 import {emptyRecord,type LandscapeRecord} from '../src/app/atlas-landscape';
 import {newLine} from '../src/app/landscape-line';
@@ -19,12 +20,12 @@ for(const [id,y,level,width] of [['bridge-water',200,90,60],['ford-water',-240,8
 const requests=[road,river,tunnel,bridge,ford];
 const plans=requests.map(r=>planRoute(base,r));
 const box={x:-320,y:-300,width:640,height:620};
-const views=[...document.querySelectorAll<HTMLCanvasElement>('canvas')].map(c=>new VegetationSpatialView(c));
+const views=[...document.querySelectorAll<HTMLCanvasElement>('canvas')].map(c=>new TerrainSpatialView(c));
 const scene=(records:LandscapeRecord[])=>({revision:1,box,records,instances:[],buildings:[],...spatialTerrainSurface([...base,...records],box,.8)});
-views[0]!.setData(scene(requests.map(r=>{const copy=structuredClone(r);delete copy.route;return copy;})));
-views[1]!.setData(scene(plans));
-for(const view of views){view.tilt=45;view.render();}
-for(const id of ['top','tilt'])document.getElementById(id)!.onclick=()=>{for(const view of views){view.tilt=id==='top'?0:45;view.render();}};
+views[0]!.setData(atlasPreviewScene(scene(requests.map(r=>{const copy=structuredClone(r);delete copy.route;return copy;}))));
+views[1]!.setData(atlasPreviewScene(scene(plans)));
+for(const view of views)view.reframe(box,45,0);
+for(const id of ['top','tilt'])document.getElementById(id)!.onclick=()=>{for(const view of views){view.reframe(box,id==='top'?0:45,0);}};
 new ResizeObserver(()=>views.forEach(v=>v.render())).observe(document.body);
 document.body.dataset.ready='true';
 Object.assign(window,{routeProbe:{read:()=>plans.map(r=>({name:r.name,nodes:r.route!.nodes.length,structures:[...new Set(r.route!.nodes.map(n=>n.structure))]}))}});

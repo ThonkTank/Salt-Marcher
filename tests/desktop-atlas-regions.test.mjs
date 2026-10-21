@@ -127,12 +127,12 @@ test('Graph preview overlays only its scope, keeps City context and joins before
  source=f.store.atlasRegionSource(token,service.cursor);assert.equal(source.reset,false);assert.deepEqual(source.changes,[]);const readonly=new Database(f.store.filename,{readonly:true});try{const overlay=new AtlasRegionReader(readonly,source.shadow);assert(overlay);assert.throws(()=>readonly.prepare('DELETE FROM graph_preview.room').run(),/readonly/);}finally{readonly.close();}
  await service.cancelAndWait();f.store.executeGraph(command('restore'));assert.equal(graphDb.open,false);source=f.store.atlasRegionSource(token,service.cursor);assert.equal(source.shadow,undefined);assert(!(await service.read(source,query())).rooms.some(r=>r.name==='Nur Vorschau'));
 });
-test('dense painter follows the vector scene order: City paper below Dungeon contours',async t=>{
+test('dense room contours remain visible while empty city ground stays transparent',async t=>{
  const f=fixture(t,1502),payload=JSON.stringify({polygons:room(0).polygons,sections:[]});f.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE campaign_id=?').run(payload,hash(payload),f.campaign.id);f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'city-create',name:'Überlappende Stadt',x:0,y:0,width:200,height:200}});
- const q=query({x:0,y:0,width:30,height:10}),r=await f.read(q);assert.equal(r.coverage.mode,'raster');const p=require('pngjs').PNG.sync.read(Buffer.from(r.raster.data.split(',')[1],'base64')),i=(Math.floor(1.5/q.box.height*p.height)*p.width+Math.floor(1.5/q.box.width*p.width))*4;assert.deepEqual([...p.data.slice(i,i+4)],[226,218,196,255],'room contours remain visible above City paper, matching the vector scene');assert(f.reader.hit(f.source,q,{x:1,y:1}).id.startsWith('r'));
+ const q=query({x:0,y:0,width:30,height:10}),r=await f.read(q);assert.equal(r.coverage.mode,'raster');const p=require('pngjs').PNG.sync.read(Buffer.from(r.raster.data.split(',')[1],'base64')),i=(Math.floor(1.5/q.box.height*p.height)*p.width+Math.floor(1.5/q.box.width*p.width))*4;assert.deepEqual([...p.data.slice(i,i+4)],[226,218,196,255],'room contours remain visible over the landscape');assert(f.reader.hit(f.source,q,{x:1,y:1}).id.startsWith('r'));const empty=(Math.floor(5/q.box.height*p.height)*p.width+Math.floor(10/q.box.width*p.width))*4;assert.equal(p.data[empty+3],0,'empty city ground must not cover the Atlas landscape');
 });
 test('dense City roofs remain above roads, matching the vector City layer order',async t=>{
- const f=fixture(t,1),city=f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'city-create',name:'Dichte Stadt',x:1000,y:1000,width:300,height:300}}).result.id,building=(id,x,y)=>({id,kind:'building',name:id,protected:true,position:{x,y},outline:[{x:-2,y:-2},{x:2,y:-2},{x:2,y:2},{x:-2,y:2}],angle:0,notes:'',residentIds:[],workerIds:[]});f.store.db.transaction(()=>{put(f.store,'city_unit',f.campaign.id,'a-roof',building('a-roof',5,5),city);for(let i=0;i<1501;i++)put(f.store,'city_unit',f.campaign.id,'grid-'+i,building('grid-'+i,30+i%40*6,30+Math.floor(i/40)*6),city);for(const [id,x]of [['n1',0],['n2',10]])put(f.store,'city_unit',f.campaign.id,id,{id,kind:'node',name:'',protected:true,point:{x,y:5}},city);put(f.store,'city_unit',f.campaign.id,'z-road',{id:'z-road',kind:'road',name:'',protected:true,nodeIds:['n1','n2'],via:[],width:2},city);})();const q=query({x:1000,y:1000,width:300,height:300}),r=await f.read(q);assert.equal(r.coverage.mode,'raster');const p=require('pngjs').PNG.sync.read(Buffer.from(r.raster.data.split(',')[1],'base64')),i=(Math.floor(5/300*p.height)*p.width+Math.floor(5/300*p.width))*4,roof=f.store.atlasCitySite(f.shell.token,city).header.roof;assert.deepEqual([...p.data.slice(i,i+3)],[1,3,5].map(n=>parseInt(roof.slice(n,n+2),16)));
+ const f=fixture(t,1),city=f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'city-create',name:'Dichte Stadt',x:1000,y:1000,width:300,height:300}}).result.id,building=(id,x,y)=>({id,kind:'building',name:id,protected:true,position:{x,y},outline:[{x:-2,y:-2},{x:2,y:-2},{x:2,y:2},{x:-2,y:2}],angle:0,notes:'',residentIds:[],workerIds:[]});f.store.db.transaction(()=>{put(f.store,'city_unit',f.campaign.id,'a-roof',building('a-roof',5,5),city);for(let i=0;i<1501;i++)put(f.store,'city_unit',f.campaign.id,'grid-'+i,building('grid-'+i,30+i%40*6,30+Math.floor(i/40)*6),city);for(const [id,x]of [['n1',0],['n2',10]])put(f.store,'city_unit',f.campaign.id,id,{id,kind:'node',name:'',protected:true,point:{x,y:5}},city);put(f.store,'city_unit',f.campaign.id,'z-road',{id:'z-road',kind:'road',name:'',protected:true,nodeIds:['n1','n2'],via:[],width:2},city);})();const q=query({x:1000,y:1000,width:300,height:300}),r=await f.read(q);assert.equal(r.coverage.mode,'raster');const p=require('pngjs').PNG.sync.read(Buffer.from(r.raster.data.split(',')[1],'base64')),i=(Math.floor(5/300*p.height)*p.width+Math.floor(5/300*p.width))*4,roof=f.store.atlasCitySite(f.shell.token,city).header.roof;assert.deepEqual([...p.data.slice(i,i+3)],[1,3,5].map(n=>parseInt(roof.slice(n,n+2),16)));const empty=(Math.floor(290/300*p.height)*p.width+Math.floor(290/300*p.width))*4;assert.equal(p.data[empty+3],0,'dense city rasters must preserve the landscape between objects');
 });
 buildSync({entryPoints:['src/app/city-ui.ts'],outfile:'.build/atlas-region-city-ui.cjs',bundle:true,platform:'node',format:'cjs'});
 test('targeted City editing preserves an unavailable faction reference during an unrelated name edit',async t=>{
@@ -261,7 +261,7 @@ test('authored room colors follow their target identity through selected reads, 
 });
 
 
-test('an overlapping empty Dungeon caption yields to active room keys without losing its target',async t=>{
+test('empty author frames remain focusable but never create map labels or hit targets',async t=>{
  const f=fixture(t,0),token=f.shell.token,campaignId=f.campaign.id;
  const write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId,action});
  const scopeId=write({kind:'dungeon-create',name:'Abendgrundriss',x:0,y:0}).result.id;
@@ -272,16 +272,18 @@ test('an overlapping empty Dungeon caption yields to active room keys without lo
  const q={...query({x:-10,y:-10,width:60,height:20}),scopeId};
  let region=await f.read(q);
  assert(region.labels.some(l=>l.text.includes('Wachstube')));
- assert(!region.labels.some(l=>l.id==='scope:'+planned),'an empty drawing inside the room cannot replace its name');
- assert(region.labels.some(l=>l.text==='Leerer Nachbar'),'separate empty Dungeons remain visible');
- assert(f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id===planned));
- assert.equal(f.reader.focus(f.source,'scope',planned).id,planned);
- // A hole no longer covers the marker. Rebuild after the geometry write.
+ assert(!region.labels.some(l=>l.id==='scope:local'),'an empty drawing inside the room cannot replace its name');
+ assert(!region.labels.some(l=>l.text==='Leerer Nachbar'),'empty documents do not represent places');
+ assert(!region.labels.some(l=>l.id==='scope:'+planned));
+ assert(!f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id===planned));
+ assert(!f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
+ assert.equal(f.reader.focus(f.source,'scope','local').id,'local');
+ // Neither a room hole nor focusing the empty frame may manufacture geometry.
  let room=f.store.atlasRoom(token,id);
  f.store.atlasRoomCommit({commandId:randomUUID(),token,campaignId,roomId:id,expectedRevision:room.revision,name:room.name,polygons:[{...polygons[0],holes:[[{x:-1,y:-1},{x:1,y:-1},{x:1,y:1},{x:-1,y:1}]]}],sections:room.sections});
- region=await f.read(q);assert(region.labels.some(l=>l.id==='scope:'+planned),'the room hole leaves the other location visible');
+ region=await f.read(q);assert(!region.labels.some(l=>l.id==='scope:local'));
+ region=await f.read({...q,scopeId:'local'});assert(region.bindings.some(b=>b.ownerId==='local'));assert(!region.scopeBounds.local);assert.equal(region.labels.filter(l=>l.id.startsWith('scope:')).length,0);
 });
-
 
 test('the empty initial drawing keeps its author frame without inventing a map label or hit target',async t=>{
  const f=fixture(t,0),q=query({x:-20,y:-20,width:40,height:40}),before=f.store.db.serialize();
@@ -374,4 +376,52 @@ test('closing the Store closes main and active graph source observers',()=>{
   store.atlasRegionSource(w.token);const readers=[...store.committedSources.readers.values()].map(r=>r.db);assert.equal(readers.length,2);
   store.close();assert(readers.every(db=>!db.open));
  }finally{if(store.db.open)store.close();rmSync(dir,{recursive:true,force:true});}
+});
+
+test('objects ignore legacy city sheets; painted areas neither own nor mutate their geometry',async t=>{
+ const f=fixture(t,1),write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action});
+ const city=write({kind:'city-create',name:'Legacy storage title',x:1000,y:1000,width:20,height:20}).result.id;
+ const house={id:'independent-house',kind:'building',name:'Gasthaus',protected:false,position:{x:500,y:500},angle:0,outline:[{x:-10,y:-10},{x:10,y:-10},{x:10,y:10},{x:-10,y:10}],use:'Taverne',notes:'',interior:false};
+ put(f.store,'city_unit',f.campaign.id,house.id,house,city);
+ const node=(id,x)=>({id,kind:'node',name:'',protected:false,point:{x,y:480}});
+ put(f.store,'city_unit',f.campaign.id,'street-a',node('street-a',450),city);put(f.store,'city_unit',f.campaign.id,'street-b',node('street-b',550),city);
+ put(f.store,'city_unit',f.campaign.id,'independent-road',{id:'independent-road',kind:'road',name:'Feldweg',protected:false,nodeIds:['street-a','street-b'],via:[],width:6},city);
+ const q=query({x:1400,y:1400,width:200,height:200}),initial=await f.read(q),units=()=>f.store.db.prepare('SELECT id,payload,checksum FROM city_unit WHERE campaign_id=? ORDER BY id').all(f.campaign.id),before=units();
+ assert(initial.cities.flatMap(c=>c.units).some(u=>u.id===house.id),'house outside the old 20m sheet is streamed');
+ assert.equal(f.reader.hit(f.source,q,{x:1500,y:1500}).id,house.id);
+ const geometry=initial.cities.flatMap(c=>c.units);
+ const assertGeometry=async()=>{const region=await f.read(q);assert.deepEqual(region.cities.flatMap(c=>c.units),geometry);assert.deepEqual(units(),before);assert(!region.labels.some(l=>l.id.startsWith('city:')));};
+ const area={id:'painted-area',revision:0,name:'Beliebiger Name',layerId:'politics',parentId:null,typeId:'city',rank:3,polygons:[{outer:[{x:1450,y:1450},{x:1550,y:1450},{x:1550,y:1550},{x:1450,y:1550}],holes:[]}],color:'#b58445',opacity:.15,border:'solid'};
+ write({kind:'territory-put',territory:area,expectedRevision:null});await assertGeometry();
+ let saved=f.store.atlasTerritories(f.shell.token).territories.find(a=>a.id===area.id);
+ write({kind:'territory-put',territory:{...saved,name:'Umbenannt',polygons:saved.polygons.map(p=>({...p,outer:p.outer.map(v=>({x:v.x+10000,y:v.y}))}))},expectedRevision:saved.revision});await assertGeometry();
+ saved=f.store.atlasTerritories(f.shell.token).territories.find(a=>a.id===area.id);
+ write({kind:'territory-remove',id:area.id,expectedRevision:saved.revision});await assertGeometry();
+ write({kind:'undo'});await assertGeometry();write({kind:'redo'});await assertGeometry();
+ const overview=await f.read(query({x:1000,y:1000,width:10000,height:10000}));assert(!overview.labels.some(l=>l.id.startsWith('city:')));assert(overview.cities.flatMap(c=>c.units).some(u=>u.id==='independent-road'),'zoom never replaces independent geometry with a city marker');
+});
+
+
+test('projected terrain omits duplicate ground but retains dense transparent objects and cache separation',async t=>{
+ const f=fixture(t,1),base={id:'land',revision:0,kind:'patch',name:'',points:[],polygons:[{outer:[{x:-20,y:-20},{x:40,y:-20},{x:40,y:40},{x:-20,y:40}],holes:[]}],resolution:1,width:0,values:{terrain:'plains'}};
+ landscape(f,base);landscape(f,road('road'));
+ const q={...query({x:-10,y:-10,width:40,height:40}),width:128,height:128};
+ const full=await f.read(q);assert(full.landscape.tiles.length>0);
+ const thin=await f.read({...q,terrainRaster:false});assert.equal(thin.landscape.state,'ready');assert.deepEqual(thin.landscape.tiles,[]);assert.deepEqual(thin.landscape.records,full.landscape.records);assert.deepEqual(thin.landscape.labels,full.landscape.labels);
+ assert.throws(()=>f.reader.read(f.source,{...q,terrainRaster:'false'}),/Kartenausschnitt/);
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++)landscape(f,road('dense'+i));})();
+ const dense=await f.read({...q,terrainRaster:false});assert.equal(dense.landscape.coverage.mode,'raster');assert(dense.landscape.tiles.length>0);assert(dense.landscape.tiles.every(t=>t.content==='objects'));
+ const pixel=(view,x,y)=>{const tile=view.landscape.tiles.find(t=>x>=t.box.x&&y>=t.box.y&&x<t.box.x+t.box.width&&y<t.box.y+t.box.height),image=require('pngjs').PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64'));const at=(Math.floor((y-tile.box.y)/tile.box.height*tile.height)*tile.width+Math.floor((x-tile.box.x)/tile.box.width*tile.width))*4;return [...image.data.subarray(at,at+4)];};
+ assert.equal(pixel(dense,5,0)[3],255,'dense roads remain painted');assert.equal(pixel(dense,5,5)[3],0,'objects do not cover projected terrain');assert.equal(f.reader.candidatesAt(f.source,q,{x:5,y:0},0,'landscape').total,601);
+ const fallback=await f.read(q);assert(fallback.landscape.tiles.every(t=>t.content===undefined));assert.equal(pixel(fallback,5,5)[3],255,'fallback still has ground after an object-only cache entry');
+ const masked=await f.read({...q,terrainRaster:false,perception:true});assert(masked.landscape.tiles.every(t=>t.content===undefined));assert.equal(pixel(masked,5,5)[3],255,'public/masked rendering always retains its terrain');
+ const again=await f.read({...q,terrainRaster:false});assert.equal(pixel(again,5,5)[3],0,'full ground cache cannot leak into a transparent overlay');
+});
+
+test('room labels carry their canonical floor elevation and scope anchor through bounded reads',async t=>{
+ const f=fixture(t,1);
+ f.store.executeDrawing({token:f.shell.token,campaignId:f.campaign.id,commandId:randomUUID(),action:{kind:'floor',scopeId:'local',id:'ground',name:'Hochgeschoss',elevation:12,cloneId:null,hidden:false}});
+ const region=await f.read(),label=region.labels.find(l=>l.id==='room:r0');assert(label);
+ assert.deepEqual(label.workplane,{scopeId:'local',elevationM:12,anchor:{x:0,y:0}});
+ assert(!JSON.stringify(label).includes('PRIVATE-TEXT'));
 });

@@ -239,7 +239,7 @@ export class AtlasWorkspaceLayout {
    this.railButton(el('atlas-create-city'),'⊕','Stadt anlegen');add(el('atlas-create-city'),this.palette);add(el('city-tool').closest('label'));add(el('city-draw-width').closest('label'));add(el('city-path-hint'));add(el('city-finish').parentElement);
    add(el('city-inspector'),this.selection);add(el('city-empty'));add(el('city-count'),this.selection);add(el('city-demographics'),this.selection);add(el('city-factions'),this.selection);
    const extra=document.createElement('details');extra.dataset.familyAction='true';extra.innerHTML='<summary>Stadtdarstellung und Ausgabe</summary>';this.selection.append(extra);
-   for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);
+   for(const id of ['city-export-svg','city-export-json'])add(el(id),extra);add(el('city-paper').closest('details'),extra);el('city-paper').closest('label')!.hidden=true;
   }
   if(section==='interior'){
    add(el('atlas-floor-field'));this.railButton(el('atlas-create-dungeon'),'⊕','Raumgruppe anlegen');add(el('atlas-create-dungeon'),this.palette);add(el('atlas-connect-entrance'),this.selection);
@@ -326,7 +326,7 @@ export class AtlasWorkspaceLayout {
   const activeGroup=this.currentGroup();
   const objectSelection=!navigating&&this.family==='terrain'&&tool.value==='select'&&activeGroup?.id==='objects';
   el('vegetation-selection-filter').closest('label')!.hidden=navigating||this.family!=='terrain'||tool.value!=='select'||activeGroup?.id!=='vegetation';
-  el('vegetation-spatial').hidden=objectSelection;el('land-cursor-height').hidden=objectSelection;
+  el('land-cursor-height').hidden=objectSelection;
   el('land-sea-options').hidden=navigating||this.family!=='terrain'||activeGroup?.id!=='water';
   for(const b of this.toolList.querySelectorAll<HTMLButtonElement>('button')){
    const entry=activeGroup?.tools.find(t=>t.id===b.dataset.atlasTool);b.disabled=this.changingTool||!!(entry&&el<HTMLSelectElement>(entry.control).disabled);

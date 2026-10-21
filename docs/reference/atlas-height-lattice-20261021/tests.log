@@ -1,0 +1,149 @@
+TAP version 13
+# Subtest: colour jobs yield to selection, share pixel semantics and reject stale revisions
+ok 1 - colour jobs yield to selection, share pixel semantics and reject stale revisions
+  ---
+  duration_ms: 1094.783414
+  type: 'test'
+  ...
+# Subtest: colour preserves baseline terrain and approved density-aware contour pixels in all three styles
+ok 2 - colour preserves baseline terrain and approved density-aware contour pixels in all three styles
+  ---
+  duration_ms: 1745.361475
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 3 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 4.327355
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 4 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 1441.304153
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 5 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 43.478609
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 6 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 4.933157
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 7 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 2.222855
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 8 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 779.17303
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 9 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 448.942346
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 10 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 341.548539
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 11 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 248.841077
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 12 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 428.675513
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 13 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 1658.574518
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 14 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 454.90807
+  type: 'test'
+  ...
+# Subtest: level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+ok 15 - level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+  ---
+  duration_ms: 114.123871
+  type: 'test'
+  ...
+# Subtest: yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+ok 16 - yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+  ---
+  duration_ms: 31.306029
+  type: 'test'
+  ...
+# Subtest: compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+ok 17 - compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+  ---
+  duration_ms: 45.893351
+  type: 'test'
+  ...
+# Subtest: navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+ok 18 - navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets
+  ---
+  duration_ms: 3.907668
+  type: 'test'
+  ...
+# Subtest: coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+ok 19 - coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read
+  ---
+  duration_ms: 345.816632
+  type: 'test'
+  ...
+# Subtest: yielding raster batches reproduce the complete projection byte for byte
+ok 20 - yielding raster batches reproduce the complete projection byte for byte
+  ---
+  duration_ms: 1267.646926
+  type: 'test'
+  ...
+# Subtest: height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+ok 21 - height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+  ---
+  duration_ms: 6222.133118
+  type: 'test'
+  ...
+# {"measurement":"process includes store, test and scratch allocations; cache bytes are accounted separately","memoryBefore":{"rss":121126912,"heapTotal":23158784,"heapUsed":17644424,"external":2625707,"arrayBuffers":117899},"memoryAfter":{"rss":213880832,"heapTotal":31498240,"heapUsed":18125040,"external":38455694,"arrayBuffers":35884768},"peakRssKiB":208868,"cache":{"bytes":5629289,"limit":16777216,"hits":766,"misses":1770,"evictions":0},"coldRasterTiles":1,"editedRasterTiles":4096}
+# Subtest: a small authored change missed by the overview lattice changes the active detail raster
+ok 22 - a small authored change missed by the overview lattice changes the active detail raster
+  ---
+  duration_ms: 872.618224
+  type: 'test'
+  ...
+# Subtest: small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+ok 23 - small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+  ---
+  duration_ms: 1817.072439
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22384.001086

@@ -1,0 +1,51 @@
+{
+  "profile": "/home/aaron/.cache/saltmarcher/vegetation-native-S7vQEh",
+  "head": "6a2d8e819dd2fc9067dac6ca65430754f5781bc5",
+  "checks": [
+    "Isolierter Prototyp: identische Bestände in Draufsicht und räumlich; regulärer Prozessabschluss",
+    "Native Pinselgeste speichert Boden, Bewuchs und Geländeart gemeinsam",
+    "Dauerhafte Lichtung durch Freihalten",
+    "Manuell platzierter Findling als geschützte Einzelkorrektur",
+    "Sichtbaren Findling auswählen, verschieben, skalieren und drehen",
+    "Hauptkamera bleibt beim Neigen und Atlas-Undo/Redo dieselbe",
+    "Flächen, Baumreihen und Abbruch laufen durch die bestehenden Atlaswerkzeuge",
+    "Frischer Electron-Prozess erhält Flächen und geschützte Korrekturen"
+  ],
+  "errors": [],
+  "sourceHashes": {
+    "src/app/vegetation.ts": "5d24c527d0f797744c06c85b2651423d003d9b447e170a08285254d0cd116543",
+    "src/app/atlas-spatial-vegetation.ts": "eb7fb98dcc764b57ddbd1b7d825c8e6c6bec73468052aebffc6bacf8de67af96",
+    "src/app/terrain-spatial-view.ts": "b9fb3a596160df7ec11a08e2840bdc55be76317e0c95e20e4bcfc503be3ad368",
+    "src/app/atlas-landscape-ui.ts": "e67fff7b65b367ea2362b5a5830735c91472b04a262b6bdea46c7e2117900bea",
+    "src/app/storage/vegetation.ts": "ac1cb44f288bcb25099b49eaade6f3ec6e7dc7112f18909c8246203cc7106761",
+    ".build/vegetation-desktop/ui/renderer.js": "4ff3f260b06a419563b62f624bb3e7bab65c5ec67c7cf78e99738757f00b88ce",
+    ".build/vegetation-desktop/main.cjs": "81a4142a98c2f7f78852de58487f59f948836b991fcd967e758d5f7b2025d0af"
+  },
+  "prototype": {
+    "instances": 880,
+    "tilt": 0,
+    "calls": 6,
+    "triangles": 36506
+  },
+  "performance": {
+    "frames": 79,
+    "frameP95Ms": 27,
+    "renderP95Ms": 7.399999976158142,
+    "meanFps": 56.62676510668592
+  },
+  "exits": [
+    {
+      "code": 0,
+      "signal": null
+    },
+    {
+      "code": 0,
+      "signal": null
+    },
+    {
+      "code": 0,
+      "signal": null
+    }
+  ],
+  "complete": true
+}

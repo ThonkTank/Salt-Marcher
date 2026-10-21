@@ -1,5 +1,4 @@
 import {atlasUnits,setAtlasUnits,atlasFieldValue,setAtlasFieldValue,lengthLabel} from './atlas-units';
-import {VegetationSpatialView} from './vegetation-spatial';
 import {emptyRecord,type LandscapeRecord,type LandscapeBox,type LandscapeAction} from './atlas-landscape';
 import {routeSpec,routeDefaults,nearestRoute,type RouteStructure} from './terrain-route';
 import {newLine,roadStyles} from './landscape-line';
@@ -7,20 +6,24 @@ import type {VegetationScene} from './vegetation';
 import type {Point} from './contracts';
 
 interface Host {
-  token:string;box:LandscapeBox;record?:LandscapeRecord;kind:'road'|'river';tilt?:number;
+  token:string;box:()=>LandscapeBox;record?:LandscapeRecord;kind:'road'|'river';
+  canvas:HTMLCanvasElement;panel:HTMLElement;
+  point:(e:MouseEvent)=>Point;hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
+  navigation:(e:PointerEvent)=>boolean;current:()=>boolean;
+  preview:(records:LandscapeRecord[]|undefined,anchors:Point[])=>void;closed:()=>void;
   write:(action:LandscapeAction|{kind:'undo'|'redo'})=>Promise<unknown>;
   changed?:()=>Promise<unknown>;navigate?:(box:LandscapeBox)=>void;
 }
-/** Both atlas entry points use this editor and the same canonical command.
- * The canvas shows the same orthographic scene at zero or nonzero tilt. */
-export async function openTerrainRoute(host:Host){
-  const dialog=document.createElement('dialog');dialog.className='vegetation-dialog';dialog.id='terrain-route-editor';
-  dialog.innerHTML=`<div class="vegetation-top"><strong>${host.kind==='river'?'Fluss':'Straße'} im Gelände</strong>
+/** Route author controls on the main Atlas. Navigation, projection and rendering
+ * belong to the Atlas; this session owns only the draft and canonical commands. */
+export function openTerrainRoute(host:Host){
+  const panel=document.createElement('section');panel.className='atlas-route-controls';panel.id='terrain-route-editor';
+  panel.innerHTML=`<div class="toolbar"><strong>${host.kind==='river'?'Fluss':'Straße'} im Gelände</strong>
     <label>Maße <select id="route-units"><option value="dnd">DnD</option><option value="metric">Metrisch</option></select></label>
-    <button data-action="fit">Verlauf einpassen</button><button data-action="top">Draufsicht</button><button data-action="tilt">Kippen</button>
+    <button data-action="fit">Verlauf einpassen</button>
     <button data-action="undo">Rückgängig</button><button data-action="redo">Wiederholen</button>
-    <button data-action="export">PNG</button><button data-action="close">Zur Karte</button></div>
-    <div class="vegetation-body"><aside>
+    <button data-action="close">Planung schließen</button></div>
+    <div class="route-fields">
     <label>Name<input id="route-name"></label>
     <label>Breite in m<input id="route-width" type="number" min=".1" step="any"></label>
     <label><input id="route-protected" type="checkbox"> Beim Geländeformen schützen</label>
@@ -41,27 +44,22 @@ export async function openTerrainRoute(host:Host){
     ${host.kind==='road'?'<label>Linienstil<select id="route-style">'+roadStyles.map(([id,label])=>`<option value="${id}">${label}</option>`).join('')+'</select></label>':'<label><input id="route-fade" type="checkbox">Schmale Quelle</label>'}</details>
     <button data-action="preview">Vorschau berechnen</button><button data-action="save" disabled>Verlauf übernehmen</button>
     <button data-action="cancel">Entwurf verwerfen</button><button data-action="delete" ${host.record?'':'hidden'}>Verlauf löschen</button>
-    </aside><div class="route-viewports"><canvas id="route-canvas" tabindex="0" aria-label="Verlaufpunkte auf dem Gelände"></canvas>
-    <canvas id="route-profile" width="800" height="110" aria-label="Höhenprofil des Verlaufs"></canvas></div></div>
+    </div><canvas id="route-profile" width="320" height="110" aria-label="Höhenprofil des Verlaufs"></canvas>
     <p id="route-status" role="status">Landschaft wird geladen …</p>`;
-  document.body.append(dialog);dialog.showModal();
-  const field=<T extends HTMLElement>(id:string)=>dialog.querySelector<T>('#route-'+id)!;
-  const button=(action:string)=>dialog.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)!;
-  const status=field('status'),canvas=field<HTMLCanvasElement>('canvas');
-  let view:VegetationSpatialView;
-  try{view=new VegetationSpatialView(canvas);}catch(e){dialog.remove();throw e;}
-  view.tilt=host.tilt??45;
-  let box={...host.box},record=structuredClone(host.record??emptyRecord(host.kind)),saved=host.record?structuredClone(host.record):undefined;
+  host.panel.append(panel);host.panel.classList.add('route-planning');
+  const field=<T extends HTMLElement>(id:string)=>panel.querySelector<T>('#route-'+id)!;
+  const button=(action:string)=>panel.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)!;
+  const status=field('status'),canvas=host.canvas;
+  let record=structuredClone(host.record??emptyRecord(host.kind)),saved=host.record?structuredClone(host.record):undefined;
   record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);
   let source:VegetationScene|undefined,proposal:LandscapeRecord|undefined,generation=0,closed=false,saving=false,dirty=false,timer:ReturnType<typeof setTimeout>|undefined;
-  let selected=-1,insert=false,drag:{index:number;start:Point;moved:boolean;pan?:LandscapeBox}|undefined;
+  let selected=-1,insert=false;
   const fitBox=()=>{
     const points=record.route!.anchors;if(points.length<2)return;
     const minX=Math.min(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxX=Math.max(...points.map(p=>p.x)),maxY=Math.max(...points.map(p=>p.y));
     const pad=Math.max(record.width*8,Math.min(200,record.route!.limits.corridor)),width=Math.max(80,maxX-minX+pad*2),height=Math.max(80,maxY-minY+pad*2,width*.65);
-    box={x:(minX+maxX-width)/2,y:(minY+maxY-height)/2,width,height};
+    host.navigate?.({x:(minX+maxX-width)/2,y:(minY+maxY-height)/2,width,height});
   };
-  if(host.record)fitBox();
   const limits=['corridor','cut','fill','shoulder','grade','depth','clearance'] as const;
   const setFields=()=>{
     field<HTMLInputElement>('name').value=record.name;
@@ -96,11 +94,10 @@ export async function openTerrainRoute(host:Host){
     section.value=old||'0';if(section.selectedIndex<0)section.selectedIndex=0;
     field<HTMLSelectElement>('structure').value=record.route!.sections[Number(section.value)]??'auto';
   }
-  function drawHandles(){
-    view.showDraft(record.route!.anchors);view.render();
-  }
+  let previewRecords:LandscapeRecord[]|undefined;
+  function drawHandles(){host.preview(previewRecords,record.route!.anchors);}
   function invalidate(){
-    if(saving)return;dirty=true;proposal=undefined;button('save').disabled=true;generation++;clearTimeout(timer);
+    if(saving)return;dirty=true;proposal=undefined;previewRecords=undefined;button('save').disabled=true;generation++;clearTimeout(timer);
     drawHandles();showProfile({...record,route:{...record.route!,nodes:[]}});status.textContent='Entwurf geändert. Vorschau wird berechnet …';
     if(record.route!.anchors.length>=2)timer=setTimeout(()=>void preview(),250);
     else status.textContent='Start und Ziel auf dem Gelände anklicken.';
@@ -125,54 +122,70 @@ export async function openTerrainRoute(host:Host){
   document.addEventListener('atlas-units-changed',unitsChanged);unitsChanged();
   async function preview(){
     if(!source||closed||saving||record.route!.anchors.length<2)return;
-    readFields();const epoch=++generation;proposal=undefined;button('save').disabled=true;canvas.setAttribute('aria-busy','true');
+    readFields();const epoch=++generation;proposal=undefined;button('save').disabled=true;panel.setAttribute('aria-busy','true');
     status.textContent='Geländegerechter Verlauf wird berechnet …';
     try{
+      const box=host.box();
       const result=await window.campaign.atlasSpatialScene(host.token,box,box.width/Math.max(1,canvas.clientWidth),{kind:'landscape-route',record:structuredClone(record)},source.fence);
       if(closed||epoch!==generation)return;if(!result.ok)throw Error(result.error);
       proposal=result.value.records.find(r=>r.id===record.id);if(!proposal?.route)throw Error('Verlauf fehlt in der Vorschau.');
-      view.selectedArea=record.id;view.setData(result.value);drawHandles();showProfile(proposal);
+      // City road copies only constrain the planner; their authored geometry is already in the Atlas.
+      previewRecords=result.value.records.filter(r=>!r.id.startsWith('city-road:'));drawHandles();showProfile(proposal);
       button('save').disabled=false;
       const structures=[...new Set(proposal.route.nodes.map(n=>n.structure))].filter(k=>k!=='ground');
       const names={bridge:'Brücke',ford:'Furt',tunnel:'Tunnel'};
       status.textContent='Vorschau bereit · '+(structures.length?structures.map(k=>names[k as keyof typeof names]).join(', ')+' · ':'')+'Geländeform und Verlauf werden gemeinsam gespeichert.';
-    }catch(e){if(epoch===generation&&!closed){status.textContent=(e as Error).message;view.setData(source);drawHandles();}}
-    finally{if(epoch===generation)canvas.setAttribute('aria-busy','false');}
+    }catch(e){if(epoch===generation&&!closed){status.textContent=(e as Error).message;previewRecords=undefined;drawHandles();}}
+    finally{if(epoch===generation)panel.setAttribute('aria-busy','false');}
   }
   async function load(){
-    const epoch=++generation;const result=await window.campaign.atlasSpatialScene(host.token,box,box.width/Math.max(1,canvas.clientWidth));
-    if(closed||epoch!==generation)return;if(!result.ok)throw Error(result.error);source=result.value;view.setData(source);drawHandles();
+    const epoch=++generation,box=host.box();const result=await window.campaign.atlasSpatialScene(host.token,box,box.width/Math.max(1,canvas.clientWidth));
+    if(closed||epoch!==generation)return;if(!result.ok)throw Error(result.error);source=result.value;previewRecords=undefined;drawHandles();
     if(host.kind==='river'){
       const select=field<HTMLSelectElement>('mouth');select.replaceChildren(new Option('Freies Ziel / Meer',''));
       for(const r of source.records)if(r.id!==record.id&&(r.kind==='river'&&r.route||r.surface==='freshwater'))select.add(new Option(r.name||r.kind,r.id));
       select.value=record.route?.mouth?.id??'';
     }
     status.textContent='Start, Zwischenpunkte und Ziel setzen. Punkte lassen sich ziehen.';
-    canvas.setAttribute('aria-busy','false');
+    panel.setAttribute('aria-busy','false');
   }
-  const local=(e:MouseEvent)=>{const b=canvas.getBoundingClientRect();return{x:e.clientX-b.x,y:e.clientY-b.y};};
-  canvas.onpointerdown=e=>{
-    if(saving||!source||![0,1].includes(e.button))return;e.preventDefault();const p=local(e);
-    if(e.button===1){drag={index:-1,start:p,moved:false,pan:{...box}};canvas.setPointerCapture(e.pointerId);return;}
-    const index=record.route!.anchors.findIndex(v=>{const q=view.project(v);return Math.hypot(q.x-p.x,q.y-p.y)<12;});
-    drag={index,start:p,moved:false};if(index>=0)selected=index;canvas.setPointerCapture(e.pointerId);
+  // Capture author gestures before normal tools; navigation remains entirely in AtlasCanvas.
+  const parent=canvas.parentElement!;
+  const listen=<K extends keyof HTMLElementEventMap>(type:K,handler:(e:HTMLElementEventMap[K])=>void)=>{
+    parent.addEventListener(type,handler,true);return()=>parent.removeEventListener(type,handler,true);
   };
-  canvas.onpointermove=e=>{
-    if(!drag)return;const p=local(e);if(Math.hypot(p.x-drag.start.x,p.y-drag.start.y)>3)drag.moved=true;
-    if(drag.pan){const m=box.width/canvas.clientWidth;box={...drag.pan,x:drag.pan.x-(p.x-drag.start.x)*m,y:drag.pan.y-(p.y-drag.start.y)*m/Math.max(.4,Math.cos(view.tilt*Math.PI/180))};view.setViewport(box);return;}
-    if(drag.index>=0&&drag.moved){const hit=view.hit(p.x,p.y);if(hit){record.route!.anchors[drag.index]={x:hit.x,y:hit.y};proposal=undefined;button('save').disabled=true;drawHandles();}}
-  };
-  canvas.onpointerup=e=>{
-    const d=drag;drag=undefined;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(!d)return;
-    if(d.pan){void load().then(()=>{if(dirty)void preview();}).catch(error);return;}
-    if(d.index<0&&!d.moved){const p=local(e),hit=view.hit(p.x,p.y);if(hit){
-      const at=insert&&selected>=0?selected+1:record.route!.anchors.length;
-      record.route!.anchors.splice(at,0,{x:hit.x,y:hit.y});if(record.route!.anchors.length>1)record.route!.sections.splice(Math.max(0,at-1),0,'auto');selected=at;insert=false;
-    }}
-    showPoints();invalidate();
-  };
-  canvas.onpointercancel=()=>{drag=undefined;showPoints();invalidate();};
-  canvas.onwheel=e=>{e.preventDefault();if(saving)return;const factor=Math.exp(Math.max(-.4,Math.min(.4,e.deltaY*.001))),width=Math.max(20,Math.min(1e7,box.width*factor)),height=width*box.height/box.width;box={x:box.x+(box.width-width)/2,y:box.y+(box.height-height)/2,width,height};clearTimeout(timer);timer=setTimeout(()=>void load().then(()=>{if(dirty)void preview();}).catch(error),150);};
+  const stop=(e:Event)=>{e.preventDefault();e.stopImmediatePropagation();};
+  let gesture:{pointer:number;index:number;start:Point;moved:boolean}|undefined;
+  const release=()=>{if(gesture&&canvas.hasPointerCapture(gesture.pointer))canvas.releasePointerCapture(gesture.pointer);gesture=undefined;};
+  const listeners=[
+    listen('pointerdown',e=>{
+      if(e.target!==canvas||host.navigation(e))return;stop(e);
+      if(saving||!source||!host.current()||e.button!==0)return;
+      canvas.focus({preventScroll:true});
+      const handle=host.hit(e,['routeAnchor']),index=handle?Number(handle.data.routeAnchor):-1;
+      gesture={pointer:e.pointerId,index,start:{x:e.clientX,y:e.clientY},moved:false};
+      if(index>=0)selected=index;canvas.setPointerCapture(e.pointerId);
+    }),
+    listen('pointermove',e=>{
+      if(!gesture||e.pointerId!==gesture.pointer)return;stop(e);
+      if(Math.hypot(e.clientX-gesture.start.x,e.clientY-gesture.start.y)>3)gesture.moved=true;
+      if(gesture.index>=0&&gesture.moved&&host.current()){
+        record.route!.anchors[gesture.index]=host.point(e);previewRecords=undefined;proposal=undefined;button('save').disabled=true;drawHandles();
+      }
+    }),
+    listen('pointerup',e=>{
+      if(!gesture||e.pointerId!==gesture.pointer)return;stop(e);const d=gesture;release();
+      if(!host.current())return;
+      if(d.index<0&&!d.moved){
+        const at=insert&&selected>=0?selected+1:record.route!.anchors.length;
+        record.route!.anchors.splice(at,0,host.point(e));if(record.route!.anchors.length>1)record.route!.sections.splice(Math.max(0,at-1),0,'auto');selected=at;insert=false;
+      }
+      showPoints();if(d.index<0&&!d.moved||d.index>=0&&d.moved)invalidate();
+    }),
+    listen('pointercancel',e=>{if(gesture&&gesture.pointer===e.pointerId){stop(e);release();showPoints();invalidate();}}),
+    listen('click',e=>{if(e.target===canvas&&!e.altKey)stop(e);}),
+    listen('keydown',e=>{if(e.target!==canvas)return;if(e.key==='Escape'){stop(e);if(!saving){if(dirty)reset();else close();}}if(e.key==='Enter'){stop(e);button('save').click();}}),
+  ];
   const error=(e:unknown)=>{status.textContent=(e as Error).message;};
   for(const id of ['name','width','protected','color',...limits,host.kind==='road'?'style':'fade'])field(id).addEventListener('change',invalidate);
   field<HTMLSelectElement>('section').onchange=()=>{field<HTMLSelectElement>('structure').value=record.route!.sections[Number(field<HTMLSelectElement>('section').value)]??'auto';};
@@ -187,10 +200,8 @@ export async function openTerrainRoute(host:Host){
   };
   button('insert').onclick=()=>{insert=true;status.textContent='Auf die Karte klicken: neuer Punkt hinter der Auswahl.';};
   button('defaults').onclick=()=>{record.route!.limits=routeDefaults(host.kind);setFields();invalidate();};
-  button('fit').onclick=()=>{fitBox();void load().then(()=>preview()).catch(error);};
+  button('fit').onclick=fitBox;
   button('preview').onclick=()=>void preview();
-  button('top').onclick=()=>{view.tilt=0;view.render();drawHandles();};
-  button('tilt').onclick=()=>{view.tilt=45;view.render();drawHandles();};
   button('save').onclick=()=>void(async()=>{
     if(!proposal||!source||saving)return;saving=true;button('save').disabled=true;
     try{
@@ -201,15 +212,18 @@ export async function openTerrainRoute(host:Host){
       button('delete').hidden=false;
     }catch(e){error(e);button('save').disabled=false;}finally{saving=false;}
   })();
-  const reset=()=>{generation++;clearTimeout(timer);record=structuredClone(saved??emptyRecord(host.kind));record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);proposal=undefined;dirty=false;selected=-1;button('save').disabled=true;setFields();if(source)view.setData(source);drawHandles();showProfile(record);status.textContent='Entwurf verworfen.';};
+  const reset=()=>{generation++;clearTimeout(timer);record=structuredClone(saved??emptyRecord(host.kind));record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);proposal=undefined;dirty=false;selected=-1;button('save').disabled=true;setFields();previewRecords=undefined;drawHandles();showProfile(record);status.textContent='Entwurf verworfen.';};
   button('cancel').onclick=reset;
   for(const action of ['undo','redo'] as const)button(action).onclick=()=>void(async()=>{if(dirty||saving){status.textContent='Zuerst Entwurf übernehmen oder verwerfen.';return;}saving=true;try{await host.write({kind:action});await host.changed?.();await load();saved=source?.records.find(r=>r.id===record.id);reset();}catch(e){error(e);}finally{saving=false;}})();
   button('delete').onclick=()=>void(async()=>{if(!saved||saving)return;saving=true;try{await host.write({kind:'landscape-remove',id:saved.id,expectedRevision:saved.revision});await host.changed?.();dirty=false;close();}catch(e){error(e);}finally{saving=false;}})();
-  button('export').onclick=()=>void(async()=>{if(dirty||!source){status.textContent='Für die Ausgabe zuerst übernehmen oder verwerfen.';return;}view.showDraft([]);view.render();const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('Bildausgabe fehlgeschlagen.');const result=await window.campaign.exportAtlasPNG(host.token,new Uint8Array(await blob.arrayBuffer()),'gm','png',source.fence);if(!result.ok)throw Error(result.error);drawHandles();})().catch(error);
-  function close(){document.removeEventListener('atlas-units-changed',unitsChanged);closed=true;generation++;clearTimeout(timer);observer.disconnect();view.dispose();dialog.close();dialog.remove();host.navigate?.(box);}
+  function close(){
+    if(closed)return;closed=true;release();listeners.forEach(remove=>remove());
+    document.removeEventListener('atlas-units-changed',unitsChanged);generation++;clearTimeout(timer);observer.disconnect();
+    host.preview(undefined,[]);panel.remove();host.panel.classList.remove('route-planning');host.closed();
+  }
   button('close').onclick=()=>{if(dirty||saving){status.textContent='Zuerst Entwurf übernehmen oder verwerfen.';return;}close();};
-  dialog.oncancel=e=>{e.preventDefault();if(saving)return;if(dirty)reset();else close();};
-  const observer=new ResizeObserver(()=>{view.render();if(profileRecord)showProfile(profileRecord);});observer.observe(canvas);
-  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();status.textContent='GPU-Kontext verloren. Entwurf bleibt erhalten; zur Karte zurückkehren.';button('save').disabled=true;});
-  setFields();try{await load();if(record.route!.anchors.length>=2){dirty=!saved;await preview();}}catch(e){error(e);}
+  const observer=new ResizeObserver(()=>{if(profileRecord)showProfile(profileRecord);});observer.observe(field('profile'));
+  setFields();let loading=true;
+  const ready=load().then(async()=>{if(!closed&&record.route!.anchors.length>=2){dirty=!saved;await preview();}}).catch(error).finally(()=>{loading=false;});
+  return {ready,hasDraft:()=>loading||dirty||saving||!!gesture,gesturing:()=>!!gesture,history:(kind:'undo'|'redo')=>button(kind).click(),close,cancel:reset};
 }

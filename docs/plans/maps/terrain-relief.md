@@ -1,5 +1,7 @@
 # Roadmap: gezeichnetes Geländerelief und kippbarer Atlas
 
+Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
+
 Verbindlicher Arbeitsplan aus dem Nutzerentscheid vom 19.10.2026. Umsetzung phasenweise, eine Phase pro Durchlauf; nach jeder Phase Vollständigkeit und Zielabstimmung prüfen. R0 wurde visuell abgenommen. Seit der Nutzeranweisung „Warte bitte nicht auf abnahmen von mir. Arbeite einfach weiter.“ werden weitere Phasen ohne Abnahmepausen umgesetzt und selbst geprüft; eine Nutzerabnahme wird dadurch nicht behauptet. Der Status steht am Ende dieser Datei; ein Prototyp ist kein Produktnachweis.
 
 ## Ziel und festgelegter Umfang

@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: colour preserves bounded cubic terrain and density-aware contour pixels in all three styles
+ok 1 - colour preserves bounded cubic terrain and density-aware contour pixels in all three styles
+  ---
+  duration_ms: 1479.492777
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 2 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 4.290258
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 3 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 1254.193924
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 4 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 54.941349
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 5 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 4.334584
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 6 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 2.663839
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 7 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 1443.10927
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 8 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 515.413893
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 9 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 645.942552
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 10 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 437.688273
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 11 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 591.658349
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 12 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 2718.093404
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 13 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 843.466171
+  type: 'test'
+  ...
+# Subtest: level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+ok 14 - level coordinate reuse preserves fractional samples beyond 32-bit cell indices
+  ---
+  duration_ms: 155.607858
+  type: 'test'
+  ...
+# Subtest: yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+ok 15 - yielded height bands preserve pixels and close all record iterators before yielding or cancellation
+  ---
+  duration_ms: 42.671736
+  type: 'test'
+  ...
+# Subtest: compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+ok 16 - compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection
+  ---
+  duration_ms: 66.561435
+  type: 'test'
+  ...
+# Subtest: bounded reconstruction keeps exact nodes, affine slopes and plateau extrema without Catmull overshoot
+ok 17 - bounded reconstruction keeps exact nodes, affine slopes and plateau extrema without Catmull overshoot
+  ---
+  duration_ms: 49.237938
+  type: 'test'
+  ...
+# Subtest: analytic hill error improves and derivatives remain continuous at interior tile seams
+ok 18 - analytic hill error improves and derivatives remain continuous at interior tile seams
+  ---
+  duration_ms: 50.158915
+  type: 'test'
+  ...
+# Subtest: schema 53 expands SQL reads without changing author bytes; undo/redo keeps the expanded footprint
+ok 19 - schema 53 expands SQL reads without changing author bytes; undo/redo keeps the expanded footprint
+  ---
+  duration_ms: 688.350042
+  type: 'test'
+  ...
+# Subtest: schema 53 migrates a redo cursor whose guard was rebased by an earlier undo
+ok 20 - schema 53 migrates a redo cursor whose guard was rebased by an earlier undo
+  ---
+  duration_ms: 541.220729
+  type: 'test'
+  ...
+# Subtest: migration never repairs an unknown conflicting history guard
+ok 21 - migration never repairs an unknown conflicting history guard
+  ---
+  duration_ms: 455.0437
+  type: 'test'
+  ...
+# Subtest: failed metadata migration rolls history, heights and schema back together
+ok 22 - failed metadata migration rolls history, heights and schema back together
+  ---
+  duration_ms: 298.085195
+  type: 'test'
+  ...
+# Subtest: schema 53 archive preview stays read-only and imported heights receive full support
+ok 23 - schema 53 archive preview stays read-only and imported heights receive full support
+  ---
+  duration_ms: 1671.126023
+  type: 'test'
+  ...
+# Subtest: a changed outer tangent invalidates warm field, mesh and colour caches beyond the former one-cell support
+ok 24 - a changed outer tangent invalidates warm field, mesh and colour caches beyond the former one-cell support
+  ---
+  duration_ms: 9.515628
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15851.064796

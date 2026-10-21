@@ -1,0 +1,293 @@
+TAP version 13
+# Subtest: trusted seeded surface is reused; successful local writes invalidate only affected blocks
+ok 1 - trusted seeded surface is reused; successful local writes invalidate only affected blocks
+  ---
+  duration_ms: 1455.787787
+  type: 'test'
+  ...
+# Subtest: focused sampling seeds all nine canonical bands and keeps local brush invalidation exact
+ok 2 - focused sampling seeds all nine canonical bands and keeps local brush invalidation exact
+  ---
+  duration_ms: 982.075547
+  type: 'test'
+  ...
+# Subtest: Undo, Redo, deletion, failed writes, outer rollback and unversioned writes cannot retain stale surfaces
+ok 3 - Undo, Redo, deletion, failed writes, outer rollback and unversioned writes cannot retain stale surfaces
+  ---
+  duration_ms: 1572.201375
+  type: 'test'
+  ...
+# Subtest: derived indexes tolerate corrupt JSON while canonical reads fail closed; metadata plans use indexes
+ok 4 - derived indexes tolerate corrupt JSON while canonical reads fail closed; metadata plans use indexes
+  ---
+  duration_ms: 1002.285361
+  type: 'test'
+  ...
+# Subtest: metres per second, soft rim, exact target and resampled gestures
+ok 5 - metres per second, soft rim, exact target and resampled gestures
+  ---
+  duration_ms: 382.854315
+  type: 'test'
+  ...
+# Subtest: smoothing preserves a plane, reduces spikes and is independent of record order
+ok 6 - smoothing preserves a plane, reduces spikes and is independent of record order
+  ---
+  duration_ms: 1654.484971
+  type: 'test'
+  ...
+# Subtest: coarse additive brushes move fine detail and smooth only their selected scale
+ok 7 - coarse additive brushes move fine detail and smooth only their selected scale
+  ---
+  duration_ms: 239.476705
+  type: 'test'
+  ...
+# Subtest: gesture transaction, failed write, single undo/redo, restart and preview agree
+ok 8 - gesture transaction, failed write, single undo/redo, restart and preview agree
+  ---
+  duration_ms: 1720.918054
+  type: 'test'
+  ...
+# Subtest: shade and optional contours remain seamless across raster tiles and do not author data
+ok 9 - shade and optional contours remain seamless across raster tiles and do not author data
+  ---
+  duration_ms: 1515.651888
+  type: 'test'
+  ...
+# Subtest: invalid controls and excessive work fail before any height is produced
+ok 10 - invalid controls and excessive work fail before any height is produced
+  ---
+  duration_ms: 1.54244
+  type: 'test'
+  ...
+# Subtest: region reader caches contour modes separately; display reads preserve the source fence
+ok 11 - region reader caches contour modes separately; display reads preserve the source fence
+  ---
+  duration_ms: 1431.042672
+  type: 'test'
+  ...
+# Subtest: optional directional target never overshoots or reverses existing terrain
+ok 12 - optional directional target never overshoots or reverses existing terrain
+  ---
+  duration_ms: 364.022556
+  type: 'test'
+  ...
+# Subtest: roughness is seeded, directional, time based and independent of sample density
+ok 13 - roughness is seeded, directional, time based and independent of sample density
+  ---
+  duration_ms: 1679.011223
+  type: 'test'
+  ...
+# Subtest: screen-sized brushes below one metre produce bounded, persistent fine geometry
+ok 14 - screen-sized brushes below one metre produce bounded, persistent fine geometry
+  ---
+  duration_ms: 42.709952
+  type: 'test'
+  ...
+# Subtest: the displayed brush resolution is the resolution actually authored at every supported scale
+ok 15 - the displayed brush resolution is the resolution actually authored at every supported scale
+  ---
+  duration_ms: 93.131407
+  type: 'test'
+  ...
+# Subtest: stationary holds combine dose without exhausting the moving-stroke work budget
+ok 16 - stationary holds combine dose without exhausting the moving-stroke work budget
+  ---
+  duration_ms: 130.275493
+  type: 'test'
+  ...
+# Subtest: streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+ok 17 - streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams
+  ---
+  duration_ms: 2970.256039
+  type: 'test'
+  ...
+# Subtest: sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+ok 18 - sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence
+  ---
+  duration_ms: 1541.010151
+  type: 'test'
+  ...
+# Subtest: scanline bands keep the same lattice at their boundary and can omit unused water geometry
+ok 19 - scanline bands keep the same lattice at their boundary and can omit unused water geometry
+  ---
+  duration_ms: 1025.414415
+  type: 'test'
+  ...
+# Subtest: two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+ok 20 - two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams
+  ---
+  duration_ms: 814.054024
+  type: 'test'
+  ...
+# Subtest: streamed field produces identical relief, contours and painted coast pixels
+ok 21 - streamed field produces identical relief, contours and painted coast pixels
+  ---
+  duration_ms: 1273.028846
+  type: 'test'
+  ...
+# Subtest: database raster streams colors in their canonical order, including erase across resolutions
+ok 22 - database raster streams colors in their canonical order, including erase across resolutions
+  ---
+  duration_ms: 4230.912957
+  type: 'test'
+  ...
+# Subtest: additive bands compose after the full legacy field at shared addresses, holes and negative seams
+ok 23 - additive bands compose after the full legacy field at shared addresses, holes and negative seams
+  ---
+  duration_ms: 1109.563414
+  type: 'test'
+  ...
+# Subtest: fine centre and coarse margins form one continuous bounded mesh with exact world UVs
+ok 24 - fine centre and coarse margins form one continuous bounded mesh with exact world UVs
+  ---
+  duration_ms: 131.157307
+  type: 'test'
+  ...
+# Subtest: canonical visibility agrees with ray tracing across the fine/coarse boundaries
+ok 25 - canonical visibility agrees with ray tracing across the fine/coarse boundaries
+  ---
+  duration_ms: 802.4618
+  type: 'test'
+  ...
+# Subtest: streamed nine-band sampling and local invalidation match canonical direct samples
+ok 26 - streamed nine-band sampling and local invalidation match canonical direct samples
+  ---
+  duration_ms: 76.243152
+  type: 'test'
+  ...
+# Subtest: refinement cannot introduce unbounded, inverted, zero-area or out-of-source bands
+ok 27 - refinement cannot introduce unbounded, inverted, zero-area or out-of-source bands
+  ---
+  duration_ms: 1.441898
+  type: 'test'
+  ...
+# Subtest: height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+ok 28 - height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights
+  ---
+  duration_ms: 13877.340254
+  type: 'test'
+  ...
+# {"measurement":"process includes store, test and scratch allocations; cache bytes are accounted separately","memoryBefore":{"rss":121192448,"heapTotal":22626304,"heapUsed":17451400,"external":2625707,"arrayBuffers":117899},"memoryAfter":{"rss":206950400,"heapTotal":31752192,"heapUsed":16646080,"external":52812487,"arrayBuffers":50279172},"peakRssKiB":216916,"cache":{"bytes":5629289,"limit":16777216,"hits":766,"misses":1770,"evictions":0},"coldRasterTiles":1,"editedRasterTiles":4096}
+# Subtest: a small authored change missed by the overview lattice changes the active detail raster
+ok 29 - a small authored change missed by the overview lattice changes the active detail raster
+  ---
+  duration_ms: 2121.323846
+  type: 'test'
+  ...
+# Subtest: small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+ok 30 - small raster pieces match full shading at fractional origins, odd output sizes and contour seams
+  ---
+  duration_ms: 5833.35242
+  type: 'test'
+  ...
+# Subtest: streamed spatial display matches existing geometry, sea and object heights on a local field
+ok 31 - streamed spatial display matches existing geometry, sea and object heights on a local field
+  ---
+  duration_ms: 1834.133198
+  type: 'test'
+  ...
+# Subtest: world above raw record budget remains drawable and locally sculptable, smoothable and paintable
+ok 32 - world above raw record budget remains drawable and locally sculptable, smoothable and paintable
+  ---
+  duration_ms: 12907.73441
+  type: 'test'
+  ...
+# Subtest: canonical streamed visibility preserves occlusion independently of local author records
+ok 33 - canonical streamed visibility preserves occlusion independently of local author records
+  ---
+  duration_ms: 1701.194195
+  type: 'test'
+  ...
+# Subtest: projection bounds reject unbounded buffers, unknown fields and renderer-supplied source heights
+ok 34 - projection bounds reject unbounded buffers, unknown fields and renderer-supplied source heights
+  ---
+  duration_ms: 3.520379
+  type: 'test'
+  ...
+# Subtest: flat high ground stays quiet; steep low ground gets ink; no height-driven snow
+ok 35 - flat high ground stays quiet; steep low ground gets ink; no height-driven snow
+  ---
+  duration_ms: 1547.726883
+  type: 'test'
+  ...
+# Subtest: hachures and ridges match across negative-coordinate raster boundaries and camera crops
+ok 36 - hachures and ridges match across negative-coordinate raster boundaries and camera crops
+  ---
+  duration_ms: 801.533794
+  type: 'test'
+  ...
+# Subtest: world anchored marks crossfade at LOD thresholds instead of being regenerated on zoom
+ok 37 - world anchored marks crossfade at LOD thresholds instead of being regenerated on zoom
+  ---
+  duration_ms: 23.523472
+  type: 'test'
+  ...
+# Subtest: style changes preserve metres, sea level, pigment and exact preview pixels
+ok 38 - style changes preserve metres, sea level, pigment and exact preview pixels
+  ---
+  duration_ms: 742.656132
+  type: 'test'
+  ...
+# Subtest: style persists, undoes atomically, invalidates distant cached tiles, and survives sea-level edits
+ok 39 - style persists, undoes atomically, invalidates distant cached tiles, and survives sea-level edits
+  ---
+  duration_ms: 12857.562888
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 40 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 65.111532
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 41 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 12.888758
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 42 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 22.032739
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 43 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 13.338447
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 44 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 10.223288
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 45 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 9.185033
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 46 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 172.960347
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 47 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 5.150255
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 97036.83923

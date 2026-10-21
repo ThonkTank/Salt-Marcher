@@ -1,0 +1,126 @@
+{
+  "stages": [
+    {
+      "tiles": "1/24",
+      "time": 2240.4000000059605
+    },
+    {
+      "tiles": "2/24",
+      "time": 2757.0999999940395
+    },
+    {
+      "tiles": "3/24",
+      "time": 2933.800000011921
+    },
+    {
+      "tiles": "4/24",
+      "time": 3190
+    },
+    {
+      "tiles": "5/24",
+      "time": 3371.5
+    },
+    {
+      "tiles": "6/24",
+      "time": 3616.4000000059605
+    },
+    {
+      "tiles": "7/24",
+      "time": 3791.5999999940395
+    },
+    {
+      "tiles": "8/24",
+      "time": 4058.2000000178814
+    },
+    {
+      "tiles": "9/24",
+      "time": 4256.200000017881
+    },
+    {
+      "tiles": "10/24",
+      "time": 4492.5
+    },
+    {
+      "tiles": "11/24",
+      "time": 4684.300000011921
+    },
+    {
+      "tiles": "12/24",
+      "time": 4952.9000000059605
+    },
+    {
+      "tiles": "13/24",
+      "time": 5279.5
+    },
+    {
+      "tiles": "14/24",
+      "time": 5550.0999999940395
+    },
+    {
+      "tiles": "15/24",
+      "time": 5757.200000017881
+    },
+    {
+      "tiles": "16/24",
+      "time": 5981.5999999940395
+    },
+    {
+      "tiles": "17/24",
+      "time": 6244.4000000059605
+    },
+    {
+      "tiles": "18/24",
+      "time": 6420.5999999940395
+    },
+    {
+      "tiles": "19/24",
+      "time": 6662.9000000059605
+    },
+    {
+      "tiles": "20/24",
+      "time": 6840.200000017881
+    },
+    {
+      "tiles": "21/24",
+      "time": 7089.200000017881
+    },
+    {
+      "tiles": "22/24",
+      "time": 7251.9000000059605
+    },
+    {
+      "tiles": "23/24",
+      "time": 7497.700000017881
+    },
+    {
+      "tiles": "24/24",
+      "time": 7682.300000011921
+    }
+  ],
+  "checks": [
+    "Non-uniform coast refines incrementally on the main Atlas; all tiles complete and the same canvas tilts."
+  ],
+  "source": "b5b8e63af3375e901a30051bc7d54f02b2b54e3a",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/colour-coast-gQsj0I",
+  "artifacts": {
+    "main.cjs": "cad3e6f4817af5897a38cdd609610f9a899d9037527ca9f8b707ef459220bb71",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "40b8c690c30d7953fba2674d43f52e8dc9c5f96e5c7c6c42e028f86ccd529816",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2221818,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

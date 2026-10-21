@@ -1,0 +1,394 @@
+TAP version 13
+# Subtest: Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+ok 1 - Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection
+  ---
+  duration_ms: 28.196083
+  type: 'test'
+  ...
+# Subtest: Far-world local room detail retains transform precision and follows terrain elevation
+ok 2 - Far-world local room detail retains transform precision and follows terrain elevation
+  ---
+  duration_ms: 2.172515
+  type: 'test'
+  ...
+# Subtest: Draped areas sample interior terrain and preserve author IDs
+ok 3 - Draped areas sample interior terrain and preserve author IDs
+  ---
+  duration_ms: 8.697928
+  type: 'test'
+  ...
+# Subtest: HUD and terrain-owned rasters are not duplicated; masked content fails closed
+ok 4 - HUD and terrain-owned rasters are not duplicated; masked content fails closed
+  ---
+  duration_ms: 1.934184
+  type: 'test'
+  ...
+# Subtest: Dash phase persists around a corner and zero gaps do not hang
+ok 5 - Dash phase persists around a corner and zero gaps do not hang
+  ---
+  duration_ms: 3.449495
+  type: 'test'
+  ...
+# Subtest: Atlas alpha colors preserve translucent previews in GPU materials
+ok 6 - Atlas alpha colors preserve translucent previews in GPU materials
+  ---
+  duration_ms: 0.857949
+  type: 'test'
+  ...
+# Subtest: dense landscape images are draped above terrain while duplicate full ground stays omitted
+ok 7 - dense landscape images are draped above terrain while duplicate full ground stays omitted
+  ---
+  duration_ms: 4.748877
+  type: 'test'
+  ...
+# Subtest: room faces, author grips and drafts share a horizontal floor over uneven ground
+ok 8 - room faces, author grips and drafts share a horizontal floor over uneven ground
+  ---
+  duration_ms: 16.589193
+  type: 'test'
+  ...
+# Subtest: raster background preserves exact room grips and the open draft above the raster, including rotated negative coordinates
+ok 9 - raster background preserves exact room grips and the open draft above the raster, including rotated negative coordinates
+  ---
+  duration_ms: 30.913774
+  type: 'test'
+  ...
+# Subtest: loading retains the confirmed scene instead of drawing old data under new filters, and respects confirmed floor/slice/perception context
+ok 10 - loading retains the confirmed scene instead of drawing old data under new filters, and respects confirmed floor/slice/perception context
+  ---
+  duration_ms: 8.98369
+  type: 'test'
+  ...
+# Subtest: detail and raster backgrounds share exactly one draft overlay; drawing does not start author reads
+ok 11 - detail and raster backgrounds share exactly one draft overlay; drawing does not start author reads
+  ---
+  duration_ms: 5.226382
+  type: 'test'
+  ...
+# Subtest: object focus fits both original extents at 1200x300
+ok 12 - object focus fits both original extents at 1200x300
+  ---
+  duration_ms: 0.844082
+  type: 'test'
+  ...
+# Subtest: object focus fits both original extents at 300x1200
+ok 13 - object focus fits both original extents at 300x1200
+  ---
+  duration_ms: 0.583818
+  type: 'test'
+  ...
+# Subtest: a detailed original retains bounded, exact-index grips instead of rebuilding thousands of overlapping handles
+ok 14 - a detailed original retains bounded, exact-index grips instead of rebuilding thousands of overlapping handles
+  ---
+  duration_ms: 90.228211
+  type: 'test'
+  ...
+# Subtest: close zoom keeps distinct original vertices reachable with constant-pixel grips
+ok 15 - close zoom keeps distinct original vertices reachable with constant-pixel grips
+  ---
+  duration_ms: 5.798529
+  type: 'test'
+  ...
+# Subtest: draft and vertex previews retain background nodes and floor controls; buffered pan rebases them
+ok 16 - draft and vertex previews retain background nodes and floor controls; buffered pan rebases them
+  ---
+  duration_ms: 8.8435
+  type: 'test'
+  ...
+# Subtest: detail preview replaces only its face slot and preserves object painter order
+ok 17 - detail preview replaces only its face slot and preserves object painter order
+  ---
+  duration_ms: 7.241555
+  type: 'test'
+  ...
+# Subtest: a polygon tool continues its draft in a dense raster instead of triggering an object read
+ok 18 - a polygon tool continues its draft in a dense raster instead of triggering an object read
+  ---
+  duration_ms: 6.191357
+  type: 'test'
+  ...
+# Subtest: an active point tool owns the press instead of dragging an existing room grip or party marker
+ok 19 - an active point tool owns the press instead of dragging an existing room grip or party marker
+  ---
+  duration_ms: 3.96713
+  type: 'test'
+  ...
+# Subtest: an object-only interior paints its geometry instead of reducing it to an empty dungeon marker
+ok 20 - an object-only interior paints its geometry instead of reducing it to an empty dungeon marker
+  ---
+  duration_ms: 6.619495
+  type: 'test'
+  ...
+# Subtest: room rectangle drag previews and commits once in a rotated frame (forward)
+ok 21 - room rectangle drag previews and commits once in a rotated frame (forward)
+  ---
+  duration_ms: 7.818004
+  type: 'test'
+  ...
+# Subtest: room rectangle drag previews and commits once in a rotated frame (reverse)
+ok 22 - room rectangle drag previews and commits once in a rotated frame (reverse)
+  ---
+  duration_ms: 3.09965
+  type: 'test'
+  ...
+# Subtest: consecutive rectangles use the retained tool and do not replay the previous release click
+ok 23 - consecutive rectangles use the retained tool and do not replay the previous release click
+  ---
+  duration_ms: 3.849572
+  type: 'test'
+  ...
+# Subtest: completed rectangle does not restart drawing after owner changes during selection
+ok 24 - completed rectangle does not restart drawing after owner changes during selection
+  ---
+  duration_ms: 3.374164
+  type: 'test'
+  ...
+# Subtest: completed rectangle does not restart drawing after floor changes during selection
+ok 25 - completed rectangle does not restart drawing after floor changes during selection
+  ---
+  duration_ms: 2.554475
+  type: 'test'
+  ...
+# Subtest: stationary room presses keep two-click authoring and an invalid second corner remains correctable
+ok 26 - stationary room presses keep two-click authoring and an invalid second corner remains correctable
+  ---
+  duration_ms: 6.549819
+  type: 'test'
+  ...
+# Subtest: cancelled, stale and switched-floor room gestures cannot write into another context
+ok 27 - cancelled, stale and switched-floor room gestures cannot write into another context
+  ---
+  duration_ms: 11.003387
+  type: 'test'
+  ...
+# Subtest: landscape callers receive the original save failure instead of losing the reason in a null acknowledgement
+ok 28 - landscape callers receive the original save failure instead of losing the reason in a null acknowledgement
+  ---
+  duration_ms: 6.381598
+  type: 'test'
+  ...
+# Subtest: a wall grip previews and commits both endpoints in one shape write, preserving source, holes and room identity
+ok 29 - a wall grip previews and commits both endpoints in one shape write, preserving source, holes and room identity
+  ---
+  duration_ms: 2.836549
+  type: 'test'
+  ...
+# Subtest: wall handles use local edge normals and preserve nonadjacent vertices; no movement creates no history entry
+ok 30 - wall handles use local edge normals and preserve nonadjacent vertices; no movement creates no history entry
+  ---
+  duration_ms: 3.172994
+  type: 'test'
+  ...
+# Subtest: successive room previews share untouched contours and holes without moving the original or accumulating deltas
+ok 31 - successive room previews share untouched contours and holes without moving the original or accumulating deltas
+  ---
+  duration_ms: 2.92132
+  type: 'test'
+  ...
+# Subtest: wall handles are available on room edges but absent in stale, slice or public contexts
+ok 32 - wall handles are available on room edges but absent in stale, slice or public contexts
+  ---
+  duration_ms: 4.066392
+  type: 'test'
+  ...
+# Subtest: core drawing controls dock before details without cloning handlers and return intact to their source
+ok 33 - core drawing controls dock before details without cloning handlers and return intact to their source
+  ---
+  duration_ms: 7.192635
+  type: 'test'
+  ...
+# Subtest: a door on a shared wall resolves original rooms without changing the selected room or using display contours
+ok 34 - a door on a shared wall resolves original rooms without changing the selected room or using display contours
+  ---
+  duration_ms: 10.969881
+  type: 'test'
+  ...
+# Subtest: distinct crossing walls require a room choice instead of silently binding a door
+ok 35 - distinct crossing walls require a room choice instead of silently binding a door
+  ---
+  duration_ms: 3.21776
+  type: 'test'
+  ...
+# Subtest: direct door mode has no inactive corner or wall grips competing with placement
+ok 36 - direct door mode has no inactive corner or wall grips competing with placement
+  ---
+  duration_ms: 5.264253
+  type: 'test'
+  ...
+# Subtest: path midpoint drag inserts one editable bend, preserves metadata and never transforms the building
+ok 37 - path midpoint drag inserts one editable bend, preserves metadata and never transforms the building
+  ---
+  duration_ms: 6.241593
+  type: 'test'
+  ...
+# Subtest: returning a dragged path vertex to its original position creates no history entry
+ok 38 - returning a dragged path vertex to its original position creates no history entry
+  ---
+  duration_ms: 5.210486
+  type: 'test'
+  ...
+# Subtest: path gesture cannot commit after stationary
+ok 39 - path gesture cannot commit after stationary
+  ---
+  duration_ms: 4.730156
+  type: 'test'
+  ...
+# Subtest: path gesture cannot commit after cancel
+ok 40 - path gesture cannot commit after cancel
+  ---
+  duration_ms: 4.147454
+  type: 'test'
+  ...
+# Subtest: path gesture cannot commit after stale
+ok 41 - path gesture cannot commit after stale
+  ---
+  duration_ms: 4.282845
+  type: 'test'
+  ...
+# Subtest: path gesture cannot commit after floor
+ok 42 - path gesture cannot commit after floor
+  ---
+  duration_ms: 3.902554
+  type: 'test'
+  ...
+# Subtest: path gesture cannot commit after owner
+ok 43 - path gesture cannot commit after owner
+  ---
+  duration_ms: 3.90684
+  type: 'test'
+  ...
+# Subtest: selected path exposes constant-size vertices and insertion grips on the author layer only
+ok 44 - selected path exposes constant-size vertices and insertion grips on the author layer only
+  ---
+  duration_ms: 4.954357
+  type: 'test'
+  ...
+# Subtest: room grip movement uses the drawing tool snap policy in local coordinates
+ok 45 - room grip movement uses the drawing tool snap policy in local coordinates
+  ---
+  duration_ms: 3.941502
+  type: 'test'
+  ...
+# Subtest: finishing a live terrain stroke re-enables history without another region read
+ok 46 - finishing a live terrain stroke re-enables history without another region read
+  ---
+  duration_ms: 5.235406
+  type: 'test'
+  ...
+# Subtest: floor changes give author handles and live drafts the same scope, height and anchor
+ok 47 - floor changes give author handles and live drafts the same scope, height and anchor
+  ---
+  duration_ms: 5.285923
+  type: 'test'
+  ...
+# Subtest: shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+ok 48 - shared room footprints preserve courtyards and disconnected components at a horizontal fixed elevation
+  ---
+  duration_ms: 27.830769
+  type: 'test'
+  ...
+# Subtest: object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+ok 49 - object layer reuses resources on unrelated frames, disposes changes, and opens focused interiors
+  ---
+  duration_ms: 11.524617
+  type: 'test'
+  ...
+# Subtest: object hits keep normal Atlas identity and respect nearer terrain
+ok 50 - object hits keep normal Atlas identity and respect nearer terrain
+  ---
+  duration_ms: 11.081535
+  type: 'test'
+  ...
+# Subtest: projection validation checks all footprint rings and rejects malformed geometry
+ok 51 - projection validation checks all footprint rings and rejects malformed geometry
+  ---
+  duration_ms: 6.858379
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 52 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 61.229521
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 53 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 20.154555
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 54 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 27.022614
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 55 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 10.614319
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 56 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 10.574709
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 57 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 8.786503
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 58 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 24.737411
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 59 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 9.755587
+  type: 'test'
+  ...
+# Subtest: retained detail stays on the same world point when the new surface clips its bounds
+ok 60 - retained detail stays on the same world point when the new surface clips its bounds
+  ---
+  duration_ms: 12.481955
+  type: 'test'
+  ...
+# Subtest: floor projection and pointer ray agree above uneven terrain at 0
+ok 61 - floor projection and pointer ray agree above uneven terrain at 0
+  ---
+  duration_ms: 17.591439
+  type: 'test'
+  ...
+# Subtest: floor projection and pointer ray agree above uneven terrain at -1000000000
+ok 62 - floor projection and pointer ray agree above uneven terrain at -1000000000
+  ---
+  duration_ms: 11.325618
+  type: 'test'
+  ...
+# Subtest: floor projection and pointer ray agree above uneven terrain at 1000000000
+ok 63 - floor projection and pointer ray agree above uneven terrain at 1000000000
+  ---
+  duration_ms: 10.482003
+  type: 'test'
+  ...
+# Subtest: unbound room groups use one terrain anchor plus the floor elevation
+ok 64 - unbound room groups use one terrain anchor plus the floor elevation
+  ---
+  duration_ms: 0.778395
+  type: 'test'
+  ...
+1..64
+# tests 64
+# suites 0
+# pass 64
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1836.83551

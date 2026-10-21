@@ -81,6 +81,8 @@ export type AtlasAction =
     }
   | { kind: "undo" | "redo" };
 export interface AtlasCommand {
+  /** Consecutive committed terrain increments share one undo entry. Each increment has its own receipt. */
+  terrainStroke?:{id:string;expectedRevision:number};
   sourceFence?:string;
   commandId: string;
   token: string;
@@ -104,6 +106,7 @@ export interface AtlasObjectPage {
 }
 export interface AtlasCommitAck {
   campaignId: string; commandId: string; revision: number; result?:{id:string};
+  sourceFence?:string;
   canUndo: boolean; canRedo: boolean;
 }
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
@@ -116,7 +119,11 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   atlasObjects(token: string, query: AtlasObjectQuery): Promise<Result<AtlasObjectPage>>;
   atlasVegetationScene(token:string,box:import('./atlas-landscape').LandscapeBox,mpp:number):Promise<Result<import('./vegetation').VegetationScene>>;
   atlasSpatialScene(token:string,box:import('./atlas-landscape').LandscapeBox,mpp:number,draft?:import('./spatial-terrain').SpatialTerrainDraft,fence?:string):Promise<Result<import('./vegetation').VegetationScene>>;
+  atlasTerrainProfile(token:string,points:import('./contracts').Point[]):Promise<Result<import('./terrain-profile').TerrainProfile&{revision:number}>>;
   atlasHeight(token:string,point:import("./contracts").Point):Promise<Result<ReturnType<import('./terrain-height').TerrainSampler['query']>>>;
+  atlasTerrainFrame(token:string,q:import('./terrain-presentation').TerrainFrameRequest):Promise<Result<import('./terrain-presentation').TerrainFrame>>;
+  atlasTerrainColor(token:string,q:import('./terrain-color').TerrainColorRequest):Promise<Result<import('./terrain-color').TerrainColorTile>>;
+  atlasTerrainProjection(token:string,q:import('./terrain-projection').TerrainProjectionRequest,consumer?:'view'|'export'):Promise<Result<import('./terrain-projection').TerrainProjection>>;
   atlasMaskRegion(token:string,box:import("./atlas-landscape").LandscapeBox):Promise<Result<{revision:number;records:import("./atlas-landscape").LandscapeRecord[]}>>;
   atlasLandscapeObject(token: string, id: string): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
   atlasRoom(token: string, id: string): Promise<Result<import('./contracts').Room>>;
