@@ -1,5 +1,6 @@
 // Sparse world map, real main Atlas, and a 2,500-mile brush. No user profile.
 import {buildDraftProbe,terrainDraftPixels} from './terrain-draft-probe.mjs';
+import {buildRenderReuseProbe,terrainRenderReusePixels} from './terrain-render-reuse-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
@@ -52,6 +53,7 @@ const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
 const draftProbe=buildDraftProbe();
+const renderReuseProbe=buildRenderReuseProbe();
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  page=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
@@ -140,5 +142,6 @@ try{
  result.contourPixels=await terrainContourPixels(page,contourProbe);
  result.detailPixels=await terrainDetailPixels(page,detailProbe);
  result.draftPixels=await terrainDraftPixels(page,draftProbe);
+ result.renderReusePixels=await terrainRenderReusePixels(page,renderReuseProbe);
  assert.deepEqual(result.errors,[]);await native.close();await native.finish(result);
 }catch(error){await writeFile(out+'/progress.json',JSON.stringify(result,null,2));await native.fail(error);throw error;}finally{await native.dispose();}

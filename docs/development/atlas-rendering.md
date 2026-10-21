@@ -13,6 +13,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Kleine Indizes für Geländelesungen](../reference/atlas-terrain-kind-index-20261021/README.md): partielle Metadatenindizes für Höhen, Trassen und Seen, exakte Zeilennummern bei lokalen Änderungen und erneuter Autorenweg bis zum Gebäude.
 
+[Cursor und Trassen wiederverwenden](../reference/atlas-render-reuse-20261021/README.md): dauerhafte Cursorressourcen, unveränderte Trassenmatrizen und Sichtbarkeitsprüfung nur bei geänderter Kamera; GPU-Bildvergleich und große Weltprobe.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |

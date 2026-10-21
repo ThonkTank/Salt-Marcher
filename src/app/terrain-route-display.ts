@@ -10,6 +10,7 @@ import {nearestRoute} from './terrain-route';
 import {routeSampleSections} from './terrain-route-clip';
 
 const smooth=(lo:number,hi:number,x:number)=>{const t=Math.max(0,Math.min(1,(x-lo)/(hi-lo)));return t*t*(3-2*t);};
+const visibilityCenter=new THREE.Vector3();
 export function routeDisplayOpacity(pixels:number,threshold:number,overview:boolean,important=false){
  return (important?1:smooth(threshold*.5,threshold*1.5,pixels))*(overview?1-smooth(.75,1.75,pixels):1);
 }
@@ -60,7 +61,7 @@ export function routeDisplayVisible(mesh:THREE.Mesh,camera:THREE.Camera,height:n
  if(!policy)return true;
  if(!mesh.geometry.boundingSphere)mesh.geometry.computeBoundingSphere();
  const sphere=mesh.geometry.boundingSphere;if(!sphere)return true;
- const center=sphere.center.clone().applyMatrix4(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse),radius=sphere.radius*mesh.matrixWorld.getMaxScaleOnAxis();
+ const center=visibilityCenter.copy(sphere.center).applyMatrix4(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse),radius=sphere.radius*mesh.matrixWorld.getMaxScaleOnAxis();
  const scale=policy.width*camera.projectionMatrix.elements[5]!*height*.5,nearest=Math.max(1e-6,-center.z-radius),farthest=Math.max(1e-6,-center.z+radius);
  if(!policy.important&&scale/nearest<=policy.threshold*.5)return false;
  return !policy.overview||scale/farthest<1.75;

@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
+      "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export * from './src/app/terrain-ring';export * from './src/app/terrain-route-visibility';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-perspective-camera-test.cjs",
@@ -23,6 +23,8 @@ const {
   gridHeight,
   validateTerrainView,
   TerrainSpatialView,
+  TerrainRing,
+  TerrainRouteVisibility,
   TerrainHexGrid,
   AtlasSpatialLabels,
   THREE,
@@ -80,8 +82,12 @@ function viewFor(v, heights = new Float32Array(v.columns * v.rows).fill(60)) {
     grid: null,
     base: null,
     routes: [],
+    cursor: new TerrainRing('#a65f30'),
+    selection: new TerrainRing('#e68a28'),
+    routeVisibility: new TerrainRouteVisibility(),
     origin: { x: 0, y: 0 },
   });
+  view.scene.add(view.cursor.line,view.selection.line);
   view.setData({
     grid: { view: v, heights, seaLevelM: 0 },
     width: 2,
