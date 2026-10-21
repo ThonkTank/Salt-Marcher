@@ -31,6 +31,45 @@ Google Maps ist das technische Ziel: unmittelbare Navigation vom Weltmaßstab bi
 
 Geprüfte Zwischenstände werden regelmäßig über die vorgeschriebene Candidate-CI nach `main` integriert. Die vollständige Produktabnahme bleibt davon getrennt.
 
+### Verbindlicher Landschaftswerkzeugumfang (21.10.2026)
+
+Die folgende Konkretisierung des Nutzerauftrags ergänzt P4–P6. Sie beschreibt
+Sollverhalten; vorhandene Werkzeuge und einzelne Nachweise gelten nicht als
+Abnahme des gesamten Umfangs. „Aufrauen“ ist ausdrücklich bestätigt.
+
+| Werkzeug | Gefordertes Verhalten | Fachlicher Anschluss |
+| --- | --- | --- |
+| Terrain: Sculpt | Einfaches Erhöhen, Senken und Aufrauen mit natürlichen Unebenheiten; Aufrauen ist eine eigene Wirkung, nicht nur eine Zufallsvariation beim Erhöhen. | [Relief](terrain-relief.md), P5 |
+| Terrain: Smooth | Gelände gezielt glätten, mit nachvollziehbarer Stärke und Bearbeitungsskala. | [Relief](terrain-relief.md), P5 |
+| Terrain: Feature | Hügel, Bergketten, Schluchten und vergleichbare komplexe Formen mit wenigen Eingaben schnell erzeugen und weiterbearbeiten. | [Relief](terrain-relief.md), P5–P6 |
+| Geländearten | Wald, Wüste, Sumpf und weitere Typen auf weiter, mittlerer und naher Distanz lesbar darstellen; weiche Übergänge an ihren Rändern. | [Landschaft](landscape-tools.md), [Bewuchs](vegetation.md), P4–P6 |
+| Wasser | Flüsse finden sinnvolle geländeabhängige Wege zwischen gesetzten Punkten; Seen füllen passende Geländebecken. | [Trassen und Gewässer](terrain-routes.md), P5–P6 |
+| Infrastruktur | Feldweg, Hauptstraße, Gasse und weitere Straßenarten erhalten passende Linien-/Texturdarstellung, Bildschirmbreiten und Sichtbarkeitsübergänge beim Zoom. | [Trassen](terrain-routes.md), [Kartografie](atlas-cartography.md), P4–P6 |
+| Gebiete | Benannte gemalte Gebiete auf voreingestellten politischen und geographischen Ebenen sowie eigenen Ebenen; jede Ebene hat ihre eigene Hierarchie. Die Geometrie darunter bleibt unabhängig. | [Kartografie](atlas-cartography.md), P4–P6 |
+
+Für die abschließenden Untersuchungen ist jeder Tabellenpunkt als vollständiger
+Ablauf im normalen Atlas zu prüfen: Anlegen, sichtbare Bearbeitung, Zoom über
+weite/mittlere/nahe Distanz, Neigen/Drehen, Auswahl, Undo/Redo, Speichern und
+frisches Öffnen sowie passende Ausgabe. Zusätzlich zu diesen gemeinsamen
+Schritten gelten folgende fachliche Prüfungen:
+
+- Aufrauen erzeugt Erhebungen und Vertiefungen; große Pinsel, Übergänge und
+  wiederholte Züge bleiben kontrollierbar. Smooth und Feature behalten ihre
+  eigenen verständlichen Bedienaufgaben.
+- Geländearten bilden erkennbare zusammenhängende Flächen, mit weichen Rändern
+  und zunehmenden Details, ohne sichtbare Nähte oder wechselnde Objektidentitäten.
+- Flüsse berücksichtigen Höhenverlauf und Senken; Seen passen zu ihrem Becken.
+  Nach Terrainänderungen bleibt der Zustand nachvollziehbar und korrigierbar.
+- Straßenklassen bleiben unterscheidbar, mit lesbaren Namen und stabilen
+  Übergängen bei schnellen Zoomrichtungswechseln.
+- Politische, geographische und eigene Gebietsebenen lassen sich unabhängig
+  bearbeiten und hierarchisch ordnen. Gebiet ändern oder löschen verändert
+  weder Straßen, Gebäude, Gewässer noch andere Objekte.
+
+Die Leistungs- und visuellen Kriterien aus Abschnitt 4 gelten für alle diese
+Abläufe. Bekannte Lücken verhindern den Abschluss; erst drei vollständige
+kritische Untersuchungen ohne weiteren Arbeitsfund erfüllen den Gesamtauftrag.
+
 ## 2. Technische Leitentscheidungen
 
 **Ein Darstellungsweg für den gesamten Atlas.** Terrain, Kartenlinien, Gebäude, Innenräume und Bearbeitungsgriffe teilen Kamera, Koordinatentransformation und Tiefeninformationen. DOM bleibt für Bedienelemente und Texteingabe zuständig.
@@ -54,7 +93,7 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
 
-[Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen. [Folgekorrektur für große Wälder beim Detailzoom](../../reference/forest-detail-20261021/README.md): begrenzte Kandidatenauswahl statt Ausfall der Landschaftsschicht, nativ über vier Maßstäbe geprüft. Die Raster- und Kronengestaltung bleibt offen. [Bildkachel-Zuordnung](../../reference/atlas-image-orientation-20261021/README.md): gespiegelte Bitmapkacheln und verlorene Objektkacheln in der perspektivischen PNG-Ausgabe lokal korrigiert und nativ geprüft. Der Export zeigt dichten Bewuchs noch als Rasterpunkte statt derselben räumlichen Kronen; diese Detailgleichheit bleibt offen.
+[Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen. [Folgekorrektur für große Wälder beim Detailzoom](../../reference/forest-detail-20261021/README.md): begrenzte Kandidatenauswahl statt Ausfall der Landschaftsschicht, nativ über vier Maßstäbe geprüft. Die Raster- und Kronengestaltung bleibt offen. [Bildkachel-Zuordnung](../../reference/atlas-image-orientation-20261021/README.md): gespiegelte Bitmapkacheln und verlorene Objektkacheln in der perspektivischen PNG-Ausgabe lokal korrigiert und nativ geprüft. Der damalige Export zeigte dichten Bewuchs noch als Rasterpunkte. [Kompakte Bewuchsprojektionen](../../reference/forest-geometry-20261021/README.md) erhalten inzwischen im geprüften größeren Ausschnitt dieselben räumlichen Kronen innerhalb des bestehenden Übertragungsbudgets. Allgemeine Detailgleichheit, Waldgestaltung und Leistungsqualifikation bleiben offen.
 
 Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
 

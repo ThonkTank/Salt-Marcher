@@ -8,8 +8,8 @@ import {randomUUID} from 'node:crypto';
 import {homedir} from 'node:os';
 const cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {LandscapeWorkbench,vegetationControls,vegetationInspector,vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-projection';export * from './src/app/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {vegetationInstances,LandscapeWorkbench,vegetationControls,vegetationInspector,vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
 const box={x:-100,y:-100,width:200,height:200};
 const rectangle=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const plane=(height=50)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*256,y*256,4,new Float32Array(4096).fill(height))));
@@ -79,7 +79,7 @@ test('render projection, exact area hits and ground raster retain semantic cover
  const Database=require('better-sqlite3'),db=new Database(f.dir+'/world.sqlite',{readonly:true}),reader=new AtlasLandscapeReader(db);
  t.after(()=>db.close());const source=f.store.atlasRegionSource(f.token);
  reader.sync(source);const q={box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true},view=reader.read(source,q,2*1024*1024);
- assert.equal(view.state,'ready');assert(view.records.find(r=>r.vegetation)?.vegetationView.instances.length>50);
+ assert.equal(view.state,'ready');assert(vegetationInstances(view.records.find(r=>r.vegetation)?.vegetationView).length>50);
  assert(reader.hits(source,q,{x:0,y:0}).items.some(i=>i.id==='wood'));assert(view.tiles.length>0);
  const r=area(),a=new LandscapeRasterizer(box,64,64),b=new LandscapeRasterizer(box,64,64);for(const tile of plane()){a.paint(tile);b.paint(tile);}b.paint(r);
  assert.notDeepEqual(a.finish(),b.finish());
@@ -275,8 +275,27 @@ test('continent forest survives buffered village detail and keeps local and prot
  const q={box:large,width:1984,height:1608,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false};
  const view=reader.read(source,q,2*1024*1024);
  assert.equal(view.state,'ready');assert.equal(view.coverage.complete,true);
- assert(view.records.some(r=>r.vegetationView?.instances.some(i=>i.id==='old-oak')));
- assert(view.tiles.length>0||view.records.some(r=>r.vegetationView?.instances.some(i=>!i.protected)));
+ assert(view.records.some(r=>vegetationInstances(r.vegetationView).some(i=>i.id==='old-oak')));
+ assert(view.tiles.length>0||view.records.some(r=>vegetationInstances(r.vegetationView).some(i=>!i.protected)));
  assert(Buffer.byteLength(JSON.stringify(view))<=2*1024*1024);
  assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),before);assert.equal(f.store.atlasRegionSource(f.token).fence,source.fence);
+});
+
+test('compact display keeps the larger perspective export in the same individual forest detail',t=>{
+ const f=setup(t),r=area('continent','deciduous');r.polygons=[rectangle(-30000,-30000,60000,60000)];
+ for(const y of [-1,0])for(const x of [-1,0])f.save(heightRecord(x*131072,y*131072,2048,new Float32Array(4096).fill(50)));
+ r.vegetation.overrides=[{id:'ancient-oak',x:0,y:0,asset:'oak',size:22,angle:.5}];f.save(r);
+ const before=f.store.atlasLandscapeObject(f.token,r.id),source=f.store.atlasRegionSource(f.token),Database=require('better-sqlite3'),db=new Database(f.dir+'/world.sqlite',{readonly:true}),reader=new AtlasLandscapeReader(db);t.after(()=>db.close());reader.sync(source);
+ const read=(edge,pixels)=>reader.read(source,{box:{x:-edge/2,y:-edge*.405,width:edge,height:edge*.81},width:pixels,height:Math.round(pixels*.81),scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
+ const live=read(600,1984),output=read(900,3072);
+ for(const layer of [live,output]){
+  assert.equal(layer.state,'ready');assert.equal(layer.coverage.mode,'detail');assert.equal(layer.tiles.length,0);
+  assert(Buffer.byteLength(JSON.stringify(layer))<=512*1024);
+ }
+ assert(output.records.find(r=>r.vegetation).vegetationView.packed);
+ const a=vegetationInstances(live.records.find(r=>r.vegetation).vegetationView),b=vegetationInstances(output.records.find(r=>r.vegetation).vegetationView),byId=new Map(b.map(i=>[i.id,i]));
+ assert(a.length>1000);assert(b.length>a.length);
+ for(const i of a)assert.deepEqual(byId.get(i.id),i,'larger export retains each visible candidate without rounding');
+ assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),before);assert.equal(f.store.atlasRegionSource(f.token).fence,source.fence);
+ const forged={...before,vegetationView:output.records.find(r=>r.vegetation).vegetationView};assert.throws(()=>f.save(forged),/Darstellungsdaten/);
 });

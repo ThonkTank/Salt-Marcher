@@ -1,0 +1,214 @@
+TAP version 13
+# Subtest: every coarse representative survives from its child, including negative cells and multiple seeds
+ok 1 - every coarse representative survives from its child, including negative cells and multiple seeds
+  ---
+  duration_ms: 10.828526
+  type: 'test'
+  ...
+# Subtest: a removed candidate is already invisible before any coarser source arrives
+ok 2 - a removed candidate is already invisible before any coarser source arrives
+  ---
+  duration_ms: 28.084379
+  type: 'test'
+  ...
+# Subtest: undergrowth fades at detail scale and protected objects stay visible
+ok 3 - undergrowth fades at detail scale and protected objects stay visible
+  ---
+  duration_ms: 0.71014
+  type: 'test'
+  ...
+# Subtest: picking follows expanded crown pixels during camera-only zoom, then ignores faded trees
+ok 4 - picking follows expanded crown pixels during camera-only zoom, then ignores faded trees
+  ---
+  duration_ms: 23.521378
+  type: 'test'
+  ...
+# Subtest: protected crowns retain physical size and remain pickable beyond automatic levels
+ok 5 - protected crowns retain physical size and remain pickable beyond automatic levels
+  ---
+  duration_ms: 8.592207
+  type: 'test'
+  ...
+# Subtest: buffered forest grids bound actual inclusive candidates with stable parent cells
+ok 6 - buffered forest grids bound actual inclusive candidates with stable parent cells
+  ---
+  duration_ms: 1.835847
+  type: 'test'
+  ...
+# Subtest: JSON transport preserves distant doubles, order, protected metadata and decode identity
+ok 7 - JSON transport preserves distant doubles, order, protected metadata and decode identity
+  ---
+  duration_ms: 22.192742
+  type: 'test'
+  ...
+# Subtest: small previews and extension fields keep their original representation
+ok 8 - small previews and extension fields keep their original representation
+  ---
+  duration_ms: 6.347069
+  type: 'test'
+  ...
+# Subtest: invalid compact payloads fail instead of publishing displaced or missing geometry
+ok 9 - invalid compact payloads fail instead of publishing displaced or missing geometry
+  ---
+  duration_ms: 45.210277
+  type: 'test'
+  ...
+# Subtest: compact projections produce the same instance matrices, selection IDs and flat scene
+ok 10 - compact projections produce the same instance matrices, selection IDs and flat scene
+  ---
+  duration_ms: 74.895871
+  type: 'test'
+  ...
+# Subtest: a type filter reaches rocks and undergrowth below a tree canopy
+ok 11 - a type filter reaches rocks and undergrowth below a tree canopy
+  ---
+  duration_ms: 38.347459
+  type: 'test'
+  ...
+# Subtest: filtering never selects through the terrain or substitutes another type
+ok 12 - filtering never selects through the terrain or substitutes another type
+  ---
+  duration_ms: 8.428572
+  type: 'test'
+  ...
+# Subtest: filtered selection retains canonical identities after view rotation and rebuild
+ok 13 - filtered selection retains canonical identities after view rotation and rebuild
+  ---
+  duration_ms: 38.629669
+  type: 'test'
+  ...
+# Subtest: new vegetation details update the main scene while terrain and camera stay allocated
+ok 14 - new vegetation details update the main scene while terrain and camera stay allocated
+  ---
+  duration_ms: 6.709636
+  type: 'test'
+  ...
+# Subtest: stable candidate identity across tiles, cameras, density changes and restart inputs
+ok 15 - stable candidate identity across tiles, cameras, density changes and restart inputs
+  ---
+  duration_ms: 207.243736
+  type: 'test'
+  ...
+# Subtest: water, roads, buildings and excessive slopes reject generated candidates
+ok 16 - water, roads, buildings and excessive slopes reject generated candidates
+  ---
+  duration_ms: 106.870057
+  type: 'test'
+  ...
+# Subtest: protected corrections and deletion tombstones survive clearing and flooding
+ok 17 - protected corrections and deletion tombstones survive clearing and flooding
+  ---
+  duration_ms: 54.474228
+  type: 'test'
+  ...
+# Subtest: fine authored cover dominates a coarse repaint and keeps its own distribution
+ok 18 - fine authored cover dominates a coarse repaint and keeps its own distribution
+  ---
+  duration_ms: 53.699485
+  type: 'test'
+  ...
+# Subtest: area history, one-step correction, failure rollback, reopen and source fence
+ok 19 - area history, one-step correction, failure rollback, reopen and source fence
+  ---
+  duration_ms: 988.876051
+  type: 'test'
+  ...
+# Subtest: render projection, exact area hits and ground raster retain semantic cover
+ok 20 - render projection, exact area hits and ground raster retain semantic cover
+  ---
+  duration_ms: 1108.227177
+  type: 'test'
+  ...
+# Subtest: invalid snapshots and forged display fields fail at canonical writer
+ok 21 - invalid snapshots and forged display fields fail at canonical writer
+  ---
+  duration_ms: 379.511274
+  type: 'test'
+  ...
+# Subtest: rows use metre spacing and fixed candidate IDs; all six presets are bounded
+ok 22 - rows use metre spacing and fixed candidate IDs; all six presets are bounded
+  ---
+  duration_ms: 177.061827
+  type: 'test'
+  ...
+# Subtest: coarse rock representations retain the positions and sizes of their local candidates
+ok 23 - coarse rock representations retain the positions and sizes of their local candidates
+  ---
+  duration_ms: 31.392716
+  type: 'test'
+  ...
+# Subtest: regional levels are nested subsets, preserving canonical candidate fields
+ok 24 - regional levels are nested subsets, preserving canonical candidate fields
+  ---
+  duration_ms: 48.000653
+  type: 'test'
+  ...
+# Subtest: spatial lakes use their water level and suppress the same generated candidates
+ok 25 - spatial lakes use their water level and suppress the same generated candidates
+  ---
+  duration_ms: 414.237366
+  type: 'test'
+  ...
+# Subtest: live height edits regenerate automatic vegetation without moving protected author decisions
+ok 26 - live height edits regenerate automatic vegetation without moving protected author decisions
+  ---
+  duration_ms: 625.453505
+  type: 'test'
+  ...
+# Subtest: rotated city buildings exclude vegetation in their world footprint and removal restores candidates
+ok 27 - rotated city buildings exclude vegetation in their world footprint and removal restores candidates
+  ---
+  duration_ms: 1799.942423
+  type: 'test'
+  ...
+# Subtest: campaign transfer remaps locations while preserving procedural identities and snapshots
+ok 28 - campaign transfer remaps locations while preserving procedural identities and snapshots
+  ---
+  duration_ms: 2173.112765
+  type: 'test'
+  ...
+# Subtest: adding and removing a road changes only affected candidates and reports protected conflicts
+ok 29 - adding and removing a road changes only affected candidates and reports protected conflicts
+  ---
+  duration_ms: 644.207223
+  type: 'test'
+  ...
+# Subtest: three display scales preserve candidate coordinates, template snapshots and authored clearings
+ok 30 - three display scales preserve candidate coordinates, template snapshots and authored clearings
+  ---
+  duration_ms: 68.619232
+  type: 'test'
+  ...
+# Subtest: dense raster fallback stays bounded at the two metre detail boundary and retains protected picking
+ok 31 - dense raster fallback stays bounded at the two metre detail boundary and retains protected picking
+  ---
+  duration_ms: 2182.114868
+  type: 'test'
+  ...
+# Subtest: visible invalid vegetation numbers reach canonical rejection; recovery saves the entered value
+ok 32 - visible invalid vegetation numbers reach canonical rejection; recovery saves the entered value
+  ---
+  duration_ms: 604.570947
+  type: 'test'
+  ...
+# Subtest: continent forest survives buffered village detail and keeps local and protected identities
+ok 33 - continent forest survives buffered village detail and keeps local and protected identities
+  ---
+  duration_ms: 1235.154897
+  type: 'test'
+  ...
+# Subtest: compact display keeps the larger perspective export in the same individual forest detail
+ok 34 - compact display keeps the larger perspective export in the same individual forest detail
+  ---
+  duration_ms: 1547.599259
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17751.478361

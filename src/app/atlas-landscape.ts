@@ -59,7 +59,7 @@ export interface LandscapeRecord {
   sourceCell?: {mapId:string;q:number;r:number;level:number};
   surface?: "land" | "sea" | "freshwater";
   vegetation?: import("./vegetation").VegetationSpec;
-  vegetationView?: import("./vegetation").VegetationView;
+  vegetationView?: import("./vegetation-projection").VegetationProjection;
   locationId?: string;
   assetId?: string;
   imageWidth?: number;

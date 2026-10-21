@@ -1,3 +1,4 @@
+import {vegetationInstances} from './vegetation-projection';
 import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
 import {atlasTerrainExport} from './atlas-terrain-export';
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
@@ -1376,7 +1377,7 @@ export class CampaignAtlasWorkbench {
       const selecting=!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family);
       if(selecting){
         const hit=this.camera.hitAt(e,['vegetationInstance']),area=this.data?.region?.landscape?.records.find(r=>r.id===hit?.data.landscapeId),
-          instance=area?.vegetationView?.instances.find(i=>i.id===hit?.data.vegetationInstance);
+          instance=vegetationInstances(area?.vegetationView).find(i=>i.id===hit?.data.vegetationInstance);
         if(area&&instance){await this.setFamily('terrain');await this.landscape.selectVegetation(area.id,instance);return;}
       }
       if(selecting&&kind==='entrance'&&id){const entrance=this.data?.entrances.find(e=>e.id===id);if(entrance)await this.entranceHeight([entrance]);return;}
