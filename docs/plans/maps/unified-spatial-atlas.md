@@ -169,6 +169,8 @@ Rein zweidimensionale Assets bleiben zulässig und werden ihrer passenden Welt- 
 
 **Abschluss:** Welt → Stadt → Haus → Raum und zurück funktioniert ausschließlich durch Navigation und Werkzeugwahl. Gelände, Straße, Haus und Raum lassen sich in einer gemeinsamen Undo-Folge bearbeiten; Texte, IDs und Verknüpfungen bleiben korrekt.
 
+Lokaler Teilanschluss: [Gemeinsame Geschossebene für Darstellung und Bearbeitung](../../reference/atlas-workplanes-20261021/README.md). Griffe, Entwürfe, Treffer und Raumnamen verwenden dieselbe Höhe. Sichtbare leere Arbeitsebenen und unterirdische Freilegung bleiben offen. Die native Probe deckte außerdem die automatische Volumenrasterung freier Raumneuanlagen trotz ausgeschaltetem Rasterfang auf; diese Speicherumwandlung ist zu korrigieren.
+
 ### P7 — Ausgabe, Spieleranzeige und Wiederherstellung integrieren
 
 PNG/JPEG bis mindestens 8.192 × 8.192 Pixel aus demselben Szenen- und Stilmodell erzeugen. Export besitzt einen festgehaltenen Quellenstand und eine eigene Ausgabe-Kamera, beeinflusst aber die Editoransicht nicht. Große Ausgaben werden gekachelt; Beschriftung und Linienbreite richten sich nach dem Ausgabeformat.

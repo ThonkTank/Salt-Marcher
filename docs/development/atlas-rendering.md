@@ -43,6 +43,8 @@ Die bestehenden Stadt-, Raum- und Landschaftswerkzeuge bleiben die Autorenbesitz
 
 Die [Terrain-Zusammenführung](../reference/atlas-terrain-reconciliation-20261021/README.md) verbindet diese Kamera mit der gestreamten Projektion im Readonly-Worker. Normale Navigation überträgt ein begrenztes Höhen-/Farbfeld, keine vollständigen Autorenrecords. Abgeleitete Blöcke werden bei lokalen Änderungen invalidiert. Additive Höhenbänder erhalten kleine Geländeformen bei großen Pinseloperationen. Die [Live-Anzeige](../reference/atlas-live-main-camera-20261021/README.md) verwendet eine feste Trefferfläche pro Pinselzug und bestätigte Teilstände mit partiellen GPU-Uploads. Erst der Abschluss synchronisiert den ganzen Atlasbereich. Messkästchen bleiben im Bildschirmraum; Höhenprofile lesen über Main von derselben Kartenfläche. Der [Repository-Entwicklungsstart](../reference/atlas-objects-main-20261021/repository-start.md) verwendet jetzt ebenfalls diese Hauptkamera.
 
+`atlas-workplane.ts` verbindet die Geschosshöhe und den Weltanker mit Fundament-/Geländehöhen. Innenraumflächen, Autorenkonturen, Maßprojektion, Raumnamen und Zeigerstrahlen verwenden denselben Bezug. Geländewerkzeuge bleiben an der Geländeoberfläche. [Prüfungen und offene Grenzen](../reference/atlas-workplanes-20261021/README.md).
+
 `atlas-camera.ts` definiert die Meterprojektion für Kamera, Arbeitsebenen und kanonische Pinselverdeckung. Poseänderungen bewegen vorhandene GPU-Puffer unmittelbar. `terrain-spatial-source.ts` hält einen geladenen oder angeforderten Ausschnitt für kleine Pan-/Zoombewegungen fest. Ältere orthografische Pinselschnappschüsse bleiben lesbar; Überhöhung verändert keine gespeicherten Meterwerte.
 
 `terrain-grid-layout.ts` verteilt die Knoten eines gemeinsamen Geländenetzes:

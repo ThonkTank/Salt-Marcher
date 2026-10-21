@@ -1,0 +1,333 @@
+{
+  "source": "d2944a2d46844b5213cbcbf931b028ec91d677c0",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/atlas-main-Mk6T09",
+  "floorHeight": 12,
+  "errors": [],
+  "checks": [
+    "Normal room and object selection work with the main camera tilted and rotated",
+    "Room draft, vertex edit and one undo/redo retain the same camera and main surface",
+    "Floor switch and committed polygon retain world placement within canonical volume cells at 24 metres under the tilted main camera",
+    "Raised floor edits retain their height after reopening",
+    "Top view keeps the renderer; a fresh native process retains canonical edits"
+  ],
+  "exits": [
+    {
+      "code": 0,
+      "signal": null,
+      "pid": 2667313
+    },
+    {
+      "code": 0,
+      "signal": null,
+      "pid": 2667972
+    }
+  ],
+  "hashes": {
+    "src/app/atlas-workplane.ts": "93f22a53e4d2dffc6ca8f8ec30c8af06d23af2aef2dfd83d7a598e2543696453",
+    "src/app/atlas-spatial-labels.ts": "4bf9151a9d080eed2a2bd1613036811bdf4fd74f76e86bf4f9e0ea90f43c84bd",
+    "src/app/atlas-label-source.ts": "50eab4c339ea7b3f30d58fd19f7716b036b5f5b3705162dd762b36f0eb66b200",
+    "src/app/atlas-region-export.ts": "f3a431ab61c2b42e313813977de7eed4d0030317a5805ce0508d2ffca1bae235",
+    "src/app/atlas-presentation.ts": "56aaacc9e9e599ef8b9ed39a42ba89dc8009854b1ef33fab62cbab98863537fc",
+    "src/app/atlas-spatial-geometry.ts": "971181876b98368f0ec7405d9d3266500b11e91e4881331087eb6a7429a8a3bd",
+    "src/app/atlas-spatial-surface.ts": "b0736bcc25795aad4ea59e096fa9941c8b161f31c398533715a37a20451f2995",
+    "src/app/atlas-spatial-label.ts": "93f1ca1aba4c71561587d9ad4f9d209f5bac589820b58f8af07fc10d479877c3",
+    "src/app/atlas-spatial-color.ts": "1a879589572028f9fea837bd6a6e430e4946e5c5d9fd2de6f361920d257250b7",
+    "src/app/terrain-spatial-worker.ts": "fe52dfc1d324636298efe216c78c43df156dada0704d90526f41264ebdb489e9",
+    "src/app/city-model.ts": "42e64fbefbe0fb95c0eb7b1bdb3fcc79d4695c195b81ef6eac6d5f3f78c3c68a",
+    "src/app/storage/atlas-region.ts": "cd398322ad0f1fd8e3563908bdaa78c99e547419028770fcbee4f883620b449b",
+    "src/app/atlas-spatial-scene.ts": "d2430cc9aeb8e9bdf5fad509d0a0274454b532fcf037a3b81b09e39840c4ec6a",
+    "src/app/atlas-canvas.ts": "ff52b43cad6812b45942a5bc876f16be95723bf667cb07ffbd99052b184d2c0d",
+    "src/app/terrain-spatial-view.ts": "3b8b3dd2e376823bee6c4875b21cd352ebff62c9930b6d457e6af29279967aab",
+    "src/app/terrain-spatial-ui.ts": "1d0bdd490b04eb8fd02022f12cf5f7425c4082021b82ad611e2b9b9223eca9c7",
+    "src/app/campaign-atlas-ui.ts": "2bff6728f7be33f19e5767f7c2b11380579c8483ffdc42ed9fa667423a71b7de",
+    ".build/desktop/ui/renderer.js": "98aee3ac4c53af1c74daaf2343060465c3e6d78381f539ae6ba3d5d5b259a4d4"
+  },
+  "savedVertex": {
+    "x": 95.00000145917036,
+    "y": -0.0000018598565816319024
+  },
+  "upperRoom": {
+    "id": "afe802b2-2a32-4da1-bfad-4d17135c51a9",
+    "floorId": "upper",
+    "polygons": [
+      {
+        "outer": [
+          {
+            "x": 10.668,
+            "y": 10.668
+          },
+          {
+            "x": 12.192,
+            "y": 10.668
+          },
+          {
+            "x": 12.192,
+            "y": 9.144
+          },
+          {
+            "x": 59.436,
+            "y": 9.144
+          },
+          {
+            "x": 59.436,
+            "y": 57.912
+          },
+          {
+            "x": 57.912,
+            "y": 57.912
+          },
+          {
+            "x": 57.912,
+            "y": 56.388
+          },
+          {
+            "x": 56.388,
+            "y": 56.388
+          },
+          {
+            "x": 56.388,
+            "y": 54.864000000000004
+          },
+          {
+            "x": 54.864000000000004,
+            "y": 54.864000000000004
+          },
+          {
+            "x": 54.864000000000004,
+            "y": 53.34
+          },
+          {
+            "x": 53.34,
+            "y": 53.34
+          },
+          {
+            "x": 53.34,
+            "y": 51.816
+          },
+          {
+            "x": 51.816,
+            "y": 51.816
+          },
+          {
+            "x": 51.816,
+            "y": 50.292
+          },
+          {
+            "x": 50.292,
+            "y": 50.292
+          },
+          {
+            "x": 50.292,
+            "y": 48.768
+          },
+          {
+            "x": 48.768,
+            "y": 48.768
+          },
+          {
+            "x": 48.768,
+            "y": 47.244
+          },
+          {
+            "x": 47.244,
+            "y": 47.244
+          },
+          {
+            "x": 47.244,
+            "y": 45.72
+          },
+          {
+            "x": 45.72,
+            "y": 45.72
+          },
+          {
+            "x": 45.72,
+            "y": 44.196
+          },
+          {
+            "x": 44.196,
+            "y": 44.196
+          },
+          {
+            "x": 44.196,
+            "y": 42.672
+          },
+          {
+            "x": 42.672,
+            "y": 42.672
+          },
+          {
+            "x": 42.672,
+            "y": 41.148
+          },
+          {
+            "x": 39.624,
+            "y": 41.148
+          },
+          {
+            "x": 39.624,
+            "y": 39.624
+          },
+          {
+            "x": 38.1,
+            "y": 39.624
+          },
+          {
+            "x": 38.1,
+            "y": 38.1
+          },
+          {
+            "x": 36.576,
+            "y": 38.1
+          },
+          {
+            "x": 36.576,
+            "y": 36.576
+          },
+          {
+            "x": 35.052,
+            "y": 36.576
+          },
+          {
+            "x": 35.052,
+            "y": 35.052
+          },
+          {
+            "x": 33.528,
+            "y": 35.052
+          },
+          {
+            "x": 33.528,
+            "y": 33.528
+          },
+          {
+            "x": 32.004,
+            "y": 33.528
+          },
+          {
+            "x": 32.004,
+            "y": 32.004
+          },
+          {
+            "x": 30.48,
+            "y": 32.004
+          },
+          {
+            "x": 30.48,
+            "y": 30.48
+          },
+          {
+            "x": 28.956,
+            "y": 30.48
+          },
+          {
+            "x": 28.956,
+            "y": 28.956
+          },
+          {
+            "x": 27.432000000000002,
+            "y": 28.956
+          },
+          {
+            "x": 27.432000000000002,
+            "y": 27.432000000000002
+          },
+          {
+            "x": 25.908,
+            "y": 27.432000000000002
+          },
+          {
+            "x": 25.908,
+            "y": 25.908
+          },
+          {
+            "x": 24.384,
+            "y": 25.908
+          },
+          {
+            "x": 24.384,
+            "y": 24.384
+          },
+          {
+            "x": 22.86,
+            "y": 24.384
+          },
+          {
+            "x": 22.86,
+            "y": 22.86
+          },
+          {
+            "x": 21.336,
+            "y": 22.86
+          },
+          {
+            "x": 21.336,
+            "y": 21.336
+          },
+          {
+            "x": 19.812,
+            "y": 21.336
+          },
+          {
+            "x": 19.812,
+            "y": 19.812
+          },
+          {
+            "x": 18.288,
+            "y": 19.812
+          },
+          {
+            "x": 18.288,
+            "y": 18.288
+          },
+          {
+            "x": 16.764,
+            "y": 18.288
+          },
+          {
+            "x": 16.764,
+            "y": 16.764
+          },
+          {
+            "x": 15.24,
+            "y": 16.764
+          },
+          {
+            "x": 15.24,
+            "y": 15.24
+          },
+          {
+            "x": 13.716000000000001,
+            "y": 15.24
+          },
+          {
+            "x": 13.716000000000001,
+            "y": 13.716000000000001
+          },
+          {
+            "x": 12.192,
+            "y": 13.716000000000001
+          },
+          {
+            "x": 12.192,
+            "y": 12.192
+          },
+          {
+            "x": 10.668,
+            "y": 12.192
+          }
+        ],
+        "holes": []
+      }
+    ],
+    "sections": [
+      {
+        "id": "d4543618-2c3c-416b-b42b-60c11372b4b7",
+        "kind": "markdown",
+        "markdown": ""
+      }
+    ]
+  },
+  "ok": true
+}

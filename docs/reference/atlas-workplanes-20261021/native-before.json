@@ -1,0 +1,56 @@
+{
+  "source": "992c168efee638bbd49617b55f35a9ed672e558c",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui-profiles/atlas-main-VBVoj4",
+  "floorHeight": 12,
+  "errors": [],
+  "checks": [
+    "Normal room and object selection work with the main camera tilted and rotated"
+  ],
+  "exits": [],
+  "hashes": {
+    "src/app/atlas-workplane.ts": "93f22a53e4d2dffc6ca8f8ec30c8af06d23af2aef2dfd83d7a598e2543696453",
+    "src/app/atlas-presentation.ts": "56aaacc9e9e599ef8b9ed39a42ba89dc8009854b1ef33fab62cbab98863537fc",
+    "src/app/atlas-spatial-geometry.ts": "971181876b98368f0ec7405d9d3266500b11e91e4881331087eb6a7429a8a3bd",
+    "src/app/atlas-spatial-surface.ts": "b0736bcc25795aad4ea59e096fa9941c8b161f31c398533715a37a20451f2995",
+    "src/app/atlas-spatial-label.ts": "93f1ca1aba4c71561587d9ad4f9d209f5bac589820b58f8af07fc10d479877c3",
+    "src/app/atlas-spatial-color.ts": "1a879589572028f9fea837bd6a6e430e4946e5c5d9fd2de6f361920d257250b7",
+    "src/app/terrain-spatial-worker.ts": "fe52dfc1d324636298efe216c78c43df156dada0704d90526f41264ebdb489e9",
+    "src/app/city-model.ts": "42e64fbefbe0fb95c0eb7b1bdb3fcc79d4695c195b81ef6eac6d5f3f78c3c68a",
+    "src/app/storage/atlas-region.ts": "9ea72ac562b4a2bb5b5a6e11a523bcf5bd9c1c69999e9b7c0b770e0addc82828",
+    "src/app/atlas-spatial-scene.ts": "d2430cc9aeb8e9bdf5fad509d0a0274454b532fcf037a3b81b09e39840c4ec6a",
+    "src/app/atlas-canvas.ts": "ff52b43cad6812b45942a5bc876f16be95723bf667cb07ffbd99052b184d2c0d",
+    "src/app/terrain-spatial-view.ts": "84a0eefbbfc5b2aed2747fa6e1c39618b37658f1d098b0defbf39745a88712f5",
+    "src/app/terrain-spatial-ui.ts": "ea740a7b918da9f7e759557ec72e3086609832ba0672dc713dc1a6dc057edc7e",
+    "src/app/campaign-atlas-ui.ts": "2bff6728f7be33f19e5767f7c2b11380579c8483ffdc42ed9fa667423a71b7de",
+    ".build/desktop/ui/renderer.js": "4e2eb5ee7d6b38f7ade516caf1d7428a395a0251b197044ef6cbfa92b2c35d89"
+  },
+  "error": "page.waitForFunction: Timeout 30000ms exceeded.\n    at /home/aaron/Schreibtisch/projects/SaltMarcher/tools/test-desktop-atlas-main-camera.mjs:299:16",
+  "state": {
+    "canvas": {
+      "atlasView": "{\"x\":-38.39999999999999,\"y\":-56.677300613496925,\"width\":156.79999999999998,\"height\":193.35460122699385}",
+      "renderer": "webgl",
+      "imageErrors": "0",
+      "decodedBytes": "0",
+      "canvasState": "loaded",
+      "atlasRegionRevision": "4",
+      "atlasTerrainRaster": "false",
+      "atlasLandscapeTiles": "0",
+      "terrainView": "main",
+      "terrainReady": "ready",
+      "atlasOriginX": "-38.39999999999999",
+      "atlasOriginY": "-56.677300613496925",
+      "pathBuilds": "10",
+      "pathReuses": "2",
+      "sceneVersion": "53",
+      "paintCommands": "13",
+      "terrainQuality": "detail",
+      "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-540.0638036809816,\"y\":-540.0638036809816,\"width\":1160.127607361963,\"height\":1160.127607361963},\"frame\":{\"x\":-38.39999999999999,\"y\":-56.677300613496925,\"width\":156.79999999999998,\"height\":193.35460122699385},\"refinement\":{\"x\":-77.6,\"y\":-105.01595092024539,\"width\":235.2,\"height\":290.0319018404908},\"columns\":257,\"rows\":257,\"focusM\":0,\"tilt\":30,\"rotation\":25,\"exaggeration\":1}",
+      "terrainPreview": "false",
+      "terrainSamplePad": "0",
+      "terrainTiles": "25/25"
+    },
+    "status": "Kartenausschnitt geladen"
+  },
+  "closeError": "TypeError: Cannot read properties of undefined (reading '_object')"
+}
