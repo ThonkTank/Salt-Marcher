@@ -14,6 +14,9 @@ const colorKeys=["CASE WHEN paint_version=1 THEN 0 ELSE 1 END","CASE WHEN paint_
 export const LANDSCAPE_COLOR_INDEX=`CREATE INDEX temp.landscape_color_order ON landscape_shape_bounds(${colorKeys.join(',')}) WHERE terrain_kind='color'`;
 const coverKeys=['-coalesce(resolution,0)','coalesce(paint_order,0)','source_row'];
 export const LANDSCAPE_COVER_INDEX=`CREATE INDEX temp.landscape_cover_order ON landscape_shape_bounds(${coverKeys.join(',')}) WHERE terrain_kind='cover'`;
+// Include the predicate and raw paint_order as well as its sort expression:
+// otherwise SQLite still probes the metadata table for every candidate.
+export const LANDSCAPE_BASE_INDEX="CREATE INDEX IF NOT EXISTS temp.landscape_base_span ON landscape_shape_bounds(terrain_kind,max_x,min_x,max_y,min_y,resolution DESC,coalesce(paint_order,0),source_row,paint_order) WHERE terrain_kind='base'";
 type Prepare=(sql:string)=>any;
 /** A page owns only 128 numeric keys, then one payload at a time. Every SQL
  * statement has finished before yielding a record, so colour work may release

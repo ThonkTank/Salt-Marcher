@@ -1,6 +1,6 @@
 import {terrainHeightBlocks} from './terrain-height-blocks';
 import {compactVegetation} from '../vegetation-projection';
-import {LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,landscapeColorRecords,landscapeCoverRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
+import {LANDSCAPE_BASE_INDEX,LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,landscapeColorRecords,landscapeCoverRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
 import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
@@ -147,7 +147,12 @@ export class AtlasLandscapeReader {
   const projection=readTerrainProjection(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange:q.colorBase?this.colorHistory.since(q.colorBase):undefined};
  }
- colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){
+  // Leave the first terrain overview unblocked. SQLite owns maintenance and
+  // rollback; no separate build cursor or index-validity state is needed.
+  if(this.terrainKinds.has('base'))this.sql(LANDSCAPE_BASE_INDEX).run();
+  return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
+ }
  *terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
   const colorChange=q.colorBase?this.colorHistory.since(q.colorBase):undefined;
   const projection=yield* readTerrainProjectionSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);

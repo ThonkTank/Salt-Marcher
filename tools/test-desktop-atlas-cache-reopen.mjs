@@ -19,13 +19,17 @@ try{
   const firstTerrainMs=performance.now()-start,state=await page.locator('#campaign-map').evaluate(n=>({view:n.dataset.atlasView,revision:n.dataset.terrainRevision,quality:n.dataset.terrainQuality}));
   const firstRegionState=await page.locator('#campaign-atlas').getAttribute('data-region-state');
   await atlasCanvasReady(page);const regionReadyMs=performance.now()-start;
-  let detailReadyMs,detailState;
+  let firstDetailMs,detailReadyMs,detailState;
   if(process.env.ATLAS_WAIT_DETAIL==='1'){
+   // Observation after the object-region wait: an upper bound, not a GPU
+   // first-pixel timestamp (a detail tile may already have arrived).
+   await page.waitForFunction(()=>Number((document.querySelector('#campaign-map').dataset.terrainTiles??'').split('/')[0])>0,null,{timeout:90000});
+   firstDetailMs=performance.now()-start;
    await page.waitForFunction(()=>{const m=document.querySelector('#campaign-map'),[done,total]=(m.dataset.terrainTiles??'').split('/').map(Number);return m.dataset.terrainQuality==='detail'&&done>0&&done===total;},null,{timeout:90000});
    detailReadyMs=performance.now()-start;detailState=await page.locator('#campaign-map').evaluate(m=>({quality:m.dataset.terrainQuality,tiles:m.dataset.terrainTiles}));
   }
   await native.capture(page,label);await native.close();const files=[];for(const name of await readdir(native.profile+'/atlas-region-cache')){const info=await stat(native.profile+'/atlas-region-cache/'+name);files.push({name,bytes:info.size,mtimeMs:info.mtimeMs});}
-  const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,files,...(detailState?{detailReadyMs,detailState}:{})};runs.push(run);console.log(JSON.stringify(run));
+  const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,files,...(detailState?{firstDetailMs,detailReadyMs,detailState}:{})};runs.push(run);console.log(JSON.stringify(run));
  }
  assert.equal(runs[0].files.length,1);assert.deepEqual(runs[1].files,runs[0].files,'unchanged restart must reuse the cache without rewriting it');assert.deepEqual(runs[1].state,runs[0].state);
  await native.finish({runs});

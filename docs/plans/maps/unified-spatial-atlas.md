@@ -319,3 +319,7 @@ Die normale Atlasfläche beginnt mit der Geländeübersicht und lädt anschließ
 ### Voller Weltbestand: dekodierte Höhenblöcke (22.10.2026)
 
 Der vorhandene, auf 16 MiB begrenzte Projektionscache hält jetzt auch dekodierte numerische Höhenblöcke. Für dieselbe erste Übersicht sanken Höhen-Nutzdatenlesungen von 4.950 auf 1.904; Farbpixel, Höhen und vollständige Antwort blieben byteidentisch. Zwei lokale Vergleichspaare benötigten vorher 1,96–2,22 s, danach 1,13–1,48 s für die Projektion. Die normale App zeigt die erste große Geländeübersicht nach rund fünf Sekunden. Die zusätzliche Prüfung aller 48 Detailkacheln zeigt weiterhin 26,6–28,1 Sekunden bis zur vollständigen Verfeinerung; der große Sculpt-Pinsel benötigte nach Loslassen 5,76 Sekunden bis zur Werkzeugfreigabe. [Verfahren, Speicherbelegung, Regressionen und native Grenzen](../../reference/atlas-height-blocks-20261022/README.md). Die Gesamtziele bleiben offen; als Nächstes sind initiale Landschaftsmetadaten und Detailfarben zu untersuchen.
+
+### Räumliche Grundflächenabfragen (22.10.2026)
+
+[Vollständig abdeckender Terrain-Index](../../reference/atlas-base-index-20261022/README.md): Ein zusätzlicher SQLite-Index beschleunigt die Grundflächenabfragen bei der Detailverfeinerung. Die erste Übersicht bleibt vom Aufbau unabhängig; SQLite pflegt Änderungen und Rollbacks. Ein aufwendigerer Rtree-Prototyp wurde nach Gegenproben verworfen. Genaue Grenzen, Abtastung und Zeichenreihenfolge bleiben erhalten. Die vollständige Weltkarten- und Pentium-Abnahme bleibt offen.
