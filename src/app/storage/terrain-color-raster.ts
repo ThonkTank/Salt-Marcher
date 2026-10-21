@@ -60,11 +60,16 @@ export function readTerrainSettings(db:any,campaignId:string):LandscapeRecord{
  const row=db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(campaignId);
  return row?JSON.parse(row.payload):settingsRecord(0);
 }
-export function terrainColorRoutes(stream:ProjectionStream,box:LandscapeBox){
- const routes:LandscapeRecord[]=[];let bytes=0,denseRoutes=false;
- for(const r of stream('line',box)){
+export function terrainColorRoutes(stream:ProjectionStream,box:LandscapeBox,focus?:LandscapeBox){
+ const routes:LandscapeRecord[]=[],seen=new Set<string>();let bytes=0,denseRoutes=false;
+ // Nearby vectors keep priority when broad horizon coverage contains many routes.
+ for(const area of focus?[focus,box]:[box]){
+ for(const r of stream('line',area)){
+  if(seen.has(r.id))continue;seen.add(r.id);
   bytes+=JSON.stringify(r).length*2;
   if(routes.length<500&&bytes<=512*1024)routes.push(r);else {denseRoutes=true;break;}
+ }
+ if(denseRoutes)break;
  }
  return {routes,denseRoutes,retainedRoutes:new Set(routes.map(r=>r.id))};
 }

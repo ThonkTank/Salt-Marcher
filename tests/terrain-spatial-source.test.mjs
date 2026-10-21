@@ -42,8 +42,8 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
 test('pending bounded projection survives small camera gestures; the result uses the latest pose',async t=>{
  const f=fixture(t);f.sync();const key=f.ui.requested,loading=f.load();
  f.sync(zoom(.9));assert.equal(f.ui.requested,key);assert.equal(f.reads.length,1);
- f.ui.tilt=75;f.sync({...zoom(.9),x:-170});f.resolveRead();await loading;assert.equal(f.jobs.length,0);assert.equal(f.ui.ready,true);assert.equal(f.published.length,2);
- assert.equal(f.ui.visibility().tilt,75);assert.equal(f.ui.visibility().frame.x,-170);
+ f.ui.tilt=40;f.sync({...zoom(.9),x:-170});f.resolveRead();await loading;assert.equal(f.jobs.length,0);assert.equal(f.ui.ready,true);assert.equal(f.published.length,2);
+ assert.equal(f.ui.visibility().tilt,40);assert.equal(f.ui.visibility().frame.x,-170);
  for(let i=0;i<50;i++)f.sync(zoom(.9+i*.001));
  assert.equal(f.jobs.length,0);assert.equal(f.reads.length,2);assert.equal(f.ui.ready,true);assert.deepEqual(f.errors,[]);
 });
@@ -80,8 +80,8 @@ test('overview becomes usable before detail; both stages retain identical geomet
  assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainQuality,'refining');assert(f.tiles.length>1);assert.equal(f.published.length,1);assert.equal(f.reads.length,2);
  assert.equal(f.reads[0].query.width,128);assert.equal(f.reads[0].query.detail,undefined);
  assert.deepEqual(f.reads[0].query.view,f.reads[1].query.view);assert.deepEqual(f.reads[0].query.objects,f.reads[1].query.objects);
- f.ui.tilt=60;f.sync(zoom(.9));f.ui.setContours(-1);f.resolveRead(1);await loading;
- assert.equal(f.input.dataset.terrainQuality,'detail');assert.equal(f.ui.visibility().tilt,60);assert.deepEqual(f.ui.visibility().frame,zoom(.9));assert.equal(f.ui.view.interval,-1);
+ f.ui.tilt=40;f.sync(zoom(.9));f.ui.setContours(-1);f.resolveRead(1);await loading;
+ assert.equal(f.input.dataset.terrainQuality,'detail');assert.equal(f.ui.visibility().tilt,40);assert.deepEqual(f.ui.visibility().frame,zoom(.9));assert.equal(f.ui.view.interval,-1);
 });
 test('a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume',async t=>{
  const f=fixture(t,{manualDetail:true});f.sync();const loading=f.load();f.resolveRead();await new Promise(setImmediate);
@@ -168,4 +168,13 @@ test('post-edit overview and live frames preserve confirmed distant detail befor
  const retained=f.ui.colorTiles.detail;
  f.ui.presentLive({...f.ui.baseline,revision:3,fence:'live',colorChange:{base:{revision:2,fence:'source'},invalidation:{reset:false,bounds:[]}},detail:undefined});
  assert.equal(f.published.at(-1).detail,retained,'a live frame cannot drop unchanged viewport detail');
+});
+
+test('steep tilt replaces narrow pending coverage but later rotations retain the widened source',async t=>{
+ const f=fixture(t);f.sync();const old=f.load(),width=f.reads[0].query.view.box.width;
+ f.ui.tilt=75;f.sync();f.resolveRead();await old;assert.equal(f.published.length,0);
+ const wide=f.load();assert(f.reads[1].query.view.box.width>width);
+ const key=f.ui.requested;f.ui.rotation=120;f.sync();assert.equal(f.ui.requested,key);
+ f.resolveRead(1);await wide;assert.equal(f.ui.ready,true);assert.equal(f.ui.visibility().rotation,120);
+ f.ui.tilt=15;f.sync();assert.equal(f.ui.requested,key,'tilting back keeps the already available source');
 });

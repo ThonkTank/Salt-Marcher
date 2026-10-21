@@ -1,3 +1,4 @@
+import {terrainCoverageLevel} from './terrain-coverage';
 import {TerrainDetailTiles,terrainColorIdentity} from './terrain-detail-tiles';
 import {terrainObjectSources,type TerrainObjectSource} from './terrain-objects';
 import type {AtlasRenderView} from './campaign-atlas-contracts';
@@ -99,6 +100,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.toggle.textContent=tilt===0?'Atlas kippen':'Senkrecht ausrichten';
     this.toggle.setAttribute('aria-pressed',String(tilt!==0));
     if(this.frame)this.reframe(this.frame);
+    if(this.sourceWindow&&(this.sourceWindow.coverage??3)<terrainCoverageLevel(tilt))this.host.redraw();
   }
   gesture(active:boolean){
     this.view?.freezePicking(active);
@@ -160,7 +162,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(this.host.live())return;
     this.objectSources=atlas?terrainObjectSources(atlas,display):[];
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
-    this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight);
+    this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight,terrainCoverageLevel(this.tilt));
     const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
     if(source!==this.requested){delete this.input.dataset.terrainTiles;this.requested=source;this.ready=false;this.input.dataset.terrainReady='loading';this.generation++;this.busy=false;this.queued=false;this.baseline=null;this.worker?.terminate();this.worker=null;this.scheduleLoad(contours);return;}
     if(this.host.writing())return;
@@ -191,7 +193,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
         if(stage===1){
           const base=this.baseline!,colors=this.colorTiles;
           const complete=await colors.load(terrainColorIdentity({token,revision,fence:base.fence!,rasterRouteKey:base.rasterRouteKey}),query.detail!,
-            {revision,fence:base.fence,routeContext:query.view.box,contours:0},
+            {revision,fence:base.fence,routeContext:query.view.box,routeFocus:query.view.refinement,contours:0},
             async q=>{const r=await window.campaign.atlasTerrainColor(token,q);if(!r.ok)throw Error(r.error);return r.value;},current,
             (detail,rect,done,total)=>{
               if(!current())return;

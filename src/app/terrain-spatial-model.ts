@@ -1,3 +1,4 @@
+import {terrainHorizon} from './terrain-coverage';
 import {atlasCameraEye,atlasProject,type AtlasCameraPose} from './atlas-camera';
 import {TerrainSampler} from './terrain-height';
 import type {LandscapeBox,LandscapeRecord} from './atlas-landscape';
@@ -46,7 +47,7 @@ export function terrainVisibility(g:TerrainGrid){
 }
 function visibleTerrain(g:TerrainGrid,p:Point,ceiling:number){
   const v=g.view,b=v.box;if(p.x<b.x||p.y<b.y||p.x>b.x+b.width||p.y>b.y+b.height)return false;
-  const z=gridHeight(g,p),screen=atlasProject(v,p,z);if((v.projection==='perspective'&&screen.depth<=0)||!Number.isFinite(screen.x)||!Number.isFinite(screen.y)||screen.x<0||screen.y<0||screen.x>1||screen.y>1)return false;
+  const z=gridHeight(g,p),screen=atlasProject(v,p,z);if((v.projection==='perspective'&&(screen.depth<=0||screen.depth>=terrainHorizon(v).far))||!Number.isFinite(screen.x)||!Number.isFinite(screen.y)||screen.x<0||screen.y<0||screen.x>1||screen.y>1)return false;
   if(v.tilt===0&&!v.projection)return true;
   const a=v.rotation*Math.PI/180,l=terrainGridLayout(v);
   let dx=Math.sin(a),dy=Math.cos(a),rise=1/Math.tan(v.tilt*Math.PI/180)/v.exaggeration,limit=Infinity;

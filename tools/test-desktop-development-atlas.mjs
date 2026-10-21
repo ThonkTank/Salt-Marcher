@@ -1,3 +1,4 @@
+import {terrainCoveragePixels} from './terrain-coverage-probe.mjs';
 // Verifies the literal repository development command with an isolated campaign profile.
 import {spawn,execFileSync} from 'node:child_process';
 import {createServer} from 'node:net';
@@ -82,6 +83,21 @@ try{
  await page.locator('#atlas-view').click();await page.locator('#atlas-camera-retry').click();await page.keyboard.press('Escape');await ready();
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='false');assert.equal(await page.locator('#campaign-map').getAttribute('data-renderer'),'webgl');
  await page.screenshot({path:out+'/05-camera-recovered.png'});result.checks.push('Main view omits duplicate ground images; actual GPU loss reloads complete Canvas terrain and explicit retry restores the main camera.');
+ if(process.env.TERRAIN_COVERAGE_PROBE==='1'){
+  const canvas=await page.locator('#atlas-terrain-spatial').elementHandle();
+  await page.locator('#atlas-view').click();
+  await page.locator('#terrain-tilt').evaluate(n=>{n.value='75';n.dispatchEvent(new Event('input',{bubbles:true}));});
+  await page.keyboard.press('Escape');await ready();
+  await page.waitForFunction(()=>{const v=JSON.parse(document.querySelector('#campaign-map').dataset.terrainProjection);return v.tilt===75&&v.box.width/Math.max(v.frame.width,v.frame.height)>50;});
+  const wide=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));
+  await page.screenshot({path:out+'/07-wide-horizon.png'});
+  await page.locator('#atlas-view').click();await page.locator('#terrain-rotation').evaluate(n=>{n.value='110';n.dispatchEvent(new Event('input',{bubbles:true}));});await page.keyboard.press('Escape');await ready();
+  const rotated=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection'));
+  assert.deepEqual(rotated.box,wide.box);assert.equal(rotated.rotation,110);assert(await canvas.evaluate(n=>n===document.querySelector('#atlas-terrain-spatial')));
+  await page.screenshot({path:out+'/08-rotated-horizon.png'});
+  result.coverage={wide,rotated,pixels:await terrainCoveragePixels(page,out)};
+  result.checks.push('Steep tilt expands terrain coverage in the normal Atlas; rotation retains the same coverage and main canvas; horizon and tiled export pixel checks pass.');
+ }
  result.artifacts={};for(const file of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html'])result.artifacts[file]=createHash('sha256').update(await readFile('.build/desktop/'+file)).digest('hex');
  await page.close({runBeforeUnload:true});const closed=await Promise.race([exited,new Promise((_,reject)=>setTimeout(()=>reject(Error('Development command did not exit normally')),15000))]);assert.deepEqual(closed,{code:0,signal:null});assert.deepEqual(result.errors,[]);result.exit=closed;
  await assert.rejects(stat('/proc/'+child.pid),{code:'ENOENT'});result.pidAbsent=true;await writeFile(out+'/result.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result.checks));

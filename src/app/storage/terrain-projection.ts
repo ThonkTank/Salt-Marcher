@@ -53,7 +53,7 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
  const view=draft?{...q.view,columns:97,rows:97}:q.view,grid=terrainTraceMeasure("projection.grid",()=>readTerrainGrid(db,source.campaignId,view,stream,cache),source.revision);
  if(!draft)grid.view={...view,focusM:gridHeight(grid,{x:view.frame.x+view.frame.width/2,y:view.frame.y+view.frame.height/2})};
  yield* checkpoint();
- const {routes,denseRoutes,retainedRoutes}=terrainColorRoutes(stream,view.box);
+ const {routes,denseRoutes,retainedRoutes}=terrainColorRoutes(stream,view.box,view.refinement);
  const render=(area:LandscapeBox,width:number,height:number,displayMpp:number)=>renderTerrainColor(area,width,height,displayMpp,{settings,stream,cache,batchEdge,contours:q.contours,revision:source.revision,denseRoutes,retainedRoutes,checkpoint});
  const pixels=yield* render(view.box,q.width,q.height,q.displayMpp);
  const size=q.detail&&terrainDetailDimensions(q.detail,q.detailResolution);

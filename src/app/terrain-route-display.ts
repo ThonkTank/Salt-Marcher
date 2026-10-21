@@ -7,7 +7,7 @@ import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
 import type {Point} from './contracts';
 import {linePoints} from './landscape-line';
 import {nearestRoute} from './terrain-route';
-import {routeSegmentRange} from './terrain-route-clip';
+import {routeSampleSections} from './terrain-route-clip';
 
 const smooth=(lo:number,hi:number,x:number)=>{const t=Math.max(0,Math.min(1,(x-lo)/(hi-lo)));return t*t*(3-2*t);};
 export function routeDisplayOpacity(pixels:number,threshold:number,overview:boolean,important=false){
@@ -53,22 +53,24 @@ export function routeDisplayMaterial(mesh:THREE.Mesh,r:LandscapeRecord,overview=
 
 /** A simplified cartographic centreline at small scales. Tunnel gaps and bridge
  * elevations are preserved. Detailed dash/rail/worn styles remain in the ribbon. */
-export function routeOverview(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,important=false,box?:LandscapeBox){
+export function routeOverview(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,important=false,box?:LandscapeBox,layout?:import('./terrain-grid-layout').TerrainRouteLayout){
  const points=linePoints(r),positions:number[]=[],nodes=r.route?.nodes;
  for(let i=1;i<points.length;i++){
-  const a=points[i-1]!,b=points[i]!,range=routeSegmentRange(a,b,box);if(!range)continue;
-  const length=Math.hypot(b.x-a.x,b.y-a.y),count=Math.max(1,Math.ceil(length*(range[1]-range[0])/Math.max(.1,step)));
-  if(!length||count>10000)continue;
-  for(let j=0;j<count;j++){
-   const at=(f:number)=>{const t=range[0]+(range[1]-range[0])*f;return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};};
-   const middle=nodes?.length?nearestRoute(nodes,at((j+.5)/count)):undefined;
-   if(middle?.structure==='tunnel'&&!r.route?.conflict)continue;
-   for(const t of [j/count,(j+1)/count]){
-    const p=at(t),profile=nodes?.length?nearestRoute(nodes,p):undefined,
-     z=profile&&!r.route?.conflict&&(r.kind==='river'||profile.structure==='bridge')?profile.z:height(p);
-    positions.push(p.x-origin.x,origin.y-p.y,(z-origin.z)*exaggeration+.025);
-   }
-  }
+  const a=points[i-1]!,b=points[i]!;
+  for(const {range,step:spacing} of routeSampleSections(a,b,box,step,layout)){
+    const length=Math.hypot(b.x-a.x,b.y-a.y),count=Math.max(1,Math.ceil(length*(range[1]-range[0])/Math.max(.1,spacing)));
+    if(!length||count>10000)continue;
+    for(let j=0;j<count;j++){
+     const at=(f:number)=>{const t=range[0]+(range[1]-range[0])*f;return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};};
+     const middle=nodes?.length?nearestRoute(nodes,at((j+.5)/count)):undefined;
+     if(middle?.structure==='tunnel'&&!r.route?.conflict)continue;
+     for(const t of [j/count,(j+1)/count]){
+      const p=at(t),profile=nodes?.length?nearestRoute(nodes,p):undefined,
+       z=profile&&!r.route?.conflict&&(r.kind==='river'||profile.structure==='bridge')?profile.z:height(p);
+      positions.push(p.x-origin.x,origin.y-p.y,(z-origin.z)*exaggeration+.025);
+     }
+    }
+ }
  }
  if(!positions.length)return;
  const geometry=new LineSegmentsGeometry();geometry.setPositions(positions);
