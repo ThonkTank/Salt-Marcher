@@ -1,3 +1,4 @@
+import {routeSegmentRange} from './terrain-route-clip';
 import {atlasWorkplaneHeight} from './atlas-workplane';
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
@@ -188,11 +189,17 @@ export class AtlasSpatialScene {
     }
     if (s.stroke && (s.lineWidth ?? 1) > 0) {
       const mat = material(s.stroke, c.alpha * (s.strokeOpacity ?? 1));
+      // Include the stroke/miter margin when clipping its centreline. The
+      // coverage itself already extends beyond the visible camera frame.
+      const margin=(s.lineWidth??1)*Math.max(Math.hypot(m.a,m.b),Math.hypot(m.c,m.d))*4;
+      const b=surface.bounds,coverage=b?{x:b.x-margin,y:b.y-margin,width:b.width+margin*2,height:b.height+margin*2}:undefined;
+      const window=coverage?(a:THREE.Vector2,b:THREE.Vector2)=>routeSegmentRange(world(a.x,a.y),world(b.x,b.y),coverage):undefined;
       for (const line of paths.lines)
         for (const part of atlasStrokeParts(
           line,
           s.lineDash,
           s.lineDashOffset,
+          window,
         )) {
           if (part.length < 2) continue;
           const geometry = SVGLoader.pointsToStroke(

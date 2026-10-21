@@ -6,7 +6,7 @@ import { buildSync } from "esbuild";
 buildSync({
   stdin: {
     resolveDir: process.cwd(),
-    contents: `export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-scene';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {drawLandscape} from './src/app/atlas-landscape-view';export {Raycaster,Vector2,Vector3} from 'three';`,
+    contents: `export {routeSegmentRange} from './src/app/terrain-route-clip';export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-scene';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {drawLandscape} from './src/app/atlas-landscape-view';export {Raycaster,Vector2,Vector3} from 'three';`,
   },
   bundle: true,
   platform: "node",
@@ -14,6 +14,7 @@ buildSync({
   outfile: ".build/atlas-spatial-scene-test.cjs",
 });
 const {
+  routeSegmentRange,
   drawLandscape,
   atlasSpatialColor,
   AtlasSpatialScene,
@@ -234,4 +235,32 @@ test('room faces, author grips and drafts share a horizontal floor over uneven g
   for(const mesh of gpu.group.children){const pos=mesh.geometry.getAttribute('position');for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-elevation)<1e-5);}
   const hit=gpu.hit(ray(2,2),['atlasVertex']);assert.equal(hit.data.atlasVertex,'0');gpu.dispose();
  }
+});
+
+
+test("clipped world dashes preserve travel phase and joins without expanding remote segments",()=>{
+  const clip=(a,b)=>routeSegmentRange(a,b,{x:-2,y:-2,width:12,height:12});
+  const points=[new Vector2(-1000000,0),new Vector2(3,0),new Vector2(3,1000000)];
+  const parts=atlasStrokeParts(points,[4,2],0,clip);
+  assert(parts.length<8);
+  // The first visible centreline begins after 999998 metres of real travel.
+  const expected=atlasStrokeParts([new Vector2(-2,0),new Vector2(3,0),new Vector2(3,10)],[4,2],999998);
+  const round=paths=>paths.map(p=>p.map(v=>[Number(v.x.toFixed(8)),Number(v.y.toFixed(8))]));
+  assert.deepEqual(round(parts),round(expected));
+  assert.deepEqual(round(atlasStrokeParts(points,[],0,clip)),[[[-2,0],[3,0],[3,10]]]);
+  const offscreen=[new Vector2(100,100),new Vector2(1e9,100)];
+  assert.deepEqual(atlasStrokeParts(offscreen,[.01,.01],0,clip),[]);
+  const returning=[new Vector2(0,0),new Vector2(20,0),new Vector2(20,5),new Vector2(0,5)];
+  assert.deepEqual(round(atlasStrokeParts(returning,[],0,clip)),[[[0,0],[10,0]],[[10,5],[0,5]]]);
+});
+
+test("main Atlas clips enormous dashed brush rings and retains transformed visible strokes",()=>{
+  const surface={...flat,bounds:{x:-50,y:-50,width:100,height:100}};
+  const ring=atlasPaint('circle',{radius:800000,style:{fill:null,stroke:'#c65d28',lineWidth:1,lineDash:[4,3]}});
+  const hidden=scene([command(ring)],surface);assert.equal(hidden.group.children.length,0);hidden.dispose();
+  const line=atlasPaint('line',{x:-1000000,y:0,x2:1000000,y2:0,style:{fill:null,stroke:'#c65d28',lineWidth:2,lineDash:[4,3]}});
+  const visible=scene([command(line,{matrix:{a:0,b:1,c:-1,d:0,e:10,f:0}})],surface);
+  assert(visible.group.children.length>0&&visible.group.children.length<30);
+  for(const mesh of visible.group.children){const p=mesh.geometry.getAttribute('position');for(let i=0;i<p.count;i++){assert(Math.abs(p.getX(i)-10)<=2);assert(Math.abs(p.getY(i))<=60);}}
+  visible.dispose();
 });
