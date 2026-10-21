@@ -84,7 +84,7 @@ try{
   };requestAnimationFrame(pixels);
   document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelStart=e.timeStamp;pixelBefore=sample();}},true);
   document.addEventListener('pointerup',()=>{pixelBefore=null;},true);
-  new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-draft']});
+  new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,tiles:map.dataset.terrainTiles,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-tiles','data-terrain-draft']});
   for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:e.timeStamp});},true);
  });
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
@@ -113,9 +113,14 @@ try{
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
  await measure('sculpt',async()=>{await page.mouse.move(x,y);await wait(100);await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);await page.mouse.up();});
  await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
- if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
+ if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
+  const map=document.querySelector('#campaign-map'),[done,total]=(map.dataset.terrainTiles??'').split('/').map(Number),up=window.__worldPointer.find(e=>e.type==='pointerup');
+  // A refined live-brush frame can also say "detail". Require the complete
+  // background tile set for the confirmed revision after this gesture.
+  return map.dataset.terrainQuality==='detail'&&done>0&&done===total&&up&&window.__worldChanges.some(c=>c.time>=up.time&&c.quality==='refining'&&c.terrain===map.dataset.terrainRevision&&c.tiles===map.dataset.terrainTiles);
+ },null,{timeout:60000});
  await native.capture(page,'world-sculpt');
- result.sculptStatus=await page.evaluate(()=>({text:document.querySelector('#land-status').textContent,revision:document.querySelector('#campaign-map').dataset.terrainRevision,quality:document.querySelector('#campaign-map').dataset.terrainQuality}));
+ result.sculptStatus=await page.evaluate(()=>({text:document.querySelector('#land-status').textContent,revision:document.querySelector('#campaign-map').dataset.terrainRevision,quality:document.querySelector('#campaign-map').dataset.terrainQuality,tiles:document.querySelector('#campaign-map').dataset.terrainTiles}));
  result.presentationChanges=await page.evaluate(()=>window.__worldChanges);
  if(process.env.WORLD_PROGRESSIVE==='1'){
   assert(result.presentationChanges.some(c=>c.draft==='height'||c.quality==='interactive'),'draft or coherent first pass must be displayed');
