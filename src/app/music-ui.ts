@@ -210,7 +210,7 @@ export function initMusic(status:typeof tell,show:typeof open){tell=status;open=
   if(selected===source&&!assetDirty&&assetRequest===selection
    &&await selectAsset(owner,copyId,()=>selected===source&&!assetDirty)
    &&current(owner)&&selected?.id===copyId&&!assetDirty){
-   el('audio-editor').scrollIntoView({block:'nearest'});el('audio-name').focus({preventScroll:true});
+   el('audio-name').scrollIntoView({block:'center'});el('audio-name').focus({preventScroll:true});
   }
   if(current(owner))await search();
  });
