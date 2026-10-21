@@ -79,3 +79,11 @@ test('yielded height bands preserve pixels and close all record iterators before
  assert(yields>1);
  const cancelled=streamTerrainFieldSteps(lattice,3,read,false,function*(){yield;});assert.equal(cancelled.next().done,false);cancelled.return();assert.equal(active,0);
 });
+
+test('compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection',()=>{
+ const records=ground();
+ check(records,{x:-.125,y:-.25,dx:1/128,dy:1/64,columns:193,rows:65},3);
+ check(records,{x:-80.125,y:-60.25,dx:19.25,dy:13.5,columns:21,rows:17},3);
+ const tile=heightRecord(0,0,1,new Float32Array(4096).fill(10));
+ assert.throws(()=>streamTerrainField({x:10.25,y:10.5,dx:.1,dy:.2,columns:17,rows:13},0,kind=>kind==='height'?[tile,tile]:[]),/Doppelte Höhenkachel/);
+});

@@ -1,5 +1,6 @@
 import {bounds,contains,type LandscapeBox,type LandscapeRecord} from './atlas-landscape';
-import {decodeHeights,DEFAULT_HEIGHT_M} from './terrain-height';
+import {DEFAULT_HEIGHT_M} from './terrain-height';
+import {accumulateHeightLattice} from './terrain-height-lattice';
 import {RouteSurface} from './terrain-route';
 
 /** A fixed display lattice. Readers must yield unique height tiles from coarse to fine.
@@ -42,48 +43,9 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
     const left=Math.max(0,Math.ceil((box.x-x)/dx)-startColumn),right=Math.min(columns-1,Math.floor((box.x+box.width-x)/dx)-startColumn),top=Math.max(0,Math.ceil((box.y-y)/dy)-startRow),bottom=Math.min(rows-1,Math.floor((box.y+box.height-y)/dy)-startRow);
     for(let r=top;r<=bottom;r++)for(let c=left;c<=right;c++)visit(r*columns+c,atX(c),atY(r));
   };
-  // Keep canonical dy/dx addition order, even when adjacent tiles arrive in a different order.
-  // This also preserves zero-weight nodes and NaN inheritance at exact tile boundaries.
-  {
-    const nodes=new Float32Array(n*8),mask=new Uint8Array(n),dirty=new Int32Array(n);let used=0,pixel=Infinity;
-    // A level shares its x/y coordinates across every sample and contributing
-    // tile. Keep Float64 indices: distant worlds can exceed signed 32-bit cells.
-    const cellX=new Float64Array(columns),cellY=new Float64Array(rows),fractionX=new Float64Array(columns),fractionY=new Float64Array(rows);
-    const level=(size:number)=>{
-      pixel=size;
-      for(let c=0;c<columns;c++){const v=atX(c)/pixel;cellX[c]=Math.floor(v);fractionX[c]=v-cellX[c]!;}
-      for(let r=0;r<rows;r++){const v=atY(r)/pixel;cellY[r]=Math.floor(v);fractionY[r]=v-cellY[r]!;}
-    };
-    const flush=()=>{
-      for(let j=0;j<used;j++){
-        const i=dirty[j]!,fx=fractionX[i%columns]!,fy=fractionY[Math.floor(i/columns)]!;
-        let weight=0,total=0,delta=0;
-        for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){
-          const corner=oy*2+ox,w=(ox?fx:1-fx)*(oy?fy:1-fy);
-          if(w&&(mask[i]!&(1<<corner))){weight+=w;total+=nodes[i*8+corner]!*w;}
-          if(w&&(mask[i]!&(1<<(corner+4))))delta+=nodes[i*8+corner+4]!*w;
-        }
-        ground[i]=ground[i]!*(1-weight)+total;additions[i]=additions[i]!+delta;mask[i]=0;
-      }
-      used=0;
-    };
-    for(const r of records('height',query)){
-      const t=r.height!;if(!t)throw Error('Höhenkachel fehlt.');
-      if(t.pixel>pixel)throw Error('Höhenkacheln müssen von grob nach fein gelesen werden.');
-      if(t.pixel!==pixel){flush();level(t.pixel);}
-      const data=decodeHeights(t),tx=t.x/pixel,ty=t.y/pixel;
-      each({x:t.x-pixel,y:t.y-pixel,width:65*pixel,height:65*pixel},i=>{
-        const gx=cellX[i%columns]!,gy=cellY[Math.floor(i/columns)]!;
-        for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){
-          const col=gx+ox-tx,row=gy+oy-ty;if(col<0||col>=64||row<0||row>=64)continue;
-          const v=data[row*64+col]!;if(Number.isNaN(v))continue;
-          const corner=oy*2+ox+(t.version===2?4:0),bit=1<<corner;if(mask[i]!&bit)throw Error('Doppelte Höhenkachel.');
-          if(!mask[i])dirty[used++]=i;mask[i]=mask[i]!|bit;nodes[i*8+corner]=v;
-        }
-      });
-    }
-    flush();
-  }
+  // Reuse source nodes before interpolation, rather than copying the same four
+  // corners into a separate scratch record for every output pixel.
+  accumulateHeightLattice(Float64Array.from({length:columns},(_,i)=>atX(i)),Float64Array.from({length:rows},(_,i)=>atY(i)),records('height',query),ground,additions);
   for(let i=0;i<n;i++)ground[i]=ground[i]!+additions[i]!;
   let weighted:Float64Array|undefined,total:Float64Array|undefined,strength:Float64Array|undefined,levels:Float64Array|undefined;
   for(const r of records('route',query)){
