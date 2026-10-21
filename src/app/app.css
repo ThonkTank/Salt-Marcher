@@ -891,8 +891,10 @@ html{scroll-padding-bottom:calc(var(--workspace-footer-height,58px) + 1rem)}
 #distribution-receipt h4 { margin: .5rem 0; }
 #ledger-editor { scroll-margin-top: var(--workspace-content-offset); }
 .ledger-transfer-fields { display:grid; grid-template-columns:5rem minmax(8rem,1fr) minmax(10rem,1fr); gap:.75rem; }
+.ledger-transfer-fields[data-operation="split"] { grid-template-columns:5rem minmax(10rem,1fr); }
+.ledger-transfer-fields[data-operation="merge"] { grid-template-columns:minmax(8rem,1fr) minmax(10rem,1fr); }
 .ledger-transfer-fields :is(input,select) { width:100%; box-sizing:border-box; }
-@media(max-width:650px) { .ledger-transfer-fields { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:650px) { .ledger-transfer-fields, .ledger-transfer-fields[data-operation] { grid-template-columns:minmax(0,1fr); } }
 
 #updates-dialog{width:min(44rem,calc(100vw - 2rem));max-width:calc(100vw - 2rem)}#updates-dialog>label{display:flex;align-items:center;gap:.5rem}#updates-automatic{width:auto}#updates-notes{white-space:pre-wrap;overflow-wrap:anywhere;max-height:40vh;overflow:auto}
 #updates-dialog .actions{flex-wrap:wrap}#updates-force-confirmation{border:1px solid var(--error);padding:1rem}#updates-force-confirmation h3{margin-top:0}

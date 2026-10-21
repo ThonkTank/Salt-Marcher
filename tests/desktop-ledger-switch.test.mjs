@@ -124,3 +124,15 @@ test('closing Party while its fresh item is read revokes the pending correction'
   assert.equal(await task,false);assert.equal(x.writes.length,0);assert.equal(x.store.ledgerItem(x.w.token,x.b.id).quantity,2);
  }finally{await x.cleanup();}
 });
+
+
+test('stack operations expose their own inputs and preview quantities without writing',async()=>{
+ const x=await fixture();try{
+  const root=x.el('ledger-stack-tools'),mode=root.querySelector('[aria-label="Stapelaktion"]'),amount=root.querySelector('[aria-label="Stapelmenge"]'),recipient=root.querySelector('[aria-label="Empfänger der Weitergabe"]'),source=root.querySelector('[aria-label="Passenden Stapel zusammenführen"]'),preview=root.querySelector('[data-ledger-stack-preview]');
+  const change=value=>{Object.defineProperty(mode,'value',{value,writable:true,configurable:true});mode.onchange();};
+  assert.equal(recipient.parentElement.hidden,false);assert.equal(source.parentElement.hidden,true);
+  change('split');assert.equal(recipient.parentElement.hidden,true);assert.equal(amount.parentElement.hidden,false);amount.value='2';amount.oninput();assert.match(preview.textContent,/2.*neuer Stapel.*2 bleiben/);assert.equal(x.writes.length,0);
+  amount.value='4';amount.oninput();assert.equal([...root.querySelectorAll('button')].find(b=>b.textContent==='Mengenstapel teilen').disabled,true);
+  change('merge');assert.equal(amount.parentElement.hidden,true);assert.equal(recipient.parentElement.hidden,true);assert.equal(source.parentElement.hidden,false);assert.match(preview.textContent,/Kein passender Stapel/);assert.equal([...root.querySelectorAll('button')].find(b=>b.textContent==='Stapel zusammenführen').disabled,true);assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});

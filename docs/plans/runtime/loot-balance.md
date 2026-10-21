@@ -134,3 +134,15 @@ Statusklärung. Native IPC-/Handelsabnahme bleibt offen.
    ausführen. Erst am realen Mengenfall messen; gegebenenfalls Bewertungsdaten
    pro Lesetransaktion teilen. Kein zweiter persistierter Bilanzstand ohne
    nachgewiesenen Bedarf.
+
+
+## Persönliche Stapel bearbeiten
+
+Die persönliche Beute unterscheidet Weitergabe, Teilen und Zusammenführen über
+„Aktion“. Empfänger erscheinen nur bei Weitergabe; beim Zusammenführen steht
+statt einer Teilmenge der passende angezeigte Quellstapel. Die Vorschau nennt
+Restbestand beziehungsweise die zusammengeführte Gesamtmenge, ohne zu buchen.
+Die bestehenden Progress-Writers erhalten Herkunft und ursprüngliche Gutschrift.
+Ein Teilverkauf bleibt eine getrennte ausdrückliche Buchung mit tatsächlichem
+Gesamterlös. `tools/test-desktop-loot-stacks.mjs` führt Teilen, Teilverkauf,
+Zusammenführen und normales erneutes Öffnen mit eigenen Daten aus.
