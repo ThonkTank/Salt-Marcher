@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {settingsRecord} from '../terrain-height';
 import {terrainTraceMeasure,terrainTraceStart} from '../terrain-timing';
 import type {LandscapeBox,LandscapeRecord} from '../atlas-landscape';
@@ -16,6 +17,10 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
  // Display reads amortize the supersampled halo across bounded batches.
  // Cache entries and local invalidation remain 32-pixel pieces below.
  const pixels=new Uint8Array(pixelWidth*pixelHeight*4),edge=batchEdge;
+ // The route list/style is shared by every 32-pixel cache piece. A full copy in
+ // each key can exceed the pixels themselves and evict an otherwise warm view.
+ // Keep the complete context in a fixed-size digest, computed once per request.
+ const context=cache?createHash('sha256').update(JSON.stringify([contours,displayMpp,settings.terrainSettings,denseRoutes?[...retainedRoutes]:null])).digest('hex'):'';
  const pixelBox=(x:number,y:number,width:number,height:number)=>({x:area.x+x*area.width/pixelWidth,y:area.y+y*area.height/pixelHeight,width:width*area.width/pixelWidth,height:height*area.height/pixelHeight});
  function* draw(box:LandscapeBox,width:number,height:number):Generator<void,Uint8Array>{
    const image=new LandscapeRasterizer(box,width,height,contours,displayMpp),samples=image.sampleLattice();image.paint(settings);
@@ -42,7 +47,7 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
   const parts:{x:number;y:number;width:number;height:number;box:LandscapeBox;key:string;pixels?:Uint8Array}[]=[];
   for(let py=0;py<height;py+=32)for(let px=0;px<width;px+=32){
    const w=Math.min(32,width-px),h=Math.min(32,height-py),b=pixelBox(x+px,y+py,w,h);
-   const key=JSON.stringify([b,w,h,contours,displayMpp,settings.terrainSettings,denseRoutes?[...retainedRoutes]:null]);
+   const key=JSON.stringify([b,w,h,context]);
    parts.push({x:px,y:py,width:w,height:h,box:b,key,pixels:cache.cachedPixels(key)});
   }
   // Cold tiles are sampled together; a local edit resamples only its small
