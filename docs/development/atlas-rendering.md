@@ -162,6 +162,13 @@ abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
 zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
 und der Reliefschattierung frei. `LandscapeRasterizer.paintColorSteps` unterbricht
 auch Pigmentmasken und kumulative Farbkomposition.
+Auch das Höhengitter bietet inzwischen Unterbrechungspunkte: `readTerrainGridSteps`
+und `TerrainProjectionCache.gridDataSteps` teilen kalte Felder und örtliche
+Reparaturen in abgeschlossene Leseblöcke. Unvollständige Gitter werden nicht
+veröffentlicht; Cache-Invalidierung während einer Pause verwirft die laufende
+Berechnung. Synchrone Autoren-/Sichtprüfungen konsumieren denselben Rasterkern
+weiter vollständig. Der Worker prüft vor jeder Fortsetzung den Quellenstand.
+Die 4.096-Sample-Blöcke sind keine garantierte Millisekundengrenze.
 [landscape-pigment-coverage.ts](../../src/app/landscape-pigment-coverage.ts)
 teilt Weltachsen, quadratische Achsabstände und Texturanteile zwischen
 überlappenden Abdrücken eines Strichs. Float64-Weltkoordinaten und die bisherige

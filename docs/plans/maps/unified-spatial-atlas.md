@@ -331,3 +331,15 @@ Prüfung](../../reference/atlas-field-index-20261022/README.md): 48 Detailkachel
 und Kontext benötigten lokal 10,7–10,9 statt 11,4–12,7 Sekunden reine Aufbereitung.
 Die erste Übersicht und das unmittelbare Reaktionsziel bleiben offen; dieser
 Schritt verändert weder Auflösung noch Speicherformat der Autorenkarte.
+
+### Unterbrechbarer Höhengitteraufbau (22.10.2026)
+
+Der normale Terrainworker gibt auch während des Höhengitteraufbaus zwischen
+abgeschlossenen Leseblöcken frei. Im lokalen Vergleich lag der erste
+Unterbrechungspunkt nach 8,6–9,4 statt 294–429 ms; Höhen und vollständige
+Projektionsantworten blieben bytegleich. Eine echte Workerprobe bearbeitete eine
+Auswahl vor Abschluss des Gitters und setzte anschließend korrekt fort.
+[Cache-Sicherheit, Regressionen und native Gegenprobe](../../reference/atlas-grid-scheduling-20261022/README.md).
+Die gesamte Öffnungszeit und der große Pinselabschluss sind dadurch nicht
+nachweislich verkürzt. Quellenaufbau, verbliebene lange Rasterabschnitte und
+Ende-zu-Ende-Reaktion auf dem Zielgerät bleiben offen.

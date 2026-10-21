@@ -79,3 +79,43 @@ test('editable cache retains raw ground and potential water without an extra sou
  cache.seedGrid(lattice,150,snapshot.surface);s.calls.length=0;
  assert.deepEqual(cache.gridData(lattice,150,s.stream),snapshot);assert(s.calls.length>0);
 });
+
+function finish(steps){for(;;){const step=steps.next();if(step.done)return step.value;}}
+const largeLattice={x:-60.125,y:-58.75,dx:.73,dy:.61,columns:193,rows:137};
+test('cooperative cold grids close source iterators before yielding and publish only complete owned buffers',()=>{
+ const s=source(),cache=new TerrainProjectionCache(),key=JSON.stringify(['surface',largeLattice,0]);let active=0,yields=0;
+ s.records[0]=heightRecord(-64,-64,1,Float32Array.from({length:4096},(_,i)=>80+30*Math.sin(i/19)));
+ function* stream(kind,box){active++;try{yield* s.stream(kind,box);}finally{active--;}}
+ function* checkpoint(){assert.equal(active,0,'no source cursor may survive a transaction boundary');yields++;yield;}
+ const cancelled=cache.gridDataSteps(largeLattice,0,stream,checkpoint);
+ for(let i=0;i<2;i++){assert.equal(cancelled.next().done,false);assert.equal(cache.tiles.get(key),undefined);}
+ cancelled.return();assert.equal(cache.tiles.get(key),undefined);
+ const actual=finish(cache.gridDataSteps(largeLattice,0,stream,checkpoint)),expected=new TerrainProjectionCache().gridData(largeLattice,0,stream);
+ assert(yields>4);assert.deepEqual(actual,expected);actual.surface.fill(-999);actual.ground.fill(-888);
+ assert.deepEqual(cache.gridData(largeLattice,0,stream),expected,'returned arrays cannot mutate the cached surface');
+});
+test('cancelling a dirty grid preserves all dirty bits and previous buffers until a complete retry',()=>{
+ const s=source(),cache=new TerrainProjectionCache(),before=cache.gridData(largeLattice,0,s.stream),key=JSON.stringify(['surface',largeLattice,0]);
+ const changes=[{x:largeLattice.x,y:largeLattice.y,width:10,height:8},{x:largeLattice.x+110,y:largeLattice.y+70,width:4,height:4}];cache.invalidate(changes);
+ const retained=cache.tiles.get(key),dirty=retained.dirty.slice(),heights=retained.heights.slice();
+ const lake={id:'changed-lake',points:[],polygons:changes.map(b=>({outer:[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}],holes:[]})),waterLevelM:500};
+ const stream=(kind,box)=>kind==='lake'?[lake]:s.stream(kind,box),steps=cache.gridDataSteps(largeLattice,0,stream,function*(){yield;});
+ assert.equal(steps.next().done,false);assert.deepEqual(retained.dirty,dirty);assert.deepEqual(retained.heights,heights);steps.return();
+ const actual=finish(cache.gridDataSteps(largeLattice,0,stream,function*(){yield;}));
+ assert.deepEqual(actual,new TerrainProjectionCache().gridData(largeLattice,0,stream));assert.notDeepEqual(actual.surface,before.surface);
+ assert.deepEqual(before.surface,heights);assert(!retained.dirty.some(Boolean));
+});
+test('source failure or invalidation during a paused grid cannot publish stale surface data',()=>{
+ for(const warm of [false,true])for(const mode of ['failure','invalidate','reset']){
+  const s=source(),cache=new TerrainProjectionCache(),key=JSON.stringify(['surface',largeLattice,0]);
+  if(warm){cache.gridData(largeLattice,0,s.stream);cache.invalidate([{x:-50,y:-50,width:8,height:4},{x:40,y:10,width:8,height:4}]);}
+  const retained=cache.tiles.get(key),snapshot=retained&&{heights:retained.heights.slice(),dirty:retained.dirty.slice()};let broken=false;
+  const stream=(kind,box)=>{if(broken)throw Error('source failure');return s.stream(kind,box);};
+  const steps=cache.gridDataSteps(largeLattice,0,stream,function*(){yield;});assert.equal(steps.next().done,false);
+  if(mode==='failure')broken=true;else cache.invalidate([{x:-48,y:-48,width:2,height:2}],mode==='reset');
+  assert.throws(()=>finish(steps),mode==='failure'?/source failure/:/inzwischen geändert/);
+  if(retained)assert.deepEqual(retained.heights,snapshot.heights);
+  if(mode==='reset'||!warm)assert.equal(cache.tiles.get(key),undefined);else assert(cache.tiles.get(key).dirty.some(Boolean));
+  assert.deepEqual(cache.gridData(largeLattice,0,s.stream),new TerrainProjectionCache().gridData(largeLattice,0,s.stream));
+ }
+});

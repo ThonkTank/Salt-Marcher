@@ -1,4 +1,4 @@
-import {streamTerrainField,type TerrainStream} from '../terrain-field-stream';
+import {streamTerrainFieldSteps,type TerrainStream} from '../terrain-field-stream';
 import {validateTerrainView,type TerrainView,type TerrainGrid} from '../terrain-spatial-model';
 import type {LandscapeRecord} from '../atlas-landscape';
 import {terrainGridLayout} from '../terrain-grid-layout';
@@ -6,6 +6,12 @@ import {landscapeSampleFilter} from './landscape-record-stream';
 
 /** Authoritative visibility lattice. Never accepts heights supplied by the renderer. */
 export function readTerrainGrid(db:any,cam:string,view:TerrainView,stream?:TerrainStream,cache?:import('../terrain-projection-cache').TerrainProjectionCache):TerrainGrid{
+ const steps=readTerrainGridSteps(db,cam,view,function*(){},stream,cache,65536);
+ for(;;){const step=steps.next();if(step.done)return step.value;}
+}
+/** The same authoritative lattice, with scheduling boundaries between complete
+ * source reads. Only a finished grid is returned to the display or author. */
+export function* readTerrainGridSteps(db:any,cam:string,view:TerrainView,checkpoint:()=>Generator<void>,stream?:TerrainStream,cache?:import('../terrain-projection-cache').TerrainProjectionCache,maxSamples=4096):Generator<void,TerrainGrid>{
  validateTerrainView(view);
  if(!stream&&db.prepare("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND NOT json_valid(payload) LIMIT 1").get(cam))throw Error('Geländequelle beschädigt.');
  const settings=db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(cam);
@@ -20,10 +26,13 @@ export function readTerrainGrid(db:any,cam:string,view:TerrainView,stream?:Terra
  };
  const heights=new Float32Array(view.columns*view.rows),ground=new Float32Array(heights.length),water=new Float32Array(heights.length);
  for(const {x,y,lattice}of terrainGridLayout(view).blocks){
-  const field=cache?cache.gridData(lattice,seaLevelM,records):(()=>{const f=streamTerrainField(lattice,seaLevelM,records);return {surface:f.surface!,ground:f.heights,levels:f.levels};})();
+  let field:{surface:Float32Array;ground?:Float32Array;levels?:Float32Array};
+  if(cache)field=yield* cache.gridDataSteps(lattice,seaLevelM,records,checkpoint,true,maxSamples);
+  else {const sampled=yield* streamTerrainFieldSteps(lattice,seaLevelM,records,true,checkpoint,maxSamples);field={surface:sampled.surface!,ground:sampled.heights,levels:sampled.levels};}
   for(let row=0;row<lattice.rows;row++){const start=row*lattice.columns,end=(row+1)*lattice.columns,offset=(y+row)*view.columns+x;
    heights.set(field.surface.subarray(start,end),offset);ground.set(field.ground!.subarray(start,end),offset);water.set(field.levels!.subarray(start,end),offset);
   }
+  yield* checkpoint();
  }
  return{view,heights,seaLevelM,editing:{ground,water}};
 }

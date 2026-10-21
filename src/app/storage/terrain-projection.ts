@@ -1,4 +1,4 @@
-import {terrainTraceMeasure} from '../terrain-timing';
+import {terrainTraceMeasure,terrainTraceStart} from '../terrain-timing';
 import {bounds,type LandscapeBox,type LandscapeRecord} from '../atlas-landscape';
 import {gridHeight} from '../terrain-spatial-model';
 import type {TerrainProjectionCache} from '../terrain-projection-cache';
@@ -8,7 +8,7 @@ import {TerrainSampler} from '../terrain-height';
 import {resolveTerrainObjects,terrainObjectPoints} from '../terrain-objects';
 import {validateTerrainProjection,type TerrainProjectionRequest,type TerrainProjection} from '../terrain-projection';
 import type {AtlasRegionSource} from '../atlas-region-contracts';
-import {readTerrainGrid} from './terrain-grid';
+import {readTerrainGrid,readTerrainGridSteps} from './terrain-grid';
 import {readRouteTerrain} from './terrain-route';
 import {terrainDetailDimensions} from '../terrain-detail';
 
@@ -18,12 +18,12 @@ const overlap=(r:LandscapeRecord,b:LandscapeBox)=>{const a=bounds(r);return a.x<
 /** Bounded display projection on the readonly worker. Draft edits read only local author records. */
 export function readTerrainProjection(db:any,source:AtlasRegionSource,q:TerrainProjectionRequest,records:ProjectionStream,cache?:TerrainProjectionCache):TerrainProjection{
  const edge=!cache||q.heightStroke||q.color?Math.max(q.width,q.height,q.detailResolution??256):512;
- const steps=readTerrainProjectionSteps(db,source,q,records,cache,edge);
+ const steps=readTerrainProjectionSteps(db,source,q,records,cache,edge,65536);
  for(;;){const step=steps.next();if(step.done)return step.value;}
 }
 /** Each yield occurs after complete SQL reads and cache writes. The worker may
  * release its WAL snapshot here and must revalidate the source before resuming. */
-export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:TerrainProjectionRequest,records:ProjectionStream,cache?:TerrainProjectionCache,batchEdge=64):Generator<void,TerrainProjection>{
+export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:TerrainProjectionRequest,records:ProjectionStream,cache?:TerrainProjectionCache,batchEdge=64,gridSamples=4096):Generator<void,TerrainProjection>{
  let sliceStart=performance.now();
  function* checkpoint(){if(performance.now()-sliceStart>=8){yield;sliceStart=performance.now();}}
  validateTerrainProjection(q);if(q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
@@ -50,7 +50,9 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
   };
   const p=q.heightStroke?.samples.at(-1);if(p)heightM=new TerrainSampler(local).sample(p).heightM;
  }
- const view=draft?{...q.view,columns:97,rows:97}:q.view,grid=terrainTraceMeasure("projection.grid",()=>readTerrainGrid(db,source.campaignId,view,stream,cache),source.revision);
+ const view=draft?{...q.view,columns:97,rows:97}:q.view,endGrid=terrainTraceStart('projection.grid',source.revision);
+ let grid:TerrainProjection['grid'];
+ try{grid=yield* readTerrainGridSteps(db,source.campaignId,view,checkpoint,stream,cache,gridSamples);}finally{endGrid();}
  if(!draft)grid.view={...view,focusM:gridHeight(grid,{x:view.frame.x+view.frame.width/2,y:view.frame.y+view.frame.height/2})};
  yield* checkpoint();
  const {routes,denseRoutes,retainedRoutes}=terrainColorRoutes(stream,view.box,view.refinement);
