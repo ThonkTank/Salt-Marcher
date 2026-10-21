@@ -9,6 +9,19 @@ test('external refresh requests cannot read the full Atlas in the middle of a di
  assert.equal(await ui.refresh(),false);
  assert.equal(await ui.refresh(true),false);
 });
+test('save-state rendering preserves an active GPU brush scene while updating controls; finish and fallback rebuild normally',()=>{
+ const seen=[],sceneReached=Error('ordinary scene path');
+ const ui=Object.assign(Object.defineProperty(Object.create(CampaignAtlasWorkbench.prototype),'data',{value:{revision:10}}),{
+  root:{hidden:false},owner:{token:'t'},landscape:{livePainting:true},terrainPresentation:{},spatial:{active:true},
+  syncBrushSizes(){seen.push('sizes');},renderPanel(){seen.push('panel');},renderTravel(){seen.push('travel');},
+  layout:{sync(){seen.push('layout');}},territories:{sync(){seen.push('territories');}},
+  camera:{redrawOverlay(){seen.push('overlay');},get view(){throw sceneReached;}},
+ });
+ ui.render();assert.deepEqual(seen,['sizes','panel','travel','layout','territories','overlay']);
+ ui.spatial.active=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'fallback frames must still publish their scene');
+ ui.spatial.active=true;ui.terrainPresentation=null;assert.throws(()=>ui.render(),e=>e===sceneReached,'finish must publish the refreshed author scene');
+ ui.terrainPresentation={};ui.landscape.livePainting=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'ordinary edits must rebuild');
+});
 test('commits advance author identity without relabelling the Atlas or awaiting display; finish refreshes once',async t=>{
  const old={document:global.document,window:global.window,CustomEvent:global.CustomEvent},status={dataset:{}},shown=[];
  global.CustomEvent=class extends Event {constructor(name,options){super(name);this.detail=options.detail;}};

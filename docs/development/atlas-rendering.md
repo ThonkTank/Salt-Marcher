@@ -19,6 +19,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Sichtbare Pinselreaktion messen](../reference/atlas-brush-response-measurement-20261021/README.md): Vergleich der Pinselinnenfläche zusätzlich zur kleinen Mitte, begrenztes asynchrones GPU-Auslesen und getrennte Profilingläufe. Die unmittelbare Reaktion der vollen Welt bleibt offen.
 
+[Pinselanzeige unabhängig aktualisieren](../reference/atlas-brush-overlay-20261021/README.md): Hover und direkte Pinselgesten verwenden den bestehenden Overlay-Weg. Speicherstatus aktualisiert während einer aktiven GPU-Präsentation die Bedienelemente; die unveränderte Kartenszene bleibt erhalten. Abschluss und Canvas-Fallback veröffentlichen weiter vollständige Szenen.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |

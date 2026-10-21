@@ -248,3 +248,35 @@ test('a different campaign resets unsubmitted relief choices even when both conf
  f.ui.context('other-campaign');f.set([]);await f.ui.load();
  assert.equal(f.document.getElementById('land-relief-light').value,'315');
 });
+
+for(const tool of ['height','smooth','color'])test(`${tool} hover and direct input update only the transient layer, retaining the author scene`,t=>{
+ const f=fixture(t);f.set([]);f.ui.setActive(true);f.ui.tool=tool;f.document.querySelector('#land-tool').value=tool;
+ const canvas=f.document.querySelector('canvas');canvas.setPointerCapture=()=>{};canvas.hasPointerCapture=()=>false;
+ f.host.hit=()=>null;f.host.terrainGesture=()=>{};f.ui.cursorHeight=()=>{};
+ const oldRAF={requestAnimationFrame:global.requestAnimationFrame,cancelAnimationFrame:global.cancelAnimationFrame};let frame=0;
+ global.requestAnimationFrame=()=>++frame;global.cancelAnimationFrame=()=>{};t.after(()=>Object.assign(global,oldRAF));
+ const counts={scene:0,overlay:0};f.host.redraw=()=>counts.scene++;f.host.redrawOverlay=()=>counts.overlay++;
+ const pointer=(type,x)=>{const e=new f.window.Event(type,{bubbles:true,cancelable:true});Object.assign(e,{button:0,pointerId:7,clientX:x,clientY:2});canvas.dispatchEvent(e);};
+ pointer('pointermove',1);pointer('pointerdown',1);pointer('pointermove',2);
+ assert.equal(f.ui.livePainting,true);assert.equal(counts.scene,0,'pointer input must not invalidate persistent map geometry');assert.equal(counts.overlay,3);
+ assert.deepEqual(f.ui.lastPoint,{x:2,y:2});assert.equal(f.ui.pointer,7);
+ f.ui.live=null;f.ui.pointer=null;f.ui.maskStroke=null;
+ pointer('pointerleave',2);assert.equal(counts.scene,0);assert.equal(counts.overlay,4);assert.equal(f.ui.hovering,false);
+ // Geometry-changing drafts continue through the full redraw path.
+ f.ui.tool='property';pointer('pointermove',4);pointer('pointerdown',4);pointer('pointermove',8);
+ assert(counts.scene>=3);assert(f.ui.points.length>0);
+});
+
+test('fallback brush cursor lives in the overlay; the main GPU brush has exactly its own cursor',t=>{
+ const f=fixture(t);f.set([]);f.ui.setActive(true);f.ui.hovering=true;f.ui.lastPoint={x:7,y:9};
+ f.document.querySelector('#land-radius').value='5';const box={x:2,y:3,width:40,height:40},mpp=.1;
+ const cursor=scene=>scene.children.filter(n=>n.kind==='circle'&&n.data.editorOnly==='true');
+ for(const tool of ['height','smooth','color','property']){
+  f.ui.tool=tool;f.host.visibility=()=>undefined;
+  const scene=new AtlasPaint('group');f.ui.draw(scene,box,mpp);assert.equal(cursor(scene).length,0);
+  const overlay=new AtlasPaint('group');f.ui.drawOverlay(overlay,box,mpp);assert.equal(cursor(overlay).length,1);
+  const {x,y,radius}=overlay.children[0].geometry;assert.deepEqual({x,y,radius},{x:5,y:6,radius:5});assert.equal(overlay.children[0].geometry.pointer,false);
+  f.host.visibility=()=>({tilt:45});const gpu=new AtlasPaint('group');f.ui.drawOverlay(gpu,box,mpp);assert.equal(cursor(gpu).length,tool==='property'?1:0);
+ }
+ f.ui.hovering=false;const outside=new AtlasPaint('group');f.ui.drawOverlay(outside,box,mpp);assert.equal(cursor(outside).length,0);
+});
