@@ -52,6 +52,9 @@ const pause=()=>new Promise<void>(resolve=>setImmediate(resolve));
 /** Rebuildable TEMP projections on a readonly source connection. No author data is written. */
 export class AtlasRegionReader {
  private terrainBases=new TerrainCache<TerrainFullFrame>(8*1024*1024);
+ // Only nearby derived shapes are retained; the full-world index holds bounds.
+ private shapePayloads=new TerrainCache<string>(4*1024*1024);
+ private buildingIndex=false;
  private statements=new Map<string,any>();
  private landscape:AtlasLandscapeReader;
  private landscapeFailure=false;
@@ -67,14 +70,11 @@ export class AtlasRegionReader {
    // Scope-only overlays preserve canonical City/world tables and other Dungeons.
    for(const table of ['room','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content'])db.exec(`CREATE TEMP VIEW ${table} AS SELECT rowid AS rowid,* FROM main.${table} WHERE scope_id<>${scope} UNION ALL SELECT (SELECT coalesce(max(rowid),0) FROM main.${table})+rowid AS rowid,* FROM graph_preview.${table}`);
   }
-  db.exec(`CREATE TEMP TABLE region_shape(key TEXT PRIMARY KEY,kind TEXT NOT NULL,owner TEXT NOT NULL,scope TEXT NOT NULL,floor TEXT NOT NULL,source_order INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL,payload TEXT NOT NULL);
+  db.exec(`CREATE TEMP TABLE region_shape(key TEXT PRIMARY KEY,kind TEXT NOT NULL,owner TEXT NOT NULL,scope TEXT NOT NULL,floor TEXT NOT NULL,source_order INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL,paint_order INTEGER NOT NULL);
    CREATE INDEX temp.region_shape_owner ON region_shape(kind,owner,scope,floor);
    CREATE TEMP TABLE region_problem(key TEXT PRIMARY KEY,id TEXT NOT NULL);
    CREATE TEMP TABLE region_extent(scope TEXT,floor TEXT,x REAL,y REAL,width REAL,height REAL,PRIMARY KEY(scope,floor));`);
-  try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.region_index USING rtree(id,min_x,max_x,min_y,max_y);
-   CREATE TEMP TRIGGER region_shape_insert AFTER INSERT ON region_shape BEGIN INSERT INTO region_index VALUES(new.rowid,new.min_x,new.max_x,new.min_y,new.max_y);END;
-   CREATE TEMP TRIGGER region_shape_delete AFTER DELETE ON region_shape BEGIN DELETE FROM region_index WHERE id=old.rowid;END;
-   CREATE TEMP TRIGGER region_shape_update AFTER UPDATE ON region_shape BEGIN DELETE FROM region_index WHERE id=old.rowid;INSERT INTO region_index VALUES(new.rowid,new.min_x,new.max_x,new.min_y,new.max_y);END;`))();}catch{this.indexed=false;}
+  try{db.exec('CREATE VIRTUAL TABLE temp.region_index USING rtree(id,min_x,max_x,min_y,max_y)');}catch{this.indexed=false;}
  }
  terrainVisibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.visibility(source,view);}
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrain(source,q);}
@@ -103,15 +103,32 @@ export class AtlasRegionReader {
  private store(kind:string,owner:string,scope:string,floor:string,id:string,value:Shape,sourceOrder:number){
   const pts=value.polygons?.flatMap(p=>[p.outer,...p.holes].flat())??value.points??[],b=bounds(pts,(value.stroke??0)/2);
   if(!Number.isFinite(b.x+b.y+b.width+b.height))return;
-  this.sql('INSERT INTO temp.region_shape VALUES(?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(key) DO UPDATE SET source_order=excluded.source_order,kind=excluded.kind,owner=excluded.owner,scope=excluded.scope,floor=excluded.floor,min_x=excluded.min_x,max_x=excluded.max_x,min_y=excluded.min_y,max_y=excluded.max_y,payload=excluded.payload').run(kind+':'+id,kind,owner,scope,floor,sourceOrder,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(value));
+  const key=kind+':'+id,order=kind==='unit'?(value.value.kind==='building'?2:['road','wall'].includes(value.value.kind)?1:0):0;
+  this.sql('INSERT INTO temp.region_shape VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(key,kind,owner,scope,floor,sourceOrder,b.x,b.x+b.width,b.y,b.y+b.height,order);
+  if(this.indexed&&!this.buildingIndex)this.sql('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape WHERE key=?').run(key);
  }
  private project(table:string,row:any){
+  const shape=this.materialize(table,row);if(!shape)return;
+  this.store(table==='room'?'room':table==='city_unit'?'unit':'element',table==='city_unit'?row.city_id:'',row.scope_id??'',row.floor_id??'',row.id,shape,row.sourceOrder);
+ }
+ /** Recreate a display shape from its canonical source only when it is needed. */
+ private shape(row:any):Shape{
+  let payload=this.shapePayloads.get(row.key);
+  if(payload===undefined){
+   const table=row.kind==='room'?'room':row.kind==='unit'?'city_unit':'drawing_element',source=this.source(table,row.key.slice(row.key.indexOf(':')+1));
+   const shape=source&&this.materialize(table,source);if(!shape)throw Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');
+   payload=JSON.stringify(shape);this.shapePayloads.put(row.key,{x:row.min_x,y:row.min_y,width:row.max_x-row.min_x,height:row.max_y-row.min_y},payload,payload.length*2);
+  }
+  // Callers add per-view styles and slices; cached source shapes stay immutable.
+  return JSON.parse(payload);
+ }
+ private materialize(table:string,row:any):Shape|undefined{
   if(table==='city_document'){readCityHeader(this.db,this.campaign,row.id);return;}
   if(table==='room'){
    if(digest(row.payload)!==row.checksum)throw new Error('Raum beschädigt.');
    const polygons=JSON.parse(row.polygons??this.sql("SELECT json_extract(payload,'$.polygons') p FROM room WHERE campaign_id=? AND id=?").get(this.campaign,row.id).p);validateRoom({name:row.name,polygons,sections:[]});
    const value:RoomGeometry={id:row.id,scopeId:row.scope_id,floorId:row.floor_id,number:row.number,name:row.name,revision:row.revision,polygons};
-   this.store('room','',row.scope_id,row.floor_id,row.id,{value,polygons},row.sourceOrder);
+   return {value,polygons};
   }else if(table==='city_unit'){
    const u=parse(row);checkedUnit(u);if(u.id!==row.id||u.kind!==row.kind)throw new Error('Stadtelement widersprüchlich.');if(u.kind==='node')return;
    const {label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,terrain}=u;
@@ -121,20 +138,25 @@ export class AtlasRegionReader {
     points=roadPoints(u,nodes);if(points.length<2)throw new Error('Straßenknoten fehlt.');outline=points;
    }
    const value={label,id,kind,name,protected:protectedValue,point,position,angle,width,interior,footprint,terrain,outline};
-   this.store('unit',row.city_id,'','',id,{value,...(points?{points,stroke:width??6}:{polygons:kind==='building'?posedFootprint(value):[{outer:outline??[],holes:[]}]})},row.sourceOrder);
+   return {value,...(points?{points,stroke:width??6}:{polygons:kind==='building'?posedFootprint(value):[{outer:outline??[],holes:[]}]})};
   }else if(table==='drawing_element'){
    const e=parse(row);validateDrawingElement(e);if(e.id!==row.id||e.scopeId!==row.scope_id||e.floorId!==row.floor_id)throw new Error('Zeichnung widersprüchlich.');if(e.archived)return;
    const {notes:unused,content:unusedContent,...value}=e;
    if(e.content?.anchor&&e.roomId){const volume=readDungeonVolume(this.db,this.campaign,e.roomId),anchor=dungeonContentAnchor({drawing:{volumes:volume?[volume]:[]}},e);if(anchor){value.points=[anchor.point];value.zOffsetMeters=anchor.zOffsetMeters;value.anchor=null;}}
-   if(value.anchor){const room=this.sql('SELECT payload FROM temp.region_shape WHERE key=?').get('room:'+value.anchor.roomId);const r=room?JSON.parse(room.payload).value:null;value.points=anchored(value,r?[r]:[]);value.anchor=null;}
+   if(value.anchor){
+    const room=this.source('room',value.anchor.roomId);let r:RoomGeometry|undefined;
+    try{r=room?this.materialize('room',room)?.value:undefined;}catch{/* A damaged anchor room is already reported by the index scan. */}
+    value.points=anchored(value,r?[r]:[]);value.anchor=null;
+   }
    const points=value.points as Point[],closed=['terrain','water','roof'].includes(value.kind),rectangle=value.kind==='object'&&!['barrel','pillar'].includes(value.variant);
    const polygons=closed?[{outer:points,holes:[]}]:rectangle?[{outer:corners({x:-value.width/2,y:-value.height/2,width:value.width,height:value.height}).map(p=>at(p,{...points[0]!,angle:value.angle*Math.PI/180})),holes:[]}]:undefined;
    const stroke=['wall','path','stairs'].includes(value.kind)?value.width:value.kind==='door'?.3:Math.max(value.width,value.height)*2;
-   this.store('element','',row.scope_id,row.floor_id,row.id,{value,...(polygons?{polygons}:{points,stroke})},row.sourceOrder);
+   return {value,...(polygons?{polygons}:{points,stroke})};
   }
  }
  private async update(table:string,id:string){
   const kind=table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element',key=kind+':'+id;
+  if(this.indexed)this.sql('DELETE FROM temp.region_index WHERE id=(SELECT rowid FROM temp.region_shape WHERE key=?)').run(key);
   this.sql('DELETE FROM temp.region_shape WHERE key=?').run(key);this.sql('DELETE FROM temp.region_problem WHERE key=?').run(key);
   const row=this.source(table,id);if(row)try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run(key,id);}
   if(++this.count%128===0)await pause();
@@ -143,20 +165,27 @@ export class AtlasRegionReader {
   this.campaign=source.campaignId;
   try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
+  if(source.reset||!this.ready||source.changes.some(c=>['city_document','city_unit','room','drawing_element','dungeon_volume'].includes(c.table)))this.shapePayloads.clear();
   if(source.reset||!this.ready){
    this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem;');
-   for(const table of ['city_document','room','city_unit','drawing_element']){
-    const fields=table==='room'?",CASE WHEN json_valid(payload) THEN json_extract(payload,'$.polygons') END polygons":'';
-    let cursor=0;
-    for(;;){
-     const batch=this.sql(`SELECT rowid sourceOrder,*${fields} FROM ${table} WHERE campaign_id=? AND rowid>? ORDER BY rowid LIMIT 128`).all(this.campaign,cursor);
-     if(!batch.length)break;
-     // Furnished towns have many more shapes than roof-only maps. Commit one
-     // bounded TEMP batch, retaining the cancellation yield between batches.
-     this.db.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
-     await pause();
+   if(this.indexed)this.db.exec('DELETE FROM temp.region_index');
+   this.buildingIndex=true;
+   try{
+    for(const table of ['city_document','room','city_unit','drawing_element']){
+     const fields=table==='room'?",CASE WHEN json_valid(payload) THEN json_extract(payload,'$.polygons') END polygons":'';
+     let cursor=0;
+     for(;;){
+      // Walk rowids once. A campaign index otherwise re-sorts the remaining rows for each page.
+      const batch=this.sql(`SELECT rowid sourceOrder,*${fields} FROM ${table} NOT INDEXED WHERE campaign_id=? AND rowid>? ORDER BY rowid LIMIT 128`).all(this.campaign,cursor);
+      if(!batch.length)break;
+      // Furnished towns have many more shapes than roof-only maps. Commit one
+      // bounded TEMP batch, retaining the cancellation yield between batches.
+      this.db.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
+      await pause();
+     }
     }
-   }
+   }finally{this.buildingIndex=false;}
+   if(this.indexed)this.db.exec('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape');
   }else{
    const changes=new Map(source.changes.map(c=>[c.table+':'+c.id,c]));
    for(const c of changes.values()){
@@ -183,10 +212,10 @@ export class AtlasRegionReader {
  // Match citySvg's surface/road/roof order; exact hits use the same painter order.
  private candidates(kind:string,owner:string,scope:string,floor:string,box:Box){
   const from=this.indexed?'temp.region_index i CROSS JOIN temp.region_shape s ON s.rowid=i.id':'temp.region_shape s',alias=this.indexed?'i':'s';
-  return this.sql(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY CASE WHEN s.kind='unit' THEN CASE json_extract(s.payload,'$.value.kind') WHEN 'building' THEN 2 WHEN 'road' THEN 1 WHEN 'wall' THEN 1 ELSE 0 END ELSE 0 END,s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
+  return this.sql(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY s.paint_order,s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
  }
  private roomShape(row:any,q:AtlasRegionQuery):Shape|null{
-  const s=JSON.parse(row.payload) as Shape,r=s.value as RoomGeometry;if(!this.roomVisible(r.id,r.scopeId,r.floorId))return null;s.style=roomMapStyle(this.db,this.campaign,r.id);
+  const s=this.shape(row),r=s.value as RoomGeometry;if(!this.roomVisible(r.id,r.scopeId,r.floorId))return null;s.style=roomMapStyle(this.db,this.campaign,r.id);
   if(q.slice!==null&&q.scopeId===r.scopeId){
    const elevation=this.sql('SELECT source_elevation z FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(this.campaign,r.scopeId,r.floorId)?.z??0,v=this.sql('SELECT payload,checksum FROM dungeon_volume WHERE campaign_id=? AND room_id=?').get(this.campaign,r.id);
    let polygons:Polygon[];
@@ -204,7 +233,7 @@ export class AtlasRegionReader {
    if(b.kind==='city'){
     let h:CityHeader;try{h=readCityHeader(this.db,this.campaign,b.ownerId);}catch{continue;}
     metadata?.(b,f,h);
-    for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=JSON.parse(r.payload);emit(s,f,'unit',b,h);}
+    for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=this.shape(r);emit(s,f,'unit',b,h);}
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
@@ -216,7 +245,7 @@ export class AtlasRegionReader {
     metadata?.(b,f);
     if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
     for(const r of this.candidates('room','',b.ownerId,floor,local))try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch{if(this.countFaults)this.readFaults++;}
-    for(const r of this.candidates('element','',b.ownerId,floor,local))emit(JSON.parse(r.payload),f,'element',b);
+    for(const r of this.candidates('element','',b.ownerId,floor,local))emit(this.shape(r),f,'element',b);
    }
   }
  }
@@ -329,7 +358,7 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
    const h=readCityHeader(this.db,this.campaign,id),r=this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='city' AND owner_id=?").get(this.campaign,id);if(!r)throw new Error('Stadt ist nicht im Atlas verortet.');const b=this.binding(r),f=this.frame(b),box=bounds(corners({x:0,y:0,width:h.width,height:h.height}).map(p=>at(p,f)));return{kind,id,point:{x:box.x+box.width/2,y:box.y+box.height/2},box,revision:source.revision};
   }
   const r=this.sql('SELECT * FROM temp.region_shape WHERE key=?').get((kind==='room'?'room:':kind==='element'?'element:':'unit:')+id);if(!r)throw new Error('Objekt fehlt oder ist beschädigt.');
-  const s=JSON.parse(r.payload),row=this.sql('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?').get(this.campaign,kind==='room'||kind==='element'?'dungeon':'city',kind==='room'||kind==='element'?r.scope:r.owner);if(!row)throw new Error('Objekt ist nicht im Atlas verortet.');
+  const s=this.shape(r),row=this.sql('SELECT * FROM atlas_binding WHERE campaign_id=? AND kind=? AND owner_id=?').get(this.campaign,kind==='room'||kind==='element'?'dungeon':'city',kind==='room'||kind==='element'?r.scope:r.owner);if(!row)throw new Error('Objekt ist nicht im Atlas verortet.');
   if(kind==='room'&&!this.roomVisible(id,r.scope,r.floor))throw new Error('Raum ist archiviert.');
   const f=this.frame(this.binding(row)),box=bounds(corners({x:r.min_x,y:r.min_y,width:r.max_x-r.min_x,height:r.max_y-r.min_y}).map(p=>at(p,f)));
   const child=kind==='building'?this.sql("SELECT owner_id FROM atlas_binding WHERE campaign_id=? AND parent='building' AND parent_id=?").get(this.campaign,id):null;

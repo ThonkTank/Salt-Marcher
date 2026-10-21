@@ -1,0 +1,209 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4326.41963
+    },
+    {
+      "name": "ready",
+      "time": 16349.864241
+    },
+    {
+      "name": "down",
+      "time": 18546.53451
+    },
+    {
+      "name": "released",
+      "time": 22909.867406
+    },
+    {
+      "name": "wheel-send",
+      "time": 23912.31059
+    },
+    {
+      "name": "wheel-ack",
+      "time": 23945.951872
+    },
+    {
+      "name": "state-returned",
+      "time": 24258.282268
+    },
+    {
+      "name": "settled",
+      "time": 31477.355841
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+    "pending": true,
+    "time": 21284
+  },
+  "trace": {
+    "long": [
+      {
+        "start": 15596.100000023842,
+        "duration": 56
+      },
+      {
+        "start": 15652.5,
+        "duration": 70
+      },
+      {
+        "start": 18103.900000035763,
+        "duration": 51
+      },
+      {
+        "start": 28147.69999998808,
+        "duration": 344
+      },
+      {
+        "start": 28540.600000023842,
+        "duration": 57
+      },
+      {
+        "start": 31092.69999998808,
+        "duration": 317
+      },
+      {
+        "start": 31409.69999998808,
+        "duration": 63
+      }
+    ],
+    "changes": [
+      {
+        "time": 20984.30000001192,
+        "view": "{\"x\":-19973581.955711752,\"y\":-14773140.805420505,\"width\":39952148.448081665,\"height\":29547943.123060394}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21000.69999998808,
+        "view": "{\"x\":-18344760.44336763,\"y\":-13630916.91468862,\"width\":37001830.237043254,\"height\":27365936.94614657}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21018.100000023842,
+        "view": "{\"x\":-17219711.449593544,\"y\":-12841967.463079749,\"width\":34964005.64454679,\"height\":25858795.841279395}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21030.900000035763,
+        "view": "{\"x\":-16530946.034478374,\"y\":-12358965.30090779,\"width\":33716430.55301743,\"height\":24936110.09650247}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21050,
+        "view": "{\"x\":-16072597.74545005,\"y\":-12037544.959859626,\"width\":32886214.784211412,\"height\":24322096.35082302}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21067.69999998808,
+        "view": "{\"x\":-15766979.849097382,\"y\":-11823228.0073859,\"width\":32332642.745534882,\"height\":23912683.697218504}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21095.80000001192,
+        "view": "{\"x\":-15542132.899655018,\"y\":-11665552.316424746,\"width\":31925372.79937513,\"height\":23611473.63287119}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21119.69999998808,
+        "view": "{\"x\":-15424951.020826276,\"y\":-11583377.602654906,\"width\":31713118.830175903,\"height\":23454494.134817593}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21134.5,
+        "view": "{\"x\":-15377423.786393814,\"y\":-11550048.755867362,\"width\":31627031.76403408,\"height\":23390825.57548354}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 21159.400000035763,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "quality": "refining",
+        "tiles": "2/48"
+      },
+      {
+        "time": 28489.19999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "detail",
+        "tiles": "2/48"
+      },
+      {
+        "time": 28528.5,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "detail"
+      },
+      {
+        "time": 31409.19999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "overview"
+      }
+    ],
+    "frames": [
+      {
+        "t": 15719.7,
+        "gap": 139.60000000000036
+      },
+      {
+        "t": 16167.8,
+        "gap": 56.79999999999927
+      },
+      {
+        "t": 18153.5,
+        "gap": 60.599999999998545
+      },
+      {
+        "t": 28526.2,
+        "gap": 366.90000000000146
+      },
+      {
+        "t": 28592.9,
+        "gap": 50.10000000000218
+      },
+      {
+        "t": 31462,
+        "gap": 366.59999999999854
+      }
+    ]
+  },
+  "source": "e4d361c0f210749829207de454c262794789a8ad",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-Jxd5GO",
+  "artifacts": {
+    "main.cjs": "4ca7ebb40593450e28223910f3d8847ccbade4b34ce81da9adba21f3bfc17be9",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "atlas-region-worker.cjs": "25a06168e8b4bafaa70b47bdcdc3586120ea8f19c7f83036e32191c8b88c4477",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "ddff8c8b96a15981ac7f1eeec5848857dc4b3d29f54dede0be9297a2dd4b07f4",
+    "ui/renderer.js": "a1dec1de735d88d44b9327cdbf0b5fabe631a612ed57818b48d50de4390f376a",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3234454,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

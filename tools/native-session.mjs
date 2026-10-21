@@ -7,7 +7,7 @@ import {homedir} from 'node:os';
 import path from 'node:path';
 import {currentProcessGroup} from './process-group.mjs';
 
-const artifacts=['main.cjs','preload.cjs','ui/renderer.js','ui/index.html','ui/app.css'];
+const artifacts=['main.cjs','preload.cjs','atlas-region-worker.cjs','room-directory-worker.cjs','terrain-route-worker.cjs','backup-validation-worker.cjs','ui/renderer.js','ui/atlas-brush-worker.js','ui/terrain-spatial-worker.js','ui/index.html','ui/app.css'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bounded(promise,ms,message){
  let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(message)),ms);})]);}finally{clearTimeout(timer);}

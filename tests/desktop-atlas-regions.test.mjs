@@ -425,3 +425,25 @@ test('room labels carry their canonical floor elevation and scope anchor through
  assert.deepEqual(label.workplane,{scopeId:'local',elevationM:12,anchor:{x:0,y:0}});
  assert(!JSON.stringify(label).includes('PRIVATE-TEXT'));
 });
+
+test('world opening indexes bounds without retaining all room shapes, then hydrates only requested geometry in a bounded cache',async t=>{
+ const f=fixture(t,4000),source=f.store.atlasRegionSource(f.shell.token),batches=[],prepare=f.db.prepare.bind(f.db);
+ f.db.prepare=(sql,...args)=>{if(sql.includes('rowid>?'))batches.push(sql);return prepare(sql,...args);};
+ await f.reader.sync(source);
+ assert.equal(f.db.prepare('SELECT count(*) n FROM temp.region_shape').get().n,4000);
+ assert(!f.db.prepare('PRAGMA temp.table_info(region_shape)').all().some(c=>c.name==='payload'),'the full-world index must not duplicate every geometry payload');
+ assert.equal(f.reader.shapePayloads.bytes,0);
+ let materialized=0;const exact=f.reader.materialize.bind(f.reader);f.reader.materialize=(...args)=>{materialized++;return exact(...args);};
+ const coarse=f.reader.read(source,{...query({x:-20000000,y:-12500000,width:40000000,height:25000000}),scopeId:null});
+ assert.equal(coarse.coverage.objects,1);assert.equal(materialized,0,'a world marker needs bounds, not all room details');
+ const near=f.reader.read(source,query());assert(near.rooms.length>0&&near.rooms.length<10);assert.equal(materialized,near.rooms.length);
+ assert(f.reader.shapePayloads.bytes>0);assert(f.reader.shapePayloads.bytes<=4*1024*1024);
+ const first=JSON.stringify(near.rooms);f.reader.read(source,{...query(),slice:0});assert.equal(JSON.stringify(f.reader.read(source,query()).rooms),first,'per-view slicing cannot mutate cached room geometry');
+ const focus=f.reader.focus(source,'room','r3999');assert(focus.point.x>19990);assert.equal(materialized,near.rooms.length+1);
+ // Query batching must follow the rowid cursor, not sort the campaign again for every page.
+ assert(batches.length>=4);
+ for(const sql of batches){
+  const plan=prepare('EXPLAIN QUERY PLAN '+sql).all(f.campaign.id,0);
+  assert(!plan.some(p=>p.detail.includes('TEMP B-TREE')));assert(plan.some(p=>p.detail.includes('rowid>?')));
+ }
+});
