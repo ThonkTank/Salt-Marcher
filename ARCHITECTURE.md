@@ -183,6 +183,14 @@ Stagingdateien. Wiederverwendung identischer Bytes ist keine geteilte
 Autorenidentität. GC betrachtet Live, Trash, retained Payloads, Staging und
 app-managed Backups; sie entfernt nie eine fremde Datei auf Verdacht.
 
+Die automatische Wiederherstellungskopie prüft ihren privaten Kandidaten in einem
+Readonly-Worker (`desktop/backup-validation.ts`). Die gemeinsame vollständige
+Prüfung liegt in `src/app/storage/snapshot-validation.ts`, zustandsfreie
+Payloadleser in `stored-records.ts`. Der Store besitzt Kopie, Epochenschutz,
+Synchronisierung und Veröffentlichung; er wartet auf das tatsächliche Workerende.
+Beim Schließen wird eine laufende Prüfung beendet und ihr Kandidat verworfen.
+[Große Welt und verbleibende Commitlast](docs/reference/atlas-backup-worker-20261021/README.md).
+
 Backup nutzt einen konsistenten DBsnapshot über die
 [SQLite-Backup-API](https://www.sqlite.org/backup.html) sowie ein hashgebundenes
 Medienmanifest. Einfaches Kopieren einer offenen `.sqlite` ohne WAL ist kein

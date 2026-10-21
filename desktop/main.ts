@@ -7,6 +7,7 @@ import {spatialRoutePreview} from './terrain-route-service';
 import {AtlasRegionService} from './atlas-region';
 import {validateRegion} from '../src/app/atlas-region-contracts';
 import {RoomDirectoryService} from './room-directory';
+import {BackupValidationService} from './backup-validation';
 import {readItemReferenceCatalog} from '../src/app/storage/item-reference';
 import {exportSessionPacketFile} from './session-packet-export';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../src/app/npc-contracts';
@@ -61,6 +62,7 @@ else {
   let stopping=false,storeClosed=false;
   let timer:ReturnType<typeof setInterval>|undefined;
   let backupTask:Promise<void>|null=null;
+  const backupValidation=new BackupValidationService();
   const activeOperations=new Set<Promise<unknown>>();
   let updateRuntime:Awaited<ReturnType<typeof openUpdateRuntime>>|null=null;
   let backupRunning = false;
@@ -535,7 +537,8 @@ else {
     handle('campaign:tutorial', (state?: 'shown' | 'finished' | 'skipped') => store.tutorial(state));
     async function finishClose(updateRequest?:string){
       if(stopping)return;stopping=true;clearInterval(timer);
-      await Promise.allSettled([...activeOperations]);await backupTask;
+      await Promise.allSettled([...activeOperations]);
+      await backupValidation.close();await backupTask;
       await Promise.all([roomDirectory.close(),atlasRoomDirectory.close(),atlasRegions.close(),atlasExportRegions.close()]);
       playerDisplay.shutdown();store.close();storeClosed=true;
       if(updateRequest)await updateRuntime!.handoff(updateRequest);
@@ -559,7 +562,7 @@ else {
     timer=setInterval(()=>{
       if(backupRunning||stopping)return;
       backupRunning=true;
-      backupTask=store.backup(path.join(dataDir,'recovery.sqlite')).then(()=>{backupError=null;},()=>{backupError='Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.';}).finally(()=>{backupRunning=false;});
+      backupTask=store.backup(path.join(dataDir,'recovery.sqlite'),filename=>backupValidation.validate(filename)).then(()=>{backupError=null;},()=>{backupError='Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.';}).finally(()=>{backupRunning=false;});
     },30000);
     win.on('closed',()=>{clearInterval(timer);playerDisplay.shutdown();});
     const updateTimer=setTimeout(()=>{if(!stopping)void updates.autoCheck();},15000);updateTimer.unref();

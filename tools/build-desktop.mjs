@@ -19,6 +19,7 @@ for(const name of ['update-helper','update-probe'])await build({entryPoints:['de
 await build({entryPoints:['desktop/terrain-route-worker.ts'],outfile:'.build/desktop/terrain-route-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({entryPoints:['desktop/atlas-region-worker.ts'],outfile:'.build/desktop/atlas-region-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({entryPoints:['desktop/room-directory-worker.ts'],outfile:'.build/desktop/room-directory-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+await build({entryPoints:['desktop/backup-validation-worker.ts'],outfile:'.build/desktop/backup-validation-worker.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 await build({ entryPoints: ['desktop/main.ts'], outfile: '.build/desktop/main.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron', 'better-sqlite3'], define: { __APP_VERSION__: JSON.stringify(applicationVersion) } });
 await build({entryPoints:['desktop/player-preload.ts'],outfile:'.build/desktop/player-preload.cjs',bundle:true,platform:'node',format:'cjs',external:['electron']});
 await build({entryPoints:['src/app/player-display.ts'],outfile:'.build/desktop/ui/player-display.js',bundle:true,platform:'browser',format:'iife'});

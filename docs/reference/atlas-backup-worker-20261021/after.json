@@ -1,0 +1,140 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4647.843381
+    },
+    {
+      "name": "ready",
+      "time": 27841.822278
+    },
+    {
+      "name": "down",
+      "time": 30064.763291
+    },
+    {
+      "name": "released",
+      "time": 34816.377072
+    },
+    {
+      "name": "wheel-send",
+      "time": 35866.089417
+    },
+    {
+      "name": "wheel-ack",
+      "time": 37905.606634
+    },
+    {
+      "name": "state-returned",
+      "time": 41495.526277
+    },
+    {
+      "name": "settled",
+      "time": 48342.322815
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127879,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+    "pending": true,
+    "time": 38181.5
+  },
+  "source": "710cbfd73a18bc93f57d489b2f97f0dc52825b04",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/mixed-settle-background-rZYoKm",
+  "artifacts": {
+    "main.cjs": "6a5cc7274646a0802a6de6f7de2767bd33edab96ebfc3278d875f9a4563e6a9e",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "a1dec1de735d88d44b9327cdbf0b5fabe631a612ed57818b48d50de4390f376a",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3204230,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "traceSummary": {
+    "longTasks": 7,
+    "maxLongTaskMs": 413,
+    "largeFrameGaps": 8
+  },
+  "rawResultSha256": "b3e4e33dbe110a999b6081d91bc4922ebe8645c244e31eec407d07b31030aa08",
+  "mainProfile": {
+    "sha256": "b5c0dceb92bd451ac38736f55e7fbf28b0dd061b6c07b9de1b8ab97abd16b32e",
+    "durationMs": 21661.854,
+    "inclusiveMs": [
+      {
+        "function": "(root)",
+        "ms": 21661.112999999958
+      },
+      {
+        "function": "(idle)",
+        "ms": 10380.983999999959
+      },
+      {
+        "function": "executeAtlasCommit",
+        "ms": 8978.153000000002
+      },
+      {
+        "function": "",
+        "ms": 8978.153000000002
+      },
+      {
+        "function": "sqliteTransaction",
+        "ms": 8975.192000000001
+      },
+      {
+        "function": "",
+        "ms": 8975.192000000001
+      },
+      {
+        "function": "terrainTraceMeasure",
+        "ms": 8975.192000000001
+      },
+      {
+        "function": "",
+        "ms": 8164.844000000038
+      },
+      {
+        "function": "applyAtlas",
+        "ms": 8162.649000000038
+      },
+      {
+        "function": "executeAtlasWrite",
+        "ms": 8147.410000000037
+      },
+      {
+        "function": "sqliteTransaction",
+        "ms": 8089.29000000004
+      },
+      {
+        "function": "",
+        "ms": 8088.198000000039
+      },
+      {
+        "function": "",
+        "ms": 1829.264
+      },
+      {
+        "function": "",
+        "ms": 1362.2660000000003
+      },
+      {
+        "function": "processImmediate",
+        "ms": 1290.4489999999996
+      },
+      {
+        "function": "step",
+        "ms": 1286.5699999999995
+      }
+    ]
+  }
+}
