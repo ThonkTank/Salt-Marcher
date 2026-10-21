@@ -29,7 +29,7 @@ Einordnung: [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md), [bisherige Relief-Ro
 
 Google Maps ist das technische Ziel: unmittelbare Navigation vom Weltmaßstab bis zum Gebäude, während Details, Linienbreiten und Namen maßstabsabhängig wechseln. Die gestalterische Referenz sind konventionelle Fantasykarten, insbesondere publizierte D&D-Karten. Wälder müssen als zusammenhängende Landschaft auf Weltmaßstab und als zunehmend detaillierte Baumgruppen auf Dorfmaßstab lesbar sein. Straßen, Flüsse, Gebäude und Regionen folgen derselben Informationshierarchie. Die [offizielle Schwertküstenkarte (Wizards, 2015)](https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_HighRes.jpg) wurde am 21.10.2026 als erste Referenz gesichtet: zusammenhängende Waldflächen mit klaren Rändern, feine Kronenstruktur, zurückhaltende Bodenfarben und kontrastierende Küsten-/Gewässerlinien. Das sind gestalterische Beobachtungen, keine Übernahme ihrer Bilddateien in das Produkt. Dorf-/Gebäudereferenzen und der direkte Vergleich mit SaltMarcher über mehrere Maßstäbe stehen noch aus; technische Prüfungen ersetzen diese Bewertung nicht.
 
-Geprüfte Zwischenstände werden regelmäßig über die vorgeschriebene Candidate-CI nach `main` integriert. Die vollständige Produktabnahme bleibt davon getrennt.
+Geprüfte Zwischenstände werden regelmäßig über die vorgeschriebene Candidate-CI nach `main` integriert. Sobald genügend Fortschritt für einen sinnvollen Nutzertest vorliegt, wird eine neue testbare Version veröffentlicht; zusätzlich gilt der verbindliche Release-Rhythmus des Repositories. Die vollständige Produktabnahme bleibt davon getrennt.
 
 ### Verbindlicher Landschaftswerkzeugumfang (21.10.2026)
 
