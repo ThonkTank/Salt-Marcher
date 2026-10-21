@@ -35,7 +35,10 @@ test('canonical visibility agrees with ray tracing across the fine/coarse bounda
 test('streamed nine-band sampling and local invalidation match canonical direct samples',()=>{
  const records=[];for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)records.push(heightRecord(x*512,y*512,8,Float32Array.from({length:4096},(_,i)=>120+Math.sin((x*512+i%64*8)/40)*20+Math.cos((y*512+Math.floor(i/64)*8)/90)*30)));
  const v=view(),db={prepare(){return {get(){return undefined;}};}},stream=kind=>kind==='height'?records:[],cache=new TerrainProjectionCache();
- const direct=terrainGrid(records,v),cold=readTerrainGrid(db,'cam',v,stream,cache),warm=readTerrainGrid(db,'cam',v,stream,cache);
+ const direct=terrainGrid(records,v);
+ // This fixture is entirely above sea level: its raw ground equals its surface.
+ assert(direct.heights.every(z=>z>0));direct.editing={ground:direct.heights.slice(),water:new Float32Array(direct.heights.length)};
+ const cold=readTerrainGrid(db,'cam',v,stream,cache),warm=readTerrainGrid(db,'cam',v,stream,cache);
  assert.deepEqual(cold,direct);assert.deepEqual(warm,direct);assert.equal(cache.tiles.misses,9);assert.equal(cache.tiles.hits,9);
  cache.invalidate([{x:-151,y:-121,width:4,height:4}]);assert.deepEqual(readTerrainGrid(db,'cam',v,stream,cache),direct);
 });
