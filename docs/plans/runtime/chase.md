@@ -1,6 +1,6 @@
 # Verfolgung als laufende Scenemaske
 
-Stand: 20.10.2026. Ergänzt den [Party-/Livevertrag](smr03-live-scene-contract.md),
+Ergänzt den [Party-/Livevertrag](smr03-live-scene-contract.md),
 [Nachbereitung](combat-recovery.md#nachbereitung-und-bestehende-schätze) und den [Gesamtumfang](../../SCOPE.md).
 
 ## Quellen und aktueller Anschluss
@@ -22,6 +22,22 @@ Actor-/Membershipabschluss und vollständige Datenclosure bleiben offen.
 Persistente Rohentwürfe und der echte Roundzeitport sind angeschlossen. Die inzwischen
 integrierte Receiptstrecke bietet Commandreplay und lesende Statusaufklärung.
 Der aktuelle Tracker ist daher eine Teillieferung.
+
+## Abschluss mit unbestätigten Eingaben
+
+Ein Abschluss bestätigt das Ergebnis und verbraucht nur `chase-outcome` aus dem
+zugehörigen Entwurf. Unbestätigte Abstand-/Erschöpfungswerte, Komplikation und
+angefangene Teilnehmer bleiben im bestehenden Entwurfsspeicher erhalten. Sie
+erzeugen weder eine Runde noch Gruppenzeit. Ein reiner Ergebnisentwurf wird nach
+Bestätigung vollständig entfernt.
+
+Abgeschlossene oder archivierte Masken zeigen den bestätigten Teilnehmerstand.
+Übrige Rohwerte stehen getrennt unter **Unbestätigte Eingaben** zum Lesen und
+Kopieren, auch nach Neustart und in einer unabhängigen Kampagnenkopie. Sie dürfen
+keine bestätigten Werte überblenden. Der bestehende Draft-/Receiptvertrag bindet
+den Restentwurf atomar an die neue Revision; Replay bestätigt dasselbe Ergebnis.
+Store-/DOMfälle prüfen diese Grenze, die native Wechselprobe zusätzlich den
+Abschluss mit leeren Zahlenfeldern und die kopierbare Wiederaufnahme bei 200 %.
 
 ## Behobene Antwortzuordnung
 

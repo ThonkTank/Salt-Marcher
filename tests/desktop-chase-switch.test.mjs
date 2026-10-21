@@ -63,6 +63,14 @@ test('round context follows the scene clock while raw proposals and explicit com
  x.el('chase-finish').onclick();await until(()=>x.store.chase(x.w.token,x.scene.id,x.b.id).chase.status==='finished'&&!x.el('chase-new').disabled);
  assert.equal(x.el('chase-round').hidden,true);assert.equal(x.el('chase-completion').hidden,true);assert.equal(x.el('chase-create').hidden,true);
  assert.equal(x.el('chase-round-label').textContent,'Bestätigter Teilnehmerstand');assert.ok(x.el('chase-status').textContent.includes('Tor erreicht'));
+ assert.equal(x.el('chase-people').querySelector('[data-distance]').value,'18');assert.equal(x.el('chase-retained-draft').hidden,false);assert.match(x.el('chase-retained-text').value,/Abstand \(m\): 36/);assert.equal(x.el('chase-retained-text').disabled,false);assert.equal(x.el('chase-draft-status').hidden,true);
+ await x.choose(x.a.id);assert.equal(x.el('chase-retained-draft').hidden,true);await x.choose(x.b.id);assert.equal(x.el('chase-people').querySelector('[data-distance]').value,'18');assert.match(x.el('chase-retained-text').value,/36/);
  assert.equal(x.store.liveScene(x.w.token,x.scene.id).clock.instantMs,'0');
  x.ui.chaseContext(null,null);assert.equal(x.el('chase-clock').hidden,true);
+}finally{x.cleanup();}});
+
+test('a lost finish reply recovers the retained raw draft without confirming a round or replaying the finish',async()=>{const x=await fixture();try{
+ x.input(x.el('chase-people').querySelector('[data-distance]'),'');x.input(x.el('chase-complication'),'Ungeklärt');x.input(x.el('chase-outcome'),'Entkommen');x.pendingWrite();x.el('chase-finish').onclick();
+ await until(()=>x.messages.some(m=>m.includes('Buchungsantwort fehlt')));await x.ui.checkPendingCommit();await until(()=>x.el('chase-status').textContent.includes('Entkommen')&&!x.el('chase-new').disabled);
+ assert.equal(x.writes.length,1);assert.equal(x.el('chase-people').querySelector('[data-distance]').value,'18');assert.match(x.el('chase-retained-text').value,/Abstand \(m\): \(leer\)/);assert.match(x.el('chase-retained-text').value,/Ungeklärt/);assert.equal(x.store.liveScene(x.w.token,x.scene.id).clock.instantMs,'0');
 }finally{x.cleanup();}});
