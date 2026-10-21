@@ -1,3 +1,4 @@
+import {consumeSessionRecapDraft} from './session-recap';
 import {prepareTravelHistoryValidation,validTravelHistoryTimeStep} from './travel-history';
 import {readLiveMomentDraft,clearSubmittedMomentDraft} from './live-moment-drafts';
 import {readSessionBoundary} from './chronicle';
@@ -246,7 +247,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
   return db.transaction(() => {
     guard(); const prior = liveStatus(db, command); if (prior.receipt) return prior.receipt;
     const campaignId = command.campaignId, action = command.action;
-    let targetId: string, revision: number, scene: LiveScene | undefined, character: Character | undefined, session: LiveAck['session'];
+    let targetId: string, revision: number, scene: LiveScene | undefined, character: Character | undefined, session: LiveAck['session'], recapDraft: LiveAck['recapDraft'];
     if (action.kind === 'initialize') {
       const party = db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId);
       if (!party || party.revision !== action.expectedRosterRevision) throw new Error('Partyquelle wurde verändert oder ist nicht verfügbar.');
@@ -380,6 +381,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
       targetId=before.id;revision=before.revision;scene=before;
       const characterIds=db.prepare('SELECT id FROM roster_member WHERE campaign_id=? AND active=1 ORDER BY ordinal,id').all(campaignId).map((row:any)=>row.id);
       recordPartyHistory(db,campaignId,targetId,action.marker==='start'?'Spielabend begonnen':'Spielabend beendet',{kind:'session-marker',marker:action.marker,summary:action.summary,handoff:action.handoff??'',characterIds,locationId:before.locationId,instantMs:before.clock.instantMs});
+      if(action.marker==='end')recapDraft=consumeSessionRecapDraft(db,campaignId,{summary:action.summary,handoff:action.handoff??''});
     } else if (action.kind === 'advance-clock') {
       const before = currentScene(db, campaignId, action.sceneId);
       if(before.clock.revision!==action.expectedRevision)throw new Error('Gruppenzeit geändert. Zeitvorschau aktualisieren.');
@@ -429,7 +431,7 @@ export function executeLive(db: any, command: LiveCommand, guard: () => void): L
     const rosterRevision = db.prepare('SELECT revision FROM roster_state WHERE campaign_id=?').get(campaignId)?.revision;
     if (!Number.isSafeInteger(rosterRevision)) throw new Error('Partyquelle nicht verfügbar.');
     const archivedRosterCount=db.prepare("SELECT count(*) n FROM character_profile WHERE campaign_id=? AND json_type(payload,'$.archive')='object'").get(campaignId).n;
-    const ack: LiveAck = { archivedRosterCount, commandId: command.commandId, targetId, revision, rosterRevision, ...(scene ? { scene } : {}), ...(character ? { character } : {}), ...(session ? { session } : {}) };
+    const ack: LiveAck = { ...(recapDraft!==undefined?{recapDraft}:{}), archivedRosterCount, commandId: command.commandId, targetId, revision, rosterRevision, ...(scene ? { scene } : {}), ...(character ? { character } : {}), ...(session ? { session } : {}) };
     const payload = json(ack);
     db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(command.commandId, fingerprint(command), campaignId, targetId, revision);
     db.prepare('INSERT INTO live_receipt VALUES(?,?,?)').run(command.commandId, payload, hash(payload));

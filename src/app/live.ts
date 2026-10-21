@@ -50,7 +50,7 @@ let context: WorkspaceGeometry | null = null, data: LiveView | null = null, sour
 let liveSourcesLoading=false,liveSourcesProblem='';
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
-type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;saving?:Promise<boolean>};
+type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;publishing?:boolean;saving?:Promise<boolean>};
 const recapDrafts=new Map<string,RecapWork>();
 function recapFields(review=(document.getElementById('live-session-close-dialog') as HTMLDialogElement|null)?.open):RecapText{
  const before=context&&recapDrafts.get(context.campaign.id)?.text;
@@ -76,6 +76,8 @@ async function retryRecapSave(){
 }
 function queueRecapSave(text?:RecapText){if(!context)return;const w=context,state=recapDrafts.get(w.campaign.id);if(!state||state.readError)return;state.text=text??recapFields();state.dirty=true;showRecapSave();void saveRecap(w,state);}
 async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
+ // The ending owns the draft until its receipt supplies the next CAS basis.
+ if(state.publishing)return false;
  if(state.saving)return state.saving;
  if(!state.dirty)return true;
  if(state.readError)return false;
@@ -244,6 +246,15 @@ function busy(on: boolean, structural = false, textSave = false) {
 function mergeAck(ack: LiveAck, action: LiveAction, submittedProfile?: CharacterProfile) {
   if (!data) return;
   liveReadRequest++;
+  if(action.kind==='session-marker'&&action.marker==='end'&&ack.recapDraft!==undefined&&context){
+    const state=recapDrafts.get(context.campaign.id);
+    if(state){
+      const accepted=acknowledgeFields(ack.recapDraft??{summary:'',handoff:''},{summary:action.summary,handoff:action.handoff??''},recapFields(),['summary','handoff']);
+      state.basis=ack.recapDraft;state.text=accepted.value;state.dirty=accepted.dirty;state.error='';
+      for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff'])get<HTMLTextAreaElement>(id).value=id.endsWith('handoff')?state.text.handoff:state.text.summary;
+      showRecapSave();if(!state.publishing&&state.dirty)void saveRecap(context,state);
+    }
+  }
   const priorScene = data.scene, priorCharacter = originalCharacter();
   data.rosterRevision = ack.rosterRevision;if(ack.archivedRosterCount!==undefined)data.archivedRosterCount=ack.archivedRosterCount;
   if (ack.character) {
@@ -687,14 +698,10 @@ async function finishLiveSession(prepareOpening=false){
  const token=context?.token,n=sessionCloseRequest,dialog=get<HTMLDialogElement>('live-session-close-dialog'),basis=sessionCloseOpeningBasis;if(!token||!dialog.open||get<HTMLButtonElement>('live-session-close-confirm').disabled)return;
  if(!currentSessionCloseReview()){get('live-session-close-status').textContent='Gruppenstand geändert. Erneut prüfen.';return;}
  const current=()=>basis===sessionCloseOpeningBasis&&currentSessionCloseReview();
- const {summary,handoff}=recapFields(),shownSummary=value('live-session-close-summary'),shownHandoff=value('live-session-close-handoff');get<HTMLTextAreaElement>('live-session-summary').value=summary;get<HTMLTextAreaElement>('live-session-handoff').value=handoff;get<HTMLButtonElement>('live-session-close-confirm').disabled=true;get<HTMLButtonElement>('live-session-close-prepare').disabled=true;
+ const {summary,handoff}=recapFields();get<HTMLButtonElement>('live-session-close-confirm').disabled=true;get<HTMLButtonElement>('live-session-close-prepare').disabled=true;
  const confirmed=await markLiveSession('end',summary,handoff,current);if(context?.token!==token||n!==sessionCloseRequest||!dialog.open||!current())return;
  if(confirmed){
-  const remaining=recapFields(false),latest=value('live-session-close-summary'),latestHandoff=value('live-session-close-handoff');
-  if(latest!==shownSummary)remaining.summary=preserveLiteralEdit(summary,latest);
-  if(latestHandoff!==shownHandoff)remaining.handoff=preserveLiteralEdit(handoff,latestHandoff);
-  get<HTMLTextAreaElement>('live-session-summary').value=remaining.summary;get<HTMLTextAreaElement>('live-session-handoff').value=remaining.handoff;
-  sessionCloseRequest++;sessionCloseOpeningBasis=null;dialog.close();queueRecapSave(remaining);if(prepareOpening&&basis)openHandoffVisit({...basis,handoff});
+  sessionCloseRequest++;sessionCloseOpeningBasis=null;dialog.close();if(prepareOpening&&basis)openHandoffVisit({...basis,handoff});
  }else{get<HTMLButtonElement>('live-session-close-confirm').disabled=false;get<HTMLButtonElement>('live-session-close-prepare').disabled=false;}
 }
 function openHandoffVisit(draft:HandoffVisitDraft){
@@ -1074,13 +1081,18 @@ async function recoverTimeWrite(){const pending=failed,command=pending?.command,
 async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>{try{return await window.campaign.chronicle(token);}catch(error){return{ok:false,error:(error as Error).message};}}
 
 async function markLiveSession(marker:'start'|'end',submittedSummary?:string,submittedHandoff?:string,stillCurrent:()=>boolean=()=>true):Promise<boolean>{
- const token=context?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,summary=marker==='end'?(submittedSummary??recapFields(false).summary):'',handoff=marker==='end'?(submittedHandoff??recapFields(false).handoff):'',shownSummary=value('live-session-summary'),shownHandoff=value('live-session-handoff');
+ const owner=context,token=owner?.token,sceneId=data?.scene?.id,focusRevision=data?.focusRevision,summary=marker==='end'?(submittedSummary??recapFields(false).summary):'',handoff=marker==='end'?(submittedHandoff??recapFields(false).handoff):'';
  const current=()=>stillCurrent()&&context?.token===token&&data?.scene?.id===sceneId&&data?.focusRevision===focusRevision;
- if(!token||!sceneId||sessionChronicleError||!sessionChronicle||marker==='end'&&recapReadError())return false;
- try{if(!await flushLive()||!current())return false;const ack=await execute({kind:'session-marker',sceneId,expectedRevision:data!.scene!.revision,marker,summary,handoff});if(!ack||!current())return false;
-  const unchanged=value('live-session-summary')===shownSummary;if(marker==='end'&&unchanged)get<HTMLTextAreaElement>('live-session-summary').value='';if(marker==='end'&&value('live-session-handoff')===shownHandoff)get<HTMLTextAreaElement>('live-session-handoff').value='';
-  // The close-review owner saves the remaining draft once, after preserving later input.
-  get('live-session-result').textContent=(marker==='start'?'Spielabend begonnen.':'Spielabend beendet. Rückblick und Übergabe gespeichert.')+(marker==='end'&&!unchanged?' Neuere Notiz bleibt erhalten.':'');return true;
+ if(!owner||!token||!sceneId||sessionChronicleError||!sessionChronicle||marker==='end'&&recapReadError())return false;
+ try{
+  if(!await flushLive()||!current())return false;
+  const recap=marker==='end'?recapDrafts.get(owner.campaign.id):undefined;
+  if(recap)recap.publishing=true;
+  let ack:LiveAck|null;
+  try{ack=await execute({kind:'session-marker',sceneId,expectedRevision:data!.scene!.revision,marker,summary,handoff});}
+  finally{if(recap){recap.publishing=false;if(recap.dirty&&!blocked)void saveRecap(owner,recap);}}
+  if(!ack||!current())return false;
+  get('live-session-result').textContent=marker==='start'?'Spielabend begonnen.':'Spielabend beendet. Rückblick und Übergabe gespeichert.';return true;
  }catch(error){if(current()){tell((error as Error).message,true);await refreshLiveSession();}}return false;
 }
 

@@ -35,3 +35,34 @@ for(const raw of ['{"summary":','[]'])test(`unreadable stored recap ${raw} leave
  store.executeLive({commandId:'edit-scene',campaignId:cam.id,token:w.token,action:{kind:'scene-content',sceneId:initial.id,expectedRevision:initial.revision,title:'Spiel geht weiter',notes:'  Eigene Notizen\r\n',locationId:null}});
  assert.equal(store.live(w.token).scene.notes,'  Eigene Notizen\r\n');assert.equal(store.db.prepare('SELECT value FROM settings WHERE key=?').get('session-recap:'+cam.id).value,raw);assert.throws(()=>store.live('expired'));store.db.prepare('UPDATE live_scene SET revision=-1 WHERE campaign_id=? AND id=?').run(cam.id,initial.id);assert.throws(()=>store.live(w.token),/Sceneinhalt/);
 });
+
+function endingFixture(t){
+ const root=mkdtempSync(path.join(tmpdir(),'recap-ending-')),file=path.join(root,'source.sqlite'),store=new CampaignStore(file),campaign=store.create('Abschluss'),w=store.activate(campaign.id);
+ t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
+ const command=action=>({commandId:crypto.randomUUID(),campaignId:campaign.id,token:w.token,action});
+ const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:0})).scene;
+ store.executeLive(command({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'start',summary:''}));
+ const draft={summary:'  Ergebnis\r\n[[Tor]]',handoff:'  Nächster Abend\r\n'};
+ store.keepSessionRecapDraft(w.token,draft,null);
+ const ending=command({kind:'session-marker',sceneId:scene.id,expectedRevision:scene.revision,marker:'end',...draft});
+ return{store,file,w,command,draft,ending};
+}
+test('ending consumes its saved recap atomically even when no renderer receives the reply',t=>{
+ const x=endingFixture(t);x.store.executeLive(x.ending);
+ const fresh=new CampaignStore(x.file);try{const w=fresh.activate(x.w.campaign.id);assert.deepEqual(fresh.live(w.token).recapDraft,{summary:'',handoff:''});const ends=fresh.chronicle(w.token).entries.filter(e=>e.sessionMarker==='end');assert.equal(ends.length,1);assert.equal(ends[0].summary,x.draft.summary);assert.equal(ends[0].handoff,x.draft.handoff);}finally{fresh.close();}
+});
+test('ending consumes only matching fields and its receipt replay never consumes a newer draft',t=>{
+ const x=endingFixture(t),later={...x.draft,handoff:'  Schon neu\r\n'};x.store.keepSessionRecapDraft(x.w.token,later,x.draft);
+ const ack=x.store.executeLive(x.ending),remaining={summary:'',handoff:later.handoff};assert.deepEqual(ack.recapDraft,remaining);assert.deepEqual(x.store.live(x.w.token).recapDraft,remaining);
+ const newer={summary:'Noch später',handoff:'Nächste Vorbereitung'};x.store.keepSessionRecapDraft(x.w.token,newer,remaining);assert.deepEqual(x.store.executeLive(x.ending),ack);assert.deepEqual(x.store.live(x.w.token).recapDraft,newer);assert.deepEqual(x.store.liveStatus(x.ending,x.w.token).receipt,ack);
+});
+test('a failed ending receipt rolls back both history and draft consumption',t=>{
+ const x=endingFixture(t),before=x.store.db.serialize();x.store.db.exec("CREATE TEMP TRIGGER reject_ending BEFORE INSERT ON live_receipt BEGIN SELECT RAISE(ABORT,'Kontrollierter Receiptfehler'); END");
+ assert.throws(()=>x.store.executeLive(x.ending),/Receiptfehler/);assert.deepEqual(x.store.live(x.w.token).recapDraft,x.draft);assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,0);assert.ok(x.store.db.serialize().equals(before));
+});
+
+
+test('an unreadable recap cannot be silently consumed by a direct ending command',t=>{
+ const x=endingFixture(t);x.store.db.prepare('UPDATE settings SET value=? WHERE key=?').run('[]','session-recap:'+x.w.campaign.id);const before=x.store.db.serialize();
+ assert.throws(()=>x.store.executeLive(x.ending),/Rückblickentwurf/);assert.ok(x.store.db.serialize().equals(before));assert.equal(x.store.chronicle(x.w.token).entries.filter(e=>e.sessionMarker==='end').length,0);
+});

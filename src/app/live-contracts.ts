@@ -56,6 +56,7 @@ export type LiveAction =
   | {kind:'advance-clock';sceneId:string;expectedRevision:number;calendarVersion:'campaign-calendar-v1';calendar:{revision:number;daySeconds:number};toInstantMs:string;expectedFocusRevision:number;eventTarget?:import('./time-plan-contracts').ClockEventTarget;reason:string};
 export interface LiveCommand { commandId: string; campaignId: string; token: string; action: LiveAction }
 export interface LiveAck {
+  recapDraft?:SessionRecapDraft|null;
   commandId: string; targetId: string; revision: number; rosterRevision: number; archivedRosterCount?:number; scene?: LiveScene; character?: Character;
   session?: { primaryId: string; focusId: string; focusRevision: number; retired: { id: string; clock: LiveScene['clock'] }[];
     members: Pick<Character, 'id' | 'active' | 'membershipRevision' | 'sceneId'>[]; groups: { id: string; membershipRevision: number; members: number }[];

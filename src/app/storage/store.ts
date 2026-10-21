@@ -1,3 +1,4 @@
+import {readSessionRecapDraft,keepSessionRecapDraft} from './session-recap';
 import {installTravelHistory} from './travel-history';
 import {checkedWorldNoteRow} from "./world-note-row";
 import {nearestAnchor} from '../drawing-model';
@@ -1320,22 +1321,12 @@ export class CampaignStore {
   previewTime(token:string,request:import('../time-plan-contracts').TimeRequest){return this.db.transaction(()=>previewSceneTime(this.db,this.guard(token),request))();}
   live(token: string):import('../live-contracts').LiveView {
     const cam=this.guard(token),live=readLive(this.db,cam);
-    try{return {...live,recapDraft:this.readSessionRecapDraft(cam)};}
+    try{return {...live,recapDraft:readSessionRecapDraft(this.db,cam)};}
     catch{return {...live,recapDraftError:'Rückblickentwurf nicht lesbar. Gespeicherte Texte bleiben erhalten. Erneut laden oder eine intakte Sicherung verwenden.'};}
-  }
-  private readSessionRecapDraft(cam:string):import('../live-contracts').SessionRecapDraft|null {
-    const value=this.db.prepare('SELECT value FROM settings WHERE key=?').get('session-recap:'+cam)?.value;
-    if(value===undefined)return null;
-    const draft=JSON.parse(value);checkedSessionRecapDraft(draft);return draft;
   }
   keepLiveMomentDraft(token:string,sceneId:string,draft:import('../live-moment-drafts').LiveMomentDraft|null,expected:import('../live-moment-drafts').LiveMomentDraft|null){return this.db.transaction(()=>{const cam=this.guard(token),scene=readLiveScene(this.db,cam,sceneId);if(scene.retired)throw new Error('Momententwurf gehört zu einer früheren Scene.');keepMomentDraft(this.db,cam,sceneId,draft,expected);}).immediate();}
   keepSessionRecapDraft(token:string,draft:import('../live-contracts').SessionRecapDraft,expected:import('../live-contracts').SessionRecapDraft|null){
-    checkedSessionRecapDraft(draft);if(expected!==null)checkedSessionRecapDraft(expected);
-    return this.db.transaction(()=>{const cam=this.guard(token),current=this.readSessionRecapDraft(cam),same=(a:any,b:any)=>a===null?b===null:!!b&&a.summary===b.summary&&a.handoff===b.handoff;
-      if(same(current,draft))return;
-      if(!same(current,expected))throw new Error('Rückblick wurde inzwischen an anderer Stelle geändert. Eigene Eingaben bleiben offen.');
-      this.db.prepare('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('session-recap:'+cam,json(draft));
-    }).immediate();
+    return this.db.transaction(()=>keepSessionRecapDraft(this.db,this.guard(token),draft,expected)).immediate();
   }
   liveScene(token: string, id: string) { return this.db.transaction(() => readLiveScene(this.db, this.guard(token), id))(); }
   liveArchives(token: string, after: string | null) { return readArchives(this.db, this.guard(token), after); }

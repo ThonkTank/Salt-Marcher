@@ -174,9 +174,18 @@ Rückblick und Übergabe erhalten beim Lesen normalisierter Browserfelder die
 Originalzeilenenden, Leerzeichen und Textverweise über den bestehenden
 `preserveLiteralEdit`-Helfer. Unveränderte Felder werden anhand ihrer sichtbaren
 Eingabefassung verglichen; CRLF allein gilt nicht als neuer Entwurf. Ein bestätigter
-Abschluss übernimmt den abgesendeten Originalwortlaut. Nur der Abschlussdialog
-sichert anschließend die verbliebene neuere Eingabe; ein zweiter leerer Save im
-Marker-Helfer darf sie nicht überholen.
+Abschluss übernimmt den abgesendeten Originalwortlaut. Der bestehende
+`session-marker`-Writer verbraucht dazu passende Entwurfsfelder in derselben
+SQLite-Transaktion wie Chronik und Receipt. Abweichende gespeicherte Felder bleiben
+stehen; ein Receipt-Replay bereinigt keine späteren Texte. Der Rückblick hat dafür
+einen Speicherbesitzer in `storage/session-recap.ts` für Lesen, Compare-and-set
+und Verbrauch. Ein Renderer-Nachlauf ist zum Bereinigen nicht mehr erforderlich.
+
+Die Antwort enthält den verbliebenen Entwurf als bestätigte Basis.
+`mergeAck` übernimmt ihn auch bei Receiptklärung mit `acknowledgeFields` und erhält
+seit dem Absenden geänderte Eingaben. Während der Abschlussantwort werden diese
+lokal behalten; erst danach werden ausschließlich neuere Texte weiter gesichert.
+Damit kann kein zusätzlicher leerer Save sie überholen.
 
 Der Einstiegsdialog hält die bearbeiteten privaten Notizen am bisherigen lokalen
 Dialogbesitzer. Der Planeditor erhält diese Bytes und bewahrt sie auch bei späterer
@@ -191,7 +200,12 @@ Ein unfertiger Einstiegsdialog ist damit noch kein über Neustart gesicherter Pl
 bestätigen, Vorbereitung abbrechen, nach Neustart aus der historischen Übergabe
 vorbereiten, Mappe speichern und nach erneutem Neustart denselben Besuch bearbeiten.
 Jeder Lauf prüft vier normale Prozessenden, einen unveränderten historischen Abschluss,
-stabile Plan-/Besuchsidentitäten und unveränderte Gruppenzeit. Kontrollierte DOMproben
+stabile Plan-/Besuchsidentitäten und unveränderte Gruppenzeit. Ein gesperrter
+separater Bereinigungsport belegt, dass der Abschluss keinen zweiten Draft-Write
+benötigt. Start, reale Zoomstufe, Quellenbindung, Aufnahmen und normales Ende
+nutzen `tools/native-session.mjs`. Store-Gegenproben öffnen direkt nach dem
+Abschluss einen frischen Store ohne Renderer-Nachlauf und prüfen neuere Felder,
+Receipt-Replay und vollständigen Rollback bei einem Receiptfehler. Kontrollierte DOMproben
 normalisieren Textareas wie ein Browser und halten die Markerantwort für neuere
 Eingaben zurück. Native verzögerte Antworten, IME und physischer Crash bleiben offen.
 

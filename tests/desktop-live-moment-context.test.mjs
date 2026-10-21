@@ -73,7 +73,7 @@ test('a failed knowledge refresh still confirms and clears the saved moment exac
 
 test('a newer recap summary survives the acknowledgement of its previous submitted ending',async t=>{
  const x=await setup(t);x.el('live-session-start').click();await settle();assert.equal(x.store.chronicle(x.w.token).entries[0].sessionMarker,'start');
- const release=x.defer('session-marker');x.el('live-session-summary').value='  Alter Rückblick\r\n';await x.end();x.el('live-session-summary').value='Neuere Notiz';release();await settle();
+ const release=x.defer('session-marker');x.el('live-session-summary').value='  Alter Rückblick\r\n';await x.end();x.el('live-session-close-summary').value='Neuere Notiz';x.el('live-session-close-summary').dispatchEvent(new x.window.Event('input'));release();await settle();
  assert.equal(x.el('live-session-summary').value,'Neuere Notiz');assert.equal(x.store.chronicle(x.w.token).entries.find(e=>e.sessionMarker==='end').summary,'  Alter Rückblick\r\n');
 });
 test('a focus change during recap flush cannot publish the former groups session boundary',async t=>{
@@ -753,4 +753,16 @@ test('browser marker acknowledgement preserves later literal recap and opening e
  assert.equal(x.el('live-session-draft-status').textContent,'Rückblickentwurf gespeichert.');
  const notes=x.el('handoff-visit-notes');notes.value+='\nEigene Vorbereitung';notes.dispatchEvent(new x.window.Event('input'));notes.value='Bearbeitet: '+notes.value;notes.dispatchEvent(new x.window.Event('input'));x.el('handoff-visit-form').onsubmit({preventDefault(){}});await settle();
  assert.equal(x.followUps[0][2].notes,'Bearbeitet: '+literalRecap.handoff+'\r\nEigene Vorbereitung');assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,1);
+});
+
+
+test('confirmed ending needs no second draft write and receipt recovery consumes the same submitted text',async t=>{
+ const x=await setup(t,true,true,JSON.stringify(literalRecap),true);let clears=0;const keep=x.window.campaign.keepSessionRecapDraft;
+ x.window.campaign.keepSessionRecapDraft=async(...args)=>{if(!args[1].summary&&!args[1].handoff){clears++;return{ok:false,error:'Kein zweiter Bereinigungsschritt erlaubt'};}return keep(...args);};
+ x.window.campaign.liveStatus=async(command,token)=>({ok:true,value:x.store.liveStatus(command,token)});
+ x.reply=async(result,command)=>{if(command.action.kind==='session-marker'&&command.action.marker==='end')throw Error('Abschlussantwort verloren');return result;};
+ x.el('live-session-end').click();await settle();x.el('live-session-close-confirm').click();await settle();assert.equal(x.el('live-reconcile').hidden,false);
+ assert.deepEqual(x.store.live(x.w.token).recapDraft,{summary:'',handoff:''});assert.equal(clears,0);
+ x.el('live-reconcile').click();await settle();assert.equal(x.el('live-reconcile').hidden,true);assert.equal(x.el('live-session-close-summary').value,'');assert.equal(x.el('live-session-close-handoff').value,'');assert.equal(clears,0);
+ assert.equal(x.commands.filter(c=>c.action.kind==='session-marker'&&c.action.marker==='end').length,1);assert.deepEqual(x.store.live(x.w.token).recapDraft,{summary:'',handoff:''});
 });
