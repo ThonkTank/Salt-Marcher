@@ -149,3 +149,46 @@ test('a damaged muted sound is isolated and remains explicitly identifiable with
   assert.deepEqual(x.store.db.prepare('SELECT * FROM audio_asset WHERE id=?').get(x.wind.id),before);assert.deepEqual(x.store.music(x.w.token).state.mutedAmbience,[x.wind.id,x.rain.id]);
  }finally{await x.cleanup();}
 });
+
+test('copy description opens the confirmed copy, even beside a homonym, and saves only its metadata',async()=>{
+ const x=await fixture();try{
+  const existing=x.store.ingestAudio(x.w.token,{...x.song.media,originalName:'Other.wav'});x.store.executeMusic({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'asset',asset:{...existing,name:'Bühne – Kopie'},expectedRevision:existing.revision}});
+  const original=x.store.audioAsset(x.song.id),homonym=x.store.audioAsset(existing.id);x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');
+  x.document.getElementById('audio-editor').scrollIntoView=()=>{};x.document.getElementById('audio-clone').click();await until(()=>x.commands.some(c=>c.action.kind==='clone'));await tick();await tick();
+  assert.equal(x.document.getElementById('audio-name').value,'Bühne – Kopie');const command=x.commands.find(c=>c.action.kind==='clone');assert.ok(command.action.copyId);assert.notEqual(command.action.copyId,original.id);assert.notEqual(command.action.copyId,homonym.id);
+  x.document.getElementById('audio-name').value='Meine Hafenmusik';x.document.getElementById('audio-vibes').value='Hafen, Abend';x.document.getElementById('audio-editor').oninput();assert.equal(await x.ui.flushMusic(),true);
+  assert.deepEqual(x.store.audioAsset(original.id),original);assert.deepEqual(x.store.audioAsset(homonym.id),homonym);const copy=x.store.audioAsset(command.action.copyId);assert.equal(copy.name,'Meine Hafenmusik');assert.deepEqual(copy.vibes,['Hafen','Abend']);assert.deepEqual(copy.media,original.media);assert.equal(copy.notes,original.notes);
+  const before=x.store.db.prepare('SELECT count(*) n FROM audio_asset').get().n;x.store.executeMusic(command);assert.equal(x.store.db.prepare('SELECT count(*) n FROM audio_asset').get().n,before);assert.equal(x.store.audioAsset(copy.id).name,'Meine Hafenmusik');
+ }finally{await x.cleanup();}
+});
+
+test('a copy target cannot overwrite an existing audio identity or change its source',async()=>{
+ const x=await fixture();try{
+  const before=x.store.db.serialize();assert.throws(()=>x.store.executeMusic({commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'clone',id:x.song.id,expectedRevision:x.song.revision,copyId:x.rain.id}}),/Kopierziel/);assert.ok(x.store.db.serialize().equals(before));
+ }finally{await x.cleanup();}
+});
+
+for(const next of ['edit','select'])test('a delayed copy answer preserves a newer original '+next,async()=>{
+ const x=await fixture();try{
+  x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');x.hold('clone');x.document.getElementById('audio-clone').click();await until(x.hasReply);
+  if(next==='edit'){x.document.getElementById('audio-name').value='Neue Originaleingabe';x.document.getElementById('audio-editor').oninput();}
+  else{x.click('Regen','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Regen');}
+  x.release();await tick();await tick();assert.equal(x.document.getElementById('audio-name').value,next==='edit'?'Neue Originaleingabe':'Regen');
+  if(next==='edit'){assert.equal(await x.ui.flushMusic(),true);assert.equal(x.store.audioAsset(x.song.id).name,'Neue Originaleingabe');}
+  const copyId=x.commands.find(c=>c.action.kind==='clone').action.copyId;assert.equal(x.store.audioAsset(copyId).name,'Bühne – Kopie');
+ }finally{await x.cleanup();}
+});
+test('a delayed copy metadata read cannot replace a newer original draft',async()=>{
+ const x=await fixture();try{
+  x.click('Bühne','Beschreibung bearbeiten');await until(()=>x.document.getElementById('audio-name').value==='Bühne');let release;const read=window.campaign.audioAsset;
+  window.campaign.audioAsset=async id=>{const result=await read(id);if(id!==x.song.id)await new Promise(r=>release=r);return result;};x.document.getElementById('audio-clone').click();await until(()=>!!release);
+  x.document.getElementById('audio-name').value='Spätere Originaleingabe';x.document.getElementById('audio-editor').oninput();release();await tick();await tick();assert.equal(x.document.getElementById('audio-name').value,'Spätere Originaleingabe');assert.equal(await x.ui.flushMusic(),true);assert.equal(x.store.audioAsset(x.song.id).name,'Spätere Originaleingabe');
+ }finally{await x.cleanup();}
+});
+
+test('existing clone requests without an explicit target keep their once-only writer behavior',async()=>{
+ const x=await fixture();try{
+  const command={commandId:randomUUID(),campaignId:x.w.campaign.id,token:x.w.token,action:{kind:'clone',id:x.song.id,expectedRevision:x.song.revision}},before=x.store.db.prepare('SELECT count(*) n FROM audio_asset').get().n;
+  x.store.executeMusic(command);assert.equal(x.store.db.prepare('SELECT count(*) n FROM audio_asset').get().n,before+1);x.store.executeMusic(command);assert.equal(x.store.db.prepare('SELECT count(*) n FROM audio_asset').get().n,before+1);assert.deepEqual(x.store.audioAsset(x.song.id),x.song);
+ }finally{await x.cleanup();}
+});

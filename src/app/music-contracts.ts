@@ -14,7 +14,7 @@ export interface MusicView {registry:AudioRegistry;state:MusicState;context:Musi
 export type MusicAction=
  |{kind:'favorite';expectedRevision:number;assetId:string;favorite:boolean}
  |{kind:'asset';asset:AudioAsset;expectedRevision:number}
- |{kind:'clone';id:string;expectedRevision:number}
+ |{kind:'clone';id:string;expectedRevision:number;copyId?:string}
  |{kind:'retry-asset';id:string}
  |{kind:'registry';axes:MoodAxis[];expectedRevision:number}
  |{kind:'scene-settings';settings:MusicSceneSettings;expectedRevision:number}

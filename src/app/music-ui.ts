@@ -148,10 +148,10 @@ export async function openMusic(){
 }
 
 async function search(more=false){const number=++libraryRequest,token=workspace?.token,query:AudioQuery={search:value('audio-search'),kind:value('audio-filter-kind') as AudioQuery['kind'],includeTrashed:el<HTMLInputElement>('audio-show-trash').checked,after:more?page.next:null},result=unwrap(await window.campaign.audioAssets(query));if(workspace?.token!==token||number!==libraryRequest)return;page=more?{items:[...page.items,...result.items],next:result.next,problems:[...page.problems,...result.problems]}:result;renderLibrary();}
-async function selectAsset(owner:WorkspaceGeometry,id:string){
+async function selectAsset(owner:WorkspaceGeometry,id:string,accept:()=>boolean=()=>true){
  const number=++assetRequest,response=await window.campaign.audioAsset(id);
- if(!current(owner)||number!==assetRequest)return;
- selected=unwrap(response);renderAsset();
+ if(!current(owner)||number!==assetRequest||!accept())return false;
+ selected=unwrap(response);renderAsset();return true;
 }
 function renderLibrary(){
  const root=el('audio-list');root.replaceChildren();
@@ -203,7 +203,17 @@ export function initMusic(status:typeof tell,show:typeof open){tell=status;open=
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-music-transport]'))b.onclick=()=>{run(async owner=>{if(b.dataset.musicTransport==='stop'){await stopMusic(owner);return;}if(!view||!await preparePlayback(owner))return;await change({kind:'transport',expectedRevision:view.state.revision,operation:b.dataset.musicTransport as 'play'|'pause'|'skip'|'back'|'release'});});};el('music-mini-open').onclick=()=>run(open);
  el('music-seek').onchange=()=>run(async owner=>{if(!view?.state.current||!duration)return;const seconds=Number(value('music-seek')),playbackId=view.state.current.playbackId;const result=await change({kind:'seek',expectedRevision:view.state.revision,playbackId,seconds},false,owner);if(result&&current(owner)&&view?.state.current?.playbackId===playbackId)player.seek(seconds);});
  const settings=async()=>{if(!view)return;await change({kind:'settings',expectedRevision:view.state.revision,autoplay:el<HTMLInputElement>('music-autoplay').checked,autoAmbience:el<HTMLInputElement>('music-auto-ambience').checked,volume:Number(value('music-volume'))/100,ambienceVolume:Number(value('music-ambience-volume'))/100,fadeSeconds:Number(value('music-fade')),loop:value('music-loop') as MusicView['state']['loop']});};for(const id of ['music-autoplay','music-auto-ambience','music-volume','music-ambience-volume','music-fade','music-loop'])el(id).onchange=()=>run(settings);el('music-settings').onsubmit=e=>e.preventDefault();
- el('audio-editor').oninput=()=>{assetDirty=true;schedule();};el('audio-editor').onchange=()=>{assetDirty=true;schedule();};el('audio-editor').onsubmit=e=>{e.preventDefault();run(async()=>{if(await flushMusic())await search();});};el('audio-clone').onclick=()=>run(async owner=>{if(!await flushMusic()||!current(owner)||!selected)return;if(await change({kind:'clone',id:selected.id,expectedRevision:selected.revision},false,owner)&&current(owner))await search();});
+ el('audio-editor').oninput=()=>{assetDirty=true;schedule();};el('audio-editor').onchange=()=>{assetDirty=true;schedule();};el('audio-editor').onsubmit=e=>{e.preventDefault();run(async()=>{if(await flushMusic())await search();});};el('audio-clone').onclick=()=>run(async owner=>{
+  if(!await flushMusic()||!current(owner)||!selected)return;
+  const source=selected,selection=assetRequest,copyId=crypto.randomUUID();
+  if(!await change({kind:'clone',id:source.id,expectedRevision:source.revision,copyId},false,owner)||!current(owner))return;
+  if(selected===source&&!assetDirty&&assetRequest===selection
+   &&await selectAsset(owner,copyId,()=>selected===source&&!assetDirty)
+   &&current(owner)&&selected?.id===copyId&&!assetDirty){
+   el('audio-editor').scrollIntoView({block:'nearest'});el('audio-name').focus({preventScroll:true});
+  }
+  if(current(owner))await search();
+ });
  el('audio-search-form').onsubmit=e=>{e.preventDefault();run(()=>search());};el('audio-more').onclick=()=>run(()=>search(true));
  el('audio-pick').onclick=()=>run(async owner=>{
   if(!await flushMusic()||!current(owner))return;

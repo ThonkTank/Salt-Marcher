@@ -102,6 +102,30 @@ Atlas-Rückkehr, stillen Neustart und ausdrückliches Play mit nativer Dekodieru
 Szenenprosa und Medienmetadaten bleiben dabei unverändert. Dieser Teilbeleg
 ersetzt weder hörbare Hardwareprüfung noch Wetter-/Ambience- und Race-Abnahmen.
 
+### Eine eigene Beschreibung kopieren
+
+Die lokale, kategorisierte Bibliothek aus den Program Capabilities, L423,
+verwendet unabhängige Beschreibungen für gemeinsam referenzierte Medienbytes.
+„Eigene Beschreibung als Kopie“ öffnet nach Bestätigung die neue Beschreibung
+und führt den Fokus zu ihrem Namen. Das Original bleibt mit seinen bisherigen
+Metadaten erhalten, auch bei gleichnamigen vorhandenen Kopien.
+
+Der Aufrufer vergibt die neue `copyId` im bestehenden Clone-Command. Der Writer
+weist belegte oder ungültige Ziele ab; Command-Fingerprint und Receipt binden
+dieselbe Zielidentität an die einmalige Ausführung. Bestehende Clone-Aufträge
+ohne Zielkennung behalten ihren bisherigen Writerpfad. Es gibt keinen
+Namensvergleich, keine neue Receipttabelle und keine Kopie der Audiodatei.
+`selectAsset` prüft bei der Antwort dieselbe Auswahl und unveränderte Eingaben.
+Neuere Bearbeitung, eine andere Auswahl oder ein Kampagnenwechsel erhalten
+ihren Vorrang vor der automatischen Öffnung.
+
+`desktop-music-stop.test.mjs` prüft die tatsächliche Controller-/Storekette mit
+gleichnamiger Beschreibung, Replay, belegter Zielkennung und verzögerten
+Schreib- und Leseantworten. `tools/test-desktop-audio-copy.mjs` führt den
+Kopier-/Bearbeitungs-/Neustartablauf mit 100/200 Prozent nativ aus und wählt danach
+beide Titel ausdrücklich mit nativer Dekodierung. Originalrecords und Medienhash
+werden verglichen. Das ist keine Prüfung hörbarer Hardwareausgabe.
+
 ### Bibliotheksintegrität
 
 Bibliothekssuche, automatische Song-/Ambienceauswahl und Bibliotheksexport
