@@ -437,20 +437,23 @@ export class AtlasCanvas {
           this.sceneOrigin.y - this.box.y,
         );
     const presentation=this.options.presentation?.();
-    presentation?.paint(this.compiled,this.sceneOrigin,this.decoded);
-    this.compiled.draw(ctx, matrix, this.decoded, {
-      x: this.box.x - this.sceneOrigin.x,
-      y: this.box.y - this.sceneOrigin.y,
-    },presentation?c=>c.hud:undefined);
-    if (this.options.overlay) {
-      const overlay = new AtlasPaint("group");
-      const mpp = Math.max(this.box.width / rect.width, this.box.height / rect.height);
-      const again = this.options.overlay(overlay, this.view, mpp);
-      const scene = new AtlasCanvasScene(overlay);
-      try { presentation?.overlay(scene,{x:this.box.x,y:this.box.y}); scene.draw(ctx, new DOMMatrix().translate((w-this.box.width*scale)/2,(h-this.box.height*scale)/2).scale(scale), new Map(), {x:0,y:0},presentation?c=>c.hud:undefined); }
-      finally { scene.dispose(); }
-      if (again) this.redrawOverlay();
-    }
+    const compiled=this.compiled,paint=()=>{
+      presentation?.paint(compiled,this.sceneOrigin,this.decoded);
+      compiled.draw(ctx, matrix, this.decoded, {
+        x: this.box.x - this.sceneOrigin.x,
+        y: this.box.y - this.sceneOrigin.y,
+      },presentation?c=>c.hud:undefined);
+      if (this.options.overlay) {
+        const overlay = new AtlasPaint("group");
+        const mpp = Math.max(this.box.width / rect.width, this.box.height / rect.height);
+        const again = this.options.overlay(overlay, this.view, mpp);
+        const scene = new AtlasCanvasScene(overlay);
+        try { presentation?.overlay(scene,{x:this.box.x,y:this.box.y}); scene.draw(ctx, new DOMMatrix().translate((w-this.box.width*scale)/2,(h-this.box.height*scale)/2).scale(scale), new Map(), {x:0,y:0},presentation?c=>c.hud:undefined); }
+        finally { scene.dispose(); }
+        if (again) this.redrawOverlay();
+      }
+    };
+    if(presentation?.batch)presentation.batch(paint);else paint();
     if (ctx.isContextLost?.()) throw Error("Zeichenfläche beim Zeichnen verloren.");
     // Drawing is synchronous inside this animation frame. Authorize hits only after it completes.
     this.painted = { generation: this.publishedGeneration, cameraVersion: this.cameraVersion, ...rect };

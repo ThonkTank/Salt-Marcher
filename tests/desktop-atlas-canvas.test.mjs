@@ -881,6 +881,19 @@ test('a current editable campaign export reports failure and releases both outpu
  assert.equal(f.get('atlas-output-save-status').textContent,'Sicherung fehlgeschlagen: No disk space');assert.deepEqual(f.errors,['No disk space']);assert.equal(f.get('atlas-export-png').disabled,false);assert.equal(f.get('atlas-output-save-campaign').disabled,false);
 });
 
+test('spatial map and overlay finish their GPU batch before author hits are enabled',async t=>{
+ const f=fixture(t),calls=[],spatial={ready:true,
+  batch(paint){calls.push('begin');assert.equal(f.canvas.ready,false);paint();assert.equal(f.canvas.ready,false);calls.push('draw');},
+  paint(){calls.push('map');},overlay(){calls.push('overlay');},
+  point:()=>({x:0,y:0}),hitAt:()=>({data:{id:'mapped'}}),navigationPoint:()=>({x:0,y:0})};
+ f.canvas.options.presentation=()=>spatial;f.canvas.options.overlay=()=>{};
+ f.canvas.render(root=>root.append(rect('world')));await settle();
+ assert.deepEqual(calls,['begin','map','overlay','draw']);assert.equal(f.canvas.ready,true);
+ spatial.batch=paint=>{paint();throw Error('GPU frame failed');};
+ f.canvas.set({...f.canvas.view,x:10});f.flush();
+ assert.equal(f.canvas.ready,false);assert.equal(f.canvas.hitAt({clientX:5,clientY:5}),null);
+});
+
 test("spatial presentation shares normal input, scene publication, HUD and pan without a second navigation handler",async t=>{
  const f=fixture(t),calls=[],spatial={ready:true,
   paint:(scene,origin)=>calls.push({kind:'paint',scene,origin}),

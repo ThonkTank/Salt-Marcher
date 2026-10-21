@@ -5,6 +5,8 @@ import type { Point } from "./contracts";
  * Neither the renderer nor a visual hit may write canonical campaign data. */
 export interface AtlasPresentation {
   readonly ready: boolean;
+  /** Publish map and transient overlay as one completed frame. */
+  batch?(paint: () => void): void;
   navigationPoint(event:{clientX:number;clientY:number}):Point|null;
   paint(
     scene: AtlasCanvasScene,

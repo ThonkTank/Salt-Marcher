@@ -95,6 +95,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   navigationPoint(e:{clientX:number;clientY:number}){return this.view?.planePoint(e.clientX,e.clientY,this.host.workplane?.())??null;}
   point(e:{clientX:number;clientY:number}){const hit=this.authorPoint(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
+  batch(paint:()=>void){if(this.view)this.view.batch(paint);else paint();}
   paint(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){this.view?.publish(scene,origin,images);}
   overlay(scene:AtlasCanvasScene,origin:Point){this.view?.overlay(scene,origin);}
   hitAt(e:{clientX:number;clientY:number},keys:string[]){return this.view?.hitAt(e.clientX,e.clientY,keys)??null;}
@@ -160,10 +161,10 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   private placeCanvas(){if(!this.canvas)return;this.canvas.style.left=this.input.offsetLeft+'px';this.canvas.style.top=this.input.offsetTop+'px';this.canvas.style.width=this.input.clientWidth+'px';this.canvas.style.height=this.input.clientHeight+'px';}
   /** Called by the existing Atlas camera before any asynchronous region request. */
-  reframe(frame:LandscapeBox){
+  reframe(frame:LandscapeBox,draw=true){
     this.frame={...frame};if(!this.active)return;
     if(this.params)this.params={...this.params,frame:{...frame},tilt:this.tilt,rotation:this.rotation,projection:'perspective'};
-    this.view?.reframe(frame,this.tilt,this.rotation);
+    this.view?.reframe(frame,this.tilt,this.rotation,draw);
     if(this.params)this.input.dataset.terrainProjection=JSON.stringify(this.params);
   }
   sync(token:string,frame:LandscapeBox,revision:number,objects:LandscapeRecord[],contours:number,atlas?:AtlasRenderView,display?:{mpp:number;roofs:boolean;scopeId:string|null}){

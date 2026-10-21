@@ -21,6 +21,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Pinselanzeige unabhängig aktualisieren](../reference/atlas-brush-overlay-20261021/README.md): Hover und direkte Pinselgesten verwenden den bestehenden Overlay-Weg. Speicherstatus aktualisiert während einer aktiven GPU-Präsentation die Bedienelemente; die unveränderte Kartenszene bleibt erhalten. Abschluss und Canvas-Fallback veröffentlichen weiter vollständige Szenen.
 
+[Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
