@@ -1,4 +1,5 @@
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
+import {paintTerrainCoast} from './terrain-coast';
 import {terrainContourInk} from './terrain-contour-style';
 import type {TerrainField,TerrainLattice} from './terrain-field-stream';
 import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
@@ -6,12 +7,11 @@ import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
 import {colorParts} from "./landscape-brush";
-import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
+import {bounds,type LandscapeBox,type LandscapeRecord} from './atlas-landscape';
 import type { Polygon } from './contracts';
 import { terrainColors } from './world-model';
 
 export const UNPAINTED_LAND = [238, 229, 207] as const;
-const COAST_INK = [104, 86, 57] as const;
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
 export const LANDSCAPE_RASTER_PAD = 16;
 export function landscapeRasterBounds(box:LandscapeBox,width:number,height:number):LandscapeBox {
@@ -98,9 +98,8 @@ export class LandscapeRasterizer {
       this.elevations=new Float32Array(this.w*this.h).fill(DEFAULT_HEIGHT_M);
       // Only the union of authored supports needs sampling. Distant ocean stays implicit.
       const spans=new Int32Array(this.h*2);for(let y=0;y<this.h;y++){spans[y*2]=this.w;spans[y*2+1]=0;}
-      for(const r of [...this.heights.filter(r=>r.height),...this.fresh]){
-        const points=r.polygons.flatMap(p=>p.outer);let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
-        for(const p of points){left=Math.min(left,p.x);top=Math.min(top,p.y);right=Math.max(right,p.x);bottom=Math.max(bottom,p.y);}
+      for(const r of [...this.heights.filter(r=>r.height||r.route),...this.fresh]){
+        const b=bounds(r),left=b.x,top=b.y,right=b.x+b.width,bottom=b.y+b.height;
         const x0=Math.max(0,Math.floor((left-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w,Math.ceil((right-this.sampleBox.x)/this.sampleBox.width*this.w)),y0=Math.max(0,Math.floor((top-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h,Math.ceil((bottom-this.sampleBox.y)/this.sampleBox.height*this.h));
         for(let y=y0;y<y1;y++){spans[y*2]=Math.min(spans[y*2]!,x0);spans[y*2+1]=Math.max(spans[y*2+1]!,x1);}
       }
@@ -177,34 +176,13 @@ export class LandscapeRasterizer {
     if(!this.coastPending)return;
     this.coastPending=false;
     yield* this.applyReliefSteps(checkpoint);
-    const w=this.w,h=this.h,water=this.water;
-    // A homogeneous tile has no shoreline. Avoid distance passes and scratch
-    // allocation on the common all-land / all-ocean viewport refinements.
-    if(!water.includes(water[0]===0?1:0))return;
-    const distance=new Uint8Array(w*h).fill(24);
-    // Chamfer distance in half-sample units; bounded to a three-pixel shore band.
-    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
-      const i=y*w+x,v=water[i];
-      if(v!==water[i-1]||v!==water[i+1]||v!==water[i-w]||v!==water[i+w])distance[i]=1;
-    }
-    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
-      const i=y*w+x;distance[i]=Math.min(distance[i]!,distance[i-1]!+2,distance[i-w]!+2,distance[i-w-1]!+3,distance[i-w+1]!+3);
-    }
-    for(let y=h-2;y>0;y--)for(let x=w-2;x>0;x--){
-      const i=y*w+x;distance[i]=Math.min(distance[i]!,distance[i+1]!+2,distance[i+w]!+2,distance[i+w-1]!+3,distance[i+w+1]!+3);
-    }
-    for(let i=0;i<distance.length;i++){
-      const d=distance[i]!/2,ink=Math.max(0,Math.min(1,1.95-d)),shore=water[i]?0:Math.max(0,1-d/7)*.18,alpha=Math.max(ink,shore);
-      if(!alpha)continue;
-      const at=i*4,old=this.samples[at+3]!/255,total=alpha+old*(1-alpha);
-      for(let c=0;c<3;c++)this.samples[at+c]=Math.round((COAST_INK[c]!*alpha+this.samples[at+c]!*old*(1-alpha))/total);
-      this.samples[at+3]=Math.round(total*255);
-    }
+    yield* paintTerrainCoast(this.samples,this.water,this.w,this.h,LANDSCAPE_RASTER_PAD*2,checkpoint);
   }
+
   private *applyReliefSteps(checkpoint:()=>Generator<void>):Generator<void>{
     const z=this.elevations;if(!z)return;
     const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink),lighting=reliefLighting(style);
-    // A small symmetric screen footprint suppresses bilinear-cell facets without changing heights or coasts.
+    // A small symmetric footprint limits high-frequency shading without changing heights or coasts.
     const step=4,stride=step*this.w;
     // The halo supplies height derivatives, shore distances and mark anchors;
     // its own shaded colours are never read by a neighbouring output pixel.

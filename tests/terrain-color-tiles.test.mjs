@@ -9,8 +9,8 @@ const {TerrainDetailMaterial,MeshBasicMaterial,DataTexture,validateTerrainColor,
 const drain=g=>{for(;;){const r=g.next();if(r.done)return r.value;}};
 const identity={revision:1,fence:'one'},query={...identity,routeContext:{x:-1024,y:-1024,width:2048,height:2048},contours:0};
 const colour=q=>({...q,pixels:new Uint8Array(q.width*q.height*4).fill(255)});
-test('colour preserves bounded cubic terrain and density-aware contour pixels in all three styles',()=>{
- const golden=JSON.parse(readFileSync(new URL('./fixtures/terrain-reconstruction-goldens.json',import.meta.url),'utf8'));
+test('colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles',()=>{
+ const golden=JSON.parse(readFileSync(new URL('./fixtures/terrain-coast-goldens.json',import.meta.url),'utf8'));
  const {settingsRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs'),records=[];
  for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)records.push(heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>80*Math.sin((x*1024+i%64*16)/150)+30*Math.cos((y*1024+Math.floor(i/64)*16)/75))));
  for(const {mode,contours,mpp,sha256}of golden.cases){

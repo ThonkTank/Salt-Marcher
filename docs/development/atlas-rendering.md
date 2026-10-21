@@ -132,6 +132,10 @@ Wiederanlauf wechselt zurück. Wahrnehmung und öffentliche Ausgabe behalten den
 vollständigen Bodenpfad. [Messung und native Gegenproben](../reference/atlas-ground-raster-20261021/README.md)
 trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarbe.
 
+### Küstenzeichnung
+
+`terrain-coast.ts` zeichnet nach der Reliefschattierung eine schmale Kontur aus den kanonischen Wasserentscheidungen des gemeinsamen zweifachen Rasters. Es hält kein zusätzliches Distanzfeld und verändert weder Höhen noch Wasserflächen. Nur Ausgabesamples werden gefärbt; deren Halo liefert die Nachbarn für nahtlose Einzelkacheln. Die Schleife gibt zwischen Zeilenpaketen den Worker frei. [Stilvergleich und Hauptatlas](../reference/atlas-coast-ink-20261021/README.md) halten den sichtbaren Gewinn und die verbleibende Vergrößerung grober Farbtexturen getrennt fest. Die Konturbreite ist bisher an Rasterpixel gebunden, nicht unter jeder Perspektive an logische Bildschirmpixel.
+
 ### Höhenabtastung ohne wiederholtes Einsammeln
 
 `terrain-height-lattice.ts` sammelt pro Auflösung die tatsächlich benötigten Quellknoten. Viele Ausgabepixel teilen deren Werte und horizontale Zwischenwerte. Nur Zeilen mit Lücken werden mit dem geerbten Wert am jeweiligen Abfragepunkt neu ausgewertet; vollständige Nachbarzeilen bleiben auch in gemischten Zellen wiederverwendbar. Ein Band hält höchstens 16 Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. `terrain-field-stream.ts` besitzt Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser.

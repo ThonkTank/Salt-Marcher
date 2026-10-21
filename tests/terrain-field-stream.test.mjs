@@ -87,3 +87,15 @@ test('compact source lattices preserve repeated cells, disjoint cells and duplic
  const tile=heightRecord(0,0,1,new Float32Array(4096).fill(10));
  assert.throws(()=>streamTerrainField({x:10.25,y:10.5,dx:.1,dy:.2,columns:17,rows:13},0,kind=>kind==='height'?[tile,tile]:[]),/Doppelte Höhenkachel/);
 });
+
+
+test('direct and streamed rasters agree at authored edges and on route-only ground',()=>{
+ const values=new Float32Array(4096).fill(40),height=heightRecord(-64,0,1,values);
+ const points=[{x:0,y:2},{x:4,y:2}],route=routeSpec('road',points);route.nodes=points.map(p=>({...p,z:40,structure:'ground'}));route.limits={...route.limits,shoulder:2,cut:200,fill:200};
+ const road={id:'road-only',revision:1,kind:'road',name:'',points,polygons:[],resolution:1,width:4,values:{},route};
+ for(const records of [[height],[road]]){
+  const box={x:.125,y:1.125,width:.75,height:1.5},a=new LandscapeRasterizer(box,48,96,0),b=new LandscapeRasterizer(box,48,96,0);
+  for(const r of records)a.paint(r);const field=streamTerrainField(b.sampleLattice(),0,stream(records),false);b.setTerrainField(field);
+  assert(field.heights.some(z=>z>-100),'fixture must reach actual height/route influence');assert.deepEqual(a.finish(),b.finish());
+ }
+});
