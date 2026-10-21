@@ -4,6 +4,8 @@
 `da562e109a3fe6c9ba62541d4568385cef0dfec9` mit den im
 [nativen Ergebnis](main-atlas.json) aufgeführten lokalen Quellhashes.
 
+[Folgekorrektur für viele Teilflächen und begrenzte Abstandssuche](../atlas-cover-distance-20261021/README.md).
+
 ## Änderung und Bildprüfung
 
 Die Bodenfarbe von Landschaftsbeständen endete mit voller Deckkraft an der

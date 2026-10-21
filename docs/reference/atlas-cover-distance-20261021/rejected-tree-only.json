@@ -1,0 +1,105 @@
+{
+  "baseline": "6c72342d5db7f2cbc5fcec6e60c30f005409409d",
+  "results": [
+    {
+      "kind": "inside",
+      "pixelSha256": "94890fed52ede38dd16059490eb5d3f1497044c8a7cc77e84a3210685fd714e1",
+      "before": {
+        "samples": 8,
+        "medianMs": 58.46941949999996,
+        "rangeMs": [
+          44.63704000000007,
+          82.05717000000004
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 57.67926149999994,
+        "rangeMs": [
+          43.812539000000015,
+          104.57001500000001
+        ]
+      }
+    },
+    {
+      "kind": "edge",
+      "pixelSha256": "2febd9840768893a08109f9bf4689cf1ab338aecfc2a39f9050416acfcd6aba5",
+      "before": {
+        "samples": 8,
+        "medianMs": 50.39957299999992,
+        "rangeMs": [
+          37.99271499999941,
+          79.98952999999983
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 100.7606495,
+        "rangeMs": [
+          89.16230300000007,
+          118.04991199999995
+        ]
+      }
+    },
+    {
+      "kind": "complex",
+      "pixelSha256": "42229b40d039a47936bd5ca71141fb8f7883c145e191cfefd821fd84c2221543",
+      "before": {
+        "samples": 8,
+        "medianMs": 67.92877499999986,
+        "rangeMs": [
+          56.26295800000025,
+          82.04881999999998
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 121.35039199999983,
+        "rangeMs": [
+          105.73810500000036,
+          176.10957899999994
+        ]
+      }
+    },
+    {
+      "kind": "scattered",
+      "pixelSha256": "e1242f01e0664398461047d4c8826f45fccef62652ba5a5aa7615d27dc4408f4",
+      "before": {
+        "samples": 8,
+        "medianMs": 130.2032035000002,
+        "rangeMs": [
+          99.07561100000021,
+          160.58699400000023
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 42.28562149999925,
+        "rangeMs": [
+          31.898635000001377,
+          49.7237980000009
+        ]
+      }
+    },
+    {
+      "kind": "visible",
+      "pixelSha256": "237be7a6a0fdb535f249f5730a7040fe8048ad2d0a63d9fb7cdb9216367f7408",
+      "before": {
+        "samples": 8,
+        "medianMs": 1049.2269880000003,
+        "rangeMs": [
+          976.8034029999981,
+          1103.3102800000015
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 197.42044250000072,
+        "rangeMs": [
+          154.24062699999922,
+          222.29469700000118
+        ]
+      }
+    }
+  ]
+}

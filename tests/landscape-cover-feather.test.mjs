@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/landscape-raster';export * from './src/app/vegetation';export * from './src/app/landscape-cover-feather';export {segmentDistance} from './src/app/atlas-landscape';"},outfile:'.build/cover-feather-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {LandscapeRasterizer,vegetationSpec,coverFeatherSteps,coverDisplayPolygons,segmentDistance}=createRequire(import.meta.url)('../.build/cover-feather-test.cjs');
+const {LandscapeRasterizer,vegetationSpec,coverFeatherSamplerSteps,coverDisplayPolygons,coverViewParts,segmentDistance}=createRequire(import.meta.url)('../.build/cover-feather-test.cjs');
+function* coverFeatherSteps(polygons,box,width,height,radius,checkpoint){
+ const sample=yield* coverFeatherSamplerSteps(polygons,box,width,height,radius,checkpoint);if(!sample)return;
+ const pixels=new Float32Array(width*height);for(let y=0;y<height;y++)for(let x=0;x<width;x++)pixels[y*width+x]=sample(x,y);return pixels;
+}
 const rect=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const record=(polygons=[{...rect(-30,-30,60,60),holes:[rect(-10,-10,20,20).outer]}],edge=8)=>{const vegetation=vegetationSpec();vegetation.preset.edge=edge;return {id:'forest',kind:'vegetation',polygons,vegetation,points:[],values:{terrain:'forest'},resolution:1};};
 const box={x:-50,y:-50,width:100,height:100};
@@ -37,7 +41,7 @@ test('clipping continent-length edges bounds work to the requested raster',()=>{
 });
 
 
-test('scanline capsules match exact distances for diagonal, reversed and degenerate edges',()=>{
+test('spatial boundary queries match exact distances for diagonal, reversed and degenerate edges',()=>{
  const triangle=[{x:-40,y:-30},{x:35,y:20},{x:-20,y:40}];
  for(const ring of [triangle,[...triangle].reverse(),[...triangle,triangle[0]]]){
   const g=coverFeatherSteps([{outer:ring,holes:[]}],box,100,100,15,function*(){});let next=g.next();while(!next.done)next=g.next();
@@ -51,4 +55,26 @@ test('sub-sample contour simplification preserves source rings and bounds its vi
  for(const p of ring){const d=Math.min(...simplified.map((a,i)=>segmentDistance(p,a,simplified[(i+1)%simplified.length])));assert(d<=.1250001);}
  const r=record(source),whole=draw(r).pixels,left=draw(r,{...box,width:50},50).pixels,right=draw(r,{...box,x:0,width:50},50).pixels;
  for(let y=0;y<100;y++){assert.deepEqual(left.slice(y*200,(y+1)*200),whole.slice(y*400,y*400+200));assert.deepEqual(right.slice(y*200,(y+1)*200),whole.slice(y*400+200,(y+1)*400));}
+});
+
+test('distance halo discards remote islands and recognizes disjoint parts without author mutation',()=>{
+ const islands=Array.from({length:2000},(_,i)=>rect(i*1000,0,20,20)),before=structuredClone(islands);
+ const nearby=coverViewParts(islands,{x:0,y:0,width:100,height:100},16);
+ assert.equal(nearby.polygons.length,1);assert.equal(nearby.disjoint,true);assert.equal(nearby.polygons[0],islands[0]);
+ assert.equal(coverViewParts([rect(0,0,20,20),rect(20,0,20,20)],box,8).disjoint,false,'touching parts must still merge');
+ assert.equal(coverViewParts([rect(0,0,20,20),rect(40,0,20,20)],box,8).disjoint,true);
+ assert.deepEqual(islands,before);
+});
+test('hierarchy and halo preserve exact distances with many disjoint, overlapping and distant boundaries',()=>{
+ const polygons=Array.from({length:50},(_,i)=>rect(i%10*13-60,Math.floor(i/10)*13-30,7+i%3,9)),before=structuredClone(polygons);
+ polygons.push(rect(-1e6,-1e6,10,10),rect(-20,-20,35,40));
+ for(const radius of [2,16,80]){
+  const parts=coverViewParts(polygons,box,radius),g=coverFeatherSteps(parts.polygons,box,70,70,radius,function*(){});let next=g.next();while(!next.done)next=g.next();
+  for(let y=0;y<70;y+=3)for(let x=0;x<70;x+=3){
+   const p={x:box.x+(x+.5)*box.width/70,y:box.y+(y+.5)*box.height/70};
+   const distance=Math.min(...polygons.flatMap(polygon=>polygon.outer.map((a,i)=>segmentDistance(p,a,polygon.outer[(i+1)%polygon.outer.length])))),t=Math.min(1,distance/radius);
+   assert(Math.abs(next.value[y*70+x]-t*t*(3-2*t))<1e-6);
+  }
+ }
+ assert.deepEqual(polygons.slice(0,50),before);
 });

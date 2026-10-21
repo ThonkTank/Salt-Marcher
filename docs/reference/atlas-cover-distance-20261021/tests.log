@@ -1,0 +1,130 @@
+TAP version 13
+# Subtest: forest colour fades inside outer edges and clearings without painting outside or over water
+ok 1 - forest colour fades inside outer edges and clearings without painting outside or over water
+  ---
+  duration_ms: 216.198141
+  type: 'test'
+  ...
+# Subtest: real world boundaries retain exact output across adjacent tiles and far origins
+ok 2 - real world boundaries retain exact output across adjacent tiles and far origins
+  ---
+  duration_ms: 240.701869
+  type: 'test'
+  ...
+# Subtest: overlapping parts have one continuous surface and interruptible paint matches synchronous paint
+ok 3 - overlapping parts have one continuous surface and interruptible paint matches synchronous paint
+  ---
+  duration_ms: 348.347302
+  type: 'test'
+  ...
+# Subtest: clipping continent-length edges bounds work to the requested raster
+ok 4 - clipping continent-length edges bounds work to the requested raster
+  ---
+  duration_ms: 3.226737
+  type: 'test'
+  ...
+# Subtest: spatial boundary queries match exact distances for diagonal, reversed and degenerate edges
+ok 5 - spatial boundary queries match exact distances for diagonal, reversed and degenerate edges
+  ---
+  duration_ms: 38.91887
+  type: 'test'
+  ...
+# Subtest: sub-sample contour simplification preserves source rings and bounds its visible error
+ok 6 - sub-sample contour simplification preserves source rings and bounds its visible error
+  ---
+  duration_ms: 152.837506
+  type: 'test'
+  ...
+# Subtest: distance halo discards remote islands and recognizes disjoint parts without author mutation
+ok 7 - distance halo discards remote islands and recognizes disjoint parts without author mutation
+  ---
+  duration_ms: 51.277015
+  type: 'test'
+  ...
+# Subtest: hierarchy and halo preserve exact distances with many disjoint, overlapping and distant boundaries
+ok 8 - hierarchy and halo preserve exact distances with many disjoint, overlapping and distant boundaries
+  ---
+  duration_ms: 131.108988
+  type: 'test'
+  ...
+# Subtest: colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+ok 9 - colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+  ---
+  duration_ms: 1740.077061
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 10 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 8.517694
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 11 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 2044.603531
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 12 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 54.156192
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 13 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 4.823912
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 14 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 2.539584
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin 0
+ok 15 - stroke coverage keeps pre-change pixels at world origin 0
+  ---
+  duration_ms: 225.420124
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin -1000000000
+ok 16 - stroke coverage keeps pre-change pixels at world origin -1000000000
+  ---
+  duration_ms: 162.314975
+  type: 'test'
+  ...
+# Subtest: stroke coverage keeps pre-change pixels at world origin 1000000000
+ok 17 - stroke coverage keeps pre-change pixels at world origin 1000000000
+  ---
+  duration_ms: 174.140174
+  type: 'test'
+  ...
+# Subtest: paged color reads preserve canonical order and exact rowids, without an open SQL statement between records
+ok 18 - paged color reads preserve canonical order and exact rowids, without an open SQL statement between records
+  ---
+  duration_ms: 361.254443
+  type: 'test'
+  ...
+# Subtest: paged cover reads preserve canonical order and exact rowids, without an open SQL statement between records
+ok 19 - paged cover reads preserve canonical order and exact rowids, without an open SQL statement between records
+  ---
+  duration_ms: 344.690187
+  type: 'test'
+  ...
+# Subtest: interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+ok 20 - interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output
+  ---
+  duration_ms: 773.296048
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8946.176122

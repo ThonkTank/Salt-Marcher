@@ -1,0 +1,4 @@
+{
+  "wrapperExit": 130,
+  "reason": "Superseded tree-only distance strategy regressed ordinary edges; native run intentionally terminated before qualification."
+}

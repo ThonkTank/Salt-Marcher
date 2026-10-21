@@ -202,6 +202,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 [Lesbarere Baumkronen](../../reference/atlas-crown-style-20261021/README.md): gelappte Laubkronen, Aststufen bei Nadelbäumen und stabile Farbvariation im bestehenden instanzierten Hauptatlas. Native Maßstabs-/Kipp-/PNG-Probe und GPU-Treffer-/Kachelprüfungen liegen vor. Die teurere erste Geometrie wurde verworfen; der begrenzte Folgeentwurf bleibt ein Nah-/Regionaldetail, keine Waldgestaltung für die Weltübersicht.
 
+[Begrenzte Kosten der weichen Ränder](../../reference/atlas-cover-distance-20261021/README.md): entfernte Teile werden verworfen, disjunkte Teile benötigen keine Vereinigung, und der Abstandskern passt sich der geschätzten Arbeit an. Im dichten 2000-Teilflächen-Fall sank die gemessene Kachelzeit von 1056 auf 193 ms; fünf Rasterfälle und die native PNG-Ausgabe bleiben pixelgleich. Allgemeine Ladeleistung bleibt offen.
+
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
 [Aufrauen als eigene Sculpt-Wirkung](../../reference/atlas-sculpt-roughen-20261021/README.md): positive und negative Unebenheiten im bestehenden direkten Höhenpinsel, mit gemeinsamen Höhenbändern, History und Hauptkamera. Lokale und native Prüfungen umfassen Undo/Redo und frisches Öffnen. Das vervollständigt noch nicht die Feature-Werkzeuge oder die allgemeine Leistungs-/Gestaltungsabnahme.
