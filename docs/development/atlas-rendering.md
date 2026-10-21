@@ -74,7 +74,7 @@ Kampagnen- oder Revisionswechsel verworfen; alte Farben verdecken keine Edits.
 `TerrainSpatialUI` verwirft Antworten nach Quellen- oder Gestenwechsel und setzt
 unterbrochene Verfeinerung nach der Geste fort. Ein Fehler nur der Detailstufe
 behält die nutzbare Übersicht und bietet den vorhandenen Kamerawiederanlauf an.
-`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 128er-Paketen
+`readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen
 mit kooperativen Haltepunkten nach abgeschlossenen SQL-Lesevorgängen. Der Worker
 beendet dort seinen WAL-Schnappschuss und prüft die Revision vor jeder Fortsetzung.
 Auswahl kann zwischen diesen Schritten laufen. Kamera-, Live- und Autorenaufträge
