@@ -38,9 +38,9 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
   local=brushPreviewRecords({generation:0,box:area,width:q.width,height:q.height,records:original,heightStroke:q.heightStroke,color:q.color},f=>{protectedLimit=f;},grid);
   const before=new Map(original.map(r=>[r.id,JSON.stringify(r)])),changed=local.filter(r=>before.get(r.id)!==JSON.stringify(r)),ids=new Set(changed.map(r=>r.id));
   const kind=(r:LandscapeRecord)=>r.height?'height':r.route?'route':r.paint?'color':r.vegetation?'cover':r.surface==='freshwater'?'lake':'base';
-  stream=function*(k,b){
+  stream=function*(k,b,samples){
    const updates=changed.filter(r=>!r.terrainSettings&&(k==='line'?r.kind==='road'||r.kind==='river':kind(r)===k)&&overlap(r,b)).sort((a,b)=>b.resolution-a.resolution||(a.order??0)-(b.order??0));let index=0;
-   for(const r of records(k,b)){
+   for(const r of records(k,b,samples)){
     if(ids.has(r.id))continue;
     // Height levels must stay coarse-to-fine. Pigment updates are appended above the saved layers.
     if(k!=='color')while(index<updates.length&&updates[index]!.resolution>=r.resolution)yield updates[index++]!;

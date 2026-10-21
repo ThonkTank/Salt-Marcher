@@ -88,7 +88,7 @@ export class AtlasLandscapeReader {
   this.colorHistory.record(source,this.invalidation);
  }
 
- visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,(kind,box)=>this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache);}
  private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
   if(kind&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
@@ -127,14 +127,19 @@ export class AtlasLandscapeReader {
   if(ids.length)yield*readPage(ids);
  }
  private *lines(source:AtlasRegionSource,box:LandscapeBox){for(const r of this.rows(source,box,false))if(r.kind==='road'||r.kind==='river')yield r;}
+ /** Read only height records whose interpolation support touches a sample.
+  * The source bounds already include the two-cell Hermite neighbourhood. */
+ private terrainStream(source:AtlasRegionSource):import('./terrain-color-raster').ProjectionStream{
+  return(kind,box,samples)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,samples?{width:samples.columns/2,height:samples.rows/2}:0,0,kind);
+ }
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){
-  const projection=readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);
+  const projection=readTerrainProjection(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange:q.colorBase?this.colorHistory.since(q.colorBase):undefined};
  }
- colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);}
  *terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
   const colorChange=q.colorBase?this.colorHistory.since(q.colorBase):undefined;
-  const projection=yield* readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);
+  const projection=yield* readTerrainProjectionSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange};
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{

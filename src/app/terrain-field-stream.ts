@@ -7,7 +7,9 @@ import {RouteSurface} from './terrain-route';
  * Only the bounded source neighbourhood survives a tile read; no author record is retained. */
 export interface TerrainLattice {x:number;y:number;dx:number;dy:number;columns:number;rows:number}
 export interface TerrainField {heights:Float32Array;water:Uint8Array;surface?:Float32Array}
-export type TerrainStream=(kind:'height'|'route'|'lake',box:LandscapeBox)=>Iterable<LandscapeRecord>;
+/** Uniform sample centres inside the query box, including its half-cell border. */
+export interface TerrainSamples {columns:number;rows:number}
+export type TerrainStream=(kind:'height'|'route'|'lake',box:LandscapeBox,samples?:TerrainSamples)=>Iterable<LandscapeRecord>;
 /** Read a retained row band without changing the global sample coordinates or arithmetic order. */
 export function streamTerrainFieldRows(lattice:TerrainLattice,first:number,count:number,seaLevelM:number,records:TerrainStream,withSurface=true):TerrainField{
   if(!Number.isInteger(first)||!Number.isInteger(count)||first<0||count<1||first+count>lattice.rows||count*lattice.columns>65536)throw Error('Geländerasterband prüfen.');
@@ -45,7 +47,7 @@ function terrainBand(lattice:TerrainLattice,startRow:number,seaLevelM:number,rec
   };
   // Reuse source nodes before interpolation, rather than copying the same
   // neighbourhood into a separate scratch record for every output pixel.
-  accumulateHeightLattice(Float64Array.from({length:columns},(_,i)=>atX(i)),Float64Array.from({length:rows},(_,i)=>atY(i)),records('height',query),ground,additions);
+  accumulateHeightLattice(Float64Array.from({length:columns},(_,i)=>atX(i)),Float64Array.from({length:rows},(_,i)=>atY(i)),records('height',query,{columns,rows}),ground,additions);
   for(let i=0;i<n;i++)ground[i]=ground[i]!+additions[i]!;
   let weighted:Float64Array|undefined,total:Float64Array|undefined,strength:Float64Array|undefined,levels:Float64Array|undefined;
   for(const r of records('route',query)){

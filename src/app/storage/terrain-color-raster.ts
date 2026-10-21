@@ -2,10 +2,10 @@ import {settingsRecord} from '../terrain-height';
 import {terrainTraceMeasure,terrainTraceStart} from '../terrain-timing';
 import type {LandscapeBox,LandscapeRecord} from '../atlas-landscape';
 import {LandscapeRasterizer,landscapeRasterBounds} from '../landscape-raster';
-import {streamTerrainFieldSteps} from '../terrain-field-stream';
+import {streamTerrainFieldSteps,type TerrainSamples} from '../terrain-field-stream';
 import type {TerrainProjectionCache} from '../terrain-projection-cache';
 import {terrainDirtyRects} from '../terrain-dirty-rects';
-export type ProjectionStream=(kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox)=>Iterable<LandscapeRecord>;
+export type ProjectionStream=(kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox,samples?:TerrainSamples)=>Iterable<LandscapeRecord>;
 export interface TerrainColorOptions {
  settings:LandscapeRecord;stream:ProjectionStream;cache?:TerrainProjectionCache;batchEdge:number;
  contours:number;revision:number;denseRoutes:boolean;retainedRoutes:ReadonlySet<string>;checkpoint:()=>Generator<void>;
