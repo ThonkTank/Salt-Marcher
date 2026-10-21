@@ -157,7 +157,7 @@ export async function openNpcProfile(id:string,contact?:{date:string;sceneTitle:
  if(draft.pendingCommand){el('npc-write-check').focus();return;}
  if(contact){
   const owner=draft,input=el<HTMLTextAreaElement>('npc-contact');
-  if(!draft.fields.contact?.trim()){
+  if(!draft.fields.contact){
    draft.fields.contact=contact.date+' · '+contact.sceneTitle+'\n';input.value=draft.fields.contact;capture();await keep();
   }
   if(workspace?.token!==token||draft!==owner||!stillCurrent())return;

@@ -79,6 +79,14 @@ test('an accepted dossier contact survives a fresh SQLite reader and editor reac
 });
 
 
+test('a resumed whitespace-only conversation remains author input rather than a new generated header',async()=>{
+ const x=await fixture();try{
+  const raw='  \r\n\t  ';x.input('npc-contact',raw);assert(await x.ui.flushNpcs());const original=x.store.npcDraft(x.w.token,x.a.id);
+  x.ui.activateNpcs(x.w);await x.ui.openNpcProfile(x.a.id,{date:'Tag 9',sceneTitle:'Nachhut'},()=>true);
+  assert.equal(x.el('npc-contact').value,raw);assert.deepEqual(x.store.npcDraft(x.w.token,x.a.id),original);assert.equal(x.store.npc(x.w.token,x.a.id).record.history,'');assert.equal(x.writes.length,0);
+ }finally{await x.cleanup();}
+});
+
 test('a lost NPC reply retains the exact command and raw contact through Fresh, then confirms only once',async()=>{
  const x=await fixture();try{
   const raw='Tag 7 · Vorhut\n  Beobachtung\r\n';x.input('npc-contact',raw);assert(await x.ui.flushNpcs());

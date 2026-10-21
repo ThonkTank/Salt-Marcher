@@ -44,8 +44,9 @@ Eingaben; erst ausdrückliches „NPC übernehmen“ hängt den Text an die Gesc
 und übernimmt genau den passenden CAS-Entwurf. Altentwürfe ohne dieses optionale
 Feld bleiben lesbar; fehlender Text wird nicht als historische Tatsache ergänzt.
 „Gespräch festhalten…“ führt direkt zum sichtbaren Gesprächsfeld im
-vorhandenen Profilformular. Ein bestehender Gesprächsentwurf erhält keinen
-weiteren Zeitheader. Der allgemeine Profileinstieg bleibt bei den Stammdaten.
+vorhandenen Profilformular. Ein vorhandener Gesprächsrohtext erhält keinen weiteren Zeitheader, auch wenn
+er ausschließlich Leerzeilen, Leerzeichen oder Tabs enthält. Nur ein tatsächlich
+leeres Feld erhält beim Gesprächseinstieg den angezeigten Zeit-/Gruppenheader. Der allgemeine Profileinstieg bleibt bei den Stammdaten.
 Alte Dialogantworten melden oder entsperren keine neue Übergabe.
 
 Vor Dispatch sichert `npc-ui.ts` den Originalauftrag einschließlich Command-ID,
@@ -120,7 +121,9 @@ vollständige Plattform-/Accessibility-/Owner-Abnahme bleiben offen.
 Der native Ablauf `tools/test-desktop-npc-conversation.mjs` prüft Dossier →
 sichtbares Gesprächsfeld → gesicherter Rohentwurf → regulärer Close/Fresh →
 Fortsetzung und ausdrückliche einmalige Übernahme → erneuter Close/Fresh bei
-100 und 200 Prozent. Unveränderte Autorenprosa einschließlich CRLF, der zweite
+100 und 200 Prozent Appzoom über den gemeinsamen nativen Sitzungshelfer. Die
+Wiederöffnung eines nur aus Leerraum bestehenden Gesprächsentwurfs wird vor dem
+eigentlichen Gespräch geprüft. Unveränderte Autorenprosa einschließlich CRLF, der zweite
 NSC und der Live-Szenenstand werden getrennt geprüft. Das qualifiziert diesen
 Bedienweg; Antwortverlust und die vollständige SMR-AC-03/04-Abnahme bleiben offen.
 
