@@ -566,6 +566,30 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
 });
 
 
+test('GM image resolution preserves label composition and scales text across tiles in both orientations',async t=>{
+ const f=fixture(t),controls=f.document.createElement('div');
+ controls.innerHTML='<input id="atlas-export-size"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><button id="atlas-output-save-campaign"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p>';
+ f.document.body.append(controls);
+ const painted=[],errors=[],create=f.document.createElement.bind(f.document);let matrix=new Matrix(),saves=0;
+ f.ctx.measureText=text=>({width:text.length*Number(f.ctx.font.match(/([\d.]+)px/)[1])*0.6});
+ f.ctx.setTransform=m=>{matrix=m;};
+ f.ctx.fillText=text=>painted.push({text,pixels:Number(f.ctx.font.match(/([\d.]+)px/)[1])*Math.hypot(matrix.a,matrix.b)});
+ f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
+ for(const [width,height]of [[1024,512],[512,1024]]){
+  const box={x:0,y:0,width,height},labels=[{id:'a',kind:'room',rank:0,text:'Torhalle',point:{x:250,y:250}},{id:'b',kind:'room',rank:0,text:'Wachstube',point:{x:295,y:250}}];
+  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:{},owner:{token:'t'},outputRun:null,landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+  f.window.campaign={atlasRegion:async(token,q)=>({ok:true,value:{campaignId:'c',revision:7,region:{box:q.box,fence:'f',labels,scopeId:null,floorId:'ground',landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}}}),exportAtlasPNG:async()=>{saves++;return{ok:true,value:{cancelled:false}};}};
+  for(const size of [1024,2048]){
+   painted.length=0;f.document.querySelector('#atlas-export-size').value=String(size);await ui.exportPNG();assert.deepEqual(errors,[]);
+   assert.deepEqual([...new Set(painted.map(p=>p.text))],['Torhalle'],'Resolution must not change collision decisions');
+   assert(painted.length>1,'The label is composed through multiple export tiles');
+   assert(painted.every(p=>Math.abs(p.pixels-12*size/1024)<1e-6),'Text scales with the exported map');
+  }
+ }
+ assert.equal(saves,4);
+});
+
+
 test('explicitly retained local paths survive rebase; dynamic paths and context caches remain independent',t=>{
  fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:10,y:0},{x:10,y:10}],holes:[]}]}),dynamic=atlasPaint('polyline',{points:[{x:1,y:1},{x:2,y:2}]}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
  const first=new AtlasCanvasScene(wrap,cache);base.geometry.matrix=[1,0,0,1,20,-10];dynamic.geometry.points=[{x:3,y:3},{x:4,y:4}];const next=new AtlasCanvasScene(wrap,cache);
