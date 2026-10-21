@@ -81,13 +81,16 @@ export class AtlasRegionReader {
  colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.colorSteps(source,q);}
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrainSteps(source,q);}
  liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{
+  const steps=this.liveTerrainSteps(source,q,base,false);for(;;){const step=steps.next();if(step.done)return step.value;}
+ }
+ *liveTerrainSteps(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity,cooperative=true):Generator<void,import('../terrain-presentation').TerrainFrame>{
   if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');
   const query=q.kind==='tilted'?{...q.query,revision:undefined,fence:undefined,colorBase:undefined,view:{...q.query.view,focusM:0}}:q.query;
   if(q.kind==='top')validateTerrainDetail(q.detail,q.query.box);
   const key=digest(JSON.stringify([source.campaignId,q.kind,query,q.kind==='top'?q.detail:undefined])),previous=this.terrainBases.get(key);
   const common={kind:'full' as const,target:{revision:source.revision,fence:source.fence,key},invalidation:this.landscape.invalidation};
   const full:TerrainFullFrame=q.kind==='top'?{...common,view:'top',layer:this.landscape.read(source,q.query,q.detail?REGION_REPLY_BYTES*3/4:REGION_REPLY_BYTES)}:
-   {...common,view:'tilted',projection:this.landscape.terrain(source,{...q.query,revision:source.revision,fence:source.fence})};
+   {...common,view:'tilted',projection:cooperative?yield* this.landscape.terrainSteps(source,{...q.query,revision:source.revision,fence:source.fence}):this.landscape.terrain(source,{...q.query,revision:source.revision,fence:source.fence})};
   if(q.kind==='top'&&q.detail&&full.view==='top'){
    const detail=this.landscape.read(source,{...q.query,box:q.detail,width:256,height:256},REGION_REPLY_BYTES/4,true);
    if(detail.state!=='ready')throw Error(detail.error??'Geländedetail nicht verfügbar.');

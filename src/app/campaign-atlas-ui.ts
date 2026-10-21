@@ -2,7 +2,7 @@ import {vegetationInstances} from './vegetation-projection';
 import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
 import {atlasTerrainExport} from './atlas-terrain-export';
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
-import {TerrainPresentation,type TerrainIdentity} from './terrain-presentation';
+import {TerrainPresentation,interactiveTerrainFrame,type TerrainIdentity} from './terrain-presentation';
 import {terrainTraceStart} from './terrain-timing';
 import {BrushSizeControl} from './atlas-brush-size';
 import {posedFootprint} from './city-model';
@@ -847,17 +847,20 @@ export class CampaignAtlasWorkbench {
       this.spatial?.gesture(true);
       const owner=this.owner!,query=this.spatial?.liveQuery()??{kind:'top' as const,query:this.regionQuery(true)};
       this.terrainAuthor=null;
-      this.terrainPresentation=new TerrainPresentation(async(source,base)=>{
+      this.terrainPresentation=new TerrainPresentation(async(source,base,refinement=false)=>{
         const end=terrainTraceStart('terrain.frame');
-        const frame=this.spatial?.liveQuery(box=>this.landscape.terrainDetail(box))??(query.kind==='top'?{...query,detail:this.landscape.terrainDetail(query.query.box)}:query);
-        const reply=await window.campaign.atlasTerrainFrame(owner.token,{source,frame,base}).finally(end);
+        let frame=this.spatial?.liveQuery(box=>this.landscape.terrainDetail(box))??(query.kind==='top'?{...query,detail:this.landscape.terrainDetail(query.query.box)}:query);
+        // Keep the requested fine dimensions independent of the last displayed coarse pass.
+        if(frame.kind==='tilted'&&query.kind==='tilted')frame={...frame,query:{...frame.query,width:query.query.width,height:query.query.height}};
+        if(!refinement)frame=interactiveTerrainFrame(frame);
+        const reply=await window.campaign.atlasTerrainFrame(owner.token,{source,frame,base,refinement}).finally(end);
         if(!reply.ok)throw Error(reply.error);return reply.value;
-      },frame=>{
+      },(frame,refined)=>{
         if(this.owner!==owner)return;
-        if(frame.view==='tilted')this.spatial?.presentLive({...frame.projection,identity:frame.target});
+        if(frame.view==='tilted')this.spatial?.presentLive({...frame.projection,identity:frame.target},refined);
         else this.landscape.presentTerrain(frame.layer);
         this.svg.dataset.terrainRevision=String(frame.target.revision);
-      },error=>{if(this.owner===owner)this.opts.status('Gespeichert. Geländeanzeige folgt beim Abschluss: '+(error as Error).message,true);});
+      },error=>{if(this.owner===owner)this.opts.status('Gespeichert. Geländeanzeige folgt beim Abschluss: '+(error as Error).message,true);},query.kind==='tilted');
       return;
     }
     const presentation=this.terrainPresentation,owner=this.owner;

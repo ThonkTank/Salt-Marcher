@@ -97,8 +97,14 @@ Treffer, Objekte oder deren GPU-Puffer. Zuletzt wird die weite Kontexttextur auf
 höchstens 512×512 Pixel verfeinert. `terrain-navigation-plan.ts` bleibt Besitzer
 der beiden Geometrie-/Kontextanfragen; die feine Farbe dazwischen verwendet
 `atlas:terrain-color` und den gemeinsamen Rasterkern in `terrain-color-raster.ts`.
-Live-Pinsel und perspektivische Ausgabe verwenden weiterhin vollständige
-Projektionen mit ihrer jeweiligen Detailauflösung.
+Live-Pinsel veröffentlichen zunächst vollständige Höhen mit höchstens 64×64
+Farbpixeln für Übersicht und Pinselbereich. `TerrainPresentation` fordert danach
+die ursprüngliche Farbauflösung an. Diese Verfeinerung läuft in unterbrechbaren
+Workerabschnitten hinter neuen Autoren- und Kameraanfragen. Beide Stufen tragen
+ihre tatsächliche Quellenrevision; eine feinere Antwort derselben Revision darf
+das erste Bild ersetzen, eine inzwischen überholte Antwort nicht. Die
+perspektivische Ausgabe behält ihre jeweilige Detailauflösung.
+[Native Teilmessung und offene Leistungsgrenze](../reference/atlas-progressive-brush-20261021/README.md).
 
 Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
 unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
