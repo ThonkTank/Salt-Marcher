@@ -132,6 +132,12 @@ Wiederanlauf wechselt zurück. Wahrnehmung und öffentliche Ausgabe behalten den
 vollständigen Bodenpfad. [Messung und native Gegenproben](../reference/atlas-ground-raster-20261021/README.md)
 trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarbe.
 
+### Höhenabtastung ohne wiederholtes Einsammeln
+
+`terrain-height-lattice.ts` sammelt pro Auflösung nur die tatsächlich benötigten Quellknoten. Viele Ausgabepixel in derselben Höhenzelle teilen deren Werte; weiter auseinanderliegende Samples erzeugen eine dünn besetzte Menge von Quellkoordinaten. Jedes Band hält höchstens vier Knoten je Ausgabesample und absoluter/additiver Ebene, keine vollständigen Autorenkacheln. Weltindizes bleiben Float64. Die bisherige bilineare Summenreihenfolge, Nullgewichte und NaN-Vererbung bleiben exakt erhalten. `terrain-field-stream.ts` besitzt weiterhin Bandgrenzen, SQL-Lebensdauer, Trassen und Wasser. [Gepaarte Kernmessungen, Pixelregressionen und Hauptatlas](../reference/atlas-height-lattice-20261021/README.md) belegen den Anschluss.
+
+Der dortige kubische Vergleich ist ein isolierter Folgeversuch, kein Produktmodus. Seine Einbindung erfordert denselben Kernel in Punktabfrage und Stream, größere Nachbarschaftslesebereiche samt Invalidierung sowie eine geprüfte Behandlung bestehender Speicher-/History-Grenzen.
+
 ### Höhenlinien auf dem vorhandenen Geländenetz
 
 `terrain-contours.ts` zeichnet Höhenlinien im GPU-Material der gemeinsamen Atlasoberfläche. Standard ist „Automatisch“ (`-1`); `0` schaltet sie aus, positive Werte wählen feste Meterintervalle. Im Automatikmodus werden ineinander enthaltene Zweierintervalle ab einem Meter anhand der lokalen Bildschirmableitung überblendet. Linien bleiben auf ihren ursprünglichen Höhen, auch bei Neigung und unterschiedlicher Entfernung zur Kamera. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.

@@ -109,11 +109,15 @@ Caches bleiben begrenzt. Im Vergleich werden 64/128/256 MiB je relevanter Cachek
 
 **Abschluss:** Kalte und warme Navigation bleiben bedienbar; Weltgröße führt nicht zu vollständigen Weltlesungen. Nach wiederholten Reisen zwischen entfernten Orten werden ungenutzte Ressourcen freigegeben. Lokale Bearbeitung wird nicht wegen eines anderswo fehlenden Details gesperrt.
 
+[Weitere lokale P3-Verbesserung](../../reference/atlas-height-lattice-20261021/README.md): Quellhöhen werden vor der Interpolation auf einem kompakten, begrenzten Raster geteilt. Die vorhandene Oberfläche bleibt pixelgleich, die gepaarten Feldkernproben benötigen deutlich weniger Zeit. Hauptatlas, Live-Bearbeitung und Küstenverfeinerung sind erneut nativ geprüft. Das ersetzt keine weltweite LOD- oder Lastabnahme.
+
 ### P4 — Semantischen Zoom und kartografische Gestaltung vervollständigen
 
 Erster lokaler Teilschritt: [GPU-Höhenlinien mit konstanter Strichbreite und unmittelbarem Intervallwechsel](../../reference/atlas-gpu-contours-20261020/README.md). [Im Repository und nativen Entwicklungsstart geprüft](../../reference/atlas-contour-zoom-20261021/README.md): automatische, kontinuierlich überblendete Höhenintervalle sind Standard; feste Intervalle bleiben wählbar. Die perspektivische Ausgabe nutzt dasselbe GPU-Material, der Canvasfallback dieselben Abstandsregeln. Weitere Objektklassen, Küstenkonturen und vollständige visuelle Zoomabnahme bleiben offen.
 
 Weiterer lokaler Teilschritt: [Höhenlinienlesbarkeit bei 100/200 %](../../reference/atlas-contour-readability-20261021/README.md). Ein isolierter Vergleich am Produktrenderer begründet 24 logische Pixel als Zielabstand; Hauptatlas und Rasterausgabe berücksichtigen die jeweilige Abtastdichte. Automatische und feste Linien behalten ihre Höhen und logischen Strichbreiten. Die eigentliche Höhengeometrie, kantige grobe Pinsel-/Quelldaten, Küstenschärfe und allgemeine Zoomleistung bleiben davon unverbessert; P4 ist weiterhin offen.
+
+Der [isolierte Interpolationsversuch](../../reference/atlas-height-lattice-20261021/README.md#glattere-rekonstruktion-noch-nicht-integriert) belegt rundere grobe Konturen mit einer begrenzten kubischen Rekonstruktion. Unbeschränktes Catmull-Rom erzeugt falsche Überhöhungen und wird verworfen. Die begrenzte Variante bleibt bis zur gemeinsamen Umstellung von kanonischer Punktabfrage, Stream, Lesebereichen, Invalidierung und History außerhalb des Produkts. Die nötigen Anschlussprüfungen stehen im Beleg; die Hauptkarte verwendet weiterhin dieselbe bilineare Höhenbedeutung.
 
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
