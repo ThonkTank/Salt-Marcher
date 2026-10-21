@@ -116,7 +116,13 @@ Die eigenständigen 256er-Farbkacheln verwenden 128er-Pakete, um den wiederholt
 abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
 zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
 und der Reliefschattierung frei. `LandscapeRasterizer.paintColorSteps` unterbricht
-auch Pigmentmasken und kumulative Farbkomposition. `landscape-record-stream.ts`
+auch Pigmentmasken und kumulative Farbkomposition.
+[landscape-pigment-coverage.ts](../../src/app/landscape-pigment-coverage.ts)
+teilt Weltachsen, quadratische Achsabstände und Texturanteile zwischen
+überlappenden Abdrücken eines Strichs. Float64-Weltkoordinaten und die bisherige
+Float32-Akkumulation erhalten auch entfernte Texturen und Radierer.
+[Pixelorakel und gepaarte Pinselprüfung](../reference/atlas-brush-coverage-20261021/README.md)
+belegen diesen Kostenschritt. `landscape-record-stream.ts`
 liest dazu begrenzte Seiten aus einem partiellen Farbindex und anschließend
 jeweils einen Payload mit abgeschlossener SQL-Abfrage. Kein SQL-Iterator
 überlebt einen Haltepunkt. Füllflächen benötigen keine Pinselstempel; konstante
