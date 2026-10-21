@@ -81,3 +81,5 @@ Testdateien: [Randabstände](../../../tests/landscape-cover-feather.test.mjs),
  Die Gesamtziele zu Ladeleistung, Weltwald,
 weiteren Geländearten und Werkzeugen bleiben offen. Keine abschließende
 Gesamtuntersuchung und keine Nutzerabnahme.
+
+Die spätere [Begrenzung pro kleiner Waldfläche](../atlas-cover-local-distance-20261021/README.md) reduziert zusätzlich die Initialisierung und Normalisierung des direkten Distanzfelds.

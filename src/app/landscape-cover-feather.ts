@@ -38,9 +38,9 @@ function edgeTree(edges:Edge[]):Node {
 function edgeRectangles(edges:Edge[],width:number,height:number,dx:number,dy:number,radius:number){
  return edges.map(edge=>({edge,left:Math.max(0,Math.ceil((edge.minX-radius)/dx-.5)),right:Math.min(width-1,Math.floor((edge.maxX+radius)/dx-.5)),top:Math.max(0,Math.ceil((edge.minY-radius)/dy-.5)),bottom:Math.min(height-1,Math.floor((edge.maxY+radius)/dy-.5))}));
 }
-function distanceRow(values:Float32Array,width:number,y:number,from:number,to:number,dx:number,py:number,e:Edge){
+function distanceRow(values:Float32Array,width:number,left:number,top:number,y:number,from:number,to:number,dx:number,py:number,e:Edge){
  for(let x=from;x<=to;x++){
-  const px=(x+.5)*dx-e.x,t=e.length2?Math.max(0,Math.min(1,(px*e.dx+py*e.dy)/e.length2)):0,d=(px-e.dx*t)**2+(py-e.dy*t)**2,at=y*width+x;
+  const px=(x+.5)*dx-e.x,t=e.length2?Math.max(0,Math.min(1,(px*e.dx+py*e.dy)/e.length2)):0,d=(px-e.dx*t)**2+(py-e.dy*t)**2,at=(y-top)*width+x-left;
   if(d<values[at]!)values[at]=d;
  }
 }
@@ -50,14 +50,20 @@ function normalize(values:Float32Array,start:number,end:number,radius:number){
 }
 /** Direct spans are cheaper for sparse edges. Only use this path when their
  * conservative total work is bounded by a few full raster passes. */
-function* sparseDistances(rectangles:ReturnType<typeof edgeRectangles>,width:number,height:number,dx:number,dy:number,radius:number,checkpoint:()=>Generator<void>){
- const values=new Float32Array(width*height).fill(radius*radius);let work=0;
- for(const r of rectangles)if(r.right>=r.left)for(let y=r.top;y<=r.bottom;y++){
-  distanceRow(values,width,y,r.left,r.right,dx,(y+.5)*dy-r.edge.y,r.edge);work+=r.right-r.left+1;
+function* sparseDistances(rectangles:ReturnType<typeof edgeRectangles>,dx:number,dy:number,radius:number,checkpoint:()=>Generator<void>){
+ const active=rectangles.filter(r=>r.right>=r.left&&r.bottom>=r.top);
+ if(!active.length)return undefined;
+ // Small covers must not allocate and normalize a whole world tile per object.
+ // Outside this clipped union every edge is at least radius away: opacity is 1.
+ let left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+ for(const r of active){left=Math.min(left,r.left);top=Math.min(top,r.top);right=Math.max(right,r.right);bottom=Math.max(bottom,r.bottom);}
+ const width=right-left+1,height=bottom-top+1,values=new Float32Array(width*height).fill(radius*radius);let work=0;
+ for(const r of active)for(let y=r.top;y<=r.bottom;y++){
+  distanceRow(values,width,left,top,y,r.left,r.right,dx,(y+.5)*dy-r.edge.y,r.edge);work+=r.right-r.left+1;
   if(work>=16384){yield* checkpoint();work=0;}
  }
  for(let start=0;start<values.length;start+=16384){yield* checkpoint();normalize(values,start,Math.min(values.length,start+16384),radius);}
- return values;
+ return (x:number,y:number)=>x<left||x>right||y<top||y>bottom?1:values[(y-top)*width+x-left]!;
 }
 function distanceSampler(tree:Node,dx:number,dy:number,radius:number){
  const limit=radius*radius,full=Math.fround(limit),stack:Node[]=[],point={x:0,y:0};let nearest:Edge|undefined;
@@ -94,7 +100,7 @@ export function* coverFeatherSamplerSteps(polygons:Polygon[],box:LandscapeBox,wi
  if(!edges.length)return;
  yield* checkpoint();const dx=box.width/width,dy=box.height/height,rectangles=edgeRectangles(edges,width,height,dx,dy,radius);
  const estimatedSamples=rectangles.reduce((n,r)=>n+Math.max(0,r.right-r.left+1)*Math.max(0,r.bottom-r.top+1),0);
- if(estimatedSamples<=width*height*4){const values=yield* sparseDistances(rectangles,width,height,dx,dy,radius,checkpoint);return(x:number,y:number)=>values[y*width+x]!;}
+ if(estimatedSamples<=width*height*4)return yield* sparseDistances(rectangles,dx,dy,radius,checkpoint);
  return distanceSampler(edgeTree(edges),dx,dy,radius);
 }
 
