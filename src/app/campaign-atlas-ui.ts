@@ -69,7 +69,6 @@ import {
   atlasDrawingHasDraft,
   atlasDrawingUndoPoint,
   drawingOverlay,
-  atlasDrawingScope,
   reloadDrawing,
 } from "./drawing-ui";
 import {
@@ -1125,13 +1124,6 @@ export class CampaignAtlasWorkbench {
   }
   private syncDrawingFloor() {
     if (!this.scopeId) return;
-    atlasDrawingScope(
-      this.data?.bindings.some(
-        (b) => b.ownerId === this.scopeId && b.parent === "building",
-      )
-        ? this.scopeId
-        : null,
-    );
     const select = get<HTMLSelectElement>("floors"),
       v = JSON.stringify([this.scopeId, this.floorId]);
     if ([...select.options].some((o) => o.value === v)) {

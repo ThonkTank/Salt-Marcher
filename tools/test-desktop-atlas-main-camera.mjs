@@ -103,6 +103,8 @@ const result = {
   hashes: {},
 };
 for (const file of [
+  "src/app/storage/drawing.ts",
+  "src/app/drawing-ui.ts",
   "src/app/atlas-workplane.ts",
   "src/app/atlas-spatial-labels.ts",
   "src/app/atlas-label-source.ts",
@@ -371,14 +373,28 @@ try {
       let row;for(let i=0;i<100&&!row;i++){row=db.prepare('SELECT id,floor_id floorId,payload FROM room WHERE name=?').get('Raum im Obergeschoss');if(!row)await page.waitForTimeout(100);}
       assert(row);const added={id:row.id,floorId:row.floorId,...JSON.parse(row.payload)};await settle();
       assert.equal(added.floorId,'upper');
-      // Existing create-room initializes 1.524 m volume cells; verify placement
-      // within that canonical grid, independently of the camera's 24 m height.
-      const ring=added.polygons[0].outer,bounds=[Math.min(...ring.map(p=>p.x)),Math.min(...ring.map(p=>p.y)),Math.max(...ring.map(p=>p.x)),Math.max(...ring.map(p=>p.y))];
-      for(const [i,value]of [10,10,60,60].entries())assert(Math.abs(bounds[i]-value)<3.048,JSON.stringify(bounds));
+      assert.equal(added.polygons.length,1);assert.equal(added.polygons[0].outer.length,3);
+      for(const p of points)assert(added.polygons[0].outer.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<.01),JSON.stringify(added.polygons));
+      assert.equal(db.prepare('SELECT count(*) n FROM dungeon_volume WHERE room_id=?').get(added.id).n,0);
       result.upperRoom=added;await capture('06-upper-floor-saved');
+      for(const kind of ['undo','redo']){
+        await page.locator('#atlas-'+kind).click();
+        const expected=kind==='undo'?1:0;let hidden;
+        for(let i=0;i<100;i++){hidden=db.prepare("SELECT hidden FROM drawing_hidden WHERE id=? AND kind='room'").get(added.id)?.hidden;if(hidden===expected)break;await page.waitForTimeout(100);}
+        assert.equal(hidden,expected);await settle();
+        assert.deepEqual(JSON.parse(db.prepare('SELECT payload FROM room WHERE id=?').get(added.id).payload).polygons,added.polygons);
+      }
+
       await page.locator('#atlas-floor').selectOption('ground');activeFloorHeight=floorHeight;await settle();
       assert.deepEqual(readRoom().polygons,saved.polygons);
-      mark('Floor switch and committed polygon retain world placement within canonical volume cells at 24 metres under the tilted main camera');
+      mark('Floor switch and committed polygon retain exactly three authored vertices at 24 metres under the tilted main camera');
+      await close();await open();
+      assert.deepEqual(JSON.parse(db.prepare('SELECT payload FROM room WHERE id=?').get(added.id).payload).polygons,added.polygons);
+      assert.equal(db.prepare('SELECT count(*) n FROM dungeon_volume WHERE room_id=?').get(added.id).n,0);
+      await page.locator('#atlas-floor').selectOption('upper');activeFloorHeight=24;await settle();
+      await capture('07-upper-floor-reopened');
+      mark('The free room creation has one undo/redo action and retains its exact polygon and no implicit volume after fresh reopening');
+
     }
   }
   if(!process.argv.includes("--raised-floor"))result.city = await verifyAtlasCity(page, settle, capture, () =>
