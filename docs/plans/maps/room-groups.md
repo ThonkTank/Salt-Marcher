@@ -1,8 +1,14 @@
 # Gemeinsame Raumgruppen
 
 Gebäude und Dungeons verwenden denselben `scope` und dieselben Room-, Geschoss-,
-Zeichnungs- und Key-Records. Ein Gebäude in einer Stadt trägt dieselbe Kennung
-wie seine Raumgruppe. Seine Kontur ist eine abgeleitete Darstellung der Räume,
+Zeichnungs- und Key-Records. **Einzelhaus** legt eine unabhängige Raumgruppe an
+der angeklickten Weltposition an. Dafür wird keine Stadt benötigt; auch eine
+ausgewählte historische Stadt wird nicht zum Besitzer des neuen Hauses.
+Gemalte Gebiete bleiben unabhängig von dieser Geometrie. Die Kamera bleibt
+beim Platzieren stehen, sodass mehrere Häuser nacheinander angelegt werden können.
+
+Bestehende Stadteinträge behalten ihre Daten und dieselbe Kennung wie ihre
+Raumgruppe. Ihre Kontur ist eine abgeleitete Darstellung der Räume,
 kein zweiter frei bearbeitbarer Grundriss. Die bestehende Atlasbindung übernimmt
 Position und Drehung des Stadteintrags; sie erzeugt keinen zweiten Innenraum.
 
@@ -64,7 +70,14 @@ nachträglich angelegten leeren Innenraumhülle.
 Verbindungen, gemeinsame Identität, abgeleitete Außenkontur, History,
 Wiederöffnung, Skalierung und unabhängigen Kampagnentransfer.
 `tools/test-desktop-room-groups.mjs` spielt Einzelhaus, Krypta, Raumtext und
-Prozessneustart in Electron durch. Die bestehenden Atlasregressionen prüfen
+Prozessneustart in Electron durch. `tests/atlas-independent-building.test.mjs`
+prüft unabhängige Platzierung mit und ohne historischen Stadtkontext sowie
+Abbruch und Kampagnenwechsel während der Vorschau.
+`tools/test-desktop-world-authoring.mjs` beginnt mit einer leeren Kampagne und
+zeichnet Kontinente, Relief, Wald, Königreich, Straße und Häuser bis zum
+Raumtext mit anschließendem Prozessneustart. Dieser Funktionsablauf ersetzt
+keine Lastmessung einer vollen Welt und keine ästhetische Abnahme.
+Die bestehenden Atlasregressionen prüfen
 zusätzlich metrische Transformationen, Raumkopien und begrenzte Ausschnittsleser.
 `tools/measure-room-groups.mjs` erzeugt 5.000 eingerichtete Häuser über den
 kanonischen Atlasbefehl und misst Wiederöffnung sowie begrenzte Ausschnittsleser.

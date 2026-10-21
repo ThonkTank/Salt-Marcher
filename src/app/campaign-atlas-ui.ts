@@ -1272,9 +1272,10 @@ export class CampaignAtlasWorkbench {
       await this.navigate("city", id);
     }
   }
-  private async createDungeon() {
+  private async createRoomGroup(mode:'interior'|'building'='interior') {
     const owner=this.owner,at={...this.lastPoint};
-    const recipe=await chooseRoomGroup({version:1,profile:'Gewölbe',width:18,depth:20,seed:crypto.randomUUID().slice(0,8)},true);
+    const building=mode==='building';
+    const recipe=await chooseRoomGroup({version:1,profile:building?'Wohnhaus':'Gewölbe',width:18,depth:20,seed:crypto.randomUUID().slice(0,8)},!building);
     if(!recipe||this.owner!==owner)return;
 
     const r = await this.write(
@@ -1286,7 +1287,12 @@ export class CampaignAtlasWorkbench {
       },
       true,
     );
-    if (r) {
+    if (r && this.owner===owner) {
+      if(building){
+        this.selection={kind:'scope',id:(r.result as {id:string}).id};
+        this.render();
+        return;
+      }
       this.scopeId = (r.result as { id: string }).id;
       this.floorId = "ground";
       this.selection = { kind: "scope", id: this.scopeId };
@@ -1368,7 +1374,7 @@ export class CampaignAtlasWorkbench {
     if(!this.camera.ready||!this.geometryCurrent()){this.opts.status('Kartenausschnitt wird vorbereitet.');return;}
     const p = this.point(e);
     this.lastPoint = p;
-    if(this.creation){const kind=this.creation;this.creation=null;delete this.root.dataset.placing;if(kind==='city')await this.createCity();else await this.createDungeon();return;}
+    if(this.creation){const kind=this.creation;this.creation=null;delete this.root.dataset.placing;if(kind==='city')await this.createCity();else await this.createRoomGroup();return;}
     const target = this.camera.hitAt(e, ["atlasObject"]),
       kind = target?.data.kind,
       id = target?.data.id;
@@ -1438,6 +1444,11 @@ export class CampaignAtlasWorkbench {
         get("atlas-draft-cancel").hidden = false;
         if (this.draft.length === 2) await this.createRoomRectangle();
         this.render();
+        return;
+      }
+      // Buildings are world geometry, even when a legacy city is selected.
+      if(this.family==='city'&&get<HTMLSelectElement>('city-tool').value==='building'){
+        await this.createRoomGroup('building');
         return;
       }
       if (

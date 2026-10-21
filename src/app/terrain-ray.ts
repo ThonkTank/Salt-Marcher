@@ -1,5 +1,5 @@
 import type {TerrainGrid} from './terrain-spatial-model';
-import {terrainGridLayout,terrainGridCoordinate} from './terrain-grid-layout';
+import {terrainGridLayout} from './terrain-grid-layout';
 
 interface Vector {x:number;y:number;z:number}
 /** Intersect the exact two triangles per heightfield cell. The ray parameter
@@ -13,8 +13,15 @@ export function terrainRaycast(grid:TerrainGrid,origin:Vector,direction:Vector,n
     const a=(min-at)/delta,z=(max-at)/delta;enter=Math.max(enter,Math.min(a,z));leave=Math.min(leave,Math.max(a,z));
   }
   if(leave<enter)return null;
-  const cell=(coordinate:number,count:number,direction:number)=>Math.max(0,Math.min(count-2,Math.floor(coordinate)-(direction<0&&coordinate===Math.floor(coordinate)?1:0)));
-  let ix=cell(terrainGridCoordinate(l.x,origin.x+direction.x*enter),v.columns,direction.x),iy=cell(terrainGridCoordinate(l.y,origin.y+direction.y*enter),v.rows,direction.y);
+  // Compare actual mesh vertices. Dividing distant coordinates by a band's
+  // step can turn an exact boundary into 127.999999..., choosing the cell
+  // behind a positive ray and terminating its walk at distance zero.
+  const cell=(values:Float64Array,value:number,direction:number)=>{
+    let lo=0,hi=values.length;
+    while(lo<hi){const mid=(lo+hi)>>>1;if(direction<0?values[mid]!<value:values[mid]!<=value)lo=mid+1;else hi=mid;}
+    return Math.max(0,Math.min(values.length-2,lo-1));
+  };
+  let ix=cell(l.x.values,origin.x+direction.x*enter,direction.x),iy=cell(l.y.values,origin.y+direction.y*enter,direction.y);
   let start=enter;
   for(let n=0;n<v.columns+v.rows+4;n++){
     const x0=l.x.values[ix]!,y0=l.y.values[iy]!,sx=l.x.values[ix+1]!-x0,sy=l.y.values[iy+1]!-y0,i=iy*v.columns+ix;
