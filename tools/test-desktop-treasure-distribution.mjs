@@ -43,7 +43,25 @@ async function confirm(){
 }
 try{
  page=await launch();await tab('#treasury-tab');await page.locator('#treasury-list').getByRole('button',{name:/Hafenfund/}).click();await page.locator('#treasury-distribute').click();await page.locator('#distribution-even').click();await shot('distribution');
- await page.getByLabel('Heiltrank an Ada',{exact:true}).fill('1');await page.getByLabel('Heiltrank an Borin',{exact:true}).fill('1');await page.locator('#distribution-check').click();await shot('review');await confirm();if(replyLoss){await tab('#live-tab');await page.getByRole('button',{name:'Ada · Beute ansehen',exact:true}).click();}else await page.locator('#distribution-receipt').getByRole('button',{name:'Ada · Beute ansehen',exact:true}).click();await page.locator('#live').waitFor({state:'visible'});await page.waitForFunction(()=>document.querySelector('#ledger-character-heading').textContent==='Beute: Ada');await shot('personal-entry');
+ await page.getByLabel('Heiltrank an Ada',{exact:true}).fill('1');await page.getByLabel('Heiltrank an Borin',{exact:true}).fill('1');
+ const adaRecipient=page.locator('#distribution-people').getByLabel('Ada',{exact:true});
+ await adaRecipient.uncheck();await shot('recipient-excluded');
+ assert.equal(await page.getByLabel('Heiltrank an Ada',{exact:true}).count(),0);
+ assert.match(await page.locator('#distribution-summary').innerText(),/Eingaben für 1 abgewählte Figur/);
+ await page.locator('#distribution-even').click();
+ assert.equal(await page.getByLabel('Goldmünze an Borin',{exact:true}).inputValue(),'50');
+ assert.equal(await page.getByLabel('Goldmünze an Cleo',{exact:true}).inputValue(),'50');
+ await adaRecipient.check();
+ assert.equal(await page.getByLabel('Goldmünze an Ada',{exact:true}).inputValue(),'33','changing recipient selection must retain the prepared coin amount');
+ assert.equal(await page.getByLabel('Heiltrank an Ada',{exact:true}).inputValue(),'1','changing recipient selection must retain the prepared potion amount');
+ assert(await page.locator('#distribution-check').isDisabled(),'restored amounts must be revalidated against the available treasure');
+ assert.doesNotMatch(await page.locator('#distribution-summary').innerText(),/Einheiten vorbereitet|bleiben im Schatz/);
+ await shot('recipient-restored-overflow');
+ await page.getByLabel('Goldmünze an Borin',{exact:true}).fill('33');
+ await page.getByLabel('Goldmünze an Cleo',{exact:true}).fill('33');
+ await page.getByLabel('Heiltrank an Cleo',{exact:true}).fill('');
+ database(db=>assert.equal(db.prepare('SELECT count(*) n FROM character_ledger').get().n,0));
+ await page.locator('#distribution-check').click();await shot('review');await confirm();if(replyLoss){await tab('#live-tab');await page.getByRole('button',{name:'Ada · Beute ansehen',exact:true}).click();}else await page.locator('#distribution-receipt').getByRole('button',{name:'Ada · Beute ansehen',exact:true}).click();await page.locator('#live').waitFor({state:'visible'});await page.waitForFunction(()=>document.querySelector('#ledger-character-heading').textContent==='Beute: Ada');await shot('personal-entry');
  await page.locator('#ledger-list').getByRole('button',{name:/33 × Goldmünze/}).click();await page.locator('#ledger-adjustments summary').click();await page.locator('#ledger-operation').selectOption('correct');assert.equal(await page.locator('#ledger-quantity').inputValue(),'33');await page.locator('#ledger-quantity').fill('32');await page.locator('#ledger-reason').fill('Eine Münze beim Nachzählen zu viel.');await page.locator('#ledger-form button[type=submit]').click();await page.waitForFunction(()=>document.querySelector('#ledger-list').textContent.includes('32 × Goldmünze'));await shot('corrected');
  await page.locator('#ledger-list').getByRole('button',{name:/1 × Heiltrank/}).click();await page.locator('#ledger-stack-tools').getByRole('button',{name:'An Figur weitergeben'}).waitFor({state:'visible'});await shot('transfer-entry');
  await page.getByLabel('Empfänger der Weitergabe',{exact:true}).selectOption(heroes[2].id);await page.getByLabel('Stapelgrund',{exact:true}).fill('Trank für Cleo');await page.getByRole('button',{name:'An Figur weitergeben',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#ledger-list').textContent.includes('Weitergegeben'));await shot('transferred');await close();

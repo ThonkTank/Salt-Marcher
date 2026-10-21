@@ -47,3 +47,20 @@ test('a rejected allocation displays its sender reason at the preserved inputs a
 test('a late sender failure cannot overwrite the next dialog or its new amounts',async t=>{
  const x=await fixture(t),wait=deferred();let report;x.send=(_a,failed)=>{report=failed;return wait.promise;};x.amount(2);x.review();x.submit();await settle();x.ui.reset();await x.open();x.amount(7);report('Alter Buchungsfehler');wait.resolve(false);await settle();assert.equal(x.input().value,'7');assert.doesNotMatch(x.el('distribution-status').textContent,/Alter Buchungsfehler/);assert.equal(x.el('distribution-receipt').hidden,true);
 });
+
+test('recipient deselection preserves raw amounts, invalidates review and never allocates excluded shares',async t=>{
+ const x=await fixture(t);x.people.push({...x.people[0],characterId:'borin',name:'Borin'});await x.open();
+ const amount=(id,value)=>{const n=x.el('distribution-grid').querySelector('[data-character-id="'+id+'"]');n.value=value;n.oninput();};
+ const select=(id,checked)=>{const n=[...x.el('distribution-people').querySelectorAll('input')].find(n=>n.value===id);n.checked=checked;n.onchange();};
+ amount('hero','3');amount('borin','2');x.review();const oldConfirm=x.el('distribution-confirm').onclick;
+ select('hero',false);assert.match(x.el('distribution-summary').textContent,/Eingaben für 1 abgewählte Figur/);assert.equal(x.el('distribution-review').hidden,true);oldConfirm();await settle();assert.equal(x.sent.length,0);
+ select('hero',true);assert.equal(x.el('distribution-grid').querySelector('[data-character-id="hero"]').value,'3');
+ amount('hero','-1');assert.equal(x.el('distribution-check').disabled,true);select('hero',false);assert.equal(x.el('distribution-check').disabled,false);select('hero',true);assert.equal(x.el('distribution-grid').querySelector('[data-character-id="hero"]').value,'-1');assert.equal(x.el('distribution-check').disabled,true);
+ select('hero',false);x.review();x.submit();await settle();assert.deepEqual(x.sent[0].allocations.map(a=>[a.characterId,a.quantity]),[['borin',2]]);assert.match(x.el('distribution-receipt').textContent,/8 × Seil/);
+});
+test('equal redistribution only replaces selected shares; restoration revalidates totals and explicit clearing removes all drafts',async t=>{
+ const x=await fixture(t);x.people.push({...x.people[0],characterId:'borin',name:'Borin'});await x.open();x.amount(3);
+ const select=(checked)=>{const n=[...x.el('distribution-people').querySelectorAll('input')].find(n=>n.value==='hero');n.checked=checked;n.onchange();};
+ select(false);x.el('distribution-even').click();assert.equal(x.input().value,'10');select(true);assert.equal(x.input().value,'3');assert.equal(x.el('distribution-check').disabled,true);assert.match(x.el('distribution-summary').textContent,/Mengen prüfen/);assert.doesNotMatch(x.el('distribution-summary').textContent,/Einheiten vorbereitet|bleiben im Schatz/);
+ select(false);[...x.el('treasure-distribution-dialog').querySelectorAll('button')].find(n=>n.textContent==='Mengen leeren').click();select(true);assert.equal(x.input().value,'');assert.equal(x.el('distribution-grid').querySelector('[data-character-id="borin"]').value,'');assert.equal(x.el('distribution-check').disabled,true);assert.equal(x.sent.length,0);
+});

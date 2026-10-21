@@ -67,6 +67,30 @@ Membership-, Doppelzuordnungs- und kontrolliertem zweitem Ledgerfehler.
 Dialog-/Bestätigungsgrenzen. Das qualifiziert lokale Teilverträge, keine native
 oder vollständige Recovery-/Portabilitätsabnahme.
 
+## Empfängerauswahl ohne Verlust vorbereiteter Mengen
+
+Abwählen schließt eine Figur aus Prüfung, Restberechnung und Buchung aus, erhält
+aber ihre Rohmengen im offenen Dialog. Ein sichtbarer Hinweis benennt die Anzahl
+abgewählter Figuren mit Eingaben. Erneutes Anwählen zeigt dieselben Werte und
+prüft die Gesamtsummen erneut; Überverteilung oder ungültige Eingaben sperren die
+Bestätigung. Ungültige Mengen oder unvollständige Prüfungen zeigen keine
+scheinbar vollständigen Summen oder Restmengen. Jede Auswahländerung entwertet
+die vorherige Review.
+
+„Gleichmäßig auf Auswahl“ ersetzt nur Mengen der ausgewählten Figuren.
+„Mengen leeren“ leert ausdrücklich alle Eingaben einschließlich abgewählter
+Figuren. Der bestehende Batchwriter erhält ausschließlich ausgewählte Anteile;
+Schatz- und Membershipbasis sowie atomare Bestätigung bleiben unverändert.
+Die Mengen bleiben im vorhandenen Dialogzustand; dauerhafte Wiederaufnahme nach
+Schließen oder Neustart bleibt der unten benannte Workingdraftauftrag.
+
+Die Kontexttests prüfen erneute Auswahl, ungültige Rohmengen, ausgeschlossene
+Buchungen, veraltete Bestätigung, Gleichverteilung und ausdrückliches Leeren.
+Die native Verteilungsprobe wählt Ada nach vorbereiteten Münzen und Trank ab,
+verteilt an die übrigen Figuren neu und stellt Adas Eingaben durch erneute Auswahl
+wieder her. Die dadurch überhöhte Summe muss korrigiert werden, bevor der gesamte
+Ablauf mit persönlicher Korrektur, Weitergabe und Neustart fortgesetzt wird.
+
 ## Identität bei fehlendem Schatz-Read
 
 Ein angeforderter Schatz ist erst nach bestätigtem Read die sichtbare Auswahl.
