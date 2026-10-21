@@ -78,8 +78,10 @@ try{
  await page.screenshot({path:out+'/02-repository-tilt-zoom.png'});result.checks.push('npm run start:desktop launches this repository; campaign navigation opens the main Atlas.','Tilt, rotation and wheel zoom retain the same main canvas.');
  result.checks.push('Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.');
  // Real GPU context loss must request a complete fallback region before presenting it.
+ const fallbackStarted=performance.now();
  await page.evaluate(()=>document.querySelector('#atlas-terrain-spatial').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.renderer==='canvas2d'&&document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='true');await atlasCanvasReady(page);
+ result.fallbackMs=performance.now()-fallbackStarted;
  assert(Number(await page.locator('#campaign-map').getAttribute('data-atlas-landscape-tiles'))>0);await page.screenshot({path:out+'/04-graphics-fallback.png'});
  await page.locator('#atlas-view').click();await page.locator('#atlas-camera-retry').click();await page.keyboard.press('Escape');await ready();
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='false');assert.equal(await page.locator('#campaign-map').getAttribute('data-renderer'),'webgl');
