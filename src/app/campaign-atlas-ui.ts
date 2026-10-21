@@ -1,3 +1,4 @@
+import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
 import {atlasTerrainExport} from './atlas-terrain-export';
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
 import {TerrainPresentation,type TerrainIdentity} from './terrain-presentation';
@@ -556,6 +557,7 @@ export class CampaignAtlasWorkbench {
     },{capture:true,passive:false});
     this.spatial=new TerrainSpatialUI(this.svg,{
       route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
+      workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
       refresh:()=>this.refresh(),redraw:()=>{
         this.scheduleRender();
@@ -1113,6 +1115,13 @@ export class CampaignAtlasWorkbench {
     const polygons = [...drag.room.polygons];
     polygons[drag.polygon] = {...polygon, outer: points};
     return {...original, polygons};
+  }
+  private floorPlane(scopeId=this.scopeId,floorId=this.floorId):AtlasWorkplane|null {
+    if(!this.data||!scopeId)return null;
+    const binding=this.data.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===scopeId);
+    if(!binding)return null;
+    const frame=atlasFrame(this.data,binding);
+    return {scopeId,elevationM:this.data.geometry.floors?.find(f=>f.scopeId===scopeId&&f.id===floorId)?.elevation??0,anchor:{x:frame.x,y:frame.y}};
   }
   private syncDrawingFloor() {
     if (!this.scopeId) return;
@@ -2214,15 +2223,15 @@ export class CampaignAtlasWorkbench {
     if(!state||state.floor.scopeId!==this.scopeId||state.floor.floorId!==this.floorId)return;
     let points=state.points,lines:string[]=[];
     if(this.roomDrag?.moved){const a=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.start,frame)),b=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.last,frame));points=[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}];lines=areaMeasures([{outer:points,holes:[]}]);}
-    else if(this.draft.length&&state.tool==='room-rectangle'&&hover){const a=this.draft[0]!,b=atlasDrawingSnapPoint(atlasToLocal(hover,frame));points=[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}];lines=areaMeasures([{outer:points,holes:[]}]);root.append(shape('polygon',{points:points.map(p=>this.relativePoint(localToAtlas(p,frame))),pointer:false,style:{fill:null,stroke:'#b85c23',lineWidth:mpp*2},data:{editorOnly:'true'}}));}
-    else if(['room-cave','room-erase','scatter'].includes(state.tool)&&hover){points=[atlasToLocal(hover,frame)];lines=radiusMeasures(state.radius);root.append(shape('circle',{x:hover.x-box.x,y:hover.y-box.y,radius:state.radius,pointer:false,style:{fill:null,stroke:'#364354',lineWidth:mpp},data:{editorOnly:'true'}}));}
+    else if(this.draft.length&&state.tool==='room-rectangle'&&hover){const a=this.draft[0]!,b=atlasDrawingSnapPoint(atlasToLocal(hover,frame));points=[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}];lines=areaMeasures([{outer:points,holes:[]}]);root.append(shape('polygon',{points:points.map(p=>this.relativePoint(localToAtlas(p,frame))),pointer:false,style:{fill:null,stroke:'#b85c23',lineWidth:mpp*2},data:{editorOnly:'true',...atlasWorkplaneData(this.floorPlane())}}));}
+    else if(['room-cave','room-erase','scatter'].includes(state.tool)&&hover){points=[atlasToLocal(hover,frame)];lines=radiusMeasures(state.radius);root.append(shape('circle',{x:hover.x-box.x,y:hover.y-box.y,radius:state.radius,pointer:false,style:{fill:null,stroke:'#364354',lineWidth:mpp},data:{editorOnly:'true',...atlasWorkplaneData(this.floorPlane())}}));}
     else if(state.tool==='select'){
       if(this.selection?.kind==='room'){const room=this.opts.roomDraft();if(room&&room.id===this.selection.id){const preview=this.roomPreview(room);points=preview.polygons.flatMap(p=>p.outer);lines=areaMeasures(preview.polygons);}}
       else if(state.element&&state.element.id===this.selection?.id){const e=this.pathPreview(state.element);points=e.points;lines=elementMeasures(e);}
     }else if(state.polygons?.length){points=state.polygons.flatMap(p=>p.outer);lines=areaMeasures(state.polygons);}
     else if(state.element){points=state.element.points;lines=elementMeasures(state.element);}
     else if(points.length>1)lines=pathMeasures(points);
-    if(state.tool!=='select'&&state.points.length>1&&!this.roomDrag&&!['room-cave','room-erase','scatter','room-hole'].includes(state.tool))root.append(shape(state.polygons?.length||['terrain','water','roof'].includes(state.tool)?'polygon':'polyline',{points:points.map(p=>this.relativePoint(localToAtlas(p,frame))),pointer:false,style:{fill:null,stroke:'#b85c23',lineWidth:mpp*2},data:{editorOnly:'true'}}));
+    if(state.tool!=='select'&&state.points.length>1&&!this.roomDrag&&!['room-cave','room-erase','scatter','room-hole'].includes(state.tool))root.append(shape(state.polygons?.length||['terrain','water','roof'].includes(state.tool)?'polygon':'polyline',{points:points.map(p=>this.relativePoint(localToAtlas(p,frame))),pointer:false,style:{fill:null,stroke:'#b85c23',lineWidth:mpp*2},data:{editorOnly:'true',...atlasWorkplaneData(this.floorPlane())}}));
     if(points.length)drawMeasurements(root,box,mpp,localToAtlas(points.at(-1)!,frame),lines,project);
   }
   private brushControls=new Map<string,BrushSizeControl>();
@@ -2412,13 +2421,13 @@ export class CampaignAtlasWorkbench {
       retained.append(base.authorSlot?this.withAuthorFace(base.node,base.authorSlot,mpp):base.node);root.append(retained);
       if (this.roomDrag?.moved) {
         const f=this.frame(this.roomDrag.scopeId),a=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.start,f)),b=atlasDrawingSnapPoint(atlasToLocal(this.roomDrag.last,f));
-        root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true"}}));
+        root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true",...atlasWorkplaneData(this.floorPlane(this.roomDrag.scopeId))}}));
       }
       if (this.draft.length && this.scopeId) {
         const f = this.frame(this.scopeId),
           p = localToAtlas(this.draft[0]!, f);
         root.append(
-          shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"}}),
+          shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"},data:atlasWorkplaneData(this.floorPlane())}),
         );
       }
 
@@ -2617,7 +2626,7 @@ export class CampaignAtlasWorkbench {
       }
     }
     if (!shown.length&&!elements.length) return;
-    const g = shape("group", {matrix: frameMatrix(this.relative(f)),data:{spatialScope:b.ownerId,spatialFloor:String(data.geometry.floors.find(f=>f.scopeId===b.ownerId&&f.id===floor)?.elevation??0)}});
+    const g = shape("group", {matrix: frameMatrix(this.relative(f)),data:atlasWorkplaneData(this.floorPlane(b.ownerId,floor))});
     for (const saved of shown) {
       if(this.authorRoom(saved)){g.append(shape('group',{data:{authorRoomFace:saved.id}}));continue;}
       let room =
@@ -2728,7 +2737,7 @@ export class CampaignAtlasWorkbench {
     if (!binding) return;
     const frame = atlasFrame(data, binding), g = shape('group', {
       matrix: frameMatrix(this.relative(frame)),
-      data: {editorOnly: 'true'},
+      data: {editorOnly: 'true',...atlasWorkplaneData(this.floorPlane())},
     });
     const original = this.opts.roomDraft();
     if (this.family === 'interior' && this.selection?.kind === 'room' &&

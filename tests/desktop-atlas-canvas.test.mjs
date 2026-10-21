@@ -666,6 +666,7 @@ test('detailed Atlas and PNG surfaces use the saved room colors and the same can
   const live=atlasPaint('group'),ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,selection:selected?{id:'r'}:null,label(){}});ui.drawRoomFace(live,room,0.1);
   const output=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),{grid:false,level:0,references:false,floorId:'ground',roofs:false}),face=output.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
   assert.deepEqual(live.children[0].geometry.polygons,room.polygons);assert.deepEqual(face.geometry.polygons,room.polygons);
+  assert.deepEqual(output.children.find(n=>n.data.spatialScope==='local').data,{spatialScope:'local',spatialFloor:'0',spatialAnchorX:'0',spatialAnchorY:'0'});
   assert.equal(live.children[0].style.fill,styles.length?style.fill:selected?'#e8d8ac':'#e2dac4');assert.equal(face.style.fill,styles.length?style.fill:'#e2dac4');
   assert.equal(live.children[0].style.stroke,styles.length?style.wall:'#3d4b45');assert.equal(face.style.stroke,live.children[0].style.stroke);assert.equal(face.style.lineWidth,live.children[0].style.lineWidth);
  }

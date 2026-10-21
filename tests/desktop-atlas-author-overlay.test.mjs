@@ -13,7 +13,7 @@ export const selectedDrawingElementId=()=>null,selectElement=()=>{},atlasDrawing
 const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
  const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode,atlasAuthorPoints:global.atlasAuthorPoints};t.after(()=>Object.assign(global,previous));
- const ids=['recover','placement','binding-pose','group-size','split-controls','scale','undo','redo','connect-entrance','local-console','create-tools','create-city','create-dungeon','floor-field','selection-title','room-draw'];
+ const ids=['entrance-height','recover','placement','binding-pose','group-size','split-controls','scale','undo','redo','connect-entrance','local-console','create-tools','create-city','create-dungeon','floor-field','selection-title','room-draw'];
  const {window,document}=parseHTML('<html><body>'+ids.map(id=>`<div id="atlas-${id}"></div>`).join('')+'<label><input id="atlas-slice-enabled"></label><label><input id="atlas-slice"></label><label><input id="atlas-roofs"></label><input id="atlas-perception"><select id="atlas-floor"></select><select id="drawing-tool"><option value="room-polygon">Polygon</option></select></body></html>');Object.assign(global,{window,document,atlasAuthorDraft:{floor:{scopeId:'local',floorId:'ground'}},atlasOverlayCalls:0,atlasAuthorPoints:[]});
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(value){this.setAttribute('data-value',value);}});
  const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
@@ -252,4 +252,14 @@ test('finishing a live terrain stroke re-enables history without another region 
  const data=f.ui.data;f.ui.landscape.livePainting=false;f.render();
  assert.equal(f.ui.data,data);assert.equal(f.document.getElementById('atlas-undo').disabled,false);
  assert.equal(f.document.getElementById('atlas-redo').disabled,true);
+});
+
+test('floor changes give author handles and live drafts the same scope, height and anchor',t=>{
+ const f=fixture(t);f.ui.data.geometry.floors=[{scopeId:'local',id:'ground',elevation:12}];
+ const author=all(f.render()).find(n=>n.data.editorOnly==='true'&&n.data.spatialScope==='local');
+ assert(author);assert.equal(author.data.spatialFloor,'12');assert.equal(author.data.spatialAnchorX,'-100');assert.equal(author.data.spatialAnchorY,'50');
+ assert(author.children.includes(atlasDraftNode));assert(all(author).some(n=>n.data.atlasVertex==='1'));
+ f.ui.data.geometry.floors[0].elevation=24;
+ const changed=all(f.render()).find(n=>n.data.editorOnly==='true'&&n.data.spatialScope==='local');
+ assert.equal(changed.data.spatialFloor,'24');
 });

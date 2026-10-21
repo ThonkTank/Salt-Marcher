@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainSpatialView,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV}=require('../.build/terrain-spatial-picking-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export * from './src/app/atlas-workplane';export {atlasProject} from './src/app/atlas-camera';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {TerrainSpatialView,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV,atlasProject,atlasWorkplaneHeight}=require('../.build/terrain-spatial-picking-test.cjs');
 function fixture(){
  const box={x:101100,y:458304,width:1894950,height:1180544},frame={x:732751,y:851819,width:631650,height:393515};
  const v={box,frame,columns:33,rows:33,focusM:120,tilt:45,rotation:0,exaggeration:2};
@@ -84,4 +84,41 @@ test('retained detail stays on the same world point when the new surface clips i
  mapUV.sub(new THREE.Vector2(b.x,b.y)).divide(new THREE.Vector2(b.z,b.w));
  assert(mapUV.distanceTo(new THREE.Vector2(.5,.5))<1e-12);assert.equal(uniforms.detailEnabled.value,true);
  state.dispose();
+});
+
+for(const offset of [0,-1e9,1e9])test(`floor projection and pointer ray agree above uneven terrain at ${offset}`,()=>{
+ const {state,data}=fixture();
+ const frame={x:offset-60,y:offset-40,width:120,height:80},box={x:offset-180,y:offset-120,width:360,height:240};
+ const view={...data.grid.view,frame,box,focusM:7,projection:'perspective',exaggeration:1.75};
+ const heights=Float32Array.from({length:33*33},(_,i)=>7+(i%33)/32);
+ state.setData({...data,grid:{...data.grid,view,heights}});
+ const plane={scopeId:'house',elevationM:6,anchor:{x:offset,y:offset}},point={x:offset+8,y:offset+4};
+ state.objectLayer.scopeBases.set('house',15);
+ assert.equal(atlasWorkplaneHeight(plane,{scopeBases:state.objectLayer.scopeBases,height:()=>100}),21,'building base wins over terrain');
+ for(const [tilt,rotation]of [[0,0],[45,25],[75,-130]]){
+  state.reframe(frame,tilt,rotation);
+  const expected=atlasProject(state.grid.view,point,21),screen=state.project(point,plane);
+  assert(Math.abs(screen.x-expected.x)<1e-12&&Math.abs(screen.y-expected.y)<1e-12);
+  const x=424+1496*screen.x,y=48+932*screen.y,hit=state.workplanePoint(x,y,plane);
+  assert(hit);assert(Math.hypot(hit.x-point.x,hit.y-point.y)<1e-6,JSON.stringify({hit,point}));
+  const nav=state.planePoint(x,y,plane);assert(nav);assert(Math.hypot(nav.x-hit.x,nav.y-hit.y)<1e-6,'navigation anchors use the same floor without terrain occlusion');
+  const ground=state.hit(x,y);if(tilt<=45)assert(ground);if(ground)assert(Math.hypot(ground.x-point.x,ground.y-point.y)>1,'terrain tools retain their separate ground intersection');
+ }
+ state.reframe(frame,45,25);
+ const buried={...plane,elevationM:-20},screen=state.project(point,buried);
+ assert.equal(state.workplanePoint(424+1496*screen.x,48+932*screen.y,buried),null,'foreground terrain blocks a hidden floor');
+ assert.equal(state.workplanePoint(1172,514,{...plane,elevationM:1000}),null,'a floor behind the camera is not actionable');
+ state.dispose();
+});
+test('unbound room groups use one terrain anchor plus the floor elevation',()=>{
+ const plane={scopeId:'free',elevationM:4,anchor:{x:20,y:30}};
+ assert.equal(atlasWorkplaneHeight(plane,{height:p=>p.x+2*p.y}),84);
+ assert.equal(atlasWorkplaneHeight(plane,{scopeBases:new Map([['free',0]]),height:()=>200}),4,'a fixed zero base remains fixed');
+});
+
+test('semantic room names use the same floor anchor as geometry',()=>{
+ const labels=new AtlasSpatialLabels();labels.surface={origin:{x:10,y:20},focusM:5,exaggeration:2,height:()=>100,scopeBases:new Map([['house',15]])};
+ const name={point:{x:13,y:24},workplane:{scopeId:'house',elevationM:6,anchor:{x:0,y:0}}};
+ assert.deepEqual(labels.anchor(name).toArray(),[3,-4,32]);
+ assert.deepEqual(labels.anchor({...name,workplane:undefined}).toArray(),[3,-4,190],'ordinary map names stay attached to terrain');labels.dispose();
 });

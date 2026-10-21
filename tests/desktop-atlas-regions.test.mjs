@@ -321,3 +321,11 @@ test('projected terrain omits duplicate ground but retains dense transparent obj
  const masked=await f.read({...q,terrainRaster:false,perception:true});assert(masked.landscape.tiles.every(t=>t.content===undefined));assert.equal(pixel(masked,5,5)[3],255,'public/masked rendering always retains its terrain');
  const again=await f.read({...q,terrainRaster:false});assert.equal(pixel(again,5,5)[3],0,'full ground cache cannot leak into a transparent overlay');
 });
+
+test('room labels carry their canonical floor elevation and scope anchor through bounded reads',async t=>{
+ const f=fixture(t,1);
+ f.store.executeDrawing({token:f.shell.token,campaignId:f.campaign.id,commandId:randomUUID(),action:{kind:'floor',scopeId:'local',id:'ground',name:'Hochgeschoss',elevation:12,cloneId:null,hidden:false}});
+ const region=await f.read(),label=region.labels.find(l=>l.id==='room:r0');assert(label);
+ assert.deepEqual(label.workplane,{scopeId:'local',elevationM:12,anchor:{x:0,y:0}});
+ assert(!JSON.stringify(label).includes('PRIVATE-TEXT'));
+});

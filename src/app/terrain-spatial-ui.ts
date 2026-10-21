@@ -1,3 +1,4 @@
+import type {AtlasWorkplane} from './atlas-workplane';
 import {terrainCoverageLevel} from './terrain-coverage';
 import {TerrainDetailTiles,terrainColorIdentity} from './terrain-detail-tiles';
 import {terrainObjectSources,type TerrainObjectSource} from './terrain-objects';
@@ -43,7 +44,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private tilt=0;private rotation=0;private exaggeration=1;
   constructor(private input:HTMLCanvasElement,private host:{
     draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
-    tool:()=>string;objectPicking?:()=>boolean;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
+    tool:()=>string;workplane?:()=>AtlasWorkplane|null;objectPicking?:()=>boolean;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
     refresh?:()=>Promise<boolean|undefined>;recovered?:(message:string)=>void;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
     this.toggle=document.createElement('button');this.toggle.id='atlas-terrain-tilt';this.toggle.textContent='Atlas kippen';this.toggle.type='button';
@@ -65,12 +66,12 @@ export class TerrainSpatialUI implements AtlasPresentation {
       this.blockedGesture=false;
       if(this.host.navigation(e))return;
       if(!this.ready&&!this.host.live()){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}
-      const hit=this.view?.hit(e.clientX,e.clientY,this.host.tool()==='select',this.host.objectPicking?.()??false);if(!hit){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}this.lastPoint=hit;
+      const hit=this.authorPoint(e.clientX,e.clientY,this.host.tool()==='select');if(!hit){this.blockedGesture=true;e.preventDefault();e.stopImmediatePropagation();return;}this.lastPoint=hit;
     },true);
     parent.addEventListener('click',e=>{if(e.target===input&&this.blockedGesture){this.blockedGesture=false;e.preventDefault();e.stopImmediatePropagation();}},true);
     parent.addEventListener('pointermove',e=>{
       if(e.target!==input||!this.active||this.host.panning())return;
-      const hit=this.view?.hit(e.clientX,e.clientY);if(!hit||!this.ready&&!this.host.live()){e.stopImmediatePropagation();return;}this.lastPoint=hit;
+      const hit=this.authorPoint(e.clientX,e.clientY);if(!hit||!this.ready&&!this.host.live()){e.stopImmediatePropagation();return;}this.lastPoint=hit;
       const field=document.getElementById('land-radius') as HTMLInputElement;
       this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
     },true);
@@ -83,12 +84,16 @@ export class TerrainSpatialUI implements AtlasPresentation {
     const field=document.getElementById('land-radius') as HTMLInputElement;
     this.view?.showCursor(hit,['height','smooth','color'].includes(this.host.tool())?Number(atlasFieldValue(field)):0);
   }
+  private authorPoint(x:number,y:number,includeRoutes=false){
+    const plane=this.host.workplane?.();
+    return plane?this.view?.workplanePoint(x,y,plane):this.view?.hit(x,y,includeRoutes,this.host.objectPicking?.()??false);
+  }
   screenAnchor(point:Point):Point|null{
-    const p=this.active?this.view?.project(point):null,frame=this.frame;
+    const p=this.active?this.view?.project(point,this.host.workplane?.()):null,frame=this.frame;
     return p&&frame?{x:frame.x+p.x*frame.width,y:frame.y+p.y*frame.height}:null;
   }
-  navigationPoint(e:{clientX:number;clientY:number}){return this.view?.planePoint(e.clientX,e.clientY)??null;}
-  point(e:{clientX:number;clientY:number}){const hit=this.view?.hit(e.clientX,e.clientY,false,this.host.objectPicking?.()??false);if(hit)this.lastPoint=hit;return this.lastPoint;}
+  navigationPoint(e:{clientX:number;clientY:number}){return this.view?.planePoint(e.clientX,e.clientY,this.host.workplane?.())??null;}
+  point(e:{clientX:number;clientY:number}){const hit=this.authorPoint(e.clientX,e.clientY);if(hit)this.lastPoint=hit;return this.lastPoint;}
   paint(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){this.view?.publish(scene,origin,images);}
   overlay(scene:AtlasCanvasScene,origin:Point){this.view?.overlay(scene,origin);}
   hitAt(e:{clientX:number;clientY:number},keys:string[]){return this.view?.hitAt(e.clientX,e.clientY,keys)??null;}

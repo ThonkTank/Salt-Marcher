@@ -222,3 +222,16 @@ test('dense landscape images are draped above terrain while duplicate full groun
  const gpu=new AtlasSpatialScene({commands:images.map(n=>command(n))},{x:0,y:0},new Map([['ground',{width:16,height:16}],['objects',{width:16,height:16}]]),{...flat,height:p=>p.x/2});
  try{assert.equal(gpu.group.children.length,1);const mesh=gpu.group.children[0];assert.equal(mesh.material.map.image.width,16);assert(mesh.geometry.getAttribute('position').count>6,'overlay follows terrain subdivisions');assert(mesh.geometry.getAttribute('position').array.some((v,i)=>i%3===2&&v>0));}finally{gpu.dispose();}
 });
+
+test('room faces, author grips and drafts share a horizontal floor over uneven ground',()=>{
+ const floor=atlasPaint('group',{data:{spatialScope:'house',spatialFloor:'6',spatialAnchorX:'10',spatialAnchorY:'20'}}),
+  face=atlasPaint('rect',{x:0,y:0,width:8,height:8,data:{atlasObject:'true',id:'room'}}),
+  grip=atlasPaint('circle',{x:2,y:2,radius:1,data:{atlasVertex:'0'}});
+ for(const scopeBases of [new Map([['house',15]]),new Map()]){
+  const elevation=scopeBases.size?21:36,surface={...flat,height:p=>p.x+p.y,scopeBases},
+   gpu=scene([command(face,{ancestry:[face,floor]}),command(grip,{ancestry:[grip,floor]})],surface);
+  gpu.group.updateMatrixWorld(true);
+  for(const mesh of gpu.group.children){const pos=mesh.geometry.getAttribute('position');for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-elevation)<1e-5);}
+  const hit=gpu.hit(ray(2,2),['atlasVertex']);assert.equal(hit.data.atlasVertex,'0');gpu.dispose();
+ }
+});

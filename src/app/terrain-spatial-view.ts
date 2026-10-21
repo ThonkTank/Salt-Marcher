@@ -1,3 +1,4 @@
+import {atlasWorkplaneHeight,type AtlasWorkplane} from './atlas-workplane';
 import {terrainHorizon,TERRAIN_SKY_COLOR} from './terrain-coverage';
 import {AtlasSpatialLabels} from './atlas-spatial-labels';
 import {TerrainObjectLayer} from './terrain-object-view';
@@ -166,9 +167,9 @@ export class TerrainSpatialView {
     for(const grid of new Set([this.grid,this.base]))if(grid)grid.view={...grid.view,frame:{...frame},tilt,rotation,projection:'perspective'};
     this.render();
   }
-  planePoint(clientX:number,clientY:number){
+  planePoint(clientX:number,clientY:number,plane?:AtlasWorkplane|null){
     if(!this.grid)return null;const r=this.canvas.getBoundingClientRect();
-    return atlasPlanePoint(this.grid.view,{x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height});
+    return atlasPlanePoint(this.grid.view,{x:(clientX-r.left)/r.width,y:(clientY-r.top)/r.height},plane?atlasWorkplaneHeight(plane,this.surface()):undefined);
   }
   private outputTile:{width:number;height:number;x:number;y:number;w:number;h:number}|null=null;
   /** Perspective sub-frusta retain the exact main-camera pose across bounded GPU tiles. */
@@ -205,7 +206,17 @@ export class TerrainSpatialView {
     if(!this.picker)return null;const ray=this.ray(clientX,clientY,this.frozenPick?.camera??this.camera,this.frozenPick?.farDepth);
     const hit=ray.intersectObjects([this.picker,...(includeRoutes?this.routes:[]),...(includeObjects&&!this.frozenPick?this.objectLayer?.meshes??[]:[])],false)[0];if(!hit||!this.base)return null;const origin=this.frozenPick?.origin??this.origin,point={x:hit.point.x+origin.x,y:origin.y-hit.point.y};return hit.object!==this.picker||terrainVisible(this.base,point)?point:null;
   }
-  project(p:Point){return this.grid?projectTerrain(this.grid.view,p,gridHeight(this.grid,p)):null;}
+  workplanePoint(clientX:number,clientY:number,plane:AtlasWorkplane):Point|null {
+    if(!this.grid)return null;
+    const height=atlasWorkplaneHeight(plane,this.surface()),ray=this.ray(clientX,clientY),
+      z=(height-this.grid.view.focusM)*this.grid.view.exaggeration,
+      at=ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),-z),new THREE.Vector3());
+    if(!at)return null;
+    const distance=at.distanceTo(ray.ray.origin),terrain=this.picker?ray.intersectObject(this.picker)[0]?.distance:undefined;
+    if(distance<ray.near||distance>ray.far||terrain!==undefined&&distance>terrain+Math.max(1e-6,distance*1e-5))return null;
+    return {x:at.x+this.origin.x,y:this.origin.y-at.y};
+  }
+  project(p:Point,plane?:AtlasWorkplane|null){return this.grid?projectTerrain(this.grid.view,p,plane?atlasWorkplaneHeight(plane,this.surface()):gridHeight(this.grid,p)):null;}
   private removeLine(line:THREE.Line|null){if(line){this.scene.remove(line);line.geometry.dispose();(line.material as THREE.Material).dispose();}}
   private ring(p:Point|null,radius:number,color:string){
     if(!p||!this.grid||radius<=0)return null;const g=this.grid,positions:number[]=[];

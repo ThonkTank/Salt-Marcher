@@ -1,3 +1,4 @@
+import {atlasWorkplaneData} from './atlas-workplane';
 import { atlasPaint as landscapeNode } from "./atlas-paint";
 import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
@@ -104,7 +105,7 @@ export function atlasRegionPaint(
     const f = atlasFrame(data, b),
       g = landscapeNode("group", {
         matrix: frameMatrix({ ...f, x: f.x - box.x, y: f.y - box.y }),
-        data:{spatialScope:b.ownerId,spatialFloor:String(data.geometry.floors.find(f=>f.scopeId===b.ownerId&&f.id===floor)?.elevation??0)},
+        data:atlasWorkplaneData({scopeId:b.ownerId,elevationM:data.geometry.floors.find(f=>f.scopeId===b.ownerId&&f.id===floor)?.elevation??0,anchor:{x:f.x,y:f.y}}),
       });
     for (const room of data.workspace.rooms.filter(
       (r) => r.scopeId === b.ownerId && r.floorId === floor,

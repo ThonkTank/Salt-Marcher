@@ -1,3 +1,4 @@
+import type {AtlasWorkplane} from './atlas-workplane';
 import type { Point } from "./contracts";
 
 export type MapLabelKind =
@@ -11,6 +12,7 @@ export type MapLabelKind =
 export interface MapLabelCandidate {
   id: string;
   objectId?: string;
+  workplane?: AtlasWorkplane;
   text: string;
   kind: MapLabelKind;
   point: Point;

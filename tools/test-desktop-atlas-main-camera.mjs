@@ -73,7 +73,13 @@ store.executeDrawing({
     },
   },
 });
-seedAtlasCity(store, token, campaign.id);
+const floorHeight=process.argv.includes('--raised-floor')?12:0;
+if(floorHeight)store.executeDrawing({commandId:randomUUID(),token,campaignId:campaign.id,
+  action:{kind:'floor',scopeId:'local',id:'ground',name:'Arbeitsgeschoss',elevation:floorHeight,cloneId:null,hidden:false}});
+if(floorHeight)store.executeDrawing({commandId:randomUUID(),token,campaignId:campaign.id,
+  action:{kind:'floor',scopeId:'local',id:'upper',name:'Obergeschoss',elevation:24,cloneId:null,hidden:false}});
+let activeFloorHeight=floorHeight;
+if(!floorHeight)seedAtlasCity(store, token, campaign.id);
 store.close();
 const db = new (require("better-sqlite3"))(profile + "/workbench.sqlite", {
   readonly: true,
@@ -90,12 +96,17 @@ const result = {
     encoding: "utf8",
   }).trim(),
   profile,
+  floorHeight,
   errors: [],
   checks: [],
   exits: [],
   hashes: {},
 };
 for (const file of [
+  "src/app/atlas-workplane.ts",
+  "src/app/atlas-spatial-labels.ts",
+  "src/app/atlas-label-source.ts",
+  "src/app/atlas-region-export.ts",
   "src/app/atlas-presentation.ts",
   "src/app/atlas-spatial-geometry.ts",
   "src/app/atlas-spatial-surface.ts",
@@ -186,13 +197,15 @@ async function selectRoom() {
   await settle();
 }
 async function close() {
+  const pid=app.process().pid;
   const exited = new Promise((resolve) =>
     app.process().once("exit", (code, signal) => resolve({ code, signal })),
   );
   await app.close();
-  const exit = await exited;
+  const exit = {...await exited,pid};
   result.exits.push(exit);
-  assert.deepEqual(exit, { code: 0, signal: null });
+  assert.equal(exit.code,0);assert.equal(exit.signal,null);
+  assert.throws(()=>process.kill(pid,0),{code:"ESRCH"});
   app = null;
 }
 async function screen(point) {
@@ -201,7 +214,7 @@ async function screen(point) {
     pose: JSON.parse(c.dataset.terrainProjection),
     rect: c.getBoundingClientRect().toJSON(),
   }));
-  const at = atlasProject(state.pose, point, 0);
+  const at = atlasProject(state.pose, point, activeFloorHeight);
   assert(
     at.depth > 0 && at.x > 0 && at.x < 1 && at.y > 0 && at.y < 1,
     JSON.stringify({ point, at }),
@@ -344,12 +357,35 @@ try {
     await open();
     assert.deepEqual(readRoom().polygons, saved.polygons);
     await capture("04-reopened");
+    if(floorHeight){
+      await page.locator('#atlas-view').click();
+      await page.locator('#terrain-tilt').fill('45');await page.locator('#terrain-tilt').dispatchEvent('input');
+      await page.locator('#terrain-rotation').fill('25');await page.locator('#terrain-rotation').dispatchEvent('input');
+      await page.keyboard.press('Escape');await settle();
+      await page.locator('#atlas-floor').selectOption('upper');activeFloorHeight=24;await settle();
+      await chooseTool('room-polygon');await page.locator('#drawing-snap').uncheck();
+      await page.locator('#drawing-room-name').fill('Raum im Obergeschoss');
+      const points=[{x:10,y:10},{x:60,y:10},{x:60,y:60}];
+      for(const p of points)await clickWorld(p);
+      await capture('05-upper-floor-draft');await page.locator('#drawing-finish').click();
+      let row;for(let i=0;i<100&&!row;i++){row=db.prepare('SELECT id,floor_id floorId,payload FROM room WHERE name=?').get('Raum im Obergeschoss');if(!row)await page.waitForTimeout(100);}
+      assert(row);const added={id:row.id,floorId:row.floorId,...JSON.parse(row.payload)};await settle();
+      assert.equal(added.floorId,'upper');
+      // Existing create-room initializes 1.524 m volume cells; verify placement
+      // within that canonical grid, independently of the camera's 24 m height.
+      const ring=added.polygons[0].outer,bounds=[Math.min(...ring.map(p=>p.x)),Math.min(...ring.map(p=>p.y)),Math.max(...ring.map(p=>p.x)),Math.max(...ring.map(p=>p.y))];
+      for(const [i,value]of [10,10,60,60].entries())assert(Math.abs(bounds[i]-value)<3.048,JSON.stringify(bounds));
+      result.upperRoom=added;await capture('06-upper-floor-saved');
+      await page.locator('#atlas-floor').selectOption('ground');activeFloorHeight=floorHeight;await settle();
+      assert.deepEqual(readRoom().polygons,saved.polygons);
+      mark('Floor switch and committed polygon retain world placement within canonical volume cells at 24 metres under the tilted main camera');
+    }
   }
-  result.city = await verifyAtlasCity(page, settle, capture, () =>
+  if(!process.argv.includes("--raised-floor"))result.city = await verifyAtlasCity(page, settle, capture, () =>
     db.prepare("SELECT id,payload,checksum FROM city_unit ORDER BY id").all(),
   );
   mark(
-    "City objects sit on landscape in the main camera; GPU context loss falls back once and explicit retry recovers",
+    floorHeight?"Raised floor edits retain their height after reopening":"City objects sit on landscape in the main camera; GPU context loss falls back once and explicit retry recovers",
   );
   await close();
   if (!process.argv.includes("--city-only"))

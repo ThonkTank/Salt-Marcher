@@ -1,3 +1,4 @@
+import {atlasWorkplaneHeight} from './atlas-workplane';
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
 import type {
@@ -83,9 +84,10 @@ export class AtlasSpatialScene {
       y: m.b * x + m.d * y + m.f + origin.y,
     });
     const object=c.ancestry.find(n=>surface.objectHeights?.has(n.data.cityUnit??n.data.id??"")),
-      scope=c.ancestry.find(n=>surface.scopeBases?.has(n.data.spatialScope??"")),
+      scope=c.ancestry.find(n=>n.data.spatialScope!==undefined),
       elevation=object?surface.objectHeights!.get(object.data.cityUnit??object.data.id!)!:
-        scope?surface.scopeBases!.get(scope.data.spatialScope!)!+Number(scope.data.spatialFloor??0):undefined;
+        scope?atlasWorkplaneHeight({scopeId:scope.data.spatialScope!,elevationM:Number(scope.data.spatialFloor??0),
+          anchor:{x:Number(scope.data.spatialAnchorX??0),y:Number(scope.data.spatialAnchorY??0)}},surface):undefined;
     const position = (p: Point) =>
       new THREE.Vector3(
         p.x - surface.origin.x,

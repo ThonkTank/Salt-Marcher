@@ -221,6 +221,7 @@ export class AtlasRegionReader {
   this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   const result:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box:{...q.box},slice:q.slice,scopeId:q.scopeId,floorId:q.floorId,rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
   let labelCandidates:MapLabelCandidate[]=[];
+  const labelFloorHeights=new Map<string,number>();
   let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
   const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{
    if(dense||Object.hasOwn(result.frames,b.id))return;
@@ -236,6 +237,11 @@ export class AtlasRegionReader {
     if(kind==='scope-marker')labelCandidates.push({id:'scope:'+b.ownerId,text:s.value.name,kind:'place',rank:2,point:at(s.points![0]!,_f)});
     else if(s.polygons){const polygons=s.polygons.map(p=>({outer:p.outer.map(p=>at(p,_f)),holes:p.holes.map(r=>r.map(p=>at(p,_f)))})),labelKind=kind==='room'?'room':s.value.kind==='building'?'building':'area',candidate=labelFromPolygon(kind+':'+s.value.id,kind==='room'?(s.value.number?'['+s.value.number+'] ':'')+s.value.name:s.value.name,labelKind,polygons,kind==='room'?0:s.value.kind==='building'?1:2);if(candidate)labelCandidates.push(candidate);}
     else if(s.points&&s.value.kind==='road')labelCandidates.push(...lineLabels('unit:'+s.value.id,s.value.name,'road',s.points.map(p=>at(p,_f)),2,q.box));
+    if(kind==='room'){
+     const key=JSON.stringify([b.ownerId,s.value.floorId]);
+     if(!labelFloorHeights.has(key))labelFloorHeights.set(key,this.sql('SELECT source_elevation z FROM drawing_floor WHERE campaign_id=? AND scope_id=? AND id=?').get(this.campaign,b.ownerId,s.value.floorId)?.z??0);
+     for(const candidate of labelCandidates.slice(labelStart))candidate.workplane={scopeId:b.ownerId,elevationM:labelFloorHeights.get(key)!,anchor:{x:_f.x,y:_f.y}};
+    }
     const style=s.value.label;if(style){const transformed={...style,...(style.point?{point:at(style.point,_f)}:{}),...(style.angle===undefined?{}:{angle:style.angle+_f.angle})};labelCandidates.splice(labelStart,labelCandidates.length-labelStart,...styledLabels(labelCandidates.slice(labelStart),transformed));}
     if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    }

@@ -1,3 +1,4 @@
+import {atlasWorkplaneHeight} from './atlas-workplane';
 import * as THREE from "three";
 import {
   MapLabelLayout,
@@ -64,7 +65,7 @@ export class AtlasSpatialLabels {
     return new THREE.Vector3(
       c.point.x - s.origin.x,
       s.origin.y - c.point.y,
-      (s.height(c.point) - s.focusM) * s.exaggeration,
+      ((c.workplane?atlasWorkplaneHeight(c.workplane,s):s.height(c.point)) - s.focusM) * s.exaggeration,
     );
   }
   update(
