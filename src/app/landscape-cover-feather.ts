@@ -1,42 +1,101 @@
 import type {Point,Polygon} from './contracts';
 import type {LandscapeBox} from './atlas-landscape';
+
+interface Bounds {minX:number;minY:number;maxX:number;maxY:number}
+interface Edge extends Bounds {x:number;y:number;dx:number;dy:number;length2:number}
+interface Node extends Bounds {edges?:Edge[];left?:Node;right?:Node}
+function polygonBounds(p:Polygon):Bounds {
+ const b={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+ for(const ring of [p.outer,...p.holes])for(const v of ring){b.minX=Math.min(b.minX,v.x);b.minY=Math.min(b.minY,v.y);b.maxX=Math.max(b.maxX,v.x);b.maxY=Math.max(b.maxY,v.y);}
+ return b;
+}
+/** Only parts in the raster's distance halo can affect its pixels. A bounded
+ * sweep proves common disjoint island sets need no polygon union. */
+export function coverViewParts(polygons:Polygon[],box:LandscapeBox,radius:number){
+ const parts=polygons.map(p=>({polygon:p,...polygonBounds(p)})).filter(p=>p.maxX>=box.x-radius&&p.minX<=box.x+box.width+radius&&p.maxY>=box.y-radius&&p.minY<=box.y+box.height+radius);
+ const ordered=[...parts].sort((a,b)=>a.minX-b.minX),active:typeof parts=[];let disjoint=true,comparisons=0;
+ outer:for(const p of ordered){
+  for(let i=active.length-1;i>=0;i--){const other=active[i]!;if(other.maxX<p.minX){active.splice(i,1);continue;}
+   if(++comparisons>200000||other.maxY>=p.minY&&other.minY<=p.maxY){disjoint=false;break outer;}
+  }
+  active.push(p);
+ }
+ return {polygons:parts.map(p=>p.polygon),disjoint};
+}
+const distanceToBox=(p:Point,b:Bounds)=>Math.max(b.minX-p.x,0,p.x-b.maxX)**2+Math.max(b.minY-p.y,0,p.y-b.maxY)**2;
+const distanceToEdge=(p:Point,e:Edge)=>{const x=p.x-e.x,y=p.y-e.y,t=e.length2?Math.max(0,Math.min(1,(x*e.dx+y*e.dy)/e.length2)):0;return (x-t*e.dx)**2+(y-t*e.dy)**2;};
+function edgeTree(edges:Edge[]):Node {
+ const box={minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity};
+ for(const e of edges){box.minX=Math.min(box.minX,e.minX);box.minY=Math.min(box.minY,e.minY);box.maxX=Math.max(box.maxX,e.maxX);box.maxY=Math.max(box.maxY,e.maxY);}
+ if(edges.length<=8)return {...box,edges};
+ const x=box.maxX-box.minX>=box.maxY-box.minY;
+ edges.sort((a,b)=>x?a.minX+a.maxX-b.minX-b.maxX:a.minY+a.maxY-b.minY-b.maxY);
+ const mid=edges.length>>1;return {...box,left:edgeTree(edges.slice(0,mid)),right:edgeTree(edges.slice(mid))};
+}
+
+/** Exact nearest-boundary queries visit a spatial hierarchy, so broad feather
+ * radii or many small islands do not scan every edge over the same pixels. */
+function edgeRectangles(edges:Edge[],width:number,height:number,dx:number,dy:number,radius:number){
+ return edges.map(edge=>({edge,left:Math.max(0,Math.ceil((edge.minX-radius)/dx-.5)),right:Math.min(width-1,Math.floor((edge.maxX+radius)/dx-.5)),top:Math.max(0,Math.ceil((edge.minY-radius)/dy-.5)),bottom:Math.min(height-1,Math.floor((edge.maxY+radius)/dy-.5))}));
+}
+function distanceRow(values:Float32Array,width:number,y:number,from:number,to:number,dx:number,py:number,e:Edge){
+ for(let x=from;x<=to;x++){
+  const px=(x+.5)*dx-e.x,t=e.length2?Math.max(0,Math.min(1,(px*e.dx+py*e.dy)/e.length2)):0,d=(px-e.dx*t)**2+(py-e.dy*t)**2,at=y*width+x;
+  if(d<values[at]!)values[at]=d;
+ }
+}
+function normalize(values:Float32Array,start:number,end:number,radius:number){
+ const full=Math.fround(radius*radius);
+ for(let i=start;i<end;i++){const t=values[i]===full?1:Math.min(1,Math.sqrt(values[i]!)/radius);values[i]=t*t*(3-2*t);}
+}
+/** Direct spans are cheaper for sparse edges. Only use this path when their
+ * conservative total work is bounded by a few full raster passes. */
+function* sparseDistances(rectangles:ReturnType<typeof edgeRectangles>,width:number,height:number,dx:number,dy:number,radius:number,checkpoint:()=>Generator<void>){
+ const values=new Float32Array(width*height).fill(radius*radius);let work=0;
+ for(const r of rectangles)if(r.right>=r.left)for(let y=r.top;y<=r.bottom;y++){
+  distanceRow(values,width,y,r.left,r.right,dx,(y+.5)*dy-r.edge.y,r.edge);work+=r.right-r.left+1;
+  if(work>=16384){yield* checkpoint();work=0;}
+ }
+ for(let start=0;start<values.length;start+=16384){yield* checkpoint();normalize(values,start,Math.min(values.length,start+16384),radius);}
+ return values;
+}
+function distanceSampler(tree:Node,dx:number,dy:number,radius:number){
+ const limit=radius*radius,full=Math.fround(limit),stack:Node[]=[],point={x:0,y:0};let nearest:Edge|undefined;
+ return (x:number,y:number)=>{
+  point.x=(x+.5)*dx;point.y=(y+.5)*dy;
+  let best=nearest?Math.min(limit,distanceToEdge(point,nearest)):limit;
+  stack.length=0;stack.push(tree);
+  while(stack.length){
+   const node=stack.pop()!;if(distanceToBox(point,node)>=best)continue;
+   if(node.edges){for(const edge of node.edges){const d=distanceToEdge(point,edge);if(d<best){best=d;nearest=edge;}}}
+   else{const a=node.left!,b=node.right!,da=distanceToBox(point,a),db=distanceToBox(point,b);
+    if(da<db){if(db<best)stack.push(b);if(da<best)stack.push(a);}else{if(da<best)stack.push(a);if(db<best)stack.push(b);}
+   }
+  }
+  const squared=Math.fround(best),t=squared===full?1:Math.min(1,Math.sqrt(squared)/radius);
+  return Math.fround(t*t*(3-2*t));
+ };
+}
+
 /** Distance to real polygon boundaries, never to the edge of a render tile. */
-export function* coverFeatherSteps(polygons:Polygon[],box:LandscapeBox,width:number,height:number,radius:number,checkpoint:()=>Generator<void>):Generator<void,Float32Array|undefined>{
- // Clip distant segments first; each scanline visits only the capsule around
- // the edge, rather than a diagonal edge's full bounding rectangle.
- let distance:Float32Array|undefined;const dx=box.width/width,dy=box.height/height;let work=0;
- for(const polygon of polygons)for(const ring of [polygon.outer,...polygon.holes]){
- for(let j=0;j<ring.length;j++){
+export function* coverFeatherSamplerSteps(polygons:Polygon[],box:LandscapeBox,width:number,height:number,radius:number,checkpoint:()=>Generator<void>):Generator<void,((x:number,y:number)=>number)|undefined>{
+ const edges:Edge[]=[];let work=0;
+ for(const polygon of polygons)for(const ring of [polygon.outer,...polygon.holes])for(let j=0;j<ring.length;j++){
+  if(++work%4096===0)yield* checkpoint();
   const a=ring[j]!,b=ring[(j+1)%ring.length]!,ax=a.x-box.x,ay=a.y-box.y,vx=b.x-a.x,vy=b.y-a.y;let lo=0,hi=1;
   for(const [origin,delta,min,max] of [[ax,vx,-radius,box.width+radius],[ay,vy,-radius,box.height+radius]]){
    if(delta===0){if(origin!<min!||origin!>max!){hi=-1;break;}}
    else{const u=(min!-origin!)/delta!,v=(max!-origin!)/delta!;lo=Math.max(lo,Math.min(u,v));hi=Math.min(hi,Math.max(u,v));}
   }
   if(hi<lo)continue;
-  distance??=new Float32Array(width*height).fill(radius*radius);
-  const x0=ax+vx*lo,y0=ay+vy*lo,ex=vx*(hi-lo),ey=vy*(hi-lo),length2=ex*ex+ey*ey,limit=radius*Math.sqrt(length2);
-  const top=Math.max(0,Math.ceil((Math.min(y0,y0+ey)-radius)/dy-.5)),bottom=Math.min(height-1,Math.floor((Math.max(y0,y0+ey)+radius)/dy-.5));
-  for(let y=top;y<=bottom;y++){
-   const py=(y+.5)*dy-y0;let left=length2?-Infinity:Infinity,right=length2?Infinity:-Infinity;
-   // The finite strip around the segment, intersected with this scanline.
-   for(const [factor,min,max] of length2?[[ex,-py*ey,length2-py*ey],[ey,py*ex-limit,py*ex+limit]]:[]){
-    if(factor===0){if(min!>0||max!<0){left=Infinity;right=-Infinity;break;}}
-    else{const a=min!/factor!,b=max!/factor!;left=Math.max(left,Math.min(a,b));right=Math.min(right,Math.max(a,b));}
-   }
-   if(left>right){left=Infinity;right=-Infinity;}
-   // Round caps complete the distance-to-segment capsule.
-   for(const [cx,cy] of [[0,0],[ex,ey]]){const vertical=py-cy!;if(Math.abs(vertical)<=radius){const reach=Math.sqrt(Math.max(0,radius*radius-vertical*vertical));left=Math.min(left,cx!-reach);right=Math.max(right,cx!+reach);}}
-   const from=Math.max(0,Math.ceil((x0+left)/dx-.5)),to=Math.min(width-1,Math.floor((x0+right)/dx-.5));
-   distanceRow(distance,width,y,from,to,dx,x0,py,ex,ey,length2);
-   work+=Math.max(0,to-from+1);if(work>=16384){yield* checkpoint();work=0;}
-
-  }
+  const x=ax+vx*lo,y=ay+vy*lo,dx=vx*(hi-lo),dy=vy*(hi-lo);
+  edges.push({x,y,dx,dy,length2:dx*dx+dy*dy,minX:Math.min(x,x+dx),minY:Math.min(y,y+dy),maxX:Math.max(x,x+dx),maxY:Math.max(y,y+dy)});
  }
- }
- if(!distance)return;
- for(let start=0;start<distance.length;start+=16384){yield* checkpoint();normalizeDistances(distance,start,Math.min(distance.length,start+16384),radius);}
-
- return distance;
+ if(!edges.length)return;
+ yield* checkpoint();const dx=box.width/width,dy=box.height/height,rectangles=edgeRectangles(edges,width,height,dx,dy,radius);
+ const estimatedSamples=rectangles.reduce((n,r)=>n+Math.max(0,r.right-r.left+1)*Math.max(0,r.bottom-r.top+1),0);
+ if(estimatedSamples<=width*height*4){const values=yield* sparseDistances(rectangles,width,height,dx,dy,radius,checkpoint);return(x:number,y:number)=>values[y*width+x]!;}
+ return distanceSampler(edgeTree(edges),dx,dy,radius);
 }
 
 /** Soft pigment edges drop sub-sample vertices; their opacity is already zero
@@ -54,15 +113,4 @@ function displayBoundary(ring:Point[],tolerance:number):Point[]{
   if(index>=0){keep[index]=1;stack.push([first!,index],[index,last!]);}
  }
  const result=points.filter((_,i)=>i<ring.length&&keep[i]);return result.length>=3?result:ring;
-}
-
-function distanceRow(distance:Float32Array,width:number,y:number,from:number,to:number,dx:number,x0:number,py:number,ex:number,ey:number,length2:number){
- for(let x=from;x<=to;x++){
-  const px=(x+.5)*dx-x0,t=length2?Math.max(0,Math.min(1,(px*ex+py*ey)/length2)):0,ux=px-ex*t,uy=py-ey*t,d2=ux*ux+uy*uy,i=y*width+x;
-  if(d2<distance[i]!)distance[i]=d2;
- }
-}
-function normalizeDistances(distance:Float32Array,from:number,to:number,radius:number){
- const full=Math.fround(radius*radius);
- for(let i=from;i<to;i++){if(distance[i]===full){distance[i]=1;continue;}const t=Math.min(1,Math.sqrt(distance[i]!)/radius);distance[i]=t*t*(3-2*t);}
 }

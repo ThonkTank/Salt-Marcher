@@ -1,4 +1,4 @@
-import {coverFeatherSteps,coverDisplayPolygons} from './landscape-cover-feather';
+import {coverFeatherSamplerSteps,coverDisplayPolygons,coverViewParts} from './landscape-cover-feather';
 import {pigmentStrokeCoverage} from './landscape-pigment-coverage';
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {paintTerrainCoast} from './terrain-coast';
@@ -79,9 +79,11 @@ export class LandscapeRasterizer {
     this.applyMasks();if(!record.vegetation)return;
     const preset=record.vegetation.preset,rgb=[1,3,5].map(i=>parseInt(preset.ground.slice(i,i+2),16));
     // Union only multipart display geometry: internal overlaps are not a forest edge.
-    const union=record.polygons.length>1?mergePolygons(record.polygons):record.polygons;
+    const radius=preset.edge>0?Math.max(preset.edge,this.displayMpp*3):0;
+    const parts=coverViewParts(record.polygons,this.sampleBox,radius);
+    const union=parts.disjoint?parts.polygons:mergePolygons(parts.polygons);
     const polygons=preset.edge>0?coverDisplayPolygons(union,Math.min(this.sampleBox.width/this.w,this.sampleBox.height/this.h)/4):union;
-    const fade=preset.edge>0?yield* coverFeatherSteps(polygons,this.sampleBox,this.w,this.h,Math.max(preset.edge,this.displayMpp*3),checkpoint):undefined;
+    const fade=preset.edge>0?yield* coverFeatherSamplerSteps(polygons,this.sampleBox,this.w,this.h,radius,checkpoint):undefined;
     for(const polygon of polygons)yield* this.polygonSteps(polygon,rgb,.78,'ground',undefined,checkpoint,fade);
   }
   paint(record: LandscapeRecord) {
@@ -275,7 +277,7 @@ export class LandscapeRasterizer {
   private polygon(p: Polygon, rgb: number[], alpha=1, target?:'ground'|'water', water?:boolean) {
     for(const _ of this.polygonSteps(p,rgb,alpha,target,water,function*(){})){}
   }
-  private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>,fade?:Float32Array):Generator<void>{
+  private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>,fade?:(x:number,y:number)=>number):Generator<void>{
     // Opaque spans overwrite their background. Use the platform's packed byte
     // order, and retain per-pixel blending for alpha or land/water clipping.
     const opaque=alpha===1&&!target&&!fade?new Uint32Array(this.samples.buffer):null;
@@ -283,8 +285,9 @@ export class LandscapeRasterizer {
     const rings=[p.outer,...p.holes].map(r=>r.map(v=>({x:(v.x-this.sampleBox.x)/this.sampleBox.width*this.w,y:(v.y-this.sampleBox.y)/this.sampleBox.height*this.h})));
     let minY=this.h,maxY=-1;
     for(const ring of rings)for(const v of ring){minY=Math.min(minY,v.y);maxY=Math.max(maxY,v.y);}
+    const rowsPerCheckpoint=fade?Math.max(1,Math.floor(4096/this.w)):16;
     for(let y=Math.max(0,Math.ceil(minY-.5));y<=Math.min(this.h-1,Math.floor(maxY-.5));y++){
-      if(y%16===0)yield* checkpoint();
+      if(y%rowsPerCheckpoint===0)yield* checkpoint();
       const intersections:number[]=[],scan=y+.5;
       for(const ring of rings)for(let i=0,j=ring.length-1;i<ring.length;j=i++){
         const a=ring[j]!,b=ring[i]!;
@@ -303,7 +306,7 @@ export class LandscapeRasterizer {
           const pixel=y*this.w+x,at=pixel*4;
           if(target&&(target==='water')!==!!this.water[pixel])continue;
           if(water!==undefined)this.water[pixel]=water?1:0;
-          const opacity=alpha*(fade?.[pixel]??1);if(!opacity)continue;
+          const opacity=alpha*(fade?.(x,y)??1);if(!opacity)continue;
           const old=this.samples[at+3]!/255,combined=opacity+old*(1-opacity);
           for(let c=0;c<3;c++)this.samples[at+c]=Math.round((rgb[c]!*opacity+this.samples[at+c]!*old*(1-opacity))/(combined||1));
           this.samples[at+3]=Math.round(combined*255);

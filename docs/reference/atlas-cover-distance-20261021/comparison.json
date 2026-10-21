@@ -1,0 +1,105 @@
+{
+  "baseline": "6c72342d5db7f2cbc5fcec6e60c30f005409409d",
+  "results": [
+    {
+      "kind": "inside",
+      "pixelSha256": "94890fed52ede38dd16059490eb5d3f1497044c8a7cc77e84a3210685fd714e1",
+      "before": {
+        "samples": 8,
+        "medianMs": 52.67149800000004,
+        "rangeMs": [
+          36.93315100000018,
+          84.59075400000006
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 56.43958550000002,
+        "rangeMs": [
+          32.117734000000155,
+          89.91029900000012
+        ]
+      }
+    },
+    {
+      "kind": "edge",
+      "pixelSha256": "2febd9840768893a08109f9bf4689cf1ab338aecfc2a39f9050416acfcd6aba5",
+      "before": {
+        "samples": 8,
+        "medianMs": 47.15622399999984,
+        "rangeMs": [
+          38.17132400000037,
+          64.7615310000001
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 36.61545849999993,
+        "rangeMs": [
+          33.14976999999999,
+          59.130179999999655
+        ]
+      }
+    },
+    {
+      "kind": "complex",
+      "pixelSha256": "42229b40d039a47936bd5ca71141fb8f7883c145e191cfefd821fd84c2221543",
+      "before": {
+        "samples": 8,
+        "medianMs": 70.50178950000009,
+        "rangeMs": [
+          61.62754099999938,
+          99.96806699999979
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 55.58735250000018,
+        "rangeMs": [
+          52.34014800000023,
+          71.39583299999958
+        ]
+      }
+    },
+    {
+      "kind": "scattered",
+      "pixelSha256": "e1242f01e0664398461047d4c8826f45fccef62652ba5a5aa7615d27dc4408f4",
+      "before": {
+        "samples": 8,
+        "medianMs": 135.63957200000004,
+        "rangeMs": [
+          105.27528100000018,
+          185.55364999999983
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 26.58848349999971,
+        "rangeMs": [
+          23.379425999999512,
+          36.23732299999938
+        ]
+      }
+    },
+    {
+      "kind": "visible",
+      "pixelSha256": "237be7a6a0fdb535f249f5730a7040fe8048ad2d0a63d9fb7cdb9216367f7408",
+      "before": {
+        "samples": 8,
+        "medianMs": 1055.9134974999988,
+        "rangeMs": [
+          971.4527230000022,
+          1086.907475
+        ]
+      },
+      "after": {
+        "samples": 8,
+        "medianMs": 192.8758710000002,
+        "rangeMs": [
+          173.19528100000025,
+          257.5675880000017
+        ]
+      }
+    }
+  ]
+}
