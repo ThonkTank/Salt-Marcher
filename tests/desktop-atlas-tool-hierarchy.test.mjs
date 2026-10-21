@@ -108,6 +108,8 @@ test('land settings retain independent size and strength, optional target and co
  show('height');assert.equal(settings.height().targetM,undefined);assert.equal(settings.height().mode,'raise');
  radius(80);f('land-height-mode').value='lower';f('land-height-strength').value='750';f('land-coast-roughness').value='1.5';
  f('land-height-target-enabled').checked=true;f('land-height-target').value='-50';show('height');assert.equal(settings.height().targetM,-50);
+ f('land-height-direction').querySelector('[data-direction=roughen]').click();assert.equal(settings.height().mode,'roughen');assert.equal(settings.height().targetM,undefined);assert.equal(settings.height().roughness,undefined);assert(f('land-shape-options').hidden);
+ f('land-height-direction').querySelector('[data-direction=lower]').click();assert.equal(settings.height().targetM,-50);assert(!f('land-shape-options').hidden);
  show('smooth');assert.equal(f('land-radius').value,'480');assert.equal(settings.height().strength,300);assert.equal(settings.height().mode,'smooth');
  assert.equal(settings.height().targetM,undefined);assert.equal(settings.height().roughness,undefined);assert(f('land-shape-options').hidden);
  radius(15);f('land-height-strength').value='90';show('color');f('land-color-operation').value='erase';assert.equal(settings.mode(),'color-erase');

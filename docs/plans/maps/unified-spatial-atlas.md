@@ -198,6 +198,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
+[Aufrauen als eigene Sculpt-Wirkung](../../reference/atlas-sculpt-roughen-20261021/README.md): positive und negative Unebenheiten im bestehenden direkten Höhenpinsel, mit gemeinsamen Höhenbändern, History und Hauptkamera. Lokale und native Prüfungen umfassen Undo/Redo und frisches Öffnen. Das vervollständigt noch nicht die Feature-Werkzeuge oder die allgemeine Leistungs-/Gestaltungsabnahme.
+
 Land formen, Glätten und Bemalen verändern während der Eingabe unmittelbar eine lokale Arbeitsfassung derselben Karte. Dafür gibt es keinen separaten Vorschaumodus und keinen Übernehmen-Knopf. Bestätigte Teilstücke werden weiterhin automatisch gespeichert.
 
 Berechnung und Übertragung beschränken sich auf betroffene Höhenbänder und Kachelbereiche. Grobe Änderungen erhalten feine Geländeanteile; Glätten und Zielhöhen berücksichtigen die gewählte Bearbeitungsskala. Bestehende Schutzregeln für Straßen, Flussbetten und manuell korrigierte Objekte bleiben wirksam.
