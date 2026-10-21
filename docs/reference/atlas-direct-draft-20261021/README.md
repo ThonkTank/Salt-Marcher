@@ -96,6 +96,10 @@ Feld-/Cache-/Frame-Tests prüfen potenzielle Wasserpegel, Besitzer der Arrays,
 Bytequoten, Invalidierung und Änderungen unter einer unveränderten Wasserfläche.
 `tests/terrain-projection-ui.test.mjs` prüft bestätigte Präfixe während der
 Arbeitsfassung und die vollständige Wiederherstellung ohne bestätigte Änderung.
+Die vollständige erste Candidate-CI fand noch einen alten Gesamtobjektvergleich
+im Test des verfeinerten Rasters: Er erwartete keine zusätzlichen Bodendaten.
+Der Test prüft nun ausdrücklich auch die Rohhöhen und Wasserpegel seiner
+vollständig über Wasser liegenden Fixture; Höhen-/Nahtvergleiche bleiben erhalten.
 Die bestehenden Brush-/Spatial-/Commit-/Live-Stroke-/Konturregressionen bleiben
 die Gegenproben für Speicherung, Undo, Auswahl und Quellenwechsel.
 
