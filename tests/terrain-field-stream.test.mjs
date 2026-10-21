@@ -35,7 +35,7 @@ test('scanline bands keep the same lattice at their boundary and can omit unused
 test('two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams',()=>{
  const records=ground();
  for(const [x,y,dx,dy]of [[-70.125,-60.25,.5,.5],[-64.1,-63.7,.7,.3],[-.1,-.2,1/3,2/7]]){
-  const lattice={x,y,dx,dy,columns:193,rows:137},expected=check(records,lattice,3),actual={heights:new Float32Array(193*137),water:new Uint8Array(193*137),surface:new Float32Array(193*137)};
+  const lattice={x,y,dx,dy,columns:193,rows:137},expected=check(records,lattice,3),actual={heights:new Float32Array(193*137),water:new Uint8Array(193*137),surface:new Float32Array(193*137),levels:new Float32Array(193*137)};
   for(let row=0;row<137;row+=32)for(let col=0;col<193;col+=32){
    const rect={x:col,y:row,width:Math.min(32,193-col),height:Math.min(32,137-row)},block=streamTerrainFieldBlock(lattice,rect,3,stream(records));
    for(const key of Object.keys(actual))for(let r=0;r<rect.height;r++)actual[key].set(block[key].subarray(r*rect.width,(r+1)*rect.width),(row+r)*193+col);
@@ -109,4 +109,12 @@ test('small mixed-resolution inland worlds retain exact fallback pixels with blo
  const layer=reader.read(source,{box:{x:0,y:0,width:512,height:512},width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:true,contours:-1},2*1024*1024);
  assert.equal(layer.state,'ready');assert.equal(layer.tiles.length,1);
  for(const tile of layer.tiles){const expected=new LandscapeRasterizer(tile.box,tile.width,tile.height,-1,2);for(const r of records)expected.paint(r);const actual=require('pngjs').PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64'));assert.deepEqual(new Uint8Array(actual.data),expected.finish());}
+});
+
+
+test('potential lake levels remain available above dry ground without changing the canonical water mask',()=>{
+ const tile=heightRecord(0,0,1,new Float32Array(4096).fill(200));
+ const lake={id:'dry-lake',kind:'patch',resolution:1,width:0,points:[],polygons:rectangle(0,0,10,10),surface:'freshwater',waterLevelM:100};
+ const field=check([tile,lake],{x:2,y:2,dx:1,dy:1,columns:2,rows:2});
+ assert.deepEqual([...field.heights],[200,200,200,200]);assert.deepEqual([...field.levels],[100,100,100,100]);assert.deepEqual([...field.water],[0,0,0,0]);
 });

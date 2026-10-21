@@ -10,7 +10,7 @@ export interface TerrainView extends AtlasCameraPose {
   box:LandscapeBox; frame:LandscapeBox; columns:number; rows:number;refinement?:LandscapeBox;
   focusM:number; tilt:number; rotation:number; exaggeration:number;
 }
-export interface TerrainGrid {view:TerrainView;heights:Float32Array;seaLevelM:number}
+export interface TerrainGrid {view:TerrainView;heights:Float32Array;seaLevelM:number;editing?:{ground:Float32Array;water:Float32Array}}
 export function validateTerrainView(v:TerrainView){
   if(!v||!v.box||!v.frame||![v.box,v.frame].every(b=>[b.x,b.y,b.width,b.height].every(Number.isFinite)&&b.width>0&&b.height>0&&Math.max(Math.abs(b.x),Math.abs(b.y),Math.abs(b.x+b.width),Math.abs(b.y+b.height))<=1e12)||
     !Number.isInteger(v.columns)||!Number.isInteger(v.rows)||v.columns<2||v.rows<2||v.columns>257||v.rows>257||v.columns*v.rows>66049||

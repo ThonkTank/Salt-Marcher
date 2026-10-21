@@ -46,9 +46,7 @@ export function scaleHeightSampler(records:LandscapeRecord[],pixel:number){
     return height+bands.sample(p).heightM+100;
   };
 }
-export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void,canonicalVisibility?:TerrainGrid,scaleHeight?:(p:{x:number;y:number})=>number,uncoupled=false):LandscapeRecord[]{
-  validateHeightStroke(s);
-  const box=strokeBox(s),pixel=heightBrushPixel(s.radius),edge=64*pixel;
+export function heightBrushDabs(s:Pick<HeightStroke,'samples'|'radius'>){
   // Midpoint integration along the whole gesture, independent of event frequency.
   const dabs:{x:number;y:number;seconds:number}[]=[];
   for(let i=1;i<s.samples.length;i++){
@@ -61,6 +59,39 @@ export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limit
       if(last&&last.x===x&&last.y===y)last.seconds+=dt/n;else dabs.push({x,y,seconds:dt/n});
     }
   }
+  return dabs;
+}
+
+/** Shared numeric effect; the caller owns the source snapshot and visibility. */
+export function heightBrushAmount(s:HeightStroke,p:{x:number;y:number},dose:number,source?: (p:{x:number;y:number})=>number){
+    const old=source?.(p)??0;
+    let amount=s.strength*dose;
+    // Signed, world-anchored noise adds peaks and hollows without changing
+    // the existing directional modulation. Preview and commit use the same seed.
+    if(s.mode==='roughen')return amount*(2*terrainRoughness(p.x/s.radius,p.y/s.radius,s.seed??0)-1);
+    if(s.mode==='raise'||s.mode==='lower'){
+      // World-anchored modulation stays fixed throughout preview, retry and commit.
+      // Its positive factor preserves direction even at maximum roughness.
+      const seed=s.seed??0;
+      if(s.roughness)amount*=1-s.roughness*.15*terrainRoughness(p.x/s.radius,p.y/s.radius,seed);
+      if(s.mode==='raise')return (s.targetM===undefined?amount:Math.max(0,Math.min(s.targetM-old,amount)));
+      return -(s.targetM===undefined?amount:Math.max(0,Math.min(old-s.targetM,amount)));
+    }
+    let target=s.targetM??0;
+    if(s.mode==='smooth'){
+      // A fixed source snapshot makes smoothing independent of tile traversal.
+      // Symmetric samples preserve planes and never overshoot local extrema.
+      target=0;
+      for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++)
+        target+=source!({x:p.x+x*s.radius/4,y:p.y+y*s.radius/4})/9;
+    }
+    return Math.sign(target-old)*Math.min(Math.abs(target-old),amount);
+}
+
+export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limited?:(factor:number)=>void,canonicalVisibility?:TerrainGrid,scaleHeight?:(p:{x:number;y:number})=>number,uncoupled=false):LandscapeRecord[]{
+  validateHeightStroke(s);
+  const box=strokeBox(s),pixel=heightBrushPixel(s.radius),edge=64*pixel;
+  const dabs=heightBrushDabs(s);
   const tiles=(Math.floor((box.x+box.width)/edge)-Math.floor(box.x/edge)+1)*(Math.floor((box.y+box.height)/edge)-Math.floor(box.y/edge)+1);
   if(dabs.length*tiles*4096>60000000)throw Error('Höhenzug zu lang. In kürzeren Zügen bearbeiten.');
   const needsSource=s.mode==='smooth'||s.targetM!==undefined,source=needsSource?(scaleHeight??scaleHeightSampler(records,pixel)):undefined,visibility=s.visibility?(canonicalVisibility??terrainGrid(records,s.visibility)):null;
@@ -73,28 +104,7 @@ export function applyTerrainBrush(records:LandscapeRecord[],s:HeightStroke,limit
       dose+=d.seconds*t*t*(3-2*t);
     }
     if(!dose||visible&&!visible(p))return undefined;
-    const old=source?.(p)??0;
-    let amount=s.strength*dose;
-    // Signed, world-anchored noise adds peaks and hollows without changing
-    // the existing directional modulation. Preview and commit use the same seed.
-    if(s.mode==='roughen')return prior+amount*(2*terrainRoughness(p.x/s.radius,p.y/s.radius,s.seed??0)-1);
-    if(s.mode==='raise'||s.mode==='lower'){
-      // World-anchored modulation stays fixed throughout preview, retry and commit.
-      // Its positive factor preserves direction even at maximum roughness.
-      const seed=s.seed??0;
-      if(s.roughness)amount*=1-s.roughness*.15*terrainRoughness(p.x/s.radius,p.y/s.radius,seed);
-      if(s.mode==='raise')return prior+(s.targetM===undefined?amount:Math.max(0,Math.min(s.targetM-old,amount)));
-      return prior-(s.targetM===undefined?amount:Math.max(0,Math.min(old-s.targetM,amount)));
-    }
-    let target=s.targetM??0;
-    if(s.mode==='smooth'){
-      // A fixed source snapshot makes smoothing independent of tile traversal.
-      // Symmetric samples preserve planes and never overshoot local extrema.
-      target=0;
-      for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++)
-        target+=source!({x:p.x+x*s.radius/4,y:p.y+y*s.radius/4})/9;
-    }
-    return prior+Math.sign(target-old)*Math.min(Math.abs(target-old),amount);
+    return prior+heightBrushAmount(s,p,dose,source);
   },2);
   return uncoupled?edited:coupleRouteEdits(records,edited,limited);
 }

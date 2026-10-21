@@ -7,6 +7,8 @@ und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzreg
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
 beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [Runtimeplan](../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
 
+[Direkte Höhenarbeitsfassung und große native Welt](../reference/atlas-direct-draft-20261021/README.md): begrenztes geladenes Raster, GPU-Küsten und Rückkehr zur bestätigten Revision. 108.076 Landschaftsobjekte funktional geprüft; unmittelbare Reaktion und vollständige Detailverfeinerung bleiben offen.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |

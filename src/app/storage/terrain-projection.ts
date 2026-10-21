@@ -68,5 +68,5 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
   },source.revision));
   yield* checkpoint();
  }
- return{revision:source.revision,fence:source.fence,generation:0,source:source.fence,grid,pixels,detail,width:q.width,height:q.height,draft,objects,routes,rasterRouteKey:JSON.stringify(denseRoutes?[...retainedRoutes]:null),protectedLimit,heightM,contourInk:settings.terrainSettings!.style?.ink};
+ return{revision:source.revision,fence:source.fence,generation:0,source:source.fence,grid,pixels,detail,width:q.width,height:q.height,draft,objects,routes,rasterRouteKey:JSON.stringify(denseRoutes?[...retainedRoutes]:null),protectedLimit,heightM,landColor:settings.terrainSettings!.style?.land,contourInk:settings.terrainSettings!.style?.ink};
 }

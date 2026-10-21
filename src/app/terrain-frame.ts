@@ -13,7 +13,7 @@ export type TerrainFullFrame=Common & {kind:'full'} & (
   {view:'top';layer:AtlasLandscapeLayer}|{view:'tilted';projection:TerrainProjection});
 export type TerrainDeltaFrame=Common & {kind:'delta';base:TerrainFrameIdentity} & (
   {view:'top';layer:Omit<AtlasLandscapeLayer,'tiles'>;tiles:AtlasLandscapeLayer['tiles'];removed:string[]}|
-  {view:'tilted';projection:Omit<TerrainProjection,'grid'|'pixels'|'detail'>;grid:Omit<TerrainGrid,'heights'>;heights:TerrainPatch<Float32Array>[];pixels:TerrainPatch<Uint8Array>[];detail?:Omit<import('./terrain-detail').TerrainDetail,'pixels'>&{patches:TerrainPatch<Uint8Array>[]}});
+  {view:'tilted';projection:Omit<TerrainProjection,'grid'|'pixels'|'detail'>;grid:Omit<TerrainGrid,'heights'|'editing'>;editing?:{ground:TerrainPatch<Float32Array>[];water:TerrainPatch<Float32Array>[]};heights:TerrainPatch<Float32Array>[];pixels:TerrainPatch<Uint8Array>[];detail?:Omit<import('./terrain-detail').TerrainDetail,'pixels'>&{patches:TerrainPatch<Uint8Array>[]}});
 export type TerrainFrame=TerrainFullFrame|TerrainDeltaFrame;
 export const sameTerrainIdentity=(a:TerrainFrameIdentity|undefined,b:TerrainFrameIdentity|undefined)=>!!a&&!!b&&a.key===b.key&&a.revision===b.revision&&a.fence===b.fence;
 export const terrainRasterKey=(t:AtlasLandscapeLayer['tiles'][number])=>JSON.stringify([t.box,t.width,t.height]);
@@ -44,10 +44,12 @@ export function terrainFrameDelta(before:TerrainFullFrame|undefined,after:Terrai
   }
   if(before.view==='tilted'&&after.view==='tilted'){
     const a=before.projection,b=after.projection;
+    if(!!a.grid.editing!==!!b.grid.editing)return after;
     if(a.width!==b.width||a.height!==b.height||a.grid.heights.length!==b.grid.heights.length)return after;
     if(JSON.stringify(a.detail&&[a.detail.box,a.detail.width,a.detail.height])!==JSON.stringify(b.detail&&[b.detail.box,b.detail.width,b.detail.height]))return after;
-    const {pixels:unusedPixels,grid:unusedGrid,detail:unusedDetail,...projection}=b,{heights:unusedHeights,...grid}=b.grid;
+    const {pixels:unusedPixels,grid:unusedGrid,detail:unusedDetail,...projection}=b,{heights:unusedHeights,editing:unusedEditing,...grid}=b.grid;
     return {...common,view:'tilted',projection,grid,
+      editing:b.grid.editing?{ground:patches(a.grid.editing!.ground,b.grid.editing.ground,b.grid.view.columns,b.grid.view.rows,1,16),water:patches(a.grid.editing!.water,b.grid.editing.water,b.grid.view.columns,b.grid.view.rows,1,16)}:undefined,
       heights:patches(a.grid.heights,b.grid.heights,b.grid.view.columns,b.grid.view.rows,1,16),
       pixels:patches(a.pixels,b.pixels,b.width,b.height,4,64),detail:b.detail?{box:b.detail.box,width:b.detail.width,height:b.detail.height,patches:patches(a.detail!.pixels,b.detail.pixels,b.detail.width,b.detail.height,4,64)}:undefined};
   }
@@ -71,7 +73,8 @@ export function applyTerrainFrame(before:TerrainFullFrame|undefined,frame:Terrai
   }
   if(before.view==='tilted'&&frame.view==='tilted'){
     const p=frame.projection,g=frame.grid;
-    return {...common,view:'tilted',projection:{...p,grid:{...g,heights:applyPatches(before.projection.grid.heights,frame.heights,g.view.columns,g.view.rows,1)},pixels:applyPatches(before.projection.pixels,frame.pixels,p.width,p.height,4),
+    if(frame.editing&&!before.projection.grid.editing)throw Error('Gelände-Basis für Bearbeitung fehlt.');
+    return {...common,view:'tilted',projection:{...p,grid:{...g,...(frame.editing?{editing:{ground:applyPatches(before.projection.grid.editing!.ground,frame.editing.ground,g.view.columns,g.view.rows,1),water:applyPatches(before.projection.grid.editing!.water,frame.editing.water,g.view.columns,g.view.rows,1)}}:{}),heights:applyPatches(before.projection.grid.heights,frame.heights,g.view.columns,g.view.rows,1)},pixels:applyPatches(before.projection.pixels,frame.pixels,p.width,p.height,4),
       detail:frame.detail?{box:frame.detail.box,width:frame.detail.width,height:frame.detail.height,pixels:applyPatches(before.projection.detail!.pixels,frame.detail.patches,frame.detail.width,frame.detail.height,4)}:undefined,
       identity:frame.target,update:{base:frame.base,heights:frame.heights.map(({data,...r})=>r),pixels:frame.pixels.map(({data,...r})=>r),detail:frame.detail?.patches.map(({data,...r})=>r)}}};
   }
@@ -79,6 +82,6 @@ export function applyTerrainFrame(before:TerrainFullFrame|undefined,frame:Terrai
 }
 export function terrainFrameBytes(frame:TerrainFullFrame){
   if(frame.view==='top')return JSON.stringify(frame).length*2;
-  const {pixels,grid,detail,...rest}=frame.projection,{heights,...view}=grid;
-  return pixels.byteLength+heights.byteLength+(detail?.pixels.byteLength??0)+JSON.stringify([rest,view,detail&&[detail.box,detail.width,detail.height],frame.target,frame.invalidation]).length*2;
+  const {pixels,grid,detail,...rest}=frame.projection,{heights,editing,...view}=grid;
+  return pixels.byteLength+heights.byteLength+(editing?editing.ground.byteLength+editing.water.byteLength:0)+(detail?.pixels.byteLength??0)+JSON.stringify([rest,view,detail&&[detail.box,detail.width,detail.height],frame.target,frame.invalidation]).length*2;
 }

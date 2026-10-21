@@ -1,0 +1,42 @@
+{
+  "failure": {
+    "source": "3cc9aed49de677e9d9d15be5e5e61e3feafd8d6b",
+    "dirty": true,
+    "profile": "/home/aaron/.cache/saltmarcher/ui/world-navigation-Jy4YQ9",
+    "artifacts": {
+      "main.cjs": "47d82c3b5758d8eb96259a2712b39e97c5b90dae7f6fded39f74cf2bc0d3f19b",
+      "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+      "ui/renderer.js": "06fd5f221c795c5c4d29f0df785c1c7a7c80d5c00f5085128169eeca756b6afa",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 2978096,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope"
+      }
+    ],
+    "errors": [],
+    "error": "page.waitForFunction: Timeout 60000ms exceeded.\n    at /home/aaron/Schreibtisch/projects/SaltMarcher/tools/test-desktop-world-navigation.mjs:114:52"
+  },
+  "records": 108076,
+  "metrics": [
+    {
+      "name": "navigation",
+      "p95Ms": 38.599999999998545,
+      "maxMs": 316.6999999999989,
+      "brushFeedback": null
+    },
+    {
+      "name": "sculpt",
+      "p95Ms": 46,
+      "maxMs": 216.70000000000073,
+      "brushFeedback": {
+        "firstPixelMs": 242,
+        "firstConfirmedMs": null,
+        "revisionsDuringHold": []
+      }
+    }
+  ]
+}
