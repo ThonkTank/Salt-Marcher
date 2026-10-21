@@ -200,6 +200,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 [Weiche Bodenfarbe an Bewuchsrändern](../../reference/atlas-cover-feather-20261021/README.md): vorhandene Randbreiten wirken auch auf Bodenfarbe und Lichtungen, mit gemeinsamem Kachelraster und unterbrechbarer Workerberechnung. Native Hauptansicht und PNG sind geprüft. Die zusätzliche CPU-Arbeit ist gemessen; Waldtextur, Kronenformen und allgemeine Ladeleistung bleiben offen.
 
+[Lesbarere Baumkronen](../../reference/atlas-crown-style-20261021/README.md): gelappte Laubkronen, Aststufen bei Nadelbäumen und stabile Farbvariation im bestehenden instanzierten Hauptatlas. Native Maßstabs-/Kipp-/PNG-Probe und GPU-Treffer-/Kachelprüfungen liegen vor. Die teurere erste Geometrie wurde verworfen; der begrenzte Folgeentwurf bleibt ein Nah-/Regionaldetail, keine Waldgestaltung für die Weltübersicht.
+
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
 [Aufrauen als eigene Sculpt-Wirkung](../../reference/atlas-sculpt-roughen-20261021/README.md): positive und negative Unebenheiten im bestehenden direkten Höhenpinsel, mit gemeinsamen Höhenbändern, History und Hauptkamera. Lokale und native Prüfungen umfassen Undo/Redo und frisches Öffnen. Das vervollständigt noch nicht die Feature-Werkzeuge oder die allgemeine Leistungs-/Gestaltungsabnahme.
