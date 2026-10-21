@@ -190,14 +190,14 @@ async function heightRead(f,reader){
  f.document.getElementById('land-radius').value='120';f.ui.hovering=true;f.ui.lastPoint={x:3,y:4};
  f.ui.cursorHeight();await delay(120);
 }
-test('height feedback identifies protected finer data and clears when the chosen radius becomes fine enough',async t=>{
+test('height feedback explains how finer data moves with a broad brush and clears when the chosen radius becomes fine enough',async t=>{
  const f=fixture(t);await heightRead(f,async()=>({ok:true,value:{heightM:300,resolutionM:1}}));
  assert.match(f.document.getElementById('land-cursor-height').textContent,/984 ft.*Auflösung: 3,28 ft/);
  assert.match(f.document.getElementById('land-brush-resolution').textContent,/6,56 ft/);
- const hint=f.document.getElementById('land-height-protection');assert.equal(hint.hidden,false);assert.match(hint.textContent,/3,28 ft.*geschützt.*Radius verkleinern/);
- const protectedOverlay=new AtlasPaint('group');f.ui.drawMeasurements(protectedOverlay,{x:0,y:0,width:10,height:10},.02);assert.match(descendants(protectedOverlay).map(n=>n.text).join(' '),/Feine Höhendetails.*geschützt.*Radius verkleinern/);
+ const hint=f.document.getElementById('land-height-protection');assert.equal(hint.hidden,false);assert.match(hint.textContent,/3,28 ft.*bewegen sich mit.*Radius verkleinern/);
+ const protectedOverlay=new AtlasPaint('group');f.ui.drawMeasurements(protectedOverlay,{x:0,y:0,width:10,height:10},.02);assert.match(descendants(protectedOverlay).map(n=>n.text).join(' '),/Feine Geländeformen.*bewegen sich mit.*Radius verkleinern/);
  f.document.getElementById('land-radius').value='32';f.ui.renderHeightPrecision();assert.equal(hint.hidden,true);
- const editableOverlay=new AtlasPaint('group');f.ui.drawMeasurements(editableOverlay,{x:0,y:0,width:10,height:10},.02);assert.doesNotMatch(descendants(editableOverlay).map(n=>n.text).join(' '),/geschützt/);
+ const editableOverlay=new AtlasPaint('group');f.ui.drawMeasurements(editableOverlay,{x:0,y:0,width:10,height:10},.02);assert.doesNotMatch(descendants(editableOverlay).map(n=>n.text).join(' '),/bewegen sich mit/);
  assert.match(f.document.getElementById('land-brush-resolution').textContent,/3,28 ft/);
 });
 for(const change of ['context','gesture','leave'])test('a late height query cannot label a replacement '+change,async t=>{

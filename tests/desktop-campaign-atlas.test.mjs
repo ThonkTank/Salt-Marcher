@@ -564,5 +564,5 @@ test("default rooms from the key editor also use the common durable history", (t
   x.fresh();
   x.write({ kind: "redo" });
   assert.equal(x.read().workspace.rooms.length, 1);
-  assert.equal(x.read().geometry.drawing.volumes.length, 1);
+  assert.equal(x.read().geometry.drawing.volumes.length, 0, 'free room creation does not initialize voxels');
 });

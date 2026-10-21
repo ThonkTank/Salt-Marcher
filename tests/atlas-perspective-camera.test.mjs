@@ -6,7 +6,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
+      "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-spatial-view';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export * as THREE from 'three';",
     resolveDir: process.cwd(),
   },
   outfile: ".build/atlas-perspective-camera-test.cjs",
@@ -19,6 +19,7 @@ const {
   atlasProject,
   atlasPlanePoint,
   terrainVisible,
+  terrainHorizon,
   gridHeight,
   validateTerrainView,
   TerrainSpatialView,
@@ -201,7 +202,9 @@ test("canonical visibility agrees with first GPU triangle along perspective rays
           );
           const hit = ray.intersectObject(view.picker, false)[0];
           assert(hit);
-          const visible =
+          // The picker can intersect triangles beyond the rendered atmospheric
+          // horizon; these must not be available to canonical authoring.
+          const visible = screen.depth < terrainHorizon(v).far &&
             Math.hypot(
               hit.point.x - x,
               hit.point.y + y,
