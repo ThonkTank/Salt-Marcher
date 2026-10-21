@@ -94,6 +94,18 @@ Bei Grafik- oder Terrainladefehlern wechselt die Hauptkarte einmalig auf Canvas2
 
 **Offene Grenzen:** Der neue Anschluss überträgt zunächst vorhandene Flächen, Symbole, Texte und Griffe auf die Terrainoberfläche. Gebäudevolumen aus Raumgrundrissen und perspektivische Bildausgabe sind [angeschlossen und lokal geprüft](../reference/atlas-objects-main-20261021/README.md). Vollständige Geschoss-Arbeitsebenen, semantische Detailstufen und Maskierung bleiben offen. Bei aktiver Wissensmaske bleibt der qualifizierte gefilterte Canvasweg maßgeblich. Bildexport verwendet denselben Kamerarenderer; die laufende Spieleranzeige ist noch separat zu qualifizieren. Die vollständigen Abnahmekriterien bleiben in der [räumlichen Atlasroadmap](../plans/maps/unified-spatial-atlas.md) offen.
 
+### Ein Boden pro Darstellung
+
+Der Hauptatlas und die perspektivische GM-Ausgabe fordern `terrainRaster=false`
+an. Der Readonly-Reader überspringt dann Boden-PNGs, die die GPU bereits aus der
+Terrainprojektion zeichnet. Dichte Landschaftsobjekte bleiben als transparente
+`LandscapeRaster.content=objects` erhalten und werden über dem Gelände gezeichnet.
+Die Rasterart gehört zum Cache-Schlüssel und zum bestätigten Regionenvergleich.
+Grafikverlust lädt vollständige Bodenbilder für Canvas nach; ausdrücklicher
+Wiederanlauf wechselt zurück. Wahrnehmung und öffentliche Ausgabe behalten den
+vollständigen Bodenpfad. [Messung und native Gegenproben](../reference/atlas-ground-raster-20261021/README.md)
+trennen die entfallende Regionenarbeit von der weiterhin benötigten Terrainfarbe.
+
 ### Höhenlinien auf dem vorhandenen Geländenetz
 
 `terrain-contours.ts` zeichnet Höhenlinien im GPU-Material der gemeinsamen Atlasoberfläche. Standard ist „Automatisch“ (`-1`); `0` schaltet sie aus, positive Werte wählen feste Meterintervalle. Im Automatikmodus werden ineinander enthaltene Zweierintervalle ab einem Meter anhand der lokalen Bildschirmableitung überblendet. Linien bleiben auf ihren ursprünglichen Höhen, auch bei Neigung und unterschiedlicher Entfernung zur Kamera. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
