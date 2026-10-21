@@ -1,0 +1,30 @@
+{
+  "baseline": "1f64af735",
+  "equal": true,
+  "runs": [
+    {
+      "label": "before",
+      "lineMs": 155.54779900000017,
+      "linePayloads": 7048,
+      "lines": 1024,
+      "lineSha256": "0cd2bbf2b33c2b7be0afb66c9b1f625e6f211aa2a91c2d28d6d7bddd3f22048b",
+      "projectionMs": 2627.657584,
+      "projectionPayloads": 31126,
+      "pixelsSha256": "af3b714211a01e3b3e5a28feae9842e3883f03e5894d89ac20c7961e66265f26",
+      "heightsSha256": "d3c54c0a2e3be7cbba186754d8c9768a149b1aa97d7e71228ebbbe1542082961",
+      "projectionSha256": "2f4691399762a73e1f77764d700acb561b5b8021d15dfb6d4e7f70ba848bff8f"
+    },
+    {
+      "label": "after",
+      "lineMs": 31.450236000000587,
+      "linePayloads": 1024,
+      "lines": 1024,
+      "lineSha256": "0cd2bbf2b33c2b7be0afb66c9b1f625e6f211aa2a91c2d28d6d7bddd3f22048b",
+      "projectionMs": 2751.814170999999,
+      "projectionPayloads": 9343,
+      "pixelsSha256": "af3b714211a01e3b3e5a28feae9842e3883f03e5894d89ac20c7961e66265f26",
+      "heightsSha256": "d3c54c0a2e3be7cbba186754d8c9768a149b1aa97d7e71228ebbbe1542082961",
+      "projectionSha256": "2f4691399762a73e1f77764d700acb561b5b8021d15dfb6d4e7f70ba848bff8f"
+    }
+  ]
+}

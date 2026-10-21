@@ -48,3 +48,26 @@ test('sparse terrain kinds use ordered indexes and preserve exact streams throug
  assert(![...reader.terrainStream(source)('route',box)].some(r=>r.id==='route:0'));
  assert([...reader.terrainStream(source)('height',box)].some(r=>r.id==='new-height'));
 });
+test('terrain line reads skip place and vegetation payloads while preserving painter order through kind changes and deletion',t=>{
+ const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-lines-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Terrain lines'),token=store.activate(campaign.id).token,db=store.db;
+ t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
+ const insert=db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ const put=r=>{const b=bounds(r);insert.run(campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));};
+ db.transaction(()=>{
+  for(let i=0;i<2000;i++)put({...emptyRecord(i%2?'place':'vegetation'),id:'other:'+i,points:[{x:0,y:0}],width:2,polygons:[polygon]});
+  for(let i=0;i<25;i++)put({...record('route','line:'+i,i),kind:i%3?'road':'river',line:{overSymbols:i%2===0}});
+ })();
+ const reader=new AtlasLandscapeReader(db);let source=store.atlasRegionSource(token);reader.sync(source);const box={x:-100,y:-100,width:500,height:500};
+ const selected=[],plans=[],sql=reader.sql.bind(reader);
+ reader.sql=text=>{const st=sql(text);if(text.includes('FROM json_each(?) ids CROSS JOIN atlas_landscape'))return{iterate(ids,...args){selected.push(...JSON.parse(ids));return st.iterate(ids,...args);}};if(text.includes("m.kind IN ('road','river')"))return{iterate(...args){plans.push(db.prepare('EXPLAIN QUERY PLAN '+text).all(...args).map(r=>r.detail).join('\n'));return st.iterate(...args);}};return st;};
+ const check=()=>{
+  const expected=[...reader.rows(source,box,false)].filter(r=>r.kind==='road'||r.kind==='river');selected.length=0;
+  const actual=[...reader.terrainStream(source)('line',box)];assert.deepEqual(actual,expected);assert.equal(selected.length,actual.length);
+  assert.match(plans.at(-1),/USING INDEX landscape_line_span/);
+  for(const id of selected)assert.match(db.prepare("SELECT json_extract(payload,'$.kind') kind FROM atlas_landscape WHERE rowid=?").get(id).kind,/^(road|river)$/);
+  return actual;
+ };
+ assert.equal(check().length,25);
+ const changed={...record('route','other:0'),kind:'river'};db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run(JSON.stringify(changed),changed.id);db.prepare('DELETE FROM atlas_landscape WHERE id=?').run('line:0');
+ source={...source,reset:false,changes:[{table:'atlas_landscape',id:'other:0'},{table:'atlas_landscape',id:'line:0'}]};reader.sync(source);const next=check();assert.equal(next.length,25);assert(next.some(r=>r.id==='other:0'));assert(!next.some(r=>r.id==='line:0'));
+});
