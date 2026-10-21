@@ -145,7 +145,7 @@ export class AtlasLandscapeReader {
   let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    if(q.references===false&&r.kind==='reference')continue;
-   if(!q.perception&&mapRecordVisible(r,q.box.width/q.width))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
+   if(!q.perception&&(q.terrainRaster===false||mapRecordVisible(r,q.box.width/q.width)))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
    const record=visual(r);if(r.vegetation)record.vegetationView=generateVegetation(r,environment().env,q.box,q.box.width/q.width);const size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
    if(record.vegetationView?.instances.some(i=>i.protected)){

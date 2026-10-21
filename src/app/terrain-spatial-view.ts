@@ -1,3 +1,4 @@
+import {AtlasSpatialLabels} from './atlas-spatial-labels';
 import {TerrainObjectLayer} from './terrain-object-view';
 import {bounds} from './atlas-landscape';
 import {terrainBoxesOverlap} from './terrain-cache';
@@ -40,6 +41,7 @@ export class TerrainSpatialView {
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
   private contours=terrainContourUniforms();
+  private labels=new AtlasSpatialLabels();
   private atlas:AtlasSpatialScene|null=null;
   private overlayScene:AtlasSpatialScene|null=null;
   private publication:{scene:AtlasCanvasScene;origin:Point;images:ReadonlyMap<string,CanvasImageSource>}|null=null;
@@ -65,6 +67,8 @@ export class TerrainSpatialView {
   }
   private rebuildAtlas(){
     if(!this.publication||!this.grid)return;
+    this.labels.set(this.publication.scene.root?.mapLabels,this.surface());
+    if(!this.labels.group.parent)this.scene.add(this.labels.group);
     const p=this.publication,next=new AtlasSpatialScene(p.scene,p.origin,p.images,this.surface());
     if(this.atlas){this.scene.remove(this.atlas.group);this.atlas.dispose();}
     this.atlas=next;this.scene.add(next.group);
@@ -178,6 +182,13 @@ export class TerrainSpatialView {
     this.camera.position.copy(target).add(new THREE.Vector3(eye.x,-eye.y,eye.z));
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
+    this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
+    this.labels.update(this.camera,this.outputTile?.width??w,this.outputTile?.height??h,anchor=>{
+      const x=anchor.x+this.origin.x,y=this.origin.y-anchor.y;
+      if(x<v.box.x||y<v.box.y||x>v.box.x+v.box.width||y>v.box.y+v.box.height)return false;
+      const eye=this.camera.position,direction=anchor.clone().sub(eye),distance=direction.length();direction.normalize();
+      return terrainRaycast(this.grid!,{x:eye.x+this.origin.x,y:this.origin.y-eye.y,z:v.focusM+eye.z/v.exaggeration},{x:direction.x,y:-direction.y,z:direction.z/v.exaggeration},0,Math.max(0,distance-Math.max(1e-6,distance*1e-8)))===null;
+    });
     if(this.outputTile){const t=this.outputTile;this.camera.setViewOffset(t.width,t.height,t.x,t.y,t.w,t.h);}
     this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);this.renderer.render(this.scene,this.camera);
   }
@@ -195,7 +206,7 @@ export class TerrainSpatialView {
   showCursor(p:Point|null,radius:number){this.cursorState=p?{point:{...p},radius}:null;this.removeLine(this.cursor);this.cursor=this.ring(p,radius,'#a65f30');this.render();}
   showSelection(p:Point|null){this.removeLine(this.selection);this.selection=this.ring(p,(this.grid?.view.frame.width??0)*.008,'#e68a28');this.render();}
   dispose(){
-    this.detail?.dispose();this.frozenPick=null;
+    this.detail?.dispose();this.labels.dispose();this.frozenPick=null;
     this.atlas?.dispose();this.overlayScene?.dispose();this.atlas=null;this.overlayScene=null;this.publication=null;
     this.objectLayer?.dispose();this.objectLayer=null;this.clearRoutes();this.vegetation?.dispose();this.vegetation=null;this.vegetationRecords=null;
     this.removeLine(this.cursor);this.removeLine(this.selection);this.cursor=null;this.selection=null;if(this.mesh){this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}

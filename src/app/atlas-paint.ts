@@ -1,3 +1,4 @@
+import type {MapLabelSource} from "./atlas-label-source";
 import type { Polygon } from "./contracts";
 /** Local drawing data shared by the Canvas screen and raster exports. */
 export type Affine = [number, number, number, number, number, number];
@@ -61,6 +62,7 @@ export interface PaintOptions {
 }
 export class AtlasPaint {
   readonly children: AtlasPaint[] = [];
+  mapLabels?: MapLabelSource;
   readonly style: PaintStyle;
   readonly data: Record<string, string>;
   title: string;

@@ -1,3 +1,4 @@
+import {atlasCameraLabelPixels} from './atlas-camera-label-probe.mjs';
 import {terrainRouteDisplayPixels} from './terrain-route-display-probe.mjs';
 // Main Atlas camera: retained roads and rivers across continuous zoom and tilt.
 import {createNativeSession} from './native-session.mjs';
@@ -39,5 +40,6 @@ try{
  await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').fill('60');await page.locator('#terrain-tilt').dispatchEvent('input');await page.keyboard.press('Escape');await atlasCanvasReady(page);await snap('04-tilted');
  assert(await canvas.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));assert.equal(authors(),before);
  const pixels=process.env.ROUTE_DISPLAY_VERIFY==='1'?await terrainRouteDisplayPixels(page):undefined;
- await native.close();await native.finish({samples,pixels,checks:['One main Atlas canvas survives regional-to-street wheel zoom and tilt with unchanged canonical road/river geometry.']});
+ const labels=process.env.LABEL_CAMERA_VERIFY==='1'?await atlasCameraLabelPixels(page,out):undefined;
+ await native.close();await native.finish({samples,pixels,labels,checks:['One main Atlas canvas survives regional-to-street wheel zoom and tilt with unchanged canonical road/river geometry.']});
 }catch(error){await native.fail(error);throw error;}finally{db.close();await native.dispose();}

@@ -94,6 +94,16 @@ function fixture(t) {
     },
   };
 }
+test('Main camera receives bounded name candidates before their flat scale threshold; public reads stay empty',async t=>{
+  const f=fixture(t);
+  f.write({kind:'landscape-put',expectedRevision:null,record:{id:'thin-road',revision:0,kind:'road',name:'Waldweg',points:[{x:-5000,y:0},{x:5000,y:0}],polygons:[],width:1,resolution:1,values:{}}});
+  const db=new (require('better-sqlite3'))(f.dir+'/world.sqlite',{readonly:true});t.after(()=>db.close());
+  const reader=new AtlasRegionReader(db),source=f.store.atlasRegionSource(f.token);await reader.sync(source);
+  const q={box:{x:-6000,y:-4000,width:12000,height:8000},width:800,height:600,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false};
+  assert(reader.read(source,q).landscape.labels.some(c=>c.text==='Waldweg'));
+  assert.equal(reader.read(source,{...q,perception:true}).landscape.labels.length,0);
+  assert.equal(f.store.landscapeFind(f.token,'Waldweg')[0].width,1);
+});
 test("brush transfers neighbouring land atomically and undo/redo survive reopening", (t) => {
   const f = fixture(t);
   f.put(territory("west", square(0, 0, 100)));

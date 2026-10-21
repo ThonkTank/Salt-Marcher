@@ -28,6 +28,7 @@ export class AtlasSpatialScene {
   ) {
     try {
       for (const [order, command] of source.commands.entries()) {
+        if(source.root?.mapLabels && command.node.data.mapLabel)continue;
         if (command.hud) continue; // Screen furniture remains on the main Canvas overlay.
         if (
           command.ancestry.some(

@@ -34,7 +34,8 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   const scene=atlasRegionPaint(snapshot,records,view.box,width*view.box.width/view.frame.width,assets,{...options,rasters:[],automaticLabels:true});
   const raster=snapshot.region?.territoryRaster;if(raster)scene.append(atlasPaint('image',{source:raster.data,x:raster.box.x-view.box.x,y:raster.box.y-view.box.y,width:raster.box.width,height:raster.box.height,pointer:false}));
   if(snapshot.region?.territories)drawTerritories(scene,snapshot.region.territories,view.box,view.frame.width/width);
-  const labels=new MapLabelLayout().layout([...(snapshot.region?.labels??[]),...(layer.labels??[])],view.frame,view.frame.width/width,measureMapText);
-  paintMapLabels(scene,labels,view.box,view.frame.width/width);
+  const candidates=[...(snapshot.region?.labels??[]),...(layer.labels??[])];
+  const labels=new MapLabelLayout().layout(candidates,view.frame,view.frame.width/width,measureMapText);
+  paintMapLabels(scene,labels,view.box,view.frame.width/width,{candidates});
   return terrainImage({...projection.value,vegetation:layer.records},width,height,format,current,progress,overlay,scene,options.contours);
 }

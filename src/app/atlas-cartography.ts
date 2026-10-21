@@ -1,5 +1,5 @@
 import type { MapLabelStyle } from "./map-label-style";
-import { atlasPaint, type AtlasPaint } from "./atlas-paint";
+import { atlasPaint, type AtlasPaint, type PaintStyle } from "./atlas-paint";
 import type { Point, Polygon } from "./contracts";
 import {
   contains,
@@ -12,26 +12,12 @@ import {
   territoryBounds,
   type TerritoryState,
 } from "./atlas-territories";
-export type MapLabelKind =
-  | "place"
-  | "city"
-  | "building"
-  | "room"
-  | "road"
-  | "river"
-  | "area";
-export interface MapLabelCandidate {
-  id: string;
-  objectId?: string;
-  text: string;
-  kind: MapLabelKind;
-  point: Point;
-  rank: number;
-  angle?: number;
-  available?: number;
-  height?: number;
-  locationId?: string;
-}
+export type { MapLabelKind, MapLabelCandidate } from "./atlas-label-source";
+import type {
+  MapLabelKind,
+  MapLabelCandidate,
+  MapLabelSource,
+} from "./atlas-label-source";
 export const labelScaleLimits = [2, 12, 100, 1000, 10000, Infinity];
 export const cityDetailVisible = (width: number, mpp: number) =>
   width / mpp >= 25;
@@ -349,6 +335,14 @@ export interface PlacedMapLabel {
   font: number;
   box: Rect;
   opacity?: number;
+  angle?: number;
+}
+export interface MapLabelProjection {
+  point: Point;
+  mpp: number;
+  angle: number;
+  available?: number;
+  height?: number;
 }
 export class MapLabelLayout {
   private previous = new Map<string, number>();
@@ -361,6 +355,7 @@ export class MapLabelLayout {
     measure: (s: string, size: number) => number,
     selected?: string,
     animate = false,
+    project?: (candidate: MapLabelCandidate) => MapLabelProjection | null,
   ): PlacedMapLabel[] {
     const now = performance.now();
     this.animating = false;
@@ -405,20 +400,36 @@ export class MapLabelLayout {
         (c.objectId && objects.has(c.objectId))
       )
         continue;
+      const projected = project?.(c);
+      if (project && !projected) continue;
+      const localMpp = projected?.mpp ?? mpp,
+        available =
+          projected?.available ??
+          (c.available === undefined ? undefined : c.available / localMpp),
+        availableHeight =
+          projected?.height ??
+          (c.height === undefined ? undefined : c.height / localMpp);
       const was = this.previous.has(c.id),
         isSelected = important(c),
-        font = c.kind === "area" ? 14 + c.rank : 12 + (c.rank >= 4 ? 2 : 0);
-      if (!isSelected && mpp > labelScaleLimits[c.rank]! * (was ? 1.15 : 1))
+        font = mapLabelFont(c);
+      if (
+        !isSelected &&
+        localMpp > labelScaleLimits[c.rank]! * (projected || was ? 1.15 : 1)
+      )
         continue;
       const width = measure(c.text, font) + 8,
         height = font + 6;
       if (
         !isSelected &&
-        c.available !== undefined &&
-        c.available / mpp < width * (was ? 0.9 : 1.1)
+        available !== undefined &&
+        available < width * (projected || was ? 0.9 : 1.1)
       )
         continue;
-      if (!isSelected && c.height !== undefined && c.height / mpp < height)
+      if (
+        !isSelected &&
+        availableHeight !== undefined &&
+        availableHeight < height
+      )
         continue;
       const options =
         c.kind === "place" || c.kind === "city"
@@ -436,8 +447,10 @@ export class MapLabelLayout {
         ];
       for (const index of order) {
         const [dx, dy] = options[index]!,
-          p = { x: c.point.x + dx! * mpp, y: c.point.y + dy! * mpp },
-          angle = c.angle ?? 0,
+          p = projected
+            ? { x: projected.point.x + dx!, y: projected.point.y + dy! }
+            : { x: c.point.x + dx! * mpp, y: c.point.y + dy! * mpp },
+          angle = projected?.angle ?? c.angle ?? 0,
           w =
             Math.abs(Math.cos(angle)) * width +
             Math.abs(Math.sin(angle)) * height,
@@ -445,8 +458,8 @@ export class MapLabelLayout {
             Math.abs(Math.sin(angle)) * width +
             Math.abs(Math.cos(angle)) * height,
           r = {
-            x: (p.x - box.x) / mpp - w / 2,
-            y: (p.y - box.y) / mpp - h / 2,
+            x: (projected ? p.x : (p.x - box.x) / mpp) - w / 2,
+            y: (projected ? p.y : (p.y - box.y) / mpp) - h / 2,
             w,
             h,
           };
@@ -477,9 +490,28 @@ export class MapLabelLayout {
         }
         const started = this.appeared.get(c.id) ?? now;
         this.appeared.set(c.id, started);
-        const opacity = animate ? Math.min(1, (now - started) / 160) : 1;
-        this.animating ||= opacity < 1;
-        placed.push({ candidate: c, point: p, font, box: r, opacity });
+        const ease = (x: number) => {
+          const t = Math.max(0, Math.min(1, x));
+          return t * t * (3 - 2 * t);
+        };
+        const scaleOpacity =
+          projected && !isSelected
+            ? ease((1.15 - localMpp / labelScaleLimits[c.rank]!) / 0.3) *
+              (available === undefined
+                ? 1
+                : ease((available / width - 0.9) / 0.2))
+            : 1;
+        const opacity =
+          (animate ? Math.min(1, (now - started) / 160) : 1) * scaleOpacity;
+        this.animating ||= animate && now - started < 160;
+        placed.push({
+          candidate: c,
+          point: p,
+          font,
+          box: r,
+          opacity,
+          ...(projected ? { angle } : {}),
+        });
         next.set(c.id, index);
         if (c.locationId) locations.add(c.locationId);
         if (c.objectId) objects.add(c.objectId);
@@ -505,12 +537,31 @@ export function measureMapText(text: string, font: number) {
   }
   return Array.from(text).length * font * 0.62;
 }
+export const mapLabelFont = (c: MapLabelCandidate) =>
+  c.kind === "area" ? 14 + c.rank : 12 + (c.rank >= 4 ? 2 : 0);
+export function mapLabelStyle(
+  kind: MapLabelKind,
+  font: number,
+  mpp = 1,
+): PaintStyle {
+  return {
+    fontSize: font * mpp,
+    textAlign: "center",
+    textBaseline: "middle",
+    fill: kind === "river" ? "#285f80" : "#293c38",
+    stroke: "#f8f3e5",
+    lineWidth: 3 * mpp,
+    lineJoin: "round",
+  };
+}
 export function paintMapLabels(
   root: AtlasPaint,
   placed: PlacedMapLabel[],
   box: LandscapeBox,
   mpp: number,
+  source?: MapLabelSource,
 ) {
+  if (source) root.mapLabels = source;
   for (const { candidate: c, point: p, font, opacity } of placed) {
     const angle = c.angle ?? 0,
       cos = Math.cos(angle),
@@ -524,15 +575,7 @@ export function paintMapLabels(
           matrix: [cos, sin, -sin, cos, p.x - box.x, p.y - box.y],
           opacity: opacity ?? 1,
           pointer: false,
-          style: {
-            fontSize: font * mpp,
-            textAlign: "center",
-            textBaseline: "middle",
-            fill: c.kind === "river" ? "#285f80" : "#293c38",
-            stroke: "#f8f3e5",
-            lineWidth: 3 * mpp,
-            lineJoin: "round",
-          },
+          style: mapLabelStyle(c.kind, font, mpp),
           data: { mapLabel: c.id },
         },
         c.text,
