@@ -1,3 +1,4 @@
+import {pigmentStrokeCoverage} from './landscape-pigment-coverage';
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {paintTerrainCoast} from './terrain-coast';
 import {terrainContourInk} from './terrain-contour-style';
@@ -139,35 +140,7 @@ export class LandscapeRasterizer {
       // A bounded raster coverage mask avoids polygon clipping for every soft dab.
       yield* pigment.paintPolygonsSteps(record.polygons,'#ffffff',1,checkpoint);
       color=[1,3,5].map(i=>parseInt(p.color.slice(i,i+2),16));
-      if(!p.fill){
-        coverage=new Float32Array(this.water.length);
-        const stamps:{x:number;y:number}[]=[];
-        for(const stroke of p.strokes??[record.points]){
-          if(!stroke.length)continue;stamps.push(stroke[0]!);
-          for(let n=1;n<stroke.length;n++){
-            const a=stroke[n-1]!,b=stroke[n]!,steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/(p.radius*.5)));
-            for(let j=1;j<=steps;j++){stamps.push({x:a.x+(b.x-a.x)*j/steps,y:a.y+(b.y-a.y)*j/steps});if(j%1024===0)yield* checkpoint();}
-          }
-        }
-        for(const c of stamps){
-          const x0=Math.max(0,Math.floor((c.x-p.radius-this.sampleBox.x)/this.sampleBox.width*this.w)),x1=Math.min(this.w-1,Math.ceil((c.x+p.radius-this.sampleBox.x)/this.sampleBox.width*this.w));
-          const y0=Math.max(0,Math.floor((c.y-p.radius-this.sampleBox.y)/this.sampleBox.height*this.h)),y1=Math.min(this.h-1,Math.ceil((c.y+p.radius-this.sampleBox.y)/this.sampleBox.height*this.h));
-          for(let y=y0;y<=y1;y++){
-          if((y-y0)%16===0)yield* checkpoint();
-          for(let x=x0;x<=x1;x++){
-            const i=y*this.w+x;if(!pigment.samples[i*4+3])continue;
-            const px=this.sampleBox.x+(x+.5)/this.w*this.sampleBox.width,py=this.sampleBox.y+(y+.5)/this.h*this.sampleBox.height;
-            const r2=((px-c.x)**2+(py-c.y)**2)/p.radius**2;if(r2>1)continue;
-            let strength=p.tip==='round'?1:(1-r2)**2;
-            if(p.tip==='textured'){
-              const nx=Math.floor(px/p.radius*24),ny=Math.floor(py/p.radius*24);
-              let n=Math.imul(nx,374761393)^Math.imul(ny,668265263)^p.seed;n=Math.imul(n^(n>>>13),1274126177);
-              strength*=.15+.85*((n^(n>>>16))>>>0)/4294967295;
-            }
-            coverage[i]=1-(1-coverage[i]!)*(1-p.flow*strength);
-          }}
-        }
-      }
+      if(!p.fill)coverage=yield* pigmentStrokeCoverage(this.sampleBox,this.w,this.h,record,pigment.samples,checkpoint);
       // Keep constant pigment RGB outside the mask. Filled areas need neither
       // dab coverage nor an extra full-pixel colour conversion pass.
     }
