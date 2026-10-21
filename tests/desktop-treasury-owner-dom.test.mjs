@@ -149,3 +149,13 @@ for(const phase of ['after','list','detail','history','write','unresolved'])test
  else{assert.ok(x.messages.some(m=>m.text.includes('gespeichert')&&m.text.includes(failure)));assert.ok(!x.messages.some(m=>m.text.includes('Verteilung bleibt offen')));}
  if(phase==='unresolved'){x.el('distribution-confirm').onclick();await until(()=>x.el('distribution-status').textContent.includes('Eine Buchung ist noch ungeklärt'));assert.equal(x.commands.length,1);assert.equal(input.value,'2');assert.equal(x.el('distribution-receipt').hidden,true);}
 });
+
+// Unnamed scenes are valid runtime groups, including the initial primary scene.
+test('treasure filters and anchor targets identify unnamed groups without requiring a rename',async t=>{
+ const x=await fixture(t);window.campaign.live=async()=>({ok:true,value:{scenes:[{id:'abcd1234-a',title:''},{id:'efab5678-b',title:''},{id:'named',title:'Hafenwache'}]}});
+ await x.ui.openTreasury();
+ for(const id of ['treasury-filter-anchor','treasury-anchor-target']){
+  const choices=[...x.el(id).options].filter(o=>o.value.startsWith('scene:')).map(o=>[o.value,o.textContent]);
+  assert.deepEqual(choices,[['scene:abcd1234-a','Gruppe: Unbenannte Gruppe · abcd1234'],['scene:efab5678-b','Gruppe: Unbenannte Gruppe · efab5678'],['scene:named','Gruppe: Hafenwache']]);
+ }
+});

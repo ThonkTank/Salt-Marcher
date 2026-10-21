@@ -206,6 +206,14 @@ Lesen gilt deren Scene als aktueller Anker. Neue explizite Umhängungen setzen b
 Felder eindeutig. Ein Papierkorbort/archivierte Gruppe bleibt als offene
 Zuordnung auffindbar und wird nicht still auf unplaced umgeschrieben.
 
+Unbenannte laufende Gruppen tragen in Liste, Zuordnungsfilter und Zielauswahl
+„Unbenannte Gruppe“ mit kurzer Gruppenkennung. So bleibt die gültige leere
+Bezeichnung ohne erzwungene Umbenennung auswählbar und wieder auffindbar.
+`tools/test-desktop-treasure-anchors.mjs` prüft denselben teilweise verteilten
+Fund von der Gruppe zum Ort, nach Neustart in den Posteingang und zurück zur
+Gruppe, anschließend erneutes Öffnen und Suche nach der kurzen Kennung.
+Bestand, Zuweisungen und das persönliche Ledger werden dabei separat geprüft.
+
 ## Anschluss an die persönliche Beute
 
 Nach bestätigter Sammelverteilung zeigt der Dialog die tatsächlich gebuchten
