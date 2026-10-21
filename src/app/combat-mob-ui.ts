@@ -45,6 +45,11 @@ export function combatMobs(combat: CombatState): CombatMob[] {
         : members.filter((actor) => positions.get(actor.id)! < turn).length,
   }));
 }
+/** Legacy/catalog troops may clone their source; prepared world groups use their own picker. */
+export function canReinforceTroop(members:Combatant[]):boolean {
+ const actor=members[0];
+ return !!actor?.sourceId&&(!actor.worldActorId||actor.sourceOrdinal!==undefined)&&(members.length>1||actor.partitionKind==='mob');
+}
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const el = document.createElement(tag);
   if (text !== undefined) el.textContent = text;
@@ -61,6 +66,7 @@ export function combatMobRow(
     health: (id: string) => void;
     initiative: (id: string) => void;
     toggle: () => void;
+    reinforce?: (groupId:string) => void;
   },
 ): HTMLTableRowElement {
   const row = node("tr"),
@@ -92,6 +98,11 @@ export function combatMobRow(
     if (options.current()) options.toggle();
   };
   heading.append(title, toggle);
+  if(combat.phase==='running'&&options.reinforce&&canReinforceTroop(mob.members)){
+    const reinforce=node('button','Verstärken…');reinforce.type='button';reinforce.className='combat-mob-reinforce';
+    reinforce.setAttribute('aria-label',name+' · '+mob.front.name+' · Trupp verstärken');
+    reinforce.onclick=()=>{if(options.current())options.reinforce!(mob.id);};heading.append(reinforce);
+  }
   card.append(heading);
   // Expanded rows already expose every member's HP, initiative and conditions.
   if (!options.expanded) {

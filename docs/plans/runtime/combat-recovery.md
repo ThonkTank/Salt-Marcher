@@ -198,6 +198,11 @@ Vorschau führt keine eigene Identität oder persistierten Namen ein.
 
 ## Verstärkung bei kurzer Ansicht
 
+Laufende quellgebundene Mobkarten öffnen über „Verstärken…“ denselben Dialog
+mit ihrer gespeicherten Trupp-ID und Fokus auf der Anzahl. Ein bloßes Öffnen
+bucht nichts; eine veraltete Karte darf keinen neuen Dialog öffnen. Vorbereitete
+Weltgruppen behalten ihren eigenen Auswahlweg.
+
 Trupp/Katalogziel und Anzahl stehen nebeneinander; bei neuer Kreatur stehen
 Initiative und Bestätigung gemeinsam darunter. Die laufende Runde und der
 aktive Teilnehmer bleiben im Dialog sichtbar. Freie Einträge und vorbereitete

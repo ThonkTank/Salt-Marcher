@@ -18,7 +18,7 @@ buildSync({
   format: "cjs",
   external: ["better-sqlite3"],
 });
-const { CampaignStore, combatMobs, combatMobRow } = createRequire(
+const { CampaignStore, combatMobs, combatMobRow, canReinforceTroop } = createRequire(
   import.meta.url,
 )("../.build/combat-mob.cjs");
 function fixture(t) {
@@ -181,4 +181,16 @@ test("compact card exposes front HP and conditions, distinguishes the active act
     row.querySelector(".combat-mob-toggle").getAttribute("aria-expanded"),
     "false",
   );
+});
+
+
+test('direct reinforcement applies only to live source-backed troops and retains the card owner guard',t=>{
+ const x=fixture(t);x.execute({kind:'start'});const mob=combatMobs(x.combat)[0],{document}=parseHTML('<main></main>'),previous=globalThis.document;globalThis.document=document;
+ try{
+  let current=true;const calls=[],options={expanded:false,selected:null,current:()=>current,choose(){},health(){},initiative(){},toggle(){},reinforce:id=>calls.push(id)};
+  const row=combatMobRow(mob,x.combat,options);row.querySelector('.combat-mob-reinforce').onclick();assert.deepEqual(calls,[mob.id]);current=false;row.querySelector('.combat-mob-reinforce').onclick();assert.equal(calls.length,1);
+  assert.equal(canReinforceTroop(mob.members.map(m=>({...m,worldActorId:'prepared',sourceOrdinal:undefined}))),false);
+  assert.equal(combatMobRow({...mob,members:mob.members.map(m=>({...m,worldActorId:'prepared',sourceOrdinal:undefined}))},x.combat,options).querySelector('.combat-mob-reinforce'),null);
+  assert.equal(combatMobRow(mob,{...x.combat,phase:'finished'},options).querySelector('.combat-mob-reinforce'),null);
+ }finally{globalThis.document=previous;}
 });

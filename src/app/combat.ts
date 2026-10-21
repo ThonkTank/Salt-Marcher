@@ -1,7 +1,7 @@
 import {BookingDialog} from './booking-dialog';
 import {captureView} from './editor-transition';
 import {CombatSelectionPanel} from './combat-selection-ui';
-import {combatMobs,combatMobRow} from './combat-mob-ui';
+import {combatMobs,combatMobRow,canReinforceTroop} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
 import {CombatInitiativePanel} from './combat-initiative-ui';
 import {initiativeGroups} from './combat-initiative';
@@ -330,11 +330,13 @@ function catalogAdditionConfirmed(creatureId:string,count:number){
  get<HTMLInputElement>('combat-creature-count').value='1';get<HTMLInputElement>('combat-creature-grouped').checked=false;get<HTMLInputElement>('combat-creature-initiative').value='';
  renderReinforcements();lock();get<HTMLInputElement>('combat-creature-search').focus();
 }
-function openReinforcements(){
+function openReinforcements(groupId?:string){
  if(blocked()||!workspace||!scene)return;
  reinforcementBooking.reset();get('combat-add-status').textContent='';
- get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
- renderReinforcements();lock();
+ get<HTMLSelectElement>('combat-creature-source').value=groupId?'group':'catalog';reinforcementSourceChosen=true;
+ renderReinforcements();
+ if(groupId){const select=get<HTMLSelectElement>('combat-creature-select'),target='group:'+groupId;if(![...select.options].some(option=>option.value===target)){tell('Trupp nicht mehr verfügbar. Verstärkung erneut öffnen.',true);return;}select.value=target;get<HTMLInputElement>('combat-creature-count').value='1';}
+ lock();
  const dialog=get<HTMLDialogElement>('combat-add-dialog');
  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
  get<HTMLInputElement>(value('combat-creature-source')==='catalog'?'combat-creature-search':'combat-creature-count').focus();
@@ -343,10 +345,7 @@ function renderReinforcements(){
  const select=get<HTMLSelectElement>('combat-creature-select'),previous=select.value,combat=view?.combat;
  get('combat-preparation-initiative').hidden=combat?.phase!=='preparing';
  const source=get<HTMLSelectElement>('combat-creature-source');
- const groups=combat?initiativeGroups(combat).filter(members=>{
-  const actor=members[0]!;
-  return actor.sourceId&&(!actor.worldActorId||actor.sourceOrdinal!==undefined)&&(members.length>1||actor.partitionKind==='mob');
- }):[];
+ const groups=combat?initiativeGroups(combat).filter(canReinforceTroop):[];
  if(!reinforcementSourceChosen||!source.value||source.value==='group'&&!groups.length)source.value=groups.length?'group':'catalog';
  source.querySelector<HTMLOptionElement>('option[value="group"]')!.disabled=!groups.length;
  source.hidden=!groups.length;get('combat-reinforcement').querySelector<HTMLLabelElement>('label[for="combat-creature-source"]')!.hidden=!groups.length;
@@ -475,7 +474,7 @@ function render() {
   const groupSizes=new Map(combat?initiativeGroups(combat).map(members=>[members[0]!.groupId,members.length]):[]);
   for (const [index,p] of order.entries()) {
     const mob=mobByMember.get(p.id);
-    if(mob&&!drawn.has(mob.id)){drawn.add(mob.id);body.append(combatMobRow(mob,combat!,{expanded:expandedMobs.has(mob.id),selected,current,choose:id=>{void chooseFighter(id);},health:openHealth,initiative:id=>{void initiativePanel?.open(id);},toggle:()=>{if(expandedMobs.has(mob.id))expandedMobs.delete(mob.id);else expandedMobs.add(mob.id);render();[...get('combat-rows').querySelectorAll<HTMLElement>('[data-mob-id]')].find(row=>row.dataset.mobId===mob.id)?.querySelector<HTMLButtonElement>('.combat-mob-toggle')?.focus({preventScroll:true});}}));}
+    if(mob&&!drawn.has(mob.id)){drawn.add(mob.id);body.append(combatMobRow(mob,combat!,{expanded:expandedMobs.has(mob.id),selected,current,choose:id=>{void chooseFighter(id);},health:openHealth,reinforce:openReinforcements,initiative:id=>{void initiativePanel?.open(id);},toggle:()=>{if(expandedMobs.has(mob.id))expandedMobs.delete(mob.id);else expandedMobs.add(mob.id);render();[...get('combat-rows').querySelectorAll<HTMLElement>('[data-mob-id]')].find(row=>row.dataset.mobId===mob.id)?.querySelector<HTMLButtonElement>('.combat-mob-toggle')?.focus({preventScroll:true});}}));}
 
     if(mob&&!expandedMobs.has(mob.id))continue;
     const tr = document.createElement('tr'); tr.dataset.participantId = p.id;if(mob)tr.dataset.mobMember=mob.id;if(turnIndex>=0&&index<turnIndex)tr.classList.add('completed-turn');
@@ -590,7 +589,7 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
   get('combat-preparation-initiative').onclick=()=>{if(blocked()||reinforcementBusy||view?.combat?.phase!=='preparing')return;closeReinforcements();void initiativePanel?.open();};
-  get('combat-add-open').onclick=openReinforcements;get('combat-add-close').onclick=()=>{if(!pending)closeReinforcements();};
+  get('combat-add-open').onclick=()=>openReinforcements();get('combat-add-close').onclick=()=>{if(!pending)closeReinforcements();};
   get('combat-add-dialog').addEventListener('cancel',event=>{event.preventDefault();if(!pending)closeReinforcements();});
   get('combat-creature-source').onchange=()=>{reinforcementSourceChosen=true;get<HTMLInputElement>('combat-creature-initiative').value='';renderReinforcements();lock();};
   get('combat-creature-search-form').onsubmit=event=>{event.preventDefault();void searchReinforcements();};

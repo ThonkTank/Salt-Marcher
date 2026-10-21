@@ -503,3 +503,14 @@ test('a late preparation confirmation cannot reopen the picker after leaving its
  let release;window.campaign.executeCombat=command=>{x.writes.push(command);return new Promise(resolve=>release=()=>resolve({ok:true,value:x.store.executeCombat(command)}));};x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>typeof release==='function');x.ui.combatContext(null,null);release();await tick();await tick();
  assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.el('combat-initiative-dialog').hasAttribute('open'),false);assert.equal(x.el('combat-preparation-initiative').disabled,true);assert.doesNotMatch(x.el('combat-add-status').textContent,/Orc übernommen/);
 });
+
+
+test('a troop card opens its own reinforcement target without writes and stale cards cannot reopen it',async t=>{
+ const x=await uiFixture(t),prepared=x.execute({kind:'add-creature',creatureId:x.creature.id,count:3,grouped:true,initiative:9}),second=prepared.participants.at(-1).groupId;
+ await x.ui.openExistingCombat(x.combat.id);await until(()=>x.el('combat-rows').querySelectorAll('.combat-mob-reinforce').length===2);
+ const before=structuredClone(prepared),button=x.el('combat-rows').querySelector('[data-mob-id="'+second+'"] .combat-mob-reinforce');button.onclick();
+ assert.equal(x.el('combat-creature-source').value,'group');assert.equal(x.el('combat-creature-select').value,'group:'+second);assert.equal(x.el('combat-creature-count').value,'1');assert.equal(x.writes.length,0);
+ x.el('combat-creature-form').onsubmit({preventDefault(){}});await until(()=>x.writes.length===1&&!x.el('combat-add-dialog').hasAttribute('open'));
+ assert.equal(x.writes[0].action.groupId,second);const saved=x.store.combat(x.w.token,x.scene.id,x.combat.id).combat;assert.equal(saved.participants.at(-1).groupId,second);assert.deepEqual(saved.participants.slice(0,-1),before.participants);assert.equal(saved.turnId,before.turnId);assert.equal(saved.round,before.round);
+ button.onclick();assert.equal(x.el('combat-add-dialog').hasAttribute('open'),false);assert.equal(x.writes.length,1);
+});
