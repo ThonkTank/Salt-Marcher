@@ -150,12 +150,9 @@ Ogern, drei Zielen und zwei bestandenen Rettungswürfen bis zum Abschluss und
 Wiederöffnen bei 100/200 %. Das belegt keine menschliche Bedienabnahme oder
 einen vollständigen aktuellen Vergleichslauf in einem anderen Produkt.
 
-Eine fehlende Schreibbestätigung bleibt im geöffneten Schadensdialog sichtbar;
-die gewählten Eingaben bleiben dort erhalten. Solange der Schreibversuch läuft,
-bleibt Schließen gesperrt. Danach dürfen Schließen und Escape den modalen Dialog
-verlassen, auch wenn ein ungeklärter Command weitere Schreibaktionen sperrt.
-So bleibt der vorhandene Buchungsstatusknopf erreichbar. Schließen verwirft
-weder das Receipt-Ticket noch dessen Schreibschutz und wiederholt keinen Command.
+Schließen, Escape und Schreibschutz folgen dem gemeinsamen
+[modalen Buchungsvertrag](../../../ARCHITECTURE.md#modale-buchungen).
+Der Schadensdialog erhält bei fehlender Bestätigung seine Zielauswahl und Eingaben.
 Nach erfolgreicher Statusklärung werden die betroffenen Mobkarten aus dem neu
 lesbaren aktuellen Kampfstand geöffnet. Die Ziel-IDs bleiben dafür während des
 laufenden Aufrufs im Bestätigungskontext; nach Neustart besitzt das Ticket nur
@@ -165,8 +162,6 @@ Anzeigeentscheidung nicht. Historische Beleg-HP ersetzen niemals aktuelle HP.
 Die native Flächenschaden-Probe führt den vollständigen Ablauf auch mit verlorener
 Antwort bis zur Statusklärung, zum Abschluss und zum normalen Wiederöffnen aus.
 Fehlenden flüchtigen Zielkontext prüft zusätzlich die Controllerprobe.
-Die [Entwickleranschlüsse der Bestätigung](../../../ARCHITECTURE.md#buchungsantworten-klären)
-verbinden Dialog, gemeinsame Buchungssperre und gespeicherten Beleg.
 
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
 
@@ -216,11 +211,9 @@ belegen den begrenzten Gegnerablauf mit unveränderten HP/Zuständen/Zug,
 Neustart und Abschluss bei 100/200 %. Keine vollständige Party-, Reward-,
 Mehrplattform- oder menschliche Bedienabnahme.
 
-Eine fehlende Antwort auf Verstärkung bleibt im modalen Dialog sichtbar,
-zusammen mit den gewählten Eingaben. Während des Schreibversuchs sind Schließen
-und Escape gesperrt; danach geben beide den vorhandenen Buchungsstatusknopf frei.
-Die gemeinsame Buchungssperre bleibt bis zur Statusklärung aktiv. Die Klärung
-liest den vorhandenen Beleg und den aktuellen Kampf, ohne Gegner erneut anzulegen.
+Die Verstärkung nutzt den [modalen Buchungsvertrag](../../../ARCHITECTURE.md#modale-buchungen)
+und erhält Fehler und gewählte Eingaben im Dialog. Nach Belegklärung liest sie
+den aktuellen Kampf, ohne Gegner erneut anzulegen.
 Der Fehlerhinweis gilt auch für die erste Kataloganlage und freie Teilnehmer
 ohne Statblock; vorbereitete Gruppen verwenden
 ihren eigenen Auswahlweg. Die native Verstärkungsprobe wählt den Trupp ausdrücklich,

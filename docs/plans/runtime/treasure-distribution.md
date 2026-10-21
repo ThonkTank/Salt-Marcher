@@ -25,8 +25,8 @@ Schatz. XP, Käufe und Münzabbuchungen gehören zu anderen Commands.
 Alle drei Wege nutzen `window.campaign.executeProgress` und den vorhandenen
 Storewriter in `src/app/storage/progression.ts`. Die verschiedenen
 Auswahlbesitzer bleiben auch am gemeinsamen Writer erhalten. Für verlorene
-Antworten gilt der gemeinsame
-[Bestätigungsweg](../../../ARCHITECTURE.md#buchungsantworten-klären).
+Antworten und modale Schreibversuche gilt der gemeinsame
+[Bestätigungsweg](../../../ARCHITECTURE.md#modale-buchungen).
 
 ## Aktueller Daten- und Bedienweg
 
@@ -45,15 +45,11 @@ Neuladen von Liste, Schatz, Verlauf oder abhängigen Ansichten, wechselt die
 bereits gebuchte Verteilung zur schreibgeschützten Bestätigung. Der
 Kampagnenstatus nennt sowohl den gespeicherten
 Auftrag als auch den Anzeigefehler; eine zweite Erfolgsmeldung verdeckt ihn nicht.
-Ein abgelehnter oder ungeklärter Write hält die Eingaben weiterhin offen. Der
-Sender gibt dessen konkreten Fehler über den bestehenden Dialogaufruf zurück.
-Nur die zugehörige, noch geöffnete Dialoggeneration zeigt ihn bei den erhaltenen
-Mengen und scrollt ihn sichtbar. Bei ungeklärtem Receipt nennt er Schließen und
-den gemeinsamen Buchungsstatus; erneutes Bestätigen sendet keinen zweiten Auftrag.
+Der Sender gibt einen Schreibfehler an die noch zugehörige offene
+Dialoggeneration zurück; sie zeigt ihn bei den erhaltenen Mengen und scrollt ihn
+sichtbar. Schließen und Buchungssperre folgen dem gemeinsamen Bestätigungsweg.
 Nach Statusklärung wird der aktuelle Schatz gelesen. Ein Receipt bleibt der
 ursprünglichen Verteilung zugeordnet, auch nach persönlichen Korrekturen.
-
-
 
 Die Bestätigung trägt die tatsächlich angezeigte Action mit Mengen, Empfängern
 und ihren Basen. Veränderte Eingaben brauchen eine neue Prüfung. Ein alter

@@ -269,14 +269,30 @@ die Diagnose über drei bestehende Besitzer:
 | Gehört der gespeicherte Beleg zu diesem Auftrag? | [`CampaignStore.commitStatus`](src/app/storage/store.ts) prüft den Aktivierungskontext; [`storage/commit-receipt.ts`](src/app/storage/commit-receipt.ts) prüft Campaign, Fingerprint, Prüfsumme und Fachbezug. |
 
 `checkPendingCommit` meldet einen bestätigten Beleg über `onCommitResolved` an
-den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](src/app/combat.ts). Ein modaler Aufrufer
-muss laufenden Aufruf und ungeklärtes Ergebnis unterscheiden: `busy` im
-[`CombatAreaPanel`](src/app/combat-area-ui.ts) endet mit dem Aufruf, die gemeinsame
-Buchungssperre bleibt bis zur Klärung bestehen. Der [Flächenschaden-Vertrag](docs/plans/runtime/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung)
-erklärt Schließen/Escape und erhaltene Eingaben. Gezielte Prüfungen:
-[`desktop-combat-area`](tests/desktop-combat-area.test.mjs) für den Dialog,
-[`desktop-chase-switch`](tests/desktop-chase-switch.test.mjs) für die gemeinsame
-Bestätigung und Rückbindung nach verlorener Antwort.
+den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](src/app/combat.ts).
+
+#### Modale Buchungen
+
+[`BookingDialog`](src/app/booking-dialog.ts) verbindet Beuteverteilung und
+Kampfverstärkung mit der bestehenden `writeConfirmed`-/Receiptgrenze.
+[`CombatAreaPanel`](src/app/combat-area-ui.ts) führt seinen eigenen `busy`-Zustand.
+Für beide Anschlüsse gilt:
+
+- Ein laufender Aufruf sperrt Schließen und Escape; pro Öffnung läuft nur ein Write.
+- Endet der Aufruf ohne Bestätigung, bleiben Fehler und Eingaben im Dialog.
+  Schließen und Escape geben den gemeinsamen Statusknopf frei. Sie löschen weder
+  Belegreferenz noch Buchungssperre und wiederholen keinen Command. Solange das
+  Receipt ungeklärt ist, bleibt erneutes Buchen gesperrt.
+- Ein bestätigtes Receipt entscheidet die Buchung; nachfolgende Lesefehler sind
+  Anzeigefehler und kein Anlass, den Auftrag erneut zu senden.
+
+Neue Öffnung oder Ownerwechsel entwerten alte Antworten; deren Fehler und
+`finally` dürfen keine neuere Ansicht entsperren. Der Dialog besitzt keine zweite
+Buchungswahrheit. Fachpläne ergänzen nur Eingabe-/Zielbindung und die Anzeige
+nach der Klärung, etwa [Flächenschaden](docs/plans/runtime/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung).
+Gezielte Gegenproben: [Öffnung und Replyverlust](tests/desktop-editor-transition.test.mjs),
+[Schadensdialog](tests/desktop-combat-area.test.mjs),
+[gemeinsame Bestätigung](tests/desktop-chase-switch.test.mjs).
 
 ### Gemeinsame Editor- und Dialogübergänge
 
@@ -288,14 +304,8 @@ Rückblick/Übergabe verwenden diesen Weg; Identität, Revision und Reihenfolge
 bleiben Teil des Fachvertrags. Rohentwurfsspeicher und Konfliktentscheidung
 bleiben bei ihren bestehenden Besitzern.
 
-[`BookingDialog`](src/app/booking-dialog.ts) vereinheitlicht Beuteverteilung und
-Kampfverstärkung: ein laufender Aufruf pro Öffnung, lokale Fehlermeldung,
-Freigabe zum Schließen nach dem Aufruf und keine neue Buchung bei ungeklärtem
-Beleg. Eine neue Öffnung entwertet die alte Antwort. Der Dialog benutzt weiterhin
-die bestehende `writeConfirmed`-/Receiptgrenze; er speichert keine zweite
-Buchungswahrheit. [Gegenproben](tests/desktop-editor-transition.test.mjs) prüfen
-spätere Eingaben, neue Öffnungen und verlorene Antworten; die jeweiligen
-Store-/DOM- und nativen Abläufe prüfen die Fachwirkung.
+[Gegenproben](tests/desktop-editor-transition.test.mjs) prüfen spätere Eingaben
+und neue Öffnungen; für modale Writes gilt der [Buchungsvertrag](#modale-buchungen).
 
 ## Runtime und gemeinsame Weltfolgen
 
