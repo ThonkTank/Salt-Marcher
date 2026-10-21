@@ -78,3 +78,18 @@ test('hierarchy and halo preserve exact distances with many disjoint, overlappin
  }
  assert.deepEqual(polygons.slice(0,50),before);
 });
+
+test('small forest edges only normalize their clipped neighbourhood inside a large world raster',()=>{
+ const area={x:-500,y:-250,width:1000,height:500},width=1024,height=512,radius=2;
+ for(const polygon of [rect(20,30,4,7),rect(-502,-252,4,7),rect(498,248,4,7)]){
+  let steps=0;function* checkpoint(){steps++;yield;}
+  const g=coverFeatherSamplerSteps([polygon],area,width,height,radius,checkpoint);let next=g.next();while(!next.done)next=g.next();
+  assert(steps<=3,`small edge caused ${steps} whole-raster checkpoints`);
+  const sample=next.value;assert(sample);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+   const p={x:area.x+(x+.5)*area.width/width,y:area.y+(y+.5)*area.height/height};
+   const d=Math.min(...polygon.outer.map((a,i)=>segmentDistance(p,a,polygon.outer[(i+1)%4]))),t=Math.min(1,d/radius);
+   assert(Math.abs(sample(x,y)-t*t*(3-2*t))<1e-6);
+  }
+ }
+});
