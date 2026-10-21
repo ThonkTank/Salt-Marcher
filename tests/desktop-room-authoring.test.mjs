@@ -71,14 +71,12 @@ test('floor overview includes separate room extents and large sparse contours wi
 
 test('a new empty room contributes no invented GM heading to the live key',t=>{const x=setup(t),w=x.store.addRoom(x.workspace.token),r=w.rooms.find(r=>r.id===w.selectedId),{renderDungeonKey}=require('../.build/room-authoring-key-model.cjs');assert.equal(r.sections[0].markdown,'');const text=renderDungeonKey(r,[],x.store.dungeon(w.token),{audience:'gm',discovered:new Set()}).text;assert.doesNotMatch(text,/## Beschreibung/);});
 
-test('ordinary new rooms have a standard shell and undo removes the whole creation',t=>{
- const x=setup(t),w=x.store.addRoom(x.workspace.token),id=w.selectedId;
- const volume=x.store.drawing(w.token).volumes.find(v=>v.roomId===id);
- assert.ok(volume);assert.equal(volume.columns.length,12);
- assert.ok(volume.columns.every(c=>c.spans.every(s=>s.height===2&&s.floor&&s.ceiling)));
+test('ordinary new rooms retain free contours through undo, redo and fresh open without implicit voxels',t=>{
+ const x=setup(t),w=x.store.addRoom(x.workspace.token),id=w.selectedId,polygons=w.rooms.find(r=>r.id===id).polygons;
+ assert.equal(x.store.drawing(w.token).volumes.length,0);
  const undone=x.store.history(w.token,'undo');assert.equal(undone.rooms.length,0);assert.equal(x.store.drawing(w.token).volumes.length,0);
- x.store.history(w.token,'redo');assert.equal(x.store.workspace().rooms[0].id,id);assert.deepEqual({...x.store.drawing(w.token).volumes[0],revision:0},volume);
- const reopened=new CampaignStore(x.filename);try{const fresh=reopened.activate(x.campaign.id);assert.equal(fresh.rooms[0].id,id);assert.deepEqual({...reopened.drawing(fresh.token).volumes[0],revision:0},volume);}finally{reopened.close();}
+ x.store.history(w.token,'redo');assert.equal(x.store.workspace().rooms[0].id,id);assert.deepEqual(x.store.workspace().rooms[0].polygons,polygons);assert.equal(x.store.drawing(w.token).volumes.length,0);
+ const reopened=new CampaignStore(x.filename);try{const fresh=reopened.activate(x.campaign.id);assert.equal(fresh.rooms[0].id,id);assert.deepEqual(fresh.rooms[0].polygons,polygons);assert.equal(reopened.drawing(fresh.token).volumes.length,0);}finally{reopened.close();}
 });
 test('connecting existing contours previews complete rooms and a route without changing confirmed truth',t=>{
  const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),token=x.workspace.token;
