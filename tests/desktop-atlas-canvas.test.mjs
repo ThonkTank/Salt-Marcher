@@ -744,6 +744,41 @@ test('smooth wheel gestures preserve anchors, coalesce history and cancel on nav
  f.window.matchMedia=()=>({matches:true});f.canvas.zoom(.5);assert.equal(f.canvas.view.width,50,'reduced motion applies immediately');
 });
 
+for(const queuedOverlay of [false,true])test(`smooth zoom advances and paints in the same frame (queued overlay: ${queuedOverlay})`,async t=>{
+ const f=fixture(t);f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();
+ const painted=[],paint=f.canvas.paint.bind(f.canvas);
+ f.canvas.paint=()=>{paint();painted.push(f.canvas.view);};
+ if(queuedOverlay)f.canvas.redrawOverlay();
+ f.canvas.zoom(.5);const start=f.canvas.zoomUpdatedAt;
+ for(const elapsed of [16,32,64,120,200]){
+  painted.length=0;
+  for(const callback of f.frames.splice(0))callback(start+elapsed);
+  assert.equal(painted.length,1,'one camera paint per frame, including the first');
+  assert.deepEqual(painted[0],f.canvas.view,'the displayed camera must be the current frame, not its predecessor');
+  assert.equal(f.canvas.ready,true,'the displayed camera and author hits agree after the frame');
+ }
+ assert.equal(f.frames.length,0,'a completed zoom must not schedule another paint');
+});
+
+test('a camera replacement during a zoom frame survives and owns the next frame',async t=>{
+ const f=fixture(t);f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();let redirected=false;
+ f.canvas.options.changed=()=>{if(!redirected){redirected=true;f.canvas.set({x:0,y:0,width:100,height:50});f.canvas.zoom(.5);}};
+ f.canvas.zoom(.8);for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+200);
+ assert.equal(f.canvas.view.width,100);assert.equal(f.canvas.destination.width,50);assert.equal(f.frames.length,1);
+ for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+200);
+ assert.equal(f.canvas.view.width,50);assert.equal(f.canvas.ready,true);assert.equal(f.frames.length,0);
+});
+
+test('a failed animated camera paint retires the zoom without scheduling a busy loop',async t=>{
+ const f=fixture(t);f.canvas.options.smoothZoom=true;f.window.matchMedia=()=>({matches:false});
+ f.canvas.render(root=>root.append(rect('room')));await settle();f.flush();
+ f.canvas.zoom(.5);f.ctx.isContextLost=()=>true;
+ for(const callback of f.frames.splice(0))callback(f.canvas.zoomUpdatedAt+16);
+ assert.equal(f.root.dataset.canvasState,'unavailable');assert.equal(f.canvas.zoomTarget,null);assert.equal(f.frames.length,0);
+});
+
 test('camera overlay repaints the current metric view while new scene images are still loading',async t=>{
  const f=fixture(t),overlays=[];
  f.canvas.options.overlay=(_root,box,mpp)=>overlays.push({box,mpp})&&false;

@@ -5,6 +5,7 @@ import {terrainPixelReadbackPixels} from './terrain-pixel-readback-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
+import {installCameraFrameProbe} from './atlas-camera-frame-probe.mjs';
 import {buildHexGridProbe} from './terrain-hex-grid-probe.mjs';
 import {buildContourProbe,terrainContourPixels} from './terrain-contour-probe.mjs';
 import {buildDetailProbe,terrainDetailPixels} from './terrain-detail-probe.mjs';
@@ -15,6 +16,8 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 const root=process.cwd(),require=createRequire(root+'/package.json');
 const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/world-navigation');
+const cameraTrace=process.env.WORLD_CAMERA_TRACE;
+assert(!cameraTrace||['1','current'].includes(cameraTrace),'Unknown camera trace mode');
 const readbackMode=process.env.WORLD_READBACK??'legacy',profileEnabled=process.env.WORLD_PROFILE===undefined?readbackMode==='legacy':process.env.WORLD_PROFILE==='1';
 assert(['legacy','sync','async'].includes(readbackMode),'Unknown pixel readback mode');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {CampaignStore} from './src/app/storage/store';export {applyTerrainBrush} from './src/app/terrain-brush';export {heightRecord} from './src/app/terrain-height';export {emptyRecord,bounds} from './src/app/atlas-landscape';export {vegetationSpec} from './src/app/vegetation';"},outfile:'.build/world-navigation-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
@@ -98,7 +101,9 @@ try{
  },readbackMode==='legacy');
  if(responseProbe)await page.evaluate('(()=>{'+responseProbe+';TerrainResponseProbe.installTerrainResponseProbe('+JSON.stringify(readbackMode)+');})()');
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
+ if(cameraTrace)await page.evaluate(installCameraFrameProbe);
  async function measure(name,fn){
+  if(cameraTrace)await page.evaluate(()=>window.__cameraFrameProbe.reset());
   if(profileEnabled)await cdp.send('Profiler.start');
   // Bracket the CDP monotonic timestamp with renderer clock samples. This
   // allows CPU samples to be located relative to input, with explicit error.
@@ -112,6 +117,10 @@ try{
   const down=data.pointer.find(e=>e.type==='pointerdown'),up=data.pointer.find(e=>e.type==='pointerup');
   if(down){const confirmed=data.changes.filter(e=>baseRevision!==null&&Number(e.terrain)>baseRevision&&e.time>=down.time);data.brushFeedback={firstPixelMs:data.response?data.response.runs[0]?.firstCenter?.readyMs??null:data.pixels[0]?.delayMs??null,firstBrushPixelMs:data.response?.runs[0]?.firstBrush?.readyMs??null,firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
   const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,baseRevision,profileClock,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],p99Ms:gaps[Math.floor(gaps.length*.99)],maxMs:gaps.at(-1),...data});
+  if(cameraTrace){
+   const trace=await page.evaluate(()=>window.__cameraFrameProbe.snapshot());result.metrics.at(-1).cameraFrames=trace;
+   if(cameraTrace==='current'&&name==='navigation'){assert(trace.drawnFrames>0);assert.equal(trace.staleFrames,0,'navigation must draw the camera advanced in the same RAF');}
+  }
   await writeFile(out+'/progress.json',JSON.stringify(result,null,2));console.log(name,JSON.stringify({p95:gaps[Math.floor(gaps.length*.95)],max:gaps.at(-1),longTasks:data.longTasks.length}));
  }
  if(process.env.WORLD_LAYOUT_TRACE==='1')await cdp.send('Tracing.start',{categories:'devtools.timeline,disabled-by-default-devtools.timeline.stack',transferMode:'ReportEvents'});

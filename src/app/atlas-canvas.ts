@@ -37,7 +37,7 @@ export class AtlasCanvas {
   private future: CanvasBox[] = [];
   private views = new Map<string, SavedView>();
   private wheelAt = 0;
-  private zoomFrame = 0;
+  private zoomPrevious = 0;
   private zoomTarget: CanvasBox | null = null;
   private zoomGeneration = 0;
   private zoomAnchor = { x: 0, y: 0 };
@@ -358,15 +358,21 @@ export class AtlasCanvas {
     if (this.compiled && !this.failed && !this.lost)
       this.root.dataset.canvasState = "loading";
     this.root.dataset.atlasView = JSON.stringify(this.box);
-    if (!this.animation)
-      this.animation = requestAnimationFrame(() => {
-        this.animation = 0;
-        try {
-          this.paint();
-        } catch (e) {
-          this.fail(e);
-        }
-      });
+    this.requestFrame();
+  }
+  /** Camera animation and the complete map/overlay share one frame owner. Keep
+   * the request occupied while advancing: set/apply must not enqueue a second
+   * paint. During paint, overlays may request a subsequent animation frame. */
+  private requestFrame(){
+    if(this.animation)return;
+    this.animation=requestAnimationFrame(now=>{
+      try{
+        this.advanceZoom(now);
+        this.animation=0;
+        this.paint();
+        if(this.zoomTarget)this.requestFrame();
+      }catch(error){this.animation=0;this.fail(error);}
+    });
   }
   private unavailableImages=new Set<string>();
   private async image(source: string, maxEdge = 512) {
@@ -591,45 +597,37 @@ export class AtlasCanvas {
     const target = zoomBox(this.box, width, anchor);
     const smooth = this.options.smoothZoom && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (!smooth) { this.stopZoom(); this.set(target, true, "zoom", coalesce); return; }
-    const before = this.view;
+    const before = this.view, running = !!this.zoomTarget;
     this.zoomTarget = target;
     this.zoomAnchor = anchor;
     this.zoomUpdatedAt = performance.now();
-    if (!coalesce && !this.zoomFrame) {
+    if (!coalesce && !running) {
       this.box = target; this.remember(before); this.box = before;
     }
-    // One animation follows changing input. Restarting an easing curve for every
-    // touchpad event adds lag, and a frame timestamp before the input can reverse it.
-    if (this.zoomFrame) return;
-    const generation = ++this.zoomGeneration;
-    let previous = this.zoomUpdatedAt;
-    const tick = (now: number) => {
-      if (generation !== this.zoomGeneration || !this.zoomTarget) return;
-      if(this.options.locked?.()){this.stopZoom();return;}
-      this.zoomFrame = 0;
-      const elapsed = Math.max(0, now - previous);
-      previous = Math.max(previous, now);
-      const current = this.view, target = this.zoomTarget;
-      const done = now - this.zoomUpdatedAt >= 160 || Math.abs(Math.log(target.width / current.width)) < 1e-7;
-      const progress = done ? 1 : 1 - Math.exp(-elapsed / 40);
-      this.set(zoomBox(current, current.width * (target.width / current.width) ** progress, this.zoomAnchor), true, "zoom", true);
-      if (generation !== this.zoomGeneration) return;
-      if (!done) this.zoomFrame = requestAnimationFrame(tick);
-      else this.zoomTarget = null;
-    };
-    this.zoomFrame = requestAnimationFrame(tick);
+    if(!running){this.zoomPrevious=this.zoomUpdatedAt;this.zoomGeneration++;}
+    this.requestFrame();
+  }
+  private advanceZoom(now=performance.now()){
+    const target=this.zoomTarget;if(!target)return;
+    if(this.options.locked?.()){this.stopZoom();return;}
+    // RAF's shared timestamp can precede input handled earlier in this frame.
+    // Actual callback time preserves monotonic elapsed time without a dead tick.
+    now=Math.max(now,performance.now());
+    const generation=this.zoomGeneration,elapsed=Math.max(0,now-this.zoomPrevious);
+    this.zoomPrevious=Math.max(this.zoomPrevious,now);
+    const current=this.view;
+    const done=now-this.zoomUpdatedAt>=160 || Math.abs(Math.log(target.width/current.width))<1e-7;
+    const progress=done?1:1-Math.exp(-elapsed/40);
+    this.set(zoomBox(current,current.width*(target.width/current.width)**progress,this.zoomAnchor),true,"zoom",true);
+    // A changed callback may replace/cancel this animation or its destination.
+    if(done&&this.zoomGeneration===generation&&this.zoomTarget===target)this.zoomTarget=null;
   }
   stopZoom() {
     this.zoomGeneration++;
-    if (this.zoomFrame) cancelAnimationFrame(this.zoomFrame);
-    this.zoomFrame = 0; this.zoomTarget = null; this.wheelAt = 0;
+    this.zoomTarget = null; this.wheelAt = 0;
+    // The shared pending frame may also contain new geometry or an overlay.
   }
-  redrawOverlay() {
-    if (!this.animation) this.animation = requestAnimationFrame(() => {
-      this.animation = 0;
-      try { this.paint(); } catch (error) { this.fail(error); }
-    });
-  }
+  redrawOverlay() { this.requestFrame(); }
   reset() {
     this.cancel();
     this.set(this.initial, true, "reset");

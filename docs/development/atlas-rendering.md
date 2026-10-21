@@ -25,6 +25,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Navigation während des Pinselabschlusses](../reference/atlas-navigation-pending-20261021/README.md): nach Loslassen freie Kamera bei weiterhin geschütztem Schreibbesitzer. Ausdrückliches Verschieben benötigt keine geladenen Autorentreffer; Pose und Terrain-Verfeinerung besitzen getrennte Sperren. Verzögerte echte Commit-/Terrainantworten und der große Weltfall nativ geprüft.
 
+[Aktuelle Kamera im selben Animationsschritt](../reference/atlas-camera-frame-latency-20261021/README.md): `AtlasCanvas` berechnet Zoom und zeichnet Karte/Hilfsebene in einem gemeinsamen RAF-Auftrag. Im großen Weltfall sinken Zeichnungen mit vorheriger Kamera von 65 auf null; Bildratenziel und vollständige Weltqualifikation bleiben offen.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
