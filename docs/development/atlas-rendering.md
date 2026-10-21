@@ -31,7 +31,7 @@ Die GPU-Anbindung hat getrennte Zuständigkeiten:
 - `atlas-spatial-geometry.ts`: numerische Flächen/Pfade, Löcher und gestrichelte Linien; nur gespeicherte Symbolpfade werden als SVG-Literal gelesen.
 - `atlas-spatial-surface.ts`: Geländeanpassung und lokale, kameranahe Koordinaten.
 - `atlas-spatial-label.ts` und `atlas-spatial-color.ts`: Textressourcen und CSS-Farbtransparenz. `atlas-spatial-labels.ts` hält Kartenname-Texturen und ordnet die begrenzten Kandidaten aus `AtlasPaint.mapLabels` mit der aktuellen Kamera an. `MapLabelLayout` teilt Priorität und Kollisionsregeln mit der flachen Ausgabe.
-- `atlas-spatial-vegetation.ts`: instanzierter Bewuchs und gefilterte Auswahl mit Verdeckung durch Gelände.
+- `atlas-spatial-vegetation.ts`: instanzierter Bewuchs und gefilterte Auswahl mit Verdeckung durch Gelände. `vegetation-lod.ts` teilt verschachtelte Kandidaten und Skalenregeln zwischen Erzeugung, Darstellung und Fallback; `vegetation-display.ts` verwendet die aktuelle Kameratiefe für Kronenbreite, Ausblenden und Treffer. Kamerafahrten verändern keine Instanzmatrizen. [Native und GPU-Belege](../reference/atlas-vegetation-camera-20261021/README.md).
 - `atlas-spatial-scene.ts`: GPU-Ressourcen, Zeichenreihenfolge und ursprüngliche Auswahl-IDs.
 - `terrain-spatial-view.ts`: gemeinsame Kamera, Gelände, Trassen und Atlasobjekte; `terrain-spatial-ui.ts`: Kameraeinstellungen und gebündelte Terrainaufträge.
 

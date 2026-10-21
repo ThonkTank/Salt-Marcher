@@ -139,6 +139,8 @@ Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 [Namen an der tatsächlichen Hauptkamera anordnen](../../reference/atlas-camera-labels-20261021/README.md): Wiederverwendete Namenskandidaten, Texturen und Textmaße reagieren ohne Terrain-Neulesung auf Zoom, Neigung und Drehung. Logische Schriftgröße, projizierte Linienwinkel, Bildschirmkollisionen und Verdeckung am Geländeanker gelten auch für die gekachelte perspektivische Ausgabe. Manuelle Anker und öffentliche Freigabe bleiben erhalten. Native Zoom-/Regions-/Exportproben sind belegt; dichte Namensszenen überschreiten weiterhin das Navigationsziel, insbesondere durch Ausreißer und kalte Glyphenarbeit. P4 und die Leistungsabnahme bleiben offen.
 
+[Vegetation an der Hauptkamera](../../reference/atlas-vegetation-camera-20261021/README.md): Regionale Bestände sind verschachtelte Teilmengen stabiler lokaler Kandidaten. Kronenbreite und Ausblenden reagieren unmittelbar auf die Kameratiefe; Treffer verwenden dieselben Regeln, geschützte Objekte bleiben maßhaltig. 26 Regressionen, der native Bearbeitungs-/Undo-/Neustartablauf und GPU-/Exportpixel sind geprüft. Noch fehlende feinere Kandidaten, große dichte Bestände und die Geländeabdeckung bei starker Neigung bleiben offen.
+
 ### P5 — Unmittelbare Terrainbearbeitung auf allen Maßstäben
 
 Land formen, Glätten und Bemalen verändern während der Eingabe unmittelbar eine lokale Arbeitsfassung derselben Karte. Dafür gibt es keinen separaten Vorschaumodus und keinen Übernehmen-Knopf. Bestätigte Teilstücke werden weiterhin automatisch gespeichert.
