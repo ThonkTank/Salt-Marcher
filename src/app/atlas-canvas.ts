@@ -73,7 +73,8 @@ export class AtlasCanvas {
       initial: CanvasBox;
       minWidth?: number;
       maxWidth?: number | (() => number);
-      pan?: (event: PointerEvent) => boolean;
+      /** Explicit navigation does not depend on current author hits. */
+      pan?: (event: PointerEvent) => boolean | "explicit";
       prepareCamera?: () => void;
       /** Hosts with source/filter state rebuild the current confirmed frame on recovery. */
       redraw?: () => void;
@@ -148,7 +149,7 @@ export class AtlasCanvas {
         if (
           this.drag ||
           this.options.locked?.() ||
-          (!this.ready && e.button === 0 && !e.altKey) ||
+          (!this.ready && e.button === 0 && !e.altKey && this.options.pan?.(e) !== "explicit") ||
           !this.navigationRequested(e)
         )
           return;
@@ -322,7 +323,7 @@ export class AtlasCanvas {
   get destination() {
     return { ...(this.zoomTarget ?? this.box) };
   }
-  navigationRequested(e:PointerEvent){return this.options.pan?.(e)??e.button===1;}
+  navigationRequested(e:PointerEvent){return !!(this.options.pan?.(e)??e.button===1);}
   get panning() {
     return !!this.drag;
   }

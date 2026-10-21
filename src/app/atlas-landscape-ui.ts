@@ -211,7 +211,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointerdown",
       (e) => {
-        if (!this.active || e.button !== 0 || e.altKey || this.spacePan || this.saving || this.live) return;
+        if (!this.active || e.button !== 0 || e.altKey || this.spacePan || this.saving || this.live || this.host.navigation?.(e)) return;
         this.releaseClick = false;
         svg.focus({preventScroll:true});
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
@@ -584,6 +584,10 @@ export class LandscapeWorkbench {
     return this.points.length + this.brushStrokes.reduce((count, points) => count + points.length, 0);
   }
   get selectedLabel(){return this.selected?(this.selected.kind==='place'?'place:':'landscape:')+this.selected.id:undefined;}
+  /** A released direct stroke still owns writes and parameters, but no longer the camera. */
+  blocksNavigation(includeRoute=true) {
+    return this.live ? this.pointer !== null : this.hasDraft(includeRoute);
+  }
   hasDraft(includeRoute=true) {
     return (
       includeRoute&&(this.routeOpening||!!this.routeSession?.hasDraft()) || !!this.routeSession?.gesturing() ||

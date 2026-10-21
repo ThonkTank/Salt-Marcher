@@ -44,7 +44,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private retry:HTMLButtonElement;
   private tilt=0;private rotation=0;private exaggeration=1;
   constructor(private input:HTMLCanvasElement,private host:{
-    draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;writing:()=>boolean;cancel:()=>void;
+    draft:()=>TerrainDraft|null;live:()=>boolean;hasDraft:()=>boolean;navigationLocked?:()=>boolean;writing:()=>boolean;cancel:()=>void;
     tool:()=>string;workplane?:()=>AtlasWorkplane|null;objectPicking?:()=>boolean;navigation:(event:PointerEvent)=>boolean;panning:()=>boolean;redraw:()=>void;
     refresh?:()=>Promise<boolean|undefined>;recovered?:(message:string)=>void;route?:(kind:'road'|'river')=>Promise<void>;error:(error:unknown)=>void;selection:()=>Point|null;
   }){
@@ -55,10 +55,10 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.retry.onclick=()=>{if(this.host.hasDraft())return;this.failed=false;this.retry.hidden=true;if(this.active){this.detailSource='';this.scheduleLoad(this.pendingContours);}else this.setActive(true);};
     document.getElementById('atlas-view-popup')!.append(this.toggle,this.controls,this.retry);
     for(const [kind,label]of [['road','Straße planen'],['river','Fluss planen']] as const){const button=document.createElement('button');button.id='terrain-plan-'+kind;button.textContent=label;button.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}void this.host.route?.(kind).catch(this.host.error);};this.controls.append(button);}
-    this.toggle.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(this.tilt===0?45:0,this.rotation);};
-    this.controls.querySelector<HTMLButtonElement>('#terrain-top')!.onclick=()=>{if(this.host.hasDraft()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(0,0);};
+    this.toggle.onclick=()=>{if(this.navigationLocked()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(this.tilt===0?45:0,this.rotation);};
+    this.controls.querySelector<HTMLButtonElement>('#terrain-top')!.onclick=()=>{if(this.navigationLocked()){this.host.error(Error('Zuerst den Pinselzug abschließen oder verwerfen.'));return;}this.setPose(0,0);};
     for(const id of ['tilt','rotation','exaggeration'] as const)this.controls.querySelector<HTMLInputElement>('#terrain-'+id)!.oninput=e=>{
-      const field=e.target as HTMLInputElement;if(this.host.hasDraft()){field.value=String(this[id]);return;}this[id]=Number(field.value);if(id==='exaggeration'){this.requested='';this.host.redraw();}else this.setPose(this.tilt,this.rotation);
+      const field=e.target as HTMLInputElement;if(id==='exaggeration'?this.host.hasDraft():this.navigationLocked()){field.value=String(this[id]);return;}this[id]=Number(field.value);if(id==='exaggeration'){this.requested='';this.host.redraw();}else this.setPose(this.tilt,this.rotation);
     };
     const parent=input.parentElement!;
     // Parent capture runs before the existing 2D canvas/author handlers; the latter still own brush gestures.
@@ -79,6 +79,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     input.addEventListener('pointerleave',()=>this.view?.showCursor(null,0));
     new ResizeObserver(()=>{this.placeCanvas();this.view?.render();}).observe(input);
   }
+  private navigationLocked(){return this.host.navigationLocked?.()??this.host.hasDraft();}
   refreshBrushCursor(x:number,y:number){
     if(!this.active||!this.ready)return;
     const hit=this.view?.hit(x,y);if(!hit)return;this.lastPoint=hit;
@@ -100,7 +101,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   overlay(scene:AtlasCanvasScene,origin:Point){this.view?.overlay(scene,origin);}
   hitAt(e:{clientX:number;clientY:number},keys:string[]){return this.view?.hitAt(e.clientX,e.clientY,keys)??null;}
   setPose(tilt:number,rotation=this.rotation){
-    if(this.host.hasDraft())return;
+    if(this.navigationLocked())return;
     this.tilt=tilt;this.rotation=rotation;
     (this.controls.querySelector('#terrain-tilt') as HTMLInputElement).value=String(tilt);
     (this.controls.querySelector('#terrain-rotation') as HTMLInputElement).value=String(rotation);

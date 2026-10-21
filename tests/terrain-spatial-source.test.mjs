@@ -39,6 +39,18 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  const resolveColor=i=>{const q=colors[i].query;colors[i].resolve({ok:true,value:{...q,fence:q.fence??'source',pixels:new Uint8Array(q.width*q.height*4).fill(255)}});};
  return {ui,input,reads,colors,tiles,jobs,published,errors,sync,load,resolveRead,resolveColor};
 }
+test('camera pose can move while author writes remain fenced, without enabling terrain reads',async t=>{
+ const f=fixture(t),fields={};f.sync();const loading=f.load();f.resolveRead();await loading;const reads=f.reads.length;
+ f.ui.controls={querySelector:id=>fields[id]??={value:''}};f.ui.toggle={setAttribute(){}};
+ f.ui.host.hasDraft=()=>true;f.ui.host.live=()=>true;f.ui.host.writing=()=>true;
+ f.ui.setPose(30,20);assert.equal(f.ui.tilt,45,'legacy hosts keep the draft lock');
+ f.ui.host.navigationLocked=()=>false;
+ f.ui.setPose(30,20);assert.equal(f.ui.tilt,30);assert.equal(f.ui.rotation,20);
+ assert.equal(f.ui.params.tilt,30);assert.equal(f.ui.params.rotation,20);
+ assert.equal(f.ui.needsLoad(),false);assert.equal(f.ui.host.hasDraft(),true);
+ f.ui.host.navigationLocked=()=>true;f.ui.setPose(60,50);assert.equal(f.ui.tilt,30);
+ assert.equal(f.reads.length,reads);
+});
 test('pending bounded projection survives small camera gestures; the result uses the latest pose',async t=>{
  const f=fixture(t);f.sync();const key=f.ui.requested,loading=f.load();
  f.sync(zoom(.9));assert.equal(f.ui.requested,key);assert.equal(f.reads.length,1);
