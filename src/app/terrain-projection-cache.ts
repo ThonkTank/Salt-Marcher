@@ -1,9 +1,11 @@
+import type {TerrainHeightSource} from './terrain-height-lattice';
 import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
 import {streamTerrainField,streamTerrainFieldRows,streamTerrainFieldBlock,type TerrainField,type TerrainLattice,type TerrainStream} from './terrain-field-stream';
 import type {LandscapeBox} from './atlas-landscape';
 import {terrainDirtyRects} from './terrain-dirty-rects';
 type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;ground?:Float32Array;levels?:Float32Array;dirty:Uint8Array};
-type Tile=Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
+type HeightBlock=Omit<TerrainHeightSource,'read'>&{values:Float32Array};
+type Tile={kind:'height';block:HeightBlock}|Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
 /** 16 MiB of the consumer's 64 MiB derived-cache budget.
  * Other shares: landscape PNGs 8, response bases 8, Main's replies 16 canonical surface blocks 8 and scale pyramid 8 (64 MiB total).
  * Active frames, GPU allocations and temporary sampling fields are working memory, measured separately.
@@ -27,6 +29,12 @@ export class TerrainProjectionCache {
     const box={x:lattice.x-lattice.dx/2,y:lattice.y+(band?.first??0)*lattice.dy-lattice.dy/2,width:lattice.columns*lattice.dx,height:(band?.count??lattice.rows)*lattice.dy};
     this.tiles.put(key,box,{kind:'field',field},key.length*2+field.heights.byteLength+field.water.byteLength+(field.surface?.byteLength??0)+(field.levels?.byteLength??0));
     return field;
+  }
+  heightBlock(id:string){const hit=this.tiles.get('height:'+id);return hit?.kind==='height'?hit.block:undefined;}
+  rememberHeightBlock(id:string,box:LandscapeBox,block:HeightBlock){
+    const key='height:'+id;
+    // Decoded numerical samples only: no author JSON/base64 or mutable record.
+    this.tiles.put(key,box,{kind:'height',block},key.length*2+block.values.byteLength+512);
   }
   private *blocks(lattice:TerrainLattice){
     // The visibility lattice includes a large camera margin. A 32-node block

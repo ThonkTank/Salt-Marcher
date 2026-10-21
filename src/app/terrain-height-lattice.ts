@@ -1,7 +1,14 @@
 import {heightRow,interpolateHeight} from './terrain-interpolation';
-import {decodeHeights,type HeightTile} from './terrain-height';
+import {decodeHeights} from './terrain-height';
 import type {LandscapeRecord} from './atlas-landscape';
 
+/** Readonly numerical source. Decoding stays lazy until a sampled node touches it. */
+export interface TerrainHeightSource {version:1|2;x:number;y:number;pixel:number;read:()=>Float32Array}
+export function* terrainHeightSources(records:Iterable<LandscapeRecord>):Generator<TerrainHeightSource>{
+ for(const record of records){const tile=record.height;if(!tile)throw Error('Höhenkachel fehlt.');
+  yield {version:tile.version,x:tile.x,y:tile.y,pixel:tile.pixel,read:()=>decodeHeights(tile)};
+ }
+}
 interface Axis {nodes:Float64Array;starts:Uint32Array;fractions:Float64Array}
 /** Each source node appears once even when many output pixels share a cell.
  * Coordinates remain Float64: author cells can lie beyond signed 32-bit range. */
@@ -27,11 +34,11 @@ class HeightLevel {
  private absolute?:Float32Array;
  private additive?:Float32Array;
  constructor(readonly pixel:number,x:Float64Array,y:Float64Array){this.x=sourceAxis(x,pixel);this.y=sourceAxis(y,pixel);}
- read(tile:HeightTile){
+ read(tile:TerrainHeightSource){
   const x=this.x.nodes,y=this.y.nodes,tx=tile.x/this.pixel,ty=tile.y/this.pixel;
   const left=lowerBound(x,tx),right=lowerBound(x,tx+64),top=lowerBound(y,ty),bottom=lowerBound(y,ty+64);
   if(left===right||top===bottom)return;
-  const values=decodeHeights(tile),target=tile.version===2?(this.additive??=new Float32Array(x.length*y.length).fill(NaN)):(this.absolute??=new Float32Array(x.length*y.length).fill(NaN));
+  const values=tile.read(),target=tile.version===2?(this.additive??=new Float32Array(x.length*y.length).fill(NaN)):(this.absolute??=new Float32Array(x.length*y.length).fill(NaN));
   for(let row=top;row<bottom;row++){
    const source=(y[row]!-ty)*64,targetRow=row*x.length;
    for(let col=left;col<right;col++){
@@ -75,10 +82,9 @@ class HeightLevel {
  }
 }
 /** Input tiles are unique and coarse-to-fine, as required by the readonly reader. */
-export function accumulateHeightLattice(x:Float64Array,y:Float64Array,records:Iterable<LandscapeRecord>,ground:Float64Array,additions:Float64Array){
+export function accumulateHeightSources(x:Float64Array,y:Float64Array,tiles:Iterable<TerrainHeightSource>,ground:Float64Array,additions:Float64Array){
  let level:HeightLevel|undefined;
- for(const record of records){
-  const tile=record.height;if(!tile)throw Error('Höhenkachel fehlt.');
+ for(const tile of tiles){
   if(level&&tile.pixel>level.pixel)throw Error('Höhenkacheln müssen von grob nach fein gelesen werden.');
   if(!level||tile.pixel!==level.pixel){level?.apply(ground,additions);level=new HeightLevel(tile.pixel,x,y);}
   level.read(tile);
