@@ -75,8 +75,19 @@ Kämpfe noch Rohentwürfe.
 Leseaufträge behalten ihre eigene laufende Nummer und den Szenen-/Kampagnenbezug.
 Während eines Wechsels sperrt die Oberfläche alte Schreibaktionen; nur die
 aktuelle Antwort darf Auswahl und Editor übernehmen. Ein Lesefehler erhält das
-angeforderte Ziel für einen ausdrücklichen Retry. Entwürfe bleiben ihrem Kampf
-zugeordnet, auch beim Besuch eines abgeschlossenen Kampfes.
+angeforderte Ziel für einen ausdrücklichen Retry. Die Fehlermeldung nennt den
+bekannten Kampftitel und bietet direkt **Erneut laden** an; dafür muss das Menü
+**Andere Kämpfe / aktualisieren** nicht geöffnet werden. Beide Ladebuttons
+verwenden denselben angeforderten Zielbezug und dieselbe Antwortprüfung.
+Entwürfe bleiben ihrem Kampf zugeordnet, auch beim Besuch eines abgeschlossenen
+Kampfes.
+
+`tools/test-desktop-combat-switch.mjs` prüft den direkten Retry bei 100/200 Prozent
+Browserzoom, den erhaltenen unvollständigen Notizentwurf nach Kampfwechsel und
+Neustart sowie seine Korrektur, Speicherung und erneute Wiederöffnung. Die
+Controllerprüfungen in `desktop-combat-switch.test.mjs` ergänzen verspätete
+Antworten und Schreibsperren. Native Automatisierung ersetzt keine menschliche
+Bedienabnahme.
 
 ## Spontane Katalogübernahme ohne Teilkampf
 
