@@ -9,6 +9,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Direkte Höhenarbeitsfassung und große native Welt](../reference/atlas-direct-draft-20261021/README.md): begrenztes geladenes Raster, GPU-Küsten und Rückkehr zur bestätigten Revision. 108.076 Landschaftsobjekte funktional geprüft; unmittelbare Reaktion und vollständige Detailverfeinerung bleiben offen.
 
+[Grundflächen nach Farbsamples filtern](../reference/atlas-base-samples-20261021/README.md): Bildgleichheit und begrenzte Nutzdaten für die Weltübersicht; getrennte Phasenmessung und weiterhin fehlgeschlagene vollständige Detailverfeinerung.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |

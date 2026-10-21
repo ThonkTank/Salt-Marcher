@@ -18,10 +18,13 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
  const pixels=new Uint8Array(pixelWidth*pixelHeight*4),edge=batchEdge;
  const pixelBox=(x:number,y:number,width:number,height:number)=>({x:area.x+x*area.width/pixelWidth,y:area.y+y*area.height/pixelHeight,width:width*area.width/pixelWidth,height:height*area.height/pixelHeight});
  function* draw(box:LandscapeBox,width:number,height:number):Generator<void,Uint8Array>{
-   const image=new LandscapeRasterizer(box,width,height,contours,displayMpp);image.paint(settings);
+   const image=new LandscapeRasterizer(box,width,height,contours,displayMpp),samples=image.sampleLattice();image.paint(settings);
    const fieldEnd=terrainTraceStart('projection.field',revision);
-   try{image.setTerrainField(yield* streamTerrainFieldSteps(image.sampleLattice(),sea,stream,false,checkpoint));}finally{fieldEnd();}
-   for(const r of stream('base',image.sampleBox))image.paint(r);
+   try{image.setTerrainField(yield* streamTerrainFieldSteps(samples,sea,stream,false,checkpoint));}finally{fieldEnd();}
+   // Base polygons/masks affect only sample centres, including the lighting halo.
+   // Filter their bounds before decoding payloads. Feathered cover/pigment has
+   // wider support and must keep its own conservative selection below.
+   terrainTraceMeasure('projection.base',()=>{for(const r of stream('base',image.sampleBox,samples))image.paint(r);},revision);
    for(const r of stream('cover',image.sampleBox))yield* image.paintCoverSteps(r,checkpoint);
    // The colour stream releases its SQL statements before each owned record.
    for(const r of stream('color',image.sampleBox))yield* image.paintColorSteps(r,checkpoint);
