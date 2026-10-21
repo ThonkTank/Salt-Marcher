@@ -1,7 +1,10 @@
 import type {LandscapeBox} from './atlas-landscape';
 import type {Point} from './contracts';
 /** A bounded display refinement, never author data or a replacement visibility grid. */
-export interface TerrainDetail {box:LandscapeBox;width:number;height:number;pixels:Uint8Array}
+export interface TerrainDetail {
+ /** Renderer-only availability mask; full projections omit it. */
+ coverage?:{columns:number;rows:number;values:Uint8Array};
+ box:LandscapeBox;width:number;height:number;pixels:Uint8Array}
 /** Legacy brush patches stay square; viewport refinements preserve their aspect. */
 export function terrainDetailDimensions(box:LandscapeBox,resolution?:number){
   if(resolution===undefined)return {width:256,height:256};

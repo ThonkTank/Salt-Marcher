@@ -39,12 +39,17 @@ export class TerrainDetailTiles {
    read:(q:TerrainColorRequest)=>Promise<TerrainColorTile>,current:()=>boolean,
    publish:(detail:TerrainDetail,rect:TerrainRect|undefined,done:number,total:number)=>void,previous?:TerrainDetail){
   if(identity!==this.identity){this.clear();this.identity=identity;previous=undefined;}
-  const plan=terrainDetailTiles(area),detail:TerrainDetail={box:plan.box,width:plan.width,height:plan.height,pixels:new Uint8Array(plan.width*plan.height*4)};
+  const plan=terrainDetailTiles(area),detail:TerrainDetail={box:plan.box,width:plan.width,height:plan.height,pixels:new Uint8Array(plan.width*plan.height*4),coverage:{columns:plan.width/TILE_PIXELS,rows:plan.height/TILE_PIXELS,values:new Uint8Array(plan.tiles.length)}};
   if(previous)retainPrevious(detail,previous);
+  const mark=(tile:TerrainRect)=>{detail.coverage!.values[tile.y/TILE_PIXELS*detail.coverage!.columns+tile.x/TILE_PIXELS]=255;};
   const pending=[];let done=0;
   for(const tile of plan.tiles){
    const key=JSON.stringify([tile.box,query.contours,plan.mpp]),pixels=this.cache.get(key);
-   if(pixels){copy(detail,tile,pixels);done++;}else pending.push({tile,key});
+   if(pixels){copy(detail,tile,pixels);mark(tile);done++;}else {
+    pending.push({tile,key});
+    // Fully covered old world detail remains visible under the sharper level.
+    if(previous){let complete=true;for(let y=0;y<tile.height&&complete;y++)for(let x=0;x<tile.width;x++)if(detail.pixels[((tile.y+y)*detail.width+tile.x+x)*4+3]!==255){complete=false;break;}if(complete)mark(tile);}
+   }
   }
   if(!current())return false;
   if(done)publish(detail,undefined,done,plan.tiles.length);
@@ -55,7 +60,7 @@ export class TerrainDetailTiles {
    if(!current()||identity!==this.identity)return false;
    if(value.revision!==query.revision||query.fence!==undefined&&value.fence!==query.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
    if(JSON.stringify(value.box)!==JSON.stringify(tile.box)||value.width!==tile.width||value.height!==tile.height||value.pixels.length!==tile.width*tile.height*4)throw Error('Geländefarbe passt nicht zum angeforderten Ausschnitt.');
-   this.cache.put(key,tile.box,value.pixels,value.pixels.byteLength);copy(detail,tile,value.pixels);done++;
+   this.cache.put(key,tile.box,value.pixels,value.pixels.byteLength);copy(detail,tile,value.pixels);mark(tile);done++;
    // The first upload initializes the full transparent image; later uploads are local.
    publish(detail,first?undefined:tile,done,plan.tiles.length);first=false;
   }

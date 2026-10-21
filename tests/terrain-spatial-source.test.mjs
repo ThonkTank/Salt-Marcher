@@ -145,3 +145,12 @@ test('individual colour tiles appear before full detail and late gesture replies
  assert.equal(f.colors.length,2);f.ui.gesture(true);f.ui.gesture(false);f.resolveColor(1);await loading;
  assert.equal(f.tiles.length,1);assert.equal(f.reads.length,1);assert.equal(f.ui.needsLoad(),true);
 });
+
+
+test('a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress',async t=>{
+ const f=fixture(t,{manualColor:true});f.sync();const loading=f.load();f.resolveRead();await new Promise(setImmediate);
+ f.resolveColor(0);await new Promise(setImmediate);f.colors[1].resolve({ok:false,error:'Colour tile unavailable'});await loading;
+ assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainQuality,'refining');assert.equal(f.tiles.length,1);assert.equal(f.ui.retry.hidden,false);assert.equal(f.ui.needsLoad(),false);
+ f.ui.detailSource='';const retry=f.load();await new Promise(setImmediate);assert.equal(f.colors.length,3);assert.deepEqual(f.colors[2].query.box,f.colors[1].query.box,'retry requests the failed tile, not the completed first tile');
+ f.ui.gesture(true);f.resolveColor(2);await retry;assert.equal(f.errors.length,1);
+});
