@@ -226,6 +226,17 @@ test("canonical visibility agrees with first GPU triangle along perspective rays
         }
     }
 });
+test('deferred navigation prepares current camera rays without submitting a partial GPU frame',()=>{
+ const v=pose(),view=viewFor(v),draws=[];
+ view.renderer.render=()=>draws.push({...view.grid.view.frame});
+ const frame={...v.frame,x:v.frame.x+70,y:v.frame.y-25,width:200,height:160};
+ view.reframe(frame,45,25,false);
+ assert.equal(draws.length,0);
+ const hit=view.hit(517,423);assert(hit);close(hit.x,frame.x+100);close(hit.y,frame.y+80);
+ const plane=view.planePoint(517,423);assert(plane);close(plane.x,frame.x+100);close(plane.y,frame.y+80);
+ view.batch(()=>{view.render();view.render();});
+ assert.deepEqual(draws,[frame],'map and overlay share one completed draw');
+});
 test('one publication draws the latest surface, camera, contours and selection once',()=>{
  const v=pose(),view=viewFor(v),draws=[];
  view.renderer.render=()=>draws.push({frame:{...view.grid.view.frame},interval:view.contours.terrainContourInterval.value,selection:!!view.selection});

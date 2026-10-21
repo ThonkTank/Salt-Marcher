@@ -189,12 +189,14 @@ export class TerrainSpatialView {
     this.contours.terrainContourInterval.value=interval;this.render();
   }
   /** Retain GPU geometry and textures while the camera moves or details load. */
-  reframe(frame:LandscapeBox,tilt:number,rotation:number){
+  reframe(frame:LandscapeBox,tilt:number,rotation:number,draw=true){
     const old=this.grid?.view;
     if(old&&old.frame.x===frame.x&&old.frame.y===frame.y&&old.frame.width===frame.width&&old.frame.height===frame.height&&old.tilt===tilt&&old.rotation===rotation)return;
     for(const grid of new Set([this.grid,this.base]))if(grid)grid.view={...grid.view,frame:{...frame},tilt,rotation,projection:'perspective'};
     this.cursor.refresh(this.grid,this.origin);this.selection.refresh(this.grid,this.origin);
-    this.render();
+    // Navigation needs current rays immediately; AtlasCanvas owns the next
+    // complete map/overlay frame and revokes author hits until it is painted.
+    if(draw)this.render();else this.updateCamera();
   }
   planePoint(clientX:number,clientY:number,plane?:AtlasWorkplane|null){
     if(!this.grid)return null;const r=this.canvas.getBoundingClientRect();
@@ -215,14 +217,9 @@ export class TerrainSpatialView {
   renderTile(width:number,height:number,x:number,y:number,w:number,h:number){
     this.outputTile={width,height,x,y,w,h};try{this.render();}finally{this.outputTile=null;this.camera.clearViewOffset();}
   }
-  render(){
-    if(this.drawBatch?.depth&&!this.outputTile){this.drawBatch.pending=true;return;}
+  private updateCamera(){
     if(!this.grid)return;const v=this.grid.view,horizon=terrainHorizon(v);
     const fog=(this.scene.fog??=new THREE.Fog(TERRAIN_SKY_COLOR,1e29,1e30)) as THREE.Fog;fog.near=horizon.near;fog.far=horizon.far;
-    const w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
-    this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
-    this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
-    this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
     this.camera.aspect=v.frame.width/v.frame.height;
     const eye=atlasCameraEye(v),target=new THREE.Vector3(v.frame.x+v.frame.width/2-this.origin.x,this.origin.y-v.frame.y-v.frame.height/2,0);
     const distance=Math.hypot(eye.x,eye.y,eye.z),extent=Math.max(v.box.width,v.box.height,this.heightRange*v.exaggeration);
@@ -231,7 +228,16 @@ export class TerrainSpatialView {
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
     this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
-    this.routeVisibility.update(this.routes,this.camera,this.outputTile?.height??h);
+    this.routeVisibility.update(this.routes,this.camera,this.outputTile?.height??Math.max(1,this.canvas.clientHeight));
+  }
+  render(){
+    if(this.drawBatch?.depth&&!this.outputTile){this.drawBatch.pending=true;return;}
+    if(!this.grid)return;const v=this.grid.view,horizon=terrainHorizon(v);
+    const w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
+    this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
+    this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
+    this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
+    this.updateCamera();
     const direction=new THREE.Vector3();
     const cameraMatrix=this.camera.matrixWorldInverse.elements;
     this.labels.update(this.camera,this.outputTile?.width??w,this.outputTile?.height??h,anchor=>{

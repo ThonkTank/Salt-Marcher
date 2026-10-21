@@ -37,7 +37,17 @@ export function buildRenderReuseProbe(){
      actual.setData(structuredClone(current));reference.setData(current);
      const p={x:origin+150,y:origin-100};actual.showCursor(p,220);legacy(p,220,current.grid);compare(name);
     }
-    return {programs,ink,comparisons};
+    actual.showCursor(null,0);legacy(null,0,current.grid);
+    const cameraFrames=[],render=actual.renderer.render.bind(actual.renderer);let draws=0;
+    actual.renderer.render=(...args)=>{draws++;return render(...args);};
+    for(let i=0;i<12;i++){
+     const frame={...current.grid.view.frame,x:-900+i*25,y:-950+i*15,width:1600+i*30,height:1600+i*30},tilt=(i%4)*20,rotation=i*17;
+     const before=draws;actual.reframe(frame,tilt,rotation,false);const deferred=draws-before;
+     actual.batch(()=>{actual.render();actual.render();});
+     reference.reframe(frame,tilt,rotation);reference.render();
+     compare('camera-frame-'+i);cameraFrames.push({deferred,draws:draws-before});
+    }
+    return {programs,ink,comparisons,cameraFrames};
    }finally{if(ring){reference.scene.remove(ring);ring.geometry.dispose();ring.material.dispose();}actual.dispose();reference.dispose();}
   }
  `},bundle:true,format:'iife',globalName:'RenderReuseProbe',write:false}).outputFiles[0].text;
@@ -49,5 +59,6 @@ export async function terrainRenderReusePixels(page,script){
  assert.equal(result.programs.actual.create,1,'cursor moves and hide/show keep one GPU program');
  assert.equal(result.programs.actual.remove,0,'cursor program stays alive until view disposal');
  assert(result.programs.legacy.create>=25,'reference reproduces the former program churn');
+ assert.equal(result.cameraFrames.length,12);assert(result.cameraFrames.every(f=>f.deferred===0&&f.draws===1),'camera matrices update immediately; the completed map/overlay frame draws exactly once');
  return result;
 }

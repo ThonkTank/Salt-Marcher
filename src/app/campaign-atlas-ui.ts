@@ -243,7 +243,8 @@ export class CampaignAtlasWorkbench {
         !!this.partyDrag ||
         this.brushId !== null,
       changed: () => {
-        this.spatial?.reframe(this.camera.view);
+        // Keep navigation rays current; AtlasCanvas paints map and overlay together.
+        this.spatial?.reframe(this.camera.view,false);
         this.remember();this.svg.dataset.atlasOriginX=String(this.camera.view.x);this.svg.dataset.atlasOriginY=String(this.camera.view.y);
         this.scheduleRegion(true);if(this.exportOpen)this.exportAreaStatus();
       },
