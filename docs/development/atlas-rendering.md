@@ -55,8 +55,22 @@ bei jeder Zeigerbewegung. Das Ergebnis bleibt der erste sichtbare Fronttreffer;
 Neigung, Überhöhung und die eingefrorene Pinsel-Trefferfläche bleiben wirksam. Renderer,
 Dreieckshöhen, kanonische Sichtprüfung, Spieler-Höhenprojektion und Main-Cache
 verwenden dasselbe Layout. Alte Views ohne Verfeinerung bleiben gleichmäßig.
-Der Readonly-Worker sampelt bis zu neun reguläre Blöcke; lokale Invalidierung
-und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
+Der Readonly-Worker sampelt bis zu neun reguläre Blöcke bei kompakten Rändern
+und bis zu 81 bei großer Fernabdeckung. Die Zahl der Knoten bleibt gleich;
+pro äußerem Rand wachsen bis zu vier Bänder nach außen, damit nahe Übergänge
+keine großen Dreiecke erhalten. Lokale Invalidierung und eingefrorene
+Trefferflächen während Pinselzügen bleiben erhalten.
+
+`terrain-coverage.ts` bestimmt die quadratische, drehungsunabhängige Abdeckung
+aus der Neigung (3-, 6-, 10-, 24- oder 64-fache längste Ausschnittsseite).
+Stärkeres Neigen fordert eine größere Quelle an; die Kamera bewegt vorhandene
+Daten sofort. Ab 60° blendet ein kontinuierlicher atmosphärischer Horizont
+fernes Gelände aus. Renderer, Beschriftungsverdeckung, Treffer und kanonische
+Pinselprüfung verwenden dieselbe Grenze, auch bei gekachelter Bildausgabe.
+Himmel und Meer haben unterschiedliche Farben. Straßen und Flüsse werden
+entlang dieser Rasterbänder adaptiv abgetastet; nahe Trassen erhalten Vorrang
+im begrenzten Vektorbudget. [Abdeckung und native Prüfungen](../reference/atlas-terrain-coverage-20261021/README.md)
+halten die Teilverbesserung und verbleibende Ladegrenzen fest.
 
 [Fokusnetz und Trefferprüfung](../reference/atlas-focus-grid-20261021/README.md) dokumentieren den nativen Entwicklungsstart, Regressionsfälle und begrenzte Messungen.
 

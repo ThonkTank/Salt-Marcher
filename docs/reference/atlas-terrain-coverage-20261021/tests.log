@@ -1,0 +1,304 @@
+TAP version 13
+# Subtest: colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+ok 1 - colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles
+  ---
+  duration_ms: 2024.985556
+  type: 'test'
+  ...
+# Subtest: world tiles are bounded and aligned across portrait, negative origins and scale changes
+ok 2 - world tiles are bounded and aligned across portrait, negative origins and scale changes
+  ---
+  duration_ms: 5.351052
+  type: 'test'
+  ...
+# Subtest: independently rendered neighbouring tiles equal the complete projection including their shared edge
+ok 3 - independently rendered neighbouring tiles equal the complete projection including their shared edge
+  ---
+  duration_ms: 1674.35977
+  type: 'test'
+  ...
+# Subtest: progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+ok 4 - progress is incremental, pans reuse world tiles, and revisions invalidate renderer colour
+  ---
+  duration_ms: 64.065298
+  type: 'test'
+  ...
+# Subtest: revoked tile replies neither paint nor populate the next frame cache
+ok 5 - revoked tile replies neither paint nor populate the next frame cache
+  ---
+  duration_ms: 5.716308
+  type: 'test'
+  ...
+# Subtest: coverage feathering ends at full quality and cannot leak into live/full textures
+ok 6 - coverage feathering ends at full quality and cannot leak into live/full textures
+  ---
+  duration_ms: 2.757897
+  type: 'test'
+  ...
+# Subtest: tilted coverage includes visible ground across portrait, landscape, rotation and retained gestures
+ok 7 - tilted coverage includes visible ground across portrait, landscape, rotation and retained gestures
+  ---
+  duration_ms: 304.878779
+  type: 'test'
+  ...
+# Subtest: coverage tier expansion invalidates a pending narrow window; smaller poses reuse its lattice
+ok 8 - coverage tier expansion invalidates a pending narrow window; smaller poses reuse its lattice
+  ---
+  duration_ms: 0.61223
+  type: 'test'
+  ...
+# Subtest: wide surroundings retain centre resolution and bounded, continuous sampling bands
+ok 9 - wide surroundings retain centre resolution and bounded, continuous sampling bands
+  ---
+  duration_ms: 4.293647
+  type: 'test'
+  ...
+# Subtest: a world-spanning route retains fine central geometry without oversampling the horizon
+ok 10 - a world-spanning route retains fine central geometry without oversampling the horizon
+  ---
+  duration_ms: 43.130381
+  type: 'test'
+  ...
+# Subtest: distant routes cannot evict nearby author vectors from the bounded retained set
+ok 11 - distant routes cannot evict nearby author vectors from the bounded retained set
+  ---
+  duration_ms: 2.246184
+  type: 'test'
+  ...
+# Subtest: ground beyond the atmospheric horizon is not an author-visible brush target
+ok 12 - ground beyond the atmospheric horizon is not an author-visible brush target
+  ---
+  duration_ms: 2.024404
+  type: 'test'
+  ...
+# Subtest: fine centre and coarse margins form one continuous bounded mesh with exact world UVs
+ok 13 - fine centre and coarse margins form one continuous bounded mesh with exact world UVs
+  ---
+  duration_ms: 71.500526
+  type: 'test'
+  ...
+# Subtest: canonical visibility agrees with ray tracing across the fine/coarse boundaries
+ok 14 - canonical visibility agrees with ray tracing across the fine/coarse boundaries
+  ---
+  duration_ms: 286.179959
+  type: 'test'
+  ...
+# Subtest: streamed nine-band sampling and local invalidation match canonical direct samples
+ok 15 - streamed nine-band sampling and local invalidation match canonical direct samples
+  ---
+  duration_ms: 62.357309
+  type: 'test'
+  ...
+# Subtest: refinement cannot introduce unbounded, inverted, zero-area or out-of-source bands
+ok 16 - refinement cannot introduce unbounded, inverted, zero-area or out-of-source bands
+  ---
+  duration_ms: 1.089452
+  type: 'test'
+  ...
+# Subtest: world-to-room scales retain the same focus bands far from the world origin
+ok 17 - world-to-room scales retain the same focus bands far from the world origin
+  ---
+  duration_ms: 4.173562
+  type: 'test'
+  ...
+# Subtest: semantic visibility and overview handoff vary continuously and keep important routes available
+ok 18 - semantic visibility and overview handoff vary continuously and keep important routes available
+  ---
+  duration_ms: 6.496234
+  type: 'test'
+  ...
+# Subtest: minimum screen-width picking follows the existing camera while hidden detail cannot intercept selection
+ok 19 - minimum screen-width picking follows the existing camera while hidden detail cannot intercept selection
+  ---
+  duration_ms: 46.243128
+  type: 'test'
+  ...
+# Subtest: overview retains canonical IDs and excludes tunnel sections rather than drawing through mountains
+ok 20 - overview retains canonical IDs and excludes tunnel sections rather than drawing through mountains
+  ---
+  duration_ms: 9.174387
+  type: 'test'
+  ...
+# Subtest: different route widths share shaders and keep their own width uniforms
+ok 21 - different route widths share shaders and keep their own width uniforms
+  ---
+  duration_ms: 10.956809
+  type: 'test'
+  ...
+# Subtest: long world roads only sample their loaded terrain coverage, with unchanged author endpoints
+ok 22 - long world roads only sample their loaded terrain coverage, with unchanged author endpoints
+  ---
+  duration_ms: 5.809155
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 23 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 39.406137
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 24 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 9.385189
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 25 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 11.339499
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 26 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 11.214521
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 27 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 10.262952
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 28 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 9.125842
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 29 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 25.76519
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 30 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 6.823411
+  type: 'test'
+  ...
+# Subtest: retained detail stays on the same world point when the new surface clips its bounds
+ok 31 - retained detail stays on the same world point when the new surface clips its bounds
+  ---
+  duration_ms: 14.308777
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 32 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 4.147946
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 33 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 30.877573
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 34 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 51.166117
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 35 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 3.82977
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 36 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 20.485792
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 37 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 18.366202
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 38 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 47.938093
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 39 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 92.38373
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 40 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 150.975569
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 41 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 24.662685
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+ok 42 - navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+  ---
+  duration_ms: 164.124968
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 43 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 76.675352
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 44 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 21.969406
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 45 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 24.416093
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 46 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 5.193703
+  type: 'test'
+  ...
+# Subtest: a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+ok 47 - a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+  ---
+  duration_ms: 54.611341
+  type: 'test'
+  ...
+# Subtest: post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+ok 48 - post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+  ---
+  duration_ms: 82.347601
+  type: 'test'
+  ...
+# Subtest: steep tilt replaces narrow pending coverage but later rotations retain the widened source
+ok 49 - steep tilt replaces narrow pending coverage but later rotations retain the widened source
+  ---
+  duration_ms: 15.545287
+  type: 'test'
+  ...
+1..49
+# tests 49
+# suites 0
+# pass 49
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10283.3348
