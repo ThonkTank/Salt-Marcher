@@ -1,0 +1,148 @@
+TAP version 13
+# Subtest: partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+ok 1 - partial projection reconstructs a full answer byte for byte without mutating frozen source arrays
+  ---
+  duration_ms: 17.461155
+  type: 'test'
+  ...
+# Subtest: missing, wrong, reset or incompatible bases receive full answers
+ok 2 - missing, wrong, reset or incompatible bases receive full answers
+  ---
+  duration_ms: 0.501023
+  type: 'test'
+  ...
+# Subtest: top-down deltas keep unchanged tile objects and replace only changed image bytes
+ok 3 - top-down deltas keep unchanged tile objects and replace only changed image bytes
+  ---
+  duration_ms: 0.818753
+  type: 'test'
+  ...
+# Subtest: derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+ok 4 - derived LRU respects its byte quota and spatial invalidation, with least recently used eviction
+  ---
+  duration_ms: 0.664844
+  type: 'test'
+  ...
+# Subtest: active detail pixels use their own delta, including full fallback when its footprint changes
+ok 5 - active detail pixels use their own delta, including full fallback when its footprint changes
+  ---
+  duration_ms: 15.397326
+  type: 'test'
+  ...
+# Subtest: player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+ok 6 - player height exports retain approved memories and never fill unknown or legacy cells from current GM terrain
+  ---
+  duration_ms: 635.414211
+  type: 'test'
+  ...
+# Subtest: cancelled, obsolete and failed output jobs release their worker without publishing pixels
+ok 7 - cancelled, obsolete and failed output jobs release their worker without publishing pixels
+  ---
+  duration_ms: 53.736559
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 0
+ok 8 - preview retains the frozen world hit after camera translation 0
+  ---
+  duration_ms: 19.510475
+  type: 'test'
+  ...
+# Subtest: preview retains the frozen world hit after camera translation 100000
+ok 9 - preview retains the frozen world hit after camera translation 100000
+  ---
+  duration_ms: 6.443085
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 0
+ok 10 - live committed surface preserves frozen hit and camera after pan 0
+  ---
+  duration_ms: 6.8056
+  type: 'test'
+  ...
+# Subtest: live committed surface preserves frozen hit and camera after pan 100000
+ok 11 - live committed surface preserves frozen hit and camera after pan 100000
+  ---
+  duration_ms: 5.535728
+  type: 'test'
+  ...
+# Subtest: matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+ok 12 - matching deltas retain GPU geometry, texture and frozen picker while uploading only changed spans
+  ---
+  duration_ms: 5.581916
+  type: 'test'
+  ...
+# Subtest: fine brush texture is reused independently and shader blending leaves distant terrain intact
+ok 13 - fine brush texture is reused independently and shader blending leaves distant terrain intact
+  ---
+  duration_ms: 3.849822
+  type: 'test'
+  ...
+# Subtest: unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+ok 14 - unchanged distant roads retain meshes; local height edits rebuild only the intersecting road
+  ---
+  duration_ms: 71.950932
+  type: 'test'
+  ...
+# Subtest: perspective output tiles match the full main-camera projection at their shared edge
+ok 15 - perspective output tiles match the full main-camera projection at their shared edge
+  ---
+  duration_ms: 3.264931
+  type: 'test'
+  ...
+# Subtest: retained detail stays on the same world point when the new surface clips its bounds
+ok 16 - retained detail stays on the same world point when the new surface clips its bounds
+  ---
+  duration_ms: 5.246974
+  type: 'test'
+  ...
+# Subtest: spatial height preview is readonly and matches canonical save, coast, undo and redo
+ok 17 - spatial height preview is readonly and matches canonical save, coast, undo and redo
+  ---
+  duration_ms: 1942.347982
+  type: 'test'
+  ...
+# Subtest: same smoothing and color commands serve both views without rewriting heights
+ok 18 - same smoothing and color commands serve both views without rewriting heights
+  ---
+  duration_ms: 3504.006191
+  type: 'test'
+  ...
+# Subtest: rejected writes keep the same replayable draft and no partial height changes
+ok 19 - rejected writes keep the same replayable draft and no partial height changes
+  ---
+  duration_ms: 1032.498387
+  type: 'test'
+  ...
+# Subtest: display tessellation follows source resolution and camera scale with a strict cap
+ok 20 - display tessellation follows source resolution and camera scale with a strict cap
+  ---
+  duration_ms: 312.502002
+  type: 'test'
+  ...
+# Subtest: projected world hits survive tilt, rotation, exaggeration and very distant coordinates
+ok 21 - projected world hits survive tilt, rotation, exaggeration and very distant coordinates
+  ---
+  duration_ms: 31.227691
+  type: 'test'
+  ...
+# Subtest: terrain raycast returns the front surface instead of a hidden far slope
+ok 22 - terrain raycast returns the front surface instead of a hidden far slope
+  ---
+  duration_ms: 1.18279
+  type: 'test'
+  ...
+# Subtest: displayed road selection resolves the same canonical atlas record
+ok 23 - displayed road selection resolves the same canonical atlas record
+  ---
+  duration_ms: 7.333982
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9919.850692

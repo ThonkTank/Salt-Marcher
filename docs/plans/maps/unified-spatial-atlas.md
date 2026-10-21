@@ -113,6 +113,8 @@ Caches bleiben begrenzt. Im Vergleich werden 64/128/256 MiB je relevanter Cachek
 
 Erster lokaler Teilschritt: [GPU-Höhenlinien mit konstanter Strichbreite und unmittelbarem Intervallwechsel](../../reference/atlas-gpu-contours-20261020/README.md). [Im Repository und nativen Entwicklungsstart geprüft](../../reference/atlas-contour-zoom-20261021/README.md): automatische, kontinuierlich überblendete Höhenintervalle sind Standard; feste Intervalle bleiben wählbar. Die perspektivische Ausgabe nutzt dasselbe GPU-Material, der Canvasfallback dieselben Abstandsregeln. Weitere Objektklassen, Küstenkonturen und vollständige visuelle Zoomabnahme bleiben offen.
 
+Weiterer lokaler Teilschritt: [Höhenlinienlesbarkeit bei 100/200 %](../../reference/atlas-contour-readability-20261021/README.md). Ein isolierter Vergleich am Produktrenderer begründet 24 logische Pixel als Zielabstand; Hauptatlas und Rasterausgabe berücksichtigen die jeweilige Abtastdichte. Automatische und feste Linien behalten ihre Höhen und logischen Strichbreiten. Die eigentliche Höhengeometrie, kantige grobe Pinsel-/Quelldaten, Küstenschärfe und allgemeine Zoomleistung bleiben davon unverbessert; P4 ist weiterhin offen.
+
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 - Küsten bleiben eigene scharfe Konturen; Relief und Bodenfarben werden getrennt gestaltet.

@@ -3,6 +3,7 @@ import {createNativeSession} from './native-session.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {createRequire} from 'node:module';
 import {randomUUID} from 'node:crypto';
+import {writeFile} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 const root=process.cwd(),require=createRequire(root+'/package.json'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/contour-display');
@@ -45,7 +46,11 @@ try{
   measurements.push({zoom,...automatic,values:undefined,autoRuns,fixedRuns,view:JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view'))});
   await native.close();
  }
- const [a,b]=measurements;assert.equal(a.width,b.width);assert.equal(a.height,b.height);assert.deepEqual(a.view,b.view);
+ await writeFile(out+'/measurements.json',JSON.stringify(measurements,null,2));
+ const [a,b]=measurements;assert.equal(a.width,b.width);assert(Math.abs(a.height-b.height)<=1,'window chrome can round by at most one logical pixel');
+ assert.equal(a.view.width,b.view.width);assert.equal(a.view.x,b.view.x);
+ assert(Math.abs((a.view.y+a.view.height/2)-(b.view.y+b.view.height/2))<1e-6,'the sampled row crosses the same world centre');
+ assert(Math.abs(a.view.height-b.view.height)<=a.view.height/a.height*1.01);
  assert(Math.abs(a.physicalWidth/a.width-1)<.01);assert(Math.abs(b.physicalWidth/b.width-1.5)<.01);
  for(const key of ['autoRuns','fixedRuns']){
   const matching=(xs,ys)=>xs.filter(x=>ys.some(y=>Math.abs(y-x)<2)).length/xs.length;

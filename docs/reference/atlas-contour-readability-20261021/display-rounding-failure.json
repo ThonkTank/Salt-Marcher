@@ -1,0 +1,36 @@
+{
+  "source": "8bdb6d29280d92d8ed83dfe9ce0b3e1bf944acee",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/contour-display-wEnD1c",
+  "artifacts": {
+    "main.cjs": "08726e4296959f19a5798fe9c00ec204dce247bf5d242eacca6e352e47e951d9",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "964a3a35b14be104c16125cb02668f633cff6b77310aa5722ea5ae77c09e5c34",
+    "ui/index.html": "898377d13f2cc3a6bf95bad63d4cfea0d344a3879de1cc0d3be2c44aff8ebdf4",
+    "ui/app.css": "f4c7ecf6e705ce30119202d29f5527313f639cbd21d03d98450173eed851c2d8"
+  },
+  "launches": [
+    {
+      "pid": 2270018,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 2270236,
+      "zoom": 2,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n717 !== 716\n\n    at file:///home/aaron/Schreibtisch/projects/SaltMarcher/tools/test-desktop-contour-display.mjs:48:64"
+}
