@@ -176,6 +176,8 @@ Weiterer lokaler Teilschritt: [Höhenlinienlesbarkeit bei 100/200 %](../../refer
 
 Der [isolierte Interpolationsversuch](../../reference/atlas-height-lattice-20261021/README.md#glattere-rekonstruktion-noch-nicht-integriert) ist inzwischen als [gemeinsame begrenzte Höhenrekonstruktion](../../reference/atlas-height-reconstruction-20261021/README.md) angeschlossen: kanonische Punktabfrage und Stream verwenden denselben Kernel; Lesebereiche, Invalidierung, Bestand und History berücksichtigen den zweiten Nachbarknoten. Knotenwerte und additive Bänder bleiben erhalten. Das beseitigt die linearen Knicke zwischen groben Höhenknoten; vollständige Kartengestaltung, Küstenschärfe und Leistungsqualifikation bleiben offen.
 
+Für die verschiedenen Zoom- und Detailstufen passende Darstellungen wählen: zusammenhängende, strukturierte Waldflächen in der Weltübersicht, lesbare Kronengruppen im Regionalmaßstab und maßhaltige Einzelobjekte im Nahbereich. Daten und Identitäten bleiben gemeinsam; die Darstellung darf je Stufe wechseln und soll kontinuierlich überblenden. Ein detaillierteres Nahmodell allein erfüllt die Übersicht nicht.
+
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 - Küsten bleiben eigene scharfe Konturen; Relief und Bodenfarben werden getrennt gestaltet.
