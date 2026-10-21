@@ -35,6 +35,7 @@ export class AtlasRegionService {
   constructor(
     private workerFile = join(__dirname, 'atlas-region-worker.cjs'),
     private cacheLimit = REGION_CACHE_BYTES/4,
+    private cacheDirectory?:string,
   ) {}
 
   get cursor() {
@@ -153,7 +154,7 @@ export class AtlasRegionService {
     }
     if (!this.worker) {
       const worker = new Worker(this.workerFile, {
-        workerData: { filename: source.filename, shadow: source.shadow },
+        workerData: { filename: source.filename, shadow: source.shadow,cacheDirectory:this.cacheDirectory },
       });
       this.starts++;
       this.worker = worker;

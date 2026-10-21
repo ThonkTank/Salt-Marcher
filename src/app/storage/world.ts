@@ -1,3 +1,4 @@
+import {validateAtlasShapeSources} from './atlas-shape-source';
 import {terrainEnvironmentRevision,validateTerrainEnvironment} from './terrain-environment';
 import {sourceCellLookup} from './atlas-source-cell';
 import {installTravelHistory,captureTravelEffects,recordTravelCheckpoint,travelHistory,applyTravelHistory,validateTravelHistory} from './travel-history';
@@ -228,7 +229,7 @@ export function executeWorld<T=never>(db:any,c:WorldCommand,guard:()=>void,timeP
  if(sceneId)syncSceneWorld(db,cam,sceneId);else for(const row of db.prepare('SELECT s.id FROM live_scene s JOIN scene_lifecycle l ON l.campaign_id=s.campaign_id AND l.id=s.id WHERE s.campaign_id=? AND l.retired=0').all(cam))syncSceneWorld(db,cam,row.id);const result:WorldAck={world:readWorld(db,cam),scene:sceneId?readSceneWorld(db,cam,sceneId):null},payload=json(result);db.prepare('INSERT INTO world_receipt VALUES(?,?,?,?,?)').run(c.commandId,cam,fp,payload,hash(payload));return result;
  }).immediate();}
 export function validateWorldBackup(db:any){
- validateTerrainEnvironment(db);
+ validateTerrainEnvironment(db);validateAtlasShapeSources(db);
  validateTravelHistory(db);
  for(const row of db.prepare('SELECT * FROM world_journey').iterate())journeyRow(row);
  for(const table of ['world_record','scene_position','world_history','world_receipt'])for(const row of db.prepare(`SELECT * FROM ${table}`).iterate()){

@@ -1,3 +1,4 @@
+import {AtlasRegionCache} from '../src/app/storage/atlas-region-cache';
 import {computeTerrainStroke,TerrainScalePyramid} from '../src/app/storage/terrain-scale';
 import {terrainTraceStart} from '../src/app/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
@@ -6,7 +7,7 @@ import {takeTerrainTrace} from '../src/app/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
 
 const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),
-  reader = new AtlasRegionReader(db, workerData.shadow),pyramid=new TerrainScalePyramid();
+  reader = new AtlasRegionReader(db, workerData.shadow,workerData.cacheDirectory&&!workerData.shadow?new AtlasRegionCache(workerData.cacheDirectory):undefined),pyramid=new TerrainScalePyramid();
 
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
 let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>}|undefined;

@@ -1,3 +1,4 @@
+import {ensureAtlasShapeSource} from './atlas-shape-source';
 import {advanceTerrainEnvironment} from './terrain-environment';
 import {validateTerritories} from './atlas-territories';
 import {validateRoute} from '../terrain-route';
@@ -48,6 +49,7 @@ export function createCampaignAtlas(db: any, cam: string) {
     cam,
     id,
   );
+  ensureAtlasShapeSource(db,cam);
 }
 export function atlasRoot(db: any, cam: string) {
   const root = db

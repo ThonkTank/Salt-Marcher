@@ -1,3 +1,5 @@
+import {atlasShapeSource} from './atlas-shape-source';
+import type {AtlasRegionCache} from './atlas-region-cache';
 import {mapFootprintVisible,mapLineVisible,mapLineWidth} from '../atlas-scale-policy';
 import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerritories} from './atlas-territories';
@@ -60,7 +62,7 @@ export class AtlasRegionReader {
  private landscapeFailure=false;
  private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(text);this.statements.set(text,s);}return s;}
  private readFaults=0;private countFaults=true;private ready=false;private indexed=true;private campaign='';private count=0;
- constructor(private db:any,shadow?:{filename:string;scopeId:string}){
+ constructor(private db:any,shadow?:{filename:string;scopeId:string},private cache?:AtlasRegionCache){
   if(!db.readonly)throw new Error('Atlasprojektion benötigt eine readonly Datenbank.');
   db.pragma('cache_size = -8192');db.pragma('temp_store = FILE');db.pragma('temp.cache_size = -8192');
   this.landscape=new AtlasLandscapeReader(db);
@@ -162,16 +164,20 @@ export class AtlasRegionReader {
   if(++this.count%128===0)await pause();
  }
  async sync(source:AtlasRegionSource){
+  if(source.shapeVersion!==undefined&&source.shapeVersion!==atlasShapeSource(this.db,source.campaignId))throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   this.campaign=source.campaignId;
+  const rebuild=source.reset||!this.ready;
+  let restored=false;
   try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
   if(source.reset||!this.ready||source.changes.some(c=>['city_document','city_unit','room','drawing_element','dungeon_volume'].includes(c.table)))this.shapePayloads.clear();
   if(source.reset||!this.ready){
-   this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem;');
+   this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem; DELETE FROM temp.region_extent;');
+   restored=await this.cache?.load(this.db,source)??false;
    if(this.indexed)this.db.exec('DELETE FROM temp.region_index');
    this.buildingIndex=true;
    try{
-    for(const table of ['city_document','room','city_unit','drawing_element']){
+    if(!restored)for(const table of ['city_document','room','city_unit','drawing_element']){
      const fields=table==='room'?",CASE WHEN json_valid(payload) THEN json_extract(payload,'$.polygons') END polygons":'';
      let cursor=0;
      for(;;){
@@ -196,10 +202,13 @@ export class AtlasRegionReader {
     if(c.table==='room')for(const r of this.sql("SELECT id FROM drawing_element WHERE campaign_id=? AND json_extract(payload,'$.anchor.roomId')=?").all(this.campaign,c.id))await this.update('drawing_element',r.id);
    }
   }
-  if(source.reset||!this.ready||source.changes.some(c=>['room','drawing_element','dungeon_volume','drawing_hidden','drawing_floor'].includes(c.table))){
+  if(!restored&&(rebuild||source.changes.some(c=>['room','drawing_element','dungeon_volume','drawing_hidden','drawing_floor'].includes(c.table)))){
    this.db.exec('DELETE FROM temp.region_extent');
    this.sql(`INSERT INTO temp.region_extent SELECT scope,floor,min(min_x),min(min_y),max(max_x)-min(min_x),max(max_y)-min(min_y) FROM temp.region_shape s WHERE s.kind IN ('room','element') AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=? AND h.hidden=1 AND (h.kind='room' AND s.kind='room' AND h.id=substr(s.key,6) OR h.kind='floor' AND h.scope_id=s.scope AND h.id=s.floor)) GROUP BY scope,floor`).run(this.campaign);
   }
+  // Do not serialize a full-world cache on interactive object edits. Its source
+  // version becomes stale; the next cold rebuild replaces it once.
+  if(!restored&&rebuild)await this.cache?.save(this.db,source);
   this.ready=true;
  }
  private binding(row:any):AtlasBinding{return{id:row.id,kind:row.kind,ownerId:row.owner_id,parent:row.parent,parentId:row.parent_id,x:row.x,y:row.y,angle:row.angle,revision:row.revision};}
