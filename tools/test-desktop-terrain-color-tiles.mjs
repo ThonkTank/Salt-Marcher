@@ -1,5 +1,6 @@
 // Inspect progressive colour on a non-uniform coast through the ordinary Atlas entry.
 import {createNativeSession} from './native-session.mjs';
+import {setBrushWorldRadius,setHeightDirection} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 import {terrainDetailPixels} from './terrain-detail-probe.mjs';
 import {createRequire} from 'node:module';
@@ -9,7 +10,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 const root=process.cwd(),require=createRequire(root+'/package.json'),out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-colour-coast');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/terrain-height';"},outfile:'.build/colour-coast-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord}=require(root+'/.build/colour-coast-store.cjs'),native=await createNativeSession({root,output:out,name:'colour-coast'});
+const {CampaignStore,heightRecord,TerrainSampler}=require(root+'/.build/colour-coast-store.cjs'),native=await createNativeSession({root,output:out,name:'colour-coast'});
 const store=new CampaignStore(native.profile+'/workbench.sqlite'),campaign=store.create('Küste und Farbkacheln'),token=store.activate(campaign.id).token;
 for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>{const px=x*1024+i%64*16,py=y*1024+Math.floor(i/64)*16;return 80*Math.sin(px/150)+30*Math.cos(py/75);}))}});
 store.tutorial('skipped');store.close();let page;
@@ -38,5 +39,16 @@ try{
  let waterPixels=0,landPixels=0;for(let i=0;i<png.data.length;i+=4){if(png.data[i]===127&&png.data[i+1]===168&&png.data[i+2]===189)waterPixels++;if(png.data[i]>180&&png.data[i+1]>160&&png.data[i+2]<240)landPixels++;}
  assert(waterPixels>png.width*png.height*.05&&landPixels>png.width*png.height*.05,'Export must contain the actual coast, land and water');assert.deepEqual(authors(),before);await writeFile(out+'/05-coast-export.png',bytes);
  await page.locator('#atlas-output-back').click();await atlasCanvasReady(page);assert(await canvas.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));
- await native.close();await native.finish({stages,detailUploads,checks:['Non-uniform coast refines incrementally on the main Atlas; all tiles complete and the same canvas tilts.','Rectangular opaque and transparent uploads match full GPU output for ground and detail.','Perspective PNG exports the visible coast through the same main renderer without changing author data.']});
+ // Lower the real coast while the camera stays tilted, then restore it in one Undo.
+ const heights=()=>JSON.stringify(authors().map(r=>JSON.parse(r.payload)).filter(r=>r.height).map(r=>[r.id,r.height]));
+ const state=()=>db.prepare('SELECT revision,cursor FROM campaign_atlas WHERE campaign_id=?').get(campaign.id);
+ const ground=()=>new TerrainSampler(authors().map(r=>JSON.parse(r.payload))).sample({x:0,y:0}).heightM;
+ const wait=async f=>{const end=Date.now()+45000;while(!f()){if(Date.now()>end)throw Error('Coast gesture did not advance');await new Promise(r=>setTimeout(r,100));}};
+ await page.locator('#atlas-section').selectOption('terrain');await atlasCanvasReady(page);await page.locator('#atlas-units').selectOption('metric');await page.locator('[data-tool-group="land"]').click();
+ await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();await setBrushWorldRadius(page,'land-radius',80);await setHeightDirection(page,'lower');await page.locator('#land-height-strength').fill('120');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('-20');
+ const initial=heights(),start=state();assert(ground()>0);const rect=await page.locator('#campaign-map').boundingBox();await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.down();
+ await wait(()=>ground()<0);await page.waitForFunction(revision=>Number(document.querySelector('#campaign-map').dataset.terrainRevision)>revision,start.revision,{timeout:60000});await page.mouse.up();await page.mouse.move(100,20);
+ await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled);await atlasCanvasReady(page);assert.equal(state().cursor,start.cursor+1);assert(await canvas.evaluate(el=>el===document.querySelector('#atlas-terrain-spatial')));await native.capture(page,'06-lowered-coast.png');
+ const changed=state().revision;await page.locator('#atlas-undo').click();await wait(()=>state().revision>changed);await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled);await atlasCanvasReady(page);assert.equal(heights(),initial);assert(ground()>0);await native.capture(page,'07-coast-undo.png');
+ await native.close();await native.finish({stages,detailUploads,checks:['Non-uniform coast refines incrementally on the main Atlas; all tiles complete and the same canvas tilts.','Rectangular opaque and transparent uploads match full GPU output for ground and detail.','Perspective PNG exports the visible coast through the same main renderer without changing author data.','Direct tilted lowering moves the coast across the sea level; one Undo restores every authored height on the same canvas.']});
 }catch(error){await native.fail(error);throw error;}finally{db.close();await native.dispose();}
