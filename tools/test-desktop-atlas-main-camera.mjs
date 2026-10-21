@@ -16,7 +16,7 @@ const root = process.cwd(),
 require("esbuild").buildSync({
   stdin: {
     resolveDir: root,
-    contents: `export * from './src/app/storage/store';export {newElement} from './src/app/drawing-model';export {atlasProject} from './src/app/atlas-camera';`,
+    contents: `export * from './src/app/storage/store';export {newElement} from './src/app/drawing-model';export {atlasProject,atlasPlanePoint} from './src/app/atlas-camera';`,
   },
   bundle: true,
   platform: "node",
@@ -24,7 +24,7 @@ require("esbuild").buildSync({
   external: ["better-sqlite3"],
   outfile: ".build/atlas-main-camera-store.cjs",
 });
-const { CampaignStore, newElement, atlasProject } = require(
+const { CampaignStore, newElement, atlasProject, atlasPlanePoint } = require(
   root + "/.build/atlas-main-camera-store.cjs",
 );
 const out = path.resolve(
@@ -368,21 +368,35 @@ try {
       await chooseTool('room-polygon');await page.locator('#drawing-snap').uncheck();
       await page.locator('#drawing-room-name').fill('Raum im Obergeschoss');
       const points=[{x:10,y:10},{x:60,y:10},{x:60,y:60}];
+      await page.evaluate(()=>{
+        window.__freeRoomClicks=[];
+        document.querySelector('#campaign-map').addEventListener('click',e=>{
+          const canvas=e.currentTarget,rect=canvas.getBoundingClientRect();
+          window.__freeRoomClicks.push({pose:JSON.parse(canvas.dataset.terrainProjection),screen:{x:(e.clientX-rect.x)/rect.width,y:(e.clientY-rect.y)/rect.height}});
+        },{capture:true});
+      });
+
       for(const p of points)await clickWorld(p);
       await capture('05-upper-floor-draft');await page.locator('#drawing-finish').click();
       let row;for(let i=0;i<100&&!row;i++){row=db.prepare('SELECT id,floor_id floorId,payload FROM room WHERE name=?').get('Raum im Obergeschoss');if(!row)await page.waitForTimeout(100);}
       assert(row);const added={id:row.id,floorId:row.floorId,...JSON.parse(row.payload)};await settle();
       assert.equal(added.floorId,'upper');
       assert.equal(added.polygons.length,1);assert.equal(added.polygons[0].outer.length,3);
-      for(const p of points)assert(added.polygons[0].outer.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<.01),JSON.stringify(added.polygons));
+      const clicks=await page.evaluate(()=>window.__freeRoomClicks);assert.equal(clicks.length,3);
+      const authored=clicks.map(c=>atlasPlanePoint(c.pose,c.screen,24));
+      for(const [i,p]of authored.entries()){
+        assert(Math.hypot(p.x-points[i].x,p.y-points[i].y)<.5,'native MouseEvent rounding stays within one screen pixel');
+        assert(added.polygons[0].outer.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<1e-5),JSON.stringify({authored,polygons:added.polygons}));
+      }
+      result.upperClicks=clicks;result.upperAuthored=authored;
       assert.equal(db.prepare('SELECT count(*) n FROM dungeon_volume WHERE room_id=?').get(added.id).n,0);
       result.upperRoom=added;await capture('06-upper-floor-saved');
       for(const kind of ['undo','redo']){
         await page.locator('#atlas-'+kind).click();
-        const expected=kind==='undo'?1:0;let hidden;
-        for(let i=0;i<100;i++){hidden=db.prepare("SELECT hidden FROM drawing_hidden WHERE id=? AND kind='room'").get(added.id)?.hidden;if(hidden===expected)break;await page.waitForTimeout(100);}
-        assert.equal(hidden,expected);await settle();
-        assert.deepEqual(JSON.parse(db.prepare('SELECT payload FROM room WHERE id=?').get(added.id).payload).polygons,added.polygons);
+        const expected=kind==='undo'?0:1;let visible;
+        for(let i=0;i<100;i++){visible=db.prepare("SELECT count(*) n FROM room r WHERE r.id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1)").get(added.id).n;if(visible===expected)break;await page.waitForTimeout(100);}
+        assert.equal(visible,expected);await settle();
+        if(kind==='redo')assert.deepEqual(JSON.parse(db.prepare('SELECT payload FROM room WHERE id=?').get(added.id).payload).polygons,added.polygons);
       }
 
       await page.locator('#atlas-floor').selectOption('ground');activeFloorHeight=floorHeight;await settle();

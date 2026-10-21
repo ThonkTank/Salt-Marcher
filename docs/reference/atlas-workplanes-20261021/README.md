@@ -89,3 +89,7 @@ nicht durch geglättete Anzeige.
 Keine Exact-SHA-Candidate-CI, Main-Integration, Paket-, Installations- oder
 Nutzerabnahme. Die drei vollständigen kritischen Abschlussuntersuchungen haben
 noch nicht begonnen.
+
+Folgestand: Die automatische Rasterung neuer freier Räume ist im
+[Konturanschluss](../atlas-free-room-contours-20261021/README.md) korrigiert.
+Die obigen Bilder dokumentieren weiterhin den damaligen Befund.

@@ -169,7 +169,7 @@ Rein zweidimensionale Assets bleiben zulässig und werden ihrer passenden Welt- 
 
 **Abschluss:** Welt → Stadt → Haus → Raum und zurück funktioniert ausschließlich durch Navigation und Werkzeugwahl. Gelände, Straße, Haus und Raum lassen sich in einer gemeinsamen Undo-Folge bearbeiten; Texte, IDs und Verknüpfungen bleiben korrekt.
 
-Lokaler Teilanschluss: [Gemeinsame Geschossebene für Darstellung und Bearbeitung](../../reference/atlas-workplanes-20261021/README.md). Griffe, Entwürfe, Treffer und Raumnamen verwenden dieselbe Höhe. Sichtbare leere Arbeitsebenen und unterirdische Freilegung bleiben offen. Die native Probe deckte außerdem die automatische Volumenrasterung freier Raumneuanlagen trotz ausgeschaltetem Rasterfang auf; diese Speicherumwandlung ist zu korrigieren.
+Lokaler Teilanschluss: [Gemeinsame Geschossebene für Darstellung und Bearbeitung](../../reference/atlas-workplanes-20261021/README.md). Griffe, Entwürfe, Treffer und Raumnamen verwenden dieselbe Höhe. Sichtbare leere Arbeitsebenen und unterirdische Freilegung bleiben offen. Die dabei entdeckte automatische Volumenrasterung freier Raumneuanlagen ist [korrigiert](../../reference/atlas-free-room-contours-20261021/README.md): neue Konturen bleiben exakt, die Volumenbearbeitung ist eine eigene Aktion.
 
 ### P7 — Ausgabe, Spieleranzeige und Wiederherstellung integrieren
 
