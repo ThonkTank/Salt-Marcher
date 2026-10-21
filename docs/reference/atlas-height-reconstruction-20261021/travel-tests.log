@@ -1,0 +1,280 @@
+TAP version 13
+# Subtest: several checkpoints undo and redo exact time, position and knowledge without repeating time consumers
+ok 1 - several checkpoints undo and redo exact time, position and knowledge without repeating time consumers
+  ---
+  duration_ms: 1826.784119
+  type: 'test'
+  ...
+# Subtest: travel undo preserves later authored prose and receipts; replay cannot undo the next checkpoint
+ok 2 - travel undo preserves later authored prose and receipts; replay cannot undo the next checkpoint
+  ---
+  duration_ms: 891.871626
+  type: 'test'
+  ...
+# Subtest: a later independent clock change cannot be hidden by travel undo
+ok 3 - a later independent clock change cannot be hidden by travel undo
+  ---
+  duration_ms: 744.181985
+  type: 'test'
+  ...
+# Subtest: journey acceptance rejects a forged displayed total instead of persisting contradictory timing
+ok 4 - journey acceptance rejects a forged displayed total instead of persisting contradictory timing
+  ---
+  duration_ms: 462.146305
+  type: 'test'
+  ...
+# Subtest: independent live prose does not invalidate an otherwise unchanged travel preview
+ok 5 - independent live prose does not invalidate an otherwise unchanged travel preview
+  ---
+  duration_ms: 572.384799
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed clock without booking movement or time
+ok 6 - accepted journey rejects changed clock without booking movement or time
+  ---
+  duration_ms: 498.826347
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed position ABA without booking movement or time
+ok 7 - accepted journey rejects changed position ABA without booking movement or time
+  ---
+  duration_ms: 516.020963
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed map without booking movement or time
+ok 8 - accepted journey rejects changed map without booking movement or time
+  ---
+  duration_ms: 497.283435
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed weather without booking movement or time
+ok 9 - accepted journey rejects changed weather without booking movement or time
+  ---
+  duration_ms: 532.043346
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed calendar without booking movement or time
+ok 10 - accepted journey rejects changed calendar without booking movement or time
+  ---
+  duration_ms: 618.291875
+  type: 'test'
+  ...
+# Subtest: accepted journey rejects changed destination without booking movement or time
+ok 11 - accepted journey rejects changed destination without booking movement or time
+  ---
+  duration_ms: 532.413507
+  type: 'test'
+  ...
+# Subtest: interruption, receipt replay, restart and resume preserve exact segment timing and independent scene prose
+ok 12 - interruption, receipt replay, restart and resume preserve exact segment timing and independent scene prose
+  ---
+  duration_ms: 1201.669793
+  type: 'test'
+  ...
+# Subtest: receipt failure rolls back position, clock, knowledge, journey and nested live receipts together
+ok 13 - receipt failure rolls back position, clock, knowledge, journey and nested live receipts together
+  ---
+  duration_ms: 739.046762
+  type: 'test'
+  ...
+# Subtest: a legacy journey without persisted time and position bases remains unchanged and cannot resume under invented bases
+ok 14 - a legacy journey without persisted time and position bases remains unchanged and cannot resume under invented bases
+  ---
+  duration_ms: 474.252528
+  type: 'test'
+  ...
+# Subtest: resuming a paused journey cannot silently accept an independent clock change
+ok 15 - resuming a paused journey cannot silently accept an independent clock change
+  ---
+  duration_ms: 518.415395
+  type: 'test'
+  ...
+# Subtest: journey id mismatch is rejected by reads, writes and backup without replacing original bytes
+ok 16 - journey id mismatch is rejected by reads, writes and backup without replacing original bytes
+  ---
+  duration_ms: 1091.865695
+  type: 'test'
+  ...
+# Subtest: journey sceneId mismatch is rejected by reads, writes and backup without replacing original bytes
+ok 17 - journey sceneId mismatch is rejected by reads, writes and backup without replacing original bytes
+  ---
+  duration_ms: 946.399394
+  type: 'test'
+  ...
+# Subtest: journey status mismatch is rejected by reads, writes and backup without replacing original bytes
+ok 18 - journey status mismatch is rejected by reads, writes and backup without replacing original bytes
+  ---
+  duration_ms: 837.531745
+  type: 'test'
+  ...
+# Subtest: a nonfocused journey records confirmed time for its own scene instead of the focused group
+ok 19 - a nonfocused journey records confirmed time for its own scene instead of the focused group
+  ---
+  duration_ms: 744.40003
+  type: 'test'
+  ...
+# Subtest: a multisegment world command publishes its confirmed time at each actual journey boundary
+ok 20 - a multisegment world command publishes its confirmed time at each actual journey boundary
+  ---
+  duration_ms: 764.481915
+  type: 'test'
+  ...
+# Subtest: replaying a confirmed multisegment journey cannot add or consume time again
+ok 21 - replaying a confirmed multisegment journey cannot add or consume time again
+  ---
+  duration_ms: 825.446635
+  type: 'test'
+  ...
+# Subtest: a rejected second segment consumer rolls back earlier segment time, movement and knowledge
+ok 22 - a rejected second segment consumer rolls back earlier segment time, movement and knowledge
+  ---
+  duration_ms: 842.788747
+  type: 'test'
+  ...
+# Subtest: changing focus between journey segments preserves the actual scene time frontier
+ok 23 - changing focus between journey segments preserves the actual scene time frontier
+  ---
+  duration_ms: 916.798275
+  type: 'test'
+  ...
+# Subtest: party-derived travel uses only assigned active PCs, warns about missing movement and retains its mode after reopening
+ok 24 - party-derived travel uses only assigned active PCs, warns about missing movement and retains its mode after reopening
+  ---
+  duration_ms: 1026.292886
+  type: 'test'
+  ...
+# Subtest: movement changes reject stale automatic previews and checkpoints but allow an explicit manual override
+ok 25 - movement changes reject stale automatic previews and checkpoints but allow an explicit manual override
+  ---
+  duration_ms: 618.489912
+  type: 'test'
+  ...
+# Subtest: the three-mile missing-speed default is one hour and explicit duration still wins
+ok 26 - the three-mile missing-speed default is one hour and explicit duration still wins
+  ---
+  duration_ms: 481.863207
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves party authority and exact remaining time
+ok 27 - independent paused hex journey copy preserves party authority and exact remaining time
+  ---
+  duration_ms: 2827.612822
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves weather authority and exact remaining time
+ok 28 - independent paused hex journey copy preserves weather authority and exact remaining time
+  ---
+  duration_ms: 3294.588629
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves stale-party authority and exact remaining time
+ok 29 - independent paused hex journey copy preserves stale-party authority and exact remaining time
+  ---
+  duration_ms: 2607.90681
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves stale-weather authority and exact remaining time
+ok 30 - independent paused hex journey copy preserves stale-weather authority and exact remaining time
+  ---
+  duration_ms: 2888.866064
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves stale-map authority and exact remaining time
+ok 31 - independent paused hex journey copy preserves stale-map authority and exact remaining time
+  ---
+  duration_ms: 2627.632313
+  type: 'test'
+  ...
+# Subtest: independent paused hex journey copy preserves stale-clock authority and exact remaining time
+ok 32 - independent paused hex journey copy preserves stale-clock authority and exact remaining time
+  ---
+  duration_ms: 2698.288127
+  type: 'test'
+  ...
+# Subtest: presentation speed is pinned at acceptance and never scales checkpoint time
+ok 33 - presentation speed is pinned at acceptance and never scales checkpoint time
+  ---
+  duration_ms: 800.218653
+  type: 'test'
+  ...
+# Subtest: world travel cannot supersede an active or paused local route, even with an older valid preview
+ok 34 - world travel cannot supersede an active or paused local route, even with an older valid preview
+  ---
+  duration_ms: 744.413943
+  type: 'test'
+  ...
+# Subtest: a cancelled local route cannot be resurrected while a world journey owns the group
+ok 35 - a cancelled local route cannot be resurrected while a world journey owns the group
+  ---
+  duration_ms: 589.59874
+  type: 'test'
+  ...
+# Subtest: a completed local route cannot be resurrected while a world journey owns the group
+ok 36 - a completed local route cannot be resurrected while a world journey owns the group
+  ---
+  duration_ms: 623.800307
+  type: 'test'
+  ...
+# Subtest: legacy overlapping trips remain readable and recover through an explicit end without losing receipts
+ok 37 - legacy overlapping trips remain readable and recover through an explicit end without losing receipts
+  ---
+  duration_ms: 1063.14444
+  type: 'test'
+  ...
+# Subtest: a local journey in one split group does not block another group world journey
+ok 38 - a local journey in one split group does not block another group world journey
+  ---
+  duration_ms: 846.758455
+  type: 'test'
+  ...
+# Subtest: an unregistered time consumer rolls back the checkpoint and capture can start again
+ok 39 - an unregistered time consumer rolls back the checkpoint and capture can start again
+  ---
+  duration_ms: 877.214628
+  type: 'test'
+  ...
+# Subtest: a new checkpoint after undo abandons the previous redo branch without deleting its evidence
+ok 40 - a new checkpoint after undo abandons the previous redo branch without deleting its evidence
+  ---
+  duration_ms: 1218.474656
+  type: 'test'
+  ...
+# Subtest: damaged travel history fails closed: checksum
+ok 41 - damaged travel history fails closed: checksum
+  ---
+  duration_ms: 1253.119675
+  type: 'test'
+  ...
+# Subtest: damaged travel history fails closed: duplicate effect
+ok 42 - damaged travel history fails closed: duplicate effect
+  ---
+  duration_ms: 1123.943683
+  type: 'test'
+  ...
+# Subtest: damaged travel history fails closed: foreign owner
+ok 43 - damaged travel history fails closed: foreign owner
+  ---
+  duration_ms: 1192.683325
+  type: 'test'
+  ...
+# Subtest: damaged travel history fails closed: original cause
+ok 44 - damaged travel history fails closed: original cause
+  ---
+  duration_ms: 1032.292187
+  type: 'test'
+  ...
+# Subtest: schema 52 opens without invented historical checkpoints; schema 53 cannot silently recreate a missing owner
+ok 45 - schema 52 opens without invented historical checkpoints; schema 53 cannot silently recreate a missing owner
+  ---
+  duration_ms: 1059.712394
+  type: 'test'
+  ...
+1..45
+# tests 45
+# suites 0
+# pass 45
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 49515.724587
