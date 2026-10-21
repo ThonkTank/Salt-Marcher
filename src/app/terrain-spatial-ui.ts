@@ -115,6 +115,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   visibility(){return this.active&&this.params?structuredClone(this.params):undefined;}
   setContours(interval:number){this.pendingContours=interval;this.view?.setContours(interval);}
+  /** Includes initial loading: the first region need not rasterize the future GPU ground. */
+  get needsTerrainRaster(){return this.failed||(document.getElementById('atlas-perception') as HTMLInputElement).checked;}
   private fail(error:unknown){
     this.failed=true;this.retry.hidden=false;this.host.cancel();this.setActive(false);this.host.error(error);
   }

@@ -42,7 +42,7 @@ export function drawLandscape(
   };
   const drawRaster=()=>{
     if(!raster||rasterDrawn)return;rasterDrawn=true;
-    for(const tile of raster)root.append(landscapeNode("image", {source: tile.data, x:tile.box.x-b.x,y:tile.box.y-b.y,width:tile.box.width,height:tile.box.height, pointer: false, data: {landscapeRaster: String('true')}}));
+    for(const tile of raster)root.append(landscapeNode("image", {source: tile.data, x:tile.box.x-b.x,y:tile.box.y-b.y,width:tile.box.width,height:tile.box.height, pointer: false, data: {landscapeRaster: String(tile.content!=='objects')}}));
   };
   for (const r of [...records].sort(
     (a, b) =>

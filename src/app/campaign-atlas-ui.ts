@@ -557,7 +557,11 @@ export class CampaignAtlasWorkbench {
     this.spatial=new TerrainSpatialUI(this.svg,{
       route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),cancel:()=>{this.landscape.cancel();this.cancel();},
       objectPicking:()=>!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
-      refresh:()=>this.refresh(),redraw:()=>this.scheduleRender(),error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
+      refresh:()=>this.refresh(),redraw:()=>{
+        this.scheduleRender();
+        // A lost/retried graphics context changes the required region contents.
+        if(this.data&&this.loadedRegionQuery?.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
+      },error:e=>this.error(e),selection:()=>this.landscape.spatialSelection,
     });
     this.terrainAnalysis=new TerrainAnalysisUI(this.svg,{
       token:()=>this.owner?.token,revision:()=>this.data?.revision??-1,hasDraft:()=>this.cameraDraftPending(),
@@ -616,8 +620,9 @@ export class CampaignAtlasWorkbench {
     this.opts.status(text, true);
   }
   private regionQuery(buffered=false):AtlasRegionQuery{
+    const terrainRaster=this.spatial?.needsTerrainRaster??true;
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
-    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,contours:this.spatial?.active?0:this.landscape.contours(),perception:get<HTMLInputElement>('atlas-perception').checked};
+    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
   private scheduleRegion(camera=false){
     if(this.root.hidden||!this.owner)return;
@@ -638,7 +643,7 @@ export class CampaignAtlasWorkbench {
   }
   private geometryCoversView(){
     const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
-    return old.scopeId===q.scopeId&&old.floorId===q.floorId&&old.slice===q.slice&&old.roofs===q.roofs&&old.perception===q.perception&&old.contours===q.contours&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
+    return old.scopeId===q.scopeId&&old.floorId===q.floorId&&old.slice===q.slice&&old.roofs===q.roofs&&old.perception===q.perception&&old.terrainRaster===q.terrainRaster&&old.contours===q.contours&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
   }
   private geometryCurrent(){
     if(this.terrainAuthor&&this.terrainAuthor.revision!==this.data?.region?.revision)return false;
@@ -761,7 +766,7 @@ export class CampaignAtlasWorkbench {
       const r = await window.campaign.atlasRegion(w.token,query);
       if (this.owner !== w || request !== this.request) return;
       if (!r.ok) throw new Error(r.error);
-      this.hitVersion++;this.hitDialog.close();this.data = r.value;this.terrainAuthor=null;this.svg.dataset.atlasRegionRevision=String(r.value.region.revision);this.loadedRegionQuery=query;void this.landscape.load().catch(e=>this.error(e));this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');
+      this.hitVersion++;this.hitDialog.close();this.data = r.value;this.terrainAuthor=null;this.svg.dataset.atlasRegionRevision=String(r.value.region.revision);this.loadedRegionQuery=query;this.svg.dataset.atlasTerrainRaster=String(query.terrainRaster!==false);this.svg.dataset.atlasLandscapeTiles=String(r.value.region.landscape?.tiles.length??0);void this.landscape.load().catch(e=>this.error(e));this.root.dataset.regionState='ready';this.svg.setAttribute('aria-busy','false');
       get("atlas-hint").textContent=r.value.region.coverage.mode==='raster'?"Dichte Kartengeometrie als Bild · Auswahl liest das genaue Objekt. Weiter hineinzoomen für Konturwerkzeuge.":"Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.";
       if(r.value.region.coverage.unreadable)get("atlas-hint").textContent+=` ${r.value.region.coverage.unreadable} beschädigte Karteneinträge bleiben unverändert.`;
       const layer=r.value.region.landscape;if(layer?.state==='error')get('atlas-hint').textContent+=' Landschaft nicht verfügbar. Ansicht erneut laden; übrige Karte bleibt nutzbar.';else if(layer?.coverage.mode==='raster')get('atlas-hint').textContent+=' Dichte Landschaft als Übersicht; genaue Auswahl per Klick.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Bildvorlagen als Umrisse.':'');
@@ -2470,7 +2475,7 @@ export class CampaignAtlasWorkbench {
       if(!chosenBox)throw new Error("Dungeon-Grundriss wird geladen. Ausschnitt erneut laden.");
       const box={...chosenBox},pose=this.spatial?.active?this.spatial.visibility():undefined;
       const surfaceBox=pose?{x:box.x-box.width,y:box.y-box.height,width:box.width*3,height:box.height*3}:box;
-      const exportQuery={...this.regionQuery(),box:{...surfaceBox},perception:audience==='public'},references=get<HTMLInputElement>('atlas-export-reference').checked,grid=get<HTMLInputElement>('atlas-export-grid').checked,level=get<HTMLSelectElement>('atlas-hex-level').value,units=atlasUnits(),scale=(document.getElementById('atlas-export-scale') as HTMLInputElement|null)?.checked??false;
+      const exportQuery={...this.regionQuery(),box:{...surfaceBox},perception:audience==='public',terrainRaster:!pose||audience==='public'},references=get<HTMLInputElement>('atlas-export-reference').checked,grid=get<HTMLInputElement>('atlas-export-grid').checked,level=get<HTMLSelectElement>('atlas-hex-level').value,units=atlasUnits(),scale=(document.getElementById('atlas-export-scale') as HTMLInputElement|null)?.checked??false;
       const format=get<HTMLSelectElement>("atlas-export-format").value as 'png'|'jpeg',size=Number(get<HTMLInputElement>("atlas-export-size").value);
       if(!Number.isInteger(size)||size<256||size>8192)throw new Error("Ausgabegröße zwischen 256 und 8192 Pixel wählen.");
       const width=Math.max(1,Math.round(size*Math.min(1,box.width/box.height))),height=Math.max(1,Math.round(size*Math.min(1,box.height/box.width)));

@@ -6,7 +6,7 @@ import { buildSync } from "esbuild";
 buildSync({
   stdin: {
     resolveDir: process.cwd(),
-    contents: `export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-scene';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {Raycaster,Vector2,Vector3} from 'three';`,
+    contents: `export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-scene';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {drawLandscape} from './src/app/atlas-landscape-view';export {Raycaster,Vector2,Vector3} from 'three';`,
   },
   bundle: true,
   platform: "node",
@@ -14,6 +14,7 @@ buildSync({
   outfile: ".build/atlas-spatial-scene-test.cjs",
 });
 const {
+  drawLandscape,
   atlasSpatialColor,
   AtlasSpatialScene,
   atlasSpatialPaths,
@@ -211,4 +212,13 @@ test("Atlas alpha colors preserve translucent previews in GPU materials", () => 
     color: "#ffffff",
     opacity: 0,
   });
+});
+
+
+test('dense landscape images are draped above terrain while duplicate full ground stays omitted',()=>{
+ const root=atlasPaint('group'),box={x:0,y:0,width:20,height:20},tile={campaignId:'c',revision:1,box,width:16,height:16,data:'ground'};
+ drawLandscape(root,[],box,1,new Map(),true,[tile,{...tile,data:'objects',content:'objects'}]);
+ const images=root.children.filter(n=>n.kind==='image');assert.equal(images.length,2);
+ const gpu=new AtlasSpatialScene({commands:images.map(n=>command(n))},{x:0,y:0},new Map([['ground',{width:16,height:16}],['objects',{width:16,height:16}]]),{...flat,height:p=>p.x/2});
+ try{assert.equal(gpu.group.children.length,1);const mesh=gpu.group.children[0];assert.equal(mesh.material.map.image.width,16);assert(mesh.geometry.getAttribute('position').count>6,'overlay follows terrain subdivisions');assert(mesh.geometry.getAttribute('position').array.some((v,i)=>i%3===2&&v>0));}finally{gpu.dispose();}
 });

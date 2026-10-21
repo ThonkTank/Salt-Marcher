@@ -124,6 +124,7 @@ export class AtlasLandscapeReader {
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjection(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return readTerrainProjectionSteps(this.db,source,q,(kind,box)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,0,0,kind),this.projectionCache);}
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{
+  const terrain=q.terrainRaster!==false||q.perception===true;
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
   const layer:AtlasLandscapeLayer={...(setting&&JSON.parse(setting.payload).terrainSettings.style?{terrainStyle:JSON.parse(setting.payload).terrainSettings.style}:{}),seaLevelM:setting?JSON.parse(setting.payload).terrainSettings.seaLevelM:0,state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
   let labelCandidates:MapLabelCandidate[]=[];
@@ -144,6 +145,7 @@ export class AtlasLandscapeReader {
   }
   layer.labels=boundedLabels(labelCandidates,q.box);
   layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=[...(exactReferences?references:[]),...protectedCovers];
+  if(!terrain&&!dense)return layer;
   if(!setting&&!dense&&!this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind') IN ('patch','vegetation') AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height))return layer;
   // At most four world-aligned tiles; a smaller detail level is explicit display aggregation.
   let edge=2**Math.ceil(Math.log2(Math.max(q.box.width,q.box.height)));
@@ -153,24 +155,27 @@ export class AtlasLandscapeReader {
   for(let pixels=Math.min(1024,2**Math.ceil(Math.log2(Math.max(256,edge/(q.box.width/q.width)))));pixels>=16;pixels/=2){
    layer.tiles=[];
    for(const box of regions){
-    const key=JSON.stringify([source.campaignId,box,pixels,dense,q.box.width/q.width,q.references!==false,exactReferences,q.contours??0]),hit=this.cache.get(key);
+    const key=JSON.stringify([source.campaignId,box,pixels,dense,terrain,q.box.width/q.width,q.references!==false,exactReferences,q.contours??0]),hit=this.cache.get(key);
     let json=hit?.json;
     if(hit){this.cache.delete(key);this.cache.set(key,hit);}
     if(!json){
-     const image=new LandscapeRasterizer(box,pixels,pixels,q.contours,q.box.width/q.width);if(setting)image.paint(JSON.parse(setting.payload));const samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;
-     if(this.canonicalTerrain){
-      const b=image.sampleBox,fieldBytes=this.sql("SELECT coalesce(sum(payload_bytes),0) n FROM temp.landscape_shape_bounds WHERE terrain_kind IN ('height','route','lake') AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?").get(b.x,b.x+b.width,b.y,b.y+b.height).n;
-      // Small local fields keep the fast sampler. Its retained input is explicitly
-      // capped; the world-sized path always folds records into bounded scanlines.
-      if(fieldBytes<=1024*1024){
-       if(!setting)image.paint(settingsRecord(layer.seaLevelM??0));
-       for(const kind of ['height','route','lake'] as const)for(const r of this.rows(source,b,true,0,0,kind))image.paint(r);
-      }else image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>this.rows(source,band,true,0,0,kind),false));
-      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'base'))image.paint(r);
-     }else for(const r of this.rows(source,image.sampleBox,true,samplePixels))if(!r.paint&&!r.vegetation)image.paint(r);
-     for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'cover'))image.paintCover(r);
-     // Order in SQL, then paint one record at a time. No spread/sort of the author corpus.
-     for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'color'))image.paintColor(r);
+     const image=new LandscapeRasterizer(box,pixels,pixels,terrain?q.contours:0,q.box.width/q.width);
+     if(terrain){
+      if(setting)image.paint(JSON.parse(setting.payload));const samplePixels=pixels+2*LANDSCAPE_RASTER_PAD;
+      if(this.canonicalTerrain){
+       const b=image.sampleBox,fieldBytes=this.sql("SELECT coalesce(sum(payload_bytes),0) n FROM temp.landscape_shape_bounds WHERE terrain_kind IN ('height','route','lake') AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?").get(b.x,b.x+b.width,b.y,b.y+b.height).n;
+       // Small local fields keep the fast sampler. Its retained input is explicitly
+       // capped; the world-sized path always folds records into bounded scanlines.
+       if(fieldBytes<=1024*1024){
+        if(!setting)image.paint(settingsRecord(layer.seaLevelM??0));
+        for(const kind of ['height','route','lake'] as const)for(const r of this.rows(source,b,true,0,0,kind))image.paint(r);
+       }else image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>this.rows(source,band,true,0,0,kind),false));
+       for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'base'))image.paint(r);
+      }else for(const r of this.rows(source,image.sampleBox,true,samplePixels))if(!r.paint&&!r.vegetation)image.paint(r);
+      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'cover'))image.paintCover(r);
+      // Order in SQL, then paint one record at a time. No spread/sort of the author corpus.
+      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'color'))image.paintColor(r);
+     }
      let tileEnvironment:ReturnType<typeof readVegetationEnvironment>|undefined;
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
       if(r.vegetation){
@@ -186,7 +191,7 @@ export class AtlasLandscapeReader {
       else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
      const data=PNG.sync.write({width:pixels,height:pixels,data:Buffer.from(image.finish())} as PNG).toString('base64');
-     json=JSON.stringify({campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
+     json=JSON.stringify({...(!terrain?{content:'objects'}:{}),campaignId:source.campaignId,revision:source.revision,box,width:pixels,height:pixels,data:'data:image/png;base64,'+data});
      const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(landscapeRasterBounds(box,pixels,pixels),Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
     }
     const tile=JSON.parse(json) as LandscapeRaster;tile.revision=source.revision;layer.tiles.push(tile);

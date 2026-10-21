@@ -43,7 +43,7 @@ try{
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  const ready=async()=>{await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready');};await ready();
- assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-view'),'main');const surface=await page.locator('#atlas-terrain-spatial').elementHandle();assert.equal(await page.locator('#vegetation-spatial-dialog').count(),0);
+ assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-view'),'main');assert.equal(await page.locator('#campaign-map').getAttribute('data-atlas-terrain-raster'),'false');assert.equal(await page.locator('#campaign-map').getAttribute('data-atlas-landscape-tiles'),'0');const surface=await page.locator('#atlas-terrain-spatial').elementHandle();assert.equal(await page.locator('#vegetation-spatial-dialog').count(),0);
  await page.waitForFunction(()=>window.__terrainLoads.some(r=>r.quality==='overview'));
  const early=JSON.parse(await page.locator('#campaign-map').getAttribute('data-atlas-view')),area=await page.locator('#campaign-map').boundingBox();
  await page.mouse.move(area.x+area.width/2,area.y+area.height/2);await page.mouse.wheel(0,-60);
@@ -70,6 +70,13 @@ try{
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail');
  await page.screenshot({path:out+'/02-repository-tilt-zoom.png'});result.checks.push('npm run start:desktop launches this repository; campaign navigation opens the main Atlas.','Tilt, rotation and wheel zoom retain the same main canvas.');
  result.checks.push('Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.');
+ // Real GPU context loss must request a complete fallback region before presenting it.
+ await page.evaluate(()=>document.querySelector('#atlas-terrain-spatial').getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.renderer==='canvas2d'&&document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='true');await atlasCanvasReady(page);
+ assert(Number(await page.locator('#campaign-map').getAttribute('data-atlas-landscape-tiles'))>0);await page.screenshot({path:out+'/04-graphics-fallback.png'});
+ await page.locator('#atlas-view').click();await page.locator('#atlas-camera-retry').click();await page.keyboard.press('Escape');await ready();
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.atlasTerrainRaster==='false');assert.equal(await page.locator('#campaign-map').getAttribute('data-renderer'),'webgl');
+ await page.screenshot({path:out+'/05-camera-recovered.png'});result.checks.push('Main view omits duplicate ground images; actual GPU loss reloads complete Canvas terrain and explicit retry restores the main camera.');
  result.artifacts={};for(const file of ['main.cjs','preload.cjs','ui/renderer.js','ui/index.html'])result.artifacts[file]=createHash('sha256').update(await readFile('.build/desktop/'+file)).digest('hex');
  await page.close({runBeforeUnload:true});const closed=await Promise.race([exited,new Promise((_,reject)=>setTimeout(()=>reject(Error('Development command did not exit normally')),15000))]);assert.deepEqual(closed,{code:0,signal:null});assert.deepEqual(result.errors,[]);result.exit=closed;
  await assert.rejects(stat('/proc/'+child.pid),{code:'ENOENT'});result.pidAbsent=true;await writeFile(out+'/result.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result.checks));

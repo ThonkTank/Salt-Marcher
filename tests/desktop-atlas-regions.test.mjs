@@ -304,3 +304,20 @@ test('objects ignore legacy city sheets; painted areas neither own nor mutate th
  write({kind:'undo'});await assertGeometry();write({kind:'redo'});await assertGeometry();
  const overview=await f.read(query({x:1000,y:1000,width:10000,height:10000}));assert(!overview.labels.some(l=>l.id.startsWith('city:')));assert(overview.cities.flatMap(c=>c.units).some(u=>u.id==='independent-road'),'zoom never replaces independent geometry with a city marker');
 });
+
+
+test('projected terrain omits duplicate ground but retains dense transparent objects and cache separation',async t=>{
+ const f=fixture(t,1),base={id:'land',revision:0,kind:'patch',name:'',points:[],polygons:[{outer:[{x:-20,y:-20},{x:40,y:-20},{x:40,y:40},{x:-20,y:40}],holes:[]}],resolution:1,width:0,values:{terrain:'plains'}};
+ landscape(f,base);landscape(f,road('road'));
+ const q={...query({x:-10,y:-10,width:40,height:40}),width:128,height:128};
+ const full=await f.read(q);assert(full.landscape.tiles.length>0);
+ const thin=await f.read({...q,terrainRaster:false});assert.equal(thin.landscape.state,'ready');assert.deepEqual(thin.landscape.tiles,[]);assert.deepEqual(thin.landscape.records,full.landscape.records);assert.deepEqual(thin.landscape.labels,full.landscape.labels);
+ assert.throws(()=>f.reader.read(f.source,{...q,terrainRaster:'false'}),/Kartenausschnitt/);
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++)landscape(f,road('dense'+i));})();
+ const dense=await f.read({...q,terrainRaster:false});assert.equal(dense.landscape.coverage.mode,'raster');assert(dense.landscape.tiles.length>0);assert(dense.landscape.tiles.every(t=>t.content==='objects'));
+ const pixel=(view,x,y)=>{const tile=view.landscape.tiles.find(t=>x>=t.box.x&&y>=t.box.y&&x<t.box.x+t.box.width&&y<t.box.y+t.box.height),image=require('pngjs').PNG.sync.read(Buffer.from(tile.data.split(',')[1],'base64'));const at=(Math.floor((y-tile.box.y)/tile.box.height*tile.height)*tile.width+Math.floor((x-tile.box.x)/tile.box.width*tile.width))*4;return [...image.data.subarray(at,at+4)];};
+ assert.equal(pixel(dense,5,0)[3],255,'dense roads remain painted');assert.equal(pixel(dense,5,5)[3],0,'objects do not cover projected terrain');assert.equal(f.reader.candidatesAt(f.source,q,{x:5,y:0},0,'landscape').total,601);
+ const fallback=await f.read(q);assert(fallback.landscape.tiles.every(t=>t.content===undefined));assert.equal(pixel(fallback,5,5)[3],255,'fallback still has ground after an object-only cache entry');
+ const masked=await f.read({...q,terrainRaster:false,perception:true});assert(masked.landscape.tiles.every(t=>t.content===undefined));assert.equal(pixel(masked,5,5)[3],255,'public/masked rendering always retains its terrain');
+ const again=await f.read({...q,terrainRaster:false});assert.equal(pixel(again,5,5)[3],0,'full ground cache cannot leak into a transparent overlay');
+});

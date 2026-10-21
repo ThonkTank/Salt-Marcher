@@ -314,6 +314,8 @@ export class LandscapeRasterizer {
   }
 }
 export interface LandscapeRaster {
+  /** Transparent aggregate drawn above a separately projected terrain surface. */
+  content?: 'objects';
   campaignId: string; revision: number; box: LandscapeBox;
   width: number; height: number; data: string;
 }
