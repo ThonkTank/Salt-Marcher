@@ -99,7 +99,8 @@ function rest(kind:'short'|'long'){
   const scope={id:scene.id,expectedClockRevision:scene.clock.revision,expectedMembershipRevision:scene.membershipRevision,expectedFocusRevision:basis.focusRevision};
   const action:Extract<ProgressAction,{kind:'rest'}>={kind:'rest',rest:kind,recipients,restoreHp,scene:withTime?{...scope,amount,unit:kind==='short'?'minutes':'hours'}:scope};
   const key=JSON.stringify({token:workspace.token,action});
-  const restFacts=(kind==='short'?'Kurze':'Lange')+' Rast für '+names.join(', ')+' · '+(withTime?amount+(kind==='short'?' Minuten':' Stunden')+' Szenenzeit':'ohne Zeitfortschreibung');
+  const restTitle=(kind==='short'?'Kurze':'Lange')+' Rast',timeFact=withTime?amount+(kind==='short'?' Minuten':' Stunden')+' Szenenzeit':'ohne Zeitfortschreibung';
+  const restFacts=restTitle+' für '+names.join(', ')+' · '+timeFact;
   const description=restFacts+(restoreHp?' · bekannte positive HP vollständig heilen':' · HP unverändert');
   if(restConfirmation!==key){
    clearRestConfirmation();restConfirmation=key;
@@ -109,7 +110,7 @@ function rest(kind:'short'|'long'){
    return;
   }
   const token=workspace.token,windowRevision=partyWindowRevision,inputRevision=restInputRevision;
-  let healthResult='';
+  let healthResult=' HP-Ergebnis nicht verfügbar.';
   clearRestConfirmation();void act(async owner=>{
    const receipt=await runPartyProgress(owner.token,action);
    if(restoreHp&&receipt)healthResult=' HP nach der Rast: '+recipients.map(({characterId})=>{
@@ -118,7 +119,7 @@ function rest(kind:'short'|'long'){
    }).join(' · ')+'.';
   },'party-rest-status').then(saved=>{
    if(saved&&workspace?.token===token&&windowRevision===partyWindowRevision&&inputRevision===restInputRevision&&opened()&&el<HTMLDetailsElement>('party-rest').open&&live?.scene?.id===scene.id)
-    message('Gebucht: '+restFacts+(restoreHp?' · bekannte positive HP vollständig geheilt':' · HP unverändert')+'.'+healthResult,false,'party-rest-status');
+    message('Gebucht: '+(restoreHp?restTitle+' · '+timeFact+'.'+healthResult:restFacts+' · HP unverändert.'),false,'party-rest-status');
   });
  }catch(error){clearRestConfirmation();message((error as Error).message,true,'party-rest-status');}
 }
