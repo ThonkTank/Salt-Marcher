@@ -37,8 +37,7 @@ nicht die Ursache. Der Fehler wurde anschließend ohne Electron reproduziert.
   und schmale Kartenfläche, an der der native Klick ausfiel.
 - `tests/terrain-ray.test.mjs`: Zellwanderung gegen vollständige Dreieckstreffer,
   Blickrichtungen, Vorderseiten, Bereichsgrenzen und entfernte Koordinaten.
-- `tools/test-desktop-room-groups.mjs`: vorhandener Stadtkontext darf ein neues
-  Einzelhaus nicht in einen Stadteintrag umwandeln; gemeinsamer Raumeditor,
+- `tools/test-desktop-room-groups.mjs`: Einzelhaus ohne Stadtkontext, gemeinsamer Raumeditor,
   Skalierung, Teilen, Undo/Redo und Wiederöffnung bleiben geprüft.
 - `tools/test-desktop-world-authoring.mjs`: vollständiger Autorenablauf aus
   der leeren Kampagne. [Nativer Ergebnisdatensatz](result.json): acht Stufen,
@@ -47,6 +46,16 @@ nicht die Ursache. Der Fehler wurde anschließend ohne Electron reproduziert.
   Starter endeten mit Exit 0, beide PIDs waren anschließend weg. Keine Renderer-
   Fehler. [Siedlung](06-settlement.png), [Raum](07-building-room.png) und
   [Wiederöffnung](08-reopened.png).
+
+Die ältere Raumgruppenprobe startete noch über die Suche nach einem historischen
+Stadtdokument und scheiterte dort vor der ersten Platzierung. Ihr Einstieg
+verwendet jetzt eine leere Kampagne; die anschließenden Bearbeitungsschritte
+bleiben erhalten. Sie verwendet ausdrücklich Meter und wartet vor dem Wechsel
+des Werkzeugs auf den Speicherabschluss. [Die erneute native Probe](room-groups.json)
+bestand einschließlich Krypta, Raumtext, Skalierung, Teilen, Undo/Redo und
+frischer Wiederöffnung. Starter und beide App-Prozesse endeten mit Exit 0;
+beide PIDs wurden anschließend als beendet geprüft. Historischer Stadtkontext
+wird im Controller-Test geprüft.
 
 Diese Funktionsprobe enthält keine volle Weltlast und ist keine ästhetische
 Abnahme. Große Sculpt-Pinsel, vollständige Weltlast und die Qualifikation auf
