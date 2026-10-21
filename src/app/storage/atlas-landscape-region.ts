@@ -34,9 +34,10 @@ export class AtlasLandscapeReader {
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
   db.exec(LANDSCAPE_COLOR_INDEX);db.exec(LANDSCAPE_COVER_INDEX);
-  // Each field block reads these sparse kinds. Keep its canonical order in a
-  // small partial index instead of scanning every base patch for every block.
-  for(const kind of ['height','route','lake'])db.exec(`CREATE INDEX temp.landscape_${kind}_order ON landscape_shape_bounds(resolution DESC,coalesce(paint_order,0),source_row) WHERE terrain_kind='${kind}'`);
+  // Each field block reads these sparse kinds in canonical order. Cover bounds,
+  // predicate and raw sort inputs too, so rejecting distant sources never
+  // probes the much larger metadata table (including its base patches).
+  for(const kind of ['height','route','lake'])db.exec(`CREATE INDEX temp.landscape_${kind}_order ON landscape_shape_bounds(resolution DESC,coalesce(paint_order,0),source_row,min_x,max_x,min_y,max_y,terrain_kind,paint_order) WHERE terrain_kind='${kind}'`);
   db.exec("CREATE INDEX temp.landscape_line_span ON landscape_shape_bounds(source_row) WHERE kind IN ('road','river')");
   db.exec("CREATE INDEX temp.landscape_place_span ON landscape_shape_bounds(source_row) WHERE kind='place'");
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);

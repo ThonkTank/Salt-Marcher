@@ -15,27 +15,38 @@ function record(kind,id,i=0){
  if(kind==='route'){const points=[{x:0,y:0},{x:64,y:64}];return {...emptyRecord('road'),id,points,route:routeSpec('road',points),resolution,order};}
  return {...emptyRecord('patch'),id,polygons:[polygon],resolution,order,...(kind==='lake'?{surface:'freshwater',waterLevelM:30}:{values:{terrain:'forest'}})};
 }
-test('sparse terrain kinds use ordered indexes and preserve exact streams through metadata changes',t=>{
+test('sparse terrain kinds use covering ordered indexes and preserve exact streams through metadata changes',t=>{
  const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-kind-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Sparse terrain kinds'),token=store.activate(campaign.id).token,db=store.db;
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
  const insert=db.prepare('INSERT INTO atlas_landscape(rowid,campaign_id,id,revision,min_x,max_x,min_y,max_y,payload) VALUES(?,?,?,?,?,?,?,?,?)');let row=9007199254740993n;
  const put=r=>{const b=bounds(r);insert.run((row++).toString(),campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));};
  db.transaction(()=>{for(let i=0;i<10000;i++)put(record('base',`base:${i}`));for(let i=0;i<133;i++)for(const kind of kinds)put(record(kind,`${kind}:${i}`,i));})();
  const reader=new AtlasLandscapeReader(db);let source=store.atlasRegionSource(token);reader.sync(source);
- const plans=[],sql=reader.sql.bind(reader);
- reader.sql=text=>{const statement=sql(text);return text.startsWith('SELECT CAST(m.source_row')?{iterate(...args){plans.push(db.prepare('EXPLAIN QUERY PLAN '+text).all(...args).map(r=>r.detail).join('\n'));return statement.iterate(...args);}}:statement;};
+ const plans=[],programs=[],sql=reader.sql.bind(reader);
+ reader.sql=text=>{const statement=sql(text);return /^SELECT CAST\((m\.)?source_row AS TEXT\)/.test(text)?{iterate(...args){plans.push(db.prepare('EXPLAIN QUERY PLAN '+text).all(...args).map(r=>r.detail).join('\n'));programs.push(db.prepare('EXPLAIN '+text).all(...args));return statement.iterate(...args);}}:statement;};
+ const metadataRoot=db.prepare("SELECT rootpage FROM temp.sqlite_master WHERE name='landscape_shape_bounds'").get().rootpage;
  const box={x:-300,y:-300,width:1000,height:1000};
  function check(){
   for(const kind of kinds){
    for(const samples of [undefined,{columns:31,rows:27}]){
     const actual=[...reader.terrainStream(source)(kind,box,samples)],plan=plans.at(-1);
-    assert.match(plan,new RegExp('USING INDEX landscape_'+kind+'_order'));
+    assert.match(plan,new RegExp('USING COVERING INDEX landscape_'+kind+'_order'));
     assert.doesNotMatch(plan,/USE TEMP B-TREE/,'canonical order should stream directly from the sparse index');
+    assert(!programs.at(-1).some(op=>op.opcode==='OpenRead'&&op.p2===metadataRoot&&op.p3===1),'rejecting candidates must not open the metadata table, even for expression indexes');
     const definition=db.prepare('SELECT sql FROM temp.sqlite_master WHERE name=?').get('landscape_'+kind+'_order').sql;
     db.exec('DROP INDEX temp.landscape_'+kind+'_order');
     const expected=[...reader.terrainStream(source)(kind,box,samples)];db.exec(definition);
     assert.deepEqual(actual,expected,`${kind} order, payloads and sample support`);
    }
+  }
+  // The decoded-height path selects bounds too. Check its actual SQL program,
+  // not just the canonical-record stream used by the equality oracle above.
+  for(const area of [box,{x:61.123,y:63.75,width:2.5,height:.25},{x:10000,y:10000,width:100,height:100}]){
+   const read=()=>[...reader.terrainStream(source).heightSources(area,{columns:13,rows:17})].map(s=>({version:s.version,x:s.x,y:s.y,pixel:s.pixel,values:s.read()}));
+   const actual=read();assert.match(plans.at(-1),/USING COVERING INDEX landscape_height_order/);
+   assert(!programs.at(-1).some(op=>op.opcode==='OpenRead'&&op.p2===metadataRoot&&op.p3===1));
+   const definition=db.prepare("SELECT sql FROM temp.sqlite_master WHERE name='landscape_height_order'").get().sql;
+   db.exec('DROP INDEX temp.landscape_height_order');const expected=read();db.exec(definition);assert.deepEqual(actual,expected);
   }
  }
  check();
@@ -47,6 +58,7 @@ test('sparse terrain kinds use ordered indexes and preserve exact streams throug
  assert(![...reader.terrainStream(source)('height',box)].some(r=>r.id==='height:0'));
  assert(![...reader.terrainStream(source)('route',box)].some(r=>r.id==='route:0'));
  assert([...reader.terrainStream(source)('height',box)].some(r=>r.id==='new-height'));
+ reader.sync({...source,reset:true});check();
 });
 test('terrain line reads skip place and vegetation payloads while preserving painter order through kind changes and deletion',t=>{
  const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-lines-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Terrain lines'),token=store.activate(campaign.id).token,db=store.db;

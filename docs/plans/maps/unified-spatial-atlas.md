@@ -323,3 +323,11 @@ Der vorhandene, auf 16 MiB begrenzte Projektionscache hält jetzt auch dekodiert
 ### Räumliche Grundflächenabfragen (22.10.2026)
 
 [Vollständig abdeckender Terrain-Index](../../reference/atlas-base-index-20261022/README.md): Ein zusätzlicher SQLite-Index beschleunigt die Grundflächenabfragen bei der Detailverfeinerung. Die erste Übersicht bleibt vom Aufbau unabhängig; SQLite pflegt Änderungen und Rollbacks. Ein aufwendigerer Rtree-Prototyp wurde nach Gegenproben verworfen. Genaue Grenzen, Abtastung und Zeichenreihenfolge bleiben erhalten. Die vollständige Weltkarten- und Pentium-Abnahme bleibt offen.
+
+Die vorhandenen kleinen Indizes für Höhen, Trassen und Seen enthalten inzwischen
+auch alle räumlichen Filterdaten. Damit entfällt das wiederholte Nachladen ihrer
+Grenzen aus der großen Metadatentabelle. [Pixelgleicher Vergleich und native
+Prüfung](../../reference/atlas-field-index-20261022/README.md): 48 Detailkacheln
+und Kontext benötigten lokal 10,7–10,9 statt 11,4–12,7 Sekunden reine Aufbereitung.
+Die erste Übersicht und das unmittelbare Reaktionsziel bleiben offen; dieser
+Schritt verändert weder Auflösung noch Speicherformat der Autorenkarte.
