@@ -1,0 +1,75 @@
+{
+  "before": {
+    "rss": 98086912,
+    "heapTotal": 21168128,
+    "heapUsed": 10528128,
+    "external": 2255233,
+    "arrayBuffers": 17359
+  },
+  "after": {
+    "rss": 131801088,
+    "heapTotal": 24215552,
+    "heapUsed": 17787312,
+    "external": 2323173,
+    "arrayBuffers": 17591
+  },
+  "collected": {
+    "rss": 131170304,
+    "heapTotal": 23478272,
+    "heapUsed": 12508152,
+    "external": 2323173,
+    "arrayBuffers": 17591
+  },
+  "closed": {
+    "rss": 131170304,
+    "heapTotal": 22691840,
+    "heapUsed": 12503264,
+    "external": 2323173,
+    "arrayBuffers": 17591
+  },
+  "durationMs": 1013.7062050000001,
+  "fixture": {
+    "counts": {
+      "hexes": 5000,
+      "buildings": 1,
+      "details": 1,
+      "dungeonRooms": 1
+    },
+    "inventory": {
+      "hexes": 5000,
+      "sourceCells": 5000,
+      "places": 0,
+      "heightTiles": 0,
+      "buildings": 1,
+      "details": 1,
+      "dungeonRooms": 1,
+      "rooms": 32,
+      "elements": 101,
+      "bindings": 4,
+      "locations": 3,
+      "cityDocuments": 0
+    },
+    "timings": {
+      "hexesMs": 542.455606,
+      "buildingsMs": 30.513021000000208,
+      "detailsMs": 5.435688000000027
+    },
+    "hexWorkload": "Biome properties; height authored independently, not 100000 fine relief edits",
+    "city": {
+      "x": 0,
+      "y": 0,
+      "width": 3100,
+      "height": 1600
+    },
+    "building": {
+      "id": "mixed-house:0",
+      "x": 30,
+      "y": 30
+    },
+    "dungeon": {
+      "id": "mixed-dungeon",
+      "x": 10000,
+      "y": 10000
+    }
+  }
+}

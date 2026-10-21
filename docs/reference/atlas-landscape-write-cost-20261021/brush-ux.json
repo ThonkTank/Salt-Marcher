@@ -1,0 +1,48 @@
+{
+  "checks": [
+    "Kompakte Oberfläche bei 640 px Fensterbreite und bis 200 % Skalierung ohne horizontales Überlaufen",
+    "Richtung, fünf Vorlagen, Bildschirmradius und sprungfreier Weltmaßmodus",
+    "Höhenzug, gesperrte Kamera/Größe während des Zugs, Undo/Redo",
+    "Land-, Farb-, Wasser-, Daten- und Bewuchspinsel sowie Wasseroptionen",
+    "Regions-, Höhlen-, Radier- und Streupinsel skalieren mit dem Atlaszoom",
+    "Shift + Mausrad ändert Radius statt Kamera bei allen Pinselfamilien, im Weltmaß und gekippten Atlas; laufender Zug bleibt gesperrt",
+    "Globaler Reliefstil und bildschirmfester Radius im gekippten Atlas",
+    "PNG-Ausgabe mit globalem Reliefstil",
+    "Wiederöffnen mit erhaltenem Radius und Reliefstil bei anderem Browserzoom"
+  ],
+  "campaign": "22ce2bdd-7941-4ddc-80af-ceb70c58baa3",
+  "source": "bb9f2d09111397e86264aa398ee51c261855e85d",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-brush-ux-ymDMQd",
+  "artifacts": {
+    "main.cjs": "1241a2f47a9b824f9024aab9c2382ca4373a153f85a15e649a9bb8f0fe4d58b7",
+    "preload.cjs": "3482865b2097b76cff63ed016d9be49967c8b09646bf5841b5bafdd0e1788eb1",
+    "ui/renderer.js": "a1dec1de735d88d44b9327cdbf0b5fabe631a612ed57818b48d50de4390f376a",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3192313,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3192939,
+      "zoom": 1.25,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "rawSha256": "78d6e65362e6303d3d5dddb4dfed79d77c24453a285ab32dc5fa4c37a402c6f0"
+}

@@ -27,6 +27,8 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Aktuelle Kamera im selben Animationsschritt](../reference/atlas-camera-frame-latency-20261021/README.md): `AtlasCanvas` berechnet Zoom und zeichnet Karte/Hilfsebene in einem gemeinsamen RAF-Auftrag. Im großen Weltfall sinken Zeichnungen mit vorheriger Kamera von 65 auf null; Bildratenziel und vollständige Weltqualifikation bleiben offen.
 
+[Landschaftsschreiben und gemischte Welt](../reference/atlas-landscape-write-cost-20261021/README.md): vier vorbereitete SQL-Programme je Verbindung begrenzen wiederholte Allokationen im Writer. Beim Öffnen wartet die Arbeitsfläche nicht mehr auf das erste Atlasbild; Autorentreffer behalten ihre eigene Freigabe. Die gemischte Probe enthält 100.000 Geländezuordnungen, 5.000 eingerichtete Gebäude und einen großen Dungeon. Sie legt weiterhin langsames erstes Terrain und eine Pause nach dem großen Pinselzug offen; sie ist keine vollständige Leistungsabnahme.
+
 ## Wo ändern und prüfen?
 
 | Aufgabe | Zuständiger Code | Vorhandene Gegenprobe |
