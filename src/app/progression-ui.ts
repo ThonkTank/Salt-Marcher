@@ -203,7 +203,7 @@ function renderLedger() {
   get('ledger-retry').hidden=!ledgerDetailError||!selectedLedger;
   const l=ledgerDetail; get('ledger-editor').hidden=!l;
   get('ledger-detail').textContent=l?l.name+(l.sourceTitle?' · Fund: '+l.sourceTitle:'')+' · '+l.recordedAt+(l.combatId?' · Kampf '+l.combatId.slice(0,8):'')+(l.treasureId?' · Beute '+l.treasureId.slice(0,8):'')+(l.sourceNoteId?' · Quest/Gerücht '+l.sourceNoteId.slice(0,8):'')+(l.counterparty?' · '+l.counterparty:'')+(l.provenance?' · '+l.provenance:'')+(l.sourceTreasureId?' · Ursprünglicher Schatz '+l.sourceTreasureId.slice(0,8):'')+(l.rewardCreditId?' · Loot-Gutschrift bei ursprünglichem Empfänger · Herkunft '+l.rewardCreditId.slice(0,8):'')+(l.creditedCopper!==undefined?' · Aktueller gutgeschriebener Lootwert: '+(l.creditedCopper===null?'unbekannt':gold(l.creditedCopper)):'')+(l.mergeTargetId?' · Zusammengeführt in '+l.mergeTargetId.slice(0,8):'')+(l.paidCopper?' · Gezahlt: '+gold(l.paidCopper):'')+(ledgerUnavailable()?' · Nicht verfügbar – letzter gelesener Stand':''):'';
-  ledgerOperationFields();drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute);lock();
+  ledgerOperationFields();drawLedgerStacks(get('ledger-stack-tools'),l,ledger.items,view?.characters??[],execute,()=>{get<HTMLDetailsElement>('ledger-adjustments').open=false;});lock();
 }
 async function loadTreasures(more=false,preferredId?:string) {
   if(!workspace)return;const token=workspace.token,request=++treasureRequest,before=treasures;

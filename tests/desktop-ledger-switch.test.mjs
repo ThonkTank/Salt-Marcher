@@ -133,6 +133,6 @@ test('stack operations expose their own inputs and preview quantities without wr
   assert.equal(recipient.parentElement.hidden,false);assert.equal(source.parentElement.hidden,true);
   change('split');assert.equal(recipient.parentElement.hidden,true);assert.equal(amount.parentElement.hidden,false);amount.value='2';amount.oninput();assert.match(preview.textContent,/2.*neuer Stapel.*2 bleiben/);assert.equal(x.writes.length,0);
   amount.value='4';amount.oninput();assert.equal([...root.querySelectorAll('button')].find(b=>b.textContent==='Mengenstapel teilen').disabled,true);
-  change('merge');assert.equal(amount.parentElement.hidden,true);assert.equal(recipient.parentElement.hidden,true);assert.equal(source.parentElement.hidden,false);assert.match(preview.textContent,/Kein passender Stapel/);assert.equal([...root.querySelectorAll('button')].find(b=>b.textContent==='Stapel zusammenführen').disabled,true);assert.equal(x.writes.length,0);
+  x.el('ledger-adjustments').open=true;x.el('ledger-reason').value='Offener Verkaufsentwurf';change('merge');assert.equal(x.el('ledger-adjustments').open,false);assert.equal(x.el('ledger-reason').value,'Offener Verkaufsentwurf');assert.equal(amount.parentElement.hidden,true);assert.equal(recipient.parentElement.hidden,true);assert.equal(source.parentElement.hidden,false);assert.match(preview.textContent,/Kein passender Stapel/);assert.equal([...root.querySelectorAll('button')].find(b=>b.textContent==='Stapel zusammenführen').disabled,true);assert.equal(x.writes.length,0);
  }finally{await x.cleanup();}
 });

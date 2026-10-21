@@ -1,6 +1,6 @@
 import {ledgerStacksMatch,type LedgerItem,type ProgressView,type ProgressAction} from './progression';
 /** Each operation exposes only its own inputs; the existing Progress writer owns the transaction. */
-export function drawLedgerStacks(root:HTMLElement,l:LedgerItem|null,items:LedgerItem[],characters:ProgressView['characters'],send:(a:ProgressAction)=>Promise<boolean>){
+export function drawLedgerStacks(root:HTMLElement,l:LedgerItem|null,items:LedgerItem[],characters:ProgressView['characters'],send:(a:ProgressAction)=>Promise<boolean>,onAction?:()=>void){
  root.replaceChildren();if(!l||l.status!=='received'||l.quantity<1)return;
  const label=(text:string,input:HTMLElement)=>{const node=document.createElement('label');node.append(text,input);return node;};
  const title=document.createElement('h4'),mode=document.createElement('select'),quantity=document.createElement('input'),reason=document.createElement('input'),source=document.createElement('select'),recipient=document.createElement('select'),preview=document.createElement('p');
@@ -30,6 +30,6 @@ export function drawLedgerStacks(root:HTMLElement,l:LedgerItem|null,items:Ledger
   else if(!valid||action==='split'&&split.disabled)preview.textContent=action==='split'?'Zum Teilen eine ganze Teilmenge kleiner als den Bestand eingeben.':'Eine ganze Teilmenge von 1 bis '+l.quantity+' eingeben.';
   else preview.textContent=action==='split'?`${n} × ${name} als neuer Stapel; ${l.quantity-n} bleiben in diesem Stapel bei ${owner}.`:`${n} × ${name} an ${characters.find(c=>c.characterId===recipient.value)?.name??'eine andere Figur'}; ${l.quantity-n} bleiben bei ${owner}. Interne Weitergaben zählen nicht als neue Belohnung.`;
  };
- mode.onchange=update;quantity.oninput=update;source.onchange=update;recipient.onchange=update;
+ mode.onchange=()=>{update();onAction?.();};quantity.oninput=update;source.onchange=update;recipient.onchange=update;
  root.append(title,label('Aktion',mode),fields,preview,transfer,split,merge);update();
 }
