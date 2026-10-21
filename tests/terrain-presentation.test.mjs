@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({entryPoints:['src/app/terrain-presentation.ts'],outfile:'.build/terrain-presentation-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainPresentation,terrainSnapshotStillValid}=createRequire(import.meta.url)('../.build/terrain-presentation-test.cjs');
+const {TerrainPresentation,terrainSnapshotStillValid,interactiveTerrainFrame}=createRequire(import.meta.url)('../.build/terrain-presentation-test.cjs');
 const identity=revision=>({revision,fence:'f'+revision});
 const frame=revision=>({kind:'full',target:identity(revision),view:'top',layer:{},invalidation:{reset:false,bounds:[]}});
 const tick=()=>new Promise(setImmediate);
@@ -50,4 +50,38 @@ test('snapshot delivery tolerates later commits and receipt-only writes but reje
  assert(terrainSnapshotStillValid(source,{...source,fence:'receipt'}));
  assert(terrainSnapshotStillValid(source,{...source,revision:8,sequence:4,fence:'b'}));
  for(const changed of [{revision:6},{sequence:4},{epoch:'other'},{token:'other'},{filename:'other'},{campaignId:'other'},{shadow:{epoch:'preview'}}])assert.equal(terrainSnapshotStillValid(source,{...source,...changed}),false);
+});
+
+
+test('interactive colour preserves full geometry, view, objects and the original detail request',()=>{
+ const original={kind:'tilted',query:{width:128,height:96,detailResolution:256,detail:{x:0,y:0,width:10,height:10},view:{columns:257,rows:257},objects:{roads:[]}}};
+ const snapshot=structuredClone(original),fast=interactiveTerrainFrame(original);
+ assert.equal(fast.query.width,64);assert.equal(fast.query.height,64);assert.equal(fast.query.detailResolution,64);
+ assert.equal(fast.query.view,original.query.view);assert.equal(fast.query.objects,original.query.objects);
+ assert.deepEqual(original,snapshot);assert.equal(interactiveTerrainFrame({kind:'top',query:{}}).kind,'top');
+});
+test('progressive display publishes coherent fast then fine frames of the same revision and finish waits for fine',async()=>{
+ const requests=[],pending=[],shown=[];
+ const display=new TerrainPresentation((source,base,refinement)=>{requests.push({source,base,refinement});return new Promise(resolve=>pending.push(resolve));},(f,fine)=>shown.push([f.target.revision,fine]),e=>{throw e;},true);
+ display.update(identity(1));let finished=false;const done=display.finish().then(()=>finished=true);
+ pending.shift()(frame(1));await tick();assert.deepEqual(shown,[[1,false]]);assert.equal(finished,false);
+ assert.equal(requests[1].refinement,true);assert.equal(requests[1].base,undefined);
+ pending.shift()(frame(1));await done;assert.deepEqual(shown,[[1,false],[1,true]]);
+});
+test('a newer confirmed revision supersedes fine output, while refinement failures do not swallow worker errors',async()=>{
+ const requests=[],pending=[],shown=[],errors=[];
+ const display=new TerrainPresentation((source,base,fine)=>{requests.push([source.revision,!!fine]);return new Promise((resolve,reject)=>pending.push({resolve,reject}));},(f,fine)=>shown.push([f.target.revision,fine]),e=>errors.push(String(e)),true);
+ display.update(identity(1));pending.shift().resolve(frame(1));await tick();
+ display.update(identity(2));pending.shift().resolve(frame(1));await tick();
+ assert.deepEqual(shown,[[1,false]],'old detail cannot overwrite newer pending input');
+ pending.shift().resolve(frame(2));await tick();pending.shift().reject(Error('Geländeberechnung durch neuere Anfrage ersetzt.'));await tick();
+ assert.deepEqual(errors,[]);display.update(identity(3));pending.shift().resolve(frame(3));await tick();pending.shift().reject(Error('worker exited'));await tick();
+ assert.match(errors[0],/worker exited/);assert.deepEqual(requests,[[1,false],[1,true],[2,false],[2,true],[3,false],[3,true]]);
+ display.stop();
+});
+test('an outdated fast reply does not refine a previously shown source',async()=>{
+ const requests=[],shown=[];
+ const display=new TerrainPresentation(async(source,base,fine)=>{requests.push([source.revision,!!fine]);return frame(1);},(f,fine)=>shown.push([f.target.revision,fine]),e=>{throw e;},true);
+ display.update(identity(1));await tick();display.update(identity(2));await tick();
+ assert.deepEqual(requests,[[1,false],[1,true],[2,false]]);assert.deepEqual(shown,[[1,false],[1,true]]);display.stop();
 });

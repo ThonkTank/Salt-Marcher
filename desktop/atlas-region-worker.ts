@@ -9,7 +9,7 @@ const db = new Database(workerData.filename, { readonly: true, fileMustExist: tr
   reader = new AtlasRegionReader(db, workerData.shadow),pyramid=new TerrainScalePyramid();
 
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
-let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>}|undefined;
+let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>}|undefined;
 
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
@@ -17,7 +17,7 @@ parentPort!.on('message', async (job: any) => {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
     // A queued source must never label newer terrain rows as an older revision.
-    if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'){
+    if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'){
       const root=db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(job.source.campaignId) as {revision:number}|undefined;
       if(root?.revision!==job.source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
     }
@@ -32,9 +32,9 @@ parentPort!.on('message', async (job: any) => {
     }
     const endRead=terrainTraceStart("region.read",job.source.revision);
     let value;
-    if(job.kind==='terrain'||job.kind==='terrain-color'){
-      const query=JSON.stringify([job.kind,job.query]);
-      if(!job.continuation)projection={fence:job.source.fence,query,steps:job.kind==='terrain-color'?reader.colorSteps(job.source,job.query):reader.terrainSteps(job.source,job.query)};
+    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'){
+      const query=JSON.stringify([job.kind,job.query,job.base]);
+      if(!job.continuation)projection={fence:job.source.fence,query,steps:job.kind==='terrain-refine'?reader.liveTerrainSteps(job.source,job.query,job.base):job.kind==='terrain-color'?reader.colorSteps(job.source,job.query):reader.terrainSteps(job.source,job.query)};
       if(!projection||projection.fence!==job.source.fence||projection.query!==query)throw Error('Geländeberechnung inzwischen ersetzt.');
       const step=projection.steps.next();
       if(!step.done){
@@ -54,7 +54,7 @@ parentPort!.on('message', async (job: any) => {
     parentPort!.postMessage({ value,...(terrainTrace?{terrainTrace}:{} ) });
   } catch (error) {
     if(job.kind==='terrain-stroke')preparation=undefined;
-    if(job.kind==='terrain'||job.kind==='terrain-color')projection=undefined;
+    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine')projection=undefined;
     if (db.inTransaction) {
       db.exec('ROLLBACK');
     }

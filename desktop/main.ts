@@ -389,13 +389,14 @@ else {
     handle('atlas:height',(token:string,point:import('../src/app/contracts').Point)=>store.atlasHeight(token,point));
     handle('atlas:terrain-frame',async(token:string,request:import('../src/app/terrain-presentation').TerrainFrameRequest)=>{
       const q=request?.frame;
+      if(request?.refinement!==undefined&&typeof request.refinement!=='boolean')throw Error('Geländeverfeinerung prüfen.');
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
       if(q?.kind==='top')validateRegion(q.query);
       else if(q?.kind==='tilted'){validateTerrainProjection(q.query);if(q.query.color||q.query.heightStroke)throw Error('Nur gespeichertes Gelände.');}
       else throw Error('Geländeansicht prüfen.');
       const source=store.atlasRegionSource(token,atlasRegions.cursor);
       if(request.source?.revision!==source.revision||request.source?.fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
-      const value=await atlasRegions.liveTerrain(source,q,request.base),current=store.atlasRegionSource(token);
+      const value=await atlasRegions.liveTerrain(source,q,request.base,request.refinement),current=store.atlasRegionSource(token);
       // A completed, versioned snapshot remains useful during later Atlas writes.
       // Unversioned journal changes, workspace/preview changes and rollbacks fail closed.
       if(!terrainSnapshotStillValid(source,current))throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');

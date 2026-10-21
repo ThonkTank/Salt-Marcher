@@ -96,3 +96,23 @@ test('a commit between slices rejects the old projection and fresh output agrees
  const cold=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
  try{assert.deepEqual(actual,await cold.terrain(f.store.atlasRegionSource(f.token),query));}finally{await cold.close();}
 });
+
+test('live refinement yields to selection and fast author feedback; complete refinement agrees with a cold frame',async t=>{
+ const f=await slicedFixture(t),{service,q}=f;
+ f.store.executeAtlasCommit({campaignId:f.campaign.id,token:f.token,commandId:randomUUID(),action:{kind:'landscape-height-stroke',stroke:{mode:'raise',radius:180,strength:500,feather:1,samples:[{x:0,y:0,t:0},{x:0,y:0,t:1000}]}}});
+ const source=f.store.atlasRegionSource(f.token);q.revision=source.revision;
+ const outcome=service.liveTerrain(source,{kind:'tilted',query:q},undefined,true).then(value=>({value}),error=>({error}));
+ await yielded(service);
+ assert.equal((await service.candidates(source,f.region,{x:0,y:0})).total,0);
+ const fastQuery={kind:'tilted',query:{...q,width:64,height:64,detailResolution:64}};
+ const fast=service.liveTerrain(source,fastQuery);
+ assert.match(String((await outcome).error),/neuere Anfrage/);
+ const first=await fast;assert.equal(first.projection.width,64);assert.equal(first.projection.grid.view.columns,q.view.columns);assert(first.projection.grid.heights.some(v=>v>0));
+ const query={kind:'tilted',query:{...q,width:128,height:128,detailResolution:128}};
+ const detail=await service.liveTerrain(source,query,undefined,true);
+ assert.equal(detail.target.revision,first.target.revision);assert.equal(detail.projection.width,128);
+ assert.deepEqual(detail.projection.grid,first.projection.grid,'full-resolution heights are already present in the fast frame');
+ const cold=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ try{const expected=await cold.liveTerrain(f.store.atlasRegionSource(f.token),query);assert.deepEqual(detail.projection,expected.projection);}finally{await cold.close();}
+ assert.equal(service.diagnostics.workerStarts,1);
+});
