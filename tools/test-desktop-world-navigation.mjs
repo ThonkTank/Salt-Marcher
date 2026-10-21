@@ -50,7 +50,9 @@ try{
  const cdp=await page.context().newCDPSession(page);await cdp.send('Profiler.enable');
  await page.evaluate(()=>{
   window.__saltTerrainTrace={events:[],dropped:0};
-  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];
+  window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];
+  const gl=document.querySelector('#atlas-terrain-spatial').getContext('webgl2'),clear=gl.clear.bind(gl);
+  gl.clear=(...args)=>{window.__worldDraws.push(performance.now());return clear(...args);};
   let previous=performance.now();const frame=now=>{window.__worldFrames.push({time:now,gap:now-previous});previous=now;requestAnimationFrame(frame);};requestAnimationFrame(frame);
   new PerformanceObserver(list=>window.__worldLong.push(...list.getEntries().map(e=>({time:e.startTime,duration:e.duration})))).observe({type:'longtask',buffered:false});
   const map=document.querySelector('#campaign-map');new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision']});
@@ -58,10 +60,10 @@ try{
  });
  const box=await page.locator('#campaign-map').boundingBox(),x=box.x+box.width/2,y=box.y+box.height/2;
  async function measure(name,fn){
-  await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];});await cdp.send('Profiler.start');
+  await page.evaluate(()=>{window.__worldFrames=[];window.__worldLong=[];window.__worldChanges=[];window.__worldPointer=[];window.__worldDraws=[];});await cdp.send('Profiler.start');
   const start=performance.now();await fn();await wait(1000);
   const {profile}=await cdp.send('Profiler.stop');await writeFile(out+'/'+name+'.cpuprofile',JSON.stringify(profile));
-  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
+  const data=await page.evaluate(()=>({frames:window.__worldFrames,longTasks:window.__worldLong,changes:window.__worldChanges,pointer:window.__worldPointer,draws:window.__worldDraws,state:{...document.querySelector('#campaign-map').dataset},status:['land-status','status','atlas-save-status'].map(id=>({id,text:document.getElementById(id)?.textContent,error:document.getElementById(id)?.dataset.error}))}));
   const down=data.pointer.find(e=>e.type==='pointerdown'),up=data.pointer.find(e=>e.type==='pointerup');
   if(down){const confirmed=data.changes.filter(e=>Number(e.terrain)>records.length&&e.time>=down.time);data.brushFeedback={firstConfirmedMs:confirmed.length?confirmed[0].time-down.time:null,revisionsDuringHold:[...new Set(confirmed.filter(e=>up&&e.time<up.time).map(e=>e.terrain))]};}
   const gaps=data.frames.map(f=>f.gap).sort((a,b)=>a-b);result.metrics.push({name,wallMs:performance.now()-start,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),...data});

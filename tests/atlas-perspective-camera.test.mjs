@@ -220,6 +220,24 @@ test("canonical visibility agrees with first GPU triangle along perspective rays
         }
     }
 });
+test('one publication draws the latest surface, camera, contours and selection once',()=>{
+ const v=pose(),view=viewFor(v),draws=[];
+ view.renderer.render=()=>draws.push({frame:{...view.grid.view.frame},interval:view.contours.terrainContourInterval.value,selection:!!view.selection});
+ const frame={...v.frame,x:v.frame.x+40,width:200,height:160};
+ view.batch(()=>{
+  view.reframe(frame,45,25);
+  view.batch(()=>{view.setContours(50);view.showSelection({x:frame.x+100,y:frame.y+80});});
+  assert.equal(draws.length,0,'intermediate states do not submit GPU work');
+ });
+ assert.deepEqual(draws,[{frame,interval:50,selection:true}]);
+ const hit=view.hit(517,423);assert(hit);close(hit.x,frame.x+100);close(hit.y,frame.y+80);
+ view.batch(()=>{});assert.equal(draws.length,1,'empty publication has no redraw');
+ assert.throws(()=>view.batch(()=>{view.setContours(100);throw Error('publication failed');}),/publication failed/);
+ assert.equal(draws.length,1,'failed intermediate publication is not painted');
+ view.setContours(25);assert.equal(draws.length,2,'subsequent ordinary updates still draw synchronously');
+ view.batch(()=>{view.setContours(20);view.renderTile(1000,800,0,0,500,800);assert.equal(draws.length,3,'image output remains synchronous');});
+ assert.equal(draws.length,4,'editor view returns after explicit image output');
+});
 test("legacy orthographic brush snapshots stay valid; malformed projection is rejected", () => {
   const v = pose();
   delete v.projection;

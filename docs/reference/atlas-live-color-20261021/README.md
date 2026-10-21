@@ -60,3 +60,18 @@ native [Küstenprobe](coast.json) bestand schrittweise Farbverfeinerung, Neigen
 auf derselben Hauptkamera, perspektivischen PNG-Export ohne Autorenänderung,
 [Absenken über den Meeresspiegel](lowered-coast.png) und vollständiges
 [Undo des Strichs](coast-undo.png). Prozess Exit 0, PID abwesend.
+
+## Zusammenhängende Veröffentlichung
+
+Gelände, Pose, Höhenlinien und Auswahl werden anschließend in einer synchronen
+Zeichengruppe veröffentlicht. Ein gezielter Test prüft eine GPU-Zeichnung für
+den vollständigen Stand statt mehrerer Zwischenbilder, korrekte Treffer direkt
+danach sowie unverändert synchrone Exportkacheln. Auch verschachtelte, leere und
+fehlgeschlagene Gruppen sind abgedeckt. 41 Kamera-/Quellen-/Trefferregressionen,
+TypeScript-Prüfung und Desktopbuild bestanden.
+
+Die [erneute native Weltprobe](batched-world.json) bestand einschließlich GPU-
+Orakeln und normalem Prozessende. Navigation p95 38,3 ms, Pinsel p95 16,8 ms;
+erste bestätigte Veröffentlichung 2.420 ms. **Keine Verbesserung der gesamten
+Pinselreaktion aus diesem einzelnen Lauf ableitbar.** Die Anzeige vermeidet
+unnötige Zwischenzeichnungen, die dominierende Worker-Wartezeit bleibt offen.
