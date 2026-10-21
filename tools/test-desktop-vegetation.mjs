@@ -147,7 +147,7 @@ try{
  assert((await readFile(out+'/spatial-export.png')).length>10000);
  mark('Räumlicher PNG-Export über nativen Speicheranschluss');
  await page.locator('#vegetation-spatial-close').click();await atlasCanvasReady(page);
- await page.locator('#atlas-select').click();await page.locator('#vegetation-selection-filter').selectOption('rocks');const linkPoint=await at(corrected.x,corrected.y);await page.mouse.click(linkPoint.x,linkPoint.y);
+ await tool('vegetation-select');await page.locator('#vegetation-selection-filter').selectOption('rocks');const linkPoint=await at(corrected.x,corrected.y);await page.mouse.click(linkPoint.x,linkPoint.y);
  await page.getByRole('button',{name:'Als besonderen Ort anlegen',exact:true}).click();await settled();
  const linked=records().find(r=>r.id===painted.id).vegetation.overrides.find(o=>o.id===corrected.id);
  assert(linked.locationId);assert(db.prepare('SELECT id FROM location WHERE id=?').get(linked.locationId));
