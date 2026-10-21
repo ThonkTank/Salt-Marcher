@@ -30,8 +30,8 @@ write({kind:'landscape-vegetation-edit',mode:'clear',polygons:[poly(-160,-80,65,
 const prototype=store.atlasVegetationScene(active.token,{x:-340,y:-240,width:680,height:480},.7);
 store.tutorial('skipped');store.close();
 const db=new Database(dir+'/workbench.sqlite',{readonly:true}),records=()=>db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.vegetation') IS NOT NULL").all().map(r=>JSON.parse(r.payload));
-const result={profile:dir,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),checks:[],errors:[],sourceHashes:{}};
-for(const file of ['src/app/vegetation.ts','src/app/vegetation-spatial.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+const result={profile:dir,head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),checks:[],errors:[],sourceHashes:{}};
+for(const file of ['src/app/vegetation.ts','src/app/vegetation-controls.ts','src/app/vegetation-spatial.ts','src/app/atlas-landscape-ui.ts','src/app/storage/vegetation.ts','.build/vegetation-desktop/ui/renderer.js','.build/vegetation-desktop/main.cjs'])result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=s=>{result.checks.push(s);console.log(s);};
 let app,page;
 async function close(){
@@ -87,8 +87,26 @@ try{
  assert(records().find(r=>r.id===painted.id).vegetation.overrides.some(o=>o.asset==='rock'));
  mark('Manuell platzierter Findling als geschützte Einzelkorrektur');
  await page.locator('#atlas-select').click();const pick=await at(160,-110);await page.mouse.click(pick.x,pick.y);
+ const beforeInvalid=records();
+ await page.locator('#vegetation-edit-density').fill('1.25');
+ await page.getByRole('button',{name:'Landschaftsänderung speichern',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error==='true'&&!document.querySelector('#land-tool').disabled);
+ assert.deepEqual(records(),beforeInvalid,'invalid visible density must not save the previous model value');
+ assert.equal(await page.locator('#vegetation-edit-density').inputValue(),'1.25');
+ await page.locator('#vegetation-edit-density').fill('0.33');
+ await page.locator('#vegetation-object-size').fill('');
+ await page.getByRole('button',{name:'Landschaftsänderung speichern',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error==='true'&&!document.querySelector('#land-tool').disabled);
+ assert.deepEqual(records(),beforeInvalid,'empty object size must not save its previous value');
+ assert.equal(await page.locator('#vegetation-object-size').inputValue(),'');
+ const locationCount=db.prepare('SELECT count(*) n FROM location').get().n;
+ await page.getByRole('button',{name:'Als besonderen Ort anlegen',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelector('#atlas-save-status').dataset.error==='true'&&!document.querySelector('#land-tool').disabled);
+ assert.equal(db.prepare('SELECT count(*) n FROM location').get().n,locationCount);assert.deepEqual(records(),beforeInvalid);
+ mark('Ungültige sichtbare Zahlen verhindern Speichern und erhalten den Entwurf');
  await page.locator('#vegetation-object-size').fill('8');await page.locator('#vegetation-object-angle').fill('33');await page.locator('#vegetation-object-x').fill('165');
  await page.getByRole('button',{name:'Landschaftsänderung speichern',exact:true}).click();await settled();
+ assert.equal(records().find(r=>r.id===painted.id).vegetation.preset.density,.33);
  const corrected=records().find(r=>r.id===painted.id).vegetation.overrides[0];assert.equal(corrected.size,8);assert.equal(corrected.x,165);assert(Math.abs(corrected.angle-33*Math.PI/180)<1e-9);
  mark('Sichtbaren Findling auswählen, verschieben, skalieren und drehen');
  await capture('04-object-edited');
@@ -101,10 +119,16 @@ try{
  assert.deepEqual(records().find(r=>r.id===painted.id).vegetation.overrides[0],corrected);
  mark('Räumliche Ansicht teilt Atlas-Undo/Redo und denselben Bestand');
  await page.locator('#vegetation-top-view').click();await page.locator('#vegetation-spatial-tool').selectOption('paint');await page.locator('#spatial-vegetation-preset').selectOption('scrub');
- const canvasBox=await page.locator('#vegetation-spatial-canvas').boundingBox(),oldCount=records().length;
+ const canvasBox=await page.locator('#vegetation-spatial-canvas').boundingBox(),oldCount=records().length,spatialBefore=records();
+ await page.locator('#spatial-vegetation-size').fill('');
  await page.mouse.move(canvasBox.x+canvasBox.width*.64,canvasBox.y+canvasBox.height*.62);await page.mouse.down();await page.mouse.move(canvasBox.x+canvasBox.width*.72,canvasBox.y+canvasBox.height*.65,{steps:8});await page.mouse.up();
  await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
- assert.equal(records().length,oldCount+1);assert(records().some(r=>r.vegetation.preset.id==='scrub'&&r.points.length>1));
+ await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-status').textContent.includes('Entwurf bleibt erhalten'));
+ assert.deepEqual(records(),spatialBefore);assert.equal(await page.locator('#spatial-vegetation-size').inputValue(),'');
+ await page.locator('#spatial-vegetation-size').fill('9.5');
+ await page.locator('#vegetation-spatial-finish').click();
+ await page.waitForFunction(()=>document.querySelector('#vegetation-spatial-canvas').getAttribute('aria-busy')==='false');
+ assert.equal(records().length,oldCount+1);assert(records().some(r=>r.vegetation.preset.id==='scrub'&&r.vegetation.preset.size===9.5&&r.points.length>1));
  mark('Direkt auf dem räumlichen Gelände gemalter Bestand wird im Atlas gespeichert');
  const clickSpatial=async(x,y)=>page.mouse.click(canvasBox.x+canvasBox.width*x,canvasBox.y+canvasBox.height*y);
  await page.locator('#vegetation-spatial-tool').selectOption('area');
@@ -123,8 +147,14 @@ try{
  assert((await readFile(out+'/spatial-export.png')).length>10000);
  mark('Räumlicher PNG-Export über nativen Speicheranschluss');
  await page.locator('#vegetation-spatial-close').click();await atlasCanvasReady(page);
+ await tool('vegetation-select');await page.locator('#vegetation-selection-filter').selectOption('rocks');const linkPoint=await at(corrected.x,corrected.y);await page.mouse.click(linkPoint.x,linkPoint.y);
+ await page.getByRole('button',{name:'Als besonderen Ort anlegen',exact:true}).click();await settled();
+ const linked=records().find(r=>r.id===painted.id).vegetation.overrides.find(o=>o.id===corrected.id);
+ assert(linked.locationId);assert(db.prepare('SELECT id FROM location WHERE id=?').get(linked.locationId));
+ mark('Abgewiesene Ortsanlage hinterlässt keinen Phantomverweis; gültige Anlage wird gemeinsam gespeichert');
  const expected=records();await close();await start();assert.deepEqual(records(),expected);await capture('06-reopened');await close();
  mark('Frischer Electron-Prozess erhält Flächen und geschützte Korrekturen');
+ for(const [file,hash] of Object.entries(result.sourceHashes))assert.equal(createHash('sha256').update(await readFile(file)).digest('hex'),hash,'Source or bundle changed during native workflow: '+file);
  assert.deepEqual(result.errors,[]);result.complete=true;
 }catch(e){result.complete=false;result.error=e.stack;await page?.screenshot({path:out+'/failure.png'}).catch(()=>{});throw e;}
 finally{

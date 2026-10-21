@@ -1,4 +1,5 @@
 import {test} from 'node:test';
+import {parseHTML} from './helpers/dom.mjs';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
@@ -7,8 +8,8 @@ import {randomUUID} from 'node:crypto';
 import {homedir} from 'node:os';
 const cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {LandscapeWorkbench,vegetationControls,vegetationInspector,vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
 const box={x:-100,y:-100,width:200,height:200};
 const rectangle=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const plane=(height=50)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*256,y*256,4,new Float32Array(4096).fill(height))));
@@ -201,4 +202,48 @@ test('dense raster fallback stays bounded at the two metre detail boundary and r
  assert(Buffer.byteLength(JSON.stringify(result))<=16384);
  const root=atlasPaint('group');drawVegetation(root,selected,q.box,q.box.width/q.width);
  assert(root.children.some(n=>n.data['vegetation-rocks']==='protected-rock'));
+});
+
+
+test('visible invalid vegetation numbers reach canonical rejection; recovery saves the entered value',async t=>{
+ const {window,document}=parseHTML('<html><body></body></html>'),previous={document:globalThis.document,Option:globalThis.Option};
+ Object.assign(globalThis,{document,Option:function(text,value){const option=document.createElement('option');option.textContent=text;option.value=value;return option;}});
+ const proto=window.HTMLSelectElement.prototype,descriptor=Object.getOwnPropertyDescriptor(proto,'value');
+ Object.defineProperty(proto,'value',{configurable:true,get(){return this.getAttribute('data-value')??'';},set(v){this.setAttribute('data-value',v);}});
+ proto.add=function(option){this.append(option);};
+ t.after(()=>{Object.assign(globalThis,previous);Object.defineProperty(proto,'value',descriptor);delete proto.add;});
+ const f=setup(t),r=area();f.save(r);
+ const original=f.store.atlasLandscapeObject(f.token,r.id),source=f.store.atlasRegionSource(f.token).revision;
+ for(const prefix of ['vegetation','spatial-vegetation']){
+   const draft=structuredClone(original),root=document.createElement('div');let edits=0;
+   vegetationControls(root,prefix,draft.vegetation,()=>edits++);
+   const density=root.querySelector('#'+prefix+'-density');
+   for(const value of ['1.25','','-0.1']){
+     density.value=value;density.oninput();
+     const workbench=Object.assign(Object.create(LandscapeWorkbench.prototype),{host:{write(){assert.fail('invalid draft reached the journal');}}});
+     for(const action of [{kind:'landscape-put',record:draft},{kind:'landscape-place',record:draft},{kind:'landscape-batch',records:[{record:draft}]}])
+       await assert.rejects(()=>workbench.commit(action),/Bewuchs/);
+     assert.throws(()=>f.save(draft),/Bewuchs/);
+     assert.equal(density.value,value);assert.equal(f.store.atlasRegionSource(f.token).revision,source);
+     assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),original);
+   }
+   assert.equal(edits,3,'invalid raw edits still own the unsaved draft');
+   density.value='0.33';density.oninput();validateVegetation(draft);
+   assert.equal(draft.vegetation.preset.density,.33,'canonical fractional values must not fall back to the old preset');
+ }
+ const failedLink=structuredClone(original),object={id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0};
+ failedLink.vegetation.preset.density=1.25;failedLink.vegetation.overrides.push({...object});
+ const beforeLink=structuredClone(failedLink),linkWorkbench=Object.create(LandscapeWorkbench.prototype);
+ await assert.rejects(()=>linkWorkbench.linkVegetation(failedLink,failedLink.vegetation.overrides[0]),/Bewuchs/);
+ assert.deepEqual(failedLink,beforeLink,'a rejected place creation must not leave a nonexistent location in the editable object');
+ const draft=structuredClone(original),root=document.createElement('div');let edits=0;
+ vegetationInspector(root,draft,{id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0},()=>edits++,()=>{},()=>{});
+ for(const [key,value]of [['x','0'],['y','0'],['size','4'],['angle','0']]){
+   const input=root.querySelector('#vegetation-object-'+key);
+   input.value='';input.oninput();assert.throws(()=>f.save(draft),/Einzelkorrektur/);
+   assert.equal(input.value,'');assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),original);
+   input.value=value;input.oninput();
+ }
+ assert.equal(edits,8);f.save(draft);f.reopen();
+ assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id).vegetation.overrides,[{id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0}]);
 });
