@@ -13,9 +13,9 @@ export function renderShopRestockTables(root:HTMLElement,view:ShopView,options:{
  for(const table of view.shop.restockTables??[]){
   const details=document.createElement('details');details.open=true;const summary=document.createElement('summary');summary.textContent=table.name+' · Revision '+table.revision;details.append(summary);section.append(details);
   const change=()=>{if(table.schedule)table.schedule.nextDueMs='0';options.changed();};
-  const field=(parent:HTMLElement,title:string,value:string,type:string,update:(s:string)=>void)=>{const label=document.createElement('label'),input=document.createElement('input');label.textContent=title;input.type=type;input.value=value;if(type==='number'){input.min='1';input.max='1000000';input.step='1';}input.oninput=()=>{update(input.value);change();};label.append(input);parent.append(label);return input;};
+  const field=(parent:HTMLElement,title:string,value:string,type:string,update:(s:string)=>void,changed=change)=>{const label=document.createElement('label'),input=document.createElement('input');label.textContent=title;input.type=type;input.value=value;if(type==='number'){input.min='1';input.max='1000000';input.step='1';}input.oninput=()=>{update(input.value);changed();};label.append(input);parent.append(label);return input;};
   const fields=document.createElement('div');fields.className='time-fields';details.append(fields);
-  field(fields,'Name',table.name,'text',v=>table.name=v);
+  field(fields,'Name',table.name,'text',v=>table.name=v,options.changed);
   field(fields,'Ziehungen je Lieferung (1–100)',String(table.rolls),'number',v=>table.rolls=Number(v)).max='100';
   field(fields,'Zufallsbasis',table.seed,'text',v=>table.seed=v);
   const sourceLabel=document.createElement('label'),source=document.createElement('select');sourceLabel.textContent='Warenquelle';source.setAttribute('aria-label','Warenquelle');sourceLabel.append(source);details.append(sourceLabel);

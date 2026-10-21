@@ -4,12 +4,13 @@ import {integerWeights} from '../generation-contracts';
 import type {Shop,ShopRestockTable,ShopStock} from '../items-contracts';
 import type {CalendarEvent} from '../world-contracts';
 
-const authored=(t:ShopRestockTable)=>JSON.stringify({name:t.name,seed:t.seed,rolls:t.rolls,entries:t.entries,catalog:t.catalog??null,trigger:t.schedule&&('eventId' in t.schedule?{eventId:t.schedule.eventId,eventRevision:t.schedule.eventRevision}:t.schedule.intervalMs)});
+// A display name revises history metadata without restarting the delivery clock.
+const authored=(t:ShopRestockTable)=>JSON.stringify({seed:t.seed,rolls:t.rolls,entries:t.entries,catalog:t.catalog??null,trigger:t.schedule&&('eventId' in t.schedule?{eventId:t.schedule.eventId,eventRevision:t.schedule.eventRevision}:t.schedule.intervalMs)});
 export function prepareRestockTables(shop:Shop,prior:Shop|null,time:()=>bigint,through:bigint|null,event:(id:string)=>CalendarEvent){
  for(const table of shop.restockTables??[]){
   const old=prior?.restockTables?.find(t=>t.id===table.id);
   const changed=!old||authored(old)!==authored(table);
-  table.revision=old?old.revision+(changed?1:0):1;
+  table.revision=old?old.revision+(changed||old.name!==table.name?1:0):1;
   if(table.schedule){
    if('eventId' in table.schedule){
     const s=table.schedule,e=event(s.eventId);

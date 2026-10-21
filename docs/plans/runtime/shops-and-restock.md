@@ -221,8 +221,15 @@ Würfeln speichert Auswahl, historische Definition, Mengen und Seed im selben
 Receipt-/Bestandsabschluss; derselbe Auftrag liefert keine zweite Lieferung.
 
 Optionale Intervalle verwenden verstrichene Millisekunden bzw. ausdrücklich
-24-Stunden-Tage. Neu angelegte/geänderte Regeln beginnen an der gewählten
-Scenezeit; bestätigte Fälligkeiten werden nie rückwirkend neu gewürfelt. Die
+24-Stunden-Tage. Neu angelegte oder inhaltlich geänderte Regeln beginnen an der
+gewählten Scenezeit; bestätigte Fälligkeiten werden nie rückwirkend neu gewürfelt.
+Eine reine Namenskorrektur erhöht die Tabellenrevision, erhält aber den bestehenden
+Liefertermin und die Zufallsbasis. Sie benötigt keine neue Zeitbasis. Der Editor
+behält dafür die bestätigte Fälligkeit; der Writer unterscheidet die Bezeichnung
+von der wirksamen Regel. Die native Probe
+[`test-desktop-restock-name.mjs`](../../../tools/test-desktop-restock-name.mjs)
+prüft Umbenennen vor Fälligkeit, zwei nachgeholte Termine, eine zweite Gruppenuhr
+und den gleichen Bestand samt Verlauf nach Neustart bei 100/200 Prozent Zoom. Die
 gemeinsame bestätigte Zeitverarbeitung addiert nur ausgewählte Zeilen und
 hält erste/letzte Fälligkeit, Anzahl, Regelrevision und konkrete Ergebnisse
 im Shopverlauf. Kampagnenkopien remappen Tabellen-/Bestandsidentitäten und

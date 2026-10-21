@@ -166,3 +166,18 @@ test('catalog deliveries expand dynamically, preserve existing prices, record em
  const snapshot=path.join(x.root,'catalog-delivery.sqlite');await x.store.campaignSnapshot(x.w.token,snapshot);const copy=new CampaignStore(path.join(x.root,'catalog-copy.sqlite'));
  try{const cam=copy.acceptCampaignSnapshot(snapshot,'Katalogkopie',{}),w=copy.activate(cam.id),id=copy.shops(w.token,false)[0].id,cloned=copy.shop(w.token,id).shop;assert.deepEqual(cloned.restockTables[0].catalog,table.catalog);assert.equal(cloned.stock.find(s=>s.reference.definitionId===second.id).quantity,2);}finally{copy.close();}
 });
+
+for(const trigger of ['interval','event'])test(`renaming a ${trigger} delivery preserves its cursor without requiring a new clock`,t=>{
+ const x=fixture(t),day=86400000,eventId=randomUUID();
+ if(trigger==='event')x.store.executeWorld(x.command({kind:'calendar-event',expectedRevision:null,event:{id:eventId,revision:0,name:'Marktschiff',startMs:String(day),durationMs:'1000',repeatMs:String(day),locationId:null,notes:'',trashed:false}}));
+ const clock=x.store.liveScene(x.w.token,x.a).clock,table={id:randomUUID(),revision:0,name:'Lieferung',seed:'stable-market',rolls:1,entries:[{entryId:'add',weight:'1',minimum:2,maximum:2}],schedule:trigger==='event'?{eventId,eventRevision:1,repeatMs:String(day),nextDueMs:'0'}:{intervalMs:String(day),nextDueMs:'0'}};
+ let shop=x.store.executeItemShop(x.command({kind:'shop',expectedRevision:x.shop.revision,scheduleClock:{sceneId:x.a,expectedRevision:clock.revision},shop:{...x.shop,stock:x.shop.stock.map(e=>({...e,restock:null})),restockTables:[table]}})).shop.shop;
+ const advance=(id,hours)=>{const s=x.store.liveScene(x.w.token,id);return x.store.executeLive(x.command({kind:'advance-clock',sceneId:id,expectedRevision:s.clock.revision,amount:hours,unit:'hours',calendarVersion:'relative-v1',reason:'Warenlieferung'}));};
+ advance(x.a,12);const original=structuredClone(shop.restockTables[0]);shop.restockTables[0].name='Hafenlieferung';
+ const rename=x.command({kind:'shop',expectedRevision:shop.revision,shop});x.store.executeItemShop(rename);x.store.executeItemShop(rename);
+ shop=x.store.shop(x.w.token,shop.id).shop;assert.deepEqual(shop.restockTables[0],{...original,name:'Hafenlieferung',revision:2});
+ advance(x.a,36);const supplied=x.store.shop(x.w.token,shop.id);assert.deepEqual(supplied.shop.stock.map(e=>e.quantity),[4,0,13]);assert.equal(supplied.shop.restockTables[0].schedule.nextDueMs,String(day*3));
+ const history=supplied.history.filter(h=>h.facts?.tableId===table.id&&h.facts.intervals);assert.equal(history.length,1);assert.equal(history[0].facts.intervals,'2');assert.equal(history[0].facts.firstDueMs,String(day));assert.equal(history[0].facts.rule.name,'Hafenlieferung');assert.equal(history[0].facts.tableRevision,2);
+ advance(x.b,48);assert.deepEqual(x.store.shop(x.w.token,shop.id),supplied);x.reopen();assert.deepEqual(x.store.shop(x.w.token,shop.id),supplied);
+ const change=structuredClone(supplied.shop);change.restockTables[0].seed='new-seed';assert.throws(()=>x.store.executeItemShop(x.command({kind:'shop',expectedRevision:change.revision,shop:change})),/Scenezeit|Zeitbasis/);
+});

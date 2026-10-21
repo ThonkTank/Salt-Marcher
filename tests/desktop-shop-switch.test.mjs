@@ -263,3 +263,13 @@ test('a newly confirmed trade retires an older history read for the same shop',a
   gate.resolve();await tick();await tick();assert.equal(x.el('shop-history').textContent,current);assert.equal(x.el('shop-history').querySelectorAll('p').length,50);assert.equal(x.writes.length,1);
  }finally{await x.cleanup();}
 });
+
+test('renaming a delivery retains the scheduled instant and sends no new clock basis',async()=>{
+ const x=await fixture();try{
+  const scene=x.store.live(x.w.token).scene,command=action=>({commandId:randomUUID(),campaignId:x.cam.id,token:x.w.token,action}),shop=x.store.shop(x.w.token,x.shops[0].id).shop;
+  shop.restockTables=[{id:randomUUID(),revision:0,name:'Alte Lieferung',seed:'stable',rolls:1,entries:[{entryId:shop.stock[0].id,weight:'1',minimum:1,maximum:1}],schedule:{intervalMs:'86400000',nextDueMs:'0'}}];
+  x.store.executeItemShop(command({kind:'shop',expectedRevision:shop.revision,shop,scheduleClock:{sceneId:scene.id,expectedRevision:scene.clock.revision}}));x.store.executeLive(command({kind:'advance-clock',sceneId:scene.id,expectedRevision:scene.clock.revision,amount:12,unit:'hours',calendarVersion:'relative-v1',reason:'Warten'}));
+  await x.ui.openItems(shop.id);const input=[...x.el('shop-restock').querySelectorAll('label')].find(l=>l.firstChild.textContent==='Name').querySelector('input');input.value='Hafenlieferung';input.oninput();assert(await x.ui.flushItems());
+  const saved=x.store.shop(x.w.token,shop.id).shop;assert.equal(saved.restockTables[0].schedule.nextDueMs,'86400000');assert.equal(saved.restockTables[0].name,'Hafenlieferung');assert.equal(saved.restockTables[0].revision,2);assert.equal(x.writes.at(-1).action.scheduleClock,undefined);assert.equal(saved.stock[0].quantity,5);
+ }finally{await x.cleanup();}
+});
