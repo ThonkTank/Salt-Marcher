@@ -128,7 +128,14 @@ try{
  await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();await setBrushWorldRadius(page,'land-radius',radius);await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('500');
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
  async function sculpt(name){
-  await measure(name,async()=>{await page.mouse.move(x,y);await wait(100);await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);await page.mouse.up();});
+  await measure(name,async()=>{
+   await page.mouse.move(x,y);await wait(100);
+   const scene=()=>page.locator('#campaign-map').evaluate(n=>({scene:n.dataset.sceneVersion,author:n.dataset.terrainAuthorRevision}));
+   const before=process.env.WORLD_OVERLAY==='1'&&name==='sculpt-repeat'?await scene():null;
+   await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);
+   if(before){const during=await scene();result.brushStrokeScene={before,during};assert.equal(during.scene,before.scene,'a live GPU stroke must keep the author scene through pointer and save-state updates');}
+   await page.mouse.up();
+  });
   await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
   if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
    const map=document.querySelector('#campaign-map'),[done,total]=(map.dataset.terrainTiles??'').split('/').map(Number),up=window.__worldPointer.find(e=>e.type==='pointerup');
@@ -152,6 +159,20 @@ try{
   assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'actual terrain pixels must change while holding the brush');
  }
  if(process.env.WORLD_REPEAT==='1'){
+  if(process.env.WORLD_OVERLAY==='1'){
+   await wait(200);
+   const before=await page.locator('#campaign-map').getAttribute('data-scene-version');
+   await page.evaluate(()=>{
+    const gl=document.querySelector('#atlas-terrain-spatial').getContext('webgl2'),original={createProgram:gl.createProgram,deleteProgram:gl.deleteProgram},counts={create:0,remove:0};
+    gl.createProgram=(...args)=>{counts.create++;return original.createProgram.apply(gl,args);};gl.deleteProgram=(...args)=>{counts.remove++;return original.deleteProgram.apply(gl,args);};
+    window.__finishHoverPrograms=()=>{Object.assign(gl,original);return counts;};
+   });
+   for(let i=0;i<12;i++){await page.mouse.move(x+60*Math.sin(i),y+30*Math.cos(i));await wait(30);}
+   await wait(200);const after=await page.locator('#campaign-map').getAttribute('data-scene-version');
+   const programs=await page.evaluate(()=>window.__finishHoverPrograms());
+   result.brushHover={before,after,programs};assert(before&&before===after,'brush hover must retain the published map scene');
+   assert.deepEqual(programs,{create:0,remove:0},'brush hover must retain its GPU programs');
+  }
   result.repeatSculpt=await sculpt('sculpt-repeat');
   assert(Number(result.repeatSculpt.status.revision)>Number(result.sculptStatus.revision),'the warm-world stroke must commit another revision');
   assert(!result.repeatSculpt.status.text.includes('gestoppt'));

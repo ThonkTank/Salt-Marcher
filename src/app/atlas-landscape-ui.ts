@@ -130,6 +130,7 @@ export class LandscapeWorkbench {
       choose?: (point:Point)=>Promise<void>;
       current?:()=>boolean;
       redraw: () => void;
+      redrawOverlay?: () => void;
       write: (a: AtlasAction) => Promise<unknown>;
       previewHeight?:(stroke:HeightStroke)=>void;
       terrainGesture:(active:boolean)=>void|Promise<void>;
@@ -272,7 +273,7 @@ export class LandscapeWorkbench {
           this.points = [this.lastPoint];
           if(this.tool==='height'||this.tool==='smooth'||this.tool==='color')this.startLive();
           svg.setPointerCapture(e.pointerId);
-          this.host.redraw();
+          this.redrawPointer();
         }
       },
       true,
@@ -280,7 +281,7 @@ export class LandscapeWorkbench {
     svg.addEventListener(
       "pointermove",
       (e) => {
-        if(this.active&&this.pointer===null){this.lastPoint=this.point(e);this.hovering=true;this.cursorHeight();if(['height','smooth','color','property','freshwater','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense'].includes(this.tool)||this.points.length)this.host.redraw();}
+        if(this.active&&this.pointer===null){this.lastPoint=this.point(e);this.hovering=true;this.cursorHeight();if(['height','smooth','color','property','freshwater','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense'].includes(this.tool)||this.points.length)this.redrawPointer();}
         if (this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -334,7 +335,7 @@ export class LandscapeWorkbench {
           }
           }
         }
-        this.scheduleLive();this.host.redraw();
+        this.scheduleLive();this.redrawPointer();
       },
       true,
     );
@@ -420,7 +421,7 @@ export class LandscapeWorkbench {
       },
       true,
     );
-    svg.addEventListener('pointerleave',()=>{this.hovering=false;this.heightRead=null;this.heightPreviewM=null;html('land-cursor-height').textContent='Höhe: –';this.renderHeightPrecision();this.host.redraw();});
+    svg.addEventListener('pointerleave',()=>{this.hovering=false;this.heightRead=null;this.heightPreviewM=null;html('land-cursor-height').textContent='Höhe: –';this.renderHeightPrecision();this.redrawPointer();});
     svg.addEventListener('contextmenu',e=>{if(this.active&&['river','road'].includes(this.tool)){e.preventDefault();e.stopImmediatePropagation();void this.finish().catch(e=>this.host.error(e));}});
     svg.addEventListener("keydown", (e) => {
       if (!this.active || (e.target as HTMLElement).closest?.('input,select,textarea,[contenteditable=true]')) return;
@@ -443,6 +444,12 @@ export class LandscapeWorkbench {
     r.points=[...this.points];r.resolution=gridMeters(html<HTMLSelectElement>('atlas-hex-level').value);
     r.polygons=[...this.brushStrokes,this.points].flatMap(ps=>brushFootprint(ps,radius));
     r.paint={...(this.colorDraft??this.settings.color(radius,this.draftSeed)),strokes:[...this.brushStrokes,this.points].map(ps=>[...ps])};r.values={};return r;
+  }
+  /** Direct brush pixels have their own presentation. Pointer/HUD changes
+   * must not rebuild the unchanged author scene; geometry drags still do. */
+  private redrawPointer(){
+    if(!this.dragging&&['height','smooth','color'].includes(this.tool)&&this.host.redrawOverlay)this.host.redrawOverlay();
+    else this.host.redraw();
   }
   terrainDetail(box:LandscapeBox){return terrainDetailBox(this.lastPoint,Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),box);}
   get spatialTool(){return this.tool;}
@@ -561,7 +568,7 @@ export class LandscapeWorkbench {
       try{const r=await window.campaign.atlasHeight(token,p);
         if(token===this.token&&generation===this.maskGeneration&&request===this.request&&!this.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok){
           this.heightPreviewM=null;this.heightRead={point:p,heightM:r.value.heightM,resolutionM:r.value.resolutionM,generation,request};
-          this.renderHeightPrecision();this.host.redraw();
+          this.renderHeightPrecision();this.redrawPointer();
         }
       }catch{/* A stale point must not replace a current height. */}finally{this.heightTimer=undefined;}
     },100);
@@ -822,7 +829,6 @@ export class LandscapeWorkbench {
       }
       if (this.tool === "measure") this.say(lengthLabel(distance(pts)));
     }
-    if(this.active&&this.hovering&&['height','smooth','color','property','freshwater','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense'].includes(this.tool))root.append(landscapeNode('circle',{x:this.lastPoint.x-box.x,y:this.lastPoint.y-box.y,radius:Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),pointer:false,style:{fill:null,stroke:'#364354',lineWidth:mpp},data:{editorOnly:'true'}}));
     if(this.active&&this.selectionRecords.size>1)for(const r of this.selectionRecords.values())root.append(landscapeNode('polyline',{points:linePoints(r).map(p=>({x:p.x-box.x,y:p.y-box.y})),pointer:false,style:{fill:null,stroke:'#d46e38',lineWidth:mpp*2,lineDash:[mpp*4,mpp*3]},data:{editorOnly:'true'}}));
     if (this.calibration)
       drawLandscape(root, [this.calibration.record], box, mpp, this.assets);
@@ -899,6 +905,11 @@ export class LandscapeWorkbench {
   private gridFade: {from: string; to: string; start: number} | null = null;
   drawOverlay(root: AtlasPaint, box: LandscapeBox, mpp: number): boolean {
     this.renderHeightPrecision();
+    // The main GPU view already owns the height/smooth/color cursor. Keep the
+    // fallback and other tool cursors in the transient layer, never the map.
+    const brush=['height','smooth','color','property','freshwater','reset','vegetation','vegetation-clear','vegetation-thin','vegetation-dense'].includes(this.tool);
+    const spatialCursor=['height','smooth','color'].includes(this.tool)&&!!this.host.visibility?.();
+    if(this.active&&this.hovering&&brush&&!spatialCursor)root.append(atlasPaint('circle',{x:this.lastPoint.x-box.x,y:this.lastPoint.y-box.y,radius:Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),pointer:false,style:{fill:null,stroke:'#364354',lineWidth:mpp},data:{editorOnly:'true'}}));
     const input = html<HTMLSelectElement>('atlas-hex-level');
     const draft = this.hasDraft();
     html('land-finish').hidden = html('land-cancel').hidden = !draft||!!this.live;

@@ -1,0 +1,573 @@
+{
+  "raw": {
+    "path": ".build/world-brush-overlay-108k/result.json",
+    "sha256": "502b602c115f04db9d94f421f73619de081f5595166f14ff08945edf66250ed1"
+  },
+  "source": "0ce4b65900ad2a9070b956a4ddb15560ead04edb",
+  "dirty": true,
+  "radius": 4023360,
+  "records": 108076,
+  "measurement": {
+    "readbackMode": "async",
+    "profileEnabled": false
+  },
+  "gpu": {
+    "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (WHL GT2), OpenGL 4.6)",
+    "ratio": 1
+  },
+  "phases": [
+    {
+      "name": "navigation",
+      "p95Ms": 33.400000000001455,
+      "p99Ms": 37.899999999999636,
+      "maxMs": 67.70000000000073,
+      "frames": 171,
+      "longTasks": [
+        {
+          "time": 9415.800000011921,
+          "duration": 54
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": []
+      },
+      "holdMs": null
+    },
+    {
+      "name": "sculpt",
+      "p95Ms": 40.70000000000073,
+      "p99Ms": 50.099999999998545,
+      "maxMs": 166.70000000000073,
+      "frames": 237,
+      "longTasks": [
+        {
+          "time": 15427.5,
+          "duration": 157
+        },
+        {
+          "time": 15586.600000023842,
+          "duration": 52
+        }
+      ],
+      "brushFeedback": {
+        "firstPixelMs": 274.5,
+        "firstBrushPixelMs": 234.5,
+        "firstConfirmedMs": null,
+        "revisionsDuringHold": []
+      },
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 15412.5,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 458,
+              "y": 308,
+              "width": 236,
+              "height": 236,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 117.18003108146438
+            },
+            "samples": [
+              {
+                "submittedMs": 71.5,
+                "readyMs": 194.30000001192093,
+                "enqueueMs": 1.300000011920929,
+                "readMs": 11.100000023841858,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 205.5,
+                "readyMs": 234.5,
+                "enqueueMs": 9.899999976158142,
+                "readMs": 7,
+                "draft": "height",
+                "center": 0,
+                "brush": 440,
+                "maximum": 13
+              },
+              {
+                "submittedMs": 241.30000001192093,
+                "readyMs": 274.5,
+                "enqueueMs": 2.899999976158142,
+                "readMs": 19.80000001192093,
+                "draft": "height",
+                "center": 5,
+                "brush": 453,
+                "maximum": 13
+              }
+            ],
+            "skippedSamples": 0,
+            "stoppedAt": 15699.699999988079,
+            "baselineRead": {
+              "submittedAt": 15428.5,
+              "availableAt": 15594,
+              "enqueueMs": 21.100000023841858,
+              "readMs": 6.899999976158142
+            },
+            "firstBrush": {
+              "submittedMs": 205.5,
+              "readyMs": 234.5,
+              "enqueueMs": 9.899999976158142,
+              "readMs": 7,
+              "draft": "height",
+              "center": 0,
+              "brush": 440,
+              "maximum": 13
+            },
+            "firstCenter": {
+              "submittedMs": 241.30000001192093,
+              "readyMs": 274.5,
+              "enqueueMs": 2.899999976158142,
+              "readMs": 19.80000001192093,
+              "draft": "height",
+              "center": 5,
+              "brush": 453,
+              "maximum": 13
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "holdMs": 4316.399999976158
+    },
+    {
+      "name": "sculpt-repeat",
+      "p95Ms": 38.5,
+      "p99Ms": 43.5,
+      "maxMs": 54.900000000001455,
+      "frames": 254,
+      "longTasks": [],
+      "brushFeedback": {
+        "firstPixelMs": 835.3000000119209,
+        "firstBrushPixelMs": 135.60000002384186,
+        "firstConfirmedMs": null,
+        "revisionsDuringHold": []
+      },
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 64610,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 458,
+              "y": 308,
+              "width": 236,
+              "height": 236,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 117.18003108146438
+            },
+            "samples": [
+              {
+                "submittedMs": 16,
+                "readyMs": 111.89999997615814,
+                "enqueueMs": 1,
+                "readMs": 1,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 57.80000001192093,
+                "readyMs": 135.60000002384186,
+                "enqueueMs": 25.899999976158142,
+                "readMs": 16.700000047683716,
+                "draft": "height",
+                "center": 0,
+                "brush": 928,
+                "maximum": 34
+              },
+              {
+                "submittedMs": 114.5,
+                "readyMs": 139.69999998807907,
+                "enqueueMs": 0.8999999761581421,
+                "readMs": 1.300000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 1401,
+                "maximum": 35
+              },
+              {
+                "submittedMs": 142.89999997615814,
+                "readyMs": 148.69999998807907,
+                "enqueueMs": 1.100000023841858,
+                "readMs": 1.0999999642372131,
+                "draft": "height",
+                "center": 0,
+                "brush": 1633,
+                "maximum": 35
+              },
+              {
+                "submittedMs": 150.39999997615814,
+                "readyMs": 203.30000001192093,
+                "enqueueMs": 6.900000035762787,
+                "readMs": 14.699999988079071,
+                "draft": "height",
+                "center": 0,
+                "brush": 1747,
+                "maximum": 35
+              },
+              {
+                "submittedMs": 161.60000002384186,
+                "readyMs": 206.89999997615814,
+                "enqueueMs": 23.599999964237213,
+                "readMs": 1.899999976158142,
+                "draft": "height",
+                "center": 0,
+                "brush": 1808,
+                "maximum": 35
+              },
+              {
+                "submittedMs": 208.39999997615814,
+                "readyMs": 214.30000001192093,
+                "enqueueMs": 1.2000000476837158,
+                "readMs": 1,
+                "draft": "height",
+                "center": 0,
+                "brush": 1901,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 215.80000001192093,
+                "readyMs": 251.39999997615814,
+                "enqueueMs": 14.899999976158142,
+                "readMs": 18.19999998807907,
+                "draft": "height",
+                "center": 0,
+                "brush": 1931,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 252.30000001192093,
+                "readyMs": 276.19999998807907,
+                "enqueueMs": 1.0999999642372131,
+                "readMs": 1.199999988079071,
+                "draft": "height",
+                "center": 0,
+                "brush": 1983,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 277.30000001192093,
+                "readyMs": 304.69999998807907,
+                "enqueueMs": 0.8999999761581421,
+                "readMs": 2.800000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2028,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 306.10000002384186,
+                "readyMs": 345.10000002384186,
+                "enqueueMs": 7,
+                "readMs": 23.200000047683716,
+                "draft": "height",
+                "center": 0,
+                "brush": 2118,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 346.19999998807907,
+                "readyMs": 352.10000002384186,
+                "enqueueMs": 0.9000000357627869,
+                "readMs": 1.800000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2150,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 353.30000001192093,
+                "readyMs": 388.39999997615814,
+                "enqueueMs": 12.899999976158142,
+                "readMs": 19.299999952316284,
+                "draft": "height",
+                "center": 0,
+                "brush": 2174,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 389.19999998807907,
+                "readyMs": 410.30000001192093,
+                "enqueueMs": 0.9000000357627869,
+                "readMs": 16.5,
+                "draft": "height",
+                "center": 0,
+                "brush": 2185,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 411.69999998807907,
+                "readyMs": 429.5,
+                "enqueueMs": 1.199999988079071,
+                "readMs": 9.300000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2208,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 430.89999997615814,
+                "readyMs": 460,
+                "enqueueMs": 1.5,
+                "readMs": 18,
+                "draft": "height",
+                "center": 0,
+                "brush": 2210,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 461.30000001192093,
+                "readyMs": 481.69999998807907,
+                "enqueueMs": 0.8999999761581421,
+                "readMs": 15.800000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2210,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 482.80000001192093,
+                "readyMs": 488.39999997615814,
+                "enqueueMs": 1.0999999642372131,
+                "readMs": 1.199999988079071,
+                "draft": "height",
+                "center": 0,
+                "brush": 2227,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 489.69999998807907,
+                "readyMs": 536,
+                "enqueueMs": 11.100000023841858,
+                "readMs": 2.300000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2239,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 506.39999997615814,
+                "readyMs": 547.6000000238419,
+                "enqueueMs": 23.30000001192093,
+                "readMs": 10.300000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2234,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 548.8000000119209,
+                "readyMs": 562.8999999761581,
+                "enqueueMs": 1.5999999642372131,
+                "readMs": 2.099999964237213,
+                "draft": "height",
+                "center": 0,
+                "brush": 2246,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 564.3999999761581,
+                "readyMs": 619.1999999880791,
+                "enqueueMs": 12.700000047683716,
+                "readMs": 15.899999976158142,
+                "draft": "height",
+                "center": 0,
+                "brush": 2241,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 580.5,
+                "readyMs": 621.3000000119209,
+                "enqueueMs": 19.5,
+                "readMs": 0.800000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2282,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 622.6000000238419,
+                "readyMs": 638.3999999761581,
+                "enqueueMs": 1,
+                "readMs": 6.899999976158142,
+                "draft": "height",
+                "center": 0,
+                "brush": 2280,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 639.8000000119209,
+                "readyMs": 672.8000000119209,
+                "enqueueMs": 2.5,
+                "readMs": 24.5,
+                "draft": "height",
+                "center": 0,
+                "brush": 2281,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 673.6999999880791,
+                "readyMs": 678.8000000119209,
+                "enqueueMs": 0.9000000357627869,
+                "readMs": 1.300000011920929,
+                "draft": "height",
+                "center": 0,
+                "brush": 2312,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 680.3000000119209,
+                "readyMs": 718.1999999880791,
+                "enqueueMs": 10.399999976158142,
+                "readMs": 23.80000001192093,
+                "draft": "height",
+                "center": 0,
+                "brush": 2357,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 719.6000000238419,
+                "readyMs": 735.1999999880791,
+                "enqueueMs": 1.0999999642372131,
+                "readMs": 10.599999964237213,
+                "draft": "height",
+                "center": 0,
+                "brush": 2395,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 736.6999999880791,
+                "readyMs": 785.8999999761581,
+                "enqueueMs": 1.4000000357627869,
+                "readMs": 20.099999964237213,
+                "draft": "height",
+                "center": 0,
+                "brush": 2457,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 744.1000000238419,
+                "readyMs": 788.3999999761581,
+                "enqueueMs": 18,
+                "readMs": 1.199999988079071,
+                "draft": "height",
+                "center": 0,
+                "brush": 2520,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 789.8000000119209,
+                "readyMs": 796.6000000238419,
+                "enqueueMs": 1.0999999642372131,
+                "readMs": 2.300000011920929,
+                "draft": "height",
+                "center": 3,
+                "brush": 2606,
+                "maximum": 36
+              },
+              {
+                "submittedMs": 798,
+                "readyMs": 835.3000000119209,
+                "enqueueMs": 7.100000023841858,
+                "readMs": 11.400000035762787,
+                "draft": "height",
+                "center": 7,
+                "brush": 2759,
+                "maximum": 37
+              }
+            ],
+            "skippedSamples": 0,
+            "stoppedAt": 65446.60000002384,
+            "baselineRead": {
+              "submittedAt": 64614.39999997616,
+              "availableAt": 64720.5,
+              "enqueueMs": 1.4000000357627869,
+              "readMs": 20.30000001192093
+            },
+            "firstBrush": {
+              "submittedMs": 57.80000001192093,
+              "readyMs": 135.60000002384186,
+              "enqueueMs": 25.899999976158142,
+              "readMs": 16.700000047683716,
+              "draft": "height",
+              "center": 0,
+              "brush": 928,
+              "maximum": 34
+            },
+            "firstCenter": {
+              "submittedMs": 798,
+              "readyMs": 835.3000000119209,
+              "enqueueMs": 7.100000023841858,
+              "readMs": 11.400000035762787,
+              "draft": "height",
+              "center": 7,
+              "brush": 2759,
+              "maximum": 37
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "holdMs": 4251.600000023842
+    }
+  ],
+  "completions": [
+    {
+      "name": "sculpt",
+      "status": {
+        "text": "Gespeichert",
+        "revision": "9",
+        "quality": "detail",
+        "tiles": "48/48"
+      },
+      "completeAfterUpMs": 39045.10000002384
+    },
+    {
+      "name": "sculpt-repeat",
+      "status": {
+        "text": "Gespeichert",
+        "revision": "14",
+        "quality": "detail",
+        "tiles": "48/48"
+      },
+      "completeAfterUpMs": 8525.699999988079
+    }
+  ],
+  "brushHover": {
+    "before": "27",
+    "after": "27",
+    "programs": {
+      "create": 0,
+      "remove": 0
+    }
+  },
+  "errors": [],
+  "launches": [
+    {
+      "pid": 3093843,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ]
+}
