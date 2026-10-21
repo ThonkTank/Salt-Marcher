@@ -1,6 +1,0 @@
-{
-  "name": "saltmarcher-relief-r0",
-  "private": true,
-  "type": "module",
-  "dependencies": { "three": "0.186.1" }
-}

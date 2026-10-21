@@ -7,7 +7,7 @@ Isolierter Prototyp zur [verbindlichen Roadmap](../../docs/plans/maps/terrain-re
 Node.js 22; Root-Abhängigkeiten einschließlich Electron müssen installiert sein.
 
 ```sh
-npm ci --prefix tools/terrain-relief-prototype --ignore-scripts
+npm ci
 node tools/terrain-relief-prototype/build.mjs
 node_modules/electron/dist/electron .build/relief-r0/main.cjs --ozone-platform=x11
 ```
@@ -17,7 +17,7 @@ node --test tests/terrain-relief-prototype.test.mjs
 node tools/test-desktop-relief-prototype.mjs
 ```
 
-Native Belege: `.build/relief-r0-evidence/`, mit `QA_EVIDENCE_DIR` umleitbar. Der Test startet ein eigenes Electron-Fenster und einen temporären Profilordner, benutzt tatsächliche UI-Eingaben, prüft normales Ende und erfasst GPU-Informationen. Er behauptet keine Nutzerabnahme oder Produkt-/Paketqualifikation. Three.js ist bewusst eine separate, exakt gepinnte Prototypabhängigkeit; der Root-Lockfile bleibt unverändert.
+Native Belege: `.build/relief-r0-evidence/`, mit `QA_EVIDENCE_DIR` umleitbar. Der Test startet ein eigenes Electron-Fenster und einen temporären Profilordner, benutzt tatsächliche UI-Eingaben, prüft normales Ende und erfasst GPU-Informationen. Er behauptet keine Nutzerabnahme oder Produkt-/Paketqualifikation. Build und Prototyp verwenden die exakt gepinnten Root-Abhängigkeiten einschließlich Three.js; eine zweite Installation oder ein eigenes Lockfile ist nicht nötig. Das gebaute Fenster bleibt ohne Produktzugriff isoliert.
 
 ## Bedienung
 

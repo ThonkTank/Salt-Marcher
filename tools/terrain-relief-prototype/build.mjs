@@ -1,11 +1,10 @@
-import {createRequire} from 'node:module';
+import {build} from 'esbuild';
 import {fileURLToPath} from 'node:url';
 import {mkdir,copyFile} from 'node:fs/promises';
 import path from 'node:path';
 const here=path.dirname(fileURLToPath(import.meta.url)),root=path.resolve(here,'../..'),out=path.join(root,'.build/relief-r0');
-const require=createRequire(path.join(root,'package.json'));
 await mkdir(out,{recursive:true});
-await require('esbuild').build({entryPoints:[path.join(here,'app.mjs')],bundle:true,format:'esm',platform:'browser',outfile:path.join(out,'app.js'),sourcemap:true});
+await build({entryPoints:[path.join(here,'app.mjs')],bundle:true,format:'esm',platform:'browser',outfile:path.join(out,'app.js'),sourcemap:true});
 for(const name of ['index.html','style.css','main.cjs'])await copyFile(path.join(here,name),path.join(out,name));
-await copyFile(path.join(here,'node_modules/three/LICENSE'),path.join(out,'THREE-LICENSE.txt'));
+await copyFile(path.join(root,'node_modules/three/LICENSE'),path.join(out,'THREE-LICENSE.txt'));
 console.log(out);

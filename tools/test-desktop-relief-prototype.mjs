@@ -8,7 +8,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 const root=process.cwd(),require=createRequire(root+'/package.json'),{_electron}=require('playwright-core');
 const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/relief-r0-evidence');await mkdir(out,{recursive:true});
-const result={phase:'R0',sourceHead:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sourceDirty:true,
+const result={phase:'R0',sourceHead:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sourceDirty:execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim().length>0,
   bundleSha256:createHash('sha256').update(await readFile('.build/relief-r0/app.js')).digest('hex'),
   memoryGiB:os.totalmem()/1024**3,hardware:os.cpus()[0]?.model,cases:[],errors:[],ownerAcceptance:'pending'};
 let app,page;

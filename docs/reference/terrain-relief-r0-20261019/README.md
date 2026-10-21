@@ -28,8 +28,10 @@ Im erneuten nativen Gesamtlauf wurden zusätzlich 4 km mit 500 m Radius und 300 
 
 [Nachlauf mit Quellenbindung](continuity/summary.json), [Draufsicht](continuity/continuous-fast-stroke-top.png), [räumliche Ansicht](continuity/continuous-stroke-tilted.png), [vorher fehlgeschlagene Tests](continuity/before-tests.log), [danach bestandene Tests](continuity/after-tests.log). Die ursprüngliche `summary.json` und der Stilvergleich bleiben historische R0-Belege; `continuity/summary.json` bindet die überarbeitete Quelle. Das bereits offene Sichtungsfenster wurde nicht neu geladen und behält seinen vorherigen Sitzungsstand; die Korrektur ist im neu gebauten Prototyp enthalten.
 
+Für die Wiederholung am aktuellen Quellstand genügt die Root-Installation. Die unten gebaute R0-Anwendung verwendet dieselbe exakt gepinnte Three.js-Abhängigkeit; die historischen Quellenhashes und Aufnahmen oben bleiben Belege ihres damaligen Standes.
+
 ```sh
-npm ci --prefix tools/terrain-relief-prototype --ignore-scripts
+npm ci
 node tools/terrain-relief-prototype/build.mjs
 node --test tests/terrain-relief-prototype.test.mjs
 node tools/test-desktop-relief-prototype.mjs
