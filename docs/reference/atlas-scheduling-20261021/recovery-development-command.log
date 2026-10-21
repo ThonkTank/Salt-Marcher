@@ -1,0 +1,15 @@
+
+> saltmarcher@0.173.0 start:desktop
+> npm run desktop:runtime && npm run build:desktop && electron .build/desktop/main.cjs --remote-debugging-address=127.0.0.1 --remote-debugging-port=43761 --data-dir /home/aaron/.cache/saltmarcher/ui/atlas-development-oQ9Fjt
+
+
+> saltmarcher@0.173.0 desktop:runtime
+> install-electron
+
+
+> saltmarcher@0.173.0 build:desktop
+> node tools/build-desktop.mjs
+
+Desktop build ready: .build/desktop/main.cjs
+
+DevTools listening on ws://127.0.0.1:43761/devtools/browser/df951b54-bad8-4d69-adfc-75946ae06ae8

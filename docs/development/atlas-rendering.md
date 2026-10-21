@@ -61,8 +61,9 @@ und eingefrorene Trefferflächen während Pinselzügen bleiben erhalten.
 Eine Textur von höchstens 512 Pixeln je Kante deckt den Kontext ab; die sichtbare
 Mitte erhält zusätzlich bis zu 1024 Pixel im passenden Seitenverhältnis.
 `TerrainDetailMaterial` mischt sie am Rand ein. Die perspektivische Ausgabe
-fordert dieselbe Verfeinerung an. Kalte Raster werden in größeren 512er-Batches
-berechnet, während der Cache weiterhin 32er-Stücke lokal ersetzt. Das ist ein
+fordert dieselbe Verfeinerung an. Synchrone Rasteraufrufe verwenden größere 512er-Batches; normale Hintergrundprojektionen
+verwenden die unten beschriebenen kleineren Pakete. Der Cache ersetzt weiterhin
+32er-Stücke lokal. Das ist ein
 begrenzter Schritt zur Detailverteilung, noch kein weltweites Kachel-LOD.
 Die [native Prüfung und Messung](../reference/atlas-progressive-20261021/README.md) belegen die frühe Übersicht und Navigation während der Verfeinerung.
 `terrain-navigation-plan.ts` liefert zuerst dieselbe vollständige Geometrie mit
@@ -74,13 +75,17 @@ Kampagnen- oder Revisionswechsel verworfen; alte Farben verdecken keine Edits.
 `TerrainSpatialUI` verwirft Antworten nach Quellen- oder Gestenwechsel und setzt
 unterbrochene Verfeinerung nach der Geste fort. Ein Fehler nur der Detailstufe
 behält die nutzbare Übersicht und bietet den vorhandenen Kamerawiederanlauf an.
+Die [Warteschlangenprüfung](../reference/atlas-scheduling-20261021/README.md) hält die Auswahlwartezeit und die höheren kalten Rasterkosten getrennt fest.
 `readTerrainProjectionSteps` berechnet normale Farbprojektionen in 64er-Paketen
 mit kooperativen Haltepunkten nach abgeschlossenen SQL-Lesevorgängen. Der Worker
 beendet dort seinen WAL-Schnappschuss und prüft die Revision vor jeder Fortsetzung.
 Auswahl kann zwischen diesen Schritten laufen. Kamera-, Live- und Autorenaufträge
 ersetzen ausstehende normale Detailarbeit; brauchbare Cacheteile bleiben erhalten.
 Die UI behandelt diese Verdrängung als erwarteten Ablauf und fordert bei Bedarf
-die fehlenden Details nach. Es bleibt höchstens eine pausierte Projektion im Worker.
+die fehlenden Details nach. Nach einer veralteten Revision sperrt sie Wiederholungen,
+bis das Nachladen der Region einen aktuellen Stand bestätigt. Überholte Nachladeaufträge
+geben diese Sperre erst mit dem bestätigten Nachfolger frei. Es bleibt höchstens
+eine pausierte Projektion im Worker.
 Synchrone Live-Frames, Höhenfeldaufbau und Indexpflege besitzen noch keine entsprechende
 Zeitgrenze. Bei starker Neigung kann die begrenzte Abdeckung am Horizont weiterhin
 sichtbar werden.
