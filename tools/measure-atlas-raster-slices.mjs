@@ -1,6 +1,6 @@
 // Compare the actual readonly fallback against an explicit earlier reader/raster
 // implementation. Both bundles share the current storage/schema and fixture.
-import {buildSync} from 'esbuild';
+import {build} from 'esbuild';
 import {createRequire} from 'node:module';
 import {mkdirSync,mkdtempSync,writeFileSync} from 'node:fs';
 import {homedir} from 'node:os';
@@ -16,7 +16,7 @@ const baseline=new Map(files.map(file=>[path.join(root,file),execFileSync('git',
 const versions={};
 for(const version of ['baseline','current']){
  const filename=out+'/'+version+'.cjs';
- buildSync({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/terrain-height';"},outfile:filename,bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],plugins:version==='baseline'?[{name:'baseline-raster',setup(build){build.onLoad({filter:/\.ts$/},args=>baseline.has(args.path)?{contents:baseline.get(args.path),loader:'ts'}:undefined);}}]:[]});
+ await build({stdin:{resolveDir:root,contents:"export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/terrain-height';"},outfile:filename,bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],plugins:version==='baseline'?[{name:'baseline-raster',setup(build){build.onLoad({filter:/\.ts$/},args=>baseline.has(args.path)?{contents:baseline.get(args.path),loader:'ts'}:undefined);}}]:[]});
  versions[version]=require(filename);
 }
 const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const profile=mkdtempSync(base+'/raster-slices-');
