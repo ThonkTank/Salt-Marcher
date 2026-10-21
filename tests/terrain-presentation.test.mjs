@@ -34,6 +34,17 @@ test('a reply older than requested cannot replace the shown frame',async()=>{
  display.update(identity(5));await tick();assert.deepEqual(shown,[]);
 });
 
+test('gesture finish presents the last confirmed successor before closing, while explicit stop still revokes it',async()=>{
+ for(const cancel of [false,true]){
+  const resolves=[],shown=[],display=new TerrainPresentation(()=>new Promise(r=>resolves.push(r)),f=>shown.push(f.target.revision),e=>{throw e;});
+  display.update(identity(1));display.update(identity(2));let done=false;
+  const finished=display.finish().then(()=>done=true);assert.equal(done,false);
+  resolves.shift()(frame(1));await tick();assert.deepEqual(shown,[1]);assert.equal(done,false);
+  if(cancel)display.stop();resolves.shift()(frame(2));await finished;
+  assert.deepEqual(shown,cancel?[1]:[1,2]);display.update(identity(3));assert.equal(resolves.length,0);
+ }
+});
+
 test('snapshot delivery tolerates later commits and receipt-only writes but rejects unversioned or foreign changes',()=>{
  const source={filename:'db',token:'t',campaignId:'c',epoch:'e',sequence:3,revision:7,fence:'a'};
  assert(terrainSnapshotStillValid(source,{...source,fence:'receipt'}));

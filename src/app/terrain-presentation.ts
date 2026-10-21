@@ -51,5 +51,8 @@ export class TerrainPresentation {
       }
     }
   }
+  /** Writers have finished. Keep their already requested final snapshot visible
+   * before releasing the gesture; cancellation still uses stop() immediately. */
+  async finish(){await this.running;this.stop();}
   stop(){this.stopped=true;this.wanted=null;this.frame=undefined;}
 }

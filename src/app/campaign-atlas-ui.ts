@@ -852,7 +852,10 @@ export class CampaignAtlasWorkbench {
       },error=>{if(this.owner===owner)this.opts.status('Gespeichert. Geländeanzeige folgt beim Abschluss: '+(error as Error).message,true);});
       return;
     }
-    this.terrainPresentation?.stop();this.terrainPresentation=null;
+    const presentation=this.terrainPresentation,owner=this.owner;
+    await presentation?.finish();
+    if(this.owner!==owner||this.terrainPresentation!==presentation)return;
+    this.terrainPresentation=null;
     const end=terrainTraceStart('atlas.refresh',this.terrainAuthor?.revision);
     try{await this.refresh();}finally{end();this.spatial?.gesture(false);}
   }
