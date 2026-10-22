@@ -34,7 +34,7 @@ import {captureKeyNote,keyNoteCaptureStatus,readKeyNoteChoices,hasNoteTitle} fro
 import {appendNoteExcerpt} from '../note-excerpt';
 import type {KeyNoteCaptureCommand} from '../key-note-capture-contracts';
 import {readNoteRoomUses} from './note-room-uses';
-import {installAtlasTravel,atlasEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
+import {installAtlasTravel,atlasEntrances,atlasDisplayEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
 import {atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
 import {installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,atlasCapturedChanges,bindAtlas,executeAtlasWrite} from './campaign-atlas';
@@ -436,7 +436,7 @@ export class CampaignStore {
     if(shell.selectedId)try{const {sections:unused,...room}=this.atlasRoom(token,shell.selectedId);rooms=[room];}catch(error){problems.push({id:shell.selectedId,number:'',message:(error as Error).message});}
     return{...shell,geometryCoverage:'selected',rooms,problems,floors:this.db.prepare('SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor WHERE campaign_id=?').all(cam)};
   }
-  atlasRegionView(token:string,region:AtlasRegionGeometry,withPerception=false):AtlasRegionView {
+  atlasRegionView(token:string,region:AtlasRegionGeometry,withPerception=false,entranceId?:string):AtlasRegionView {
     const cam=this.guard(token);if(region.token!==token||region.campaignId!==cam||region.fence!==this.atlasRegionSource(token).fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
     return this.db.transaction(()=>{
       const root=atlasRoot(this.db,cam),workspace={...this.workspaceShell(),rooms:region.rooms,floors:region.floors,problems:[]},geometry=dungeonMapView(this.db,cam,workspace,region.drawing);
@@ -458,7 +458,7 @@ export class CampaignStore {
        }
       }
       const result:AtlasRegionView={campaignId:cam,revision:root.revision,workspace,geometry,terrain,perception,scopes:region.scopes,cities:region.cities,bindings,region:{...coverage,frames},
-       entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,scene,...atlasHistoryState(this.db,cam)};
+       entrances:atlasDisplayEntrances(this.db,cam,bindings.filter(b=>b.kind==='dungeon').map(b=>b.ownerId),entranceId),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,scene,...atlasHistoryState(this.db,cam)};
       if(Buffer.byteLength(JSON.stringify(result))>REGION_ACTIVE_BYTES)throw new Error('Laufender Atlas-Kontext überschreitet das aktive Darstellungsbudget. Exakte Fachansicht verwenden.');
       return result;
     })();

@@ -42,6 +42,7 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     assert.equal(x.ui.hitDialog.open,false,'pending source refresh closes the old exact-choice dialog');
     assert.equal(x.get('place').disabled, true);
     assert.equal(document.getElementById('atlas-context-fields').inert, true);
+    assert.equal(document.getElementById('atlas-entrance-choice').disabled, true);
     assert.match(x.get('status').textContent, /geladen/);
     await x.ui.travelControl('start');
     assert.equal(x.sent.length, 0);
@@ -51,10 +52,12 @@ test('pending and failed Atlas context reads revoke previews and block travel; r
     assert.equal(x.get('place').disabled, true);
     assert.equal(x.get('refresh').hidden, false);
     assert.match(x.get('status').textContent, /nicht verfügbar/);
+    assert.equal(document.getElementById('atlas-entrance-choice').disabled, true);
     window.campaign.atlasRegion = async () => ({ ok: true, value: {...x.store.atlasRenderView(x.w.token),region:{coverage:{mode:'detail',unreadable:0}}} });
     await x.ui.refresh();
     assert.equal(x.get('place').disabled, false);
     assert.equal(document.getElementById('atlas-context-fields').inert, false);
+    assert.equal(document.getElementById('atlas-entrance-choice').disabled, false);
     assert.equal(x.get('start').disabled, true);
     assert.equal(x.get('refresh').hidden, true);
     assert.equal(x.ui.localPreview, null);
