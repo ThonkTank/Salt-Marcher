@@ -57,6 +57,11 @@ beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [
 
 [Pinselanzeige unabhängig aktualisieren](../reference/atlas-brush-overlay-20261021/README.md): Hover und direkte Pinselgesten verwenden den bestehenden Overlay-Weg. Speicherstatus aktualisiert während einer aktiven GPU-Präsentation die Bedienelemente; die unveränderte Kartenszene bleibt erhalten. Abschluss und Canvas-Fallback veröffentlichen weiter vollständige Szenen.
 
+Höhenvorschau und Schreibwünsche teilen außerdem [einen Animationsauftrag](../reference/atlas-brush-frame-20261022/README.md).
+Stationäres Malen bleibt während laufender Speicherung sichtbar; deren Bestätigung
+startet keinen zweiten Höhenaufbau im gleichen Frame. Der Bericht trennt die
+beseitigte Doppelarbeit von weiterhin offenen Bildraten- und Latenzzielen.
+
 [Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
 
 [Navigation während des Pinselabschlusses](../reference/atlas-navigation-pending-20261021/README.md): nach Loslassen freie Kamera bei weiterhin geschütztem Schreibbesitzer. Ausdrückliches Verschieben benötigt keine geladenen Autorentreffer; Pose und Terrain-Verfeinerung besitzen getrennte Sperren. Verzögerte echte Commit-/Terrainantworten und der große Weltfall nativ geprüft.

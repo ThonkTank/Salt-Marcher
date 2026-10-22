@@ -93,6 +93,7 @@ export class LandscapeWorkbench {
   private maskStart=0;
   private maskGeneration=0;
   private liveFrame:number|undefined;
+  private liveWriteRequested=false;
   private maskTimer:ReturnType<typeof setTimeout>|undefined;
   private live:TerrainLiveStroke|null=null;
   private liveColorCount=0;
@@ -466,38 +467,36 @@ export class LandscapeWorkbench {
     // Sample the first real elapsed frame, just like subsequent stationary
     // samples. A near-zero pointerdown dose can commit without changing a pixel.
     // Releasing before that frame still flushes the actual elapsed input below.
-    this.scheduleLive();this.scheduleHeightPreview();
-  }
-  private previewFrame:number|undefined;
-  private scheduleHeightPreview(){
-    if(!this.live||!this.maskStroke||this.pointer===null||this.previewFrame!==undefined)return;
-    this.previewFrame=requestAnimationFrame(()=>{
-      this.previewFrame=undefined;this.sampleHeight();
-      if(this.maskStroke)this.host.previewHeight?.(this.maskStroke);
-      this.scheduleHeightPreview();
-    });
+    this.scheduleLive();
   }
   private sampleHeight(){
     if(this.maskStroke&&this.pointer!==null&&this.maskStroke.samples.length<20000){const last=this.maskStroke.samples.at(-1)!;this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(last.t,performance.now()-this.maskStart))});}
   }
-  private sampleLive(){
+  private sampleLive(write=true){
     this.sampleHeight();
     if(this.maskStroke)this.host.previewHeight?.(this.maskStroke);
-    if(!this.live)return;
+    if(!this.live||!write)return;
     if(this.maskStroke)this.live.update({kind:'landscape-height-stroke',stroke:this.maskStroke});
     else if(this.points.length!==this.liveColorCount){const record=this.colorRecord();record.id=this.liveId;this.liveColorCount=this.points.length;this.live.update({kind:'landscape-color-stroke',record});}
   }
   private liveFailureMessage:string|undefined;
   private tickLive(){
-    this.liveFrame=undefined;this.sampleLive();
+    this.liveFrame=undefined;
+    const write=this.liveWriteRequested;this.liveWriteRequested=false;
+    this.sampleLive(write);
+    // Stationary height feedback continues while storage is occupied. Input
+    // and returning write capacity join this frame instead of drawing twice.
+    if(this.maskStroke)this.scheduleLive(false);
   }
-  private scheduleLive(){
-    if(!this.live||this.pointer===null||this.liveFrame!==undefined)return;
+  private scheduleLive(write=true){
+    if(!this.live||this.pointer===null)return;
+    this.liveWriteRequested ||= write;
+    if(this.liveFrame!==undefined)return;
     this.liveFrame=requestAnimationFrame(()=>this.tickLive());
   }
   private endLiveInput(){
-    if(this.previewFrame!==undefined)cancelAnimationFrame(this.previewFrame);this.previewFrame=undefined;
     if(this.liveFrame!==undefined)cancelAnimationFrame(this.liveFrame);this.liveFrame=undefined;
+    this.liveWriteRequested=false;
     if(this.maskStroke&&this.pointer!==null)this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,performance.now()-this.maskStart))});
     this.pointer=null;clearTimeout(this.maskTimer);
   }
