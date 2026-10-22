@@ -35,11 +35,11 @@ test('save-state rendering preserves an active GPU brush scene while updating co
  const seen=[],sceneReached=Error('ordinary scene path');
  const ui=Object.assign(Object.defineProperty(Object.create(CampaignAtlasWorkbench.prototype),'data',{value:{revision:10}}),{
   root:{hidden:false},owner:{token:'t'},landscape:{livePainting:true},terrainPresentation:{},spatial:{active:true},
-  syncBrushSizes(){seen.push('sizes');},renderPanel(){seen.push('panel');},renderTravel(){seen.push('travel');},
+  syncBrushSizes(){assert.fail('save-state updates must defer radius measurement to the shared frame');},renderPanel(){seen.push('panel');},renderTravel(){seen.push('travel');},
   layout:{sync(){seen.push('layout');}},territories:{sync(){seen.push('territories');}},
   camera:{redrawOverlay(){seen.push('overlay');},get view(){throw sceneReached;}},
  });
- ui.render();assert.deepEqual(seen,['sizes','panel','travel','layout','territories','overlay']);
+ ui.render();assert.deepEqual(seen,['panel','travel','layout','territories','overlay']);
  ui.spatial.active=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'fallback frames must still publish their scene');
  ui.spatial.active=true;ui.terrainPresentation=null;assert.throws(()=>ui.render(),e=>e===sceneReached,'finish must publish the refreshed author scene');
  ui.terrainPresentation={};ui.landscape.livePainting=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'ordinary edits must rebuild');

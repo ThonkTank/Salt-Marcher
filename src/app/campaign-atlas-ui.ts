@@ -222,7 +222,7 @@ export class CampaignAtlasWorkbench {
       presentation:()=>this.spatial?.active?this.spatial:null,
       relative: true,
       smoothZoom: true,
-      overlay:(root,box,mpp)=>{this.syncBrushSizes();const again=this.landscape?.drawOverlay(root,box,mpp);this.reference?.draw(root,box,mpp);this.drawAuthorMeasurements(root,box,mpp);return again;},
+      overlay:(root,box,mpp)=>{this.syncBrushSizes(mpp);const again=this.landscape?.drawOverlay(root,box,mpp);this.reference?.draw(root,box,mpp);this.drawAuthorMeasurements(root,box,mpp);return again;},
       initial: { x: -15000, y: -10000, width: 30000, height: 20000 },
       minWidth: 0.1,
       maxWidth: () => earthView(this.svg.clientWidth / Math.max(1,this.svg.clientHeight)).width * 1.1,
@@ -2305,9 +2305,12 @@ export class CampaignAtlasWorkbench {
     const drawing=['interior','decoration'].includes(this.family)&&['room-cave','room-erase','scatter'].includes(get<HTMLSelectElement>('drawing-tool').value)&&atlasDrawingDraft().path.length>0;
     return land||!!this.landscape?.routeGesture||!!this.territories?.hasDraft()||this.brushId!==null||drawing;
   }
-  private syncBrushSizes(){
+  private syncBrushSizes(scale?:number){
     if(!this.camera)return;
-    const b=this.camera.view,r=this.svg.getBoundingClientRect(),scale=Math.max(b.width/Math.max(1,r.width),b.height/Math.max(1,r.height)),locked=this.brushDraftPending();
+    // Drawing already owns the current viewport measurement. Only immediate
+    // input boundaries need a fresh DOM read before the next painted frame.
+    if(scale===undefined){const b=this.camera.view,r=this.svg.getBoundingClientRect();scale=Math.max(b.width/Math.max(1,r.width),b.height/Math.max(1,r.height));}
+    const locked=this.brushDraftPending();
     for(const [id,c]of this.brushControls){
       let tool=id==='drawing-brush'?get<HTMLSelectElement>('drawing-tool').value:id==='territory-radius'?'territory':get<HTMLSelectElement>('land-tool').value;
       if(id==='land-radius'&&tool==='color')tool+=':'+get<HTMLSelectElement>('land-color-target').value+':'+get<HTMLSelectElement>('land-color-operation').value;
@@ -2316,7 +2319,6 @@ export class CampaignAtlasWorkbench {
     }
   }
   private render(preview=false) {
-    this.syncBrushSizes();
     const data=this.data;
     if(this.root.hidden)return;
     if(!data){
@@ -2329,6 +2331,8 @@ export class CampaignAtlasWorkbench {
     // and the spatial view owns the draft. Save-state notifications only need
     // controls/HUD here. Finish clears the presentation before refreshing the
     // author scene; the Canvas fallback still needs its ordinary scene rebuild.
+    // Radius controls share the ensuing frame measurement. Do not schedule an
+    // additional old-scene frame when the ordinary scene is being rebuilt below.
     if(this.landscape.livePainting&&this.terrainPresentation&&this.spatial?.active){this.camera.redrawOverlay();return;}
     const box = this.camera.view;
     get('atlas-entrance-height').hidden=!(this.selection?.kind==='room'&&data.entrances.some(e=>e.roomId===this.selection!.id));
@@ -2338,7 +2342,7 @@ export class CampaignAtlasWorkbench {
     const mpp = box.width / Math.max(1, this.svg.clientWidth);
     // Keep the last confirmed scene intact while a new filter/source is loading.
     // In particular, never interpret old contours under new floor/roof/slice controls.
-    if(!this.geometryCurrent()&&!(preview&&this.geometryCoversView()))return;
+    if(!this.geometryCurrent()&&!(preview&&this.geometryCoversView())){this.camera.redrawOverlay();return;}
     this.camera.render((root) => {
       this.drawTerrain(root, box, mpp);
       this.landscape.draw(root,box,mpp);

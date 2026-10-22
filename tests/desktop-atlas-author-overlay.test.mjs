@@ -271,3 +271,18 @@ test('a selected subpixel room group keeps its frame without manufacturing a wor
  f.ui.data={...f.ui.data,workspace:{...f.ui.data.workspace,rooms:[f.original]},region:{...f.ui.data.region,scopeBounds:{local:{x:1,y:2,width:.1,height:20}}}};
  const visible=f.render(),layer=visible.children.find(n=>n.data.atlasBase==='true');assert(!all(layer).some(n=>n.data.kind==='scope'));assert(all(layer).some(n=>n.kind==='polygons'));
 });
+
+test('brush controls share the painted scale, while immediate input remeasures a resized viewport',t=>{
+ const {ui}=fixture(t),seen=[];let width=200,reads=0,locked=false;
+ ui.brushControls=new Map([['territory-radius',{sync:(...args)=>seen.push(args)}]]);ui.brushDraftPending=()=>locked;
+ ui.camera.view={x:0,y:0,width:40,height:20};ui.svg.getBoundingClientRect=()=>{reads++;return{width,height:100};};
+ const sync=CampaignAtlasWorkbench.prototype.syncBrushSizes;
+ sync.call(ui,.25);assert.deepEqual(seen.pop(),['territory-radius:territory',.25,false]);assert.equal(reads,0);
+ width=80;locked=true;sync.call(ui);assert.deepEqual(seen.pop(),['territory-radius:territory',.5,true]);assert.equal(reads,1);
+ locked=false;sync.call(ui,.4);assert.deepEqual(seen.pop(),['territory-radius:territory',.4,false]);assert.equal(reads,1);
+});
+
+test('pending geometry still schedules brush controls with its retained frame instead of reading layout after UI writes',t=>{
+ const f=fixture(t);let frames=0;f.ui.camera.redrawOverlay=()=>frames++;f.ui.syncBrushSizes=()=>assert.fail('ordinary render must share the next frame measurement');
+ f.render();const before=frames;f.current(false);f.render();assert.equal(frames,before+1);
+});

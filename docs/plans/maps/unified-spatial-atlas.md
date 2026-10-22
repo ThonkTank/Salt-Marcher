@@ -425,6 +425,12 @@ Bearbeitungszyklen und ersetzt die Zielgerätequalifikation nicht.
 
 ### Nächster Architekturabschnitt: persistente räumliche Projektionen
 
+[Bedienfelder mit dem Kartenbild aktualisieren](../../reference/atlas-control-frame-20261022/README.md):
+Pinselregler verwenden den bereits berechneten Frame-Maßstab, Werkzeuggruppen
+eine gemeinsame aktuelle Katalogaufnahme. Ein ausdrücklich getrennter Welttest
+ohne laufendes Pixelauslesen misst Frameabstände. Die Sculpt-Werte bleiben bei
+rund 40 ms p95; dieser UI-Kostenschritt erfüllt das Leistungsziel nicht.
+
 [Detailbilder auf der GPU halten](../../reference/atlas-gpu-detail-20261022/README.md):
 Der normale Atlas übernimmt Farbe und Waldkanal bei Kamerawechseln auf der GPU.
 Angenommene Kacheln bleiben unverändert; lokale Änderungen löschen betroffene

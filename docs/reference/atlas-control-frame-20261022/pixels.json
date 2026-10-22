@@ -1,0 +1,364 @@
+{
+  "source": "aade620ce49352379ed48e41f93a1a96e9ae48ab",
+  "dirty": true,
+  "artifacts": {
+    "main.cjs": "cfaf373e8ed2695d7644fd8ded188f86fb98fdf145e1bc2648439ef739745eae",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "2081310320ff21a671026a14405ba22ff9cabacf9b71a6299c9881a5c060dd74",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "6348eb0b70a7f971e64ba140f564564db974b7eea815910aaee82785ae78fcd7",
+    "ui/renderer.js": "e897261d92f7da9a4e4ddb9f26ca08eaa22471ee9e265dd564d26fba4dfc9cb4",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3685642,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3685950,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "radius": 4023360,
+  "records": 108076,
+  "mixedFixture": {
+    "counts": {
+      "hexes": 100000,
+      "buildings": 5000,
+      "details": 50,
+      "dungeonRooms": 4001
+    },
+    "inventory": {
+      "hexes": 100000,
+      "sourceCells": 100000,
+      "places": 5000,
+      "heightTiles": 1028,
+      "buildings": 5000,
+      "details": 50,
+      "dungeonRooms": 4001,
+      "rooms": 15701,
+      "elements": 48670,
+      "bindings": 5052,
+      "locations": 5051,
+      "cityDocuments": 0
+    },
+    "timings": {
+      "hexesMs": 20593.018567,
+      "buildingsMs": 40250.802049000005,
+      "detailsMs": 567.4624119999935
+    },
+    "hexWorkload": "Biome properties; height authored independently, not 100000 fine relief edits",
+    "city": {
+      "x": 0,
+      "y": 0,
+      "width": 3100,
+      "height": 1600
+    },
+    "building": {
+      "id": "mixed-house:0",
+      "x": 30,
+      "y": 30
+    },
+    "dungeon": {
+      "id": "mixed-dungeon",
+      "x": 10000,
+      "y": 10000
+    }
+  },
+  "measurement": {
+    "readbackMode": "async",
+    "profileEnabled": false,
+    "warmOpening": true
+  },
+  "opening": {
+    "workspaceMs": 1212.2857400000066,
+    "navigation": {
+      "before": {
+        "view": {
+          "x": -20000000,
+          "y": -14791666.666666666,
+          "width": 40000000,
+          "height": 29583333.333333332
+        },
+        "canvas": "empty",
+        "region": "loading"
+      },
+      "after": {
+        "view": {
+          "x": -16374615.061559636,
+          "y": -12110392.389278479,
+          "width": 32749230.123119272,
+          "height": 24220784.778556958
+        },
+        "canvas": "empty",
+        "region": "loading"
+      }
+    },
+    "terrainReadyMs": 4301.738334000009
+  },
+  "sculptStatus": {
+    "text": "Gespeichert",
+    "revision": "12",
+    "quality": "detail",
+    "tiles": "48/48"
+  },
+  "brushHover": {
+    "before": "21",
+    "after": "21",
+    "programs": {
+      "create": 0,
+      "remove": 0
+    }
+  },
+  "brushStrokeScene": {
+    "before": {
+      "scene": "21",
+      "author": "12"
+    },
+    "during": {
+      "scene": "21",
+      "author": "18"
+    }
+  },
+  "gpu": {
+    "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (WHL GT2), OpenGL 4.6)",
+    "ratio": 1
+  },
+  "rawResult": {
+    "path": ".build/control-frame-pixels/result.json",
+    "sha256": "8ae991ab50822cb6e091c11553be2a47fde3067b5ce4f8e00456f73d2896e7ad"
+  },
+  "metrics": [
+    {
+      "name": "navigation",
+      "p95Ms": 24.100000000000364,
+      "p99Ms": 66.69999999999982,
+      "maxMs": 66.69999999999982,
+      "longTasks": [
+        {
+          "time": 8018.299999952316,
+          "duration": 68
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": []
+      }
+    },
+    {
+      "name": "sculpt",
+      "p95Ms": 39.100000000000364,
+      "p99Ms": 42,
+      "maxMs": 116.80000000000109,
+      "longTasks": [
+        {
+          "time": 11937.5,
+          "duration": 60
+        },
+        {
+          "time": 11998.099999964237,
+          "duration": 61
+        },
+        {
+          "time": 12098.5,
+          "duration": 57
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 11937,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 434,
+              "y": 284,
+              "width": 284,
+              "height": 284,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 141.3233122581004
+            },
+            "samples": [
+              {
+                "submittedMs": 61.5,
+                "readyMs": 182,
+                "enqueueMs": 2.199999988079071,
+                "readMs": 11.600000023841858,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 123.09999996423721,
+                "readyMs": 200.39999997615814,
+                "enqueueMs": 26.69999998807907,
+                "readMs": 1.5,
+                "draft": "height",
+                "center": 67,
+                "brush": 784,
+                "maximum": 29
+              }
+            ],
+            "skippedSamples": 0,
+            "stoppedAt": 12152.699999988079,
+            "baselineRead": {
+              "submittedAt": 11945.699999988079,
+              "availableAt": 12106.699999988079,
+              "enqueueMs": 9,
+              "readMs": 7.800000011920929
+            },
+            "firstCenter": {
+              "submittedMs": 123.09999996423721,
+              "readyMs": 200.39999997615814,
+              "enqueueMs": 26.69999998807907,
+              "readMs": 1.5,
+              "draft": "height",
+              "center": 67,
+              "brush": 784,
+              "maximum": 29
+            },
+            "firstBrush": {
+              "submittedMs": 123.09999996423721,
+              "readyMs": 200.39999997615814,
+              "enqueueMs": 26.69999998807907,
+              "readMs": 1.5,
+              "draft": "height",
+              "center": 67,
+              "brush": 784,
+              "maximum": 29
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "brushFeedback": {
+        "firstPixelMs": 200.39999997615814,
+        "firstBrushPixelMs": 200.39999997615814,
+        "firstConfirmedMs": null,
+        "revisionsDuringHold": []
+      }
+    },
+    {
+      "name": "sculpt-repeat",
+      "p95Ms": 41.200000000004366,
+      "p99Ms": 53,
+      "maxMs": 64.59999999999854,
+      "longTasks": [
+        {
+          "time": 33499,
+          "duration": 56
+        },
+        {
+          "time": 33603.89999997616,
+          "duration": 63
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 33483.59999996424,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 434,
+              "y": 284,
+              "width": 284,
+              "height": 284,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 141.3233122581004
+            },
+            "samples": [
+              {
+                "submittedMs": 15.699999988079071,
+                "readyMs": 141.69999998807907,
+                "enqueueMs": 1.2000000476837158,
+                "readMs": 10.599999964237213,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 72.30000001192093,
+                "readyMs": 176.60000002384186,
+                "enqueueMs": 20.69999998807907,
+                "readMs": 1.199999988079071,
+                "draft": "height",
+                "center": 13,
+                "brush": 2108,
+                "maximum": 38
+              }
+            ],
+            "skippedSamples": 1,
+            "stoppedAt": 33664.69999998808,
+            "baselineRead": {
+              "submittedAt": 33484.5,
+              "availableAt": 33611.5,
+              "enqueueMs": 1.399999976158142,
+              "readMs": 7.200000047683716
+            },
+            "firstCenter": {
+              "submittedMs": 72.30000001192093,
+              "readyMs": 176.60000002384186,
+              "enqueueMs": 20.69999998807907,
+              "readMs": 1.199999988079071,
+              "draft": "height",
+              "center": 13,
+              "brush": 2108,
+              "maximum": 38
+            },
+            "firstBrush": {
+              "submittedMs": 72.30000001192093,
+              "readyMs": 176.60000002384186,
+              "enqueueMs": 20.69999998807907,
+              "readMs": 1.199999988079071,
+              "draft": "height",
+              "center": 13,
+              "brush": 2108,
+              "maximum": 38
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "brushFeedback": {
+        "firstPixelMs": 176.60000002384186,
+        "firstBrushPixelMs": 176.60000002384186,
+        "firstConfirmedMs": null,
+        "revisionsDuringHold": []
+      }
+    }
+  ],
+  "repeatStatus": {
+    "text": "Gespeichert",
+    "revision": "20",
+    "quality": "detail",
+    "tiles": "48/48"
+  }
+}
