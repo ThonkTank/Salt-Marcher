@@ -4,7 +4,7 @@ import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {paintTerrainCoast} from './terrain-coast';
 import {terrainContourInk,terrainContourStep} from './terrain-contour-style';
 import type {TerrainField,TerrainLattice} from './terrain-field-stream';
-import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
+import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,mountainMaterial,type TerrainStyle} from './terrain-relief';
 import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
@@ -206,6 +206,7 @@ export class LandscapeRasterizer {
   private *applyReliefSteps(checkpoint:()=>Generator<void>):Generator<void>{
     const z=this.elevations;if(!z)return;
     const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink),lighting=reliefLighting(style);
+    const material=mountainMaterial(style,Math.max(dx,dy)),snowline=style.snowlineM??2500;
     // A small symmetric footprint limits high-frequency shading without changing heights or coasts.
     const step=4,stride=step*this.w,contourStep=terrainContourStep(this.displayMpp);
     // The halo supplies height derivatives, shore distances and mark anchors;
@@ -217,9 +218,10 @@ export class LandscapeRasterizer {
         // Uniform terrain has unit lighting, no ridge and no contour ink.
         // Keep its existing pigment untouched instead of shading every sample.
         const height=z[i]!;
-        if(style.mode!=='height'&&height===z[i-1]&&height===z[i+1]&&height===z[i-this.w]&&height===z[i+this.w]&&height===z[i-step]&&height===z[i+step]&&height===z[i-stride]&&height===z[i+stride])continue;
+        if(style.mode!=='height'&&(!material||height<=snowline)&&height===z[i-1]&&height===z[i+1]&&height===z[i-this.w]&&height===z[i+this.w]&&height===z[i-step]&&height===z[i+step]&&height===z[i-stride]&&height===z[i+stride])continue;
         const zx=(z[i+1]!-z[i-1]!)/2,zy=(z[i+this.w]!-z[i-this.w]!)/2,sx=(z[i+step]!-z[i-step]!)/(2*dx*step),sy=(z[i+stride]!-z[i-stride]!)/(2*dy*step);
         const light=lighting(sx,sy);
+        material?.(this.samples,i*4,this.sampleBox.x+(x+.5)*dx,this.sampleBox.y+(y+.5)*dy,height,sx,sy);
         const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
         const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
         // Height derivatives use the 2x sample grid; contour spacing is in output pixels.

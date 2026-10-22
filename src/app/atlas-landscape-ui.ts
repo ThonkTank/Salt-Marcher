@@ -474,17 +474,18 @@ export class LandscapeWorkbench {
   spatialDraft():import("./terrain-spatial-ui").TerrainDraft|null {return this.routes.routeRecords?{routeRecords:this.routes.routeRecords}:null;}
   private installReliefStyle(){
     const root=document.createElement('details');root.id='land-relief-style';
-    root.innerHTML='<summary>Reliefstil</summary><label>Darstellung<select id="land-relief-mode"><option value="drawn">Gezeichnet</option><option value="shaded">Nur Schattierung</option><option value="height">Höhenfarben</option></select></label><label>Unbemaltes Land<input id="land-relief-land" type="color" value="#eee5cf"></label><label>Felsstriche<input id="land-relief-ink" type="color" value="#685639"></label><label>Licht aus Richtung (Grad)<input id="land-relief-light" type="number" min="0" max="359" value="315"></label><label>Strich- und Schattenstärke<input id="land-relief-strength" type="range" min="0" max="1" step="0.05" value="0.65"></label><button id="land-relief-apply" type="button">Reliefstil übernehmen</button><p>Nur Darstellung. Höhenfarben sind eine Analyseansicht; Höhe erzeugt weder Schnee noch Biome.</p>';
+    root.innerHTML='<summary>Reliefstil</summary><label>Darstellung<select id="land-relief-mode"><option value="drawn">Gezeichnet</option><option value="shaded">Nur Schattierung</option><option value="height">Höhenfarben</option></select></label><label>Unbemaltes Land<input id="land-relief-land" type="color" value="#eee5cf"></label><label>Felsstriche<input id="land-relief-ink" type="color" value="#685639"></label><label>Licht aus Richtung (Grad)<input id="land-relief-light" type="number" min="0" max="359" value="315"></label><label>Strich- und Schattenstärke<input id="land-relief-strength" type="range" min="0" max="1" step="0.05" value="0.65"></label><label><input id="land-relief-mountains" type="checkbox" checked> Fels und Schnee</label><label>Schneegrenze in m<input id="land-relief-snowline" type="number" min="-1000000" max="1000000" step="any" value="2500"></label><button id="land-relief-apply" type="button">Reliefstil übernehmen</button><p>Fels folgt der Hangneigung, Schnee der Höhe in Weltmetern. Gemalte Farben bleiben erhalten. Höhenfarben zeigen die Analyse ohne Gebirgsmaterial.</p>';
     this.panel.append(root);
     root.querySelector<HTMLButtonElement>('button')!.onclick=()=>{
       if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
-      const style:TerrainStyle={version:1,mode:html<HTMLSelectElement>('land-relief-mode').value as TerrainStyle['mode'],land:html<HTMLInputElement>('land-relief-land').value,ink:html<HTMLInputElement>('land-relief-ink').value,lightDegrees:Number(html<HTMLInputElement>('land-relief-light').value),strength:Number(html<HTMLInputElement>('land-relief-strength').value)};
+      const style:TerrainStyle={version:1,mode:html<HTMLSelectElement>('land-relief-mode').value as TerrainStyle['mode'],land:html<HTMLInputElement>('land-relief-land').value,ink:html<HTMLInputElement>('land-relief-ink').value,lightDegrees:Number(html<HTMLInputElement>('land-relief-light').value),strength:Number(html<HTMLInputElement>('land-relief-strength').value),mountains:html<HTMLInputElement>('land-relief-mountains').checked,snowlineM:Number(html<HTMLInputElement>('land-relief-snowline').value)};
       void this.commit({kind:'landscape-terrain-style',style});
     };
   }
   private showReliefStyle(style:TerrainStyle|undefined){
     const s=style??DEFAULT_TERRAIN_STYLE;
-    for(const [id,value]of Object.entries({mode:s.mode,land:s.land,ink:s.ink,light:s.lightDegrees,strength:s.strength})){
+    html<HTMLInputElement>('land-relief-mountains').checked=!!s.mountains;
+    for(const [id,value]of Object.entries({mode:s.mode,land:s.land,ink:s.ink,light:s.lightDegrees,strength:s.strength,snowline:s.snowlineM??2500})){
       const field=html<HTMLInputElement>('land-relief-'+id);field.value=String(value);
     }
   }

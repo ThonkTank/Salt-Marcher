@@ -7,13 +7,14 @@ import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/terrain-relief';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/landscape-raster';export * from './src/app/atlas-brush-worker';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';",resolveDir:process.cwd()},outfile:'.build/terrain-relief-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {DEFAULT_TERRAIN_STYLE,validateTerrainStyle,reliefMarks,LandscapeRasterizer,heightRecord,settingsRecord,CampaignStore,AtlasLandscapeReader,renderBrushPreview}=require('../.build/terrain-relief-test.cjs');
+const {DEFAULT_TERRAIN_STYLE,validateTerrainStyle,mountainMaterial,reliefMarks,LandscapeRasterizer,heightRecord,settingsRecord,CampaignStore,AtlasLandscapeReader,renderBrushPreview}=require('../.build/terrain-relief-test.cjs');
 const plane=fn=>{const rs=[];for(let y=-2;y<2;y++)for(let x=-2;x<2;x++)rs.push(heightRecord(x*64,y*64,1,Float32Array.from({length:4096},(_,i)=>fn(x*64+i%64,y*64+Math.floor(i/64)))));return rs;};
 const box={x:-32,y:-32,width:64,height:64};
 function pixels(rs,b=box,w=64,h=64,mpp=b.width/w){const image=new LandscapeRasterizer(b,w,h,0,mpp);rs.forEach(r=>image.paint(r));return image.finish();}
 function setting(mode='drawn',extra={}){const r=settingsRecord(0);r.terrainSettings.style={...DEFAULT_TERRAIN_STYLE,mode,...extra};return r;}
-test('flat high ground stays quiet; steep low ground gets ink; no height-driven snow',()=>{
+test('disabled mountain material retains the original quiet high ground and low hachures',()=>{
  const flat=plane(()=>2800),low=plane((x,y)=>100+x*.3+y*.3);
+ const setting=(mode='drawn')=>{const r=settingsRecord(0);r.terrainSettings.style={...DEFAULT_TERRAIN_STYLE,mode,mountains:false};return r;};
  assert.deepEqual(pixels([...flat,setting()]),pixels([...flat,setting('shaded')]));
  assert.notDeepEqual(pixels([...low,setting()]),pixels([...low,setting('shaded')]));
  assert.deepEqual([...pixels([...flat,setting()]).slice(0,3)],[238,229,207]);
@@ -36,7 +37,7 @@ test('style changes preserve metres, sea level, pigment and exact preview pixels
  assert.deepEqual(renderBrushPreview({generation:1,records:rs,box,width:64,height:64}),pixels(rs));
  assert.equal(JSON.stringify(rs),before);
  assert.notDeepEqual(pixels(rs),pixels([...rs.filter(r=>!r.terrainSettings),setting('drawn',{lightDegrees:260})]));
- for(const bad of [{strength:NaN},{lightDegrees:360},{mode:'snow'},{ink:'red'},{extra:true}])assert.throws(()=>validateTerrainStyle({...DEFAULT_TERRAIN_STYLE,...bad}),/Reliefstil/);
+ for(const bad of [{strength:NaN},{lightDegrees:360},{mode:'snow'},{ink:'red'},{extra:true},{mountains:1},{snowlineM:NaN},{snowlineM:Infinity},{snowlineM:1000001}])assert.throws(()=>validateTerrainStyle({...DEFAULT_TERRAIN_STYLE,...bad}),/Reliefstil/);
 });
 test('style persists, undoes atomically, invalidates distant cached tiles, and survives sea-level edits',t=>{
  const root=homedir()+'/.cache/saltmarcher/test-workspaces';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/r4-');let store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('R4'),active=store.activate(cam.id);
@@ -46,9 +47,36 @@ test('style persists, undoes atomically, invalidates distant cached tiles, and s
  t.after(()=>{db.close();store.close();rmSync(dir,{recursive:true,force:true});});
  const q={box:{x:970,y:970,width:60,height:60},width:128,height:128,scopeId:null,floorId:'ground',slice:null,roofs:true};
  const read=()=>{const source=store.atlasRegionSource(active.token);reader.sync(source);return reader.read(source,q,2*1024*1024);};
- const original=read(),style={...DEFAULT_TERRAIN_STYLE,mode:'height',land:'#ceceae',lightDegrees:90};
+ const original=read(),style={...DEFAULT_TERRAIN_STYLE,mode:'drawn',land:'#ceceae',lightDegrees:90,mountains:true,snowlineM:100};
  write({kind:'landscape-terrain-style',style});const changed=read();assert.notDeepEqual(original.tiles,changed.tiles);assert.deepEqual(changed.terrainStyle,style);assert.equal(store.atlasHeight(active.token,{x:1000,y:1000}).heightM,before.heightM);
  write({kind:'undo'});assert.equal(read().terrainStyle,undefined);write({kind:'redo'});assert.deepEqual(read().terrainStyle,style);
  write({kind:'landscape-sea-level',seaLevelM:20});assert.deepEqual(read().terrainStyle,style);assert.equal(read().seaLevelM,20);
  store.close();store=new CampaignStore(dir+'/world.sqlite');active=store.activate(cam.id);assert.deepEqual(store.atlasMaskRegion(active.token,q.box).records.find(r=>r.terrainSettings).terrainSettings,{version:1,seaLevelM:20,style});
+});
+
+
+test('mountain coverage uses physical height and slope; analysis and legacy styles remain unchanged',()=>{
+ const base=[80,130,65,255],shade=mountainMaterial({...DEFAULT_TERRAIN_STYLE,snowlineM:1000},1);
+ const pixel=(h,slope=0)=>{const p=Uint8Array.from(base);shade(p,0,-321,476,h,slope,0);return [...p];};
+ assert.deepEqual(pixel(1000),base);
+ const mid=pixel(1150),snow=pixel(1300);assert(mid[0]>base[0]&&mid[0]<snow[0]);assert(snow[0]>240&&snow[1]>240&&snow[2]>240);
+ const cliff=pixel(500,2);assert(cliff[0]>base[0]&&cliff[2]>base[2]);assert(pixel(1300,3)[0]<snow[0],'Steep faces retain visible rock above the snowline');
+ const {mountains,snowlineM,...legacy}=DEFAULT_TERRAIN_STYLE;validateTerrainStyle(legacy);assert.equal(mountainMaterial(legacy,1),undefined);
+ assert.equal(mountainMaterial({...DEFAULT_TERRAIN_STYLE,mode:'height'},1),undefined);
+});
+test('high plateaus receive snow, water stays clear and disabling restores exact authored pigments',()=>{
+ const rs=[...plane(()=>2800),setting('shaded',{land:'#508241'})],before=JSON.stringify(rs);
+ const snow=pixels(rs);assert(snow[0]>240&&snow[1]>240&&snow[2]>240,'Uniform high terrain must not take the shading fast path');
+ const green=pixels([...rs.slice(0,-1),setting('shaded',{land:'#508241',mountains:false})]);assert.deepEqual([...green.slice(0,3)],[80,130,65]);assert.equal(JSON.stringify(rs),before);
+ const submerged=plane(()=>-50);
+ assert.deepEqual(pixels([...submerged,setting('shaded',{snowlineM:-1000})]),pixels([...submerged,setting('shaded',{mountains:false})]));
+ assert.deepEqual(pixels([...rs.slice(0,-1),setting('height')]),pixels([...rs.slice(0,-1),setting('height',{mountains:false})]));
+});
+test('snow transition is world anchored, seam-free and shared with brush preview',()=>{
+ const rs=[...plane((x,y)=>2650+x*.7+y*.2),setting('shaded')],whole=pixels(rs);
+ const left=pixels(rs,{...box,width:32},32),right=pixels(rs,{...box,x:0,width:32},32);
+ for(let y=0;y<64;y++){assert.deepEqual(whole.slice(y*256,y*256+128),left.slice(y*128,(y+1)*128));assert.deepEqual(whole.slice(y*256+128,(y+1)*256),right.slice(y*128,(y+1)*128));}
+ assert.deepEqual(renderBrushPreview({generation:1,records:rs,box,width:64,height:64}),whole);
+ const shade=mpp=>{const p=Uint8Array.from([80,130,65,255]);mountainMaterial(DEFAULT_TERRAIN_STYLE,mpp)(p,0,-543,123,2650,.7,.2);return p;};
+ for(const edge of [20,80])assert.deepEqual(shade(edge-1e-5),shade(edge+1e-5));
 });
