@@ -10,9 +10,12 @@ export class TerrainDraftMaterial {
   private uniforms={terrainDraftEnabled:{value:false},terrainDraftLand:{value:new THREE.Color(DEFAULT_TERRAIN_STYLE.land)},terrainDraftWater:{value:new THREE.Color(terrainColors.water)}};
   attach(mesh:THREE.Mesh<THREE.BufferGeometry,THREE.MeshBasicMaterial>,grid:TerrainGrid,land?:string){
     this.uniforms.terrainDraftEnabled.value=false;this.uniforms.terrainDraftLand.value.set(land??DEFAULT_TERRAIN_STYLE.land);
-    const values=new Float32Array(grid.heights.length*3);
-    if(grid.editing)for(let i=0;i<grid.heights.length;i++)values.set([grid.editing.ground[i]!,grid.editing.ground[i]!,grid.editing.water[i]!],i*3);
-    mesh.geometry.setAttribute('terrainDraftHeights',new THREE.BufferAttribute(values,3));
+    let attribute=mesh.geometry.getAttribute('terrainDraftHeights') as THREE.BufferAttribute|undefined;
+    if(!attribute||attribute.count!==grid.heights.length){attribute=new THREE.BufferAttribute(new Float32Array(grid.heights.length*3),3);mesh.geometry.setAttribute('terrainDraftHeights',attribute);}
+    const values=attribute.array as Float32Array;
+    if(grid.editing)for(let i=0;i<grid.heights.length;i++){const at=i*3;values[at]=values[at+1]=grid.editing.ground[i]!;values[at+2]=grid.editing.water[i]!;}
+    else values.fill(0);
+    attribute.clearUpdateRanges();attribute.needsUpdate=true;
     const material=mesh.material;if(material.userData.terrainDraft)return;
     material.userData.terrainDraft=true;
     const prior=material.onBeforeCompile,key=material.customProgramCacheKey.bind(material),uniforms=this.uniforms;

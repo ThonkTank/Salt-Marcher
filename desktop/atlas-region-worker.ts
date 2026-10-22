@@ -5,6 +5,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import Database from 'better-sqlite3';
 import {takeTerrainTrace} from '../src/app/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
+import {AtlasReadCancelled} from '../src/app/storage/atlas-read-cancellation';
 
 const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),
   reader = new AtlasRegionReader(db, workerData.shadow,workerData.cacheDirectory&&!workerData.shadow?new AtlasRegionCache(workerData.cacheDirectory):undefined),pyramid=new TerrainScalePyramid();
@@ -15,7 +16,7 @@ let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['te
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
   const geometry=['region','focus','candidates','hit'].includes(job.kind);
-  let syncStarted=false;
+  let syncStarted=false,readStarted=false,endRead:(()=>void)|undefined;
   try {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
@@ -33,7 +34,7 @@ parentPort!.on('message', async (job: any) => {
       if(!preparation.steps.next().done){db.exec('COMMIT');parentPort!.postMessage({value:{terrainContinuation:true}});return;}
       preparation=undefined;
     }
-    const endRead=terrainTraceStart("region.read",job.source.revision);
+    endRead=terrainTraceStart("region.read",job.source.revision);readStarted=true;
     let value;
     if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'){
       const query=JSON.stringify([job.kind,job.query,job.base]);
@@ -51,11 +52,19 @@ parentPort!.on('message', async (job: any) => {
         ? reader.candidatesAt(job.source, job.query, job.point, job.offset, job.layer, job.visualElementId)
         : job.kind === 'hit'
           ? reader.hit(job.source, job.query, job.point)
-          : reader.read(job.source, job.query);
+          : reader.read(job.source, job.query,job.cancellation);
     endRead();db.exec('COMMIT');
     const terrainTrace=takeTerrainTrace();
     parentPort!.postMessage({ value,...(terrainTrace?{terrainTrace}:{} ) });
   } catch (error) {
+    endRead?.();
+    if(error instanceof AtlasReadCancelled&&readStarted){
+      // Read iterators have unwound. Keep the completed TEMP index maintenance:
+      // rolling it back would make every camera successor rebuild the world.
+      db.exec('COMMIT');
+      const terrainTrace=takeTerrainTrace();
+      parentPort!.postMessage({value:{regionReadCancelled:true},...(terrainTrace?{terrainTrace}:{})});return;
+    }
     if(job.kind==='terrain-stroke')preparation=undefined;
     if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine')projection=undefined;
     if (db.inTransaction) {

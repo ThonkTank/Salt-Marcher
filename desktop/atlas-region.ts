@@ -29,6 +29,8 @@ export class AtlasRegionService {
   private draining = false;
   private starts = 0;
   private terrainYields=0;
+  private regionCancellation: Int32Array | null = null;
+  private regionCancelled = 0;
   private cache = new Map<string, { json: string; bytes: number }>();
   private cacheBytes = 0;
 
@@ -55,6 +57,7 @@ export class AtlasRegionService {
       queued: this.queued.size > 0,
       cacheBytes: this.cacheBytes,
       terrainYields:this.terrainYields,
+      regionCancelled:this.regionCancelled,
     };
   }
 
@@ -124,9 +127,14 @@ export class AtlasRegionService {
         const lane = LANE_PRIORITY.find(lane=>this.queued.has(lane))!,
           request = this.queued.get(lane)!;
         this.queued.delete(lane);request.endQueue();
+        const cancellation=lane==='camera'?new Int32Array(new SharedArrayBuffer(4)):null;
+        if(cancellation)this.regionCancellation=cancellation;
         try {
-          const value=await this.run(request.source, request.job);
-          if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color','terrain-refine'].includes((request.job as {kind:string}).kind)){
+          const value=await this.run(request.source, cancellation?{...request.job,cancellation}:request.job);
+          if(cancellation&&(Atomics.load(cancellation,0)||value?.regionReadCancelled===true)){
+            this.regionCancelled++;
+            request.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
+          }else if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color','terrain-refine'].includes((request.job as {kind:string}).kind)){
             this.terrainYields++;
             if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
             else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
@@ -136,6 +144,8 @@ export class AtlasRegionService {
           }else request.resolve(value);
         } catch (e) {
           request.reject(e as Error);
+        } finally {
+          if(this.regionCancellation===cancellation)this.regionCancellation=null;
         }
       }
     } finally {
@@ -205,6 +215,11 @@ export class AtlasRegionService {
     if (this.closed) {
       throw new Error('Kartenausschnitt abgebrochen.');
     }
+    // A cache hit also supersedes older work. Shared memory reaches the busy
+    // worker without waiting for its synchronous read to process a message.
+    if(this.regionCancellation)Atomics.store(this.regionCancellation,0,1);
+    this.queued.get('camera')?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
+    this.queued.delete('camera');
     const key = JSON.stringify([source.filename, source.token, source.fence, query]);
     const hit = this.cache.get(key);
     if (hit) {

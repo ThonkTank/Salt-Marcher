@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export * from './src/app/terrain-ring';export * from './src/app/terrain-route-visibility';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export * from './src/app/atlas-workplane';export {atlasProject} from './src/app/atlas-camera';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {TerrainSpatialView,TerrainRing,TerrainRouteVisibility,TerrainHexGrid,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV,atlasProject,atlasWorkplaneHeight}=require('../.build/terrain-spatial-picking-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export {updateTerrainMesh} from './src/app/terrain-surface-mesh';export {terrainContourUniforms} from './src/app/terrain-contours';export * from './src/app/terrain-ring';export * from './src/app/terrain-route-visibility';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export * from './src/app/atlas-workplane';export {atlasProject} from './src/app/atlas-camera';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-picking-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {updateTerrainMesh,terrainContourUniforms,TerrainSpatialView,TerrainRing,TerrainRouteVisibility,TerrainHexGrid,AtlasSpatialLabels,THREE,ATLAS_CAMERA_FOV,atlasProject,atlasWorkplaneHeight}=require('../.build/terrain-spatial-picking-test.cjs');
 function fixture(){
  const box={x:101100,y:458304,width:1894950,height:1180544},frame={x:732751,y:851819,width:631650,height:393515};
  const v={box,frame,columns:33,rows:33,focusM:120,tilt:45,rotation:0,exaggeration:2};
@@ -39,6 +39,8 @@ test('fine brush texture is reused independently and shader blending leaves dist
  const detail={box,width:256,height:256,pixels:new Uint8Array(256*256*4)};
  state.setData({...data,identity,detail});state.freezePicking(true);
  const texture=state.detail.detailTexture,picker=state.picker,geometry=state.mesh.geometry,shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <map_fragment>'};
+ // This checks shader assembly, not canvas pattern pixels (covered natively).
+ state.detail.forestPattern.texture=new THREE.Texture();
  state.mesh.material.onBeforeCompile(shader);assert.match(shader.fragmentShader,/fineUV/);assert.match(shader.fragmentShader,/smoothstep/);
  const pixels=detail.pixels.slice();pixels[40]=255;
  state.setData({...data,identity:{...identity,revision:2,fence:'two'},detail:{...detail,pixels},update:{base:identity,heights:[],pixels:[],detail:[{x:10,y:0,width:1,height:1}]}});
@@ -121,4 +123,71 @@ test('semantic room names use the same floor anchor as geometry',()=>{
  const name={point:{x:13,y:24},workplane:{scopeId:'house',elevationM:6,anchor:{x:0,y:0}}};
  assert.deepEqual(labels.anchor(name).toArray(),[3,-4,32]);
  assert.deepEqual(labels.anchor({...name,workplane:undefined}).toArray(),[3,-4,190],'ordinary map names stay attached to terrain');labels.dispose();
+});
+
+
+test('world-hidden roads wait for visibility and use the latest terrain without a new read',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'deferred-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-50,y:c.y},{x:c.x+50,y:c.y}],polygons:[],width:2,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});
+ assert.equal(state.routes.length,0,'hidden ribbons allocate no meshes');assert.equal(state.routeState.get(road.id).pending,true);
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0},heights:new Float32Array(data.grid.heights.length).fill(320)},routes:[road]});
+ assert.equal(state.routes.length,0);
+ state.reframe({x:c.x-500,y:c.y-400,width:1000,height:800},0,0);
+ assert(state.routes.length>0,'retained route appears on the camera update alone');assert.equal(state.routeState.get(road.id).pending,false);
+ for(const mesh of state.routes.filter(m=>!m.userData.routeOverview)){
+  const vertices=mesh.geometry.getAttribute('position').array;
+  for(let i=2;i<vertices.length;i+=3)assert(Math.abs(vertices[i]-400.025)<.001,'newly visible geometry uses the latest terrain');
+ }
+ const meshes=state.routes;let disposed=0;for(const m of meshes)m.geometry.addEventListener('dispose',()=>disposed++);
+ state.reframe(v.frame,0,0);assert.equal(state.routes,meshes,'created geometry survives camera motion');assert(state.routes.every(m=>!m.visible));
+ state.reframe({x:c.x-500,y:c.y-400,width:1000,height:800},0,0);assert.equal(state.routes,meshes);assert(state.routes.some(m=>m.visible));
+ state.setData({...data,routes:[]});assert.equal(state.routes.length,0);assert.equal(state.routeState.size,0);assert.equal(disposed,meshes.length);
+});
+
+test('removed pending roads never reappear on zoom or export',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'removed-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-50,y:c.y},{x:c.x+50,y:c.y}],polygons:[],width:2,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});assert.equal(state.routes.length,0);
+ state.setData({...data,routes:[]});state.reframe({x:c.x-50,y:c.y-40,width:100,height:80},0,0);state.renderTile(6000,4000,0,0,1000,1000);
+ assert.equal(state.routes.length,0);assert.equal(state.routeState.size,0);
+});
+
+test('high-resolution output reveals deferred roads using output pixels and retains the editor pose',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'export-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-500,y:c.y},{x:c.x+500,y:c.y}],polygons:[],width:20,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});assert.equal(state.routes.length,0);
+ const frame=structuredClone(state.grid.view.frame);state.renderTile(6000,4000,0,0,1000,1000);assert(state.routes.some(m=>m.visible));
+ state.render();assert(state.routes.every(m=>!m.visible));assert.deepEqual(state.grid.view.frame,frame);
+});
+
+
+test('terrain domain, image size and topology changes retain the shader and match a fresh mesh',()=>{
+ const {state,data}=fixture(),mesh=state.mesh,material=mesh.material;
+ for(const [i,columns,width,height,refine] of [[0,33,16,16,false],[1,33,64,32,true],[2,33,64,32,false],[3,17,64,32,true],[4,257,16,16,false],[5,33,16,16,true]]){
+  const box={x:2**30+i*100,y:-(2**30),width:10000+i*70,height:8000+i*30},frame={x:box.x+box.width/4,y:box.y+box.height/4,width:box.width/2,height:box.height/2},
+    view={...data.grid.view,box,frame,columns,rows:columns,focusM:80+i*30,exaggeration:1+i/3,...(refine?{refinement:frame}:{})},
+    heights=Float32Array.from({length:columns*columns},(_,n)=>120+Math.sin(n/columns)*40),
+    current={...data,width,height,pixels:new Uint8Array(width*height*4).fill(i*30),grid:{...data.grid,view,heights}};
+  const oldGeometry=mesh.geometry,oldTexture=material.map,oldColumns=state.grid.view.columns;let geometryDisposed=0,textureDisposed=0;
+  oldGeometry.addEventListener('dispose',()=>geometryDisposed++);oldTexture.addEventListener('dispose',()=>textureDisposed++);
+  const original=heights.slice();state.setData(current);assert.equal(state.mesh,mesh);assert.equal(mesh.material,material);assert.deepEqual(heights,original);
+  assert.equal(geometryDisposed,Number(oldColumns!==columns));assert.equal(mesh.geometry===oldGeometry,oldColumns===columns);
+  assert.equal(textureDisposed,Number(oldTexture.image.width!==width||oldTexture.image.height!==height));
+  const fresh=updateTerrainMesh(null,current,null,{x:0,y:0},state.origin,undefined,terrainContourUniforms()).mesh;
+  for(const name of ['position','uv','terrainElevation'])assert.deepEqual(mesh.geometry.getAttribute(name).array,fresh.geometry.getAttribute(name).array,name);
+  assert.deepEqual(mesh.geometry.index.array,fresh.geometry.index.array);assert.deepEqual(mesh.geometry.boundingSphere,fresh.geometry.boundingSphere);
+  assert.deepEqual(Object.keys(state.picker.geometry.attributes),[],'numeric picker must not duplicate the display buffers');
+  fresh.geometry.dispose();fresh.material.map.dispose();fresh.material.dispose();
+ }
+ state.dispose();
+});
+
+test('terrain draft attributes reuse storage and reset after editing data is removed',()=>{
+ const {state,data}=fixture(),n=data.grid.heights.length;
+ const apply=(ground,water)=>state.setData({...data,grid:{...data.grid,editing:{ground:new Float32Array(n).fill(ground),water:new Float32Array(n).fill(water)}}});
+ apply(150,20);const attr=state.mesh.geometry.getAttribute('terrainDraftHeights'),version=attr.version;
+ apply(180,40);assert.equal(state.mesh.geometry.getAttribute('terrainDraftHeights'),attr);assert(attr.version>version);
+ for(let i=0;i<n;i++)assert.deepEqual(Array.from(attr.array.subarray(i*3,i*3+3)),[180,180,40]);
+ state.setData(data);assert.equal(state.mesh.geometry.getAttribute('terrainDraftHeights'),attr);assert(attr.array.every(v=>v===0));state.dispose();
 });

@@ -982,3 +982,13 @@ for(const mode of ['surface','transport-error','source-error','hidden','new-owne
  assert.deepEqual(calls,mode==='surface'?['terrain','region','tools']:['hidden','new-owner'].includes(mode)?[]:['region','tools']);
  assert.equal(ui.openingSurface??null,null);
 });
+
+test('PNG output applies the same subpixel group rule to a retained detailed frame',()=>{
+ const room={id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:12,y:0},{x:12,y:6},{x:0,y:6}],holes:[]}]},
+  data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[room]},region:{scopeId:'local',floorId:'ground',scopeBounds:{local:{x:0,y:0,width:12,height:6}},frames:{b:{x:0,y:0,angle:0}}},geometry:{floors:[],drawing:{elements:[]}}},
+  options={grid:false,level:0,references:false,floorId:'ground',roofs:false};
+ const far=atlasRegionPaint(data,[],{x:0,y:0,width:100000,height:100000},1000,new Map(),options);
+ assert(!far.children.some(n=>n.data.spatialScope==='local'));
+ const near=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),options),face=near.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
+ assert.deepEqual(face.geometry.polygons,room.polygons);assert.equal(data.workspace.rooms[0],room);
+});

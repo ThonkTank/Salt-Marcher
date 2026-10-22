@@ -40,5 +40,10 @@ export function mapFootprintVisible(
     xx = Math.max(xx, p.x);
     yy = Math.max(yy, p.y);
   }
-  return Math.max(xx - x, yy - y) / mpp >= 2;
+  return mapExtentVisible(xx-x,yy-y,mpp);
+}
+
+/** Subpixel geometry does not become a synthetic place marker when zooming out. */
+export function mapExtentVisible(width:number,height:number,mpp:number){
+  return mpp<=0||Math.max(width,height)/mpp>=2;
 }

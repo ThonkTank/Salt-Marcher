@@ -1,0 +1,27 @@
+{
+  "source": "1628f998fe6b71bc17eafeeb4e5115a4a6ac24f1",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/forest-style-y5TTaL",
+  "artifacts": {
+    "main.cjs": "50a592bb18dcc30e5cfb9b9aaf49f073ee1fd0bb525db2e51d23fa1cdf0f43a4",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "8619b9d684b47d369cc7362585955b83c64f986d6d140d7291a42318f8b26a20",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "e4b44e712f465f19f38a29b3edbdb259cdcf14f57ef082be5472299cb03db5c4",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "3eecb99a013507e1bdf3795d442236fa3d1d1e725e3dc34e3e67f10b1baaccad",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3389588,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope"
+    }
+  ],
+  "errors": [],
+  "error": "page.waitForFunction: Timeout 15000ms exceeded.\n    at zoom (/home/aaron/Schreibtisch/projects/SaltMarcher/tools/test-desktop-forest-style.mjs:49:15)\n    at async file:///home/aaron/Schreibtisch/projects/SaltMarcher/tools/test-desktop-forest-style.mjs:53:28"
+}

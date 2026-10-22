@@ -279,6 +279,13 @@ Bedienhürden, widersprüchliche Maßstabswechsel und unstimmige Darstellung
 festgehalten. Ein funktional bestandener Autorenweg ist noch keine gestalterische
 Abnahme einer tatsächlich spielbaren, ansprechenden Fantasykarte.
 
+[Autorenreise vom 22.10.2026](../../reference/atlas-world-authoring-20261022/README.md):
+Kontinente, Relief, Wald und unabhängiges Königreich bis zu Straßen, sechs
+Gebäuden und frischer Raumwiederöffnung. Die Sichtprüfung hält glatte Küsten,
+schematisches Relief, verdeckende Bäume und fehlende gestalterische Detailhierarchie
+als offene Arbeit fest. Ein zwischenzeitlich verlorener Erzeugungsklick bleibt
+unaufgeklärt; ein später erfolgreicher Durchlauf gilt nicht als Fehlerbehebung.
+
 | Bereich | Ziel |
 | --- | --- |
 | Gewöhnliche Navigation | 60-FPS-Ziel auf dem Laptop des Nutzers bei 1080p; Bildintervalle p95 ≤16,7 ms, p99 ≤33,3 ms |
@@ -378,3 +385,30 @@ rund 467 auf 195–216 ms bei identischen Projektionsbytes. Nativ war der Folgez
 nach Zoom nach 4,3 statt 5,3 Sekunden möglich. Erster Überblick, Zielgerät und
 unmittelbare Bearbeitung bleiben offen; die normale 128-Pixel-Übersicht erhält
 keinen behaupteten Geschwindigkeitsgewinn.
+
+### Örtlichen Bewuchs ohne Scan der Weltlandschaft lesen
+
+[Begrenzte lokale Abfragen](../../reference/atlas-local-region-reads-20261022/README.md)
+verwenden die vorhandenen Einstellungs- und Landschaftsindizes, statt für einen
+Baum die Weltpayloads zu prüfen. Die vollständigen Antworten bleiben gleich.
+Eine zusätzlich erprobte Joinänderung wurde wegen langsamerer Treffer in einem
+großen Einzelbestand verworfen. Diese lokale Verbesserung folgt der Releasequelle
+0.184.0; unmittelbare Weltreaktion und Zielgerätequalifikation bleiben offen.
+
+[Waldsignatur im normalen Atlas](../../reference/atlas-forest-integration-20261022/README.md): Der semantische Waldkanal folgt jetzt Farbe, Revision, Detailkacheln und lokalen Pinselpatches durch dieselben begrenzten Caches. Der Produktshader blendet weltverankerte Muster weich bis zu nahen Einzelbäumen aus; Hauptkamera und PNG-Ausgabe teilen die Darstellung. Gestaltung, volle Welt und Pentium-Leistung bleiben offen.
+
+[Billigere Detailübernahme](../../reference/atlas-detail-retention-20261022/README.md): Weltverankerte Zeilenkopien ersetzen die vollständige RGBA-Pixelschleife bei gleichem Raster; echte Maßstabwechsel übernehmen wiederholte Zeilen und gepackte Farbwerte. Extrem große Sampleindizes können nicht mehr in alte Bildbereiche überlaufen. Pixelgegenprobe und native Messungen sind getrennt dokumentiert; unmittelbare Weltbearbeitung bleibt offen.
+
+[Gebündelte Bindungsmetadaten](../../reference/atlas-binding-metadata-20261022/README.md): Grenzen und Scope-Namen kommen mit dem Bindungsread aus demselben Snapshot. Tausende separate Abfragen entfallen; Geometrie-Rtree, Geschosswahl, leere Autorrahmen und Ergebnisdarstellung bleiben erhalten. Die gesamte Wartezeit nach großen Strichen ist dadurch noch nicht nachweisbar kürzer; nicht unterbrechbare Regionsreads bleiben offen.
+
+[Überholte Kameraausschnitte abbrechen](../../reference/atlas-region-cancellation-20261022/README.md): Der normale Atlas ersetzt laufende Abfragen bei geänderter Zielauflösung oder verlassenem Puffer. Gemeinsame Abbruchsignale beenden alte Workerlesungen zwischen Objekten und erhalten den Weltindex. Ergebnisse, Auswahl und Export sind gegengeprüft; aktuelle Regionsreads und lange Zeichenpausen bleiben zu teuer.
+
+[Tatsächliche Geometrie beim Zoom und einmalige Rasterlesung](../../reference/atlas-geometry-stream-20261022/README.md): Automatische Raumgruppenmarker entfallen; subpixelkleine Geometrie bleibt per Suche erreichbar. Dichte Bereiche werden in einem Durchlauf gerastert, Raumstil-SQL wird pro Verbindung vorbereitet. Bildgleichheit des Rasterumbaus, normaler Atlas und große Welt sind getrennt geprüft. Mittlere dichte Geometrie, wiederholte Bereichsanfragen und unmittelbare Bearbeitung bleiben offene Engpässe.
+
+[Laufende Bereichsanfragen erhalten](../../reference/atlas-region-request-reuse-20261022/README.md): Gelände-Neuzeichnung und veraltete Terrainantworten ersetzen keine bereits passende Regionslesung mehr. Echte Kamera- und Grafikwechsel behalten ihren eigenen Aktualisierungsweg. Die große Weltprobe reduziert unbeabsichtigte Abbrüche; 3,84 Sekunden bis zur erneuten Bearbeitbarkeit und lange Rendererpausen bleiben deutlich über dem Ziel.
+
+[Leere Objektraster auslassen](../../reference/atlas-empty-object-tiles-20261022/README.md): Der dichte Weltmaßstab überspringt Rasterdurchlauf und PNG-Kodierung, wenn die vorhandenen Sichtbarkeitsregeln keine Objektpixel zulassen. Namen, Treffer, Referenzbilder und geschützte Bäume bleiben erhalten. Die isolierte Weltlesung sinkt von 622 auf 276 ms; 3,41 s bis zur erneuten Bearbeitbarkeit und Rendererpausen bleiben über dem Ziel.
+
+[Unsichtbare Straßen später aufbauen](../../reference/atlas-deferred-routes-20261022/README.md): Der normale Atlas erzeugt Geometrie sicher unsichtbarer Bodentrassen erst beim Heranzoomen aus aktuellen geladenen Daten. Geplante Trassen, Auswahl und hochaufgelöste Ausgabe bleiben erhalten. Die gemessenen Straßenaufbauten in langen Pinselabschluss-Aufgaben entfallen; Netz-/GPU-Arbeit und mehrsekündige Gesamtwartezeiten bleiben offen.
+
+[Geländenetz und Shader wiederverwenden](../../reference/atlas-terrain-mesh-reuse-20261022/README.md): Weltgrenzen und Bildgrößen ersetzen nicht mehr die ganze GPU-Szene. Topologie, Texturen und Draftpuffer besitzen getrennte Lebenszyklen; numerisches Picking kopiert keine Rendergeometrie. Sieben native GPU-Vergleiche bleiben pixelgleich, die längste gemessene Weltaufgabe sinkt von 311 auf 169 ms. Mehrsekündige Bearbeitungsfreigabe und Zielgeräteprüfung bleiben offen.

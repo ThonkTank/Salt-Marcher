@@ -1,0 +1,241 @@
+{
+  "checks": [
+    "World, region, village and crown detail share the normal Atlas canvas; tilted output is saved through the native export.",
+    "Navigation and export preserve all authored landscape rows and protected identities."
+  ],
+  "views": [
+    {
+      "name": "01-world",
+      "hint": "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.",
+      "box": {
+        "x": -40000,
+        "y": -32419.354838709674,
+        "width": 80000,
+        "height": 64838.70967741935
+      },
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -120000,
+          "y": -120000,
+          "width": 240000,
+          "height": 240000
+        },
+        "frame": {
+          "x": -40000,
+          "y": -32419.354838709674,
+          "width": 80000,
+          "height": 64838.70967741935
+        },
+        "refinement": {
+          "x": -60000,
+          "y": -48629.032258064515,
+          "width": 120000,
+          "height": 97258.06451612903
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 41.00415802001953,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      }
+    },
+    {
+      "name": "02-region",
+      "hint": "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.",
+      "box": {
+        "x": -2999.999997924395,
+        "y": -2431.4516112209812,
+        "width": 5999.99999584879,
+        "height": 4862.9032224419625
+      },
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -9102.908870629366,
+          "y": -9102.908870629366,
+          "width": 18205.817741258732,
+          "height": 18205.817741258732
+        },
+        "frame": {
+          "x": -2999.999997924395,
+          "y": -2431.4516112209812,
+          "width": 5999.99999584879,
+          "height": 4862.9032224419625
+        },
+        "refinement": {
+          "x": -4551.454435314683,
+          "y": -3688.8804092671426,
+          "width": 9102.908870629366,
+          "height": 7377.760818534285
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 41.00415802001953,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      }
+    },
+    {
+      "name": "03-village",
+      "hint": "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.",
+      "box": {
+        "x": -600.00000900823,
+        "y": -486.29032988167035,
+        "width": 1200.00001801646,
+        "height": 972.5806597633407
+      },
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -1800.00002702469,
+          "y": -1800.00002702469,
+          "width": 3600.00005404938,
+          "height": 3600.00005404938
+        },
+        "frame": {
+          "x": -600.00000900823,
+          "y": -486.29032988167035,
+          "width": 1200.00001801646,
+          "height": 972.5806597633407
+        },
+        "refinement": {
+          "x": -900.000013512345,
+          "y": -729.4354948225055,
+          "width": 1800.00002702469,
+          "height": 1458.870989645011
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 41.00415802001953,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      }
+    },
+    {
+      "name": "04-crowns",
+      "hint": "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.",
+      "box": {
+        "x": -150.00000053625203,
+        "y": -121.57258107978488,
+        "width": 300.00000107250406,
+        "height": 243.14516215956976
+      },
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -450.00000160875607,
+          "y": -450.00000160875607,
+          "width": 900.0000032175121,
+          "height": 900.0000032175121
+        },
+        "frame": {
+          "x": -150.00000053625203,
+          "y": -121.57258107978488,
+          "width": 300.00000107250406,
+          "height": 243.14516215956976
+        },
+        "refinement": {
+          "x": -225.00000080437803,
+          "y": -182.35887161967733,
+          "width": 450.00000160875607,
+          "height": 364.71774323935466
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 41.00415802001953,
+        "tilt": 0,
+        "rotation": 0,
+        "exaggeration": 1
+      }
+    },
+    {
+      "name": "05-tilted",
+      "hint": "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.",
+      "box": {
+        "x": -150.00000053625203,
+        "y": -121.57258107978488,
+        "width": 300.00000107250406,
+        "height": 243.14516215956976
+      },
+      "projection": {
+        "projection": "perspective",
+        "box": {
+          "x": -900.0000032175121,
+          "y": -900.0000032175121,
+          "width": 1800.0000064350243,
+          "height": 1800.0000064350243
+        },
+        "frame": {
+          "x": -150.00000053625203,
+          "y": -121.57258107978488,
+          "width": 300.00000107250406,
+          "height": 243.14516215956976
+        },
+        "refinement": {
+          "x": -225.00000080437803,
+          "y": -182.35887161967733,
+          "width": 450.00000160875607,
+          "height": 364.71774323935466
+        },
+        "columns": 257,
+        "rows": 257,
+        "focusM": 41.00415802001953,
+        "tilt": 45,
+        "rotation": 0,
+        "exaggeration": 1
+      }
+    }
+  ],
+  "hashes": {
+    "src/app/vegetation-geometry.ts": "01faa0744c0f827342d89d50b183c1cb33f7a1648692add057e439230cc6913f",
+    "src/app/vegetation-shape.ts": "f185bd1de55e28893b94a0dee62e2cf17729bc50a5d87acb2fb804c895be895c",
+    "src/app/landscape-cover-feather.ts": "3cd9d22603eb4075adec5e1cc941d11344aec86497d82642eecd83027f8e923b",
+    "src/app/storage/landscape-record-stream.ts": "9a5f37cdbd183eb5f5c3340c2bed1929ba5a0cff3460bd40e8a0707770672f2f",
+    "src/app/storage/terrain-color-raster.ts": "12fddbcb87f99a400b8d012cbce306756009c0fc734f24b9f65169c88d6d196f",
+    "src/app/vegetation-projection.ts": "c9b2c35d2c6c105944c7b7226854fa380e288f688f40603decbc6177564b058e",
+    "src/app/atlas-terrain-export.ts": "cbb59f8df5a65b8e5b2e0574725e28cff7c8f744508b8e57d161b67062a6f055",
+    "src/app/atlas-spatial-scene.ts": "a9fa04a0b5abcf6a525c64d841714bef3fd7cca9ba7dfef5a52df62e11a8b1e5",
+    "src/app/vegetation.ts": "8794a4f3caaaebc993ea8d29de8e6d8888ba4bb8a6e471e56acd8460eb231780",
+    "src/app/vegetation-lod.ts": "1aaedd2fcb1604e88ed58f494bdad9ffb589ee46a861786a444185ede06b014f",
+    "src/app/storage/atlas-landscape-region.ts": "862b13d6da2df1bf5d15db0a8084fb2525c5d49bbf6d712244499c0db0d63a1b",
+    "src/app/atlas-spatial-vegetation.ts": "f26e16a2d873be785bb396010452b68876257929b0a8894d9398530a49535e18",
+    "src/app/vegetation-display.ts": "1766c0aef115f60331f3446eb98eba489fab4a2e2c657b223c062263cf867c84",
+    "src/app/vegetation-view.ts": "6a42bb4d967ce73ab2554c8bead28df24171a76b99e8b0ccbf184c2197cab276",
+    "src/app/landscape-raster.ts": "ddfc27516018475840363ca59a46dc8a5c581a1d68a0dbb7f6bdb142220c42d1"
+  },
+  "exportedForestPixels": 178232,
+  "exportedCrownPixels": 132305,
+  "source": "1628f998fe6b71bc17eafeeb4e5115a4a6ac24f1",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/forest-style-DyKKsr",
+  "artifacts": {
+    "main.cjs": "50a592bb18dcc30e5cfb9b9aaf49f073ee1fd0bb525db2e51d23fa1cdf0f43a4",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "b5e03662bafaf9b6b8c3ca0278b3e4ecf2e748eab5128f08a7063bf8576a1b35",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "e4b44e712f465f19f38a29b3edbdb259cdcf14f57ef082be5472299cb03db5c4",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "3eecb99a013507e1bdf3795d442236fa3d1d1e725e3dc34e3e67f10b1baaccad",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3393278,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

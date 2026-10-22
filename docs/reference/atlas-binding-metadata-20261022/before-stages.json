@@ -1,0 +1,334 @@
+{
+  "source": "d2857daed76ea87b4ea3321dcf4d897cafee43a8",
+  "rawPath": ".build/atlas-finish-stages-current/result.json",
+  "rawSha256": "062b04a45dfe383f7e0cffb4bfa40fdcc4d4e71d353188ee14c2bcbc6d7767f1",
+  "events": [
+    {
+      "name": "open",
+      "time": 4210.797127,
+      "mainTime": 2425.63227
+    },
+    {
+      "name": "ready",
+      "time": 15290.64367,
+      "mainTime": 13505.568929
+    },
+    {
+      "name": "down",
+      "time": 17394.895209,
+      "mainTime": 15608.860263
+    },
+    {
+      "name": "released",
+      "time": 21687.903788,
+      "mainTime": 19901.801636
+    },
+    {
+      "name": "wheel-send",
+      "time": 22692.250436,
+      "mainTime": 20906.28123
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22730.265725,
+      "mainTime": 20945.959146
+    },
+    {
+      "name": "state-returned",
+      "time": 23034.310457,
+      "mainTime": 21248.206379
+    },
+    {
+      "name": "settled",
+      "time": 24447.440578,
+      "mainTime": 22661.894715
+    },
+    {
+      "name": "author-ready",
+      "time": 26855.148604,
+      "mainTime": 25069.893149
+    },
+    {
+      "name": "second-down",
+      "time": 26927.155193,
+      "mainTime": 25141.024621
+    },
+    {
+      "name": "second-released",
+      "time": 27232.151452,
+      "mainTime": 25446.308825
+    },
+    {
+      "name": "second-author-ready",
+      "time": 30229.369714,
+      "mainTime": 28444.045343
+    },
+    {
+      "name": "detail-ready",
+      "time": 43252.053479,
+      "mainTime": 41467.445428
+    }
+  ],
+  "groups": [
+    {
+      "worker": 2,
+      "kind": "terrain-live",
+      "revision": 10,
+      "firstPostedAfterReleaseMs": -288.3719149999997,
+      "lastReceivedAfterReleaseMs": 104.35047599999962,
+      "stagesMs": {
+        "region.sync": 57.79668800000218,
+        "projection.grid": 45.539152999997896,
+        "projection.field": 36.470870000001014,
+        "projection.base": 98.22357199999897,
+        "projection.finish": 1.0063300000001618,
+        "region.read": 328.8058860000019
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-stroke",
+      "revision": 10,
+      "firstPostedAfterReleaseMs": 104.44509000000107,
+      "lastReceivedAfterReleaseMs": 152.2716189999992,
+      "stagesMs": {
+        "region.sync": 0.9568690000014612,
+        "region.read": 45.58278599999903
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-refine",
+      "revision": 10,
+      "firstPostedAfterReleaseMs": 152.32782299999963,
+      "lastReceivedAfterReleaseMs": 230.26831899999888,
+      "stagesMs": {
+        "region.sync": 0.8693070000008447,
+        "projection.grid": 2.3110260000030394,
+        "region.read": 20.20801500000016
+      },
+      "packets": 2
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-live",
+      "revision": 11,
+      "firstPostedAfterReleaseMs": 232.60331099999894,
+      "lastReceivedAfterReleaseMs": 521.777653000001,
+      "stagesMs": {
+        "region.sync": 7.518240999997943,
+        "projection.grid": 28.26137799999924,
+        "projection.field": 12.191664999998466,
+        "projection.base": 97.71326299999782,
+        "projection.finish": 1.0633940000006987,
+        "region.read": 277.59875300000203
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-stroke",
+      "revision": 11,
+      "firstPostedAfterReleaseMs": 521.8352290000003,
+      "lastReceivedAfterReleaseMs": 555.5383890000012,
+      "stagesMs": {
+        "region.sync": 0.6481769999991229,
+        "region.read": 32.05309599999964
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-refine",
+      "revision": 11,
+      "firstPostedAfterReleaseMs": 555.5979660000012,
+      "lastReceivedAfterReleaseMs": 622.0348229999981,
+      "stagesMs": {
+        "region.sync": 0.8883559999994759,
+        "projection.grid": 2.592434999998659,
+        "region.read": 23.007025999999314
+      },
+      "packets": 2
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-live",
+      "revision": 12,
+      "firstPostedAfterReleaseMs": 623.5937989999984,
+      "lastReceivedAfterReleaseMs": 850.3421310000012,
+      "stagesMs": {
+        "region.sync": 8.28226700000232,
+        "projection.grid": 25.468092000002798,
+        "projection.field": 9.223321000001306,
+        "projection.base": 76.39673600000242,
+        "projection.finish": 1.0635920000022452,
+        "region.read": 212.88583500000095
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "region",
+      "revision": 12,
+      "firstPostedAfterReleaseMs": 902.5231810000005,
+      "lastReceivedAfterReleaseMs": 3762.8163889999996,
+      "stagesMs": {
+        "region.sync": 2.690994000004139,
+        "region.read": 2136.9881410000053
+      },
+      "packets": 2
+    },
+    {
+      "worker": 2,
+      "kind": "terrain",
+      "revision": 12,
+      "firstPostedAfterReleaseMs": 3762.8907279999985,
+      "lastReceivedAfterReleaseMs": 4811.011214999999,
+      "stagesMs": {
+        "region.sync": 24.355106000002706,
+        "region.read": 834.879665000004,
+        "projection.base": 198.49454299999707,
+        "projection.finish": 1.9454139999979816
+      },
+      "packets": 36
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-color",
+      "revision": 12,
+      "firstPostedAfterReleaseMs": 5058.144601,
+      "lastReceivedAfterReleaseMs": 5325.631853999999,
+      "stagesMs": {
+        "region.sync": 16.3705229999905,
+        "region.read": 223.84941000000617,
+        "projection.base": 54.65409,
+        "projection.finish": 2.7868539999981294
+      },
+      "packets": 16
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-stroke",
+      "revision": 12,
+      "firstPostedAfterReleaseMs": 5325.7352409999985,
+      "lastReceivedAfterReleaseMs": 5616.294593999999,
+      "stagesMs": {
+        "region.sync": 0.747112000000925,
+        "region.read": 288.4594470000011
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-live",
+      "revision": 13,
+      "firstPostedAfterReleaseMs": 5682.433047999999,
+      "lastReceivedAfterReleaseMs": 6113.519439,
+      "stagesMs": {
+        "region.sync": 44.92119599999933,
+        "projection.grid": 29.87630800000261,
+        "projection.field": 177.224761999998,
+        "projection.base": 76.3149450000019,
+        "projection.finish": 0.8539909999999509,
+        "region.read": 377.2077730000019
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-stroke",
+      "revision": 13,
+      "firstPostedAfterReleaseMs": 6113.596924000001,
+      "lastReceivedAfterReleaseMs": 6349.493653000001,
+      "stagesMs": {
+        "region.sync": 0.9005289999986417,
+        "region.read": 231.55627599999934
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-refine",
+      "revision": 13,
+      "firstPostedAfterReleaseMs": 6349.5502400000005,
+      "lastReceivedAfterReleaseMs": 6424.412077000001,
+      "stagesMs": {
+        "region.sync": 0.48462800000197603,
+        "projection.grid": 4.762238000002981,
+        "region.read": 24.498392999998032
+      },
+      "packets": 2
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-live",
+      "revision": 14,
+      "firstPostedAfterReleaseMs": 6427.017059999998,
+      "lastReceivedAfterReleaseMs": 6727.191619000001,
+      "stagesMs": {
+        "region.sync": 7.098930000000109,
+        "projection.grid": 26.607891999999993,
+        "projection.field": 24.188363000001118,
+        "projection.base": 105.49942000000374,
+        "projection.finish": 1.2281829999992624,
+        "region.read": 286.8347020000001
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "region",
+      "revision": 14,
+      "firstPostedAfterReleaseMs": 6779.8041410000005,
+      "lastReceivedAfterReleaseMs": 7835.333286000001,
+      "stagesMs": {
+        "region.sync": 0.7792990000016289,
+        "region.read": 1049.7867619999997
+      },
+      "packets": 1
+    },
+    {
+      "worker": 2,
+      "kind": "terrain-color",
+      "revision": 14,
+      "firstPostedAfterReleaseMs": 8681.318372000002,
+      "lastReceivedAfterReleaseMs": 12761.121441,
+      "stagesMs": {
+        "region.sync": 191.72991799996817,
+        "region.read": 3108.5083209999866,
+        "projection.base": 599.9810730000136,
+        "projection.finish": 81.12392599999293
+      },
+      "packets": 262
+    }
+  ],
+  "launches": [
+    {
+      "pid": 3441602,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "artifacts": {
+    "main.cjs": "f29efb111d808e1dcffc2c110ba07a7e945790e803be86687f4c530a16ca1f10",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "e38b8f9f64f2de8de37e08876484e583dd28fe8676d284c4b7ee7312c0c6f4a8",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "45de3bc3d9b638cde2dd03a1bcb078607ac305194418067e0359452faa49ff4f",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "dropped": 0
+}

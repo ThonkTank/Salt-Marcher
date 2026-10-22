@@ -24,7 +24,7 @@ test('history accumulates skipped reads, survives same-source reads, and fails c
 });
 async function loaded(){
  const tiles=new TerrainDetailTiles();let reads=0;
- const read=async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4).fill(q.revision===1?255:127)};};
+ const read=async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4).fill(q.revision===1?255:127),forest:new Uint8Array(q.width*q.height).fill(q.revision===1?200:60)};};
  const load=async revision=>tiles.load(terrainColorIdentity(source(revision)),box,{...identity(revision),contours:0,routeContext:box},read,()=>true,detail=>tiles.detail=detail,tiles.detail);
  tiles.reconcile(source(1));await load(1);
  return {tiles,load,reads:()=>reads};
@@ -37,7 +37,8 @@ test('a confirmed local change keeps distant pixels and reads only affected tile
  assert.equal(next.pixels[(30*4*next.width+30*4)*4+3],0,'neighbouring tile also invalidated through the halo');
  assert.equal(next.pixels[(200*4*next.width+200*4)*4+3],255,'distant world detail stays sharp');
  assert.equal(next.coverage.values.filter(v=>v===0).length,2);
- await load(2);assert.equal(reads()-count,2);assert.equal(tiles.detail.coverage.values.filter(v=>v===255).length,16);
+ assert.equal(next.forest[30*4*next.width+30*4],0);assert.equal(next.forest[200*4*next.width+200*4],200);assert(before.forest.every(v=>v===200));
+ await load(2);assert.equal(reads()-count,2);assert.equal(tiles.detail.forest[30*4*next.width+30*4],60);assert.equal(tiles.detail.forest[200*4*next.width+200*4],200);assert.equal(tiles.detail.coverage.values.filter(v=>v===255).length,16);
 });
 test('unknown base, source reset, another campaign and route-context changes cannot reuse pigment',async()=>{
  for(const kind of ['missing','wrong','reset','campaign','route']){
@@ -75,4 +76,35 @@ test('live brush patches cover the full disc inside their unfaded interior witho
  const edge=terrainDetailBox({x:0,y:0},8,{x:0,y:0,width:10,height:10});
  assert.deepEqual(edge,{x:0,y:0,width:10,height:10});
  assert.equal(terrainDetailBox({x:100,y:100},8,{x:0,y:0,width:10,height:10}),undefined);
+});
+
+test('retained detail matches pixel-centre sampling across pans, zooms, clipped edges and absent forest',()=>{
+ const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
+ const blank=(box,width,height)=>({box,width,height,pixels:new Uint8Array(width*height*4).fill(17),forest:new Uint8Array(width*height).fill(23)});
+ const sample=(target,previous)=>{
+  for(let y=0;y<target.height;y++)for(let x=0;x<target.width;x++){
+   const sx=Math.floor(((target.box.x+(x+.5)*target.box.width/target.width)-previous.box.x)/previous.box.width*previous.width),sy=Math.floor(((target.box.y+(y+.5)*target.box.height/target.height)-previous.box.y)/previous.box.height*previous.height);
+   if(sx<0||sy<0||sx>=previous.width||sy>=previous.height)continue;
+   const a=sy*previous.width+sx,b=y*target.width+x;target.pixels.set(previous.pixels.subarray(a*4,a*4+4),b*4);target.forest[b]=previous.forest?.[a]??0;
+  }
+ };
+ for(const origin of [-20000000,0,1e12])for(const scale of [.125,1,65536])for(const ratio of [.25,.5,1,2,4])for(const shift of [-40,-5.3,0,3,40])for(const forest of [true,false]){
+  const previous=blank({x:origin,y:origin,width:32*scale,height:24*scale},32,24);
+  previous.pixels=Uint8Array.from(previous.pixels,(_,i)=>(i*37+Math.floor(i/17))%256);
+  if(forest)previous.forest=Uint8Array.from(previous.forest,(_,i)=>(i*41)%256);else delete previous.forest;
+  const target=blank({x:origin+shift*scale,y:origin-shift*scale,width:36*scale*ratio,height:28*scale*ratio},36,28),expected=structuredClone(target),before=structuredClone(previous);
+  // Both aligned typed arrays and unaligned views preserve arbitrary RGBA.
+  if(shift===3){const bytes=new Uint8Array(previous.pixels.length+1);bytes.set(previous.pixels,1);previous.pixels=bytes.subarray(1);}
+  sample(expected,previous);retainTerrainDetail(target,previous);
+  assert.deepEqual(target,expected,JSON.stringify({origin,scale,ratio,shift,forest}));assert.deepEqual({...previous,pixels:Uint8Array.from(previous.pixels)},before);
+ }
+});
+
+test('a world jump cannot wrap distant sample coordinates back into a tiny previous detail',()=>{
+ const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs'),mpp=1/512;
+ const previous={box:{x:0,y:0,width:4*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32).fill(255),forest:new Uint8Array(8).fill(200)};
+ const target={box:{x:-(2**31)*mpp,y:0,width:4*(2**32)*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32),forest:new Uint8Array(8)};
+ retainTerrainDetail(target,previous);
+ assert.deepEqual([...target.forest],[200,0,0,0,200,0,0,0]);
+ for(let i=0;i<8;i++)assert.equal(target.pixels[i*4+3],i%4===0?255:0);
 });

@@ -153,7 +153,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange);
     this.colorTiles.detail=detail;
     // The retained image has different tile rectangles from the live brush patch.
-    this.baseline={...data,detail,brushDetail:data.detail,update:data.update?{...data.update,detail:undefined}:undefined,source:this.source};this.liveQuality=refined?'detail':'interactive';
+    this.baseline={...data,detail,brushDetail:data.detail,update:data.update?{...data.update,detail:undefined,detailForest:undefined}:undefined,source:this.source};this.liveQuality=refined?'detail':'interactive';
     if(this.liveHeight)return false;
     this.publish(this.baseline);this.input.dataset.terrainQuality=refined?'detail':'interactive';return true;
   }

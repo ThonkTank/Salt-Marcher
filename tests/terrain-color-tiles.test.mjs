@@ -34,13 +34,14 @@ test('independently rendered neighbouring tiles equal the complete projection in
  const records=[heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>40+20*Math.sin(i%64/7)*Math.cos(Math.floor(i/64)/9)))],cover={...emptyRecord('vegetation'),id:'forest',vegetation:vegetationSpec(),values:{terrain:'forest'},polygons:[{outer:[{x:80,y:90},{x:530,y:75},{x:550,y:300},{x:100,y:290}],holes:[[{x:280,y:150},{x:370,y:160},{x:350,y:220},{x:270,y:230}]]}]},stream=kind=>kind==='height'?records:kind==='cover'?[cover]:[];
  const db={prepare(){return {get(){}};}},source={campaignId:'test',...identity},box={x:64,y:64,width:512,height:256},view={box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1};
  for(const contours of [0,10]){
-  const expected=readTerrainProjection(db,source,{view,width:512,height:256,contours,displayMpp:1,revision:1},stream,new TerrainProjectionCache()),assembled=new Uint8Array(expected.pixels.length);
+  const expected=readTerrainProjection(db,source,{view,width:512,height:256,contours,displayMpp:1,revision:1},stream,new TerrainProjectionCache()),assembled=new Uint8Array(expected.pixels.length),forest=new Uint8Array(expected.forest.length);
   for(let x=0;x<2;x++){
    const q={...query,box:{...box,x:box.x+x*256,width:256},routeContext:box,width:256,height:256,displayMpp:1,contours},value=drain(readTerrainColorSteps(db,source,q,stream,new TerrainProjectionCache()));
+   for(let y=0;y<256;y++)forest.set(value.forest.subarray(y*256,(y+1)*256),y*512+x*256);
    assert.equal(value.grid,undefined);assert.equal(value.objects,undefined);
    for(let y=0;y<256;y++)assembled.set(value.pixels.subarray(y*256*4,(y+1)*256*4),(y*512+x*256)*4);
   }
-  assert.deepEqual(assembled,expected.pixels);
+  assert.deepEqual(assembled,expected.pixels);assert.deepEqual(forest,expected.forest);assert(forest.some(v=>v>0));assert(forest.some(v=>v===0));
  }
  assert.throws(()=>drain(readTerrainColorSteps(db,{...source,revision:2},{...query,box,width:256,height:256,displayMpp:1},stream,new TerrainProjectionCache())),/inzwischen geändert/);
 });
@@ -69,4 +70,15 @@ test('coverage feathering ends at full quality and cannot leak into live/full te
  const mask=uniforms.coverageMap.value;let disposed=0;mask.addEventListener('dispose',()=>disposed++);
  coverage.values.fill(255);owner.update(material,data);assert.equal(uniforms.coverageEnabled.value,false,'completed colour uses its exact unfeathered pixels');
  const {coverage:unused,...complete}=detail;owner.update(material,{...data,detail:complete});assert.equal(uniforms.coverageEnabled.value,false);assert.equal(disposed,1,'live/full frame releases the progressive mask');owner.dispose();material.map.dispose();material.dispose();
+});
+
+
+test('material retains base masks on detail-only progress and updates one-component rectangles',()=>{
+ const material=new MeshBasicMaterial({map:new DataTexture(new Uint8Array(4*4*4),4,4)}),owner=new TerrainDetailMaterial(),box={x:0,y:0,width:4,height:4};
+ const data={grid:{view:{box}},width:4,height:4,forest:new Uint8Array(16).fill(255),detail:{box,width:4,height:4,pixels:new Uint8Array(64).fill(255),forest:new Uint8Array(16).fill(127)}};
+ owner.update(material,data);const base=owner.forestUniforms.forestMap.value,detail=owner.forestUniforms.detailForestMap.value;let disposed=0;detail.addEventListener('dispose',()=>disposed++);
+ data.detail.forest[6]=0;owner.update(material,{grid:data.grid,detail:data.detail},[{x:2,y:1,width:1,height:1}]);
+ assert.equal(owner.forestUniforms.forestMap.value,base);assert.deepEqual(detail.updateRanges,[{start:6,count:1}]);assert.equal(detail.image.data[6],0);
+ owner.update(material,{grid:data.grid,width:4,height:4});assert.equal(disposed,1);assert.equal(owner.forestUniforms.forestMap.value.image.data.length,1);assert.equal(owner.forestUniforms.forestMap.value.image.data[0],0);
+ owner.dispose();material.map.dispose();material.dispose();
 });

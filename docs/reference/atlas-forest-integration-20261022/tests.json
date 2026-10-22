@@ -1,0 +1,67 @@
+{
+  "baseline": "37a7914f14510b4d08033320761d4150ade41e35",
+  "tests": [
+    "tests/terrain-forest-pattern.test.mjs",
+    "tests/terrain-frame-delta.test.mjs",
+    "tests/terrain-color-tiles.test.mjs",
+    "tests/terrain-color-retention.test.mjs",
+    "tests/terrain-color-cache-context.test.mjs",
+    "tests/terrain-projection-service.test.mjs",
+    "tests/terrain-color-service.test.mjs",
+    "tests/terrain-progressive-projection.test.mjs",
+    "tests/terrain-projection-ui.test.mjs",
+    "tests/terrain-live-stroke.test.mjs",
+    "tests/landscape-forest-coverage.test.mjs"
+  ],
+  "passed": 59,
+  "failed": 0,
+  "qualification": "57 unchanged cases from the 59-case run plus both final forest-pattern cases rerun after the fade-range change. No physical Pentium or full performance acceptance.",
+  "runtime": {
+    "src/app/storage/terrain-color-raster.ts": "3246c87ebb98eb2aa79c4496a6f02f624f8bc4681ab023d6e20c0efb36788e94",
+    "src/app/storage/terrain-color.ts": "4b69416c254e538eef056be8898489df7d37d8595d960fa19dfcb3c34568407d",
+    "src/app/storage/terrain-projection.ts": "3ed9dcb49c445d021102507616c64d832a42f8836f3423f263ed4bb59260e7b7",
+    "src/app/terrain-detail-material.ts": "de335c75a8a7f39869ef2dacc16dc6454c518f30ce12ca529590571762bda7de",
+    "src/app/terrain-detail-retention.ts": "3d2a695f05a376e2bb8d30fabb81df358447465ef7976d60aea95e898c02012c",
+    "src/app/terrain-detail-tiles.ts": "483ace8004e8dcd781d5f63f5db567b50ba71d7a4b5731218487c76a50d2e106",
+    "src/app/terrain-detail.ts": "f4cdea20a4cb9a78975905766142d5eef9f4452f120c8d5eceee557af568e10b",
+    "src/app/terrain-frame.ts": "68343cb58c9c08836c3ab6b9ec3fe95ef4c4397a5ed4aff25fd72b12f3f92738",
+    "src/app/terrain-projection-cache.ts": "3318a88daaba5f452ab282c75e74ac0b490700cf91db52ee209e2057ba3f6e0c",
+    "src/app/terrain-spatial-ui.ts": "5b5254a3ddea7c56d4cfa451915c70f324e79b2152f363cee6da32832140086a",
+    "src/app/terrain-spatial-view.ts": "aa1e28e4696c523d0b7b3af85b6914d0d63030c0c1f10bc7eaf0d1c8d0275a21",
+    "src/app/terrain-spatial-worker.ts": "11bbbc0b204f52e44d4305e6d71ee61e8c1d7b4ccf789119ab8c3aa51aec7e9f",
+    "src/app/terrain-texture-upload.ts": "bf6656585f29b38d58e1acf28548891639493c317ab8bebf88ef753aec9c5bef",
+    "src/app/terrain-forest-pattern.ts": "283eeb8c35c9f25b4322dfd02c0a7ac7f74099e853a1946622ba6b7dd892d6e0"
+  },
+  "logs": {
+    ".build/forest-integration-tests.log": "f0f1c7eea6e219885b47baf65d7c595ff00c447743f2243fedfc4da0a268e99a",
+    ".build/forest-integration-range-tests.log": "cd2893f31bf7aaa8aba510f4e959ba5af8261e660e4fe9e736b710cff202c3a2",
+    ".build/forest-integration-types-final.log": "08d7eb73e9ba5169a0325239582fb976177dab5994bcccd491f62936562ae925",
+    ".build/forest-integration-desktop-types.log": "ada0bd9ca4f72501291ead9b54b334e9cacdef9bd3bae164308bc867a14657c9",
+    ".build/forest-integration-range-build.log": "31dc362fbcf23c8db08ea368f672a99165f375b55c85e4dca3f33e8042dd6bd2",
+    ".build/forest-integrated-repo.log": "1a7cc0eb888a6f1fa85a569df9713608e2fb8d6d50a265fb5b425c2cb14c5d74"
+  },
+  "checks": [
+    "npm run check",
+    "npm run check:desktop",
+    "npm run build:desktop",
+    "npm run check:repo"
+  ],
+  "nativeTools": [
+    "tools/test-forest-pattern-prototype.mjs",
+    "tools/test-desktop-forest-style.mjs",
+    "tools/measure-desktop-backup-impact.mjs"
+  ],
+  "nativeArtifacts": {
+    "main.cjs": "f29efb111d808e1dcffc2c110ba07a7e945790e803be86687f4c530a16ca1f10",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "e38b8f9f64f2de8de37e08876484e583dd28fe8676d284c4b7ee7312c0c6f4a8",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "b1d82ade75ad3983dd5a80c14304b03de5ab3f1f589033d224fef28a63d24b07",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  }
+}

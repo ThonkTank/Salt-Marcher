@@ -5,7 +5,7 @@ import type {LandscapeBox} from './atlas-landscape';
 import {terrainDirtyRects} from './terrain-dirty-rects';
 type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;ground?:Float32Array;levels?:Float32Array;water?:Uint8Array;dirty:Uint8Array};
 type HeightBlock=Omit<TerrainHeightSource,'read'>&{values:Float32Array};
-type Tile={kind:'height';block:HeightBlock}|Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
+type Tile={kind:'height';block:HeightBlock}|Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array;forest?:Uint8Array};
 type GridData={surface:Float32Array;ground?:Float32Array;levels?:Float32Array;water?:Uint8Array};
 /** 16 MiB of the consumer's 64 MiB derived-cache budget.
  * Other shares: landscape PNGs 8, response bases 8, Main's replies 16 canonical surface blocks 8 and scale pyramid 8 (64 MiB total).
@@ -101,10 +101,11 @@ export class TerrainProjectionCache {
     const hit=this.cachedPixels(key);if(hit)return hit;
     const pixels=create();this.rememberPixels(key,box,pixels);return pixels;
   }
-  cachedPixels(key:string){
-    const hit=this.tiles.get('pixels:'+key);return hit?.kind==='pixels'?hit.pixels:undefined;
+  cachedPixels(key:string){return this.cachedColor(key)?.pixels;}
+  cachedColor(key:string){
+    const hit=this.tiles.get('pixels:'+key);return hit?.kind==='pixels'?hit:undefined;
   }
-  rememberPixels(key:string,box:LandscapeBox,pixels:Uint8Array){
-    key='pixels:'+key;this.tiles.put(key,box,{kind:'pixels',pixels},key.length*2+pixels.byteLength);
+  rememberPixels(key:string,box:LandscapeBox,pixels:Uint8Array,forest?:Uint8Array){
+    key='pixels:'+key;this.tiles.put(key,box,{kind:'pixels',pixels,forest},key.length*2+pixels.byteLength+(forest?.byteLength??0));
   }
 }

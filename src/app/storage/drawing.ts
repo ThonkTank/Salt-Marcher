@@ -22,10 +22,20 @@ CREATE TABLE IF NOT EXISTS dungeon_feature_receipt(campaign_id TEXT NOT NULL REF
 function parsed<T=any>(row:any):T{if(!row||hash(row.payload)!==row.checksum)throw new Error('Dungeonstand fehlt oder ist beschädigt.');return JSON.parse(row.payload);}
 export function drawingRoomFromRow(r:any):Room{if(!r||hash(r.payload)!==r.checksum)throw new Error('Raum fehlt oder ist beschädigt.');return{id:r.id,scopeId:r.scope_id,floorId:r.floor_id,number:r.number,name:r.name,revision:r.revision,...JSON.parse(r.payload)};}
 export function drawingRoom(db:any,cam:string,id:string):Room{return drawingRoomFromRow(db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(cam,id));}
+// Cache only the two SQL programs, never style/secret values across snapshots.
+const roomStyleQueries=new WeakMap<object,{profile:any;key:any}>();
+function roomStyleStatements(db:any){
+ let queries=roomStyleQueries.get(db);
+ if(!queries){queries={
+  profile:db.prepare('SELECT p.* FROM room r JOIN drawing_profile p ON p.campaign_id=r.campaign_id AND p.scope_id=r.scope_id AND p.target_id=r.id WHERE r.campaign_id=? AND r.id=?'),
+  key:db.prepare("SELECT id,scope_id,kind,revision,payload,checksum,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.id','$.scopeId','$.kind','$.revision','$.secret') END header FROM dungeon_key_content WHERE campaign_id=? AND id=? AND kind='room'"),
+ };roomStyleQueries.set(db,queries);}
+ return queries;
+}
 /** Selected display style; secret Key metadata does not create an author revision. */
 export function roomMapStyle(db:any,cam:string,id:string):RoomStyle&{authorRevision?:number|null}|undefined{
- const profile=db.prepare('SELECT p.* FROM room r JOIN drawing_profile p ON p.campaign_id=r.campaign_id AND p.scope_id=r.scope_id AND p.target_id=r.id WHERE r.campaign_id=? AND r.id=?').get(cam,id);let style:(RoomStyle&{authorRevision?:number|null})|undefined=profile?parsed<RoomStyle>(profile):undefined;
- const row=db.prepare("SELECT id,scope_id,kind,revision,payload,checksum,CASE WHEN json_valid(payload) THEN json_extract(payload,'$.id','$.scopeId','$.kind','$.revision','$.secret') END header FROM dungeon_key_content WHERE campaign_id=? AND id=? AND kind='room'").get(cam,id);
+ const queries=roomStyleStatements(db),profile=queries.profile.get(cam,id);let style:(RoomStyle&{authorRevision?:number|null})|undefined=profile?parsed<RoomStyle>(profile):undefined;
+ const row=queries.key.get(cam,id);
  if(row){const header=JSON.parse(row.header??'null');if(hash(row.payload)!==row.checksum||!Array.isArray(header)||header.length!==5||header[0]!==row.id||header[1]!==row.scope_id||header[2]!==row.kind||!Number.isSafeInteger(row.revision)||row.revision<0||header[3]!==row.revision||typeof header[4]!=='boolean')throw new Error('Dungeon-Key beschädigt.');
   if(header[4])style=style?{...style,secret:true}:{id,revision:0,scopeId:row.scope_id,ceilingMeters:3.048,fill:'#c5b998',wall:'#56493e',publicLabel:'',secret:true,authorRevision:null};
  }return style;

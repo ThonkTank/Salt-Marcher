@@ -1,0 +1,27 @@
+{
+  "tests33": {
+    "path": ".build/deferred-routes-final-tests.log",
+    "sha256": "7c5388ce75b844aea13a541137be2a9631bc8ec56a64bb26d1b139df2b0c0aaf",
+    "exit": 0
+  },
+  "appTypes": {
+    "path": ".build/deferred-routes-final-types.log",
+    "sha256": "08d7eb73e9ba5169a0325239582fb976177dab5994bcccd491f62936562ae925",
+    "exit": 0
+  },
+  "desktopTypes": {
+    "path": ".build/deferred-routes-desktop-types-final.log",
+    "sha256": "ada0bd9ca4f72501291ead9b54b334e9cacdef9bd3bae164308bc867a14657c9",
+    "exit": 0
+  },
+  "desktopBuild": {
+    "path": ".build/deferred-routes-build.log",
+    "sha256": "31dc362fbcf23c8db08ea368f672a99165f375b55c85e4dca3f33e8042dd6bd2",
+    "exit": 0
+  },
+  "repository": {
+    "path": ".build/deferred-routes-repo.log",
+    "sha256": "1a7cc0eb888a6f1fa85a569df9713608e2fb8d6d50a265fb5b425c2cb14c5d74",
+    "exit": 0
+  }
+}

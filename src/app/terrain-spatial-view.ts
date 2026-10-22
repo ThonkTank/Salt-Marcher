@@ -26,6 +26,7 @@ import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
 import {terrainRaycast} from './terrain-ray';
 import {TerrainHexGrid} from './terrain-hex-grid';
 import {TerrainRouteVisibility} from './terrain-route-visibility';
+import {routeMayDraw} from './terrain-route-display';
 import {TerrainRing} from './terrain-ring';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
@@ -46,7 +47,7 @@ export class TerrainSpatialView {
   private cursor=new TerrainRing('#a65f30');
   private selection=new TerrainRing('#e68a28');
   private routes:THREE.Mesh[]=[];
-  private routeState=new Map<string,{key:string;meshes:THREE.Mesh[]}>();
+  private routeState=new Map<string,{key:string;meshes:THREE.Mesh[];record:LandscapeRecord;pending:boolean;selected:boolean}>();
   private routeVisibility=new TerrainRouteVisibility();
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
@@ -146,13 +147,14 @@ export class TerrainSpatialView {
       if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
       this.mesh=next.mesh;this.scene.add(this.mesh);
     }
-    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
+    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail,partial?{base:partial.forest,detail:partial.detailForest}:undefined);
     this.hexGrid.attach(this.mesh.material);
     this.draftMaterial??=new TerrainDraftMaterial();this.draftMaterial.attach(this.mesh,g,data.landColor);
-    const geometry=this.mesh.geometry;
     if(!data.draft&&!this.frozenPick){
       this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
-      this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);
+      // The custom grid raycast below never reads GPU attributes. Copying the
+      // complete display mesh here only doubled buffers on every publication.
+      this.picker=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);
       const origin={...this.origin},picker=this.picker;
       picker.raycast=(raycaster,hits)=>{
         const r=raycaster.ray,distance=terrainRaycast(g,{x:r.origin.x+origin.x,y:origin.y-r.origin.y,z:g.view.focusM+r.origin.z/g.view.exaggeration},{x:r.direction.x,y:-r.direction.y,z:r.direction.z/g.view.exaggeration},raycaster.near,raycaster.far);
@@ -169,10 +171,7 @@ export class TerrainSpatialView {
       const key=JSON.stringify([r,transform,data.protectedLimit]),old=this.routeState.get(r.id);
       if(old?.key===key&&!changed.some(box=>terrainBoxesOverlap(box,bounds(r))))continue;
       if(old)dispose(old.meshes);
-      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,step/2,data.protectedLimit!==undefined&&!!r.route?.protected,v.box,terrainGridLayout(v));
-      // Route vertices already contain their complete transform. Keep these
-      // immutable matrices out of Three's per-frame scene recomposition.
-      for(const mesh of meshes){mesh.updateMatrixWorld(true);mesh.matrixAutoUpdate=false;mesh.matrixWorldAutoUpdate=false;this.scene.add(mesh);}this.routeState.set(r.id,{key,meshes});
+      this.routeState.set(r.id,{key,meshes:[],record:r,pending:true,selected:data.protectedLimit!==undefined&&!!r.route?.protected});
     }
     this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
     if(!this.objectLayer){this.objectLayer=new TerrainObjectLayer();this.scene.add(this.objectLayer.group);}
@@ -228,7 +227,17 @@ export class TerrainSpatialView {
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
     this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
-    this.routeVisibility.update(this.routes,this.camera,this.outputTile?.height??Math.max(1,this.canvas.clientHeight));
+    const height=this.outputTile?.height??Math.max(1,this.canvas.clientHeight);let added=false;
+    for(const state of this.routeState?.values()??[]){
+      if(!state.pending||!routeMayDraw(state.record,this.camera,height,v.box,this.origin,this.heightRange,v.exaggeration))continue;
+      const layout=terrainGridLayout(v);
+      state.meshes=routeMeshes(state.record,p=>gridHeight(this.grid!,p),{...this.origin,z:v.focusM},v.exaggeration,layout.minimumStep/2,state.selected,v.box,layout);state.pending=false;added=true;
+      // Deferred routes use the latest confirmed surface. Once created they
+      // remain available through camera motion without another worker read.
+      for(const mesh of state.meshes){mesh.updateMatrixWorld(true);mesh.matrixAutoUpdate=false;mesh.matrixWorldAutoUpdate=false;this.scene.add(mesh);}
+    }
+    if(added)this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
+    this.routeVisibility.update(this.routes,this.camera,height);
   }
   render(){
     if(this.drawBatch?.depth&&!this.outputTile){this.drawBatch.pending=true;return;}
@@ -237,6 +246,7 @@ export class TerrainSpatialView {
     this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
     this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
     this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
+    this.detail?.updateView(this.origin,v.frame.width/(this.outputTile?.width??w));
     this.updateCamera();
     const direction=new THREE.Vector3();
     const cameraMatrix=this.camera.matrixWorldInverse.elements;

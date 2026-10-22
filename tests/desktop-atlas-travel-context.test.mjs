@@ -201,14 +201,19 @@ test('a press rejected during saving cannot become a selection after saving comp
 });
 
 
-test('long wheel gestures start bounded reads before input settles without cancelling in-flight frames',async t=>{
+test('camera input preserves useful buffered reads and replaces obsolete destinations before completion',async t=>{
  const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));let now=0,id=0;const jobs=new Map(),reads=[];
  global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
  const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
  ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);ui.scheduleRegion(true);advance(40);assert.deepEqual(reads,[true],'continuous input must not starve loading');assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
- ui.regionReading=ui.request;ui.scheduleRegion(true);advance(200);assert.deepEqual(reads,[true],'at most one camera request can be in flight');assert.equal(ui.request,0,'camera movement must not discard an in-flight reply');
- ui.scheduleRegion(false);assert.equal(ui.request,1,'a source/filter change must invalidate the earlier reply');advance(60);assert.deepEqual(reads,[true,false]);
+ const q={box:{x:0,y:0,width:100,height:80},width:100,height:80,scopeId:'local',floorId:'ground',slice:null,roofs:true};
+ ui.regionQuery=()=>q;ui.camera={destination:{...q.box,x:20}};ui.regionReading=ui.request;
+ ui.regionReadingQuery={...q,box:{x:-50,y:-40,width:200,height:160},width:200,height:160};
+ ui.scheduleRegion(true);advance(200);assert.deepEqual(reads,[true],'panning within the buffer must preserve useful work');assert.equal(ui.request,0);
+ ui.camera.destination={...q.box,width:50,height:40};ui.scheduleRegion(true);advance(90);ui.scheduleRegion(true);advance(40);assert.deepEqual(reads,[true,true],'a scale change must reach the busy worker without waiting for the old answer');
+ ui.camera.destination={...q.box,x:500};ui.scheduleRegion(true);advance(120);assert.deepEqual(reads,[true,true,true],'leaving the buffer replaces an obsolete pan request');
+ ui.camera.destination=q.box;ui.scheduleRegion(false);assert.equal(ui.request,1,'a source/filter change must invalidate the earlier reply');advance(60);assert.deepEqual(reads,[true,true,true,false]);
 });
 
 test('camera refresh preserves a checked local route only after the identical source is confirmed',async t=>{
@@ -243,4 +248,53 @@ test('settling at a prefetched scale republishes constant-pixel author handles o
  let renders=0;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>true,scheduleRender:()=>renders++});
  ui.scheduleRegion(true);assert.equal(renders,1);assert.equal(ui.root.dataset.regionState,'ready');
  ui.scheduleRegion(true);assert.equal(renders,1,'an unchanged camera does not rebuild the scene repeatedly');
+});
+
+test('an obsolete camera rejection cannot fail or clear the newer pending view',async t=>{
+ const x=fixture(t),replies=[],errors=[];
+ x.ui.error=error=>errors.push(String(error));window.campaign.atlasRegion=()=>new Promise(resolve=>replies.push(resolve));
+ const old=x.ui.refresh(true),firstQuery=x.ui.regionReadingQuery;
+ const nextQuery={...firstQuery,box:{x:100,y:0,width:50,height:50}};x.ui.regionQuery=()=>nextQuery;
+ const latest=x.ui.refresh(true),latestRequest=x.ui.request;
+ replies[0]({ok:false,error:'Kartenausschnitt durch neuere Anfrage ersetzt.'});await old;
+ assert.deepEqual(errors,[]);assert.equal(x.ui.root.dataset.regionState,'loading');assert.equal(x.ui.regionReading,latestRequest);assert.equal(x.ui.regionReadingQuery,nextQuery);
+ replies[1]({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'current',coverage:{mode:'detail',unreadable:0}}}});await latest;
+ assert.equal(x.ui.root.dataset.regionState,'ready');assert.equal(x.ui.regionReading,null);assert.equal(x.ui.regionReadingQuery,null);assert.equal(x.ui.loadedRegionQuery,nextQuery);assert.deepEqual(errors,[]);
+});
+
+test('terrain redraws preserve a matching pending region; only a real representation change replaces it',t=>{
+ const x=fixture(t);
+ const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));
+ let now=0,id=0,renders=0;const jobs=new Map(),reads=[];
+ global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
+ const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
+ let required=false;const q={box:{x:0,y:0,width:100,height:80},width:100,height:80,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false};
+ const ui=Object.assign(x.ui,{
+  root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},
+  geometryCurrent:()=>false,refresh:async keep=>reads.push(keep),scheduleRender:()=>renders++,regionQuery:()=>({...q,terrainRaster:required}),
+  request:4,regionReading:4,regionReadingQuery:q,loadedRegionQuery:null,
+ });
+ for(let n=0;n<6;n++){ui.redrawSpatial();advance(100);}
+ assert.equal(renders,6);assert.equal(ui.request,4);assert.equal(jobs.size,0);assert.deepEqual(reads,[],'terrain refinements must not cancel an unchanged pending geometry read');
+ assert.equal(ui.root.dataset.regionState,'loading','redraw does not authorize editing');
+ required=true;ui.redrawSpatial();assert.equal(ui.request,5,'graphics fallback must invalidate the old representation');
+ advance(40);ui.redrawSpatial();advance(25);assert.deepEqual(reads,[false],'subsequent redraws must not postpone the required replacement');
+ ui.regionReading=5;ui.regionReadingQuery={...q,terrainRaster:true};required=false;ui.redrawSpatial();advance(60);assert.deepEqual(reads,[false,false],'graphics recovery also replaces a pending fallback read');
+ ui.regionReading=null;ui.loadedRegionQuery={...q,terrainRaster:false};required=true;ui.redrawSpatial();advance(60);assert.deepEqual(reads,[false,false,false],'an already loaded representation must change as well');
+ ui.loadedRegionQuery=null;ui.regionReadingQuery=null;ui.redrawSpatial();advance(100);assert.deepEqual(reads,[false,false,false],'opening/error ownership remains with its existing refresh/retry path');
+});
+
+test('stale terrain waits for an existing geometry owner without replacing or authorizing it',async t=>{
+ const x=fixture(t);let release,reads=0;
+ window.campaign.atlasRegion=()=>{reads++;return new Promise(resolve=>release=resolve);};
+ const pending=x.ui.refresh(true),request=x.ui.request;
+ assert.equal(await x.ui.refreshSpatialSource(),false);assert.equal(await x.ui.refreshSpatialSource(),false);
+ assert.equal(reads,1);assert.equal(x.ui.request,request);assert.equal(x.ui.regionReading,request);
+ assert.equal(x.ui.travelReadState,'loading');assert.equal(x.ui.root.dataset.regionState,'loading');
+ release({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'fresh',coverage:{mode:'detail',unreadable:0}}}});assert.equal(await pending,true);
+ assert.equal(x.ui.regionReading,null);assert.equal(x.ui.data.region.fence,'fresh');assert.equal(x.ui.travelReadState,'ready');
+ window.campaign.atlasRegion=async()=>{reads++;return{ok:false,error:'source unavailable'};};x.ui.error=()=>{};
+ assert.equal(await x.ui.refreshSpatialSource(),false);assert.equal(reads,2,'without an owner, stale terrain still requests a source');assert.equal(x.ui.travelReadState,'failed');
+ window.campaign.atlasRegion=async()=>{reads++;return{ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'retry',coverage:{mode:'detail',unreadable:0}}}};};
+ assert.equal(await x.ui.refreshSpatialSource(),true);assert.equal(reads,3);assert.equal(x.ui.data.region.fence,'retry');
 });

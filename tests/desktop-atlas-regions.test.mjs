@@ -51,12 +51,16 @@ test('rotated city with 5000 buildings: resolved roads, targeted author details 
  f.store.db.prepare('DELETE FROM city_unit WHERE campaign_id=? AND id=?').run(cam,'b4999');const detached=await f.read();assert.equal(detached.coverage.complete,false,'a missing parent frame is explicit incomplete coverage');assert(detached.coverage.unreadable>0);
 });
 test('dense region is a bounded raster; exact hit honors holes and source fence',async t=>{
- const f=fixture(t,5000),q=query({x:-2,y:-2,width:25010,height:10}),r=await f.read(q);
+ const f=fixture(t,5000),q=query({x:-2,y:-2,width:25010,height:10});
+ const shape=f.reader.roomShape.bind(f.reader),prepare=f.db.prepare.bind(f.db);let shapes=0,stylePrograms=0;
+ f.reader.roomShape=(...args)=>{shapes++;return shape(...args);};
+ f.db.prepare=sql=>{if(sql.includes('JOIN drawing_profile')||sql.includes('FROM dungeon_key_content'))stylePrograms++;return prepare(sql);};
+ const r=await f.read(q);assert.equal(shapes,5000,'dense raster must not reread every room');assert.equal(stylePrograms,2,'only two style SQL programs per connection');
  assert.equal(r.coverage.mode,'raster');assert(r.raster.data.startsWith('data:image/png;base64,'));assert.equal(r.rooms.length,0);assert(r.bindings.some(b=>b.ownerId==='local'),'selected author frame survives raster mode');assert(Buffer.byteLength(JSON.stringify(r))<=2*1024*1024);
  const hit=f.reader.hit(f.source,q,{x:501,y:1});assert.equal(hit.id,'r100');
  const old=r;f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('changed',f.campaign.id,'r1');assert.throws(()=>f.store.atlasRegionView(f.shell.token,old),/inzwischen/);
  const p=f.store.atlasRoom(f.shell.token,'r0'),payload=JSON.stringify({polygons:[{outer:p.polygons[0].outer,holes:[[{x:.5,y:.5},{x:2.5,y:.5},{x:2.5,y:2.5},{x:.5,y:2.5}]]}],sections:p.sections});f.store.db.prepare('UPDATE room SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),f.campaign.id,'r0');await f.read();assert.equal(f.reader.hit(f.source,query(),{x:1,y:1}),null);
- f.store.db.prepare('INSERT INTO drawing_profile(campaign_id,id,scope_id,target_id,revision,payload,checksum) VALUES(?,?,?,?,?,?,?)').run(f.campaign.id,'r4999','local','r4999',1,'{}','bad-checksum');const incomplete=await f.read(q);assert.equal(incomplete.coverage.mode,'raster');assert.equal(incomplete.coverage.unreadable,1);assert.equal(incomplete.coverage.complete,false,'corruption beyond the vector cutoff is still reported');
+ f.store.db.prepare('INSERT INTO drawing_profile(campaign_id,id,scope_id,target_id,revision,payload,checksum) VALUES(?,?,?,?,?,?,?)').run(f.campaign.id,'r4999','local','r4999',1,'{}','bad-checksum');const incomplete=await f.read(q);assert.equal(incomplete.coverage.mode,'raster');assert.equal(incomplete.coverage.unreadable,1);assert.equal(incomplete.coverage.complete,false,'corruption beyond the vector cutoff is still reported');assert.equal(stylePrograms,2,'reuse statements, while reading current style values each time');
 });
 test('worker lifecycle, warm index reuse, cancellation and invalid requests',async t=>{
  const f=fixture(t),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
@@ -162,7 +166,7 @@ test('broken landscape is a local layer error and never removes usable Room geom
 });
 test('camera request burst retains one worker/index with one replaceable successor',async t=>{
  const f=fixture(t,500),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());const source=f.store.atlasRegionSource(f.shell.token);
- const calls=[];for(let i=0;i<20;i++)calls.push(service.read(source,query({x:i,y:-2,width:30,height:10})));const results=await Promise.allSettled(calls);assert.equal(results[0].status,'fulfilled');assert.equal(results.at(-1).status,'fulfilled');assert.equal(results.filter(r=>r.status==='fulfilled').length,2);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.active,false);assert.equal(service.diagnostics.queued,false);
+ const calls=[];for(let i=0;i<20;i++)calls.push(service.read(source,query({x:i,y:-2,width:30,height:10})));const results=await Promise.allSettled(calls);assert.equal(results[0].status,'rejected');assert.match(results[0].reason.message,/neuere Anfrage/);assert.equal(results.at(-1).status,'fulfilled');assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.regionCancelled,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.active,false);assert.equal(service.diagnostics.queued,false);
  const warm=await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query({x:21,y:-2,width:30,height:10}));assert(warm.rooms.length);assert.equal(service.diagnostics.workerStarts,1);
 });
 
@@ -215,7 +219,7 @@ test('camera successors cannot replace queued object selection; both lanes remai
   const first=service.read(source,query()),selection=kind==='focus'?service.focus(source,'room','r0'):kind==='hit'?service.hit(source,query(),{x:1,y:1}):service.candidates(source,query(),{x:1,y:1});
   const cameras=Array.from({length:20},(_,i)=>service.read(source,query({x:i/10,y:-2,width:30,height:10})));
   const [initial,selected,...frames]=await Promise.allSettled([first,selection,...cameras]);
-  assert.equal(initial.status,'fulfilled');assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
+  assert.equal(initial.status,'rejected');assert.match(initial.reason.message,/neuere Anfrage/);assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
   assert.equal(kind==='candidates'?selected.value.items[0].id:selected.value.id,'r0');assert.equal(frames.at(-1).status,'fulfilled');assert.equal(frames.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
   const pending=Promise.allSettled([service.read(source,query({x:50,y:50,width:30,height:10})),service.focus(source,'room','r0'),service.read(source,query({x:60,y:50,width:30,height:10}))]);await service.cancelAndWait();assert((await pending).every(r=>r.status==='rejected'&&/abgebrochen/.test(r.reason.message)));await service.close();
  }
@@ -258,6 +262,9 @@ test('authored room colors follow their target identity through selected reads, 
  const region=await f.read();assert.deepEqual(region.drawing.styles,[style]);assert.deepEqual(f.store.atlasRegionView(f.shell.token,region).geometry.drawing.styles,[style]);
  f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'undo'}});assert.deepEqual((await f.read()).drawing.styles,[]);
  f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'redo'}});const restored=await f.read();assert.equal(restored.drawing.styles[0].fill,style.fill);assert.equal(restored.drawing.styles[0].wall,style.wall);
+ f.store.atlasDrawingCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'key-batch',rooms:[{id:'r0',expectedRevision:0,keyRevision:null}],patch:{secret:true}}});
+ const secret=await f.read();assert.equal(secret.drawing.styles[0].secret,true);assert.equal(secret.drawing.styles[0].fill,style.fill);
+ f.store.executeAtlasCommit({commandId:randomUUID(),campaignId:f.campaign.id,token:f.shell.token,action:{kind:'undo'}});assert.equal((await f.read()).drawing.styles[0].secret,false,'prepared SQL must not retain old secret values');
 });
 
 
@@ -291,9 +298,17 @@ test('the empty initial drawing keeps its author frame without inventing a map l
  assert(binding);assert(region.frames[binding.id]);assert(!region.labels.some(l=>l.id==='scope:local'));assert.equal(region.coverage.objects,0);
  assert(!f.reader.candidatesAt(f.source,q,{x:0,y:0},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
  assert.equal(f.reader.focus(f.source,'scope','local').id,'local');assert.ok(f.store.db.serialize().equals(before));
- // Once the same frame has actual authored content, its coarse location marker is meaningful again.
+ // Actual geometry stays searchable without inventing a large marker at world scale.
  f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'room-create',scopeId:'local',floorId:'ground',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:3,y:0},{x:3,y:3},{x:0,y:3}],holes:[]}]}});
- const coarse=await f.read(query({x:-5000,y:-5000,width:10000,height:10000}));assert(coarse.labels.some(l=>l.id==='scope:local'));assert(f.reader.candidatesAt(f.source,query({x:-5000,y:-5000,width:10000,height:10000}),{x:1.5,y:1.5},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
+ const far=query({x:-5000,y:-5000,width:10000,height:10000}),coarse=await f.read(far);
+ assert(!coarse.labels.some(l=>l.id==='scope:local'));assert.equal(coarse.coverage.objects,0);assert(!coarse.raster);assert(coarse.bindings.some(b=>b.ownerId==='local'),'selected author frame survives scale filtering');
+ assert(!f.reader.candidatesAt(f.source,far,{x:1.5,y:1.5},0,'all').items.some(h=>h.kind==='scope'&&h.id==='local'));
+ assert.equal(f.reader.focus(f.source,'scope','local').id,'local','search/focus retains real geometry');
+ const edge=query({x:-100,y:-100,width:1536,height:1536}),visible=await f.read(edge);
+ assert.equal(visible.rooms.length,1,'actual room geometry remains at two pixels');assert(!visible.labels.some(l=>l.id==='scope:local'),'a group name must not become an automatic place label');
+ assert(f.reader.candidatesAt(f.source,edge,{x:1.5,y:1.5},0,'all').items.some(h=>h.kind==='room'&&h.name.includes('Zollhaus')));
+ const unselected=await f.read({...far,scopeId:null});assert.equal(unselected.bindings.length,0);
+ const near=await f.read(query({x:-1,y:-1,width:10,height:10}));assert.equal(near.rooms.length,1);assert(near.labels.some(l=>l.text.includes('Zollhaus')));
 });
 
 test('rejected writes preserve published frames and search cursors; corrected drafts commit without reloading',async t=>{
@@ -435,7 +450,7 @@ test('world opening indexes bounds without retaining all room shapes, then hydra
  assert.equal(f.reader.shapePayloads.bytes,0);
  let materialized=0;const exact=f.reader.materialize.bind(f.reader);f.reader.materialize=(...args)=>{materialized++;return exact(...args);};
  const coarse=f.reader.read(source,{...query({x:-20000000,y:-12500000,width:40000000,height:25000000}),scopeId:null});
- assert.equal(coarse.coverage.objects,1);assert.equal(materialized,0,'a world marker needs bounds, not all room details');
+ assert.equal(coarse.coverage.objects,0);assert.equal(materialized,0,'subpixel groups need no world markers or hydrated room details');
  const near=f.reader.read(source,query());assert(near.rooms.length>0&&near.rooms.length<10);assert.equal(materialized,near.rooms.length);
  assert(f.reader.shapePayloads.bytes>0);assert(f.reader.shapePayloads.bytes<=4*1024*1024);
  const first=JSON.stringify(near.rooms);f.reader.read(source,{...query(),slice:0});assert.equal(JSON.stringify(f.reader.read(source,query()).rooms),first,'per-view slicing cannot mutate cached room geometry');
@@ -487,4 +502,104 @@ test('real worker keeps object edits consumed by terrain jobs until the next reg
  f.store.atlasRoomCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,roomId:room.id,expectedRevision:room.revision,name:room.name,polygons:room.polygons.map(p=>({...p,outer:p.outer.map(p=>({x:p.x+1000,y:p.y}))})),sections:room.sections});
  await terrain();await terrain();const result=await service.read(source(),query());assert(!result.rooms.some(r=>r.id==='r0'));assert(result.rooms.some(r=>r.id==='r1'));
  assert.equal(service.diagnostics.workerStarts,1);
+});
+
+
+test('a dense single building keeps spatial bounds ahead of its complete owner collection',async t=>{
+ const f=fixture(t,3);await f.read();
+ f.db.transaction(()=>{for(let i=0;i<5000;i++)f.reader.store('room','','dense','ground','dense-'+i,{value:{},polygons:room(i).polygons},i);})();
+ const sql=f.reader.sql.bind(f.reader);let plan=[];
+ f.reader.sql=text=>{const statement=sql(text);if(!text.startsWith('SELECT s.*'))return statement;return{iterate(...args){plan=f.db.prepare('EXPLAIN QUERY PLAN '+text).all(...args);return statement.iterate(...args);}};};
+ const result=[...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})];
+ assert.deepEqual(result.map(r=>r.key),Array.from({length:5},(_,i)=>'room:dense-'+i));
+ assert.match(plan[0].detail,/SCAN i VIRTUAL TABLE INDEX 2:/,'A large owner must not probe every shape in its Rtree');
+ f.reader.indexed=false;
+ assert.deepEqual([...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})],result);
+});
+
+test('binding metadata follows selected floors, renamed scopes and hidden extents without per-binding SQL lookups',async t=>{
+ const f=fixture(t,1),ids=[];
+ for(let i=0;i<20;i++)ids.push(f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'group-generate',name:'Haus '+i,x:100+i*100,y:50,recipe:{version:1,profile:'Wohnhaus',width:6,depth:6,floors:2,basement:false,seed:'binding-'+i}}}).result.id);
+ const selected=ids[7],q={...query({x:0,y:-200,width:2500,height:500}),scopeId:selected,floorId:'floor-1',terrainRaster:false};
+ const sql=f.reader.sql.bind(f.reader);let joined=0;
+ f.reader.sql=text=>{
+  assert(!/^SELECT (x,y,width,height FROM temp\.region_extent|(?:id,)?name FROM scope)/.test(text),'metadata must travel with the binding row');
+  if(text.includes('e.x extent_x'))joined++;
+  return sql(text);
+ };
+ let result=await f.read(q);assert(joined>0);assert.equal(result.scopes.find(s=>s.id===selected).name,'Haus 7');assert(result.bindings.some(b=>b.ownerId===selected));
+ assert.deepEqual(result.scopeBounds[selected],f.db.prepare('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(selected,'floor-1'));
+ f.store.db.prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?').run('Oberhaus',f.campaign.id,selected);
+ f.store.db.prepare("INSERT INTO drawing_hidden(campaign_id,id,scope_id,kind,hidden,revision) VALUES(?,?,?,'floor',1,1)").run(f.campaign.id,'floor-1',selected);
+ result=await f.read(q);assert.equal(result.scopes.find(s=>s.id===selected).name,'Oberhaus');assert.equal(result.scopeBounds[selected],undefined,'hidden upper floor must not fall back to the ground extent');assert(!result.rooms.some(r=>r.scopeId===selected));assert(result.bindings.some(b=>b.ownerId===selected),'selected empty author frame stays available');
+ const db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const fresh=new AtlasRegionReader(db);await fresh.sync({...f.source,reset:true});assert.deepEqual(fresh.read(f.source,q),result);
+});
+
+test('obsolete geometry reads close their cursor before and after the raster transition',async t=>{
+ const f=fixture(t,1600),q=query({x:0,y:-2,width:8000,height:10}),expected=await f.read(q),shape=f.reader.shape.bind(f.reader);
+ assert.equal(expected.coverage.mode,'raster');
+ for(const stop of [4,1505]){
+  const signal=new Int32Array(new SharedArrayBuffer(4));let visited=0;
+  f.reader.shape=row=>{const value=shape(row);if(++visited===stop)Atomics.store(signal,0,1);return value;};
+  f.db.exec('BEGIN');
+  assert.throws(()=>f.reader.read(f.source,q,signal),/neuere Anfrage/);
+  assert.equal(visited,stop,'cancellation stops before processing the next shape');
+  f.db.exec('COMMIT');
+  f.reader.shape=shape;
+  // An outstanding SQLite iterator would prevent this TEMP rebuild.
+  await f.reader.sync({...f.source,reset:true});
+  assert.deepEqual(f.reader.read(f.source,q),expected);
+ }
+});
+
+test('obsolete landscape reads are not published as partial error layers and release nested SQL cursors',async t=>{
+ const f=fixture(t,1),q={...query({x:0,y:0,width:1000,height:1000}),terrainRaster:false};
+ const put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++){
+  const x=10+i%30*20,y=10+Math.floor(i/30)*20,record={id:'place-'+i,revision:1,kind:'place',name:'Ort '+i,points:[{x,y}],polygons:[],resolution:1,width:0,values:{}};
+  put.run(f.campaign.id,record.id,1,x,x,y,y,JSON.stringify(record));
+ }})();
+ const expected=await f.read(q),landscape=f.reader.landscape,rows=landscape.rows.bind(landscape);
+ assert.equal(expected.landscape.coverage.mode,'raster');
+ for(const stop of [25,605]){
+  const signal=new Int32Array(new SharedArrayBuffer(4));let visited=0,closed=0;
+  landscape.cache.clear();landscape.bytes=0;
+  landscape.rows=function*(...args){try{for(const row of rows(...args)){if(++visited===stop)Atomics.store(signal,0,1);yield row;}}finally{closed++;}};
+  f.db.exec('BEGIN');
+  assert.throws(()=>f.reader.read(f.source,q,signal),/neuere Anfrage/);
+  assert.equal(visited,stop);assert(closed>0);
+  f.db.exec('COMMIT');landscape.rows=rows;
+  await f.reader.sync({...f.source,reset:true});
+  assert.deepEqual(f.reader.read(f.source,q),expected);
+ }
+});
+
+test('a cached current view cancels active and queued stale camera work while preserving selection',async t=>{
+ const f=fixture(t,50),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+ let source=f.store.atlasRegionSource(f.shell.token),expected=await service.read(source,query());
+ source=f.store.atlasRegionSource(f.shell.token,service.cursor);
+ const first=service.read(source,query({x:10,y:-2,width:30,height:10})),queued=service.read(source,query({x:20,y:-2,width:30,height:10})),selection=service.focus(source,'room','r0'),cached=service.read(source,query());
+ const [old,next,pick,current]=await Promise.allSettled([first,queued,selection,cached]);
+ for(const result of [old,next]){assert.equal(result.status,'rejected');assert.match(result.reason.message,/neuere Anfrage/);}
+ assert.equal(pick.status,'fulfilled');assert.equal(pick.value.id,'r0');assert.deepEqual(current.value,expected);
+ assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
+ const renamed=f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?');renamed.run('Nach dem Abbruch',f.campaign.id,'r0');
+ assert.equal((await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query())).rooms[0].name,'Nach dem Abbruch');
+});
+
+test('dense world symbols omit empty object tiles while preserving names, hits and visible fallbacks',async t=>{
+ const f=fixture(t,0);f.store.db.transaction(()=>{for(let i=0;i<600;i++)landscape(f,road('minor-'+i));})();
+ landscape(f,{...road('capital'),kind:'place',name:'Explicit world label',label:{rank:5},points:[{x:20,y:20}],width:0});
+ const q={...query({x:-4e6,y:-4e6,width:8e6,height:8e6}),width:256,height:256,scopeId:null,terrainRaster:false};
+ const world=await f.read(q);assert.equal(world.landscape.coverage.mode,'raster');assert.equal(world.landscape.coverage.objects,601);assert.equal(world.landscape.coverage.complete,true);assert.deepEqual(world.landscape.tiles,[]);
+ assert(world.landscape.labels.some(l=>l.id==='place:capital'&&l.rank===5));assert.equal(f.reader.candidatesAt(f.source,q,{x:5,y:0},0,'landscape').total,601);
+ landscape(f,{...road('minor-0'),revision:1,width:10000});assert((await f.read(q)).landscape.tiles.length>0,'a widened road appears without moving the camera');
+ landscape(f,{...road('minor-0'),revision:2});assert.deepEqual((await f.read(q)).landscape.tiles,[],'hiding it again does not retain old raster ink');
+ const near=await f.read({...q,box:{x:-1000,y:-1000,width:2000,height:2000}});assert(near.landscape.tiles.length>0,'place symbols return at the appropriate scale');
+ const ref=id=>({...road(id),kind:'reference',points:[{x:0,y:0}],width:10,imageWidth:10,imageHeight:10,angle:0,visible:true,assetId:id});
+ landscape(f,ref('template'));const exact=await f.read(q);assert.deepEqual(exact.landscape.tiles,[]);assert(exact.landscape.records.some(r=>r.id==='template'&&r.assetId==='template'));
+ f.store.db.transaction(()=>{for(let i=0;i<16;i++)landscape(f,ref('template-'+i));})();
+ assert((await f.read(q)).landscape.tiles.length>0,'excess image templates retain their outlines');
+ const hidden=await f.read({...q,references:false});assert.deepEqual(hidden.landscape.tiles,[]);assert.equal(hidden.landscape.coverage.references,0);
+ const ground=await f.read({...q,terrainRaster:true});assert(ground.landscape.tiles.length>0,'Canvas terrain is still produced when requested');
 });

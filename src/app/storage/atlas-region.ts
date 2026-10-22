@@ -1,7 +1,9 @@
+import {AtlasGeometryRaster} from './atlas-geometry-raster';
+import {AtlasReadCancelled,atlasReadCheckpoint} from './atlas-read-cancellation';
 import {AtlasDeferredGeometry} from './atlas-deferred-geometry';
 import {atlasShapeSource} from './atlas-shape-source';
 import type {AtlasRegionCache} from './atlas-region-cache';
-import {mapFootprintVisible,mapLineVisible,mapLineWidth} from '../atlas-scale-policy';
+import {mapExtentVisible} from '../atlas-scale-policy';
 import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerritories} from './atlas-territories';
 import {validateTerrainDetail} from '../terrain-detail';
@@ -29,6 +31,7 @@ const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=(r:any)=>{if(!r||digest(r.payload)!==r.checksum)throw new Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');return JSON.parse(r.payload);};
 type Box={x:number;y:number;width:number;height:number};
 type Frame={x:number;y:number;angle:number};
+type BindingDetail={extent?:Box;scope?:{id:string;name:string}};
 type Shape={value:any;style?:ReturnType<typeof roomMapStyle>;polygons?:Polygon[];points?:Point[];stroke?:number};
 const bounds=(points:Iterable<Point>,pad=0):Box=>{let x=Infinity,y=Infinity,xx=-Infinity,yy=-Infinity;for(const p of points){if(!Number.isFinite(p.x+p.y))throw new Error('Kontur prüfen.');x=Math.min(x,p.x);xx=Math.max(xx,p.x);y=Math.min(y,p.y);yy=Math.max(yy,p.y);}return{x:x-pad,y:y-pad,width:xx-x+pad*2,height:yy-y+pad*2};};
 const corners=(b:Box)=>[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}];
@@ -249,50 +252,62 @@ export class AtlasRegionReader {
    if(!polygons.length)return null;s.value={...r,polygons};s.polygons=polygons;
   }return s;
  }
- private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader)=>void,searchBox?:Box){
+ private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader,detail?:BindingDetail)=>void,searchBox?:Box,checkpoint?:()=>void){
   const mpp=q.box.width/q.width;
   // Workbench vectors paint all Cities first, then Dungeon contours.
-  for(const row of this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY CASE kind WHEN 'city' THEN 0 ELSE 1 END,rowid").iterate(this.campaign)){
+  // Read extent/name metadata with each binding, without one metadata query
+  // per owner. Dense views stream these shapes directly into their raster.
+  for(const row of this.sql(`SELECT b.*,e.x extent_x,e.y extent_y,e.width extent_width,e.height extent_height,s.id scope_id,s.name scope_name
+   FROM atlas_binding b LEFT JOIN temp.region_extent e ON b.kind='dungeon' AND e.scope=b.owner_id AND e.floor=CASE WHEN b.owner_id=? THEN ? ELSE 'ground' END
+   LEFT JOIN scope s ON b.kind='dungeon' AND s.campaign_id=b.campaign_id AND s.id=b.owner_id
+   WHERE b.campaign_id=? ORDER BY CASE b.kind WHEN 'city' THEN 0 ELSE 1 END,b.rowid`).iterate(q.scopeId,q.floorId,this.campaign)){
+   checkpoint?.();
    const b=this.binding(row);let f:Frame;try{f=this.frame(b);}catch{if(this.countFaults)this.readFaults++;continue;}
    const local=bounds(corners(searchBox??q.box).map(p=>inverse(p,f)));
    if(b.kind==='city'){
     let h:CityHeader;try{h=readCityHeader(this.db,this.campaign,b.ownerId);}catch{continue;}
     metadata?.(b,f,h);
-    for(const r of this.candidates('unit',b.ownerId,'','',local)){const s=this.shape(r);emit(s,f,'unit',b,h);}
+    for(const r of this.candidates('unit',b.ownerId,'','',local)){checkpoint?.();const s=this.shape(r);emit(s,f,'unit',b,h);}
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
-    const extent=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,floor)??{x:null};
+    const detail:BindingDetail={extent:row.extent_x===null?undefined:{x:row.extent_x,y:row.extent_y,width:row.extent_width,height:row.extent_height},scope:row.scope_id===null?undefined:{id:row.scope_id,name:row.scope_name}},extent=detail.extent;
     // An empty author frame remains available for editing/focus, but is not a
     // place on the landscape and must not contribute a marker, label or hit.
-    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
-    if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
-    metadata?.(b,f);
-    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
-    for(const r of this.candidates('room','',b.ownerId,floor,local))try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch{if(this.countFaults)this.readFaults++;}
-    for(const r of this.candidates('element','',b.ownerId,floor,local))emit(this.shape(r),f,'element',b);
+    if(!extent){if(b.ownerId===q.scopeId)metadata?.(b,f,undefined,detail);continue;}
+    if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f,undefined,detail);continue;}
+    if(b.parent==='world'&&!mapExtentVisible(extent.width,extent.height,mpp)){
+     // Keep the selected editing frame and search target, without promoting
+     // every tiny house/room group to a world-scale place marker.
+     if(b.ownerId===q.scopeId)metadata?.(b,f,undefined,detail);continue;
+    }
+    metadata?.(b,f,undefined,detail);
+    for(const r of this.candidates('room','',b.ownerId,floor,local)){checkpoint?.();try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch(error){if(error instanceof AtlasReadCancelled)throw error;if(this.countFaults)this.readFaults++;}}
+    for(const r of this.candidates('element','',b.ownerId,floor,local)){checkpoint?.();emit(this.shape(r),f,'element',b);}
    }
   }
  }
- read(source:AtlasRegionSource,q:AtlasRegionQuery):AtlasRegionGeometry{
+ read(source:AtlasRegionSource,q:AtlasRegionQuery,cancellation?:Int32Array):AtlasRegionGeometry{
+  const checkpoint=atlasReadCheckpoint(cancellation);
+  checkpoint?.();
   this.readFaults=0;this.countFaults=true;validateRegion(q);if(q.revision!==undefined&&q.revision!==source.revision||q.fence!==undefined&&q.fence!==source.fence)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   const result:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box:{...q.box},slice:q.slice,scopeId:q.scopeId,floorId:q.floorId,rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
   let labelCandidates:MapLabelCandidate[]=[];
   const labelFloorHeights=new Map<string,number>();
+  const raster=new AtlasGeometryRaster(q,checkpoint);
   let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
-  const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{
+  const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader,detail?:BindingDetail)=>{
    if(dense||Object.hasOwn(result.frames,b.id))return;
-   const scope=b.kind==='dungeon'?this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId):null,
+   const scope=b.kind==='dungeon'?(detail?detail.scope:this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)):null,
     floors=scope?this.sql('SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind=\'floor\' AND h.hidden=1)').all(this.campaign,b.ownerId):[];
    used+=bytes([b,f,h,scope,floors]);if(used>REGION_REPLY_BYTES-800*1024){dense=true;return;}
-   result.bindings.push(b);result.frames[b.id]=f;if(scope){const e=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,b.ownerId===q.scopeId?q.floorId:'ground');if(e&&e.x!==null)result.scopeBounds[b.ownerId]=e;}if(scope){result.scopes.push(scope);result.floors.push(...floors);}
+   result.bindings.push(b);result.frames[b.id]=f;if(scope){const e=detail?detail.extent:this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,b.ownerId===q.scopeId?q.floorId:'ground');if(e&&e.x!==null)result.scopeBounds[b.ownerId]=e;}if(scope){result.scopes.push(scope);result.floors.push(...floors);}
    if(h){const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
   };
-  this.visit(q,(s,_f,kind,b)=>{
+  this.visit(q,(s,_f,kind,b,h)=>{
    if((s.value.name||kind==='room'&&s.value.number)){
     const labelStart=labelCandidates.length;
-    if(kind==='scope-marker')labelCandidates.push({id:'scope:'+b.ownerId,text:s.value.name,kind:'place',rank:2,point:at(s.points![0]!,_f)});
-    else if(s.polygons){const polygons=s.polygons.map(p=>({outer:p.outer.map(p=>at(p,_f)),holes:p.holes.map(r=>r.map(p=>at(p,_f)))})),labelKind=kind==='room'?'room':s.value.kind==='building'?'building':'area',candidate=labelFromPolygon(kind+':'+s.value.id,kind==='room'?(s.value.number?'['+s.value.number+'] ':'')+s.value.name:s.value.name,labelKind,polygons,kind==='room'?0:s.value.kind==='building'?1:2);if(candidate)labelCandidates.push(candidate);}
+    if(s.polygons){const polygons=s.polygons.map(p=>({outer:p.outer.map(p=>at(p,_f)),holes:p.holes.map(r=>r.map(p=>at(p,_f)))})),labelKind=kind==='room'?'room':s.value.kind==='building'?'building':'area',candidate=labelFromPolygon(kind+':'+s.value.id,kind==='room'?(s.value.number?'['+s.value.number+'] ':'')+s.value.name:s.value.name,labelKind,polygons,kind==='room'?0:s.value.kind==='building'?1:2);if(candidate)labelCandidates.push(candidate);}
     else if(s.points&&s.value.kind==='road')labelCandidates.push(...lineLabels('unit:'+s.value.id,s.value.name,'road',s.points.map(p=>at(p,_f)),2,q.box));
     if(kind==='room'){
      const key=JSON.stringify([b.ownerId,s.value.floorId]);
@@ -302,9 +317,12 @@ export class AtlasRegionReader {
     const style=s.value.label;if(style){const transformed={...style,...(style.point?{point:at(style.point,_f)}:{}),...(style.angle===undefined?{}:{angle:style.angle+_f.angle})};labelCandidates.splice(labelStart,labelCandidates.length-labelStart,...styledLabels(labelCandidates.slice(labelStart),transformed));}
     if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    }
-result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense=true;
+   result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense=true;
+   const cost=dense?0:bytes(s.value);if(used+cost>REGION_REPLY_BYTES-800*1024)dense=true;
+   if(dense)raster.activate();
+   raster.append(s,_f,kind,h?.roof);
    if(dense)return;
-   const cost=bytes(s.value);if(used+cost>REGION_REPLY_BYTES-800*1024){dense=true;return;}used+=cost;
+   used+=cost;
    if(kind==='room'){
     result.rooms.push(s.value);if(s.style){used+=bytes(s.style);result.drawing.styles.push(s.style);}
    }else if(kind==='unit'){
@@ -319,25 +337,15 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
     }
    }
    else if(kind==='element')result.drawing.elements.push(s.value);
-  },metadata);
+  },metadata,undefined,checkpoint);
+  checkpoint?.();
   if(bytes(result)>REGION_REPLY_BYTES-800*1024)dense=true;
   if(dense){
    this.countFaults=false;
    result.rooms=[];result.cities=[];result.bindings=[];result.frames=Object.create(null);result.scopeBounds=Object.create(null);result.interiors=Object.create(null);result.scopes=[];result.floors=[];result.drawing=emptyDrawing();result.coverage.mode='raster';
    // Keep the chosen author frame even when contours are represented by pixels.
    if(q.scopeId){const row=this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? AND kind='dungeon' AND owner_id=?").get(this.campaign,q.scopeId);if(row){dense=false;metadata(this.binding(row),this.frame(this.binding(row)));dense=true;}}
-   const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),image=new LandscapeRasterizer(q.box,width,height);
-   this.visit(q,(s,f,kind,_b,h)=>{
-    const polygons=s.polygons?.map(p=>({outer:p.outer.map(p=>at(p,f)),holes:p.holes.map(r=>r.map(p=>at(p,f)))}));
-    if(kind==='unit'&&s.value.kind==='building'&&!mapFootprintVisible(polygons?.flatMap(p=>p.outer)??[],q.box.width/q.width))return;
-    if(kind==='unit'&&s.value.kind==='road'&&!mapLineVisible('road',s.stroke??6,q.box.width/q.width))return;
-    let color=kind==='unit'?s.value.kind==='water'?'#8eafb9':s.value.kind==='building'?h!.roof:'#d9c6a4':kind==='room'?'#e2dac4':s.value.color??'#685b50';
-    if(kind==='room')color=s.style?.fill??color;
-    if(polygons){image.paintPolygons(polygons,color);const pixel=q.box.width/width;for(const polygon of polygons){const extent=bounds(polygon.outer);if(extent.width<pixel||extent.height<pixel)image.paintLine([{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],pixel,color);}}
-    else if(s.points){const p=s.points.map(p=>at(p,f));image.paintLine(p,kind.endsWith('marker')?q.box.width/q.width*8:mapLineWidth(s.stroke??q.box.width/q.width*2,q.box.width/q.width),color);}
-   });
-   const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
-   result.raster={box:{...q.box},width,height,data:'data:image/png;base64,'+data};
+   result.raster=raster.finish();
   }
   if(!q.perception){
    const state=readTerritories(this.db,source.campaignId,q.box);
@@ -346,28 +354,17 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
    else {
     const width=Math.min(512,q.width),height=Math.max(1,Math.min(512,Math.round(width*q.height/q.width))),image=new LandscapeRasterizer(q.box,width,height),mpp=q.box.width/q.width;
     for(const l of state.layers)if(l.visible)for(const t of state.territories.filter(t=>t.layerId===l.id).sort((a,b)=>b.rank-a.rank||a.id.localeCompare(b.id))){
+     checkpoint?.();
      image.paintPolygons(t.polygons,t.color,t.opacity);
      if(mpp<=labelScaleLimits[t.rank]!*4)for(const p of t.polygons)for(const ring of [p.outer,...p.holes])image.paintLine([...ring,ring[0]!],mpp*(t.rank>=4?1.8:1.1),t.color);
     }
     result.territoryRaster={box:{...q.box},width,height,data:'data:image/png;base64,'+PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64')};
    }
   }
-  if(!q.perception){
-   // A coarse Dungeon marker must not replace a room key in the active floor.
-   // Keep the marker/search target and all authored data; only its covered caption yields.
-   const active=result.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===q.scopeId),frame=active&&result.frames[active.id];
-   if(frame)labelCandidates=labelCandidates.filter(c=>{
-    if(!c.id.startsWith('scope:')||c.id==='scope:'+q.scopeId)return true;
-    const point=inverse(c.point,frame);
-    for(const row of this.candidates('room','',q.scopeId!,q.floorId,{...point,width:0,height:0})){
-     try{const room=this.roomShape(row,q);if(room?.polygons&&inside(point,room.polygons))return false;}catch{/* The regular visit reports unreadable rooms; a caption cannot blank the map. */}
-    }
-    return true;
-   });
-   result.labels=boundedLabels(labelCandidates,q.box);
-  }
+  if(!q.perception)result.labels=boundedLabels(labelCandidates,q.box);
   result.coverage.unreadable+=this.readFaults;result.coverage.complete=result.coverage.unreadable===0;
-  try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024));}catch(error){result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
+  try{if(this.landscapeFailure)throw Error('Landschaftsprojektion nicht verfügbar.');result.landscape=this.landscape.read(source,q,Math.max(8192,REGION_REPLY_BYTES-bytes(result)-1024),false,checkpoint);}catch(error){if(error instanceof AtlasReadCancelled)throw error;result.landscape={state:'error',records:[],tiles:[],coverage:{complete:false,mode:'raster',objects:0,references:0},error:'Landschaft nicht verfügbar. Erneut laden.'};}
+  checkpoint?.();
   if(bytes(result)>REGION_REPLY_BYTES)throw new Error('Ausschnitt überschreitet das Darstellungsbudget. Weiter hineinzoomen.');
   return result;
  }
@@ -399,10 +396,10 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
    return{items,total,next:offset+items.length<total?offset+items.length:null,fence:source.fence,...(geometry.unavailable||landscape.unavailable?{unavailable:[...(geometry.unavailable??[]),...(landscape.unavailable??[])]}:{})};
   }
   const items:AtlasHit[]=[];let matched=0,more=false;const radius=q.box.width/q.width*8;this.readFaults=0;this.countFaults=true;
-  const emit=(s:Shape,_f:Frame,kind:string,b:AtlasBinding)=>{
+  const emit=(s:Shape,_f:Frame,kind:string,_b:AtlasBinding)=>{
    if(matched++<offset)return;if(items.length>=40){more=true;return;}
-   const focus=kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
-   items.push({...focus,name:(kind==='room'?s.value.number+'. ':'')+(s.value.name||({room:'Raum',element:'Objekt','scope-marker':'Dungeon',unit:'Stadtelement'}[kind]??'Objekt'))});
+   const focus=kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
+   items.push({...focus,name:(kind==='room'?s.value.number+'. ':'')+(s.value.name||({room:'Raum',element:'Objekt',unit:'Stadtelement'}[kind]??'Objekt'))});
   };
   // A rendered glyph can extend beyond its logical anchor's point-pick radius.
   // Union that exact source ID with all canonical overlaps; never auto-prioritize it.
@@ -422,9 +419,9 @@ result.coverage.objects++;if(result.coverage.objects>REGION_VECTOR_OBJECTS)dense
  }
  hit(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point):AtlasObjectFocus|null{
   validateRegion(q);if(!p||!Number.isFinite(p.x+p.y)||!overlap({x:p.x,y:p.y,width:0,height:0},q.box))throw new Error('Kartenauswahl prüfen.');
-  let hit:AtlasObjectFocus|null=null;this.visit(q,(s,f,kind,b)=>{
+  let hit:AtlasObjectFocus|null=null;this.visit(q,(s,f,kind)=>{
    const touch=touches(s,inverse(p,f),q.box.width/q.width);
-   if(touch)hit=kind==='scope-marker'?this.focus(source,'scope',b.ownerId):kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
+   if(touch)hit=kind==='room'?this.focus(source,'room',s.value.id):kind==='element'?this.focus(source,'element',s.value.id):this.focus(source,'building',s.value.id);
   });return hit;
  }
 }

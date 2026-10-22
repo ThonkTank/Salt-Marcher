@@ -1,4 +1,5 @@
 import {vegetationInstances} from './vegetation-projection';
+import {mapExtentVisible} from './atlas-scale-policy';
 import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
 import {atlasTerrainExport} from './atlas-terrain-export';
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
@@ -114,6 +115,7 @@ export class CampaignAtlasWorkbench {
   private regionTimer:ReturnType<typeof setTimeout>|null=null;
   private loadedRegionQuery:AtlasRegionQuery|null=null;
   private regionReading:number|null=null;
+  private regionReadingQuery:AtlasRegionQuery|null=null;
   private searchRequest=0;
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private livePortal:LiveAtlasPortal|null=null;
@@ -558,11 +560,7 @@ export class CampaignAtlasWorkbench {
       route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),navigationLocked:()=>this.cameraDraftPending(true),cancel:()=>{this.landscape.cancel();this.cancel();},
       workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
-      refresh:()=>this.refresh(),redraw:()=>{
-        this.scheduleRender();
-        // A lost/retried graphics context changes the required region contents.
-        if(this.data&&this.loadedRegionQuery?.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
-      },error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
+      refresh:()=>this.refreshSpatialSource(),redraw:()=>this.redrawSpatial(),error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
     });
     this.terrainAnalysis=new TerrainAnalysisUI(this.svg,{
       token:()=>this.owner?.token,revision:()=>this.data?.revision??-1,hasDraft:()=>this.cameraDraftPending(),
@@ -631,6 +629,20 @@ export class CampaignAtlasWorkbench {
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
+  private async refreshSpatialSource(){
+    // A stale terrain reply must wait for the current geometry owner. Returning
+    // false keeps TerrainSpatialUI's existing source-recovery latch closed until
+    // that read publishes a confirmed source (or the explicit retry succeeds).
+    if(this.regionReading===this.request)return false;
+    return this.refresh();
+  }
+  private redrawSpatial(){
+    this.scheduleRender();
+    // A redraw is not a new source. While loading, compare the requested
+    // representation: refresh deliberately clears the last loaded query.
+    const query=this.regionReading===this.request?this.regionReadingQuery:this.loadedRegionQuery;
+    if(this.data&&query&&query.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
+  }
   private openingSurface:{owner:WorkspaceGeometry;revision?:number}|null=null;
   private scheduleRegion(camera=false){
     if(this.openingSurface&&!this.data){this.scheduleRender();return;}
@@ -643,15 +655,25 @@ export class CampaignAtlasWorkbench {
       return;
     }
     this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
-    // Throttle camera reads instead of postponing them until input stops. A read
-    // already in flight can publish a useful frame during a long touchpad gesture.
-    if(camera&&(this.regionTimer||this.regionReading===this.request))return;
+    // Keep useful buffered work during panning. A different destination scale
+    // or uncovered area must reach the worker while the old read is still busy.
+    if(camera){
+      const reading=this.regionReading===this.request?this.regionReadingQuery:null,
+        target=reading?{...this.regionQuery(),box:this.camera.destination}:null;
+      if(reading&&target&&this.regionQueryCovers(reading,target)&&Math.abs(reading.box.width/reading.width/(target.box.width/target.width)-1)<1e-6){
+        if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}return;
+      }
+      if(this.regionTimer)return;
+    }
     if(this.regionTimer)clearTimeout(this.regionTimer);
     if(!camera)this.request++;
     this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh(camera);},camera?120:60);
   }
   private geometryCoversView(){
-    const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
+    return this.regionQueryCovers(this.loadedRegionQuery,this.regionQuery());
+  }
+  private regionQueryCovers(old:AtlasRegionQuery|null,q:AtlasRegionQuery){
+    if(!old)return false;
     return old.scopeId===q.scopeId&&old.floorId===q.floorId&&old.slice===q.slice&&old.roofs===q.roofs&&old.perception===q.perception&&old.terrainRaster===q.terrainRaster&&old.contours===q.contours&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
   }
   private geometryCurrent(){
@@ -789,6 +811,7 @@ export class CampaignAtlasWorkbench {
     this.renderTravel();
     try {
       const query=this.regionQuery(true);
+      this.regionReadingQuery=query;
       const r = await window.campaign.atlasRegion(w.token,query);
       if (this.owner !== w || request !== this.request) return;
       if (!r.ok) throw new Error(r.error);
@@ -814,7 +837,7 @@ export class CampaignAtlasWorkbench {
         this.renderTravel();
       }return false;
     } finally {
-      if(this.regionReading===request)this.regionReading=null;
+      if(this.regionReading===request){this.regionReading=null;this.regionReadingQuery=null;}
       if(completed&&this.owner===w&&request===this.request&&!this.geometryCurrent())this.scheduleRegion(true);
     }
   }
@@ -2653,25 +2676,13 @@ export class CampaignAtlasWorkbench {
       elements=data.geometry.drawing.elements.filter(e=>e.scopeId===b.ownerId&&e.floorId===floor&&!e.archived);
     if (b.parent === "world" && (shown.length || elements.length || !!regionValue(data.region?.scopeBounds,b.ownerId))) {
       const points = [...shown.flatMap((r) => r.polygons.flatMap((p) => p.outer)),...elements.flatMap(e=>e.points)],
-        extent = regionValue(data.region?.scopeBounds,b.ownerId)?.width ?? (points.length
+        extentBox=regionValue(data.region?.scopeBounds,b.ownerId),
+        extent = extentBox?.width ?? (points.length
           ? Math.max(...points.map((p) => p.x)) -
             Math.min(...points.map((p) => p.x))
-          : 0);
-      if ((!shown.length&&!elements.length) || mpp > Math.max(1, extent / 25)) {
-        const extentBox=regionValue(data.region?.scopeBounds,b.ownerId),center=extentBox?localToAtlas({x:extentBox.x+extentBox.width/2,y:extentBox.y+extentBox.height/2},f):f;
-        const marker = shape("circle", {x: center.x - box.x, y: center.y - box.y, radius: mpp * 6, style: {fill: shown.length||elements.length ? "#685b50" : null, stroke: "#685b50", lineWidth: mpp * 2}});
-        marker.data.atlasObject = "true";
-        marker.data.kind = "scope";
-        marker.data.id = b.ownerId;
-        root.append(marker);
-        this.label(
-          root,
-          data.scopes.find((s) => s.id === b.ownerId)?.name ?? "Dungeon",
-          center,
-          mpp,
-        );
-        return;
-      }
+          : 0),
+        height=extentBox?.height??(points.length?Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)):0);
+      if(!mapExtentVisible(extent,height,mpp))return;
     }
     if (!shown.length&&!elements.length) return;
     const g = shape("group", {matrix: frameMatrix(this.relative(f)),data:atlasWorkplaneData(this.floorPlane(b.ownerId,floor))});

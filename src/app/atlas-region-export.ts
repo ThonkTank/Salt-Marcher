@@ -1,4 +1,5 @@
 import {atlasWorkplaneData} from './atlas-workplane';
+import {mapExtentVisible} from './atlas-scale-policy';
 import { atlasPaint as landscapeNode } from "./atlas-paint";
 import { regionValue } from "./atlas-region-contracts";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
@@ -90,6 +91,8 @@ export function atlasRegionPaint(
     scene.append(g);
   }
   for (const b of data.bindings.filter((b) => b.kind === "dungeon")) {
+    const extent=regionValue(data.region?.scopeBounds,b.ownerId);
+    if(b.parent==='world'&&extent&&!mapExtentVisible(extent.width,extent.height,mpp))continue;
     if (
       b.parent === "building" &&
       options.roofs &&

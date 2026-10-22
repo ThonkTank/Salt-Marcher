@@ -44,3 +44,16 @@ test('cached colour distinguishes every rendering context, footprint and image s
  }
  assert.notDeepEqual(f.draw(box,{retainedRoutes:new Set([...f.options.retainedRoutes,'raster-road'])}),initial,'retaining a vector removes its raster duplicate');
 });
+
+
+test('colour and forest share warm pieces, local invalidation, undo and the same byte quota',()=>{
+ const f=fixture(128*1024),box={x:0,y:0,width:64,height:64};
+ const draw=(overrides={})=>{const forest=new Uint8Array(64*64),pixels=f.draw(box,{...overrides,forest},64,64);return {pixels,forest};};
+ const oldColor=f.draw(box,{},64,64),empty=draw();assert.deepEqual(oldColor,empty.pixels);assert(empty.forest.every(v=>v===0));
+ const reads=f.reads();assert.deepEqual(draw(),empty);assert.equal(f.reads(),reads,'both channels reuse the same cache entry');
+ const patch={...emptyRecord('patch'),id:'woods',values:{terrain:'forest'},polygons:[{outer:[{x:4,y:4},{x:58,y:4},{x:58,y:58},{x:4,y:58}],holes:[]}]};
+ f.patch([patch]);f.cache.invalidate([{x:4,y:4,width:54,height:54}]);const changed=draw();assert(changed.forest.some(v=>v>0));assert.deepEqual(changed,draw({cache:undefined}));assert(f.cache.tiles.bytes<=f.cache.tiles.limit);
+ f.patch([]);f.cache.invalidate([box]);assert.deepEqual(draw(),empty,'undo removes the semantic data along with colour');
+ f.patch([patch]);f.cache.invalidate([],true);assert.deepEqual(draw(),changed,'reset reconstructs both channels');
+ assert.throws(()=>f.draw(box,{forest:new Uint8Array(2)}),/Waldabdeckung/);
+});

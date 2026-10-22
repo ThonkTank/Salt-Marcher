@@ -10,6 +10,7 @@ export function* readTerrainColorSteps(db:any,source:AtlasRegionSource,q:Terrain
  const settings=readTerrainSettings(db,source.campaignId),routes=terrainColorRoutes(stream,q.routeContext,q.routeFocus);
  // Four bounded batches per colour tile amortize the supersampled halo;
  // checkpoints still release the worker between completed read snapshots.
- const pixels=yield* renderTerrainColor(q.box,q.width,q.height,q.displayMpp,{settings,stream,cache,batchEdge:128,contours:q.contours,revision:source.revision,...routes,checkpoint});
- return {box:q.box,width:q.width,height:q.height,pixels,revision:source.revision,fence:source.fence};
+ const forest=new Uint8Array(q.width*q.height);
+ const pixels=yield* renderTerrainColor(q.box,q.width,q.height,q.displayMpp,{settings,stream,cache,forest,batchEdge:128,contours:q.contours,revision:source.revision,...routes,checkpoint});
+ return {box:q.box,width:q.width,height:q.height,pixels,forest,revision:source.revision,fence:source.fence};
 }

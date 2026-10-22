@@ -8,8 +8,8 @@ import {randomUUID} from 'node:crypto';
 import {homedir} from 'node:os';
 const cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-projection';export * from './src/app/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {vegetationInstances,LandscapeWorkbench,vegetationControls,vegetationInspector,vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-projection';export * from './src/app/vegetation-controls';export {LandscapeWorkbench} from './src/app/atlas-landscape-ui';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export {readVegetationEnvironment} from './src/app/storage/vegetation';export * from './src/app/landscape-raster';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/vegetation-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {readVegetationEnvironment,vegetationInstances,LandscapeWorkbench,vegetationControls,vegetationInspector,vegetationSpec,vegetationPresets,validateVegetation,generateVegetation,vegetationEnvironment,heightRecord,emptyRecord,contains,CampaignStore,AtlasLandscapeReader,effectiveLandscape,LandscapeRasterizer,atlasPaint,drawVegetation}=require('../.build/vegetation-test.cjs');
 const box={x:-100,y:-100,width:200,height:200};
 const rectangle=(x,y,w,h)=>({outer:[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}],holes:[]});
 const plane=(height=50)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*256,y*256,4,new Float32Array(4096).fill(height))));
@@ -32,6 +32,13 @@ test('world reader retains a protected tree without loading the continent height
  const layer=reader.read(source,{box:{x:-1e6,y:-1e6,width:4e7,height:4e7},width:1024,height:1024,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
  assert.equal(layer.state,'ready');const view=layer.records.find(record=>record.id===r.id).vegetationView;
  assert.equal(view.mode,'surface');assert.equal(view.instances.length,1);assert.equal(view.instances[0].id,'old-oak');assert.equal(view.instances[0].z,50);
+ // Dense world overlays must not discard protected instances with invisible
+ // automatic trees and place symbols.
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++){const place={...emptyRecord('place'),id:'far-place-'+i,name:'Ort',points:[{x:i,y:0}]};insert.run(f.cam.id,place.id,0,i,i,0,0,JSON.stringify(place));}})();
+ const denseSource=f.store.atlasRegionSource(f.token);reader.sync(denseSource);
+ const dense=reader.read(denseSource,{box:{x:-1e6,y:-1e6,width:4e7,height:4e7},width:1024,height:1024,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
+ assert.equal(dense.coverage.mode,'raster');assert.equal(dense.records.find(record=>record.id===r.id).vegetationView.instances[0].id,'old-oak');
+
 });
 function setup(t){
  const dir=mkdtempSync(cache+'/vegetation-test-');let store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('Landschaft'),active=store.activate(cam.id);
@@ -317,4 +324,24 @@ test('compact display keeps the larger perspective export in the same individual
  for(const i of a)assert.deepEqual(byId.get(i.id),i,'larger export retains each visible candidate without rounding');
  assert.deepEqual(f.store.atlasLandscapeObject(f.token,r.id),before);assert.equal(f.store.atlasRegionSource(f.token).fence,source.fence);
  const forged={...before,vegetationView:output.records.find(r=>r.vegetation).vegetationView};assert.throws(()=>f.save(forged),/Darstellungsdaten/);
+});
+
+
+test('local vegetation reads global settings once in paint order without scanning unrelated world payloads',t=>{
+ const f=setup(t),r=area();f.save(r);f.write({kind:'landscape-sea-level',seaLevelM:20});
+ const db=f.store.db,cam=f.cam.id,oldQuery="SELECT payload FROM atlas_landscape WHERE campaign_id=? AND (json_extract(payload,'$.terrainSettings') IS NOT NULL OR (max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?)) ORDER BY rowid";
+ // Both paths see settings inside and outside their geometric bounds, including
+ // absence and a later authoritative edit; no cached settings may leak across reads.
+ for(const target of [box,{x:1e6,y:1e6,width:10,height:10}]){
+  let plan='';const wrapped={prepare(sql){const statement=db.prepare(sql);if(!sql.includes('UNION'))return statement;return{iterate(...args){plan=db.prepare('EXPLAIN QUERY PLAN '+sql).all(...args).map(p=>p.detail).join('\n');return statement.iterate(...args);}};}};
+  const actual=readVegetationEnvironment(wrapped,cam,target),expected=db.prepare(oldQuery).all(cam,target.x-100,target.x+target.width+100,target.y-100,target.y+target.height+100).map(row=>JSON.parse(row.payload));
+  assert.deepEqual(actual.records,expected);assert.equal(new Set(actual.records.map(r=>r.id)).size,actual.records.length);
+  assert.equal(actual.records.filter(r=>r.terrainSettings).length,1);
+  assert.match(plan,/landscape_settings_fast/);assert.match(plan,/landscape_area \(campaign_id=\? AND min_x<\?\)/);
+  assert.deepEqual(generateVegetation(r,actual.env,target,1),generateVegetation(r,vegetationEnvironment(expected),target,1));
+ }
+ f.write({kind:'landscape-sea-level',seaLevelM:80});assert.equal(readVegetationEnvironment(db,cam,box).env.terrain.seaLevelM,80);
+ f.write({kind:'undo'});assert.equal(readVegetationEnvironment(db,cam,box).env.terrain.seaLevelM,20);
+ db.prepare("DELETE FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NOT NULL").run(cam);
+ assert(!readVegetationEnvironment(db,cam,box).records.some(r=>r.terrainSettings));
 });

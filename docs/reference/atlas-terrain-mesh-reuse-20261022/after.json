@@ -1,0 +1,518 @@
+{
+  "source": "89d47f23cf2704c99ae15b423fcbb7a81d38d160",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-24pAky",
+  "artifacts": {
+    "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "5c4319f170192ad5cef96b30f833159c7395b726b914469d713056eef7ee7b89",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "145ecae77eb72b6caf8b49617a9c56c2b8f64c3036ea72870aaf2ac1537df7fb",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3526834,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "detailState": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "14",
+    "authorRevision": "14",
+    "tiles": "36/36"
+  },
+  "profileClock": {
+    "before": 13319.899999976158,
+    "after": 13325.599999964237,
+    "timestamp": 329713.31642
+  },
+  "raw": {
+    "result.json": {
+      "path": ".build/mesh-reuse-world/result.json",
+      "sha256": "b4e64294e65d01757f83c5fe79c09c8e82d97c9dcf64376d941657a642624463"
+    },
+    "renderer.cpuprofile": {
+      "path": ".build/mesh-reuse-world/renderer.cpuprofile",
+      "sha256": "edf2f65a691512ffc907ec2e1b1075f4f5bc09573daf5ba076702818236eac3e"
+    }
+  },
+  "milliseconds": {
+    "open": 10236.683410000001,
+    "firstAuthor": 3088.772649999999,
+    "secondAuthor": 1943.9311610000004,
+    "maxLongTask": 169,
+    "maxRecordedGap": 200.10000000000218
+  },
+  "largestTasks": [
+    {
+      "task": {
+        "start": 23100.599999964237,
+        "duration": 169
+      },
+      "self": [
+        [
+          "(program) :0",
+          65.10000000000218
+        ],
+        [
+          "(anonymous) :0",
+          26.045999999998457
+        ],
+        [
+          "texSubImage2D :0",
+          7.623999999999796
+        ],
+        [
+          "setData renderer.js:49446",
+          6.945999999999913
+        ],
+        [
+          "render renderer.js:73662",
+          6.473999999998341
+        ],
+        [
+          "getBoundingClientRect :0",
+          6.473000000005413
+        ],
+        [
+          "render renderer.js:49621",
+          6.46900000000096
+        ],
+        [
+          "terrainContourSlope renderer.js:44774",
+          5.356999999996333
+        ],
+        [
+          "(garbage collector) :0",
+          5.003999999997177
+        ],
+        [
+          "updateTerrainMesh renderer.js:44871",
+          3.305000000000291
+        ],
+        [
+          "render renderer.js:51613",
+          2.2040000000015425
+        ],
+        [
+          "hasOption renderer.js:53483",
+          2.1970000000001164
+        ]
+      ],
+      "inclusive": [
+        [
+          "(root) :0",
+          169.0
+        ],
+        [
+          "(program) :0",
+          65.10000000000218
+        ],
+        [
+          "batch renderer.js:49556",
+          50.12699999999677
+        ],
+        [
+          "publish renderer.js:53292",
+          42.58399999999165
+        ],
+        [
+          "gesture renderer.js:52942",
+          42.58399999999165
+        ],
+        [
+          "terrainGesture renderer.js:72017",
+          42.58399999999165
+        ],
+        [
+          "render renderer.js:73662",
+          28.080000000009022
+        ],
+        [
+          "refresh renderer.js:71901",
+          28.080000000009022
+        ],
+        [
+          "(anonymous) :0",
+          26.045999999998457
+        ],
+        [
+          "setData renderer.js:49446",
+          25.20699999999124
+        ],
+        [
+          "(anonymous) renderer.js:53293",
+          25.20699999999124
+        ],
+        [
+          "render renderer.js:49621",
+          20.60200000000259
+        ],
+        [
+          "WebGLRenderer.render renderer.js:42682",
+          9.790000000000873
+        ],
+        [
+          "syncBrushSizes renderer.js:73652",
+          8.677000000006956
+        ]
+      ]
+    },
+    {
+      "task": {
+        "start": 19690.899999976158,
+        "duration": 99
+      },
+      "self": [
+        [
+          "(program) :0",
+          34.986000000018976
+        ],
+        [
+          "(anonymous) :0",
+          25.988999999986845
+        ],
+        [
+          "render renderer.js:73662",
+          7.544999999994616
+        ],
+        [
+          "regionQuery renderer.js:71676",
+          6.598000000001775
+        ],
+        [
+          "getBoundingClientRect :0",
+          6.495000000002619
+        ],
+        [
+          "layout renderer.js:44237",
+          2.172999999998865
+        ],
+        [
+          "n renderer.js:50506",
+          1.1059999999997672
+        ],
+        [
+          "set renderer.js:44434",
+          1.098999999998341
+        ],
+        [
+          "anchor renderer.js:44454",
+          1.092000000000553
+        ],
+        [
+          "renderTravel renderer.js:73275",
+          1.0910000000003492
+        ],
+        [
+          "renderPanel renderer.js:73494",
+          1.0900000000001455
+        ],
+        [
+          "refresh renderer.js:71901",
+          1.0889999999999418
+        ]
+      ],
+      "inclusive": [
+        [
+          "(root) :0",
+          99.0
+        ],
+        [
+          "refresh renderer.js:71901",
+          38.02499999999418
+        ],
+        [
+          "render renderer.js:73662",
+          36.93599999999424
+        ],
+        [
+          "(program) :0",
+          34.986000000018976
+        ],
+        [
+          "(anonymous) :0",
+          25.988999999986845
+        ],
+        [
+          "render renderer.js:69474",
+          17.461999999995896
+        ],
+        [
+          "batch renderer.js:49556",
+          14.225999999998749
+        ],
+        [
+          "batch renderer.js:52918",
+          14.225999999998749
+        ],
+        [
+          "paint renderer.js:69226",
+          14.225999999998749
+        ],
+        [
+          "drain renderer.js:69501",
+          14.225999999998749
+        ],
+        [
+          "paint3 renderer.js:69254",
+          12.05199999999968
+        ],
+        [
+          "overlay renderer.js:71046",
+          8.787000000000262
+        ],
+        [
+          "syncBrushSizes renderer.js:73652",
+          7.578000000001339
+        ],
+        [
+          "regionQuery renderer.js:71676",
+          6.598000000001775
+        ]
+      ]
+    },
+    {
+      "task": {
+        "start": 19037.19999998808,
+        "duration": 86
+      },
+      "self": [
+        [
+          "terrainContourSlope renderer.js:44774",
+          20.695999999999913
+        ],
+        [
+          "setData renderer.js:49446",
+          13.512999999995372
+        ],
+        [
+          "texSubImage2D :0",
+          8.361999999997352
+        ],
+        [
+          "updateTerrainMesh renderer.js:44871",
+          7.5790000000015425
+        ],
+        [
+          "(anonymous) renderer.js:49451",
+          6.700999909466191
+        ],
+        [
+          "attach renderer.js:43782",
+          6.56699999999546
+        ],
+        [
+          "computeBoundingSphere renderer.js:21705",
+          4.974999999998545
+        ],
+        [
+          "fromBufferAttribute renderer.js:13931",
+          4.561000000001513
+        ],
+        [
+          "layout renderer.js:10930",
+          2.723999999998341
+        ],
+        [
+          "set renderer.js:44434",
+          1.614000000001397
+        ],
+        [
+          "layout renderer.js:44237",
+          1.5620000000017171
+        ],
+        [
+          "upload renderer.js:35996",
+          1.1189999999987776
+        ]
+      ],
+      "inclusive": [
+        [
+          "(root) :0",
+          86.0
+        ],
+        [
+          "batch renderer.js:49556",
+          84.8109999094595
+        ],
+        [
+          "publish renderer.js:53292",
+          84.8109999094595
+        ],
+        [
+          "gesture renderer.js:52942",
+          84.8109999094595
+        ],
+        [
+          "terrainGesture renderer.js:72017",
+          84.8109999094595
+        ],
+        [
+          "(anonymous) renderer.js:53293",
+          72.1649999094625
+        ],
+        [
+          "setData renderer.js:49446",
+          70.55599990946212
+        ],
+        [
+          "terrainContourSlope renderer.js:44774",
+          22.89099999999962
+        ],
+        [
+          "updateTerrainMesh renderer.js:44871",
+          17.1150000000016
+        ],
+        [
+          "render renderer.js:49621",
+          12.645999999997002
+        ],
+        [
+          "WebGLRenderer.render renderer.js:42682",
+          10.552999999996246
+        ],
+        [
+          "computeBoundingSphere renderer.js:21705",
+          9.536000000000058
+        ],
+        [
+          "upload renderer.js:35996",
+          9.48099999999613
+        ],
+        [
+          "setProgram renderer.js:43066",
+          9.48099999999613
+        ]
+      ]
+    },
+    {
+      "task": {
+        "start": 13602.099999964237,
+        "duration": 78
+      },
+      "self": [
+        [
+          "render renderer.js:49621",
+          23.192999999995664
+        ],
+        [
+          "(garbage collector) :0",
+          7.433999999999287
+        ],
+        [
+          "visibleTerrain renderer.js:10979",
+          5.992999999998574
+        ],
+        [
+          "terrainVisibility renderer.js:10974",
+          5.013999999999214
+        ],
+        [
+          "(program) :0",
+          4.4730000667550485
+        ],
+        [
+          "previewHeight renderer.js:49433",
+          4.3289999999979045
+        ],
+        [
+          "hasOption renderer.js:53483",
+          3.6959999999999127
+        ],
+        [
+          "update renderer.js:11078",
+          3.2479999999995925
+        ],
+        [
+          "regionQuery renderer.js:71676",
+          2.9240000000008877
+        ],
+        [
+          "update renderer.js:43828",
+          2.149999999999636
+        ],
+        [
+          "update renderer.js:32333",
+          1.522000000000844
+        ],
+        [
+          "sampleHeight renderer.js:63643",
+          1.3559999999997672
+        ]
+      ],
+      "inclusive": [
+        [
+          "(root) :0",
+          78.0
+        ],
+        [
+          "previewHeight renderer.js:49433",
+          49.81399999998939
+        ],
+        [
+          "previewHeight renderer.js:52980",
+          49.81399999998939
+        ],
+        [
+          "previewHeight renderer.js:71178",
+          49.81399999998939
+        ],
+        [
+          "sampleLive renderer.js:63649",
+          37.15199999999095
+        ],
+        [
+          "tickLive renderer.js:63662",
+          37.15199999999095
+        ],
+        [
+          "(anonymous) renderer.js:63668",
+          37.15199999999095
+        ],
+        [
+          "render renderer.js:49621",
+          26.869999999995343
+        ],
+        [
+          "(anonymous) renderer.js:63636",
+          16.190999999998894
+        ],
+        [
+          "update renderer.js:11078",
+          10.328999999997905
+        ],
+        [
+          "(garbage collector) :0",
+          7.433999999999287
+        ],
+        [
+          "(anonymous) renderer.js:10977",
+          7.080999999998312
+        ],
+        [
+          "batch renderer.js:49556",
+          6.1490000000012515
+        ],
+        [
+          "batch renderer.js:52918",
+          6.1490000000012515
+        ]
+      ]
+    }
+  ]
+}
