@@ -1,0 +1,74 @@
+diff --git a/src/app/campaign-atlas-ui.ts b/src/app/campaign-atlas-ui.ts
+index e630df800..416313708 100644
+--- a/src/app/campaign-atlas-ui.ts
++++ b/src/app/campaign-atlas-ui.ts
+@@ -98,6 +98,7 @@ const shape = atlasPaint;
+ export class CampaignAtlasWorkbench {
+   readonly root = document.createElement("section");
+   private svg: HTMLCanvasElement;
++  private viewport: {width:number;height:number}|null=null;
+   private camera: AtlasCanvas;
+   private landscape: LandscapeWorkbench;
+   private spatial?:TerrainSpatialUI;
+@@ -225,7 +226,7 @@ export class CampaignAtlasWorkbench {
+       overlay:(root,box,mpp)=>{this.syncBrushSizes(mpp);const again=this.landscape?.drawOverlay(root,box,mpp);this.reference?.draw(root,box,mpp);this.drawAuthorMeasurements(root,box,mpp);return again;},
+       initial: { x: -15000, y: -10000, width: 30000, height: 20000 },
+       minWidth: 0.1,
+-      maxWidth: () => earthView(this.svg.clientWidth / Math.max(1,this.svg.clientHeight)).width * 1.1,
++      maxWidth: () => {const size=this.viewportSize();return earthView(size.width / Math.max(1,size.height)).width * 1.1;},
+       pan: (e) => {
+         if(e.button===1 || e.button===0 && (this.root.dataset.panMode==="true" || this.spacePan || e.altKey))return "explicit";
+         return e.button===0 && this.family==="navigation" && !this.reference?.active && !this.exportOpen && !this.pointToolActive() &&
+@@ -301,11 +302,16 @@ export class CampaignAtlasWorkbench {
+     get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
+     this.hitDialog.id='atlas-hit-candidates';this.hitDialog.addEventListener('close',()=>this.hitVersion++);this.root.append(this.hitDialog);
+     this.root.querySelectorAll<HTMLInputElement>('#atlas-hex-level,#atlas-terrain').forEach(n=>n.addEventListener('change',()=>{if(n.id==='atlas-hex-level')get<HTMLInputElement>('land-auto-level').checked=false;this.render();}));
+-    let viewport:{width:number;height:number}|null=null;
+-    new ResizeObserver(()=>{
+-      const width=this.svg.clientWidth,height=this.svg.clientHeight;
+-      if(width<=0||height<=0){viewport=null;return;}
+-      this.camera.resizeViewport(viewport??{width,height}, {width,height});viewport={width,height};
++    new ResizeObserver(([entry])=>{
++      if(!entry)return;
++      // The canvas has no border or padding. Reuse the delivered CSS size;
++      // querying clientWidth after panel updates would force layout again.
++      const width=Math.round(entry.contentRect.width),height=Math.round(entry.contentRect.height);
++      const previous=this.viewport;
++      this.viewport=width>0&&height>0?{width,height}:null;
++      if(!this.viewport)return;
++      // Publish before resizeViewport notifies region loading and zoom limits.
++      this.camera.resizeViewport(previous??this.viewport,this.viewport);
+       // The buffered geometry can remain valid; publish current selection handles at the new size too.
+       this.scheduleRender();
+     }).observe(this.svg);
+@@ -624,9 +630,15 @@ export class CampaignAtlasWorkbench {
+     get("atlas-save-status").dataset.error = "true";
+     this.opts.status(text, true);
+   }
++  private viewportSize(){
++    // First opening (or returning from a hidden workspace) can precede the
++    // observer. Input hit testing still measures the current DOM in AtlasCanvas.
++    return this.viewport??{width:this.svg.clientWidth,height:this.svg.clientHeight};
++  }
+   private regionQuery(buffered=false):AtlasRegionQuery{
+     const terrainRaster=this.spatial?.needsTerrainRaster??true;
+-    const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
++    const size=this.viewportSize();
++    const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,size.width||1024)),height=Math.max(1,Math.min(4096,size.height||768));
+     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
+   }
+   private async refreshSpatialSource(){
+@@ -2335,11 +2347,11 @@ export class CampaignAtlasWorkbench {
+     // additional old-scene frame when the ordinary scene is being rebuilt below.
+     if(this.landscape.livePainting&&this.terrainPresentation&&this.spatial?.active){this.camera.redrawOverlay();return;}
+     const box = this.camera.view;
++    const mpp = box.width / Math.max(1,this.viewportSize().width);
+     get('atlas-entrance-height').hidden=!(this.selection?.kind==='room'&&data.entrances.some(e=>e.roomId===this.selection!.id));
+-    this.spatial?.sync(this.owner!.token,box,data.revision,data.region?.landscape?.records??[],this.landscape.contours(),data,{mpp:box.width/Math.max(1,this.svg.clientWidth),roofs:get<HTMLInputElement>('atlas-roofs').checked,scopeId:this.scopeId});
++    this.spatial?.sync(this.owner!.token,box,data.revision,data.region?.landscape?.records??[],this.landscape.contours(),data,{mpp,roofs:get<HTMLInputElement>('atlas-roofs').checked,scopeId:this.scopeId});
+     this.svg.dataset.atlasOriginX = String(box.x);
+     this.svg.dataset.atlasOriginY = String(box.y);
+-    const mpp = box.width / Math.max(1, this.svg.clientWidth);
+     // Keep the last confirmed scene intact while a new filter/source is loading.
+     // In particular, never interpret old contours under new floor/roof/slice controls.
+     if(!this.geometryCurrent()&&!(preview&&this.geometryCoversView())){this.camera.redrawOverlay();return;}

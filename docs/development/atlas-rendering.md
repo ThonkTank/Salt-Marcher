@@ -24,6 +24,10 @@ Darstellungsgrenzen sowie korrigierte Fixturefehler. Kein Produktwechsel.
 X11-/Wayland-Gegenprobe mit voller Welt, Chromium-Trace und Korrektur des
 erzwungenen X11-Teststarts. Lange Ausreißer und die Pentium-Qualifikation bleiben offen.
 
+[Verworfener Ausschnittsgrößen-Cache](../reference/atlas-viewport-size-20261022/README.md):
+erzwungene Layoutarbeit wanderte zu anderen Lesern; kein belastbarer Gesamtgewinn.
+Produktversuch entfernt, native Größen-/Trefferregression und Rohvergleich erhalten.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
