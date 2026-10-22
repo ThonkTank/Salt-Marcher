@@ -253,7 +253,7 @@ function checkedChanges(state: TerritoryState, changes: AtlasTerritory[]) {
 }
 /** A brush transfers painted land from siblings in the same atomic command.
  * Erasure leaves the parent remainder unassigned, deliberately not a neighbour. */
-export function reshapeTerritory(
+function reshapeTerritory(
   state: TerritoryState,
   id: string,
   polygons: Polygon[],

@@ -1,0 +1,266 @@
+[
+  {
+    "run": "drawing-profile-world-before",
+    "profileSHA256": "f6c804aeae795eac50ffd5a19fac818afc47823bf3f0c3e6505fb091c2279d02",
+    "note": "Sampled self time, profiler overhead; renderer.js lines identify the measured runtime, not current TypeScript lines.",
+    "topFunctions": [
+      {
+        "function": "(idle)",
+        "rendererLine0": -1,
+        "sampleMs": 2137.1970000000033
+      },
+      {
+        "function": "(program)",
+        "rendererLine0": -1,
+        "sampleMs": 439.1399999999998
+      },
+      {
+        "function": "number",
+        "rendererLine0": 7646,
+        "sampleMs": 33.741
+      },
+      {
+        "function": "layout",
+        "rendererLine0": 44236,
+        "sampleMs": 19.903
+      },
+      {
+        "function": "render",
+        "rendererLine0": 51804,
+        "sampleMs": 19.763
+      },
+      {
+        "function": "draw",
+        "rendererLine0": 10693,
+        "sampleMs": 18.369
+      },
+      {
+        "function": "(garbage collector)",
+        "rendererLine0": -1,
+        "sampleMs": 17.378999999999998
+      },
+      {
+        "function": "",
+        "rendererLine0": 44252,
+        "sampleMs": 15.757000000000003
+      },
+      {
+        "function": "project",
+        "rendererLine0": 44473,
+        "sampleMs": 14.547
+      },
+      {
+        "function": "updateCamera",
+        "rendererLine0": 50463,
+        "sampleMs": 13.417
+      },
+      {
+        "function": "",
+        "rendererLine0": 4,
+        "sampleMs": 12.264999999999999
+      },
+      {
+        "function": "setItem",
+        "rendererLine0": -1,
+        "sampleMs": 10.692
+      },
+      {
+        "function": "n",
+        "rendererLine0": 50697,
+        "sampleMs": 8.598
+      },
+      {
+        "function": "routeMayDraw",
+        "rendererLine0": 47439,
+        "sampleMs": 7.968999999999999
+      },
+      {
+        "function": "AtlasPaint",
+        "rendererLine0": 8228,
+        "sampleMs": 7.090999999999999
+      },
+      {
+        "function": "getParameter",
+        "rendererLine0": -1,
+        "sampleMs": 6.978
+      },
+      {
+        "function": "drawOverlay",
+        "rendererLine0": 64358,
+        "sampleMs": 6.871
+      },
+      {
+        "function": "applyMatrix4",
+        "rendererLine0": 13370,
+        "sampleMs": 6.523000000000001
+      },
+      {
+        "function": "paint3",
+        "rendererLine0": 69377,
+        "sampleMs": 5.9590000000000005
+      },
+      {
+        "function": "apply",
+        "rendererLine0": 69287,
+        "sampleMs": 5.866
+      },
+      {
+        "function": "regionQuery",
+        "rendererLine0": 71803,
+        "sampleMs": 5.534000000000001
+      },
+      {
+        "function": "requestAnimationFrame",
+        "rendererLine0": -1,
+        "sampleMs": 5.367
+      },
+      {
+        "function": "set",
+        "rendererLine0": 69423,
+        "sampleMs": 4.687
+      },
+      {
+        "function": "caption",
+        "rendererLine0": 7678,
+        "sampleMs": 4.684
+      },
+      {
+        "function": "display",
+        "rendererLine0": 7691,
+        "sampleMs": 4.448
+      }
+    ]
+  },
+  {
+    "run": "drawing-profile-world-after",
+    "profileSHA256": "a7c24a12b4d46bce0ed96367650fde61e65017a182dda4819c513bd9cf14e6ca",
+    "note": "Sampled self time, profiler overhead; renderer.js lines identify the measured runtime, not current TypeScript lines.",
+    "topFunctions": [
+      {
+        "function": "(idle)",
+        "rendererLine0": -1,
+        "sampleMs": 2249.260000000003
+      },
+      {
+        "function": "(program)",
+        "rendererLine0": -1,
+        "sampleMs": 492.0750000000002
+      },
+      {
+        "function": "number",
+        "rendererLine0": 7646,
+        "sampleMs": 34.869
+      },
+      {
+        "function": "layout",
+        "rendererLine0": 18665,
+        "sampleMs": 32.598
+      },
+      {
+        "function": "project",
+        "rendererLine0": 52800,
+        "sampleMs": 27.969
+      },
+      {
+        "function": "applyMatrix4",
+        "rendererLine0": 22281,
+        "sampleMs": 25.891
+      },
+      {
+        "function": "(garbage collector)",
+        "rendererLine0": -1,
+        "sampleMs": 23.089000000000006
+      },
+      {
+        "function": "render",
+        "rendererLine0": 60330,
+        "sampleMs": 21.395
+      },
+      {
+        "function": "",
+        "rendererLine0": 18681,
+        "sampleMs": 21.159000000000002
+      },
+      {
+        "function": "setItem",
+        "rendererLine0": -1,
+        "sampleMs": 17.132
+      },
+      {
+        "function": "",
+        "rendererLine0": 4,
+        "sampleMs": 16.061
+      },
+      {
+        "function": "draw",
+        "rendererLine0": 17944,
+        "sampleMs": 15.52
+      },
+      {
+        "function": "routeMayDraw",
+        "rendererLine0": 55766,
+        "sampleMs": 14.91
+      },
+      {
+        "function": "regionQuery",
+        "rendererLine0": 19422,
+        "sampleMs": 14.609000000000002
+      },
+      {
+        "function": "display",
+        "rendererLine0": 7691,
+        "sampleMs": 12.305
+      },
+      {
+        "function": "marginBands",
+        "rendererLine0": 18188,
+        "sampleMs": 10.983
+      },
+      {
+        "function": "n",
+        "rendererLine0": 58956,
+        "sampleMs": 10.226
+      },
+      {
+        "function": "updateCamera",
+        "rendererLine0": 58790,
+        "sampleMs": 10.203999999999999
+      },
+      {
+        "function": "paint3",
+        "rendererLine0": 72875,
+        "sampleMs": 9.35
+      },
+      {
+        "function": "visit",
+        "rendererLine0": 17881,
+        "sampleMs": 9.291
+      },
+      {
+        "function": "MutationObserver.observe.attributes",
+        "rendererLine0": 20,
+        "sampleMs": 6.6370000000000005
+      },
+      {
+        "function": "render",
+        "rendererLine0": 58829,
+        "sampleMs": 6.603
+      },
+      {
+        "function": "render",
+        "rendererLine0": 74955,
+        "sampleMs": 6.574
+      },
+      {
+        "function": "drawOverlay",
+        "rendererLine0": 72203,
+        "sampleMs": 6.561
+      },
+      {
+        "function": "paint",
+        "rendererLine0": 72847,
+        "sampleMs": 6.457
+      }
+    ]
+  }
+]

@@ -1,4 +1,4 @@
-import {atlasUnits,FOOT,MILE,lengthLabel,type AtlasUnits} from './atlas-units';
+import {atlasNumberLabel,atlasUnits,FOOT,MILE,lengthLabel,type AtlasUnits} from './atlas-units';
 import type { CanvasBox } from './passive-map-canvas';
 import { hexSize } from './atlas-landscape';
 
@@ -30,11 +30,10 @@ export function scaleBar(metersPerPixel: number, viewportWidth: number, system:A
 }
 export function hexTravelLabel(meters:number){
  const hours=meters/MILE/3,days=hours/8;
- const n=(v:number)=>v.toLocaleString('de-DE',{maximumSignificantDigits:3});
- if(hours<8)return `${n(hours)} ${hours===1?'Stunde':'Stunden'}`;
- if(days>=30-1e-8&&Math.abs(days/30-Math.round(days/30))<1e-8)return `${n(days/30)} ${Math.round(days/30)===1?'Monat':'Monate'}`;
- if(days>=7-1e-8&&Math.abs(days/7-Math.round(days/7))<1e-8)return `${n(days/7)} ${Math.round(days/7)===1?'Woche':'Wochen'}`;
- return `${n(days)} ${Math.abs(days-1)<1e-8?'Reisetag':'Reisetage'}`;
+ if(hours<8)return `${atlasNumberLabel(hours)} ${hours===1?'Stunde':'Stunden'}`;
+ if(days>=30-1e-8&&Math.abs(days/30-Math.round(days/30))<1e-8)return `${atlasNumberLabel(days/30)} ${Math.round(days/30)===1?'Monat':'Monate'}`;
+ if(days>=7-1e-8&&Math.abs(days/7-Math.round(days/7))<1e-8)return `${atlasNumberLabel(days/7)} ${Math.round(days/7)===1?'Woche':'Wochen'}`;
+ return `${atlasNumberLabel(days)} ${Math.abs(days-1)<1e-8?'Reisetag':'Reisetage'}`;
 }
 export function automaticGrid(mpp: number, previous: string | null): string {
   // Log distance treats zooming in and out symmetrically. Hysteresis retains

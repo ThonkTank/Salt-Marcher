@@ -41,8 +41,10 @@ Beweis für überflüssige Format-/Grundlagenprüfungen. Er bleibt erhalten.
 Eine Bezeichnerzählung aller versionierten TS-/JS-/MJS-/HTML-Dateien unter
 `src`, `desktop`, `tests` und `tools` ergab jeweils nur die Deklaration.
 Zusätzlich wurden Reexports, dynamische Einstiegspunkte und die gebauten
-Main-/Renderer-/Spielerartefakte geprüft. Die vier Namen waren auch dort nicht
+Main-/Renderer-/Spielerartefakte geprüft. Die sechs Namen waren auch dort nicht
 enthalten. Keine dieser Deklarationen ist ein IPC- oder Speichervertrag.
+Der ergänzende Suchlauf bezieht auch `campaign-atlas*` und die Atlasmodule in
+`src/app/storage` und `desktop` ein.
 
 | Entfernt | Grund | Erhaltener aktiver Weg |
 | --- | --- | --- |
@@ -50,6 +52,17 @@ enthalten. Keine dieser Deklarationen ist ein IPC- oder Speichervertrag.
 | `hexStrokePolygons` in `atlas-landscape.ts` | Unbenutzter Ein-Zug-Wrapper | `hexStrokesPolygons` erhält getrennte Gesten ohne Verbindungslinie |
 | `atlasUnitFieldIds` in `atlas-units.ts` | Unbenutzte Registry-Aufzählung | Bestehende Feldbindung und Einheitenumrechnung |
 | `UNPAINTED_LAND` in `landscape-raster.ts` | Unbenutzter alter RGB-Wert | Aktuelle Raster-/Geländefarben und Fallbacks |
+| `recoverAtlasWrite` in `campaign-atlas-author.ts` | Kein Aufrufer des alten Vollbild-Recoverypfads | `recoverAtlasCommit` mit derselben gespeicherten Auftragskennung und kompakter Bestätigung |
+| `frameTransform` in `campaign-atlas-model.ts` | Unbenutzter SVG-Transformationsstring | Numerische `frameMatrix`/Koordinatentransformationen; aktive SVG-Serializer bleiben erhalten |
+
+Sieben ausschließlich innerhalb ihrer eigenen Datei verwendete Helfer sind
+jetzt privat: `atlasCameraBasis`, `footprintVisible`, `EARTH_WIDTH`,
+`reshapeTerritory`, `writeAtlas`, `installLandscapeIndex`, `atlasReadJournal`.
+Der jetzt private `writeAtlas` benötigt keinen unbenutzten Recoveryparameter
+mehr; offene Aufträge bleiben gesperrt und werden weiterhin ausdrücklich
+über `recoverAtlasCommit` geklärt. Historischer Adapter, separat getesteter
+Positionscodec und die parallel bearbeitete `landscape-brush.ts` bleiben
+außerhalb dieser API-Verkleinerung.
 
 Es wurden keine Tests oder Formatleser entfernt. Die Bezeichnungen `svg` in
 echten SVG-Serialisierern und im passiven Spielerbild bleiben korrekt; die
@@ -73,6 +86,29 @@ Draft-, Archiv-/Medien- und Spielerprojektionsfälle bestanden lokal.
 Die Archivtests erhalten validierte Metadaten und exakte Medienbytes und
 weisen beschädigte/manipulierte Pakete vor der Veröffentlichung zurück.
 Die Spielerprobe hält private Prosa aus der passiven Projektion heraus.
+Nach der Verkleinerung der internen APIs bestanden weitere 159 gezielte
+Bereichs-, Raumlese-, Dungeonautoren-, Controller- und Canvasfälle. Darunter
+sind verlorene Schreibantworten mit identischer Auftragskennung, gesperrte
+Folgeschreibversuche und Klärung über den unveränderten kompakten Recoverypfad.
+
+## Vollständiger Zeichnungsbesitzer und wiederholte Framearbeit
+
+Die Nachprüfung fand noch den eigentlichen Szenenaufbau in der Workbench.
+Auch dieser liegt jetzt in `AtlasDrawing.draw`: behaltene Stadt-/Raumgeometrie,
+Autorenkonturen, Beschriftungen, Ausgabeauswahl und Reisezeichnung. Die Workbench
+koordiniert weiterhin die vorhandenen Quellen-/Trefferfreigaben und übergibt
+nur Szene, bestätigte Daten, Ausschnitt und Maßstab. Die bisherigen Cache-Schlüssel
+und die Fachbesitzer bleiben erhalten; es gibt keine neue Vermittlungsschicht.
+
+Die Profile zeigten wiederholt Zahlenformatierung im Kamerapfad. Maß- und
+Reisebeschriftung verwendeten zwei identische `toLocaleString`-Definitionen.
+Beide verwenden jetzt denselben `Intl.NumberFormat` mit unveränderten
+`de-DE`-/Drei-Ziffern-Optionen. `geometryCurrent` verwendet für Abdeckung und
+Auflösung dieselbe Eingabeaufnahme, statt die Bedienelemente und Viewportmaße
+zweimal synchron zu lesen. Die getrennten Prüfungen für sichtbare Geometrie
+und bearbeitbare Treffer bleiben bestehen. Nach diesen Änderungen bestanden
+128 Controller-, Canvas-, Autoren- und Bereichsfälle sowie 14 Maß-, Navigations-
+und Trasseneinheitenfälle.
 
 ## Längere Stadtmessung
 
@@ -85,41 +121,84 @@ Darstellung und Datenbestand waren gleich. Laufreihenfolge und Zusammenfassung:
 
 Im ersten Paar lagen die Zoom-CPU-Mediane bei 86/82 ms und p95 bei 135/145 ms
 (vorher/nachher). Während dieses Paars lief zeitweise eine Quelltextsuche;
-es ist deshalb keine alleinige Leistungsqualifikation. Im zweiten Paar ohne
-parallele eigene Prüfung und mit umgekehrter Reihenfolge lagen die Mediane bei 88/88 ms und p95 bei
-142/132 ms. Ein drittes Paar, ebenfalls ohne parallele eigene Prüfung und
-wieder in Vorher-/Nachher-Reihenfolge, ergab Mediane von 89/88 ms und p95 von
-136/106 ms. In allen Läufen blieben gepufferte Szenen beim Pan erhalten;
-Hover verursachte keine zusätzlichen SQLite-Leseaufträge. Die höheren Spitzen
-des ersten kurzen Tests reproduzieren sich in den zwei längeren sauberen
-Vergleichspaaren somit nicht. Bestehende absolute Latenzgrenzen bleiben offen;
-aus diesen Messungen wird keine allgemeine Leistungssteigerung abgeleitet.
+es ist deshalb keine alleinige Leistungsqualifikation. Zwei weitere Paare
+ohne parallele eigene Prüfungen ergaben p95 von 142/132 und 136/106 ms.
+Der Zwischenstand nach API-Verkleinerung lag bei Median 90 und p95 144 ms.
+Der abschließende Vergleich mit vollständigem Zeichnungsbesitzer und geteilter
+Zahlenformatierung ergibt Median **91/86 ms**, p95 **143/114 ms**.
+In allen Läufen blieb die gepufferte Szene beim Pan erhalten; Hover verursachte
+keine zusätzlichen SQLite-Leseaufträge. Bestehende absolute Latenzziele bleiben
+offen. Diese begrenzten Messungen belegen keine allgemeine Leistungssteigerung.
 
-## Große Welt und native Belege
+## Große Welt und Leistungsdiagnose
 
-Zusätzlich lief die bestehende `tools/test-desktop-world-navigation.mjs` mit
-`WORLD_POPULATED=1 WORLD_LARGE=1 WORLD_READBACK=off WORLD_PROFILE=0` jeweils
-auf der eingefrorenen Vorher-Runtime und dem finalen Renderer. Beide Läufe
-verwenden denselben deterministischen Fixtureaufbau in getrennten Profilen:
-108.076 Records einschließlich Relief, Bewuchs, Straßen, Flächen und 5.000 Orten.
-Die Runtime-Hashes identifizieren den tatsächlich ausgeführten Stand;
-Checkout-SHA/Dirty-Angaben allein identifizieren die Vorher-Runtime nicht.
+`tools/test-desktop-world-navigation.mjs` lief mit
+`WORLD_POPULATED=1 WORLD_LARGE=1 WORLD_READBACK=off WORLD_PROFILE=0` auf
+der eingefrorenen Vorher-Runtime und den jeweils bezeichneten Zwischenständen.
+Der deterministische Fixtureaufbau enthält 108.076 Records einschließlich
+Relief, Bewuchs, Straßen, Flächen und 5.000 Orten. Runtime-Hashes identifizieren
+den ausgeführten Stand; Checkout-SHA/Dirty-Angaben allein identifizieren eine
+eingespielte Vorher-Runtime nicht.
 
-Beide vollständigen Abläufe bestanden: Navigation, echter großer Höhenpinsel,
-Bestätigung der neuen Revision 9, Hex-/Kontur-/Detail-/Entwurfs-/Reuse-Pixelprüfungen,
-keine Rendererfehler und reguläres Prozessende mit verschwundener PID.
-Navigation-Frame-p95: 18,8/20,3 ms; Pinsel-Frame-p95: 22,5/22,3 ms
-(vorher/nachher). Readback und CPU-Profiling waren für beide Läufe ausgeschaltet;
-die Messung ist deshalb keine Eingabe-zu-Pixel-Latenzqualifikation.
+Der erste Vergleich ergab Navigation-p95 18,8/20,3 ms. Weitere Wechselmessungen
+bestätigten einen kleinen Abstand: drei Paare lagen bei 16,8/19,5,
+16,8/19,1 und 16,7/20,2 ms. Dieser Befund wurde zunächst als offener Rückschritt
+behandelt. Profilierte Läufe dienten der Zuordnung von Arbeit und werden nicht
+mit den Messungen ohne Profiler vermischt. Sie zeigen wiederholte
+Zahlenformatierung und Bereichsabfragen, aber keinen zusätzlichen veralteten
+Kameraframe. [Profilkosten](world-profile-costs.json).
 
-- [Welt vorher](verification-world-before.json), [Bild vorher](verification-world-before.png)
-- [Welt nachher](verification-world-after.json), [Bild nachher](verification-world-after.png)
+Nach der oben beschriebenen Nacharbeit wurde dieselbe Sequenz erneut
+in wechselnder Reihenfolge geprüft:
 
-Die bereits bestandenen nativen Kamera-, Bearbeitungs-, History-, Export-/Menü-
-und 200-Prozent-Wiederöffnungsproben aus dem ersten Nachweis bleiben gültig:
-die vier zusätzlichen Entfernungen ändern den gebauten Renderer nicht
-(SHA256 weiterhin `be81c81d3fc9112d59061b8642cd3346f56bf3c52bf1e1cdd82405e0644bab2c`).
+| Paar, Navigation-Frame-p95 | Vorher | Nachher | Einordnung |
+| --- | ---: | ---: | --- |
+| Neuer Stand, Paar 1 | 22,5 ms | 20,3 ms | Ohne eigene parallele Prüfjobs |
+| Neuer Stand, Paar 2 | 20,3 ms | 38,5 ms | Belastet: gleichzeitig laufende `tsc --noEmit` und Desktop-`tsc` im anderen Arbeitsstand |
+| Neuer Stand, Paar 3 | 23,7 ms | 20,9 ms | Gleiche Messserie; Hintergrundlast nicht durchgehend erfasst |
+| Abschließendes überwachtes Paar | **21,5 ms** | **20,6 ms** | Während beider Prozesse keine aktiven Node-Prüfjobs im anderen Arbeitsstand erfasst |
+
+Im überwachten Paar beträgt Pinsel-p95 21,4/21,8 ms. Alle vollständigen Abläufe
+bestanden: Navigation, großer Höhenpinsel, bestätigte Revision 9,
+Hex-/Kontur-/Detail-/Entwurfs-/Reuse-Pixelprüfungen, keine Rendererfehler und
+reguläres Prozessende. Der vorher wiederholte Navigationsabstand reproduziert
+sich nach der Nacharbeit nicht. Dies ist keine vollständige Lastisolation des
+Hosts und keine Eingabe-zu-Pixel-Latenzqualifikation; Readback war ausgeschaltet.
+Asynchrone Nachladung und die interpolierte Kamera führen zu leicht verschiedenen
+Endausschnitten und Szenengenerationen; Generation 5 und 6 kommen bereits in
+der Baseline vor. Die Cache-/Reuse-Prüfungen und Bildvergleiche bleiben maßgeblich,
+nicht eine als Vollaufbauzahl fehlinterpretierte Szenengeneration.
+
+- [Alle Weltläufe mit Laufzeit-Hashes und Prüfwerten](world-comparisons.json)
+- [Alle Frameabstände](world-frame-samples.csv), [Prozessbeobachtung des letzten Paars](world-process-monitor.json)
+- [Erster Vorherlauf](verification-world-before.json), [Bild vorher](verification-world-before.png)
+- [Erster Nachherlauf](verification-world-after.json), [Bild nachher](verification-world-after.png)
+
+Identische aufeinanderfolgende Detail-Uploadaufrufe sind in der Übersicht als
+`callRuns` mit Anzahl zusammengefasst; ihre Reihenfolge und Dimensionen bleiben
+nachvollziehbar. Auch schlechte, profilierte und belastete Messungen bleiben
+erhalten. Es wurden keine fehlgeschlagenen Leistungswerte aus der Serie entfernt.
+
+## Native Abschlussprüfung und Grenzen
+
+Die finalen nativen Proben belegen Auswahl bei geneigter/gedrehter Hauptkamera,
+Raumeckpunktbearbeitung, Undo/Redo, Stadtobjekte, GPU-Kontextverlust mit expliziter
+Wiederherstellung, reguläres Beenden und kanonische Änderungen nach frischem Öffnen.
+PNG-Ausgabe wird bei 100 und 200 Prozent jeweils durch Menübedienung,
+Katalogwechsel, erneute Raumauswahl und frisches Öffnen ergänzt:
+[Hauptkamera](qualified-camera.json), [100 Prozent](qualified-output-100.json),
+[200 Prozent](qualified-output-200.json).
+
+Die ersten vier Entfernungen ließen den Renderer bytegleich bei
+`be81c81d3fc9112d59061b8642cd3346f56bf3c52bf1e1cdd82405e0644bab2c`.
+Der API-Zwischenstand hatte
+`1173d1f23358932be655eb4d3618e5454ebc53174a6cdd43d4ca073ff7c01f4a`.
+Der abschließend geprüfte Renderer hat SHA256
+`2c029bac3ea492e60486fc2564c95181f8f43bc8ed23fc8d9779fff073116f21`.
+Main bleibt bytegleich bei SHA256
+`218492b9908d9da2c595d27d10c66a35e96f71796fc4242316daf2e8457e9d5a`.
 Öffentliche IPC-Verträge, Schema und Archivformate wurden nicht geändert.
-Die alte Exportnaht und die dokumentierten bereits vorher fehlschlagenden
+Die alte Exportnaht und die im ersten Bericht bereits vorher fehlschlagenden
 Proben bleiben ausdrücklich offen. Keine neue Produktanforderung wird durch
-diese interne Bereinigung als erfüllt markiert.
+diese interne Bereinigung als erfüllt markiert. Paketbau und Installation
+werden durch diese Quellcode-/Native-Prüfung nicht behauptet.

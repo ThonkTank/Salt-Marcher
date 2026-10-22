@@ -7,7 +7,7 @@ import type { AtlasCell, Terrain } from "./world-contracts";
 import { atlasHexAt, atlasHexPoint } from "./campaign-atlas-model";
 import { linePoints, lineContains } from "./landscape-line";
 export const HEX_METERS = 4828.032;
-export const EARTH_WIDTH = 40000000,
+const EARTH_WIDTH = 40000000,
   EARTH_HEIGHT = 20000000;
 export const hexSize = (level: number) => HEX_METERS * 3 ** level;
 export interface LandscapeBox {
