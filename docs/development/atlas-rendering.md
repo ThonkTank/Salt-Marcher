@@ -538,3 +538,5 @@ halten vermiedene Arbeit und noch offene Latenzen getrennt fest.
 über vorhandene Indizes, mit Zeilennummer zur Deduplizierung und Malreihenfolge.
 Die volle Weltübersicht bleibt ein offener Engpass. Der erprobte freie Join
 bei Raumtreffern wurde wegen einer Regression für große Einzelbestände verworfen.
+
+[Waldabdeckung und Musterstudie](../reference/atlas-forest-coverage-20261022/README.md): optionaler semantischer Kanal für Wasser, Lichtungen und Dichtekorrekturen, unveränderte Bodenfarben und native GPU-Studie mit Weltverankerung und weichen Maßstabsübergängen. Noch kein Anschluss an die normalen Atlas-Detailkacheln; Gestaltung, volle Welt und Pentium-Leistung bleiben offen.

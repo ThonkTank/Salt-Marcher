@@ -35,6 +35,9 @@ export function landscapeRasterSlice(tile:LandscapeBox,pixels:number,view:Landsc
 /** Display-only supersampled raster. Exact queries always use author geometry. */
 export class LandscapeRasterizer {
   readonly pixels: Uint8Array;
+  /** Optional semantic forest coverage, independent of colour/alpha. Populated by finish(). */
+  readonly forest?: Uint8Array;
+  private readonly forestSamples?: Uint8Array;
   private readonly samples: Uint8Array;
   private readonly water: Uint8Array;
   private readonly w: number;
@@ -53,7 +56,7 @@ export class LandscapeRasterizer {
   private terrainStyle:Readonly<TerrainStyle>=DEFAULT_TERRAIN_STYLE;
   private seaLevelM=0;
   readonly sampleBox:LandscapeBox;
-  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width) {
+  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width,forest=false) {
     if(!box||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0||
        !Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>1024||height>1024)
       throw new Error('Landschaftsübersicht prüfen.');
@@ -62,6 +65,7 @@ export class LandscapeRasterizer {
     this.samples=new Uint8Array(this.w*this.h*4);
     this.water=new Uint8Array(this.w*this.h).fill(1);
     this.pixels=new Uint8Array(width*height*4);
+    if(forest){this.forest=new Uint8Array(width*height);this.forestSamples=new Uint8Array(this.w*this.h);}
   }
   sampleLattice():TerrainLattice {
     const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h;
@@ -84,7 +88,23 @@ export class LandscapeRasterizer {
     const union=parts.disjoint?parts.polygons:mergePolygons(parts.polygons);
     const polygons=preset.edge>0?coverDisplayPolygons(union,Math.min(this.sampleBox.width/this.w,this.sampleBox.height/this.h)/4):union;
     const fade=preset.edge>0?yield* coverFeatherSamplerSteps(polygons,this.sampleBox,this.w,this.h,radius,checkpoint):undefined;
-    for(const polygon of polygons)yield* this.polygonSteps(polygon,rgb,.78,'ground',undefined,checkpoint,fade);
+    // Rasterize corrections once per visible edit, never point-in-polygon for
+    // every sample against every author polygon. This field is display-only.
+    let density:Float32Array|undefined;
+    if(this.forestSamples&&record.vegetation.edits.length){
+      density=new Float32Array(this.w*this.h).fill(preset.density);
+      for(const edit of record.vegetation.edits){
+        const parts=coverViewParts(edit.polygons,this.sampleBox,0),polygons=parts.disjoint?parts.polygons:mergePolygons(parts.polygons);
+        for(const p of polygons)yield* this.polygonSteps(p,[],0,undefined,undefined,checkpoint,undefined,i=>{
+          density![i]=edit.mode==='clear'?0:edit.mode==='thin'?density![i]!* .3:Math.min(1,density![i]!+.5);
+        });
+      }
+    }
+    const forest=this.forestSamples,coverage=forest?(i:number,fade:number)=>{
+      const value=Math.min(1,(density?.[i]??preset.density)/.8)*255;
+      forest[i]=Math.round(forest[i]!*(1-fade)+value*fade);
+    }:undefined;
+    for(const polygon of polygons)yield* this.polygonSteps(polygon,rgb,.78,'ground',undefined,checkpoint,fade,coverage);
   }
   paint(record: LandscapeRecord) {
     if(record.terrainSettings){this.terrainStyle=record.terrainSettings.style??DEFAULT_TERRAIN_STYLE;this.seaLevelM=record.terrainSettings.seaLevelM;}
@@ -98,7 +118,10 @@ export class LandscapeRasterizer {
     if(record.maskManaged)this.maskPending=true;
     const color=terrainColors[record.values.terrain];if(!color)throw new Error('Geländefarbe fehlt.');
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
-    for(const polygon of record.polygons)this.polygon(polygon,rgb,1,undefined,record.maskManaged?undefined:record.values.terrain==='water');
+    for(const polygon of record.polygons){
+      const coverage=this.forestSamples?((i:number)=>{this.forestSamples![i]=record.values.terrain==='forest'?255:0;}):undefined;
+      for(const _ of this.polygonSteps(polygon,rgb,1,undefined,record.maskManaged?undefined:record.values.terrain==='water',function*(){},undefined,coverage)){}
+    }
   }
   private applyVegetation(){
     this.applyMasks();if(!this.coverPending)return;this.coverPending=false;
@@ -256,14 +279,14 @@ export class LandscapeRasterizer {
       travel+=len;
     }
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
-    for(let i=0;i<coverage.length;i++)if(coverage[i]){const at=i*4,alpha=opacity*coverage[i]!/255,old=this.samples[at+3]!/255,combined=alpha+old*(1-alpha);for(let c=0;c<3;c++)this.samples[at+c]=Math.round((rgb[c]!*alpha+this.samples[at+c]!*old*(1-alpha))/combined);this.samples[at+3]=Math.round(combined*255);}
+    for(let i=0;i<coverage.length;i++)if(coverage[i]){const at=i*4,alpha=opacity*coverage[i]!/255,old=this.samples[at+3]!/255,combined=alpha+old*(1-alpha);for(let c=0;c<3;c++)this.samples[at+c]=Math.round((rgb[c]!*alpha+this.samples[at+c]!*old*(1-alpha))/combined);this.samples[at+3]=Math.round(combined*255);if(this.forestSamples)this.forestSamples[i]=Math.round(this.forestSamples[i]!*(1-alpha));}
   }
   paintPolygons(polygons:Polygon[],color:string,opacity=1){
     for(const _ of this.paintPolygonsSteps(polygons,color,opacity,function*(){})){}
   }
   private *paintPolygonsSteps(polygons:Polygon[],color:string,opacity:number,checkpoint:()=>Generator<void>):Generator<void>{
     if(!/^#[a-f0-9]{6}$/i.test(color))throw new Error('Darstellungsfarbe fehlt.');
-    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));for(const p of polygons)yield* this.polygonSteps(p,rgb,opacity,undefined,undefined,checkpoint);
+    const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));for(const p of polygons)yield* this.polygonSteps(p,rgb,opacity,undefined,undefined,checkpoint,undefined,this.forestSamples?(i)=>{this.forestSamples![i]=Math.round(this.forestSamples![i]!*(1-opacity));}:undefined);
   }
   paintLine(points:{x:number;y:number}[],width:number,color:string,opacity=1){
     this.applyCoast();
@@ -277,7 +300,7 @@ export class LandscapeRasterizer {
   private polygon(p: Polygon, rgb: number[], alpha=1, target?:'ground'|'water', water?:boolean) {
     for(const _ of this.polygonSteps(p,rgb,alpha,target,water,function*(){})){}
   }
-  private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>,fade?:(x:number,y:number)=>number):Generator<void>{
+  private *polygonSteps(p:Polygon,rgb:number[],alpha:number,target:'ground'|'water'|undefined,water:boolean|undefined,checkpoint:()=>Generator<void>,fade?:(x:number,y:number)=>number,coverage?:(pixel:number,fade:number)=>void):Generator<void>{
     // Opaque spans overwrite their background. Use the platform's packed byte
     // order, and retain per-pixel blending for alpha or land/water clipping.
     const opaque=alpha===1&&!target&&!fade?new Uint32Array(this.samples.buffer):null;
@@ -300,13 +323,15 @@ export class LandscapeRasterizer {
         if(opaque){
           const start=y*this.w+from,end=y*this.w+to+1;opaque.fill(packed,start,end);
           if(water!==undefined)this.water.fill(water?1:0,start,end);
+          if(coverage)for(let i=start;i<end;i++)coverage(i,1);
           continue;
         }
         for(let x=from;x<=to;x++){
           const pixel=y*this.w+x,at=pixel*4;
           if(target&&(target==='water')!==!!this.water[pixel])continue;
           if(water!==undefined)this.water[pixel]=water?1:0;
-          const opacity=alpha*(fade?.(x,y)??1);if(!opacity)continue;
+          const feather=fade?.(x,y)??1;coverage?.(pixel,feather);
+          const opacity=alpha*feather;if(!opacity)continue;
           const old=this.samples[at+3]!/255,combined=opacity+old*(1-opacity);
           for(let c=0;c<3;c++)this.samples[at+c]=Math.round((rgb[c]!*opacity+this.samples[at+c]!*old*(1-opacity))/(combined||1));
           this.samples[at+3]=Math.round(combined*255);
@@ -318,6 +343,10 @@ export class LandscapeRasterizer {
     this.applyCoast();
     for(let y=0;y<this.height;y++)for(let x=0;x<this.width;x++){
       const out=(y*this.width+x)*4,at=((y+LANDSCAPE_RASTER_PAD)*2*this.w+(x+LANDSCAPE_RASTER_PAD)*2)*4,below=at+this.w*4,s=this.samples;
+      if(this.forest&&this.forestSamples){
+        const sample=at/4,below=sample+this.w,f=this.forestSamples;
+        this.forest[y*this.width+x]=Math.round(((this.water[sample]?0:f[sample]!)+(this.water[sample+1]?0:f[sample+1]!)+(this.water[below]?0:f[below]!)+(this.water[below+1]?0:f[below+1]!))/4);
+      }
       const a=s[at+3]!,b=s[at+7]!,c=s[below+3]!,d=s[below+7]!,alpha=a+b+c+d;
       if(alpha){
         for(let channel=0;channel<3;channel++)this.pixels[out+channel]=Math.round((s[at+channel]!*a+s[at+4+channel]!*b+s[below+channel]!*c+s[below+4+channel]!*d)/alpha);
