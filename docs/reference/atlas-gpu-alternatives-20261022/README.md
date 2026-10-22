@@ -76,11 +76,37 @@ ausgeführt und zählt nicht zu diesen 35 Tests.
 
 Die beiden veränderten Produktdateien wurden auf den Ausgangsstand zurückgeführt;
 der neue Indexgenerator, seine Tests und die isolierte native Probe wurden aus
-dem Repository entfernt. Der Versuch bleibt lokal unter
+dem aktiven Quellbaum entfernt. Der Versuch bleibt lokal unter
 `~/.cache/saltmarcher/atlas-planar-rejected-20261022/` rekonstruierbar. Die hier
-abgelegten JSON-Belege sind Messprotokolle, keine dauerhaft ausführbare Suite.
+abgelegten JSON-Belege sind Messprotokolle. Der eingefrorene
+[Versuchspatch](rejected-prototype.patch) erhält den Code separat vom Produkt,
+damit eine spätere Neubewertung nicht von dieser lokalen Kopie abhängt.
 Der anschließend erneute Desktopbuild verwendet wieder den unveränderten
 Produktrenderer. Keine neue Cache-, LOD- oder Umschaltlogik bleibt zurück.
+
+## Wiederholen oder neu bewerten
+
+In einer separaten sauberen Arbeitskopie des Ausgangscommits, mit Node 22/npm:
+
+```sh
+git switch --detach 8325168224e8a6e371c593ce29f80a18eb63aab9
+npm ci
+git apply /pfad/zum/rejected-prototype.patch
+node build.mjs --test
+node --test --test-concurrency=1 tests/terrain-planar-mesh.test.mjs tests/terrain-focus-grid.test.mjs tests/terrain-ray.test.mjs tests/terrain-spatial-picking.test.mjs tests/terrain-brush-draft.test.mjs
+npm run check
+npm run build:desktop
+python3 tools/ui-session.py timeout --signal=TERM 180s node tools/test-desktop-terrain-planar-mesh.mjs
+WORLD_WARM_OPEN=1 WORLD_POPULATED=1 WORLD_LARGE=1 WORLD_MIXED=1 WORLD_READBACK=off WORLD_PROFILE=0 WORLD_DRAFT=1 WORLD_REPEAT=1 WORLD_PROGRESSIVE=1 WORLD_OVERLAY=1 QA_EVIDENCE_DIR=.build/planar-world python3 tools/ui-session.py timeout --signal=TERM 300s node tools/test-desktop-world-navigation.mjs
+```
+
+Die native Sitzung setzt einen Linux-Desktop mit GPU voraus. Abweichende Hosts
+und Treiber getrennt ausweisen. Vor einem Referenzlauf den Versuchspatch in dieser
+isolierten Arbeitskopie rückwärts anwenden, neu bauen und andere Evidence-Pfade
+verwenden; vorhandene Ergebnisse nicht überschreiben. Der Patch enthält auch den
+oben als unausgeführt ausgewiesenen zusätzlichen Test. `git apply --check` gegen
+den Ausgangsstand wurde geprüft. Eine spätere Neubewertung darf diese Ablehnung
+auf Basis neuer Vergleichsergebnisse ausdrücklich ersetzen.
 
 Nächste Entscheidung: den gesamten Weg von Eingabe bis Präsentation untersuchen
 und gekachelte Terrain-Detailstufen, GPU-Höhenfelder sowie einen Vektorkartenrenderer

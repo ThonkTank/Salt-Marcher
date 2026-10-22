@@ -1,0 +1,285 @@
+diff --git a/src/app/terrain-mesh-indices.ts b/src/app/terrain-mesh-indices.ts
+new file mode 100644
+--- /dev/null
++++ b/src/app/terrain-mesh-indices.ts
+@@ -0,0 +1,55 @@
++import type {TerrainGrid} from './terrain-spatial-model';
++import {terrainGridLayout} from './terrain-grid-layout';
++
++type Indices=Uint16Array|Uint32Array;
++
++/** Full author topology, also restored before a provisional height edit. */
++export function terrainRegularIndices(columns:number,rows:number,indices:Indices){
++  let at=0;
++  for(let y=0;y<rows-1;y++)for(let x=0;x<columns-1;x++){
++    const i=y*columns+x;
++    indices[at++]=i;indices[at++]=i+columns;indices[at++]=i+1;
++    indices[at++]=i+1;indices[at++]=i+columns;indices[at++]=i+columns+1;
++  }
++  return at;
++}
++
++/** Collapse only planar patches, retaining every boundary sample. Adjacent
++ * patches therefore share identical edge segments, including focus-band seams.
++ * No height, UV, source sample or picking topology is resampled. Each sample
++ * must lie within 10 µm of the plane, bounding the difference between the two
++ * interpolated surfaces to 20 µm before GPU rounding, independently of zoom.
++ * Curved patches keep the original diagonal in every cell. The caller owns one
++ * bounded, reusable index buffer. */
++export function terrainPlanarIndices(grid:TerrainGrid,indices:Indices){
++  const {view,heights}=grid,{x,y}=terrainGridLayout(view),columns=view.columns;
++  let at=0;
++  function triangle(a:number,b:number,c:number){indices[at++]=a;indices[at++]=b;indices[at++]=c;}
++  function visit(left:number,top:number,right:number,bottom:number){
++    const width=right-left,height=bottom-top;
++    if(width>=4&&height>=4){
++      const z=heights[top*columns+left]!,ox=x.values[left]!,oy=y.values[top]!;
++      const sx=(heights[top*columns+right]!-z)/(x.values[right]!-ox),sy=(heights[bottom*columns+left]!-z)/(y.values[bottom]!-oy);
++      let planar=true;
++      outer:for(let row=top;row<=bottom;row++)for(let column=left;column<=right;column++){
++        if(Math.abs(heights[row*columns+column]!-(z+(x.values[column]!-ox)*sx+(y.values[row]!-oy)*sy))>1e-5){planar=false;break outer;}
++      }
++      if(planar){
++        const center=Math.floor((top+bottom)/2)*columns+Math.floor((left+right)/2);
++        for(let row=top;row<bottom;row++)triangle(center,row*columns+left,(row+1)*columns+left);
++        for(let column=left;column<right;column++)triangle(center,bottom*columns+column,bottom*columns+column+1);
++        for(let row=bottom;row>top;row--)triangle(center,row*columns+right,(row-1)*columns+right);
++        for(let column=right;column>left;column--)triangle(center,top*columns+column,top*columns+column-1);
++        return;
++      }
++      const mx=Math.floor((left+right)/2),my=Math.floor((top+bottom)/2);
++      visit(left,top,mx,my);visit(mx,top,right,my);visit(left,my,mx,bottom);visit(mx,my,right,bottom);
++      return;
++    }
++    for(let row=top;row<bottom;row++)for(let column=left;column<right;column++){
++      const i=row*columns+column;triangle(i,i+columns,i+1);triangle(i+1,i+columns,i+columns+1);
++    }
++  }
++  visit(0,0,view.columns-1,view.rows-1);
++  return at;
++}
+diff --git a/src/app/terrain-surface-mesh.ts b/src/app/terrain-surface-mesh.ts
+--- a/src/app/terrain-surface-mesh.ts
++++ b/src/app/terrain-surface-mesh.ts
+@@ -6,6 +6,7 @@
+ import {terrainContourMaterial,terrainContourUniforms} from './terrain-contours';
+ import {terrainGridLayout} from './terrain-grid-layout';
+ import {uploadTerrainTexture} from './terrain-texture-upload';
++import {terrainPlanarIndices,terrainRegularIndices} from './terrain-mesh-indices';
+ 
+ type Mesh=THREE.Mesh<THREE.BufferGeometry,THREE.MeshBasicMaterial>;
+ function terrainTexture(data:SpatialReply){
+@@ -14,7 +15,7 @@
+ }
+ 
+ /** Own buffer/texture replacement while retaining the mesh and its shader.
+- * Topology depends on sample counts, not world bounds or image resolution.
++ * Buffer capacity depends on sample counts; planar patches use fewer indices.
+  * Changed domains still overwrite every vertex/UV; only confirmed deltas may
+  * leave old samples in place. */
+ export function updateTerrainMesh(mesh:Mesh|null,data:SpatialReply,previous:TerrainGrid|null,oldOrigin:Point,origin:Point,
+@@ -35,9 +36,6 @@
+     geometry.setAttribute('uv',new THREE.BufferAttribute(new Float32Array(v.columns*v.rows*2),2));
+     geometry.setAttribute('terrainElevation',new THREE.BufferAttribute(g.heights.slice(),1));
+     const indices=v.columns*v.rows>65535?new Uint32Array((v.columns-1)*(v.rows-1)*6):new Uint16Array((v.columns-1)*(v.rows-1)*6);
+-    let at=0;for(let y=0;y<v.rows-1;y++)for(let x=0;x<v.columns-1;x++){
+-      const i=y*v.columns+x;indices[at++]=i;indices[at++]=i+v.columns;indices[at++]=i+1;indices[at++]=i+1;indices[at++]=i+v.columns;indices[at++]=i+v.columns+1;
+-    }
+     geometry.setIndex(new THREE.BufferAttribute(indices,1));
+   }else{
+     const position=geometry.getAttribute('position') as THREE.BufferAttribute,elevation=geometry.getAttribute('terrainElevation') as THREE.BufferAttribute;
+@@ -56,7 +54,11 @@
+     }
+     uv.clearUpdateRanges();uv.needsUpdate=true;
+   }
+-  if(rects.length)geometry.computeBoundingSphere();
++  if(rects.length){
++    geometry.computeBoundingSphere();
++    const index=geometry.index!,count=terrainPlanarIndices(g,index.array as Uint16Array|Uint32Array);
++    index.clearUpdateRanges();index.addUpdateRange(0,count);index.needsUpdate=true;geometry.setDrawRange(0,count);
++  }
+   if(!mesh){
+     const material=new THREE.MeshBasicMaterial({map:terrainTexture(data),side:THREE.FrontSide});terrainContourMaterial(material,contours);
+     mesh=new THREE.Mesh(geometry,material);
+@@ -73,3 +75,13 @@
+   contours.terrainContourSea.value=g.seaLevelM;contours.terrainContourInk.value.set(data.contourInk??'#685639');
+   return {mesh,rects};
+ }
++
++/** A draft may bend a previously planar patch. Restore its author triangles
++ * once before the first changed vertex, reusing the existing GPU index buffer. */
++export function restoreTerrainAuthorIndices(geometry:THREE.BufferGeometry,grid:TerrainGrid){
++  const count=(grid.view.columns-1)*(grid.view.rows-1)*6;
++  if(geometry.drawRange.count===count)return;
++  const index=geometry.index!;
++  terrainRegularIndices(grid.view.columns,grid.view.rows,index.array as Uint16Array|Uint32Array);
++  index.clearUpdateRanges();index.addUpdateRange(0,count);index.needsUpdate=true;geometry.setDrawRange(0,count);
++}
+diff --git a/src/app/terrain-spatial-view.ts b/src/app/terrain-spatial-view.ts
+--- a/src/app/terrain-spatial-view.ts
++++ b/src/app/terrain-spatial-view.ts
+@@ -7,7 +7,7 @@
+ import {TerrainObjectLayer} from './terrain-object-view';
+ import {bounds} from './atlas-landscape';
+ import {terrainBoxesOverlap} from './terrain-cache';
+-import {updateTerrainMesh} from './terrain-surface-mesh';
++import {updateTerrainMesh,restoreTerrainAuthorIndices} from './terrain-surface-mesh';
+ import {TerrainDetailMaterial} from './terrain-detail-material';
+ import {sameTerrainIdentity,type TerrainFrameIdentity} from './terrain-frame';
+ import type {LandscapeRecord} from './atlas-landscape';
+@@ -134,6 +134,7 @@
+     if(!this.mesh||!this.grid?.editing)return false;
+     this.brushDraft??=new TerrainBrushDraft(this.grid);
+     if(!this.brushDraft.update(stroke))return false;
++    restoreTerrainAuthorIndices(this.mesh.geometry,this.grid);
+     this.draftMaterial!.update(this.mesh,this.brushDraft.grid,this.brushDraft.ground,this.brushDraft.changedRect);
+     this.grid=this.brushDraft.grid;this.contourSlope=Math.max(this.contourSlope,terrainContourSlope(this.grid,this.brushDraft.changedRect));
+     this.heightRange=Math.max(this.heightRange,this.brushDraft.maximumHeight);
+diff --git a/tests/terrain-planar-mesh.test.mjs b/tests/terrain-planar-mesh.test.mjs
+new file mode 100644
+--- /dev/null
++++ b/tests/terrain-planar-mesh.test.mjs
+@@ -0,0 +1,67 @@
++import {test} from 'node:test';
++import assert from 'node:assert/strict';
++import {buildSync} from 'esbuild';
++import {createRequire} from 'node:module';
++buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-mesh-indices';export * from './src/app/terrain-grid-layout';export * from './src/app/terrain-surface-mesh';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-contours';export * from './src/app/terrain-draft-material';export * as THREE from 'three';"},outfile:'.build/terrain-planar-mesh-test.cjs',bundle:true,platform:'node',format:'cjs'});
++const {terrainPlanarIndices,terrainRegularIndices,terrainGridLayout,updateTerrainMesh,restoreTerrainAuthorIndices,terrainContourUniforms,gridHeight,TerrainDraftMaterial,THREE}=createRequire(import.meta.url)('../.build/terrain-planar-mesh-test.cjs');
++function fixture(columns=33,rows=33){
++ const view={columns,rows,box:{x:-300,y:-240,width:600,height:480},frame:{x:-200,y:-160,width:400,height:320},refinement:{x:-150,y:-120,width:300,height:240},focusM:100,tilt:0,rotation:0,exaggeration:1};
++ return {view,heights:new Float32Array(columns*rows).fill(100),seaLevelM:0};
++}
++const data=grid=>({grid,width:2,height:2,pixels:new Uint8Array(16).fill(255)});
++function mesh(grid){return updateTerrainMesh(null,data(grid),null,{x:0,y:0},{x:0,y:0},undefined,terrainContourUniforms()).mesh;}
++function dispose(m){m.geometry.dispose();m.material.map.dispose();m.material.dispose();}
++
++test('world-sized empty sea draws under one percent of the author triangles without removing samples',()=>{
++ const grid=fixture(257,257),m=mesh(grid),full=256*256*6;
++ assert(m.geometry.drawRange.count<full/100);assert.equal(m.geometry.getAttribute('position').count,257*257);
++ assert.equal(m.geometry.index.array.length,full);dispose(m);
++});
++test('non-square planar and partly curved fields retain ray heights, winding and watertight shared edges',()=>{
++ for(const curved of [false,true]){
++  const g=fixture(37,29),l=terrainGridLayout(g.view),n=g.view.columns;
++  for(let row=0;row<g.view.rows;row++)for(let col=0;col<n;col++)g.heights[row*n+col]=100+(curved?Math.max(0,30-Math.hypot(col-13,row-13)*6):0);
++  const m=mesh(g);m.updateMatrixWorld(true);const indices=m.geometry.index.array,count=m.geometry.drawRange.count,edges=new Map();
++  for(let i=0;i<count;i+=3){
++   const tri=Array.from(indices.subarray(i,i+3));
++   const points=tri.map(j=>({x:l.x.values[j%n],y:l.y.values[Math.floor(j/n)]}));
++   assert((points[1].x-points[0].x)*(points[2].y-points[0].y)-(points[1].y-points[0].y)*(points[2].x-points[0].x)<0,'front-facing, nondegenerate');
++   for(let j=0;j<3;j++){const a=tri[j],b=tri[(j+1)%3],key=[Math.min(a,b),Math.max(a,b)].join(':');edges.set(key,(edges.get(key)??0)+1);}
++  }
++  for(const [key,uses]of edges){const [a,b]=key.split(':').map(Number),ax=a%n,ay=Math.floor(a/n),bx=b%n,by=Math.floor(b/n);const boundary=ax===bx&&(ax===0||ax===n-1)||ay===by&&(ay===0||ay===g.view.rows-1);assert.equal(uses,boundary?1:2,key);}
++  for(let row=0;row<g.view.rows-1;row++)for(let col=0;col<n-1;col++)for(const [u,v]of [[.13,.23],[.83,.77]]){
++   const p={x:l.x.values[col]*(1-u)+l.x.values[col+1]*u,y:l.y.values[row]*(1-v)+l.y.values[row+1]*v};
++   const hits=new THREE.Raycaster(new THREE.Vector3(p.x,-p.y,1000),new THREE.Vector3(0,0,-1)).intersectObject(m);
++   assert(hits.length);assert(Math.abs(hits[0].point.z+g.view.focusM-gridHeight(g,p))<.00003);
++  }
++  dispose(m);
++ }
++});
++test('a one-sample ridge cannot disappear inside an otherwise planar patch',()=>{
++ const g=fixture(),n=g.view.columns;g.heights[17*n+21]=200;
++ const indices=new Uint16Array((n-1)*(n-1)*6),count=terrainPlanarIndices(g,indices);
++ assert(indices.subarray(0,count).includes(17*n+21));assert(count<indices.length);
++});
++test('sloping planes preserve their elevation gradient and UV coordinates across nonuniform focus bands',()=>{
++ const g=fixture(),l=terrainGridLayout(g.view),n=g.view.columns;
++ for(let row=0;row<g.view.rows;row++)for(let col=0;col<n;col++)g.heights[row*n+col]=100+l.x.values[col]*.125+l.y.values[row]*.25;
++ const m=mesh(g);m.updateMatrixWorld(true);assert(m.geometry.drawRange.count<m.geometry.index.count/4);
++ for(let x=-299;x<300;x+=23)for(let y=-239;y<240;y+=29){
++  const hit=new THREE.Raycaster(new THREE.Vector3(x,-y,1000),new THREE.Vector3(0,0,-1)).intersectObject(m)[0];
++  assert(hit);assert(Math.abs(hit.point.z+100-gridHeight(g,{x,y}))<.00003);
++  assert(Math.abs(hit.uv.x-(x+300)/600)<1e-7);assert(Math.abs(hit.uv.y-(y+240)/480)<1e-7);
++ }
++ dispose(m);
++});
++test('restoring author indices precedes a draft bend, reuses the buffer, and confirmed flat data compacts again',()=>{
++ const g=fixture(),m=mesh(g),geometry=m.geometry,index=geometry.index,position=geometry.getAttribute('position');
++ g.editing={ground:g.heights.slice(),water:new Float32Array(g.heights.length)};
++ const draft=new TerrainDraftMaterial();draft.attach(m,g);restoreTerrainAuthorIndices(geometry,g);
++ assert.equal(geometry.drawRange.count,index.count);const expected=new Uint16Array(index.count);terrainRegularIndices(g.view.columns,g.view.rows,expected);assert.deepEqual(index.array,expected);
++ const version=index.version;restoreTerrainAuthorIndices(geometry,g);assert.equal(index.version,version,'once per draft, not every move');
++ const changed={...g,heights:g.heights.slice()},at=16*g.view.columns+16;changed.heights[at]=500;
++ draft.update(m,changed,changed.heights,{x:16,y:16,width:1,height:1});m.updateMatrixWorld(true);
++ const hit=new THREE.Raycaster(new THREE.Vector3(0,0,1000),new THREE.Vector3(0,0,-1)).intersectObject(m)[0];assert(Math.abs(hit.point.z-400)<.001);
++ updateTerrainMesh(m,data(g),g,{x:0,y:0},{x:0,y:0},undefined,terrainContourUniforms());
++ assert.equal(m.geometry,geometry);assert.equal(geometry.index,index);assert.equal(geometry.getAttribute('position'),position);assert(geometry.drawRange.count<index.count);dispose(m);
++});
+diff --git a/tools/test-desktop-terrain-planar-mesh.mjs b/tools/test-desktop-terrain-planar-mesh.mjs
+new file mode 100644
+--- /dev/null
++++ b/tools/test-desktop-terrain-planar-mesh.mjs
+@@ -0,0 +1,71 @@
++import {buildSync} from 'esbuild';
++import assert from 'node:assert/strict';
++import {writeFile} from 'node:fs/promises';
++import path from 'node:path';
++import {createNativeSession} from './native-session.mjs';
++
++// Compare the production surface with its full author triangulation in the same
++// native GPU context. Timer pairs alternate order; no readback between A and B.
++const probe=buildSync({stdin:{resolveDir:process.cwd(),contents:`
++ import {TerrainSpatialView} from './src/app/terrain-spatial-view';
++ import {terrainRegularIndices} from './src/app/terrain-mesh-indices';
++ import {terrainGridLayout} from './src/app/terrain-grid-layout';
++ export async function run(){
++  const canvas=document.createElement('canvas');canvas.style.cssText='position:fixed;left:0;top:0;width:960px;height:720px;z-index:999999';document.body.append(canvas);
++  const view=new TerrainSpatialView(canvas,1),gl=view.renderer.getContext(),ext=gl.getExtension('EXT_disjoint_timer_query_webgl2');
++  const tick=()=>new Promise(r=>requestAnimationFrame(r));
++  const read=()=>{const bytes=new Uint8Array(canvas.width*canvas.height*4);gl.readPixels(0,0,canvas.width,canvas.height,gl.RGBA,gl.UNSIGNED_BYTE,bytes);return bytes;};
++  const measurements=[],images=[],timings=[];let reference;
++  try{
++   for(const scale of [1,100000])for(const field of ['sea','island','waves']){
++    const frame={x:-200*scale,y:-150*scale,width:400*scale,height:300*scale};
++    const pose={box:{x:-600*scale,y:-600*scale,width:1200*scale,height:1200*scale},frame,refinement:{x:-300*scale,y:-225*scale,width:600*scale,height:450*scale},columns:257,rows:257,focusM:0,tilt:0,rotation:0,exaggeration:1};
++    const l=terrainGridLayout(pose),height=(x,y)=>field==='sea'?0:field==='waves'?40+30*Math.sin(x/60)*Math.cos(y/40):Math.max(0,40*(1-Math.hypot(x/160,y/110)));
++    const heights=Float32Array.from({length:257*257},(_,i)=>height(l.x.values[i%257]/scale,l.y.values[Math.floor(i/257)]/scale));
++    const pixels=new Uint8Array(128*128*4),forest=new Uint8Array(128*128);
++    for(let y=0;y<128;y++)for(let x=0;x<128;x++){
++     const at=y*128+x,h=height((x+.5)/128*1200-600,(y+.5)/128*1200-600),color=h>0?[175+Math.min(45,h),185,130]:[107,166,185];
++     pixels.set([...color,255],at*4);forest[at]=h>0?170:0;
++    }
++    view.setData({generation:0,source:'planar-probe',draft:false,grid:{view:pose,heights,seaLevelM:0},width:128,height:128,pixels,forest});view.setContours(-1);
++    const compact=view.mesh.geometry;reference=compact.clone();const index=reference.index;
++    terrainRegularIndices(257,257,index.array);index.needsUpdate=true;reference.setDrawRange(0,index.count);
++    for(const [tilt,rotation] of [[0,0],[45,23],[70,-47]])for(const tile of [false,true]){
++     view.reframe(frame,tilt,rotation,false);
++     const draw=geometry=>{view.mesh.geometry=geometry;if(tile)view.renderTile(1920,1440,480,360,960,720);else view.render();};
++     draw(reference);const expected=read();draw(compact);const actual=read();let max=0,changed=0,large=0,total=0;
++     for(let i=0;i<actual.length;i+=4){let pixel=0;for(let c=0;c<3;c++){const d=Math.abs(actual[i+c]-expected[i+c]);max=Math.max(max,d);pixel=Math.max(pixel,d);total+=d;}if(pixel)changed++;if(pixel>2)large++;}
++     measurements.push({scale,field,tilt,rotation,tile,indices:compact.drawRange.count,full:index.count,max,changed,large,mean:total/(canvas.width*canvas.height*3)});
++     if(field==='island'&&scale===1&&tilt===45&&!tile)images.push({name:'island',data:canvas.toDataURL('image/png')});
++    }
++    view.reframe(frame,0,0,false);
++    if(ext){
++     for(let i=0;i<20;i++){await tick();view.mesh.geometry=reference;view.render();view.mesh.geometry=compact;view.render();}
++     const pending=[];
++     for(let i=0;i<40;i++){
++      await tick();const pair={};
++      for(const [name,geometry] of (i%2?[['compact',compact],['reference',reference]]:[['reference',reference],['compact',compact]])){
++       view.mesh.geometry=geometry;const q=gl.createQuery();gl.beginQuery(ext.TIME_ELAPSED_EXT,q);view.render();gl.endQuery(ext.TIME_ELAPSED_EXT);pair[name]=q;
++      }pending.push(pair);
++     }
++     while(pending.some(p=>!gl.getQueryParameter(p.reference,gl.QUERY_RESULT_AVAILABLE)||!gl.getQueryParameter(p.compact,gl.QUERY_RESULT_AVAILABLE)))await tick();
++     if(gl.getParameter(ext.GPU_DISJOINT_EXT))throw Error('Disjoint GPU timers');
++     const samples=pending.map(p=>{const a=gl.getQueryParameter(p.reference,gl.QUERY_RESULT)/1e6,b=gl.getQueryParameter(p.compact,gl.QUERY_RESULT)/1e6;gl.deleteQuery(p.reference);gl.deleteQuery(p.compact);return{reference:a,compact:b,ratio:b/a};});
++     const median=key=>samples.map(s=>s[key]).sort((a,b)=>a-b)[20];timings.push({scale,field,referenceMedian:median('reference'),compactMedian:median('compact'),ratioMedian:median('ratio'),samples});
++    }
++    view.mesh.geometry=compact;reference.dispose();reference=undefined;
++   }
++   if(gl.getError())throw Error('WebGL error');return{measurements,timings,images};
++  }finally{reference?.dispose();view.dispose();canvas.remove();}
++ }
++ `},bundle:true,format:'iife',globalName:'PlanarMeshProbe',write:false}).outputFiles[0].text;
++const output=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/terrain-planar-mesh');
++const native=await createNativeSession({output,name:'terrain-planar-mesh'});
++try{
++ const page=await native.launch(),result=await page.evaluate('(async()=>{'+probe+';return PlanarMeshProbe.run();})()');
++ for(const image of result.images)await writeFile(path.join(output,image.name+'.png'),Buffer.from(image.data.split(',')[1],'base64'));delete result.images;
++ await writeFile(path.join(output,'measurements.json'),JSON.stringify(result,null,2));
++ // Permit only isolated rasterisation edge pixels, not shifted lines or seams.
++ for(const row of result.measurements){assert(row.mean<.001,JSON.stringify(row));assert(row.large<10,JSON.stringify(row));assert(row.max<=16,JSON.stringify(row));}
++ await native.close();await native.finish(result);console.log(JSON.stringify({measurements:result.measurements,timings:result.timings.map(({samples,...r})=>r)}));
++}catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

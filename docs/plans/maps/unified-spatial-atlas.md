@@ -35,6 +35,8 @@ Produkteinstieg; technische Prototypen sind keine zweite Produktansicht.
 Jeder Arbeitszyklus berichtet im Chat die belegten Hauptprobleme, mindestens
 drei Optionen mit Vor-/Nachteilen und Auswahl, anschließend Verbesserungen,
 Rückschritte und unveränderte Punkte sowie die konkrete Aufräumarbeit.
+Tests und Ergebnisse müssen nachvollziehbar und reproduzierbar abgelegt werden;
+frühere Tests und Entscheidungen dürfen mit neuer Evidenz neu bewertet werden.
 
 Bestehende, bewährte Implementierungen und Verfahren sind vor neuen eigenen Lösungen zu prüfen und soweit passend zu übernehmen. Die Verbesserung bleibt in der vorhandenen Atlasfläche und ihren Werkzeugen verankert. Für den nächsten Terrain-Schritt dienen insbesondere [GDALs begrenzter Rasterblockcache](https://gdal.org/en/stable/user/configoptions.html#performance-and-caching), [mehrstufige Rasterübersichten mit gezielter Aktualisierung](https://gdal.org/en/stable/programs/gdaladdo.html) und [MapLibres dokumentierter Kachellebenszyklus](https://github.com/maplibre/maplibre-gl-js/blob/main/developer-guides/life-of-a-tile.md) als technische Referenzen: wiederholte Blocklesungen vermeiden, passende Auflösung wählen und bereits geladene über-/untergeordnete Kacheln während des Nachladens verwenden. Die Quellen wurden am 21.10.2026 gelesen; daraus folgt noch keine Entscheidung für zusätzliche Laufzeitabhängigkeiten.
 
