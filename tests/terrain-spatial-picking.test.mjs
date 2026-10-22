@@ -39,6 +39,8 @@ test('fine brush texture is reused independently and shader blending leaves dist
  const detail={box,width:256,height:256,pixels:new Uint8Array(256*256*4)};
  state.setData({...data,identity,detail});state.freezePicking(true);
  const texture=state.detail.detailTexture,picker=state.picker,geometry=state.mesh.geometry,shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <map_fragment>'};
+ // This checks shader assembly, not canvas pattern pixels (covered natively).
+ state.detail.forestPattern.texture=new THREE.Texture();
  state.mesh.material.onBeforeCompile(shader);assert.match(shader.fragmentShader,/fineUV/);assert.match(shader.fragmentShader,/smoothstep/);
  const pixels=detail.pixels.slice();pixels[40]=255;
  state.setData({...data,identity:{...identity,revision:2,fence:'two'},detail:{...detail,pixels},update:{base:identity,heights:[],pixels:[],detail:[{x:10,y:0,width:1,height:1}]}});
@@ -121,4 +123,40 @@ test('semantic room names use the same floor anchor as geometry',()=>{
  const name={point:{x:13,y:24},workplane:{scopeId:'house',elevationM:6,anchor:{x:0,y:0}}};
  assert.deepEqual(labels.anchor(name).toArray(),[3,-4,32]);
  assert.deepEqual(labels.anchor({...name,workplane:undefined}).toArray(),[3,-4,190],'ordinary map names stay attached to terrain');labels.dispose();
+});
+
+
+test('world-hidden roads wait for visibility and use the latest terrain without a new read',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'deferred-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-50,y:c.y},{x:c.x+50,y:c.y}],polygons:[],width:2,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});
+ assert.equal(state.routes.length,0,'hidden ribbons allocate no meshes');assert.equal(state.routeState.get(road.id).pending,true);
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0},heights:new Float32Array(data.grid.heights.length).fill(320)},routes:[road]});
+ assert.equal(state.routes.length,0);
+ state.reframe({x:c.x-500,y:c.y-400,width:1000,height:800},0,0);
+ assert(state.routes.length>0,'retained route appears on the camera update alone');assert.equal(state.routeState.get(road.id).pending,false);
+ for(const mesh of state.routes.filter(m=>!m.userData.routeOverview)){
+  const vertices=mesh.geometry.getAttribute('position').array;
+  for(let i=2;i<vertices.length;i+=3)assert(Math.abs(vertices[i]-400.025)<.001,'newly visible geometry uses the latest terrain');
+ }
+ const meshes=state.routes;let disposed=0;for(const m of meshes)m.geometry.addEventListener('dispose',()=>disposed++);
+ state.reframe(v.frame,0,0);assert.equal(state.routes,meshes,'created geometry survives camera motion');assert(state.routes.every(m=>!m.visible));
+ state.reframe({x:c.x-500,y:c.y-400,width:1000,height:800},0,0);assert.equal(state.routes,meshes);assert(state.routes.some(m=>m.visible));
+ state.setData({...data,routes:[]});assert.equal(state.routes.length,0);assert.equal(state.routeState.size,0);assert.equal(disposed,meshes.length);
+});
+
+test('removed pending roads never reappear on zoom or export',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'removed-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-50,y:c.y},{x:c.x+50,y:c.y}],polygons:[],width:2,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});assert.equal(state.routes.length,0);
+ state.setData({...data,routes:[]});state.reframe({x:c.x-50,y:c.y-40,width:100,height:80},0,0);state.renderTile(6000,4000,0,0,1000,1000);
+ assert.equal(state.routes.length,0);assert.equal(state.routeState.size,0);
+});
+
+test('high-resolution output reveals deferred roads using output pixels and retains the editor pose',()=>{
+ const {state,data}=fixture(),v=data.grid.view,c={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
+ const road={id:'export-road',revision:1,kind:'road',name:'Road',points:[{x:c.x-500,y:c.y},{x:c.x+500,y:c.y}],polygons:[],width:20,resolution:1,values:{}};
+ state.setData({...data,grid:{...data.grid,view:{...v,tilt:0}},routes:[road]});assert.equal(state.routes.length,0);
+ const frame=structuredClone(state.grid.view.frame);state.renderTile(6000,4000,0,0,1000,1000);assert(state.routes.some(m=>m.visible));
+ state.render();assert(state.routes.every(m=>!m.visible));assert.deepEqual(state.grid.view.frame,frame);
 });

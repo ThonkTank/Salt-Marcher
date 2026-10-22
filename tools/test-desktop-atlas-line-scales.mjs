@@ -18,13 +18,19 @@ store.tutorial('skipped');store.close();
 const db=new (require('better-sqlite3'))(native.profile+'/workbench.sqlite',{readonly:true}),authors=()=>JSON.stringify(db.prepare('SELECT id,revision,payload FROM atlas_landscape ORDER BY id').all()),before=authors();
 let page;const samples=[];
 try{
- page=await native.launch();await page.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-6000,y:-4000,width:12000,height:8000})),campaign.id);
+ const initial=process.env.ROUTE_WORLD_START==='1'?80000:12000;
+ page=await native.launch();await page.evaluate(({id,width})=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-width/2,y:-width/3,width,height:width*2/3})),{id:campaign.id,width:initial});
  await page.locator('.campaign-card').filter({hasText:'Straßenmaßstäbe'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
  await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);
  if(await page.locator('#campaign-atlas').isHidden()){if(!await page.locator('#atlas-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#atlas-tab').click();}
  await atlasCanvasReady(page);await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
  const canvas=await page.locator('#atlas-terrain-spatial').elementHandle();
  const snap=async name=>{samples.push({name,...await page.locator('#campaign-map').evaluate(el=>({projection:JSON.parse(el.dataset.terrainProjection),quality:el.dataset.terrainQuality,css:{width:el.clientWidth,height:el.clientHeight}}))});await native.capture(page,name+'.png');};
+ if(process.env.ROUTE_WORLD_START==='1'){
+  await snap('00-world');const box=await page.locator('#campaign-map').boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+  for(let i=0;i<20;i++){if(await page.locator('#campaign-map').evaluate(el=>JSON.parse(el.dataset.terrainProjection).frame.width)<=12000)break;await page.mouse.wheel(0,-360);await page.waitForTimeout(100);}
+  await atlasCanvasReady(page);
+ }
  await snap('01-regional');
  if(process.env.ROUTE_DISPLAY_VERIFY==='1'){
   const bounds=await page.locator('#campaign-map').boundingBox(),view=JSON.parse(await page.locator('#campaign-map').getAttribute('data-terrain-projection')),point=projectTerrain(view,{x:-2000,y:-60},50);

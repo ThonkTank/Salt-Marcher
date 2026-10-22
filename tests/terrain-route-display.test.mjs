@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-route-display';export * from './src/app/terrain-route-view';export * from './src/app/atlas-landscape';export * from './src/app/landscape-line';export * from './src/app/terrain-route';export {PerspectiveCamera,Raycaster,Vector2} from 'three';"},outfile:'.build/terrain-route-display-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {routeDisplayVisible,routeDisplayOpacity,routeMeshes,emptyRecord,newLine,routeSpec,PerspectiveCamera,Raycaster,Vector2}=createRequire(import.meta.url)('../.build/terrain-route-display-test.cjs');
+const {routeMayDraw,routeDisplayVisible,routeDisplayOpacity,routeMeshes,emptyRecord,newLine,routeSpec,PerspectiveCamera,Raycaster,Vector2}=createRequire(import.meta.url)('../.build/terrain-route-display-test.cjs');
 const road=()=>({...emptyRecord('road'),id:'road',width:2,line:{...newLine('road'),style:'solid',curve:'linear',roughness:0},points:[{x:-100,y:0},{x:100,y:0}]});
 const dispose=meshes=>meshes.forEach(m=>{m.geometry.dispose();m.material.dispose();});
 test('semantic visibility and overview handoff vary continuously and keep important routes available',()=>{
@@ -50,4 +50,26 @@ test('world-scale invisible routes skip draw calls and reappear without rebuildi
  const selected=routeMeshes(r,()=>0,{x:0,y:0,z:0},1,10,true);at(1e8);assert(selected.some(m=>routeDisplayVisible(m,camera,1000)),'selected routes remain visible');
  // A long route can extend much nearer than its centre. Culling must use its bound.
  const mesh=meshes.find(m=>m.userData.routeOverview);mesh.geometry.boundingSphere.radius=1e8;assert(routeDisplayVisible(mesh,camera,1000));dispose(meshes);dispose(selected);
+});
+
+
+test('preflight only defers zero-opacity ground routes across camera poses and output sizes',()=>{
+ const r=road(),box={x:-100,y:-100,width:200,height:200},origin={x:0,y:0},camera=new PerspectiveCamera(45,1,.001,1e9);
+ let skipped=0,visible=0;
+ for(const elevation of [-20,0,20])for(const distance of [100,1000,100000,1e8])for(const tilt of [0,.5,1.1])for(const pixels of [300,1000,6000]){
+  camera.position.set(0,-Math.sin(tilt)*distance,Math.cos(tilt)*distance);camera.lookAt(0,0,0);camera.updateMatrixWorld();camera.updateProjectionMatrix();
+  const may=routeMayDraw(r,camera,pixels,box,origin,20,2);
+  if(may){visible++;continue;}skipped++;
+  const meshes=routeMeshes(r,()=>elevation,{...origin,z:0},2,10,false,box);
+  for(const mesh of meshes.filter(m=>!m.userData.routeOverview)){
+   const a=mesh.geometry.getAttribute('position'),m=camera.matrixWorldInverse.elements;
+   for(let i=0;i<a.count;i++){
+    const depth=-(m[2]*a.getX(i)+m[6]*a.getY(i)+m[10]*a.getZ(i)+m[14]);
+    assert.equal(routeDisplayOpacity(r.width*camera.projectionMatrix.elements[5]*pixels*.5/Math.max(1e-6,depth),.18,false),0);
+   }
+  }dispose(meshes);
+ }
+ assert(skipped>30);assert(visible>30);
+ camera.position.set(0,0,1e8);camera.lookAt(0,0,0);camera.updateMatrixWorld();
+ assert(routeMayDraw({...r,route:routeSpec('road',r.points)},camera,1000,box,origin,20,2),'planned routes keep portals and conflict/selection indicators');
 });

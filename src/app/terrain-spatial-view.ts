@@ -26,6 +26,7 @@ import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
 import {terrainRaycast} from './terrain-ray';
 import {TerrainHexGrid} from './terrain-hex-grid';
 import {TerrainRouteVisibility} from './terrain-route-visibility';
+import {routeMayDraw} from './terrain-route-display';
 import {TerrainRing} from './terrain-ring';
 
 /** Derived GPU surface only. Every position is relative to the shared camera centre. */
@@ -46,7 +47,7 @@ export class TerrainSpatialView {
   private cursor=new TerrainRing('#a65f30');
   private selection=new TerrainRing('#e68a28');
   private routes:THREE.Mesh[]=[];
-  private routeState=new Map<string,{key:string;meshes:THREE.Mesh[]}>();
+  private routeState=new Map<string,{key:string;meshes:THREE.Mesh[];record:LandscapeRecord;pending:boolean;selected:boolean}>();
   private routeVisibility=new TerrainRouteVisibility();
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
@@ -169,10 +170,7 @@ export class TerrainSpatialView {
       const key=JSON.stringify([r,transform,data.protectedLimit]),old=this.routeState.get(r.id);
       if(old?.key===key&&!changed.some(box=>terrainBoxesOverlap(box,bounds(r))))continue;
       if(old)dispose(old.meshes);
-      const meshes=routeMeshes(r,p=>gridHeight(g,p),{...this.origin,z:v.focusM},v.exaggeration,step/2,data.protectedLimit!==undefined&&!!r.route?.protected,v.box,terrainGridLayout(v));
-      // Route vertices already contain their complete transform. Keep these
-      // immutable matrices out of Three's per-frame scene recomposition.
-      for(const mesh of meshes){mesh.updateMatrixWorld(true);mesh.matrixAutoUpdate=false;mesh.matrixWorldAutoUpdate=false;this.scene.add(mesh);}this.routeState.set(r.id,{key,meshes});
+      this.routeState.set(r.id,{key,meshes:[],record:r,pending:true,selected:data.protectedLimit!==undefined&&!!r.route?.protected});
     }
     this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
     if(!this.objectLayer){this.objectLayer=new TerrainObjectLayer();this.scene.add(this.objectLayer.group);}
@@ -228,7 +226,17 @@ export class TerrainSpatialView {
     if(v.tilt===0){const a=v.rotation*Math.PI/180;this.camera.up.set(-Math.sin(a),Math.cos(a),0);}
     this.camera.lookAt(target);
     this.camera.clearViewOffset();this.camera.updateProjectionMatrix();this.camera.updateMatrixWorld(true);
-    this.routeVisibility.update(this.routes,this.camera,this.outputTile?.height??Math.max(1,this.canvas.clientHeight));
+    const height=this.outputTile?.height??Math.max(1,this.canvas.clientHeight);let added=false;
+    for(const state of this.routeState?.values()??[]){
+      if(!state.pending||!routeMayDraw(state.record,this.camera,height,v.box,this.origin,this.heightRange,v.exaggeration))continue;
+      const layout=terrainGridLayout(v);
+      state.meshes=routeMeshes(state.record,p=>gridHeight(this.grid!,p),{...this.origin,z:v.focusM},v.exaggeration,layout.minimumStep/2,state.selected,v.box,layout);state.pending=false;added=true;
+      // Deferred routes use the latest confirmed surface. Once created they
+      // remain available through camera motion without another worker read.
+      for(const mesh of state.meshes){mesh.updateMatrixWorld(true);mesh.matrixAutoUpdate=false;mesh.matrixWorldAutoUpdate=false;this.scene.add(mesh);}
+    }
+    if(added)this.routes=[...this.routeState.values()].flatMap(s=>s.meshes);
+    this.routeVisibility.update(this.routes,this.camera,height);
   }
   render(){
     if(this.drawBatch?.depth&&!this.outputTile){this.drawBatch.pending=true;return;}

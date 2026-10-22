@@ -67,6 +67,23 @@ export function routeDisplayVisible(mesh:THREE.Mesh,camera:THREE.Camera,height:n
  return !policy.overview||scale/farthest<1.75;
 }
 
+/** Conservative preflight for ordinary ground ribbons, before allocating their
+ * geometry. The whole loaded terrain bounds every clipped segment. Planned
+ * routes retain their bridges, tunnel portals and conflict indicators eagerly. */
+export function routeMayDraw(r:LandscapeRecord,camera:THREE.Camera,height:number,box:LandscapeBox,
+ origin:{x:number;y:number},heightRange:number,exaggeration:number){
+ if(r.route)return true;
+ const m=camera.matrixWorldInverse.elements,pad=r.width*8,
+  x0=box.x-pad-origin.x,x1=x0+box.width+pad*2,
+  y0=origin.y-box.y-box.height-pad,y1=y0+box.height+pad*2,
+  z=heightRange*Math.abs(exaggeration)+.025;
+ // Eye depth is affine; its minimum over this box occurs at a corner. The
+ // padding covers clipped endpoints, wide styles and the ribbon's miters.
+ const nearest=-m[14]!-Math.max(m[2]!*x0,m[2]!*x1)-Math.max(m[6]!*y0,m[6]!*y1)-Math.abs(m[10]!)*z;
+ const pixels=r.width*camera.projectionMatrix.elements[5]!*height*.5/Math.max(1e-6,nearest);
+ return pixels>mapLineThreshold(r.kind==='river'?'river':'road',r.style==='path'||r.style==='stream')*.5;
+}
+
 /** A simplified cartographic centreline at small scales. Tunnel gaps and bridge
  * elevations are preserved. Detailed dash/rail/worn styles remain in the ribbon. */
 export function routeOverview(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,important=false,box?:LandscapeBox,layout?:import('./terrain-grid-layout').TerrainRouteLayout){
