@@ -46,12 +46,14 @@ in der [Stadt](city.png) das regelmäßige synthetische Raster. Auf
 [Gebäudeebene](building.png) verdecken geschlossene Baukörper die Raumflächen.
 Etagenbedienung und D&D-Kartengestaltung sind nicht geprüft oder erreicht.
 
-**Alle diese Läufe erzwingen X11.** Der anschließend belegte
+**Alle diese ursprünglichen Läufe erzwingen X11.** Der anschließend belegte
 [Unterschied zum normalen Wayland-Start](../atlas-presentation-platform-20261022/README.md)
 begrenzt ihre Übertragbarkeit. Vor einer Architekturentscheidung müssen die
 vielversprechenden Kandidaten mit normalem Start und gleichwertigen Details,
 Beschriftungen und Bearbeitung erneut verglichen werden. Ein automatischer
-Leistungsgewinn durch die Integration dieser Probe ist nicht belegt.
+Leistungsgewinn durch die Integration dieser Probe ist nicht belegt. Die spätere
+[Wiederholung mit normalem Start](../atlas-presentation-platform-20261022/README.md#kartenbibliotheken-mit-normalem-start)
+verringert einen Teil der Framezeiten, erreicht das Ziel aber ebenfalls nicht.
 
 ## Ungültige Vorversuche und Korrekturen
 
@@ -79,8 +81,8 @@ mkdir -p "$HOME/.cache/saltmarcher/deck-comparison/probe"
 cp docs/reference/atlas-deck-comparison-20261022/source/package*.json "$HOME/.cache/saltmarcher/deck-comparison/"
 npm ci --ignore-scripts --no-audit --no-fund --prefix "$HOME/.cache/saltmarcher/deck-comparison"
 cp docs/reference/atlas-deck-comparison-20261022/source/main.cjs docs/reference/atlas-deck-comparison-20261022/source/index.html docs/reference/atlas-deck-comparison-20261022/source/style.css docs/reference/atlas-deck-comparison-20261022/source/probe.mjs "$HOME/.cache/saltmarcher/deck-comparison/probe/"
-cp docs/reference/atlas-deck-comparison-20261022/source/build.mjs docs/reference/atlas-deck-comparison-20261022/source/run-deck-components.mjs docs/reference/atlas-deck-comparison-20261022/source/run-deck-probe.mjs .build/
-node .build/build.mjs
+cp docs/reference/atlas-deck-comparison-20261022/source/build-deck-comparison.mjs docs/reference/atlas-deck-comparison-20261022/source/run-deck-components.mjs docs/reference/atlas-deck-comparison-20261022/source/run-deck-probe.mjs .build/
+node .build/build-deck-comparison.mjs
 QA_EVIDENCE_DIR=.build/deck-components-repeat python3 tools/ui-session.py timeout --signal=TERM 180s node .build/run-deck-components.mjs
 QA_EVIDENCE_DIR=.build/deck-visual-repeat python3 tools/ui-session.py timeout --signal=TERM 180s node .build/run-deck-probe.mjs
 ```

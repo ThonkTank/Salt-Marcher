@@ -61,7 +61,11 @@ bestanden. Die Produktanwendung und ihre Grafikoptionen wurden nicht geändert.
 
 ## Reproduzieren
 
-Die Rohtraces und CPU-Profile sind verlustfrei gzip-komprimiert abgelegt.
+Die Rohtraces, vollständigen Ergebnisse und CPU-Profile sind verlustfrei
+gzip-komprimiert abgelegt. Lesbare Ergebniszusammenfassungen werden mit
+`summarize-results.mjs PFAD/result.json.gz` daraus erzeugt; die vollständigen
+Frame-/Änderungsarrays bleiben im Archiv, statt Reviews mit rund 39.000
+zusätzlichen Zeilen zu überladen.
 Sie lassen sich nach dem Entpacken in Chromium/Perfetto bzw. DevTools öffnen.
 Die Zahlen oben berechnet:
 
@@ -100,6 +104,43 @@ Auch die bisherigen isolierten MapLibre-/deck.gl-Proben verwendeten X11.
 Ihre Ergebnisse bleiben für dieses Protokoll gültig; sie sind keine Rangfolge
 für den normalen Wayland-Start. Wiederholte, gleichwertige Detail-/Sculpt- und
 Etagenfälle fehlen weiterhin. Kein Architekturgewinner, keine Gesamtproduktabnahme.
+
+## Kartenbibliotheken mit normalem Start
+
+Die kontrollierten Komponentenfolgen wurden anschließend ohne erzwungenen
+Plattformschalter auf demselben Wayland-Desktop wiederholt. Die Engine-/Szenenquellen
+blieben unverändert; nur Startargument und Plattformmetadaten des Laufskripts
+änderten sich. Beide Prozesse endeten normal, PIDs abwesend, keine Fehler.
+
+| Frame p95 / p99 ms | MapLibre 6.15.0 | deck.gl 9.4.0 |
+| --- | --- | --- |
+| Alles | 35,1 / 92,4 | 45,1 / 123,9 |
+| Ohne Terrain | 19,6 / 61,4 | 23,8 / 24,4 |
+| Alles erneut | 25,5 / 38,5 | 35,6 / 42,5 |
+| Nur Terrain | 20,0 / 28,3 | 28,5 / 34,0 |
+| Hintergrund | 20,9 / 21,2 | 20,4 / 20,7 |
+| Leeres Electron | 16,8 / 16,8 | 16,7 / 16,8 |
+
+[MapLibre-Rohdaten](maplibre-default/result.json.gz) und
+[deck.gl-Rohdaten](deck-default/result.json.gz) enthalten die vollständigen
+Frame-/CPU-/GPU-Samples und Quellenhashes. Reproduktion nach Aufbau der jeweiligen
+[MapLibre-Fixture](../atlas-renderer-comparison-20261022/README.md) bzw.
+[deck.gl-Fixture](../atlas-deck-comparison-20261022/README.md): das jeweilige
+`maplibre-default/run.mjs` oder `deck-default/run.mjs` nach `.build/` kopieren
+und mit neuem `QA_EVIDENCE_DIR` über `tools/ui-session.py timeout --signal=TERM 180s`
+ausführen. Nicht parallel starten.
+
+Das Vergleichsproblem der nicht gleichwertigen Vektor-/Textarbeit bleibt bestehen;
+keine Engine-Rangfolge ableiten. Die Verbesserung mehrerer Werte gegenüber X11
+bestätigt die Bedeutung des Startpfads; beide Szenen verfehlen weiterhin das
+16,7-ms-Ziel und zeigen Ausreißer. Ein Wiederholungslauf ersetzt keine Statistik.
+
+Im Produktrace bleibt darüber hinaus synchrone Style-/Layoutarbeit offen:
+`regionQuery → refresh` löste unter Wayland acht Styleberechnungen mit zusammen
+58 ms und acht Layouts mit 7,55 ms aus. Ein weiterer Stylelauf stammt aus dem
+`maxWidth`-Callback während `advanceZoom`. Diese Stellen lesen `clientWidth`/
+`clientHeight`; die Aufzeichnung liefert einen konkreten Prüfpunkt, noch keine
+angenommene Korrektur oder Erklärung aller Ausreißer.
 
 ## Release dieses Zyklus
 
