@@ -1,0 +1,446 @@
+[
+  {
+    "label": "before",
+    "rawPath": ".build/binding-metadata-stages/result.json",
+    "rawSha256": "216d5f8260e4949cd6f4e51993112d7739982d43ebbdfe9e296a49203e9c6ebd",
+    "source": "d2857daed76ea87b4ea3321dcf4d897cafee43a8",
+    "artifacts": {
+      "main.cjs": "f29efb111d808e1dcffc2c110ba07a7e945790e803be86687f4c530a16ca1f10",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "7aa18310ef258cfdb0213e8fb8a12d98510e7895c67f9c0863d9e7cf109d030c",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+      "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+      "ui/renderer.js": "45de3bc3d9b638cde2dd03a1bcb078607ac305194418067e0359452faa49ff4f",
+      "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+      "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 3447340,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "events": [
+      {
+        "name": "open",
+        "time": 4202.884012,
+        "mainTime": 2376.242716
+      },
+      {
+        "name": "ready",
+        "time": 15141.326313,
+        "mainTime": 13314.144142
+      },
+      {
+        "name": "down",
+        "time": 17379.998743,
+        "mainTime": 15552.116583
+      },
+      {
+        "name": "released",
+        "time": 21767.750393,
+        "mainTime": 19941.106955
+      },
+      {
+        "name": "wheel-send",
+        "time": 22774.600202,
+        "mainTime": 20947.034964
+      },
+      {
+        "name": "wheel-ack",
+        "time": 22843.864121,
+        "mainTime": 21017.393656
+      },
+      {
+        "name": "state-returned",
+        "time": 23152.407677,
+        "mainTime": 21324.483248
+      },
+      {
+        "name": "settled",
+        "time": 24611.34361,
+        "mainTime": 22783.730863
+      },
+      {
+        "name": "author-ready",
+        "time": 26947.342012,
+        "mainTime": 25120.17019
+      },
+      {
+        "name": "second-down",
+        "time": 27019.968881,
+        "mainTime": 25192.814886
+      },
+      {
+        "name": "second-released",
+        "time": 27323.421431,
+        "mainTime": 25495.543896
+      },
+      {
+        "name": "second-author-ready",
+        "time": 30335.832213,
+        "mainTime": 28508.111947
+      },
+      {
+        "name": "detail-ready",
+        "time": 43603.404959,
+        "mainTime": 41775.508257
+      }
+    ],
+    "authorState": {
+      "ready": "ready",
+      "quality": "overview",
+      "revision": "12",
+      "authorRevision": "12"
+    },
+    "secondState": {
+      "ready": "ready",
+      "quality": "interactive",
+      "revision": "14",
+      "authorRevision": "14"
+    },
+    "detailState": {
+      "ready": "ready",
+      "quality": "detail",
+      "revision": "14",
+      "authorRevision": "14",
+      "tiles": "36/36"
+    },
+    "durationsMs": {
+      "opening": 10938.442301,
+      "controls": 2843.5932170000015,
+      "author": 5179.5916190000025,
+      "secondAuthor": 3012.4107820000027
+    },
+    "maxLongTaskMs": 438,
+    "maxRecordedFrameGapMs": 517,
+    "traceDropped": {
+      "main": 0,
+      "worker": 0
+    },
+    "rendererTraceDropped": 0,
+    "regions": [
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 4,
+        "continuation": false,
+        "posted": 7861.476402,
+        "received": 12767.906626,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 7861.629567,
+              "duration": 4029.118095,
+              "revision": 4
+            },
+            {
+              "stage": "region.read",
+              "start": 11890.752611,
+              "duration": 864.3816619999998,
+              "revision": 4
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "continuation": false,
+        "posted": 21012.446286,
+        "received": 22015.050565,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21012.986375,
+              "duration": 1.1821639999980107,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 21014.173938,
+              "duration": 997.4654550000014,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "continuation": false,
+        "posted": 22816.813982,
+        "received": 23657.824025,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 22817.060706,
+              "duration": 1.3475609999986773,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 22818.418128,
+              "duration": 835.9011119999996,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 14,
+        "continuation": false,
+        "posted": 26724.516299,
+        "received": 27648.08403,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 26724.685195,
+              "duration": 1.1778790000025765,
+              "revision": 14
+            },
+            {
+              "stage": "region.read",
+              "start": 26725.885899,
+              "duration": 916.9583009999988,
+              "revision": 14
+            }
+          ],
+          "dropped": 0
+        }
+      }
+    ]
+  },
+  {
+    "label": "after",
+    "rawPath": ".build/region-cancellation-world-final/result.json",
+    "rawSha256": "e592febef860d1f73f3321918fe0a708621fd6e58aaab8cdcdf843d34e70ef26",
+    "source": "2c360dcf9704cc65ae2f237a08a4ede1d96a3cb4",
+    "artifacts": {
+      "main.cjs": "cfaa0538ab15cf99c088bde307e948232878e6fe7fbc5762b806580185b08876",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "178ea3187c3820bb7af2478888add772186160dd0b325e638e34eb594c0789a3",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+      "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+      "ui/renderer.js": "f6d287d96079e5b1d60b11effd1da58749861b7368899009f61a3cc6a0d68583",
+      "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+      "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 3458636,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "events": [
+      {
+        "name": "open",
+        "time": 4260.553354,
+        "mainTime": 2357.431792
+      },
+      {
+        "name": "ready",
+        "time": 15080.244959,
+        "mainTime": 13176.119407
+      },
+      {
+        "name": "down",
+        "time": 17263.797203,
+        "mainTime": 15359.025164
+      },
+      {
+        "name": "released",
+        "time": 21708.279233,
+        "mainTime": 19804.287184
+      },
+      {
+        "name": "wheel-send",
+        "time": 22714.395238,
+        "mainTime": 20809.424469
+      },
+      {
+        "name": "wheel-ack",
+        "time": 22751.178101,
+        "mainTime": 20846.773962
+      },
+      {
+        "name": "state-returned",
+        "time": 23071.680746,
+        "mainTime": 21166.626698
+      },
+      {
+        "name": "settled",
+        "time": 24691.89559,
+        "mainTime": 22787.263506
+      },
+      {
+        "name": "author-ready",
+        "time": 26171.640366,
+        "mainTime": 24271.222306
+      },
+      {
+        "name": "second-down",
+        "time": 26254.284602,
+        "mainTime": 24349.823272
+      },
+      {
+        "name": "second-released",
+        "time": 26569.979607,
+        "mainTime": 24665.722162
+      },
+      {
+        "name": "second-author-ready",
+        "time": 29299.033567,
+        "mainTime": 27394.706171
+      },
+      {
+        "name": "detail-ready",
+        "time": 42470.400532,
+        "mainTime": 40565.462906
+      }
+    ],
+    "authorState": {
+      "ready": "ready",
+      "quality": "overview",
+      "revision": "12",
+      "authorRevision": "12"
+    },
+    "secondState": {
+      "ready": "ready",
+      "quality": "interactive",
+      "revision": "14",
+      "authorRevision": "14"
+    },
+    "detailState": {
+      "ready": "ready",
+      "quality": "detail",
+      "revision": "14",
+      "authorRevision": "14",
+      "tiles": "36/36"
+    },
+    "durationsMs": {
+      "opening": 10819.691605,
+      "controls": 2983.616356999999,
+      "author": 4463.3611329999985,
+      "secondAuthor": 2729.0539599999975
+    },
+    "maxLongTaskMs": 435,
+    "maxRecordedFrameGapMs": 450.2999999999993,
+    "traceDropped": {
+      "main": 0,
+      "worker": 0
+    },
+    "rendererTraceDropped": 0,
+    "regions": [
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 4,
+        "continuation": false,
+        "posted": 7606.968069,
+        "received": 12600.907517,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 7607.146147,
+              "duration": 4087.101470999999,
+              "revision": 4
+            },
+            {
+              "stage": "region.read",
+              "start": 11694.252547,
+              "duration": 894.0273870000001,
+              "revision": 4
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "continuation": false,
+        "posted": 21001.7741,
+        "received": 22090.257614,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21002.39835,
+              "duration": 1.2802169999995385,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 21003.690651,
+              "duration": 1083.2279329999983,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 14,
+        "continuation": false,
+        "posted": 25945.456814,
+        "received": 26718.708466,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 25945.670707,
+              "duration": 0.7464529999997467,
+              "revision": 14
+            },
+            {
+              "stage": "region.read",
+              "start": 25946.422774,
+              "duration": 766.8054489999995,
+              "revision": 14
+            }
+          ],
+          "dropped": 0
+        }
+      }
+    ]
+  }
+]

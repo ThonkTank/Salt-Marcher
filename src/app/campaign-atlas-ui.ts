@@ -114,6 +114,7 @@ export class CampaignAtlasWorkbench {
   private regionTimer:ReturnType<typeof setTimeout>|null=null;
   private loadedRegionQuery:AtlasRegionQuery|null=null;
   private regionReading:number|null=null;
+  private regionReadingQuery:AtlasRegionQuery|null=null;
   private searchRequest=0;
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private livePortal:LiveAtlasPortal|null=null;
@@ -643,15 +644,25 @@ export class CampaignAtlasWorkbench {
       return;
     }
     this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
-    // Throttle camera reads instead of postponing them until input stops. A read
-    // already in flight can publish a useful frame during a long touchpad gesture.
-    if(camera&&(this.regionTimer||this.regionReading===this.request))return;
+    // Keep useful buffered work during panning. A different destination scale
+    // or uncovered area must reach the worker while the old read is still busy.
+    if(camera){
+      const reading=this.regionReading===this.request?this.regionReadingQuery:null,
+        target=reading?{...this.regionQuery(),box:this.camera.destination}:null;
+      if(reading&&target&&this.regionQueryCovers(reading,target)&&Math.abs(reading.box.width/reading.width/(target.box.width/target.width)-1)<1e-6){
+        if(this.regionTimer){clearTimeout(this.regionTimer);this.regionTimer=null;}return;
+      }
+      if(this.regionTimer)return;
+    }
     if(this.regionTimer)clearTimeout(this.regionTimer);
     if(!camera)this.request++;
     this.regionTimer=setTimeout(()=>{this.regionTimer=null;void this.refresh(camera);},camera?120:60);
   }
   private geometryCoversView(){
-    const old=this.loadedRegionQuery,q=this.regionQuery();if(!old)return false;
+    return this.regionQueryCovers(this.loadedRegionQuery,this.regionQuery());
+  }
+  private regionQueryCovers(old:AtlasRegionQuery|null,q:AtlasRegionQuery){
+    if(!old)return false;
     return old.scopeId===q.scopeId&&old.floorId===q.floorId&&old.slice===q.slice&&old.roofs===q.roofs&&old.perception===q.perception&&old.terrainRaster===q.terrainRaster&&old.contours===q.contours&&old.box.x<=q.box.x&&old.box.y<=q.box.y&&old.box.x+old.box.width>=q.box.x+q.box.width&&old.box.y+old.box.height>=q.box.y+q.box.height;
   }
   private geometryCurrent(){
@@ -789,6 +800,7 @@ export class CampaignAtlasWorkbench {
     this.renderTravel();
     try {
       const query=this.regionQuery(true);
+      this.regionReadingQuery=query;
       const r = await window.campaign.atlasRegion(w.token,query);
       if (this.owner !== w || request !== this.request) return;
       if (!r.ok) throw new Error(r.error);
@@ -814,7 +826,7 @@ export class CampaignAtlasWorkbench {
         this.renderTravel();
       }return false;
     } finally {
-      if(this.regionReading===request)this.regionReading=null;
+      if(this.regionReading===request){this.regionReading=null;this.regionReadingQuery=null;}
       if(completed&&this.owner===w&&request===this.request&&!this.geometryCurrent())this.scheduleRegion(true);
     }
   }

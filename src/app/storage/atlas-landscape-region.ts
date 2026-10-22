@@ -159,7 +159,8 @@ export class AtlasLandscapeReader {
   const projection=yield* readTerrainProjectionSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange};
  }
- read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false):AtlasLandscapeLayer{
+ read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false,checkpoint?:()=>void):AtlasLandscapeLayer{
+  checkpoint?.();
   const terrain=q.terrainRaster!==false||q.perception===true;
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
   const layer:AtlasLandscapeLayer={...(setting&&JSON.parse(setting.payload).terrainSettings.style?{terrainStyle:JSON.parse(setting.payload).terrainSettings.style}:{}),seaLevelM:setting?JSON.parse(setting.payload).terrainSettings.seaLevelM:0,state:'ready',records:[],tiles:[],coverage:{complete:true,mode:'detail',objects:0,references:0}};
@@ -168,6 +169,7 @@ export class AtlasLandscapeReader {
   const vectorBudget=Math.min(512*1024,budget/3);
   let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
+   checkpoint?.();
    if(q.references===false&&r.kind==='reference')continue;
    if(!q.perception&&(q.terrainRaster===false||mapRecordVisible(r,q.box.width/q.width)))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
@@ -201,6 +203,7 @@ export class AtlasLandscapeReader {
   for(let pixels=Math.min(1024,2**Math.ceil(Math.log2(Math.max(256,edge/(q.box.width/q.width)))));pixels>=16;pixels/=2){
    layer.tiles=[];
    for(const region of regions){
+    checkpoint?.();
     const {box,width,height}=landscapeRasterSlice(region,pixels,q.box);
     const key=JSON.stringify([source.campaignId,box,width,height,dense,terrain,q.box.width/q.width,q.references!==false,exactReferences,q.contours??0]),hit=this.cache.get(key);
     let json=hit?.json;
@@ -208,19 +211,21 @@ export class AtlasLandscapeReader {
     if(!json){
      const image=new LandscapeRasterizer(box,width,height,terrain?q.contours:0,q.box.width/q.width);
      if(terrain){
+      checkpoint?.();
       if(setting)image.paint(JSON.parse(setting.payload));const samplePixels={width:width+2*LANDSCAPE_RASTER_PAD,height:height+2*LANDSCAPE_RASTER_PAD};
       if(this.canonicalTerrain){
        // Small source files can still cover millions of output samples. Share
        // the bounded lattice sampler with the spatial projection at every size.
-       image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>this.rows(source,band,true,0,0,kind),false));
-       for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'base'))image.paint(r);
-      }else for(const r of this.rows(source,image.sampleBox,true,samplePixels))if(!r.paint&&!r.vegetation)image.paint(r);
-      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'cover'))image.paintCover(r);
+       image.setTerrainField(streamTerrainField(image.sampleLattice(),layer.seaLevelM??0,(kind,band)=>{checkpoint?.();return this.rows(source,band,true,0,0,kind);},false));
+       for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'base')){checkpoint?.();image.paint(r);}
+      }else for(const r of this.rows(source,image.sampleBox,true,samplePixels)){checkpoint?.();if(!r.paint&&!r.vegetation)image.paint(r);}
+      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'cover')){checkpoint?.();image.paintCover(r);}
       // Order in SQL, then paint one record at a time. No spread/sort of the author corpus.
-      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'color'))image.paintColor(r);
+      for(const r of this.rows(source,image.sampleBox,true,samplePixels,0,'color')){checkpoint?.();image.paintColor(r);}
      }
      let tileEnvironment:ReturnType<typeof vegetationEnvironmentReader>|undefined;
      if(dense)for(const r of this.rows(source,box,false,0,Math.max(q.box.width/q.width,edge/pixels))){
+      checkpoint?.();
       if(r.vegetation){
        // A raster fallback represents groups, even when its tile happens to be
        // sampled at exactly 2 m/px. Generating every local blade on a padded
@@ -235,10 +240,12 @@ export class AtlasLandscapeReader {
       else if(r.kind==='place'&&mapRecordVisible(r,q.box.width/q.width))image.paintLine(r.points,Math.max(q.box.width/q.width*10,edge/pixels),'#5b4338');
       else if(r.kind==='reference'&&q.references!==false&&!exactReferences){const b=bounds(r);image.paintLine([{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height},{x:b.x,y:b.y}],edge/pixels,'#75604e');}
      }
+     checkpoint?.();
      const data=PNG.sync.write({width,height,data:Buffer.from(image.finish())} as PNG).toString('base64');
      json=JSON.stringify({...(!terrain?{content:'objects'}:{}),campaignId:source.campaignId,revision:source.revision,box,width,height,data:'data:image/png;base64,'+data});
      const bytes=json.length*2;while(this.bytes+bytes>this.cacheLimit&&this.cache.size){const [k,v]=this.cache.entries().next().value!;this.bytes-=v.bytes;this.cache.delete(k);}if(bytes<=this.cacheLimit){this.cache.set(key,{box:landscapePaintBox(landscapeRasterBounds(box,width,height),Math.max(q.box.width/q.width,edge/pixels),this.placeLabelUnits),json,bytes});this.bytes+=bytes;}
     }
+    checkpoint?.();
     const tile=JSON.parse(json) as LandscapeRaster;tile.revision=source.revision;layer.tiles.push(tile);
    }
    if(Buffer.byteLength(JSON.stringify(layer))<=budget)return layer;

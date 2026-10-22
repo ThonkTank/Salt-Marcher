@@ -162,7 +162,7 @@ test('broken landscape is a local layer error and never removes usable Room geom
 });
 test('camera request burst retains one worker/index with one replaceable successor',async t=>{
  const f=fixture(t,500),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());const source=f.store.atlasRegionSource(f.shell.token);
- const calls=[];for(let i=0;i<20;i++)calls.push(service.read(source,query({x:i,y:-2,width:30,height:10})));const results=await Promise.allSettled(calls);assert.equal(results[0].status,'fulfilled');assert.equal(results.at(-1).status,'fulfilled');assert.equal(results.filter(r=>r.status==='fulfilled').length,2);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.active,false);assert.equal(service.diagnostics.queued,false);
+ const calls=[];for(let i=0;i<20;i++)calls.push(service.read(source,query({x:i,y:-2,width:30,height:10})));const results=await Promise.allSettled(calls);assert.equal(results[0].status,'rejected');assert.match(results[0].reason.message,/neuere Anfrage/);assert.equal(results.at(-1).status,'fulfilled');assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.regionCancelled,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.active,false);assert.equal(service.diagnostics.queued,false);
  const warm=await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query({x:21,y:-2,width:30,height:10}));assert(warm.rooms.length);assert.equal(service.diagnostics.workerStarts,1);
 });
 
@@ -215,7 +215,7 @@ test('camera successors cannot replace queued object selection; both lanes remai
   const first=service.read(source,query()),selection=kind==='focus'?service.focus(source,'room','r0'):kind==='hit'?service.hit(source,query(),{x:1,y:1}):service.candidates(source,query(),{x:1,y:1});
   const cameras=Array.from({length:20},(_,i)=>service.read(source,query({x:i/10,y:-2,width:30,height:10})));
   const [initial,selected,...frames]=await Promise.allSettled([first,selection,...cameras]);
-  assert.equal(initial.status,'fulfilled');assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
+  assert.equal(initial.status,'rejected');assert.match(initial.reason.message,/neuere Anfrage/);assert.equal(selected.status,'fulfilled',kind+' must survive background camera requests');
   assert.equal(kind==='candidates'?selected.value.items[0].id:selected.value.id,'r0');assert.equal(frames.at(-1).status,'fulfilled');assert.equal(frames.filter(r=>r.status==='fulfilled').length,1);assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
   const pending=Promise.allSettled([service.read(source,query({x:50,y:50,width:30,height:10})),service.focus(source,'room','r0'),service.read(source,query({x:60,y:50,width:30,height:10}))]);await service.cancelAndWait();assert((await pending).every(r=>r.status==='rejected'&&/abgebrochen/.test(r.reason.message)));await service.close();
  }
@@ -518,4 +518,56 @@ test('binding metadata follows selected floors, renamed scopes and hidden extent
  f.store.db.prepare("INSERT INTO drawing_hidden(campaign_id,id,scope_id,kind,hidden,revision) VALUES(?,?,?,'floor',1,1)").run(f.campaign.id,'floor-1',selected);
  result=await f.read(q);assert.equal(result.scopes.find(s=>s.id===selected).name,'Oberhaus');assert.equal(result.scopeBounds[selected],undefined,'hidden upper floor must not fall back to the ground extent');assert(!result.rooms.some(r=>r.scopeId===selected));assert(result.bindings.some(b=>b.ownerId===selected),'selected empty author frame stays available');
  const db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const fresh=new AtlasRegionReader(db);await fresh.sync({...f.source,reset:true});assert.deepEqual(fresh.read(f.source,q),result);
+});
+
+test('obsolete geometry reads close both visit cursors and preserve the complete next result',async t=>{
+ const f=fixture(t,1600),q=query({x:0,y:-2,width:8000,height:10}),expected=await f.read(q),shape=f.reader.shape.bind(f.reader);
+ assert.equal(expected.coverage.mode,'raster');
+ for(const stop of [4,1605]){
+  const signal=new Int32Array(new SharedArrayBuffer(4));let visited=0;
+  f.reader.shape=row=>{const value=shape(row);if(++visited===stop)Atomics.store(signal,0,1);return value;};
+  f.db.exec('BEGIN');
+  assert.throws(()=>f.reader.read(f.source,q,signal),/neuere Anfrage/);
+  assert.equal(visited,stop,'cancellation stops before processing the next shape');
+  f.db.exec('COMMIT');
+  f.reader.shape=shape;
+  // An outstanding SQLite iterator would prevent this TEMP rebuild.
+  await f.reader.sync({...f.source,reset:true});
+  assert.deepEqual(f.reader.read(f.source,q),expected);
+ }
+});
+
+test('obsolete landscape reads are not published as partial error layers and release nested SQL cursors',async t=>{
+ const f=fixture(t,1),q={...query({x:0,y:0,width:1000,height:1000}),terrainRaster:false};
+ const put=f.store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++){
+  const x=10+i%30*20,y=10+Math.floor(i/30)*20,record={id:'place-'+i,revision:1,kind:'place',name:'Ort '+i,points:[{x,y}],polygons:[],resolution:1,width:0,values:{}};
+  put.run(f.campaign.id,record.id,1,x,x,y,y,JSON.stringify(record));
+ }})();
+ const expected=await f.read(q),landscape=f.reader.landscape,rows=landscape.rows.bind(landscape);
+ assert.equal(expected.landscape.coverage.mode,'raster');
+ for(const stop of [25,605]){
+  const signal=new Int32Array(new SharedArrayBuffer(4));let visited=0,closed=0;
+  landscape.cache.clear();landscape.bytes=0;
+  landscape.rows=function*(...args){try{for(const row of rows(...args)){if(++visited===stop)Atomics.store(signal,0,1);yield row;}}finally{closed++;}};
+  f.db.exec('BEGIN');
+  assert.throws(()=>f.reader.read(f.source,q,signal),/neuere Anfrage/);
+  assert.equal(visited,stop);assert(closed>0);
+  f.db.exec('COMMIT');landscape.rows=rows;
+  await f.reader.sync({...f.source,reset:true});
+  assert.deepEqual(f.reader.read(f.source,q),expected);
+ }
+});
+
+test('a cached current view cancels active and queued stale camera work while preserving selection',async t=>{
+ const f=fixture(t,50),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+ let source=f.store.atlasRegionSource(f.shell.token),expected=await service.read(source,query());
+ source=f.store.atlasRegionSource(f.shell.token,service.cursor);
+ const first=service.read(source,query({x:10,y:-2,width:30,height:10})),queued=service.read(source,query({x:20,y:-2,width:30,height:10})),selection=service.focus(source,'room','r0'),cached=service.read(source,query());
+ const [old,next,pick,current]=await Promise.allSettled([first,queued,selection,cached]);
+ for(const result of [old,next]){assert.equal(result.status,'rejected');assert.match(result.reason.message,/neuere Anfrage/);}
+ assert.equal(pick.status,'fulfilled');assert.equal(pick.value.id,'r0');assert.deepEqual(current.value,expected);
+ assert.equal(service.diagnostics.workerStarts,1);assert.equal(service.diagnostics.queued,false);
+ const renamed=f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?');renamed.run('Nach dem Abbruch',f.campaign.id,'r0');
+ assert.equal((await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query())).rooms[0].name,'Nach dem Abbruch');
 });

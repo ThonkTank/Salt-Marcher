@@ -1,0 +1,150 @@
+{
+  "baseline": "2c360dcf",
+  "files": [
+    "desktop/atlas-region.ts",
+    "desktop/atlas-region-worker.ts",
+    "src/app/storage/atlas-region.ts",
+    "src/app/storage/atlas-landscape-region.ts"
+  ],
+  "source": "2c360dcf9704cc65ae2f237a08a4ede1d96a3cb4",
+  "equal": true,
+  "runs": [
+    {
+      "label": "before",
+      "replaceAfterMs": 40.707180000000335,
+      "obsoleteAfterReplacementMs": 1033.9977,
+      "latestAfterReplacementMs": 1862.6095969999988,
+      "previous": {
+        "state": "fulfilled",
+        "time": 7470.035141,
+        "bytes": 144548
+      },
+      "packets": [
+        {
+          "time": 7467.876118,
+          "cancelled": false,
+          "trace": {
+            "events": [
+              {
+                "stage": "region.sync",
+                "start": 6395.69641,
+                "duration": 0.6226970000006986,
+                "revision": 4
+              },
+              {
+                "stage": "region.read",
+                "start": 6396.333605,
+                "duration": 1067.4580930000002,
+                "revision": 4
+              }
+            ],
+            "dropped": 0
+          }
+        },
+        {
+          "time": 8296.539051,
+          "cancelled": false,
+          "trace": {
+            "events": [
+              {
+                "stage": "region.sync",
+                "start": 7468.207594,
+                "duration": 0.21756999999979598,
+                "revision": 4
+              },
+              {
+                "stage": "region.read",
+                "start": 7468.436681,
+                "duration": 819.4117930000002,
+                "revision": 4
+              }
+            ],
+            "dropped": 0
+          }
+        }
+      ],
+      "diagnostics": {
+        "workerStarts": 1,
+        "active": false,
+        "queued": false,
+        "cacheBytes": 0,
+        "terrainYields": 0
+      },
+      "sha256": "0087d969c56b730887a54b5616a8b8652c33306dd069b0d9f4ceec566019c53c",
+      "bytes": 146326,
+      "bundles": {
+        "service": "31c7f1ec180355941c90212b2c0353505f718df190fa3b2a4ce0b74601951361",
+        "worker": "7aa18310ef258cfdb0213e8fb8a12d98510e7895c67f9c0863d9e7cf109d030c"
+      }
+    },
+    {
+      "label": "after",
+      "replaceAfterMs": 40.428844000000026,
+      "obsoleteAfterReplacementMs": 0.744724000000133,
+      "latestAfterReplacementMs": 1008.5694519999997,
+      "previous": {
+        "state": "rejected",
+        "time": 14566.193943,
+        "error": "Kartenausschnitt durch neuere Anfrage ersetzt."
+      },
+      "packets": [
+        {
+          "time": 14565.972895,
+          "cancelled": true,
+          "trace": {
+            "events": [
+              {
+                "stage": "region.sync",
+                "start": 14525.357648,
+                "duration": 0.5431840000001102,
+                "revision": 4
+              },
+              {
+                "stage": "region.read",
+                "start": 14525.912014,
+                "duration": 39.824509000000035,
+                "revision": 4
+              }
+            ],
+            "dropped": 0
+          }
+        },
+        {
+          "time": 15572.179626,
+          "cancelled": false,
+          "trace": {
+            "events": [
+              {
+                "stage": "region.sync",
+                "start": 14566.251187,
+                "duration": 0.20287699999971665,
+                "revision": 4
+              },
+              {
+                "stage": "region.read",
+                "start": 14566.463812,
+                "duration": 999.9225939999997,
+                "revision": 4
+              }
+            ],
+            "dropped": 0
+          }
+        }
+      ],
+      "diagnostics": {
+        "workerStarts": 1,
+        "active": false,
+        "queued": false,
+        "cacheBytes": 0,
+        "terrainYields": 0,
+        "regionCancelled": 1
+      },
+      "sha256": "0087d969c56b730887a54b5616a8b8652c33306dd069b0d9f4ceec566019c53c",
+      "bytes": 146326,
+      "bundles": {
+        "service": "cf9fccbead2637c92f2da82c9310d234d8e795ae50f641ce2af48bbf0e241eae",
+        "worker": "178ea3187c3820bb7af2478888add772186160dd0b325e638e34eb594c0789a3"
+      }
+    }
+  ]
+}
