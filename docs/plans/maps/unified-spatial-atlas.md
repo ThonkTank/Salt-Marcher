@@ -418,4 +418,7 @@ Eine native Zoomreise legte einen 50-Sekunden-Bereichsread offen. Die Abfragewah
 berücksichtigt nun kleine Objektgruppen, während große Dungeons den räumlichen
 Index behalten. Der identische Nachbarschaftsausschnitt benötigt lokal 2,8 statt
 56 Sekunden bei bytegleicher Ausgabe. Die sofortige Detailfreigabe und das
-Speicherplateau bleiben eigene, noch nicht abgeschlossene Ziele.
+Speicherplateau bleiben eigene, noch nicht abgeschlossene Ziele. Eine anschließende
+31-Minuten-Probe mit 22 vollständigen Zoomrunden endete regulär ohne erneuten
+Ladehänger und ohne fortlaufenden Speicheranstieg. Sie enthält keine
+Bearbeitungszyklen und ersetzt die Zielgerätequalifikation nicht.

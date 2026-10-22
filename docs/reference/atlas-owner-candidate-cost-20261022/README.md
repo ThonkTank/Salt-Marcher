@@ -73,5 +73,47 @@ kleine Gruppen mit überlagerten lokalen Koordinaten, gleiche räumliche
 Kandidaten/Zeichenreihenfolge sowie den Wechsel zum Rtree beim Wachstum einer
 Gruppe. Der bestehende Fall für einen großen Einzelbesitzer bleibt bestanden.
 
-Eine 30-Minuten-Navigationsprobe ist zusätzlich vorgesehen. Dieser kurze
-Durchlauf belegt noch kein Speicherplateau oder die gesamte Leistungsabnahme.
+## Wiederholte Navigation über 31 Minuten
+
+Die [vollständige Speicherprobe](navigation-memory.json) durchlief 22 Runden
+in 31,1 Minuten ohne erneuten Ladehänger oder Rendererfehler. Kartendaten und
+Atlasrevision blieben gleich. Der Prozess endete regulär mit Code 0; alle vier
+beobachteten Electron-Prozesse sind beendet. Die elf Build-Artefakte blieben
+während des gesamten Laufs unverändert. Das abschließende Weltbild wurde geprüft.
+
+Verglichen werden ausschließlich beruhigte Weltansichten, ohne erzwungene GC:
+
+| Abschnitt | Prozess-PSS, Minimum / Median / Maximum | Renderer-JS-Heap, Median |
+| --- | --- | ---: |
+| Minute 5–15, 7 Messpunkte | 870 / 1.060 / 1.520 MiB | 48 MiB |
+| Minute 15–31, 12 Messpunkte | 891 / 1.115 / 1.560 MiB | 51 MiB |
+
+Der Lauf zeigt wiederkehrende Speicheranstiege und Rückgänge, keinen
+fortlaufenden Anstieg. Das ist ein Teilbeleg für Navigation, keine abgeschlossene
+Ressourcenabnahme: wiederholte Terrainbearbeitung fehlt, PSS erfasst nicht den
+gesamten Grafikspeicher, und der Entwicklungsrechner ersetzt den Pentium-Laptop
+nicht. In der Mitte des Laufs liefen kurze SQL-Diagnosen und gezielte Tests;
+die Zeitwerte dieses Laufs sind deshalb keine isolierte Navigationsmessung.
+Die rohe Messung und ihre Prüfsumme bleiben im kompakten Beleg referenziert.
+
+## Folgeänderung nach der Releasequelle 0.185.0
+
+Neu materialisierte Räume und Zeichnungselemente werden direkt für die aktuelle
+Lesung verwendet. Der begrenzte Cache besitzt weiterhin ausschließlich ihren
+serialisierten Text; spätere Zugriffe erhalten eigene Objekte. Die unmittelbar
+nach dem Serialisieren erfolgte zweite JSON-Kopie entfällt. Historische
+Stadtelemente behalten ihre JSON-Normalisierung, damit optionale Felder bei kalten
+und warmen Lesungen identisch bleiben.
+
+55 Bereichstests bestehen, einschließlich veränderter kalter und warmer
+Ergebnisobjekte, Ausschnitten, Invalidierung und alten Stadtobjekten. Alle fünf
+[vollständigen Vergleichsantworten](cold-shape-reads.json) bleiben bytegleich.
+Die Nachbarschaftslesung benötigt in diesem einzelnen isolierten Paar 3.013
+beziehungsweise 2.861 ms. Andere Ausschnitte schwanken in beide Richtungen;
+daraus folgt keine allgemeine Latenzgarantie oder vollständige Leistungsabnahme.
+
+Die [native Gegenprobe der Folgeänderung](cold-shape-native.json) erreicht erneut
+alle sechs Maßstäbe und kehrt zur Welt zurück. Daten und Revision bleiben gleich,
+der Prozess endet regulär und alle elf Artefakte stimmen überein. Gebäude- und
+Weltbild wurden kontrolliert. Beide Typechecks, Desktopbuild und Repositoryprüfung
+bestehen. Die Folgeänderung ist nicht im bereits veröffentlichten Paket 0.185.0.
