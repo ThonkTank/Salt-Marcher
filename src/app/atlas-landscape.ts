@@ -127,10 +127,6 @@ export function hexPolygon(q: number, r: number, size: number): Polygon {
     holes: [],
   };
 }
-/** One bounded axial footprint shared by the draft and the authored patch. */
-export function hexStrokePolygons(points: Point[], size: number): Polygon[] {
-  return hexStrokesPolygons([points], size);
-}
 /** Separate gestures share one bounded draft without painting between them. */
 export function hexStrokesPolygons(strokes: Point[][], size: number): Polygon[] {
   if (

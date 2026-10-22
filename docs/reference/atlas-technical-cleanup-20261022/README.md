@@ -1,5 +1,7 @@
 # Technische Atlasbereinigung – 22.10.2026
 
+[Nachprüfung: Erreichbarkeit, begründete Entfernungen, A–B–A und längere Leistungsmessung](verification.md).
+
 Die beiden Workbench-Dateien bündeln jetzt ihre Komponenten, statt auch deren
 gesamten Zustand zu besitzen. [Zuständigkeiten und Datenfluss](../../development/atlas-rendering.md#zuständigkeiten-und-datenfluss)
 beschreiben Laden, Autorenaktionen, Zeichnung, Reise, Ausgabe, Pinselzug,

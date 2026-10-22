@@ -24,8 +24,6 @@ import type {
   MapLabelSource,
 } from "./atlas-label-source";
 export const labelScaleLimits = [2, 12, 100, 1000, 10000, Infinity];
-export const cityDetailVisible = (width: number, mpp: number) =>
-  width / mpp >= 25;
 export const footprintVisible = (width: number, mpp: number) =>
   width / mpp >= 2;
 export function labelFromPolygon(

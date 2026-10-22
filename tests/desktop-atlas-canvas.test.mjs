@@ -877,7 +877,8 @@ test('ground-plan preview fits the unobscured canvas when the export panel overl
  assert((box.y-view.y)/mpp>=12);assert((box.y+box.height-view.y)/mpp<=600-12);
 });
 
-for(const sameToken of [false,true])for(const heldStage of ['read','save'])test(`a retired PNG export cannot block or finish the current campaign export (${heldStage}, same token=${sameToken})`,async t=>{
+for(const transition of ['other','same','A–B–A'])for(const heldStage of ['read','save'])test(`a retired PNG export cannot block or finish the current campaign export (${heldStage}, transition=${transition})`,async t=>{
+ const sameToken=transition!=='other';
  const f=fixture(t),controls=f.document.createElement('div');
  controls.innerHTML='<section id="atlas-output"></section><button id="atlas-output-open"></button><input id="atlas-export-size" value="256"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><button id="atlas-output-save-campaign"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p><div id="atlas-search-results"></div>';
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),create=f.document.createElement.bind(f.document),messages=[],errors=[],saved=[],held=[];
@@ -889,7 +890,7 @@ for(const sameToken of [false,true])for(const heldStage of ['read','save'])test(
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held export stage');};
  const old=ui.exportPNG();let current;
  try{
-  await until(()=>held.length===1);ui.activate(next);ui.projection={};ui.floorId='ground';
+  await until(()=>held.length===1);if(transition==='A–B–A')ui.activate({token:'intermediate',campaign:{id:'b'}});ui.activate(next);ui.projection={};ui.floorId='ground';
   assert.equal(ui.exporting,false,'a new activation owns fresh export controls');assert.equal(get('atlas-export-png').disabled,false);assert.equal(get('atlas-export-cancel').hidden,true);
   current=ui.exportPNG();await until(()=>held.length===2);held.shift()();await old;
   assert.equal(ui.exporting,true,'the retired finalizer must not unlock the current run');assert.equal(get('atlas-export-png').disabled,true);assert.equal(get('atlas-export-cancel').hidden,false);assert.deepEqual(messages,[],'a retired save reply must not announce success in the new context');assert.deepEqual(errors,[]);

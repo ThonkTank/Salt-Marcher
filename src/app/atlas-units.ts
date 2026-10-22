@@ -23,7 +23,6 @@ register('room-group-width room-group-depth route-width route-corridor route-cut
 register('points drawing-element-points city-unit-points path-waypoints',1,true);
 register('volume-height volume-slice volume-brush-radius volume-box-x0 volume-box-x1 volume-box-y0 volume-box-y1 volume-box-z0 volume-box-z1 path-from-x path-from-y path-from-z path-to-x path-to-y path-to-z',1.524);
 register('path-widths path-heights',1.524,true);
-export const atlasUnitFieldIds=()=>[...definitions.keys()];
 type Bound={definition:Definition;canonical:string;shown:string;min:string;max:string;step:string};
 const fields=new Map<Field,Bound>();
 let enabled=false;
