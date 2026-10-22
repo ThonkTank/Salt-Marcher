@@ -2,6 +2,11 @@
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Der Anschluss nutzt die vorhandenen Atlaswerkzeuge; die folgenden Teilbelege ersetzen noch keine vollständige Produktabnahme.
 
+[GPU-Varianten und verworfene Netzverdichtung](../reference/atlas-gpu-alternatives-20261022/README.md):
+gepaarte Komponentenmessung, fast gleiche GPU-Bilder, aber kein belegter Gewinn
+in der vollständigen Navigation und langsamerer erster Sculpt-Lauf. Der Prototyp
+wurde entfernt; grundlegende Architekturalternativen bleiben ausdrücklich offen.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt

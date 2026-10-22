@@ -27,6 +27,15 @@ Einordnung: [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md), [bisherige Relief-Ro
 
 ### Bewährte Lösungen bevorzugen (Ergänzung 21.10.2026)
 
+**Erweiterter Auftrag vom 22.10.2026:** Bestehende Architektur und technische
+Entscheidungen sind keine Bindung. Grundsätzlich andere Ansätze sollen anhand
+derselben Bedienfälle verglichen werden, bevor weitere Arbeit in einen
+möglicherweise ungeeigneten Weg fließt. Der normale Atlas bleibt der
+Produkteinstieg; technische Prototypen sind keine zweite Produktansicht.
+Jeder Arbeitszyklus berichtet im Chat die belegten Hauptprobleme, mindestens
+drei Optionen mit Vor-/Nachteilen und Auswahl, anschließend Verbesserungen,
+Rückschritte und unveränderte Punkte sowie die konkrete Aufräumarbeit.
+
 Bestehende, bewährte Implementierungen und Verfahren sind vor neuen eigenen Lösungen zu prüfen und soweit passend zu übernehmen. Die Verbesserung bleibt in der vorhandenen Atlasfläche und ihren Werkzeugen verankert. Für den nächsten Terrain-Schritt dienen insbesondere [GDALs begrenzter Rasterblockcache](https://gdal.org/en/stable/user/configoptions.html#performance-and-caching), [mehrstufige Rasterübersichten mit gezielter Aktualisierung](https://gdal.org/en/stable/programs/gdaladdo.html) und [MapLibres dokumentierter Kachellebenszyklus](https://github.com/maplibre/maplibre-gl-js/blob/main/developer-guides/life-of-a-tile.md) als technische Referenzen: wiederholte Blocklesungen vermeiden, passende Auflösung wählen und bereits geladene über-/untergeordnete Kacheln während des Nachladens verwenden. Die Quellen wurden am 21.10.2026 gelesen; daraus folgt noch keine Entscheidung für zusätzliche Laufzeitabhängigkeiten.
 
 Eine lokale Diagnose nach der frühen Geländeöffnung zählt für die erste Übersicht 4.950 Lesungen von 1.028 unterschiedlichen Höhenkacheln, rund 109,9 MB Nutzdaten bei einmalig 22,8 MB. Die nächsten Implementierungsversuche müssen diese Wiederholung innerhalb des vorhandenen Speicherbudgets reduzieren und gleiche Höhen, Küsten, Quelleninvalidierung und Undo/Redo nachweisen. Vorberechnete Auflösungsstufen benötigen zusätzlich eine explizite Strategie für Änderungen und Wiederöffnung. Die Diagnose misst Zugriffe, keine Bildrate oder Produktabnahme.
@@ -51,6 +60,7 @@ Abnahme des gesamten Umfangs. „Aufrauen“ ist ausdrücklich bestätigt.
 | Geländearten | Wald, Wüste, Sumpf und weitere Typen auf weiter, mittlerer und naher Distanz lesbar darstellen; weiche Übergänge an ihren Rändern. | [Landschaft](landscape-tools.md), [Bewuchs](vegetation.md), P4–P6 |
 | Wasser | Flüsse finden sinnvolle geländeabhängige Wege zwischen gesetzten Punkten; Seen füllen passende Geländebecken. | [Trassen und Gewässer](terrain-routes.md), P5–P6 |
 | Infrastruktur | Feldweg, Hauptstraße, Gasse und weitere Straßenarten erhalten passende Linien-/Texturdarstellung, Bildschirmbreiten und Sichtbarkeitsübergänge beim Zoom. | [Trassen](terrain-routes.md), [Kartografie](atlas-cartography.md), P4–P6 |
+| Gebäude | Gebäude mit D&D-Raster in den Innenräumen und mehreren Etagen bleiben Teil derselben Atlasfläche. | [Raumgruppen](room-groups.md), [räumliche Dungeons](../dungeon/smr04-spatial-coverage.md), P6 |
 | Gebiete | Benannte gemalte Gebiete auf voreingestellten politischen und geographischen Ebenen sowie eigenen Ebenen; jede Ebene hat ihre eigene Hierarchie. Die Geometrie darunter bleibt unabhängig. | [Kartografie](atlas-cartography.md), P4–P6 |
 
 Für die abschließenden Untersuchungen ist jeder Tabellenpunkt als vollständiger
