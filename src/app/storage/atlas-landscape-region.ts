@@ -1,5 +1,6 @@
+import {terrainHeightBlocks} from './terrain-height-blocks';
 import {compactVegetation} from '../vegetation-projection';
-import {LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,landscapeColorRecords,landscapeCoverRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
+import {LANDSCAPE_BASE_INDEX,LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,landscapeColorRecords,landscapeCoverRecords,landscapeSampleFilter,type RasterSamples} from './landscape-record-stream';
 import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
@@ -33,9 +34,11 @@ export class AtlasLandscapeReader {
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   db.exec('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
   db.exec(LANDSCAPE_COLOR_INDEX);db.exec(LANDSCAPE_COVER_INDEX);
-  // Each field block reads these sparse kinds. Keep its canonical order in a
-  // small partial index instead of scanning every base patch for every block.
-  for(const kind of ['height','route','lake'])db.exec(`CREATE INDEX temp.landscape_${kind}_order ON landscape_shape_bounds(resolution DESC,coalesce(paint_order,0),source_row) WHERE terrain_kind='${kind}'`);
+  // Each field block reads these sparse kinds in canonical order. Cover bounds,
+  // predicate and raw sort inputs too, so rejecting distant sources never
+  // probes the much larger metadata table (including its base patches).
+  for(const kind of ['height','route','lake'])db.exec(`CREATE INDEX temp.landscape_${kind}_order ON landscape_shape_bounds(resolution DESC,coalesce(paint_order,0),source_row,min_x,max_x,min_y,max_y,terrain_kind,paint_order) WHERE terrain_kind='${kind}'`);
+  db.exec("CREATE INDEX temp.landscape_line_span ON landscape_shape_bounds(source_row) WHERE kind IN ('road','river')");
   db.exec("CREATE INDEX temp.landscape_place_span ON landscape_shape_bounds(source_row) WHERE kind='place'");
   try{db.transaction(()=>db.exec(`CREATE VIRTUAL TABLE temp.landscape_region_index USING rtree(id,min_x,max_x,min_y,max_y);
    CREATE TEMP TRIGGER landscape_bound_insert AFTER INSERT ON landscape_shape_bounds WHEN new.kind IS NOT 'patch' BEGIN INSERT INTO landscape_region_index VALUES(new.source_row,new.min_x,new.max_x,new.min_y,new.max_y);END;
@@ -92,21 +95,25 @@ export class AtlasLandscapeReader {
  }
 
  visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache);}
- private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'){
-  if(kind&&!this.terrainKinds.has(kind))return;
+ private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'|'line'){
+  if(kind&&kind!=='line'&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
   // Terrain already has canonical bounded columns. Index only sparse objects:
   // building another 100k-row Rtree before the first view costs more than its scans.
-  const indexed=this.indexed&&!patches;
+  const indexed=this.indexed&&!patches,line=kind==='line';
   // A patch whose bounds contain no supersample center cannot change this tile.
   // Conservative epsilon and clipping match Rasterizer's 2x sample lattice.
   const sampleFilter=landscapeSampleFilter(box,pixels,patches&&this.sampleMath);
   if(kind==='cover'){yield* landscapeCoverRecords(text=>this.sql(text),source.campaignId,search,sampleFilter);return;}
   if(kind==='color'){yield* landscapeColorRecords(text=>this.sql(text),source.campaignId,search,sampleFilter);return;}
   const filter=kind?"m.terrain_kind='"+kind+"'":"m.terrain_kind IS NOT NULL";
+  // Colour projection only needs route lines. Use the small kind index before
+  // fetching payloads, rather than loading every place and vegetation object.
+  const objects=line?'temp.landscape_shape_bounds m CROSS JOIN atlas_landscape a ON a.rowid=m.source_row':indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a';
+  const range=line?'m':indexed?'i':'a',objectKinds=line?"m.kind IN ('road','river')":"json_extract(a.payload,'$.kind')!='patch'";
   const sql=patches
    ?`SELECT CAST(m.source_row AS TEXT) source_row FROM temp.landscape_shape_bounds m WHERE m.max_x>=? AND m.min_x<=? AND m.max_y>=? AND m.min_y<=? ${sampleFilter.sql} AND ${filter} ORDER BY m.resolution DESC,coalesce(m.paint_order,0),m.source_row`
-   :`SELECT CAST(a.rowid AS TEXT) source_row FROM ${indexed?'temp.landscape_region_index i CROSS JOIN atlas_landscape a ON a.rowid=i.id':'atlas_landscape a'} WHERE a.campaign_id=? AND ${indexed?'i':'a'}.max_x>=? AND ${indexed?'i':'a'}.min_x<=? AND ${indexed?'i':'a'}.max_y>=? AND ${indexed?'i':'a'}.min_y<=? AND json_extract(a.payload,'$.kind')!='patch' ORDER BY CASE WHEN json_extract(a.payload,'$.kind')='reference' THEN 0 WHEN json_extract(a.payload,'$.line.overSymbols')=1 THEN 3 WHEN json_extract(a.payload,'$.line') IS NOT NULL THEN 1 ELSE 2 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid`;
+   :`SELECT CAST(a.rowid AS TEXT) source_row FROM ${objects} WHERE a.campaign_id=? AND ${range}.max_x>=? AND ${range}.min_x<=? AND ${range}.max_y>=? AND ${range}.min_y<=? AND ${objectKinds} ORDER BY CASE WHEN json_extract(a.payload,'$.kind')='reference' THEN 0 WHEN json_extract(a.payload,'$.line.overSymbols')=1 THEN 3 WHEN json_extract(a.payload,'$.line') IS NOT NULL THEN 1 ELSE 2 END,CAST(json_extract(a.payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(a.payload,'$.order'),0),a.rowid`;
   // Sort narrow keys, then read complete bounded pages. Sorting full payloads
   // spills authors' large contours/prose into SQLite temporary files.
   const page=this.sql(`SELECT CAST(a.rowid AS TEXT) source_row,a.payload,a.min_x,a.max_x,a.min_y,a.max_y,json_extract(l.payload,'$.name') location_name,l.trashed FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? ORDER BY CAST(ids.key AS INTEGER)`);
@@ -129,17 +136,24 @@ export class AtlasLandscapeReader {
   }
   if(ids.length)yield*readPage(ids);
  }
- private *lines(source:AtlasRegionSource,box:LandscapeBox){for(const r of this.rows(source,box,false))if(r.kind==='road'||r.kind==='river')yield r;}
+ private *lines(source:AtlasRegionSource,box:LandscapeBox){yield* this.rows(source,box,false,0,0,'line');}
  /** Read only height records whose interpolation support touches a sample.
   * The source bounds already include the two-cell Hermite neighbourhood. */
  private terrainStream(source:AtlasRegionSource):import('./terrain-color-raster').ProjectionStream{
-  return(kind,box,samples)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,samples?{width:samples.columns/2,height:samples.rows/2}:0,0,kind);
+  const stream:import('./terrain-color-raster').ProjectionStream=(kind,box,samples)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,samples?{width:samples.columns/2,height:samples.rows/2}:0,0,kind);
+  stream.heightSources=(box,samples)=>this.terrainKinds.has('height')?terrainHeightBlocks(text=>this.sql(text),this.projectionCache,source.campaignId,box,samples,this.sampleMath):[];
+  return stream;
  }
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){
   const projection=readTerrainProjection(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange:q.colorBase?this.colorHistory.since(q.colorBase):undefined};
  }
- colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){
+  // Leave the first terrain overview unblocked. SQLite owns maintenance and
+  // rollback; no separate build cursor or index-validity state is needed.
+  if(this.terrainKinds.has('base'))this.sql(LANDSCAPE_BASE_INDEX).run();
+  return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
+ }
  *terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
   const colorChange=q.colorBase?this.colorHistory.since(q.colorBase):undefined;
   const projection=yield* readTerrainProjectionSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);

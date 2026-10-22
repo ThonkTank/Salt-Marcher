@@ -133,6 +133,14 @@ das erste Bild ersetzen, eine inzwischen überholte Antwort nicht. Die
 perspektivische Ausgabe behält ihre jeweilige Detailauflösung.
 [Native Teilmessung und offene Leistungsgrenze](../reference/atlas-progressive-brush-20261021/README.md).
 
+Der Pinselabschluss wartet auf die letzte bestätigte vollständige Höhenübersicht,
+aber nicht mehr auf deren feine Farben. Neue bestätigte Übersichten können
+ältere Verfeinerung ersetzen. Teilantworten behalten ihre angeforderte Basis,
+auch wenn zwischenzeitlich ein Detailbild erscheint. Nach Abschluss lädt der
+normale Atlas die ausstehende Detailstufe weiter, einschließlich unveränderter
+Quellenrevisionen. Objektaktualisierung und Terrainbereitschaft bleiben für
+den nächsten Zug erforderlich. [Diagnose, Schutzregeln und echter Folgezug](../reference/atlas-brush-finish-20261022/README.md).
+
 Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
 unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
 Randkacheln entstehen höchstens 9×9 Kacheln beziehungsweise 2304×2304 Pixel.
@@ -162,6 +170,13 @@ abgetasteten Rand zu verkleinern. Der gemeinsame Rasterkern gibt den Worker
 zusätzlich während der Höhenabtastung (höchstens 16.384 Samples je Zeilenband)
 und der Reliefschattierung frei. `LandscapeRasterizer.paintColorSteps` unterbricht
 auch Pigmentmasken und kumulative Farbkomposition.
+Auch das Höhengitter bietet inzwischen Unterbrechungspunkte: `readTerrainGridSteps`
+und `TerrainProjectionCache.gridDataSteps` teilen kalte Felder und örtliche
+Reparaturen in abgeschlossene Leseblöcke. Unvollständige Gitter werden nicht
+veröffentlicht; Cache-Invalidierung während einer Pause verwirft die laufende
+Berechnung. Synchrone Autoren-/Sichtprüfungen konsumieren denselben Rasterkern
+weiter vollständig. Der Worker prüft vor jeder Fortsetzung den Quellenstand.
+Die 4.096-Sample-Blöcke sind keine garantierte Millisekundengrenze.
 [landscape-pigment-coverage.ts](../../src/app/landscape-pigment-coverage.ts)
 teilt Weltachsen, quadratische Achsabstände und Texturanteile zwischen
 überlappenden Abdrücken eines Strichs. Float64-Weltkoordinaten und die bisherige
@@ -491,3 +506,29 @@ Begrenzte Zoomzyklen sind kein Leakbeweis; Post-GC-Werte sind keine normale Spei
 Das damalige Cacheexperiment begründet keine Budgeterhöhung.
 [Stufenmessung](../../tools/measure-atlas-regions.mjs) ergänzt Store/Worker/Transport,
 ohne zusammengesetzte Phasen als isolierte CPUkosten auszugeben.
+
+
+### Quellenübergabe nach bestätigten Terrainzügen
+
+`TerrainSpatialUI.sync` hält die Revisionskennung getrennt von den übrigen
+Projektionsinputs. Ein bereits veröffentlichtes Live-Gitter darf die neue Quelle
+nur übernehmen, wenn die frische Region dieselbe Revision und Quellenkennung
+bestätigt, der bisherige Quellenbesitzer übereinstimmt und die Abtastgeometrie
+zum normalen Ladeplan passt. Kontext-, Kameraabdeckungs- oder Objektänderungen
+verwerfen es weiterhin. Die Übernahme leert den Autorenrecord-Cache und setzt
+die normalen Detailaufträge fort; sie führt keinen weiteren Mesh-Upload aus.
+[Regressionen und native Folgezüge](../reference/atlas-live-source-handoff-20261022/README.md)
+belegen den begrenzten Übergang und die weiterhin offenen Latenzen.
+
+
+### Begrenzte Abtastfelder für Live-Farben
+
+`TerrainProjectionCache.colorFieldSteps` verwendet den vorhandenen atomaren
+Gittercache auch für exakte Wasserentscheidungen kleiner Live-Bilder bis
+64 Pixel. `TerrainCache` hält dafür eine zweite LRU-Reihenfolge mit eigener
+Obergrenze innerhalb desselben Gesamtbudgets; gewöhnliche Einträge ändern ihr
+Verhalten ohne solche Felder nicht. `AtlasRegionReader.navigationTerrain` und
+der normale Farblader geben diese Felder vor normaler Navigation wieder frei.
+`liveTerrainSteps` umgeht diese Übergabe, damit feine Live-Antworten den nächsten
+Pinselstand nicht entwerten. [Numerische, Speicher- und Bediennachweise](../reference/atlas-coarse-field-cache-20261022/README.md)
+halten vermiedene Arbeit und noch offene Latenzen getrennt fest.

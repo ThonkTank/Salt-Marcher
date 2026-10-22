@@ -1,0 +1,145 @@
+{
+  "baseline": "e4d361c0f",
+  "source": "e4d361c0f210749829207de454c262794789a8ad",
+  "equal": true,
+  "runs": [
+    {
+      "label": "before",
+      "bundleSha256": "3e7db20272053da91f98c72fa78cb36e3434bcef3a885c0e63504e0e93f39caf",
+      "syncMs": 16408.996714,
+      "tempBytes": 78839808,
+      "shapeCacheBytes": null,
+      "views": [
+        {
+          "name": "world",
+          "ms": 1246.6359279999997,
+          "sha256": "9c77d7e7fa33d909ce89d17a1ed50e839992df5d056a53fc173596e1e67f563f",
+          "bytes": 144551,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5051,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 544.1293960000003,
+          "sha256": "3bef54507430be9cebbe39c4b3691bbfc28e086a259977b143669f4a118a66d9",
+          "bytes": 10896,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5001,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 976.5229350000009,
+          "sha256": "5627b8d21c86d8aff787a762dc6359d1f1dd36ee4c484c9d7fd30aec442f9ff3",
+          "bytes": 46518,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 1066.499523999999,
+          "sha256": "b482fd84cdc4b3077dc18fe3c2ba1d063a02e9404509eae6fb9e46ffbcec32d1",
+          "bytes": 116303,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "bundleSha256": "a224d237eabc8ad66a66485890a39cf2b80446564dcbbec270d1a00d68629b5a",
+      "syncMs": 5503.911238000001,
+      "tempBytes": 28901376,
+      "shapeCacheBytes": 126850,
+      "views": [
+        {
+          "name": "world",
+          "ms": 1027.2108919999991,
+          "sha256": "9c77d7e7fa33d909ce89d17a1ed50e839992df5d056a53fc173596e1e67f563f",
+          "bytes": 144551,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5051,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 450.29140800000096,
+          "sha256": "3bef54507430be9cebbe39c4b3691bbfc28e086a259977b143669f4a118a66d9",
+          "bytes": 10896,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5001,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 845.4497059999994,
+          "sha256": "5627b8d21c86d8aff787a762dc6359d1f1dd36ee4c484c9d7fd30aec442f9ff3",
+          "bytes": 46518,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 898.4003760000014,
+          "sha256": "b482fd84cdc4b3077dc18fe3c2ba1d063a02e9404509eae6fb9e46ffbcec32d1",
+          "bytes": 116303,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import {AtlasRegionCache} from '../src/app/storage/atlas-region-cache';
 import {computeTerrainStroke,TerrainScalePyramid} from '../src/app/storage/terrain-scale';
 import {terrainTraceStart} from '../src/app/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
@@ -6,13 +7,15 @@ import {takeTerrainTrace} from '../src/app/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
 
 const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),
-  reader = new AtlasRegionReader(db, workerData.shadow),pyramid=new TerrainScalePyramid();
+  reader = new AtlasRegionReader(db, workerData.shadow,workerData.cacheDirectory&&!workerData.shadow?new AtlasRegionCache(workerData.cacheDirectory):undefined),pyramid=new TerrainScalePyramid();
 
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
 let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>}|undefined;
 
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
+  const geometry=['region','focus','candidates','hit'].includes(job.kind);
+  let syncStarted=false;
   try {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
@@ -22,7 +25,7 @@ parentPort!.on('message', async (job: any) => {
       if(root?.revision!==job.source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
     }
     const endSync=terrainTraceStart("region.sync",job.source.revision);
-    await reader.sync(job.source);pyramid.sync(db,job.source);endSync();
+    syncStarted=true;await reader.sync(job.source,geometry);pyramid.sync(db,job.source);endSync();
     if(job.kind==='terrain-stroke'){
       const stroke=JSON.stringify(job.stroke);
       if(!job.continuation)preparation={fence:job.source.fence,stroke,steps:pyramid.warm(db,job.source.campaignId,job.stroke)};
@@ -56,7 +59,7 @@ parentPort!.on('message', async (job: any) => {
     if(job.kind==='terrain-stroke')preparation=undefined;
     if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine')projection=undefined;
     if (db.inTransaction) {
-      db.exec('ROLLBACK');
+      db.exec('ROLLBACK');if(syncStarted)reader.rollback(geometry);
     }
     const terrainTrace=takeTerrainTrace();
     parentPort!.postMessage({ error: (error as Error).message,...(terrainTrace?{terrainTrace}:{} ) });

@@ -25,6 +25,12 @@ Die neue Roadmap ersetzt die bisherigen Vorgaben für getrennte Drauf-/Kippdarst
 
 Einordnung: [Atlas-Roadmap](../../../ROADMAP-HEX-ATLAS.md), [bisherige Relief-Roadmap](terrain-relief.md), [Architektur](../../../ARCHITECTURE.md), [räumliche Dungeonanforderungen](../dungeon/smr04-spatial-coverage.md) und [Spieleranzeige](../runtime/player-projection.md). Die bisherigen Dokumente und Belege bleiben als Ausgangsstand erhalten; P0 gleicht ihre widersprechenden Zielvorgaben mit dieser Roadmap ab.
 
+### Bewährte Lösungen bevorzugen (Ergänzung 21.10.2026)
+
+Bestehende, bewährte Implementierungen und Verfahren sind vor neuen eigenen Lösungen zu prüfen und soweit passend zu übernehmen. Die Verbesserung bleibt in der vorhandenen Atlasfläche und ihren Werkzeugen verankert. Für den nächsten Terrain-Schritt dienen insbesondere [GDALs begrenzter Rasterblockcache](https://gdal.org/en/stable/user/configoptions.html#performance-and-caching), [mehrstufige Rasterübersichten mit gezielter Aktualisierung](https://gdal.org/en/stable/programs/gdaladdo.html) und [MapLibres dokumentierter Kachellebenszyklus](https://github.com/maplibre/maplibre-gl-js/blob/main/developer-guides/life-of-a-tile.md) als technische Referenzen: wiederholte Blocklesungen vermeiden, passende Auflösung wählen und bereits geladene über-/untergeordnete Kacheln während des Nachladens verwenden. Die Quellen wurden am 21.10.2026 gelesen; daraus folgt noch keine Entscheidung für zusätzliche Laufzeitabhängigkeiten.
+
+Eine lokale Diagnose nach der frühen Geländeöffnung zählt für die erste Übersicht 4.950 Lesungen von 1.028 unterschiedlichen Höhenkacheln, rund 109,9 MB Nutzdaten bei einmalig 22,8 MB. Die nächsten Implementierungsversuche müssen diese Wiederholung innerhalb des vorhandenen Speicherbudgets reduzieren und gleiche Höhen, Küsten, Quelleninvalidierung und Undo/Redo nachweisen. Vorberechnete Auflösungsstufen benötigen zusätzlich eine explizite Strategie für Änderungen und Wiederöffnung. Die Diagnose misst Zugriffe, keine Bildrate oder Produktabnahme.
+
 ### Technische und gestalterische Referenz
 
 Google Maps ist das technische Ziel: unmittelbare Navigation vom Weltmaßstab bis zum Gebäude, während Details, Linienbreiten und Namen maßstabsabhängig wechseln. Die gestalterische Referenz sind konventionelle Fantasykarten, insbesondere publizierte D&D-Karten. Wälder müssen als zusammenhängende Landschaft auf Weltmaßstab und als zunehmend detaillierte Baumgruppen auf Dorfmaßstab lesbar sein. Straßen, Flüsse, Gebäude und Regionen folgen derselben Informationshierarchie. Die [offizielle Schwertküstenkarte (Wizards, 2015)](https://media.wizards.com/2015/images/dnd/resources/Sword-Coast-Map_HighRes.jpg) wurde am 21.10.2026 als erste Referenz gesichtet: zusammenhängende Waldflächen mit klaren Rändern, feine Kronenstruktur, zurückhaltende Bodenfarben und kontrastierende Küsten-/Gewässerlinien. Das sind gestalterische Beobachtungen, keine Übernahme ihrer Bilddateien in das Produkt. Dorf-/Gebäudereferenzen und der direkte Vergleich mit SaltMarcher über mehrere Maßstäbe stehen noch aus; technische Prüfungen ersetzen diese Bewertung nicht.
@@ -92,6 +98,10 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 ## 3. Lieferphasen und Abschlusskriterien
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
+
+[Gezielte Linienversorgung der Terrainprojektion](../../reference/terrain-line-stream-20261021/README.md): Orte und Vegetationsobjekte werden für Straßen-/Flussdurchläufe nicht mehr dekodiert. Die vollständige Projektion bleibt byteidentisch; die gesamte Öffnungszeit ist weiterhin offen.
+
+[Wiederverwendbarer räumlicher Objektindex](../../reference/atlas-persistent-region-index-20261021/README.md): unveränderte Objektgrenzen nach einem Neustart aus einem quellengebundenen Cache laden. Externe Änderungen, Undo, Sicherungsrückspielung und defekte Caches sind abgesichert. Die kalte Erfassung und die erste Terrainaufbereitung bleiben offene Öffnungskosten.
 
 [Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen. [Folgekorrektur für große Wälder beim Detailzoom](../../reference/forest-detail-20261021/README.md): begrenzte Kandidatenauswahl statt Ausfall der Landschaftsschicht, nativ über vier Maßstäbe geprüft. Die Raster- und Kronengestaltung bleibt offen. [Bildkachel-Zuordnung](../../reference/atlas-image-orientation-20261021/README.md): gespiegelte Bitmapkacheln und verlorene Objektkacheln in der perspektivischen PNG-Ausgabe lokal korrigiert und nativ geprüft. Der damalige Export zeigte dichten Bewuchs noch als Rasterpunkte. [Kompakte Bewuchsprojektionen](../../reference/forest-geometry-20261021/README.md) erhalten inzwischen im geprüften größeren Ausschnitt dieselben räumlichen Kronen innerhalb des bestehenden Übertragungsbudgets. Allgemeine Detailgleichheit, Waldgestaltung und Leistungsqualifikation bleiben offen.
 
@@ -293,3 +303,78 @@ Jede Phase erhält Funktions-, Leistungs- und visuelle Belege. Verfehlte Ziele b
 Der Straßen-/Flussdialog nutzte weiterhin den alten Landschaftsrenderer und umging damit die Hauptkamera. Dieser Weg ist jetzt im Implementierungsstand entfernt: Planung als Atlas-Seitenleiste, dieselben Punkt-/Navigationsfunktionen, Entwurf und Geländevorschau im Haupt-GPU-Worker, gemeinsame History. Der alte Landschafts-3D-Dialog samt `VegetationSpatialView` wurde gelöscht; instanzierter Bewuchs ist eine Ebene der gemeinsamen Szene. Auch isolierte Bildfixtures nutzen den Produktrenderer. Der normale Canvas bleibt Eingabe-/HUD-Fläche und Fehlerfallback, keine separat bedienbare Karte.
 
 Die bereits gespeicherten Qualifikationen des entfernten Dialogs sind historische Belege. Insbesondere `test-desktop-vegetation-qualification.mjs` und alte räumliche Pinselproben sind noch nicht vollständig auf den gemeinsamen Atlas übertragen; deren Detail-, Leistungs- und Exportaussagen gelten nicht als aktuelle Abnahme. Perspektivische Ausgabe und Spieleranzeige bleiben offene Roadmap-Arbeit.
+
+### Voller Weltbestand: Terrain-History entkoppelt (21.10.2026)
+
+Nach der ausgelagerten Sicherungsprüfung wurde die unveränderte Quellenkarte aus dem Terrain-Schreib-/Historypfad entfernt. Eine kleine persistente Geländerevision hält Reisevorschauen und angenommene Reisen auch über Undo/Redo und Neustarts korrekt ungültig. In derselben nativen gemischten Prüfwelt sank die gesamte synchrone Commitarbeit von 8,98 auf 0,51 Sekunden; die History eines großen Pinselzugs von 35,36 MB auf 271 KB. [Änderung, Messweg und Grenzen](../../reference/atlas-bounded-terrain-history-20261021/README.md). Die erste Terrainansicht benötigt weiterhin rund 23 Sekunden, der vollständige Pinselabschluss rund 13 Sekunden. Die oben festgelegten Ziele bleiben offen; nächste Arbeit ist die initiale Objektprojektion und verbleibende Workerarbeit. Lokale Implementierungsbelege sind keine Main-/Release- oder Zielgerätequalifikation.
+
+### Voller Weltbestand: kompakter Objektindex (21.10.2026)
+
+Die Übersicht hält zunächst Objektgrenzen und Zeichenreihenfolge; genaue Zeichenkopien werden im benötigten Ausschnitt in einem auf 4 MiB begrenzten Cache aufgebaut. Initiale SQL-Blöcke folgen dem Rowid-Cursor, der Rtree wird einmal gesammelt aufgebaut. [Gleichheit, Gegenproben und native Läufe](../../reference/atlas-lazy-region-shapes-20261021/README.md). Welt-, Regions-, Gebäude- und Dungeonausgabe blieben byteidentisch. In der vollen gemischten Welt sank der sichtbare Start von rund 23 auf 12 Sekunden. Weiterhin werden beim Start alle Objektgrenzen ermittelt; das Zwei-Sekunden-Ziel und der vollständige Pinselabschluss bleiben offen. Nächster Schritt ist die Eröffnung ohne wiederholte Gesamterfassung, mit eindeutig geprüftem Quellenstand.
+
+### Voller Weltbestand: Gelände vor Objektaufbau (21.10.2026)
+
+Die normale Atlasfläche beginnt mit der Geländeübersicht und lädt anschließend den vollständigen Objektausschnitt. Ein begrenzter Akkumulator bewahrt Objektänderungen, die zwischenzeitliche Terrainaufträge bereits aus dem gemeinsamen Quellenjournal konsumiert haben. In der nativen gemischten Prüfwelt wurde Gelände nach 5,94 Sekunden sichtbar, die Objektgeometrie nach 11,63 Sekunden; im frischen Prozess mit Objektcache nach 5,79 beziehungsweise 8,82 Sekunden. Zoom und Verschieben wurden mit gezielt zurückgehaltener echter Objektantwort geprüft. [Umsetzung, Regressionen, Messung und Grenzen](../../reference/atlas-early-terrain-20261021/README.md). Das Zwei-Sekunden-Ziel, die Zielgeräteprüfung und die gestalterische Abnahme bleiben offen; nächste Arbeit ist die erste Terrainprojektion selbst.
+
+### Voller Weltbestand: dekodierte Höhenblöcke (22.10.2026)
+
+Der vorhandene, auf 16 MiB begrenzte Projektionscache hält jetzt auch dekodierte numerische Höhenblöcke. Für dieselbe erste Übersicht sanken Höhen-Nutzdatenlesungen von 4.950 auf 1.904; Farbpixel, Höhen und vollständige Antwort blieben byteidentisch. Zwei lokale Vergleichspaare benötigten vorher 1,96–2,22 s, danach 1,13–1,48 s für die Projektion. Die normale App zeigt die erste große Geländeübersicht nach rund fünf Sekunden. Die zusätzliche Prüfung aller 48 Detailkacheln zeigt weiterhin 26,6–28,1 Sekunden bis zur vollständigen Verfeinerung; der große Sculpt-Pinsel benötigte nach Loslassen 5,76 Sekunden bis zur Werkzeugfreigabe. [Verfahren, Speicherbelegung, Regressionen und native Grenzen](../../reference/atlas-height-blocks-20261022/README.md). Die Gesamtziele bleiben offen; als Nächstes sind initiale Landschaftsmetadaten und Detailfarben zu untersuchen.
+
+### Räumliche Grundflächenabfragen (22.10.2026)
+
+[Vollständig abdeckender Terrain-Index](../../reference/atlas-base-index-20261022/README.md): Ein zusätzlicher SQLite-Index beschleunigt die Grundflächenabfragen bei der Detailverfeinerung. Die erste Übersicht bleibt vom Aufbau unabhängig; SQLite pflegt Änderungen und Rollbacks. Ein aufwendigerer Rtree-Prototyp wurde nach Gegenproben verworfen. Genaue Grenzen, Abtastung und Zeichenreihenfolge bleiben erhalten. Die vollständige Weltkarten- und Pentium-Abnahme bleibt offen.
+
+Die vorhandenen kleinen Indizes für Höhen, Trassen und Seen enthalten inzwischen
+auch alle räumlichen Filterdaten. Damit entfällt das wiederholte Nachladen ihrer
+Grenzen aus der großen Metadatentabelle. [Pixelgleicher Vergleich und native
+Prüfung](../../reference/atlas-field-index-20261022/README.md): 48 Detailkacheln
+und Kontext benötigten lokal 10,7–10,9 statt 11,4–12,7 Sekunden reine Aufbereitung.
+Die erste Übersicht und das unmittelbare Reaktionsziel bleiben offen; dieser
+Schritt verändert weder Auflösung noch Speicherformat der Autorenkarte.
+
+### Unterbrechbarer Höhengitteraufbau (22.10.2026)
+
+Der normale Terrainworker gibt auch während des Höhengitteraufbaus zwischen
+abgeschlossenen Leseblöcken frei. Im lokalen Vergleich lag der erste
+Unterbrechungspunkt nach 8,6–9,4 statt 294–429 ms; Höhen und vollständige
+Projektionsantworten blieben bytegleich. Eine echte Workerprobe bearbeitete eine
+Auswahl vor Abschluss des Gitters und setzte anschließend korrekt fort.
+[Cache-Sicherheit, Regressionen und native Gegenprobe](../../reference/atlas-grid-scheduling-20261022/README.md).
+Die gesamte Öffnungszeit und der große Pinselabschluss sind dadurch nicht
+nachweislich verkürzt. Quellenaufbau, verbliebene lange Rasterabschnitte und
+Ende-zu-Ende-Reaktion auf dem Zielgerät bleiben offen.
+
+### Pinselabschluss ohne Warten auf feine Farben (22.10.2026)
+
+Die native Diagnose zeigte rund 1,7 Sekunden abschließende Farbverfeinerung vor
+der Objektaktualisierung. Der Abschluss wartet jetzt weiter auf die letzte
+vollständige Höhenantwort, während feine Farben unabhängig fortgesetzt werden.
+[Schutzregeln, Gegenproben und tatsächlicher Folgezug](../../reference/atlas-brush-finish-20261022/README.md).
+Die Bedienelemente wurden lokal nach 3,6–3,8 statt 5,9 Sekunden freigegeben.
+Für einen tatsächlich angenommenen Folgezug war die normale Terrainquelle
+jedoch erst nach rund 5,1 Sekunden wieder bereit. Diese erneute Ladephase und
+die Gesamtlatenzziele bleiben ausdrücklich offen.
+
+### Bestätigtes Höhengitter nach dem Pinselzug behalten (22.10.2026)
+
+Der Quellenwechsel nach einem Pinselzug übernimmt jetzt das bestätigte Live-Gitter,
+wenn frische Region, Revision, Quellenkennung und sämtliche Geometrieeingaben
+übereinstimmen. Alte Autorenrecord-Caches werden verworfen, Farben verfeinern
+weiter. Bei geänderter Abdeckung bleibt ein neuer Übersichtsaufbau notwendig.
+[Schutzfälle und native Vorher-/Nachherprobe](../../reference/atlas-live-source-handoff-20261022/README.md).
+Im festen Ausschnitt sank die Bereitschaft für den nächsten Zug lokal von
+5,6 auf 4,0 Sekunden; beim kurzen Folgezug von 5,0 auf 2,8 Sekunden. Ein Zoom
+über die bisherige Abdeckung benötigt weiterhin rund 5,3 Sekunden. Die letzten
+Sekunden, Großwelt-Latenzgrenzen und Zielgerätequalifikation bleiben offen.
+
+### Numerische Live-Felder wiederverwenden (22.10.2026)
+
+Kleine Live-Farbbilder behalten ihre exakten Höhen-/Wasserfelder mit lokaler
+Invalidierung. Die Felder dürfen höchstens 4 MiB innerhalb des vorhandenen
+16-MiB-Caches beanspruchen; normale Navigation gibt ihre bevorzugte Belegung
+wieder frei. [Vergleich, verworfene Varianten und native Bedienung](../../reference/atlas-coarse-field-cache-20261022/README.md).
+Nach wiederholten lokalen Invalidierungen sank die 64-Pixel-Berechnung von
+rund 467 auf 195–216 ms bei identischen Projektionsbytes. Nativ war der Folgezug
+nach Zoom nach 4,3 statt 5,3 Sekunden möglich. Erster Überblick, Zielgerät und
+unmittelbare Bearbeitung bleiben offen; die normale 128-Pixel-Übersicht erhält
+keinen behaupteten Geschwindigkeitsgewinn.

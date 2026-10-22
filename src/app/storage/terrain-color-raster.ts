@@ -3,12 +3,12 @@ import {settingsRecord} from '../terrain-height';
 import {terrainTraceMeasure,terrainTraceStart} from '../terrain-timing';
 import type {LandscapeBox,LandscapeRecord} from '../atlas-landscape';
 import {LandscapeRasterizer,landscapeRasterBounds} from '../landscape-raster';
-import {streamTerrainFieldSteps,type TerrainSamples} from '../terrain-field-stream';
+import {streamTerrainFieldSteps,type TerrainSamples,type TerrainStream} from '../terrain-field-stream';
 import type {TerrainProjectionCache} from '../terrain-projection-cache';
 import {terrainDirtyRects} from '../terrain-dirty-rects';
-export type ProjectionStream=(kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox,samples?:TerrainSamples)=>Iterable<LandscapeRecord>;
+export type ProjectionStream=((kind:'height'|'route'|'lake'|'base'|'cover'|'color'|'line',box:LandscapeBox,samples?:TerrainSamples)=>Iterable<LandscapeRecord>) & Pick<TerrainStream,'heightSources'>;
 export interface TerrainColorOptions {
- settings:LandscapeRecord;stream:ProjectionStream;cache?:TerrainProjectionCache;batchEdge:number;
+ settings:LandscapeRecord;stream:ProjectionStream;cache?:TerrainProjectionCache;batchEdge:number;retainField?:boolean;
  contours:number;revision:number;denseRoutes:boolean;retainedRoutes:ReadonlySet<string>;checkpoint:()=>Generator<void>;
 }
 /** Shared raster kernel for complete projections and independently requested colour tiles. */
@@ -25,7 +25,7 @@ export function* renderTerrainColor(area:LandscapeBox,pixelWidth:number,pixelHei
  function* draw(box:LandscapeBox,width:number,height:number):Generator<void,Uint8Array>{
    const image=new LandscapeRasterizer(box,width,height,contours,displayMpp),samples=image.sampleLattice();image.paint(settings);
    const fieldEnd=terrainTraceStart('projection.field',revision);
-   try{image.setTerrainField(yield* streamTerrainFieldSteps(samples,sea,stream,false,checkpoint));}finally{fieldEnd();}
+   try{image.setTerrainField(yield* (cache&&options.retainField?cache.colorFieldSteps(samples,sea,stream,checkpoint):streamTerrainFieldSteps(samples,sea,stream,false,checkpoint)));}finally{fieldEnd();}
    // Base polygons/masks affect only sample centres, including the lighting halo.
    // Filter their bounds before decoding payloads. Feathered cover/pigment has
    // wider support and must keep its own conservative selection below.

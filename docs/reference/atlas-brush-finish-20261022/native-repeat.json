@@ -1,0 +1,378 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4130.849917
+    },
+    {
+      "name": "ready",
+      "time": 15129.643497
+    },
+    {
+      "name": "down",
+      "time": 17265.114265
+    },
+    {
+      "name": "released",
+      "time": 21688.064414
+    },
+    {
+      "name": "wheel-send",
+      "time": 22689.675662
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22727.165361
+    },
+    {
+      "name": "state-returned",
+      "time": 23054.290463
+    },
+    {
+      "name": "settled",
+      "time": 25257.868164
+    },
+    {
+      "name": "author-ready",
+      "time": 26808.74917
+    },
+    {
+      "name": "second-down",
+      "time": 26958.257493
+    },
+    {
+      "name": "second-released",
+      "time": 27264.695693
+    },
+    {
+      "name": "second-author-ready",
+      "time": 32236.633138
+    },
+    {
+      "name": "detail-ready",
+      "time": 45421.430571
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+    "pending": true,
+    "time": 20310.599999964237
+  },
+  "settledState": {
+    "ready": "loading",
+    "quality": "interactive",
+    "revision": "10",
+    "authorRevision": "10"
+  },
+  "authorState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "10",
+    "authorRevision": "10"
+  },
+  "secondStartState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "10",
+    "authorRevision": "10"
+  },
+  "secondState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "trace": {
+    "long": [
+      {
+        "start": 14496.299999952316,
+        "duration": 51
+      },
+      {
+        "start": 14548.199999988079,
+        "duration": 57
+      },
+      {
+        "start": 14606.099999964237,
+        "duration": 65
+      },
+      {
+        "start": 15328.699999988079,
+        "duration": 59
+      },
+      {
+        "start": 16511.19999998808,
+        "duration": 66
+      },
+      {
+        "start": 17582.69999998808,
+        "duration": 58
+      },
+      {
+        "start": 22105.799999952316,
+        "duration": 401
+      },
+      {
+        "start": 23689.599999964237,
+        "duration": 272
+      },
+      {
+        "start": 23961.69999998808,
+        "duration": 68
+      },
+      {
+        "start": 24263.099999964237,
+        "duration": 56
+      },
+      {
+        "start": 26064.599999964237,
+        "duration": 53
+      },
+      {
+        "start": 27505.099999964237,
+        "duration": 473
+      },
+      {
+        "start": 27979.5,
+        "duration": 94
+      },
+      {
+        "start": 29220.19999998808,
+        "duration": 219
+      }
+    ],
+    "changes": [
+      {
+        "time": 14458,
+        "view": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 19998.19999998808,
+        "view": "{\"x\":-19960434.183443177,\"y\":-14763920.826754177,\"width\":39928333.6152933,\"height\":29530330.069644004}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20017.299999952316,
+        "view": "{\"x\":-18271224.189482138,\"y\":-13579349.038536215,\"width\":36868632.49415632,\"height\":27267426.11546978}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20036.19999998808,
+        "view": "{\"x\":-17004359.707875285,\"y\":-12690950.361182982,\"width\":34573934.56520806,\"height\":25570305.77218513}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20046.299999952316,
+        "view": "{\"x\":-16397432.875760976,\"y\":-12265338.148725463,\"width\":33474595.397604786,\"height\":24757252.846145205}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20067.799999952316,
+        "view": "{\"x\":-15991036.60712608,\"y\":-11980349.570406023,\"width\":32738481.401586864,\"height\":24212835.20325695}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20084.5,
+        "view": "{\"x\":-15771859.778344955,\"y\":-11826650.096134983,\"width\":32341481.86266256,\"height\":23919220.960927516}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20100.099999964237,
+        "view": "{\"x\":-15598892.222301982,\"y\":-11705355.237652019,\"width\":32028182.138509255,\"height\":23687509.7066058}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20116.5,
+        "view": "{\"x\":-15492686.589720018,\"y\":-11630877.702853974,\"width\":31835809.671945695,\"height\":23545234.236543167}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20148.19999998808,
+        "view": "{\"x\":-15376754.15268083,\"y\":-11549579.169961711,\"width\":31625818.842591688,\"height\":23389928.5190001}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20170.799999952316,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 22506.099999964237,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "interactive",
+        "tiles": "4/48"
+      },
+      {
+        "time": 22528.799999952316,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "interactive"
+      },
+      {
+        "time": 23961.399999976158,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "10",
+        "quality": "overview"
+      },
+      {
+        "time": 27935.69999998808,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "interactive"
+      },
+      {
+        "time": 29438.899999976158,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "overview"
+      },
+      {
+        "time": 29916.799999952316,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "1/36"
+      },
+      {
+        "time": 30451.399999976158,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "2/36"
+      },
+      {
+        "time": 31142,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "3/36"
+      },
+      {
+        "time": 31578.399999976158,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "4/36"
+      },
+      {
+        "time": 31927.5,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "5/36"
+      },
+      {
+        "time": 32290.5,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "6/36"
+      },
+      {
+        "time": 32844,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "7/36"
+      },
+      {
+        "time": 33194.299999952316,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.223218873}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "8/36"
+      }
+    ],
+    "frames": [
+      {
+        "t": 14665.7,
+        "gap": 134.40000000000146
+      },
+      {
+        "t": 15380.5,
+        "gap": 75.29999999999927
+      },
+      {
+        "t": 16570.9,
+        "gap": 72.10000000000218
+      },
+      {
+        "t": 17639.6,
+        "gap": 71.19999999999709
+      },
+      {
+        "t": 22525.3,
+        "gap": 416.8999999999978
+      },
+      {
+        "t": 24016.8,
+        "gap": 316.8999999999978
+      },
+      {
+        "t": 24171.1,
+        "gap": 87.69999999999709
+      },
+      {
+        "t": 24304.5,
+        "gap": 66.70000000000073
+      },
+      {
+        "t": 28057.4,
+        "gap": 550.3000000000029
+      },
+      {
+        "t": 29479.6,
+        "gap": 250.1999999999971
+      }
+    ]
+  },
+  "detailState": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "12",
+    "authorRevision": "12",
+    "tiles": "36/36"
+  },
+  "source": "43f6429cbc5a5fd496fe3c9ebbc98426ec61b035",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-esomtN",
+  "artifacts": {
+    "main.cjs": "daaaf828884340b82c646274a7561a2c6ef8b61ca63e25fb47789def5249dab1",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "b7789f9230141ad3298a978a7a74ef7f052cde12910c10067d9ef9667fd2db98",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "e4dc53cb17e274eeb151a2b6fde334275ef828f53d12bb5fd1a30e6385cac92a",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3352313,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

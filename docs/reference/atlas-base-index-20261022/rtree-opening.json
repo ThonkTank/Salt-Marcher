@@ -1,0 +1,89 @@
+{
+  "runs": [
+    {
+      "label": "cold",
+      "firstTerrainMs": 5234.239673,
+      "regionReadyMs": 10869.29209,
+      "firstRegionState": "loading",
+      "state": {
+        "view": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "quality": "overview"
+      },
+      "files": [
+        {
+          "name": "9c3b8191ca7d9682df2ba31adb12e08ead9626eb1bf0187037d41a2a0e5f0036.jsonl",
+          "bytes": 9897192,
+          "mtimeMs": 1792621795145.6133
+        }
+      ],
+      "firstDetailMs": 11083.32279,
+      "detailReadyMs": 26346.187531,
+      "detailState": {
+        "quality": "detail",
+        "tiles": "48/48"
+      }
+    },
+    {
+      "label": "reopened",
+      "firstTerrainMs": 4998.827709999998,
+      "regionReadyMs": 8243.685037000003,
+      "firstRegionState": "loading",
+      "state": {
+        "view": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "quality": "overview"
+      },
+      "files": [
+        {
+          "name": "9c3b8191ca7d9682df2ba31adb12e08ead9626eb1bf0187037d41a2a0e5f0036.jsonl",
+          "bytes": 9897192,
+          "mtimeMs": 1792621795145.6133
+        }
+      ],
+      "firstDetailMs": 8534.143576000002,
+      "detailReadyMs": 24726.285857000003,
+      "detailState": {
+        "quality": "detail",
+        "tiles": "48/48"
+      }
+    }
+  ],
+  "source": "5f0968763b8efe285f57c174bf6a84dad801559c",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-cache-reopen-AXungw",
+  "artifacts": {
+    "main.cjs": "0089d34e99e1056775b245ebee65b57ff47f83fa41da2a035c4bfb9a843d4f72",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "46c2d01a371bfaa8c1d586948021fdf695e304a861910deffc72c1569bc08b83",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "0451384483f64a5d73dad40e7dcd13b94946ed77f015d710a07937132b9c2efc",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3302258,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3302676,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

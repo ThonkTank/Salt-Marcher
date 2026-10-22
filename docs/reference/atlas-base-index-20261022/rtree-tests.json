@@ -1,0 +1,52 @@
+{
+  "tests": 22,
+  "failures": 0,
+  "cases": [
+    "base refinement builds cooperatively after overview, preserves painter order and exact Float64/sample bounds",
+    "cancelled and rolled-back builds resume without missing pages or accepting incomplete indexes",
+    "source changes during a paused build and after publication track moved, removed and reclassified patches",
+    "rolling back metadata reset restores the previously complete index and its original candidates",
+    "SQLite without Rtree keeps the exact scan path and rolls back partial schema creation",
+    "colour jobs with 0 pigment layers yield to selection, share pixels and reject stale revisions",
+    "colour jobs with 12 pigment layers yield to selection, share pixels and reject stale revisions",
+    "sparse terrain kinds use ordered indexes and preserve exact streams through metadata changes",
+    "terrain line reads skip place and vegetation payloads while preserving painter order through kind changes and deletion",
+    "paged color reads preserve canonical order and exact rowids, without an open SQL statement between records",
+    "paged cover reads preserve canonical order and exact rowids, without an open SQL statement between records",
+    "interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output",
+    "navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets",
+    "coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read",
+    "yielding raster batches reproduce the complete projection byte for byte",
+    "live frames use changed interpolation support and reject a source overtaken before snapshot creation",
+    "terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse",
+    "colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse",
+    "selection preempts detail without cancelling it; a newer camera replaces it and retains the worker",
+    "a commit between slices rejects the old projection and fresh output agrees with a cold worker",
+    "live refinement yields to selection and fast author feedback; complete refinement agrees with a cold frame",
+    "a colour tile completes and closes background work even when the index is not yet ready"
+  ],
+  "logs": [
+    {
+      "path": ".build/base-index-interleaved-tests.log",
+      "sha256": "115d1c8e14036a67eee6ff18497a5903f620bd0cec2e957ac1d7a63cbd4ef5f0"
+    },
+    {
+      "path": ".build/base-index-interleaved-regression.log",
+      "sha256": "ff89c5c1b466cbe6e8e13f0eedd5a48dbe9bf332f93216f992b4daaecd3d8dea"
+    }
+  ],
+  "checks": [
+    {
+      "path": ".build/base-index-types.log",
+      "sha256": "9ce96242ae3e02a45f6bea1c86d425bdd4e64b91ec33765de3f81834e8ac8bb0"
+    },
+    {
+      "path": ".build/base-index-desktop-types.log",
+      "sha256": "0395b7e76a993373187d7abd491b5ed5ce716fe0c3678e189ffdee868d72908d"
+    },
+    {
+      "path": ".build/base-index-build.log",
+      "sha256": "86090115b3828fbde94f4ada9f64d9cf6df5cbd528b66f248adadccc61f1bab9"
+    }
+  ]
+}

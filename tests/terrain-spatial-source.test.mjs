@@ -27,7 +27,7 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  global.Worker=class{postMessage(job){jobs.push({job:structuredClone(job),worker:this});}terminate(){this.terminated=true;}};
  const input={clientWidth:1000,clientHeight:800,dataset:{}};
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
-  active:true,ready:false,input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
+  active:true,ready:false,firstSurface:new Set(),input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
   loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
   view:{batch:update=>update(),setDetail:(detail,rects)=>tiles.push({detail,rects}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
@@ -203,4 +203,87 @@ test('a confirmed new frame reports graphics recovery once and never before publ
  const f=fixture(t),recovered=[];f.ui.failureMessage='graphics';f.ui.host.recovered=m=>recovered.push(m);
  f.sync();const loading=f.load();assert.deepEqual(recovered,[]);f.resolveRead();await loading;
  assert.deepEqual(recovered,['graphics']);assert.equal(f.ui.failureMessage,null);
+});
+
+test('opening waits only for the first usable terrain, not colour/detail or object geometry',async t=>{
+ const f=fixture(t,{manualColor:true});let resolved=false;
+ const opening=f.ui.openSurface('campaign',frame,1,0).then(value=>{resolved=value;});
+ const loading=f.load();await new Promise(setImmediate);assert.equal(resolved,false);
+ f.resolveRead();await opening;assert.equal(resolved,true);assert.equal(f.published.length,1);assert.equal(f.colors.length,1);
+ assert.equal(f.ui.firstSurface.size,0);assert.equal(await f.ui.openSurface('campaign',frame,1,0),true);
+ f.ui.gesture(true);f.resolveColor(0);await loading;
+});
+test('stale bootstrap hands back to the full region without recursively awaiting refresh',async t=>{
+ const f=fixture(t);f.ui.host.refresh=()=>{throw Error('bootstrap must not recurse');};
+ const opening=f.ui.openSurface('campaign',frame,1,0),loading=f.load();
+ f.reads[0].resolve({ok:false,error:'Gelände inzwischen geändert. Ausschnitt erneut laden.'});
+ assert.equal(await opening,false);await loading;assert.deepEqual(f.errors,[]);assert.equal(f.ui.firstSurface.size,0);assert.equal(f.ui.needsLoad(),false);
+ f.ui.sync('campaign',frame,2,[],0,{cities:[],entrances:[],bindings:[],region:{revision:2}});assert.equal(f.ui.needsLoad(),true);
+});
+test('leaving the Atlas resolves bootstrap and a late terrain reply cannot publish',async t=>{
+ const f=fixture(t);f.input.style={};f.ui.view.dispose=()=>{};
+ const opening=f.ui.openSurface('campaign',frame,1,0),loading=f.load();f.ui.setActive(false);
+ assert.equal(await opening,false);f.resolveRead();await loading;assert.equal(f.published.length,0);
+});
+test('bootstrap exceptions remove their waiter and rejected modes do not start a read',async t=>{
+ const f=fixture(t);f.ui.sync=()=>{throw Error('init failure');};
+ await assert.rejects(f.ui.openSurface('campaign',frame,1,0),/init failure/);assert.equal(f.ui.firstSurface.size,0);
+ f.ui.failed=true;assert.equal(await f.ui.openSurface('campaign',frame,1,0),false);assert.equal(f.reads.length,0);
+});
+
+const region=(revision=2,fence='confirmed')=>({cities:[],entrances:[],bindings:[],region:{revision,fence}});
+async function confirmedGesture(t){
+ const f=fixture(t);f.sync();const initial=f.load();f.resolveRead();await initial;
+ f.ui.gesture(true);
+ const confirmed={...f.ui.baseline,revision:2,fence:'confirmed',identity:{revision:2,fence:'confirmed',key:'live'},detail:undefined};
+ f.ui.presentLive(confirmed,false);f.ui.gesture(false);
+ return {...f,confirmed};
+}
+test('matching confirmed gesture retains full heights and resumes only colour refinement',async t=>{
+ const f=await confirmedGesture(t),grid=f.ui.baseline.grid,pixels=f.ui.baseline.pixels,published=f.published.length,reads=f.reads.length;
+ f.ui.records=[{id:'old'}];f.ui.recordsSource=f.ui.source;
+ f.ui.sync('campaign',zoom(.9),2,[],100,region());
+ assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainReady,'ready');
+ assert.equal(f.ui.baseline.grid,grid);assert.equal(f.ui.baseline.pixels,pixels);assert.equal(f.published.length,published,'source handoff needs no second mesh upload');
+ assert.equal(f.ui.source,f.ui.requested);assert.equal(f.ui.baseline.source,f.ui.source);
+ assert.equal(f.ui.recordsSource,'');assert.deepEqual(f.ui.records,[],'author previews must not reuse records from the previous revision');
+ assert.deepEqual(f.ui.visibility().frame,zoom(.9));assert.equal(f.ui.view.interval,100);
+ assert.equal(f.ui.needsLoad(),true);await f.load();
+ assert.equal(f.reads.length,reads+1);assert.equal(f.reads.at(-1).query.width,512,'no duplicate overview');
+ assert.equal(f.reads.at(-1).query.revision,2);assert.equal(f.ui.needsLoad(),false);assert.equal(f.input.dataset.terrainQuality,'detail');
+});
+test('confirmed heights are never adopted for a different source, mesh or object context',async t=>{
+ const variants={
+  'missing region':f=>({atlas:undefined}),
+  'different fence':f=>({atlas:region(2,'other')}),
+  'newer revision':f=>({revision:3,atlas:region(3)}),
+  'different campaign':f=>({token:'other'}),
+  'wider view':f=>({box:zoom(2)}),
+  'new road':f=>({objects:[{kind:'road',id:'r',revision:1}]}),
+  'larger smooth halo':f=>{f.ui.host.tool=()=> 'smooth';return{};},
+  'different exaggeration':f=>{f.ui.exaggeration=2;return{};},
+  'unconfirmed preview':f=>{f.ui.baseline={...f.ui.baseline,draft:true};return{};},
+  'ordinary frame':f=>{f.ui.baseline={...f.ui.baseline,identity:undefined};return{};},
+  'coarser mesh':f=>{f.ui.baseline={...f.ui.baseline,grid:{...f.ui.baseline.grid,view:{...f.ui.baseline.grid.view,columns:97,rows:97}}};return{};},
+  'shifted mesh':f=>{f.ui.baseline={...f.ui.baseline,grid:{...f.ui.baseline.grid,view:{...f.ui.baseline.grid.view,box:{...f.ui.baseline.grid.view.box,x:1}}}};return{};},
+  'mismatched baseline':f=>{f.ui.baseline={...f.ui.baseline,source:'obsolete'};return{};},
+  'unready source':f=>{f.ui.ready=false;return{};},
+ };
+ for(const [name,change] of Object.entries(variants))await t.test(name,async t=>{
+  const f=await confirmedGesture(t),{token='campaign',box=frame,revision=2,objects=[],...rest}=change(f);
+  const atlas=Object.hasOwn(rest,'atlas')?rest.atlas:region();
+  f.ui.sync(token,box,revision,objects,0,atlas);
+  assert.equal(f.ui.ready,false);assert.equal(f.ui.baseline,null);assert.equal(f.input.dataset.terrainReady,'loading');
+  const pending=f.load();assert.equal(f.reads.at(-1).query.width,128);f.resolveRead(f.reads.length-1,revision);await pending;
+ });
+});
+test('a second gesture revokes refinement of an adopted source before publishing its newer height state',async t=>{
+ const f=fixture(t,{manualColor:true});f.sync();const initial=f.load();f.resolveRead();await new Promise(setImmediate);
+ f.ui.gesture(true);f.resolveColor(0);await initial;
+ f.ui.presentLive({...f.ui.baseline,revision:2,fence:'confirmed',identity:{revision:2,fence:'confirmed',key:'live'}},false);f.ui.gesture(false);
+ f.ui.sync('campaign',frame,2,[],0,region());assert.equal(f.ui.ready,true);
+ const detail=f.load();await new Promise(setImmediate);const index=f.colors.length-1,tiles=f.tiles.length;
+ f.ui.gesture(true);f.resolveColor(index);await detail;assert.equal(f.tiles.length,tiles,'late colour cannot overwrite the next gesture');
+ f.ui.presentLive({...f.ui.baseline,revision:3,fence:'next',identity:{revision:3,fence:'next',key:'live'}},false);f.ui.gesture(false);
+ f.ui.sync('campaign',frame,3,[],0,region(3,'next'));assert.equal(f.ui.ready,true);assert.equal(f.ui.baseline.identity.revision,3);
 });

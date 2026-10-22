@@ -425,3 +425,66 @@ test('room labels carry their canonical floor elevation and scope anchor through
  assert.deepEqual(label.workplane,{scopeId:'local',elevationM:12,anchor:{x:0,y:0}});
  assert(!JSON.stringify(label).includes('PRIVATE-TEXT'));
 });
+
+test('world opening indexes bounds without retaining all room shapes, then hydrates only requested geometry in a bounded cache',async t=>{
+ const f=fixture(t,4000),source=f.store.atlasRegionSource(f.shell.token),batches=[],prepare=f.db.prepare.bind(f.db);
+ f.db.prepare=(sql,...args)=>{if(sql.includes('rowid>?'))batches.push(sql);return prepare(sql,...args);};
+ await f.reader.sync(source);
+ assert.equal(f.db.prepare('SELECT count(*) n FROM temp.region_shape').get().n,4000);
+ assert(!f.db.prepare('PRAGMA temp.table_info(region_shape)').all().some(c=>c.name==='payload'),'the full-world index must not duplicate every geometry payload');
+ assert.equal(f.reader.shapePayloads.bytes,0);
+ let materialized=0;const exact=f.reader.materialize.bind(f.reader);f.reader.materialize=(...args)=>{materialized++;return exact(...args);};
+ const coarse=f.reader.read(source,{...query({x:-20000000,y:-12500000,width:40000000,height:25000000}),scopeId:null});
+ assert.equal(coarse.coverage.objects,1);assert.equal(materialized,0,'a world marker needs bounds, not all room details');
+ const near=f.reader.read(source,query());assert(near.rooms.length>0&&near.rooms.length<10);assert.equal(materialized,near.rooms.length);
+ assert(f.reader.shapePayloads.bytes>0);assert(f.reader.shapePayloads.bytes<=4*1024*1024);
+ const first=JSON.stringify(near.rooms);f.reader.read(source,{...query(),slice:0});assert.equal(JSON.stringify(f.reader.read(source,query()).rooms),first,'per-view slicing cannot mutate cached room geometry');
+ const focus=f.reader.focus(source,'room','r3999');assert(focus.point.x>19990);assert.equal(materialized,near.rooms.length+1);
+ // Query batching must follow the rowid cursor, not sort the campaign again for every page.
+ assert(batches.length>=4);
+ for(const sql of batches){
+  const plan=prepare('EXPLAIN QUERY PLAN '+sql).all(f.campaign.id,0);
+  assert(!plan.some(p=>p.detail.includes('TEMP B-TREE')));assert(plan.some(p=>p.detail.includes('rowid>?')));
+ }
+});
+
+test('terrain-only sync defers all room projection and later consumes changes across shared cursors',async t=>{
+ const f=fixture(t,100),project=f.reader.project.bind(f.reader);let projected=0,cursor;
+ f.reader.project=(...args)=>{projected++;return project(...args);};
+ const sync=async geometry=>{const source=f.store.atlasRegionSource(f.shell.token,cursor);await f.reader.sync(source,geometry);cursor={epoch:source.epoch,sequence:source.sequence};return source;};
+ await sync(false);assert.equal(projected,0);assert.equal(f.db.prepare('SELECT count(*) n FROM temp.region_shape').get().n,0);
+ let source=await sync(true);assert.equal(projected,100);assert(f.reader.read(source,query()).rooms.some(r=>r.id==='r0'));
+ const before=f.store.atlasRoom(f.shell.token,'r0');
+ f.store.atlasRoomCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,roomId:before.id,expectedRevision:before.revision,name:before.name,polygons:before.polygons.map(p=>({...p,outer:p.outer.map(p=>({x:p.x+1000,y:p.y}))})),sections:before.sections});
+ await sync(false);assert.equal(projected,100,'terrain must not build objects even after an edit');
+ f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?').run('Deferred name',f.campaign.id,'r1');
+ await sync(false);await sync(false);source=await sync(true);
+ assert.equal(projected,102,'the next geometry read applies both consumed changes without rebuilding');
+ f.db.exec('BEGIN');await f.reader.sync({...source,reset:false,changes:[]},false);f.db.exec('ROLLBACK');f.reader.rollback(false);
+ await sync(true);assert.equal(projected,102,'a rejected terrain query must retain the object index');
+ const view=f.reader.read(source,query());assert(!view.rooms.some(r=>r.id==='r0'));assert.equal(view.rooms.find(r=>r.id==='r1').name,'Deferred name');
+ f.store.db.prepare("INSERT INTO drawing_hidden VALUES(?,?,'local','room',1,1)").run(f.campaign.id,'r1');await sync(false);source=await sync(true);
+ assert(!f.reader.read(source,query()).rooms.some(r=>r.id==='r1'));
+});
+
+test('rolled-back TEMP sync invalidates JavaScript readiness and rebuilds on the same source',async t=>{
+ const f=fixture(t,5);await f.read();const old=f.store.atlasRoom(f.shell.token,'r0');
+ f.store.atlasRoomCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,roomId:old.id,expectedRevision:old.revision,name:old.name,polygons:old.polygons.map(p=>({...p,outer:p.outer.map(p=>({x:p.x+1000,y:p.y}))})),sections:old.sections});
+ const source=f.store.atlasRegionSource(f.shell.token,{epoch:f.source.epoch,sequence:f.source.sequence});
+ f.db.exec('BEGIN');await f.reader.sync(source);assert(!f.reader.read(source,query()).rooms.some(r=>r.id==='r0'));
+ f.db.exec('ROLLBACK');f.reader.rollback();
+ await f.reader.sync({...source,reset:false,changes:[]});assert(!f.reader.read(source,query()).rooms.some(r=>r.id==='r0'));
+});
+
+test('real worker keeps object edits consumed by terrain jobs until the next region',async t=>{
+ const f=fixture(t,10),service=new AtlasRegionService(new URL('../.build/atlas-region-worker.cjs',import.meta.url).pathname);t.after(()=>service.close());
+ const box={x:0,y:-2,width:100,height:100},q={view:{box,frame:box,columns:9,rows:9,focusM:0,tilt:0,rotation:0,exaggeration:1},width:16,height:16,contours:0,displayMpp:1};
+ const source=()=>f.store.atlasRegionSource(f.shell.token,service.cursor);
+ const terrain=()=>{const s=source();return service.terrain(s,{...q,revision:s.revision});};
+ await terrain();await assert.rejects(service.read(source(),{...query(),width:0}),/prüfen/);
+ assert((await service.read(source(),query())).rooms.some(r=>r.id==='r0'),'a rejected first region must not leave a rolled-back index marked ready');
+ const room=f.store.atlasRoom(f.shell.token,'r0');
+ f.store.atlasRoomCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,roomId:room.id,expectedRevision:room.revision,name:room.name,polygons:room.polygons.map(p=>({...p,outer:p.outer.map(p=>({x:p.x+1000,y:p.y}))})),sections:room.sections});
+ await terrain();await terrain();const result=await service.read(source(),query());assert(!result.rooms.some(r=>r.id==='r0'));assert(result.rooms.some(r=>r.id==='r1'));
+ assert.equal(service.diagnostics.workerStarts,1);
+});

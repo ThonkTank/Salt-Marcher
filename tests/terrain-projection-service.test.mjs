@@ -116,3 +116,23 @@ test('live refinement yields to selection and fast author feedback; complete ref
  try{const expected=await cold.liveTerrain(f.store.atlasRegionSource(f.token),query);assert.deepEqual(detail.projection,expected.projection);}finally{await cold.close();}
  assert.equal(service.diagnostics.workerStarts,1);
 });
+
+test('selection runs inside unfinished height-grid construction and the resumed projection equals a cold worker',{timeout:15000},async t=>{
+ const previous=process.env.SALTMARCHER_TERRAIN_TRACE;process.env.SALTMARCHER_TERRAIN_TRACE='1';
+ t.after(()=>{if(previous===undefined)delete process.env.SALTMARCHER_TERRAIN_TRACE;else process.env.SALTMARCHER_TERRAIN_TRACE=previous;});
+ const f=await slicedFixture(t),{service,store,token,campaign}=f;
+ store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'landscape-height-stroke',stroke:{mode:'raise',radius:180,strength:500,feather:1,samples:[{x:0,y:0,t:0},{x:0,y:0,t:1000}]}}});
+ const source=store.atlasRegionSource(token),box={x:-180,y:-180,width:360,height:360},q={...f.q,revision:source.revision,fence:source.fence,view:{...f.q.view,box,frame:box,columns:257,rows:257},width:16,height:16,detail:undefined,detailResolution:undefined};
+ // Start and synchronize the worker first, with a different tiny lattice.
+ await service.terrain(source,{...q,view:{...q.view,columns:9,rows:9}});
+ let done=false,selected;
+ const firstSlice=new Promise((resolve,reject)=>{const observe=reply=>{try{
+  if(!reply?.value?.terrainProjectionContinuation)return;service.worker.off('message',observe);
+  assert(reply.terrainTrace);assert(!reply.terrainTrace.events.some(e=>e.stage==='projection.grid'),'selection must enter before the grid has completed, not during later colour work');
+  selected=service.candidates(source,f.region,{x:0,y:0}).then(value=>{assert.equal(done,false);return value;});resolve();
+ }catch(error){reject(error);}};service.worker.on('message',observe);});
+ const projected=service.terrain(source,q).then(value=>{done=true;return value;});await firstSlice;await selected;const actual=await projected;
+ const cold=new AtlasRegionService(new URL('../.build/terrain-service-worker.cjs',import.meta.url).pathname);
+ try{assert.deepEqual(actual,await cold.terrain(store.atlasRegionSource(token),q));}finally{await cold.close();}
+ assert.equal(service.diagnostics.workerStarts,1);
+});

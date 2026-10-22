@@ -967,3 +967,18 @@ test('initial spatial read and graphics fallback require different confirmed reg
  ui.spatial.needsTerrainRaster=true;assert.equal(ui.regionQuery().contours,-1);assert.equal(ui.geometryCoversView(),false,'old groundless region cannot serve fallback');ui.loadedRegionQuery=ui.regionQuery();assert(ui.geometryCoversView());
  ui.spatial.needsTerrainRaster=false;assert.equal(ui.geometryCoversView(),false,'explicit camera retry replaces the fallback source');
 });
+
+for(const mode of ['surface','transport-error','source-error','hidden','new-owner','fallback'])test(`normal Atlas bootstrap yields to current object loading: ${mode}`,async t=>{
+ const f=fixture(t),status=f.document.createElement('p');status.id='atlas-save-status';f.document.body.append(status);
+ const owner={token:'bootstrap',campaign:{id:'world'}},calls=[];let release,reply;
+ const source=new Promise(resolve=>reply=resolve),surface=new Promise(resolve=>release=resolve);
+ f.window.campaign={atlasTerrainSource:async token=>{assert.equal(token,owner.token);if(mode==='transport-error')throw Error('IPC failed');return source;}};
+ const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:f.root,owner,data:null,family:'terrain',layout:{setActive(){}},camera:{view:{x:0,y:0,width:10,height:10}},landscape:{contours:()=>-1},spatial:{needsTerrainRaster:mode==='fallback',openSurface:async(token,box,revision,contours)=>{calls.push('terrain');assert.equal(revision,9);assert.equal(contours,-1);return surface;}},refresh:async()=>calls.push('region'),setFamily:async()=>calls.push('tools')});
+ const opening=ui.open();await new Promise(setImmediate);
+ if(mode==='hidden')ui.root.hidden=true;if(mode==='new-owner')ui.owner={token:'new'};
+ reply(mode==='source-error'?{ok:false,error:'unavailable'}:{ok:true,value:{revision:9}});await new Promise(setImmediate);
+ if(mode==='surface'){assert.deepEqual(calls,['terrain']);assert(ui.openingSurface);}
+ release(true);await opening;
+ assert.deepEqual(calls,mode==='surface'?['terrain','region','tools']:['hidden','new-owner'].includes(mode)?[]:['region','tools']);
+ assert.equal(ui.openingSurface??null,null);
+});

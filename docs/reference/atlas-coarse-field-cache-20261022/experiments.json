@@ -1,0 +1,1010 @@
+[
+  {
+    "path": ".build/coarse-field-parity/result.json",
+    "sha256": "f4b61bfe049e36f1940b0e017bbff9dd4add6c0ecadbe2aef87964f47640c9be",
+    "note": "Rejected: numerical fields without retention are evicted by decoded source blocks.",
+    "equal": true,
+    "runs": [
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 841.0964129999998,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 519.3111429999999,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 513.7687849999998,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 470.7244700000001,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1084.736312,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1016.8156850000005,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 964.8142719999996,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 971.1578530000006,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 834.5861779999996,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 647.4531759999991,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 552.5185860000001,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 527.7227280000006,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1773.695599999999,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1547.259288000001,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1363.4819869999992,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 1543.353234000002,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 550.0712319999984,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 524.6424810000026,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 507.6557360000006,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 540.9196419999971,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1572.1735310000004,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1509.0108789999977,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1590.1147960000017,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 1587.7793679999995,
+            "samples": 215573,
+            "cacheBytes": 16773858
+          }
+        ]
+      },
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 578.7808530000038,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 480.97398400000384,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 527.7448420000001,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 473.47713400000066,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1114.2066609999965,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 868.7403359999953,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1013.7441770000005,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 902.7100320000027,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": ".build/coarse-field-priority-parity/result.json",
+    "sha256": "b5320e286cda669323acff246c8dba01e472439a47149ed0b02db8359653d407",
+    "note": "Rejected: protecting all consumer data and up-to-128-pixel fields slows initial overview.",
+    "equal": true,
+    "runs": [
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 787.8578479999999,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 554.4770509999998,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 491.9275859999998,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 451.6802630000002,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1076.2686760000006,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 984.1127280000001,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 897.0793910000002,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 903.4543910000002,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 734.8332850000006,
+            "samples": 104981,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 216.34912299999996,
+            "samples": 1536,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 210.31320799999958,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 254.79883899999913,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1567.3284390000008,
+            "samples": 215573,
+            "cacheBytes": 16766407
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1467.4308220000003,
+            "samples": 66816,
+            "cacheBytes": 16760911
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 594.959245,
+            "samples": 3040,
+            "cacheBytes": 16760903
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 567.5443200000009,
+            "samples": 3040,
+            "cacheBytes": 16760903
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 578.7540249999984,
+            "samples": 104981,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 189.18331299999772,
+            "samples": 1536,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 204.79655300000013,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 199.87563900000168,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1486.9818699999996,
+            "samples": 215573,
+            "cacheBytes": 16766407
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1476.7112039999993,
+            "samples": 66816,
+            "cacheBytes": 16760911
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 465.749065,
+            "samples": 3040,
+            "cacheBytes": 16760903
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 460.9690950000004,
+            "samples": 3040,
+            "cacheBytes": 16760903
+          }
+        ]
+      },
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 651.9257960000032,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 477.69134699999995,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 539.1140699999996,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 559.9526020000012,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1039.683229000002,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 914.4758619999993,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1113.0999300000003,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 937.5723089999956,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": ".build/coarse-field-final-parity/result.json",
+    "sha256": "fb06392a2a13cab5690ac561a7514cd06f193894b9933f4752f80503b9a6d28f",
+    "note": "Rejected: limiting fields to 64 pixels alone does not remove the cost of protecting all consumer data.",
+    "equal": true,
+    "runs": [
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 706.3637089999997,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 620.9634150000002,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 560.9255839999996,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 486.74712199999976,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1136.0866860000006,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1018.9723869999998,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 901.9205399999992,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 992.2412179999992,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 729.4033780000009,
+            "samples": 104981,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 215.7990209999989,
+            "samples": 1536,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 204.4742409999999,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 282.5471639999996,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1798.0588009999992,
+            "samples": 215573,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1474.8215029999992,
+            "samples": 66816,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1545.6917819999999,
+            "samples": 66656,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 1458.2387220000019,
+            "samples": 66656,
+            "cacheBytes": 16767645
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 538.5266449999981,
+            "samples": 104981,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 182.90499099999943,
+            "samples": 1536,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 189.58283900000242,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 242.5578170000008,
+            "samples": 1312,
+            "cacheBytes": 16774041
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1634.221720999998,
+            "samples": 215573,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1438.7634410000028,
+            "samples": 66816,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 1437.1637119999978,
+            "samples": 66656,
+            "cacheBytes": 16767645
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 1475.1372009999977,
+            "samples": 66656,
+            "cacheBytes": 16767645
+          }
+        ]
+      },
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 678.9773599999971,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 493.62428,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 425.6192050000027,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 446.3681690000012,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1038.4196079999965,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 939.4017879999956,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 929.0290390000009,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 943.336884999997,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "path": ".build/coarse-field-retained-parity/result.json",
+    "sha256": "d45b3ba4eec6cb878e0a7c4f1f5e6e7f5c007064695e5c47985bfc13b16bebdc",
+    "note": "Selected policy before adding the bounded 4 MiB retained-field sublimit.",
+    "equal": true,
+    "runs": [
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 791.9160570000004,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 544.7000480000002,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 545.9384839999998,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 470.174575,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1125.6269789999997,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 945.0453729999999,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 931.4587920000004,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 976.5414920000003,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 686.7424919999994,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 448.56636099999923,
+            "samples": 68373,
+            "cacheBytes": 16770427
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 201.27296300000125,
+            "samples": 16746,
+            "cacheBytes": 16774059
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 212.85957800000142,
+            "samples": 1312,
+            "cacheBytes": 16774059
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1117.1304170000003,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 947.6347160000005,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 915.3276880000012,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 1029.9189369999986,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "after",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 561.7404150000002,
+            "samples": 104981,
+            "cacheBytes": 16773840
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 443.5174330000009,
+            "samples": 68373,
+            "cacheBytes": 16770427
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 186.3535690000026,
+            "samples": 16746,
+            "cacheBytes": 16774059
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 188.2227359999997,
+            "samples": 1312,
+            "cacheBytes": 16774059
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1118.3380659999966,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 1033.464928999998,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 971.3449009999968,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 911.1348419999995,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      },
+      {
+        "label": "before",
+        "rows": [
+          {
+            "width": 64,
+            "edit": 0,
+            "ms": 603.0210269999989,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 1,
+            "ms": 476.9771359999977,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 2,
+            "ms": 469.3727629999994,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 64,
+            "edit": 3,
+            "ms": 453.2068709999985,
+            "samples": 104981,
+            "cacheBytes": 16765636
+          },
+          {
+            "width": 128,
+            "edit": 0,
+            "ms": 1009.4090609999985,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 1,
+            "ms": 933.2387620000009,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 2,
+            "ms": 961.6455739999983,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          },
+          {
+            "width": 128,
+            "edit": 3,
+            "ms": 925.869283,
+            "samples": 215573,
+            "cacheBytes": 16766276
+          }
+        ]
+      }
+    ]
+  }
+]

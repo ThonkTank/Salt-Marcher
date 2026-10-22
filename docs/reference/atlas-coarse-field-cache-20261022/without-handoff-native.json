@@ -1,0 +1,385 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4151.511034
+    },
+    {
+      "name": "ready",
+      "time": 14792.93084
+    },
+    {
+      "name": "down",
+      "time": 17002.238314
+    },
+    {
+      "name": "released",
+      "time": 21412.425743
+    },
+    {
+      "name": "wheel-send",
+      "time": 22414.096549
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22473.959127
+    },
+    {
+      "name": "state-returned",
+      "time": 22779.970107
+    },
+    {
+      "name": "settled",
+      "time": 24185.637008
+    },
+    {
+      "name": "author-ready",
+      "time": 26917.369634
+    },
+    {
+      "name": "second-down",
+      "time": 27004.696178
+    },
+    {
+      "name": "second-released",
+      "time": 27309.421
+    },
+    {
+      "name": "second-author-ready",
+      "time": 30408.818858
+    },
+    {
+      "name": "detail-ready",
+      "time": 42680.317942
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+    "pending": true,
+    "time": 19973.30000001192
+  },
+  "settledState": {
+    "ready": "loading",
+    "quality": "interactive",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "authorState": {
+    "ready": "ready",
+    "quality": "refining",
+    "revision": "12",
+    "authorRevision": "12",
+    "tiles": "1/36"
+  },
+  "secondStartState": {
+    "ready": "ready",
+    "quality": "refining",
+    "revision": "12",
+    "authorRevision": "12",
+    "tiles": "1/36"
+  },
+  "secondState": {
+    "ready": "ready",
+    "quality": "refining",
+    "revision": "14",
+    "authorRevision": "14",
+    "tiles": "1/36"
+  },
+  "trace": {
+    "long": [
+      {
+        "start": 14151.5,
+        "duration": 69
+      },
+      {
+        "start": 14221.300000011921,
+        "duration": 55
+      },
+      {
+        "start": 14277.300000011921,
+        "duration": 65
+      },
+      {
+        "start": 15013.5,
+        "duration": 66
+      },
+      {
+        "start": 17290.30000001192,
+        "duration": 60
+      },
+      {
+        "start": 17538.600000023842,
+        "duration": 52
+      },
+      {
+        "start": 20957.399999976158,
+        "duration": 415
+      },
+      {
+        "start": 22709.100000023842,
+        "duration": 110
+      },
+      {
+        "start": 23737.30000001192,
+        "duration": 262
+      },
+      {
+        "start": 23999.600000023842,
+        "duration": 80
+      },
+      {
+        "start": 27170.69999998808,
+        "duration": 355
+      },
+      {
+        "start": 27526.399999976158,
+        "duration": 71
+      },
+      {
+        "start": 27650.69999998808,
+        "duration": 60
+      }
+    ],
+    "changes": [
+      {
+        "time": 19682.399999976158,
+        "view": "{\"x\":-19921234.081202786,\"y\":-14736431.4468812,\"width\":39857329.65651826,\"height\":29477816.725133292}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19696.30000001192,
+        "view": "{\"x\":-18145130.00105787,\"y\":-13490924.497597188,\"width\":36640235.47361426,\"height\":27098507.48569388}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19716.899999976158,
+        "view": "{\"x\":-17120703.162581638,\"y\":-12772537.123445615,\"width\":34784669.87939316,\"height\":25726162.09830119}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19728.80000001192,
+        "view": "{\"x\":-16435265.468576316,\"y\":-12291868.551863266,\"width\":33543122.35817597,\"height\":24807934.244067647}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19750.100000023842,
+        "view": "{\"x\":-16020323.33134839,\"y\":-12000887.116008462,\"width\":32791529.053008407,\"height\":24252068.3621208}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19779.69999998808,
+        "view": "{\"x\":-15605229.008223388,\"y\":-11709798.958596904,\"width\":32039660.090366893,\"height\":23695998.608500514}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19806.899999976158,
+        "view": "{\"x\":-15496845.63812149,\"y\":-11633794.268242428,\"width\":31843343.042635154,\"height\":23550805.791948915}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19836.80000001192,
+        "view": "{\"x\":-15375211.16478717,\"y\":-11548497.137570877,\"width\":31623023.996595632,\"height\":23387861.497482184}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 19856.19999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "quality": "refining",
+        "tiles": "5/48"
+      },
+      {
+        "time": 21371.69999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "interactive",
+        "tiles": "5/48"
+      },
+      {
+        "time": 21396.899999976158,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "interactive"
+      },
+      {
+        "time": 23999.19999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "refining",
+        "tiles": "1/36"
+      },
+      {
+        "time": 27486.600000023842,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "interactive",
+        "tiles": "1/36"
+      },
+      {
+        "time": 27552.100000023842,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "interactive"
+      },
+      {
+        "time": 27710.899999976158,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "1/36"
+      },
+      {
+        "time": 28102.69999998808,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "2/36"
+      },
+      {
+        "time": 28438.899999976158,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "3/36"
+      },
+      {
+        "time": 28893,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "4/36"
+      },
+      {
+        "time": 29251.899999976158,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "5/36"
+      },
+      {
+        "time": 29618,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "6/36"
+      },
+      {
+        "time": 29987.399999976158,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "7/36"
+      },
+      {
+        "time": 30386.100000023842,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "8/36"
+      },
+      {
+        "time": 30999.600000023842,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "9/36"
+      },
+      {
+        "time": 31582.5,
+        "view": "{\"x\":-15288031.931886386,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "10/36"
+      }
+    ],
+    "frames": [
+      {
+        "t": 14215.8,
+        "gap": 66.59999999999854
+      },
+      {
+        "t": 14328.4,
+        "gap": 112.60000000000036
+      },
+      {
+        "t": 15070.6,
+        "gap": 58.100000000000364
+      },
+      {
+        "t": 16154.5,
+        "gap": 52.600000000000364
+      },
+      {
+        "t": 17339,
+        "gap": 53.5
+      },
+      {
+        "t": 17586.1,
+        "gap": 60.89999999999782
+      },
+      {
+        "t": 21391.2,
+        "gap": 433.6000000000022
+      },
+      {
+        "t": 22849.1,
+        "gap": 133.5
+      },
+      {
+        "t": 24075,
+        "gap": 333.5
+      },
+      {
+        "t": 24287,
+        "gap": 62.599999999998545
+      },
+      {
+        "t": 27587.1,
+        "gap": 416.7999999999993
+      }
+    ]
+  },
+  "detailState": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "14",
+    "authorRevision": "14",
+    "tiles": "36/36"
+  },
+  "source": "9f3ec8ab5a445e4ae404b44045391757b2d0f190",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-8h0zLo",
+  "artifacts": {
+    "main.cjs": "6a67c78edbd1cc5e1aa5f6a54ce06298351421b428c29422071e67fb1328f78a",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "2146c00d527a54e47eacda701b07eded33a0dbb05551f01c62942cbdb0da84cf",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "ef6ef80536ea0f3cfe97a9ee54301f58b12615cda59b89e571562dcbeae62f1d",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3373579,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

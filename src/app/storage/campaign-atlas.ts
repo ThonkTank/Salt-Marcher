@@ -1,3 +1,5 @@
+import {ensureAtlasShapeSource} from './atlas-shape-source';
+import {advanceTerrainEnvironment} from './terrain-environment';
 import {validateTerritories} from './atlas-territories';
 import {validateRoute} from '../terrain-route';
 import {validateVegetation} from '../vegetation';
@@ -47,6 +49,7 @@ export function createCampaignAtlas(db: any, cam: string) {
     cam,
     id,
   );
+  ensureAtlasShapeSource(db,cam);
 }
 export function atlasRoot(db: any, cam: string) {
   const root = db
@@ -325,6 +328,7 @@ function history(db: any, cam: string, direction: "undo" | "redo") {
   db.pragma("defer_foreign_keys=ON");
   for (const d of direction === "undo" ? [...changes].reverse() : changes)
     restore(db, d, direction === "undo" ? d.before : d.after);
+  if (changes.some(d => d.table === "atlas_landscape")) advanceTerrainEnvironment(db, cam);
   const cursor = direction === "undo" ? ordinal - 1 : ordinal;
   db.prepare("UPDATE campaign_atlas SET cursor=? WHERE campaign_id=?").run(
     cursor,
@@ -499,6 +503,7 @@ export function executeAtlasWrite(
         const meaningful = [...changes.values()].filter(
           (d) => fp(d.before) !== fp(d.after),
         );
+        if (meaningful.some(d => d.table === "atlas_landscape")) advanceTerrainEnvironment(db, c.campaignId);
         if (meaningful.length) {
           const root = atlasRoot(db, c.campaignId);
           if(continuation){

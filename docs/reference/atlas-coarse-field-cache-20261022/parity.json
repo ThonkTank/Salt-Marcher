@@ -1,0 +1,386 @@
+{
+  "baseline": "9f3ec8ab5",
+  "files": {
+    "src/app/storage/atlas-region.ts": "bbf82617e13a11927ccdbf3f8360f464d09d791a8ce026115c693102e733b192",
+    "src/app/terrain-cache.ts": "4db7001fd9f2a4fa3798fc2dae9ecdb0f1c85c141d050d22cfc64e27027324cd",
+    "src/app/terrain-projection-cache.ts": "2ea8ca7b4a4d985be8f631f88d51e92209fd0b3c4f5a2e36cffbd09167fab26f",
+    "src/app/storage/terrain-color-raster.ts": "12fddbcb87f99a400b8d012cbce306756009c0fc734f24b9f65169c88d6d196f",
+    "src/app/storage/terrain-projection.ts": "d8e1a7c09056a7d12e63b05433f2e3bcea39bd08c87f90cf835424941dfc8663"
+  },
+  "equal": true,
+  "note": "Readonly CPU comparison after metadata sync. Invalidates a 2500-mile-radius area without changing the database; numerical edit/undo correctness is tested separately. No IPC, native input timing or physical target qualification.",
+  "runs": [
+    {
+      "label": "before",
+      "rows": [
+        {
+          "width": 64,
+          "edit": 0,
+          "ms": 783.015013,
+          "maxSliceMs": 82.47055900000032,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 1,
+          "ms": 518.4059539999998,
+          "maxSliceMs": 69.03790600000002,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 2,
+          "ms": 518.7022910000001,
+          "maxSliceMs": 74.27345300000025,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 3,
+          "ms": 467.3747449999996,
+          "maxSliceMs": 61.65537399999994,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 128,
+          "edit": 0,
+          "ms": 1083.3469100000002,
+          "maxSliceMs": 81.07226499999979,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 1,
+          "ms": 1019.1081690000001,
+          "maxSliceMs": 87.37312900000052,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 2,
+          "ms": 1124.7974969999996,
+          "maxSliceMs": 103.67288400000052,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 3,
+          "ms": 928.9731829999992,
+          "maxSliceMs": 82.08795500000087,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "rows": [
+        {
+          "width": 64,
+          "edit": 0,
+          "ms": 740.6727810000011,
+          "maxSliceMs": 82.7187240000003,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16773840,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 1,
+          "ms": 440.0437689999999,
+          "maxSliceMs": 67.30807300000015,
+          "queries": 33,
+          "samples": 68373,
+          "cacheBytes": 16770427,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 2,
+          "ms": 203.69387800000004,
+          "maxSliceMs": 53.307512999999744,
+          "queries": 13,
+          "samples": 16746,
+          "cacheBytes": 16774059,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 3,
+          "ms": 215.7414829999998,
+          "maxSliceMs": 52.05726400000094,
+          "queries": 2,
+          "samples": 1312,
+          "cacheBytes": 16774059,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 128,
+          "edit": 0,
+          "ms": 1088.7662109999983,
+          "maxSliceMs": 90.77535500000158,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 1,
+          "ms": 917.1202890000004,
+          "maxSliceMs": 94.77939400000105,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 2,
+          "ms": 914.1229590000003,
+          "maxSliceMs": 77.31593900000007,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 3,
+          "ms": 967.6518840000026,
+          "maxSliceMs": 99.84785000000011,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "rows": [
+        {
+          "width": 64,
+          "edit": 0,
+          "ms": 628.9280670000007,
+          "maxSliceMs": 85.54842900000222,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16773840,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 1,
+          "ms": 415.24028199999884,
+          "maxSliceMs": 54.40489900000102,
+          "queries": 33,
+          "samples": 68373,
+          "cacheBytes": 16770427,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 2,
+          "ms": 192.02802399999928,
+          "maxSliceMs": 54.308021000000736,
+          "queries": 13,
+          "samples": 16746,
+          "cacheBytes": 16774059,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 3,
+          "ms": 195.17623100000128,
+          "maxSliceMs": 59.153659999999945,
+          "queries": 2,
+          "samples": 1312,
+          "cacheBytes": 16774059,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 128,
+          "edit": 0,
+          "ms": 1067.8080779999982,
+          "maxSliceMs": 98.14145500000086,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 1,
+          "ms": 936.5243650000011,
+          "maxSliceMs": 97.0044999999991,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 2,
+          "ms": 1035.1782220000023,
+          "maxSliceMs": 94.65494600000238,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 3,
+          "ms": 978.579700000002,
+          "maxSliceMs": 100.89973699999973,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        }
+      ]
+    },
+    {
+      "label": "before",
+      "rows": [
+        {
+          "width": 64,
+          "edit": 0,
+          "ms": 624.1758990000017,
+          "maxSliceMs": 73.83321200000137,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 1,
+          "ms": 515.9645549999987,
+          "maxSliceMs": 79.8229199999987,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 2,
+          "ms": 423.07301799999914,
+          "maxSliceMs": 63.43472000000111,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 64,
+          "edit": 3,
+          "ms": 467.0632710000027,
+          "maxSliceMs": 75.05939399999988,
+          "queries": 35,
+          "samples": 104981,
+          "cacheBytes": 16765636,
+          "cacheLimit": 16777216,
+          "sha256": "37df9f65b0c5eb116587738e0ea4b083eb10ffce8c77edf9d6040a5c78977f67"
+        },
+        {
+          "width": 128,
+          "edit": 0,
+          "ms": 1043.6158400000022,
+          "maxSliceMs": 88.94418399999995,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 1,
+          "ms": 934.0968069999981,
+          "maxSliceMs": 87.97841800000242,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 2,
+          "ms": 917.5418849999987,
+          "maxSliceMs": 91.6142319999999,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        },
+        {
+          "width": 128,
+          "edit": 3,
+          "ms": 906.5074050000003,
+          "maxSliceMs": 93.75245899999936,
+          "queries": 44,
+          "samples": 215573,
+          "cacheBytes": 16766276,
+          "cacheLimit": 16777216,
+          "sha256": "f565accdfac9b9b6bfddf9fabc2bbb67b67d257f1566fca9e76c6fb6b0ff0a8e"
+        }
+      ]
+    }
+  ]
+}

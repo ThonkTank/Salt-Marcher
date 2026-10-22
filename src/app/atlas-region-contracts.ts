@@ -46,12 +46,16 @@ export interface AtlasObjectFocus {
 }
 export interface AtlasRegionCursor {epoch:string;sequence:number;shadow?:{epoch:string;sequence:number}}
 export interface AtlasRegionSource {
+ /** Durable geometry-only cache identity, verified again in the worker snapshot. */
+ shapeVersion?:string;
  filename:string;campaignId:string;token:string;fence:string;revision:number;epoch:string;sequence:number;
  shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
  reset:boolean;changes:{table:string;id:string;terrainBounds?:LandscapeBox}[];
 }
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
+ /** Cheap terrain bootstrap; no object index or geometry response is implied. */
+ atlasTerrainSource(token:string):Promise<import('./contracts').Result<{revision:number}>>;
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;
  atlasObjectFocus(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string):Promise<import('./contracts').Result<AtlasObjectFocus>>;
  atlasRegionCandidates(token:string,query:AtlasRegionQuery,point:Point,fence:string,offset?:number,layer?:'geometry'|'landscape'|'all',visualElementId?:string):Promise<import('./contracts').Result<AtlasHitPage>>;

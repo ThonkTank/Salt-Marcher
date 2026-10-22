@@ -1,0 +1,159 @@
+{
+  "uniquePassed": 37,
+  "logsSha256": {
+    "height-block-initial-tests.log": "42210c4843ae297c57a27d7cc04a12610e519543b402fa34f5e2101b44475c30",
+    "height-block-service-tests.log": "8560ad630d4b1aea9521ccd3cb927cb765312b92c39ab002ffefe5462c7e1d14",
+    "height-block-final-tests.log": "994b2c6574c1f2e2972ba76f4c67895a3faf85f946ce1dc8a40d7bc2c5391e04",
+    "height-block-final-field-tests.log": "b0a33a0ad4e25e140511a4c732ef965ef898244af7a8d13cb7c6eac7e126a52b"
+  },
+  "cases": {
+    "streamed heights match canonical sparse inheritance, negative coordinates, exact nodes and tile seams": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "sea, lake holes, crossing roads and rivers retain effective ground and canonical water precedence": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "scanline bands keep the same lattice at their boundary and can omit unused water geometry": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "two-dimensional blocks preserve canonical sample arithmetic at fractional origins and seams": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "streamed field produces identical relief, contours and painted coast pixels": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "database raster streams colors in their canonical order, including erase across resolutions": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "additive bands compose after the full legacy field at shared addresses, holes and negative seams": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "level coordinate reuse preserves fractional samples beyond 32-bit cell indices": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "yielded height bands preserve pixels and close all record iterators before yielding or cancellation": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "compact source lattices preserve repeated cells, disjoint cells and duplicate-tile rejection": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "direct and streamed rasters agree at authored edges and on route-only ground": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "small mixed-resolution inland worlds retain exact fallback pixels with block sampling": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "potential lake levels remain available above dry ground without changing the canonical water mask": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "height and shading caches reuse unaffected areas; warm edits match cold/full projections and invalidate deleted heights": {
+      "passed": true,
+      "log": "height-block-initial-tests.log"
+    },
+    "a small authored change missed by the overview lattice changes the active detail raster": {
+      "passed": true,
+      "log": "height-block-initial-tests.log"
+    },
+    "small raster pieces match full shading at fractional origins, odd output sizes and contour seams": {
+      "passed": true,
+      "log": "height-block-initial-tests.log"
+    },
+    "colour jobs with 0 pigment layers yield to selection, share pixels and reject stale revisions": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "colour jobs with 12 pigment layers yield to selection, share pixels and reject stale revisions": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "decoded blocks serve new sample lattices without rereading payloads and match raw sparse height arithmetic": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "sculpt, Undo, Redo and deletion invalidate decoded sources before rebuilding affected fields": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "external canonical replacement resets decoded blocks, including unchanged row identity": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "cache pressure shares the projection quota and eviction changes only reads, not terrain": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "an unsampled height source stays undecoded; sampled failures are not accepted as cached data": {
+      "passed": true,
+      "log": "height-block-final-field-tests.log"
+    },
+    "fixed height codec preserves little-endian values, NaNs, signed zero and subnormals in Node and renderer bundles": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "existing atob-compatible padding and whitespace retain their exact decoding behavior": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "malformed alphabet, lengths, padding and invalid height values still fail closed": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "sparse terrain kinds use ordered indexes and preserve exact streams through metadata changes": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "terrain line reads skip place and vegetation payloads while preserving painter order through kind changes and deletion": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "navigation stages validate at portrait, landscape and extreme scales with fixed geometry budgets": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "coarse colour and final colour have byte-identical terrain geometry; staged final equals a cold full read": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "yielding raster batches reproduce the complete projection byte for byte": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "live frames use changed interpolation support and reject a source overtaken before snapshot creation": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "terrain lane supersedes only its pending projection and remains cancellable with warm worker reuse": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "colour change evidence spans intervening region reads, multiple edits and Undo; restart resets reuse": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "selection preempts detail without cancelling it; a newer camera replaces it and retains the worker": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "a commit between slices rejects the old projection and fresh output agrees with a cold worker": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    },
+    "live refinement yields to selection and fast author feedback; complete refinement agrees with a cold frame": {
+      "passed": true,
+      "log": "height-block-service-tests.log"
+    }
+  }
+}

@@ -15,10 +15,23 @@ import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
 import {terrainNavigationPlan} from './terrain-navigation-plan';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
+const samplingKey=(v:TerrainView)=>JSON.stringify([v.box,v.refinement,v.columns,v.rows,v.exaggeration]);
 
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
 export class TerrainSpatialUI implements AtlasPresentation {
   active=false;ready=false;
+  private firstSurface=new Set<(ready:boolean)=>void>();
+  private settleFirstSurface(ready:boolean){for(const resolve of this.firstSurface)resolve(ready);this.firstSurface.clear();}
+  /** The regular Atlas surface can load before object geometry is available. */
+  openSurface(token:string,frame:LandscapeBox,revision:number,contours:number):Promise<boolean>{
+    if(this.needsTerrainRaster)return Promise.resolve(false);
+    return new Promise(resolve=>{
+      this.firstSurface.add(resolve);
+      try{this.sync(token,frame,revision,[],contours);}
+      catch(error){this.firstSurface.delete(resolve);throw error;}
+      if(!this.active)this.settleFirstSurface(false);else if(this.ready)this.settleFirstSurface(true);
+    });
+  }
   private canvas:HTMLCanvasElement|null=null;
   private view:TerrainSpatialView|null=null;
   private worker:Worker|null=null;
@@ -27,6 +40,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private recordsSource='';private draftLoading=false;
   private params:TerrainView|null=null;
   private source='';private requested='';private generation=0;private busy=false;private queued=false;private lastDraft='';
+  private requestedGeometry='';
   private baseline:(SpatialReply & {fence?:string;revision?:number})|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
@@ -133,6 +147,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   presentLive(data:import('./terrain-projection').TerrainProjection,refined=true){
     if(!this.active)return;
+    // Gesture completion may release author tools after full heights and coarse
+    // colour. Resume ordinary detail loading even for a receipt-only/no-op write.
+    if(!refined)this.detailSource='';
     const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange);
     this.colorTiles.detail=detail;
     // The retained image has different tile rectangles from the live brush patch.
@@ -152,7 +169,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(active&&this.failed)return;
     if(active&&(document.getElementById('atlas-perception') as HTMLInputElement).checked)return;
     if(this.active===active)return;this.active=active;
-    if(!active){this.liveHeight=false;delete this.input.dataset.terrainDraft;this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
+    if(!active){this.settleFirstSurface(false);this.liveHeight=false;delete this.input.dataset.terrainDraft;this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;delete this.input.dataset.terrainTiles;this.host.redraw();return;}
     try{
       this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
@@ -184,8 +201,24 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.objectSources=atlas?terrainObjectSources(atlas,display):[];
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight,terrainCoverageLevel(this.tilt));
-    const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
-    if(source!==this.requested){delete this.input.dataset.terrainTiles;this.requested=source;this.ready=false;this.input.dataset.terrainReady='loading';this.generation++;this.busy=false;this.queued=false;this.baseline=null;this.worker?.terminate();this.worker=null;this.scheduleLoad(contours);return;}
+    const geometry=JSON.stringify([token,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
+    const source=JSON.stringify([revision,geometry]);
+    if(source!==this.requested){
+      const base=this.baseline,identity=base?.identity;
+      const expected=terrainNavigationPlan(this.sourceWindow,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources)[0].view;
+      // A confirmed live frame already contains the full navigation mesh. Only
+      // adopt it after the region confirms the same source and all inputs other
+      // than revision remain unchanged. Draft/ordinary frames have no identity.
+      const adopt=this.ready&&!this.sourceRefresh&&geometry===this.requestedGeometry&&base?.source===this.source&&this.source===this.requested&&
+        !base.draft&&samplingKey(base.grid.view)===samplingKey(expected)&&identity?.revision===revision&&identity.fence===atlas?.region?.fence;
+      delete this.input.dataset.terrainTiles;this.requested=source;this.requestedGeometry=geometry;
+      this.generation++;this.busy=false;this.queued=false;this.worker?.terminate();this.worker=null;
+      if(adopt){
+        this.source=source;this.baseline={...base,source};this.records=[];this.recordsSource='';this.lastDraft='null';this.detailSource='';
+        this.params={...base.grid.view,frame:{...frame},tilt:this.tilt,rotation:this.rotation};
+      }else{this.ready=false;this.input.dataset.terrainReady='loading';this.baseline=null;}
+      this.scheduleLoad(contours);return;
+    }
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);
     if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
@@ -249,6 +282,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
   }
   private sourceFailed(source:string,error:unknown){
     if(!this.active||this.requested!==source||this.sourceRefresh||this.host.writing()||this.host.live())return;
+    if(this.firstSurface.size&&String(error).includes('inzwischen geändert')){
+      this.sourceRefresh={region:this.regionSource,pending:false};this.settleFirstSurface(false);return;
+    }
     if(String(error).includes('inzwischen geändert')&&this.retrySource!==source&&this.host.refresh){
       this.retrySource=source;this.ready=false;const refresh={region:this.regionSource,pending:true};this.sourceRefresh=refresh;let completed=false;
       void this.host.refresh().then(value=>{completed=value===true;}).catch(e=>{if(this.active&&this.sourceRefresh===refresh)this.fail(e);}).finally(()=>{
@@ -266,7 +302,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.view!.batch(()=>{
       this.view!.setData(data);this.reframe(this.frame!);this.view!.setContours(this.pendingContours);
       this.view!.showSelection(this.host.selection());
-    });this.ready=true;
+    });this.ready=true;this.settleFirstSurface(true);
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
     this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
     if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}

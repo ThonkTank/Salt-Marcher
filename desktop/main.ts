@@ -1,3 +1,4 @@
+import {eraseAtlasRegionCache,clearAtlasRegionCacheCandidates} from '../src/app/storage/atlas-region-cache';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
 import {terrainSnapshotStillValid} from '../src/app/terrain-presentation';
@@ -67,7 +68,7 @@ else {
   let updateRuntime:Awaited<ReturnType<typeof openUpdateRuntime>>|null=null;
   let backupRunning = false;
   let backupError: string | null = null;
-  async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});store.finishCampaignErasure(id);}
+  async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});await eraseAtlasRegionCache(path.join(dataDir,'atlas-region-cache'),store.filename,id);store.finishCampaignErasure(id);}
   const dungeonImportPreviews = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
   const root = path.join(__dirname, 'ui');
   const origin = 'campaign://app/index.html';
@@ -77,6 +78,7 @@ else {
     const updates=new UpdateService({version:__APP_VERSION__,root:updateRuntime.root,settings:path.join(dataDir,'update-settings.json'),publicKey:updateRuntime.root?await updateRuntime.publicKey():'',emit:status=>{if(win&&!win.isDestroyed())win.webContents.send('update:status',status);}});
     await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
+    await clearAtlasRegionCacheCandidates(path.join(dataDir,'atlas-region-cache'));
     for(const id of store.pendingCampaignErasures())await finishPendingCampaignErasure(id);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);
@@ -121,12 +123,12 @@ else {
       });
     }
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
-    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')dungeonImportPreviews.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishPendingCampaignErasure(c.id);}return result;});
-    handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase')await finishPendingCampaignErasure(result.campaignId);return result;});
+    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')dungeonImportPreviews.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){await Promise.all([atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishPendingCampaignErasure(c.id);}return result;});
+    handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase'){await Promise.all([atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);await finishPendingCampaignErasure(result.campaignId);}return result;});
     handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
     handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();dungeonImportPreviews.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
-    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,16*1024*1024),atlasExportRegions=new AtlasRegionService(undefined,16*1024*1024);
+    const roomDirectory=new RoomDirectoryService(),atlasRoomDirectory=new RoomDirectoryService(),atlasRegions=new AtlasRegionService(undefined,16*1024*1024,path.join(dataDir,'atlas-region-cache')),atlasExportRegions=new AtlasRegionService(undefined,16*1024*1024,path.join(dataDir,'atlas-region-cache'));
     let graphSourceReadBarrierDepth=0;
     async function withGraphSourceReadBarrier<T>(operation:()=>T):Promise<T>{
       graphSourceReadBarrierDepth++;
@@ -411,6 +413,7 @@ else {
       const value=await atlasRegions.terrainColor(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
+    handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:store.atlasRegionSource(token).revision};});
     handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
       const reader=consumer==='view'?atlasRegions:atlasExportRegions,source=store.atlasRegionSource(token,reader.cursor);
