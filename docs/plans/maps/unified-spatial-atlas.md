@@ -425,6 +425,15 @@ Bearbeitungszyklen und ersetzt die Zielgerätequalifikation nicht.
 
 ### Nächster Architekturabschnitt: persistente räumliche Projektionen
 
+[Detailbilder auf der GPU halten](../../reference/atlas-gpu-detail-20261022/README.md):
+Der normale Atlas übernimmt Farbe und Waldkanal bei Kamerawechseln auf der GPU.
+Angenommene Kacheln bleiben unverändert; lokale Änderungen löschen betroffene
+Bereiche ohne vollständige CPU-Bildkopie. Die ersetzte CPU-Übernahme ist entfernt.
+25 native Pixelvergleiche und vier Hauptkamera-/Ausgabevergleiche bestehen.
+Die abschließende Mischwelt erreicht Navigation p95 24,8 ms, aber Pinselantworten
+von 253/175 ms. Vollständige Verfeinerung und Recovery bestehen funktional;
+Öffnungs-, Frame- und Pinselziele sowie Pentium- und Gestaltungsabnahme bleiben offen.
+
 [Drei Optionen, Entscheidung und Prüfgrenzen](atlas-persistent-projection.md):
 Statt weitere Einzelkosten zum Hauptziel zu machen, werden fertig aufgebaute
 räumliche Indizes dauerhaft wiederverwendet und bei Änderungen gezielt gepflegt.

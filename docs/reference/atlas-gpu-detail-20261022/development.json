@@ -1,0 +1,310 @@
+{
+  "root": "/home/aaron/Schreibtisch/projects/SaltMarcher",
+  "command": [
+    "npm",
+    "run",
+    "start:desktop",
+    "--",
+    "--remote-debugging-address=127.0.0.1",
+    "--remote-debugging-port=43061",
+    "--data-dir",
+    "/home/aaron/.cache/saltmarcher/ui/atlas-development-RvDDDi"
+  ],
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-development-RvDDDi",
+  "source": "ecbfaa34490122b2ca6bc615a5e99f2f4aa50bd7",
+  "checks": [
+    "Overview geometry becomes usable before fine colour; center-first colour tiles appear incrementally and wheel navigation responds during refinement on the same canvas.",
+    "npm run start:desktop launches this repository; campaign navigation opens the main Atlas.",
+    "Tilt, rotation and wheel zoom retain the same main canvas.",
+    "Automatic GPU contours match screen-space reference ink across four scales; tiled output retains identical levels.",
+    "Main view omits duplicate ground images; actual GPU loss reloads complete Canvas terrain and explicit retry restores the main camera."
+  ],
+  "errors": [],
+  "loading": {
+    "stages": [
+      {
+        "quality": "overview",
+        "time": 2659,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -1350,
+            "width": 2700,
+            "height": 2700
+          },
+          "frame": {
+            "x": -450,
+            "y": -364.71774193548384,
+            "width": 900,
+            "height": 729.4354838709677
+          },
+          "refinement": {
+            "x": -675,
+            "y": -547.0766129032257,
+            "width": 1350,
+            "height": 1094.1532258064515
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      },
+      {
+        "quality": "refining",
+        "time": 3405.399999976158,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -1350,
+            "width": 2700,
+            "height": 2700
+          },
+          "frame": {
+            "x": -399.1141965227209,
+            "y": -323.4756189559149,
+            "width": 798.2283930454417,
+            "height": 646.9512379118298
+          },
+          "refinement": {
+            "x": -675,
+            "y": -547.0766129032257,
+            "width": 1350,
+            "height": 1094.1532258064515
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      },
+      {
+        "quality": "detail",
+        "time": 9740,
+        "view": {
+          "projection": "perspective",
+          "box": {
+            "x": -1350,
+            "y": -1350,
+            "width": 2700,
+            "height": 2700
+          },
+          "frame": {
+            "x": -399.1141965227209,
+            "y": -323.4756189559149,
+            "width": 798.2283930454417,
+            "height": 646.9512379118298
+          },
+          "refinement": {
+            "x": -675,
+            "y": -547.0766129032257,
+            "width": 1350,
+            "height": 1094.1532258064515
+          },
+          "columns": 257,
+          "rows": 257,
+          "focusM": 110,
+          "tilt": 0,
+          "rotation": 0,
+          "exaggeration": 1
+        }
+      }
+    ],
+    "cameraQuality": "overview",
+    "tiles": [
+      {
+        "tiles": "1/36",
+        "time": 3405.399999976158
+      },
+      {
+        "tiles": "2/36",
+        "time": 3832.600000023842
+      },
+      {
+        "tiles": "3/36",
+        "time": 4021.5
+      },
+      {
+        "tiles": "4/36",
+        "time": 4174.800000011921
+      },
+      {
+        "tiles": "5/36",
+        "time": 4339.199999988079
+      },
+      {
+        "tiles": "6/36",
+        "time": 4473.300000011921
+      },
+      {
+        "tiles": "7/36",
+        "time": 4636.399999976158
+      },
+      {
+        "tiles": "8/36",
+        "time": 4764.600000023842
+      },
+      {
+        "tiles": "9/36",
+        "time": 4938.199999988079
+      },
+      {
+        "tiles": "10/36",
+        "time": 5079.600000023842
+      },
+      {
+        "tiles": "11/36",
+        "time": 5214.600000023842
+      },
+      {
+        "tiles": "12/36",
+        "time": 5340.699999988079
+      },
+      {
+        "tiles": "13/36",
+        "time": 5482.100000023842
+      },
+      {
+        "tiles": "14/36",
+        "time": 5637.899999976158
+      },
+      {
+        "tiles": "15/36",
+        "time": 5776
+      },
+      {
+        "tiles": "16/36",
+        "time": 5911
+      },
+      {
+        "tiles": "17/36",
+        "time": 6034.800000011921
+      },
+      {
+        "tiles": "18/36",
+        "time": 6159.899999976158
+      },
+      {
+        "tiles": "19/36",
+        "time": 6320
+      },
+      {
+        "tiles": "20/36",
+        "time": 6455.199999988079
+      },
+      {
+        "tiles": "21/36",
+        "time": 6639
+      },
+      {
+        "tiles": "22/36",
+        "time": 6834.199999988079
+      },
+      {
+        "tiles": "23/36",
+        "time": 6962.399999976158
+      },
+      {
+        "tiles": "24/36",
+        "time": 7123.399999976158
+      },
+      {
+        "tiles": "25/36",
+        "time": 7302.699999988079
+      },
+      {
+        "tiles": "26/36",
+        "time": 7445.199999988079
+      },
+      {
+        "tiles": "27/36",
+        "time": 7873.100000023842
+      },
+      {
+        "tiles": "28/36",
+        "time": 8002.600000023842
+      },
+      {
+        "tiles": "29/36",
+        "time": 8148.300000011921
+      },
+      {
+        "tiles": "30/36",
+        "time": 8276.199999988079
+      },
+      {
+        "tiles": "31/36",
+        "time": 8423.800000011921
+      },
+      {
+        "tiles": "32/36",
+        "time": 8553
+      },
+      {
+        "tiles": "33/36",
+        "time": 8665.5
+      },
+      {
+        "tiles": "34/36",
+        "time": 8790
+      },
+      {
+        "tiles": "35/36",
+        "time": 8901.399999976158
+      },
+      {
+        "tiles": "36/36",
+        "time": 9030.899999976158
+      }
+    ]
+  },
+  "camera": {
+    "projection": "perspective",
+    "box": {
+      "x": -1336.7916645179541,
+      "y": -1336.7916645179541,
+      "width": 2673.5833290359083,
+      "height": 2673.5833290359083
+    },
+    "frame": {
+      "x": -219.0385151819872,
+      "y": -177.5271836757235,
+      "width": 438.0770303639744,
+      "height": 355.054367351447
+    },
+    "refinement": {
+      "x": -334.19791612948853,
+      "y": -270.86202073398067,
+      "width": 668.3958322589771,
+      "height": 541.7240414679613
+    },
+    "columns": 257,
+    "rows": 257,
+    "focusM": 110,
+    "tilt": 45,
+    "rotation": 25,
+    "exaggeration": 1
+  },
+  "fallbackMs": 3239.706155,
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "pidAbsent": true,
+  "artifacts": {
+    "main.cjs": "cfaf373e8ed2695d7644fd8ded188f86fb98fdf145e1bc2648439ef739745eae",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "ui/renderer.js": "fb05ea8eb38cf5c73b5b99a71fe893f46d17fb20f9987e5766a7841d9594dee4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3"
+  },
+  "rawResult": {
+    "path": ".build/gpu-detail-development/result.json",
+    "sha256": "58e2d32166ced37d7e45e8f9f3bfc47b03274cb6957543669955e97497553375"
+  }
+}

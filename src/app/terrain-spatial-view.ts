@@ -1,3 +1,4 @@
+import type {TerrainColorFrame} from './terrain-color-frame';
 import {TerrainBrushDraft} from './terrain-brush-draft';
 import {TerrainDraftMaterial} from './terrain-draft-material';
 import {atlasWorkplaneHeight,type AtlasWorkplane} from './atlas-workplane';
@@ -124,6 +125,11 @@ export class TerrainSpatialView {
     if(!this.mesh||!this.grid)return;
     this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{grid:this.grid,detail},rects);this.render();
   }
+  prepareColorFrames(){this.detail??=new TerrainDetailMaterial(this.renderer);return this.detail.prepareColorFrames();}
+  setColorFrame(frame:TerrainColorFrame){
+    if(!this.mesh||!this.grid)return;
+    this.detail!.update(this.mesh.material,{grid:this.grid},undefined,undefined,frame);this.render();
+  }
   previewHeight(stroke:import('./terrain-brush').HeightStroke){
     if(!this.mesh||!this.grid?.editing)return false;
     this.brushDraft??=new TerrainBrushDraft(this.grid);
@@ -134,7 +140,7 @@ export class TerrainSpatialView {
     this.cursor.refresh(this.grid,this.origin);this.selection.refresh(this.grid,this.origin);
     this.render();return true;
   }
-  setData(data:SpatialReply){
+  setData(data:SpatialReply,frame?:TerrainColorFrame){
     this.brushDraft=null;
     const previous=this.grid,oldOrigin=this.origin;
     const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view;
@@ -147,7 +153,7 @@ export class TerrainSpatialView {
       if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
       this.mesh=next.mesh;this.scene.add(this.mesh);
     }
-    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail,partial?{base:partial.forest,detail:partial.detailForest}:undefined);
+    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail,partial?{base:partial.forest,detail:partial.detailForest}:undefined,frame);
     this.hexGrid.attach(this.mesh.material);
     this.draftMaterial??=new TerrainDraftMaterial();this.draftMaterial.attach(this.mesh,g,data.landColor);
     if(!data.draft&&!this.frozenPick){

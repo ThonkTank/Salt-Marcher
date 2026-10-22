@@ -1,0 +1,29 @@
+{
+  "base": "ecbfaa34490122b2ca6bc615a5e99f2f4aa50bd7",
+  "sourceHashes": {
+    "src/app/terrain-color-frame.ts": "a7df1d82b4066dc9b94f8b9b8c72414c3be43c7b8cfccb16027ad0e37fe10b31",
+    "src/app/terrain-color-surface.ts": "4e8d6b80bbacf99f959c8b1fd4a7d9c3fba687f980ee30a16c003a010125fe91",
+    "src/app/terrain-detail-material.ts": "582eb901be3a91050833a28f7483e7aa9d8beea1418299c532f7574199ad378b",
+    "src/app/terrain-detail-tiles.ts": "7b07efe36681ed13841660ca13f4b5a2995d9d7a92e16017e5aa060bf245465e",
+    "src/app/terrain-spatial-ui.ts": "6c34a885e256e535a2e4b21a80ce1cf2107feacdde814470b1a3765835c7cd0f",
+    "src/app/terrain-spatial-view.ts": "08268040e448b246e2daba538d2742e465e97b8580629774fbc5d8eb96e124bc",
+    "tests/terrain-color-retention.test.mjs": "3569d2a6ac54a6fee0c1fddec7d81777fb53756a993aebbcd58c622651c48481",
+    "tests/terrain-spatial-source.test.mjs": "2c84105cf6cf851b358031385320f5876fcfcc9da7cf2001aced422ded0549dc",
+    "tools/terrain-color-reference.mjs": "8b4986f38adff2ace146eaf8d76d01e47978abe05ec9862c91af0aba1c8c2088",
+    "tools/terrain-color-surface-probe.mjs": "97206bf36a9992df8c61675c65283e94eefeb53d1d09cf26ab65c57e36b964d8",
+    "tools/test-desktop-terrain-color-surface.mjs": "8886f3f7d9a5338c718e874614fd12282cf993762f0cda70edeb36bf593bdb3d"
+  },
+  "targeted": {
+    "tests": 83,
+    "pass": 83,
+    "fail": 0,
+    "log": ".build/gpu-detail-tests-final.log"
+  },
+  "checks": {
+    "appTypes": ".build/gpu-detail-types-final.log",
+    "desktopTypes": ".build/gpu-detail-desktop-types-final.log",
+    "desktopBuild": ".build/gpu-detail-build-final.log",
+    "repository": ".build/gpu-detail-repo-final.log"
+  },
+  "qualification": "Local developer host; not exact-SHA CI, release, Pentium acceptance, aesthetic acceptance or 30-minute editing plateau"
+}

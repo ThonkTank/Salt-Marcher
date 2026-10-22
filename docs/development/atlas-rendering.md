@@ -116,10 +116,12 @@ halten die Teilverbesserung und verbleibende Ladegrenzen fest.
 Die Hauptkamera veröffentlicht zuerst die vollständige Geometrie mit höchstens
 128×128 Farbpixeln. Danach lädt `TerrainDetailTiles` weltfest ausgerichtete
 256×256-Farbkacheln von der Mitte nach außen und veröffentlicht jede fertige
-Kachel über `TerrainSpatialView.setDetail`. `terrain-texture-upload.ts` überträgt
-bestätigte Rechtecke mit jeweils einer GPU-Kopie und vollständige Bilder mit
-einem Upload; Boden, Detail und Live-Pinsel teilen diesen Weg. Die CPU-Quelle
-teilt die vorhandenen Pixel und belegt keine zusätzliche GPU-Textur. Das verändert weder Höhen noch
+Kachel über `TerrainSpatialView.setColorFrame`. `TerrainColorSurface` hält das
+zusammengesetzte Farb-/Waldbild auf der GPU, übernimmt vorhandene Weltpixel bei
+Kamerawechseln und lädt ausschließlich neue angenommene Kacheln hoch.
+`terrain-texture-upload.ts` überträgt weiterhin bestätigte CPU-Pinselpatches und
+Grundbilder. Die CPU-Quelle teilt die vorhandenen Pixel und belegt keine
+zusätzliche GPU-Textur. Das verändert weder Höhen noch
 Treffer, Objekte oder deren GPU-Puffer. Zuletzt wird die weite Kontexttextur auf
 höchstens 512×512 Pixel verfeinert. `terrain-navigation-plan.ts` bleibt Besitzer
 der beiden Geometrie-/Kontextanfragen; die feine Farbe dazwischen verwendet
@@ -144,9 +146,12 @@ den nächsten Zug erforderlich. [Diagnose, Schutzregeln und echter Folgezug](../
 Die Farbkoordinaten liegen auf einem Zweierpotenzraster. Seine Auflösung
 unterschreitet die bisherige zentrale 1024-Pixel-Dichte nicht; einschließlich
 Randkacheln entstehen höchstens 9×9 Kacheln beziehungsweise 2304×2304 Pixel.
-Ein 32-MiB-LRU hält abgeleitete Kachelpixel. Zusammengesetzte aktuelle und
-gegebenenfalls vorherige Detailbilder sowie GPU-Texturen benötigen zusätzlichen
-Speicher; die LRU-Grenze ist keine Gesamt-RAM-Garantie. Identität umfasst
+Ein 32-MiB-LRU hält abgeleitete Kachelpixel. Aktuell angenommene Kachelpuffer
+und bis zu zwei zusammengesetzte GPU-Bilder benötigen zusätzlichen Speicher;
+die LRU-Grenze ist keine Gesamt-RAM-Garantie. `TerrainColorFrame` hält als
+Vorgänger ausschließlich Identität und Raster, keine rekursive Pufferhistorie.
+[GPU-Besitz, Pixelgegenprobe und verbleibende Weltlatenz](../reference/atlas-gpu-detail-20261022/README.md).
+Identität umfasst
 Kampagnentoken, Revision, Quellenfence und die Auswahl rasterisierter Trassen.
 Pan und kleine Zoomänderungen nutzen passende Kacheln wieder; Quellenänderungen
 verwerfen den Renderer-Cache. Die örtliche Backend-Invalidierung bleibt erhalten.
