@@ -1,0 +1,484 @@
+{
+  "source": "ecbfaa34490122b2ca6bc615a5e99f2f4aa50bd7",
+  "dirty": true,
+  "artifacts": {
+    "main.cjs": "cfaf373e8ed2695d7644fd8ded188f86fb98fdf145e1bc2648439ef739745eae",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "2081310320ff21a671026a14405ba22ff9cabacf9b71a6299c9881a5c060dd74",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "6348eb0b70a7f971e64ba140f564564db974b7eea815910aaee82785ae78fcd7",
+    "ui/renderer.js": "fb05ea8eb38cf5c73b5b99a71fe893f46d17fb20f9987e5766a7841d9594dee4",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3662534,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3662822,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "radius": 4023360,
+  "records": 108076,
+  "mixedFixture": {
+    "counts": {
+      "hexes": 100000,
+      "buildings": 5000,
+      "details": 50,
+      "dungeonRooms": 4001
+    },
+    "inventory": {
+      "hexes": 100000,
+      "sourceCells": 100000,
+      "places": 5000,
+      "heightTiles": 1028,
+      "buildings": 5000,
+      "details": 50,
+      "dungeonRooms": 4001,
+      "rooms": 15701,
+      "elements": 48670,
+      "bindings": 5052,
+      "locations": 5051,
+      "cityDocuments": 0
+    },
+    "timings": {
+      "hexesMs": 20277.601849,
+      "buildingsMs": 39532.42836599999,
+      "detailsMs": 569.7422769999976
+    },
+    "hexWorkload": "Biome properties; height authored independently, not 100000 fine relief edits",
+    "city": {
+      "x": 0,
+      "y": 0,
+      "width": 3100,
+      "height": 1600
+    },
+    "building": {
+      "id": "mixed-house:0",
+      "x": 30,
+      "y": 30
+    },
+    "dungeon": {
+      "id": "mixed-dungeon",
+      "x": 10000,
+      "y": 10000
+    }
+  },
+  "measurement": {
+    "readbackMode": "async",
+    "profileEnabled": false,
+    "warmOpening": true
+  },
+  "opening": {
+    "workspaceMs": 1144.3604690000066,
+    "navigation": {
+      "before": {
+        "view": {
+          "x": -20000000,
+          "y": -14791666.666666666,
+          "width": 40000000,
+          "height": 29583333.333333332
+        },
+        "canvas": "empty",
+        "region": "loading"
+      },
+      "after": {
+        "view": {
+          "x": -16374615.061559636,
+          "y": -12110392.38927848,
+          "width": 32749230.123119272,
+          "height": 24220784.77855696
+        },
+        "canvas": "empty",
+        "region": "loading"
+      }
+    },
+    "terrainReadyMs": 4330.716490999999
+  },
+  "sculptStatus": {
+    "text": "Gespeichert",
+    "revision": "11",
+    "quality": "detail",
+    "tiles": "48/48"
+  },
+  "brushHover": {
+    "before": "21",
+    "after": "21",
+    "programs": {
+      "create": 0,
+      "remove": 0
+    }
+  },
+  "brushStrokeScene": {
+    "before": {
+      "scene": "21",
+      "author": "11"
+    },
+    "during": {
+      "scene": "21",
+      "author": "18"
+    }
+  },
+  "gpu": {
+    "renderer": "ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (WHL GT2), OpenGL 4.6)",
+    "ratio": 1
+  },
+  "rawResult": {
+    "path": ".build/gpu-detail-world-final/result.json",
+    "sha256": "e4be018440f3aec8d1ad14613e57ad588f33a0019e17d34cf8aa05d18e7d1024"
+  },
+  "metrics": [
+    {
+      "name": "navigation",
+      "wallMs": 3671.472742999991,
+      "p95Ms": 24.800000000000182,
+      "p99Ms": 71.39999999999964,
+      "maxMs": 133.40000000000055,
+      "longTasks": [
+        {
+          "time": 7920.400000035763,
+          "duration": 114
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": []
+      },
+      "state": {
+        "atlasView": "{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-14026063.104827251",
+        "atlasOriginY": "-10719216.5816878",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":1700,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "4",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "5",
+        "paintCommands": "1",
+        "terrainTiles": "4/48"
+      },
+      "status": [
+        {
+          "id": "land-status",
+          "text": "Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt."
+        },
+        {
+          "id": "status",
+          "text": "Gespeichert.",
+          "error": "false"
+        },
+        {
+          "id": "atlas-save-status",
+          "text": "Kartenausschnitt geladen"
+        }
+      ]
+    },
+    {
+      "name": "sculpt",
+      "wallMs": 5730.897963999989,
+      "p95Ms": 40.69999999999891,
+      "p99Ms": 62.80000000000109,
+      "maxMs": 150,
+      "longTasks": [
+        {
+          "time": 11816.400000035763,
+          "duration": 92
+        },
+        {
+          "time": 11908.400000035763,
+          "duration": 70
+        },
+        {
+          "time": 12024.100000023842,
+          "duration": 59
+        },
+        {
+          "time": 12524.100000023842,
+          "duration": 53
+        },
+        {
+          "time": 13703.600000023842,
+          "duration": 53
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 11813,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 432,
+              "y": 282,
+              "width": 288,
+              "height": 288,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 143.65633161337496
+            },
+            "samples": [
+              {
+                "submittedMs": 95.80000001192093,
+                "readyMs": 227.69999998807907,
+                "enqueueMs": 2.5,
+                "readMs": 4.099999964237213,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 165.80000001192093,
+                "readyMs": 253.30000001192093,
+                "enqueueMs": 32,
+                "readMs": 1.5,
+                "draft": "height",
+                "center": 74,
+                "brush": 826,
+                "maximum": 31
+              }
+            ],
+            "skippedSamples": 0,
+            "stoppedAt": 12081.300000011921,
+            "baselineRead": {
+              "submittedAt": 11833,
+              "availableAt": 12035.400000035763,
+              "enqueueMs": 16,
+              "readMs": 11
+            },
+            "firstCenter": {
+              "submittedMs": 165.80000001192093,
+              "readyMs": 253.30000001192093,
+              "enqueueMs": 32,
+              "readMs": 1.5,
+              "draft": "height",
+              "center": 74,
+              "brush": 826,
+              "maximum": 31
+            },
+            "firstBrush": {
+              "submittedMs": 165.80000001192093,
+              "readyMs": 253.30000001192093,
+              "enqueueMs": 32,
+              "readMs": 1.5,
+              "draft": "height",
+              "center": 74,
+              "brush": 826,
+              "maximum": 31
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "state": {
+        "atlasView": "{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-14026063.104827251",
+        "atlasOriginY": "-10719216.5816878",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":1700,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "4",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "18",
+        "paintCommands": "1",
+        "terrainTiles": "9/48",
+        "terrainDraft": "height",
+        "terrainAuthorRevision": "11"
+      },
+      "status": [
+        {
+          "id": "land-status",
+          "text": "Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück."
+        },
+        {
+          "id": "status",
+          "text": "Gespeichert",
+          "error": "false"
+        },
+        {
+          "id": "atlas-save-status",
+          "text": "Gespeichert",
+          "error": "false"
+        }
+      ]
+    },
+    {
+      "name": "sculpt-repeat",
+      "wallMs": 5916.147629000014,
+      "p95Ms": 41.20000000000073,
+      "p99Ms": 52.19999999999709,
+      "maxMs": 77.19999999999709,
+      "longTasks": [
+        {
+          "time": 32152,
+          "duration": 55
+        },
+        {
+          "time": 34175.30000001192,
+          "duration": 54
+        }
+      ],
+      "response": {
+        "mode": "async",
+        "errors": [],
+        "runs": [
+          {
+            "pointerDownAt": 32024.900000035763,
+            "clientX": 864,
+            "clientY": 474,
+            "region": {
+              "x": 432,
+              "y": 282,
+              "width": 288,
+              "height": 288,
+              "centerX": 576,
+              "centerY": 426,
+              "radius": 143.65633161337496
+            },
+            "samples": [
+              {
+                "submittedMs": 18.5,
+                "readyMs": 168.19999998807907,
+                "enqueueMs": 1,
+                "readMs": 15.900000035762787,
+                "draft": null,
+                "center": 0,
+                "brush": 0,
+                "maximum": 0
+              },
+              {
+                "submittedMs": 61.39999997615814,
+                "readyMs": 175,
+                "enqueueMs": 15.5,
+                "readMs": 1,
+                "draft": "height",
+                "center": 22,
+                "brush": 1979,
+                "maximum": 34
+              }
+            ],
+            "skippedSamples": 2,
+            "stoppedAt": 32205,
+            "baselineRead": {
+              "submittedAt": 32025.900000035763,
+              "availableAt": 32176.69999998808,
+              "enqueueMs": 1.399999976158142,
+              "readMs": 24.599999964237213
+            },
+            "firstCenter": {
+              "submittedMs": 61.39999997615814,
+              "readyMs": 175,
+              "enqueueMs": 15.5,
+              "readMs": 1,
+              "draft": "height",
+              "center": 22,
+              "brush": 1979,
+              "maximum": 34
+            },
+            "firstBrush": {
+              "submittedMs": 61.39999997615814,
+              "readyMs": 175,
+              "enqueueMs": 15.5,
+              "readMs": 1,
+              "draft": "height",
+              "center": 22,
+              "brush": 1979,
+              "maximum": 34
+            },
+            "stopReason": "both-regions-changed"
+          }
+        ]
+      },
+      "state": {
+        "atlasView": "{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-14026063.104827251",
+        "atlasOriginY": "-10719216.5816878",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "detail",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-14026063.104827251,\"y\":-10719216.5816878,\"width\":32263880.52615755,\"height\":23861828.305804007},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":2483.800537109375,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "11",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "21",
+        "paintCommands": "1",
+        "terrainAuthorRevision": "20",
+        "terrainRevision": "11",
+        "terrainTiles": "48/48",
+        "terrainDraft": "height"
+      },
+      "status": [
+        {
+          "id": "land-status",
+          "text": "Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück."
+        },
+        {
+          "id": "status",
+          "text": "Gespeichert",
+          "error": "false"
+        },
+        {
+          "id": "atlas-save-status",
+          "text": "Gespeichert",
+          "error": "false"
+        }
+      ]
+    }
+  ],
+  "repeatStatus": {
+    "text": "Gespeichert",
+    "revision": "20",
+    "quality": "detail",
+    "tiles": "48/48"
+  }
+}

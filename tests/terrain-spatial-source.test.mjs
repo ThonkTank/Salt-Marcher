@@ -30,7 +30,7 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
   active:true,ready:false,firstSurface:new Set(),input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
   loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
-  view:{batch:update=>update(),setDetail:(detail,rects)=>tiles.push({detail,rects}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
+  view:{batch:update=>update(),prepareColorFrames:async()=>{},setColorFrame:detail=>tiles.push({detail}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
  const load=()=>ui.load(ui.requested,0);
@@ -115,11 +115,11 @@ test('detail failure retains usable geometry and stops retries until an explicit
 
 test('navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it',async t=>{
  const f=fixture(t,{manualDetail:true});f.sync();const first=f.load();f.resolveRead();await new Promise(setImmediate);
- f.resolveRead(1);await first;const detail=f.ui.colorTiles.detail;
+ f.resolveRead(1);await first;const detail=f.ui.colorTiles.frame;
  f.sync(zoom(.6));const next=f.load();f.resolveRead(2);await new Promise(setImmediate);
- assert.equal(f.published.at(-1).detail,detail,'keep the same world texture while new detail is pending');f.resolveRead(3);await next;
- f.sync(zoom(.6),2);const edited=f.load();f.resolveRead(4,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).detail,undefined,'old pigment cannot cover a changed revision');f.resolveRead(5,2);await edited;
- f.ui.colorTiles.detail=detail;f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).detail,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
+ assert.equal(f.published.at(-1).colorFrame,detail,'keep the same world texture while new detail is pending');f.resolveRead(3);await next;
+ f.sync(zoom(.6),2);const edited=f.load();f.resolveRead(4,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).colorFrame,undefined,'old pigment cannot cover a changed revision');f.resolveRead(5,2);await edited;
+ f.ui.colorTiles.frame=detail;f.sync(zoom(.6),2,'different');const switched=f.load();f.resolveRead(6,2);await new Promise(setImmediate);assert.equal(f.published.at(-1).colorFrame,undefined,'campaign detail cannot leak');f.resolveRead(7,2);await switched;
 });
 
 test('expected worker preemption resumes missing detail without fallback or an error banner',async t=>{
@@ -169,25 +169,25 @@ test('a failed colour tile keeps earlier tiles usable and explicit retry starts 
 
 test('post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive',async t=>{
  const f=fixture(t,{manualDetail:true});f.sync();const first=f.load();f.resolveRead();await new Promise(setImmediate);f.resolveRead(1);await first;
- const before=f.published.at(-1).detail,original=before.pixels.slice(),base={revision:1,fence:'source'};
+ const before=f.published.at(-1).colorFrame,original=structuredClone([...before.tiles]),base={revision:1,fence:'source'};
  const bounds=[{x:before.box.x+before.box.width/2,y:before.box.y+before.box.height/2,width:1,height:1}];
  f.sync(frame,2);const second=f.load();assert.deepEqual(f.reads[2].query.colorBase,base);
  f.resolveRead(2,2,{colorChange:{base,invalidation:{reset:false,bounds}}});await new Promise(setImmediate);
- const early=f.published[2].detail;
+ const early=f.published[2].colorFrame;
  assert(early,'the overview must already carry retained sharp pixels');assert.notEqual(early,before);
- assert(early.coverage.values.some(v=>v===0));assert(early.coverage.values.some(v=>v===255));assert.deepEqual(before.pixels,original);
+ assert(early.coverage.values.some(v=>v===0));assert(early.coverage.values.some(v=>v===255));assert.deepEqual([...before.tiles],original);
  f.resolveRead(3,2);await second;
- const retained=f.ui.colorTiles.detail;
+ const retained=f.ui.colorTiles.frame;
  f.ui.presentLive({...f.ui.baseline,revision:3,fence:'live',colorChange:{base:{revision:2,fence:'source'},invalidation:{reset:false,bounds:[]}},detail:undefined});
- assert.equal(f.published.at(-1).detail,retained,'a live frame cannot drop unchanged viewport detail');
- const fresh={box:bounds[0],width:16,height:16,pixels:new Uint8Array(16*16*4).fill(127)},originalRetained=retained.pixels.slice();
+ assert.equal(f.published.at(-1).colorFrame,retained,'a live frame cannot drop unchanged viewport detail');
+ const fresh={box:bounds[0],width:16,height:16,pixels:new Uint8Array(16*16*4).fill(127)},originalRetained=structuredClone([...retained.tiles]);
  f.ui.presentLive({...f.ui.baseline,revision:4,fence:'next',colorChange:{base:{revision:3,fence:'live'},invalidation:{reset:false,bounds}},detail:fresh});
  const live=f.published.at(-1);
  assert.equal(live.brushDetail,fresh,'small confirmed patch goes directly to GPU composition');
- assert(live.detail.coverage.values.some(v=>v===0),'invalid fine pixels are not faked as loaded by CPU upsampling');
- assert(live.detail.coverage.values.some(v=>v===255),'distant current detail stays sharp');
- assert.deepEqual(retained.pixels,originalRetained,'earlier frames are immutable');
- assert.notEqual(live.detail,fresh,'brush pixels never replace the retained world image');
+ assert(live.colorFrame.coverage.values.some(v=>v===0),'invalid fine pixels are not faked as loaded by CPU upsampling');
+ assert(live.colorFrame.coverage.values.some(v=>v===255),'distant current detail stays sharp');
+ assert.deepEqual([...retained.tiles],originalRetained,'earlier frames are immutable');
+ assert.notEqual(live.colorFrame,fresh,'brush pixels never replace the retained world image');
 });
 
 test('steep tilt replaces narrow pending coverage but later rotations retain the widened source',async t=>{

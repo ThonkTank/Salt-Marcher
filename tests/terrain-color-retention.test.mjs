@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-detail-retention';export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';export * from './src/app/terrain-detail';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/terrain-color-frame';export * from './src/app/terrain-change-history';export * from './src/app/terrain-detail-tiles';export * from './src/app/terrain-projection';export * from './src/app/terrain-detail';"},outfile:'.build/terrain-color-retention-test.cjs',bundle:true,platform:'node',format:'cjs'});
 const {TerrainChangeHistory,TerrainDetailTiles,terrainColorIdentity,terrainDetailTiles,validateTerrainProjection,terrainDetailBox}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
 const source=revision=>({revision,fence:'f'+revision,token:'campaign',rasterRouteKey:'null'});
 const identity=revision=>({revision,fence:'f'+revision});
@@ -25,20 +25,21 @@ test('history accumulates skipped reads, survives same-source reads, and fails c
 async function loaded(){
  const tiles=new TerrainDetailTiles();let reads=0;
  const read=async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4).fill(q.revision===1?255:127),forest:new Uint8Array(q.width*q.height).fill(q.revision===1?200:60)};};
- const load=async revision=>tiles.load(terrainColorIdentity(source(revision)),box,{...identity(revision),contours:0,routeContext:box},read,()=>true,detail=>tiles.detail=detail,tiles.detail);
+ const load=async revision=>tiles.load(terrainColorIdentity(source(revision)),box,{...identity(revision),contours:0,routeContext:box},read,()=>true,detail=>tiles.frame=detail,tiles.frame);
  tiles.reconcile(source(1));await load(1);
  return {tiles,load,reads:()=>reads};
 }
 test('a confirmed local change keeps distant pixels and reads only affected tiles, including the shading halo',async()=>{
- const {tiles,load,reads}=await loaded(),before=tiles.detail,original=before.pixels.slice(),count=reads();
+ const {tiles,load,reads}=await loaded(),before=tiles.frame,original=structuredClone([...before.tiles]),count=reads();
  // x=65 is outside the left tile but inside its four-metre raster halo.
  const local={x:65,y:30,width:1,height:1},next=tiles.reconcile(source(2),change(1,[local]));
- assert.notEqual(next,before);assert.deepEqual(before.pixels,original,'published predecessor is immutable');
- assert.equal(next.pixels[(30*4*next.width+30*4)*4+3],0,'neighbouring tile also invalidated through the halo');
- assert.equal(next.pixels[(200*4*next.width+200*4)*4+3],255,'distant world detail stays sharp');
+ assert.notEqual(next,before);assert.deepEqual([...before.tiles],original,'published predecessor tile buffers are immutable');
+ assert(!next.tiles.has(0),'neighbouring tile also invalidated through the halo');
+ assert.equal(next.tiles.get(15).color.pixels[3],255,'distant world detail stays sharp');
  assert.equal(next.coverage.values.filter(v=>v===0).length,2);
- assert.equal(next.forest[30*4*next.width+30*4],0);assert.equal(next.forest[200*4*next.width+200*4],200);assert(before.forest.every(v=>v===200));
- await load(2);assert.equal(reads()-count,2);assert.equal(tiles.detail.forest[30*4*next.width+30*4],60);assert.equal(tiles.detail.forest[200*4*next.width+200*4],200);assert.equal(tiles.detail.coverage.values.filter(v=>v===255).length,16);
+ assert(next.clear.some(r=>r.x===0&&r.y===0),'GPU clears both channels in invalidated tiles');assert.equal(next.tiles.get(15).color.forest[0],200);assert([...before.tiles.values()].every(t=>t.color.forest.every(v=>v===200)));
+ assert.equal(next.previous.id,before.id);assert.equal(next.previous.tiles,undefined,'predecessor descriptor cannot retain recursive tile buffers');
+ await load(2);assert.equal(reads()-count,2);assert.equal(tiles.frame.tiles.get(0).color.forest[0],60);assert.equal(tiles.frame.tiles.get(15).color.forest[0],200);assert.equal(tiles.frame.coverage.values.filter(v=>v===255).length,16);
 });
 test('unknown base, source reset, another campaign and route-context changes cannot reuse pigment',async()=>{
  for(const kind of ['missing','wrong','reset','campaign','route']){
@@ -78,33 +79,23 @@ test('live brush patches cover the full disc inside their unfaded interior witho
  assert.equal(terrainDetailBox({x:100,y:100},8,{x:0,y:0,width:10,height:10}),undefined);
 });
 
-test('retained detail matches pixel-centre sampling across pans, zooms, clipped edges and absent forest',()=>{
- const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
- const blank=(box,width,height)=>({box,width,height,pixels:new Uint8Array(width*height*4).fill(17),forest:new Uint8Array(width*height).fill(23)});
- const sample=(target,previous)=>{
-  for(let y=0;y<target.height;y++)for(let x=0;x<target.width;x++){
-   const sx=Math.floor(((target.box.x+(x+.5)*target.box.width/target.width)-previous.box.x)/previous.box.width*previous.width),sy=Math.floor(((target.box.y+(y+.5)*target.box.height/target.height)-previous.box.y)/previous.box.height*previous.height);
-   if(sx<0||sy<0||sx>=previous.width||sy>=previous.height)continue;
-   const a=sy*previous.width+sx,b=y*target.width+x;target.pixels.set(previous.pixels.subarray(a*4,a*4+4),b*4);target.forest[b]=previous.forest?.[a]??0;
-  }
- };
- for(const origin of [-20000000,0,1e12])for(const scale of [.125,1,65536])for(const ratio of [.25,.5,1,2,4])for(const shift of [-40,-5.3,0,3,40])for(const forest of [true,false]){
-  const previous=blank({x:origin,y:origin,width:32*scale,height:24*scale},32,24);
-  previous.pixels=Uint8Array.from(previous.pixels,(_,i)=>(i*37+Math.floor(i/17))%256);
-  if(forest)previous.forest=Uint8Array.from(previous.forest,(_,i)=>(i*41)%256);else delete previous.forest;
-  const target=blank({x:origin+shift*scale,y:origin-shift*scale,width:36*scale*ratio,height:28*scale*ratio},36,28),expected=structuredClone(target),before=structuredClone(previous);
-  // Both aligned typed arrays and unaligned views preserve arbitrary RGBA.
-  if(shift===3){const bytes=new Uint8Array(previous.pixels.length+1);bytes.set(previous.pixels,1);previous.pixels=bytes.subarray(1);}
-  sample(expected,previous);retainTerrainDetail(target,previous);
-  assert.deepEqual(target,expected,JSON.stringify({origin,scale,ratio,shift,forest}));assert.deepEqual({...previous,pixels:Uint8Array.from(previous.pixels)},before);
- }
+test('accepted tile buffers are shared across pans without an assembled CPU image or recursive predecessors',async()=>{
+ const {tiles,load}=await loaded(),before=tiles.frame;
+ assert.equal(before.pixels,undefined);assert.equal(before.forest,undefined);
+ await load(1);const after=tiles.frame;
+ assert.equal(after.previous.id,before.id);assert.equal(after.previous.previous,undefined);assert.equal(after.previous.tiles,undefined);
+ assert.equal(after.tiles.size,before.tiles.size);
+ for(const [key,tile]of after.tiles)assert.equal(tile.color,before.tiles.get(key).color,'accepted immutable buffers must be reused');
 });
 
-test('a world jump cannot wrap distant sample coordinates back into a tiny previous detail',()=>{
- const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs'),mpp=1/512;
- const previous={box:{x:0,y:0,width:4*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32).fill(255),forest:new Uint8Array(8).fill(200)};
- const target={box:{x:-(2**31)*mpp,y:0,width:4*(2**32)*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32),forest:new Uint8Array(8)};
- retainTerrainDetail(target,previous);
- assert.deepEqual([...target.forest],[200,0,0,0,200,0,0,0]);
- for(let i=0;i<8;i++)assert.equal(target.pixels[i*4+3],i%4===0?255:0);
+test('retained coverage rejects missing predecessor tiles and clipped borders, across world scales',()=>{
+ const {retainedColorTile}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
+ for(const scale of [.125,1,65536]){
+  const previous={id:{},box:{x:-20000000,y:-20000000,width:512*scale,height:512*scale},width:512,height:512,coverage:{columns:2,rows:2,values:new Uint8Array([255,0,255,255])},tiles:new Map()};
+  const frame={...previous,id:{},width:1024,height:1024};
+  assert(retainedColorTile(frame,{x:0,y:0,width:256,height:256},previous));
+  assert(!retainedColorTile(frame,{x:256,y:0,width:512,height:256},previous),'one missing previous tile rejects complete inherited coverage');
+  assert(retainedColorTile(frame,{x:0,y:512,width:512,height:512},previous));
+  assert(!retainedColorTile({...frame,box:{...frame.box,x:frame.box.x-256*scale}},{x:0,y:0,width:256,height:256},previous));
+ }
 });

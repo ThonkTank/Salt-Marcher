@@ -1,3 +1,5 @@
+import {TerrainColorSurface} from './terrain-color-surface';
+import type {TerrainColorFrame} from './terrain-color-frame';
 import * as THREE from 'three';
 import type {SpatialReply} from './terrain-spatial-worker';
 import {TerrainForestPattern} from './terrain-forest-pattern';
@@ -8,7 +10,7 @@ export class TerrainDetailMaterial {
   private forestPattern=new TerrainForestPattern();
   private emptyForest=new THREE.DataTexture(new Uint8Array(1),1,1,THREE.RedFormat);
   private forestTextures=new Map<'base'|'detail'|'brush',THREE.DataTexture>();
-  private forestUniforms={forestMap:{value:this.emptyForest},detailForestMap:{value:this.emptyForest},brushForestMap:{value:this.emptyForest}};
+  private forestUniforms:Record<'forestMap'|'detailForestMap'|'brushForestMap',{value:THREE.Texture}>={forestMap:{value:this.emptyForest},detailForestMap:{value:this.emptyForest},brushForestMap:{value:this.emptyForest}};
   private forestTexture(kind:'base'|'detail'|'brush',data:{width:number;height:number;forest?:Uint8Array}|undefined,rects?:import('./terrain-frame').TerrainRect[]){
     const old=this.forestTextures.get(kind);
     if(!data?.forest){old?.dispose();this.forestTextures.delete(kind);return this.emptyForest;}
@@ -22,8 +24,13 @@ export class TerrainDetailMaterial {
   private coverageTexture:THREE.DataTexture|null=null;
   private detailTexture:THREE.DataTexture|null=null;
   private brushTexture:THREE.DataTexture|null=null;
+  private colorSurface:TerrainColorSurface|undefined;
+  prepareColorFrames(){
+    if(!this.renderer)throw Error('Geländekacheln benötigen den GPU-Renderer.');
+    this.colorSurface??=new TerrainColorSurface(this.renderer);return this.colorSurface.ready;
+  }
   constructor(private readonly renderer?:THREE.WebGLRenderer){this.emptyForest.needsUpdate=true;}
-  update(material:THREE.MeshBasicMaterial,data:Pick<SpatialReply,'grid'|'detail'|'brushDetail'>&Partial<Pick<SpatialReply,'width'|'height'|'forest'>>,rects:import('./terrain-frame').TerrainRect[]|undefined,forestRects?:{base?:import('./terrain-frame').TerrainRect[];detail?:import('./terrain-frame').TerrainRect[]}){
+  update(material:THREE.MeshBasicMaterial,data:Pick<SpatialReply,'grid'|'detail'|'brushDetail'>&Partial<Pick<SpatialReply,'width'|'height'|'forest'>>,rects:import('./terrain-frame').TerrainRect[]|undefined,forestRects?:{base?:import('./terrain-frame').TerrainRect[];detail?:import('./terrain-frame').TerrainRect[]},frame?:TerrainColorFrame){
     let uniforms=material.userData.terrainDetail as {detailMap:{value:THREE.Texture};detailBox:{value:THREE.Vector4};detailEnabled:{value:boolean};coverageMap:{value:THREE.Texture};coverageEnabled:{value:boolean};brushMap:{value:THREE.Texture};brushBox:{value:THREE.Vector4};brushEnabled:{value:boolean}}|undefined;
     if(!uniforms){
       uniforms={detailMap:{value:material.map!},detailBox:{value:new THREE.Vector4()},detailEnabled:{value:false},coverageMap:{value:material.map!},coverageEnabled:{value:false},brushMap:{value:material.map!},brushBox:{value:new THREE.Vector4()},brushEnabled:{value:false}};
@@ -70,7 +77,7 @@ export class TerrainDetailMaterial {
     }
     // Detail-only uploads retain the current base mask and source identity.
     if(data.width!==undefined&&data.height!==undefined)this.forestUniforms.forestMap.value=this.forestTexture('base',{width:data.width,height:data.height,forest:data.forest},forestRects?.base);
-    this.forestUniforms.detailForestMap.value=this.forestTexture('detail',data.detail,forestRects?forestRects.detail:rects);
+    this.forestUniforms.detailForestMap.value=this.forestTexture('detail',frame?undefined:data.detail,forestRects?forestRects.detail:rects);
     this.forestUniforms.brushForestMap.value=this.forestTexture('brush',data.brushDetail);
     // Let the GPU magnify the small confirmed patch. Upsampling it into a
     // multi-megapixel retained image on the UI thread stalls camera input.
@@ -84,7 +91,7 @@ export class TerrainDetailMaterial {
       const b=data.grid.view.box,d=brush.box;uniforms.brushMap.value=this.brushTexture;uniforms.brushBox.value.set((d.x-b.x)/b.width,(d.y-b.y)/b.height,d.width/b.width,d.height/b.height);
     }else{this.brushTexture?.dispose();this.brushTexture=null;uniforms.brushMap.value=material.map!;}
     uniforms.brushEnabled.value=!!brush;
-    const detail=data.detail,coverage=detail?.coverage;
+    const detail=data.detail,coverage=frame?.coverage??detail?.coverage;
     if(coverage){
       if(!this.coverageTexture||this.coverageTexture.image.width!==coverage.columns||this.coverageTexture.image.height!==coverage.rows){
         this.coverageTexture?.dispose();this.coverageTexture=new THREE.DataTexture(coverage.values,coverage.columns,coverage.rows,THREE.RedFormat);
@@ -94,6 +101,13 @@ export class TerrainDetailMaterial {
       uniforms.coverageMap.value=this.coverageTexture;uniforms.coverageEnabled.value=coverage.values.some(value=>value!==255);
     }else{this.coverageTexture?.dispose();this.coverageTexture=null;uniforms.coverageEnabled.value=false;uniforms.coverageMap.value=material.map!;}
 
+    if(frame){
+      if(!this.colorSurface)throw Error('Geländekacheln wurden nicht vorbereitet.');
+      const textures=this.colorSurface.update(frame),b=data.grid.view.box,d=frame.box;
+      this.detailTexture?.dispose();this.detailTexture=null;
+      uniforms.detailMap.value=textures.color;this.forestUniforms.detailForestMap.value=textures.forest;
+      uniforms.detailBox.value.set((d.x-b.x)/b.width,(d.y-b.y)/b.height,d.width/b.width,d.height/b.height);uniforms.detailEnabled.value=true;return;
+    }
     if(!detail){this.detailTexture?.dispose();this.detailTexture=null;uniforms.detailEnabled.value=false;uniforms.detailMap.value=material.map!;return;}
     const compatible=this.detailTexture?.image.width===detail.width&&this.detailTexture?.image.height===detail.height;
     if(!compatible){
@@ -104,5 +118,5 @@ export class TerrainDetailMaterial {
     uploadTerrainTexture(texture,compatible?rects:undefined,this.renderer);
     const b=data.grid.view.box,d=detail.box;uniforms.detailMap.value=texture;uniforms.detailBox.value.set((d.x-b.x)/b.width,(d.y-b.y)/b.height,d.width/b.width,d.height/b.height);uniforms.detailEnabled.value=true;
   }
-  dispose(){this.forestPattern.dispose();this.emptyForest.dispose();for(const texture of this.forestTextures.values())texture.dispose();this.forestTextures.clear();this.detailTexture?.dispose();this.detailTexture=null;this.coverageTexture?.dispose();this.coverageTexture=null;this.brushTexture?.dispose();this.brushTexture=null;}
+  dispose(){this.colorSurface?.dispose();this.colorSurface=undefined;this.forestPattern.dispose();this.emptyForest.dispose();for(const texture of this.forestTextures.values())texture.dispose();this.forestTextures.clear();this.detailTexture?.dispose();this.detailTexture=null;this.coverageTexture?.dispose();this.coverageTexture=null;this.brushTexture?.dispose();this.brushTexture=null;}
 }

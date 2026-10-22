@@ -1,3 +1,4 @@
+import type {TerrainColorFrame} from './terrain-color-frame';
 import type {AtlasWorkplane} from './atlas-workplane';
 import {terrainCoverageLevel} from './terrain-coverage';
 import {TerrainDetailTiles,terrainColorIdentity} from './terrain-detail-tiles';
@@ -15,6 +16,7 @@ import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
 import {terrainNavigationPlan} from './terrain-navigation-plan';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
+type DisplayReply=SpatialReply & {colorFrame?:TerrainColorFrame;fence?:string;revision?:number};
 const samplingKey=(v:TerrainView)=>JSON.stringify([v.box,v.refinement,v.columns,v.rows,v.exaggeration]);
 
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
@@ -41,7 +43,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private params:TerrainView|null=null;
   private source='';private requested='';private generation=0;private busy=false;private queued=false;private lastDraft='';
   private requestedGeometry='';
-  private baseline:(SpatialReply & {fence?:string;revision?:number})|null=null;private lastSelection='';
+  private baseline:DisplayReply|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
   private samplePad=0;
@@ -151,9 +153,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
     // colour. Resume ordinary detail loading even for a receipt-only/no-op write.
     if(!refined)this.detailSource='';
     const detail=this.colorTiles.reconcile({token:this.token,...data},data.colorChange);
-    this.colorTiles.detail=detail;
+    this.colorTiles.frame=detail;
     // The retained image has different tile rectangles from the live brush patch.
-    this.baseline={...data,detail,brushDetail:data.detail,update:data.update?{...data.update,detail:undefined,detailForest:undefined}:undefined,source:this.source};this.liveQuality=refined?'detail':'interactive';
+    this.baseline={...data,detail:undefined,colorFrame:detail,brushDetail:data.detail,update:data.update?{...data.update,detail:undefined,detailForest:undefined}:undefined,source:this.source};this.liveQuality=refined?'detail':'interactive';
     if(this.liveHeight)return false;
     this.publish(this.baseline);this.input.dataset.terrainQuality=refined?'detail':'interactive';return true;
   }
@@ -172,7 +174,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     if(!active){this.settleFirstSurface(false);this.liveHeight=false;delete this.input.dataset.terrainDraft;this.colorTiles.clear();this.sourceRefresh=null;this.regionSource=undefined;}
     if(!active){clearTimeout(this.loadTimer);this.loadTimer=undefined;this.generation++;this.ready=false;this.source='';this.requested='';this.detailSource='';this.sourceWindow=null;this.worker?.terminate();this.worker=null;this.busy=false;this.records=[];this.params=null;this.baseline=null;this.view?.dispose();this.view=null;this.canvas?.remove();this.canvas=null;this.input.style.background='';this.input.style.position='';this.input.style.zIndex='';this.input.dataset.renderer='canvas2d';delete this.input.dataset.terrainView;delete this.input.dataset.terrainReady;delete this.input.dataset.terrainQuality;delete this.input.dataset.terrainTiles;this.host.redraw();return;}
     try{
-      this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
+      this.canvas=document.createElement('canvas');this.canvas.id='atlas-terrain-spatial';this.canvas.style.cssText='position:absolute;pointer-events:none;z-index:0;';this.input.parentElement!.append(this.canvas);this.placeCanvas();this.view=new TerrainSpatialView(this.canvas);void this.view.prepareColorFrames().catch(()=>{});this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='webgl';this.input.dataset.terrainView='main';this.input.dataset.terrainReady='loading';
       this.canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();if(this.active){this.fail(Error('Grafikdarstellung verloren. Der Atlas ist in Draufsicht verfügbar. Die Atlaskamera kann im Ansichtsmenü erneut geladen werden.'));}});
       this.requested='';this.host.redraw();
     }catch(error){this.fail(error);}
@@ -221,7 +223,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
     }
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);
-    if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
+    if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline,this.baseline.colorFrame);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
     if(this.needsLoad()&&!this.loadBusy&&this.loadTimer===undefined)this.scheduleLoad(contours);
   }
   private needsLoad(){return this.active&&!this.sourceRefresh&&(!this.ready||this.detailSource!==this.requested)&&!this.host.hasDraft()&&!this.host.live()&&!this.host.writing();}
@@ -245,16 +247,17 @@ export class TerrainSpatialUI implements AtlasPresentation {
         if(!current())return;
         const query=stages[stage]!;
         if(stage===1){
+          await this.view!.prepareColorFrames();if(!current())return;
           const base=this.baseline!,colors=this.colorTiles;
           const complete=await colors.load(terrainColorIdentity({token,revision,fence:base.fence!,rasterRouteKey:base.rasterRouteKey}),query.detail!,
             {revision,fence:base.fence,routeContext:query.view.box,routeFocus:query.view.refinement,contours:0},
             async q=>{const r=await window.campaign.atlasTerrainColor(token,q);if(!r.ok)throw Error(r.error);return r.value;},current,
-            (detail,rect,done,total)=>{
+            (detail,_rect,done,total)=>{
               if(!current())return;
-              colors.detail=detail;this.baseline={...this.baseline!,detail};
-              this.view!.setDetail(detail,rect?[rect]:undefined);this.input.dataset.terrainQuality='refining';
+              colors.frame=detail;this.baseline={...this.baseline!,detail:undefined,colorFrame:detail};
+              this.view!.setColorFrame(detail);this.input.dataset.terrainQuality='refining';
               this.input.dataset.terrainTiles=done+'/'+total;
-            },colors.detail);
+            },colors.frame);
           if(!complete||!current())return;
         }
         // Detail tiles are already visible; refine the wider context last.
@@ -267,8 +270,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
         this.params={...reply.value.grid.view,frame:{...this.frame!},tilt:this.tilt,rotation:this.rotation};this.source=source;this.lastDraft='null';
         this.detailSource=stage===1?source:'';this.input.dataset.terrainQuality=stage===1?'detail':'overview';
         const retained=this.colorTiles.reconcile({token,...reply.value},reply.value.colorChange);
-        const detail=retained??reply.value.detail;this.colorTiles.detail=detail;
-        const data={...reply.value,detail,source};
+        const data={...reply.value,colorFrame:retained,source};
         this.baseline=data;this.publish(data);
         if(stage===1)this.retry.hidden=true;
       }
@@ -298,9 +300,9 @@ export class TerrainSpatialUI implements AtlasPresentation {
     }
     this.fail(error);
   }
-  private publish(data:SpatialReply){
+  private publish(data:DisplayReply){
     this.view!.batch(()=>{
-      this.view!.setData(data);this.reframe(this.frame!);this.view!.setContours(this.pendingContours);
+      this.view!.setData(data,data.colorFrame);this.reframe(this.frame!);this.view!.setContours(this.pendingContours);
       this.view!.showSelection(this.host.selection());
     });this.ready=true;this.settleFirstSurface(true);
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
