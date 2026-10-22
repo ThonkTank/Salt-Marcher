@@ -77,3 +77,34 @@ test('live brush patches cover the full disc inside their unfaded interior witho
  assert.deepEqual(edge,{x:0,y:0,width:10,height:10});
  assert.equal(terrainDetailBox({x:100,y:100},8,{x:0,y:0,width:10,height:10}),undefined);
 });
+
+test('retained detail matches pixel-centre sampling across pans, zooms, clipped edges and absent forest',()=>{
+ const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs');
+ const blank=(box,width,height)=>({box,width,height,pixels:new Uint8Array(width*height*4).fill(17),forest:new Uint8Array(width*height).fill(23)});
+ const sample=(target,previous)=>{
+  for(let y=0;y<target.height;y++)for(let x=0;x<target.width;x++){
+   const sx=Math.floor(((target.box.x+(x+.5)*target.box.width/target.width)-previous.box.x)/previous.box.width*previous.width),sy=Math.floor(((target.box.y+(y+.5)*target.box.height/target.height)-previous.box.y)/previous.box.height*previous.height);
+   if(sx<0||sy<0||sx>=previous.width||sy>=previous.height)continue;
+   const a=sy*previous.width+sx,b=y*target.width+x;target.pixels.set(previous.pixels.subarray(a*4,a*4+4),b*4);target.forest[b]=previous.forest?.[a]??0;
+  }
+ };
+ for(const origin of [-20000000,0,1e12])for(const scale of [.125,1,65536])for(const ratio of [.25,.5,1,2,4])for(const shift of [-40,-5.3,0,3,40])for(const forest of [true,false]){
+  const previous=blank({x:origin,y:origin,width:32*scale,height:24*scale},32,24);
+  previous.pixels=Uint8Array.from(previous.pixels,(_,i)=>(i*37+Math.floor(i/17))%256);
+  if(forest)previous.forest=Uint8Array.from(previous.forest,(_,i)=>(i*41)%256);else delete previous.forest;
+  const target=blank({x:origin+shift*scale,y:origin-shift*scale,width:36*scale*ratio,height:28*scale*ratio},36,28),expected=structuredClone(target),before=structuredClone(previous);
+  // Both aligned typed arrays and unaligned views preserve arbitrary RGBA.
+  if(shift===3){const bytes=new Uint8Array(previous.pixels.length+1);bytes.set(previous.pixels,1);previous.pixels=bytes.subarray(1);}
+  sample(expected,previous);retainTerrainDetail(target,previous);
+  assert.deepEqual(target,expected,JSON.stringify({origin,scale,ratio,shift,forest}));assert.deepEqual({...previous,pixels:Uint8Array.from(previous.pixels)},before);
+ }
+});
+
+test('a world jump cannot wrap distant sample coordinates back into a tiny previous detail',()=>{
+ const {retainTerrainDetail}=createRequire(import.meta.url)('../.build/terrain-color-retention-test.cjs'),mpp=1/512;
+ const previous={box:{x:0,y:0,width:4*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32).fill(255),forest:new Uint8Array(8).fill(200)};
+ const target={box:{x:-(2**31)*mpp,y:0,width:4*(2**32)*mpp,height:2*mpp},width:4,height:2,pixels:new Uint8Array(32),forest:new Uint8Array(8)};
+ retainTerrainDetail(target,previous);
+ assert.deepEqual([...target.forest],[200,0,0,0,200,0,0,0]);
+ for(let i=0;i<8;i++)assert.equal(target.pixels[i*4+3],i%4===0?255:0);
+});

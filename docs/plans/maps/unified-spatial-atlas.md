@@ -389,3 +389,5 @@ großen Einzelbestand verworfen. Diese lokale Verbesserung folgt der Releasequel
 0.184.0; unmittelbare Weltreaktion und Zielgerätequalifikation bleiben offen.
 
 [Waldsignatur im normalen Atlas](../../reference/atlas-forest-integration-20261022/README.md): Der semantische Waldkanal folgt jetzt Farbe, Revision, Detailkacheln und lokalen Pinselpatches durch dieselben begrenzten Caches. Der Produktshader blendet weltverankerte Muster weich bis zu nahen Einzelbäumen aus; Hauptkamera und PNG-Ausgabe teilen die Darstellung. Gestaltung, volle Welt und Pentium-Leistung bleiben offen.
+
+[Billigere Detailübernahme](../../reference/atlas-detail-retention-20261022/README.md): Weltverankerte Zeilenkopien ersetzen die vollständige RGBA-Pixelschleife bei gleichem Raster; echte Maßstabwechsel übernehmen wiederholte Zeilen und gepackte Farbwerte. Extrem große Sampleindizes können nicht mehr in alte Bildbereiche überlaufen. Pixelgegenprobe und native Messungen sind getrennt dokumentiert; unmittelbare Weltbearbeitung bleibt offen.

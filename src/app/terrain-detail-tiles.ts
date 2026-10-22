@@ -1,4 +1,4 @@
-import {invalidateTerrainDetail} from './terrain-detail-retention';
+import {invalidateTerrainDetail,retainTerrainDetail} from './terrain-detail-retention';
 import type {LandscapeBox} from './atlas-landscape';
 import type {TerrainDetail} from './terrain-detail';
 import type {TerrainRect} from './terrain-frame';
@@ -31,14 +31,6 @@ const copy=(detail:TerrainDetail,rect:TerrainRect,{pixels,forest}:Color)=>{
  if(detail.forest)for(let y=0;y<rect.height;y++){const at=(rect.y+y)*detail.width+rect.x;if(forest)detail.forest.set(forest.subarray(y*rect.width,(y+1)*rect.width),at);else detail.forest.fill(0,at,at+rect.width);}
  for(let y=0;y<rect.height;y++)detail.pixels.set(pixels.subarray(y*rect.width*4,(y+1)*rect.width*4),((rect.y+y)*detail.width+rect.x)*4);
 };
-/** Keep the previous world-anchored detail under missing tiles during a level change. */
-function retainPrevious(target:TerrainDetail,previous:TerrainDetail){
- const xs=Int32Array.from({length:target.width},(_,x)=>Math.floor(((target.box.x+(x+.5)*target.box.width/target.width)-previous.box.x)/previous.box.width*previous.width));
- for(let y=0;y<target.height;y++){
-  const sy=Math.floor(((target.box.y+(y+.5)*target.box.height/target.height)-previous.box.y)/previous.box.height*previous.height);if(sy<0||sy>=previous.height)continue;
-  for(let x=0;x<target.width;x++){const sx=xs[x]!;if(sx<0||sx>=previous.width)continue;const a=(sy*previous.width+sx)*4,b=(y*target.width+x)*4;for(let c=0;c<4;c++)target.pixels[b+c]=previous.pixels[a+c]!;if(target.forest)target.forest[b/4]=previous.forest?.[a/4]??0;}
- }
-}
 /** Renderer-only derived cache: 32 MiB plus one bounded assembled detail image.
  * Cross-revision reuse requires worker-confirmed, complete change history. */
 export class TerrainDetailTiles {
@@ -67,7 +59,7 @@ export class TerrainDetailTiles {
    publish:(detail:TerrainDetail,rect:TerrainRect|undefined,done:number,total:number)=>void,previous?:TerrainDetail){
   if(identity!==this.identity){this.clear();this.identity=identity;previous=undefined;}
   const plan=terrainDetailTiles(area),detail:TerrainDetail={box:plan.box,width:plan.width,height:plan.height,pixels:new Uint8Array(plan.width*plan.height*4),forest:new Uint8Array(plan.width*plan.height),coverage:{columns:plan.width/TILE_PIXELS,rows:plan.height/TILE_PIXELS,values:new Uint8Array(plan.tiles.length)}};
-  if(previous)retainPrevious(detail,previous);
+  if(previous)retainTerrainDetail(detail,previous);
   const mark=(tile:TerrainRect)=>{detail.coverage!.values[tile.y/TILE_PIXELS*detail.coverage!.columns+tile.x/TILE_PIXELS]=255;};
   const pending=[];let done=0;
   for(const tile of plan.tiles){

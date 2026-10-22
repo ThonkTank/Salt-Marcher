@@ -540,3 +540,5 @@ Die volle Weltübersicht bleibt ein offener Engpass. Der erprobte freie Join
 bei Raumtreffern wurde wegen einer Regression für große Einzelbestände verworfen.
 
 [Waldsignatur im normalen Atlas](../reference/atlas-forest-integration-20261022/README.md): Der semantische Waldkanal folgt jetzt Farbe, Revision, Detailkacheln und lokalen Pinselpatches durch dieselben begrenzten Caches. Der Produktshader blendet weltverankerte Muster weich bis zu nahen Einzelbäumen aus; Hauptkamera und PNG-Ausgabe teilen die Darstellung. Gestaltung, volle Welt und Pentium-Leistung bleiben offen.
+
+[Billigere Detailübernahme](../reference/atlas-detail-retention-20261022/README.md): Weltverankerte Zeilenkopien ersetzen die vollständige RGBA-Pixelschleife bei gleichem Raster; echte Maßstabwechsel übernehmen wiederholte Zeilen und gepackte Farbwerte. Extrem große Sampleindizes können nicht mehr in alte Bildbereiche überlaufen. Pixelgegenprobe und native Messungen sind getrennt dokumentiert; unmittelbare Weltbearbeitung bleibt offen.
