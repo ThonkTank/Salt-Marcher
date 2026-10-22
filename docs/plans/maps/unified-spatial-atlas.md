@@ -279,6 +279,13 @@ Bedienhürden, widersprüchliche Maßstabswechsel und unstimmige Darstellung
 festgehalten. Ein funktional bestandener Autorenweg ist noch keine gestalterische
 Abnahme einer tatsächlich spielbaren, ansprechenden Fantasykarte.
 
+[Autorenreise vom 22.10.2026](../../reference/atlas-world-authoring-20261022/README.md):
+Kontinente, Relief, Wald und unabhängiges Königreich bis zu Straßen, sechs
+Gebäuden und frischer Raumwiederöffnung. Die Sichtprüfung hält glatte Küsten,
+schematisches Relief, verdeckende Bäume und den teilweise verdeckten Raumfokus
+als offene Arbeit fest. Ein zwischenzeitlich verlorener Erzeugungsklick bleibt
+unaufgeklärt; ein später erfolgreicher Durchlauf gilt nicht als Fehlerbehebung.
+
 | Bereich | Ziel |
 | --- | --- |
 | Gewöhnliche Navigation | 60-FPS-Ziel auf dem Laptop des Nutzers bei 1080p; Bildintervalle p95 ≤16,7 ms, p99 ≤33,3 ms |

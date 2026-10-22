@@ -202,6 +202,20 @@ async function land(radius, strength = 500, direction = "raise") {
   await page.locator("#land-height-strength").fill(String(strength));
 }
 async function zoom(width, point = [0.5, 0.5]) {
+  // Wheel zoom keeps its anchor under the pointer. Centre the chosen landscape
+  // first so subsequent composition is actually inside that continent/kingdom.
+  if (point[0] !== 0.5 || point[1] !== 0.5) {
+    await page.locator("#atlas-pan").click();
+    const b = await page.locator("#campaign-map").boundingBox();
+    await page.mouse.move(b.x + b.width * point[0], b.y + b.height * point[1]);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width * 0.5, b.y + b.height * 0.5, {
+      steps: 12,
+    });
+    await page.mouse.up();
+    await ready();
+    point = [0.5, 0.5];
+  }
   for (let n = 0; n < 40; n++) {
     const old = await page
         .locator("#campaign-map")
@@ -241,6 +255,43 @@ try {
     ],
     550,
   );
+  // A broad inland body and an eastern cape, then a cut into the west coast.
+  // These are authored gestures, not injected landscape records.
+  await land(1800000, 700);
+  await stroke(
+    [
+      [0.27, 0.4],
+      [0.33, 0.44],
+      [0.31, 0.52],
+    ],
+    450,
+  );
+  await land(950000, 700);
+  await stroke(
+    [
+      [0.29, 0.35],
+      [0.36, 0.31],
+    ],
+    450,
+  );
+  await land(650000, 1600, "lower");
+  await stroke(
+    [
+      [0.2, 0.42],
+      [0.255, 0.43],
+    ],
+    500,
+  );
+  await land(1000000, 550, "roughen");
+  await stroke(
+    [
+      [0.25, 0.3],
+      [0.31, 0.37],
+      [0.34, 0.48],
+      [0.31, 0.6],
+    ],
+    400,
+  );
   await record("01-western-continent");
   await land(1600000);
   await stroke(
@@ -262,7 +313,7 @@ try {
     400,
   );
   await record("02-continents");
-  await zoom(9000000, [0.27, 0.46]);
+  await zoom(9000000, [0.29, 0.46]);
   await land(420000, 1500);
   await stroke(
     [
@@ -309,7 +360,27 @@ try {
   const region = inventory().regions.find((r) => r.name === "Königreich Aster");
   assert(region?.polygons.length);
   await record("05-kingdom");
-  await zoom(400, [0.35, 0.5]);
+  await zoom(400, [0.53, 0.53]);
+  // The settlement is a clearing painted into independent vegetation, not a
+  // city boundary that silently owns or deletes the landscape beneath it.
+  await page.locator('[data-tool-group="vegetation"]').click();
+  await page
+    .locator(
+      '[data-tool-select="land-tool"][data-tool-value="vegetation-clear"]',
+    )
+    .first()
+    .click();
+  await setBrushWorldRadius(page, "land-radius", 55);
+  await stroke(
+    [
+      [0.37, 0.43],
+      [0.49, 0.4],
+      [0.65, 0.43],
+      [0.64, 0.6],
+      [0.5, 0.6],
+    ],
+    350,
+  );
   await page.locator("[data-tool-group=routes]").click();
   await page
     .locator('[data-tool-select="land-tool"][data-tool-value="road"]')
@@ -325,23 +396,74 @@ try {
     await page.mouse.click(area.x + area.width * x, area.y + area.height * y);
   await page.locator("#land-finish").click();
   await ready();
+  await page.locator("#land-width").fill("3");
+  for (const points of [
+    [
+      [0.43, 0.52],
+      [0.43, 0.37],
+    ],
+    [
+      [0.61, 0.51],
+      [0.61, 0.66],
+    ],
+  ]) {
+    area = await page.locator("#campaign-map").boundingBox();
+    for (const [x, y] of points)
+      await page.mouse.click(area.x + area.width * x, area.y + area.height * y);
+    await page.locator("#land-finish").click();
+    await ready();
+  }
   assert(inventory().roads > 0);
   await page.locator("#atlas-section").selectOption("city");
   await page.locator("[data-tool-group=buildings]").click();
   await page.locator("[data-atlas-tool=building]").click();
   await ready();
-  for (const [i, profile, x, y] of [
-    [0, "Taverne", 0.43, 0.44],
-    [1, "Wohnhaus", 0.55, 0.43],
-    [2, "Werkstatt", 0.61, 0.6],
+  for (const [i, profile, x, y, width, depth] of [
+    [0, "Taverne", 0.38, 0.43, 18, 22],
+    [1, "Wohnhaus", 0.49, 0.42, 9, 12],
+    [2, "Werkstatt", 0.65, 0.6, 14, 12],
+    [3, "Wohnhaus", 0.66, 0.43, 10, 10],
+    [4, "Wohnhaus", 0.55, 0.6, 8, 12],
+    [5, "Wohnhaus", 0.48, 0.33, 11, 9],
   ]) {
     area = await page.locator("#campaign-map").boundingBox();
+    await page.evaluate(() => {
+      window.__buildingPress = [];
+      for (const name of ["pointerdown", "click"])
+        document.addEventListener(
+          name,
+          (e) =>
+            window.__buildingPress.push({
+              name,
+              target: e.target.id,
+              time: performance.now(),
+              region:
+                document.querySelector("#campaign-atlas").dataset.regionState,
+              canvas: { ...document.querySelector("#campaign-map").dataset },
+              undoDisabled: document.querySelector("#atlas-undo").disabled,
+              cityTool: document.querySelector("#city-tool")?.value,
+              section: document.querySelector("#atlas-section")?.value,
+              status: document.querySelector("#atlas-save-status").textContent,
+            }),
+          { once: true, capture: true },
+        );
+    });
     await page.mouse.click(area.x + area.width * x, area.y + area.height * y);
+    (result.buildingAttempts ??= []).push({
+      i,
+      profile,
+      groups: inventory().groups,
+      press: await page.evaluate(() => window.__buildingPress),
+    });
+    await writeFile(
+      out + "/progress.json",
+      JSON.stringify({ ...result, profile: native.profile }, null, 2),
+    );
     const dialog = page.getByRole("dialog", { name: "Raumgruppe erzeugen" });
     await dialog.waitFor();
     await dialog.locator("[name=profile]").selectOption(profile);
-    await dialog.locator("[name=width]").fill("16");
-    await dialog.locator("[name=depth]").fill("18");
+    await dialog.locator("[name=width]").fill(String(width));
+    await dialog.locator("[name=depth]").fill(String(depth));
     await dialog.locator("[name=seed]").fill("asterfall-" + i);
     await dialog
       .getByRole("button", { name: "Übernehmen", exact: true })
