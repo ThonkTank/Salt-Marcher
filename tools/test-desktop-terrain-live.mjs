@@ -29,10 +29,6 @@ const files=['src/app/landscape-tool-settings.ts','src/app/terrain-ray.ts','src/
 for(const file of files)result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=text=>{result.checks.push(text);console.log(text);};
 let app,page;
-async function ready(){await page.waitForFunction(()=>{
- const map=document.querySelector('#campaign-map'),pad=document.querySelector('#land-tool').value==='smooth'?Number(document.querySelector('#land-radius').value)/2:0;
- return map?.dataset.terrainReady==='ready'&&Number(map.dataset.terrainSamplePad)===pad;
-},null,{timeout:60000});}
 
 const db=new (require('better-sqlite3'))(dir+'/workbench.sqlite',{readonly:true});
 const rows=()=>db.prepare('SELECT payload FROM atlas_landscape ORDER BY id').all().map(r=>JSON.parse(r.payload));
@@ -40,8 +36,8 @@ const heights=()=>createHash('sha256').update(JSON.stringify(rows().filter(r=>r.
 const state=()=>db.prepare('SELECT revision,cursor FROM campaign_atlas WHERE campaign_id=?').get(campaign.id);
 const wait=async f=>{const end=Date.now()+45000;while(!f()){if(Date.now()>end)throw Error('Direct gesture did not advance');await new Promise(r=>setTimeout(r,50));}};
 async function settled(){await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);}
-async function tool(name){await settled();await page.locator('[data-tool-select="land-tool"][data-tool-value="'+name+'"]').first().click();await setBrushWorldRadius(page,'land-radius',48);}
-async function down(){await ready();const b=await page.locator('#campaign-map').boundingBox();const p={x:b.x+b.width/2,y:b.y+b.height/2};await page.mouse.move(p.x,p.y);await page.mouse.down();return p;}
+async function tool(name){await settled();await page.locator('[data-tool-select="land-tool"][data-tool-value="'+name+'"]').first().click();await setBrushWorldRadius(page,'land-radius',48);assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready','tool switch must retain the ready surface');}
+async function down(){assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready','pointerdown must not need a terrain reload');const b=await page.locator('#campaign-map').boundingBox();const p={x:b.x+b.width/2,y:b.y+b.height/2};await page.mouse.move(p.x,p.y);await page.mouse.down();return p;}
 async function measureProfile(){
  const revision=state().revision;
  await page.locator('#atlas-view').click();await page.locator('#atlas-height-profile').click();
@@ -83,7 +79,21 @@ await page.screenshot({path:out+'/01-direct-top.png'});await page.mouse.up();awa
  assert.equal(Number(await page.locator('#campaign-map').getAttribute('data-terrain-revision')),state().revision,'released terrain shows the final committed revision');
  assert.equal(await jobs(),fullBefore+1,'release synchronizes the Atlas once');await undo(initial);mark('Top-down sculpt persists before release, has no confirmation controls and undoes in one step');
  await measureProfile();mark('Main Atlas profile intercepts the active brush and measures without writing');
- await tool('smooth');await page.locator('#land-height-strength').fill('40');start=state();await down();await wait(()=>state().revision>=start.revision+2);await page.mouse.up();await settled();assert.notEqual(heights(),initial);assert.equal(state().cursor,start.cursor+1);await undo(initial);mark('Smoothing updates directly and one Undo restores the prior terrain');
+ // Finish pre-existing refinement before counting reads caused only by settings.
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:60000});
+ const projectionReads=()=>app.evaluate(()=>global.__terrainJobs.filter(j=>j.kind==='terrain').length);
+ const readsBefore=await projectionReads();
+ await page.evaluate(()=>{
+  const map=document.querySelector('#campaign-map');globalThis.__brushReadyChanges=[];
+  globalThis.__brushReadyObserver=new MutationObserver(records=>globalThis.__brushReadyChanges.push(...records.map(r=>({from:r.oldValue,to:map.dataset.terrainReady}))));
+  globalThis.__brushReadyObserver.observe(map,{attributes:true,attributeOldValue:true,attributeFilter:['data-terrain-ready']});
+ });
+ await tool('smooth');await setBrushWorldRadius(page,'land-radius',96);assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready','Smooth radius change must retain the ready surface');await page.locator('#land-height-strength').fill('40');
+ const readyChanges=await page.evaluate(()=>{const observer=globalThis.__brushReadyObserver;const map=document.querySelector('#campaign-map');globalThis.__brushReadyChanges.push(...observer.takeRecords().map(r=>({from:r.oldValue,to:map.dataset.terrainReady})));observer.disconnect();return globalThis.__brushReadyChanges;});
+ const readsAfter=await projectionReads();result.smoothSettings={readsBefore,readsAfter,readyChanges};
+ assert.equal(readsAfter,readsBefore,'Smooth settings must not issue another terrain projection');
+ assert(readyChanges.every(c=>c.from==='ready'&&c.to==='ready'),'Smooth settings must never suspend input');
+ start=state();await down();await wait(()=>state().revision>=start.revision+2);await page.mouse.up();await settled();assert.notEqual(heights(),initial);assert.equal(state().cursor,start.cursor+1);await undo(initial);mark('Smoothing updates directly and one Undo restores the prior terrain');
  await tool('color');await page.locator('#land-paint-opacity').evaluate(el=>{el.value='0.5';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});start=state();const p=await down();await wait(()=>state().revision>start.revision);await page.mouse.move(p.x+90,p.y,{steps:5});await wait(()=>state().revision>=start.revision+2);await page.keyboard.press('Escape');await page.mouse.up();await settled();
  const color=rows().filter(r=>r.paint);assert.equal(color.length,1);assert.equal(color[0].paint.opacity,.5);assert(color[0].points.length>=2);assert.equal(heights(),initial);assert.equal(state().cursor,start.cursor+1);await page.screenshot({path:out+'/02-color-stopped.png'});await undo(initial);assert.equal(rows().filter(r=>r.paint).length,0);mark('Cumulative color keeps one half-opacity layer; Escape stops input and Undo removes the committed gesture');
  await tool('height');await page.locator('#land-height-target-enabled').uncheck();start=state();await down();await wait(()=>state().revision>start.revision);await page.evaluate(()=>window.dispatchEvent(new Event('blur')));await page.mouse.up();await settled();assert.notEqual(heights(),initial);assert.equal(state().cursor,start.cursor+1);await undo(initial);mark('Blur finishes the saved prefix without leaving an uncommitted terrain draft');

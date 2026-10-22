@@ -222,6 +222,17 @@ try{
   if(readbackMode!=='off')assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'the warm-world stroke must change actual pixels');
   assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'the repeated draft must finish');
  }
+ if(process.env.WORLD_SMOOTH==='1'){
+  const previous=result.repeatSculpt?.status??result.sculptStatus;
+  await page.locator('[data-tool-select="land-tool"][data-tool-value="smooth"]').first().click();
+  assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready','world Smooth switch must keep input available');
+  await setBrushWorldRadius(page,'land-radius',radius*.75);
+  assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready','world Smooth radius must not reload the surface');
+  result.smooth=await sculpt('smooth');result.smooth.radius=radius*.75;
+  assert(Number(result.smooth.status.revision)>Number(previous.revision),'world Smooth must commit');
+  assert(!result.smooth.status.text.includes('gestoppt'));
+  if(readbackMode!=='off')assert(result.metrics.find(m=>m.name==='smooth').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'world Smooth must change visible pixels');
+ }
  result.timing=await page.evaluate(()=>window.__saltTerrainTrace);
  if(process.env.SALTMARCHER_TERRAIN_TRACE==='1')result.backendTiming=await native.app.evaluate(()=>({main:global.__saltTerrainTrace,worker:global.__worldWorkerTrace}));
  assert(Number(result.sculptStatus.revision)>records.length,'confirmed terrain must actually appear after the brush');assert(!result.sculptStatus.text.includes('gestoppt'),'brush failure is not successful editing');
