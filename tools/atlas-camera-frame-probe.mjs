@@ -7,8 +7,12 @@ export function installCameraFrameProbe(){
  window.requestAnimationFrame=callback=>request(time=>{
   const previous=current;
   current=frames.get(time);
-  if(!current){current={time,draws:[],lastView:map.dataset.atlasView};if(frames.size<2048)frames.set(time,current);}
-  try{callback(time);}finally{current.lastView=map.dataset.atlasView;current=previous;}
+  if(!current){current={time,draws:[],callbacks:[],lastView:map.dataset.atlasView};if(frames.size<2048)frames.set(time,current);}
+  const start=performance.now();
+  try{callback(time);}finally{
+   current.callbacks.push({name:callback.name,ms:performance.now()-start});
+   current.lastView=map.dataset.atlasView;current=previous;
+  }
  });
  gl.clear=(...args)=>{
   if(current)current.draws.push({time:performance.now(),view:map.dataset.atlasView});else outside++;

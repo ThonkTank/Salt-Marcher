@@ -3,14 +3,16 @@ export type AtlasUnits = 'dnd' | 'metric';
 export const FOOT = .3048, MILE = 1609.344;
 let units: AtlasUnits = 'dnd';
 export const atlasUnits = () => units;
-const number = (n:number) => n.toLocaleString('de-DE',{maximumSignificantDigits:3});
+// Camera overlays share one formatter; do not recreate locale machinery per label/frame.
+const labelNumbers = new Intl.NumberFormat('de-DE',{maximumSignificantDigits:3});
+export const atlasNumberLabel = (n:number) => labelNumbers.format(n);
 export function lengthLabel(meters:number,system=units) {
  const large=system==='dnd'?MILE:1000,small=system==='dnd'?FOOT:1;
- return Math.abs(meters)>=large ? `${number(meters/large)} ${system==='dnd'?(Math.abs(meters/large-1)<1e-10?'Meile':'Meilen'):'km'}` : `${number(meters/small)} ${system==='dnd'?'ft':'m'}`;
+ return Math.abs(meters)>=large ? `${atlasNumberLabel(meters/large)} ${system==='dnd'?(Math.abs(meters/large-1)<1e-10?'Meile':'Meilen'):'km'}` : `${atlasNumberLabel(meters/small)} ${system==='dnd'?'ft':'m'}`;
 }
 export function areaLabel(squareMeters:number,system=units) {
  const large=system==='dnd'?MILE*MILE:1e6,small=system==='dnd'?FOOT*FOOT:1;
- return squareMeters>=large?`${number(squareMeters/large)} ${system==='dnd'?'mi²':'km²'}`:`${number(squareMeters/small)} ${system==='dnd'?'ft²':'m²'}`;
+ return squareMeters>=large?`${atlasNumberLabel(squareMeters/large)} ${system==='dnd'?'mi²':'km²'}`:`${atlasNumberLabel(squareMeters/small)} ${system==='dnd'?'ft²':'m²'}`;
 }
 
 type Field = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -23,7 +25,6 @@ register('room-group-width room-group-depth route-width route-corridor route-cut
 register('points drawing-element-points city-unit-points path-waypoints',1,true);
 register('volume-height volume-slice volume-brush-radius volume-box-x0 volume-box-x1 volume-box-y0 volume-box-y1 volume-box-z0 volume-box-z1 path-from-x path-from-y path-from-z path-to-x path-to-y path-to-z',1.524);
 register('path-widths path-heights',1.524,true);
-export const atlasUnitFieldIds=()=>[...definitions.keys()];
 type Bound={definition:Definition;canonical:string;shown:string;min:string;max:string;step:string};
 const fields=new Map<Field,Bound>();
 let enabled=false;

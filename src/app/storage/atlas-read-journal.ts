@@ -4,7 +4,7 @@ import type {LandscapeBox} from '../atlas-landscape';
 const journals=new WeakMap<object,{epoch:string;external:number}>();
 const tables=['atlas_territory','atlas_territory_layer','atlas_landscape','atlas_reference_asset','location','room','city_document','city_unit','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content','atlas_binding','scope'];
 /** Bounded TEMP invalidation log: participates in the writer transaction, never in archives/history. */
-export function atlasReadJournal(db:any){
+function atlasReadJournal(db:any){
  let state=journals.get(db);const external=db.pragma('data_version',{simple:true});if(state){if(state.external!==external){state.epoch=randomUUID();state.external=external;}return state;}
  db.transaction(()=>{
   db.exec('CREATE TEMP TABLE atlas_read_changes(sequence INTEGER PRIMARY KEY AUTOINCREMENT,table_name TEXT NOT NULL,campaign_id TEXT NOT NULL,id TEXT NOT NULL,terrain_bounds TEXT)');

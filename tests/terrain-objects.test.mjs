@@ -26,6 +26,19 @@ test('concave building roofs use footprint triangulation, not a fan extending ou
  for(let i=0;i<vertices.length;i+=9)area+=Math.abs((vertices[i+3]-vertices[i])*(vertices[i+7]-vertices[i+1])-(vertices[i+6]-vertices[i])*(vertices[i+4]-vertices[i+1]))/2;
  assert.equal(area,28);const zs=[...vertices].filter((_,i)=>i%3===2);assert.equal(Math.min(...zs),object.topM);assert.equal(Math.max(...zs),object.topM+object.roofM);for(const m of meshes){m.geometry.dispose();m.material.dispose();}
 });
+test('marker-only terrain entries retain their height through mesh replacement without renderer errors',t=>{
+ const errors=[];t.mock.method(console,'error',(...args)=>errors.push(args));
+ const layer=new TerrainObjectLayer();t.after(()=>layer.dispose());
+ const building=resolveTerrainObjects([source],[heights()])[0];
+ const marker={...building,kind:'entrance',outline:[],wallM:0,roofM:0,topM:building.baseM};
+ const origin={x:0,y:0,z:100};
+ for(const entry of [marker,marker,building,marker]){
+  layer.update([entry],origin,1);
+  assert.equal(layer.heights.get(entry.id),entry.kind==='entrance'?116:128);
+  assert.equal(layer.meshes.length,entry.kind==='entrance'?0:3);
+ }
+ assert.deepEqual(errors,[]);
+});
 test('profile samples known slopes, bends, ascent and descent without changing author data',()=>{
  const records=[heights()],before=JSON.stringify(records),p=terrainProfile(records,[{x:10,y:10},{x:30,y:10},{x:10,y:10}]);
  assert.equal(p.distanceM,40);assert(Math.abs(p.ascentM-10)<1e-7);assert(Math.abs(p.descentM-10)<1e-7);

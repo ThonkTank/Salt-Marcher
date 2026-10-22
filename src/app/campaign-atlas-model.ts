@@ -31,8 +31,6 @@ export function atlasFrame(atlas: Pick<AtlasRenderView,"cities"|"bindings">, b: 
     offset = localToAtlas({ x: b.x, y: b.y }, pose);
   return { ...offset, angle: pose.angle + b.angle };
 }
-export const frameTransform = (f: AtlasFrame) =>
-  `translate(${f.x} ${f.y}) rotate(${(f.angle * 180) / Math.PI})`;
 // Axial hexes use distance between parallel sides as their physical metric.
 export const atlasHexPoint = (q: number, r: number, size: number) => ({
   x: (q + r / 2) * size,

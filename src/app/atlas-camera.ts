@@ -14,7 +14,7 @@ export interface AtlasCameraPose {
 export const ATLAS_CAMERA_FOV = 36.86989764584402;
 const halfFovTan = Math.tan((ATLAS_CAMERA_FOV * Math.PI) / 360);
 
-export function atlasCameraBasis(pose: AtlasCameraPose) {
+function atlasCameraBasis(pose: AtlasCameraPose) {
   const a = (pose.rotation * Math.PI) / 180,
     t = (pose.tilt * Math.PI) / 180;
   return {

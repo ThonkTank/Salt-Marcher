@@ -31,6 +31,14 @@ Autorenaktionen passieren weiterhin die bestehende Commit-/Recoverygrenze.
 `TerrainPresentation` und `TerrainLiveStroke` behalten getrennte Anzeige- und
 Schreibaufträge; ein Pinselzug bleibt ein Historyschritt.
 
+Die Workbench prüft vor dem Zeichnen den bestätigten Quellenstand und übergibt
+den Szenenaufbau an `AtlasDrawing.draw`. Dort entstehen auch die behaltene
+Stadt-/Raumgeometrie, Exportmarkierung und Reisezeichnung; die Cache-Schlüssel
+bleiben unverändert. Abdeckung und Auflösung eines Bereichs werden gegen
+dieselbe Aufnahme der Bedienelemente und Viewportmaße geprüft. Maß- und
+Reisebeschriftungen teilen den bestehenden deutschen Zahlenstil über einen
+wiederverwendeten `Intl.NumberFormat` in `atlas-units.ts`.
+
 Beim Verbergen beziehungsweise Aktivieren eines anderen Kontexts werden
 Bereichsantworten, Reisevorschauen und Ausgabeaufträge beim jeweiligen Besitzer
 entwertet. Ein unbekannter Schreibausgang wird dadurch weder wiederholt noch

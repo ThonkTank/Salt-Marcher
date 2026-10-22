@@ -113,8 +113,8 @@ export class AtlasRegions {
             this.request++;
         this.regionTimer = setTimeout(() => { this.regionTimer = null; void this.refresh(camera); }, camera ? 120 : 60);
     }
-    geometryCoversView() {
-        return this.regionQueryCovers(this.loadedRegionQuery, this.regionQuery());
+    geometryCoversView(query = this.regionQuery()) {
+        return this.regionQueryCovers(this.loadedRegionQuery, query);
     }
     regionQueryCovers(old: AtlasRegionQuery | null, q: AtlasRegionQuery) {
         if (!old)
@@ -129,7 +129,9 @@ export class AtlasRegions {
             return false;
         // Authoring still requires geometry at the displayed scale. During motion,
         // a matching buffered frame may be painted without authorizing stale hits.
-        return this.geometryCoversView() && Math.abs(old.box.width / old.width / (q.box.width / q.width) - 1) < 1e-6;
+        // Coverage and resolution must describe the same control/viewport snapshot.
+        // Re-reading it here also repeats synchronous DOM measurements per frame.
+        return this.geometryCoversView(q) && Math.abs(old.box.width / old.width / (q.box.width / q.width) - 1) < 1e-6;
     }
     async openTerrain(owner: WorkspaceGeometry) {
         if (this.data || !this.host.spatial || this.host.spatial.needsTerrainRaster || !window.campaign.atlasTerrainSource)
