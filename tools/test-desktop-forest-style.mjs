@@ -1,5 +1,6 @@
 import {createNativeSession} from './native-session.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
+import {terrainMeshReusePixels} from './terrain-mesh-reuse-probe.mjs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {mkdir,readFile} from 'node:fs/promises';
@@ -84,6 +85,7 @@ try{
  assert(exportedForestPixels>100,'Automatic forest missing from PNG: '+exportedForestPixels);
  assert(exportedCrownPixels>100,'Spatial crowns missing from PNG: '+exportedCrownPixels);
  checks.push('World, region, village and crown detail share the normal Atlas canvas; tilted output is saved through the native export.');
+ const meshReuse=process.env.TERRAIN_MESH_VERIFY==='1'?await terrainMeshReusePixels(page):undefined;
  await native.close();
  const fresh=new CampaignStore(native.profile+'/workbench.sqlite');try{assert.equal(fresh.atlasLandscapeObject(fresh.activateShell(cam.id).token,'oak-wood').vegetation.overrides[0].id,'ancient-oak');}finally{fresh.close();}
  // Opening changes campaign usage metadata, so compare authored terrain only.
@@ -91,5 +93,5 @@ try{
  try{assert.deepEqual(db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all(),before);}finally{db.close();}
  checks.push('Navigation and export preserve all authored landscape rows and protected identities.');
  const hashes={};for(const file of ['src/app/vegetation-geometry.ts','src/app/vegetation-shape.ts','src/app/landscape-cover-feather.ts','src/app/storage/landscape-record-stream.ts','src/app/storage/terrain-color-raster.ts','src/app/vegetation-projection.ts','src/app/atlas-terrain-export.ts','src/app/atlas-spatial-scene.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts','src/app/terrain-forest-pattern.ts','src/app/terrain-detail-material.ts','src/app/terrain-detail-tiles.ts','src/app/terrain-frame.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
- await native.finish({checks,views,hashes,worldPatternTones:worldTones.size,exportedForestPixels,exportedCrownPixels});
+ await native.finish({checks,views,hashes,meshReuse,worldPatternTones:worldTones.size,exportedForestPixels,exportedCrownPixels});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

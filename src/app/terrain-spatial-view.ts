@@ -150,10 +150,11 @@ export class TerrainSpatialView {
     this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail,partial?{base:partial.forest,detail:partial.detailForest}:undefined);
     this.hexGrid.attach(this.mesh.material);
     this.draftMaterial??=new TerrainDraftMaterial();this.draftMaterial.attach(this.mesh,g,data.landColor);
-    const geometry=this.mesh.geometry;
     if(!data.draft&&!this.frozenPick){
       this.base=g;if(this.picker){this.picker.geometry.dispose();(this.picker.material as THREE.Material).dispose();}
-      this.picker=new THREE.Mesh(geometry.clone(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);
+      // The custom grid raycast below never reads GPU attributes. Copying the
+      // complete display mesh here only doubled buffers on every publication.
+      this.picker=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({side:THREE.FrontSide}));this.picker.updateMatrixWorld(true);
       const origin={...this.origin},picker=this.picker;
       picker.raycast=(raycaster,hits)=>{
         const r=raycaster.ray,distance=terrainRaycast(g,{x:r.origin.x+origin.x,y:origin.y-r.origin.y,z:g.view.focusM+r.origin.z/g.view.exaggeration},{x:r.direction.x,y:-r.direction.y,z:r.direction.z/g.view.exaggeration},raycaster.near,raycaster.far);
