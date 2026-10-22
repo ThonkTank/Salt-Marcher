@@ -113,3 +113,26 @@ Aufgeräumt: vorhandenen Layoutzustand wiederverwendet, überflüssige dokumentw
 Selektoren ersetzt, gleiche Statusknoten behalten. Kein neuer Cache und keine
 zweite Größenbeobachtung. Die CSS-Zwischenmessung ist ausdrücklich getrennt vom
 finalen Stand, sämtliche Rohtraces komprimiert; keine neue alternative Atlasansicht.
+
+## Zusätzliche Probe ohne CPU-Profiling
+
+Ein weiterer Lauf desselben Produktcodes mit `WORLD_READBACK=async WORLD_PROFILE=0`
+und ohne `WORLD_LAYOUT_TRACE` besteht ebenfalls: normale Enden, PIDs abwesend,
+keine Rendererfehler, beide Pinsel gespeichert. [Rohdaten und Zusammenfassung](async-readback/result.json).
+Navigation p95/p99/Maximum: **20,7 / 99,9 / 200,0 ms**. Der gute p99 des profilierten
+Vergleichs wiederholt sich damit nicht; lange Ausreißer bleiben ausdrücklich offen.
+Sculpt: 24,2 / 83,2 / 100,0 ms; Wiederholung: 24,3 / 65,0 / 133,4 ms.
+
+Erstmals geänderte Pixel im Pinselinneren wurden nach **188,0 ms** und beim
+Wiederholungszug nach **121,3 ms** verfügbar. Das sind obere Grenzen der
+GPU-Pixelverfügbarkeit, keine Compositor-/Bildschirmlatenz. Schon das Einreihen
+der jeweiligen Readback-Anfrage kostet 22,6 bzw. 25,5 ms; die Messung beeinflusst
+damit selbst das Timing. Die geänderten Frames wurden bei 113,2 bzw. 52,4 ms
+abgefragt. Daraus keine exakte Eingabe-Pixel-Latenz und keinen Nachweis für das
+100-ms-Ziel ableiten. Der Vergleich ignoriert den Pinselrand und endet bei
+Zeigerbewegung, damit Cursorbewegung nicht als Terrainreaktion zählt.
+
+Reproduktion: denselben Weltbefehl mit den beiden genannten Flags, ohne
+Traceflag und direkt mit `tools/test-desktop-world-navigation.mjs` ausführen.
+Der finale Code verändert diese Messhilfe nicht. Nachfolgende Arbeit muss die
+verbleibenden Ausreißer und Reaktionszeit samt Messkosten untersuchen.
