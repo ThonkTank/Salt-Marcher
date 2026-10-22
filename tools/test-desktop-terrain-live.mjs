@@ -29,7 +29,10 @@ const files=['src/app/landscape-tool-settings.ts','src/app/terrain-ray.ts','src/
 for(const file of files)result.sourceHashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
 const mark=text=>{result.checks.push(text);console.log(text);};
 let app,page;
-async function ready(){await page.waitForFunction(()=>document.querySelector('#campaign-map')?.dataset.terrainReady==='ready',null,{timeout:60000});}
+async function ready(){await page.waitForFunction(()=>{
+ const map=document.querySelector('#campaign-map'),pad=document.querySelector('#land-tool').value==='smooth'?Number(document.querySelector('#land-radius').value)/2:0;
+ return map?.dataset.terrainReady==='ready'&&Number(map.dataset.terrainSamplePad)===pad;
+},null,{timeout:60000});}
 
 const db=new (require('better-sqlite3'))(dir+'/workbench.sqlite',{readonly:true});
 const rows=()=>db.prepare('SELECT payload FROM atlas_landscape ORDER BY id').all().map(r=>JSON.parse(r.payload));
@@ -38,7 +41,7 @@ const state=()=>db.prepare('SELECT revision,cursor FROM campaign_atlas WHERE cam
 const wait=async f=>{const end=Date.now()+45000;while(!f()){if(Date.now()>end)throw Error('Direct gesture did not advance');await new Promise(r=>setTimeout(r,50));}};
 async function settled(){await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);}
 async function tool(name){await settled();await page.locator('[data-tool-select="land-tool"][data-tool-value="'+name+'"]').first().click();await setBrushWorldRadius(page,'land-radius',48);}
-async function down(){const b=await page.locator('#campaign-map').boundingBox();const p={x:b.x+b.width/2,y:b.y+b.height/2};await page.mouse.move(p.x,p.y);await page.mouse.down();return p;}
+async function down(){await ready();const b=await page.locator('#campaign-map').boundingBox();const p={x:b.x+b.width/2,y:b.y+b.height/2};await page.mouse.move(p.x,p.y);await page.mouse.down();return p;}
 async function measureProfile(){
  const revision=state().revision;
  await page.locator('#atlas-view').click();await page.locator('#atlas-height-profile').click();
@@ -67,12 +70,18 @@ try{
  const initial=heights();
  await tool('height');await page.locator('#land-height-strength').fill('120');await page.locator('#land-height-target-enabled').check();await page.locator('#land-height-target').fill('200');
  const jobs=()=>app.evaluate(()=>global.__terrainJobs.filter(j=>j.kind==='region').length);
- const fullBefore=await jobs();
+ const fullBefore=await jobs(),displayBefore=await page.locator('#campaign-map').getAttribute('data-terrain-revision');
  let start=state();await down();await wait(()=>state().revision>=start.revision+2);assert.notEqual(heights(),initial);assert.equal(state().cursor,start.cursor+1);assert.equal(await page.locator('#land-finish').isVisible(),false);
- await page.waitForFunction(revision=>Number(document.querySelector('#campaign-map').dataset.terrainRevision)>revision,start.revision,{timeout:60000});
+ // The direct draft retains its loaded ground until release; confirmed writes
+ // advance independently and must not relabel that frozen presentation.
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainDraft==='height');
+ assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-revision'),displayBefore);
  assert.equal(await jobs(),fullBefore,'held sculpt must not request the complete Atlas');
  assert.equal(await page.locator('#campaign-map').getAttribute('data-atlas-region-revision'),String(start.revision),'old Atlas region retains its own revision');
-await page.screenshot({path:out+'/01-direct-top.png'});await page.mouse.up();await settled();assert.equal(await jobs(),fullBefore+1,'release synchronizes the Atlas once');await undo(initial);mark('Top-down sculpt persists before release, has no confirmation controls and undoes in one step');
+await page.screenshot({path:out+'/01-direct-top.png'});await page.mouse.up();await settled();
+ assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-draft'),null,'release restores confirmed terrain');
+ assert.equal(Number(await page.locator('#campaign-map').getAttribute('data-terrain-revision')),state().revision,'released terrain shows the final committed revision');
+ assert.equal(await jobs(),fullBefore+1,'release synchronizes the Atlas once');await undo(initial);mark('Top-down sculpt persists before release, has no confirmation controls and undoes in one step');
  await measureProfile();mark('Main Atlas profile intercepts the active brush and measures without writing');
  await tool('smooth');await page.locator('#land-height-strength').fill('40');start=state();await down();await wait(()=>state().revision>=start.revision+2);await page.mouse.up();await settled();assert.notEqual(heights(),initial);assert.equal(state().cursor,start.cursor+1);await undo(initial);mark('Smoothing updates directly and one Undo restores the prior terrain');
  await tool('color');await page.locator('#land-paint-opacity').evaluate(el=>{el.value='0.5';el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));});start=state();const p=await down();await wait(()=>state().revision>start.revision);await page.mouse.move(p.x+90,p.y,{steps:5});await wait(()=>state().revision>=start.revision+2);await page.keyboard.press('Escape');await page.mouse.up();await settled();
@@ -87,7 +96,7 @@ await page.screenshot({path:out+'/01-direct-top.png'});await page.mouse.up();awa
  await settled();await page.locator('#atlas-view').click();await page.locator('#atlas-terrain-tilt').click();await page.locator('#atlas-search').click();await atlasCanvasReady(page);
  assert(await surface.evaluate(n=>n===document.querySelector('#atlas-terrain-spatial')));assert.equal(await page.locator('#vegetation-spatial').count(),0);
  await tool('height');await setHeightDirection(page,'roughen');await page.locator('#land-height-strength').fill('80');assert.equal(await page.locator('#land-height-target-enabled').isVisible(),false);start=state();await down();await wait(()=>state().revision>=start.revision+2);
- await page.waitForFunction(revision=>Number(document.querySelector('#campaign-map').dataset.terrainRevision)>revision,start.revision,{timeout:60000});
+ await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainDraft==='height');
  await native.capture(page,'04-tilted-live');await page.mouse.up();await settled();const saved=heights();assert.notEqual(saved,initial);
  let minimum=0,maximum=0,count=0;for(const r of rows().filter(r=>r.height?.version===2)){const b=Buffer.from(r.height.data,'base64');for(let i=0;i<b.length;i+=4){const value=b.readFloatLE(i);if(Number.isFinite(value)){minimum=Math.min(minimum,value);maximum=Math.max(maximum,value);count++;}}}
  result.roughen={minimumDeltaM:minimum,maximumDeltaM:maximum,nodes:count};assert(minimum<-1&&maximum>1,'Roughen must author both peaks and hollows');assert.equal(state().cursor,start.cursor+1);

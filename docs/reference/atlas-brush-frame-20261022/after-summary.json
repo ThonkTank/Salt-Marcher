@@ -1,0 +1,221 @@
+{
+  "source": "9bd89e20484b858901cbaa0873e8e2810ea4ab5e",
+  "artifacts": {
+    "main.cjs": "218492b9908d9da2c595d27d10c66a35e96f71796fc4242316daf2e8457e9d5a",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "1ebcc63f67cff07bfbb198dd7104ec0fadb86d2f19634cf2b672667eaa52ee9d",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "6348eb0b70a7f971e64ba140f564564db974b7eea815910aaee82785ae78fcd7",
+    "ui/renderer.js": "5d483aaa12a7020044eb1fc9fa2e53b16738a84b5d06f77ba00a97010079c97e",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+  },
+  "launches": [
+    {
+      "pid": 3827491,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "platform": {
+        "requested": "default",
+        "desktopSession": "wayland"
+      },
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3827789,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "platform": {
+        "requested": "default",
+        "desktopSession": "wayland"
+      },
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": [],
+  "measurement": {
+    "readbackMode": "off",
+    "profileEnabled": false,
+    "warmOpening": true
+  },
+  "metrics": [
+    {
+      "name": "navigation",
+      "p95": 20.099999999999454,
+      "p99": 35,
+      "max": 83.30000000000018
+    },
+    {
+      "name": "sculpt",
+      "p95": 21.700000000000728,
+      "p99": 66.70000000000073,
+      "max": 150,
+      "heightDraws": 226,
+      "heightFrames": 226,
+      "duplicateHeightFrames": 0,
+      "maxHeightDrawsPerFrame": 1,
+      "firstHeightSubmissionMs": 80.89999997615814,
+      "firstFramePhases": [
+        {
+          "name": "View.render",
+          "parent": "",
+          "frame": 10779.7,
+          "start": 48.09999996423721,
+          "duration": 0
+        },
+        {
+          "name": "View.render",
+          "parent": "",
+          "frame": 10779.7,
+          "start": 48.5,
+          "duration": 0.7999999523162842
+        },
+        {
+          "name": "Landscape.sampleHeight",
+          "parent": "Landscape.tickLive/Landscape.sampleLive",
+          "frame": 10779.7,
+          "start": 51,
+          "duration": 0
+        },
+        {
+          "name": "Draft.update",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 10779.7,
+          "start": 57.39999997615814,
+          "duration": 14.699999988079071
+        },
+        {
+          "name": "Material.update",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 10779.7,
+          "start": 72.09999996423721,
+          "duration": 1.699999988079071
+        },
+        {
+          "name": "View.render",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 10779.7,
+          "start": 75.29999995231628,
+          "duration": 5.900000035762787
+        },
+        {
+          "name": "View.previewHeight",
+          "parent": "Landscape.tickLive/Landscape.sampleLive",
+          "frame": 10779.7,
+          "start": 51.09999996423721,
+          "duration": 30.100000023841858
+        },
+        {
+          "name": "Landscape.sampleLive",
+          "parent": "Landscape.tickLive",
+          "frame": 10779.7,
+          "start": 50.799999952316284,
+          "duration": 32.30000001192093
+        },
+        {
+          "name": "Landscape.tickLive",
+          "parent": "",
+          "frame": 10779.7,
+          "start": 50.799999952316284,
+          "duration": 32.30000001192093
+        }
+      ],
+      "heightPreviewCpuMs": 558.5999998450279,
+      "longTasks": [
+        {
+          "time": 10781.400000035763,
+          "duration": 88
+        }
+      ]
+    },
+    {
+      "name": "sculpt-repeat",
+      "p95": 24.200000000000728,
+      "p99": 83.19999999999709,
+      "max": 149.59999999999854,
+      "heightDraws": 250,
+      "heightFrames": 250,
+      "duplicateHeightFrames": 0,
+      "maxHeightDrawsPerFrame": 1,
+      "firstHeightSubmissionMs": 27,
+      "firstFramePhases": [
+        {
+          "name": "Landscape.sampleHeight",
+          "parent": "Landscape.tickLive/Landscape.sampleLive",
+          "frame": 30403.9,
+          "start": 11.100000023841858,
+          "duration": 0
+        },
+        {
+          "name": "Draft.update",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 30403.9,
+          "start": 19.30000001192093,
+          "duration": 3.800000011920929
+        },
+        {
+          "name": "Material.update",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 30403.9,
+          "start": 23.100000023841858,
+          "duration": 1.300000011920929
+        },
+        {
+          "name": "View.render",
+          "parent": "Landscape.tickLive/Landscape.sampleLive/View.previewHeight",
+          "frame": 30403.9,
+          "start": 26.200000047683716,
+          "duration": 1.0999999642372131
+        },
+        {
+          "name": "View.previewHeight",
+          "parent": "Landscape.tickLive/Landscape.sampleLive",
+          "frame": 30403.9,
+          "start": 11.200000047683716,
+          "duration": 16.099999964237213
+        },
+        {
+          "name": "Landscape.sampleLive",
+          "parent": "Landscape.tickLive",
+          "frame": 30403.9,
+          "start": 11.100000023841858,
+          "duration": 16.80000001192093
+        },
+        {
+          "name": "Landscape.tickLive",
+          "parent": "",
+          "frame": 30403.9,
+          "start": 11.100000023841858,
+          "duration": 16.80000001192093
+        },
+        {
+          "name": "View.render",
+          "parent": "",
+          "frame": 30403.9,
+          "start": 40.40000003576279,
+          "duration": 0
+        },
+        {
+          "name": "View.render",
+          "parent": "",
+          "frame": 30403.9,
+          "start": 40.700000047683716,
+          "duration": 0.5
+        }
+      ],
+      "heightPreviewCpuMs": 536.9000005126,
+      "longTasks": []
+    }
+  ]
+}
