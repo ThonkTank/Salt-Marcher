@@ -32,6 +32,13 @@ test('world reader retains a protected tree without loading the continent height
  const layer=reader.read(source,{box:{x:-1e6,y:-1e6,width:4e7,height:4e7},width:1024,height:1024,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
  assert.equal(layer.state,'ready');const view=layer.records.find(record=>record.id===r.id).vegetationView;
  assert.equal(view.mode,'surface');assert.equal(view.instances.length,1);assert.equal(view.instances[0].id,'old-oak');assert.equal(view.instances[0].z,50);
+ // Dense world overlays must not discard protected instances with invisible
+ // automatic trees and place symbols.
+ f.store.db.transaction(()=>{for(let i=0;i<600;i++){const place={...emptyRecord('place'),id:'far-place-'+i,name:'Ort',points:[{x:i,y:0}]};insert.run(f.cam.id,place.id,0,i,i,0,0,JSON.stringify(place));}})();
+ const denseSource=f.store.atlasRegionSource(f.token);reader.sync(denseSource);
+ const dense=reader.read(denseSource,{box:{x:-1e6,y:-1e6,width:4e7,height:4e7},width:1024,height:1024,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false},2*1024*1024);
+ assert.equal(dense.coverage.mode,'raster');assert.equal(dense.records.find(record=>record.id===r.id).vegetationView.instances[0].id,'old-oak');
+
 });
 function setup(t){
  const dir=mkdtempSync(cache+'/vegetation-test-');let store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('Landschaft'),active=store.activate(cam.id);

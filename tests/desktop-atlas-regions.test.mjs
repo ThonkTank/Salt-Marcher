@@ -586,3 +586,20 @@ test('a cached current view cancels active and queued stale camera work while pr
  const renamed=f.store.db.prepare('UPDATE room SET name=? WHERE campaign_id=? AND id=?');renamed.run('Nach dem Abbruch',f.campaign.id,'r0');
  assert.equal((await service.read(f.store.atlasRegionSource(f.shell.token,service.cursor),query())).rooms[0].name,'Nach dem Abbruch');
 });
+
+test('dense world symbols omit empty object tiles while preserving names, hits and visible fallbacks',async t=>{
+ const f=fixture(t,0);f.store.db.transaction(()=>{for(let i=0;i<600;i++)landscape(f,road('minor-'+i));})();
+ landscape(f,{...road('capital'),kind:'place',name:'Explicit world label',label:{rank:5},points:[{x:20,y:20}],width:0});
+ const q={...query({x:-4e6,y:-4e6,width:8e6,height:8e6}),width:256,height:256,scopeId:null,terrainRaster:false};
+ const world=await f.read(q);assert.equal(world.landscape.coverage.mode,'raster');assert.equal(world.landscape.coverage.objects,601);assert.equal(world.landscape.coverage.complete,true);assert.deepEqual(world.landscape.tiles,[]);
+ assert(world.landscape.labels.some(l=>l.id==='place:capital'&&l.rank===5));assert.equal(f.reader.candidatesAt(f.source,q,{x:5,y:0},0,'landscape').total,601);
+ landscape(f,{...road('minor-0'),revision:1,width:10000});assert((await f.read(q)).landscape.tiles.length>0,'a widened road appears without moving the camera');
+ landscape(f,{...road('minor-0'),revision:2});assert.deepEqual((await f.read(q)).landscape.tiles,[],'hiding it again does not retain old raster ink');
+ const near=await f.read({...q,box:{x:-1000,y:-1000,width:2000,height:2000}});assert(near.landscape.tiles.length>0,'place symbols return at the appropriate scale');
+ const ref=id=>({...road(id),kind:'reference',points:[{x:0,y:0}],width:10,imageWidth:10,imageHeight:10,angle:0,visible:true,assetId:id});
+ landscape(f,ref('template'));const exact=await f.read(q);assert.deepEqual(exact.landscape.tiles,[]);assert(exact.landscape.records.some(r=>r.id==='template'&&r.assetId==='template'));
+ f.store.db.transaction(()=>{for(let i=0;i<16;i++)landscape(f,ref('template-'+i));})();
+ assert((await f.read(q)).landscape.tiles.length>0,'excess image templates retain their outlines');
+ const hidden=await f.read({...q,references:false});assert.deepEqual(hidden.landscape.tiles,[]);assert.equal(hidden.landscape.coverage.references,0);
+ const ground=await f.read({...q,terrainRaster:true});assert(ground.landscape.tiles.length>0,'Canvas terrain is still produced when requested');
+});

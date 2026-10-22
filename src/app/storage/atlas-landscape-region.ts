@@ -9,7 +9,7 @@ import {TerrainProjectionCache} from '../terrain-projection-cache';
 import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
 import {vegetationEnvironmentReader} from './vegetation';
-import {generateVegetation} from '../vegetation';
+import {generateVegetation,VEGETATION_SURFACE_MPP} from '../vegetation';
 import {streamTerrainField} from '../terrain-field-stream';
 import { lineContains } from "../landscape-line";
 import {PNG} from 'pngjs';
@@ -167,12 +167,17 @@ export class AtlasLandscapeReader {
   let labelCandidates:MapLabelCandidate[]=[];
   const environment=vegetationEnvironmentReader(this.db,source.campaignId,q.box,q.box.width/q.width);
   const vectorBudget=Math.min(512*1024,budget/3);
-  let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
+  let used=0,dense=forceRaster,referenceBytes=0,protectedBytes=0,rasterObjects=false;const references:LandscapeRecord[]=[],protectedCovers:LandscapeRecord[]=[];
   for(const r of this.rows(source,q.box,false,0,q.box.width/q.width)){
    checkpoint?.();
    if(q.references===false&&r.kind==='reference')continue;
    if(!q.perception&&(q.terrainRaster===false||mapRecordVisible(r,q.box.width/q.width)))labelCandidates.push(...landscapeLabels(r,q.box));if(labelCandidates.length>2400)labelCandidates=boundedLabels(labelCandidates,q.box);
    layer.coverage.objects++;if(r.kind==='reference')layer.coverage.references++;
+   // Track possible ink independently of labels and exact hit coverage. The
+   // fallback samples at this scale or coarser, so an automatic surface-only
+   // cover cannot add crowns there. Overrides are conservative even offscreen.
+   if(r.vegetation)rasterObjects||=q.box.width/q.width<=VEGETATION_SURFACE_MPP||r.vegetation.overrides.some(o=>!o.removed);
+   else if(r.kind==='road'||r.kind==='river'||r.kind==='place')rasterObjects||=mapRecordVisible(r,q.box.width/q.width);
    const record=visual(r),vegetation=r.vegetation?generateVegetation(r,environment,q.box,q.box.width/q.width):undefined;
    if(vegetation)record.vegetationView=vegetation;
    let size=Buffer.byteLength(JSON.stringify(record));if(r.kind==='reference'){referenceBytes+=size;if(references.length<16&&referenceBytes<=128*1024)references.push(record);}
@@ -193,7 +198,10 @@ export class AtlasLandscapeReader {
   }
   layer.labels=boundedLabels(labelCandidates,q.box);
   layer.coverage.mode=dense?'raster':'detail';const exactReferences=layer.coverage.references<=16&&referenceBytes<=128*1024;if(dense)layer.records=[...(exactReferences?references:[]),...protectedCovers];
-  if(!terrain&&!dense)return layer;
+  // Dense hidden symbols need no second object pass or transparent PNGs.
+  // Exact reference images and protected objects remain in layer.records;
+  // excess references still require their visible raster outlines.
+  if(!terrain&&(!dense||!rasterObjects&&(exactReferences||!layer.coverage.references)))return layer;
   if(!setting&&!dense&&!this.sql("SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.kind') IN ('patch','vegetation') AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? LIMIT 1").get(source.campaignId,q.box.x,q.box.x+q.box.width,q.box.y,q.box.y+q.box.height))return layer;
   // At most four world-aligned tiles; a smaller detail level is explicit display aggregation.
   let edge=2**Math.ceil(Math.log2(Math.max(q.box.width,q.box.height)));
