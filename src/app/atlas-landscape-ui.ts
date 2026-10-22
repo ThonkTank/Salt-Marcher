@@ -1,22 +1,25 @@
+import {LandscapeInspector} from './landscape-inspector';
+import {LandscapeRoutes} from './landscape-routes';
+import {LandscapeBrushSession} from './landscape-brush-session';
+import type {LandscapeHost,LandscapeTool as Tool} from './landscape-workbench-types';
 import {vegetationInstances} from './vegetation-projection';
-import {mapLabelEditor,readMapLabelEditor} from './map-label-editor';
+
 import {AUTO_CONTOURS} from './terrain-contour-style';
 import {terrainDetailBox} from './terrain-detail';
-import {TerrainLiveStroke,type TerrainLiveAction,type TerrainLiveContext} from './terrain-live-stroke';
-import {openTerrainRoute} from './terrain-route-ui';
+
 import {validateVegetation,vegetationSpec,type VegetationInstance,type VegetationOverride} from './vegetation';
-import {vegetationControls,vegetationInspector} from './vegetation-controls';
+import {vegetationControls} from './vegetation-controls';
 import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
-import {heightBrushResolution,type HeightStroke} from './terrain-brush';
+import {heightBrushResolution} from './terrain-brush';
 import {drawMeasurements,areaMeasures,pathMeasures,radiusMeasures} from './atlas-measurements';
 import {atlasFieldValue,setAtlasFieldValue,setAtlasElevationField,lengthLabel} from './atlas-units';
-import {LandscapeToolSettings,lineControls,readLineControls} from "./landscape-tool-settings";
+import {LandscapeToolSettings} from "./landscape-tool-settings";
 import {brushFootprint,type BrushMode} from "./landscape-brush";
-import {newLine,linePoints,translateLine,splitLine} from "./landscape-line";
+import {linePoints,translateLine} from "./landscape-line";
 import { automaticGrid, gridMeters, travelHexSizes } from "./atlas-navigation-scale";
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import { pendingAtlasWrite } from "./campaign-atlas-author";
-import type { AtlasRenderView, AtlasAction } from "./campaign-atlas-contracts";
+import type {AtlasAction} from "./campaign-atlas-contracts";
 import type { Point, Polygon } from "./contracts";
 import {
   contains,
@@ -33,43 +36,84 @@ import {
   drawLandscapeGrid,
   drawScale,
 } from "./atlas-landscape-view";
-import {
-  newLocation,
-  type LocationDocument,
-} from "../features/location/location-schema";
+import {newLocation} from "../features/location/location-schema";
 import { atlasHexAt } from "./campaign-atlas-model";
 const html = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
-type Tool =
-  | "vegetation" | "vegetation-area" | "vegetation-line" | "vegetation-erase" | "vegetation-thin" | "vegetation-dense" | "vegetation-object"
-  | "select"
-  | "height"
-  | "smooth"
-  | "color"
-  | "property"
-  | "freshwater"
-  | "hex"
-  | "reset"
-  | "river"
-  | "road"
-  | "place"
-  | "measure";
+
 export class LandscapeWorkbench {
+  private brush: LandscapeBrushSession = this.createLandscapeBrushSession();
+  private createLandscapeBrushSession(): LandscapeBrushSession {
+      const source = this;
+      return new LandscapeBrushSession({
+          get effects() { return source.host; },
+          get pointer() { return source.pointer; }, set pointer(value) { source.pointer = value; },
+          disable: (...args) => this.disable(...args),
+          say: (...args) => this.say(...args),
+          get lastPoint() { return source.lastPoint; },
+          get points() { return source.points; }, set points(value) { source.points = value; },
+          colorRecord: (...args) => this.colorRecord(...args),
+          get saving() { return source.saving; }, set saving(value) { source.saving = value; },
+          get brushStrokes() { return source.brushStrokes; }, set brushStrokes(value) { source.brushStrokes = value; },
+          get draftSeed() { return source.draftSeed; }, set draftSeed(value) { source.draftSeed = value; },
+          get token() { return source.token; },
+          get heightPreviewM() { return source.heightPreviewM; }, set heightPreviewM(value) { source.heightPreviewM = value; },
+          get active() { return source.active; },
+          get hovering() { return source.hovering; },
+          cursorHeight: (...args) => this.cursorHeight(...args)
+      });
+  }
+
+  private routes: LandscapeRoutes = this.createLandscapeRoutes();
+  private createLandscapeRoutes(): LandscapeRoutes {
+      const source = this;
+      return new LandscapeRoutes({
+          get tool() { return source.tool; },
+          hasDraft: (...args) => this.hasDraft(...args),
+          say: (...args) => this.say(...args),
+          get selected() { return source.details.selected; }, set selected(value) { source.details.selected = value; },
+          get selectionRecords() { return source.details.selectionRecords; },
+          get inspectorRoot() { return source.inspectorRoot; },
+          get effects() { return source.host; },
+          get token() { return source.token; },
+          get panel() { return source.panel; },
+          get canvas() { return source.canvas; },
+          point: (...args) => this.point(...args),
+          hit: (...args) => this.hit(...args),
+          get spacePan() { return source.spacePan; },
+          commit: (...args) => this.commit(...args)
+      });
+  }
+
+  private details: LandscapeInspector = this.createLandscapeInspector();
+  private createLandscapeInspector(): LandscapeInspector {
+      const source = this;
+      return new LandscapeInspector({
+          get inspectorRoot() { return source.inspectorRoot; },
+          hasDraft: (...args) => this.hasDraft(...args),
+          get token() { return source.token; },
+          get effects() { return source.host; },
+          say: (...args) => this.say(...args),
+          get background() { return source.background; }, set background(value) { source.background = value; },
+          get assets() { return source.assets; },
+          rememberAsset: (...args) => this.rememberAsset(...args),
+          objectOptions: (...args) => this.objectOptions(...args),
+          get routes() { return source.routes; },
+          finish: (...args) => this.finish(...args),
+          commit: (...args) => this.commit(...args),
+          get draftSeed() { return source.draftSeed; },
+          selectId: (...args) => this.selectId(...args)
+      });
+  }
+
   readonly panel = document.createElement("section");
   private vegetationSettings=vegetationSpec();
   private vegetationFields=document.createElement('div');
-  private vegetationInstance:VegetationInstance|undefined;
   private inspectorRoot: HTMLElement;
   private settings:LandscapeToolSettings;
   private draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;
-  private selectionRecords=new Map<string,LandscapeRecord>();
   private dragOrigin:Point|null=null;
   private hovering=false;
-  private routeSession:Awaited<ReturnType<typeof openTerrainRoute>>|undefined;
-  private routeOpening=false;
-  private routeGeneration=0;
-  private routeRecords:LandscapeRecord[]|undefined;
-  private routeAnchors:Point[]=[];
 
   readonly assets = new Map<string, string>();
   private unavailableAssets=new Set<string>();
@@ -88,57 +132,20 @@ export class LandscapeWorkbench {
   private tool: Tool = "select";
   private points: Point[] = [];
   private brushStrokes: Point[][] = [];
-  private maskStroke:HeightStroke|null=null;
-  private colorDraft:ReturnType<LandscapeToolSettings['color']>|null=null;
-  private maskStart=0;
-  private maskGeneration=0;
-  private liveFrame:number|undefined;
-  private liveWriteRequested=false;
-  private maskTimer:ReturnType<typeof setTimeout>|undefined;
-  private live:TerrainLiveStroke|null=null;
-  private liveColorCount=0;
-  private liveId="";
-  get livePainting(){return this.live!==null;}
   private pointer: number | null = null;
-  private selected: LandscapeRecord | null = null;
-  get selectionId(){return this.selected&&this.inspectorRoot.dataset.selectionId===this.selected.id?this.selected.id:null;}
-  private vertex = 0;
   private dragging = false;
   private lineDragChanged = false;
   private releaseClick = false;
-  private dirty = false;
   private saving = false;
   private measurement: Point[] = [];
-  private doc: LocationDocument | null = null;
-  private docRevision: number | null = null;
   private calibration: {
     record: LandscapeRecord;
     points: Point[];
   } | null = null;
   private lastPoint: Point = { x: 0, y: 0 };
   constructor(
-    private svg: HTMLCanvasElement,
-    private host: {
-      box: () => LandscapeBox;
-      planning?:()=>void;
-      navigation?:(e:PointerEvent)=>boolean;
-      visibility?:()=>import("./terrain-spatial-model").TerrainView|undefined;
-      navigate?:(box:LandscapeBox)=>void;
-      hit:(e:MouseEvent,keys:string[])=>{data:Record<string,string>}|null;
-      point:(e:MouseEvent)=>Point;
-      refresh?:()=>Promise<unknown>;
-      selected?:(id:string,kind:LandscapeRecord['kind'])=>void;
-      choose?: (point:Point)=>Promise<void>;
-      current?:()=>boolean;
-      redraw: () => void;
-      redrawOverlay?: () => void;
-      write: (a: AtlasAction) => Promise<unknown>;
-      previewHeight?:(stroke:HeightStroke)=>void;
-      terrainGesture:(active:boolean)=>void|Promise<void>;
-      writeTerrain:(a:TerrainLiveAction,c:TerrainLiveContext)=>Promise<import("./campaign-atlas-contracts").AtlasCommitAck>;
-      error: (e: unknown) => void;
-      data: () => AtlasRenderView | null;
-    },
+    private canvas: HTMLCanvasElement,
+    private host: LandscapeHost,
   ) {
     this.panel.id = "atlas-landscape-tools";
     this.panel.hidden = true;
@@ -160,7 +167,7 @@ export class LandscapeWorkbench {
     html("atlas-tool-fields").after(this.panel);
     this.settings=new LandscapeToolSettings(this.panel,()=>{this.toolFields();this.host.redraw();},()=>{if(this.hasDraft()){this.say("Zuerst abschließen oder verwerfen.");return false;}return true;});
     const routePlan=document.createElement('button');routePlan.id='land-route-plan';routePlan.textContent='Geländegerecht planen';routePlan.type='button';this.settings.lineRoot.after(routePlan);
-    routePlan.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}void this.openRoute().catch(e=>this.host.error(e));};
+    routePlan.onclick=()=>{if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}void this.routes.openRoute().catch(e=>this.host.error(e));};
     html<HTMLSelectElement>("land-tool").onchange = () => {
       // A ruler is temporary; leaving it must not require saving a drawing.
       if(this.tool==='measure'&&!this.saving&&this.pointer===null)this.points=[];
@@ -170,14 +177,14 @@ export class LandscapeWorkbench {
         return;
       }
       this.tool = html<HTMLSelectElement>("land-tool").value as Tool;
-      this.liveFailureMessage=undefined;
+      this.brush.liveFailureMessage=undefined;
       this.toolFields();
       this.say("Werkzeug wählen, auf der Karte arbeiten. Enter schließt Punktzüge ab; Escape verwirft.");
       this.measurement=[];
-      this.selected = null;
-      this.vegetationInstance=undefined;
-      this.selectionRecords.clear();
-      this.doc = null;
+      this.details.selected = null;
+      this.details.vegetationInstance=undefined;
+      this.details.selectionRecords.clear();
+      this.details.doc = null;
       html("land-selection").replaceChildren();
       this.host.redraw();
     };
@@ -185,7 +192,7 @@ export class LandscapeWorkbench {
       const r = this.records.find(
         (r) => r.id === html<HTMLSelectElement>("land-object").value,
       );
-      if (r) void (this.host.data()?.region?.landscape?this.selectId(r.id):this.select(r)).catch((e) => this.host.error(e));
+      if (r) void (this.host.data()?.region?.landscape?this.selectId(r.id):this.details.select(r)).catch((e) => this.host.error(e));
     };
     const property = () => {
       const field = html<HTMLSelectElement>("land-field").value;
@@ -204,17 +211,17 @@ export class LandscapeWorkbench {
     html("land-finish").onclick = () =>
       void this.finish().catch((e) => this.host.error(e));
     html("land-cancel").onclick = () => this.cancel();
-    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(true));if(this.selected?.assetId&&!this.assets.has(this.selected.assetId))await this.selectId(this.selected.id);})().catch(e=>this.host.error(e));
+    html("land-reload").onclick = () => void (async()=>{await (this.host.refresh?this.host.refresh():this.load(true));if(this.details.selected?.assetId&&!this.assets.has(this.details.selected.assetId))await this.selectId(this.details.selected.id);})().catch(e=>this.host.error(e));
     html("land-reference").onclick = () =>
       void this.importReference().catch((e) => this.host.error(e));
     html("land-grid").onchange = () => this.host.redraw();
     html("land-auto-level").onchange = () => { this.toolFields(); this.host.redraw(); };
-    svg.addEventListener(
+    canvas.addEventListener(
       "pointerdown",
       (e) => {
-        if (!this.active || e.button !== 0 || e.altKey || this.spacePan || this.saving || this.live || this.host.navigation?.(e)) return;
+        if (!this.active || e.button !== 0 || e.altKey || this.spacePan || this.saving || this.brush.live || this.host.navigation?.(e)) return;
         this.releaseClick = false;
-        svg.focus({preventScroll:true});
+        canvas.focus({preventScroll:true});
         if(this.host.current&&!this.host.current()){this.say('Kartenausschnitt wird geladen. Zug danach beginnen.');return;}
         if (
           this.tool === "select" && !this.host.choose &&
@@ -226,30 +233,30 @@ export class LandscapeWorkbench {
         this.lastPoint = this.point(e);
         this.heightRead=null;this.heightPreviewM=null;
         if(this.settings.eyedropper){
-          const b=svg.getBoundingClientRect(),pixel=svg.getContext('2d')?.getImageData(Math.floor((e.clientX-b.left)*svg.width/b.width),Math.floor((e.clientY-b.top)*svg.height/b.height),1,1).data;
+          const b=canvas.getBoundingClientRect(),pixel=canvas.getContext('2d')?.getImageData(Math.floor((e.clientX-b.left)*canvas.width/b.width),Math.floor((e.clientY-b.top)*canvas.height/b.height),1,1).data;
           if(pixel)this.settings.sample('#'+[...pixel.slice(0,3)].map(v=>v.toString(16).padStart(2,'0')).join(''));this.releaseClick=true;return;
         }
-        const handle = this.selectionRecords.size>1?null:this.hit(e, ["landVertex"]);
-        if (handle && this.selected) {
-          if (this.selected.kind === "reference" && this.selected.locked)
+        const handle = this.details.selectionRecords.size>1?null:this.hit(e, ["landVertex"]);
+        if (handle && this.details.selected) {
+          if (this.details.selected.kind === "reference" && this.details.selected.locked)
             return;
-          this.vertex = Number(handle.data.landVertex);
+          this.details.vertex = Number(handle.data.landVertex);
           this.dragging = true;
           this.lineDragChanged = false;
           this.pointer = e.pointerId;
-          svg.setPointerCapture(e.pointerId);
+          canvas.setPointerCapture(e.pointerId);
           return;
         }
         if (this.tool === "select") {
           const filter=html<HTMLSelectElement>('vegetation-selection-filter').value;
           const plant=this.hit(e,[filter==='all'?'vegetationInstance':'vegetation-'+filter]);
-          if(plant?.data.vegetationInstance&&plant.data.landscapeId){const record=this.records.find(r=>r.id===plant.data.landscapeId),instance=vegetationInstances(record?.vegetationView).find(i=>i.id===plant.data.vegetationInstance);if(instance){void this.selectVegetation(record!.id,instance).catch(e=>this.host.error(e));return;}}
+          if(plant?.data.vegetationInstance&&plant.data.landscapeId){const record=this.records.find(r=>r.id===plant.data.landscapeId),instance=vegetationInstances(record?.vegetationView).find(i=>i.id===plant.data.vegetationInstance);if(instance){void this.details.selectVegetation(record!.id,instance).catch(e=>this.host.error(e));return;}}
           if(filter!=='all'){this.say('Kein Objekt des gewählten Typs an dieser Stelle.');return;}
           const id=this.hit(e,['landscapeId'])?.data.landscapeId;
-          if(e.shiftKey&&id){void this.selectAdditional(id).catch(e=>this.host.error(e));return;}
-          if(id&&this.selected&&(id===this.selected.id||this.selectionRecords.has(id))&&['river','road'].includes(this.selected.kind)){
-            if(this.selected.route){void this.openRoute(this.selected).catch(e=>this.host.error(e));return;}
-            this.vertex=-2;this.dragOrigin=this.lastPoint;this.dragging=true;this.lineDragChanged=false;this.pointer=e.pointerId;svg.setPointerCapture(e.pointerId);return;
+          if(e.shiftKey&&id){void this.details.selectAdditional(id).catch(e=>this.host.error(e));return;}
+          if(id&&this.details.selected&&(id===this.details.selected.id||this.details.selectionRecords.has(id))&&['river','road'].includes(this.details.selected.kind)){
+            if(this.details.selected.route){void this.routes.openRoute(this.details.selected).catch(e=>this.host.error(e));return;}
+            this.details.vertex=-2;this.dragOrigin=this.lastPoint;this.dragging=true;this.lineDragChanged=false;this.pointer=e.pointerId;canvas.setPointerCapture(e.pointerId);return;
           }
           if(this.host.choose){void this.host.choose(this.lastPoint).catch(e=>this.host.error(e));return;}
           const r = this.records.find(
@@ -258,7 +265,7 @@ export class LandscapeWorkbench {
               this.hit(e, ["landscapeId"])
                 ?.data.landscapeId,
           );
-          if (r) void this.select(r);
+          if (r) void this.details.select(r);
           return;
         }
         if (["height", "smooth", "color", "property", "freshwater", "hex", "reset", "vegetation", "vegetation-erase", "vegetation-thin", "vegetation-dense"].includes(this.tool)) {
@@ -266,20 +273,20 @@ export class LandscapeWorkbench {
             this.say("Entwurf voll. Zuerst abschließen oder verwerfen.");
             return;
           }
-          if(this.maskStroke){this.say('Zuerst abschließen oder verwerfen.');return;}
+          if(this.brush.maskStroke){this.say('Zuerst abschließen oder verwerfen.');return;}
           this.pointer = e.pointerId;
-          if(this.tool==='color')this.colorDraft??={...this.settings.color(Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),this.draftSeed),visibility:this.host.visibility?.()};
-          if(this.tool==='height'||this.tool==='smooth'){this.maskStart=e.timeStamp;this.maskStroke={...this.settings.height(),visibility:this.host.visibility?.(),seed:this.draftSeed,radius:Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),samples:[{...this.lastPoint,t:0}]};}
+          if(this.tool==='color')this.brush.colorDraft??={...this.settings.color(Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),this.draftSeed),visibility:this.host.visibility?.()};
+          if(this.tool==='height'||this.tool==='smooth'){this.brush.maskStart=e.timeStamp;this.brush.maskStroke={...this.settings.height(),visibility:this.host.visibility?.(),seed:this.draftSeed,radius:Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),samples:[{...this.lastPoint,t:0}]};}
           if (this.points.length) this.brushStrokes.push(this.points);
           this.points = [this.lastPoint];
-          if(this.tool==='height'||this.tool==='smooth'||this.tool==='color')this.startLive();
-          svg.setPointerCapture(e.pointerId);
+          if(this.tool==='height'||this.tool==='smooth'||this.tool==='color')this.brush.startLive();
+          canvas.setPointerCapture(e.pointerId);
           this.redrawPointer();
         }
       },
       true,
     );
-    svg.addEventListener(
+    canvas.addEventListener(
       "pointermove",
       (e) => {
         if(this.active&&this.pointer===null){this.lastPoint=this.point(e);this.hovering=true;this.cursorHeight();if(['height','smooth','color','property','freshwater','reset','vegetation','vegetation-erase','vegetation-thin','vegetation-dense'].includes(this.tool)||this.points.length)this.redrawPointer();}
@@ -288,39 +295,39 @@ export class LandscapeWorkbench {
         e.preventDefault();
         const p = this.point(e);
         this.lastPoint = p;
-        if(this.maskStroke){const events=e.getCoalescedEvents?.()??[];for(const sample of events.length?events:[e])if(this.maskStroke.samples.length<20000)this.maskStroke.samples.push({...this.point(sample),t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,sample.timeStamp-this.maskStart))});}
-        if (this.dragging && this.selected) {
-          if (this.selected.kind === "reference" && this.vertex === -1) {
-            const o = this.selected.points[0]!,
+        if(this.brush.maskStroke){const events=e.getCoalescedEvents?.()??[];for(const sample of events.length?events:[e])if(this.brush.maskStroke.samples.length<20000)this.brush.maskStroke.samples.push({...this.point(sample),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,sample.timeStamp-this.brush.maskStart))});}
+        if (this.dragging && this.details.selected) {
+          if (this.details.selected.kind === "reference" && this.details.vertex === -1) {
+            const o = this.details.selected.points[0]!,
               ratio =
-                (this.selected.imageHeight ?? 1) /
-                (this.selected.imageWidth ?? 1);
-            this.selected.width =
+                (this.details.selected.imageHeight ?? 1) /
+                (this.details.selected.imageWidth ?? 1);
+            this.details.selected.width =
               Math.hypot(p.x - o.x, p.y - o.y) / Math.hypot(1, ratio);
-            this.selected.angle =
+            this.details.selected.angle =
               Math.atan2(p.y - o.y, p.x - o.x) - Math.atan2(ratio, 1);
             setAtlasFieldValue(html<HTMLInputElement>("land-record-width"), String(
-              this.selected.width,
+              this.details.selected.width,
             ));
             html<HTMLInputElement>("land-angle").value=String(
-              (this.selected.angle * 180) / Math.PI,
+              (this.details.selected.angle * 180) / Math.PI,
             );
-          } else if(this.vertex===-2&&this.dragOrigin){
+          } else if(this.details.vertex===-2&&this.dragOrigin){
             const dx=p.x-this.dragOrigin.x,dy=p.y-this.dragOrigin.y;
-            for(const r of this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])translateLine(r,dx,dy);
+            for(const r of this.details.selectionRecords.size?[...this.details.selectionRecords.values()]:[this.details.selected])translateLine(r,dx,dy);
             this.dragOrigin=p;this.lineDragChanged ||= !!(dx||dy);
-            setAtlasFieldValue(html<HTMLInputElement>('land-x'), String(this.selected.points[0]!.x));setAtlasFieldValue(html<HTMLInputElement>('land-y'), String(this.selected.points[0]!.y));
+            setAtlasFieldValue(html<HTMLInputElement>('land-x'), String(this.details.selected.points[0]!.x));setAtlasFieldValue(html<HTMLInputElement>('land-y'), String(this.details.selected.points[0]!.y));
           } else {
-            const before = this.selected.points[this.vertex];
+            const before = this.details.selected.points[this.details.vertex];
             this.lineDragChanged ||= !!before && (before.x !== p.x || before.y !== p.y);
-            this.selected.points[this.vertex] = p;
+            this.details.selected.points[this.details.vertex] = p;
           }
-          if (this.vertex === 0) {
+          if (this.details.vertex === 0) {
             setAtlasFieldValue(html<HTMLInputElement>("land-x"), String(p.x));
             setAtlasFieldValue(html<HTMLInputElement>("land-y"), String(p.y));
           }
-          this.dirty = true;
-          if(this.selectionRecords.size>1)this.background=null;
+          this.details.dirty = true;
+          if(this.details.selectionRecords.size>1)this.background=null;
         } else {
           const events=this.tool==='color'?(e.getCoalescedEvents?.()??[]):[];
           for(const sample of events.length?events:[e]){
@@ -329,27 +336,27 @@ export class LandscapeWorkbench {
           const a = previous && atlasHexAt(previous, size), b = atlasHexAt(p, size);
           const changed = !previous || (this.tool === "hex"
             ? a!.q !== b.q || a!.r !== b.r
-            : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(1e-9, (this.colorDraft?.radius??Number(atlasFieldValue(html<HTMLInputElement>('land-radius')))) / 3));
+            : Math.hypot(p.x - previous.x, p.y - previous.y) > Math.max(1e-9, (this.brush.colorDraft?.radius??Number(atlasFieldValue(html<HTMLInputElement>('land-radius')))) / 3));
           if (changed) {
             if (this.brushPointCount() < 1000) this.points.push(p);
             else this.say("Entwurf voll. Zuerst abschließen oder verwerfen.");
           }
           }
         }
-        this.scheduleLive();this.redrawPointer();
+        this.brush.scheduleLive();this.redrawPointer();
       },
       true,
     );
-    svg.addEventListener(
+    canvas.addEventListener(
       "pointerup",
       (e) => {
         if (this.pointer !== e.pointerId) return;
         e.stopImmediatePropagation();
         e.preventDefault();
-        if(this.maskStroke)this.maskStroke.samples.push({...this.point(e),t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,e.timeStamp-this.maskStart))});
-        clearTimeout(this.maskTimer);
+        if(this.brush.maskStroke)this.brush.maskStroke.samples.push({...this.point(e),t:Math.min(300000,Math.max(this.brush.maskStroke.samples.at(-1)!.t,e.timeStamp-this.brush.maskStart))});
+        clearTimeout(this.brush.maskTimer);
         const commitLine = this.dragging && this.lineDragChanged &&
-          (this.selected?.kind === "road" || this.selected?.kind === "river");
+          (this.details.selected?.kind === "road" || this.details.selected?.kind === "river");
         if(!this.dragging&&['height','smooth','color','property','freshwater','hex','reset','vegetation','vegetation-erase','vegetation-thin','vegetation-dense'].includes(this.tool)&&this.brushPointCount()<1000){const p=this.point(e),last=this.points.at(-1);if(last&&(last.x!==p.x||last.y!==p.y))this.points.push(p);}
         this.pointer = null;
         this.dragging = false;
@@ -360,21 +367,21 @@ export class LandscapeWorkbench {
         }
         if (["height", "smooth", "color", "property", "freshwater", "hex", "reset", "vegetation", "vegetation-erase", "vegetation-thin", "vegetation-dense"].includes(this.tool))
           void this.finish().catch(e=>this.host.error(e));
-        if (svg.hasPointerCapture(e.pointerId))
-          svg.releasePointerCapture(e.pointerId);
+        if (canvas.hasPointerCapture(e.pointerId))
+          canvas.releasePointerCapture(e.pointerId);
         this.host.redraw();
       },
       true,
     );
-    svg.addEventListener("pointercancel", () => {
-      if(this.live){this.endLiveInput();void this.finishLive();return;}
-      if(this.maskStroke)this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,performance.now()-this.maskStart)});
-      clearTimeout(this.maskTimer);
+    canvas.addEventListener("pointercancel", () => {
+      if(this.brush.live){this.brush.endLiveInput();void this.brush.finishLive();return;}
+      if(this.brush.maskStroke)this.brush.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,performance.now()-this.brush.maskStart)});
+      clearTimeout(this.brush.maskTimer);
       this.pointer = null;
       this.dragging = false;
       this.say("Zug unterbrochen. Abschließen oder verwerfen.");
     });
-    svg.addEventListener(
+    canvas.addEventListener(
       "click",
       (e) => {
         if (!this.active || this.spacePan || e.altKey) return;
@@ -396,14 +403,14 @@ export class LandscapeWorkbench {
         e.stopImmediatePropagation();
         e.preventDefault();
         if (["height", "smooth", "color", "property", "freshwater", "hex", "reset", "vegetation", "vegetation-erase", "vegetation-thin", "vegetation-dense"].includes(this.tool)) return;
-        if (this.tool === "place" && this.selected) {
-          if (this.dirty) {
+        if (this.tool === "place" && this.details.selected) {
+          if (this.details.dirty) {
             this.say("Ortsänderungen zuerst abschließen oder verwerfen.");
             return;
           }
-          this.selected = null;
-          this.doc = null;
-          this.docRevision = null;
+          this.details.selected = null;
+          this.details.doc = null;
+          this.details.docRevision = null;
           html("land-selection").replaceChildren();
         }
         const p = this.point(e);
@@ -422,12 +429,12 @@ export class LandscapeWorkbench {
       },
       true,
     );
-    svg.addEventListener('pointerleave',()=>{this.hovering=false;this.heightRead=null;this.heightPreviewM=null;html('land-cursor-height').textContent='Höhe: –';this.renderHeightPrecision();this.redrawPointer();});
-    svg.addEventListener('contextmenu',e=>{if(this.active&&['river','road'].includes(this.tool)){e.preventDefault();e.stopImmediatePropagation();void this.finish().catch(e=>this.host.error(e));}});
-    svg.addEventListener("keydown", (e) => {
+    canvas.addEventListener('pointerleave',()=>{this.hovering=false;this.heightRead=null;this.heightPreviewM=null;html('land-cursor-height').textContent='Höhe: –';this.renderHeightPrecision();this.redrawPointer();});
+    canvas.addEventListener('contextmenu',e=>{if(this.active&&['river','road'].includes(this.tool)){e.preventDefault();e.stopImmediatePropagation();void this.finish().catch(e=>this.host.error(e));}});
+    canvas.addEventListener("keydown", (e) => {
       if (!this.active || (e.target as HTMLElement).closest?.('input,select,textarea,[contenteditable=true]')) return;
       if(e.code==="Space"){this.spacePan=true;return;}
-      if(e.key==="Backspace"){e.preventDefault();if(this.live)return;this.points.pop();this.host.redraw();return;}
+      if(e.key==="Backspace"){e.preventDefault();if(this.brush.live)return;this.points.pop();this.host.redraw();return;}
       if (e.key === "Escape") {
         e.preventDefault();
         this.cancel();
@@ -438,13 +445,13 @@ export class LandscapeWorkbench {
       }
     });
     window.addEventListener("keyup",e=>{if(e.code==="Space")this.spacePan=false;});
-    window.addEventListener("blur",()=>{this.spacePan=false;if(this.live){this.endLiveInput();void this.finishLive();return;}if(this.maskStroke&&this.pointer!==null){this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,performance.now()-this.maskStart)});const pointer=this.pointer;this.pointer=null;clearTimeout(this.maskTimer);if(svg.hasPointerCapture(pointer))svg.releasePointerCapture(pointer);this.say('Zug unterbrochen. Abschließen oder verwerfen.');}});
+    window.addEventListener("blur",()=>{this.spacePan=false;if(this.brush.live){this.brush.endLiveInput();void this.brush.finishLive();return;}if(this.brush.maskStroke&&this.pointer!==null){this.brush.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,performance.now()-this.brush.maskStart)});const pointer=this.pointer;this.pointer=null;clearTimeout(this.brush.maskTimer);if(canvas.hasPointerCapture(pointer))canvas.releasePointerCapture(pointer);this.say('Zug unterbrochen. Abschließen oder verwerfen.');}});
   }
   private colorRecord(){
-    const radius=this.colorDraft?.radius??Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),r=emptyRecord('patch');
+    const radius=this.brush.colorDraft?.radius??Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),r=emptyRecord('patch');
     r.points=[...this.points];r.resolution=gridMeters(html<HTMLSelectElement>('atlas-hex-level').value);
     r.polygons=[...this.brushStrokes,this.points].flatMap(ps=>brushFootprint(ps,radius));
-    r.paint={...(this.colorDraft??this.settings.color(radius,this.draftSeed)),strokes:[...this.brushStrokes,this.points].map(ps=>[...ps])};r.values={};return r;
+    r.paint={...(this.brush.colorDraft??this.settings.color(radius,this.draftSeed)),strokes:[...this.brushStrokes,this.points].map(ps=>[...ps])};r.values={};return r;
   }
   /** Direct brush pixels have their own presentation. Pointer/HUD changes
    * must not rebuild the unchanged author scene; geometry drags still do. */
@@ -452,73 +459,19 @@ export class LandscapeWorkbench {
     if(!this.dragging&&['height','smooth','color'].includes(this.tool)&&this.host.redrawOverlay)this.host.redrawOverlay();
     else this.host.redraw();
   }
+  get livePainting(){return this.brush.livePainting;}
+  get selectedLabel(){return this.details.selectedLabel;}
+  get selectionId(){return this.details.selectionId;}
+  get routeGesture(){return this.routes.routeGesture;}
+  routeHistory(kind:'undo'|'redo'){return this.routes.routeHistory(kind);}
+  planTerrainRoute(kind:'road'|'river'){return this.routes.planTerrainRoute(kind);}
+  select(record:LandscapeRecord){return this.details.select(record);}
+  selectVegetation(id:string,instance?:VegetationInstance){return this.details.selectVegetation(id,instance);}
+
   terrainDetail(box:LandscapeBox){return terrainDetailBox(this.lastPoint,Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),box);}
   get spatialTool(){return this.tool;}
-  get spatialSelection(){return this.selected?.points[0]??this.selected?.polygons[0]?.outer[0]??null;}
-  spatialDraft():import("./terrain-spatial-ui").TerrainDraft|null {return this.routeRecords?{routeRecords:this.routeRecords}:null;}
-  private startLive(){
-    const data=this.host.data();if(!data?.region)throw Error('Kartenausschnitt fehlt. Erneut laden.');
-    this.host.terrainGesture(true);this.liveId=crypto.randomUUID();this.liveColorCount=0;this.liveFailureMessage=undefined;
-    this.live=new TerrainLiveStroke({id:this.liveId,expectedRevision:data.revision,sourceFence:data.region.fence},(a,c)=>this.host.writeTerrain(a,c),error=>{
-      this.liveFailureMessage=error instanceof Error?error.message:String(error);
-      this.pointer=null;clearTimeout(this.maskTimer);void this.finishLive(true);this.host.error(error);
-    },()=>this.scheduleLive());
-    this.disable(true);this.say('Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück.');
-    // Sample the first real elapsed frame, just like subsequent stationary
-    // samples. A near-zero pointerdown dose can commit without changing a pixel.
-    // Releasing before that frame still flushes the actual elapsed input below.
-    this.scheduleLive();
-  }
-  private sampleHeight(){
-    if(this.maskStroke&&this.pointer!==null&&this.maskStroke.samples.length<20000){const last=this.maskStroke.samples.at(-1)!;this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(last.t,performance.now()-this.maskStart))});}
-  }
-  private sampleLive(write=true){
-    this.sampleHeight();
-    if(this.maskStroke)this.host.previewHeight?.(this.maskStroke);
-    if(!this.live||!write)return;
-    if(this.maskStroke)this.live.update({kind:'landscape-height-stroke',stroke:this.maskStroke});
-    else if(this.points.length!==this.liveColorCount){const record=this.colorRecord();record.id=this.liveId;this.liveColorCount=this.points.length;this.live.update({kind:'landscape-color-stroke',record});}
-  }
-  private liveFailureMessage:string|undefined;
-  private tickLive(){
-    this.liveFrame=undefined;
-    const write=this.liveWriteRequested;this.liveWriteRequested=false;
-    this.sampleLive(write);
-    // Stationary height feedback continues while storage is occupied. Input
-    // and returning write capacity join this frame instead of drawing twice.
-    if(this.maskStroke)this.scheduleLive(false);
-  }
-  private scheduleLive(write=true){
-    if(!this.live||this.pointer===null)return;
-    this.liveWriteRequested ||= write;
-    if(this.liveFrame!==undefined)return;
-    this.liveFrame=requestAnimationFrame(()=>this.tickLive());
-  }
-  private endLiveInput(){
-    if(this.liveFrame!==undefined)cancelAnimationFrame(this.liveFrame);this.liveFrame=undefined;
-    this.liveWriteRequested=false;
-    if(this.maskStroke&&this.pointer!==null)this.maskStroke.samples.push({...this.lastPoint,t:Math.min(300000,Math.max(this.maskStroke.samples.at(-1)!.t,performance.now()-this.maskStart))});
-    this.pointer=null;clearTimeout(this.maskTimer);
-  }
-  private async finishLive(stop=false){
-    const live=this.live;if(!live||this.saving)return;
-    this.endLiveInput();if(!stop)this.sampleLive();this.saving=true;
-    let failed=stop;
-    try{if(stop)await live.stop();else await live.finish();}
-    catch{failed=true;/* The writer already surfaced the error and owns unknown-outcome recovery. */}
-    finally{
-      if(this.live===live){
-        try{await this.host.terrainGesture(false);}
-        catch(error){failed=true;this.liveFailureMessage=error instanceof Error?error.message:String(error);this.host.error(error);}
-        finally{this.live=null;this.saving=false;}
-        this.clearMask();this.points=[];this.brushStrokes=[];this.draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;this.saving=false;
-        const pending=!!pendingAtlasWrite(this.token);this.disable(pending);
-        const saved=pending?'Speicherstand des Pinselzugs noch ungeklärt.':live.hasCommittedChanges?'Gespeicherte Änderungen bleiben; Rückgängig nimmt den Zug zurück.':'Keine Änderung dieses Pinselzugs gespeichert.';
-        this.say(failed?(this.liveFailureMessage?this.liveFailureMessage+' ':'')+'Pinsel gestoppt. '+saved:'Gespeichert');this.host.redraw();
-      }
-    }
-  }
-  private clearMask(){clearTimeout(this.maskTimer);this.maskGeneration++;this.heightPreviewM=null;this.maskStroke=null;this.colorDraft=null;if(this.active&&this.hovering)this.cursorHeight();}
+  get spatialSelection(){return this.details.selected?.points[0]??this.details.selected?.polygons[0]?.outer[0]??null;}
+  spatialDraft():import("./terrain-spatial-ui").TerrainDraft|null {return this.routes.routeRecords?{routeRecords:this.routes.routeRecords}:null;}
   private installReliefStyle(){
     const root=document.createElement('details');root.id='land-relief-style';
     root.innerHTML='<summary>Reliefstil</summary><label>Darstellung<select id="land-relief-mode"><option value="drawn">Gezeichnet</option><option value="shaded">Nur Schattierung</option><option value="height">Höhenfarben</option></select></label><label>Unbemaltes Land<input id="land-relief-land" type="color" value="#eee5cf"></label><label>Felsstriche<input id="land-relief-ink" type="color" value="#685639"></label><label>Licht aus Richtung (Grad)<input id="land-relief-light" type="number" min="0" max="359" value="315"></label><label>Strich- und Schattenstärke<input id="land-relief-strength" type="range" min="0" max="1" step="0.05" value="0.65"></label><button id="land-relief-apply" type="button">Reliefstil übernehmen</button><p>Nur Darstellung. Höhenfarben sind eine Analyseansicht; Höhe erzeugt weder Schnee noch Biome.</p>';
@@ -550,7 +503,7 @@ export class LandscapeWorkbench {
     const output=this.settings.precisionRoot.querySelector<HTMLOutputElement>('#land-brush-resolution')!,label=visible?'Pinselauflösung: '+lengthLabel(brush):'';
     if(output.textContent!==label)output.textContent=label;
     const read=this.heightRead,point=this.lastPoint;
-    const protectedPoint=visible&&this.hovering&&!this.maskStroke&&read&&read.generation===this.maskGeneration&&read.request===this.request&&read.point.x===point.x&&read.point.y===point.y&&read.resolutionM!==null&&read.resolutionM<brush;
+    const protectedPoint=visible&&this.hovering&&!this.brush.maskStroke&&read&&read.generation===this.brush.maskGeneration&&read.request===this.request&&read.point.x===point.x&&read.point.y===point.y&&read.resolutionM!==null&&read.resolutionM<brush;
     const hint=this.settings.precisionRoot.querySelector<HTMLElement>('#land-height-protection')!;hint.hidden=!protectedPoint;
     if(protectedPoint&&read.resolutionM!==null){
       const fixed=(document.getElementById('land-radius-fixed') as HTMLInputElement|null)?.checked;
@@ -561,11 +514,11 @@ export class LandscapeWorkbench {
     return [];
   }
   private cursorHeight(){
-    if(this.heightTimer||this.maskStroke)return;
+    if(this.heightTimer||this.brush.maskStroke)return;
     this.heightTimer=setTimeout(async()=>{
-      const token=this.token,p={...this.lastPoint},generation=this.maskGeneration,request=this.request;
+      const token=this.token,p={...this.lastPoint},generation=this.brush.maskGeneration,request=this.request;
       try{const r=await window.campaign.atlasHeight(token,p);
-        if(token===this.token&&generation===this.maskGeneration&&request===this.request&&!this.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok){
+        if(token===this.token&&generation===this.brush.maskGeneration&&request===this.request&&!this.brush.maskStroke&&this.hovering&&p.x===this.lastPoint.x&&p.y===this.lastPoint.y&&r.ok){
           this.heightPreviewM=null;this.heightRead={point:p,heightM:r.value.heightM,resolutionM:r.value.resolutionM,generation,request};
           this.renderHeightPrecision();this.redrawPointer();
         }
@@ -582,60 +535,39 @@ export class LandscapeWorkbench {
   private brushPointCount() {
     return this.points.length + this.brushStrokes.reduce((count, points) => count + points.length, 0);
   }
-  get selectedLabel(){return this.selected?(this.selected.kind==='place'?'place:':'landscape:')+this.selected.id:undefined;}
   /** A released direct stroke still owns writes and parameters, but no longer the camera. */
   blocksNavigation(includeRoute=true) {
-    return this.live ? this.pointer !== null : this.hasDraft(includeRoute);
+    return this.brush.live ? this.pointer !== null : this.hasDraft(includeRoute);
   }
   hasDraft(includeRoute=true) {
     return (
-      includeRoute&&(this.routeOpening||!!this.routeSession?.hasDraft()) || !!this.routeSession?.gesturing() ||
+      includeRoute&&(this.routes.routeOpening||!!this.routes.routeSession?.hasDraft()) || !!this.routes.routeSession?.gesturing() ||
       (this.tool !== "measure" && this.points.length > 0) ||
-      this.dirty ||
+      this.details.dirty ||
       !!this.calibration ||
       this.pointer !== null ||
-      this.saving || !!this.live
+      this.saving || !!this.brush.live
     );
   }
   cancel() {
-    if(this.live){void this.finishLive(true);return;}
-    this.liveFailureMessage=undefined;
-    this.routeGeneration++;this.routeSession?.close();this.routeSession=undefined;
-    this.clearMask();
+    if(this.brush.live){void this.brush.finishLive(true);return;}
+    this.brush.liveFailureMessage=undefined;
+    this.routes.close();
+    this.brush.clearMask();
     this.points = [];
     this.brushStrokes = [];
     this.measurement=[];
-    this.dirty = false;
+    this.details.dirty = false;
     this.pointer = null;
     this.calibration = null;
     this.dragging = false;
-    this.selected = null;
-    this.selectionRecords.clear();
+    this.details.selected = null;
+    this.details.selectionRecords.clear();
     this.draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;
-    this.doc = null;
+    this.details.doc = null;
     html("land-selection").replaceChildren();
     this.say("Zug verworfen.");
     this.host.redraw();
-  }
-  get routeGesture(){return !!this.routeSession?.gesturing();}
-  routeHistory(kind:'undo'|'redo'){if(!this.routeSession)return false;this.routeSession.history(kind);return true;}
-  planTerrainRoute(kind:'road'|'river'){return this.openRoute(undefined,kind);}
-  private async openRoute(record?:LandscapeRecord,kind:'road'|'river'=record?.kind==='river'||this.tool==='river'?'river':'road'){
-    if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
-    this.routeSession?.close();this.selected=null;this.selectionRecords.clear();this.inspectorRoot.replaceChildren();
-    this.host.planning?.();this.routeOpening=true;
-    const generation=++this.routeGeneration;
-    try{
-      const session=openTerrainRoute({token:this.token,box:()=>this.host.box(),record,kind,
-        panel:this.panel,canvas:this.svg,point:e=>this.point(e),hit:(e,keys)=>this.hit(e,keys),
-        navigation:e=>this.host.navigation?.(e)??(e.button!==0||e.altKey||this.spacePan),current:()=>this.host.current?.()??true,
-        navigate:b=>this.host.navigate?.(b),write:a=>this.commit(a),changed:()=>this.host.refresh?.()??Promise.resolve(),
-        preview:(records,anchors)=>{if(generation!==this.routeGeneration)return;this.routeRecords=records;this.routeAnchors=anchors.map(p=>({...p}));this.host.redraw();},
-        closed:()=>{this.routeSession=undefined;this.routeRecords=undefined;this.routeAnchors=[];this.host.redraw();},
-      });
-      if(generation!==this.routeGeneration)session.close();else this.routeSession=session;
-      await session.ready;
-    }finally{this.routeOpening=false;}
   }
   private toolFields() {
     const routePlan=document.getElementById('land-route-plan');if(routePlan)routePlan.hidden=this.tool!=='road'&&this.tool!=='river';
@@ -670,7 +602,7 @@ export class LandscapeWorkbench {
     }
   }
   setActive(active: boolean) {
-    if(!active&&this.active){this.routeGeneration++;this.routeSession?.close();}
+    if(!active&&this.active){this.routes.routeGeneration++;this.routes.routeSession?.close();}
     this.active = active;
     this.panel.hidden = !active;
     const palette = ["atlas-terrain", "atlas-hex-level"].flatMap(id => {
@@ -700,7 +632,7 @@ export class LandscapeWorkbench {
     if (!r.ok) throw new Error(r.error);
     const record = r.value.find((r) => r.locationId === id);
     if (!record) throw new Error("Ort ist nicht im Atlas platziert.");
-    await this.select(record);
+    await this.details.select(record);
     if (sectionId) {
       const section = this.inspectorRoot.querySelector<HTMLTextAreaElement>(
         `[data-section-body="${sectionId}"]`,
@@ -740,7 +672,7 @@ export class LandscapeWorkbench {
       this.key=frameKey;
       this.request++;const generation=this.request;
       this.records=layer.records;this.raster=layer.tiles;if(document.activeElement!==html('land-sea-level'))html<HTMLInputElement>('land-sea-level').value=String(layer.seaLevelM??0);html('land-reload').hidden=layer.state==='ready';
-      if(layer.state==='error'||!this.liveFailureMessage)this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
+      if(layer.state==='error'||!this.brush.liveFailureMessage)this.say(layer.state==='error'?layer.error??'Landschaft nicht verfügbar.':layer.coverage.mode==='raster'?'Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt.'+(layer.coverage.references>layer.records.filter(r=>r.kind==='reference').length?' Vorlagen sind als Umrisse dargestellt.':''):'Landschaft geladen.');
       this.objectOptions();this.host.redraw();
       const visibleAssets=new Set(this.records.filter(r=>r.kind==='reference'&&r.visible!==false).map(r=>r.assetId));
       for(const id of this.assets.keys())if(!visibleAssets.has(id)&&id!==this.calibration?.record.assetId)this.assets.delete(id);
@@ -770,8 +702,8 @@ export class LandscapeWorkbench {
   }
   private objectOptions(){
     const select=html<HTMLSelectElement>('land-object');select.replaceChildren(new Option('Auf der Karte auswählen',''));
-    const records=this.selected&&!this.records.some(r=>r.id===this.selected!.id)?[...this.records,this.selected]:this.records;
-    for(const r of records)select.add(new Option(r.name||r.kind,r.id));select.value=this.selected?.id??'';
+    const records=this.details.selected&&!this.records.some(r=>r.id===this.details.selected!.id)?[...this.records,this.details.selected]:this.records;
+    for(const r of records)select.add(new Option(r.name||r.kind,r.id));select.value=this.details.selected?.id??'';
   }
   async selectId(id:string){
     // Explicit selection leaves a temporary ruler just like a tool change.
@@ -780,35 +712,35 @@ export class LandscapeWorkbench {
     if(this.hasDraft()){this.say('Zuerst abschließen oder verwerfen.');return;}
     const response=await window.campaign.atlasLandscapeObject(token,id);
     if(token!==this.token||generation!==this.selectionRequest||frame!==this.host.data()?.region?.fence)return;
-    if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.select(response.value);
+    if(!response.ok)throw new Error(response.error);this.tool="select";html<HTMLSelectElement>("land-tool").value=this.tool;this.toolFields();await this.details.select(response.value);
   }
   draw(root: AtlasPaint, box: LandscapeBox, mpp: number) {
     const landscapeNode=atlasPaint;
-    const key=[this.records,this.raster,this.selectionRecords.size,this.selected?.id,this.selected?.resolution,this.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
+    const key=[this.records,this.raster,this.details.selectionRecords.size,this.details.selected?.id,this.details.selected?.resolution,this.details.selected?.order,mpp,...[...this.assets].flat(),...this.unavailableAssets];
     let background=this.background;
     if(!background||background.key.length!==key.length||!background.key.every((v,i)=>v===key[i])){
       const node=atlasPaint('group',{retainGeometry:true});
-      drawLandscape(node,this.selected?[...this.records.filter(r=>r.id!==this.selected!.id&&!this.selectionRecords.has(r.id)),...(this.selectionRecords.size?[...this.selectionRecords.values()]:[this.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
-      this.background=background={key,node,box:{...box},selectedSlot:this.selected?node.children.findIndex(n=>n.data.landscapeId===this.selected!.id):-1};
+      drawLandscape(node,this.details.selected?[...this.records.filter(r=>r.id!==this.details.selected!.id&&!this.details.selectionRecords.has(r.id)),...(this.details.selectionRecords.size?[...this.details.selectionRecords.values()]:[this.details.selected])]:this.records,box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
+      this.background=background={key,node,box:{...box},selectedSlot:this.details.selected?node.children.findIndex(n=>n.data.landscapeId===this.details.selected!.id):-1};
     }
     const retained=atlasPaint('group',{matrix:[1,0,0,1,background.box.x-box.x,background.box.y-box.y],data:{atlasLandscapeBase:'true'}});
     let node=background.node;
-    if(this.selected&&background.selectedSlot>=0&&this.selectionRecords.size<=1){
+    if(this.details.selected&&background.selectedSlot>=0&&this.details.selectionRecords.size<=1){
       // Keep the original painter slot, especially for references below terrain.
-      const selected=atlasPaint('group');drawLandscape(selected,[this.selected.vegetation?{...this.selected,vegetationView:this.records.find(r=>r.id===this.selected!.id)?.vegetationView}:this.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
+      const selected=atlasPaint('group');drawLandscape(selected,[this.details.selected.vegetation?{...this.details.selected,vegetationView:this.records.find(r=>r.id===this.details.selected!.id)?.vegetationView}:this.details.selected],background.box,mpp,this.assets,true,this.raster,this.unavailableAssets,true);
       node=atlasPaint('group',{retainGeometry:true});node.append(...background.node.children);
-      node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.selected!.id)!;
+      node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.details.selected!.id)!;
     }
     retained.append(node);root.append(retained);
-    if(this.routeAnchors.length){
-      const points=this.routeAnchors.map(p=>({x:p.x-box.x,y:p.y-box.y}));
+    if(this.routes.routeAnchors.length){
+      const points=this.routes.routeAnchors.map(p=>({x:p.x-box.x,y:p.y-box.y}));
       root.append(atlasPaint('polyline',{points,pointer:false,style:{stroke:'#c77d32',fill:null,lineWidth:mpp*2},data:{editorOnly:'true'}}));
       points.forEach((p,i)=>root.append(atlasPaint('circle',{...p,radius:mpp*6,style:{fill:'#fff1c9',stroke:'#a05a24',lineWidth:mpp*2},data:{routeAnchor:String(i),editorOnly:'true'}})));
     }
     const pts =
       this.calibration?.points ??
       (this.points.length ? this.points : this.measurement);
-    if(this.maskStroke||(this.tool==='color'&&this.points.length)){
+    if(this.brush.maskStroke||(this.tool==='color'&&this.points.length)){
       // Direct terrain strokes are rendered from the committed region.
     } else if (pts.length && this.tool === "hex") {
       try {
@@ -832,21 +764,21 @@ export class LandscapeWorkbench {
       }
       if (this.tool === "measure") this.say(lengthLabel(distance(pts)));
     }
-    if(this.active&&this.selectionRecords.size>1)for(const r of this.selectionRecords.values())root.append(landscapeNode('polyline',{points:linePoints(r).map(p=>({x:p.x-box.x,y:p.y-box.y})),pointer:false,style:{fill:null,stroke:'#d46e38',lineWidth:mpp*2,lineDash:[mpp*4,mpp*3]},data:{editorOnly:'true'}}));
+    if(this.active&&this.details.selectionRecords.size>1)for(const r of this.details.selectionRecords.values())root.append(landscapeNode('polyline',{points:linePoints(r).map(p=>({x:p.x-box.x,y:p.y-box.y})),pointer:false,style:{fill:null,stroke:'#d46e38',lineWidth:mpp*2,lineDash:[mpp*4,mpp*3]},data:{editorOnly:'true'}}));
     if (this.calibration)
       drawLandscape(root, [this.calibration.record], box, mpp, this.assets);
-    if (this.selected && !this.selected.vegetation && !this.selected.route && this.active && this.tool === "select" && this.selectionRecords.size<=1)
-      this.selected.points.forEach((p, i) =>
+    if (this.details.selected && !this.details.selected.vegetation && !this.details.selected.route && this.active && this.tool === "select" && this.details.selectionRecords.size<=1)
+      this.details.selected.points.forEach((p, i) =>
         root.append(
-          landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 6, style: {fill: i === this.vertex ? "#e1984b" : "#fff", stroke: "#a55d35", lineWidth: mpp * 2}, data: {landVertex: String(i), editorOnly: String("true")}}),
+          landscapeNode("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 6, style: {fill: i === this.details.vertex ? "#e1984b" : "#fff", stroke: "#a55d35", lineWidth: mpp * 2}, data: {landVertex: String(i), editorOnly: String("true")}}),
         ),
       );
     if (
-      this.selected?.kind === "reference" &&
-      !this.selected.locked &&
+      this.details.selected?.kind === "reference" &&
+      !this.details.selected.locked &&
       this.active
     ) {
-      const r = this.selected,
+      const r = this.details.selected,
         o = r.points[0]!,
         w = r.width,
         h = (w * (r.imageHeight ?? 1)) / (r.imageWidth ?? 1),
@@ -868,19 +800,6 @@ export class LandscapeWorkbench {
       if(d<best){nearest=q;best=d;}
     }}return nearest;
   }
-  private async selectAdditional(id:string){
-    if(this.hasDraft())throw Error('Änderung zuerst abschließen oder verwerfen.');
-    const token=this.token,frame=this.host.data()?.region?.fence,response=await window.campaign.atlasLandscapeObject(token,id);
-    if(token!==this.token||frame!==this.host.data()?.region?.fence)return;
-    if(!response.ok)throw Error(response.error);const r=response.value;
-    if(!['river','road'].includes(r.kind))return;
-    if(r.route||this.selected?.route){await this.select(r);return;}
-    if(!this.selected||!['river','road'].includes(this.selected.kind)){await this.select(r);return;}
-    if(this.selected.kind!==r.kind){this.say('Straßen und Flüsse getrennt gemeinsam bearbeiten.');return;}
-    if(!this.selectionRecords.size)this.selectionRecords.set(this.selected.id,this.selected);
-    if(this.selectionRecords.has(id)&&id!==this.selected.id)this.selectionRecords.delete(id);else this.selectionRecords.set(id,id===this.selected.id?this.selected:structuredClone(r));
-    this.inspector();this.background=null;this.host.redraw();
-  }
 
   drawMeasurements(root:AtlasPaint,box:LandscapeBox,mpp:number,project?:(p:Point)=>Point){
     if(!this.active)return;
@@ -893,8 +812,8 @@ export class LandscapeWorkbench {
       const record=this.tool==='measure'?null:this.draftLine(points);
       lines=pathMeasures(record?linePoints(record):points,record?.width);
       anchor=points.at(-1)??anchor;
-    }else if(this.selected&&this.tool==='select'){
-      const r=this.selected;anchor=r.points.at(-1)??r.polygons[0]?.outer[0]??anchor;
+    }else if(this.details.selected&&this.tool==='select'){
+      const r=this.details.selected;anchor=r.points.at(-1)??r.polygons[0]?.outer[0]??anchor;
       if(r.kind==='road'||r.kind==='river')lines=pathMeasures(linePoints(r),r.width);
       else if(r.kind==='patch')lines=areaMeasures(r.polygons);
       else if(r.kind==='reference')lines=[`${lengthLabel(r.width)} × ${lengthLabel(r.width*(r.imageHeight??1)/(r.imageWidth??1))}`];
@@ -915,7 +834,7 @@ export class LandscapeWorkbench {
     if(this.active&&this.hovering&&brush&&!spatialCursor)root.append(atlasPaint('circle',{x:this.lastPoint.x-box.x,y:this.lastPoint.y-box.y,radius:Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),pointer:false,style:{fill:null,stroke:'#364354',lineWidth:mpp},data:{editorOnly:'true'}}));
     const input = html<HTMLSelectElement>('atlas-hex-level');
     const draft = this.hasDraft();
-    html('land-finish').hidden = html('land-cancel').hidden = !draft||!!this.live;
+    html('land-finish').hidden = html('land-cancel').hidden = !draft||!!this.brush.live;
     input.disabled = draft;
     html<HTMLInputElement>('land-auto-level').disabled = draft;
     const auto = html<HTMLInputElement>('land-auto-level').checked && !draft;
@@ -949,7 +868,7 @@ export class LandscapeWorkbench {
     return t<1;
   }
   private sayIfIdle(s: string) {
-    if (!this.liveFailureMessage && !(this.tool === "measure" && (this.points.length || this.measurement.length)) && !this.hasDraft() && !this.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
+    if (!this.brush.liveFailureMessage && !(this.tool === "measure" && (this.points.length || this.measurement.length)) && !this.hasDraft() && !this.details.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
   recovered() {
     this.cancel();
@@ -982,16 +901,16 @@ export class LandscapeWorkbench {
       if (!r)
         throw new Error("Änderung nicht bestätigt. Entwurf bleibt erhalten.");
       if (token !== this.token) return r;
-      this.clearMask();
+      this.brush.clearMask();
       this.points = [];
       this.brushStrokes = [];
-      this.selectionRecords.clear();
+      this.details.selectionRecords.clear();
       this.draftSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
-      this.dirty = false;
+      this.details.dirty = false;
       this.calibration = null;
-      this.selected = null;
-      this.selectionRecords.clear();
-      this.doc = null;
+      this.details.selected = null;
+      this.details.selectionRecords.clear();
+      this.details.doc = null;
       html("land-selection").replaceChildren();
       this.key = "";
       await this.load(true);
@@ -1004,13 +923,13 @@ export class LandscapeWorkbench {
           if (token !== this.token || fence !== this.host.data()?.region?.fence)
             return r;
           if (latest.ok) {
-            this.selected = structuredClone(latest.value);
-            this.inspector();
+            this.details.selected = structuredClone(latest.value);
+            this.details.inspector();
             this.objectOptions();
           }
         } catch { /* The edit is saved; reopening the selection remains available. */ }
       }
-      this.say(keep && !this.selected
+      this.say(keep && !this.details.selected
         ? "Gespeichert. Objekt erneut auswählen."
         : "Gespeichert");
       return r;
@@ -1021,7 +940,7 @@ export class LandscapeWorkbench {
     }
   }
   async finish() {
-    if(this.live){if(this.pointer===null)await this.finishLive();return;}
+    if(this.brush.live){if(this.pointer===null)await this.brush.finishLive();return;}
     if (this.pointer !== null || this.saving) return;
     if (this.calibration) {
       const { record, points } = this.calibration;
@@ -1048,28 +967,28 @@ export class LandscapeWorkbench {
         expectedRevision: null,
       });
     }
-    if (this.selected) {
-      this.readInspector();
-      if (this.selectionRecords.size > 1)
+    if (this.details.selected) {
+      this.details.readInspector();
+      if (this.details.selectionRecords.size > 1)
         return this.commit({
           kind: 'landscape-batch',
-          records: [...this.selectionRecords.values()].map(record => ({
+          records: [...this.details.selectionRecords.values()].map(record => ({
             record,
             expectedRevision: record.revision,
           })),
         });
-      if (this.selected.kind === "place" && this.doc)
+      if (this.details.selected.kind === "place" && this.details.doc)
         return this.commit({
           kind: "landscape-place",
-          record: this.selected,
-          document: this.doc,
-          expectedRevision: this.selected.revision,
-          expectedLocationRevision: this.docRevision,
+          record: this.details.selected,
+          document: this.details.doc,
+          expectedRevision: this.details.selected.revision,
+          expectedLocationRevision: this.details.docRevision,
         });
       return this.commit({
         kind: "landscape-put",
-        record: this.selected,
-        expectedRevision: this.selected.revision,
+        record: this.details.selected,
+        expectedRevision: this.details.selected.revision,
       });
     }
     if (this.tool === "measure") {
@@ -1081,7 +1000,7 @@ export class LandscapeWorkbench {
     }
     if (!this.points.length) return;
     if(this.tool.startsWith('vegetation'))return this.finishVegetation();
-    if(this.maskStroke)return this.commit({kind:'landscape-height-stroke',stroke:this.maskStroke});
+    if(this.brush.maskStroke)return this.commit({kind:'landscape-height-stroke',stroke:this.brush.maskStroke});
     if(this.tool==='color')return this.commit({kind:'landscape-color-stroke',record:this.colorRecord()});
     const res = gridMeters(html<HTMLSelectElement>("atlas-hex-level").value);
     if (["height", "smooth", "color", "property", "freshwater", "hex", "reset", "vegetation", "vegetation-erase", "vegetation-thin", "vegetation-dense"].includes(this.tool)) {
@@ -1162,268 +1081,8 @@ export class LandscapeWorkbench {
         expectedLocationRevision: null,
       });
       const saved = this.records.find((p) => p.id === r.id);
-      if (saved) await this.select(saved);
+      if (saved) await this.details.select(saved);
     }
-  }
-  async select(record: LandscapeRecord) {
-    if (this.hasDraft()) {
-      this.say("Zuerst abschließen oder verwerfen.");
-      return;
-    }
-    this.selected = structuredClone(record);
-    this.selectionRecords.clear();
-    this.doc = null;
-    this.docRevision = null;
-    this.vertex = 0;
-    const token = this.token,frame=this.host.data()?.region?.fence;
-    if (record.locationId) {
-      const r = await window.campaign.deskContent(token, {kind:"location",id:record.locationId});
-      if (token !== this.token || this.selected?.id !== record.id || frame!==this.host.data()?.region?.fence) return;
-      if (!r.ok) throw new Error(r.error);
-      if (!r.value.location || r.value.unavailable)throw new Error("Ortsinhalt nicht verfügbar. Originaldaten bleiben erhalten.");
-      this.doc = structuredClone(r.value.location);
-      this.docRevision = r.value.revision;
-    }
-    if(record.assetId&&!this.assets.has(record.assetId)){
-      const image=await window.campaign.referenceAssetPreview(token,record.assetId,1024);
-      if(token!==this.token||this.selected?.id!==record.id||frame!==this.host.data()?.region?.fence)return;if(image.ok)this.rememberAsset(record.assetId,image.value);else {html('land-reload').hidden=false;this.say('Bildvorlage nicht verfügbar. Original bleibt erhalten.');}
-    }
-    this.inspector();
-    this.objectOptions();
-    this.host.selected?.(record.id,record.kind);
-    this.host.redraw();
-  }
-  private inspector() {
-    const root = html("land-selection");
-    root.replaceChildren();
-    delete root.dataset.selectionId;
-    const r = this.selected;
-    if (!r) return;
-    root.dataset.selectionId=r.id;
-    if(r.route){
-      const title=document.createElement('p');title.textContent=(r.name||'Geplanter Verlauf')+(r.route.conflict?' · '+r.route.conflict:' · Geländeform verbunden');
-      const edit=document.createElement('button');edit.textContent='Verlauf und Gelände bearbeiten';edit.onclick=()=>void this.openRoute(r).catch(e=>this.host.error(e));root.append(title,edit);return;
-    }
-    if(r.vegetation){vegetationInspector(root,r,this.vegetationInstance,()=>{this.dirty=true;this.background=null;},()=>void this.finish().catch(e=>this.host.error(e)),()=>void this.commit({kind:'landscape-remove',id:r.id,expectedRevision:r.revision}).catch(e=>this.host.error(e)),o=>void this.linkVegetation(r,o).catch(e=>this.host.error(e)));return;}
-    const label = (title: string, id: string, value: string, type = "text") => {
-      const l = document.createElement("label");
-      l.textContent = title;
-      const input = document.createElement("input");
-      input.id = id;
-      input.type = type;
-      input.value = value;
-      input.oninput = () => {
-        this.dirty = true;
-        if(type==='number'&&input.value&&Number.isFinite(Number(input.value))){this.readInspector();this.background=null;this.host.redraw();}
-      };
-      l.append(input);
-      root.append(l);
-      return input;
-    };
-    if(r.kind==='road'||r.kind==='river'){const plan=document.createElement('button');plan.textContent='Geländegerecht planen';plan.onclick=()=>void this.openRoute(r).catch(e=>this.host.error(e));root.append(plan);}
-    label("Name des ausgewählten Objekts", "land-name", r.name);
-    if(r.kind!=="reference")mapLabelEditor(root,"land",r.label,()=>{this.dirty=true;});
-    const x=label("X in m", "land-x", String(r.points[0]!?.x ?? 0), "number"),y=label("Y in m", "land-y", String(r.points[0]!?.y ?? 0), "number");
-    let position:HTMLDetailsElement|undefined;
-    if(r.kind==='place'){
-      position=document.createElement('details');position.id='land-position';
-      const title=document.createElement('summary');title.textContent='Position';position.append(title,x.closest('label')!,y.closest('label')!);
-    }
-    const button = (name: string, run: () => void) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = name;
-      b.onclick = run;
-      root.append(b);
-    };
-    if (r.kind === "river" || r.kind === "road") {
-      const profile=document.createElement('button');profile.id='land-inspect-profile';profile.textContent='Geländehöhen entlang des Verlaufs';profile.onclick=()=>document.dispatchEvent(new CustomEvent('terrain-profile-request',{detail:{points:linePoints(r),kind:r.kind}}));root.append(profile);
-      label("Breite in m", "land-record-width", String(r.width), "number");
-      const settings=document.createElement('div');settings.id='land-selected-line';root.append(settings);
-      const legacy={...newLine(r.kind),curve:'linear' as const,roughness:0,meander:0,fadeIn:false,style:r.style==='path'?'dashed' as const:'solid' as const};
-      lineControls(settings,'land-edit',r.line??legacy,r.kind==='river',()=>{r.line=readLineControls(settings,'land-edit',r.line??legacy);this.dirty=true;this.background=null;this.host.redraw();});
-      if(this.selectionRecords.size>1){
-        const note=document.createElement('p');note.textContent=this.selectionRecords.size+' Verläufe ausgewählt. Ziehen verschiebt alle gemeinsam.';root.append(note);
-        button('Breite und Stil auf Auswahl anwenden',()=>{this.readInspector();for(const other of this.selectionRecords.values()){other.width=r.width;other.line={...(r.line??legacy),seed:other.line?.seed??this.draftSeed,continuity:other.line?.continuity};}this.dirty=true;this.background=null;this.host.redraw();});
-      }
-      button('Weitere Verläufe mit Umschalt-Klick auswählen',()=>this.say('Umschalt gedrückt halten und weitere Straßen oder Flüsse anklicken. Erneuter Umschalt-Klick entfernt sie aus der Auswahl.'));
-      button("Punkt nach markiertem Punkt einfügen", () => {
-        this.vertex=Math.max(0,this.vertex);
-        const a = r.points[this.vertex]!,
-          b = r.points[this.vertex + 1]! ?? a;
-        r.points.splice(this.vertex + 1, 0, {
-          x: (a.x + b.x) / 2,
-          y: (a.y + b.y) / 2,
-        });
-        this.dirty = true;
-        this.host.redraw();
-      });
-      button("Markierten Punkt entfernen", () => {
-        if (r.points.length <= 2) return;
-        r.points.splice(this.vertex, 1);
-        this.vertex = 0;
-        this.dirty = true;
-        this.host.redraw();
-      });
-      button("Am markierten Punkt teilen", () => {
-        if (this.vertex <= 0 || this.vertex >= r.points.length - 1) {
-          this.say("Einen inneren Verlaufpunkt auswählen.");
-          return;
-        }
-        this.readInspector();
-        const [first,second]=splitLine(r,this.vertex,crypto.randomUUID());
-        void this.commit({
-          kind: "landscape-batch",
-          records: [
-            { record: first, expectedRevision: r.revision },
-            { record: second, expectedRevision: null },
-          ],
-        }).catch((e) => this.host.error(e));
-      });
-    }
-    if (r.kind === "reference") {
-      label("Breite in m", "land-record-width", String(r.width), "number");
-      label(
-        "Drehung in Grad",
-        "land-angle",
-        String(((r.angle ?? 0) * 180) / Math.PI),
-        "number",
-      );
-      label(
-        "Deckkraft 0–1",
-        "land-opacity",
-        String(r.opacity ?? 0.4),
-        "number",
-      );
-      for (const [id, title, value] of [
-        ["land-visible", "Bild anzeigen", r.visible !== false],
-        ["land-locked", "Bild sperren", r.locked !== false],
-      ] as const) {
-        const l = document.createElement("label"),
-          input = document.createElement("input");
-        input.id = id;
-        input.type = "checkbox";
-        input.checked = value;
-        input.onchange = () => {
-          this.dirty = true;
-        };
-        l.append(input, title);
-        root.append(l);
-      }
-    }
-    if (this.doc) {
-      for (const s of this.doc.sections) {
-        const l = document.createElement("label"),
-          name = document.createElement("input"),
-          body = document.createElement("textarea");
-        name.value = s.title;
-        name.dataset.sectionTitle = s.id;
-        body.value = s.markdown;
-        body.dataset.sectionBody = s.id;
-        name.oninput = body.oninput = () => {
-          this.dirty = true;
-        };
-        l.append(name, body);
-        root.append(l);
-        button("Abschnitt nach oben", () => {
-          this.readInspector();
-          const sections = [...this.doc!.sections],
-            i = sections.findIndex((v) => v.id === s.id);
-          if (i > 0)
-            [sections[i - 1]!, sections[i]!] = [sections[i]!, sections[i - 1]!];
-          this.doc = { ...this.doc!, sections };
-          this.dirty = true;
-          this.inspector();
-        });
-        button("Abschnittslink kopieren", () => {
-          void navigator.clipboard
-            .writeText(
-              `[${s.title}](dungeon-ref:location/${this.doc!.id}#section=${s.id})`,
-            )
-            .catch((e) => this.host.error(e));
-        });
-      }
-      button("Abschnitt hinzufügen", () => {
-        this.readInspector();
-        this.doc = {
-          ...this.doc!,
-          sections: [
-            ...this.doc!.sections,
-            { id: crypto.randomUUID(), title: "Neuer Abschnitt", markdown: "" },
-          ],
-        };
-        this.dirty = true;
-        this.inspector();
-      });
-    }
-    if(position)root.append(position);
-    button(
-      "Auswahl speichern",
-      () => void this.finish().catch((e) => this.host.error(e)),
-    );
-    button(
-      "Aus Atlas entfernen",
-      () =>
-        void this.commit(this.selectionRecords.size>1?{kind:"landscape-batch",records:[],remove:[...this.selectionRecords.values()].map(r=>({id:r.id,expectedRevision:r.revision}))}:{
-          kind: "landscape-remove",
-          id: r.id,
-          expectedRevision: r.revision,
-        }).catch((e) => this.host.error(e)),
-    );
-    this.say(r.kind === "road" || r.kind === "river" ? "Punkte ziehen; beim Loslassen wird gespeichert. Rückgängig ist im Atlas verfügbar." : "Punkte ziehen; Änderungen anschließend speichern.");
-  }
-  private readInspector() {
-    const r = this.selected;
-    if (!r || r.vegetation || r.route) return;
-    r.name = html<HTMLInputElement>("land-name").value;
-    r.label=readMapLabelEditor(this.inspectorRoot,"land");
-    const p = {
-        x: Number(atlasFieldValue(html<HTMLInputElement>("land-x"))),
-        y: Number(atlasFieldValue(html<HTMLInputElement>("land-y"))),
-      },
-      old = r.points[0]!;
-    if (old) {
-      const dx = p.x - old.x,
-        dy = p.y - old.y;
-      if (!r.locked || r.kind !== "reference")
-        for(const record of this.selectionRecords.size?[...this.selectionRecords.values()]:[r])translateLine(record,dx,dy);
-    }
-    const width = document.getElementById(
-      "land-record-width",
-    ) as HTMLInputElement | null;
-    if (width) r.width = Number(atlasFieldValue(width));
-    if (r.kind === "reference") {
-      r.angle =
-        (Number(html<HTMLInputElement>("land-angle").value) * Math.PI) / 180;
-      r.opacity = Number(html<HTMLInputElement>("land-opacity").value);
-      r.visible = html<HTMLInputElement>("land-visible").checked;
-      r.locked = html<HTMLInputElement>("land-locked").checked;
-    }
-    if (this.doc)
-      this.doc = {
-        ...this.doc,
-        name: r.name,
-        sections: this.doc.sections.map((s) => ({
-          ...s,
-          title: this.inspectorRoot.querySelector<HTMLInputElement>(
-            `[data-section-title="${s.id}"]`,
-          )!.value,
-          markdown: this.inspectorRoot.querySelector<HTMLTextAreaElement>(
-            `[data-section-body="${s.id}"]`,
-          )!.value,
-        })),
-      };
-  }
-  async selectVegetation(id:string,instance?:VegetationInstance){
-    this.vegetationInstance=instance;await this.selectId(id);this.inspector();
-  }
-  private async linkVegetation(r:LandscapeRecord,o:VegetationOverride){
-    const doc=newLocation(crypto.randomUUID(),r.name+' · '+(o.asset==='rock'?'Felsen':'Baum'),'poi',[crypto.randomUUID(),crypto.randomUUID()]);
-    // The proposed location belongs to the command until it is acknowledged.
-    // A failed creation must leave the editable object free of phantom links.
-    const record=structuredClone(r),v=record.vegetation!;
-    v.overrides=v.overrides.filter(x=>x.id!==o.id);v.overrides.push({...o,locationId:doc.id});
-    return this.commit({kind:'landscape-place',record,point:{x:o.x,y:o.y},document:doc,expectedLocationRevision:null,expectedRevision:r.revision});
   }
   private async finishVegetation(){
     const radius=Number(atlasFieldValue(html<HTMLInputElement>('land-radius')));

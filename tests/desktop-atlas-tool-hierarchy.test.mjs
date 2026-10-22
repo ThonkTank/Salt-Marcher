@@ -1,3 +1,4 @@
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -70,7 +71,7 @@ test('global Dungeon selection reaches the existing author tool and respects a r
 test('the real family switch releases an idle rectangle cursor but preserves a started rectangle and a rejected flush',async t=>{
  const {document,root}=fixture(t);for(const id of ['atlas-families','atlas-tool-fields']){const node=document.createElement('div');node.id=id;root.append(node);}
  const statuses=[],events=[],layoutStates=[];let allow=true;
- const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root,territories:{hasDraft:()=>false},family:'interior',draft:[],roomDrag:null,camera:{stopZoom(){}},reference:{active:false},opts:{flush:async()=>allow,status:message=>statuses.push(message)},landscape:{hasDraft:()=>false,setActive:value=>events.push(value)},layout:{beforeTool(){},setFamily:family=>layoutStates.push([family,root.dataset.family])},dockDrawingTools(){},render(){},scheduleRegion(){}});
+ const editor=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root,territories:{hasDraft:()=>false},family:'interior',draft:[],roomDrag:null,camera:{stopZoom(){}},reference:{active:false},opts:{flush:async()=>allow,status:message=>statuses.push(message)},landscape:{hasDraft:()=>false,setActive:value=>events.push(value)},layout:{beforeTool(){},setFamily:family=>layoutStates.push([family,root.dataset.family])},dockDrawingTools(){},render(){},scheduleRegion(){}});
  root.dataset.roomDraw='true';await editor.setFamily('navigation');assert.equal(root.dataset.roomDraw,'false');assert.equal(editor.family,'navigation');
  root.dataset.roomDraw='true';editor.draft=[{x:1,y:2}];await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');assert.deepEqual(editor.draft,[{x:1,y:2}]);assert.equal(statuses.length,1);
  editor.draft=[];allow=false;await editor.setFamily('city');assert.equal(root.dataset.roomDraw,'true');assert.equal(editor.family,'navigation');
@@ -144,7 +145,7 @@ test('only an accepted explicit tool switch restores tools from compact selectio
 });
 
 test('main-camera pose is locked during room, city and output gestures, and released after cancellation',()=>{
- const editor=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{
+ const editor=Object.assign(atlasFixture(CampaignAtlasWorkbench),{
   busy:false,landscape:{hasDraft:()=>false},territories:{hasDraft:()=>false},draft:[],brushId:null,
   drag:null,vertexDrag:null,pathDrag:null,roomDrag:null,partyDrag:null,entranceDraft:null,
   placeIntent:null,exportDrag:null,exportCorner:null,
@@ -159,7 +160,7 @@ test('main-camera pose is locked during room, city and output gestures, and rele
 
 test('graphics recovery clears only the failure that belongs to the recovered presentation',t=>{
  const {document}=fixture(t),local=document.createElement('p');local.id='atlas-save-status';document.body.append(local);
- const global=document.getElementById('status'),calls=[],workbench=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{opts:{status(text,error){calls.push({text,error});global.textContent=text;global.dataset.error=String(error);}}});
+ const global=document.getElementById('status'),calls=[],workbench=Object.assign(atlasFixture(CampaignAtlasWorkbench),{opts:{status(text,error){calls.push({text,error});global.textContent=text;global.dataset.error=String(error);}}});
  for(const [a,b]of [['graphics','graphics'],['write pending','graphics'],['graphics','other failure']]){
   local.textContent=a;global.textContent=b;local.dataset.error=global.dataset.error='true';calls.length=0;
   workbench.recoverPresentation('graphics');

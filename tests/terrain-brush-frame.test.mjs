@@ -1,3 +1,4 @@
+import {landscapeFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -11,7 +12,7 @@ function fixture(t,{color=false}={}){
  global.requestAnimationFrame=fn=>{frames.set(++serial,fn);return serial;};
  global.cancelAnimationFrame=id=>frames.delete(id);global.performance={now:()=>now};
  t.after(()=>Object.assign(global,old));
- const ui=Object.assign(Object.create(LandscapeWorkbench.prototype),{
+ const ui=Object.assign(landscapeFixture(LandscapeWorkbench),{
   pointer:1,maskStart:0,lastPoint:{x:0,y:0},points:[{x:0,y:0}],
   maskStroke:color?null:{mode:'raise',radius:100,strength:10,feather:0,samples:[{x:0,y:0,t:0}]},
   host:{data:()=>({revision:1,region:{fence:'base'}}),terrainGesture(){},

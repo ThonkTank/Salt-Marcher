@@ -1,3 +1,4 @@
+import {atlasFixture,landscapeFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -5,7 +6,7 @@ import {createRequire} from 'node:module';
 buildSync({stdin:{contents:"export * from './src/app/campaign-atlas-ui';export * from './src/app/atlas-landscape-ui';",resolveDir:process.cwd()},outfile:'.build/terrain-commit-display-test.cjs',bundle:true,platform:'node',format:'cjs',external:['obsidian']});
 const {CampaignAtlasWorkbench,LandscapeWorkbench}=createRequire(import.meta.url)('../.build/terrain-commit-display-test.cjs');
 test('released direct strokes retain their author fence while releasing camera input',()=>{
- const ui=Object.assign(Object.create(LandscapeWorkbench.prototype),{
+ const ui=Object.assign(landscapeFixture(LandscapeWorkbench),{
   live:{},pointer:7,saving:false,tool:'height',points:[{x:0,y:0}],dirty:false,calibration:null,
  });
  assert.equal(ui.blocksNavigation(),true);assert.equal(ui.hasDraft(),true);
@@ -18,7 +19,7 @@ test('released direct strokes retain their author fence while releasing camera i
 });
 test('hand mode during released direct writes preserves the author owner and bypasses draft flush',async()=>{
  let flushed=0,synced=0;
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{
   root:{dataset:{family:'terrain'}},landscape:{livePainting:true,blocksNavigation:()=>false,setActive(active){assert.equal(active,false);}},camera:{redrawOverlay(){}},
   flush:async()=>{flushed++;return false;},layout:{sync(){synced++;}},
  });
@@ -27,13 +28,13 @@ test('hand mode during released direct writes preserves the author owner and byp
  ui.landscape.blocksNavigation=()=>true;await ui.setNavigationMode(true);assert.equal(flushed,1);
 });
 test('external refresh requests cannot read the full Atlas in the middle of a direct gesture',async()=>{
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{landscape:{livePainting:true},terrainPresentation:{}});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{landscape:{livePainting:true},terrainPresentation:{}});
  assert.equal(await ui.refresh(),false);
  assert.equal(await ui.refresh(true),false);
 });
 test('save-state rendering preserves an active GPU brush scene while updating controls; finish and fallback rebuild normally',()=>{
  const seen=[],sceneReached=Error('ordinary scene path');
- const ui=Object.assign(Object.defineProperty(Object.create(CampaignAtlasWorkbench.prototype),'data',{value:{revision:10}}),{
+ const ui=Object.assign(Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{revision:10}}),{
   root:{hidden:false},owner:{token:'t'},landscape:{livePainting:true},terrainPresentation:{},spatial:{active:true},
   syncBrushSizes(){assert.fail('save-state updates must defer radius measurement to the shared frame');},renderPanel(){seen.push('panel');},renderTravel(){seen.push('travel');},
   layout:{sync(){seen.push('layout');}},territories:{sync(){seen.push('territories');}},
@@ -52,8 +53,8 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
  global.window={campaign:{executeAtlasCommit:async c=>({ok:true,value:{commandId:c.commandId,campaignId:'c',revision:++writes+10,sourceFence:'f'+writes,canUndo:true,canRedo:false}})}};
  t.after(()=>Object.assign(global,old));
  const atlas={revision:10,region:{revision:10,fence:'original'}},owner={token:'token',campaign:{id:'c'}};
- const ui=Object.assign(Object.defineProperty(Object.create(CampaignAtlasWorkbench.prototype),'data',{value:atlas,writable:true}),{
-   owner,data:atlas,svg:{dataset:{}},busy:false,opts:{status(){}},playback:{stop(){}},render(){},
+ const ui=Object.assign(Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:atlas}),{
+   owner,projection:atlas,svg:{dataset:{}},busy:false,opts:{status(){}},playback:{stop(){}},render(){},
    terrainPresentation:{update:s=>shown.push(s),async finish(){finishes++;},stop(){}},spatial:{gesture(){}},
    async refresh(){refreshes++;},error:e=>{throw e;},
  });
@@ -68,7 +69,7 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
 
 test('a failed final display refresh releases the brush lock and preserves the saved-prefix status',async()=>{
  const errors=[],messages=[],locks=[];let redraws=0;
- const ui=Object.assign(Object.create(LandscapeWorkbench.prototype),{
+ const ui=Object.assign(landscapeFixture(LandscapeWorkbench),{
   token:'finish-test',live:{hasCommittedChanges:true,async finish(){}},saving:false,points:[{x:0,y:0}],brushStrokes:[],
   endLiveInput(){},sampleLive(){},clearMask(){},disable:value=>locks.push(value),say:text=>messages.push(text),
   host:{terrainGesture:async()=>{throw Error('Anzeige nicht erreichbar');},error:e=>errors.push(e.message),redraw(){redraws++;}},
