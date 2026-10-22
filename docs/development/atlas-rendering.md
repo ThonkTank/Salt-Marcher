@@ -1,81 +1,42 @@
 # Atlasdarstellung, Auswahl und Bildausgabe
 
-Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Der Anschluss nutzt die vorhandenen Atlaswerkzeuge; die folgenden Teilbelege ersetzen noch keine vollständige Produktabnahme.
+Die normale Atlasfläche verbindet eine perspektivische Kamera, räumliche
+Geometrie und getrennte Autorenhilfen. Main bleibt Besitzer der kanonischen
+SQLite-Daten; Renderer greifen ausschließlich über die Preload-Brücke darauf zu.
+Bedienung, Speicherformate und Produktumfang werden durch die interne
+Bereinigung nicht geändert. Fachziele: [gemeinsamer Atlas](../plans/maps/unified-spatial-atlas.md).
 
-[GPU-Varianten und verworfene Netzverdichtung](../reference/atlas-gpu-alternatives-20261022/README.md):
-gepaarte Komponentenmessung, fast gleiche GPU-Bilder, aber kein belegter Gewinn
-in der vollständigen Navigation und langsamerer erster Sculpt-Lauf. Der Prototyp
-wurde entfernt; grundlegende Architekturalternativen bleiben ausdrücklich offen.
+## Zuständigkeiten und Datenfluss
 
-[Kartenrenderer-Vergleich](../reference/atlas-renderer-comparison-20261022/README.md):
-MapLibre mit eigener Meterprojektion, lokale Welt- bis Gebäudeprobe und
-kontrollierte CPU-/GPU-Messung. Kein Architekturwechsel angenommen;
-Bearbeitung, Innenräume und gleichwertige Vollweltlast bleiben offen.
+`CampaignAtlasWorkbench` verbindet Arbeitsbereich, Werkzeugwechsel und die
+bestehende Schreibgrenze. Die Zustandsbesitzer bekommen gezielte typisierte
+Ports, niemals die gesamte Workbench:
 
-[Autorenwelt mit Küstenkomposition](../reference/atlas-world-authoring-coast-20261022/README.md):
-normaler Atlas von Kontinenten bis zu sechs Gebäuden und 95 Räumen,
-Neustart bestanden; sporadischer Freihalten-Fehler und visuelle Lücken offen.
+| Besitzer | Eigener Zustand und Verantwortung |
+| --- | --- |
+| [AtlasRegions](../../src/app/atlas-regions.ts) | Bereichsabfragen, laufende Reads, Quellenstand, Abdeckung und Geometriefreigabe. Abbruch entwertet Antworten und räumt den eigenen Timer auf. |
+| [AtlasAuthor](../../src/app/atlas-author.ts) | Auswahl, Pointergesten, Raum-/Pfadentwürfe und deren Übergabe an den vorhandenen Writer. |
+| [AtlasDrawing](../../src/app/atlas-drawing.ts) | Zeichenkommandos, Grundgeometriecache, Beschriftung und Autorenhilfen. Keine eigenen Speicher- oder Ladeaufträge. |
+| [AtlasJourney](../../src/app/atlas-journey.ts) | Reisevorschau, ungeklärte Reiseaufträge, Eingänge und Wiedergabe. |
+| [AtlasOutput](../../src/app/atlas-output.ts) | Ausgabeauswahl, eingefrorener Quellenstand und genau ein abbrechbarer Ausgabeauftrag. |
+| [LandscapeBrushSession](../../src/app/landscape-brush-session.ts) | Pinselabtastung, gemeinsamer Animationsauftrag und Abschluss des bestehenden `TerrainLiveStroke`. |
+| [LandscapeRoutes](../../src/app/landscape-routes.ts) | Temporäre Trassensitzung und Vorschau. Alte Abschluss- und Close-Callbacks dürfen keine Nachfolgesitzung verändern. |
+| [LandscapeInspector](../../src/app/landscape-inspector.ts) | Ausgewählte Landschaftsrecords, Mehrfachauswahl und editierbarer Inspectorentwurf. |
 
-[Zweite Architekturprobe mit deck.gl](../reference/atlas-deck-comparison-20261022/README.md):
-gekacheltes Terrain und freie Kamera; synthetische Messung, Beschriftungs- und
-Darstellungsgrenzen sowie korrigierte Fixturefehler. Kein Produktwechsel.
+Eine Kamerabewegung aktualisiert Darstellung und bei Bedarf den Ausschnitt.
+`AtlasRegions` veröffentlicht nur Antworten des aktuellen Besitzers und Auftrags.
+Zeichnung und Trefferfreigabe verwenden denselben bestätigten Quellenkontext;
+ein noch sichtbares altes Bild erlaubt keine Bearbeitung mit veralteten Treffern.
+Autorenaktionen passieren weiterhin die bestehende Commit-/Recoverygrenze.
+`TerrainPresentation` und `TerrainLiveStroke` behalten getrennte Anzeige- und
+Schreibaufträge; ein Pinselzug bleibt ein Historyschritt.
 
-[Präsentationspfad und native Prüfplattform](../reference/atlas-presentation-platform-20261022/README.md):
-X11-/Wayland-Gegenprobe mit voller Welt, Chromium-Trace und Korrektur des
-erzwungenen X11-Teststarts. Lange Ausreißer und die Pentium-Qualifikation bleiben offen.
+Beim Verbergen beziehungsweise Aktivieren eines anderen Kontexts werden
+Bereichsantworten, Reisevorschauen und Ausgabeaufträge beim jeweiligen Besitzer
+entwertet. Ein unbekannter Schreibausgang wird dadurch weder wiederholt noch
+als erfolgreich behandelt. Die vorhandenen Fachguards bleiben erhalten.
 
-[Verworfener Ausschnittsgrößen-Cache](../reference/atlas-viewport-size-20261022/README.md):
-erzwungene Layoutarbeit wanderte zu anderen Lesern; kein belastbarer Gesamtgewinn.
-Produktversuch entfernt, native Größen-/Trefferregression und Rohvergleich erhalten.
-
-[Styleinvalidierung bei der Navigation](../reference/atlas-style-invalidation-20261022/README.md):
-vorhandener Atlaszustand ersetzt die globale CSS-Abfrage; gleiche Meldungstexte
-behalten ihre DOM-Knoten. Weniger Layoutunterbrechungen und ein besserer
-Navigationslauf; Sculpt, Eingabe-Pixel-Latenz und Pentium-Abnahme bleiben offen.
-
-[Begrenzte Eingangsprojektion](../reference/atlas-scoped-entrances-20261022/README.md):
-Weltantworten enthalten nur Eingänge gelieferter Raumgruppen und die aktuelle
-Reiseauswahl. Kanonische Reiseprüfungen bleiben vollständig; 5.000 entfernte
-Eingänge entfallen aus der Weltantwort. Native Reiseprobe und Größenvergleich.
-
-Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
-und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
-Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
-beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [Runtimeplan](../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
-
-[Direkte Höhenarbeitsfassung und große native Welt](../reference/atlas-direct-draft-20261021/README.md): begrenztes geladenes Raster, GPU-Küsten und Rückkehr zur bestätigten Revision. 108.076 Landschaftsobjekte funktional geprüft; unmittelbare Reaktion und vollständige Detailverfeinerung bleiben offen.
-
-[Grundflächen nach Farbsamples filtern](../reference/atlas-base-samples-20261021/README.md): Bildgleichheit und begrenzte Nutzdaten für die Weltübersicht; getrennte Phasenmessung und weiterhin fehlgeschlagene vollständige Detailverfeinerung.
-
-[Kleine Indizes für Geländelesungen](../reference/atlas-terrain-kind-index-20261021/README.md): partielle Metadatenindizes für Höhen, Trassen und Seen, exakte Zeilennummern bei lokalen Änderungen und erneuter Autorenweg bis zum Gebäude.
-
-[Cursor und Trassen wiederverwenden](../reference/atlas-render-reuse-20261021/README.md): dauerhafte Cursorressourcen, unveränderte Trassenmatrizen und Sichtbarkeitsprüfung nur bei geänderter Kamera; GPU-Bildvergleich und große Weltprobe.
-
-[Farbkacheln im vorhandenen Cache halten](../reference/atlas-color-cache-context-20261021/README.md): kompakte Stil-/Straßenidentität statt wiederholter Metadaten je Pixelstück; Bildgleichheit, Cache-Druck und vollständige Weltansicht.
-
-[Sichtbare Pinselreaktion messen](../reference/atlas-brush-response-measurement-20261021/README.md): Vergleich der Pinselinnenfläche zusätzlich zur kleinen Mitte, begrenztes asynchrones GPU-Auslesen und getrennte Profilingläufe. Die unmittelbare Reaktion der vollen Welt bleibt offen.
-
-[Pinselanzeige unabhängig aktualisieren](../reference/atlas-brush-overlay-20261021/README.md): Hover und direkte Pinselgesten verwenden den bestehenden Overlay-Weg. Speicherstatus aktualisiert während einer aktiven GPU-Präsentation die Bedienelemente; die unveränderte Kartenszene bleibt erhalten. Abschluss und Canvas-Fallback veröffentlichen weiter vollständige Szenen.
-
-Höhenvorschau und Schreibwünsche teilen außerdem [einen Animationsauftrag](../reference/atlas-brush-frame-20261022/README.md).
-Stationäres Malen bleibt während laufender Speicherung sichtbar; deren Bestätigung
-startet keinen zweiten Höhenaufbau im gleichen Frame. Der Bericht trennt die
-beseitigte Doppelarbeit von weiterhin offenen Bildraten- und Latenzzielen.
-
-[Glätten ohne erneutes Laden](../reference/atlas-smooth-ready-20261022/README.md):
-Werkzeugwahl und Pinselradius gehören nicht zur Geometrieidentität. Verfügbare Höhen
-und laufende Detailverfeinerung bleiben erhalten; frühe Gesten werden beim Wechsel
-auf Smooth nicht mehr durch einen unnötigen Neuaufbau verworfen.
-
-[Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
-
-[Navigation während des Pinselabschlusses](../reference/atlas-navigation-pending-20261021/README.md): nach Loslassen freie Kamera bei weiterhin geschütztem Schreibbesitzer. Ausdrückliches Verschieben benötigt keine geladenen Autorentreffer; Pose und Terrain-Verfeinerung besitzen getrennte Sperren. Verzögerte echte Commit-/Terrainantworten und der große Weltfall nativ geprüft.
-
-[Aktuelle Kamera im selben Animationsschritt](../reference/atlas-camera-frame-latency-20261021/README.md): `AtlasCanvas` berechnet Zoom und zeichnet Karte/Hilfsebene in einem gemeinsamen RAF-Auftrag. Im großen Weltfall sinken Zeichnungen mit vorheriger Kamera von 65 auf null; Bildratenziel und vollständige Weltqualifikation bleiben offen.
-
-[Landschaftsschreiben und gemischte Welt](../reference/atlas-landscape-write-cost-20261021/README.md): vier vorbereitete SQL-Programme je Verbindung begrenzen wiederholte Allokationen im Writer. Beim Öffnen wartet die Arbeitsfläche nicht mehr auf das erste Atlasbild; Autorentreffer behalten ihre eigene Freigabe. Die gemischte Probe enthält 100.000 Geländezuordnungen, 5.000 eingerichtete Gebäude und einen großen Dungeon. Sie legt weiterhin langsames erstes Terrain und eine Pause nach dem großen Pinselzug offen; sie ist keine vollständige Leistungsabnahme.
-
-[Sicherungsprüfung im Hintergrund](../reference/atlas-backup-worker-20261021/README.md): die große Weltprobe identifizierte über eine Minute synchrone Snapshotprüfung im Hauptprozess. Die vollständige Prüfung läuft nun in einem Readonly-Worker; kanonische Schreib-/Historyarbeit bleibt ein gemessener Engpass.
+[Bereinigungsnachweis: Regressionen, native Abläufe und offene Grenzen](../reference/atlas-technical-cleanup-20261022/README.md).
 
 ## Wo ändern und prüfen?
 
@@ -83,9 +44,9 @@ auf Smooth nicht mehr durch einen unnötigen Neuaufbau verworfen.
 | --- | --- | --- |
 | Zeichenkommandos, Transformationen, Pfade und Symbolfamilien | [AtlasPaint](../../src/app/atlas-paint.ts), [AtlasCanvasScene](../../src/app/atlas-canvas-scene.ts); historische SVG-Ausgabe: [Serializer](../../src/app/atlas-paint-svg.ts) | [Paint-Verträge](../../tests/desktop-atlas-paint.test.mjs) |
 | [Kamera, sichtbarer Frame und Trefferfreigabe](#welcher-frame-darf-eingaben-annehmen), [Bilder und Recovery](#grenzen-und-fehlerwiederaufnahme) | [AtlasCanvas](../../src/app/atlas-canvas.ts): `render`, `drain`, `paint`, `recover` | [Canvasfälle](../../tests/desktop-atlas-canvas.test.mjs), [native Wiederherstellung](../../tools/test-desktop-canvas-recovery.mjs) |
-| [Autorenebene, Entwürfe und Wiederverwendung](#was-bleibt-bei-rasterwechsel-und-pan-erhalten) | [CampaignAtlasWorkbench](../../src/app/campaign-atlas-ui.ts): `chooseAt`, Autorenzeichnung und Hintergrundaufbau | [Autorenregression](../../tests/desktop-atlas-author-overlay.test.mjs), [nativer Autorenablauf](../../tools/test-desktop-atlas-author-overlay.mjs) |
+| [Autorenebene, Entwürfe und Wiederverwendung](#was-bleibt-bei-rasterwechsel-und-pan-erhalten) | [AtlasAuthor](../../src/app/atlas-author.ts): Gesten und Entwürfe; [AtlasDrawing](../../src/app/atlas-drawing.ts): Autorenzeichnung und Hintergrundaufbau; `chooseAt` bleibt der Auswahlanschluss der Workbench | [Autorenregression](../../tests/desktop-atlas-author-overlay.test.mjs), [nativer Autorenablauf](../../tools/test-desktop-atlas-author-overlay.mjs) |
 | [Genaue Kandidaten](#welcher-frame-darf-eingaben-annehmen) und Landschaftsraster | [AtlasRegionReader](../../src/app/storage/atlas-region.ts): `candidatesAt`; [AtlasLandscapeReader](../../src/app/storage/atlas-landscape-region.ts) | [Bereichsauswahl](../../tests/desktop-atlas-region.test.mjs), [Bereichsworker](../../tests/desktop-atlas-regions.test.mjs), [Zeichenüberhang](../../tests/desktop-landscape-paint-bounds.test.mjs) |
-| [GM-Bildausgabe und ihr Lebenszyklus](#gm-ausgabe-und-öffentliche-freigabe) | `exportPNG`/`outputRun` im Workbench, [atlasRegionPaint](../../src/app/atlas-region-export.ts) | [nativer Bereichsexport](../../tools/test-desktop-region-export.mjs), Canvasregressionen |
+| [GM-Bildausgabe und ihr Lebenszyklus](#gm-ausgabe-und-öffentliche-freigabe) | `exportPNG`/`outputRun` in `AtlasOutput`, [atlasRegionPaint](../../src/app/atlas-region-export.ts) | [nativer Bereichsexport](../../tools/test-desktop-region-export.mjs), Canvasregressionen |
 | [Kippbares Gelände und Dreieckstreffer](#draufsicht-und-geländeprojektion) | [TerrainSpatialUI](../../src/app/terrain-spatial-ui.ts), [Vorschauworker](../../src/app/terrain-spatial-worker.ts), [TerrainSpatialView](../../src/app/terrain-spatial-view.ts) | [Projektionsfälle](../../tests/terrain-tilted-atlas.test.mjs), [Speicherfälle](../../tests/terrain-tilted-atlas-storage.test.mjs), [native Geländeprobe](../../tools/test-desktop-terrain-tilted-atlas.mjs) |
 
 Leisten, Werkzeuge und Navigation: [Atlasoberfläche ändern](../../ARCHITECTURE.md#atlasoberfläche-ändern).
@@ -618,3 +579,85 @@ bei Raumtreffern wurde wegen einer Regression für große Einzelbestände verwor
 Kleine Raumgruppen beginnen im Gruppenindex, große Sammlungen im Rtree; beide
 verwenden identische räumliche Grenzen. Die Regression prüft viele Gebäude mit
 überlappenden lokalen Koordinaten sowie Wachstum zum großen Einzelbesitzer.
+
+## Frühere Messungen und Versuche
+
+Die folgenden Berichte beschreiben datierte Teilstände und offene Grenzen.
+Sie ersetzen weder aktuelle Regressionen noch die Produktabnahme.
+
+Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](../plans/maps/unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Der Anschluss nutzt die vorhandenen Atlaswerkzeuge; die folgenden Teilbelege ersetzen noch keine vollständige Produktabnahme.
+
+[GPU-Varianten und verworfene Netzverdichtung](../reference/atlas-gpu-alternatives-20261022/README.md):
+gepaarte Komponentenmessung, fast gleiche GPU-Bilder, aber kein belegter Gewinn
+in der vollständigen Navigation und langsamerer erster Sculpt-Lauf. Der Prototyp
+wurde entfernt; grundlegende Architekturalternativen bleiben ausdrücklich offen.
+
+[Kartenrenderer-Vergleich](../reference/atlas-renderer-comparison-20261022/README.md):
+MapLibre mit eigener Meterprojektion, lokale Welt- bis Gebäudeprobe und
+kontrollierte CPU-/GPU-Messung. Kein Architekturwechsel angenommen;
+Bearbeitung, Innenräume und gleichwertige Vollweltlast bleiben offen.
+
+[Autorenwelt mit Küstenkomposition](../reference/atlas-world-authoring-coast-20261022/README.md):
+normaler Atlas von Kontinenten bis zu sechs Gebäuden und 95 Räumen,
+Neustart bestanden; sporadischer Freihalten-Fehler und visuelle Lücken offen.
+
+[Zweite Architekturprobe mit deck.gl](../reference/atlas-deck-comparison-20261022/README.md):
+gekacheltes Terrain und freie Kamera; synthetische Messung, Beschriftungs- und
+Darstellungsgrenzen sowie korrigierte Fixturefehler. Kein Produktwechsel.
+
+[Präsentationspfad und native Prüfplattform](../reference/atlas-presentation-platform-20261022/README.md):
+X11-/Wayland-Gegenprobe mit voller Welt, Chromium-Trace und Korrektur des
+erzwungenen X11-Teststarts. Lange Ausreißer und die Pentium-Qualifikation bleiben offen.
+
+[Verworfener Ausschnittsgrößen-Cache](../reference/atlas-viewport-size-20261022/README.md):
+erzwungene Layoutarbeit wanderte zu anderen Lesern; kein belastbarer Gesamtgewinn.
+Produktversuch entfernt, native Größen-/Trefferregression und Rohvergleich erhalten.
+
+[Styleinvalidierung bei der Navigation](../reference/atlas-style-invalidation-20261022/README.md):
+vorhandener Atlaszustand ersetzt die globale CSS-Abfrage; gleiche Meldungstexte
+behalten ihre DOM-Knoten. Weniger Layoutunterbrechungen und ein besserer
+Navigationslauf; Sculpt, Eingabe-Pixel-Latenz und Pentium-Abnahme bleiben offen.
+
+[Begrenzte Eingangsprojektion](../reference/atlas-scoped-entrances-20261022/README.md):
+Weltantworten enthalten nur Eingänge gelieferter Raumgruppen und die aktuelle
+Reiseauswahl. Kanonische Reiseprüfungen bleiben vollständig; 5.000 entfernte
+Eingänge entfallen aus der Weltantwort. Native Reiseprobe und Größenvergleich.
+
+Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
+und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
+Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
+beim genannten Besitzer nachschlagen. Fachumfang und Speichergrenze bleiben im [Runtimeplan](../../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md).
+
+[Direkte Höhenarbeitsfassung und große native Welt](../reference/atlas-direct-draft-20261021/README.md): begrenztes geladenes Raster, GPU-Küsten und Rückkehr zur bestätigten Revision. 108.076 Landschaftsobjekte funktional geprüft; unmittelbare Reaktion und vollständige Detailverfeinerung bleiben offen.
+
+[Grundflächen nach Farbsamples filtern](../reference/atlas-base-samples-20261021/README.md): Bildgleichheit und begrenzte Nutzdaten für die Weltübersicht; getrennte Phasenmessung und weiterhin fehlgeschlagene vollständige Detailverfeinerung.
+
+[Kleine Indizes für Geländelesungen](../reference/atlas-terrain-kind-index-20261021/README.md): partielle Metadatenindizes für Höhen, Trassen und Seen, exakte Zeilennummern bei lokalen Änderungen und erneuter Autorenweg bis zum Gebäude.
+
+[Cursor und Trassen wiederverwenden](../reference/atlas-render-reuse-20261021/README.md): dauerhafte Cursorressourcen, unveränderte Trassenmatrizen und Sichtbarkeitsprüfung nur bei geänderter Kamera; GPU-Bildvergleich und große Weltprobe.
+
+[Farbkacheln im vorhandenen Cache halten](../reference/atlas-color-cache-context-20261021/README.md): kompakte Stil-/Straßenidentität statt wiederholter Metadaten je Pixelstück; Bildgleichheit, Cache-Druck und vollständige Weltansicht.
+
+[Sichtbare Pinselreaktion messen](../reference/atlas-brush-response-measurement-20261021/README.md): Vergleich der Pinselinnenfläche zusätzlich zur kleinen Mitte, begrenztes asynchrones GPU-Auslesen und getrennte Profilingläufe. Die unmittelbare Reaktion der vollen Welt bleibt offen.
+
+[Pinselanzeige unabhängig aktualisieren](../reference/atlas-brush-overlay-20261021/README.md): Hover und direkte Pinselgesten verwenden den bestehenden Overlay-Weg. Speicherstatus aktualisiert während einer aktiven GPU-Präsentation die Bedienelemente; die unveränderte Kartenszene bleibt erhalten. Abschluss und Canvas-Fallback veröffentlichen weiter vollständige Szenen.
+
+Höhenvorschau und Schreibwünsche teilen außerdem [einen Animationsauftrag](../reference/atlas-brush-frame-20261022/README.md).
+Stationäres Malen bleibt während laufender Speicherung sichtbar; deren Bestätigung
+startet keinen zweiten Höhenaufbau im gleichen Frame. Der Bericht trennt die
+beseitigte Doppelarbeit von weiterhin offenen Bildraten- und Latenzzielen.
+
+[Glätten ohne erneutes Laden](../reference/atlas-smooth-ready-20261022/README.md):
+Werkzeugwahl und Pinselradius gehören nicht zur Geometrieidentität. Verfügbare Höhen
+und laufende Detailverfeinerung bleiben erhalten; frühe Gesten werden beim Wechsel
+auf Smooth nicht mehr durch einen unnötigen Neuaufbau verworfen.
+
+[Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
+
+[Navigation während des Pinselabschlusses](../reference/atlas-navigation-pending-20261021/README.md): nach Loslassen freie Kamera bei weiterhin geschütztem Schreibbesitzer. Ausdrückliches Verschieben benötigt keine geladenen Autorentreffer; Pose und Terrain-Verfeinerung besitzen getrennte Sperren. Verzögerte echte Commit-/Terrainantworten und der große Weltfall nativ geprüft.
+
+[Aktuelle Kamera im selben Animationsschritt](../reference/atlas-camera-frame-latency-20261021/README.md): `AtlasCanvas` berechnet Zoom und zeichnet Karte/Hilfsebene in einem gemeinsamen RAF-Auftrag. Im großen Weltfall sinken Zeichnungen mit vorheriger Kamera von 65 auf null; Bildratenziel und vollständige Weltqualifikation bleiben offen.
+
+[Landschaftsschreiben und gemischte Welt](../reference/atlas-landscape-write-cost-20261021/README.md): vier vorbereitete SQL-Programme je Verbindung begrenzen wiederholte Allokationen im Writer. Beim Öffnen wartet die Arbeitsfläche nicht mehr auf das erste Atlasbild; Autorentreffer behalten ihre eigene Freigabe. Die gemischte Probe enthält 100.000 Geländezuordnungen, 5.000 eingerichtete Gebäude und einen großen Dungeon. Sie legt weiterhin langsames erstes Terrain und eine Pause nach dem großen Pinselzug offen; sie ist keine vollständige Leistungsabnahme.
+
+[Sicherungsprüfung im Hintergrund](../reference/atlas-backup-worker-20261021/README.md): die große Weltprobe identifizierte über eine Minute synchrone Snapshotprüfung im Hauptprozess. Die vollständige Prüfung läuft nun in einem Readonly-Worker; kanonische Schreib-/Historyarbeit bleibt ein gemessener Engpass.

@@ -1,3 +1,4 @@
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
@@ -18,9 +19,9 @@ function fixture(t){
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(value){this.setAttribute('data-value',value);}});
  const original={name:'Autorenraum',number:'1',id:'room',scopeId:'local',floorId:'ground',revision:7,polygons:[{outer:[{x:1,y:2},{x:9,y:2},{x:9,y:8},{x:1,y:8}],holes:[]}]},binding={id:'bind',kind:'dungeon',ownerId:'local',parent:'world',parentId:null,x:-100,y:50,angle:Math.PI/2,revision:0};
  let output,current=true;
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{redrawOverlay(){},view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],territories:{sync(){},draw(){}},labelLayout:{layout:()=>[],animating:false},landscape:{draw(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},syncBrushSizes(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:{hidden:false,dataset:{}},svg:{clientWidth:100,dataset:{}},camera:{redrawOverlay(){},view:{x:-110,y:40,width:20,height:20},render:draw=>{output={children:[],data:{mapScene:'true'},append(...nodes){this.children.push(...nodes);}};draw(output);}},family:'interior',scopeId:'local',floorId:'ground',selection:{kind:'room',id:'room'},draft:[],territories:{sync(){},draw(){}},labelLayout:{layout:()=>[],animating:false},landscape:{draw(){}},opts:{roomDraft:()=>original},geometryCurrent:()=>current,selectedBinding:()=>null,renderTravel(){},syncBrushSizes(){},drawTerrain(){},drawInteriorRuntime(){},drawParty(){}});
  // A raster region intentionally contains no author contours or display rooms.
- Object.defineProperty(ui,'data',{value:{campaignId:'campaign',revision:5,canUndo:true,canRedo:false,cities:[],bindings:[binding],workspace:{rooms:[],floors:[]},entrances:[],terrain:{hexMeters:100},region:{box:{x:-120,y:30,width:40,height:40},raster:{box:{x:-110,y:40,width:20,height:20},data:'raster'},frames:{bind:{x:-100,y:50,angle:Math.PI/2}}},geometry:{position:null,drawing:{styles:[]}}},writable:true});
+ Object.defineProperty(ui.regions,'data',{value:{campaignId:'campaign',revision:5,canUndo:true,canRedo:false,cities:[],bindings:[binding],workspace:{rooms:[],floors:[]},entrances:[],terrain:{hexMeters:100},region:{box:{x:-120,y:30,width:40,height:40},raster:{box:{x:-110,y:40,width:20,height:20},data:'raster'},frames:{bind:{x:-100,y:50,angle:Math.PI/2}}},geometry:{position:null,drawing:{styles:[]}}},writable:true});
  global.atlasDraftNode={kind:'polyline',geometry:{points:[{x:2,y:3},{x:4,y:5}]},style:{},data:{editorOnly:'true'},children:[]};
  return{ui,original,document,render(){ui.render();return output;},current(value){current=value;}};
 }
@@ -43,7 +44,7 @@ test('detail and raster backgrounds share exactly one draft overlay; drawing doe
 });
 
 for(const [width,height]of [[1200,300],[300,1200]])test(`object focus fits both original extents at ${width}x${height}`,()=>{
- let view;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{svg:{clientWidth:width,clientHeight:height},camera:{set:box=>view=box}});
+ let view;const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{svg:{clientWidth:width,clientHeight:height},camera:{set:box=>view=box}});
  ui.focus({x:-150,y:75},140,280);
  assert(view.width>=140&&view.height>=280);assert.equal(view.width/view.height,width/height);
  assert.equal(view.x+view.width/2,-150);assert.equal(view.y+view.height/2,75);
@@ -84,7 +85,7 @@ test('a polygon tool continues its draft in a dense raster instead of triggering
 });
 test('an active point tool owns the press instead of dragging an existing room grip or party marker',t=>{
  const f=fixture(t);Object.assign(f.ui,{entranceDraft:null,camera:{...f.ui.camera,ready:true,hitAt(){throw Error('Point tools must not start semantic drags');}}});
- f.ui.down({button:0,altKey:false,pointerId:1});assert.equal(f.ui.vertexDrag,undefined);assert.equal(f.ui.partyDrag,undefined);
+ f.ui.down({button:0,altKey:false,pointerId:1});assert.equal(f.ui.vertexDrag,null);assert.equal(f.ui.partyDrag,null);
 });
 
 test('an object-only interior paints its geometry instead of reducing it to an empty dungeon marker',t=>{
@@ -183,7 +184,7 @@ test('wall handles are available on room edges but absent in stale, slice or pub
  assert.deepEqual(edges.map(n=>({x:n.geometry.x,y:n.geometry.y})),[{x:5,y:2},{x:9,y:5},{x:5,y:8},{x:1,y:5}]);
  f.document.getElementById('atlas-slice-enabled').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined).length,0);
  f.document.getElementById('atlas-slice-enabled').checked=false;f.document.getElementById('atlas-perception').checked=true;scene=f.render();assert.equal(all(scene).filter(n=>n.data.atlasEdge!==undefined).length,0);
- f.current(false);f.ui.svg.dataset.atlasGeometryStale='true';f.ui.camera.ready=true;f.ui.camera.hitAt=()=>{throw Error('stale handles must not be hit');};f.ui.down({button:0,altKey:false,pointerId:9});assert.equal(f.ui.vertexDrag,undefined);
+ f.current(false);f.ui.svg.dataset.atlasGeometryStale='true';f.ui.camera.ready=true;f.ui.camera.hitAt=()=>{throw Error('stale handles must not be hit');};f.ui.down({button:0,altKey:false,pointerId:9});assert.equal(f.ui.vertexDrag,null);
 });
 test('core drawing controls dock before details without cloning handlers and return intact to their source',t=>{
  const f=fixture(t),doc=f.document,source=doc.createElement('section'),target=doc.createElement('section');target.id='atlas-drawing-tools';doc.body.append(source,target);

@@ -1,3 +1,4 @@
+import {landscapeFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from './helpers/build.mjs';
@@ -20,7 +21,7 @@ function setup(t){
  const svg=document.getElementById('map');
  const box={x:0,y:0,width:30000,height:20000},commands=[];
  const write=action=>{commands.push(structuredClone(action));return Promise.resolve(store.executeAtlas({commandId:randomUUID(),token:w.token,campaignId:cam.id,action}));};
- const view=new LandscapeWorkbench(svg,{point:e=>({x:e.clientX,y:e.clientY}),box:()=>box,redraw:()=>{},write,error:e=>{throw e;},data:()=>store.campaignAtlas(w.token)});
+ const view=landscapeFixture(new LandscapeWorkbench(svg,{point:e=>({x:e.clientX,y:e.clientY}),box:()=>box,redraw:()=>{},write,error:e=>{throw e;},data:()=>store.campaignAtlas(w.token)}));
  view.active=true;view.token=w.token;
  // The projection port reads the real stored records; raster/viewport loading is unrelated to a click's authoring target.
  view.load=async()=>{view.records=store.landscapeRegion(w.token,box).records;};

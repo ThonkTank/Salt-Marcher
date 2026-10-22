@@ -1,3 +1,4 @@
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildSync } from "esbuild";
@@ -569,7 +570,7 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
   n.getContext=()=>ctx;n.toBlob=(done,type)=>{encodings.push({width:n.width,height:n.height,type});done(new Blob(['png']));};
  }return n;};
  const frame=q=>({campaignId:'c',revision:7,region:{box:q.box,fence:'f',scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:{},owner:{token:'t'},outputRun:null,floorId:'ground',landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{},owner:{token:'t'},outputRun:null,floorId:'ground',landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  f.window.campaign={atlasRegion:async(token,q)=>{
   queries.push(q);
   if(queries.length===1){f.document.querySelector('#atlas-export-grid').checked=false;f.document.querySelector('#atlas-hex-level').value='10';f.document.querySelector('#atlas-export-reference').checked=true;f.document.querySelector('#atlas-export-size').value='2048';f.document.querySelector('#atlas-export-format').value='jpeg';ui.floorId='upper';box.x=20000;}
@@ -590,7 +591,7 @@ test('GM image resolution preserves label composition and scales text across til
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
  for(const [width,height]of [[1024,512],[512,1024]]){
   const box={x:0,y:0,width,height},labels=[{id:'a',kind:'room',rank:0,text:'Torhalle',point:{x:250,y:250}},{id:'b',kind:'room',rank:0,text:'Wachstube',point:{x:295,y:250}}];
-  const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:{},owner:{token:'t'},outputRun:null,landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+  const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{},owner:{token:'t'},outputRun:null,landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
   f.window.campaign={atlasRegion:async(token,q)=>({ok:true,value:{campaignId:'c',revision:7,region:{box:q.box,fence:'f',labels,scopeId:null,floorId:'ground',landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}}}),exportAtlasPNG:async()=>{saves++;return{ok:true,value:{cancelled:false}};}};
   for(const size of [1024,2048]){
    painted.length=0;f.document.querySelector('#atlas-export-size').value=String(size);await ui.exportPNG();assert.deepEqual(errors,[]);
@@ -660,7 +661,7 @@ test('output range commits on release, preserves author data, supports two corne
  // This range probe bypasses the constructor; provide its export-mode controls.
  f.document.body.insertAdjacentHTML('beforeend','<select id="atlas-export-kind"><option value="image" selected>Bild</option><option value="campaign">Bearbeitbare Kampagne</option></select><section id="atlas-output-editable"></section><div id="atlas-output-image"></div><button id="atlas-output-save-campaign"></button><button id="atlas-export-png"></button>');
  const initial={x:-2,y:-3,width:30,height:20};let draws=0;
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true,stopZoom(){}},reference:{active:false},exportOpen:true,exportChoosing:true,outputRun:null,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:{dataset:{}},svg:f.root,camera:{view:initial,ready:true,stopZoom(){}},reference:{active:false},exportOpen:true,exportChoosing:true,outputRun:null,exportBox:null,exportCorner:null,exportDrag:null,point:e=>({x:e.clientX,y:e.clientY}),geometryCurrent:()=>true,render:()=>draws++,suppressClick(){},opts:{status(){throw Error('Unexpected write or navigation');}},family:'interior',draft:[{x:99,y:88}]});
  const event=(x,y)=>({button:0,pointerId:7,clientX:x,clientY:y});
  ui.down(event(12,6));ui.move(event(-1,-1));await ui.up(event(-1,-1));
  assert.deepEqual(ui.exportBox,{x:-1,y:-1,width:13,height:7});assert.equal(ui.exportChoosing,false);assert.match(area.textContent,/Gewählter Bereich/);
@@ -700,7 +701,7 @@ test('detailed Atlas and PNG surfaces use the saved room colors and the same can
  const room={id:'r',scopeId:'local',floorId:'ground',number:'1',name:'Zollhaus',polygons:[{outer:[{x:0,y:0},{x:12,y:0},{x:12,y:6},{x:0,y:6}],holes:[]}]},style={id:'r',fill:'#3f7c9e',wall:'#8b2e4b'};
  for(const styles of [[],[style]])for(const selected of [false,true]){
   const data={cities:[],bindings:[{id:'b',kind:'dungeon',ownerId:'local',parent:'world',x:0,y:0,angle:0}],workspace:{rooms:[room]},geometry:{floors:[],drawing:{elements:[],styles}}};
-  const live=atlasPaint('group'),ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,selection:selected?{id:'r'}:null,label(){}});ui.drawRoomFace(live,room,0.1);
+  const live=atlasPaint('group'),ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:data,selection:selected?{id:'r'}:null,label(){}});ui.drawRoomFace(live,room,0.1);
   const output=atlasRegionPaint(data,[],{x:0,y:0,width:12,height:6},120,new Map(),{grid:false,level:0,references:false,floorId:'ground',roofs:false}),face=output.children.flatMap(n=>n.children).find(n=>n.kind==='polygons');
   assert.deepEqual(live.children[0].geometry.polygons,room.polygons);assert.deepEqual(face.geometry.polygons,room.polygons);
   assert.deepEqual(output.children.find(n=>n.data.spatialScope==='local').data,{spatialScope:'local',spatialFloor:'0',spatialAnchorX:'0',spatialAnchorY:'0'});
@@ -849,7 +850,7 @@ test('dungeon export frames source-indexed whole-floor geometry, not visible roo
 test('chosen dungeon framing follows later confirmed enlargement and refuses stale scope or floor metadata',t=>{
  fixture(t);
  const data={bindings:[{id:'b',kind:'dungeon',ownerId:'s',parent:'world',x:0,y:0,angle:0}],cities:[],region:{scopeId:'s',floorId:'ground',scopeBounds:{s:{x:0,y:0,width:10,height:10}}}};
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{projection:data,scopeId:'s',floorId:'ground',exportDungeon:true,exportBox:{x:800,y:800,width:1,height:1},camera:{view:{x:10,y:10,width:5,height:5}}});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:data,scopeId:'s',floorId:'ground',exportDungeon:true,exportBox:{x:800,y:800,width:1,height:1},camera:{view:{x:10,y:10,width:5,height:5}}});
  const first=ui.outputBox();assert(first.width>10);
  data.region.scopeBounds.s.width=30;assert(ui.outputBox().width>first.width,'An earlier export must not retain the old rectangle');
  ui.floorId='upper';assert.equal(ui.outputBox(),null,'No old custom box or camera fallback');
@@ -869,7 +870,7 @@ test('automatic ground-plan framing reserves a scale strip even at small output 
 
 test('ground-plan preview fits the unobscured canvas when the export panel overlays it',t=>{
  const f=fixture(t),panel=f.document.createElement('aside');panel.id='atlas-secondary';panel.getBoundingClientRect=()=>({left:700});f.document.body.append(panel);
- let view;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{svg:{getBoundingClientRect:()=>({left:300,right:1000,width:700,height:600})},camera:{set:v=>view=v}}),box={x:10,y:20,width:60,height:30};
+ let view;const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{svg:{getBoundingClientRect:()=>({left:300,right:1000,width:700,height:600})},camera:{set:v=>view=v}}),box={x:10,y:20,width:60,height:30};
  ui.frameOutput(box);const mpp=view.width/700;
  const left=(box.x-view.x)/mpp,right=(box.x+box.width-view.x)/mpp;
  assert(left>=12&&right<=400-12,'The entire frame remains left of the overlay');
@@ -882,9 +883,9 @@ for(const sameToken of [false,true])for(const heldStage of ['read','save'])test(
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),create=f.document.createElement.bind(f.document),messages=[],errors=[],saved=[],held=[];
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
  const box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'campaign'}},next=sameToken?owner:{token:'second',campaign:{id:'other'}},frame=(token,q)=>({campaignId:token==='second'?'other':'campaign',revision:7,region:{box:q.box,fence:'f-'+token,scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  let initial=0;
- f.window.campaign={atlasRegion:async(token,q)=>{if(q.revision===undefined){initial++;if((initial===1&&heldStage==='read')||initial===2)return new Promise(resolve=>held.push(()=>resolve({ok:true,value:frame(token,q)})));}return{ok:true,value:frame(token,q)};},exportAtlasPNG:async token=>{saved.push(token);if(saved.length===1&&heldStage==='save')return new Promise(resolve=>held.push(()=>resolve({ok:true,value:{cancelled:false}})));return{ok:true,value:{cancelled:false}};}};
+ f.window.campaign={cancelAtlasRegion:async()=>{},atlasRegion:async(token,q)=>{if(q.revision===undefined){initial++;if((initial===1&&heldStage==='read')||initial===2)return new Promise(resolve=>held.push(()=>resolve({ok:true,value:frame(token,q)})));}return{ok:true,value:frame(token,q)};},exportAtlasPNG:async token=>{saved.push(token);if(saved.length===1&&heldStage==='save')return new Promise(resolve=>held.push(()=>resolve({ok:true,value:{cancelled:false}})));return{ok:true,value:{cancelled:false}};}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held export stage');};
  const old=ui.exportPNG();let current;
  try{
@@ -900,8 +901,8 @@ function editableExportFixture(t){
  const f=fixture(t),controls=f.document.createElement('div');
  controls.innerHTML='<section id="atlas-output"></section><button id="atlas-output-open"></button><input id="atlas-export-kind" value="campaign"><div id="atlas-output-editable"></div><div id="atlas-output-image"></div><button id="atlas-output-save-campaign"></button><p id="atlas-output-save-status"></p><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p><div id="atlas-search-results"></div><input id="atlas-export-size" value="256"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference">';
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),messages=[],errors=[],held=[],saved=[],box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'first'}};
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{workspace:{floors:[]}},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},flush:async()=>true,opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
- f.window.campaign={exportCampaign:token=>{saved.push(token);return new Promise(resolve=>held.push(resolve));}};
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{workspace:{floors:[]}},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},flush:async()=>true,opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ f.window.campaign={cancelAtlasRegion:async()=>{},exportCampaign:token=>{saved.push(token);return new Promise(resolve=>held.push(resolve));}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held campaign export');};
  return{...f,ui,get,messages,errors,held,saved,owner,until};
 }
@@ -962,7 +963,7 @@ test("spatial presentation shares normal input, scene publication, HUD and pan w
 
 test('initial spatial read and graphics fallback require different confirmed region sources',t=>{
  const f=fixture(t);for(const id of ['atlas-slice-enabled','atlas-roofs','atlas-perception']){const input=f.document.createElement('input');input.id=id;input.checked=false;f.document.body.append(input);}
- const box={x:0,y:0,width:40,height:20},ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{svg:f.root,camera:{view:box,destination:box},scopeId:null,floorId:'ground',landscape:{contours:()=>-1},spatial:{active:false,needsTerrainRaster:false}});
+ const box={x:0,y:0,width:40,height:20},ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{svg:f.root,camera:{view:box,destination:box},scopeId:null,floorId:'ground',landscape:{contours:()=>-1},spatial:{active:false,needsTerrainRaster:false}});
  const first=ui.regionQuery();assert.equal(first.terrainRaster,false,'do not wait for GPU activation to suppress ground work');assert.equal(first.contours,0);ui.loadedRegionQuery=first;assert(ui.geometryCoversView());
  ui.spatial.needsTerrainRaster=true;assert.equal(ui.regionQuery().contours,-1);assert.equal(ui.geometryCoversView(),false,'old groundless region cannot serve fallback');ui.loadedRegionQuery=ui.regionQuery();assert(ui.geometryCoversView());
  ui.spatial.needsTerrainRaster=false;assert.equal(ui.geometryCoversView(),false,'explicit camera retry replaces the fallback source');
@@ -973,7 +974,7 @@ for(const mode of ['surface','transport-error','source-error','hidden','new-owne
  const owner={token:'bootstrap',campaign:{id:'world'}},calls=[];let release,reply;
  const source=new Promise(resolve=>reply=resolve),surface=new Promise(resolve=>release=resolve);
  f.window.campaign={atlasTerrainSource:async token=>{assert.equal(token,owner.token);if(mode==='transport-error')throw Error('IPC failed');return source;}};
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:f.root,owner,data:null,family:'terrain',layout:{setActive(){}},camera:{view:{x:0,y:0,width:10,height:10}},landscape:{contours:()=>-1},spatial:{needsTerrainRaster:mode==='fallback',openSurface:async(token,box,revision,contours)=>{calls.push('terrain');assert.equal(revision,9);assert.equal(contours,-1);return surface;}},refresh:async()=>calls.push('region'),setFamily:async()=>calls.push('tools')});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,owner,data:null,family:'terrain',layout:{setActive(){}},camera:{view:{x:0,y:0,width:10,height:10}},landscape:{contours:()=>-1},spatial:{needsTerrainRaster:mode==='fallback',openSurface:async(token,box,revision,contours)=>{calls.push('terrain');assert.equal(revision,9);assert.equal(contours,-1);return surface;}},refresh:async()=>calls.push('region'),setFamily:async()=>calls.push('tools')});
  const opening=ui.open();await new Promise(setImmediate);
  if(mode==='hidden')ui.root.hidden=true;if(mode==='new-owner')ui.owner={token:'new'};
  reply(mode==='source-error'?{ok:false,error:'unavailable'}:{ok:true,value:{revision:9}});await new Promise(setImmediate);
