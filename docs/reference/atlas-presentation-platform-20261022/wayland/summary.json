@@ -1,0 +1,26 @@
+{
+  "NativeViewGLSurfaceEGL:RealSwapBuffers": {
+    "count": 0
+  },
+  "FireAnimationFrame": {
+    "count": 300,
+    "p50": 0.183,
+    "p95": 7.73,
+    "max": 15.439,
+    "sum": 597.5869999999999
+  },
+  "ProxyMain::BeginMainFrame": {
+    "count": 201,
+    "p50": 0.779,
+    "p95": 10.251,
+    "max": 19.743,
+    "sum": 766.6989999999996
+  },
+  "EventDispatch": {
+    "count": 76,
+    "p50": 0.042,
+    "p95": 1.219,
+    "max": 5.823,
+    "sum": 33.443000000000005
+  }
+}

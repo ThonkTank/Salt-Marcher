@@ -1,0 +1,41 @@
+[
+  {
+    "run": "deck-initial",
+    "pid": 3742867,
+    "sourceHashes": {
+      "main.cjs": "ab60a4120f40bdd53b181b9acdb07eba6a79257d0df7c8cc44c9d1cdcdc3a1bb",
+      "index.html": "df439743c4b1e5152ea15a6a7ee6fec45aa0067ed58d7fe5aca246039ef6ecae",
+      "probe.mjs": "9a971148331083e5269a9166fcbb2e75809ad1cc4b1ddeaa5d7dfd7dc50b29bb",
+      "bundle.mjs": "b96dfdc75104a77527c8e092b9c33d2455b0ee43a55611414597dad3cb04b5cd",
+      "style.css": "f3bd93724a67ab964d5aa665a7d305bba3ef344f0f20640135cc124fd6656ca8"
+    },
+    "error": "page.evaluate: Error: Deck load timeout",
+    "consoleErrorCount": 0
+  },
+  {
+    "run": "deck-load-diagnosis",
+    "pid": 3743666,
+    "sourceHashes": {
+      "main.cjs": "ab60a4120f40bdd53b181b9acdb07eba6a79257d0df7c8cc44c9d1cdcdc3a1bb",
+      "index.html": "df439743c4b1e5152ea15a6a7ee6fec45aa0067ed58d7fe5aca246039ef6ecae",
+      "probe.mjs": "9a971148331083e5269a9166fcbb2e75809ad1cc4b1ddeaa5d7dfd7dc50b29bb",
+      "bundle.mjs": "b96dfdc75104a77527c8e092b9c33d2455b0ee43a55611414597dad3cb04b5cd",
+      "style.css": "f3bd93724a67ab964d5aa665a7d305bba3ef344f0f20640135cc124fd6656ca8"
+    },
+    "error": "page.evaluate: Error: Deck load timeout",
+    "consoleErrorCount": 0
+  },
+  {
+    "run": "deck-components",
+    "pid": 3747725,
+    "sourceHashes": {
+      "main.cjs": "ab60a4120f40bdd53b181b9acdb07eba6a79257d0df7c8cc44c9d1cdcdc3a1bb",
+      "index.html": "df439743c4b1e5152ea15a6a7ee6fec45aa0067ed58d7fe5aca246039ef6ecae",
+      "probe.mjs": "8a14c474e01ea085d2aff981ab668e07d3682a70ff9de8ef552528fa6a93f081",
+      "bundle.mjs": "20d707bd52135627c3d99078077be70af19a2538c56c6d972f293f6e93f77d6c",
+      "style.css": "f3bd93724a67ab964d5aa665a7d305bba3ef344f0f20640135cc124fd6656ca8"
+    },
+    "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:",
+    "consoleErrorCount": 245
+  }
+]

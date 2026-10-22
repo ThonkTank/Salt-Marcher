@@ -16,6 +16,14 @@ Bearbeitung, Innenräume und gleichwertige Vollweltlast bleiben offen.
 normaler Atlas von Kontinenten bis zu sechs Gebäuden und 95 Räumen,
 Neustart bestanden; sporadischer Freihalten-Fehler und visuelle Lücken offen.
 
+[Zweite Architekturprobe mit deck.gl](../reference/atlas-deck-comparison-20261022/README.md):
+gekacheltes Terrain und freie Kamera; synthetische Messung, Beschriftungs- und
+Darstellungsgrenzen sowie korrigierte Fixturefehler. Kein Produktwechsel.
+
+[Präsentationspfad und native Prüfplattform](../reference/atlas-presentation-platform-20261022/README.md):
+X11-/Wayland-Gegenprobe mit voller Welt, Chromium-Trace und Korrektur des
+erzwungenen X11-Teststarts. Lange Ausreißer und die Pentium-Qualifikation bleiben offen.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
