@@ -79,6 +79,9 @@ import {
   openDungeon,stopDungeonPlayback,
 } from "./dungeon-ui";
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+// Region reads update these notices repeatedly while the same gesture is in
+// flight. Retain equal text nodes instead of invalidating layout each time.
+const setText = (id:string,value:string) => {const node=get(id);if(node.textContent!==value)node.textContent=value;};
 type Selection =
   | { kind: "city"; id: string }
   | { kind: "scope"; id: string }
@@ -803,7 +806,7 @@ export class CampaignAtlasWorkbench {
     const retry = this.travelReadState === "failed";get("atlas-region-retry").hidden=true;if(!this.data)get("atlas-save-status").textContent="Kartenausschnitt wird geladen…";
     this.hitVersion++;this.hitDialog.close();this.travelReadState = "loading";this.loadedRegionQuery=null;this.root.dataset.regionState='loading';this.svg.setAttribute('aria-busy','true');
     get("atlas-hint").dataset.idle = "false";
-    get("atlas-hint").textContent=this.data?"Vorheriger Kartenstand · Ansicht wird geladen. Auswahl und Bearbeitung sind vorübergehend gesperrt.":"Ansicht wird geladen.";
+    setText("atlas-hint",this.data?"Vorheriger Kartenstand · Ansicht wird geladen. Auswahl und Bearbeitung sind vorübergehend gesperrt.":"Ansicht wird geladen.");
     this.previewRequest++;
     this.localPreview = null;
     this.playback.stop();
@@ -1906,13 +1909,13 @@ export class CampaignAtlasWorkbench {
     get<HTMLButtonElement>("atlas-local-refresh").disabled = this.busy;
     for (const kind of ["preview", "place", "entrance", "start", "step", "round", "play", "pause", "end"])
       get<HTMLButtonElement>("atlas-local-" + kind).disabled = locked;
-    if (unavailable) get("atlas-local-status").textContent = unavailable;
+    if (unavailable) setText("atlas-local-status",unavailable);
     if (!this.data) return;
     const j = this.data.localJourney,
       dp = this.data.geometry.journey,
       hp = this.data.scene?.journey;
     const worldLeg=!this.data.geometry.position&&hp&&['active','paused','interrupted'].includes(hp.status)&&!j?.status.match(/^(active|paused)$/);
-    get('atlas-local-round').textContent=worldLeg?'Bis nächste Grenze':'Eine Runde';
+    setText('atlas-local-round',worldLeg?'Bis nächste Grenze':'Eine Runde');
     const wp = this.worldPreview();
     const text = wp
       ? (wp.distanceMeters / 1000).toFixed(1) + " km · " + (wp.durationSeconds / 3600).toFixed(2) + " h · Ankunft " + wp.arrival + (wp.warnings.length ? " · " + wp.warnings.join(" · ") : "")
@@ -1935,14 +1938,14 @@ export class CampaignAtlasWorkbench {
           : hp
             ? "Weltreise: " + hp.status
             : "Ziel in der Karte wählen und Weg prüfen.";
-    get("atlas-local-status").textContent = unavailable || text;
+    setText("atlas-local-status",unavailable || text);
     const journeyActive=!!(j||dp||hp);
     for(const kind of ['step','round','play','pause','end'])get('atlas-local-'+kind).hidden=!journeyActive;
     get<HTMLButtonElement>("atlas-local-start").disabled =
       locked || !(this.localPreview || wp || (this.data.geometry.position && atlasDungeonState().preview));
-    get("atlas-local-play").textContent = this.playback?.running
+    setText("atlas-local-play",this.playback?.running
       ? "Wiedergabe anhalten"
-      : "Wiedergabe starten";
+      : "Wiedergabe starten");
     const at = atlasPartyPoint(this.data),
       pose = this.data.geometry.position;
     const near = this.data.entrances.filter((e) => {
@@ -1987,9 +1990,9 @@ export class CampaignAtlasWorkbench {
     get("atlas-entrance-field").hidden = near.length < 2;
     const e = this.data.entrances.find((e) => e.id === this.entranceId);
     get("atlas-local-entrance").hidden = !e;
-    get("atlas-local-entrance").textContent = pose
+    setText("atlas-local-entrance",pose
       ? "Eingang verlassen"
-      : "Eingang betreten";
+      : "Eingang betreten");
     for (const kind of ["step", "round", "play", "pause", "end"])
       get<HTMLButtonElement>("atlas-local-" + kind).disabled =
         locked ||

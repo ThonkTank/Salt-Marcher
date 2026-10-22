@@ -1,0 +1,34 @@
+{
+  "UpdateLayoutTree: regionQuery > refresh > ": {
+    "count": 7,
+    "wallMs": 50.365
+  },
+  "UpdateLayoutTree: ": {
+    "count": 1,
+    "wallMs": 10.405
+  },
+  "Layout: regionQuery > refresh > ": {
+    "count": 7,
+    "wallMs": 5.526
+  },
+  "UpdateLayoutTree: render > ": {
+    "count": 1,
+    "wallMs": 4.802
+  },
+  "UpdateLayoutTree: render > refresh": {
+    "count": 1,
+    "wallMs": 3.848
+  },
+  "Layout: render > refresh": {
+    "count": 1,
+    "wallMs": 0.51
+  },
+  "UpdateLayoutTree: paint > ": {
+    "count": 2,
+    "wallMs": 0.216
+  },
+  "UpdateLayoutTree: regionQuery > geometryCurrent > refresh": {
+    "count": 1,
+    "wallMs": 0.181
+  }
+}
