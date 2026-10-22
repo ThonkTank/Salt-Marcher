@@ -171,3 +171,22 @@ Commits. Alle fünf Fehler betreffen Farbschnitte. Die anschließenden
 bestehen nach der endgültigen Korrektur. Reproduktion aus dem Repository:
 `node docs/reference/atlas-terrain-eraser-20261022/pigment-regression/reproduce.mjs`.
 Die neue genaue Candidate-CI bleibt vor Integration verpflichtend.
+
+
+## Integration und veröffentlichte Version 0.187.0
+
+PR #1379 wurde als `7ebaabf08098cdb553dd3fb96e44015c7e9fb657` integriert.
+Candidate und exakte Main-CI bestanden jeweils mit 4.366 Tests: 4.365 erfolgreich,
+keiner fehlgeschlagen, einer übersprungen. Der anschließende
+[native Mitternachtslauf auf Main](release-187-main-authoring.json) besteht alle
+acht Stufen einschließlich frischer Wiederöffnung (6 Gebäude, 95 Räume,
+keine Stadtdokument-Hüllen). Beide Prozesse endeten normal, keine Rendererfehler.
+Dieser Lauf enthält keine neue Latenzmessung.
+
+[v0.187.0](https://github.com/ThonkTank/Salt-Marcher/releases/tag/v0.187.0)
+wurde nach grünem Main, signiertem Paket und drei erfolgreichen nativen
+Update-/Neustartprüfungen veröffentlicht. Basis ist v0.186.0; acht integrierte
+PRs sind enthalten. Die [unabhängige Prüfung des heruntergeladenen Pakets](release-187-verification.json)
+bestätigt Ed25519-Signatur, Quellcommit, Archiv und alle 129 Dateien. Das ist
+keine Installation auf dem Laptop des Nutzers. Der Eingangsdach-Fehler und die
+anderen beschriebenen Darstellungsprobleme sind in dieser Version noch enthalten.

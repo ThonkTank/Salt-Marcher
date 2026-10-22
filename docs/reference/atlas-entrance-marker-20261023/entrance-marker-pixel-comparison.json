@@ -1,0 +1,35 @@
+{
+  "01-top": {
+    "changedPixels": 595,
+    "bounds": {
+      "minX": 849,
+      "minY": 305,
+      "maxX": 878,
+      "maxY": 326
+    },
+    "width": 1440,
+    "height": 900
+  },
+  "02-tilted": {
+    "changedPixels": 1738,
+    "bounds": {
+      "minX": 850,
+      "minY": 294,
+      "maxX": 877,
+      "maxY": 358
+    },
+    "width": 1440,
+    "height": 900
+  },
+  "03-fixed": {
+    "changedPixels": 2049,
+    "bounds": {
+      "minX": 850,
+      "minY": 283,
+      "maxX": 877,
+      "maxY": 358
+    },
+    "width": 1440,
+    "height": 900
+  }
+}
