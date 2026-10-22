@@ -501,3 +501,21 @@ test('a dense single building keeps spatial bounds ahead of its complete owner c
  f.reader.indexed=false;
  assert.deepEqual([...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})],result);
 });
+
+test('binding metadata follows selected floors, renamed scopes and hidden extents without per-binding SQL lookups',async t=>{
+ const f=fixture(t,1),ids=[];
+ for(let i=0;i<20;i++)ids.push(f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'group-generate',name:'Haus '+i,x:100+i*100,y:50,recipe:{version:1,profile:'Wohnhaus',width:6,depth:6,floors:2,basement:false,seed:'binding-'+i}}}).result.id);
+ const selected=ids[7],q={...query({x:0,y:-200,width:2500,height:500}),scopeId:selected,floorId:'floor-1',terrainRaster:false};
+ const sql=f.reader.sql.bind(f.reader);let joined=0;
+ f.reader.sql=text=>{
+  assert(!/^SELECT (x,y,width,height FROM temp\.region_extent|(?:id,)?name FROM scope)/.test(text),'metadata must travel with the binding row');
+  if(text.includes('e.x extent_x'))joined++;
+  return sql(text);
+ };
+ let result=await f.read(q);assert(joined>0);assert.equal(result.scopes.find(s=>s.id===selected).name,'Haus 7');assert(result.bindings.some(b=>b.ownerId===selected));
+ assert.deepEqual(result.scopeBounds[selected],f.db.prepare('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(selected,'floor-1'));
+ f.store.db.prepare('UPDATE scope SET name=? WHERE campaign_id=? AND id=?').run('Oberhaus',f.campaign.id,selected);
+ f.store.db.prepare("INSERT INTO drawing_hidden(campaign_id,id,scope_id,kind,hidden,revision) VALUES(?,?,?,'floor',1,1)").run(f.campaign.id,'floor-1',selected);
+ result=await f.read(q);assert.equal(result.scopes.find(s=>s.id===selected).name,'Oberhaus');assert.equal(result.scopeBounds[selected],undefined,'hidden upper floor must not fall back to the ground extent');assert(!result.rooms.some(r=>r.scopeId===selected));assert(result.bindings.some(b=>b.ownerId===selected),'selected empty author frame stays available');
+ const db=new Database(f.store.filename,{readonly:true});t.after(()=>db.close());const fresh=new AtlasRegionReader(db);await fresh.sync({...f.source,reset:true});assert.deepEqual(fresh.read(f.source,q),result);
+});

@@ -1,0 +1,148 @@
+{
+  "baseline": "d2857dae",
+  "files": [
+    "src/app/storage/atlas-region.ts"
+  ],
+  "source": "d2857daed76ea87b4ea3321dcf4d897cafee43a8",
+  "equal": true,
+  "runs": [
+    {
+      "label": "before",
+      "bundleSha256": "467d56ff6c2fddf0634440cb5944ae33b5b563f5ce1e95cb69fb7c8d4fd7e1ae",
+      "syncMs": 5622.400136,
+      "tempBytes": 28958720,
+      "shapeCacheBytes": 126850,
+      "views": [
+        {
+          "name": "world",
+          "ms": 1212.5143640000006,
+          "sha256": "9c77d7e7fa33d909ce89d17a1ed50e839992df5d056a53fc173596e1e67f563f",
+          "bytes": 144551,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5051,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 427.41084300000057,
+          "sha256": "3bef54507430be9cebbe39c4b3691bbfc28e086a259977b143669f4a118a66d9",
+          "bytes": 10896,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5001,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 325.392957,
+          "sha256": "5627b8d21c86d8aff787a762dc6359d1f1dd36ee4c484c9d7fd30aec442f9ff3",
+          "bytes": 46518,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 354.07951499999945,
+          "sha256": "b482fd84cdc4b3077dc18fe3c2ba1d063a02e9404509eae6fb9e46ffbcec32d1",
+          "bytes": 116303,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    },
+    {
+      "label": "after",
+      "bundleSha256": "c8713431cc9a358a964238bfce79b307ef7643d1bfa67e316fef059ec98cfd21",
+      "syncMs": 5515.339356,
+      "tempBytes": 28958720,
+      "shapeCacheBytes": 126850,
+      "views": [
+        {
+          "name": "world",
+          "ms": 969.0141329999988,
+          "sha256": "9c77d7e7fa33d909ce89d17a1ed50e839992df5d056a53fc173596e1e67f563f",
+          "bytes": 144551,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5051,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 311.1935429999994,
+          "sha256": "3bef54507430be9cebbe39c4b3691bbfc28e086a259977b143669f4a118a66d9",
+          "bytes": 10896,
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 5001,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 331.94057900000007,
+          "sha256": "5627b8d21c86d8aff787a762dc6359d1f1dd36ee4c484c9d7fd30aec442f9ff3",
+          "bytes": 46518,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 334.0363010000001,
+          "sha256": "b482fd84cdc4b3077dc18fe3c2ba1d063a02e9404509eae6fb9e46ffbcec32d1",
+          "bytes": 116303,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    }
+  ]
+}

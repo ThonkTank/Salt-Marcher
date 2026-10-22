@@ -29,6 +29,7 @@ const digest=(s:string)=>createHash('sha256').update(s).digest('hex');
 const parse=(r:any)=>{if(!r||digest(r.payload)!==r.checksum)throw new Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');return JSON.parse(r.payload);};
 type Box={x:number;y:number;width:number;height:number};
 type Frame={x:number;y:number;angle:number};
+type BindingDetail={extent?:Box;scope?:{id:string;name:string}};
 type Shape={value:any;style?:ReturnType<typeof roomMapStyle>;polygons?:Polygon[];points?:Point[];stroke?:number};
 const bounds=(points:Iterable<Point>,pad=0):Box=>{let x=Infinity,y=Infinity,xx=-Infinity,yy=-Infinity;for(const p of points){if(!Number.isFinite(p.x+p.y))throw new Error('Kontur prüfen.');x=Math.min(x,p.x);xx=Math.max(xx,p.x);y=Math.min(y,p.y);yy=Math.max(yy,p.y);}return{x:x-pad,y:y-pad,width:xx-x+pad*2,height:yy-y+pad*2};};
 const corners=(b:Box)=>[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}];
@@ -249,10 +250,15 @@ export class AtlasRegionReader {
    if(!polygons.length)return null;s.value={...r,polygons};s.polygons=polygons;
   }return s;
  }
- private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader)=>void,searchBox?:Box){
+ private visit(q:AtlasRegionQuery,emit:(shape:Shape,frame:Frame,kind:string,binding:AtlasBinding,header?:CityHeader)=>void,metadata?:(b:AtlasBinding,f:Frame,h?:CityHeader,detail?:BindingDetail)=>void,searchBox?:Box){
   const mpp=q.box.width/q.width;
   // Workbench vectors paint all Cities first, then Dungeon contours.
-  for(const row of this.sql("SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY CASE kind WHEN 'city' THEN 0 ELSE 1 END,rowid").iterate(this.campaign)){
+  // Read the small extent/name metadata with each binding. World views visit
+  // thousands of bindings twice (labels then raster), not thousands of SQL calls.
+  for(const row of this.sql(`SELECT b.*,e.x extent_x,e.y extent_y,e.width extent_width,e.height extent_height,s.id scope_id,s.name scope_name
+   FROM atlas_binding b LEFT JOIN temp.region_extent e ON b.kind='dungeon' AND e.scope=b.owner_id AND e.floor=CASE WHEN b.owner_id=? THEN ? ELSE 'ground' END
+   LEFT JOIN scope s ON b.kind='dungeon' AND s.campaign_id=b.campaign_id AND s.id=b.owner_id
+   WHERE b.campaign_id=? ORDER BY CASE b.kind WHEN 'city' THEN 0 ELSE 1 END,b.rowid`).iterate(q.scopeId,q.floorId,this.campaign)){
    const b=this.binding(row);let f:Frame;try{f=this.frame(b);}catch{if(this.countFaults)this.readFaults++;continue;}
    const local=bounds(corners(searchBox??q.box).map(p=>inverse(p,f)));
    if(b.kind==='city'){
@@ -262,13 +268,13 @@ export class AtlasRegionReader {
    }else{
     const floor=b.ownerId===q.scopeId?q.floorId:'ground';
     if(b.parent==='building'&&q.roofs&&mpp>0.4&&b.ownerId!==q.scopeId)continue;
-    const extent=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,floor)??{x:null};
+    const detail:BindingDetail={extent:row.extent_x===null?undefined:{x:row.extent_x,y:row.extent_y,width:row.extent_width,height:row.extent_height},scope:row.scope_id===null?undefined:{id:row.scope_id,name:row.scope_name}},extent=detail.extent;
     // An empty author frame remains available for editing/focus, but is not a
     // place on the landscape and must not contribute a marker, label or hit.
-    if(extent.x===null){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
-    if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f);continue;}
-    metadata?.(b,f);
-    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:this.sql('SELECT name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
+    if(!extent){if(b.ownerId===q.scopeId)metadata?.(b,f,undefined,detail);continue;}
+    if(!overlap(bounds(corners(extent).map(p=>at(p,f))),q.box)){if(b.ownerId===q.scopeId)metadata?.(b,f,undefined,detail);continue;}
+    metadata?.(b,f,undefined,detail);
+    if(b.parent==='world'&&mpp>Math.max(1,extent.width/25)){emit({value:{id:b.ownerId,name:detail.scope?.name??''},points:[{x:extent.x+extent.width/2,y:extent.y+extent.height/2}],stroke:mpp*12},f,'scope-marker',b);continue;}
     for(const r of this.candidates('room','',b.ownerId,floor,local))try{const s=this.roomShape(r,q);if(s)emit(s,f,'room',b);}catch{if(this.countFaults)this.readFaults++;}
     for(const r of this.candidates('element','',b.ownerId,floor,local))emit(this.shape(r),f,'element',b);
    }
@@ -280,12 +286,12 @@ export class AtlasRegionReader {
   let labelCandidates:MapLabelCandidate[]=[];
   const labelFloorHeights=new Map<string,number>();
   let used=bytes(result),dense=false;const cities=new Map<string,AtlasRegionGeometry['cities'][number]>();
-  const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader)=>{
+  const metadata=(b:AtlasBinding,f:Frame,h?:CityHeader,detail?:BindingDetail)=>{
    if(dense||Object.hasOwn(result.frames,b.id))return;
-   const scope=b.kind==='dungeon'?this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId):null,
+   const scope=b.kind==='dungeon'?(detail?detail.scope:this.sql('SELECT id,name FROM scope WHERE campaign_id=? AND id=?').get(this.campaign,b.ownerId)):null,
     floors=scope?this.sql('SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind=\'floor\' AND h.hidden=1)').all(this.campaign,b.ownerId):[];
    used+=bytes([b,f,h,scope,floors]);if(used>REGION_REPLY_BYTES-800*1024){dense=true;return;}
-   result.bindings.push(b);result.frames[b.id]=f;if(scope){const e=this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,b.ownerId===q.scopeId?q.floorId:'ground');if(e&&e.x!==null)result.scopeBounds[b.ownerId]=e;}if(scope){result.scopes.push(scope);result.floors.push(...floors);}
+   result.bindings.push(b);result.frames[b.id]=f;if(scope){const e=detail?detail.extent:this.sql('SELECT x,y,width,height FROM temp.region_extent WHERE scope=? AND floor=?').get(b.ownerId,b.ownerId===q.scopeId?q.floorId:'ground');if(e&&e.x!==null)result.scopeBounds[b.ownerId]=e;}if(scope){result.scopes.push(scope);result.floors.push(...floors);}
    if(h){const c={header:h,units:[]};cities.set(h.id,c);result.cities.push(c);}
   };
   this.visit(q,(s,_f,kind,b)=>{
