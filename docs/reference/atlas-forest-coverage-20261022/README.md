@@ -1,5 +1,7 @@
 # Waldabdeckung und Musterstudie, 22.10.2026
 
+**Nachfolgender Stand:** Der [Anschluss an den normalen Atlas](../atlas-forest-integration-20261022/README.md) ist separat dokumentiert. Der folgende Beleg beschreibt den früheren optionalen Baustein und die Musterstudie.
+
 Lokaler Baustein nach 0.184.0, auf `bef9af2f4833d97c773c0f73848b7aa579773ef3`.
 **Die Musterstudie ist noch nicht an die normale Atlasdarstellung angeschlossen.**
 Die laufende Produktanforderung bleibt die vorhandene Hauptkamera, eine sofort

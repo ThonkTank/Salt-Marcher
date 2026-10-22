@@ -388,4 +388,4 @@ Eine zusätzlich erprobte Joinänderung wurde wegen langsamerer Treffer in einem
 großen Einzelbestand verworfen. Diese lokale Verbesserung folgt der Releasequelle
 0.184.0; unmittelbare Weltreaktion und Zielgerätequalifikation bleiben offen.
 
-[Waldabdeckung und Musterstudie](../../reference/atlas-forest-coverage-20261022/README.md): optionaler semantischer Kanal für Wasser, Lichtungen und Dichtekorrekturen, unveränderte Bodenfarben und native GPU-Studie mit Weltverankerung und weichen Maßstabsübergängen. Noch kein Anschluss an die normalen Atlas-Detailkacheln; Gestaltung, volle Welt und Pentium-Leistung bleiben offen.
+[Waldsignatur im normalen Atlas](../../reference/atlas-forest-integration-20261022/README.md): Der semantische Waldkanal folgt jetzt Farbe, Revision, Detailkacheln und lokalen Pinselpatches durch dieselben begrenzten Caches. Der Produktshader blendet weltverankerte Muster weich bis zu nahen Einzelbäumen aus; Hauptkamera und PNG-Ausgabe teilen die Darstellung. Gestaltung, volle Welt und Pentium-Leistung bleiben offen.

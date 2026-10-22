@@ -59,10 +59,10 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
  // Live textures repeatedly sample a wide halo after small edits.
  // Retain those small numerical fields; fine tiles must not crowd their pixels
  // out of the shared cache with disposable sampling arrays.
- const render=(area:LandscapeBox,width:number,height:number,displayMpp:number)=>renderTerrainColor(area,width,height,displayMpp,{settings,stream,cache,batchEdge,retainField:Math.max(width,height)<=64,contours:q.contours,revision:source.revision,denseRoutes,retainedRoutes,checkpoint});
- const pixels=yield* render(view.box,q.width,q.height,q.displayMpp);
+ function* render(area:LandscapeBox,width:number,height:number,displayMpp:number){const forest=new Uint8Array(width*height);const pixels=yield* renderTerrainColor(area,width,height,displayMpp,{settings,stream,cache,forest,batchEdge,retainField:Math.max(width,height)<=64,contours:q.contours,revision:source.revision,denseRoutes,retainedRoutes,checkpoint});return {pixels,forest};}
+ const {pixels,forest}=yield* render(view.box,q.width,q.height,q.displayMpp);
  const size=q.detail&&terrainDetailDimensions(q.detail,q.detailResolution);
- const detail=q.detail&&size?{box:q.detail,...size,pixels:yield* render(q.detail,size.width,size.height,Math.min(q.displayMpp,Math.max(q.detail.width/size.width,q.detail.height/size.height)))}:undefined;
+ const detail=q.detail&&size?{box:q.detail,...size,...yield* render(q.detail,size.width,size.height,Math.min(q.displayMpp,Math.max(q.detail.width/size.width,q.detail.height/size.height)))}:undefined;
  const objects:TerrainProjection['objects']=[];
  for(const o of q.objects??[]){
   objects.push(...terrainTraceMeasure('projection.objects',()=>{
@@ -73,5 +73,5 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
   },source.revision));
   yield* checkpoint();
  }
- return{revision:source.revision,fence:source.fence,generation:0,source:source.fence,grid,pixels,detail,width:q.width,height:q.height,draft,objects,routes,rasterRouteKey:JSON.stringify(denseRoutes?[...retainedRoutes]:null),protectedLimit,heightM,landColor:settings.terrainSettings!.style?.land,contourInk:settings.terrainSettings!.style?.ink};
+ return{revision:source.revision,fence:source.fence,generation:0,source:source.fence,grid,pixels,forest,detail,width:q.width,height:q.height,draft,objects,routes,rasterRouteKey:JSON.stringify(denseRoutes?[...retainedRoutes]:null),protectedLimit,heightM,landColor:settings.terrainSettings!.style?.land,contourInk:settings.terrainSettings!.style?.ink};
 }

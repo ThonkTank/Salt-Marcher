@@ -26,7 +26,9 @@ export function terrainDetailTiles(area:LandscapeBox){
  tiles.sort((a,b)=>Math.hypot(a.box.x+edge/2-area.x-area.width/2,a.box.y+edge/2-area.y-area.height/2)-Math.hypot(b.box.x+edge/2-area.x-area.width/2,b.box.y+edge/2-area.y-area.height/2));
  return {box,width,height,mpp,tiles};
 }
-const copy=(detail:TerrainDetail,rect:TerrainRect,pixels:Uint8Array)=>{
+type Color=Pick<TerrainDetail,'pixels'|'forest'>;
+const copy=(detail:TerrainDetail,rect:TerrainRect,{pixels,forest}:Color)=>{
+ if(detail.forest)for(let y=0;y<rect.height;y++){const at=(rect.y+y)*detail.width+rect.x;if(forest)detail.forest.set(forest.subarray(y*rect.width,(y+1)*rect.width),at);else detail.forest.fill(0,at,at+rect.width);}
  for(let y=0;y<rect.height;y++)detail.pixels.set(pixels.subarray(y*rect.width*4,(y+1)*rect.width*4),((rect.y+y)*detail.width+rect.x)*4);
 };
 /** Keep the previous world-anchored detail under missing tiles during a level change. */
@@ -34,13 +36,13 @@ function retainPrevious(target:TerrainDetail,previous:TerrainDetail){
  const xs=Int32Array.from({length:target.width},(_,x)=>Math.floor(((target.box.x+(x+.5)*target.box.width/target.width)-previous.box.x)/previous.box.width*previous.width));
  for(let y=0;y<target.height;y++){
   const sy=Math.floor(((target.box.y+(y+.5)*target.box.height/target.height)-previous.box.y)/previous.box.height*previous.height);if(sy<0||sy>=previous.height)continue;
-  for(let x=0;x<target.width;x++){const sx=xs[x]!;if(sx<0||sx>=previous.width)continue;const a=(sy*previous.width+sx)*4,b=(y*target.width+x)*4;for(let c=0;c<4;c++)target.pixels[b+c]=previous.pixels[a+c]!;}
+  for(let x=0;x<target.width;x++){const sx=xs[x]!;if(sx<0||sx>=previous.width)continue;const a=(sy*previous.width+sx)*4,b=(y*target.width+x)*4;for(let c=0;c<4;c++)target.pixels[b+c]=previous.pixels[a+c]!;if(target.forest)target.forest[b/4]=previous.forest?.[a/4]??0;}
  }
 }
 /** Renderer-only derived cache: 32 MiB plus one bounded assembled detail image.
  * Cross-revision reuse requires worker-confirmed, complete change history. */
 export class TerrainDetailTiles {
- private cache=new TerrainCache<Uint8Array>(32*1024*1024);
+ private cache=new TerrainCache<Color>(32*1024*1024);
  private identity='';
  private source:TerrainColorSource|undefined;
  detail:TerrainDetail|undefined;
@@ -64,7 +66,7 @@ export class TerrainDetailTiles {
    read:(q:TerrainColorRequest)=>Promise<TerrainColorTile>,current:()=>boolean,
    publish:(detail:TerrainDetail,rect:TerrainRect|undefined,done:number,total:number)=>void,previous?:TerrainDetail){
   if(identity!==this.identity){this.clear();this.identity=identity;previous=undefined;}
-  const plan=terrainDetailTiles(area),detail:TerrainDetail={box:plan.box,width:plan.width,height:plan.height,pixels:new Uint8Array(plan.width*plan.height*4),coverage:{columns:plan.width/TILE_PIXELS,rows:plan.height/TILE_PIXELS,values:new Uint8Array(plan.tiles.length)}};
+  const plan=terrainDetailTiles(area),detail:TerrainDetail={box:plan.box,width:plan.width,height:plan.height,pixels:new Uint8Array(plan.width*plan.height*4),forest:new Uint8Array(plan.width*plan.height),coverage:{columns:plan.width/TILE_PIXELS,rows:plan.height/TILE_PIXELS,values:new Uint8Array(plan.tiles.length)}};
   if(previous)retainPrevious(detail,previous);
   const mark=(tile:TerrainRect)=>{detail.coverage!.values[tile.y/TILE_PIXELS*detail.coverage!.columns+tile.x/TILE_PIXELS]=255;};
   const pending=[];let done=0;
@@ -84,8 +86,8 @@ export class TerrainDetailTiles {
    const value=await read({...query,box:tile.box,width:tile.width,height:tile.height,displayMpp:plan.mpp});
    if(!current()||identity!==this.identity)return false;
    if(value.revision!==query.revision||query.fence!==undefined&&value.fence!==query.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
-   if(JSON.stringify(value.box)!==JSON.stringify(tile.box)||value.width!==tile.width||value.height!==tile.height||value.pixels.length!==tile.width*tile.height*4)throw Error('Geländefarbe passt nicht zum angeforderten Ausschnitt.');
-   this.cache.put(key,landscapeRasterBounds(tile.box,tile.width,tile.height),value.pixels,value.pixels.byteLength);copy(detail,tile,value.pixels);mark(tile);done++;
+   if(JSON.stringify(value.box)!==JSON.stringify(tile.box)||value.width!==tile.width||value.height!==tile.height||value.pixels.length!==tile.width*tile.height*4||value.forest!==undefined&&(!(value.forest instanceof Uint8Array)||value.forest.length!==tile.width*tile.height))throw Error('Geländefarbe passt nicht zum angeforderten Ausschnitt.');
+   this.cache.put(key,landscapeRasterBounds(tile.box,tile.width,tile.height),{pixels:value.pixels,forest:value.forest},value.pixels.byteLength+(value.forest?.byteLength??0));copy(detail,tile,value);mark(tile);done++;
    // The first upload initializes the full transparent image; later uploads are local.
    publish(detail,first?undefined:tile,done,plan.tiles.length);first=false;
   }

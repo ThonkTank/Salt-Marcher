@@ -24,7 +24,7 @@ test('history accumulates skipped reads, survives same-source reads, and fails c
 });
 async function loaded(){
  const tiles=new TerrainDetailTiles();let reads=0;
- const read=async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4).fill(q.revision===1?255:127)};};
+ const read=async q=>{reads++;return {...q,pixels:new Uint8Array(q.width*q.height*4).fill(q.revision===1?255:127),forest:new Uint8Array(q.width*q.height).fill(q.revision===1?200:60)};};
  const load=async revision=>tiles.load(terrainColorIdentity(source(revision)),box,{...identity(revision),contours:0,routeContext:box},read,()=>true,detail=>tiles.detail=detail,tiles.detail);
  tiles.reconcile(source(1));await load(1);
  return {tiles,load,reads:()=>reads};
@@ -37,7 +37,8 @@ test('a confirmed local change keeps distant pixels and reads only affected tile
  assert.equal(next.pixels[(30*4*next.width+30*4)*4+3],0,'neighbouring tile also invalidated through the halo');
  assert.equal(next.pixels[(200*4*next.width+200*4)*4+3],255,'distant world detail stays sharp');
  assert.equal(next.coverage.values.filter(v=>v===0).length,2);
- await load(2);assert.equal(reads()-count,2);assert.equal(tiles.detail.coverage.values.filter(v=>v===255).length,16);
+ assert.equal(next.forest[30*4*next.width+30*4],0);assert.equal(next.forest[200*4*next.width+200*4],200);assert(before.forest.every(v=>v===200));
+ await load(2);assert.equal(reads()-count,2);assert.equal(tiles.detail.forest[30*4*next.width+30*4],60);assert.equal(tiles.detail.forest[200*4*next.width+200*4],200);assert.equal(tiles.detail.coverage.values.filter(v=>v===255).length,16);
 });
 test('unknown base, source reset, another campaign and route-context changes cannot reuse pigment',async()=>{
  for(const kind of ['missing','wrong','reset','campaign','route']){

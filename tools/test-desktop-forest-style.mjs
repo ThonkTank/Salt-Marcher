@@ -55,12 +55,25 @@ try{
   }
   assert(Math.abs(Math.log((await box()).width/width))<.01,'Wheel navigation must reach the requested scale');
  };
- await capture('01-world');await zoom(6000);await capture('02-region');await zoom(1200);await capture('03-village');await zoom(300);await capture('04-crowns');
+ const exportPNG=async name=>{
+  await native.app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/'+name);
+  if(await page.locator('#atlas-output').isHidden())await page.locator('#atlas-output-open').click();
+  if(await page.locator('#atlas-export-size').isHidden())await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();
+  await page.locator('#atlas-export-size').fill('1024');await page.locator('#atlas-export-grid').uncheck();await page.locator('#atlas-export-png').click();
+  await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:90000});
+  const png=require('pngjs').PNG.sync.read(await readFile(out+'/'+name));await page.getByRole('button',{name:'← Karte bearbeiten',exact:true}).click();await atlasCanvasReady(page);return png;
+ };
+ await capture('01-world');
+ const worldBox=await box(),worldPNG=await exportPNG('export-world.png'),worldTones=new Set();
+ const left=Math.floor((-14000-worldBox.x)/worldBox.width*worldPNG.width),right=Math.floor((-10000-worldBox.x)/worldBox.width*worldPNG.width),top=Math.floor((-12000-worldBox.y)/worldBox.height*worldPNG.height),bottom=Math.floor((-8000-worldBox.y)/worldBox.height*worldPNG.height);
+ // Interior of the flat forest: no coast, contour, tree object, label or grid.
+ // A solid ground colour cannot supply the distinct tones of the forest pattern.
+ for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){const i=(y*worldPNG.width+x)*4;worldTones.add(worldPNG.data[i]+','+worldPNG.data[i+1]+','+worldPNG.data[i+2]);}
+ assert(worldTones.size>12,'World PNG lost its forest pattern: '+worldTones.size);
+ checks.push('World PNG retains the forest pattern inside flat forest, independently of the near-tree export.');
+ await zoom(60000);await capture('01-transition');await zoom(6000);await capture('02-region');await zoom(1200);await capture('03-village');await zoom(300);await capture('04-crowns');
  await page.locator('#atlas-view').click();await page.locator('#atlas-terrain-tilt').click();await page.locator('#atlas-search').click();await capture('05-tilted');
- await native.app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},out+'/export.png');
- await page.locator('#atlas-output-open').click();await page.locator('#atlas-output summary').filter({hasText:'Bildoptionen'}).click();await page.locator('#atlas-export-size').fill('1024');await page.locator('#atlas-export-grid').uncheck();await page.locator('#atlas-export-png').click();
- await page.waitForFunction(()=>document.querySelector('#atlas-save-status').textContent==='Atlas-PNG gespeichert',null,{timeout:90000});
- const png=require('pngjs').PNG.sync.read(await readFile(out+'/export.png'));
+ const png=await exportPNG('export.png');
  let exportedForestPixels=0,exportedCrownPixels=0;
  // The protected oak is in the left half. Automatic forest must also survive
  // in the right half; file existence alone missed its previous disappearance.
@@ -77,6 +90,6 @@ try{
  const Database=require('better-sqlite3'),db=new Database(native.profile+'/workbench.sqlite',{readonly:true});
  try{assert.deepEqual(db.prepare('SELECT id,payload FROM atlas_landscape ORDER BY id').all(),before);}finally{db.close();}
  checks.push('Navigation and export preserve all authored landscape rows and protected identities.');
- const hashes={};for(const file of ['src/app/vegetation-geometry.ts','src/app/vegetation-shape.ts','src/app/landscape-cover-feather.ts','src/app/storage/landscape-record-stream.ts','src/app/storage/terrain-color-raster.ts','src/app/vegetation-projection.ts','src/app/atlas-terrain-export.ts','src/app/atlas-spatial-scene.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
- await native.finish({checks,views,hashes,exportedForestPixels,exportedCrownPixels});
+ const hashes={};for(const file of ['src/app/vegetation-geometry.ts','src/app/vegetation-shape.ts','src/app/landscape-cover-feather.ts','src/app/storage/landscape-record-stream.ts','src/app/storage/terrain-color-raster.ts','src/app/vegetation-projection.ts','src/app/atlas-terrain-export.ts','src/app/atlas-spatial-scene.ts','src/app/vegetation.ts','src/app/vegetation-lod.ts','src/app/storage/atlas-landscape-region.ts','src/app/atlas-spatial-vegetation.ts','src/app/vegetation-display.ts','src/app/vegetation-view.ts','src/app/landscape-raster.ts','src/app/terrain-forest-pattern.ts','src/app/terrain-detail-material.ts','src/app/terrain-detail-tiles.ts','src/app/terrain-frame.ts'])hashes[file]=createHash('sha256').update(await readFile(file)).digest('hex');
+ await native.finish({checks,views,hashes,worldPatternTones:worldTones.size,exportedForestPixels,exportedCrownPixels});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

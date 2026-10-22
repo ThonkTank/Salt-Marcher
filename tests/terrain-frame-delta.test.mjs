@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 buildSync({stdin:{contents:"export * from './src/app/terrain-frame';export * from './src/app/terrain-cache';",resolveDir:process.cwd()},outfile:'.build/terrain-frame-delta-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {terrainFrameDelta,applyTerrainFrame,TerrainCache}=createRequire(import.meta.url)('../.build/terrain-frame-delta-test.cjs');
+const {terrainFrameDelta,applyTerrainFrame,terrainFrameBytes,TerrainCache}=createRequire(import.meta.url)('../.build/terrain-frame-delta-test.cjs');
 const identity=revision=>({revision,fence:'f'+revision,key:'view'});
 function tilted(revision){
  const box={x:-100,y:-50,width:200,height:100};
@@ -89,4 +89,22 @@ test('ending field retention frees its bytes while preserving ordinary cached da
  cache.put('field',box,'field',20,true);cache.put('source',box,'source',50);cache.clearRetained();
  assert.equal(cache.bytes,50);assert.equal(cache.retainedBytes,0);assert.equal(cache.get('field'),undefined);assert.equal(cache.get('source'),'source');
  cache.clearRetained();assert.equal(cache.bytes,50);
+});
+
+
+test('forest-only edits patch base and detail masks without resending RGBA or mutating predecessors',()=>{
+ const before=tilted(1),after=tilted(2),box={x:0,y:0,width:64,height:64};
+ for(const f of [before,after]){
+  f.projection.forest=new Uint8Array(256*128);
+  f.projection.detail={box,width:128,height:128,pixels:new Uint8Array(128*128*4),forest:new Uint8Array(128*128)};
+ }
+ after.projection.forest[100*256+200]=199;after.projection.detail.forest[90*128+70]=177;
+ const delta=terrainFrameDelta(before,after,before.target);assert.equal(delta.kind,'delta');assert.equal(delta.pixels.length,0);assert.equal(delta.detail.patches.length,0);assert.equal(delta.forest.length,1);assert.equal(delta.detail.forest.length,1);
+ const full=applyTerrainFrame(before,delta);assert.deepEqual(full.projection.forest,after.projection.forest);assert.deepEqual(full.projection.detail,after.projection.detail);
+ assert(before.projection.forest.every(v=>v===0));assert(before.projection.detail.forest.every(v=>v===0));
+ assert.equal(full.projection.update.forest.length,1);assert.equal(full.projection.update.detailForest.length,1);
+ const bytes=terrainFrameBytes(after);delete after.projection.forest;delete after.projection.detail.forest;
+ assert.equal(bytes-terrainFrameBytes(after),256*128+128*128,'cache accounting includes every semantic byte without JSON-serializing it');
+ assert.equal(terrainFrameDelta(before,after,before.target).kind,'full');
+ delete before.projection.forest;assert.throws(()=>applyTerrainFrame(before,delta),/Basis/);
 });

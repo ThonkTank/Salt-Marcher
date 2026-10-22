@@ -146,7 +146,7 @@ export class TerrainSpatialView {
       if(this.mesh){this.scene.remove(this.mesh);this.mesh.geometry.dispose();this.mesh.material.map?.dispose();this.mesh.material.dispose();}
       this.mesh=next.mesh;this.scene.add(this.mesh);
     }
-    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail);
+    this.detail??=new TerrainDetailMaterial(this.renderer);this.detail.update(this.mesh.material,{...data,grid:g},partial?.detail,partial?{base:partial.forest,detail:partial.detailForest}:undefined);
     this.hexGrid.attach(this.mesh.material);
     this.draftMaterial??=new TerrainDraftMaterial();this.draftMaterial.attach(this.mesh,g,data.landColor);
     const geometry=this.mesh.geometry;
@@ -237,6 +237,7 @@ export class TerrainSpatialView {
     this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
     this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
     this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
+    this.detail?.updateView(this.origin,v.frame.width/(this.outputTile?.width??w));
     this.updateCamera();
     const direction=new THREE.Vector3();
     const cameraMatrix=this.camera.matrixWorldInverse.elements;

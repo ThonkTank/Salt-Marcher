@@ -1,0 +1,371 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4423.424339
+    },
+    {
+      "name": "ready",
+      "time": 15162.535431
+    },
+    {
+      "name": "down",
+      "time": 17200.921841
+    },
+    {
+      "name": "released",
+      "time": 21516.372481
+    },
+    {
+      "name": "wheel-send",
+      "time": 22518.823586
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22549.900279
+    },
+    {
+      "name": "state-returned",
+      "time": 22868.121296
+    },
+    {
+      "name": "settled",
+      "time": 24187.640779
+    },
+    {
+      "name": "author-ready",
+      "time": 26729.324221
+    },
+    {
+      "name": "second-down",
+      "time": 26788.740028
+    },
+    {
+      "name": "second-released",
+      "time": 27109.597804
+    },
+    {
+      "name": "second-author-ready",
+      "time": 30254.519311
+    },
+    {
+      "name": "detail-ready",
+      "time": 43391.014009
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+    "pending": true,
+    "time": 19863.5
+  },
+  "settledState": {
+    "ready": "loading",
+    "quality": "interactive",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "authorState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "secondStartState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "secondState": {
+    "ready": "ready",
+    "quality": "interactive",
+    "revision": "14",
+    "authorRevision": "14"
+  },
+  "trace": {
+    "long": [
+      {
+        "start": 14252.200000047684,
+        "duration": 57
+      },
+      {
+        "start": 14987.700000047684,
+        "duration": 53
+      },
+      {
+        "start": 16117.300000011921,
+        "duration": 51
+      },
+      {
+        "start": 17148.80000001192,
+        "duration": 51
+      },
+      {
+        "start": 19446,
+        "duration": 56
+      },
+      {
+        "start": 20793.30000001192,
+        "duration": 383
+      },
+      {
+        "start": 22353.700000047684,
+        "duration": 115
+      },
+      {
+        "start": 23314.400000035763,
+        "duration": 321
+      },
+      {
+        "start": 23636.100000023842,
+        "duration": 67
+      },
+      {
+        "start": 25390.5,
+        "duration": 57
+      },
+      {
+        "start": 26731.400000035763,
+        "duration": 434
+      },
+      {
+        "start": 27165.900000035763,
+        "duration": 69
+      },
+      {
+        "start": 27286.600000023842,
+        "duration": 113
+      }
+    ],
+    "changes": [
+      {
+        "time": 19560.700000047684,
+        "view": "{\"x\":-19960434.17561862,\"y\":-14763920.821267145,\"width\":39928333.60112052,\"height\":29530330.059162047}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19575.100000023842,
+        "view": "{\"x\":-18084231.039832834,\"y\":-13448218.62227271,\"width\":36529927.92120664,\"height\":27016925.85839241}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19592.900000035763,
+        "view": "{\"x\":-17096791.497972783,\"y\":-12755768.880653867,\"width\":34741358.1850073,\"height\":25694129.490994982}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19606.600000023842,
+        "view": "{\"x\":-16453172.65352169,\"y\":-12304426.106085964,\"width\":33575558.013926074,\"height\":24831923.11446616}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19627.200000047684,
+        "view": "{\"x\":-16050855.66854683,\"y\":-12022298.157502962,\"width\":32846832.909065947,\"height\":24292970.172330026}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19645.200000047684,
+        "view": "{\"x\":-15769413.547449466,\"y\":-11824934.657488145,\"width\":32337050.95387072,\"height\":23915943.934633557}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19675.30000001192,
+        "view": "{\"x\":-15498956.940422833,\"y\":-11635274.835579531,\"width\":31847167.288313046,\"height\":23553634.14031486}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19700.5,
+        "view": "{\"x\":-15400898.00964801,\"y\":-11566510.239470141,\"width\":31669551.11181525,\"height\":23422272.1764467}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 19721.5,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "quality": "refining",
+        "tiles": "3/48"
+      },
+      {
+        "time": 21175.400000035763,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "12",
+        "quality": "interactive",
+        "tiles": "3/48"
+      },
+      {
+        "time": 21195.200000047684,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "12",
+        "quality": "interactive"
+      },
+      {
+        "time": 23635.700000047684,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "12",
+        "quality": "overview"
+      },
+      {
+        "time": 27109.80000001192,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "interactive"
+      },
+      {
+        "time": 27793,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "1/36"
+      },
+      {
+        "time": 28200.30000001192,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "2/36"
+      },
+      {
+        "time": 28529.80000001192,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "3/36"
+      },
+      {
+        "time": 28906.30000001192,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "4/36"
+      },
+      {
+        "time": 29253.900000035763,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "5/36"
+      },
+      {
+        "time": 29632.80000001192,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "6/36"
+      },
+      {
+        "time": 30009.600000023842,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "7/36"
+      },
+      {
+        "time": 30386.200000047684,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "8/36"
+      },
+      {
+        "time": 31208.900000035763,
+        "view": "{\"x\":-15288031.931886397,\"y\":-11487362.015127877,\"width\":31465114.44266214,\"height\":23271074.223218877}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "9/36"
+      }
+    ],
+    "frames": [
+      {
+        "t": 14297,
+        "gap": 94.70000000000073
+      },
+      {
+        "t": 16167.5,
+        "gap": 59.79999999999927
+      },
+      {
+        "t": 16698.9,
+        "gap": 60.400000000001455
+      },
+      {
+        "t": 21187.7,
+        "gap": 383.5
+      },
+      {
+        "t": 21254.5,
+        "gap": 66.79999999999927
+      },
+      {
+        "t": 22485.7,
+        "gap": 116.70000000000073
+      },
+      {
+        "t": 23699.7,
+        "gap": 383.6000000000022
+      },
+      {
+        "t": 23871.8,
+        "gap": 55.599999999998545
+      },
+      {
+        "t": 24061.7,
+        "gap": 51.60000000000218
+      },
+      {
+        "t": 25445.7,
+        "gap": 50.10000000000218
+      },
+      {
+        "t": 27231.1,
+        "gap": 483.5
+      },
+      {
+        "t": 27395.4,
+        "gap": 100.10000000000218
+      }
+    ]
+  },
+  "detailState": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "14",
+    "authorRevision": "14",
+    "tiles": "36/36"
+  },
+  "source": "37a7914f14510b4d08033320761d4150ade41e35",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-pPvVm5",
+  "artifacts": {
+    "main.cjs": "f29efb111d808e1dcffc2c110ba07a7e945790e803be86687f4c530a16ca1f10",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "e38b8f9f64f2de8de37e08876484e583dd28fe8676d284c4b7ee7312c0c6f4a8",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "b1d82ade75ad3983dd5a80c14304b03de5ab3f1f589033d224fef28a63d24b07",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3427754,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
