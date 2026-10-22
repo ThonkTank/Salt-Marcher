@@ -20,7 +20,14 @@ export function vegetationEnvironmentReader(db:any,cam:string,box:LandscapeBox,m
  * or changes the source fence during a projection. */
 export function readVegetationEnvironment(db:any,cam:string,box:LandscapeBox) {
   const halo=100,search={x:box.x-halo,y:box.y-halo,width:box.width+halo*2,height:box.height+halo*2};
-  const rows=db.prepare("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND (json_extract(payload,'$.terrainSettings') IS NOT NULL OR (max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?)) ORDER BY rowid").iterate(cam,search.x,search.x+search.width,search.y,search.y+search.height);
+  // Separate global settings from local bounds so SQLite can use both existing
+  // indexes. An OR here parsed every world payload, even for a single tree.
+  // Row identity deduplicates in-box settings and retains canonical paint order.
+  const rows=db.prepare(`SELECT rowid,payload FROM atlas_landscape INDEXED BY landscape_settings_fast
+    WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL
+    UNION SELECT rowid,payload FROM atlas_landscape
+    WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?
+    ORDER BY rowid`).iterate(cam,cam,search.x,search.x+search.width,search.y,search.y+search.height);
   const records:LandscapeRecord[]=[];let bytes=0;
   for(const row of rows){bytes+=Buffer.byteLength(row.payload);if(bytes>16*1024*1024)throw Error('Bewuchsbereich zu groß. Kleineren Ausschnitt wählen.');records.push(JSON.parse(row.payload));}
   const buildings:Polygon[]=[];

@@ -488,3 +488,16 @@ test('real worker keeps object edits consumed by terrain jobs until the next reg
  await terrain();await terrain();const result=await service.read(source(),query());assert(!result.rooms.some(r=>r.id==='r0'));assert(result.rooms.some(r=>r.id==='r1'));
  assert.equal(service.diagnostics.workerStarts,1);
 });
+
+
+test('a dense single building keeps spatial bounds ahead of its complete owner collection',async t=>{
+ const f=fixture(t,3);await f.read();
+ f.db.transaction(()=>{for(let i=0;i<5000;i++)f.reader.store('room','','dense','ground','dense-'+i,{value:{},polygons:room(i).polygons},i);})();
+ const sql=f.reader.sql.bind(f.reader);let plan=[];
+ f.reader.sql=text=>{const statement=sql(text);if(!text.startsWith('SELECT s.*'))return statement;return{iterate(...args){plan=f.db.prepare('EXPLAIN QUERY PLAN '+text).all(...args);return statement.iterate(...args);}};};
+ const result=[...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})];
+ assert.deepEqual(result.map(r=>r.key),Array.from({length:5},(_,i)=>'room:dense-'+i));
+ assert.match(plan[0].detail,/SCAN i VIRTUAL TABLE INDEX 2:/,'A large owner must not probe every shape in its Rtree');
+ f.reader.indexed=false;
+ assert.deepEqual([...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})],result);
+});

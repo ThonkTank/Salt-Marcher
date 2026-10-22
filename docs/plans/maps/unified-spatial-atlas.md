@@ -378,3 +378,12 @@ rund 467 auf 195–216 ms bei identischen Projektionsbytes. Nativ war der Folgez
 nach Zoom nach 4,3 statt 5,3 Sekunden möglich. Erster Überblick, Zielgerät und
 unmittelbare Bearbeitung bleiben offen; die normale 128-Pixel-Übersicht erhält
 keinen behaupteten Geschwindigkeitsgewinn.
+
+### Örtlichen Bewuchs ohne Scan der Weltlandschaft lesen
+
+[Begrenzte lokale Abfragen](../../reference/atlas-local-region-reads-20261022/README.md)
+verwenden die vorhandenen Einstellungs- und Landschaftsindizes, statt für einen
+Baum die Weltpayloads zu prüfen. Die vollständigen Antworten bleiben gleich.
+Eine zusätzlich erprobte Joinänderung wurde wegen langsamerer Treffer in einem
+großen Einzelbestand verworfen. Diese lokale Verbesserung folgt der Releasequelle
+0.184.0; unmittelbare Weltreaktion und Zielgerätequalifikation bleiben offen.

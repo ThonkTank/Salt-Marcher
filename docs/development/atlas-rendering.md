@@ -532,3 +532,9 @@ der normale Farblader geben diese Felder vor normaler Navigation wieder frei.
 `liveTerrainSteps` umgeht diese Übergabe, damit feine Live-Antworten den nächsten
 Pinselstand nicht entwerten. [Numerische, Speicher- und Bediennachweise](../reference/atlas-coarse-field-cache-20261022/README.md)
 halten vermiedene Arbeit und noch offene Latenzen getrennt fest.
+
+[Örtliche Bewuchslesungen](../reference/atlas-local-region-reads-20261022/README.md):
+`readVegetationEnvironment` vereinigt globale Einstellungen und örtliche Bounds
+über vorhandene Indizes, mit Zeilennummer zur Deduplizierung und Malreihenfolge.
+Die volle Weltübersicht bleibt ein offener Engpass. Der erprobte freie Join
+bei Raumtreffern wurde wegen einer Regression für große Einzelbestände verworfen.

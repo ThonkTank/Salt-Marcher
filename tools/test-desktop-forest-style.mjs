@@ -46,9 +46,14 @@ try{
   for(let n=0;n<12;n++){
    const b=await box(),ratio=width/b.width;if(Math.abs(Math.log(ratio))<.01)break;
    const r=await page.locator('#campaign-map').boundingBox();await page.mouse.move(r.x+r.width/2,r.y+r.height/2);await page.mouse.wheel(0,Math.log(ratio)/.002);
-   await page.waitForFunction(w=>Math.abs(JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width/w-1)>.05,b.width);
+   // Wait for this wheel step's clamped destination. A final 1–5% correction
+   // cannot satisfy the former >5% movement condition; observing an early
+   // animation frame also compounded the next wheel event's target.
+   const expected=b.width*Math.exp(Math.max(-1.2,Math.min(1.2,Math.log(ratio))));
+   await page.waitForFunction(w=>Math.abs(Math.log(JSON.parse(document.querySelector('#campaign-map').dataset.atlasView).width/w))<.001,expected);
    await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.canvasState==='loaded');
   }
+  assert(Math.abs(Math.log((await box()).width/width))<.01,'Wheel navigation must reach the requested scale');
  };
  await capture('01-world');await zoom(6000);await capture('02-region');await zoom(1200);await capture('03-village');await zoom(300);await capture('04-crowns');
  await page.locator('#atlas-view').click();await page.locator('#atlas-terrain-tilt').click();await page.locator('#atlas-search').click();await capture('05-tilted');

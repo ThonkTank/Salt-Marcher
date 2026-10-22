@@ -1,17 +1,20 @@
 // Compare the region reader against an explicit Git baseline on a retained synthetic mixed world.
-// Both readers use current shared dependencies; this is not a whole-release comparison.
+// Explicit baseline files come from Git; all other dependencies stay current.
+// This is not a whole-release comparison.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {execFileSync} from 'node:child_process';
 import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
-const require=createRequire(import.meta.url),Database=require('better-sqlite3'),{buildSync}=require('esbuild');
+const require=createRequire(import.meta.url),Database=require('better-sqlite3'),{build}=require('esbuild');
 const file='src/app/storage/atlas-region.ts',ref=process.env.ATLAS_REGION_BASELINE,filename=process.env.ATLAS_MIXED_SOURCE;
 assert(ref&&filename,'Set ATLAS_REGION_BASELINE and ATLAS_MIXED_SOURCE (a retained synthetic world, never a live user database)');
 const output=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-region-opening');mkdirSync(output,{recursive:true});
-const old=execFileSync('git',['show',ref+':'+file],{encoding:'utf8'});buildSync({stdin:{loader:'ts',contents:old,resolveDir:path.resolve('src/app/storage')},outfile:path.join(output,'region-before.cjs'),bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-buildSync({entryPoints:[file],outfile:path.join(output,'region-after.cjs'),bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const files=(process.env.ATLAS_REGION_BASELINE_FILES??file).split(',');assert(files.includes(file));
+const old=new Map(files.map(f=>[path.resolve(f),execFileSync('git',['show',ref+':'+f],{encoding:'utf8'})]));
+await build({entryPoints:[file],outfile:path.join(output,'region-before.cjs'),bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],plugins:[{name:'baseline',setup(b){b.onLoad({filter:/\.ts$/},args=>old.has(args.path)?{contents:old.get(args.path),loader:'ts',resolveDir:path.dirname(args.path)}:undefined);}}]});
+await build({entryPoints:[file],outfile:path.join(output,'region-after.cjs'),bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const runs=[];
 for(const label of ['before','after']){
  const db=new Database(filename,{readonly:true});try{
@@ -27,5 +30,5 @@ for(const label of ['before','after']){
  }finally{db.close();}
 }
 const equal=runs[0].views.every((view,i)=>runs[1].views[i].sha256===view.sha256);
-writeFileSync(path.join(output,'result.json'),JSON.stringify({baseline:ref,source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),equal,runs},null,2));
+writeFileSync(path.join(output,'result.json'),JSON.stringify({baseline:ref,files,source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),equal,runs},null,2));
 assert(equal,'Region rendering differs from the baseline; inspect the retained results');
