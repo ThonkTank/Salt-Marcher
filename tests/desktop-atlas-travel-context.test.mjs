@@ -1,3 +1,4 @@
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildSync } from './helpers/build.mjs';
@@ -25,7 +26,7 @@ function fixture(t) {
     window.campaign = { cancelAtlasRegion:async()=>({ok:true,value:null}),atlasRegion: async () => ({ ok: true, value: snapshot() }), previewAtlasTravel: async (token, end) => ({ ok: true, value: store.previewAtlasTravel(token, end) }), executeAtlasTravelCommit: async (c) => { sent.push(c); return { ok: true, value: store.executeAtlasTravelCommit(c) }; } };
     // Exercise the production controller/render methods with real SQLite snapshots.
     // Whole-workbench mounting and click wiring are covered by the native probe.
-    const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, hitVersion:0,hitDialog:{open:true,close(){this.open=false;}},landscape:{load:async()=>{},contours:()=>0}, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
+    const ui = Object.assign(atlasFixture(CampaignAtlasWorkbench), { owner: w, data: snapshot(), root: document.createElement('section'),svg:document.createElement('svg'),regionQuery:()=>({box:{x:0,y:0,width:100,height:100},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true}), request: 0, hitVersion:0,hitDialog:{open:true,close(){this.open=false;}},landscape:{load:async()=>{},contours:()=>0}, previewRequest: 0, busy: false, pendingTravel: null, localPreview: null, lastPoint: { x: 20, y: 0 }, entranceId: null, travelReadState: 'ready', family: 'travel', playback: { running: false, stop() { }, async settled() { } }, opts: { status() { } } });
     ui.render = () => ui.renderTravel();
     ui.render();
     t.after(() => { Object.assign(globalThis, beforeGlobals); store.close(); rmSync(dir, { recursive: true, force: true }); });
@@ -186,19 +187,19 @@ test('Atlas long-distance preview exposes duration and starts the same world jou
 });
 
 test('a delayed click after a geometry drag stays suppressed until the next actual pointer press',async()=>{
- const ui=Object.create(CampaignAtlasWorkbench.prototype);ui.suppressClick();await new Promise(resolve=>setTimeout(resolve,10));
+ const ui=atlasFixture(CampaignAtlasWorkbench);ui.suppressClick();await new Promise(resolve=>setTimeout(resolve,10));
  assert.equal(ui.ignoreClick,true,'native drag completion can deliver its click after a zero-delay timer');
  await ui.click({});assert.equal(ui.ignoreClick,false,'the generated click is consumed before any selection/read');
  ui.suppressClick();ui.down({button:1});assert.equal(ui.ignoreClick,false,'a new pointer press starts an independent gesture even if no click followed the drag');
 });
 
 test('a visible drawing glyph joins the candidate picker even beyond the canonical point-pick radius',async()=>{
- const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async(p,layer,id)=>chosen.push({p,layer,id})});
+ const chosen=[],ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{family:'navigation',entranceDraft:null,root:{dataset:{}},camera:{ready:true,hitAt:()=>({data:{kind:'element',id:'glyph'}})},point:()=>({x:20,y:0}),geometryCurrent:()=>true,navigateElement:async id=>chosen.push(id),chooseAt:async(p,layer,id)=>chosen.push({p,layer,id})});
  await ui.click({button:0,altKey:false});assert.deepEqual(chosen,[{p:{x:20,y:0},layer:'all',id:'glyph'}],'a glyph must not silently outrank overlapping rooms and landscape');
 });
 
 test('a press rejected during saving cannot become a selection after saving completes',async()=>{
- const chosen=[],ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{busy:true,family:'navigation',root:{dataset:{}},entranceDraft:null,camera:{ready:true,hitAt:()=>null},geometryCurrent:()=>true,point:()=>({x:0,y:0}),chooseAt:async()=>chosen.push('unexpected')});
+ const chosen=[],ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{busy:true,family:'navigation',root:{dataset:{}},entranceDraft:null,camera:{ready:true,hitAt:()=>null},geometryCurrent:()=>true,point:()=>({x:0,y:0}),chooseAt:async()=>chosen.push('unexpected')});
  ui.down({button:0,altKey:false});ui.busy=false;await ui.click({button:0,altKey:false});
  assert.deepEqual(chosen,[],'release belongs to the rejected press, even if its write has finished');
 });
@@ -208,7 +209,7 @@ test('camera input preserves useful buffered reads and replaces obsolete destina
  const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));let now=0,id=0;const jobs=new Map(),reads=[];
  global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
  const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
- const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:{hidden:false,dataset:{}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>false,refresh:async keepScene=>reads.push(keepScene),request:0});
  ui.scheduleRegion(true);advance(90);assert.deepEqual(reads,[]);ui.scheduleRegion(true);advance(40);assert.deepEqual(reads,[true],'continuous input must not starve loading');assert.equal(jobs.size,0);assert.equal(ui.root.dataset.regionState,'loading');
  const q={box:{x:0,y:0,width:100,height:80},width:100,height:80,scopeId:'local',floorId:'ground',slice:null,roofs:true};
  ui.regionQuery=()=>q;ui.camera={destination:{...q.box,x:20}};ui.regionReading=ui.request;
@@ -235,7 +236,7 @@ test('leaving the Atlas revokes a late complete region response before reopening
 });
 
 test('camera reads predict the zoom destination while authoring still requires the displayed scale',t=>{
- const x=fixture(t);delete x.ui.regionQuery;
+ const x=fixture(t);delete x.ui.regions.regionQuery;
  x.document.body.insertAdjacentHTML('beforeend','<input id="atlas-slice-enabled" type="checkbox"><input id="atlas-slice" value="0"><input id="atlas-roofs" type="checkbox"><input id="atlas-perception" type="checkbox">');
  Object.defineProperties(x.ui.svg,{clientWidth:{value:100},clientHeight:{value:80}});
  x.ui.camera={view:{x:0,y:0,width:100,height:80},destination:{x:-50,y:-40,width:200,height:160}};
@@ -248,7 +249,7 @@ test('camera reads predict the zoom destination while authoring still requires t
 });
 
 test('settling at a prefetched scale republishes constant-pixel author handles once',()=>{
- let renders=0;const ui=Object.assign(Object.create(CampaignAtlasWorkbench.prototype),{root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>true,scheduleRender:()=>renders++});
+ let renders=0;const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},geometryCurrent:()=>true,scheduleRender:()=>renders++});
  ui.scheduleRegion(true);assert.equal(renders,1);assert.equal(ui.root.dataset.regionState,'ready');
  ui.scheduleRegion(true);assert.equal(renders,1,'an unchanged camera does not rebuild the scene repeatedly');
 });

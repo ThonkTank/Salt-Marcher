@@ -1,3 +1,4 @@
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildSync } from "./helpers/build.mjs";
@@ -48,7 +49,7 @@ function fixture(t, cityId = null) {
   const writes = [],
     point = { x: 12345678.25, y: -3456789.5 },
     owner = { token: "current" };
-  const ui = Object.assign(Object.create(CampaignAtlasWorkbench.prototype), {
+  const ui = Object.assign(atlasFixture(CampaignAtlasWorkbench), {
     owner,
     cityId,
     scopeId: null,

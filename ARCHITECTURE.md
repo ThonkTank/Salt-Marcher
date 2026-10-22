@@ -377,6 +377,12 @@ besitzt Fachlieferungen und R7-Abnahme.
 
 ### Atlasoberfläche ändern
 
+Die [Atlas-Zuständigkeiten](docs/development/atlas-rendering.md#zuständigkeiten-und-datenfluss)
+trennen Bereichsladen, Autorenaktionen, Zeichnung, Reisen und Ausgabe sowie
+Pinsel, Trassen und Landschaftsinspector. `CampaignAtlasWorkbench` und
+`LandscapeWorkbench` verbinden diese Besitzer mit der vorhandenen Oberfläche;
+die externen Einstiegsmethoden und die kanonische Speichergrenze bleiben erhalten.
+
 | Änderung | Zuständiger Einstieg |
 | --- | --- |
 | Bereiche, Gruppen und Werkzeugrouten | [atlas-tool-catalog.ts](src/app/atlas-tool-catalog.ts) ordnet vorhandene Controls und Operationswerte zu. Die globale Auswahl verwendet im Dungeon das bestehende Zeichen-Auswahlwerkzeug, damit Raum- und Pfadgriffe erreichbar bleiben. Nicht verfügbare Werkzeuge und leere Gruppen bleiben ausgeblendet. |

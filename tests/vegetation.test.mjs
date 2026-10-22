@@ -1,3 +1,4 @@
+import {landscapeFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import {parseHTML} from './helpers/dom.mjs';
 import assert from 'node:assert/strict';
@@ -257,7 +258,7 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
    const density=root.querySelector('#'+prefix+'-density');
    for(const value of ['1.25','','-0.1']){
      density.value=value;density.oninput();
-     const workbench=Object.assign(Object.create(LandscapeWorkbench.prototype),{host:{write(){assert.fail('invalid draft reached the journal');}}});
+     const workbench=Object.assign(landscapeFixture(LandscapeWorkbench),{host:{write(){assert.fail('invalid draft reached the journal');}}});
      for(const action of [{kind:'landscape-put',record:draft},{kind:'landscape-place',record:draft},{kind:'landscape-batch',records:[{record:draft}]}])
        await assert.rejects(()=>workbench.commit(action),/Bewuchs/);
      assert.throws(()=>f.save(draft),/Bewuchs/);
@@ -270,7 +271,7 @@ test('visible invalid vegetation numbers reach canonical rejection; recovery sav
  }
  const failedLink=structuredClone(original),object={id:'manual:rock',x:0,y:0,asset:'rock',size:4,angle:0};
  failedLink.vegetation.preset.density=1.25;failedLink.vegetation.overrides.push({...object});
- const beforeLink=structuredClone(failedLink),linkWorkbench=Object.create(LandscapeWorkbench.prototype);
+ const beforeLink=structuredClone(failedLink),linkWorkbench=landscapeFixture(LandscapeWorkbench);
  await assert.rejects(()=>linkWorkbench.linkVegetation(failedLink,failedLink.vegetation.overrides[0]),/Bewuchs/);
  assert.deepEqual(failedLink,beforeLink,'a rejected place creation must not leave a nonexistent location in the editable object');
  const draft=structuredClone(original),root=document.createElement('div');let edits=0;

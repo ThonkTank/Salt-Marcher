@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {parseHTML} from './helpers/dom.mjs';
+import {atlasFixture} from './helpers/atlas-workbench.mjs';
 buildSync({stdin:{contents:"export * from './src/app/drawing-ui';export {newElement} from './src/app/drawing-model';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';export {AtlasPaint} from './src/app/atlas-paint';",resolveDir:process.cwd()},outfile:'.build/drawing-draft-lifecycle.cjs',bundle:true,platform:'node',format:'cjs'});
 const require=createRequire(import.meta.url),file=require.resolve('../.build/drawing-draft-lifecycle.cjs');
 async function fixture(t){
@@ -13,7 +14,7 @@ async function fixture(t){
  window.campaign=new Proxy({},{get(){throw Error('Drafts must not write or load data');}});
  drawing.initDrawing((s,error)=>{if(error)errors.push(s);},()=>owner,()=>selected,()=>prepare(),async()=>{},()=>{});
  await drawing.activateDrawing(owner,false);document.querySelector('#floors').value=JSON.stringify(['local','ground']);document.querySelector('#drawing-tool').value='room-cave';document.querySelector('#drawing-brush').value='1';document.querySelector('#drawing-snap').checked=false;
- const ui=Object.assign(Object.create(drawing.CampaignAtlasWorkbench.prototype),{scopeId:'local',brushQueue:Promise.resolve(),frame:()=>({x:0,y:0,angle:0}),render(){},error:e=>errors.push(e)});
+ const ui=Object.assign(atlasFixture(drawing.CampaignAtlasWorkbench),{scopeId:'local',brushQueue:Promise.resolve(),frame:()=>({x:0,y:0,angle:0}),render(){},error:e=>errors.push(e)});
  return{...drawing,ui,document,window,errors,owner:()=>owner,select(room){selected=room;owner.rooms=[room];owner.selectedId=room.id;},hold(){let release;const task=new Promise(r=>release=r);prepare=()=>task;return()=>release(true);},switchOwner:async()=>{owner={...owner,token:'next'};await drawing.activateDrawing(owner,false);}};
 }
 const emptyDrawing=()=>({coverage:'selected',elements:[],styles:[],volumes:[],features:[],hiddenRooms:[],hiddenFloors:[]});
