@@ -15,7 +15,8 @@ import {terrainSourceWindow,type TerrainSourceWindow} from './terrain-spatial-so
 import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
 import {terrainNavigationPlan} from './terrain-navigation-plan';
-export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
+/** Route plans use worker previews; direct brushes own their live presentation. */
+export interface TerrainDraft {routeRecords:LandscapeRecord[]}
 type DisplayReply=SpatialReply & {colorFrame?:TerrainColorFrame;fence?:string;revision?:number};
 const samplingKey=(v:TerrainView)=>JSON.stringify([v.box,v.refinement,v.columns,v.rows,v.exaggeration]);
 
@@ -46,7 +47,6 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private baseline:DisplayReply|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
-  private samplePad=0;
   private sourceWindow:TerrainSourceWindow|null=null;
   private token='';private revision=-1;private frame:LandscapeBox|null=null;private objects:LandscapeRecord[]=[];
   private liveHeight=false;private liveQuality:string|undefined;
@@ -201,9 +201,8 @@ export class TerrainSpatialUI implements AtlasPresentation {
     const selected=this.host.selection(),selectionKey=JSON.stringify(selected);if(selectionKey!==this.lastSelection){this.lastSelection=selectionKey;this.view?.showSelection(selected);}
     if(this.host.live())return;
     this.objectSources=atlas?terrainObjectSources(atlas,display):[];
-    const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight,terrainCoverageLevel(this.tilt));
-    const geometry=JSON.stringify([token,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
+    const geometry=JSON.stringify([token,this.sourceWindow,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
     const source=JSON.stringify([revision,geometry]);
     if(source!==this.requested){
       const base=this.baseline,identity=base?.identity;
@@ -306,7 +305,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
       this.view!.showSelection(this.host.selection());
     });this.ready=true;this.settleFirstSurface(true);
     this.input.dataset.terrainReady='ready';this.input.dataset.terrainPreview=String(data.draft);
-    this.input.dataset.terrainProjection=JSON.stringify(this.params);this.input.dataset.terrainSamplePad=String(this.samplePad);
+    this.input.dataset.terrainProjection=JSON.stringify(this.params);
     if(this.failureMessage){this.host.recovered?.(this.failureMessage);this.failureMessage=null;}
     this.host.redraw();
   }
@@ -316,7 +315,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
       if(this.draftLoading){this.queued=true;return;}
       this.draftLoading=true;const source=this.source,token=this.token,revision=this.revision;
       try{
-        const reply=await window.campaign.atlasMaskRegion(token,terrainSourceBounds(this.params,this.samplePad));
+        const reply=await window.campaign.atlasMaskRegion(token,terrainSourceBounds(this.params));
         if(!this.active||source!==this.source||source!==this.requested)return;
         if(!reply.ok)throw Error(reply.error);
         if(reply.value.revision!==revision){this.requested='';this.host.redraw();return;}

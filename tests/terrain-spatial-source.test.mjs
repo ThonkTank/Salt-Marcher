@@ -29,7 +29,7 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  const ui=Object.assign(Object.create(TerrainSpatialUI.prototype),{
   active:true,ready:false,firstSurface:new Set(),input,colorTiles:new TerrainDetailTiles(),host:{live:()=>false,hasDraft:()=>false,selection:()=>null,tool:()=> 'height',writing:()=>false,draft:()=>null,error:e=>errors.push(e),redraw(){}},
   sourceWindow:null,source:'',requested:'',generation:0,busy:false,queued:false,lastDraft:'',lastSelection:'',baseline:null,
-  loadBusy:false,worker:null,params:null,frame:null,records:[],samplePad:0,tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
+  loadBusy:false,worker:null,params:null,frame:null,records:[],tilt:45,rotation:0,exaggeration:1,toggle:{},controls:{},retry:{},failed:false,canvas:null,
   view:{batch:update=>update(),prepareColorFrames:async()=>{},setColorFrame:detail=>tiles.push({detail}),freezePicking(){},reframe(){},setVegetation(){},setContours(interval){this.interval=interval;},setData:data=>published.push(data),showSelection(){}},scheduleLoad(){},
  });
  const sync=(b=frame,revision=1,token='campaign',contours=0,objects=[])=>ui.sync(token,b,revision,objects,contours);
@@ -39,6 +39,24 @@ function fixture(t,{manualDetail=false,manualColor=false}={}){
  const resolveColor=i=>{const q=colors[i].query;colors[i].resolve({ok:true,value:{...q,fence:q.fence??'source',pixels:new Uint8Array(q.width*q.height*4).fill(255)}});};
  return {ui,input,reads,colors,tiles,jobs,published,errors,sync,load,resolveRead,resolveColor};
 }
+test('brush choice and radius retain ready geometry, loaded detail and input eligibility',async t=>{
+ const f=fixture(t);f.sync();const loading=f.load();f.resolveRead();await loading;
+ const key=f.ui.requested,base=f.ui.baseline,grid=base.grid,reads=f.reads.length,colors=f.colors.length;
+ for(const tool of ['smooth','height','color','smooth'])for(const radius of [10,100,5000]){
+  f.ui.host.tool=()=>tool;document.getElementById('land-radius').value=String(radius);f.sync();
+  assert.equal(f.ui.ready,true,tool+' radius '+radius+' must not drop gestures');
+  assert.equal(f.input.dataset.terrainReady,'ready');assert.equal(f.ui.requested,key);
+  assert.equal(f.ui.baseline,base);assert.equal(f.ui.baseline.grid,grid);assert.equal(f.ui.needsLoad(),false);
+ }
+ assert.equal(f.reads.length,reads);assert.equal(f.colors.length,colors);assert.equal(f.jobs.length,0);
+});
+test('switching to Smooth during refinement retains the current surface and accepts the pending detail',async t=>{
+ const f=fixture(t,{manualDetail:true});f.sync();const loading=f.load();f.resolveRead();await new Promise(setImmediate);
+ const key=f.ui.requested,generation=f.ui.generation;assert.equal(f.ui.ready,true);
+ f.ui.host.tool=()=> 'smooth';document.getElementById('land-radius').value='128';f.sync();
+ assert.equal(f.ui.ready,true);assert.equal(f.ui.requested,key);assert.equal(f.ui.generation,generation);
+ f.resolveRead(1);await loading;assert.equal(f.published.length,2);assert.equal(f.ui.needsLoad(),false);
+});
 test('camera pose can move while author writes remain fenced, without enabling terrain reads',async t=>{
  const f=fixture(t),fields={};f.sync();const loading=f.load();f.resolveRead();await loading;const reads=f.reads.length;
  f.ui.controls={querySelector:id=>fields[id]??={value:''}};f.ui.toggle={setAttribute(){}};
@@ -239,9 +257,9 @@ async function confirmedGesture(t){
  f.ui.presentLive(confirmed,false);f.ui.gesture(false);
  return {...f,confirmed};
 }
-test('matching confirmed gesture retains full heights and resumes only colour refinement',async t=>{
+test('matching confirmed gesture retains full heights across a Smooth switch and resumes only colour refinement',async t=>{
  const f=await confirmedGesture(t),grid=f.ui.baseline.grid,pixels=f.ui.baseline.pixels,published=f.published.length,reads=f.reads.length;
- f.ui.records=[{id:'old'}];f.ui.recordsSource=f.ui.source;
+ f.ui.records=[{id:'old'}];f.ui.recordsSource=f.ui.source;f.ui.host.tool=()=> 'smooth';document.getElementById('land-radius').value='128';
  f.ui.sync('campaign',zoom(.9),2,[],100,region());
  assert.equal(f.ui.ready,true);assert.equal(f.input.dataset.terrainReady,'ready');
  assert.equal(f.ui.baseline.grid,grid);assert.equal(f.ui.baseline.pixels,pixels);assert.equal(f.published.length,published,'source handoff needs no second mesh upload');
@@ -260,7 +278,6 @@ test('confirmed heights are never adopted for a different source, mesh or object
   'different campaign':f=>({token:'other'}),
   'wider view':f=>({box:zoom(2)}),
   'new road':f=>({objects:[{kind:'road',id:'r',revision:1}]}),
-  'larger smooth halo':f=>{f.ui.host.tool=()=> 'smooth';return{};},
   'different exaggeration':f=>{f.ui.exaggeration=2;return{};},
   'unconfirmed preview':f=>{f.ui.baseline={...f.ui.baseline,draft:true};return{};},
   'ordinary frame':f=>{f.ui.baseline={...f.ui.baseline,identity:undefined};return{};},

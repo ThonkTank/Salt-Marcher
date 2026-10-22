@@ -225,7 +225,7 @@ async function zoomReached(previous,deltaY){
  await atlasCanvasReady(page);
 }
 async function spatialReady(){
- await page.waitForFunction(()=>{const d=document.querySelector('#campaign-map').dataset;if(d.terrainReady==='error'||!d.terrainView)return true;if(d.terrainReady!=='ready'||!d.terrainProjection)return false;const v=JSON.parse(d.terrainProjection);const pad=document.querySelector('#land-tool').value==='smooth'?Number(document.querySelector('#land-radius').value)/2:0;return Number(d.terrainSamplePad)===pad&&['tilt','rotation','exaggeration'].every(k=>v[k]===Number(document.querySelector('#terrain-'+k).value));},null,{timeout:60000});
+ await page.waitForFunction(()=>{const d=document.querySelector('#campaign-map').dataset;if(d.terrainReady==='error'||!d.terrainView)return true;if(d.terrainReady!=='ready'||!d.terrainProjection)return false;const v=JSON.parse(d.terrainProjection);return ['tilt','rotation','exaggeration'].every(k=>v[k]===Number(document.querySelector('#terrain-'+k).value));},null,{timeout:60000});
  assert.equal(await page.locator('#campaign-map').getAttribute('data-terrain-ready'),'ready',await page.locator('#atlas-save-status').textContent());
 }
 async function history(kind){

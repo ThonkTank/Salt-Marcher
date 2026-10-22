@@ -1,0 +1,371 @@
+TAP version 13
+# Subtest: stationary preview draws once per frame while storage is blocked; ACK joins the next preview
+ok 1 - stationary preview draws once per frame while storage is blocked; ACK joins the next preview
+  ---
+  duration_ms: 29.52559
+  type: 'test'
+  ...
+# Subtest: coalesced movement and release preserve the final point and elapsed dose without a late preview
+ok 2 - coalesced movement and release preserve the final point and elapsed dose without a late preview
+  ---
+  duration_ms: 7.77014
+  type: 'test'
+  ...
+# Subtest: release before the first frame flushes the actual elapsed stroke
+ok 3 - release before the first frame flushes the actual elapsed stroke
+  ---
+  duration_ms: 3.118075
+  type: 'test'
+  ...
+# Subtest: colour brush remains event driven and commits its final cumulative points
+ok 4 - colour brush remains event driven and commits its final cumulative points
+  ---
+  duration_ms: 6.074318
+  type: 'test'
+  ...
+# Subtest: a failed write cancels future height frames without retrying an uncertain operation
+ok 5 - a failed write cancels future height frames without retrying an uncertain operation
+  ---
+  duration_ms: 11.985372
+  type: 'test'
+  ...
+# Subtest: one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+ok 6 - one source lattice covers bounded pan/zoom, not a separate surface for every camera frame
+  ---
+  duration_ms: 3.496653
+  type: 'test'
+  ...
+# Subtest: brush choice and radius retain ready geometry, loaded detail and input eligibility
+ok 7 - brush choice and radius retain ready geometry, loaded detail and input eligibility
+  ---
+  duration_ms: 18.149128
+  type: 'test'
+  ...
+# Subtest: switching to Smooth during refinement retains the current surface and accepts the pending detail
+ok 8 - switching to Smooth during refinement retains the current surface and accepts the pending detail
+  ---
+  duration_ms: 31.216366
+  type: 'test'
+  ...
+# Subtest: camera pose can move while author writes remain fenced, without enabling terrain reads
+ok 9 - camera pose can move while author writes remain fenced, without enabling terrain reads
+  ---
+  duration_ms: 15.565848
+  type: 'test'
+  ...
+# Subtest: pending bounded projection survives small camera gestures; the result uses the latest pose
+ok 10 - pending bounded projection survives small camera gestures; the result uses the latest pose
+  ---
+  duration_ms: 10.990637
+  type: 'test'
+  ...
+# Subtest: detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+ok 11 - detail/coverage changes invalidate pending replies while canonical revision and context always invalidate reuse
+  ---
+  duration_ms: 35.249175
+  type: 'test'
+  ...
+# Subtest: source change during IPC discards the old campaign; record ordering does not discard a valid surface
+ok 12 - source change during IPC discards the old campaign; record ordering does not discard a valid surface
+  ---
+  duration_ms: 2.437809
+  type: 'test'
+  ...
+# Subtest: contour interval changes are immediate display changes without source reads or worker invalidation
+ok 13 - contour interval changes are immediate display changes without source reads or worker invalidation
+  ---
+  duration_ms: 9.056241
+  type: 'test'
+  ...
+# Subtest: a late terrain reply cannot restore an earlier contour mode
+ok 14 - a late terrain reply cannot restore an earlier contour mode
+  ---
+  duration_ms: 10.491309
+  type: 'test'
+  ...
+# Subtest: overview becomes usable before detail; both stages retain identical geometry and latest camera
+ok 15 - overview becomes usable before detail; both stages retain identical geometry and latest camera
+  ---
+  duration_ms: 27.942337
+  type: 'test'
+  ...
+# Subtest: a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+ok 16 - a gesture revokes an in-flight detail even if it ends before that reply; refinement can resume
+  ---
+  duration_ms: 21.145099
+  type: 'test'
+  ...
+# Subtest: navigation during refinement discards the old detail and prioritizes an overview of the new source
+ok 17 - navigation during refinement discards the old detail and prioritizes an overview of the new source
+  ---
+  duration_ms: 23.710682
+  type: 'test'
+  ...
+# Subtest: detail failure retains usable geometry and stops retries until an explicit retry or new source
+ok 18 - detail failure retains usable geometry and stops retries until an explicit retry or new source
+  ---
+  duration_ms: 8.370202
+  type: 'test'
+  ...
+# Subtest: navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+ok 19 - navigation retains sharp world-anchored colour, but unconfirmed edits and campaign changes discard it
+  ---
+  duration_ms: 70.600046
+  type: 'test'
+  ...
+# Subtest: expected worker preemption resumes missing detail without fallback or an error banner
+ok 20 - expected worker preemption resumes missing detail without fallback or an error banner
+  ---
+  duration_ms: 9.700107
+  type: 'test'
+  ...
+# Subtest: stale source refresh blocks premature reads and then loads the latest revision
+ok 21 - stale source refresh blocks premature reads and then loads the latest revision
+  ---
+  duration_ms: 11.560083
+  type: 'test'
+  ...
+# Subtest: an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+ok 22 - an overtaken refresh waits for its confirmed successor rather than re-reading old geometry
+  ---
+  duration_ms: 12.90694
+  type: 'test'
+  ...
+# Subtest: individual colour tiles appear before full detail and late gesture replies cannot paint
+ok 23 - individual colour tiles appear before full detail and late gesture replies cannot paint
+  ---
+  duration_ms: 3.064567
+  type: 'test'
+  ...
+# Subtest: a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+ok 24 - a failed colour tile keeps earlier tiles usable and explicit retry starts with cached progress
+  ---
+  duration_ms: 3.577992
+  type: 'test'
+  ...
+# Subtest: post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+ok 25 - post-edit overview and live frames preserve confirmed distant detail before any replacement tiles arrive
+  ---
+  duration_ms: 56.530794
+  type: 'test'
+  ...
+# Subtest: steep tilt replaces narrow pending coverage but later rotations retain the widened source
+ok 26 - steep tilt replaces narrow pending coverage but later rotations retain the widened source
+  ---
+  duration_ms: 3.972686
+  type: 'test'
+  ...
+# Subtest: a confirmed new frame reports graphics recovery once and never before publication
+ok 27 - a confirmed new frame reports graphics recovery once and never before publication
+  ---
+  duration_ms: 30.488104
+  type: 'test'
+  ...
+# Subtest: opening waits only for the first usable terrain, not colour/detail or object geometry
+ok 28 - opening waits only for the first usable terrain, not colour/detail or object geometry
+  ---
+  duration_ms: 15.90442
+  type: 'test'
+  ...
+# Subtest: stale bootstrap hands back to the full region without recursively awaiting refresh
+ok 29 - stale bootstrap hands back to the full region without recursively awaiting refresh
+  ---
+  duration_ms: 1.666816
+  type: 'test'
+  ...
+# Subtest: leaving the Atlas resolves bootstrap and a late terrain reply cannot publish
+ok 30 - leaving the Atlas resolves bootstrap and a late terrain reply cannot publish
+  ---
+  duration_ms: 1.789267
+  type: 'test'
+  ...
+# Subtest: bootstrap exceptions remove their waiter and rejected modes do not start a read
+ok 31 - bootstrap exceptions remove their waiter and rejected modes do not start a read
+  ---
+  duration_ms: 2.141059
+  type: 'test'
+  ...
+# Subtest: matching confirmed gesture retains full heights across a Smooth switch and resumes only colour refinement
+ok 32 - matching confirmed gesture retains full heights across a Smooth switch and resumes only colour refinement
+  ---
+  duration_ms: 6.702039
+  type: 'test'
+  ...
+# Subtest: confirmed heights are never adopted for a different source, mesh or object context
+    # Subtest: missing region
+    ok 1 - missing region
+      ---
+      duration_ms: 16.480446
+      type: 'test'
+      ...
+    # Subtest: different fence
+    ok 2 - different fence
+      ---
+      duration_ms: 25.052522
+      type: 'test'
+      ...
+    # Subtest: newer revision
+    ok 3 - newer revision
+      ---
+      duration_ms: 14.325418
+      type: 'test'
+      ...
+    # Subtest: different campaign
+    ok 4 - different campaign
+      ---
+      duration_ms: 16.851324
+      type: 'test'
+      ...
+    # Subtest: wider view
+    ok 5 - wider view
+      ---
+      duration_ms: 33.617667
+      type: 'test'
+      ...
+    # Subtest: new road
+    ok 6 - new road
+      ---
+      duration_ms: 15.78047
+      type: 'test'
+      ...
+    # Subtest: different exaggeration
+    ok 7 - different exaggeration
+      ---
+      duration_ms: 20.485289
+      type: 'test'
+      ...
+    # Subtest: unconfirmed preview
+    ok 8 - unconfirmed preview
+      ---
+      duration_ms: 17.971725
+      type: 'test'
+      ...
+    # Subtest: ordinary frame
+    ok 9 - ordinary frame
+      ---
+      duration_ms: 17.028959
+      type: 'test'
+      ...
+    # Subtest: coarser mesh
+    ok 10 - coarser mesh
+      ---
+      duration_ms: 21.086292
+      type: 'test'
+      ...
+    # Subtest: shifted mesh
+    ok 11 - shifted mesh
+      ---
+      duration_ms: 13.854821
+      type: 'test'
+      ...
+    # Subtest: mismatched baseline
+    ok 12 - mismatched baseline
+      ---
+      duration_ms: 17.608175
+      type: 'test'
+      ...
+    # Subtest: unready source
+    ok 13 - unready source
+      ---
+      duration_ms: 22.370136
+      type: 'test'
+      ...
+    1..13
+ok 33 - confirmed heights are never adopted for a different source, mesh or object context
+  ---
+  duration_ms: 256.483497
+  type: 'test'
+  ...
+# Subtest: a second gesture revokes refinement of an adopted source before publishing its newer height state
+ok 34 - a second gesture revokes refinement of an adopted source before publishing its newer height state
+  ---
+  duration_ms: 15.915351
+  type: 'test'
+  ...
+# Subtest: canonical orthographic commit clips occluders, matches preview, and survives history/reopen
+ok 35 - canonical orthographic commit clips occluders, matches preview, and survives history/reopen
+  ---
+  duration_ms: 2481.817429
+  type: 'test'
+  ...
+# Subtest: canonical perspective commit clips occluders, matches preview, and survives history/reopen
+ok 36 - canonical perspective commit clips occluders, matches preview, and survives history/reopen
+  ---
+  duration_ms: 1942.795158
+  type: 'test'
+  ...
+# Subtest: rotation, tilt and exaggeration project to the same position as the orthographic Three camera
+ok 37 - rotation, tilt and exaggeration project to the same position as the orthographic Three camera
+  ---
+  duration_ms: 20.025014
+  type: 'test'
+  ...
+# Subtest: triangular interpolation matches GPU triangles rather than smoothing across their diagonal
+ok 38 - triangular interpolation matches GPU triangles rather than smoothing across their diagonal
+  ---
+  duration_ms: 1.591822
+  type: 'test'
+  ...
+# Subtest: near ridge occludes far ground, rotation reverses it; overheight is visual and considered by clipping
+ok 39 - near ridge occludes far ground, rotation reverses it; overheight is visual and considered by clipping
+  ---
+  duration_ms: 179.421403
+  type: 'test'
+  ...
+# Subtest: all sculpt modes protect hidden nodes and share exactly the same frozen camera mask
+ok 40 - all sculpt modes protect hidden nodes and share exactly the same frozen camera mask
+  ---
+  duration_ms: 1092.928587
+  type: 'test'
+  ...
+# Subtest: colour stores a visible footprint once, not a camera-dependent paint layer
+ok 41 - colour stores a visible footprint once, not a camera-dependent paint layer
+  ---
+  duration_ms: 108.296834
+  type: 'test'
+  ...
+# Subtest: spatial preview reads the same height operation as the canonical field; no new terrain is invented by zoom
+ok 42 - spatial preview reads the same height operation as the canonical field; no new terrain is invented by zoom
+  ---
+  duration_ms: 456.453813
+  type: 'test'
+  ...
+# Subtest: unbounded meshes and invalid projections are rejected before generation
+ok 43 - unbounded meshes and invalid projections are rejected before generation
+  ---
+  duration_ms: 2.000051
+  type: 'test'
+  ...
+# Subtest: visibility agrees with real triangle ray hits across diagonal rays and rotated ridges
+ok 44 - visibility agrees with real triangle ray hits across diagonal rays and rotated ridges
+  ---
+  duration_ms: 873.94974
+  type: 'test'
+  ...
+# Subtest: wide smoothing reads neighbouring tiles beyond the displayed mesh without editing hidden nodes
+ok 45 - wide smoothing reads neighbouring tiles beyond the displayed mesh without editing hidden nodes
+  ---
+  duration_ms: 33.239032
+  type: 'test'
+  ...
+# Subtest: spatial contour ink is drawn at display time, not baked into background pixels
+ok 46 - spatial contour ink is drawn at display time, not baked into background pixels
+  ---
+  duration_ms: 255.806709
+  type: 'test'
+  ...
+# Subtest: main Atlas empty terrain is opaque ocean behind ordinary map objects
+ok 47 - main Atlas empty terrain is opaque ocean behind ordinary map objects
+  ---
+  duration_ms: 3.635973
+  type: 'test'
+  ...
+1..47
+# tests 60
+# suites 0
+# pass 60
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5680.177824

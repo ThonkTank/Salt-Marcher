@@ -62,6 +62,11 @@ Stationäres Malen bleibt während laufender Speicherung sichtbar; deren Bestät
 startet keinen zweiten Höhenaufbau im gleichen Frame. Der Bericht trennt die
 beseitigte Doppelarbeit von weiterhin offenen Bildraten- und Latenzzielen.
 
+[Glätten ohne erneutes Laden](../reference/atlas-smooth-ready-20261022/README.md):
+Werkzeugwahl und Pinselradius gehören nicht zur Geometrieidentität. Verfügbare Höhen
+und laufende Detailverfeinerung bleiben erhalten; frühe Gesten werden beim Wechsel
+auf Smooth nicht mehr durch einen unnötigen Neuaufbau verworfen.
+
 [Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
 
 [Navigation während des Pinselabschlusses](../reference/atlas-navigation-pending-20261021/README.md): nach Loslassen freie Kamera bei weiterhin geschütztem Schreibbesitzer. Ausdrückliches Verschieben benötigt keine geladenen Autorentreffer; Pose und Terrain-Verfeinerung besitzen getrennte Sperren. Verzögerte echte Commit-/Terrainantworten und der große Weltfall nativ geprüft.
