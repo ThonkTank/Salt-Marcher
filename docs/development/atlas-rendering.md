@@ -28,6 +28,11 @@ erzwungenen X11-Teststarts. Lange Ausreißer und die Pentium-Qualifikation bleib
 erzwungene Layoutarbeit wanderte zu anderen Lesern; kein belastbarer Gesamtgewinn.
 Produktversuch entfernt, native Größen-/Trefferregression und Rohvergleich erhalten.
 
+[Styleinvalidierung bei der Navigation](../reference/atlas-style-invalidation-20261022/README.md):
+vorhandener Atlaszustand ersetzt die globale CSS-Abfrage; gleiche Meldungstexte
+behalten ihre DOM-Knoten. Weniger Layoutunterbrechungen und ein besserer
+Navigationslauf; Sculpt, Eingabe-Pixel-Latenz und Pentium-Abnahme bleiben offen.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt

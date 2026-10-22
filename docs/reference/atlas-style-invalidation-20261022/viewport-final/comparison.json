@@ -1,0 +1,17 @@
+{
+  "identicalCameraCases": true,
+  "images": [
+    {
+      "name": "resized-room",
+      "sameSize": true,
+      "changedPixels": 4,
+      "total": 1126400
+    },
+    {
+      "name": "returned-room",
+      "sameSize": true,
+      "changedPixels": 0,
+      "total": 1126400
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "scheduled": 112,
+  "recalculated": 604,
+  "bodyTriggers": {
+    "refresh > ": 8,
+    "renderTravel > changed": 40,
+    "renderTravel > refresh": 40,
+    "say > load": 1,
+    "objectOptions > load": 2,
+    "refresh": 2,
+    "renderPanel > render": 2,
+    "renderTravel > render": 10
+  },
+  "selectors": {
+    "body:has(> #campaign-atlas:not([hidden])) > header": 10,
+    "#live .live-desk-reference:has(#live-travel-host:not([hidden])) :is(input, textarea, select, button, [tabindex], h2, h3)": 350,
+    "#atlas-drawing-tools label:has(#drawing-tool) select": 20,
+    "#note-thread-sources article:has(details[open]) > p:last-of-type": 20
+  }
+}
