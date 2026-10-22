@@ -354,3 +354,15 @@ Die Bedienelemente wurden lokal nach 3,6–3,8 statt 5,9 Sekunden freigegeben.
 Für einen tatsächlich angenommenen Folgezug war die normale Terrainquelle
 jedoch erst nach rund 5,1 Sekunden wieder bereit. Diese erneute Ladephase und
 die Gesamtlatenzziele bleiben ausdrücklich offen.
+
+### Bestätigtes Höhengitter nach dem Pinselzug behalten (22.10.2026)
+
+Der Quellenwechsel nach einem Pinselzug übernimmt jetzt das bestätigte Live-Gitter,
+wenn frische Region, Revision, Quellenkennung und sämtliche Geometrieeingaben
+übereinstimmen. Alte Autorenrecord-Caches werden verworfen, Farben verfeinern
+weiter. Bei geänderter Abdeckung bleibt ein neuer Übersichtsaufbau notwendig.
+[Schutzfälle und native Vorher-/Nachherprobe](../../reference/atlas-live-source-handoff-20261022/README.md).
+Im festen Ausschnitt sank die Bereitschaft für den nächsten Zug lokal von
+5,6 auf 4,0 Sekunden; beim kurzen Folgezug von 5,0 auf 2,8 Sekunden. Ein Zoom
+über die bisherige Abdeckung benötigt weiterhin rund 5,3 Sekunden. Die letzten
+Sekunden, Großwelt-Latenzgrenzen und Zielgerätequalifikation bleiben offen.

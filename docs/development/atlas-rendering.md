@@ -506,3 +506,16 @@ Begrenzte Zoomzyklen sind kein Leakbeweis; Post-GC-Werte sind keine normale Spei
 Das damalige Cacheexperiment begründet keine Budgeterhöhung.
 [Stufenmessung](../../tools/measure-atlas-regions.mjs) ergänzt Store/Worker/Transport,
 ohne zusammengesetzte Phasen als isolierte CPUkosten auszugeben.
+
+
+### Quellenübergabe nach bestätigten Terrainzügen
+
+`TerrainSpatialUI.sync` hält die Revisionskennung getrennt von den übrigen
+Projektionsinputs. Ein bereits veröffentlichtes Live-Gitter darf die neue Quelle
+nur übernehmen, wenn die frische Region dieselbe Revision und Quellenkennung
+bestätigt, der bisherige Quellenbesitzer übereinstimmt und die Abtastgeometrie
+zum normalen Ladeplan passt. Kontext-, Kameraabdeckungs- oder Objektänderungen
+verwerfen es weiterhin. Die Übernahme leert den Autorenrecord-Cache und setzt
+die normalen Detailaufträge fort; sie führt keinen weiteren Mesh-Upload aus.
+[Regressionen und native Folgezüge](../reference/atlas-live-source-handoff-20261022/README.md)
+belegen den begrenzten Übergang und die weiterhin offenen Latenzen.

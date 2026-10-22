@@ -15,6 +15,7 @@ import type {AtlasPresentation} from './atlas-presentation';
 import type {AtlasCanvasScene} from './atlas-canvas-scene';
 import {terrainNavigationPlan} from './terrain-navigation-plan';
 export interface TerrainDraft {heightStroke?:HeightStroke;color?:LandscapeRecord;routeRecords?:LandscapeRecord[]}
+const samplingKey=(v:TerrainView)=>JSON.stringify([v.box,v.refinement,v.columns,v.rows,v.exaggeration]);
 
 /** Main Atlas presentation: camera controls and terrain jobs, with existing author handlers. */
 export class TerrainSpatialUI implements AtlasPresentation {
@@ -39,6 +40,7 @@ export class TerrainSpatialUI implements AtlasPresentation {
   private recordsSource='';private draftLoading=false;
   private params:TerrainView|null=null;
   private source='';private requested='';private generation=0;private busy=false;private queued=false;private lastDraft='';
+  private requestedGeometry='';
   private baseline:(SpatialReply & {fence?:string;revision?:number})|null=null;private lastSelection='';
   private loadTimer:ReturnType<typeof setTimeout>|undefined;private loadBusy=false;private pendingContours=0;
   private detailSource='';
@@ -199,8 +201,24 @@ export class TerrainSpatialUI implements AtlasPresentation {
     this.objectSources=atlas?terrainObjectSources(atlas,display):[];
     const radius=Number(atlasFieldValue(document.getElementById('land-radius') as HTMLInputElement));this.samplePad=this.host.tool()==='smooth'&&Number.isFinite(radius)&&radius>0?radius/2:0;
     this.sourceWindow=terrainSourceWindow(this.sourceWindow,frame,this.input.clientWidth,this.input.clientHeight,terrainCoverageLevel(this.tilt));
-    const source=JSON.stringify([token,revision,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
-    if(source!==this.requested){delete this.input.dataset.terrainTiles;this.requested=source;this.ready=false;this.input.dataset.terrainReady='loading';this.generation++;this.busy=false;this.queued=false;this.baseline=null;this.worker?.terminate();this.worker=null;this.scheduleLoad(contours);return;}
+    const geometry=JSON.stringify([token,this.sourceWindow,this.samplePad,this.exaggeration,this.objectSources,objects.filter(r=>r.kind!=='patch').map(r=>[r.id,r.revision]).sort()]);
+    const source=JSON.stringify([revision,geometry]);
+    if(source!==this.requested){
+      const base=this.baseline,identity=base?.identity;
+      const expected=terrainNavigationPlan(this.sourceWindow,revision,{tilt:this.tilt,rotation:this.rotation,exaggeration:this.exaggeration},this.objectSources)[0].view;
+      // A confirmed live frame already contains the full navigation mesh. Only
+      // adopt it after the region confirms the same source and all inputs other
+      // than revision remain unchanged. Draft/ordinary frames have no identity.
+      const adopt=this.ready&&!this.sourceRefresh&&geometry===this.requestedGeometry&&base?.source===this.source&&this.source===this.requested&&
+        !base.draft&&samplingKey(base.grid.view)===samplingKey(expected)&&identity?.revision===revision&&identity.fence===atlas?.region?.fence;
+      delete this.input.dataset.terrainTiles;this.requested=source;this.requestedGeometry=geometry;
+      this.generation++;this.busy=false;this.queued=false;this.worker?.terminate();this.worker=null;
+      if(adopt){
+        this.source=source;this.baseline={...base,source};this.records=[];this.recordsSource='';this.lastDraft='null';this.detailSource='';
+        this.params={...base.grid.view,frame:{...frame},tilt:this.tilt,rotation:this.rotation};
+      }else{this.ready=false;this.input.dataset.terrainReady='loading';this.baseline=null;}
+      this.scheduleLoad(contours);return;
+    }
     if(this.host.writing())return;
     const draft=this.host.draft(),key=JSON.stringify(draft);
     if(this.ready&&key!==this.lastDraft){this.lastDraft=key;if(!draft&&this.baseline?.source===this.source){this.generation++;this.worker?.terminate();this.worker=null;this.busy=false;this.queued=false;this.view!.setData(this.baseline);this.reframe(this.frame!);this.input.dataset.terrainPreview='false';}else this.queue(contours);}
