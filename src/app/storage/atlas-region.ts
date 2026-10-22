@@ -129,6 +129,10 @@ export class AtlasRegionReader {
    const table=row.kind==='room'?'room':row.kind==='unit'?'city_unit':'drawing_element',source=this.source(table,row.key.slice(row.key.indexOf(':')+1));
    const shape=source&&this.materialize(table,source);if(!shape)throw Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');
    payload=JSON.stringify(shape);this.shapePayloads.put(row.key,{x:row.min_x,y:row.min_y,width:row.max_x-row.min_x,height:row.max_y-row.min_y},payload,payload.length*2);
+   // The cache owns an immutable string. New room/drawing shapes are already
+   // private to this read. Legacy city units still need JSON normalization of
+   // their explicitly undefined optional fields, matching subsequent cache hits.
+   if(row.kind!=='unit')return shape;
   }
   // Callers add per-view styles and slices; cached source shapes stay immutable.
   return JSON.parse(payload);

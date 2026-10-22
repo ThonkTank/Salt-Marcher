@@ -453,7 +453,11 @@ test('world opening indexes bounds without retaining all room shapes, then hydra
  assert.equal(coarse.coverage.objects,0);assert.equal(materialized,0,'subpixel groups need no world markers or hydrated room details');
  const near=f.reader.read(source,query());assert(near.rooms.length>0&&near.rooms.length<10);assert.equal(materialized,near.rooms.length);
  assert(f.reader.shapePayloads.bytes>0);assert(f.reader.shapePayloads.bytes<=4*1024*1024);
- const first=JSON.stringify(near.rooms);f.reader.read(source,{...query(),slice:0});assert.equal(JSON.stringify(f.reader.read(source,query()).rooms),first,'per-view slicing cannot mutate cached room geometry');
+ const first=JSON.stringify(near.rooms);
+ near.rooms[0].polygons[0].outer[0].x+=1234;
+ const warm=f.reader.read(source,query());assert.equal(JSON.stringify(warm.rooms),first,'a cold result cannot mutate the serialized cache');
+ warm.rooms[0].polygons[0].outer[0].y-=1234;
+ f.reader.read(source,{...query(),slice:0});assert.equal(JSON.stringify(f.reader.read(source,query()).rooms),first,'warm results and per-view slicing cannot mutate cached room geometry');
  const focus=f.reader.focus(source,'room','r3999');assert(focus.point.x>19990);assert.equal(materialized,near.rooms.length+1);
  // Query batching must follow the rowid cursor, not sort the campaign again for every page.
  assert(batches.length>=4);
