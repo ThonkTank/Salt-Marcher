@@ -119,3 +119,36 @@ test('source failure or invalidation during a paused grid cannot publish stale s
   assert.deepEqual(cache.gridData(largeLattice,0,s.stream),new TerrainProjectionCache().gridData(largeLattice,0,s.stream));
  }
 });
+
+function colorOracle(lattice,sea,stream){const {heights,water}=streamTerrainField(lattice,sea,stream,false);return {heights,water};}
+test('coarse colour retains exact water decisions, owns buffers and accounts every retained byte',()=>{
+ const cache=new TerrainProjectionCache(),records=[heightRecord(0,0,1,Float32Array.from({length:4096},(_,i)=>i%2?100.00000762939453:100))];
+ const l={x:10.125,y:12.25,dx:.25,dy:.25,columns:19,rows:17};let reads=0;
+ const stream=kind=>{reads++;return kind==='height'?records:[];},read=()=>finish(cache.colorFieldSteps(l,100,stream,function*(){}));
+ const expected=colorOracle(l,100,stream),first=read();
+ assert.deepEqual(first,expected);
+ assert(expected.heights.some((h,i)=>h<=100&&expected.water[i]===0),'rounded heights cannot reconstruct the exact shoreline decision');
+ first.heights.fill(-500);first.water.fill(1);reads=0;assert.deepEqual(read(),expected);assert.equal(reads,0);
+ const key=JSON.stringify(['surface',l,100]);assert.equal(cache.tiles.bytes,key.length*2+l.columns*l.rows*13+5*5+128);
+ cache.seedGrid(l,100,new Float32Array(l.columns*l.rows).fill(100));reads=0;assert.deepEqual(read(),expected);assert(reads>0,'height-only seeds do not invent water decisions');
+ const tiny=new TerrainProjectionCache(100);assert.deepEqual(finish(tiny.colorFieldSteps(l,100,stream,function*(){})),expected);assert.equal(tiny.tiles.bytes,0);
+});
+test('coarse colour updates and removes local lakes without resampling clean ground or mutating older replies',()=>{
+ const cache=new TerrainProjectionCache(),s=source(),read=stream=>finish(cache.colorFieldSteps(largeLattice,0,stream,function*(){})),before=read(s.stream);
+ const b={x:-30,y:-20,width:3,height:3},lake={id:'lake',points:[],polygons:[{outer:[{x:b.x,y:b.y},{x:b.x+b.width,y:b.y},{x:b.x+b.width,y:b.y+b.height},{x:b.x,y:b.y+b.height}],holes:[]}],waterLevelM:200};
+ const stream=(kind,box)=>kind==='lake'?[lake]:s.stream(kind,box);
+ cache.invalidate([b]);s.calls.length=0;const after=read(stream),samples=s.calls.filter(c=>c.kind==='height').reduce((n,c)=>n+c.box.width/largeLattice.dx*c.box.height/largeLattice.dy,0);
+ assert(samples<largeLattice.columns*largeLattice.rows/10);assert.deepEqual(after,colorOracle(largeLattice,0,stream));assert.notDeepEqual(after.water,before.water);
+ const saved=structuredClone(after);cache.invalidate([b]);assert.deepEqual(read(s.stream),before);assert.deepEqual(after,saved);
+ cache.invalidate([],true);assert.deepEqual(read(stream),colorOracle(largeLattice,0,stream));
+});
+test('cancelled or invalidated colour fields keep prior water and dirty state until a complete retry',()=>{
+ for(const mode of ['cancel','invalidate','reset']){
+  const cache=new TerrainProjectionCache(),s=source(),read=()=>finish(cache.colorFieldSteps(largeLattice,0,s.stream,function*(){}));read();
+  const key=JSON.stringify(['surface',largeLattice,0]),retained=cache.tiles.get(key),water=retained.water.slice();
+  cache.invalidate([{x:-40,y:-30,width:4,height:4},{x:30,y:20,width:4,height:4}]);const dirty=retained.dirty.slice();
+  const work=cache.colorFieldSteps(largeLattice,0,s.stream,function*(){yield;});assert.equal(work.next().done,false);
+  if(mode==='cancel')work.return();else{cache.invalidate([{x:-40,y:-30,width:4,height:4}],mode==='reset');assert.throws(()=>finish(work),/inzwischen geändert/);}
+  assert.deepEqual(retained.water,water);assert.deepEqual(retained.dirty,dirty);assert.deepEqual(read(),colorOracle(largeLattice,0,s.stream));
+ }
+});

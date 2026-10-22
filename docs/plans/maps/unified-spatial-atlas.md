@@ -366,3 +366,15 @@ Im festen Ausschnitt sank die Bereitschaft für den nächsten Zug lokal von
 5,6 auf 4,0 Sekunden; beim kurzen Folgezug von 5,0 auf 2,8 Sekunden. Ein Zoom
 über die bisherige Abdeckung benötigt weiterhin rund 5,3 Sekunden. Die letzten
 Sekunden, Großwelt-Latenzgrenzen und Zielgerätequalifikation bleiben offen.
+
+### Numerische Live-Felder wiederverwenden (22.10.2026)
+
+Kleine Live-Farbbilder behalten ihre exakten Höhen-/Wasserfelder mit lokaler
+Invalidierung. Die Felder dürfen höchstens 4 MiB innerhalb des vorhandenen
+16-MiB-Caches beanspruchen; normale Navigation gibt ihre bevorzugte Belegung
+wieder frei. [Vergleich, verworfene Varianten und native Bedienung](../../reference/atlas-coarse-field-cache-20261022/README.md).
+Nach wiederholten lokalen Invalidierungen sank die 64-Pixel-Berechnung von
+rund 467 auf 195–216 ms bei identischen Projektionsbytes. Nativ war der Folgezug
+nach Zoom nach 4,3 statt 5,3 Sekunden möglich. Erster Überblick, Zielgerät und
+unmittelbare Bearbeitung bleiben offen; die normale 128-Pixel-Übersicht erhält
+keinen behaupteten Geschwindigkeitsgewinn.

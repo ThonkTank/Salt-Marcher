@@ -82,9 +82,12 @@ export class AtlasRegionReader {
   try{db.exec('CREATE VIRTUAL TABLE temp.region_index USING rtree(id,min_x,max_x,min_y,max_y)');}catch{this.indexed=false;}
  }
  terrainVisibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.visibility(source,view);}
- terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrain(source,q);}
- colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.colorSteps(source,q);}
- terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.terrainSteps(source,q);}
+ /** Navigation resumes after the gesture; its new overview/fine tiles need the
+  * full cache again. Live frames below deliberately bypass this handoff. */
+ private navigationTerrain(){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');this.landscape.projectionCache.tiles.clearRetained();return this.landscape;}
+ terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return this.navigationTerrain().terrain(source,q);}
+ colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return this.navigationTerrain().colorSteps(source,q);}
+ terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return this.navigationTerrain().terrainSteps(source,q);}
  liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{
   const steps=this.liveTerrainSteps(source,q,base,false);for(;;){const step=steps.next();if(step.done)return step.value;}
  }

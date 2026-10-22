@@ -3,10 +3,10 @@ import {TerrainCache,terrainBoxesOverlap} from './terrain-cache';
 import {streamTerrainField,streamTerrainFieldSteps,streamTerrainFieldRows,streamTerrainFieldBlock,type TerrainField,type TerrainLattice,type TerrainStream} from './terrain-field-stream';
 import type {LandscapeBox} from './atlas-landscape';
 import {terrainDirtyRects} from './terrain-dirty-rects';
-type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;ground?:Float32Array;levels?:Float32Array;dirty:Uint8Array};
+type Surface={kind:'surface';lattice:TerrainLattice;heights:Float32Array;ground?:Float32Array;levels?:Float32Array;water?:Uint8Array;dirty:Uint8Array};
 type HeightBlock=Omit<TerrainHeightSource,'read'>&{values:Float32Array};
 type Tile={kind:'height';block:HeightBlock}|Surface|{kind:'field';field:TerrainField}|{kind:'pixels';pixels:Uint8Array};
-type GridData={surface:Float32Array;ground?:Float32Array;levels?:Float32Array};
+type GridData={surface:Float32Array;ground?:Float32Array;levels?:Float32Array;water?:Uint8Array};
 /** 16 MiB of the consumer's 64 MiB derived-cache budget.
  * Other shares: landscape PNGs 8, response bases 8, Main's replies 16 canonical surface blocks 8 and scale pyramid 8 (64 MiB total).
  * Active frames, GPU allocations and temporary sampling fields are working memory, measured separately.
@@ -14,7 +14,7 @@ type GridData={surface:Float32Array;ground?:Float32Array;levels?:Float32Array};
 export class TerrainProjectionCache {
   readonly tiles:TerrainCache<Tile>;
   private generation=0;
-  constructor(limit=16*1024*1024){this.tiles=new TerrainCache<Tile>(limit);}
+  constructor(limit=16*1024*1024){this.tiles=new TerrainCache<Tile>(limit,Math.floor(limit/4));}
   invalidate(boxes:LandscapeBox[],reset=false){
     if(reset||boxes.length)this.generation++;
     if(reset){this.tiles.clear();return;}
@@ -49,15 +49,21 @@ export class TerrainProjectionCache {
       yield {rect,index:index++,box};
     }
   }
-  seedGrid(lattice:TerrainLattice,sea:number,heights:Float32Array,ground?:Float32Array,levels?:Float32Array){
-    if(heights.length!==lattice.columns*lattice.rows||ground&&ground.length!==heights.length||levels&&levels.length!==heights.length||!!ground!==!!levels)throw Error('Geländerastergröße prüfen.');
+  seedGrid(lattice:TerrainLattice,sea:number,heights:Float32Array,ground?:Float32Array,levels?:Float32Array,water?:Uint8Array){
+    if(heights.length!==lattice.columns*lattice.rows||ground&&ground.length!==heights.length||levels&&levels.length!==heights.length||water&&water.length!==heights.length||!!ground!==!!levels)throw Error('Geländerastergröße prüfen.');
     const key=JSON.stringify(['surface',lattice,sea]),dirty=new Uint8Array(Math.ceil(lattice.columns/4)*Math.ceil(lattice.rows/4));
     const box={x:lattice.x-lattice.dx/2,y:lattice.y-lattice.dy/2,width:lattice.columns*lattice.dx,height:lattice.rows*lattice.dy};
     // A single contiguous raster avoids thousands of key lookups and row copies.
     // Own the arrays: a returned frame or trusted worker seed must never alias it.
-    this.tiles.put(key,box,{kind:'surface',lattice:{...lattice},heights:heights.slice(),ground:ground?.slice(),levels:levels?.slice(),dirty},key.length*2+heights.byteLength+(ground?.byteLength??0)+(levels?.byteLength??0)+dirty.byteLength+128);
+    this.tiles.put(key,box,{kind:'surface',lattice:{...lattice},heights:heights.slice(),ground:ground?.slice(),levels:levels?.slice(),water:water?.slice(),dirty},key.length*2+heights.byteLength+(ground?.byteLength??0)+(levels?.byteLength??0)+(water?.byteLength??0)+dirty.byteLength+128,!!water);
   }
   grid(lattice:TerrainLattice,sea:number,stream:TerrainStream){return this.gridData(lattice,sea,stream,false).surface;}
+  /** Coarse colour needs exact water decisions, not a comparison of rounded
+   * float32 heights. Reuse the same bounded, locally invalidated sampling cache. */
+  *colorFieldSteps(lattice:TerrainLattice,sea:number,stream:TerrainStream,checkpoint:()=>Generator<void>):Generator<void,TerrainField>{
+    const data=yield* this.gridDataSteps(lattice,sea,stream,checkpoint,true,16384,true);
+    return {heights:data.ground!,water:data.water!};
+  }
   /** Editable ground and potential water levels share the surface's reads and invalidation. */
   gridData(lattice:TerrainLattice,sea:number,stream:TerrainStream,editable=true):GridData{
     const steps=this.gridDataSteps(lattice,sea,stream,function*(){},editable,65536);
@@ -65,30 +71,31 @@ export class TerrainProjectionCache {
   }
   /** Completed row bands release all source iterators. Surface cache publication
    * stays atomic: cancellation, failure or invalidation never cleans a partial grid. */
-  *gridDataSteps(lattice:TerrainLattice,sea:number,stream:TerrainStream,checkpoint:()=>Generator<void>,editable=true,maxSamples=4096):Generator<void,GridData>{
+  *gridDataSteps(lattice:TerrainLattice,sea:number,stream:TerrainStream,checkpoint:()=>Generator<void>,editable=true,maxSamples=4096,withWater=false):Generator<void,GridData>{
     const generation=this.generation,cache=this;
     function* pause(){yield* checkpoint();if(cache.generation!==generation)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');}
     const key=JSON.stringify(['surface',lattice,sea]),hit=this.tiles.get(key);
     // Cold/reset views stream each source through a few bands, not hundreds of
     // tiny queries/decodes. Subsequent local edits rebuild only dirty blocks.
-    if(hit?.kind!=='surface'||editable&&!hit.ground||hit.dirty.reduce((sum,v)=>sum+v,0)>hit.dirty.length/2){
+    if(hit?.kind!=='surface'||editable&&!hit.ground||withWater&&!hit.water||hit.dirty.reduce((sum,v)=>sum+v,0)>hit.dirty.length/2){
       const full=yield* streamTerrainFieldSteps(lattice,sea,stream,true,pause,maxSamples);
       const ground=editable?full.heights:undefined,levels=editable?full.levels:undefined;
-      this.seedGrid(lattice,sea,full.surface!,ground,levels);return {surface:full.surface!,ground,levels};
+      const water=withWater?full.water:undefined;
+      this.seedGrid(lattice,sea,full.surface!,ground,levels,water);return {surface:full.surface!,ground,levels,water};
     }
-    const heights=hit.heights.slice(),ground=hit.ground?.slice(),levels=hit.levels?.slice();
-    if(!hit.dirty.some(Boolean))return {surface:heights,ground,levels};
+    const heights=hit.heights.slice(),ground=hit.ground?.slice(),levels=hit.levels?.slice(),water=hit.water?.slice();
+    if(!hit.dirty.some(Boolean))return {surface:heights,ground,levels,water};
     for(const r of terrainDirtyRects(hit.dirty,lattice.columns,lattice.rows,4,maxSamples)){
       const part=streamTerrainFieldBlock(lattice,r,sea,stream);
       for(let y=0;y<r.height;y++){const start=y*r.width,end=(y+1)*r.width,offset=(r.y+y)*lattice.columns+r.x;
-        heights.set(part.surface!.subarray(start,end),offset);ground?.set(part.heights.subarray(start,end),offset);levels?.set(part.levels!.subarray(start,end),offset);
+        heights.set(part.surface!.subarray(start,end),offset);ground?.set(part.heights.subarray(start,end),offset);levels?.set(part.levels!.subarray(start,end),offset);water?.set(part.water.subarray(start,end),offset);
       }
       yield* pause();
     }
     // Publish only after every dirty block succeeded. A failed source read leaves
     // the old grid dirty, and previously returned frames remain immutable.
-    hit.heights.set(heights);if(ground)hit.ground!.set(ground);if(levels)hit.levels!.set(levels);hit.dirty.fill(0);
-    return {surface:heights,ground,levels};
+    hit.heights.set(heights);if(ground)hit.ground!.set(ground);if(levels)hit.levels!.set(levels);if(water)hit.water!.set(water);hit.dirty.fill(0);
+    return {surface:heights,ground,levels,water};
   }
   pixels(key:string,box:LandscapeBox,create:()=>Uint8Array){
     const hit=this.cachedPixels(key);if(hit)return hit;

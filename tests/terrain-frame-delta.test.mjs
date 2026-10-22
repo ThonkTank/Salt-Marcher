@@ -58,3 +58,35 @@ test('raw ground and water deltas survive a surface that remains unchanged under
  assert.deepEqual(applyTerrainFrame(before,delta).projection.grid,after.projection.grid);assert.equal(before.projection.grid.editing.ground[100],-100);
  delete before.projection.grid.editing;assert.equal(terrainFrameDelta(before,after,before.target).kind,'full');
 });
+
+test('retained sampling fields survive source churn within the same total byte quota',()=>{
+ const cache=new TerrainCache(30),box={x:0,y:0,width:1,height:1};
+ cache.put('field',box,'field',10,true);cache.put('a',box,'a',10);cache.put('b',box,'b',10);
+ assert.equal(cache.get('a'),'a');cache.put('c',box,'c',10);
+ assert.equal(cache.get('b'),undefined,'ordinary queue retains its own LRU order');assert.equal(cache.get('field'),'field');assert.equal(cache.bytes,30);
+ cache.put('other-field',box,'other-field',20,true);assert.equal(cache.get('a'),undefined);assert.equal(cache.get('c'),undefined);assert.equal(cache.get('field'),'field');
+ cache.put('source',box,'not admitted',10);assert.equal(cache.get('source'),undefined);assert.equal(cache.get('other-field'),'other-field');assert.equal(cache.bytes,30);
+ cache.put('new-field',box,'new-field',20,true);assert.equal(cache.get('field'),undefined);assert.equal(cache.get('other-field'),undefined);assert.equal(cache.bytes,20,'retained data still obeys LRU and the total quota');
+});
+test('cache invalidation, replacement and reset cover both priority queues exactly once',()=>{
+ const cache=new TerrainCache(40),a={x:0,y:0,width:1,height:1},b={x:10,y:10,width:1,height:1};
+ cache.put('a',a,'source',10);cache.put('b',b,'field',10,true);cache.put('a',a,'promoted',15,true);assert.equal(cache.bytes,25);assert.equal(cache.get('a'),'promoted');
+ cache.put('a',a,'demoted',5);assert.equal(cache.bytes,15);assert.equal(cache.get('a'),'demoted');
+ const seen=[];cache.invalidate([a,b],(value)=>{seen.push(value);return value==='field';});assert.deepEqual(seen.sort(),['demoted','field']);assert.equal(cache.bytes,10);assert.equal(cache.get('a'),undefined);
+ cache.put('a',a,'source',5);cache.clear();assert.equal(cache.bytes,0);assert.equal(cache.get('a'),undefined);assert.equal(cache.get('b'),undefined);
+});
+
+test('retained-field sublimit leaves capacity for source blocks across many camera views',()=>{
+ const cache=new TerrainCache(100,25),box={x:0,y:0,width:1,height:1};
+ for(let i=0;i<100;i++){cache.put('field'+i,box,i,10,true);cache.put('source'+i,box,i,20);assert(cache.bytes<=100);assert(cache.retainedBytes<=25);}
+ assert.equal(cache.retainedBytes,20);assert.equal(cache.get('field0'),undefined);assert.equal(cache.get('field99'),99);assert.equal(cache.get('source99'),99);
+ cache.put('oversized-field',box,0,26,true);assert.equal(cache.get('oversized-field'),undefined);assert.equal(cache.retainedBytes,20);
+ cache.invalidate([box]);assert.equal(cache.bytes,0);assert.equal(cache.retainedBytes,0);
+});
+
+test('ending field retention frees its bytes while preserving ordinary cached data',()=>{
+ const cache=new TerrainCache(100,25),box={x:0,y:0,width:1,height:1};
+ cache.put('field',box,'field',20,true);cache.put('source',box,'source',50);cache.clearRetained();
+ assert.equal(cache.bytes,50);assert.equal(cache.retainedBytes,0);assert.equal(cache.get('field'),undefined);assert.equal(cache.get('source'),'source');
+ cache.clearRetained();assert.equal(cache.bytes,50);
+});

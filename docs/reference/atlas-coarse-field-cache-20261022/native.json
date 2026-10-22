@@ -1,0 +1,380 @@
+{
+  "events": [
+    {
+      "name": "open",
+      "time": 4081.506842
+    },
+    {
+      "name": "ready",
+      "time": 15042.526446
+    },
+    {
+      "name": "down",
+      "time": 17160.635493
+    },
+    {
+      "name": "released",
+      "time": 21598.781624
+    },
+    {
+      "name": "wheel-send",
+      "time": 22600.456505
+    },
+    {
+      "name": "wheel-ack",
+      "time": 22628.544568
+    },
+    {
+      "name": "state-returned",
+      "time": 22966.194098
+    },
+    {
+      "name": "settled",
+      "time": 24452.671337
+    },
+    {
+      "name": "author-ready",
+      "time": 25915.279468
+    },
+    {
+      "name": "second-down",
+      "time": 25971.601677
+    },
+    {
+      "name": "second-released",
+      "time": 26404.541326
+    },
+    {
+      "name": "second-author-ready",
+      "time": 29318.957101
+    },
+    {
+      "name": "detail-ready",
+      "time": 41603.200798
+    }
+  ],
+  "after": {
+    "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+    "pending": true,
+    "time": 20206.80000001192
+  },
+  "settledState": {
+    "ready": "loading",
+    "quality": "interactive",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "authorState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "secondStartState": {
+    "ready": "ready",
+    "quality": "overview",
+    "revision": "12",
+    "authorRevision": "12"
+  },
+  "secondState": {
+    "ready": "ready",
+    "quality": "interactive",
+    "revision": "14",
+    "authorRevision": "14"
+  },
+  "trace": {
+    "long": [
+      {
+        "start": 14424.400000035763,
+        "duration": 65
+      },
+      {
+        "start": 14489.600000023842,
+        "duration": 66
+      },
+      {
+        "start": 15246,
+        "duration": 54
+      },
+      {
+        "start": 16330.699999988079,
+        "duration": 55
+      },
+      {
+        "start": 19898.900000035763,
+        "duration": 59
+      },
+      {
+        "start": 21311.900000035763,
+        "duration": 375
+      },
+      {
+        "start": 22765.30000001192,
+        "duration": 315
+      },
+      {
+        "start": 23081,
+        "duration": 52
+      },
+      {
+        "start": 23268.600000023842,
+        "duration": 51
+      },
+      {
+        "start": 26169.19999998808,
+        "duration": 298
+      },
+      {
+        "start": 26468,
+        "duration": 77
+      },
+      {
+        "start": 26591.30000001192,
+        "duration": 66
+      }
+    ],
+    "changes": [
+      {
+        "time": 19878.100000023842,
+        "view": "{\"x\":-19960434.183443177,\"y\":-14763920.826754177,\"width\":39928333.6152933,\"height\":29530330.069644004}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 19896.600000023842,
+        "view": "{\"x\":-18394863.37053396,\"y\":-13666051.986254947,\"width\":37092582.708891705,\"height\":27433055.96178449}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 19967.400000035763,
+        "view": "{\"x\":-15733059.694420435,\"y\":-11799441.232250808,\"width\":32271202.465365317,\"height\":23867243.490009762}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 19981.80000001192,
+        "view": "{\"x\":-15629312.769819357,\"y\":-11726687.885753825,\"width\":32083283.507597324,\"height\":23728261.760827184}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 19995.30000001192,
+        "view": "{\"x\":-15524837.56114705,\"y\":-11653423.824326389,\"width\":31894045.393775783,\"height\":23588304.405813336}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20007.100000023842,
+        "view": "{\"x\":-15458380.258251239,\"y\":-11606820.118207628,\"width\":31773669.90173809,\"height\":23499276.69816046}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20023.5,
+        "view": "{\"x\":-15400615.285725709,\"y\":-11566311.977096958,\"width\":31669039.008106943,\"height\":23421893.43307909}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 20041.80000001192,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "quality": "refining",
+        "tiles": "4/48"
+      },
+      {
+        "time": 21685.900000035763,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "interactive",
+        "tiles": "4/48"
+      },
+      {
+        "time": 21707.900000035763,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "interactive"
+      },
+      {
+        "time": 23080.600000023842,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "12",
+        "quality": "overview"
+      },
+      {
+        "time": 26432.30000001192,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "interactive"
+      },
+      {
+        "time": 27020.400000035763,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "1/36"
+      },
+      {
+        "time": 27350.5,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "2/36"
+      },
+      {
+        "time": 27716.600000023842,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "3/36"
+      },
+      {
+        "time": 28106.19999998808,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "4/36"
+      },
+      {
+        "time": 28443.69999998808,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "5/36"
+      },
+      {
+        "time": 28794.100000023842,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "6/36"
+      },
+      {
+        "time": 29043,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "7/36"
+      },
+      {
+        "time": 29331.100000023842,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "8/36"
+      },
+      {
+        "time": 29599,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "9/36"
+      },
+      {
+        "time": 30145,
+        "view": "{\"x\":-15288031.93188639,\"y\":-11487362.015127875,\"width\":31465114.44266214,\"height\":23271074.22321887}",
+        "revision": "14",
+        "quality": "refining",
+        "tiles": "10/36"
+      }
+    ],
+    "frames": [
+      {
+        "t": 14549.6,
+        "gap": 133.39999999999964
+      },
+      {
+        "t": 14696.7,
+        "gap": 50.100000000000364
+      },
+      {
+        "t": 16379.5,
+        "gap": 69.5
+      },
+      {
+        "t": 17000.9,
+        "gap": 57.60000000000218
+      },
+      {
+        "t": 17778.2,
+        "gap": 58.60000000000218
+      },
+      {
+        "t": 18827.1,
+        "gap": 56.79999999999927
+      },
+      {
+        "t": 19960,
+        "gap": 59.599999999998545
+      },
+      {
+        "t": 21704.8,
+        "gap": 383.59999999999854
+      },
+      {
+        "t": 21773.3,
+        "gap": 68.5
+      },
+      {
+        "t": 23118.2,
+        "gap": 350.1000000000022
+      },
+      {
+        "t": 23318.5,
+        "gap": 83.40000000000146
+      },
+      {
+        "t": 23421.5,
+        "gap": 69.59999999999854
+      },
+      {
+        "t": 23479.2,
+        "gap": 57.70000000000073
+      },
+      {
+        "t": 26532.6,
+        "gap": 350.09999999999854
+      },
+      {
+        "t": 26656.5,
+        "gap": 57.099999999998545
+      }
+    ]
+  },
+  "detailState": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "14",
+    "authorRevision": "14",
+    "tiles": "36/36"
+  },
+  "source": "9f3ec8ab5a445e4ae404b44045391757b2d0f190",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/backup-impact-m4ATpR",
+  "artifacts": {
+    "main.cjs": "82b823d47d2bece0a50b2219271193cbf49f37bb9be26eac4054d3421c5e6e4b",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "36fdd432ac39e5a1121cb980d958c2409d4384be3f932092210b4adb8e328e5a",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "8e9d9585cbd577a6a59807e7668044b70f810bfbcb97b8d7801a1538cb239a55",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "3eecb99a013507e1bdf3795d442236fa3d1d1e725e3dc34e3e67f10b1baaccad",
+    "ui/atlas-brush-worker.js": "ca9c27d0446562f625e15454eacafa6d429bbef9a415287704e46a8fc97d44ea",
+    "ui/terrain-spatial-worker.js": "a3a8200eced6028f31c4f59dc537b2b783cc4285184e608f8492a7577377b842",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3376956,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

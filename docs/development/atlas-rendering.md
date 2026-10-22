@@ -519,3 +519,16 @@ verwerfen es weiterhin. Die Übernahme leert den Autorenrecord-Cache und setzt
 die normalen Detailaufträge fort; sie führt keinen weiteren Mesh-Upload aus.
 [Regressionen und native Folgezüge](../reference/atlas-live-source-handoff-20261022/README.md)
 belegen den begrenzten Übergang und die weiterhin offenen Latenzen.
+
+
+### Begrenzte Abtastfelder für Live-Farben
+
+`TerrainProjectionCache.colorFieldSteps` verwendet den vorhandenen atomaren
+Gittercache auch für exakte Wasserentscheidungen kleiner Live-Bilder bis
+64 Pixel. `TerrainCache` hält dafür eine zweite LRU-Reihenfolge mit eigener
+Obergrenze innerhalb desselben Gesamtbudgets; gewöhnliche Einträge ändern ihr
+Verhalten ohne solche Felder nicht. `AtlasRegionReader.navigationTerrain` und
+der normale Farblader geben diese Felder vor normaler Navigation wieder frei.
+`liveTerrainSteps` umgeht diese Übergabe, damit feine Live-Antworten den nächsten
+Pinselstand nicht entwerten. [Numerische, Speicher- und Bediennachweise](../reference/atlas-coarse-field-cache-20261022/README.md)
+halten vermiedene Arbeit und noch offene Latenzen getrennt fest.

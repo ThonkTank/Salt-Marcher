@@ -56,7 +56,10 @@ export function* readTerrainProjectionSteps(db:any,source:AtlasRegionSource,q:Te
  if(!draft)grid.view={...view,focusM:gridHeight(grid,{x:view.frame.x+view.frame.width/2,y:view.frame.y+view.frame.height/2})};
  yield* checkpoint();
  const {routes,denseRoutes,retainedRoutes}=terrainColorRoutes(stream,view.box,view.refinement);
- const render=(area:LandscapeBox,width:number,height:number,displayMpp:number)=>renderTerrainColor(area,width,height,displayMpp,{settings,stream,cache,batchEdge,contours:q.contours,revision:source.revision,denseRoutes,retainedRoutes,checkpoint});
+ // Live textures repeatedly sample a wide halo after small edits.
+ // Retain those small numerical fields; fine tiles must not crowd their pixels
+ // out of the shared cache with disposable sampling arrays.
+ const render=(area:LandscapeBox,width:number,height:number,displayMpp:number)=>renderTerrainColor(area,width,height,displayMpp,{settings,stream,cache,batchEdge,retainField:Math.max(width,height)<=64,contours:q.contours,revision:source.revision,denseRoutes,retainedRoutes,checkpoint});
  const pixels=yield* render(view.box,q.width,q.height,q.displayMpp);
  const size=q.detail&&terrainDetailDimensions(q.detail,q.detailResolution);
  const detail=q.detail&&size?{box:q.detail,...size,pixels:yield* render(q.detail,size.width,size.height,Math.min(q.displayMpp,Math.max(q.detail.width/size.width,q.detail.height/size.height)))}:undefined;
