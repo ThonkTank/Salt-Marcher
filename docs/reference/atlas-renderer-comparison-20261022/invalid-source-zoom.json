@@ -1,0 +1,16 @@
+{
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'maxZoom should be in the 0-24 range',\n+   'maxZoom should be in the 0-24 range'\n+ ]\n- []\n\n    at file:///home/aaron/Schreibtisch/projects/SaltMarcher/.build/run-maplibre-probe.mjs:14:37",
+  "pid": 3721234,
+  "profile": "/home/aaron/.cache/saltmarcher/renderer-comparison/profiles/probe-ov3VnE",
+  "hashes": {
+    "main.cjs": "64f64eb26d3d3f0eff4693cf5d4a886c7526856e61936e618b7169e9b19d8ae1",
+    "index.html": "5585a44cce228e0b4af94823f7bdc0ce7176156e35ff58c5473002c0514856bb",
+    "probe.mjs": "14bae7a6723aa7c0b85a9ec8ccd54faa3c17300560f4d121ff3bfd68269bf6f8",
+    "projection.mjs": "80950eef593b8a8ca30e6e58f40702dae9ff7193951f28b6ceba3d7e3f95d810",
+    "style.css": "1880cff20f9d99d97a918823d53d191517ab34164611e5f9884a9329508a29b1"
+  },
+  "errors": [],
+  "consoleErrors": [
+    "You are using the same source for a hillshade layer and for 3D terrain. Please consider using two separate sources to improve rendering quality."
+  ]
+}
