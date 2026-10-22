@@ -678,3 +678,12 @@ Höhenstufen nur nach Kartenmaßstab auswählen; Produktregel mit 256-m-Obergren
 [Landschaftsschreiben und gemischte Welt](../reference/atlas-landscape-write-cost-20261021/README.md): vier vorbereitete SQL-Programme je Verbindung begrenzen wiederholte Allokationen im Writer. Beim Öffnen wartet die Arbeitsfläche nicht mehr auf das erste Atlasbild; Autorentreffer behalten ihre eigene Freigabe. Die gemischte Probe enthält 100.000 Geländezuordnungen, 5.000 eingerichtete Gebäude und einen großen Dungeon. Sie legt weiterhin langsames erstes Terrain und eine Pause nach dem großen Pinselzug offen; sie ist keine vollständige Leistungsabnahme.
 
 [Sicherungsprüfung im Hintergrund](../reference/atlas-backup-worker-20261021/README.md): die große Weltprobe identifizierte über eine Minute synchrone Snapshotprüfung im Hauptprozess. Die vollständige Prüfung läuft nun in einem Readonly-Worker; kanonische Schreib-/Historyarbeit bleibt ein gemessener Engpass.
+
+
+## Eingangsmarker und Gebäudevolumen
+
+`terrain-objects.ts` hält Eingänge als Höhenanker ohne Grundfläche. Der normale
+Atlas zeichnet und trifft ihren vorhandenen Marker; `terrain-object-view.ts`
+erzeugt ausschließlich Gebäudevolumen. Eine zusätzliche Eingangswand oder
+Dachhöhe würde den Marker von seiner kanonischen Höhe versetzen.
+[Native Gegenprobe, Höhenbearbeitung und Wiederöffnung](../reference/atlas-entrance-marker-20261023/README.md).

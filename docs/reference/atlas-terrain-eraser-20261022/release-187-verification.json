@@ -1,0 +1,24 @@
+{
+  "version": "0.187.0",
+  "commit": "7ebaabf08098cdb553dd3fb96e44015c7e9fb657",
+  "product": "saltmarcher-workbench",
+  "dataLine": "CampaignWorkbench",
+  "platform": "linux-x64",
+  "archive": "SaltMarcher-0.187.0-linux-x64.zip",
+  "signatureValid": true,
+  "bytes": 315000829,
+  "sha256": "16cf9762a43bfd5528e7816ba39f1affb553330d17ce087c4556fdbe78a12af5",
+  "indexSha256": "09d3b416cea9eca8f7cdd099feccdc9484669ee4e920265d7c681544a8002a09",
+  "verifiedFiles": 129,
+  "buildInfo": {
+    "applicationVersion": "0.187.0",
+    "commit": "7ebaabf08098cdb553dd3fb96e44015c7e9fb657",
+    "product": "saltmarcher-workbench",
+    "dataLine": "CampaignWorkbench",
+    "schema": {
+      "min": 0,
+      "max": 54,
+      "target": 54
+    }
+  }
+}

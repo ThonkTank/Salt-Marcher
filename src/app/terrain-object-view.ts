@@ -5,7 +5,7 @@ import type {TerrainObject} from './terrain-objects';
  * Floors are horizontal; only the foundation's lower edge follows the ground. */
 export function terrainObjectMeshes(object:TerrainObject,origin:{x:number;y:number;z:number},exaggeration:number){
   const meshes:THREE.Mesh[]=[];
-  if(object.closed===false)return meshes;
+  if(object.closed===false||object.kind==='entrance')return meshes;
   const add=(vertices:number[],color:string)=>{
     if(!vertices.length)return;
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.computeVertexNormals();
@@ -45,7 +45,7 @@ export function terrainObjectMeshes(object:TerrainObject,origin:{x:number;y:numb
         const j=(i+1)%ring.length;quad(roof,at(r,i,object.topM),at(r,j,object.topM),at(r,i,object.topM+object.roofM),at(r,j,object.topM+object.roofM));
       }
     }
-    add(foundation,'#857c67');add(walls,object.kind==='entrance'?'#343432':'#d9c9ac');add(roof,object.color);
+    add(foundation,'#857c67');add(walls,'#d9c9ac');add(roof,object.color);
   }
   return meshes;
 }
