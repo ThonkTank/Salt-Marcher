@@ -11,9 +11,9 @@ export {LandscapeRoutes} from './src/app/landscape-routes';`,resolveDir:process.
  plugins:[{name:'controlled-route-session',setup(build){build.onLoad({filter:/\/terrain-route-ui\.ts$/},()=>({contents:'export const openTerrainRoute = options => globalThis.openTestRoute(options);',loader:'ts'}));}}]});
 const {AtlasRegions,AtlasOutput,LandscapeRoutes}=createRequire(import.meta.url)('../.build/atlas-controller-lifecycle.cjs');
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
-function dom(t){
+function dom(t,extra=''){
  const previous={document:global.document,window:global.window,openTestRoute:global.openTestRoute};
- const {document,window}=parseHTML('<p id="atlas-save-status"></p>');
+ const {document,window}=parseHTML('<p id="atlas-save-status"></p>'+extra);
  Object.assign(global,{document,window});t.after(()=>Object.assign(global,previous));
  return{document,window};
 }
@@ -41,6 +41,27 @@ test('closing an output owner cancels only its export lane and retains the sessi
  output.outputRun=session;output.cancel();
  assert.equal(session.cancelled,true);assert.equal(output.outputRun,session);
  assert.deepEqual(cancelled,[['campaign','export']]);
+});
+
+test('A–B–A region activation rejects both retired replies even when A reuses its owner object',async t=>{
+ const {window,document}=dom(t,'<p id="atlas-hint"></p><button id="atlas-region-retry"></button>'),reads=[],cancelled=[],errors=[],loads=[];
+ const a={token:'a'},b={token:'b'},root=document.createElement('section'),canvas=document.createElement('canvas');
+ const host={owner:a,root,canvas,hitVersion:0,hitDialog:{close(){}},landscape:{load:async()=>loads.push('load')},
+  journey:{travelReadState:'ready',previewRequest:0,localPreview:null,playback:{stop(){}},renderTravel(){}},
+  render(){},error:e=>errors.push(e),opts:{status(){}}};
+ window.campaign={cancelAtlasRegion:token=>cancelled.push(token),atlasRegion:token=>{const read=deferred();reads.push({...read,token});return read.promise;}};
+ const regions=new AtlasRegions(host),q={box:{x:0,y:0,width:10,height:10},width:100,height:100,scopeId:null,floorId:'ground',terrainRaster:false};
+ regions.regionQuery=()=>q;
+ const first=regions.refresh();regions.cancel();host.owner=b;
+ const second=regions.refresh();regions.cancel();host.owner=a;
+ const current=regions.refresh(),request=regions.request;
+ const reply=revision=>({ok:true,value:{workspace:{rooms:[]},geometry:{drawing:{elements:[],hiddenRooms:[]}},region:{revision,coverage:{mode:'detail',unreadable:0}}}});
+ reads[0].resolve(reply(1));await first;reads[1].resolve(reply(2));await second;
+ assert.deepEqual(reads.map(r=>r.token),['a','b','a']);assert.deepEqual(cancelled,['a','b']);
+ assert.equal(regions.data,null);assert.equal(regions.regionReading,request);assert.equal(root.dataset.regionState,'loading');assert.deepEqual(loads,[]);
+ reads[2].resolve(reply(9));await current;
+ assert.equal(regions.data.region.revision,9);assert.equal(canvas.dataset.atlasRegionRevision,'9');
+ assert.equal(root.dataset.regionState,'ready');assert.equal(regions.regionReading,null);assert.deepEqual(loads,['load']);assert.deepEqual(errors,[]);
 });
 
 test('an old route completion and close cannot clear the next route session or preview',async t=>{

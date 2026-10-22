@@ -167,7 +167,7 @@ export function installLandscape(db: any) {
 }
 const attemptedIndexes=new WeakSet<object>();
 /** Rebuildable connection-local index; never exported or captured in author history. */
-export function installLandscapeIndex(db: any) {
+function installLandscapeIndex(db: any) {
   attemptedIndexes.add(db);
   // Separate point/line/image candidates keep a world overview from scanning
   // every fine patch just to exclude it before requesting its display raster.

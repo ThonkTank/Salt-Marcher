@@ -13,7 +13,6 @@ import {bounds,type LandscapeBox,type LandscapeRecord} from './atlas-landscape';
 import type { Polygon } from './contracts';
 import { terrainColors } from './world-model';
 
-export const UNPAINTED_LAND = [238, 229, 207] as const;
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
 export const LANDSCAPE_RASTER_PAD = 16;
 export function landscapeRasterBounds(box:LandscapeBox,width:number,height:number):LandscapeBox {

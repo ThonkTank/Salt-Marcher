@@ -9,16 +9,10 @@ import type {
 } from "./campaign-atlas-contracts";
 const pending = new Map<string, AtlasCommand>();
 export const pendingAtlasWrite = (token: string) => pending.get(token) ?? null;
-export async function recoverAtlasWrite(token: string) {
-  const c = pending.get(token);
-  if (!c) return null;
-  return writeAtlas(c, true);
-}
-export async function writeAtlas(
+async function writeAtlas(
   c: AtlasCommand,
-  recovery = false,
 ): Promise<Result<{ atlas: CampaignAtlas; result: unknown }>> {
-  if (pending.has(c.token) && !recovery)
+  if (pending.has(c.token))
     return {
       ok: false,
       error:

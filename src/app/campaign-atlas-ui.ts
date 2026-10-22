@@ -6,15 +6,14 @@ import {AtlasRegions} from './atlas-regions';
 import {AtlasJourney} from './atlas-journey';
 import {AtlasOutput} from './atlas-output';
 
-import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
+import type {AtlasWorkplane} from './atlas-workplane';
 
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
 import {TerrainPresentation,interactiveTerrainFrame,type TerrainIdentity} from './terrain-presentation';
 import {terrainTraceStart} from './terrain-timing';
 import {BrushSizeControl} from './atlas-brush-size';
-import {posedFootprint} from './city-model';
 import {chooseRoomGroup} from './room-group-ui';
-import {MapLabelLayout,measureMapText,paintMapLabels,drawTerritories} from './atlas-cartography';
+import {MapLabelLayout} from './atlas-cartography';
 import {TerritoryWorkbench} from './atlas-territories-ui';
 import {TerrainSpatialUI} from './terrain-spatial-ui';
 
@@ -32,13 +31,12 @@ import {LiveAtlasPortal} from './live-atlas-portal';
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
 import {earthView} from "./atlas-landscape";
 
-import { atlasPartyPoint,atlasWorldRoute } from "./atlas-runtime-model";
+import { atlasPartyPoint } from "./atlas-runtime-model";
 
-import {openWorld,atlasWorldTravelState} from "./world-ui";
+import {openWorld} from "./world-ui";
 
 import {AtlasCanvas} from "./atlas-canvas";
-import {atlasPaint} from "./atlas-canvas-scene";
-import {atlasFrame,localToAtlas,atlasToLocal,frameMatrix,atlasHexPoint} from "./campaign-atlas-model";
+import {atlasFrame,localToAtlas,atlasToLocal} from "./campaign-atlas-model";
 import {
   writeAtlasCommit,
   pendingAtlasWrite,
@@ -47,15 +45,13 @@ import {
 import type {AtlasRenderView,AtlasAction} from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
-import { cityObjectsPaint, roadPoints } from "./city-model";
 
 import {nearestAnchor} from "./drawing-model";
 import {atlasCityState,atlasCityUndoPoint,openCityReference} from "./city-ui";
-import {atlasDrawingSnapPoint,selectedDrawingElementId,atlasDrawingDraft,atlasDrawingHasDraft,atlasDrawingUndoPoint,reloadDrawing} from "./drawing-ui";
-import {atlasDungeonState,openDungeon,stopDungeonPlayback} from "./dungeon-ui";
+import {selectedDrawingElementId,atlasDrawingDraft,atlasDrawingHasDraft,atlasDrawingUndoPoint,reloadDrawing} from "./drawing-ui";
+import {openDungeon,stopDungeonPlayback} from "./dungeon-ui";
 
 
-const shape = atlasPaint;
 export class CampaignAtlasWorkbench {
   private output: AtlasOutput = this.createAtlasOutput();
   private createAtlasOutput(): AtlasOutput {
@@ -129,6 +125,10 @@ export class CampaignAtlasWorkbench {
   private createAtlasDrawing(): AtlasDrawing {
       const source = this;
       return new AtlasDrawing({
+          get drag() { return source.author.drag; },
+          get territories() { return source.territories; },
+          get journey() { return source.journey; },
+          scheduleRender: () => this.scheduleRender(),
           get regions() { return source.regions; },
           get output() { return source.output; },
           get landscape() { return source.landscape; },
@@ -1342,207 +1342,6 @@ export class CampaignAtlasWorkbench {
     // Keep the last confirmed scene intact while a new filter/source is loading.
     // In particular, never interpret old contours under new floor/roof/slice controls.
     if(!this.regions.geometryCurrent()&&!(preview&&this.regions.geometryCoversView())){this.camera.redrawOverlay();return;}
-    this.camera.render((root) => {
-      this.drawing.drawTerrain(root, box, mpp);
-      this.landscape.draw(root,box,mpp);
-      const draft=this.opts.roomDraft(),cacheable=!this.author.drag&&!atlasCityState()&&!atlasDungeonState().preview&&!get<HTMLInputElement>('atlas-perception').checked;
-      const key=[data,this.scopeId,this.floorId,this.family,this.author.selection?.kind,this.author.selection?.id,get<HTMLInputElement>('atlas-roofs').checked,get<HTMLInputElement>('atlas-slice-enabled').checked,atlasFieldValue(get<HTMLInputElement>('atlas-slice')),get<HTMLInputElement>('atlas-perception').checked,mpp,draft?.id,draft?.name,draft?.number,draft?.polygons];
-      let base=this.drawing.baseGeometry;
-      if(!cacheable||!base||!base.key.every((v,i)=>v===key[i])){
-        const root=shape('group',{retainGeometry:true,data:{mapScene:'true'}});
-      for (const citySaved of data.cities) {
-        const binding = data.bindings.find(
-          (b) => b.kind === "city" && b.ownerId === citySaved.header.id,
-        );
-        if (!binding) continue;
-        const preview = atlasCityState(),
-          city =
-            preview?.view.header.id === citySaved.header.id &&
-            preview.view.header.revision >= citySaved.header.revision
-              ? preview.view
-              : citySaved,
-          f = atlasFrame(data, binding),
-          g = shape("group", {matrix: frameMatrix(this.drawing.relative(f))});
-        let shownCity = city;
-        if (
-          this.author.drag?.selection?.kind === "building" &&
-          this.author.drag.selection.cityId === city.header.id
-        ) {
-          const drag = this.author.drag,
-            a = atlasToLocal(drag.start, f),
-            b = atlasToLocal(drag.last, f);
-          shownCity = {
-            ...city,
-            units: city.units.map((u) =>
-              u.id === drag.selection!.id && u.position
-                ? {
-                    ...u,
-                    position: {
-                      x: u.position.x + b.x - a.x,
-                      y: u.position.y + b.y - a.y,
-                    },
-                  }
-                : u,
-            ),
-          };
-        }
-        const coverage=data.region?.box??box;
-        const corners = [
-            { x: coverage.x, y: coverage.y },
-            { x: coverage.x + coverage.width, y: coverage.y },
-            { x: coverage.x, y: coverage.y + coverage.height },
-            { x: coverage.x + coverage.width, y: coverage.y + coverage.height },
-          ].map((p) => atlasToLocal(p, f)),
-          xmin = Math.min(...corners.map((p) => p.x)),
-          xmax = Math.max(...corners.map((p) => p.x)),
-          ymin = Math.min(...corners.map((p) => p.y)),
-          ymax = Math.max(...corners.map((p) => p.y));
-        const visibleUnits = shownCity.units.filter((u) => {
-          if (u.kind === "node") return true;
-          const pts =
-            u.kind === "building"
-              ? posedFootprint(u).flatMap(p=>p.outer)
-              : ["road", "wall"].includes(u.kind)
-                ? roadPoints(u, shownCity.units)
-                : (u.outline ?? []);
-          if (
-            u.kind === "building" &&
-            pts.length &&
-            Math.max(
-              Math.max(...pts.map((p) => p.x)) -
-                Math.min(...pts.map((p) => p.x)),
-              Math.max(...pts.map((p) => p.y)) -
-                Math.min(...pts.map((p) => p.y)),
-            ) <
-              mpp * 2
-          )
-            return false;
-          return (
-            pts.length &&
-            Math.max(...pts.map((p) => p.x)) >= xmin &&
-            Math.min(...pts.map((p) => p.x)) <= xmax &&
-            Math.max(...pts.map((p) => p.y)) >= ymin &&
-            Math.min(...pts.map((p) => p.y)) <= ymax
-          );
-        });
-        const cityScene = cityObjectsPaint({ ...shownCity, units: visibleUnits }, false,mpp);
-        for (const c of cityScene.children) {
-          const uid = c.data.cityUnit,
-            interior = data.bindings.find(
-              (b) => b.parent === "building" && b.parentId === uid,
-            )??(uid&&regionValue(data.region?.interiors,uid)?{ownerId:regionValue(data.region?.interiors,uid)!}:null);
-          if (
-            interior &&
-            (!get<HTMLInputElement>("atlas-roofs").checked ||
-              mpp <= 0.4 ||
-              interior.ownerId === this.scopeId)
-          ) {
-            for (const p of c.children.filter(child => ["polygon","polygons"].includes(child.kind))) {
-              p.style.fill=null;
-              p.style.stroke="#624337";
-              p.style.lineWidth=Math.max(.15,mpp);
-              if (
-                interior.ownerId === this.scopeId &&
-                this.floorId !== "ground"
-              )
-                p.geometry.hidden=true;
-            }
-          }
-          for (const text of [
-            c,
-            ...c.children.filter(child => child.kind === "text"),
-          ].filter((n) => n.kind === "text"))
-            text.style.fontSize=Math.min(text.style.fontSize??6,12*mpp);
-          g.append(c);
-        }
-        for (const u of visibleUnits
-          .filter((u) => u.kind !== "node")
-          .sort(
-            (a, b) =>
-              Number(a.kind === "building") - Number(b.kind === "building"),
-          )) {
-          const line = ["road", "wall"].includes(u.kind),
-            points =
-              u.kind === "building"
-                ? posedFootprint(u).flatMap(p=>p.outer)
-                : line
-                  ? roadPoints(u, shownCity.units)
-                  : (u.outline ?? []),
-            path = shape(line ? "polyline" : u.kind==='building'?"polygons":"polygon", {
-              ...(u.kind==='building'?{polygons:posedFootprint(u)}:{points}),style:{fill:line?null:"transparent",stroke:this.author.selection?.id===u.id?"#b85525":"transparent",lineWidth:line?Math.max(u.width??6,mpp*8):2*mpp},
-            });
-          path.data.atlasObject = "true";
-          path.data.kind = u.kind === "building" ? "building" : "city-unit";
-          path.data.id = u.id;
-          path.data.cityId = city.header.id;
-          g.append(path);
-        }
-        if (preview?.view.header.id === city.header.id && preview.path.length)
-          g.append(
-            shape("polyline", {points:preview.path, style: {fill: null, stroke: "#c65d28", lineWidth: 2 * mpp}}),
-          );
-        root.append(g);
-      }
-      for (const binding of data.bindings.filter((b) => b.kind === "dungeon"))
-        if(!data.region?.raster)this.drawing.drawInterior(root, binding, box, mpp);
-      if(data.region?.raster){const r=data.region.raster;const image=shape("image", {x: r.box.x-box.x, y: r.box.y-box.y, width: r.box.width, height: r.box.height, source: r.data});image.geometry.pointer=false;root.append(image);for(const b of data.bindings.filter(b=>b.kind==='dungeon')){const floor=data.geometry.position?.scopeId===b.ownerId?data.geometry.position.floorId:b.ownerId===this.scopeId?this.floorId:'ground',g=shape("group", {matrix: frameMatrix(this.drawing.relative(atlasFrame(data,b)))});this.drawing.drawInteriorRuntime(g,b,floor,mpp,[]);root.append(g);}}
-        base={key,node:root,origin:{x:box.x,y:box.y},authorSlot:this.drawing.authorFaceSlot(root)};
-        this.drawing.baseGeometry=cacheable?base:null;
-      }
-      const retained=shape('group',{matrix:[1,0,0,1,base.origin.x-box.x,base.origin.y-box.y],data:{atlasBase:'true'}});
-      retained.append(base.authorSlot?this.drawing.withAuthorFace(base.node,base.authorSlot,mpp):base.node);root.append(retained);
-      if (this.author.roomDrag?.moved) {
-        const f=this.frame(this.author.roomDrag.scopeId),a=atlasDrawingSnapPoint(atlasToLocal(this.author.roomDrag.start,f)),b=atlasDrawingSnapPoint(atlasToLocal(this.author.roomDrag.last,f));
-        root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.drawing.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true",...atlasWorkplaneData(this.floorPlane(this.author.roomDrag.scopeId))}}));
-      }
-      if (this.author.draft.length && this.scopeId) {
-        const f = this.frame(this.scopeId),
-          p = localToAtlas(this.author.draft[0]!, f);
-        root.append(
-          shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"},data:atlasWorkplaneData(this.floorPlane())}),
-        );
-      }
-
-      if(!get<HTMLInputElement>('atlas-perception').checked){const raster=data.region?.territoryRaster;if(raster)root.append(shape('image',{source:raster.data,x:raster.box.x-box.x,y:raster.box.y-box.y,width:raster.box.width,height:raster.box.height,pointer:false}));const state=data.region?.territories;if(state)drawTerritories(root,state,box,mpp);const candidates=[...(data.region?.labels??[]),...(data.region?.landscape?.labels??[])];const selected=this.territories.selectedLabel??this.landscape.selectedLabel??(this.author.selection?(['building','city-unit'].includes(this.author.selection.kind)?'unit':this.author.selection.kind)+':'+this.author.selection.id:undefined);paintMapLabels(root,this.drawing.labelLayout.layout(candidates,box,mpp,measureMapText,selected, !this.spatial?.active&&!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),box,mpp,{candidates,selected});if(this.drawing.labelLayout.animating)this.scheduleRender();}
-      if(!this.output.exportOpen){this.drawing.drawInteriorAuthor(root,mpp);this.territories.draw(root,box,mpp);}
-      if(this.output.exportOpen){
-        const b=this.output.exportDrag?.moved?this.output.exportRectangle(this.output.exportDrag.start,this.output.exportDrag.last):this.output.exportDungeon?this.output.dungeonOutputBox():this.output.exportBox;
-        if(b)root.append(shape('rect',{x:b.x-box.x,y:b.y-box.y,width:b.width,height:b.height,pointer:false,style:{fill:null,stroke:'#a84720',lineWidth:2*mpp,lineDash:[8*mpp,5*mpp]},data:{editorOnly:'true'}}));
-      }
-      const travel = atlasWorldTravelState(),
-        route = atlasWorldRoute(data,travel.preview);
-      if (route.length)
-        root.append(
-          shape("polyline", {points: route
-              .map((p) => {
-                const h = atlasHexPoint(p.q, p.r, data.terrain.hexMeters);
-                return {x:h.x-box.x,y:h.y-box.y};
-              }), style: {fill: null, stroke: "#be5939", lineWidth: mpp * 3}}),
-        );
-      for (const e of data.entrances) {
-        const binding = data.bindings.find(
-          (b) => b.kind === "dungeon" && b.ownerId === e.scopeId,
-        );
-        if (!binding) continue;
-        const f = atlasFrame(data, binding),
-          out = localToAtlas(e.outside, f),
-          at = localToAtlas(e.inside, f);
-        root.append(
-          shape("line", {x: out.x - box.x, y: out.y - box.y, x2: at.x - box.x, y2: at.y - box.y, style: {stroke: "#27635a", lineWidth: mpp * 2}}),
-        );
-        const marker = shape("circle", {x: out.x - box.x, y: out.y - box.y, radius: mpp * 5, style: {fill: "#39766a", stroke: "white", lineWidth: mpp}});
-        marker.data.atlasObject = "true";
-        marker.data.kind = "entrance";
-        marker.data.id = e.id;
-        root.append(marker);
-      }
-      const localRoute = this.journey.localPreview?.route ?? (data.localJourney&&['active','paused'].includes(data.localJourney.status)?data.localJourney.route:[]);
-      if (localRoute?.length)
-        root.append(
-          shape("polyline", {points: localRoute
-              .map(p=>({x:p.x-box.x,y:p.y-box.y})), style: {fill: null, stroke: "#b05d32", lineWidth: mpp * 2}}),
-        );
-      this.drawing.drawParty(root, mpp);
-    });
+    this.camera.render(root => this.drawing.draw(root, data, box, mpp));
   }
 }
