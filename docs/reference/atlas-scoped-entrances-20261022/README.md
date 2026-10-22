@@ -40,6 +40,12 @@ Raumgruppenbindung einer innen stehenden Party bleibt vor der Eingangsprojektion
 erhalten. Dadurch funktionieren sowohl der ausdrücklich ausgewählte Eingang
 außerhalb des Ausschnitts als auch das Verlassen eines Innenraums.
 
+Das Eingangsauswahlfeld wird während einer laufenden oder fehlgeschlagenen
+Kontextabfrage direkt deaktiviert. Im Spielabend liegt es außerhalb seines
+ursprünglichen gesperrten Containers; die neue Antwort darf deshalb nicht mit
+einer inzwischen geänderten Eingangsauswahl ankommen. Die native Probe hält eine
+echte Main-Antwort zurück und prüft die Sperre an zwei verfügbaren Eingängen.
+
 Kanonische Reisebefehle, vollständige Fachansichten und deren Prüfsummenprüfung
 verwenden weiterhin `atlasEntrances`. Eine beschädigte ausgewählte Zeile wird
 auch im begrenzten Leser abgewiesen. Gelöschte Auswahlen liefern keinen Eingang.
@@ -118,6 +124,15 @@ Der normale Fensterabschluss und der frische gespeicherte Außenstand sind im
 Ergebnis enthalten. 84 betroffene Node-Tests, beide Typprüfungen, Desktopbuild
 und Repositoryprüfung bestanden; die ergänzte Eingangsvalidierung wurde separat
 über den bestehenden Worker-Lebenszyklustest ausgeführt.
+Nach der zusätzlichen Auswahlsperre wurden die 19 Reisekontexttests, die
+Renderer-Typprüfung, der Desktopbuild und der native Reiseablauf erneut ausgeführt.
+Die Größen-/Leistungstabellen stammen vom Stand vor dieser zusätzlichen
+Bedienelementsperre; die Rohdaten enthalten die jeweiligen Artefakthashes.
+Ein [erster Versuch der verzögerten Probe](travel-probe-early-assertion.json)
+prüfte schon beim Kamerahinweis „loading“, noch vor dem verzögert gestarteten
+Kontextauftrag. Die korrigierte Probe wartet zuerst auf die tatsächlich gehaltene
+Main-Antwort und prüft dann das Auswahlfeld. Der fehlgeschlagene Lauf zählt nicht
+als normale native Fertigstellung; sein Prozess wurde vor dem nächsten Lauf beendet.
 
 ```sh
 node build.mjs --test

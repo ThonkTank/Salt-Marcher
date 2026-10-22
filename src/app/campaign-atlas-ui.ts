@@ -1907,6 +1907,8 @@ export class CampaignAtlasWorkbench {
     const tools=document.getElementById("atlas-workspace-tools");if(tools)tools.inert=this.family==="travel"&&locked;
     get("atlas-local-refresh").hidden = this.travelReadState !== "failed";
     get<HTMLButtonElement>("atlas-local-refresh").disabled = this.busy;
+    // The live surface moves these controls outside atlas-context-fields.
+    get<HTMLSelectElement>("atlas-entrance-choice").disabled = locked;
     for (const kind of ["preview", "place", "entrance", "start", "step", "round", "play", "pause", "end"])
       get<HTMLButtonElement>("atlas-local-" + kind).disabled = locked;
     if (unavailable) setText("atlas-local-status",unavailable);
