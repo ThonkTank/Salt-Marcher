@@ -282,7 +282,7 @@ Abnahme einer tatsächlich spielbaren, ansprechenden Fantasykarte.
 [Autorenreise vom 22.10.2026](../../reference/atlas-world-authoring-20261022/README.md):
 Kontinente, Relief, Wald und unabhängiges Königreich bis zu Straßen, sechs
 Gebäuden und frischer Raumwiederöffnung. Die Sichtprüfung hält glatte Küsten,
-schematisches Relief, verdeckende Bäume und den teilweise verdeckten Raumfokus
+schematisches Relief, verdeckende Bäume und fehlende gestalterische Detailhierarchie
 als offene Arbeit fest. Ein zwischenzeitlich verlorener Erzeugungsklick bleibt
 unaufgeklärt; ein später erfolgreicher Durchlauf gilt nicht als Fehlerbehebung.
 

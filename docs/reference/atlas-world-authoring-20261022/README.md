@@ -70,9 +70,11 @@ noch wie einfarbige Bänder, Hausansichten zeigen bereits sehr viele Innenwände
 
 ![Raum mit verdeckender Baumkrone](room-before-clearing.png)
 
-Weitere konkrete Befunde: Raumfokus wird teilweise vom rechten Inspektor
-verdeckt, die Gebäudeansicht braucht eine klarere Detailhierarchie, Raum- und
-Eingangsmarker sollten die Karte weniger dominieren. Bäume in Nähe eines
+Weitere konkrete Befunde: Der ausgewählte Raum liegt sichtbar in der freien
+Kartenmitte; angrenzende Teile der Raumgruppe reichen hinter den rechten
+Inspektor. Eine vollständige Gebäudeübersicht wurde damit nicht geprüft. Die
+Gebäudeansicht braucht eine klarere Detailhierarchie; Raum- und Eingangsmarker
+sollten die Karte weniger dominieren. Bäume in Nähe eines
 Innenraums brauchen eine verständliche Sicht-/Bearbeitungslösung. Das manuelle
 Freihalten ersetzt diese Produktentscheidung nicht. Neue Terrainfeatures,
 Gewässer, alle Geländearten, Hierarchieebenen und die vollständige große
