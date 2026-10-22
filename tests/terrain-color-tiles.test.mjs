@@ -10,7 +10,7 @@ const drain=g=>{for(;;){const r=g.next();if(r.done)return r.value;}};
 const identity={revision:1,fence:'one'},query={...identity,routeContext:{x:-1024,y:-1024,width:2048,height:2048},contours:0};
 const colour=q=>({...q,pixels:new Uint8Array(q.width*q.height*4).fill(255)});
 test('colour preserves bounded cubic terrain, narrow coast ink and density-aware contours in all three styles',()=>{
- const golden=JSON.parse(readFileSync(new URL('./fixtures/terrain-coast-goldens.json',import.meta.url),'utf8'));
+ const golden=JSON.parse(readFileSync(new URL('./fixtures/terrain-scale-contour-goldens.json',import.meta.url),'utf8'));
  const {settingsRecord}=createRequire(import.meta.url)('../.build/terrain-color-tiles-test.cjs'),records=[];
  for(let y=-1;y<=0;y++)for(let x=-1;x<=0;x++)records.push(heightRecord(x*1024,y*1024,16,Float32Array.from({length:4096},(_,i)=>80*Math.sin((x*1024+i%64*16)/150)+30*Math.cos((y*1024+Math.floor(i/64)*16)/75))));
  for(const {mode,contours,mpp,sha256}of golden.cases){
@@ -33,7 +33,7 @@ test('world tiles are bounded and aligned across portrait, negative origins and 
 test('independently rendered neighbouring tiles equal the complete projection including their shared edge',()=>{
  const records=[heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>40+20*Math.sin(i%64/7)*Math.cos(Math.floor(i/64)/9)))],cover={...emptyRecord('vegetation'),id:'forest',vegetation:vegetationSpec(),values:{terrain:'forest'},polygons:[{outer:[{x:80,y:90},{x:530,y:75},{x:550,y:300},{x:100,y:290}],holes:[[{x:280,y:150},{x:370,y:160},{x:350,y:220},{x:270,y:230}]]}]},stream=kind=>kind==='height'?records:kind==='cover'?[cover]:[];
  const db={prepare(){return {get(){}};}},source={campaignId:'test',...identity},box={x:64,y:64,width:512,height:256},view={box,frame:box,columns:33,rows:33,focusM:0,tilt:45,rotation:0,exaggeration:1};
- for(const contours of [0,10]){
+ for(const contours of [0,-1,10]){
   const expected=readTerrainProjection(db,source,{view,width:512,height:256,contours,displayMpp:1,revision:1},stream,new TerrainProjectionCache()),assembled=new Uint8Array(expected.pixels.length),forest=new Uint8Array(expected.forest.length);
   for(let x=0;x<2;x++){
    const q={...query,box:{...box,x:box.x+x*256,width:256},routeContext:box,width:256,height:256,displayMpp:1,contours},value=drain(readTerrainColorSteps(db,source,q,stream,new TerrainProjectionCache()));

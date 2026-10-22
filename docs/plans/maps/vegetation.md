@@ -55,7 +55,7 @@ Fachgrenzen frei wählbar, beispielsweise eine Baumdichte von `0,33`.
 | Landschaft malen | Ein gedrückter Pinselzug speichert eine Fläche als einen Undo-Schritt. |
 | Landschaft umgrenzen | Eckpunkte anklicken und den Punktzug abschließen. |
 | Hecke / Baumreihe | Verlauf zeichnen; natürlicher Saum oder regelmäßige Reihe mit Meterabstand. |
-| Freihalten | Automatische Objekte dauerhaft im bemalten Bereich unterdrücken. Der Boden bleibt erhalten. |
+| Gelände radieren | Entfernt Geländeauftrag einschließlich Boden und zugehörigem Bewuchs. Keine dauerhafte Freihaltefläche; erneutes Malen funktioniert dort normal. Höhen, Straßen und Gebäude bleiben unabhängig. |
 | Ausdünnen / Verdichten | Lokale Dichtekorrektur, ohne den restlichen Bestand neu zu würfeln. |
 | Einzelbaum / Felsen | Innerhalb einer Landschaftsfläche ein geschütztes Objekt setzen und abschließen. |
 | Bewuchs auswählen | Baum oder Felsen anklicken; Typ, X/Y, Größe und Drehung ändern, entfernen oder Einzelkorrektur zurücksetzen. Der Typfilter erreicht Felsen oder Unterwuchs auch unter Baumkronen. |

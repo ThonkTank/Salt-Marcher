@@ -6,7 +6,7 @@ export function buildContourProbe(){
   return buildSync({stdin:{resolveDir:process.cwd(),contents:`
     import * as THREE from 'three';
     import {terrainContourMaterial,terrainContourUniforms} from './src/app/terrain-contours';
-    import {terrainContourInk} from './src/app/terrain-contour-style';
+    import {terrainContourInk,terrainContourStep} from './src/app/terrain-contour-style';
     export function run(){
       const canvas=document.createElement('canvas'),renderer=new THREE.WebGLRenderer({canvas,antialias:false,preserveDrawingBuffer:true});
       renderer.setPixelRatio(1);renderer.setSize(512,512);renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -20,7 +20,7 @@ export function buildContourProbe(){
       const gl=renderer.getContext(),pixels=new Uint8Array(512*4);
       const row=(width,interval)=>{
         camera.left=-width/2;camera.right=width/2;camera.top=width/2;camera.bottom=-width/2;camera.updateProjectionMatrix();
-        uniforms.terrainContourInterval.value=interval;uniforms.terrainContourAutomaticStep.value=width/512*24;renderer.render(scene,camera);gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+        uniforms.terrainContourInterval.value=interval;uniforms.terrainContourAutomaticStep.value=terrainContourStep(width/512);renderer.render(scene,camera);gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
         if(gl.getError()!==gl.NO_ERROR)throw Error('Contour GPU read failed');
         return Array.from({length:512},(_,i)=>pixels[i*4]);
       };
@@ -33,7 +33,7 @@ export function buildContourProbe(){
         const automatic=[.25,4,64,1000].map(width=>{
           const colors=row(width,-1),gradient=width/512;
           const expected=colors.map((_,i)=>{
-            const ink=terrainContourInk(((i+.5)/512-.5)*width,gradient,-1,-10000);
+            const ink=terrainContourInk(((i+.5)/512-.5)*width,gradient,-1,-10000,1,terrainContourStep(width/512));
             return Math.round(new THREE.Color(1-ink,1-ink,1-ink).convertLinearToSRGB().r*255);
           });
           return {width,inkPixels:colors.filter(v=>v<250).length,maxError:Math.max(...colors.map((v,i)=>Math.abs(v-expected[i])))};
@@ -42,10 +42,10 @@ export function buildContourProbe(){
         for(const ratio of [1,1.5,2])for(const width of [250,1000]){
           renderer.setPixelRatio(ratio);renderer.setSize(512,512);uniforms.terrainContourPixelRatio.value=ratio;
           camera.left=-width/2;camera.right=width/2;camera.top=width/2;camera.bottom=-width/2;camera.updateProjectionMatrix();
-          uniforms.terrainContourAutomaticStep.value=width/512*24;
+          uniforms.terrainContourAutomaticStep.value=terrainContourStep(width/512);
           renderer.render(scene,camera);const size=512*ratio,values=new Uint8Array(size*4);gl.readPixels(0,size/2,size,1,gl.RGBA,gl.UNSIGNED_BYTE,values);
           let maxError=0;for(let i=0;i<size;i++){
-            const ink=terrainContourInk(((i+.5)/size-.5)*width,width/size,-1,-10000,ratio),expected=Math.round(new THREE.Color(1-ink,1-ink,1-ink).convertLinearToSRGB().r*255);
+            const ink=terrainContourInk(((i+.5)/size-.5)*width,width/size,-1,-10000,ratio,terrainContourStep(width/512)),expected=Math.round(new THREE.Color(1-ink,1-ink,1-ink).convertLinearToSRGB().r*255);
             maxError=Math.max(maxError,Math.abs(values[i*4]-expected));
           }
           highDpi.push({ratio,width,maxError});
@@ -66,7 +66,15 @@ export function buildContourProbe(){
         varying.setAttribute('terrainElevation',new THREE.BufferAttribute(Float32Array.from({length:position.count},(_,i)=>144+position.getY(i)*(.05+1.35*(position.getX(i)+500)/1000)),1));
         scene.children[0].geometry=varying;uniforms.terrainContourAutomaticStep.value=16;uniforms.terrainContourInterval.value=-1;renderer.render(scene,camera);
         gl.readPixels(0,256,512,1,gl.RGBA,gl.UNSIGNED_BYTE,pixels);const continuousMax=Math.max(...Array.from({length:508},(_,i)=>pixels[(i+2)*4]));varying.dispose();scene.children[0].geometry=geometry;
-        return {measurements,automatic,highDpi,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum,continuousMax};
+        // World-sized terrain with only 1 km of relief must retain contour
+        // feedback. The uncapped scale rule produced no ink even after editing.
+        const world=new THREE.PlaneGeometry(1e7,1e7,1,1),wp=world.attributes.position;
+        const wh=Float32Array.from({length:wp.count},(_,i)=>200+(wp.getX(i)+5e6)/10000);
+        world.setAttribute('terrainElevation',new THREE.BufferAttribute(wh,1));scene.children[0].geometry=world;
+        const before=row(1e7,-1);wh.forEach((v,i)=>wh[i]=v+8);world.attributes.terrainElevation.needsUpdate=true;
+        const after=row(1e7,-1),worldInk=before.filter(v=>v<245).length,worldChanged=before.filter((v,i)=>Math.abs(v-after[i])>6).length;
+        world.dispose();scene.children[0].geometry=geometry;
+        return {measurements,automatic,highDpi,tileError,disabledMin,denseMin,seaMinimum,automaticSeaMinimum,continuousMax,worldInk,worldChanged};
       }finally{geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();}
     }
   `},bundle:true,format:'iife',globalName:'ContourPixelProbe',write:false}).outputFiles[0].text;
@@ -80,5 +88,7 @@ export async function terrainContourPixels(page,source=buildContourProbe()){
   for(const m of result.highDpi)assert(m.maxError<=2,JSON.stringify(m));
   assert(result.tileError<=1,'export tiles must preserve the full-image intervals and blending');assert.equal(result.automaticSeaMinimum,255);
   assert(result.continuousMax<250,'the same 144 m contour must cross gentle and steep slopes without ending');
+  assert(result.worldInk>=6,'world relief retains fixed elevation contours');
+  assert(result.worldChanged>=6,'a small world-scale height edit must change contour pixels');
   return result;
 }

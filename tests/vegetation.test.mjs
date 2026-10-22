@@ -345,3 +345,28 @@ test('local vegetation reads global settings once in paint order without scannin
  db.prepare("DELETE FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NOT NULL").run(cam);
  assert(!readVegetationEnvironment(db,cam,box).records.some(r=>r.terrainSettings));
 });
+
+test('terrain eraser removes ground and vegetation, supports repaint and preserves independent objects through undo and reopen',t=>{
+ const f=setup(t),r=area();r.vegetation.overrides=[{id:'inside',x:0,y:0,asset:'oak',size:10,angle:0},{id:'outside',x:80,y:80,asset:'rock',size:4,angle:0}];f.save(r);
+ const road={...emptyRecord('road'),id:'independent-road',name:'Straße',points:[{x:-100,y:90},{x:100,y:90}],width:4};f.save(road);
+ const records=()=>f.store.landscapeRegion(f.token,box).records;
+ const before=records(),height=f.store.atlasHeight(f.token,{x:0,y:0}).heightM;
+ const action={kind:'landscape-vegetation-edit',mode:'erase',polygons:[rectangle(-40,-40,80,80)]};
+ f.write(action);const after=records(),wood=after.find(x=>x.id===r.id);
+ assert(!contains({x:0,y:0},wood.polygons));assert(contains({x:80,y:80},wood.polygons));
+ assert.notEqual(effectiveLandscape(after,{x:0,y:0}).terrain,'forest');
+ assert.deepEqual(wood.vegetation.edits,[]);assert.deepEqual(wood.vegetation.overrides,[r.vegetation.overrides[1]]);
+ assert.deepEqual(after.filter(x=>x.id!==r.id),before.filter(x=>x.id!==r.id));
+ assert.equal(f.store.atlasHeight(f.token,{x:0,y:0}).heightM,height);
+ f.write(action);assert.deepEqual(records(),after);
+ const payload=rs=>rs.map(({revision,...r})=>r);
+ f.write({kind:'undo'});assert.deepEqual(payload(records()),payload(before));
+ f.write({kind:'redo'});f.reopen();assert.deepEqual(payload(records()),payload(after));
+ const repaint=area('repaint');repaint.resolution=1;repaint.polygons=[rectangle(-40,-40,80,80)];f.save(repaint);
+ assert.equal(effectiveLandscape(records(),{x:0,y:0}).terrain,'forest');
+ assert(f.store.atlasVegetationScene(f.token,box,1).instances.some(i=>Math.abs(i.x)<40&&Math.abs(i.y)<40));
+ f.write({kind:'landscape-vegetation-edit',mode:'erase',polygons:[rectangle(-200,-200,400,400)]});
+ assert(!records().some(x=>x.vegetation));assert(records().some(x=>x.id===road.id));
+ f.write({kind:'undo'});assert.equal(records().filter(x=>x.vegetation).length,2);
+ assert.throws(()=>f.write({...action,polygons:[{outer:[{x:0,y:0},{x:1,y:1},{x:2,y:0}],holes:[[{x:NaN,y:0}]]}]}),/prüfen/);
+});

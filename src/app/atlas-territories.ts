@@ -141,6 +141,14 @@ export function polygonArea(polygons: Polygon[]): number {
     0,
   );
 }
+/** Normalization may reorder a ring. A fixed square-metre epsilon is smaller
+ * than one representable area step for continental polygons. Keep the existing
+ * small-shape tolerance and allow only floating-point roundoff at larger scales.
+ */
+function samePolygonArea(a:Polygon[],b:Polygon[]):boolean {
+  const first=polygonArea(a),second=polygonArea(b);
+  return Math.abs(first-second)<=Math.max(1e-5,16*Number.EPSILON*Math.max(first,second));
+}
 const text = (s: unknown) =>
   typeof s === "string" && s.trim().length > 0 && s.length <= 1000;
 const point = (p: Point) =>
@@ -214,7 +222,7 @@ export function validateTerritory(t: AtlasTerritory, state: TerritoryState) {
     );
   const normalized = unionPolygons(t.polygons, t.polygons);
   if (
-    Math.abs(polygonArea(normalized) - polygonArea(t.polygons)) > 1e-5 ||
+    !samePolygonArea(normalized,t.polygons) ||
     t.polygons.some((p) => polygonArea([p]) <= 1e-8)
   )
     throw Error("Regionsgrenze kreuzt sich oder umschließt keine Fläche.");
@@ -418,7 +426,7 @@ export function territoryVertex(
       // an ambiguous drag into a different region silently.
       const normalized = unionPolygons(polygons, polygons);
       if (
-        Math.abs(polygonArea(normalized) - polygonArea(polygons)) > 1e-5 ||
+        !samePolygonArea(normalized,polygons) ||
         polygons.some((p) => polygonArea([p]) <= 1e-8)
       )
         throw Error("Grenze kreuzt sich oder fällt zusammen.");
