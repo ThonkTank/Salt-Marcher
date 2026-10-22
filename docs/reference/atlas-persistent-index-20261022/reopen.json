@@ -1,0 +1,101 @@
+{
+  "runs": [
+    {
+      "label": "cold",
+      "firstTerrainMs": 5279.627587999999,
+      "regionReadyMs": 9939.584139999999,
+      "firstRegionState": "loading",
+      "state": {
+        "view": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "quality": "overview"
+      },
+      "files": [
+        {
+          "name": "88c8c0c1cea088b81c71aef6718d2e07b08ddcb203142937c9ffdf6a7c1b2b30.9a4599e9da613c4e4535de0f371ab03d39e55863a370d9f6d9c8e979ddf8c902.sqlite",
+          "bytes": 37822464,
+          "mtimeMs": 1792651804796.5715
+        },
+        {
+          "name": "88c8c0c1cea088b81c71aef6718d2e07b08ddcb203142937c9ffdf6a7c1b2b30.json",
+          "bytes": 323,
+          "mtimeMs": 1792651805000.8354
+        }
+      ]
+    },
+    {
+      "label": "reopened",
+      "firstTerrainMs": 3290.5114390000017,
+      "regionReadyMs": 4090.48315,
+      "firstRegionState": "loading",
+      "state": {
+        "view": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "quality": "overview"
+      },
+      "files": [
+        {
+          "name": "88c8c0c1cea088b81c71aef6718d2e07b08ddcb203142937c9ffdf6a7c1b2b30.9a4599e9da613c4e4535de0f371ab03d39e55863a370d9f6d9c8e979ddf8c902.sqlite",
+          "bytes": 37822464,
+          "mtimeMs": 1792651804796.5715
+        },
+        {
+          "name": "88c8c0c1cea088b81c71aef6718d2e07b08ddcb203142937c9ffdf6a7c1b2b30.json",
+          "bytes": 323,
+          "mtimeMs": 1792651805000.8354
+        }
+      ]
+    }
+  ],
+  "canonicalBefore": {
+    "sha256": "6f21949e12b5cf806f6319e0e751a5b876d4cba3dd131cb6befdb5889e99b202",
+    "atlas": {
+      "campaign_id": "3b14ffee-6cc7-4e40-8aca-f6eeb74b05a1",
+      "revision": 21
+    }
+  },
+  "canonicalAfter": {
+    "sha256": "6f21949e12b5cf806f6319e0e751a5b876d4cba3dd131cb6befdb5889e99b202",
+    "atlas": {
+      "campaign_id": "3b14ffee-6cc7-4e40-8aca-f6eeb74b05a1",
+      "revision": 21
+    }
+  },
+  "source": "d7b4750edea3e18836621fd813083ec5546ff35e",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-cache-reopen-TnPnYp",
+  "artifacts": {
+    "main.cjs": "cfaf373e8ed2695d7644fd8ded188f86fb98fdf145e1bc2648439ef739745eae",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "2081310320ff21a671026a14405ba22ff9cabacf9b71a6299c9881a5c060dd74",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "6348eb0b70a7f971e64ba140f564564db974b7eea815910aaee82785ae78fcd7",
+    "ui/renderer.js": "145ecae77eb72b6caf8b49617a9c56c2b8f64c3036ea72870aaf2ac1537df7fb",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3627439,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 3627704,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

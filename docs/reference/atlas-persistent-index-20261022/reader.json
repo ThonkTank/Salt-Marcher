@@ -1,0 +1,253 @@
+{
+  "bundleSha256": "c9f763ff2a73b4a230ea68418504a9b18974ba3cbb46f6ed2a66c1c9652cde41",
+  "equal": true,
+  "runs": [
+    {
+      "label": "uncached",
+      "openMs": 7.233155000000124,
+      "syncMs": 5547.447967,
+      "backupMs": 0.24338400000124238,
+      "projected": 64371,
+      "views": [
+        {
+          "name": "world",
+          "ms": 274.41997400000037,
+          "sha256": "ad07ab737538abad45111e0fb45d40a5362d3ead865ec6a03dc5624216e970f9",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 68.34765200000038,
+          "sha256": "1d6f63f4f8256ca606ce7bb5fd2dd2f12a672bb22e7a51cd1cb0ccd776084c18",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "neighborhood",
+          "ms": 2725.234047,
+          "sha256": "9bdb24b99650d3baaae89455c98f826898663073c1fb5d6bc84fd99cefddd532",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 11200,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 72.99536400000034,
+          "sha256": "af4f56ecf84984a51af0fd78c2b214d02fcf2de20bf5d18065d2ca511a3fe012",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 204.27380699999958,
+          "sha256": "da2fe742fddac9cf115dd8de452fab126100187d73a57dcabfad467e371aac4d",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    },
+    {
+      "label": "cold",
+      "openMs": 6.336069999999381,
+      "syncMs": 5845.485187,
+      "backupMs": 342.15288800000053,
+      "projected": 64371,
+      "views": [
+        {
+          "name": "world",
+          "ms": 268.92359000000215,
+          "sha256": "ad07ab737538abad45111e0fb45d40a5362d3ead865ec6a03dc5624216e970f9",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 57.78675199999998,
+          "sha256": "1d6f63f4f8256ca606ce7bb5fd2dd2f12a672bb22e7a51cd1cb0ccd776084c18",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "neighborhood",
+          "ms": 2699.883528999999,
+          "sha256": "9bdb24b99650d3baaae89455c98f826898663073c1fb5d6bc84fd99cefddd532",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 11200,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 120.07666900000186,
+          "sha256": "af4f56ecf84984a51af0fd78c2b214d02fcf2de20bf5d18065d2ca511a3fe012",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 204.62875200000053,
+          "sha256": "da2fe742fddac9cf115dd8de452fab126100187d73a57dcabfad467e371aac4d",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    },
+    {
+      "label": "reopened",
+      "openMs": 231.90662299999894,
+      "syncMs": 51.1119319999998,
+      "backupMs": 0.029994999997143168,
+      "projected": 0,
+      "views": [
+        {
+          "name": "world",
+          "ms": 284.81275200000164,
+          "sha256": "ad07ab737538abad45111e0fb45d40a5362d3ead865ec6a03dc5624216e970f9",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "region",
+          "ms": 38.35041199999978,
+          "sha256": "1d6f63f4f8256ca606ce7bb5fd2dd2f12a672bb22e7a51cd1cb0ccd776084c18",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "neighborhood",
+          "ms": 2482.994412,
+          "sha256": "9bdb24b99650d3baaae89455c98f826898663073c1fb5d6bc84fd99cefddd532",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 11200,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 0,
+          "elements": 0
+        },
+        {
+          "name": "building",
+          "ms": 57.2087649999994,
+          "sha256": "af4f56ecf84984a51af0fd78c2b214d02fcf2de20bf5d18065d2ca511a3fe012",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 45,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 9,
+          "elements": 36
+        },
+        {
+          "name": "dungeon",
+          "ms": 149.90405399999872,
+          "sha256": "da2fe742fddac9cf115dd8de452fab126100187d73a57dcabfad467e371aac4d",
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          },
+          "rooms": 98,
+          "elements": 0
+        }
+      ]
+    }
+  ],
+  "files": [
+    {
+      "name": "69432dd4c03f00ae5b6a09b07a6dc3f1f73584db44cda530a20cd41f501bbdbc.fbdee443bd038a40edad730b4addaaac955ea9edc13bbfc341b34e430cb7244e.sqlite",
+      "bytes": 28975104
+    },
+    {
+      "name": "69432dd4c03f00ae5b6a09b07a6dc3f1f73584db44cda530a20cd41f501bbdbc.json",
+      "bytes": 323
+    }
+  ]
+}

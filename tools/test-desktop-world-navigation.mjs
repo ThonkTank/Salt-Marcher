@@ -2,6 +2,7 @@
 import {buildDraftProbe,terrainDraftPixels} from './terrain-draft-probe.mjs';
 import {buildRenderReuseProbe,terrainRenderReusePixels} from './terrain-render-reuse-probe.mjs';
 import {terrainPixelReadbackPixels} from './terrain-pixel-readback-probe.mjs';
+import {waitForAtlasProjection} from './atlas-projection-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {setBrushWorldRadius} from './atlas-brush-probe.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
@@ -70,6 +71,13 @@ const renderReuseProbe=buildRenderReuseProbe();
 const responseProbe=readbackMode==='legacy'?null:require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {installTerrainResponseProbe} from './tools/terrain-pixel-readback.mjs';"},bundle:true,format:'iife',globalName:'TerrainResponseProbe',write:false}).outputFiles[0].text;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
+ if(process.env.WORLD_WARM_OPEN==='1'){
+  const warm=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
+  await warm.evaluate(id=>localStorage.setItem('atlas-camera:'+id,JSON.stringify({x:-20000000,y:-12500000,width:40000000,height:25000000})),campaign.id);
+  await warm.locator('.campaign-card').filter({hasText:'Sparse world navigation'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();
+  await atlasCanvasReady(warm);await waitForAtlasProjection(native.profile+'/atlas-region-cache');await native.close();
+  result.measurement.warmOpening=true;
+ }
  page=await native.launch();await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,900));
  if(process.env.SALTMARCHER_TERRAIN_TRACE==='1')await native.app.evaluate(()=>{
   const {Worker}=process.getBuiltinModule('node:worker_threads'),post=Worker.prototype.postMessage,seen=new WeakSet();global.__worldWorkerTrace=[];

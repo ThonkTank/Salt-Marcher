@@ -1,8 +1,8 @@
 import {AtlasGeometryRaster} from './atlas-geometry-raster';
 import {AtlasReadCancelled,atlasReadCheckpoint} from './atlas-read-cancellation';
 import {AtlasDeferredGeometry} from './atlas-deferred-geometry';
-import {atlasShapeSource} from './atlas-shape-source';
-import type {AtlasRegionCache} from './atlas-region-cache';
+import {atlasProjectionSource} from './atlas-shape-source';
+import {AtlasProjectionIndex} from './atlas-projection-index';
 import {mapExtentVisible} from '../atlas-scale-policy';
 import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerritories} from './atlas-territories';
@@ -64,25 +64,28 @@ export class AtlasRegionReader {
  private geometryChanges=new AtlasDeferredGeometry();
  private statements=new Map<string,any>();
  private landscape:AtlasLandscapeReader;
+ private projection:AtlasProjectionIndex;
  private landscapeFailure=false;
  private landscapeSyncChanged=true;
- private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(text);this.statements.set(text,s);}return s;}
+ private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(this.projection.readSql(text));this.statements.set(text,s);}return s;}
+ private meta(text:string){return this.projection.prepare(text);}
  private readFaults=0;private countFaults=true;private ready=false;private indexed=true;private campaign='';private count=0;
- constructor(private db:any,shadow?:{filename:string;scopeId:string},private cache?:AtlasRegionCache){
+ constructor(private db:any,shadow?:{filename:string;scopeId:string},projection?:AtlasProjectionIndex){
   if(!db.readonly)throw new Error('Atlasprojektion benötigt eine readonly Datenbank.');
-  db.pragma('cache_size = -8192');db.pragma('temp_store = FILE');db.pragma('temp.cache_size = -8192');
-  this.landscape=new AtlasLandscapeReader(db);
+  this.projection=projection??AtlasProjectionIndex.temporary(db);
+  this.landscape=new AtlasLandscapeReader(db,8*1024*1024,this.projection);
   if(shadow){
    db.prepare('ATTACH DATABASE ? AS graph_preview').run(shadow.filename);
    const scope="'"+shadow.scopeId.replaceAll("'","''")+"'";
    // Scope-only overlays preserve canonical City/world tables and other Dungeons.
    for(const table of ['room','drawing_element','drawing_profile','drawing_hidden','drawing_floor','dungeon_volume','dungeon_key_content'])db.exec(`CREATE TEMP VIEW ${table} AS SELECT rowid AS rowid,* FROM main.${table} WHERE scope_id<>${scope} UNION ALL SELECT (SELECT coalesce(max(rowid),0) FROM main.${table})+rowid AS rowid,* FROM graph_preview.${table}`);
   }
-  db.exec(`CREATE TEMP TABLE region_shape(key TEXT PRIMARY KEY,kind TEXT NOT NULL,owner TEXT NOT NULL,scope TEXT NOT NULL,floor TEXT NOT NULL,source_order INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL,paint_order INTEGER NOT NULL);
+  if(this.projection.init(`CREATE TEMP TABLE region_shape(key TEXT PRIMARY KEY,kind TEXT NOT NULL,owner TEXT NOT NULL,scope TEXT NOT NULL,floor TEXT NOT NULL,source_order INTEGER NOT NULL,min_x REAL,max_x REAL,min_y REAL,max_y REAL,paint_order INTEGER NOT NULL);
    CREATE INDEX temp.region_shape_owner ON region_shape(kind,owner,scope,floor);
    CREATE TEMP TABLE region_problem(key TEXT PRIMARY KEY,id TEXT NOT NULL);
-   CREATE TEMP TABLE region_extent(scope TEXT,floor TEXT,x REAL,y REAL,width REAL,height REAL,PRIMARY KEY(scope,floor));`);
-  try{db.exec('CREATE VIRTUAL TABLE temp.region_index USING rtree(id,min_x,max_x,min_y,max_y)');}catch{this.indexed=false;}
+   CREATE TEMP TABLE region_extent(scope TEXT,floor TEXT,x REAL,y REAL,width REAL,height REAL,PRIMARY KEY(scope,floor));
+   CREATE TEMP TABLE region_hidden(kind TEXT,id TEXT,scope TEXT,PRIMARY KEY(kind,id,scope)) WITHOUT ROWID;`))this.projection.forget('geometry');
+  try{if(this.projection.init('CREATE VIRTUAL TABLE temp.region_index USING rtree(id,min_x,max_x,min_y,max_y)'))this.projection.forget('geometry');}catch{this.indexed=false;}
  }
  terrainVisibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');return this.landscape.visibility(source,view);}
  /** Navigation resumes after the gesture; its new overview/fine tiles need the
@@ -115,8 +118,8 @@ export class AtlasRegionReader {
   const pts=value.polygons?.flatMap(p=>[p.outer,...p.holes].flat())??value.points??[],b=bounds(pts,(value.stroke??0)/2);
   if(!Number.isFinite(b.x+b.y+b.width+b.height))return;
   const key=kind+':'+id,order=kind==='unit'?(value.value.kind==='building'?2:['road','wall'].includes(value.value.kind)?1:0):0;
-  this.sql('INSERT INTO temp.region_shape VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(key,kind,owner,scope,floor,sourceOrder,b.x,b.x+b.width,b.y,b.y+b.height,order);
-  if(this.indexed&&!this.buildingIndex)this.sql('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape WHERE key=?').run(key);
+  this.meta('INSERT INTO temp.region_shape VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(key,kind,owner,scope,floor,sourceOrder,b.x,b.x+b.width,b.y,b.y+b.height,order);
+  if(this.indexed&&!this.buildingIndex)this.meta('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape WHERE key=?').run(key);
  }
  private project(table:string,row:any){
   const shape=this.materialize(table,row);if(!shape)return;
@@ -171,9 +174,9 @@ export class AtlasRegionReader {
  }
  private async update(table:string,id:string){
   const kind=table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element',key=kind+':'+id;
-  if(this.indexed)this.sql('DELETE FROM temp.region_index WHERE id=(SELECT rowid FROM temp.region_shape WHERE key=?)').run(key);
-  this.sql('DELETE FROM temp.region_shape WHERE key=?').run(key);this.sql('DELETE FROM temp.region_problem WHERE key=?').run(key);
-  const row=this.source(table,id);if(row)try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run(key,id);}
+  if(this.indexed)this.meta('DELETE FROM temp.region_index WHERE id=(SELECT rowid FROM temp.region_shape WHERE key=?)').run(key);
+  this.meta('DELETE FROM temp.region_shape WHERE key=?').run(key);this.meta('DELETE FROM temp.region_problem WHERE key=?').run(key);
+  const row=this.source(table,id);if(row)try{this.project(table,row);}catch{this.meta('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run(key,id);}
   if(++this.count%128===0)await pause();
  }
  /** A rolled-back worker snapshot also rolls back TEMP tables, not JS state. */
@@ -182,12 +185,18 @@ export class AtlasRegionReader {
   if(this.landscapeSyncChanged)this.landscapeFailure=true;
  }
  async sync(source:AtlasRegionSource,geometry=true){
-  if(source.shapeVersion!==undefined&&source.shapeVersion!==atlasShapeSource(this.db,source.campaignId))throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
+  this.projection.begin();
+  try{await this.syncProjection(source,geometry);this.projection.commit();}
+  catch(error){this.projection.rollback();this.rollback(geometry);throw error;}
+ }
+ private async syncProjection(source:AtlasRegionSource,geometry:boolean){
+  const versions=atlasProjectionSource(this.db,source.campaignId);
+  if(source.shapeVersion!==undefined&&source.shapeVersion!==versions.shapeVersion||source.geometryVersion!==undefined&&source.geometryVersion!==versions.geometryVersion)throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
   this.campaign=source.campaignId;
   this.geometryChanges.observe(source);
   // An invalid query on an unchanged snapshot must not discard precise terrain invalidation.
   this.landscapeSyncChanged=this.landscapeFailure||source.reset||source.changes.length>0;
-  try{this.db.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
+  try{this.projection.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
   if(!geometry)return;
   source=this.geometryChanges.source(source);
@@ -195,9 +204,11 @@ export class AtlasRegionReader {
   let restored=false;
   if(source.reset||!this.ready||source.changes.some(c=>['city_document','city_unit','room','drawing_element','dungeon_volume'].includes(c.table)))this.shapePayloads.clear();
   if(source.reset||!this.ready){
-   this.db.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem; DELETE FROM temp.region_extent;');
-   restored=await this.cache?.load(this.db,source)??false;
-   if(this.indexed)this.db.exec('DELETE FROM temp.region_index');
+   restored=this.projection.valid('geometry',source);
+   if(!restored){
+    this.projection.exec('DELETE FROM temp.region_shape; DELETE FROM temp.region_problem; DELETE FROM temp.region_extent;');
+    if(this.indexed)this.projection.exec('DELETE FROM temp.region_index');
+   }
    this.buildingIndex=true;
    try{
     if(!restored)for(const table of ['city_document','room','city_unit','drawing_element']){
@@ -209,12 +220,12 @@ export class AtlasRegionReader {
       if(!batch.length)break;
       // Furnished towns have many more shapes than roof-only maps. Commit one
       // bounded TEMP batch, retaining the cancellation yield between batches.
-      this.db.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.sql('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
+      this.projection.transaction(()=>{for(const row of batch){try{this.project(table,row);}catch{this.meta('INSERT OR REPLACE INTO temp.region_problem VALUES(?,?)').run((table==='room'?'room':table==='city_unit'?'unit':table==='city_document'?'city':'element')+':'+row.id,row.id);}cursor=row.sourceOrder;}})();
       await pause();
      }
     }
    }finally{this.buildingIndex=false;}
-   if(this.indexed)this.db.exec('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape');
+   if(!restored&&this.indexed)this.projection.exec('INSERT INTO temp.region_index SELECT rowid,min_x,max_x,min_y,max_y FROM temp.region_shape');
   }else{
    const changes=new Map(source.changes.map(c=>[c.table+':'+c.id,c]));
    for(const c of changes.values()){
@@ -226,12 +237,11 @@ export class AtlasRegionReader {
    }
   }
   if(!restored&&(rebuild||source.changes.some(c=>['room','drawing_element','dungeon_volume','drawing_hidden','drawing_floor'].includes(c.table)))){
-   this.db.exec('DELETE FROM temp.region_extent');
-   this.sql(`INSERT INTO temp.region_extent SELECT scope,floor,min(min_x),min(min_y),max(max_x)-min(min_x),max(max_y)-min(min_y) FROM temp.region_shape s WHERE s.kind IN ('room','element') AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=? AND h.hidden=1 AND (h.kind='room' AND s.kind='room' AND h.id=substr(s.key,6) OR h.kind='floor' AND h.scope_id=s.scope AND h.id=s.floor)) GROUP BY scope,floor`).run(this.campaign);
+   this.projection.exec('DELETE FROM temp.region_extent; DELETE FROM temp.region_hidden');
+   this.projection.copy('region_hidden',3,'SELECT kind,id,scope_id FROM drawing_hidden WHERE campaign_id=? AND hidden=1',[this.campaign]);
+   this.meta("INSERT INTO temp.region_extent SELECT scope,floor,min(min_x),min(min_y),max(max_x)-min(min_x),max(max_y)-min(min_y) FROM temp.region_shape s WHERE s.kind IN ('room','element') AND NOT EXISTS(SELECT 1 FROM temp.region_hidden h WHERE h.kind='room' AND s.kind='room' AND h.id=substr(s.key,6) OR h.kind='floor' AND h.scope=s.scope AND h.id=s.floor) GROUP BY scope,floor").run();
   }
-  // Do not serialize a full-world cache on interactive object edits. Its source
-  // version becomes stale; the next cold rebuild replaces it once.
-  if(!restored&&rebuild)await this.cache?.save(this.db,source);
+  this.projection.mark('geometry',source);
   this.ready=true;this.geometryChanges.accepted();
  }
  private binding(row:any):AtlasBinding{return{id:row.id,kind:row.kind,ownerId:row.owner_id,parent:row.parent,parentId:row.parent_id,x:row.x,y:row.y,angle:row.angle,revision:row.revision};}

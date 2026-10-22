@@ -1,4 +1,4 @@
-import {atlasShapeSource,installAtlasShapeSource} from './atlas-shape-source';
+import {atlasProjectionSource,installAtlasShapeSource} from './atlas-shape-source';
 import {decodeRoom,checkedRoomHistory,decodeRoomDraft,decodePreparationDraft,preparationDraftTable,decodeLocation,readStoredPlan} from './stored-records';
 import {validateDatabase,validateBackupCandidate} from './snapshot-validation';
 import {readSessionRecapDraft,keepSessionRecapDraft} from './session-recap';
@@ -419,9 +419,9 @@ export class CampaignStore {
     const shadow=preview&&shadowChanges?{filename:preview.db.name,scopeId:preview.scopeId,epoch:shadowChanges.epoch,sequence:shadowChanges.sequence}:undefined;
     const fingerprint=[this.db.name,version,changes.epoch,changes.sequence,shadow,shadowVersion,preview?.state()];
     const revision=atlasRoot(this.db,campaignId).revision;
-    const shapeVersion=atlasShapeSource(this.db,campaignId);
+    const versions=atlasProjectionSource(this.db,campaignId);
     if(this.committedSources.version(this.db)!==version||preview&&this.committedSources.version(preview.db)!==shadowVersion)throw new Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
-    return{filename:this.db.name,campaignId,token,...changes,shadow,reset:changes.reset||!!shadowChanges?.reset,changes:[...changes.changes,...(shadowChanges?.changes??[])],fence:hash(JSON.stringify(fingerprint)),revision,shapeVersion};
+    return{filename:this.db.name,campaignId,token,...changes,shadow,reset:changes.reset||!!shadowChanges?.reset,changes:[...changes.changes,...(shadowChanges?.changes??[])],fence:hash(JSON.stringify(fingerprint)),revision,...versions};
   }
   atlasCitySite(token:string,cityId:string,id?:string):import('../atlas-region-contracts').AtlasCitySite{return this.db.transaction(()=>{
     const cam=this.guard(token),site=id?readCitySite(this.db,cam,cityId,id):{header:readCityHeader(this.db,cam,cityId),unit:null};

@@ -16,11 +16,11 @@ function record(kind,id,i=0){
  return {...emptyRecord('patch'),id,polygons:[polygon],resolution,order,...(kind==='lake'?{surface:'freshwater',waterLevelM:30}:{values:{terrain:'forest'}})};
 }
 test('sparse terrain kinds use covering ordered indexes and preserve exact streams through metadata changes',t=>{
- const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-kind-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Sparse terrain kinds'),token=store.activate(campaign.id).token,db=store.db;
- t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
- const insert=db.prepare('INSERT INTO atlas_landscape(rowid,campaign_id,id,revision,min_x,max_x,min_y,max_y,payload) VALUES(?,?,?,?,?,?,?,?,?)');let row=9007199254740993n;
+ const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-kind-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Sparse terrain kinds'),token=store.activate(campaign.id).token,writer=store.db,db=new (require('better-sqlite3'))(store.filename,{readonly:true});
+ t.after(()=>{db.close();store.close();rmSync(dir,{recursive:true,force:true});});
+ const insert=writer.prepare('INSERT INTO atlas_landscape(rowid,campaign_id,id,revision,min_x,max_x,min_y,max_y,payload) VALUES(?,?,?,?,?,?,?,?,?)');let row=9007199254740993n;
  const put=r=>{const b=bounds(r);insert.run((row++).toString(),campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));};
- db.transaction(()=>{for(let i=0;i<10000;i++)put(record('base',`base:${i}`));for(let i=0;i<133;i++)for(const kind of kinds)put(record(kind,`${kind}:${i}`,i));})();
+ writer.transaction(()=>{for(let i=0;i<10000;i++)put(record('base',`base:${i}`));for(let i=0;i<133;i++)for(const kind of kinds)put(record(kind,`${kind}:${i}`,i));})();
  const reader=new AtlasLandscapeReader(db);let source=store.atlasRegionSource(token);reader.sync(source);
  const plans=[],programs=[],sql=reader.sql.bind(reader);
  reader.sql=text=>{const statement=sql(text);return /^SELECT CAST\((m\.)?source_row AS TEXT\)/.test(text)?{iterate(...args){plans.push(db.prepare('EXPLAIN QUERY PLAN '+text).all(...args).map(r=>r.detail).join('\n'));programs.push(db.prepare('EXPLAIN '+text).all(...args));return statement.iterate(...args);}}:statement;};
@@ -51,8 +51,8 @@ test('sparse terrain kinds use covering ordered indexes and preserve exact strea
  }
  check();
  const changed=record('lake','height:0',5),b=bounds(changed);
- db.prepare('UPDATE atlas_landscape SET payload=?,min_x=?,max_x=?,min_y=?,max_y=? WHERE id=?').run(JSON.stringify(changed),b.x,b.x+b.width,b.y,b.y+b.height,changed.id);
- db.prepare('DELETE FROM atlas_landscape WHERE id=?').run('route:0');put(record('height','new-height',7));
+ writer.prepare('UPDATE atlas_landscape SET payload=?,min_x=?,max_x=?,min_y=?,max_y=? WHERE id=?').run(JSON.stringify(changed),b.x,b.x+b.width,b.y,b.y+b.height,changed.id);
+ writer.prepare('DELETE FROM atlas_landscape WHERE id=?').run('route:0');put(record('height','new-height',7));
  source={...source,reset:false,revision:source.revision+1,changes:[changed.id,'route:0','new-height'].map(id=>({table:'atlas_landscape',id}))};reader.sync(source);check();
  assert([...reader.terrainStream(source)('lake',box)].some(r=>r.id==='height:0'));
  assert(![...reader.terrainStream(source)('height',box)].some(r=>r.id==='height:0'));
@@ -61,11 +61,11 @@ test('sparse terrain kinds use covering ordered indexes and preserve exact strea
  reader.sync({...source,reset:true});check();
 });
 test('terrain line reads skip place and vegetation payloads while preserving painter order through kind changes and deletion',t=>{
- const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-lines-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Terrain lines'),token=store.activate(campaign.id).token,db=store.db;
- t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
- const insert=db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
+ const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/terrain-lines-'),store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Terrain lines'),token=store.activate(campaign.id).token,writer=store.db,db=new (require('better-sqlite3'))(store.filename,{readonly:true});
+ t.after(()=>{db.close();store.close();rmSync(dir,{recursive:true,force:true});});
+ const insert=writer.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
  const put=r=>{const b=bounds(r);insert.run(campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));};
- db.transaction(()=>{
+ writer.transaction(()=>{
   for(let i=0;i<2000;i++)put({...emptyRecord(i%2?'place':'vegetation'),id:'other:'+i,points:[{x:0,y:0}],width:2,polygons:[polygon]});
   for(let i=0;i<25;i++)put({...record('route','line:'+i,i),kind:i%3?'road':'river',line:{overSymbols:i%2===0}});
  })();
@@ -80,6 +80,6 @@ test('terrain line reads skip place and vegetation payloads while preserving pai
   return actual;
  };
  assert.equal(check().length,25);
- const changed={...record('route','other:0'),kind:'river'};db.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run(JSON.stringify(changed),changed.id);db.prepare('DELETE FROM atlas_landscape WHERE id=?').run('line:0');
+ const changed={...record('route','other:0'),kind:'river'};writer.prepare('UPDATE atlas_landscape SET payload=? WHERE id=?').run(JSON.stringify(changed),changed.id);writer.prepare('DELETE FROM atlas_landscape WHERE id=?').run('line:0');
  source={...source,reset:false,changes:[{table:'atlas_landscape',id:'other:0'},{table:'atlas_landscape',id:'line:0'}]};reader.sync(source);const next=check();assert.equal(next.length,25);assert(next.some(r=>r.id==='other:0'));assert(!next.some(r=>r.id==='line:0'));
 });

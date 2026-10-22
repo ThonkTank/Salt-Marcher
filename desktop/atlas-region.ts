@@ -1,3 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {eraseProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {terrainTraceStart} from '../src/app/terrain-timing';
 import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
@@ -163,13 +165,16 @@ export class AtlasRegionService {
       throw new Error('Kartenausschnitt abgebrochen.');
     }
     if (!this.worker) {
+      const workId=randomUUID();
       const worker = new Worker(this.workerFile, {
-        workerData: { filename: source.filename, shadow: source.shadow,cacheDirectory:this.cacheDirectory },
+        workerData: { filename: source.filename, shadow: source.shadow,cacheDirectory:this.cacheDirectory,workId },
       });
       this.starts++;
       this.worker = worker;
       this.identity = identity;
-      this.exit = new Promise(resolve => worker.once('exit', resolve));
+      this.exit = new Promise(resolve => worker.once('exit', resolve)).then(async()=>{
+        if(this.cacheDirectory)await eraseProjectionWork(this.cacheDirectory,source.filename,source.campaignId,workId).catch(()=>{});
+      });
       worker.on('message', result => {
         if (this.worker !== worker) {
           return;

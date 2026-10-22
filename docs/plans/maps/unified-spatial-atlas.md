@@ -422,3 +422,12 @@ Speicherplateau bleiben eigene, noch nicht abgeschlossene Ziele. Eine anschließ
 31-Minuten-Probe mit 22 vollständigen Zoomrunden endete regulär ohne erneuten
 Ladehänger und ohne fortlaufenden Speicheranstieg. Sie enthält keine
 Bearbeitungszyklen und ersetzt die Zielgerätequalifikation nicht.
+
+### Nächster Architekturabschnitt: persistente räumliche Projektionen
+
+[Drei Optionen, Entscheidung und Prüfgrenzen](atlas-persistent-projection.md):
+Statt weitere Einzelkosten zum Hauptziel zu machen, werden fertig aufgebaute
+räumliche Indizes dauerhaft wiederverwendet und bei Änderungen gezielt gepflegt.
+Der bestehende Atlas und die schreibgeschützte kanonische Leseverbindung bleiben
+der Anschluss. Der Indexanschluss ist implementiert; persistente Detailstufen
+und die vollständige Leistungsabnahme bleiben offen.

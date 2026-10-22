@@ -2,12 +2,20 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {createHash} from 'node:crypto';
 import {readdir,stat} from 'node:fs/promises';
+import {waitForAtlasProjection} from './atlas-projection-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3'),input=process.env.ATLAS_MIXED_SOURCE;
 assert(input,'Set ATLAS_MIXED_SOURCE to a retained synthetic full world');
 const output=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-cache-reopen'),native=await createNativeSession({output,name:'atlas-cache-reopen'}),source=new Database(input,{readonly:true});
+function canonical(db){
+ const hash=createHash('sha256');
+ for(const table of ['atlas_landscape','room','drawing_element','atlas_territory'])for(const row of db.prepare('SELECT * FROM '+table+' ORDER BY rowid').iterate())hash.update(JSON.stringify(row));
+ return {sha256:hash.digest('hex'),atlas:db.prepare('SELECT campaign_id,revision FROM campaign_atlas').get()};
+}
+const canonicalBefore=canonical(source);
 const id=source.prepare('SELECT id FROM campaign').get().id;await source.backup(native.profile+'/workbench.sqlite');source.close();
 const runs=[];
 try{
@@ -28,9 +36,11 @@ try{
    await page.waitForFunction(()=>{const m=document.querySelector('#campaign-map'),[done,total]=(m.dataset.terrainTiles??'').split('/').map(Number);return m.dataset.terrainQuality==='detail'&&done>0&&done===total;},null,{timeout:90000});
    detailReadyMs=performance.now()-start;detailState=await page.locator('#campaign-map').evaluate(m=>({quality:m.dataset.terrainQuality,tiles:m.dataset.terrainTiles}));
   }
-  await native.capture(page,label);await native.close();const files=[];for(const name of await readdir(native.profile+'/atlas-region-cache')){const info=await stat(native.profile+'/atlas-region-cache/'+name);files.push({name,bytes:info.size,mtimeMs:info.mtimeMs});}
+  await native.capture(page,label);
+  await waitForAtlasProjection(native.profile+'/atlas-region-cache');await native.close();const files=[];for(const name of await readdir(native.profile+'/atlas-region-cache')){const info=await stat(native.profile+'/atlas-region-cache/'+name);files.push({name,bytes:info.size,mtimeMs:info.mtimeMs});}
   const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,files,...(detailState?{firstDetailMs,detailReadyMs,detailState}:{})};runs.push(run);console.log(JSON.stringify(run));
  }
- assert.equal(runs[0].files.length,1);assert.deepEqual(runs[1].files,runs[0].files,'unchanged restart must reuse the cache without rewriting it');assert.deepEqual(runs[1].state,runs[0].state);
- await native.finish({runs});
+ assert.equal(runs[0].files.length,2);assert.deepEqual(runs[1].files,runs[0].files,'unchanged restart must reuse the cache without rewriting it');assert.deepEqual(runs[1].state,runs[0].state);
+ const check=new Database(native.profile+'/workbench.sqlite',{readonly:true});let canonicalAfter;try{canonicalAfter=canonical(check);}finally{check.close();}
+ assert.deepEqual(canonicalAfter,canonicalBefore);await native.finish({runs,canonicalBefore,canonicalAfter});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}
