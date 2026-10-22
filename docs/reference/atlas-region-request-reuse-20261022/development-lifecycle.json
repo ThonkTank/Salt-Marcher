@@ -1,0 +1,20 @@
+{
+  "verifiedAbsentPids": [
+    3498141,
+    3498161,
+    3498239,
+    3498289,
+    3498293
+  ],
+  "artifacts": {
+    "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "ui/renderer.js": "be502220c5e1fcf3e0204485982d79c8e3e1790fd26e95c9414b7f99f9c985ca",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3"
+  },
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "worldArtifactsUnchanged": true
+}

@@ -1,0 +1,1025 @@
+[
+  {
+    "label": "before",
+    "rawPath": ".build/region-query-before/result.json",
+    "rawSha256": "77fffb84dc35aa2d1461dbfbdba9daa6a8e8b651c8aeb97492bba0d88a9eda5a",
+    "source": "d5054473f1426512b5d09a1fcce39b913c6ea90a",
+    "artifacts": {
+      "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "5d94f49bb28cf133b4058a9cf3798f1ce1d469326b3df394b8a4cc0fa68bfbd7",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+      "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+      "ui/renderer.js": "ccd271b9930062b4b101b295539436670b63d6672d7c61f036f017afe5f4525b",
+      "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+      "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 3491625,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "events": [
+      {
+        "name": "open",
+        "time": 4063.630293,
+        "mainTime": 2277.944995
+      },
+      {
+        "name": "ready",
+        "time": 14889.158502,
+        "mainTime": 13103.866647
+      },
+      {
+        "name": "down",
+        "time": 17308.67693,
+        "mainTime": 15521.895034
+      },
+      {
+        "name": "released",
+        "time": 21759.325781,
+        "mainTime": 19972.529633
+      },
+      {
+        "name": "wheel-send",
+        "time": 22763.415488,
+        "mainTime": 20976.88732
+      },
+      {
+        "name": "wheel-ack",
+        "time": 22798.417864,
+        "mainTime": 21012.130005
+      },
+      {
+        "name": "state-returned",
+        "time": 23541.559557,
+        "mainTime": 21757.298071
+      },
+      {
+        "name": "settled",
+        "time": 23554.790016,
+        "mainTime": 21768.402956
+      },
+      {
+        "name": "author-ready",
+        "time": 25827.798756,
+        "mainTime": 24046.047187
+      },
+      {
+        "name": "second-down",
+        "time": 25885.998134,
+        "mainTime": 24099.221518
+      },
+      {
+        "name": "second-released",
+        "time": 26308.812561,
+        "mainTime": 24522.326141
+      },
+      {
+        "name": "second-author-ready",
+        "time": 28981.242935,
+        "mainTime": 27195.147879
+      },
+      {
+        "name": "detail-ready",
+        "time": 41577.332196,
+        "mainTime": 39793.517248
+      }
+    ],
+    "ms": {
+      "open": 10825.528209,
+      "controls": 1795.4642349999995,
+      "author": 4068.4729750000006,
+      "secondAuthor": 2672.4303739999996,
+      "maxLongTask": 407,
+      "maxRecordedFrameGap": 450.2000000000007
+    },
+    "detailState": {
+      "ready": "ready",
+      "quality": "detail",
+      "revision": "14",
+      "authorRevision": "14",
+      "tiles": "36/36"
+    },
+    "regions": [
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 4,
+        "sequence": 0,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 7701.663496,
+        "received": 12600.501034,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 7701.864894,
+              "duration": 4274.7782879999995,
+              "revision": 4
+            },
+            {
+              "stage": "region.read",
+              "start": 11976.648066,
+              "duration": 609.4061099999999,
+              "revision": 4
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "sequence": 42,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 20869.841863,
+        "received": 21149.134069,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 20870.038933,
+              "duration": 0.7827660000002652,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 20870.826258,
+              "duration": 277.4788779999981,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "sequence": 42,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643775
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 21149.446127,
+        "received": 21700.716789,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21150.572061,
+              "duration": 1.2116400000013527,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 21151.788337,
+              "duration": 505.87162399999943,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "sequence": 42,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643774
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 21700.797812,
+        "received": 21732.156503,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21701.092406,
+              "duration": 1.0599289999991015,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 21702.161132,
+              "duration": 29.734660999998596,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 12,
+        "sequence": 42,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643774
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 21732.236409,
+        "received": 22178.191474,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21732.389287,
+              "duration": 1.0628649999998743,
+              "revision": 12
+            },
+            {
+              "stage": "region.read",
+              "start": 21733.456369,
+              "duration": 439.4369709999992,
+              "revision": 12
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 14,
+        "sequence": 58,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643774
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 25601.994866,
+        "received": 26468.925415,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 25602.268814,
+              "duration": 1.204012000001967,
+              "revision": 14
+            },
+            {
+              "stage": "region.read",
+              "start": 25603.480952,
+              "duration": 860.9535049999977,
+              "revision": 14
+            }
+          ],
+          "dropped": 0
+        }
+      }
+    ],
+    "dropped": {
+      "worker": 0,
+      "main": 0,
+      "renderer": 0
+    }
+  },
+  {
+    "label": "redraw-only",
+    "rawPath": ".build/region-query-after/result.json",
+    "rawSha256": "8edc08a3e172d8cc4c48bb6373c3f3b874f17553e9d55b5e5bd5ed3bd26a4a5a",
+    "source": "d5054473f1426512b5d09a1fcce39b913c6ea90a",
+    "artifacts": {
+      "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "5d94f49bb28cf133b4058a9cf3798f1ce1d469326b3df394b8a4cc0fa68bfbd7",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+      "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+      "ui/renderer.js": "29334773c17890cc23442877e64fc37f22c820e1929b16e1e177ab977f200aa3",
+      "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+      "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 3494638,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "events": [
+      {
+        "name": "open",
+        "time": 4187.354853,
+        "mainTime": 2287.459759
+      },
+      {
+        "name": "ready",
+        "time": 14776.398408,
+        "mainTime": 12876.162381
+      },
+      {
+        "name": "down",
+        "time": 17033.302921,
+        "mainTime": 15132.313672
+      },
+      {
+        "name": "released",
+        "time": 21435.388772,
+        "mainTime": 19534.652253
+      },
+      {
+        "name": "wheel-send",
+        "time": 22439.452864,
+        "mainTime": 20539.89574
+      },
+      {
+        "name": "wheel-ack",
+        "time": 22474.195495,
+        "mainTime": 20574.048314
+      },
+      {
+        "name": "state-returned",
+        "time": 23051.835769,
+        "mainTime": 21150.71691
+      },
+      {
+        "name": "settled",
+        "time": 23060.561696,
+        "mainTime": 21159.853642
+      },
+      {
+        "name": "author-ready",
+        "time": 25497.103292,
+        "mainTime": 23597.692206
+      },
+      {
+        "name": "second-down",
+        "time": 25588.755398,
+        "mainTime": 23688.26765
+      },
+      {
+        "name": "second-released",
+        "time": 25902.237601,
+        "mainTime": 24001.785291
+      },
+      {
+        "name": "second-author-ready",
+        "time": 28543.585335,
+        "mainTime": 26643.108517
+      },
+      {
+        "name": "detail-ready",
+        "time": 43189.856854,
+        "mainTime": 41288.917259
+      }
+    ],
+    "ms": {
+      "open": 10589.043555,
+      "controls": 1625.1729240000022,
+      "author": 4061.7145200000014,
+      "secondAuthor": 2641.347733999999,
+      "maxLongTask": 431,
+      "maxRecordedFrameGap": 483.6000000000022
+    },
+    "detailState": {
+      "ready": "ready",
+      "quality": "detail",
+      "revision": "13",
+      "authorRevision": "13",
+      "tiles": "36/36"
+    },
+    "regions": [
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 4,
+        "sequence": 0,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 7661.544603,
+        "received": 12327.570228,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 7662.017413,
+              "duration": 4035.2114949999996,
+              "revision": 4
+            },
+            {
+              "stage": "region.read",
+              "start": 11697.238874,
+              "duration": 617.622605999999,
+              "revision": 4
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 11,
+        "sequence": 37,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 20336.987616,
+        "received": 20714.16114,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 20337.347182,
+              "duration": 1.1017419999989215,
+              "revision": 11
+            },
+            {
+              "stage": "region.read",
+              "start": 20338.45678,
+              "duration": 374.7809559999987,
+              "revision": 11
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 11,
+        "sequence": 37,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643775
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 20714.314,
+        "received": 21278.100939,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 20714.517243,
+              "duration": 1.9408900000016729,
+              "revision": 11
+            },
+            {
+              "stage": "region.read",
+              "start": 20716.46976,
+              "duration": 561.4146069999988,
+              "revision": 11
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 11,
+        "sequence": 37,
+        "query": {
+          "box": {
+            "x": -31020589.153217465,
+            "y": -23122899.126737315,
+            "width": 62930228.88532428,
+            "height": 46542148.446437754
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 21278.18023,
+        "received": 21732.39654,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 21278.302218,
+              "duration": 0.7967349999998987,
+              "revision": 11
+            },
+            {
+              "stage": "region.read",
+              "start": 21279.103476,
+              "duration": 448.22717999999804,
+              "revision": 11
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 13,
+        "sequence": 53,
+        "query": {
+          "box": {
+            "x": -31020589.153217465,
+            "y": -23122899.126737315,
+            "width": 62930228.88532428,
+            "height": 46542148.446437754
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 25298.805881,
+        "received": 25914.304059,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 25299.417672,
+              "duration": 0.8495839999995951,
+              "revision": 13
+            },
+            {
+              "stage": "region.read",
+              "start": 25300.281159,
+              "duration": 608.9747830000015,
+              "revision": 13
+            }
+          ],
+          "dropped": 0
+        }
+      }
+    ],
+    "dropped": {
+      "worker": 0,
+      "main": 0,
+      "renderer": 0
+    }
+  },
+  {
+    "label": "final",
+    "rawPath": ".build/region-query-final/result.json",
+    "rawSha256": "7bfa3f7dbb1acf77bbb7068afa86e60c3f25ce082f73fc3e11b8c3c60a5f4094",
+    "source": "d5054473f1426512b5d09a1fcce39b913c6ea90a",
+    "artifacts": {
+      "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "5d94f49bb28cf133b4058a9cf3798f1ce1d469326b3df394b8a4cc0fa68bfbd7",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+      "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+      "ui/renderer.js": "be502220c5e1fcf3e0204485982d79c8e3e1790fd26e95c9414b7f99f9c985ca",
+      "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+      "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+    },
+    "launches": [
+      {
+        "pid": 3497429,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "errors": [],
+    "events": [
+      {
+        "name": "open",
+        "time": 4230.282255,
+        "mainTime": 2446.901758
+      },
+      {
+        "name": "ready",
+        "time": 14774.290833,
+        "mainTime": 12990.018701
+      },
+      {
+        "name": "down",
+        "time": 17056.054576,
+        "mainTime": 15272.506403
+      },
+      {
+        "name": "released",
+        "time": 21529.109509,
+        "mainTime": 19744.764145
+      },
+      {
+        "name": "wheel-send",
+        "time": 22535.814623,
+        "mainTime": 20751.716955
+      },
+      {
+        "name": "wheel-ack",
+        "time": 22574.55598,
+        "mainTime": 20789.63726
+      },
+      {
+        "name": "state-returned",
+        "time": 23168.065506,
+        "mainTime": 21382.438195
+      },
+      {
+        "name": "settled",
+        "time": 23176.7719,
+        "mainTime": 21391.321762
+      },
+      {
+        "name": "author-ready",
+        "time": 25368.701212,
+        "mainTime": 23584.514368
+      },
+      {
+        "name": "second-down",
+        "time": 25443.424285,
+        "mainTime": 23658.024057
+      },
+      {
+        "name": "second-released",
+        "time": 25755.374945,
+        "mainTime": 23971.376039
+      },
+      {
+        "name": "second-author-ready",
+        "time": 28534.360462,
+        "mainTime": 26749.931075
+      },
+      {
+        "name": "detail-ready",
+        "time": 41954.029004,
+        "mainTime": 40168.925172
+      }
+    ],
+    "ms": {
+      "open": 10544.008577999999,
+      "controls": 1647.662390999998,
+      "author": 3839.5917029999982,
+      "secondAuthor": 2778.985517000001,
+      "maxLongTask": 377,
+      "maxRecordedFrameGap": 433.6000000000022
+    },
+    "detailState": {
+      "ready": "ready",
+      "quality": "detail",
+      "revision": "13",
+      "authorRevision": "13",
+      "tiles": "36/36"
+    },
+    "regions": [
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 4,
+        "sequence": 0,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 7482.900639,
+        "received": 12397.314592,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 7483.695746,
+              "duration": 4207.764340999999,
+              "revision": 4
+            },
+            {
+              "stage": "region.read",
+              "start": 11691.467102,
+              "duration": 693.2390829999986,
+              "revision": 4
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 11,
+        "sequence": 39,
+        "query": {
+          "box": {
+            "x": -40000000,
+            "y": -29583333.333333332,
+            "width": 80000000,
+            "height": 59166666.666666664
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 20460.390496,
+        "received": 20972.975274,
+        "regionReadCancelled": true,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 20461.295228,
+              "duration": 1.302930000001652,
+              "revision": 11
+            },
+            {
+              "stage": "region.read",
+              "start": 20462.608453,
+              "duration": 510.04888799999753,
+              "revision": 11
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 11,
+        "sequence": 39,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643775
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 20973.096427,
+        "received": 21793.7219,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 20973.236653,
+              "duration": 1.1956780000000435,
+              "revision": 11
+            },
+            {
+              "stage": "region.read",
+              "start": 20974.437946,
+              "duration": 814.678436000002,
+              "revision": 11
+            }
+          ],
+          "dropped": 0
+        }
+      },
+      {
+        "worker": 2,
+        "kind": "region",
+        "revision": 13,
+        "sequence": 55,
+        "query": {
+          "box": {
+            "x": -31020589.153217457,
+            "y": -23122899.12673731,
+            "width": 62930228.88532428,
+            "height": 46542148.44643774
+          },
+          "width": 2304,
+          "height": 1704,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "continuation": false,
+        "posted": 25172.464633,
+        "received": 26067.101472,
+        "regionReadCancelled": false,
+        "trace": {
+          "events": [
+            {
+              "stage": "region.sync",
+              "start": 25173.306384,
+              "duration": 0.9884600000004866,
+              "revision": 13
+            },
+            {
+              "stage": "region.read",
+              "start": 25174.30142,
+              "duration": 889.5675699999993,
+              "revision": 13
+            }
+          ],
+          "dropped": 0
+        }
+      }
+    ],
+    "dropped": {
+      "worker": 0,
+      "main": 0,
+      "renderer": 0
+    }
+  }
+]

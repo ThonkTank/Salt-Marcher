@@ -261,3 +261,40 @@ test('an obsolete camera rejection cannot fail or clear the newer pending view',
  replies[1]({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'current',coverage:{mode:'detail',unreadable:0}}}});await latest;
  assert.equal(x.ui.root.dataset.regionState,'ready');assert.equal(x.ui.regionReading,null);assert.equal(x.ui.regionReadingQuery,null);assert.equal(x.ui.loadedRegionQuery,nextQuery);assert.deepEqual(errors,[]);
 });
+
+test('terrain redraws preserve a matching pending region; only a real representation change replaces it',t=>{
+ const x=fixture(t);
+ const original={setTimeout:global.setTimeout,clearTimeout:global.clearTimeout};t.after(()=>Object.assign(global,original));
+ let now=0,id=0,renders=0;const jobs=new Map(),reads=[];
+ global.setTimeout=(run,delay)=>{jobs.set(++id,{run,at:now+delay});return id;};global.clearTimeout=id=>jobs.delete(id);
+ const advance=ms=>{now+=ms;for(const [id,job]of [...jobs])if(job.at<=now){jobs.delete(id);job.run();}};
+ let required=false;const q={box:{x:0,y:0,width:100,height:80},width:100,height:80,scopeId:null,floorId:'ground',slice:null,roofs:true,terrainRaster:false};
+ const ui=Object.assign(x.ui,{
+  root:{hidden:false,dataset:{regionState:'loading'}},owner:{token:'t'},svg:{setAttribute(){}},
+  geometryCurrent:()=>false,refresh:async keep=>reads.push(keep),scheduleRender:()=>renders++,regionQuery:()=>({...q,terrainRaster:required}),
+  request:4,regionReading:4,regionReadingQuery:q,loadedRegionQuery:null,
+ });
+ for(let n=0;n<6;n++){ui.redrawSpatial();advance(100);}
+ assert.equal(renders,6);assert.equal(ui.request,4);assert.equal(jobs.size,0);assert.deepEqual(reads,[],'terrain refinements must not cancel an unchanged pending geometry read');
+ assert.equal(ui.root.dataset.regionState,'loading','redraw does not authorize editing');
+ required=true;ui.redrawSpatial();assert.equal(ui.request,5,'graphics fallback must invalidate the old representation');
+ advance(40);ui.redrawSpatial();advance(25);assert.deepEqual(reads,[false],'subsequent redraws must not postpone the required replacement');
+ ui.regionReading=5;ui.regionReadingQuery={...q,terrainRaster:true};required=false;ui.redrawSpatial();advance(60);assert.deepEqual(reads,[false,false],'graphics recovery also replaces a pending fallback read');
+ ui.regionReading=null;ui.loadedRegionQuery={...q,terrainRaster:false};required=true;ui.redrawSpatial();advance(60);assert.deepEqual(reads,[false,false,false],'an already loaded representation must change as well');
+ ui.loadedRegionQuery=null;ui.regionReadingQuery=null;ui.redrawSpatial();advance(100);assert.deepEqual(reads,[false,false,false],'opening/error ownership remains with its existing refresh/retry path');
+});
+
+test('stale terrain waits for an existing geometry owner without replacing or authorizing it',async t=>{
+ const x=fixture(t);let release,reads=0;
+ window.campaign.atlasRegion=()=>{reads++;return new Promise(resolve=>release=resolve);};
+ const pending=x.ui.refresh(true),request=x.ui.request;
+ assert.equal(await x.ui.refreshSpatialSource(),false);assert.equal(await x.ui.refreshSpatialSource(),false);
+ assert.equal(reads,1);assert.equal(x.ui.request,request);assert.equal(x.ui.regionReading,request);
+ assert.equal(x.ui.travelReadState,'loading');assert.equal(x.ui.root.dataset.regionState,'loading');
+ release({ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'fresh',coverage:{mode:'detail',unreadable:0}}}});assert.equal(await pending,true);
+ assert.equal(x.ui.regionReading,null);assert.equal(x.ui.data.region.fence,'fresh');assert.equal(x.ui.travelReadState,'ready');
+ window.campaign.atlasRegion=async()=>{reads++;return{ok:false,error:'source unavailable'};};x.ui.error=()=>{};
+ assert.equal(await x.ui.refreshSpatialSource(),false);assert.equal(reads,2,'without an owner, stale terrain still requests a source');assert.equal(x.ui.travelReadState,'failed');
+ window.campaign.atlasRegion=async()=>{reads++;return{ok:true,value:{...x.store.atlasRenderView(x.w.token),region:{fence:'retry',coverage:{mode:'detail',unreadable:0}}}};};
+ assert.equal(await x.ui.refreshSpatialSource(),true);assert.equal(reads,3);assert.equal(x.ui.data.region.fence,'retry');
+});

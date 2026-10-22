@@ -29,7 +29,7 @@ try {
      if(!reply?.terrainTrace)return;const trace=global.__brushWorkerTrace;
      if(trace.packets.length<10000)trace.packets.push({...pending.get(this),received:performance.now(),regionReadCancelled:reply.value?.regionReadCancelled===true,trace:reply.terrainTrace});else trace.dropped++;
     });}
-    pending.set(this,{worker:this.threadId,kind:job?.kind,revision:job?.source?.revision,continuation:!!job?.continuation,posted:performance.now()});
+    pending.set(this,{worker:this.threadId,kind:job?.kind,revision:job?.source?.revision,sequence:job?.source?.sequence,...(job?.kind==='region'?{query:job.query}:{}),continuation:!!job?.continuation,posted:performance.now()});
     return post.call(this,job,...args);
    };
   });

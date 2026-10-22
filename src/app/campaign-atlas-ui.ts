@@ -560,11 +560,7 @@ export class CampaignAtlasWorkbench {
       route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),navigationLocked:()=>this.cameraDraftPending(true),cancel:()=>{this.landscape.cancel();this.cancel();},
       workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
-      refresh:()=>this.refresh(),redraw:()=>{
-        this.scheduleRender();
-        // A lost/retried graphics context changes the required region contents.
-        if(this.data&&this.loadedRegionQuery?.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
-      },error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
+      refresh:()=>this.refreshSpatialSource(),redraw:()=>this.redrawSpatial(),error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
     });
     this.terrainAnalysis=new TerrainAnalysisUI(this.svg,{
       token:()=>this.owner?.token,revision:()=>this.data?.revision??-1,hasDraft:()=>this.cameraDraftPending(),
@@ -632,6 +628,20 @@ export class CampaignAtlasWorkbench {
     const terrainRaster=this.spatial?.needsTerrainRaster??true;
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
     return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
+  }
+  private async refreshSpatialSource(){
+    // A stale terrain reply must wait for the current geometry owner. Returning
+    // false keeps TerrainSpatialUI's existing source-recovery latch closed until
+    // that read publishes a confirmed source (or the explicit retry succeeds).
+    if(this.regionReading===this.request)return false;
+    return this.refresh();
+  }
+  private redrawSpatial(){
+    this.scheduleRender();
+    // A redraw is not a new source. While loading, compare the requested
+    // representation: refresh deliberately clears the last loaded query.
+    const query=this.regionReading===this.request?this.regionReadingQuery:this.loadedRegionQuery;
+    if(this.data&&query&&query.terrainRaster!==this.regionQuery().terrainRaster)this.scheduleRegion();
   }
   private openingSurface:{owner:WorkspaceGeometry;revision?:number}|null=null;
   private scheduleRegion(camera=false){
