@@ -21,6 +21,10 @@ export function assertNativeCompletion(launches,errors){
 /** Technical evidence only. The caller owns the actual user task and its assertions. */
 export async function createNativeSession({root=process.cwd(),output,name,resultName='result.json'}){
  const require=createRequire(root+'/package.json');
+ // Match an ordinary Electron launch unless the probe explicitly compares a backend.
+ const platform=process.env.QA_OZONE_PLATFORM;
+ assert(platform===undefined||['auto','x11','wayland'].includes(platform),'Unknown native display platform');
+ const platformArgs=platform?[`--ozone-platform=${platform}`]:[];
  await mkdir(output,{recursive:true});
  // Remove success before fixture setup: even a setup failure must not leave an old pass.
  await rm(path.join(output,resultName),{force:true});await rm(path.join(output,'failure.json'),{force:true});
@@ -43,13 +47,14 @@ export async function createNativeSession({root=process.cwd(),output,name,result
  async function launch(zoom=1){
   assert.equal(app,null,'Close the previous native process before restarting');
   assert.deepEqual(await hashes(),build,'Native artifacts changed during this workflow');await startBus();
-  app=await require('playwright-core')._electron.launch({executablePath:path.join(root,'node_modules/electron/dist/electron'),args:[path.join(root,'.build/desktop/main.cjs'),'--ozone-platform=x11','--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:20000});
+  app=await require('playwright-core')._electron.launch({executablePath:path.join(root,'node_modules/electron/dist/electron'),args:[path.join(root,'.build/desktop/main.cjs'),...platformArgs,'--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+bus},timeout:20000});
   processHandle=app.process();const pid=processHandle.pid,entry={pid,zoom,cgroup:group};launches.push(entry);
   app.process().once('exit',(code,signal)=>{entry.exit={code,signal};});
   assert((await readFile('/proc/'+pid+'/cmdline','utf8')).includes(profile),'Native profile ownership missing');
   assert.equal((await readFile('/proc/'+pid+'/cgroup','utf8')).trim().split('::')[1],group);
   const page=await app.firstWindow();page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.stack));
   await page.waitForURL(/\/index\.html$/);await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true');
+  entry.platform={requested:platform??'default',desktopSession:process.env.XDG_SESSION_TYPE??null};
   await app.evaluate(({BrowserWindow},zoom)=>{const window=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().endsWith('/index.html'));window.webContents.setZoomFactor(zoom);window.show();window.focus();},zoom);
   return page;
  }

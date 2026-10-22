@@ -46,10 +46,17 @@ Bedienabnahme oder Owner-Abnahme.
 `tools/native-session.mjs` besitzt das isolierte Profil, den Busproxy, Start,
 echten Browserzoom, frische Fensteraufnahmen und reguläres Close/Fresh. Ein
 Ergebnis wird erst nach normalen Prozessenden, verschwundenen PIDs, fehlerfreiem
-Renderer und unveränderten fünf Runtimeartefakten veröffentlicht. Ein neuer
+Renderer und unveränderten elf Runtimeartefakten veröffentlicht. Ein neuer
 Lauf entfernt vorherige Erfolgsdaten bereits vor dem Fixtureaufbau. Notfall-Cleanup
-ist kein normaler Prozessabschluss. Profile folgen `TMPDIR`; bei großen Fixtures
-ein eigenes Verzeichnis auf Disk statt eines RAM-Dateisystems verwenden.
+ist kein normaler Prozessabschluss. Profile liegen unter `~/.cache/saltmarcher/ui/` auf Disk, unabhängig vom
+RAM-basierten `/tmp`.
+
+Die Sitzung verwendet standardmäßig dieselbe Plattformwahl wie ein normaler
+Electron-Start. `QA_OZONE_PLATFORM=x11`, `wayland` oder `auto` erlaubt einen
+gezielten Vergleich; angeforderte Plattform und Desktop-Sitzung stehen im
+Prozessbeleg. Der frühere feste X11-Schalter verzerrte auf diesem Wayland-Host
+die Einordnung der Atlas-Framezeiten. [Vergleich, Trace und verbleibende
+Grenzen](../reference/atlas-presentation-platform-20261022/README.md).
 
 Vorbereitung/Generierung, narrative Beuteverteilung, Kampfverstärkung und manuelle
 Timeline teilen diesen Unterbau. Die Skripte behalten ihre tatsächlichen
