@@ -72,7 +72,7 @@ export interface LandscapeRecord {
 export type LandscapeAction =
   | {kind:'landscape-route';record:LandscapeRecord;expectedRevision:number|null;sourceRevision:number}
 
-  | {kind:'landscape-vegetation-edit';polygons:Polygon[];mode:'clear'|'thin'|'dense'}
+  | {kind:'landscape-vegetation-edit';polygons:Polygon[];mode:'clear'|'thin'|'dense'|'erase'}
 
   | {kind:"landscape-terrain-style"; style:import("./terrain-relief").TerrainStyle}
   | {kind:"landscape-sea-level"; seaLevelM:number}

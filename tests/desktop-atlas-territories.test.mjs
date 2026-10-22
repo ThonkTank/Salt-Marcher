@@ -782,3 +782,14 @@ test('a bend between two regions can be deleted without losing area and undone t
  f.write({kind:'territory-vertex',id:'west',expectedRevision:1,polygon:0,ring:0,vertex:2,point:null});assert.equal(f.state.territories.reduce((sum,r)=>sum+polygonArea(r.polygons),0),20000);assert(f.state.territories.every(r=>r.polygons[0].outer.length===4));
  f.write({kind:'undo'});assert.deepEqual(f.state.territories.map(r=>r.polygons),before);f.fresh();assert.deepEqual(f.state.territories.map(r=>r.polygons),before);
 });
+
+test('continental brush survives normalization roundoff while a crossing at the same scale is rejected',t=>{
+ const f=fixture(t),{brushFootprint,unionPolygons}=require('../.build/atlas-territories-tests.cjs');
+ const points=[{x:-8580000,y:-1449582.867321307},{x:-7860000,y:-1316457.867321307},{x:-8130000,y:-850520.3673213068}];
+ const polygons=brushFootprint(points,800000),normalized=unionPolygons(polygons,polygons);
+ assert(polygonArea(polygons)>3e12);
+ assert(Math.abs(polygonArea(polygons)-polygonArea(normalized))<.01);
+ f.put(territory('continental',polygons));assert(f.state.territories.find(r=>r.id==='continental').polygons.length);
+ const x=2e7,y=-1e7;
+ assert.throws(()=>f.put(territory('crossing-world',[{outer:[{x,y},{x:x+1e6,y:y+1e6},{x,y:y+1e6},{x:x+1e6,y}],holes:[]}])),/kreuzt|Fläche/);
+});

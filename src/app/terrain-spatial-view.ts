@@ -21,8 +21,8 @@ import type {SpatialReply} from './terrain-spatial-worker';
 import type {Point} from './contracts';
 import {AtlasSpatialScene} from './atlas-spatial-scene';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
-import {terrainContourUniforms,terrainContourSlope} from './terrain-contours';
-import {CONTOUR_SPACING_PIXELS} from './terrain-contour-style';
+import {terrainContourUniforms} from './terrain-contours';
+import {terrainContourStep} from './terrain-contour-style';
 import {terrainGridLayout,terrainGridRect} from './terrain-grid-layout';
 import {terrainRaycast} from './terrain-ray';
 import {TerrainHexGrid} from './terrain-hex-grid';
@@ -53,7 +53,6 @@ export class TerrainSpatialView {
   private origin={x:0,y:0};
   private renderWidth=0;private renderHeight=0;private heightRange=0;
   private contours=terrainContourUniforms();
-  private contourSlope=0;
   private hexGrid=new TerrainHexGrid();
   private labels=new AtlasSpatialLabels();
   private atlas:AtlasSpatialScene|null=null;
@@ -135,7 +134,7 @@ export class TerrainSpatialView {
     this.brushDraft??=new TerrainBrushDraft(this.grid);
     if(!this.brushDraft.update(stroke))return false;
     this.draftMaterial!.update(this.mesh,this.brushDraft.grid,this.brushDraft.ground,this.brushDraft.changedRect);
-    this.grid=this.brushDraft.grid;this.contourSlope=Math.max(this.contourSlope,terrainContourSlope(this.grid,this.brushDraft.changedRect));
+    this.grid=this.brushDraft.grid;
     this.heightRange=Math.max(this.heightRange,this.brushDraft.maximumHeight);
     this.cursor.refresh(this.grid,this.origin);this.selection.refresh(this.grid,this.origin);
     this.render();return true;
@@ -145,7 +144,6 @@ export class TerrainSpatialView {
     const previous=this.grid,oldOrigin=this.origin;
     const g=this.frozenPick&&this.base?{...data.grid,view:{...data.grid.view,focusM:this.base.view.focusM}}:data.grid,v=g.view;
     this.grid=g;this.heightRange=g.heights.reduce((n,z)=>Math.max(n,Math.abs(z-v.focusM)),1);this.origin={x:v.frame.x+v.frame.width/2,y:v.frame.y+v.frame.height/2};
-    this.contourSlope=terrainContourSlope(g);
     this.contours??=terrainContourUniforms();
     const partial=data.update&&sameTerrainIdentity(this.identity,data.update.base)?data.update:undefined;
     const next=updateTerrainMesh(this.mesh,{...data,grid:g},previous,oldOrigin,this.origin,partial,this.contours,this.renderer);
@@ -250,7 +248,7 @@ export class TerrainSpatialView {
     if(!this.grid)return;const v=this.grid.view,horizon=terrainHorizon(v);
     const w=this.outputTile?.w??Math.max(1,this.canvas.clientWidth),h=this.outputTile?.h??Math.max(1,this.canvas.clientHeight);if(w!==this.renderWidth||h!==this.renderHeight){this.renderer.setSize(w,h,false);this.renderWidth=w;this.renderHeight=h;}
     this.contours.terrainContourPixelRatio.value=this.renderer.getPixelRatio();
-    this.contours.terrainContourAutomaticStep.value=Math.max(1,this.contourSlope*v.frame.width/(this.outputTile?.width??w)*CONTOUR_SPACING_PIXELS);
+    this.contours.terrainContourAutomaticStep.value=terrainContourStep(v.frame.width/(this.outputTile?.width??w));
     this.hexGrid.update(this.origin,this.renderer.getPixelRatio());
     this.detail?.updateView(this.origin,v.frame.width/(this.outputTile?.width??w));
     this.updateCamera();

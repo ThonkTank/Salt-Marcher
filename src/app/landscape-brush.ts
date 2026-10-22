@@ -2,6 +2,7 @@ import {validateTerrainView,type TerrainView} from './terrain-spatial-model';
 import polygonClipping from 'polygon-clipping';
 import type { Point, Polygon } from './contracts';
 import type { LandscapeRecord } from './atlas-landscape';
+import {clipLandscapePolygons,roundBrushPolygons} from './landscape-polygon-clipping';
 export type BrushMode = 'terrain'|'land'|'land-erase'|'raise'|'lower'|'freshwater'|'freshwater-erase'|'ground-color'|'water-color'|'color-erase';
 export interface LandscapeColor {
   version:1|2; operation?:'paint'|'erase'; fillScope?:'connected'|'all'; target:'ground'|'water'; color:string; opacity:number; flow:number;
@@ -16,22 +17,39 @@ export const mergePolygons=(polygons:Polygon[])=>polygons.length?unclipPolygons(
 export const intersectPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.intersection(clipPolygons(a),clipPolygons(b))):[];
 export const subtractPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.difference(clipPolygons(a),clipPolygons(b))):a;
 export const unionPolygons=(a:Polygon[],b:Polygon[])=>!a.length?b:!b.length?a:unclipPolygons(polygonClipping.union(clipPolygons(a),clipPolygons(b)));
+function brushRing(point:Point,radius:number,roughness:number,seed:number,index=0):Point[]{
+  return Array.from({length:24},(_,j)=>{
+    const a=j*Math.PI/12,r=radius*(1+roughness*.13*(Math.sin(j*3+index*.7+seed)+Math.cos(j*5-seed)));
+    return{x:point.x+Math.cos(a)*r,y:point.y+Math.sin(a)*r};
+  });
+}
 /** Capsules avoid holes even with sparse/coalesced pointer samples. */
 export function brushFootprint(points:Point[],radius:number,roughness=0,seed=1):Polygon[]{
   if(!points.length)return [];
   if(!Number.isFinite(radius)||radius<=0||!Number.isFinite(roughness)||roughness<0||roughness>2||points.length>2000||points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)))throw Error('Pinselgröße und Strichpunkte prüfen.');
-  const rings:Polygon[]=points.map((p,i)=>({outer:Array.from({length:24},(_,j)=>{
-    const a=j*Math.PI/12,r=radius*(1+roughness*.13*(Math.sin(j*3+i*.7+seed)+Math.cos(j*5-seed)));
-    return{x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r};
-  }),holes:[]}));
+  if(!roughness)return roundBrushPolygons(points,radius);
+  // Construct and clip near the stroke, before adding its world offset. Tiny
+  // capsule intersections otherwise lose precision thousands of kilometres away.
+  const origin=points[0]!;
+  points=points.map(p=>({x:p.x-origin.x,y:p.y-origin.y}));
+  const rings:Polygon[]=points.map((p,i)=>({outer:brushRing(p,radius,roughness,seed,i),holes:[]}));
   for(let i=1;i<points.length;i++){
     const a=points[i-1]!,b=points[i]!,len=Math.hypot(b.x-a.x,b.y-a.y);if(!len)continue;
     const x=-(b.y-a.y)/len*radius,y=(b.x-a.x)/len*radius;
     rings.push({outer:[{x:a.x+x,y:a.y+y},{x:b.x+x,y:b.y+y},{x:b.x-x,y:b.y-y},{x:a.x-x,y:a.y-y}],holes:[]});
   }
-  // Bound each clipping call; combining all 2000 rings in one call is needlessly costly.
-  let out:Polygon[]=[];for(let i=0;i<rings.length;i+=64)out=unionPolygons(out,unclipPolygons(polygonClipping.union(clipPolygons(rings.slice(i,i+64)))));
-  return out;
+  // Dissolve small batches, then merge similarly sized results. A single union
+  // of thousands of overlapping circles spends most of its time on hidden edges.
+  let groups:Polygon[][]=[];
+  for(let i=0;i<rings.length;i+=64)groups.push(clipLandscapePolygons('union',rings.slice(i,i+64)));
+  while(groups.length>1){
+    const next:Polygon[][]=[];
+    for(let i=0;i<groups.length;i+=2)next.push(i+1<groups.length?clipLandscapePolygons('union',[...groups[i]!,...groups[i+1]!]):groups[i]!);
+    groups=next;
+  }
+  const out=groups[0]!;
+  const translate=(ring:Point[])=>ring.map(p=>({x:p.x+origin.x,y:p.y+origin.y}));
+  return out.map(p=>({outer:translate(p.outer),holes:p.holes.map(translate)}));
 }
 export function validateColor(r:LandscapeRecord){
   if(r.propertyOnly!==undefined&&(r.propertyOnly!==true||r.kind!=='patch'||r.paint||r.mask||r.surface||r.maskManaged))throw Error('Eigenschaftsfläche prüfen.');
@@ -72,7 +90,10 @@ export function colorParts(r:LandscapeRecord):ColorPart[]{
     let previous=0;const bands=p.tip==='round'?1:6;
     for(let i=0;i<bands;i++){
       const next=p.flow*((i+1)/bands),opacity=(next-previous)/(1-previous||1);previous=next;
-      out.push({color:p.color,opacity,polygons:intersectPolygons(r.polygons,brushFootprint([stamps[n]!],p.radius*(1-i*.13),p.tip==='textured'?1.5:0,p.seed+n+i))});
+      // Version-1 pigment is reconstructed from its original 24-point stamps.
+      // New author brush geometry must not repaint already saved colour strokes.
+      const stamp:Polygon={outer:brushRing(stamps[n]!,p.radius*(1-i*.13),p.tip==='textured'?1.5:0,p.seed+n+i),holes:[]};
+      out.push({color:p.color,opacity,polygons:clipLandscapePolygons('intersection',r.polygons,[stamp])});
     }
   }
   return out;

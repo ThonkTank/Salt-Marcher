@@ -1,0 +1,44 @@
+{
+  "counts": {
+    "hexes": 100000,
+    "buildings": 5000,
+    "details": 50,
+    "dungeonRooms": 4001
+  },
+  "inventory": {
+    "hexes": 100000,
+    "sourceCells": 100000,
+    "places": 5000,
+    "heightTiles": 1028,
+    "buildings": 5000,
+    "details": 50,
+    "dungeonRooms": 4001,
+    "rooms": 15701,
+    "elements": 48670,
+    "bindings": 5052,
+    "locations": 5051,
+    "cityDocuments": 0
+  },
+  "timings": {
+    "hexesMs": 20339.016736999998,
+    "buildingsMs": 40529.863608,
+    "detailsMs": 479.6277219999902
+  },
+  "hexWorkload": "Biome properties; height authored independently, not 100000 fine relief edits",
+  "city": {
+    "x": 0,
+    "y": 0,
+    "width": 3100,
+    "height": 1600
+  },
+  "building": {
+    "id": "mixed-house:0",
+    "x": 30,
+    "y": 30
+  },
+  "dungeon": {
+    "id": "mixed-dungeon",
+    "x": 10000,
+    "y": 10000
+  }
+}

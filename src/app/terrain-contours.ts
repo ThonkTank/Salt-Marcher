@@ -1,24 +1,6 @@
 import * as THREE from 'three';
 import {DEFAULT_TERRAIN_STYLE} from './terrain-relief';
 import {CONTOUR_BASE_METRES,CONTOUR_INK} from './terrain-contour-style';
-import type {TerrainGrid} from './terrain-spatial-model';
-import {terrainGridLayout} from './terrain-grid-layout';
-
-/** One slope reference for the loaded focus region, independent of individual
- * fragments. Choosing a level per pixel made equal-elevation lines break up. */
-export function terrainContourSlope(grid:TerrainGrid,rect?:{x:number;y:number;width:number;height:number}){
-  const v=grid.view,l=terrainGridLayout(v),b=v.refinement??v.box;let slope=0;
-  const left=Math.max(0,(rect?.x??1)-1),top=Math.max(0,(rect?.y??1)-1),right=Math.min(v.columns-1,rect?rect.x+rect.width:v.columns-1),bottom=Math.min(v.rows-1,rect?rect.y+rect.height:v.rows-1);
-  for(let y=top;y<bottom;y++)for(let x=left;x<right;x++){
-    if(l.x.values[x]!<b.x||l.x.values[x]!>b.x+b.width||l.y.values[y]!<b.y||l.y.values[y]!>b.y+b.height)continue;
-    const i=y*v.columns+x,h=grid.heights;
-    const dx=l.x.values[x+1]!-l.x.values[x]!,dy=l.y.values[y+1]!-l.y.values[y]!;
-    slope=Math.max(slope,Math.hypot((h[i+1]!-h[i]!)/dx,(h[i+v.columns]!-h[i]!)/dy),
-      Math.hypot((h[i+v.columns+1]!-h[i+v.columns]!)/dx,(h[i+v.columns+1]!-h[i+1]!)/dy));
-  }
-  return slope;
-}
-
 /** Display-only ink on the same triangular surface used for visible brush hits.
  * Derivatives express metres per actual screen pixel, keeping lines sharp as the
  * camera moves. Dense intervals fade before they alias; their heights never move. */

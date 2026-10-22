@@ -3,48 +3,44 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 buildSync({entryPoints:['src/app/terrain-contour-style.ts'],outfile:'.build/terrain-contours-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {terrainContourInk:ink,CONTOUR_SPACING_PIXELS:spacing}=createRequire(import.meta.url)('../.build/terrain-contours-test.cjs');
+const {terrainContourInk:ink,terrainContourStep:step,CONTOUR_INK:style}=createRequire(import.meta.url)('../.build/terrain-contours-test.cjs');
 
-test('automatic detail crossfades continuously through nested intervals without shifting elevations',()=>{
- for(let exponent=0;exponent<18;exponent++){
-  const gradient=2**exponent/spacing,step=2**exponent;
-  for(const height of [-2.3,-1,0,.3,1,2,5,10].map(n=>n*step)){
-   assert(Math.abs(ink(height,gradient*(1-1e-7),-1,-1e9)-ink(height,gradient*(1+1e-7),-1,-1e9))<1e-5);
+test('zoom crossfades nested fixed elevations continuously without sliding lines',()=>{
+ for(let exponent=0;exponent<=8;exponent++){
+  const interval=2**exponent,mpp=interval/16,gradient=interval/24;
+  for(const height of [-2.3,-1,0,.3,1,2,5,10].map(n=>n*interval)){
+   assert(Math.abs(ink(height,gradient,-1,-1e9,1,step(mpp*(1-1e-7)))-ink(height,gradient,-1,-1e9,1,step(mpp*(1+1e-7))))<1e-5);
   }
-  assert(ink(step*10,gradient,-1,0)>.49,'shared principal contour survives every interval boundary');
-  assert.equal(ink(step*.5,gradient,-1,0),0,'levels do not slide into intermediate elevations');
+  assert(ink(interval*10,gradient,-1,0,1,step(mpp))>.7,'shared principal contour survives interval boundaries');
+  assert.equal(ink(interval*.5,gradient,-1,0,1,step(mpp)),0,'levels do not slide into intermediate elevations');
  }
- assert(ink(3,.05,-1,0)>0);assert.equal(ink(3,2,-1,0),0,'fine lines disappear before becoming dense');
+ assert.equal(step(.001),1,'minimum interval remains one metre');
+ assert.equal(step(1),16);assert.equal(step(16),256);
+ for(const mpp of [32,1000,1e6])assert.equal(step(mpp),256,'world relief must not disappear behind unbounded elevation intervals');
 });
-test('logical spacing and contour elevations do not change with device or supersample density',()=>{
- assert.equal(spacing,24);
- for(const gradient of [.05,.2,1,5,100]){
-  const step=2**Math.floor(Math.max(0,Math.log2(gradient*spacing)));
-  for(const n of [-5,0,1,20])for(const ratio of [1.5,2]){
-   const height=n*step*10;
-   assert.equal(ink(height,gradient/ratio,-1,-1e9,ratio),ink(height,gradient,-1,-1e9),'shared principal elevations retain their exact opacity');
-   assert.equal(ink(height+step/2,gradient/ratio,-1,-1e9,ratio),0,'high DPI must not introduce intermediate elevation levels');
+test('the same scale preserves the same elevation lines across slopes and sample densities',()=>{
+ for(const mpp of [.0625,.5,8,64]){
+  const interval=step(mpp);
+  for(const slope of [.01,.1,1])for(const ratio of [1,1.5,2]){
+   const gradient=mpp*slope/ratio;
+   assert(ink(interval*3,gradient,-1,0,ratio,step(mpp))>0,'a shared minor elevation crosses gentle and steep slopes');
+   assert.equal(ink(interval*3.5,gradient,-1,0,ratio,step(mpp)),0,'slope or DPI must not introduce other levels');
+   assert.equal(ink(interval*10,gradient,-1,0,ratio,step(mpp)),ink(interval*10,gradient*ratio,-1,0,1,step(mpp)));
   }
  }
- // Antialias support is one physical pixel; its fringe need not match at different densities.
+ // Antialias support is one physical pixel; compare logical half-opacity width.
  for(const ratio of [1,1.5,2]){
-  const samples=Array.from({length:401},(_,i)=>({offset:(i-200)/100,ink:ink(500+(i-200)/100,1/ratio,100,0,ratio)}));
-  const visible=samples.filter(p=>p.ink>.26);
-  assert(Math.abs(visible.at(-1).offset-visible[0].offset-1.5)<.03,'principal line keeps its 1.5 logical pixel half-opacity width');
+  const samples=Array.from({length:601},(_,i)=>({offset:(i-300)/100,ink:ink(500+(i-300)/100,1/ratio,100,0,ratio,step(1))}));
+  const visible=samples.filter(p=>p.ink>style.majorAlpha/2);
+  assert(Math.abs(visible.at(-1).offset-visible[0].offset-2*style.majorWidth)<.03);
  }
 });
-test('fixed intervals, disabled contours and water plateaus retain their meaning',()=>{
+test('manual intervals, disabled contours, unresolved lines and water plateaus retain their meaning',()=>{
  for(const gradient of [.01,.1,1,2]){
-  assert(ink(100,gradient,100,0)>0);assert.equal(ink(50,gradient,100,0),0);
-  for(const height of [-100,0,100])assert.equal(ink(height,gradient,0,-1000),0);
-  for(const interval of [-1,10,100])for(const sea of [-100,0,100])assert.equal(ink(sea,gradient,interval,sea),0);
+  assert(ink(100,gradient,100,0,1,step(100))>0);assert.equal(ink(50,gradient,100,0,1,step(100)),0);
+  for(const height of [-100,0,100])assert.equal(ink(height,gradient,0,-1000,1,step(1)),0);
+  for(const interval of [-1,10,100])for(const sea of [-100,0,100])assert.equal(ink(sea,gradient,interval,sea,1,step(1)),0);
  }
- assert.equal(ink(100,0,-1,0),0);
-});
-test('one automatic interval retains a continuous elevation across changing slopes',()=>{
- for(const step of [1,8,128,1024])for(const gradient of [.001,.01,.025].map(n=>n*step)){
-  assert(ink(step*3,gradient,-1,0,1,step)>.3,'same minor contour must survive gentle and steep sections');
-  assert.equal(ink(step*3.5,gradient,-1,0,1,step),0,'slope must not introduce another elevation');
- }
- for(let i=1;i<100;i++)assert(Math.abs(ink(80,.1,-1,0,1,8*(1-i*1e-8))-ink(80,.1,-1,0,1,8*(1+i*1e-8)))<1e-4);
+ assert.equal(ink(100,0,-1,0,1,step(1)),0);
+ assert.equal(ink(100,100,1,0,1,step(1)),0,'subpixel spacing fades before aliasing');
 });

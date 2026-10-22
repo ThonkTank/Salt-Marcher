@@ -90,9 +90,11 @@ kritische Untersuchungen ohne weiteren Arbeitsfund erfüllen den Gesamtauftrag.
 
 ## 2. Technische Leitentscheidungen
 
+Die einfachste Lösung, die das gewünschte Ergebnis erzielt, hat Vorrang. Dauerhafte Module bleiben lesbar und nach fachlicher Verantwortung getrennt; zusätzliche Infrastruktur braucht einen belegten Nutzen.
+
 **Ein Darstellungsweg für den gesamten Atlas.** Terrain, Kartenlinien, Gebäude, Innenräume und Bearbeitungsgriffe teilen Kamera, Koordinatentransformation und Tiefeninformationen. DOM bleibt für Bedienelemente und Texteingabe zuständig.
 
-**Bestehende Atlas-Technik schrittweise verbessern.** Auf ausdrücklichen Nutzerwunsch vom 20.10.2026 entfällt der MapLibre-Vergleich. Der vorhandene Atlas mit Canvas2D, Three.js-Gelände, kanonischen Daten und Werkzeugen ist die Grundlage. Kamera, Datenversorgung und Darstellung werden dort verbessert und anschließend für die gemeinsame räumliche Fläche zusammengeführt. Die bisher begonnenen MapLibre-Adapter und Abhängigkeiten werden nicht übernommen.
+**Technik nach Eignung wählen.** Die Zielaktualisierung vom 22.10.2026 erlaubt ausdrücklich neue Architektur, Backend und isolierte Greenfield-Versuche. Die frühere Beschränkung auf die vorhandene Technik ist aufgehoben. Mehrere Ansätze anhand derselben konkreten Nutzeraufgaben vergleichen; bewährte Lösungen übernehmen, wenn sie besser tragen. Das Ergebnis bleibt die eine über die App erreichbare Atlasfläche. Bestehende Nutzerdaten und unabhängige Geometrie bleiben erhalten.
 
 Die Entscheidung für diesen Arbeitsweg ersetzt keine Funktions- oder Leistungsprüfung. Der vorhandene Renderer muss dieselben Produktziele erreichen; seine verbleibenden Grenzen werden pro Schritt geprüft und behoben.
 
@@ -203,7 +205,7 @@ Für die verschiedenen Zoom- und Detailstufen passende Darstellungen wählen: zu
 Für alle Objektklassen gemeinsame Maßstabsregeln einführen:
 
 - Küsten bleiben eigene scharfe Konturen; Relief und Bodenfarben werden getrennt gestaltet.
-- Höhenlinien behalten ihre tatsächlichen Höhen. Hauptlinien bleiben bestehen, Zwischenlinien werden schrittweise ergänzt; automatische Intervalle sind Standard, feste Intervalle bleiben wählbar.
+- Höhenlinien behalten ihre tatsächlichen Höhen und gleichmäßigen Höhenabstände. Die automatische Auswahl ineinander verschachtelter Höhenstufen hängt nur vom Kartenmaßstab ab, niemals von örtlicher oder geladener Steigung, Höhenspanne oder Geländeänderungen. Hauptlinien bleiben bestehen, Zwischenlinien werden weich ergänzt; feste Meterintervalle bleiben wählbar.
 - Straßen und Flüsse erhalten vereinfachte Verläufe, kontrollierte Bildschirmbreiten und maßstabsabhängige Namen.
 - Benutzer malen unabhängige Gebietsflächen mit Grenzen und Beschriftungen über die Geometrie. Bezeichnungen wie Stadt oder Stadtteil sind ausschließlich Typen dieser Overlays; darunterliegende Objekte bleiben unabhängig. Dokumenthüllen erzeugen keine zusätzlichen Marker oder Beschriftungen.
 - Namen verwenden Prioritäten, alternative Positionen, Linienbeschriftung und gemeinsame Überlappungsprüfung über Kachelgrenzen hinweg.

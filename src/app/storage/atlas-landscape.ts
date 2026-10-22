@@ -4,6 +4,7 @@ import {terrainTraceMeasure} from '../terrain-timing';
 import {readRouteTerrain,routeProposal} from './terrain-route';
 import {validateRoute} from '../terrain-route';
 import {validateVegetation} from '../vegetation';
+import {eraseVegetation} from '../vegetation-erase';
 import {computeTerrainStroke} from './terrain-scale';
 import {applyHeightArea,resetHeightArea,decodeHeights,validateTerrain,settingsRecord} from '../terrain-height';
 import {validateMask} from '../land-mask';
@@ -379,12 +380,29 @@ export function executeLandscape(db: any, cam: string, a: LandscapeAction, liveC
   }
   if((a.kind==='landscape-put'||a.kind==='landscape-place')&&a.record.route||a.kind==='landscape-batch'&&a.records.some(x=>x.record.route))throw Error('Geplante Verläufe mit Vorschau im Verlaufseditor bearbeiten.');
   if(a.kind==='landscape-vegetation-edit'){
-    if(!['clear','thin','dense'].includes(a.mode)||!Array.isArray(a.polygons)||!a.polygons.length||a.polygons.length>1000||a.polygons.some(p=>!p||!Array.isArray(p.outer)||p.outer.length<3||!Array.isArray(p.holes)))throw Error('Bestandskorrektur prüfen.');
+    if(
+      !['clear','thin','dense','erase'].includes(a.mode)||
+      !Array.isArray(a.polygons)||!a.polygons.length||a.polygons.length>1000||
+      a.polygons.some(p=>
+        !p||!Array.isArray(p.outer)||p.outer.length<3||!Array.isArray(p.holes)||
+        [p.outer,...p.holes].some(r=>
+          !Array.isArray(r)||r.length<3||
+          r.some(v=>!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))))
+    )throw Error('Bestandskorrektur prüfen.');
     const area=bounds({id:'',revision:0,name:'',kind:'vegetation',points:[],polygons:a.polygons,width:0,resolution:1,values:{}});
     if(!Object.values(area).every(Number.isFinite))throw Error('Bestandskorrektur prüfen.');
     const records=landscapeRegion(db,cam,area).filter(r=>r.vegetation);
-    if(!records.length)throw Error('Hier liegt keine Bewuchsfläche. Zuerst eine Landschaft malen.');
-    for(const record of records){record.vegetation!.edits.push({polygons:a.polygons,mode:a.mode});putLandscape(db,cam,record,record.revision);}
+    if(!records.length&&a.mode!=='erase')throw Error('Hier liegt keine Bewuchsfläche. Zuerst eine Landschaft malen.');
+    for(const record of records){
+      if(a.mode==='erase'){
+        const remaining=eraseVegetation(record,a.polygons);
+        if(!remaining)db.prepare('DELETE FROM atlas_landscape WHERE campaign_id=? AND id=?').run(cam,record.id);
+        else if(remaining!==record)putLandscape(db,cam,remaining,record.revision);
+      }else{
+        record.vegetation!.edits.push({polygons:a.polygons,mode:a.mode});
+        putLandscape(db,cam,record,record.revision);
+      }
+    }
     return;
   }
 
