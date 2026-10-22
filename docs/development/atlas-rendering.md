@@ -46,6 +46,11 @@ Leisten, Werkzeuge und Navigation: [Atlasoberfläche ändern](../../ARCHITECTURE
 Pinselgrößen werden bei Kamerabildern synchronisiert. Ihre Beschriftungsknoten
 bleiben dabei bestehen; nur echte Einheitenwechsel ändern den Text.
 [Native Stil-/Navigationsmessung](../reference/atlas-brush-controls-20261021/README.md).
+Die Hilfsebene reicht inzwischen ihren bereits gemessenen Kartenmaßstab an
+die Pinselregler weiter. Speicherbestätigungen benötigen dafür keine eigene
+synchrone Layoutabfrage; direkte Eingaben prüfen aktuelle Maße weiterhin sofort.
+Die Werkzeugleiste teilt eine aktuelle Katalogaufnahme je Aktualisierung und
+behält unveränderte Beschriftungen bei. [Ablauf, Messgrenzen und volle Welt](../reference/atlas-control-frame-20261022/README.md).
 Testvorbereitung und native Sitzungen: [Testanleitung](testing.md).
 Die aufgeführten Prüfwege sind keine neue Ausführung oder Produktabnahme.
 

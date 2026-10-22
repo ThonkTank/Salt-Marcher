@@ -21,7 +21,7 @@ const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/world-navigation');
 const cameraTrace=process.env.WORLD_CAMERA_TRACE;
 assert(!cameraTrace||['1','current'].includes(cameraTrace),'Unknown camera trace mode');
 const readbackMode=process.env.WORLD_READBACK??'legacy',profileEnabled=process.env.WORLD_PROFILE===undefined?readbackMode==='legacy':process.env.WORLD_PROFILE==='1';
-assert(['legacy','sync','async'].includes(readbackMode),'Unknown pixel readback mode');
+assert(['off','legacy','sync','async'].includes(readbackMode),'Unknown pixel readback mode');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {CampaignStore} from './src/app/storage/store';export {applyTerrainBrush} from './src/app/terrain-brush';export {heightRecord} from './src/app/terrain-height';export {emptyRecord,bounds} from './src/app/atlas-landscape';export {vegetationSpec} from './src/app/vegetation';"},outfile:'.build/world-navigation-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,applyTerrainBrush,heightRecord,emptyRecord,bounds,vegetationSpec}=require(root+'/.build/world-navigation-store.cjs');
 const native=await createNativeSession({root,output:out,name:'world-navigation'}),store=new CampaignStore(native.profile+'/workbench.sqlite');
@@ -68,7 +68,8 @@ const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
 const draftProbe=buildDraftProbe();
 const renderReuseProbe=buildRenderReuseProbe();
-const responseProbe=readbackMode==='legacy'?null:require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {installTerrainResponseProbe} from './tools/terrain-pixel-readback.mjs';"},bundle:true,format:'iife',globalName:'TerrainResponseProbe',write:false}).outputFiles[0].text;
+// Off mode isolates ordinary frame timing; it cannot qualify input-to-pixel latency.
+const responseProbe=['off','legacy'].includes(readbackMode)?null:require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {installTerrainResponseProbe} from './tools/terrain-pixel-readback.mjs';"},bundle:true,format:'iife',globalName:'TerrainResponseProbe',write:false}).outputFiles[0].text;
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
  if(process.env.WORLD_WARM_OPEN==='1'){
@@ -198,7 +199,7 @@ try{
  if(process.env.WORLD_DRAFT==='1'){
   assert(result.presentationChanges.some(c=>c.draft==='height'),'direct grid draft must be visible during the gesture');
   assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'draft must be replaced when the gesture finishes');
-  assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'actual terrain pixels must change while holding the brush');
+  if(readbackMode!=='off')assert(result.metrics.find(m=>m.name==='sculpt').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'actual terrain pixels must change while holding the brush');
  }
  if(process.env.WORLD_REPEAT==='1'){
   if(process.env.WORLD_OVERLAY==='1'){
@@ -218,7 +219,7 @@ try{
   result.repeatSculpt=await sculpt('sculpt-repeat');
   assert(Number(result.repeatSculpt.status.revision)>Number(result.sculptStatus.revision),'the warm-world stroke must commit another revision');
   assert(!result.repeatSculpt.status.text.includes('gestoppt'));
-  assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'the warm-world stroke must change actual pixels');
+  if(readbackMode!=='off')assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'the warm-world stroke must change actual pixels');
   assert(await page.locator('#campaign-map').evaluate(n=>!n.dataset.terrainDraft),'the repeated draft must finish');
  }
  result.timing=await page.evaluate(()=>window.__saltTerrainTrace);
@@ -232,6 +233,6 @@ try{
  result.detailPixels=await terrainDetailPixels(page,detailProbe);
  result.draftPixels=await terrainDraftPixels(page,draftProbe);
  result.renderReusePixels=await terrainRenderReusePixels(page,renderReuseProbe);
- if(readbackMode!=='legacy')result.readbackPixels=await terrainPixelReadbackPixels(page);
+ if(responseProbe)result.readbackPixels=await terrainPixelReadbackPixels(page);
  assert.deepEqual(result.errors,[]);await native.close();await native.finish(result);
 }catch(error){await writeFile(out+'/progress.json',JSON.stringify(result,null,2));await native.fail(error);throw error;}finally{await native.dispose();}

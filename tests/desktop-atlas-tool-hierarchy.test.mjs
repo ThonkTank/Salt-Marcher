@@ -167,3 +167,19 @@ test('graphics recovery clears only the failure that belongs to the recovered pr
   if(a!=='graphics')assert.equal(local.textContent,a);if(b!=='graphics')assert.equal(global.textContent,b);
  }
 });
+
+test('unchanged toolbar updates preserve accessible labels and pressed state; switching tools uses fresh domain state',t=>{
+ const {layout,document,root}=fixture(t);
+ for(const id of ['atlas-floor-field','atlas-new-name','atlas-more-options','atlas-measure','atlas-active-tool','atlas-select','atlas-pan','vegetation-selection-filter','land-cursor-height','land-sea-options'])if(!document.getElementById(id)){
+  const label=document.createElement('label'),node=document.createElement('input');node.id=id;label.append(node);root.append(label);
+ }
+ layout.tools=document.createElement('div');layout.active=true;root.dataset.family='terrain';layout.renderGroups();
+ const sync=()=>AtlasWorkspaceLayout.prototype.sync.call(layout),tool=document.getElementById('land-tool');tool.value='height';sync();
+ const caption=document.getElementById('atlas-active-tool'),text=caption.firstChild,group=layout.groups.querySelector('[data-tool-group="land"]');
+ assert.equal(caption.textContent,'Land formen');assert.equal(group.getAttribute('aria-pressed'),'true');
+ let catalogReads=0;const catalog=layout.catalog.bind(layout);layout.catalog=(...args)=>{catalogReads++;return catalog(...args);};
+ sync();assert.equal(catalogReads,1,'one current availability snapshot serves all buttons');assert.equal(caption.firstChild,text,'an unchanged label must retain its text node');
+ tool.value='river';sync();assert.equal(caption.textContent,'Fluss zeichnen');assert.equal(layout.groups.querySelector('[data-tool-group="water"]').getAttribute('aria-pressed'),'true');
+ tool.disabled=true;sync();assert.equal(layout.toolList.querySelector('[data-atlas-tool="river"]').disabled,true,'domain control changes reach the visible toolbar');
+ root.dataset.panMode='true';sync();assert.equal(caption.textContent,'Hand');assert.equal(document.getElementById('atlas-pan').getAttribute('aria-pressed'),'true');
+});
