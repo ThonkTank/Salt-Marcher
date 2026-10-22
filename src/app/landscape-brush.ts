@@ -17,6 +17,12 @@ export const mergePolygons=(polygons:Polygon[])=>polygons.length?unclipPolygons(
 export const intersectPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.intersection(clipPolygons(a),clipPolygons(b))):[];
 export const subtractPolygons=(a:Polygon[],b:Polygon[])=>a.length&&b.length?unclipPolygons(polygonClipping.difference(clipPolygons(a),clipPolygons(b))):a;
 export const unionPolygons=(a:Polygon[],b:Polygon[])=>!a.length?b:!b.length?a:unclipPolygons(polygonClipping.union(clipPolygons(a),clipPolygons(b)));
+function brushRing(point:Point,radius:number,roughness:number,seed:number,index=0):Point[]{
+  return Array.from({length:24},(_,j)=>{
+    const a=j*Math.PI/12,r=radius*(1+roughness*.13*(Math.sin(j*3+index*.7+seed)+Math.cos(j*5-seed)));
+    return{x:point.x+Math.cos(a)*r,y:point.y+Math.sin(a)*r};
+  });
+}
 /** Capsules avoid holes even with sparse/coalesced pointer samples. */
 export function brushFootprint(points:Point[],radius:number,roughness=0,seed=1):Polygon[]{
   if(!points.length)return [];
@@ -26,10 +32,7 @@ export function brushFootprint(points:Point[],radius:number,roughness=0,seed=1):
   // capsule intersections otherwise lose precision thousands of kilometres away.
   const origin=points[0]!;
   points=points.map(p=>({x:p.x-origin.x,y:p.y-origin.y}));
-  const rings:Polygon[]=points.map((p,i)=>({outer:Array.from({length:24},(_,j)=>{
-    const a=j*Math.PI/12,r=radius*(1+roughness*.13*(Math.sin(j*3+i*.7+seed)+Math.cos(j*5-seed)));
-    return{x:p.x+Math.cos(a)*r,y:p.y+Math.sin(a)*r};
-  }),holes:[]}));
+  const rings:Polygon[]=points.map((p,i)=>({outer:brushRing(p,radius,roughness,seed,i),holes:[]}));
   for(let i=1;i<points.length;i++){
     const a=points[i-1]!,b=points[i]!,len=Math.hypot(b.x-a.x,b.y-a.y);if(!len)continue;
     const x=-(b.y-a.y)/len*radius,y=(b.x-a.x)/len*radius;
@@ -87,7 +90,10 @@ export function colorParts(r:LandscapeRecord):ColorPart[]{
     let previous=0;const bands=p.tip==='round'?1:6;
     for(let i=0;i<bands;i++){
       const next=p.flow*((i+1)/bands),opacity=(next-previous)/(1-previous||1);previous=next;
-      out.push({color:p.color,opacity,polygons:intersectPolygons(r.polygons,brushFootprint([stamps[n]!],p.radius*(1-i*.13),p.tip==='textured'?1.5:0,p.seed+n+i))});
+      // Version-1 pigment is reconstructed from its original 24-point stamps.
+      // New author brush geometry must not repaint already saved colour strokes.
+      const stamp:Polygon={outer:brushRing(stamps[n]!,p.radius*(1-i*.13),p.tip==='textured'?1.5:0,p.seed+n+i),holes:[]};
+      out.push({color:p.color,opacity,polygons:clipLandscapePolygons('intersection',r.polygons,[stamp])});
     }
   }
   return out;

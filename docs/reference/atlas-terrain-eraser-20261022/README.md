@@ -140,3 +140,34 @@ Einstellungen beim Malen. Normaler Exit, PID verschwunden, keine Rendererfehler.
 [Bild](options/eraser-options.png). Der erste Prüfansatz verwendete irrtümlich
 das verborgene kanonische Radiusfeld; geprüft wird jetzt die sichtbare Eingabe
 `land-radius-value`. Dafür war keine weitere Produktänderung nötig.
+
+
+## Durch die vollständige CI entdeckte Farbregression
+
+Candidate `72727d54305b5bef4e555cda673182197ad2ffe4` scheiterte im vorhandenen
+Pixelvergleich für gespeicherte Farbaufträge (Run `39849364722`). Die neue
+Pinselgeometrie veränderte die Rekonstruktion von Version-1-Pigment. Der
+[Vergleich](pigment-regression/pigment-comparison.json) zeigt 1.067 veränderte
+Pixel von 16.384, maximal 24 Kanalwerte. [Vorher](pigment-regression/pigment-baseline.png),
+[fehlerhafter Kandidat](pigment-regression/pigment-candidate.png),
+[Korrektur](pigment-regression/pigment-fixed.png) wurden visuell betrachtet.
+
+Drei Möglichkeiten: vollständige Rücknahme des neuen Geometriepfades würde
+die belegten Radiererfehler zurückbringen; ein neuer erwarteter Bildhash würde
+die Veränderung vorhandener Karten akzeptieren; eine getrennte Rekonstruktion
+der ursprünglichen 24-Punkt-Stempel erhält deren Form. Gewählt ist die dritte
+Variante. Ihr Schnitt mit neuen Pinselrändern verwendet das robuste Integer-
+Verfahren, weil nahezu deckungsgleiche Gleitkommakanten andernfalls scheitern.
+Der bestehende erwartete Bildhash bleibt unverändert. Der feste Vergleich ist
+nach der Korrektur pixelgleich (0 veränderte Pixel); das ist ein Fixture-Nachweis,
+keine Garantie für jede beliebige gespeicherte Karte.
+
+Der vollständige lokale Diagnoselauf endete mit 4.363 Tests, 4.357 erfolgreich,
+fünf fehlgeschlagen und einem übersprungenen Test. Während dieses Laufs wurde
+der Reparaturentwurf geändert; er ist daher keine Qualifikation eines festen
+Commits. Alle fünf Fehler betreffen Farbschnitte. Die anschließenden
+[19 Pigment-/Werkzeugtests](pigment-regression/release-187-pigment-fix2.log) und
+[18 Küsten-/Farbreihenfolge-/Pinseltests](pigment-regression/release-187-remaining-fix.log)
+bestehen nach der endgültigen Korrektur. Reproduktion aus dem Repository:
+`node docs/reference/atlas-terrain-eraser-20261022/pigment-regression/reproduce.mjs`.
+Die neue genaue Candidate-CI bleibt vor Integration verpflichtend.
