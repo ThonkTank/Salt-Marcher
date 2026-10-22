@@ -27,7 +27,7 @@ for(const c of cases){
 const results=[];
 try{
  const page=await native.launch();
- for(const spacing of [12,24,36]){
+ for(const spacing of [8,16,24]){
   const bundle=(await build({stdin:{resolveDir:root,contents:`
    import {TerrainSpatialView} from './src/app/terrain-spatial-view';
    export function render(encoded,tilt){
@@ -36,7 +36,7 @@ try{
     const canvas=document.createElement('canvas');canvas.style.cssText='position:fixed;left:-2000px;top:0;width:960px;height:640px';document.body.append(canvas);
     const view=new TerrainSpatialView(canvas,1);try{view.setData(data);view.setContours(-1);return canvas.toDataURL('image/png');}finally{view.dispose();canvas.remove();}
    }
-  `},bundle:true,format:'iife',globalName:'ContourReadabilityProbe',write:false,plugins:[{name:'isolated-spacing',setup(b){b.onLoad({filter:/terrain-contour-style\.ts$/},async args=>({contents:(await readFile(args.path,'utf8')).replace(/CONTOUR_SPACING_PIXELS=\d+/, 'CONTOUR_SPACING_PIXELS='+spacing),loader:'ts'}));}}]})).outputFiles[0].text;
+  `},bundle:true,format:'iife',globalName:'ContourReadabilityProbe',write:false,plugins:[{name:'isolated-spacing',setup(b){b.onLoad({filter:/terrain-contour-style\.ts$/},async args=>({contents:(await readFile(args.path,'utf8')).replace('16*metresPerPixel', spacing+'*metresPerPixel'),loader:'ts'}));}}]})).outputFiles[0].text;
   await page.evaluate(bundle);
   for(const c of encoded)for(const tilt of [0,45]){
    const png=await page.evaluate(({data,tilt})=>ContourReadabilityProbe.render(data,tilt),{data:c.data,tilt}),file=c.name+'-'+spacing+'-'+tilt+'.png';
@@ -44,5 +44,5 @@ try{
   }
  }
  await native.close();await native.finish({results,checks:['Same production geometry, colour and camera across isolated contour-spacing variants; no product or author changes.']});
- await writeFile(out+'/comparison.html','<!doctype html><meta charset="utf-8"><title>Konturenvergleich</title><style>body{font:16px system-ui;margin:24px;background:#faf8f2}section{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}figure{margin:0}img{width:100%}</style><h1>Isolierter Konturenvergleich</h1>'+cases.flatMap(c=>[0,45].map(tilt=>'<h2>'+c.name+' · '+tilt+'°</h2><section>'+[12,24,36].map(spacing=>'<figure><img src="'+c.name+'-'+spacing+'-'+tilt+'.png"><figcaption>'+spacing+' px Zielabstand</figcaption></figure>').join('')+'</section>')).join(''));
+ await writeFile(out+'/comparison.html','<!doctype html><meta charset="utf-8"><title>Konturenvergleich</title><style>body{font:16px system-ui;margin:24px;background:#faf8f2}section{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}figure{margin:0}img{width:100%}</style><h1>Isolierter Konturenvergleich</h1>'+cases.flatMap(c=>[0,45].map(tilt=>'<h2>'+c.name+' · '+tilt+'°</h2><section>'+[8,16,24].map(spacing=>'<figure><img src="'+c.name+'-'+spacing+'-'+tilt+'.png"><figcaption>'+spacing+' m Höhenabstand bei 1 m/px</figcaption></figure>').join('')+'</section>')).join(''));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

@@ -1,0 +1,59 @@
+{
+  "source": "Fixed zoom-selected contour elevations, 16 m at 1 logical m/px; clearer ink. Previous slope-derived pixels retained in terrain-coast-goldens.json.",
+  "cases": [
+    {
+      "mode": "drawn",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "shaded",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "height",
+      "contours": 0,
+      "mpp": 0.25,
+      "sha256": "fb1501bbfd22ceb637db6271bc2b8a4b70832365f92c285afc751193bc309b23"
+    },
+    {
+      "mode": "drawn",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "060c550646e2e3c23536ff9b3228c8f0591bb5c75b6980827c84ea3b7d7cd38b"
+    },
+    {
+      "mode": "drawn",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "6569502ebd70b21d663ccf4d90837c6afd78166765be868b35497d0a1e4e9949"
+    },
+    {
+      "mode": "shaded",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "6bf0a003f3a1ea4e0e511351d155caeba2542adc35729f73f1f2b885c211e9cf"
+    },
+    {
+      "mode": "shaded",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "ef49e3cbb02186fa9a7c5b2cdd9ad2b91c2ce3a1e1ecf876cbb9b6444bc16292"
+    },
+    {
+      "mode": "height",
+      "contours": -1,
+      "mpp": 1,
+      "sha256": "342d5105e711a18d02902e71d543c74fc6bb28407bb7a190a03faf179d2f9b7a"
+    },
+    {
+      "mode": "height",
+      "contours": 10,
+      "mpp": 4,
+      "sha256": "a0e3662169fa96a13b2cb10155657fdd506a36abb9585a75c49d9f3075d89740"
+    }
+  ]
+}

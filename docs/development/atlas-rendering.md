@@ -88,8 +88,8 @@ Die GPU-Anbindung hat getrennte Zuständigkeiten:
 Die Hauptkamera liefert nur Weltanker, Größe und Überblendung der Gitterstufen;
 sie baut dafür keine projizierten Pfade pro Kamerabild mehr. Canvas-Fallback
 und Vektorausgabe behalten ihre bisherigen Pfade. Automatische Höhenlinien
-verwenden eine gemeinsame Steigungsreferenz des geladenen Fokusbereichs, damit
-dieselbe Höhenlinie nicht an einem Wechsel der örtlichen Steigung endet.
+verwenden feste Höhenstufen, die nur nach Kartenmaßstab ausgewählt werden.
+Geländesteigung, Nachladen und Bearbeitung verändern die Höhenstaffel nicht.
 Unsichtbare Trassen werden konservativ vor der GPU-Einreichung ausgesondert.
 Waldübersichten erzeugen ihre Höhenumgebung erst bei tatsächlich sichtbaren
 Einzelobjekten. [Weltprobe, Ursachen und verbleibende Pinselblockade](../reference/atlas-world-response-20261021/README.md).
@@ -309,9 +309,9 @@ Ein Höhenknoten beeinflusst zwei Zellen in jeder Richtung. `bounds` liefert dah
 
 ### Höhenlinien auf dem vorhandenen Geländenetz
 
-`terrain-contours.ts` zeichnet Höhenlinien im GPU-Material der gemeinsamen Atlasoberfläche. Standard ist „Automatisch“ (`-1`); `0` schaltet sie aus, positive Werte wählen feste Meterintervalle. Im Automatikmodus werden ineinander enthaltene Zweierintervalle ab einem Meter anhand der lokalen Bildschirmableitung überblendet. Linien bleiben auf ihren ursprünglichen Höhen, auch bei Neigung und unterschiedlicher Entfernung zur Kamera. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
+`terrain-contours.ts` zeichnet Höhenlinien im GPU-Material der gemeinsamen Atlasoberfläche. Standard ist „Automatisch“ (`-1`); `0` schaltet sie aus, positive Werte wählen feste Meterintervalle. Im Automatikmodus werden ineinander enthaltene Zweierintervalle ab einem Meter anhand des Kartenmaßstabs überblendet. Linien bleiben auf ihren ursprünglichen Höhen, auch bei Neigung und unterschiedlicher Entfernung zur Kamera. Die Eingabehöhen bleiben unveränderte Meterwerte; Überhöhung verändert weder Intervall noch Linienhöhe. Bildschirmableitungen halten die Strichbreite beim Zoomen/Neigen konstant und blenden unlesbar dichte Linien aus. Jede fünfte Linie wird hervorgehoben. Die Meereshöhe erzeugt keine zusätzliche Linie auf der Wasserfläche.
 
-Die Dichte richtet sich nach logischen Anzeigepixeln: Zielabstand 24 px, die verschachtelten Intervalle liegen je nach Überblendung etwa 12–24 px auseinander. Das Material erhält die tatsächliche Renderer-Pixeldichte; der CPU-Rasterkern berücksichtigt seine zweifache Abtastdichte je Achse. Strichbreiten und Deckkräfte stehen gemeinsam in `terrain-contour-style.ts`. Kantenglättung bleibt auf physische Pixel bezogen. Die Ausgabe mit eigener Auflösung verwendet Pixeldichte 1. [Lesbarkeitsvergleich und Hauptatlas bei 100/200 %](../reference/atlas-contour-readability-20261021/README.md) prüfen die Auswahl und den Anschluss. Grobe kanonische Höhen erzeugen weiterhin eckige Konturen; ihre Geometrie wird hier nicht geglättet.
+Die Höhenstaffel richtet sich nach Metern pro logischem Anzeigepixel: Bei 1 m/px werden 16-m-Stufen gewählt; bei anderem Maßstab werden die benachbarten Zweierintervalle zwischen 1 und höchstens 256 m überblendet. Die feste Obergrenze hält auch auf Weltmaßstab breite Höhenformen sichtbar. Das ist kein räumlicher Mindestabstand: Steile Hänge haben engere Linien als flache. Derselbe Maßstab verwendet dieselben Stufen unabhängig vom Gelände. Die frühere Steigungsreferenz ist entfernt. Das Material erhält die tatsächliche Renderer-Pixeldichte; der CPU-Rasterkern berücksichtigt seine zweifache Abtastdichte je Achse. Strichbreiten und Deckkräfte stehen gemeinsam in `terrain-contour-style.ts`. Kantenglättung bleibt auf physische Pixel bezogen. Die Ausgabe mit eigener Auflösung verwendet Pixeldichte 1. [Lesbarkeitsvergleich und Hauptatlas bei 100/200 %](../reference/atlas-contour-readability-20261021/README.md) prüfen die Auswahl und den Anschluss. Grobe kanonische Höhen erzeugen weiterhin eckige Konturen; ihre Geometrie wird hier nicht geglättet.
 
 Intervallwechsel aktualisieren das Material unmittelbar, ohne Bereichsread, Geländedaten oder Textur neu aufzubauen. Verspätete Terrainantworten erhalten die aktuelle Anzeigeeinstellung. Perspektivische Bildausgabe verwendet dasselbe Material; View-Offsets erhalten über Kachelgrenzen denselben Pixelmaßstab. Der Canvas2D-Fallback verwendet dieselbe Intervall- und Überblendungsregel aus `terrain-contour-style.ts`. Die Linien folgen dem angezeigten Dreiecksnetz, dessen begrenzte Auflösung bei weiterem Zoom durch LOD verbessert werden muss. Die native Pixelprobe liegt in `tools/terrain-contour-probe.mjs`; der [Repository-Startnachweis](../reference/atlas-contour-zoom-20261021/README.md) prüft automatische Intervalle, feste Linien und Exportkachelgrenzen.
 
@@ -588,6 +588,17 @@ Kleine Raumgruppen beginnen im Gruppenindex, große Sammlungen im Rtree; beide
 verwenden identische räumliche Grenzen. Die Regression prüft viele Gebäude mit
 überlappenden lokalen Koordinaten sowie Wachstum zum großen Einzelbesitzer.
 
+## Gelände-Radierer und Pinselgeometrie
+
+Der Gelände-Radierer entfernt die tatsächliche Vegetationsfläche samt ihrem
+Bodenauftrag. Er erzeugt keine dauerhafte Freihaltemaske.
+`vegetation-erase.ts` berechnet die Restfläche; der bestehende Speicherbefehl
+übernimmt History, Revisionen und die atomare Aktualisierung.
+`landscape-polygon-clipping.ts` kapselt robuste Integer-Geometrie: lokale
+Koordinaten, direkte Verbreiterung runder Striche, begrenzte Pfadvereinfachung
+und die Erhaltung von Löchern. Die übrigen Polygonoperationen werden dadurch
+nicht pauschal ausgetauscht. [Fehler, Varianten und Prüfungen](../reference/atlas-terrain-eraser-20261022/README.md).
+
 ## Frühere Messungen und Versuche
 
 Die folgenden Berichte beschreiben datierte Teilstände und offene Grenzen.
@@ -659,6 +670,12 @@ beseitigte Doppelarbeit von weiterhin offenen Bildraten- und Latenzzielen.
 Werkzeugwahl und Pinselradius gehören nicht zur Geometrieidentität. Verfügbare Höhen
 und laufende Detailverfeinerung bleiben erhalten; frühe Gesten werden beim Wechsel
 auf Smooth nicht mehr durch einen unnötigen Neuaufbau verworfen.
+
+[Höhenlinien-Referenzvergleich](../reference/atlas-contour-reference-20261022/README.md):
+Ein einzelner steiler Hang vergröbert das Intervall des ganzen Ausschnitts.
+Mittelwert, Median und Variationsgewichtung sind mit gleicher Geometrie verglichen;
+als Intervallgeber nach Nutzerkorrektur verworfen. Nächster Schritt: feste
+Höhenstufen nur nach Kartenmaßstab auswählen; Produktregel mit 256-m-Obergrenze, native Gegenprobe und Vollweltgrenzen stehen im [Umsetzungsbericht](../reference/atlas-fixed-contours-20261022/README.md).
 
 [Navigation gemeinsam zeichnen](../reference/atlas-navigation-frame-20261021/README.md): sofort aktuelle Kamerastrahlen, gemeinsame GPU-Zeichnung von Karteninhalt und Hilfsebene, Trefferfreigabe erst nach erfolgreichem Abschluss. Zwölf Kameraposen pixelgleich; große Welt weiterhin unter dem Leistungsziel.
 

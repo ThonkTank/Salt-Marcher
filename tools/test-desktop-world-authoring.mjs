@@ -366,7 +366,7 @@ try {
   await page.locator('[data-tool-group="vegetation"]').click();
   await page
     .locator(
-      '[data-tool-select="land-tool"][data-tool-value="vegetation-clear"]',
+      '[data-tool-select="land-tool"][data-tool-value="vegetation-erase"]',
     )
     .first()
     .click();

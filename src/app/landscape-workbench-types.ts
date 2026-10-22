@@ -26,4 +26,4 @@ export interface LandscapeHost {
     error: (e: unknown) => void;
     data: () => AtlasRenderView | null;
 }
-export type LandscapeTool = "vegetation" | "vegetation-area" | "vegetation-line" | "vegetation-clear" | "vegetation-thin" | "vegetation-dense" | "vegetation-object" | "select" | "height" | "smooth" | "color" | "property" | "freshwater" | "hex" | "reset" | "river" | "road" | "place" | "measure";
+export type LandscapeTool = "vegetation" | "vegetation-area" | "vegetation-line" | "vegetation-erase" | "vegetation-thin" | "vegetation-dense" | "vegetation-object" | "select" | "height" | "smooth" | "color" | "property" | "freshwater" | "hex" | "reset" | "river" | "road" | "place" | "measure";

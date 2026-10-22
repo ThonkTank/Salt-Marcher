@@ -1,0 +1,32 @@
+[
+  {
+    "id": "atlas-status",
+    "text": "Gespeichert",
+    "title": "Gespeichert",
+    "html": "<button id=\"atlas-status\" type=\"button\" aria-controls=\"atlas-status-popup\" aria-expanded=\"false\" aria-live=\"polite\" aria-label=\"Status: Gespeichert\" title=\"Gespeichert\" data-error=\"false\">Gespeichert</button>"
+  },
+  {
+    "id": "land-status",
+    "text": "1 Monat · 1.160 km Kante zu Kante · 8 Reisestunden/Tag",
+    "title": "",
+    "html": "<p id=\"land-status\" role=\"status\">1 Monat · 1.160 km Kante zu Kante · 8 Reisestunden/Tag</p>"
+  },
+  {
+    "id": "travel-placement-status",
+    "text": "Kein bestätigter Gruppenkontext für eine Platzierung.",
+    "title": "",
+    "html": "<p id=\"travel-placement-status\" class=\"caption\" role=\"status\" data-error=\"false\">Kein bestätigter Gruppenkontext für eine Platzierung.</p>"
+  },
+  {
+    "id": "status",
+    "text": "Gespeichert",
+    "title": "",
+    "html": "<div id=\"status\" role=\"status\" aria-live=\"polite\" data-error=\"false\">Gespeichert</div>"
+  },
+  {
+    "id": "atlas-save-status",
+    "text": "Gespeichert",
+    "title": "",
+    "html": "<p id=\"atlas-save-status\" role=\"status\" data-error=\"false\">Gespeichert</p>"
+  }
+]

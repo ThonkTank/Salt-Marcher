@@ -2,7 +2,7 @@ import {coverFeatherSamplerSteps,coverDisplayPolygons,coverViewParts} from './la
 import {pigmentStrokeCoverage} from './landscape-pigment-coverage';
 import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {paintTerrainCoast} from './terrain-coast';
-import {terrainContourInk} from './terrain-contour-style';
+import {terrainContourInk,terrainContourStep} from './terrain-contour-style';
 import type {TerrainField,TerrainLattice} from './terrain-field-stream';
 import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,type TerrainStyle} from './terrain-relief';
 import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
@@ -207,7 +207,7 @@ export class LandscapeRasterizer {
     const z=this.elevations;if(!z)return;
     const dx=this.sampleBox.width/this.w,dy=this.sampleBox.height/this.h,style=this.terrainStyle,inkRgb=reliefRgb(style.ink),lighting=reliefLighting(style);
     // A small symmetric footprint limits high-frequency shading without changing heights or coasts.
-    const step=4,stride=step*this.w;
+    const step=4,stride=step*this.w,contourStep=terrainContourStep(this.displayMpp);
     // The halo supplies height derivatives, shore distances and mark anchors;
     // its own shaded colours are never read by a neighbouring output pixel.
     const pad=LANDSCAPE_RASTER_PAD*2;
@@ -223,7 +223,7 @@ export class LandscapeRasterizer {
         const convex=Math.max(0,(z[i]!*4-z[i-step]!-z[i+step]!-z[i-stride]!-z[i+stride]!)/(step*(dx+dy)));
         const ridge=style.mode==='drawn'?Math.min(.14,convex*.24)*style.strength:0;
         // Height derivatives use the 2x sample grid; contour spacing is in output pixels.
-        const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM,2);
+        const contour=this.contours===0?0:terrainContourInk(z[i]!,Math.hypot(zx,zy),this.contours,this.seaLevelM,2,contourStep);
         const ink=Math.max(ridge,contour),analysis=style.mode==='height'?elevationColor(z[i]!,this.seaLevelM):null;
         for(let c=0;c<3;c++){const at=i*4+c,value=analysis?.[c]??this.samples[at]!;this.samples[at]=Math.round(Math.max(0,Math.min(255,value*light))*(1-ink)+inkRgb[c]!*ink);}
       }

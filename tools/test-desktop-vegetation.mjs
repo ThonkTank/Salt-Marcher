@@ -15,7 +15,7 @@ const dir=await mkdtemp(cache+'/vegetation-native-'),out=root+'/.build/vegetatio
 await writeFile(out+'/build.mjs',(await readFile('tools/build-desktop.mjs','utf8')).replaceAll('.build/desktop','.build/vegetation-desktop'));
 execFileSync(process.execPath,[out+'/build.mjs'],{cwd:root,stdio:'pipe'});
 buildSync({stdin:{contents:"export * from './src/app/storage/store';export * from './src/app/atlas-landscape';export * from './src/app/terrain-height';export * from './src/app/vegetation';export * from './src/app/terrain-spatial-model';",resolveDir:root},outfile:out+'/store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord,emptyRecord,vegetationSpec,TerrainSampler,projectTerrain}=require(out+'/store.cjs'),Database=require('better-sqlite3');
+const {CampaignStore,heightRecord,emptyRecord,vegetationSpec,TerrainSampler,projectTerrain,contains}=require(out+'/store.cjs'),Database=require('better-sqlite3');
 const store=new CampaignStore(dir+'/workbench.sqlite'),cam=store.create('Vegetationsprobe'),active=store.activate(cam.id);
 const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:active.token,action});
 const save=r=>write({kind:'landscape-put',record:r,expectedRevision:null});
@@ -87,13 +87,13 @@ try{
  const count=records().length;await stroke([80,-100],[220,-100]);assert.equal(records().length,count+1);const painted=records().find(r=>r.name==='Laubwald');assert(painted);assert.equal(painted.values.terrain,'forest');
  mark('Native Pinselgeste speichert Boden, Bewuchs und Geländeart gemeinsam');
  await capture('03-painted');
- await tool('vegetation-clear');await setBrushWorldRadius(page,'land-radius','25');await stroke([130,-100],[150,-100]);assert(records().find(r=>r.id===painted.id).vegetation.edits.length>0);
- mark('Dauerhafte Lichtung durch Freihalten');
+ await tool('vegetation-erase');await setBrushWorldRadius(page,'land-radius','25');await stroke([130,-100],[150,-100]);assert(!contains({x:140,y:-100},records().find(r=>r.id===painted.id).polygons));
+ mark('Gelände-Radierer entfernt Boden und Bewuchs ohne Sperrfläche');
  await tool('vegetation-object');await page.locator('#vegetation-asset').selectOption('rock');
- const p=await at(160,-110);await page.mouse.click(p.x,p.y);await page.locator('#land-finish').click();await settled();
+ const p=await at(190,-110);await page.mouse.click(p.x,p.y);await page.locator('#land-finish').click();await settled();
  assert(records().find(r=>r.id===painted.id).vegetation.overrides.some(o=>o.asset==='rock'));
  mark('Manuell platzierter Findling als geschützte Einzelkorrektur');
- await page.locator('#atlas-select').click();const pick=await at(160,-110);await page.mouse.click(pick.x,pick.y);
+ await page.locator('#atlas-select').click();const pick=await at(190,-110);await page.mouse.click(pick.x,pick.y);
  const beforeInvalid=records();
  await page.locator('#vegetation-edit-density').fill('1.25');
  await page.getByRole('button',{name:'Landschaftsänderung speichern',exact:true}).click();
