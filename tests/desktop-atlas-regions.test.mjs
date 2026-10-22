@@ -517,6 +517,24 @@ test('a dense single building keeps spatial bounds ahead of its complete owner c
  assert.deepEqual([...f.reader.candidates('room','','dense','ground',{x:-1,y:-1,width:21,height:5})],result);
 });
 
+test('many small buildings use their group index while preserving spatial candidates and paint order',async t=>{
+ const f=fixture(t,3);await f.read();
+ f.db.transaction(()=>{for(let group=0;group<2000;group++)for(let i=0;i<3;i++)
+  f.reader.store('room','','house-'+group,'ground','house-'+group+'-'+i,{value:{},polygons:room(i).polygons},3-i);
+ })();
+ const sql=f.reader.sql.bind(f.reader);let plan=[];
+ f.reader.sql=text=>{const statement=sql(text);if(!text.startsWith('SELECT s.*'))return statement;return{iterate(...args){plan=f.db.prepare('EXPLAIN QUERY PLAN '+text).all(...args);return statement.iterate(...args);}};};
+ const box={x:-1,y:-1,width:21,height:5},scope='house-17';
+ const spatial=()=>f.db.prepare('SELECT s.* FROM temp.region_index i CROSS JOIN temp.region_shape s ON s.rowid=i.id WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND i.max_x>=? AND i.min_x<=? AND i.max_y>=? AND i.min_y<=? ORDER BY s.paint_order,s.source_order,s.key').all('room','',scope,'ground',box.x,box.x+box.width,box.y,box.y+box.height);
+ const read=()=>[...f.reader.candidates('room','',scope,'ground',box)];
+ assert.deepEqual(read(),spatial());
+ assert.match(plan[0].detail,/SEARCH s USING INDEX region_shape_owner/,'coincident local bounds must not scan every other building');
+ assert.deepEqual(read().map(r=>r.key),['room:house-17-2','room:house-17-1','room:house-17-0']);
+ f.db.transaction(()=>{for(let i=3;i<2000;i++)f.reader.store('room','',scope,'ground','house-17-'+i,{value:{},polygons:room(i).polygons},i);})();
+ assert.deepEqual(read(),spatial());assert.match(plan[0].detail,/SCAN i VIRTUAL TABLE INDEX 2:/,'growth must restore spatial filtering without a stale size cache');
+ assert.deepEqual([...f.reader.candidates('room','','missing','ground',box)],[]);
+});
+
 test('binding metadata follows selected floors, renamed scopes and hidden extents without per-binding SQL lookups',async t=>{
  const f=fixture(t,1),ids=[];
  for(let i=0;i<20;i++)ids.push(f.store.executeAtlasCommit({commandId:randomUUID(),token:f.shell.token,campaignId:f.campaign.id,action:{kind:'group-generate',name:'Haus '+i,x:100+i*100,y:50,recipe:{version:1,profile:'Wohnhaus',width:6,depth:6,floors:2,basement:false,seed:'binding-'+i}}}).result.id);

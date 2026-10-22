@@ -412,3 +412,10 @@ großen Einzelbestand verworfen. Diese lokale Verbesserung folgt der Releasequel
 [Unsichtbare Straßen später aufbauen](../../reference/atlas-deferred-routes-20261022/README.md): Der normale Atlas erzeugt Geometrie sicher unsichtbarer Bodentrassen erst beim Heranzoomen aus aktuellen geladenen Daten. Geplante Trassen, Auswahl und hochaufgelöste Ausgabe bleiben erhalten. Die gemessenen Straßenaufbauten in langen Pinselabschluss-Aufgaben entfallen; Netz-/GPU-Arbeit und mehrsekündige Gesamtwartezeiten bleiben offen.
 
 [Geländenetz und Shader wiederverwenden](../../reference/atlas-terrain-mesh-reuse-20261022/README.md): Weltgrenzen und Bildgrößen ersetzen nicht mehr die ganze GPU-Szene. Topologie, Texturen und Draftpuffer besitzen getrennte Lebenszyklen; numerisches Picking kopiert keine Rendergeometrie. Sieben native GPU-Vergleiche bleiben pixelgleich, die längste gemessene Weltaufgabe sinkt von 311 auf 169 ms. Mehrsekündige Bearbeitungsfreigabe und Zielgeräteprüfung bleiben offen.
+
+[Zwischenmaßstab mit vielen kleinen Gebäuden](../../reference/atlas-owner-candidate-cost-20261022/README.md):
+Eine native Zoomreise legte einen 50-Sekunden-Bereichsread offen. Die Abfragewahl
+berücksichtigt nun kleine Objektgruppen, während große Dungeons den räumlichen
+Index behalten. Der identische Nachbarschaftsausschnitt benötigt lokal 2,8 statt
+56 Sekunden bei bytegleicher Ausgabe. Die sofortige Detailfreigabe und das
+Speicherplateau bleiben eigene, noch nicht abgeschlossene Ziele.

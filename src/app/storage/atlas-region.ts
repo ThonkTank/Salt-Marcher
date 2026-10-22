@@ -239,7 +239,11 @@ export class AtlasRegionReader {
  private roomVisible(id:string,scope:string,floor:string){return!this.sql("SELECT 1 FROM drawing_hidden WHERE campaign_id=? AND hidden=1 AND (kind='room' AND id=? OR kind='floor' AND scope_id=? AND id=?)").get(this.campaign,id,scope,floor);}
  // Match citySvg's surface/road/roof order; exact hits use the same painter order.
  private candidates(kind:string,owner:string,scope:string,floor:string,box:Box){
-  const from=this.indexed?'temp.region_index i CROSS JOIN temp.region_shape s ON s.rowid=i.id':'temp.region_shape s',alias=this.indexed?'i':'s';
+  // Thousands of small buildings share the same local coordinates. Starting at
+  // the spatial index for each one repeatedly visits every other building.
+  // Bound the cardinality probe: a large dungeon still starts with its Rtree.
+  const small=this.indexed&&this.sql('SELECT count(*) n FROM (SELECT 1 FROM temp.region_shape WHERE kind=? AND owner=? AND scope=? AND floor=? LIMIT 129)').get(kind,owner,scope,floor).n<=128;
+  const from=this.indexed?(small?'temp.region_shape s INDEXED BY region_shape_owner CROSS JOIN temp.region_index i ON i.id=s.rowid':'temp.region_index i CROSS JOIN temp.region_shape s ON s.rowid=i.id'):'temp.region_shape s',alias=this.indexed?'i':'s';
   return this.sql(`SELECT s.* FROM ${from} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND ${alias}.max_x>=? AND ${alias}.min_x<=? AND ${alias}.max_y>=? AND ${alias}.min_y<=? ORDER BY s.paint_order,s.source_order,s.key`).iterate(kind,owner,scope,floor,box.x,box.x+box.width,box.y,box.y+box.height);
  }
  private roomShape(row:any,q:AtlasRegionQuery):Shape|null{
