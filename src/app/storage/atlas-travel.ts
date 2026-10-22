@@ -35,6 +35,15 @@ export function atlasEntrances(db: any, cam: string): AtlasEntrance[] {
     .all(cam)
     .map(decode);
 }
+/** Display projection only. Canonical travel commands still read all entrances. */
+export function atlasDisplayEntrances(db:any,cam:string,scopeIds:string[],selectedId?:string):AtlasEntrance[]{
+  if(!scopeIds.length)return selectedId
+    ?db.prepare('SELECT payload,checksum FROM atlas_entrance WHERE campaign_id=? AND id=?').all(cam,selectedId).map(decode)
+    :[];
+  return db.prepare(`SELECT payload,checksum FROM atlas_entrance WHERE campaign_id=?
+    AND (id=? OR json_extract(payload,'$.scopeId') IN (SELECT value FROM json_each(?)))`)
+    .all(cam,selectedId??null,JSON.stringify([...new Set(scopeIds)])).map(decode);
+}
 function decode(row: any) {
   if (!row || hash(JSON.parse(row.payload)) !== row.checksum)
     throw new Error("Atlaslaufstand beschädigt.");

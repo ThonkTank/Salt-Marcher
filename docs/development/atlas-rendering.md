@@ -33,6 +33,11 @@ vorhandener Atlaszustand ersetzt die globale CSS-Abfrage; gleiche Meldungstexte
 behalten ihre DOM-Knoten. Weniger Layoutunterbrechungen und ein besserer
 Navigationslauf; Sculpt, Eingabe-Pixel-Latenz und Pentium-Abnahme bleiben offen.
 
+[Begrenzte Eingangsprojektion](../reference/atlas-scoped-entrances-20261022/README.md):
+Weltantworten enthalten nur Eingänge gelieferter Raumgruppen und die aktuelle
+Reiseauswahl. Kanonische Reiseprüfungen bleiben vollständig; 5.000 entfernte
+Eingänge entfallen aus der Weltantwort. Native Reiseprobe und Größenvergleich.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt

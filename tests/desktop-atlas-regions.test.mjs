@@ -13,6 +13,48 @@ const room=i=>({id:'r'+i,scopeId:'local',floorId:'ground',number:String(i),name:
 const query=(box={x:0,y:-2,width:30,height:10})=>({box,width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true});
 function fixture(t,n=100){const dir=mkdtempSync(tmpdir()+'/atlas-regions-'),store=new CampaignStore(dir+'/campaign.sqlite'),campaign=store.create('Regionen',Array.from({length:n},(_,i)=>room(i))),shell=store.activateShell(campaign.id),db=new Database(store.filename,{readonly:true}),reader=new AtlasRegionReader(db);let source; t.after(()=>{db.close();store.close();rmSync(dir,{recursive:true,force:true});});return{store,db,reader,shell,campaign,async read(q=query()){const next=store.atlasRegionSource(shell.token,source&&{epoch:source.epoch,sequence:source.sequence});await reader.sync(next);source=next;return reader.read(next,q);},get source(){return source;}};}
 function put(store,table,cam,id,payload,city){const value=JSON.stringify(payload);if(table==='city_unit')store.db.prepare('INSERT INTO city_unit VALUES(?,?,?,?,?,?)').run(cam,city,id,payload.kind,value,hash(value));}
+test('region replies exclude 5000 offscreen entrances but retain a chosen entrance and canonical checksums',async t=>{
+ const f=fixture(t,1),token=f.shell.token,cam=f.campaign.id;
+ const write=action=>f.store.executeAtlasCommit({commandId:randomUUID(),token,campaignId:cam,action});
+ const farScope=write({kind:'dungeon-create',name:'Ferne Gruppe',x:1e6,y:1e6}).result.id;
+ const farRoom=write({kind:'room-create',scopeId:farScope,floorId:'ground',name:'Ferne Halle',polygons:room(0).polygons}).result.id;
+ const entry={id:'near-door',scopeId:'local',roomId:'r0',floorId:'ground',inside:{x:1,y:1},outside:{x:-1,y:1},revision:0};
+ write({kind:'entrance',entrance:entry});
+ const insert=f.store.db.prepare('INSERT INTO atlas_entrance VALUES(?,?,?,?)');
+ f.store.db.transaction(()=>{for(let i=0;i<5000;i++){const value=JSON.stringify({...entry,id:'far-door-'+i,scopeId:farScope,roomId:farRoom,revision:1});insert.run(cam,'far-door-'+i,value,hash(value));}})();
+ const near=f.store.atlasRegionView(token,await f.read());assert.deepEqual(near.entrances.map(e=>e.id),['near-door']);
+ const awayQuery={...query({x:2e6,y:2e6,width:100,height:100}),scopeId:null,terrainRaster:false};
+ const away=await f.read(awayQuery);assert.equal(away.bindings.length,0);
+ assert.deepEqual(f.store.atlasRegionView(token,away).entrances,[]);
+ const chosen=f.store.atlasRegionView(token,away,false,'far-door-42');assert.deepEqual(chosen.entrances.map(e=>e.id),['far-door-42']);
+ assert.equal(f.store.campaignAtlas(token).entrances.length,5001,'canonical reader remains complete');
+ assert.deepEqual(f.store.atlasRegionView(token,away,false,'deleted-door').entrances,[]);
+ f.store.db.prepare('UPDATE atlas_entrance SET checksum=? WHERE campaign_id=? AND id=?').run('broken',cam,'far-door-42');
+ const fresh=await f.read(awayQuery);
+ assert.throws(()=>f.store.atlasRegionView(token,fresh,false,'far-door-42'),/beschädigt/);
+ assert.throws(()=>f.store.campaignAtlas(token),/beschädigt/,'canonical reader must still detect damaged entries');
+});
+test('chosen entrance outside the viewport and indoor party context retain canonical enter and exit',async t=>{
+ const f=fixture(t,1),token=f.shell.token,campaignId=f.campaign.id;
+ const command=action=>({commandId:randomUUID(),token,campaignId,action});
+ f.store.executeAtlasCommit(command({kind:'entrance',entrance:{id:'party-door',scopeId:'local',roomId:'r0',floorId:'ground',inside:{x:1,y:1},outside:{x:-1,y:1},revision:0}}));
+ const pc=f.store.executeLive(command({kind:'create-character',profile:{name:'Iri',speedFeet:30}})).character;
+ const live=f.store.live(token);
+ f.store.executeLive(command({kind:'membership',characterId:pc.id,expectedRevision:pc.membershipRevision,expectedRosterRevision:live.rosterRevision,active:true,targetSceneId:null,expectedFocusRevision:live.focusRevision}));
+ const scene=f.store.executeLive(command({kind:'initialize',expectedRosterRevision:f.store.live(token).rosterRevision})).scene;
+ const travel=(action,view)=>f.store.executeAtlasTravel({...command({...action,expectedPositionRevision:view.scene.position.revision,expectedMembershipRevision:view.scene.scene.membershipRevision}),sceneId:scene.id});
+ travel({kind:'place',point:{x:-1,y:1}},f.store.campaignAtlas(token));
+ const awayQuery={...query({x:2e6,y:2e6,width:100,height:100}),scopeId:null,terrainRaster:false};
+ const outside=f.store.atlasRegionView(token,await f.read(awayQuery),false,'party-door');
+ assert.equal(outside.geometry.position,null);assert.equal(outside.bindings.length,0);
+ assert.deepEqual(outside.entrances.map(e=>e.id),['party-door']);
+ travel({kind:'entrance',id:'party-door',revision:outside.entrances[0].revision,direction:'enter'},outside);
+ const inside=f.store.atlasRegionView(token,await f.read(awayQuery));
+ assert.equal(inside.geometry.position.roomId,'r0');assert(inside.bindings.some(b=>b.kind==='dungeon'&&b.ownerId==='local'));
+ assert.deepEqual(inside.entrances.map(e=>e.id),['party-door'],'current party scope is retained without an explicitly selected entrance');
+ travel({kind:'entrance',id:'party-door',revision:inside.entrances[0].revision,direction:'exit'},inside);
+ assert.equal(f.store.campaignAtlas(token).geometry.position,null);
+});
 test('4000 rooms: opening reads one selected room; region excludes offscreen prose and geometry',async t=>{
  const f=fixture(t,4000),initial=f.store.workspaceInitial(f.shell.token);assert.equal(initial.rooms.length,1);assert(!JSON.stringify(initial).includes('PRIVATE-TEXT'));
  f.store.workspaceGeometry=f.store.campaignAtlas=f.store.cities=f.store.city=()=>{throw new Error('full read forbidden');};
@@ -69,7 +111,9 @@ test('worker lifecycle, warm index reuse, cancellation and invalid requests',asy
  const focus=await service.focus(source,'room','r99');assert.equal(focus.id,'r99');
  const cancelled=service.read(source,query({x:30,y:0,width:30,height:10}));service.cancel();await assert.rejects(cancelled,/abgebrochen/);await service.cancelAndWait();
  source=f.store.atlasRegionSource(f.shell.token,service.cursor);r=await service.read(source,query());assert(r.rooms.length);
- await assert.rejects(service.read(source,{...query(),width:0}),/prüfen/);await service.close();await assert.rejects(service.read(source,query()),/abgebrochen/);
+ await assert.rejects(service.read(source,{...query(),width:0}),/prüfen/);
+ for(const entranceId of ['',null,42])await assert.rejects(service.read(source,{...query(),entranceId}),/Karteneingang prüfen/);
+ await service.close();await assert.rejects(service.read(source,query()),/abgebrochen/);
 });
 test('Rtree unavailable falls back atomically; slices retain upper volume contours',async t=>{
  const f=fixture(t,3),db=new Database(f.store.filename,{readonly:true}),exec=db.exec.bind(db);t.after(()=>db.close());db.exec=sql=>{if(sql.includes('CREATE VIRTUAL TABLE temp.region_index'))throw new Error('rtree unavailable');return exec(sql);};

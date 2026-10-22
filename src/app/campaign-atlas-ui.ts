@@ -630,7 +630,7 @@ export class CampaignAtlasWorkbench {
   private regionQuery(buffered=false):AtlasRegionQuery{
     const terrainRaster=this.spatial?.needsTerrainRaster??true;
     const box=buffered?this.camera.destination:this.camera.view,width=Math.max(1,Math.min(4096,Math.round(this.svg.clientWidth)||1024)),height=Math.max(1,Math.min(4096,Math.round(this.svg.clientHeight)||768));
-    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
+    return{box:buffered?{x:box.x-box.width/2,y:box.y-box.height/2,width:box.width*2,height:box.height*2}:box,width:width*(buffered?2:1),height:height*(buffered?2:1),scopeId:this.scopeId,floorId:this.floorId,entranceId:this.entranceId??undefined,slice:get<HTMLInputElement>('atlas-slice-enabled').checked?Number(atlasFieldValue(get<HTMLInputElement>('atlas-slice'))):null,roofs:get<HTMLInputElement>('atlas-roofs').checked,terrainRaster,contours:terrainRaster?this.landscape.contours():0,perception:get<HTMLInputElement>('atlas-perception').checked};
   }
   private async refreshSpatialSource(){
     // A stale terrain reply must wait for the current geometry owner. Returning

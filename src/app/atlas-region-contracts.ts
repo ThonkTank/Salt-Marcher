@@ -14,6 +14,8 @@ export interface AtlasRegionQuery {
  box:LandscapeBox; width:number;height:number;scopeId:string|null;floorId:string;
  /** False when the consumer projects terrain itself; dense object overlays remain. */
  terrainRaster?:boolean;
+ /** Keep a chosen travel entrance available when its geometry leaves the viewport. */
+ entranceId?:string;
  slice:number|null;roofs:boolean;contours?:number;perception?:boolean;references?:boolean;revision?:number;fence?:string;
 }
 export interface AtlasLandscapeLayer {
@@ -67,6 +69,7 @@ export interface AtlasRegionAPI {
 }
 export const emptyDrawing=():DrawingMapView=>({elements:[],styles:[],hiddenRooms:[],hiddenFloors:[],features:[]});
 export function validateRegion(q:AtlasRegionQuery){
+ if(q?.entranceId!==undefined&&(typeof q.entranceId!=='string'||!q.entranceId))throw new Error('Karteneingang prüfen.');
  if(!q||q.terrainRaster!==undefined&&typeof q.terrainRaster!=='boolean'||q.contours!==undefined&&(!Number.isFinite(q.contours)||q.contours<0&&q.contours!==-1||q.contours>1e6)||!q.box||![q.box.x,q.box.y,q.box.width,q.box.height].every(Number.isFinite)||q.box.width<=0||q.box.height<=0||!Number.isFinite(q.box.x+q.box.width)||!Number.isFinite(q.box.y+q.box.height)||!Number.isSafeInteger(q.width)||!Number.isSafeInteger(q.height)||q.width<1||q.height<1||q.width>8192||q.height>8192||q.scopeId!==null&&(typeof q.scopeId!=='string'||!q.scopeId)||typeof q.floorId!=='string'||!q.floorId||q.slice!==null&&!Number.isFinite(q.slice)||typeof q.roofs!=='boolean'||q.perception!==undefined&&typeof q.perception!=='boolean'||q.references!==undefined&&typeof q.references!=='boolean'||q.revision!==undefined&&(!Number.isSafeInteger(q.revision)||q.revision<0)||q.fence!==undefined&&(typeof q.fence!=='string'||!q.fence))throw new Error('Kartenausschnitt prüfen.');
 }
 

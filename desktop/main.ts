@@ -439,7 +439,7 @@ else {
       if(graphSourceReadBarrierDepth)throw new Error('Graphwechsel läuft. Ausschnitt danach aktualisieren.');validateRegion(query);
       if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');const reader=consumer==='view'?atlasRegions:atlasExportRegions;
       const source=store.atlasRegionSource(token,reader.cursor),region=await reader.read(source,query);
-      return store.atlasRegionView(token,region,query.perception===true);
+      return store.atlasRegionView(token,region,query.perception===true,query.entranceId);
     });
     handle('atlas:focus',async(token:string,kind:'room'|'city'|'building'|'element'|'scope',id:string)=>{
       if(graphSourceReadBarrierDepth||!['room','city','building','element','scope'].includes(kind)||typeof id!=='string'||!id)throw new Error('Kartenauswahl prüfen.');
