@@ -136,11 +136,17 @@ Zwei Prüfgrenzen wurden dabei ausdrücklich korrigiert bzw. offengehalten:
   laufende kanonische Speicherung und `terrainDraft=height`, danach exakt die
   bestätigte Revision und entfernte Vorschau. Dieser Nachweis ersetzt keine
   Messung der sichtbaren Eingabe-Pixel-Latenz.
-- Beim Wechsel auf Glätten benötigt der Atlas zusätzliche Nachbarschaftsdaten.
+- Beim Wechsel auf Glätten ändert der Atlas `samplePad` in seiner
+  Ladeidentität und sperrt die Eingabe bis zur erneuten Veröffentlichung.
   Die [zu frühe Geste](live-tool-readiness-failure.json) begann vor deren
   Bereitschaft und wurde verworfen; die spätere Bereitschaft startet sie nicht
   nachträglich. Die Funktionsprobe wartet jetzt vor dem Pinselzug auf den
-  passenden geladenen Nachbarschaftsbereich. **Der unmittelbar reagierende
+  passenden Bereitschaftsmarker. Die anschließende Codeprüfung zeigt jedoch:
+  `load()` verwendet den Paddingwert nicht für seine Projektionsanfrage; nur
+  der ältere `queue()`-Entwurfspfad liest ihn. Der kanonische Smooth-Writer
+  ermittelt seinen Nachbarschaftsbereich selbst über `heightBrushBounds`.
+  Eine unnötige Invalidierung beim Werkzeugwechsel ist daher der nächste
+  gezielt zu prüfende Befund. **Der unmittelbar reagierende
   Werkzeugwechsel ist damit nicht abgenommen und bleibt eine Bedienlücke.**
 
 Die fehlgeschlagenen Läufe zählen nicht als normale Fertigstellung. Ihre
