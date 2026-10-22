@@ -202,3 +202,62 @@ Die alte Exportnaht und die im ersten Bericht bereits vorher fehlschlagenden
 Proben bleiben ausdrücklich offen. Keine neue Produktanforderung wird durch
 diese interne Bereinigung als erfüllt markiert. Paketbau und Installation
 werden durch diese Quellcode-/Native-Prüfung nicht behauptet.
+
+## Aktualisierung auf den aktuellen Mainstand
+
+Vor der Integration wurden die parallel gelieferten Korrekturen aus #1379
+(`7ebaabf08`, Release 0.187.0) und #1382 (`3bf16b9d2`, Eingangsmarker)
+übernommen. Die fremde Arbeitskopie wurde nicht verändert. Die vorstehenden
+Messungen behalten ihre ursprünglichen Runtime-Hashes und werden nicht auf
+die neue Basis umetikettiert.
+
+Auf `7ebaabf08` bestand eine erneute Serie mit 170 gezielten Regressionen,
+großer Welt, derselben geschlossenen Stadtfixture, Hauptkamera und Ausgabe.
+Für die Vergleichsruntime wurde der exakte `git archive`-Inhalt von
+`7ebaabf08` separat gebaut. Die Metadaten benennen diesen Archivstand; die
+Artefakthashes bestimmen weiterhin die tatsächlich ausgeführte Runtime.
+Der Weltvergleich ergab Navigation-p95 22,2/23,7 ms und Pinsel-p95 20,8/21,3 ms;
+beide Abläufe bestanden einschließlich Detail-/Reuse-Prüfungen. Diese kleinen
+Abweichungen liegen innerhalb der zuvor beobachteten Schwankung und stellen
+für sich keine wiederholt nachgewiesene Verschlechterung dar. Die absoluten
+Latenzziele werden weiterhin nicht als erfüllt gewertet.
+
+Die Stadtserie ergab CPU-Median 87/81 ms und p95 145/136 ms. Im Nachherlauf
+wurde kurz ein fremder Desktopbuild erfasst; insbesondere die höhere
+TaskTime-Spitze dieses Laufs wird deshalb nicht als sauberer Leistungsvergleich
+gewertet. [Prozessbeobachtungen](current-process-monitor.json), alle CPU-/Task-
+und Framedaten stehen in den oben verlinkten Messdateien.
+
+| Geprüfter Stand | Native Belege |
+| --- | --- |
+| API-Verkleinerung, Renderer `1173d1f2` | [Kamera](api-cleanup-camera.json), [100 %](api-cleanup-output-100.json), [200 %](api-cleanup-output-200.json), [Welt](verification-world-api-cleanup.json) |
+| Vollständiger Zeichnungsbesitzer, Renderer `2c029bac` | [Kamera](qualified-camera.json), [100 %](qualified-output-100.json), [200 %](qualified-output-200.json) |
+| Aktualisierung auf `7ebaabf08`, Renderer `411d32d3` | [Kamera](current-camera.json), [100 %](current-output-100.json), [200 %](current-output-200.json) |
+| Lieferstand einschließlich `3bf16b9d2` und Leerfallkorrektur | [Eingangsmarker](delivery-entrance.json), [Kamera](delivery-camera.json), [100 %](delivery-output-100.json), [200 %](delivery-output-200.json) |
+
+Die zusätzliche Eingangsmarkerkorrektur betrifft die separate Geländeobjekt-
+projektion. Ihr eigener nativer Ablauf sowie Kamera, Bearbeitung, Wiederherstellung
+und Ausgabe wurden auf dem endgültigen Lieferstand erneut ausgeführt.
+Renderer-SHA256:
+`a529062b06b924a063713d6adc71a61a52b1f2acfbc4ff96bd411f511b7b91e7`;
+Main-SHA256:
+`43904dfdebe139294c30b4322ccfc57ec11461f1c03a2adef0282dddd3d8f4a7`.
+Der separat gebaute Main-Vergleich ist nach Normalisierung ausschließlich der
+esbuild-Abhängigkeitspfadnamen (`../../../node_modules/` → `node_modules/`)
+identisch. Die technischen Bereinigungen ändern weder Main-Verhalten noch
+IPC- oder Speicherverträge; die zwischenzeitlichen Produktänderungen gehören
+zu den genannten separaten Mainlieferungen.
+
+
+Die erste Kameraprobe nach #1382 scheiterte an erfassten Rendererfehlern:
+Ein Eingangsmarker ohne Hausgeometrie ergibt eine leere Meshliste, und
+`THREE.Group.add(...[])` meldet `add(undefined)` als Fehler.
+[Fehlerlauf](delivery-camera-before-empty-fix.json).
+`TerrainObjectLayer` fügt jetzt nur nichtleere Meshlisten hinzu; Höhenanker,
+Cacheeintrag und Auswahlzustand bleiben auch ohne Mesh erhalten. Eine neue
+Regression wechselt Marker → Gebäude → Marker und prüft Höhe, Geometrie und
+fehlende Rendererfehler. Sie schlug zunächst an den zwei leeren Add-Aufrufen
+fehl und besteht nach der Korrektur:
+[Rot](marker-empty-red.log), [Grün einschließlich der übrigen Objektfälle](marker-empty-green.log).
+Die native Fehlerprüfung wurde nicht abgeschwächt. Der oben verlinkte finale
+Kameralauf ist die Wiederholung nach dieser konkreten Korrektur.

@@ -754,5 +754,173 @@
       "openToUsableMs": 2798.9170219999996,
       "warmOpenToUsableMs": 1674.4781269999985
     }
+  },
+  {
+    "run": "current-city-before",
+    "runtimeHashes": {
+      "main.cjs": "396d456782b979731e7dc40b598130aa4ae1b05df0ee481c880e8245a02f0e9d",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "b57e158531cb7b5b11651f13deceef7cc580e1154767569a03bbe7196e07b00b",
+      "ui/renderer.js": "555ddf7cd176247c08f0446f5337f7cbea8a62d88db0332ac1985c89f4497657"
+    },
+    "host": {
+      "memoryBytes": 41651896320,
+      "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+      "os": "7.2.9-200.fc44.x86_64",
+      "node": "v22.22.0"
+    },
+    "platform": "default",
+    "cycles": 6,
+    "case": {
+      "population": {
+        "landscape": 0,
+        "buildings": 5000,
+        "cells": 0
+      },
+      "cpu": {
+        "pan": {
+          "n": 30,
+          "median": 10.537000000000019,
+          "p95": 15.967999999999982,
+          "max": 17.262
+        },
+        "hover": {
+          "n": 30,
+          "median": 5.73200000000007,
+          "p95": 13.487000000000027,
+          "max": 77.31099999999991
+        },
+        "preview": {
+          "n": 20,
+          "median": 36.64500000000004,
+          "p95": 46.61300000000024,
+          "max": 63.87799999999988
+        },
+        "zoom": {
+          "n": 56,
+          "median": 86.8549999999999,
+          "p95": 144.54999999999973,
+          "max": 153.7890000000002
+        }
+      },
+      "taskTime": {
+        "pan": {
+          "n": 30,
+          "median": 10.959999999999859,
+          "p95": 16.15499999999992,
+          "max": 16.819999999999837
+        },
+        "hover": {
+          "n": 30,
+          "median": 5.428999999999906,
+          "p95": 20.936999999999983,
+          "max": 96.09599999999996
+        },
+        "preview": {
+          "n": 20,
+          "median": 50.13499999999959,
+          "p95": 62.16,
+          "max": 95.90299999999985
+        },
+        "zoom": {
+          "n": 56,
+          "median": 147.25799999999902,
+          "p95": 217.75699999999975,
+          "max": 230.19700000000043
+        }
+      },
+      "bufferedPanRetainedScene": true,
+      "errors": [],
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "openToUsableMs": 2766.3071069999996,
+      "warmOpenToUsableMs": 885.2129609999974
+    }
+  },
+  {
+    "run": "current-city-after",
+    "runtimeHashes": {
+      "main.cjs": "43904dfdebe139294c30b4322ccfc57ec11461f1c03a2adef0282dddd3d8f4a7",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "2a09c5ff54524942f7b4eedc910d61ed4eddd641d8fbbd451c6183aa4237b568",
+      "ui/renderer.js": "411d32d38e065d5c5f5886d7db14458bc1211a196ec0dfe43ab0b045acc0047f"
+    },
+    "host": {
+      "memoryBytes": 41651896320,
+      "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+      "os": "7.2.9-200.fc44.x86_64",
+      "node": "v22.22.0"
+    },
+    "platform": "default",
+    "cycles": 6,
+    "case": {
+      "population": {
+        "landscape": 0,
+        "buildings": 5000,
+        "cells": 0
+      },
+      "cpu": {
+        "pan": {
+          "n": 30,
+          "median": 9.699000000000012,
+          "p95": 18.41899999999996,
+          "max": 21.35700000000007
+        },
+        "hover": {
+          "n": 30,
+          "median": 5.442999999999865,
+          "p95": 11.843000000000048,
+          "max": 69.14799999999998
+        },
+        "preview": {
+          "n": 20,
+          "median": 33.35200000000005,
+          "p95": 48.29799999999995,
+          "max": 67.53399999999998
+        },
+        "zoom": {
+          "n": 56,
+          "median": 81.37400000000028,
+          "p95": 135.87799999999993,
+          "max": 146.87899999999976
+        }
+      },
+      "taskTime": {
+        "pan": {
+          "n": 30,
+          "median": 9.711999999999943,
+          "p95": 18.39999999999997,
+          "max": 21.07199999999998
+        },
+        "hover": {
+          "n": 30,
+          "median": 5.138000000000087,
+          "p95": 13.357999999999981,
+          "max": 87.5990000000002
+        },
+        "preview": {
+          "n": 20,
+          "median": 48.11699999999996,
+          "p95": 61.87500000000013,
+          "max": 98.70400000000012
+        },
+        "zoom": {
+          "n": 56,
+          "median": 138.92000000000058,
+          "p95": 247.20899999999978,
+          "max": 271.66600000000153
+        }
+      },
+      "bufferedPanRetainedScene": true,
+      "errors": [],
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "openToUsableMs": 2700.497225,
+      "warmOpenToUsableMs": 1492.942742000003
+    }
   }
 ]

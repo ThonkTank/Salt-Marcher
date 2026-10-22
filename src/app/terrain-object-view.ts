@@ -70,7 +70,11 @@ export class TerrainObjectLayer {
       if(o.closed===false)continue;
       const key=JSON.stringify([o,origin,exaggeration]);if(this.entries.get(o.id)?.key===key)continue;
       if(this.entries.has(o.id))remove(o.id);
-      const meshes=terrainObjectMeshes(o,origin,exaggeration);this.group.add(...meshes);this.entries.set(o.id,{key,meshes});changed=true;
+      const meshes=terrainObjectMeshes(o,origin,exaggeration);
+      // Marker-only entries still own a height anchor but have no meshes to add.
+      // THREE interprets add(...[]) as add(undefined) and reports a renderer error.
+      if(meshes.length)this.group.add(...meshes);
+      this.entries.set(o.id,{key,meshes});changed=true;
     }
     this.closedIds.clear();for(const id of this.entries.keys())this.closedIds.add(id);
     return changed;

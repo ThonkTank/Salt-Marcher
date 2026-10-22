@@ -18186,5 +18186,1504 @@
         "longTasks": []
       }
     ]
+  },
+  {
+    "records": 108076,
+    "measurement": {
+      "readbackMode": "off",
+      "profileEnabled": false
+    },
+    "opening": {
+      "workspaceMs": 521.275658999999,
+      "terrainReadyMs": 4929.651137000001
+    },
+    "errors": [],
+    "hexPixels": {
+      "centreMin": 255,
+      "edgeMax": 234,
+      "periodicError": 0,
+      "tileError": 0,
+      "hiddenMin": 255,
+      "gridObjects": 0
+    },
+    "contourPixels": {
+      "measurements": [
+        {
+          "width": 1000,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 173
+        },
+        {
+          "width": 500,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 166
+        },
+        {
+          "width": 250,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 173
+        }
+      ],
+      "automatic": [
+        {
+          "width": 0.25,
+          "inkPixels": 2,
+          "maxError": 0
+        },
+        {
+          "width": 4,
+          "inkPixels": 8,
+          "maxError": 1
+        },
+        {
+          "width": 64,
+          "inkPixels": 64,
+          "maxError": 1
+        },
+        {
+          "width": 1000,
+          "inkPixels": 66,
+          "maxError": 0
+        }
+      ],
+      "highDpi": [
+        {
+          "ratio": 1,
+          "width": 250,
+          "maxError": 0
+        },
+        {
+          "ratio": 1,
+          "width": 1000,
+          "maxError": 0
+        },
+        {
+          "ratio": 1.5,
+          "width": 250,
+          "maxError": 1
+        },
+        {
+          "ratio": 1.5,
+          "width": 1000,
+          "maxError": 0
+        },
+        {
+          "ratio": 2,
+          "width": 250,
+          "maxError": 0
+        },
+        {
+          "ratio": 2,
+          "width": 1000,
+          "maxError": 0
+        }
+      ],
+      "tileError": 0,
+      "disabledMin": 255,
+      "denseMin": 255,
+      "seaMinimum": 255,
+      "automaticSeaMinimum": 255,
+      "continuousMax": 198,
+      "worldInk": 8,
+      "worldChanged": 16
+    },
+    "detailPixels": {
+      "uploads": [
+        {
+          "layer": "detail",
+          "mode": "rows",
+          "textureCount": 4,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 3.799999952316284,
+              "mismatch": 0,
+              "changed": 49024,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 256,
+                  "call": {
+                    "width": 256,
+                    "height": 1
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 1.100000023841858,
+              "mismatch": 0,
+              "changed": 49426,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 17,
+                  "call": {
+                    "width": 31,
+                    "height": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "detail",
+          "mode": "rectangles",
+          "textureCount": 4,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 2,
+              "mismatch": 0,
+              "changed": 49024,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 256,
+                    "height": 256
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.9000000357627869,
+              "mismatch": 0,
+              "changed": 49426,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 31,
+                    "height": 17
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "ground",
+          "mode": "rows",
+          "textureCount": 1,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 3,
+              "mismatch": 0,
+              "changed": 49152,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 256,
+                  "call": {
+                    "width": 256,
+                    "height": 1
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.3999999761581421,
+              "mismatch": 0,
+              "changed": 49584,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 17,
+                  "call": {
+                    "width": 31,
+                    "height": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "ground",
+          "mode": "rectangles",
+          "textureCount": 1,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 0.6000000238418579,
+              "mismatch": 0,
+              "changed": 49152,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 256,
+                    "height": 256
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.5,
+              "mismatch": 0,
+              "changed": 49584,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 31,
+                    "height": 17
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "brush": {
+        "before": [
+          230,
+          220,
+          200,
+          255
+        ],
+        "confirmed": [
+          180,
+          50,
+          30,
+          255
+        ],
+        "unaffected": [
+          20,
+          160,
+          80,
+          255
+        ],
+        "cleared": [
+          230,
+          220,
+          200,
+          255
+        ],
+        "textures": 5,
+        "during": 6,
+        "after": 5,
+        "sourceBytes": 256
+      },
+      "productUploads": [
+        {
+          "width": 256,
+          "height": 256
+        }
+      ]
+    },
+    "draftPixels": {
+      "before": [
+        127,
+        168,
+        189
+      ],
+      "submerged": [
+        127,
+        168,
+        189
+      ],
+      "raised": [
+        216,
+        200,
+        163
+      ],
+      "restored": [
+        127,
+        168,
+        189
+      ],
+      "lowered": [
+        127,
+        168,
+        189
+      ],
+      "water": [
+        127,
+        168,
+        189
+      ],
+      "land": [
+        216,
+        200,
+        163
+      ]
+    },
+    "renderReusePixels": {
+      "programs": {
+        "actual": {
+          "create": 1,
+          "remove": 0
+        },
+        "legacy": {
+          "create": 25,
+          "remove": 24
+        }
+      },
+      "ink": 202,
+      "comparisons": [
+        {
+          "name": "move-0",
+          "mismatch": 0
+        },
+        {
+          "name": "move-1",
+          "mismatch": 0
+        },
+        {
+          "name": "move-2",
+          "mismatch": 0
+        },
+        {
+          "name": "move-3",
+          "mismatch": 0
+        },
+        {
+          "name": "move-4",
+          "mismatch": 0
+        },
+        {
+          "name": "move-5",
+          "mismatch": 0
+        },
+        {
+          "name": "move-6",
+          "mismatch": 0
+        },
+        {
+          "name": "move-7",
+          "mismatch": 0
+        },
+        {
+          "name": "move-8",
+          "mismatch": 0
+        },
+        {
+          "name": "move-9",
+          "mismatch": 0
+        },
+        {
+          "name": "move-10",
+          "mismatch": 0
+        },
+        {
+          "name": "move-11",
+          "mismatch": 0
+        },
+        {
+          "name": "move-12",
+          "mismatch": 0
+        },
+        {
+          "name": "move-13",
+          "mismatch": 0
+        },
+        {
+          "name": "move-14",
+          "mismatch": 0
+        },
+        {
+          "name": "move-15",
+          "mismatch": 0
+        },
+        {
+          "name": "move-16",
+          "mismatch": 0
+        },
+        {
+          "name": "move-17",
+          "mismatch": 0
+        },
+        {
+          "name": "move-18",
+          "mismatch": 0
+        },
+        {
+          "name": "move-19",
+          "mismatch": 0
+        },
+        {
+          "name": "move-20",
+          "mismatch": 0
+        },
+        {
+          "name": "move-21",
+          "mismatch": 0
+        },
+        {
+          "name": "move-22",
+          "mismatch": 0
+        },
+        {
+          "name": "move-23",
+          "mismatch": 0
+        },
+        {
+          "name": "hidden",
+          "mismatch": 0
+        },
+        {
+          "name": "shown-again",
+          "mismatch": 0
+        },
+        {
+          "name": "raised",
+          "mismatch": 0
+        },
+        {
+          "name": "tilted",
+          "mismatch": 0
+        },
+        {
+          "name": "distant",
+          "mismatch": 0
+        },
+        {
+          "name": "replaced-surface",
+          "mismatch": 0
+        },
+        {
+          "name": "ridge",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-0",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-1",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-2",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-3",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-4",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-5",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-6",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-7",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-8",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-9",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-10",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-11",
+          "mismatch": 0
+        }
+      ],
+      "cameraFrames": [
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        }
+      ]
+    },
+    "artifacts": {
+      "main.cjs": "396d456782b979731e7dc40b598130aa4ae1b05df0ee481c880e8245a02f0e9d",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "b57e158531cb7b5b11651f13deceef7cc580e1154767569a03bbe7196e07b00b",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "ee78b4a739b5c14c77566ed838f01a68292eb69aa282d07a848b6f5bb0032208",
+      "backup-validation-worker.cjs": "b90e5c43b966b7390b1b83401f91a47ce25bf719ae7402b621bb612d2f378979",
+      "ui/renderer.js": "555ddf7cd176247c08f0446f5337f7cbea8a62d88db0332ac1985c89f4497657",
+      "ui/atlas-brush-worker.js": "2d619576ba8e9262db9c2c4f55d491ed5fb1a0e2f5080d540d4f7579c6eb9140",
+      "ui/terrain-spatial-worker.js": "4b5d4339281aef82ca1d93aced4a1d05c81d908f11b66695bffab102a2b0c2b3",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    },
+    "launches": [
+      {
+        "pid": 101281,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "run": "current-world-before",
+    "metrics": [
+      {
+        "name": "navigation",
+        "wallMs": 3054.4972820000003,
+        "p95Ms": 22.199999999999818,
+        "p99Ms": 24.80000000000109,
+        "maxMs": 37.100000000000364,
+        "state": {
+          "atlasView": "{\"x\":-17012241.730326734,\"y\":-13001360.558875486,\"width\":39132929.21664305,\"height\":28942062.23314227}",
+          "renderer": "webgl",
+          "imageErrors": "0",
+          "decodedBytes": "0",
+          "canvasState": "loading",
+          "atlasOriginX": "-17012241.730326734",
+          "atlasOriginY": "-13001360.558875486",
+          "terrainView": "main",
+          "terrainReady": "loading",
+          "terrainQuality": "overview",
+          "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-17012241.730326734,\"y\":-13001360.558875486,\"width\":39132929.21664305,\"height\":28942062.23314227},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":1700,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+          "terrainPreview": "false",
+          "atlasRegionRevision": "4",
+          "atlasTerrainRaster": "false",
+          "atlasLandscapeTiles": "0",
+          "pathBuilds": "1",
+          "pathReuses": "0",
+          "sceneVersion": "6",
+          "paintCommands": "1"
+        },
+        "status": [
+          {
+            "id": "land-status",
+            "text": "Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt."
+          },
+          {
+            "id": "status",
+            "text": "Gespeichert.",
+            "error": "false"
+          },
+          {
+            "id": "atlas-save-status",
+            "text": "Kartenausschnitt geladen"
+          }
+        ],
+        "frameCount": 182,
+        "drawCount": 99,
+        "longTasks": []
+      },
+      {
+        "name": "sculpt",
+        "wallMs": 5696.0889400000015,
+        "p95Ms": 20.80000000000109,
+        "p99Ms": 37.5,
+        "maxMs": 116.70000000000073,
+        "state": {
+          "atlasView": "{\"x\":-17012241.730326734,\"y\":-13001360.558875486,\"width\":39132929.21664305,\"height\":28942062.23314227}",
+          "renderer": "webgl",
+          "imageErrors": "0",
+          "decodedBytes": "0",
+          "canvasState": "loaded",
+          "atlasOriginX": "-17012241.730326734",
+          "atlasOriginY": "-13001360.558875486",
+          "terrainView": "main",
+          "terrainReady": "ready",
+          "terrainQuality": "overview",
+          "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-63771429.706463344,\"y\":-58536809.97877079,\"width\":117398787.64992915,\"height\":117398787.64992915},\"frame\":{\"x\":-17012241.730326734,\"y\":-13001360.558875486,\"width\":39132929.21664305,\"height\":28942062.23314227},\"refinement\":{\"x\":-34421732.79398106,\"y\":-21543962.828662917,\"width\":58699393.824964575,\"height\":43413093.34971341},\"columns\":257,\"rows\":257,\"focusM\":235.4582977294922,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+          "terrainPreview": "false",
+          "atlasRegionRevision": "4",
+          "atlasTerrainRaster": "false",
+          "atlasLandscapeTiles": "0",
+          "pathBuilds": "1",
+          "pathReuses": "0",
+          "sceneVersion": "20",
+          "paintCommands": "1",
+          "terrainDraft": "height",
+          "terrainAuthorRevision": "7"
+        },
+        "status": [
+          {
+            "id": "land-status",
+            "text": "Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück."
+          },
+          {
+            "id": "status",
+            "text": "Gespeichert",
+            "error": "false"
+          },
+          {
+            "id": "atlas-save-status",
+            "text": "Wird gespeichert…",
+            "error": "false"
+          }
+        ],
+        "brushFeedback": {
+          "firstPixelMs": null,
+          "firstBrushPixelMs": null,
+          "firstConfirmedMs": null,
+          "revisionsDuringHold": []
+        },
+        "frameCount": 326,
+        "drawCount": 274,
+        "longTasks": [
+          {
+            "time": 12523.400000035763,
+            "duration": 68
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "records": 108076,
+    "measurement": {
+      "readbackMode": "off",
+      "profileEnabled": false
+    },
+    "opening": {
+      "workspaceMs": 549.1428820000001,
+      "terrainReadyMs": 5129.680665
+    },
+    "errors": [],
+    "hexPixels": {
+      "centreMin": 255,
+      "edgeMax": 234,
+      "periodicError": 0,
+      "tileError": 0,
+      "hiddenMin": 255,
+      "gridObjects": 0
+    },
+    "contourPixels": {
+      "measurements": [
+        {
+          "width": 1000,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 173
+        },
+        {
+          "width": 500,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 166
+        },
+        {
+          "width": 250,
+          "inkPixels": 2,
+          "centerMinimum": 129,
+          "height100Minimum": 173
+        }
+      ],
+      "automatic": [
+        {
+          "width": 0.25,
+          "inkPixels": 2,
+          "maxError": 0
+        },
+        {
+          "width": 4,
+          "inkPixels": 8,
+          "maxError": 1
+        },
+        {
+          "width": 64,
+          "inkPixels": 64,
+          "maxError": 1
+        },
+        {
+          "width": 1000,
+          "inkPixels": 66,
+          "maxError": 0
+        }
+      ],
+      "highDpi": [
+        {
+          "ratio": 1,
+          "width": 250,
+          "maxError": 0
+        },
+        {
+          "ratio": 1,
+          "width": 1000,
+          "maxError": 0
+        },
+        {
+          "ratio": 1.5,
+          "width": 250,
+          "maxError": 1
+        },
+        {
+          "ratio": 1.5,
+          "width": 1000,
+          "maxError": 0
+        },
+        {
+          "ratio": 2,
+          "width": 250,
+          "maxError": 0
+        },
+        {
+          "ratio": 2,
+          "width": 1000,
+          "maxError": 0
+        }
+      ],
+      "tileError": 0,
+      "disabledMin": 255,
+      "denseMin": 255,
+      "seaMinimum": 255,
+      "automaticSeaMinimum": 255,
+      "continuousMax": 198,
+      "worldInk": 8,
+      "worldChanged": 16
+    },
+    "detailPixels": {
+      "uploads": [
+        {
+          "layer": "detail",
+          "mode": "rows",
+          "textureCount": 4,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 3.799999952316284,
+              "mismatch": 0,
+              "changed": 49024,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 256,
+                  "call": {
+                    "width": 256,
+                    "height": 1
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 1.199999988079071,
+              "mismatch": 0,
+              "changed": 49426,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 17,
+                  "call": {
+                    "width": 31,
+                    "height": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "detail",
+          "mode": "rectangles",
+          "textureCount": 4,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 2.099999964237213,
+              "mismatch": 0,
+              "changed": 49024,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 256,
+                    "height": 256
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.800000011920929,
+              "mismatch": 0,
+              "changed": 49426,
+              "textureCount": 4,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 31,
+                    "height": 17
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "ground",
+          "mode": "rows",
+          "textureCount": 1,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 2.700000047683716,
+              "mismatch": 0,
+              "changed": 49152,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 256,
+                  "call": {
+                    "width": 256,
+                    "height": 1
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.40000003576278687,
+              "mismatch": 0,
+              "changed": 49584,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 17,
+                  "call": {
+                    "width": 31,
+                    "height": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "layer": "ground",
+          "mode": "rectangles",
+          "textureCount": 1,
+          "patches": [
+            {
+              "rect": {
+                "x": 128,
+                "y": 128,
+                "width": 256,
+                "height": 256
+              },
+              "ms": 0.5999999642372131,
+              "mismatch": 0,
+              "changed": 49152,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 256,
+                    "height": 256
+                  }
+                }
+              ]
+            },
+            {
+              "rect": {
+                "x": 3,
+                "y": 401,
+                "width": 31,
+                "height": 17
+              },
+              "ms": 0.699999988079071,
+              "mismatch": 0,
+              "changed": 49584,
+              "textureCount": 1,
+              "callRuns": [
+                {
+                  "count": 1,
+                  "call": {
+                    "width": 31,
+                    "height": 17
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "brush": {
+        "before": [
+          230,
+          220,
+          200,
+          255
+        ],
+        "confirmed": [
+          180,
+          50,
+          30,
+          255
+        ],
+        "unaffected": [
+          20,
+          160,
+          80,
+          255
+        ],
+        "cleared": [
+          230,
+          220,
+          200,
+          255
+        ],
+        "textures": 5,
+        "during": 6,
+        "after": 5,
+        "sourceBytes": 256
+      },
+      "productUploads": [
+        {
+          "width": 256,
+          "height": 256
+        }
+      ]
+    },
+    "draftPixels": {
+      "before": [
+        127,
+        168,
+        189
+      ],
+      "submerged": [
+        127,
+        168,
+        189
+      ],
+      "raised": [
+        216,
+        200,
+        163
+      ],
+      "restored": [
+        127,
+        168,
+        189
+      ],
+      "lowered": [
+        127,
+        168,
+        189
+      ],
+      "water": [
+        127,
+        168,
+        189
+      ],
+      "land": [
+        216,
+        200,
+        163
+      ]
+    },
+    "renderReusePixels": {
+      "programs": {
+        "actual": {
+          "create": 1,
+          "remove": 0
+        },
+        "legacy": {
+          "create": 25,
+          "remove": 24
+        }
+      },
+      "ink": 202,
+      "comparisons": [
+        {
+          "name": "move-0",
+          "mismatch": 0
+        },
+        {
+          "name": "move-1",
+          "mismatch": 0
+        },
+        {
+          "name": "move-2",
+          "mismatch": 0
+        },
+        {
+          "name": "move-3",
+          "mismatch": 0
+        },
+        {
+          "name": "move-4",
+          "mismatch": 0
+        },
+        {
+          "name": "move-5",
+          "mismatch": 0
+        },
+        {
+          "name": "move-6",
+          "mismatch": 0
+        },
+        {
+          "name": "move-7",
+          "mismatch": 0
+        },
+        {
+          "name": "move-8",
+          "mismatch": 0
+        },
+        {
+          "name": "move-9",
+          "mismatch": 0
+        },
+        {
+          "name": "move-10",
+          "mismatch": 0
+        },
+        {
+          "name": "move-11",
+          "mismatch": 0
+        },
+        {
+          "name": "move-12",
+          "mismatch": 0
+        },
+        {
+          "name": "move-13",
+          "mismatch": 0
+        },
+        {
+          "name": "move-14",
+          "mismatch": 0
+        },
+        {
+          "name": "move-15",
+          "mismatch": 0
+        },
+        {
+          "name": "move-16",
+          "mismatch": 0
+        },
+        {
+          "name": "move-17",
+          "mismatch": 0
+        },
+        {
+          "name": "move-18",
+          "mismatch": 0
+        },
+        {
+          "name": "move-19",
+          "mismatch": 0
+        },
+        {
+          "name": "move-20",
+          "mismatch": 0
+        },
+        {
+          "name": "move-21",
+          "mismatch": 0
+        },
+        {
+          "name": "move-22",
+          "mismatch": 0
+        },
+        {
+          "name": "move-23",
+          "mismatch": 0
+        },
+        {
+          "name": "hidden",
+          "mismatch": 0
+        },
+        {
+          "name": "shown-again",
+          "mismatch": 0
+        },
+        {
+          "name": "raised",
+          "mismatch": 0
+        },
+        {
+          "name": "tilted",
+          "mismatch": 0
+        },
+        {
+          "name": "distant",
+          "mismatch": 0
+        },
+        {
+          "name": "replaced-surface",
+          "mismatch": 0
+        },
+        {
+          "name": "ridge",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-0",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-1",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-2",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-3",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-4",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-5",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-6",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-7",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-8",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-9",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-10",
+          "mismatch": 0
+        },
+        {
+          "name": "camera-frame-11",
+          "mismatch": 0
+        }
+      ],
+      "cameraFrames": [
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        },
+        {
+          "deferred": 0,
+          "draws": 1
+        }
+      ]
+    },
+    "artifacts": {
+      "main.cjs": "43904dfdebe139294c30b4322ccfc57ec11461f1c03a2adef0282dddd3d8f4a7",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "2a09c5ff54524942f7b4eedc910d61ed4eddd641d8fbbd451c6183aa4237b568",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "7d1849dc619dbad52226e65a7e4de66be843deac88efa54ea74ce86fe4683292",
+      "backup-validation-worker.cjs": "d2ff8c46aff8362fcebfa9195c59195f0b6c17a39bfc33eb0a635986f1353aba",
+      "ui/renderer.js": "411d32d38e065d5c5f5886d7db14458bc1211a196ec0dfe43ab0b045acc0047f",
+      "ui/atlas-brush-worker.js": "80c3e2a28c8da02d50d9d96261d60afb26b647424953bf079969068bf9c69592",
+      "ui/terrain-spatial-worker.js": "9dc86de66d0d7fa806079a2e270731c5d536a3cb4ebbe2bfaf33b7cf0aaec68d",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    },
+    "launches": [
+      {
+        "pid": 101920,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "run": "current-world-after",
+    "metrics": [
+      {
+        "name": "navigation",
+        "wallMs": 2998.928777000001,
+        "p95Ms": 23.699999999999818,
+        "p99Ms": 24.600000000000364,
+        "maxMs": 24.700000000000728,
+        "state": {
+          "atlasView": "{\"x\":-17057896.225439772,\"y\":-13036251.348784717,\"width\":39237947.36498591,\"height\":29019731.90535416}",
+          "renderer": "webgl",
+          "imageErrors": "0",
+          "decodedBytes": "0",
+          "canvasState": "loading",
+          "atlasOriginX": "-17057896.225439772",
+          "atlasOriginY": "-13036251.348784717",
+          "terrainView": "main",
+          "terrainReady": "loading",
+          "terrainQuality": "overview",
+          "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-17057896.225439772,\"y\":-13036251.348784717,\"width\":39237947.36498591,\"height\":29019731.90535416},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":1700,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+          "terrainPreview": "false",
+          "atlasRegionRevision": "4",
+          "atlasTerrainRaster": "false",
+          "atlasLandscapeTiles": "0",
+          "pathBuilds": "1",
+          "pathReuses": "0",
+          "sceneVersion": "6",
+          "paintCommands": "1"
+        },
+        "status": [
+          {
+            "id": "land-status",
+            "text": "Dichte Landschaft als Übersicht. Anklicken liest das genaue Objekt."
+          },
+          {
+            "id": "status",
+            "text": "Gespeichert.",
+            "error": "false"
+          },
+          {
+            "id": "atlas-save-status",
+            "text": "Kartenausschnitt geladen"
+          }
+        ],
+        "frameCount": 174,
+        "drawCount": 89,
+        "longTasks": []
+      },
+      {
+        "name": "sculpt",
+        "wallMs": 5551.781492000002,
+        "p95Ms": 21.299999999999272,
+        "p99Ms": 33.29999999999927,
+        "maxMs": 133.39999999999964,
+        "state": {
+          "atlasView": "{\"x\":-17057896.225439772,\"y\":-13036251.348784717,\"width\":39237947.36498591,\"height\":29019731.90535416}",
+          "renderer": "webgl",
+          "imageErrors": "0",
+          "decodedBytes": "0",
+          "canvasState": "loaded",
+          "atlasOriginX": "-17057896.225439772",
+          "atlasOriginY": "-13036251.348784717",
+          "terrainView": "main",
+          "terrainReady": "ready",
+          "terrainQuality": "overview",
+          "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-63502618.81914005,\"y\":-58148208.017123155,\"width\":117713842.09495774,\"height\":117713842.09495774},\"frame\":{\"x\":-17057896.225439772,\"y\":-13036251.348784717,\"width\":39237947.36498591,\"height\":29019731.90535416},\"refinement\":{\"x\":-34074158.29540061,\"y\":-21056085.898659907,\"width\":58856921.04747887,\"height\":43529597.85803124},\"columns\":257,\"rows\":257,\"focusM\":193.90408325195312,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+          "terrainPreview": "false",
+          "atlasRegionRevision": "4",
+          "atlasTerrainRaster": "false",
+          "atlasLandscapeTiles": "0",
+          "pathBuilds": "1",
+          "pathReuses": "0",
+          "sceneVersion": "20",
+          "paintCommands": "1",
+          "terrainDraft": "height",
+          "terrainAuthorRevision": "7"
+        },
+        "status": [
+          {
+            "id": "land-status",
+            "text": "Pinsel arbeitet direkt. Rückgängig nimmt den ganzen Zug zurück."
+          },
+          {
+            "id": "status",
+            "text": "Gespeichert",
+            "error": "false"
+          },
+          {
+            "id": "atlas-save-status",
+            "text": "Wird gespeichert…",
+            "error": "false"
+          }
+        ],
+        "brushFeedback": {
+          "firstPixelMs": null,
+          "firstBrushPixelMs": null,
+          "firstConfirmedMs": null,
+          "revisionsDuringHold": []
+        },
+        "frameCount": 325,
+        "drawCount": 270,
+        "longTasks": []
+      }
+    ]
   }
 ]
