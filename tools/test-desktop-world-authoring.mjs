@@ -510,6 +510,13 @@ try {
   await native.close();
   await native.finish(result);
 } catch (error) {
+  // Keep the actual UI rejection; a revision assertion alone hides intermittent
+  // commit failures after a long author journey.
+  if (page) await writeFile(out + "/failure-status.json", JSON.stringify(
+    await page.evaluate(() => Array.from(document.querySelectorAll(
+      "#atlas-save-status,#land-status,[data-error]",
+    )).map(n => ({id:n.id,text:n.textContent,title:n.title}))), null, 2,
+  )).catch(() => {});
   await native.fail(error);
   throw error;
 } finally {

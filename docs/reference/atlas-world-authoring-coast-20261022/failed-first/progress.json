@@ -1,0 +1,413 @@
+{
+  "campaignId": "da1d151b-c0e3-43fd-8287-86dc5cd4ab3b",
+  "stages": [
+    {
+      "name": "01-western-continent",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 148,
+        "heights": 82,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-20000000",
+        "atlasOriginY": "-14791666.666666666",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":0,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "148",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "75",
+        "paintCommands": "1",
+        "terrainAuthorRevision": "148",
+        "terrainRevision": "148",
+        "terrainTiles": "48/48"
+      }
+    },
+    {
+      "name": "02-continents",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 216,
+        "heights": 116,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-20000000",
+        "atlasOriginY": "-14791666.666666666",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "detail",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":0,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "216",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "105",
+        "paintCommands": "1",
+        "terrainAuthorRevision": "216",
+        "terrainRevision": "216",
+        "terrainTiles": "48/48"
+      }
+    },
+    {
+      "name": "03-continental-relief",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 340,
+        "heights": 261,
+        "vegetation": 0,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-12899999.406911938",
+        "atlasOriginY": "-4511457.867321311",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-22100464.465987895,\"y\":-14883797.926477814,\"width\":27400930.11877051,\"height\":27400930.11877051},\"frame\":{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-15250231.936295267,\"y\":-6249650.675511065,\"width\":13700465.059385255,\"height\":10132635.616837014},\"columns\":257,\"rows\":257,\"focusM\":572.9165039062505,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "340",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "169",
+        "paintCommands": "1",
+        "terrainAuthorRevision": "340",
+        "terrainRevision": "340",
+        "terrainTiles": "18/40"
+      }
+    },
+    {
+      "name": "04-continental-forest",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 344,
+        "heights": 261,
+        "vegetation": 3,
+        "regions": []
+      },
+      "view": {
+        "atlasView": "{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-12899999.406911938",
+        "atlasOriginY": "-4511457.867321311",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-22100464.465987895,\"y\":-14883797.926477814,\"width\":27400930.11877051,\"height\":27400930.11877051},\"frame\":{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-15250231.936295267,\"y\":-6249650.675511065,\"width\":13700465.059385255,\"height\":10132635.616837014},\"columns\":257,\"rows\":257,\"focusM\":572.91650390625,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "344",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "3",
+        "sceneVersion": "285",
+        "paintCommands": "4",
+        "terrainAuthorRevision": "340",
+        "terrainRevision": "340",
+        "terrainTiles": "40/40"
+      }
+    },
+    {
+      "name": "05-kingdom",
+      "inventory": {
+        "groups": 0,
+        "rooms": [],
+        "cityDocuments": 0,
+        "roads": 0,
+        "revision": 346,
+        "heights": 261,
+        "vegetation": 3,
+        "regions": [
+          {
+            "id": "4d919e67-30c1-4b02-ab9c-12b5a5e987a8",
+            "revision": 2,
+            "name": "Königreich Aster",
+            "layerId": "politics",
+            "parentId": null,
+            "typeId": "kingdom",
+            "rank": 5,
+            "polygons": [
+              {
+                "outer": [
+                  {
+                    "x": -9379980.7298639,
+                    "y": -1449555.3900794657
+                  },
+                  {
+                    "x": -9352721.390895154,
+                    "y": -1656610.6261614824
+                  },
+                  {
+                    "x": -9272801.052891452,
+                    "y": -1849555.3900794655
+                  },
+                  {
+                    "x": -9145666.154813139,
+                    "y": -2015240.8150287033
+                  },
+                  {
+                    "x": -8979980.7298639,
+                    "y": -2142375.7131070164
+                  },
+                  {
+                    "x": -8787035.965945918,
+                    "y": -2222296.0511107203
+                  },
+                  {
+                    "x": -8579980.7298639,
+                    "y": -2249555.3900794657
+                  },
+                  {
+                    "x": -8435647.36374645,
+                    "y": -2230553.541944907
+                  },
+                  {
+                    "x": -8434597.522129213,
+                    "y": -2236234.30991193
+                  },
+                  {
+                    "x": -8218617.125502893,
+                    "y": -2196319.775433198
+                  },
+                  {
+                    "x": -8219666.967120129,
+                    "y": -2190639.007466175
+                  },
+                  {
+                    "x": -8219592.845560956,
+                    "y": -2190629.249177785
+                  },
+                  {
+                    "x": -8218543.174989653,
+                    "y": -2196306.105319086
+                  },
+                  {
+                    "x": -8002549.115766124,
+                    "y": -2156368.0477217315
+                  },
+                  {
+                    "x": -8003598.786337427,
+                    "y": -2150691.1915804306
+                  },
+                  {
+                    "x": -8003595.870816782,
+                    "y": -2150690.807744856
+                  },
+                  {
+                    "x": -8002546.207014489,
+                    "y": -2156367.509877811
+                  },
+                  {
+                    "x": -7786556.912259642,
+                    "y": -2116429.5073057027
+                  },
+                  {
+                    "x": -7787606.576061935,
+                    "y": -2110752.8051727475
+                  },
+                  {
+                    "x": -7724961.743177187,
+                    "y": -2102505.4564625253
+                  },
+                  {
+                    "x": -7532016.979259203,
+                    "y": -2022585.1184588214
+                  },
+                  {
+                    "x": -7366331.554309965,
+                    "y": -1895450.2203805088
+                  },
+                  {
+                    "x": -7239196.656231652,
+                    "y": -1729764.7954312712
+                  },
+                  {
+                    "x": -7159276.318227949,
+                    "y": -1536820.031513288
+                  },
+                  {
+                    "x": -7132016.979259203,
+                    "y": -1329764.7954312707
+                  },
+                  {
+                    "x": -7150561.657953437,
+                    "y": -1188903.975970373
+                  },
+                  {
+                    "x": -7144705.275562121,
+                    "y": -1187848.3368311592
+                  },
+                  {
+                    "x": -7180698.604548136,
+                    "y": -988167.6976351151
+                  },
+                  {
+                    "x": -7186554.986939453,
+                    "y": -989223.336774329
+                  },
+                  {
+                    "x": -7195269.647213964,
+                    "y": -923028.92015321
+                  },
+                  {
+                    "x": -7275189.985217667,
+                    "y": -730084.1562352267
+                  },
+                  {
+                    "x": -7275958.338501519,
+                    "y": -729082.818740406
+                  },
+                  {
+                    "x": -7275816.641417626,
+                    "y": -729000.7140392505
+                  },
+                  {
+                    "x": -7383808.8743152255,
+                    "y": -542626.6785791588
+                  },
+                  {
+                    "x": -7383950.571399118,
+                    "y": -542708.7832803143
+                  },
+                  {
+                    "x": -7510317.1161935795,
+                    "y": -378024.69582589704
+                  },
+                  {
+                    "x": -7676002.541142818,
+                    "y": -250889.79774758418
+                  },
+                  {
+                    "x": -7868947.305060801,
+                    "y": -170969.45974388032
+                  },
+                  {
+                    "x": -8076002.541142818,
+                    "y": -143710.120775135
+                  },
+                  {
+                    "x": -8283057.777224834,
+                    "y": -170969.45974388032
+                  },
+                  {
+                    "x": -8476002.541142818,
+                    "y": -250889.79774758406
+                  },
+                  {
+                    "x": -8641687.966092056,
+                    "y": -378024.6958258969
+                  },
+                  {
+                    "x": -8768822.864170369,
+                    "y": -543710.120775135
+                  },
+                  {
+                    "x": -8831603.11142275,
+                    "y": -695275.0451409691
+                  },
+                  {
+                    "x": -8979980.7298639,
+                    "y": -756735.0670519149
+                  },
+                  {
+                    "x": -9145666.154813139,
+                    "y": -883869.9651302277
+                  },
+                  {
+                    "x": -9272801.052891452,
+                    "y": -1049555.3900794657
+                  },
+                  {
+                    "x": -9352721.390895154,
+                    "y": -1242500.1539974492
+                  },
+                  {
+                    "x": -9379980.7298639,
+                    "y": -1449555.3900794657
+                  }
+                ],
+                "holes": []
+              }
+            ],
+            "color": "#b58445",
+            "opacity": 0.15,
+            "border": "solid"
+          }
+        ]
+      },
+      "view": {
+        "atlasView": "{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-12899999.406911938",
+        "atlasOriginY": "-4511457.867321311",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "detail",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-22100464.465987895,\"y\":-14883797.926477814,\"width\":27400930.11877051,\"height\":27400930.11877051},\"frame\":{\"x\":-12899999.406911938,\"y\":-4511457.867321311,\"width\":9000000.000618594,\"height\":6656250.000457503},\"refinement\":{\"x\":-15250231.936295267,\"y\":-6249650.675511065,\"width\":13700465.059385255,\"height\":10132635.616837014},\"columns\":257,\"rows\":257,\"focusM\":572.91650390625,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "346",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "52",
+        "pathReuses": "3",
+        "sceneVersion": "328",
+        "paintCommands": "56",
+        "terrainAuthorRevision": "340",
+        "terrainRevision": "340",
+        "terrainTiles": "40/40"
+      }
+    }
+  ],
+  "scope": "continents, continental relief, independent kingdom area, streets, buildings and a room; functional author journey, not visual or performance acceptance",
+  "profile": "/home/aaron/.cache/saltmarcher/ui/world-authoring-Rn6EnG"
+}

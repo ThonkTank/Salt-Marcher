@@ -7,6 +7,15 @@ gepaarte Komponentenmessung, fast gleiche GPU-Bilder, aber kein belegter Gewinn
 in der vollständigen Navigation und langsamerer erster Sculpt-Lauf. Der Prototyp
 wurde entfernt; grundlegende Architekturalternativen bleiben ausdrücklich offen.
 
+[Kartenrenderer-Vergleich](../reference/atlas-renderer-comparison-20261022/README.md):
+MapLibre mit eigener Meterprojektion, lokale Welt- bis Gebäudeprobe und
+kontrollierte CPU-/GPU-Messung. Kein Architekturwechsel angenommen;
+Bearbeitung, Innenräume und gleichwertige Vollweltlast bleiben offen.
+
+[Autorenwelt mit Küstenkomposition](../reference/atlas-world-authoring-coast-20261022/README.md):
+normaler Atlas von Kontinenten bis zu sechs Gebäuden und 95 Räumen,
+Neustart bestanden; sporadischer Freihalten-Fehler und visuelle Lücken offen.
+
 Entwicklervertrag für die gemeinsame Atlasfläche. Code besitzt Implementierung
 und veränderliche Budgets; diese Seite verbindet Zuständigkeiten und Schutzregeln.
 Nach dem Codeeinstieg nur den betroffenen Abschnitt lesen; Zahlenbudgets direkt
