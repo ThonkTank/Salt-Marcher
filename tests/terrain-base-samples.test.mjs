@@ -14,7 +14,8 @@ function fixture(t,records){
  t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
  const insert=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
  store.db.transaction(()=>{for(const r of records){const b=bounds(r);insert.run(campaign.id,r.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(r));}})();
- const reader=new AtlasLandscapeReader(store.db);reader.sync(source);
+ const db=new (require('better-sqlite3'))(store.filename,{readonly:true});t.after(()=>db.close());
+ const reader=new AtlasLandscapeReader(db);reader.sync(source);
  return reader.terrainStream(source);
 }
 function draw(read,box,width,height,filtered,batchEdge=Math.max(width,height)){

@@ -1,4 +1,4 @@
-import {AtlasRegionCache} from '../src/app/storage/atlas-region-cache';
+import {AtlasProjectionIndex} from '../src/app/storage/atlas-projection-index';
 import {computeTerrainStroke,TerrainScalePyramid} from '../src/app/storage/terrain-scale';
 import {terrainTraceStart} from '../src/app/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
@@ -7,8 +7,8 @@ import {takeTerrainTrace} from '../src/app/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
 import {AtlasReadCancelled} from '../src/app/storage/atlas-read-cancellation';
 
-const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),
-  reader = new AtlasRegionReader(db, workerData.shadow,workerData.cacheDirectory&&!workerData.shadow?new AtlasRegionCache(workerData.cacheDirectory):undefined),pyramid=new TerrainScalePyramid();
+const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),pyramid=new TerrainScalePyramid();
+let index:AtlasProjectionIndex,reader:AtlasRegionReader;
 
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
 let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>}|undefined;
@@ -18,6 +18,10 @@ parentPort!.on('message', async (job: any) => {
   const geometry=['region','focus','candidates','hit'].includes(job.kind);
   let syncStarted=false,readStarted=false,endRead:(()=>void)|undefined;
   try {
+    if(!reader){
+      index=await AtlasProjectionIndex.open(db,job.source,workerData.cacheDirectory,workerData.workId);
+      reader=new AtlasRegionReader(db,workerData.shadow,index);
+    }
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
     // A queued source must never label newer terrain rows as an older revision.
@@ -72,5 +76,9 @@ parentPort!.on('message', async (job: any) => {
     }
     const terrainTrace=takeTerrainTrace();
     parentPort!.postMessage({ error: (error as Error).message,...(terrainTrace?{terrainTrace}:{} ) });
+  } finally {
+    // Publishing derived data never delays the response; the next job can run
+    // between SQLite backup batches. Main owns cleanup after worker termination.
+    index?.schedule();
   }
 });

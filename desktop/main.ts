@@ -1,4 +1,4 @@
-import {eraseAtlasRegionCache,clearAtlasRegionCacheCandidates} from '../src/app/storage/atlas-region-cache';
+import {eraseAtlasProjection,clearProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
 import {terrainSnapshotStillValid} from '../src/app/terrain-presentation';
@@ -68,7 +68,7 @@ else {
   let updateRuntime:Awaited<ReturnType<typeof openUpdateRuntime>>|null=null;
   let backupRunning = false;
   let backupError: string | null = null;
-  async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});await eraseAtlasRegionCache(path.join(dataDir,'atlas-region-cache'),store.filename,id);store.finishCampaignErasure(id);}
+  async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});await eraseAtlasProjection(path.join(dataDir,'atlas-region-cache'),store.filename,id);store.finishCampaignErasure(id);}
   const dungeonImportPreviews = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
   const root = path.join(__dirname, 'ui');
   const origin = 'campaign://app/index.html';
@@ -78,7 +78,7 @@ else {
     const updates=new UpdateService({version:__APP_VERSION__,root:updateRuntime.root,settings:path.join(dataDir,'update-settings.json'),publicKey:updateRuntime.root?await updateRuntime.publicKey():'',emit:status=>{if(win&&!win.isDestroyed())win.webContents.send('update:status',status);}});
     await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
-    await clearAtlasRegionCacheCandidates(path.join(dataDir,'atlas-region-cache'));
+    await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));
     for(const id of store.pendingCampaignErasures())await finishPendingCampaignErasure(id);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);

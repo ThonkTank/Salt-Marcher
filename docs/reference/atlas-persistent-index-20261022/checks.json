@@ -1,0 +1,111 @@
+{
+  "source": "d7b4750edea3e18836621fd813083ec5546ff35e",
+  "dirty": true,
+  "distinctTests": 103,
+  "cacheTestsRerun": 15,
+  "files": [
+    {
+      "file": ".build/persistent-independent-all-tests.log",
+      "sha256": "118647c36ac4c78c85fcc1dd30615ea4f51c0e7a1cb5f1d7bafd1d5fc5b9a450",
+      "tail": [
+        "  ...",
+        "1..102",
+        "# tests 102",
+        "# suites 0",
+        "# pass 102",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 144966.632622"
+      ]
+    },
+    {
+      "file": ".build/persistent-publication-tests.log",
+      "sha256": "a039c951eea6cedef71e7cadee2e693c0fb6f0c6cbee09d3fcaef4400c2a0926",
+      "tail": [
+        "  ...",
+        "1..15",
+        "# tests 15",
+        "# suites 0",
+        "# pass 15",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 16036.418237"
+      ]
+    },
+    {
+      "file": ".build/persistent-independent-app-types.log",
+      "sha256": "e1ecfe45e3de2251a8edea111519abb4529b52a25ff2341e13936de2451d9011",
+      "tail": [
+        "",
+        "> saltmarcher@0.185.0 check",
+        "> tsc --noEmit",
+        ""
+      ]
+    },
+    {
+      "file": ".build/persistent-publication-desktop-types.log",
+      "sha256": "6092451ddf0a485a4c10802ea13fab51743d67c6b4db1a67b57d5261466acbc8",
+      "tail": [
+        "",
+        "> saltmarcher@0.185.0 check:desktop",
+        "> tsc --noEmit -p desktop/tsconfig.json",
+        ""
+      ]
+    },
+    {
+      "file": ".build/persistent-publication-build.log",
+      "sha256": "e4b759a8607a0d4069374c0a386209f8d0f5de35eb36c6e864be18fdc336561f",
+      "tail": [
+        "",
+        "> saltmarcher@0.185.0 build:desktop",
+        "> node tools/build-desktop.mjs",
+        "",
+        "Desktop build ready: .build/desktop/main.cjs"
+      ]
+    },
+    {
+      "file": ".build/persistent-cold-warm-update-test.log",
+      "sha256": "9543b1c3a2dbb31bad6e9238337ca259b7dd35f6017ad2e05fc00d077f7341ed",
+      "tail": [
+        "  ...",
+        "1..1",
+        "# tests 1",
+        "# suites 0",
+        "# pass 1",
+        "# fail 0",
+        "# cancelled 0",
+        "# skipped 0",
+        "# todo 0",
+        "# duration_ms 2788.826718"
+      ]
+    },
+    {
+      "file": ".build/persistent-final-repo.log",
+      "sha256": "765000fbcc7ccb89310d01478ba3f9f5422af14f858829d7b61746ff76b7aea8",
+      "tail": [
+        "",
+        "> saltmarcher@0.185.0 check:repo",
+        "> node tools/check-repository.mjs",
+        "",
+        "Repository check PASS (offline links, JSON, source references and core test registration)"
+      ]
+    }
+  ],
+  "testFiles": [
+    "tests/desktop-atlas-region-cache.test.mjs",
+    "tests/desktop-atlas-regions.test.mjs",
+    "tests/desktop-atlas-region.test.mjs",
+    "tests/terrain-projection-service.test.mjs",
+    "tests/terrain-color-service.test.mjs",
+    "tests/terrain-scale-worker.test.mjs",
+    "tests/terrain-base-samples.test.mjs",
+    "tests/terrain-sample-filter.test.mjs",
+    "tests/terrain-base-span.test.mjs",
+    "tests/terrain-kind-index.test.mjs",
+    "tests/terrain-height-blocks.test.mjs"
+  ]
+}

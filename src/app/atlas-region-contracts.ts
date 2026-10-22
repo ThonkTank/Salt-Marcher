@@ -46,8 +46,10 @@ export interface AtlasObjectFocus {
 }
 export interface AtlasRegionCursor {epoch:string;sequence:number;shadow?:{epoch:string;sequence:number}}
 export interface AtlasRegionSource {
- /** Durable geometry-only cache identity, verified again in the worker snapshot. */
+ /** Durable geometry/landscape input identity, verified in the worker snapshot. */
  shapeVersion?:string;
+ /** Geometry-only identity survives terrain-only journal resets. */
+ geometryVersion?:string;
  filename:string;campaignId:string;token:string;fence:string;revision:number;epoch:string;sequence:number;
  shadow?:{filename:string;scopeId:string;epoch:string;sequence:number};
  reset:boolean;changes:{table:string;id:string;terrainBounds?:LandscapeBox}[];
