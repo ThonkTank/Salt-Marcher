@@ -1,0 +1,151 @@
+{
+  "checks": [
+    "A world-hidden building is found through normal room search and opens its furnished geometry in the same Atlas.",
+    "Zooming back out hides subpixel geometry and automatic markers while retaining the chosen author frame.",
+    "Author records are unchanged after search, zoom and native PNG export."
+  ],
+  "views": [
+    {
+      "name": "01-world",
+      "box": {
+        "x": -40000,
+        "y": -32419.354838709674,
+        "width": 80000,
+        "height": 64838.70967741935
+      },
+      "region": {
+        "query": {
+          "box": {
+            "x": -80000,
+            "y": -64838.70967741935,
+            "width": 160000,
+            "height": 129677.4193548387
+          },
+          "width": 1984,
+          "height": 1608,
+          "scopeId": null,
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "objects": 0,
+        "rooms": 0,
+        "elements": 0,
+        "scopeLabels": [],
+        "scopes": [],
+        "raster": false
+      }
+    },
+    {
+      "name": "02-search-room",
+      "box": {
+        "x": -19.45,
+        "y": -25.221295515337424,
+        "width": 30,
+        "height": 36.99386503067485
+      },
+      "region": {
+        "query": {
+          "box": {
+            "x": -34.45,
+            "y": -43.71822803067485,
+            "width": 60,
+            "height": 73.9877300613497
+          },
+          "width": 1304,
+          "height": 1608,
+          "scopeId": "cf65eb58-f47a-43b0-8094-e9d3c4a2888f",
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "objects": 45,
+        "rooms": 9,
+        "elements": 36,
+        "scopeLabels": [],
+        "scopes": [
+          "cf65eb58-f47a-43b0-8094-e9d3c4a2888f"
+        ],
+        "raster": false
+      }
+    },
+    {
+      "name": "03-selected-world",
+      "box": {
+        "x": -40004.449548246135,
+        "y": -32426.07883557042,
+        "width": 79999.99909649223,
+        "height": 64838.70894514085
+      },
+      "region": {
+        "query": {
+          "box": {
+            "x": -80004.44909649223,
+            "y": -64845.43330814084,
+            "width": 159999.99819298447,
+            "height": 129677.4178902817
+          },
+          "width": 1984,
+          "height": 1608,
+          "scopeId": "cf65eb58-f47a-43b0-8094-e9d3c4a2888f",
+          "floorId": "ground",
+          "slice": null,
+          "roofs": true,
+          "terrainRaster": false,
+          "contours": 0,
+          "perception": false
+        },
+        "objects": 0,
+        "rooms": 0,
+        "elements": 0,
+        "scopeLabels": [],
+        "scopes": [
+          "cf65eb58-f47a-43b0-8094-e9d3c4a2888f"
+        ],
+        "raster": false
+      }
+    }
+  ],
+  "group": "cf65eb58-f47a-43b0-8094-e9d3c4a2888f",
+  "authored": {
+    "room": "1f4357017d8c1af2bbaf436eedfc658330dfa6b6c4afa65dd2f4e4a0468c4856",
+    "drawing_element": "a39db5a198aca78eae3545ea4dbc74f12ca7a199ce070d78031c590929a2367d",
+    "room_group": "ac555ca7929e0b8e8def3389a6e78f302c67179c0a826c2eee7224b883880377",
+    "atlas_binding": "759455d6dd988f04c9c906924b7708eea1139f6c263021ccd2141b6dee9d67c3"
+  },
+  "source": "7e1c92c2511eaf5f0e4838313f11225c800c58ec",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/geometry-scale-pZ9c40",
+  "artifacts": {
+    "main.cjs": "b44f91ed081bfd1fab519bd4416e24bfb7a6373eeda0af1614f3d3b95b662b75",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "5d94f49bb28cf133b4058a9cf3798f1ce1d469326b3df394b8a4cc0fa68bfbd7",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "ccd271b9930062b4b101b295539436670b63d6672d7c61f036f017afe5f4525b",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3486976,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}

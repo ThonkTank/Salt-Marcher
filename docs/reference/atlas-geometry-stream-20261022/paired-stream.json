@@ -1,0 +1,121 @@
+{
+  "equal": true,
+  "results": [
+    {
+      "name": "two-pass",
+      "bundleSha256": "31dc244f353acdd54b9f61d0838881cd2640bcd6dc41d239d63ef29e31aadb74",
+      "views": [
+        {
+          "name": "world",
+          "ms": 671.950605,
+          "sha256": "2c0f358cf55ca14fc3b31c743bfb022ed1d3bc7112a545b6012d1914b0147d62",
+          "raster": null,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "middle",
+          "ms": 3167.281141999999,
+          "sha256": "240c37d2c353bdbf9ab6fd4a5c24bc02ea8feb29f54085b8528a1da9c0f1032b",
+          "raster": "41c22265c677b9951f09d99f4cbd376c9ccc21e8621f14e606fb0cf0f9c1ea61",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 4001,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "dungeon",
+          "ms": 3382.345048000001,
+          "sha256": "bdcad1babbbad6a26e69766069540ba9b511862eeac7e9b9a808b15a85e1f189",
+          "raster": "9f0f51972eb510f4b0a021d0794bc7b8bac1d244ebdee24dbbc9cf271025234a",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 4001,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "room",
+          "ms": 348.4686279999987,
+          "sha256": "3ae3dca75b8465741ad29fff5afcb1b15553fda7eec9578d8ad064dfd17fc88a",
+          "raster": null,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        }
+      ]
+    },
+    {
+      "name": "stream",
+      "bundleSha256": "c6462850baf24d4ce611dff044e775f03d7518446bd2a315cc759249b36ec3c4",
+      "views": [
+        {
+          "name": "world",
+          "ms": 692.2232499999991,
+          "sha256": "2c0f358cf55ca14fc3b31c743bfb022ed1d3bc7112a545b6012d1914b0147d62",
+          "raster": null,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 0,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "middle",
+          "ms": 1505.2321950000005,
+          "sha256": "240c37d2c353bdbf9ab6fd4a5c24bc02ea8feb29f54085b8528a1da9c0f1032b",
+          "raster": "41c22265c677b9951f09d99f4cbd376c9ccc21e8621f14e606fb0cf0f9c1ea61",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 4001,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "dungeon",
+          "ms": 1542.4743390000003,
+          "sha256": "bdcad1babbbad6a26e69766069540ba9b511862eeac7e9b9a808b15a85e1f189",
+          "raster": "9f0f51972eb510f4b0a021d0794bc7b8bac1d244ebdee24dbbc9cf271025234a",
+          "coverage": {
+            "complete": true,
+            "mode": "raster",
+            "objects": 4001,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        },
+        {
+          "name": "room",
+          "ms": 292.87767299999905,
+          "sha256": "3ae3dca75b8465741ad29fff5afcb1b15553fda7eec9578d8ad064dfd17fc88a",
+          "raster": null,
+          "coverage": {
+            "complete": true,
+            "mode": "detail",
+            "objects": 98,
+            "unreadable": 0,
+            "index": "rtree"
+          }
+        }
+      ]
+    }
+  ]
+}

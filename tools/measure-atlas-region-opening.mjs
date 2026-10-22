@@ -9,6 +9,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3'),{build}=require('esbuild');
 const file='src/app/storage/atlas-region.ts',ref=process.env.ATLAS_REGION_BASELINE,filename=process.env.ATLAS_MIXED_SOURCE;
+const visibility=process.env.ATLAS_REGION_SMALL_GEOMETRY==='1';
 assert(ref&&filename,'Set ATLAS_REGION_BASELINE and ATLAS_MIXED_SOURCE (a retained synthetic world, never a live user database)');
 const output=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/atlas-region-opening');mkdirSync(output,{recursive:true});
 const files=(process.env.ATLAS_REGION_BASELINE_FILES??file).split(',');assert(files.includes(file));
@@ -25,10 +26,19 @@ for(const label of ['before','after']){
   assert(building&&dungeon,'Mixed-world fixture requires an independent building and a dungeon with over 4000 rooms');
   const {AtlasRegionReader}=require(path.join(output,'region-'+label+'.cjs')),reader=new AtlasRegionReader(db),start=performance.now();await reader.sync(source);const syncMs=performance.now()-start;
   const queries=[['world',{x:-20000000,y:-12500000,width:40000000,height:25000000},null],['region',{x:-1000000,y:-600000,width:2000000,height:1200000},null],['building',{x:building.x-20,y:building.y-20,width:40,height:40},building.owner_id],['dungeon',{x:dungeon.x-20,y:dungeon.y-20,width:100,height:60},dungeon.owner_id]];
-  const views=[];for(const [name,box,scopeId] of queries){const q={box,width:1440,height:900,scopeId,floorId:'ground',slice:null,roofs:true,terrainRaster:false},start=performance.now(),result=reader.read(source,q),json=JSON.stringify(result);views.push({name,ms:performance.now()-start,sha256:createHash('sha256').update(json).digest('hex'),bytes:Buffer.byteLength(json),coverage:result.coverage,rooms:result.rooms.length,elements:result.drawing.elements.length});}
+  const views=[];for(const [name,box,scopeId] of queries){const q={box,width:1440,height:900,scopeId,floorId:'ground',slice:null,roofs:true,terrainRaster:false},start=performance.now(),result=reader.read(source,q),json=JSON.stringify(result);views.push({name,ms:performance.now()-start,sha256:createHash('sha256').update(json).digest('hex'),bytes:Buffer.byteLength(json),coverage:result.coverage,rooms:result.rooms.length,elements:result.drawing.elements.length,bindings:result.bindings.length,scopeLabels:result.labels?.filter(l=>l.id.startsWith('scope:')).length??0,raster:!!result.raster,landscapeSha256:createHash('sha256').update(JSON.stringify(result.landscape)).digest('hex')});}
   const report={label,bundleSha256:createHash('sha256').update(readFileSync(path.join(output,'region-'+label+'.cjs'))).digest('hex'),syncMs,tempBytes:db.pragma('temp.page_count',{simple:true})*db.pragma('temp.page_size',{simple:true}),shapeCacheBytes:reader.shapePayloads?.bytes??null,views};runs.push(report);console.log(JSON.stringify(report));
  }finally{db.close();}
 }
 const equal=runs[0].views.every((view,i)=>runs[1].views[i].sha256===view.sha256);
-writeFileSync(path.join(output,'result.json'),JSON.stringify({baseline:ref,files,source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),equal,runs},null,2));
-assert(equal,'Region rendering differs from the baseline; inspect the retained results');
+writeFileSync(path.join(output,'result.json'),JSON.stringify({baseline:ref,files,comparison:visibility?'small-geometry-visibility':'equality',source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),equal,runs},null,2));
+if(visibility){
+ // This explicit mode qualifies the intended world-scale visibility change;
+ // it does not weaken the default byte-equality check used for optimizations.
+ for(let i=0;i<runs[0].views.length;i++){
+  const before=runs[0].views[i],after=runs[1].views[i];
+  assert.equal(after.landscapeSha256,before.landscapeSha256,'Landscape rendering must remain exact');
+  if(i<2){assert(before.coverage.objects>0);assert.equal(after.coverage.objects,0);assert.equal(after.scopeLabels,0);assert.equal(after.bindings,0);assert.equal(after.raster,false);}
+  else assert.equal(after.sha256,before.sha256,'Nearby geometry, labels and raster must remain exact');
+ }
+}else assert(equal,'Region rendering differs from the baseline; inspect the retained results');

@@ -263,3 +263,11 @@ test('floor changes give author handles and live drafts the same scope, height a
  const changed=all(f.render()).find(n=>n.data.editorOnly==='true'&&n.data.spatialScope==='local');
  assert.equal(changed.data.spatialFloor,'24');
 });
+
+test('a selected subpixel room group keeps its frame without manufacturing a world marker',t=>{
+ const f=fixture(t);f.ui.selection=null;f.ui.opts.roomDraft=()=>null;f.ui.data.geometry.floors=[];f.ui.data.geometry.drawing.elements=[];f.ui.data.scopes=[{id:'local',name:'Haus'}];f.ui.data.region.raster=undefined;f.ui.data.region.scopeBounds={local:{x:1,y:2,width:.1,height:.1}};
+ const scene=f.render(),base=scene.children.find(n=>n.data.atlasBase==='true');assert(!all(base).some(n=>n.data.kind==='scope'&&n.data.id==='local'));
+ // Tall narrow structures use their visible height as well as their width.
+ f.ui.data={...f.ui.data,workspace:{...f.ui.data.workspace,rooms:[f.original]},region:{...f.ui.data.region,scopeBounds:{local:{x:1,y:2,width:.1,height:20}}}};
+ const visible=f.render(),layer=visible.children.find(n=>n.data.atlasBase==='true');assert(!all(layer).some(n=>n.data.kind==='scope'));assert(all(layer).some(n=>n.kind==='polygons'));
+});

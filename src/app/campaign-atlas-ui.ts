@@ -1,4 +1,5 @@
 import {vegetationInstances} from './vegetation-projection';
+import {mapExtentVisible} from './atlas-scale-policy';
 import {atlasWorkplaneData,type AtlasWorkplane} from './atlas-workplane';
 import {atlasTerrainExport} from './atlas-terrain-export';
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
@@ -2665,25 +2666,13 @@ export class CampaignAtlasWorkbench {
       elements=data.geometry.drawing.elements.filter(e=>e.scopeId===b.ownerId&&e.floorId===floor&&!e.archived);
     if (b.parent === "world" && (shown.length || elements.length || !!regionValue(data.region?.scopeBounds,b.ownerId))) {
       const points = [...shown.flatMap((r) => r.polygons.flatMap((p) => p.outer)),...elements.flatMap(e=>e.points)],
-        extent = regionValue(data.region?.scopeBounds,b.ownerId)?.width ?? (points.length
+        extentBox=regionValue(data.region?.scopeBounds,b.ownerId),
+        extent = extentBox?.width ?? (points.length
           ? Math.max(...points.map((p) => p.x)) -
             Math.min(...points.map((p) => p.x))
-          : 0);
-      if ((!shown.length&&!elements.length) || mpp > Math.max(1, extent / 25)) {
-        const extentBox=regionValue(data.region?.scopeBounds,b.ownerId),center=extentBox?localToAtlas({x:extentBox.x+extentBox.width/2,y:extentBox.y+extentBox.height/2},f):f;
-        const marker = shape("circle", {x: center.x - box.x, y: center.y - box.y, radius: mpp * 6, style: {fill: shown.length||elements.length ? "#685b50" : null, stroke: "#685b50", lineWidth: mpp * 2}});
-        marker.data.atlasObject = "true";
-        marker.data.kind = "scope";
-        marker.data.id = b.ownerId;
-        root.append(marker);
-        this.label(
-          root,
-          data.scopes.find((s) => s.id === b.ownerId)?.name ?? "Dungeon",
-          center,
-          mpp,
-        );
-        return;
-      }
+          : 0),
+        height=extentBox?.height??(points.length?Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y)):0);
+      if(!mapExtentVisible(extent,height,mpp))return;
     }
     if (!shown.length&&!elements.length) return;
     const g = shape("group", {matrix: frameMatrix(this.relative(f)),data:atlasWorkplaneData(this.floorPlane(b.ownerId,floor))});

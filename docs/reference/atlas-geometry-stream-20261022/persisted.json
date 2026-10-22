@@ -1,0 +1,16 @@
+{
+  "canonical": [
+    {
+      "campaign_id": "2ccda8c2-4096-4552-a915-627fc4cde092",
+      "revision": 13
+    }
+  ],
+  "visible": {
+    "ready": "ready",
+    "quality": "detail",
+    "revision": "13",
+    "authorRevision": "13",
+    "tiles": "36/36"
+  },
+  "readonly": true
+}
