@@ -59,6 +59,7 @@ Abnahme des gesamten Umfangs. „Aufrauen“ ist ausdrücklich bestätigt.
 | Terrain: Sculpt | Einfaches Erhöhen, Senken und Aufrauen mit natürlichen Unebenheiten; Aufrauen ist eine eigene Wirkung, nicht nur eine Zufallsvariation beim Erhöhen. | [Relief](terrain-relief.md), P5 |
 | Terrain: Smooth | Gelände gezielt glätten, mit nachvollziehbarer Stärke und Bearbeitungsskala. | [Relief](terrain-relief.md), P5 |
 | Terrain: Feature | Hügel, Bergketten, Schluchten und vergleichbare komplexe Formen mit wenigen Eingaben schnell erzeugen und weiterbearbeiten. | [Relief](terrain-relief.md), P5–P6 |
+| Gebirgsmaterial (ergänzt 23.10.2026) | Höhe und Hangneigung modulieren Geländefarbe und Textur: steinigere Hänge und schneebedeckte Gipfel oberhalb einer einstellbaren Schneegrenze, mit weichen Übergängen. Gemalte Grundfarben bleiben erhalten. | [Relief R4](terrain-relief.md#r4--den-gezeichneten-kartenstil-ausarbeiten), P4–P6 |
 | Geländearten | Wald, Wüste, Sumpf und weitere Typen auf weiter, mittlerer und naher Distanz lesbar darstellen; weiche Übergänge an ihren Rändern. | [Landschaft](landscape-tools.md), [Bewuchs](vegetation.md), P4–P6 |
 | Wasser | Flüsse finden sinnvolle geländeabhängige Wege zwischen gesetzten Punkten; Seen füllen passende Geländebecken. | [Trassen und Gewässer](terrain-routes.md), P5–P6 |
 | Infrastruktur | Feldweg, Hauptstraße, Gasse und weitere Straßenarten erhalten passende Linien-/Texturdarstellung, Bildschirmbreiten und Sichtbarkeitsübergänge beim Zoom. | [Trassen](terrain-routes.md), [Kartografie](atlas-cartography.md), P4–P6 |
@@ -76,6 +77,13 @@ Schritten gelten folgende fachliche Prüfungen:
   eigenen verständlichen Bedienaufgaben.
 - Geländearten bilden erkennbare zusammenhängende Flächen, mit weichen Rändern
   und zunehmenden Details, ohne sichtbare Nähte oder wechselnde Objektidentitäten.
+- Gebirgsmaterial folgt Terrainänderungen und der eingestellten Schneegrenze;
+  Zoom und visuelle Höhenüberhöhung verändern die physische Grenze nicht.
+  Fels- und Schneetexturen bleiben beim Navigieren stabil und stimmen zwischen
+  normalem Atlas, geneigter Kamera und Bildausgabe überein. Der
+  [Materialschritt](../../reference/atlas-mountain-material-20261023/README.md)
+  ergänzt den gemeinsamen Rasterkern; sofortige Materialreaktion beim Sculpt
+  und die vollständige Leistungs-/Gestaltungsabnahme bleiben offen.
 - Flüsse berücksichtigen Höhenverlauf und Senken; Seen passen zu ihrem Becken.
   Nach Terrainänderungen bleibt der Zustand nachvollziehbar und korrigierbar.
 - Straßenklassen bleiben unterscheidbar, mit lesbaren Namen und stabilen

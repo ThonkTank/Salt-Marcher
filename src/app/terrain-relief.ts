@@ -1,6 +1,6 @@
 import type {Point} from './contracts';
 
-/** Shared by the canvas raster, worker preview and export. Heights never choose a biome. */
+/** Shared by the canvas raster, worker preview and export. Materials never write biomes. */
 export interface TerrainStyle {
   version:1;
   mode:'drawn'|'shaded'|'height';
@@ -8,16 +8,21 @@ export interface TerrainStyle {
   ink:string;
   lightDegrees:number;
   strength:number;
+  /** Absent on legacy profiles: preserve their original appearance. */
+  mountains?:boolean;
+  snowlineM?:number;
 }
 export const DEFAULT_TERRAIN_STYLE:Readonly<TerrainStyle>=Object.freeze({
-  version:1,mode:'drawn',land:'#eee5cf',ink:'#685639',lightDegrees:315,strength:.65,
+  version:1,mode:'drawn',land:'#eee5cf',ink:'#685639',lightDegrees:315,strength:.65,mountains:true,snowlineM:2500,
 });
 export function validateTerrainStyle(s:TerrainStyle){
   if(!s||s.version!==1||!['drawn','shaded','height'].includes(s.mode)||
     !/^#[0-9a-f]{6}$/i.test(s.land)||!/^#[0-9a-f]{6}$/i.test(s.ink)||
     !Number.isFinite(s.lightDegrees)||s.lightDegrees<0||s.lightDegrees>=360||
     !Number.isFinite(s.strength)||s.strength<0||s.strength>1||
-    Object.keys(s).some(k=>!['version','mode','land','ink','lightDegrees','strength'].includes(k)))throw Error('Reliefstil prüfen.');
+    (s.mountains!==undefined&&typeof s.mountains!=='boolean')||
+    (s.snowlineM!==undefined&&(!Number.isFinite(s.snowlineM)||Math.abs(s.snowlineM)>1000000))||
+    Object.keys(s).some(k=>!['version','mode','land','ink','lightDegrees','strength','mountains','snowlineM'].includes(k)))throw Error('Reliefstil prüfen.');
 }
 export const reliefRgb=(hex:string)=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
 export function reliefLighting(style:TerrainStyle){
@@ -26,6 +31,30 @@ export function reliefLighting(style:TerrainStyle){
 }
 export function reliefLight(sx:number,sy:number,style:TerrainStyle){return reliefLighting(style)(sx,sy);}
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
+const smooth=(lo:number,hi:number,value:number)=>{const t=Math.max(0,Math.min(1,(value-lo)/(hi-lo)));return t*t*(3-2*t);};
+/** Display-only material, before lighting/contours. Physical height and slope,
+ * not camera tilt, exaggeration or the loaded height range, choose coverage.
+ * Fixed world grain fades below its sampling limit; zoom never moves snow.
+ * Mutate only the derived pixel buffer, with no per-pixel allocation. */
+export function mountainMaterial(style:TerrainStyle,footprintM:number){
+  if(!style.mountains||style.mode==='height')return undefined;
+  const snowline=style.snowlineM??2500,grainScale=160;
+  const grainWeight=1-smooth(grainScale/8,grainScale/2,footprintM);
+  return (pixels:Uint8Array,at:number,x:number,y:number,height:number,sx:number,sy:number)=>{
+    const slope=Math.hypot(sx,sy),rock=.85*smooth(.35,1.2,slope);
+    const snow=smooth(snowline,snowline+300,height)*(1-.8*smooth(1,2.5,slope));
+    if(!rock&&!snow)return;
+    let grain=0;
+    if(grainWeight){
+      const u=x/grainScale,v=y/grainScale,ix=Math.floor(u),iy=Math.floor(v),fx=smooth(0,1,u-ix),fy=smooth(0,1,v-iy);
+      grain=(mix(mix(noise(ix,iy,137),noise(ix+1,iy,137),fx),mix(noise(ix,iy+1,137),noise(ix+1,iy+1,137),fx),fy)-.5)*grainWeight;
+    }
+    for(let c=0;c<3;c++){
+      const stone=(c===0?144:c===1?139:129)+grain*18,ice=(c===0?246:c===1?248:244)+grain*4;
+      pixels[at+c]=Math.round(mix(mix(pixels[at+c]!,stone,rock),ice,snow));
+    }
+  };
+}
 /** Explicit analysis mode, relative to sea level. No snow or terrain-type writes. */
 export function elevationColor(heightM:number,seaLevelM:number){
   const t=Math.min(1,Math.max(0,(heightM-seaLevelM)/3000)),low=[189,209,148],mid=[206,177,111],high=[145,105,92];
