@@ -556,3 +556,9 @@ bei Raumtreffern wurde wegen einer Regression für große Einzelbestände verwor
 [Unsichtbare Straßen später aufbauen](../reference/atlas-deferred-routes-20261022/README.md): Der normale Atlas erzeugt Geometrie sicher unsichtbarer Bodentrassen erst beim Heranzoomen aus aktuellen geladenen Daten. Geplante Trassen, Auswahl und hochaufgelöste Ausgabe bleiben erhalten. Die gemessenen Straßenaufbauten in langen Pinselabschluss-Aufgaben entfallen; Netz-/GPU-Arbeit und mehrsekündige Gesamtwartezeiten bleiben offen.
 
 [Geländenetz und Shader wiederverwenden](../reference/atlas-terrain-mesh-reuse-20261022/README.md): Weltgrenzen und Bildgrößen ersetzen nicht mehr die ganze GPU-Szene. Topologie, Texturen und Draftpuffer besitzen getrennte Lebenszyklen; numerisches Picking kopiert keine Rendergeometrie. Sieben native GPU-Vergleiche bleiben pixelgleich, die längste gemessene Weltaufgabe sinkt von 311 auf 169 ms. Mehrsekündige Bearbeitungsfreigabe und Zielgeräteprüfung bleiben offen.
+
+[Gruppen- oder räumlichen Index zuerst lesen](../reference/atlas-owner-candidate-cost-20261022/README.md):
+`AtlasRegionReader.candidates` begrenzt die Größenprüfung auf 129 Einträge.
+Kleine Raumgruppen beginnen im Gruppenindex, große Sammlungen im Rtree; beide
+verwenden identische räumliche Grenzen. Die Regression prüft viele Gebäude mit
+überlappenden lokalen Koordinaten sowie Wachstum zum großen Einzelbesitzer.

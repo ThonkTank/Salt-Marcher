@@ -1,0 +1,873 @@
+{
+  "purpose": "Repeated main-Atlas navigation on the mixed world. No forced GC, no editing; this is not the full navigation-and-editing plateau qualification.",
+  "durationMs": 0,
+  "canonicalBefore": {
+    "sha256": "6f21949e12b5cf806f6319e0e751a5b876d4cba3dd131cb6befdb5889e99b202",
+    "atlas": {
+      "campaign_id": "3b14ffee-6cc7-4e40-8aca-f6eeb74b05a1",
+      "revision": 21
+    }
+  },
+  "inventory": {
+    "hexes": 100000,
+    "sourceCells": 100000,
+    "places": 5000,
+    "heightTiles": 1033,
+    "buildings": 5000,
+    "details": 50,
+    "dungeonRooms": 4001,
+    "rooms": 15701,
+    "elements": 48670,
+    "bindings": 5052,
+    "locations": 5051,
+    "cityDocuments": 0
+  },
+  "samples": [
+    {
+      "cycle": -1,
+      "scale": 40000000,
+      "elapsedMs": 57.6539440000015,
+      "heap": {
+        "usedSize": 13982292,
+        "totalSize": 26206208,
+        "embedderHeapUsedSize": 40083248,
+        "backingStorageSize": 26751402
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 12.69,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 340556,
+            "peakWorkingSetSize": 391672
+          },
+          "pssKb": 248032
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.78,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 150744,
+            "peakWorkingSetSize": 150744
+          },
+          "pssKb": 91237
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88636,
+            "peakWorkingSetSize": 88636
+          },
+          "pssKb": 29763
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 3.45,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 243452,
+            "peakWorkingSetSize": 243972
+          },
+          "pssKb": 181955
+        }
+      ],
+      "pssKb": 550987,
+      "canvas": {
+        "atlasView": "{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-20000000",
+        "atlasOriginY": "-14791666.666666666",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-60000000,\"y\":-60000000,\"width\":120000000,\"height\":120000000},\"frame\":{\"x\":-20000000,\"y\":-14791666.666666666,\"width\":40000000,\"height\":29583333.333333332},\"refinement\":{\"x\":-30000000,\"y\":-22187500,\"width\":60000000,\"height\":44375000},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "3",
+        "paintCommands": "1",
+        "terrainTiles": "1/48"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 2000000,
+      "elapsedMs": 6225.638492000002,
+      "heap": {
+        "usedSize": 33910200,
+        "totalSize": 60547072,
+        "embedderHeapUsedSize": 39326688,
+        "backingStorageSize": 86794013
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 19.79,
+            "percentCPUUsage": 14.355234055823502,
+            "idleWakeupsPerSecond": 115
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 388628,
+            "peakWorkingSetSize": 416000
+          },
+          "pssKb": 296107
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 1.27,
+            "percentCPUUsage": 0.9907298419636281,
+            "idleWakeupsPerSecond": 89
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 165244,
+            "peakWorkingSetSize": 165244
+          },
+          "pssKb": 98787
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88636,
+            "peakWorkingSetSize": 88636
+          },
+          "pssKb": 29761
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 6.21,
+            "percentCPUUsage": 5.580509689786745,
+            "idleWakeupsPerSecond": 99
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 330144,
+            "peakWorkingSetSize": 330144
+          },
+          "pssKb": 261640
+        }
+      ],
+      "pssKb": 686295,
+      "canvas": {
+        "atlasView": "{\"x\":-999999.973749304,\"y\":-739583.3139187563,\"width\":1999999.947498608,\"height\":1479166.6278375126}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-999999.973749304",
+        "atlasOriginY": "-739583.3139187563",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-2999999.9212479116,\"y\":-2999999.9212479116,\"width\":5999999.842495823,\"height\":5999999.842495823},\"frame\":{\"x\":-999999.973749304,\"y\":-739583.3139187563,\"width\":1999999.947498608,\"height\":1479166.6278375126},\"refinement\":{\"x\":-1499999.9606239558,\"y\":-1109374.9708781345,\"width\":2999999.9212479116,\"height\":2218749.941756269},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "16",
+        "sceneVersion": "12",
+        "paintCommands": "17",
+        "terrainTiles": "4/36"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 20000,
+      "elapsedMs": 15619.114108000005,
+      "heap": {
+        "usedSize": 50548332,
+        "totalSize": 99196928,
+        "embedderHeapUsedSize": 44201360,
+        "backingStorageSize": 44721394
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 29.75,
+            "percentCPUUsage": 13.27580696912687,
+            "idleWakeupsPerSecond": 92
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 447520,
+            "peakWorkingSetSize": 478772
+          },
+          "pssKb": 355908
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 2.15,
+            "percentCPUUsage": 1.172974747133303,
+            "idleWakeupsPerSecond": 84
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 167296,
+            "peakWorkingSetSize": 167296
+          },
+          "pssKb": 100735
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88636,
+            "peakWorkingSetSize": 88636
+          },
+          "pssKb": 29745
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 10.86,
+            "percentCPUUsage": 6.198230116051128,
+            "idleWakeupsPerSecond": 112
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 381548,
+            "peakWorkingSetSize": 423312
+          },
+          "pssKb": 313408
+        }
+      ],
+      "pssKb": 799796,
+      "canvas": {
+        "atlasView": "{\"x\":-9999.999937217704,\"y\":-7395.833286900596,\"width\":19999.99987443541,\"height\":14791.666573801192}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "776192",
+        "canvasState": "loaded",
+        "atlasOriginX": "-9999.999937217704",
+        "atlasOriginY": "-7395.833286900596",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-29999.999811653113,\"y\":-29999.999811653113,\"width\":59999.99962330623,\"height\":59999.99962330623},\"frame\":{\"x\":-9999.999937217704,\"y\":-7395.833286900596,\"width\":19999.99987443541,\"height\":14791.666573801192},\"refinement\":{\"x\":-14999.999905826557,\"y\":-11093.749930350894,\"width\":29999.999811653113,\"height\":22187.499860701788},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "15159",
+        "sceneVersion": "21",
+        "paintCommands": "15162",
+        "terrainTiles": "5/48"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 400,
+      "elapsedMs": 39829.750071,
+      "heap": {
+        "usedSize": 119509568,
+        "totalSize": 176943104,
+        "embedderHeapUsedSize": 44808544,
+        "backingStorageSize": 101931838
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 69.6,
+            "percentCPUUsage": 20.569353086464208,
+            "idleWakeupsPerSecond": 123
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 539396,
+            "peakWorkingSetSize": 1105720
+          },
+          "pssKb": 446465
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 4.02,
+            "percentCPUUsage": 0.9652318730589806,
+            "idleWakeupsPerSecond": 100
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 190092,
+            "peakWorkingSetSize": 190092
+          },
+          "pssKb": 123239
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88768,
+            "peakWorkingSetSize": 88768
+          },
+          "pssKb": 29743
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 22.84,
+            "percentCPUUsage": 6.1836700732253895,
+            "idleWakeupsPerSecond": 98
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 536224,
+            "peakWorkingSetSize": 536224
+          },
+          "pssKb": 466841
+        }
+      ],
+      "pssKb": 1066288,
+      "canvas": {
+        "atlasView": "{\"x\":-199.99999777920212,\"y\":-147.9166650242016,\"width\":399.99999555840424,\"height\":295.8333300484032}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-199.99999777920212",
+        "atlasOriginY": "-147.9166650242016",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-599.9999933376064,\"y\":-599.9999933376064,\"width\":1199.9999866752128,\"height\":1199.9999866752128},\"frame\":{\"x\":-199.99999777920212,\"y\":-147.9166650242016,\"width\":399.99999555840424,\"height\":295.8333300484032},\"refinement\":{\"x\":-299.9999966688032,\"y\":-221.87499753630237,\"width\":599.9999933376064,\"height\":443.74999507260475},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "237",
+        "pathReuses": "6094",
+        "sceneVersion": "30",
+        "paintCommands": "6332",
+        "terrainTiles": "5/24"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 80,
+      "elapsedMs": 45702.569352000006,
+      "heap": {
+        "usedSize": 139802868,
+        "totalSize": 198311936,
+        "embedderHeapUsedSize": 51563456,
+        "backingStorageSize": 168871859
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 74.15,
+            "percentCPUUsage": 9.694269583021129,
+            "idleWakeupsPerSecond": 97
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 535172,
+            "peakWorkingSetSize": 1105720
+          },
+          "pssKb": 443987
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 4.88,
+            "percentCPUUsage": 1.8322969350529994,
+            "idleWakeupsPerSecond": 274
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 172636,
+            "peakWorkingSetSize": 194736
+          },
+          "pssKb": 104950
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88768,
+            "peakWorkingSetSize": 88768
+          },
+          "pssKb": 29709
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 26.63,
+            "percentCPUUsage": 8.074605090026521,
+            "idleWakeupsPerSecond": 101
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 626760,
+            "peakWorkingSetSize": 626760
+          },
+          "pssKb": 557041
+        }
+      ],
+      "pssKb": 1135687,
+      "canvas": {
+        "atlasView": "{\"x\":-40.000000184063815,\"y\":-29.583333469463863,\"width\":80.00000036812763,\"height\":59.166666938927726}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-40.000000184063815",
+        "atlasOriginY": "-29.583333469463863",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-120.00000055219144,\"y\":-120.00000055219144,\"width\":240.00000110438287,\"height\":240.00000110438287},\"frame\":{\"x\":-40.000000184063815,\"y\":-29.583333469463863,\"width\":80.00000036812763,\"height\":59.166666938927726},\"refinement\":{\"x\":-60.00000027609572,\"y\":-44.37500020419579,\"width\":120.00000055219144,\"height\":88.75000040839159},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "9",
+        "pathReuses": "417",
+        "sceneVersion": "36",
+        "paintCommands": "429",
+        "terrainTiles": "5/48"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 2000000,
+      "elapsedMs": 74938.31102,
+      "heap": {
+        "usedSize": 66778092,
+        "totalSize": 129490944,
+        "embedderHeapUsedSize": 56624992,
+        "backingStorageSize": 141418572
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 122.22,
+            "percentCPUUsage": 20.566438830285353,
+            "idleWakeupsPerSecond": 111
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 597792,
+            "peakWorkingSetSize": 1177520
+          },
+          "pssKb": 503946
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 7.78,
+            "percentCPUUsage": 1.240755515714468,
+            "idleWakeupsPerSecond": 133
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 170632,
+            "peakWorkingSetSize": 203988
+          },
+          "pssKb": 102915
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88688,
+            "peakWorkingSetSize": 88688
+          },
+          "pssKb": 29547
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 38.61,
+            "percentCPUUsage": 5.125649083448374,
+            "idleWakeupsPerSecond": 102
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 487208,
+            "peakWorkingSetSize": 731524
+          },
+          "pssKb": 417434
+        }
+      ],
+      "pssKb": 1053842,
+      "canvas": {
+        "atlasView": "{\"x\":-1000000.0042668821,\"y\":-739583.336489049,\"width\":2000000.0085337642,\"height\":1479166.672978098}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-1000000.0042668821",
+        "atlasOriginY": "-739583.336489049",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-3000000.012800646,\"y\":-3000000.012800646,\"width\":6000000.025601292,\"height\":6000000.025601292},\"frame\":{\"x\":-1000000.0042668821,\"y\":-739583.336489049,\"width\":2000000.0085337642,\"height\":1479166.672978098},\"refinement\":{\"x\":-1500000.006400323,\"y\":-1109375.0047335736,\"width\":3000000.012800646,\"height\":2218750.0094671473},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "16",
+        "sceneVersion": "58",
+        "paintCommands": "17",
+        "terrainTiles": "8/36"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": 40000000,
+      "elapsedMs": 82298.426206,
+      "heap": {
+        "usedSize": 51350804,
+        "totalSize": 127340544,
+        "embedderHeapUsedSize": 38038848,
+        "backingStorageSize": 100288159
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 133.28,
+            "percentCPUUsage": 18.75822325908424,
+            "idleWakeupsPerSecond": 144
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 577016,
+            "peakWorkingSetSize": 1177520
+          },
+          "pssKb": 484300
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 8.13,
+            "percentCPUUsage": 0.5935954107951601,
+            "idleWakeupsPerSecond": 51
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 170052,
+            "peakWorkingSetSize": 203988
+          },
+          "pssKb": 102329
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88688,
+            "peakWorkingSetSize": 88688
+          },
+          "pssKb": 29547
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 40.6,
+            "percentCPUUsage": 3.374856848408757,
+            "idleWakeupsPerSecond": 92
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 441052,
+            "peakWorkingSetSize": 731524
+          },
+          "pssKb": 371242
+        }
+      ],
+      "pssKb": 987418,
+      "canvas": {
+        "atlasView": "{\"x\":-19999999.38964846,\"y\":-14791666.215260852,\"width\":39999998.77929692,\"height\":29583332.430521704}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-19999999.38964846",
+        "atlasOriginY": "-14791666.215260852",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-59999998.16894538,\"y\":-59999998.16894538,\"width\":119999996.33789076,\"height\":119999996.33789076},\"frame\":{\"x\":-19999999.38964846,\"y\":-14791666.215260852,\"width\":39999998.77929692,\"height\":29583332.430521704},\"refinement\":{\"x\":-29999999.08447269,\"y\":-22187499.32289128,\"width\":59999998.16894538,\"height\":44374998.64578256},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "67",
+        "paintCommands": "1",
+        "terrainTiles": "3/48"
+      }
+    },
+    {
+      "cycle": 0,
+      "scale": "world-settled",
+      "elapsedMs": 84731.151864,
+      "heap": {
+        "usedSize": 37052816,
+        "totalSize": 127340544,
+        "embedderHeapUsedSize": 38943040,
+        "backingStorageSize": 72153612
+      },
+      "processes": [
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 138.24,
+            "percentCPUUsage": 25.51571582900355,
+            "idleWakeupsPerSecond": 119
+          },
+          "pid": 3549670,
+          "type": "Browser",
+          "creationTime": 1792644458070,
+          "memory": {
+            "workingSetSize": 596520,
+            "peakWorkingSetSize": 1177520
+          },
+          "pssKb": 503246
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 8.31,
+            "percentCPUUsage": 0.9260429198256734,
+            "idleWakeupsPerSecond": 75
+          },
+          "pid": 3549708,
+          "type": "GPU",
+          "creationTime": 1792644458690,
+          "serviceName": "GPU",
+          "memory": {
+            "workingSetSize": 169980,
+            "peakWorkingSetSize": 203988
+          },
+          "pssKb": 102249
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 0.16,
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          },
+          "pid": 3549711,
+          "type": "Utility",
+          "creationTime": 1792644458700,
+          "serviceName": "network.mojom.NetworkService",
+          "name": "Network Service",
+          "memory": {
+            "workingSetSize": 88688,
+            "peakWorkingSetSize": 88688
+          },
+          "pssKb": 29547
+        },
+        {
+          "cpu": {
+            "cumulativeCPUUsage": 40.92,
+            "percentCPUUsage": 1.6465255429623793,
+            "idleWakeupsPerSecond": 61
+          },
+          "pid": 3549759,
+          "type": "Tab",
+          "creationTime": 1792644459080,
+          "memory": {
+            "workingSetSize": 448732,
+            "peakWorkingSetSize": 731524
+          },
+          "pssKb": 378892
+        }
+      ],
+      "pssKb": 1013934,
+      "canvas": {
+        "atlasView": "{\"x\":-19999999.38964846,\"y\":-14791666.215260852,\"width\":39999998.77929692,\"height\":29583332.430521704}",
+        "renderer": "webgl",
+        "imageErrors": "0",
+        "decodedBytes": "0",
+        "canvasState": "loaded",
+        "atlasOriginX": "-19999999.38964846",
+        "atlasOriginY": "-14791666.215260852",
+        "terrainView": "main",
+        "terrainReady": "ready",
+        "terrainQuality": "refining",
+        "terrainProjection": "{\"projection\":\"perspective\",\"box\":{\"x\":-59999998.16894538,\"y\":-59999998.16894538,\"width\":119999996.33789076,\"height\":119999996.33789076},\"frame\":{\"x\":-19999999.38964846,\"y\":-14791666.215260852,\"width\":39999998.77929692,\"height\":29583332.430521704},\"refinement\":{\"x\":-29999999.08447269,\"y\":-22187499.32289128,\"width\":59999998.16894538,\"height\":44374998.64578256},\"columns\":257,\"rows\":257,\"focusM\":3232.229736328125,\"tilt\":0,\"rotation\":0,\"exaggeration\":1}",
+        "terrainPreview": "false",
+        "terrainSamplePad": "0",
+        "atlasRegionRevision": "21",
+        "atlasTerrainRaster": "false",
+        "atlasLandscapeTiles": "0",
+        "pathBuilds": "1",
+        "pathReuses": "0",
+        "sceneVersion": "67",
+        "paintCommands": "1",
+        "terrainTiles": "8/48"
+      }
+    }
+  ],
+  "cycles": [
+    {
+      "cycle": 0,
+      "elapsedMs": 84731.151864,
+      "pssKb": 1013934,
+      "heapUsed": 37052816
+    }
+  ],
+  "probeSha256": "5a99ee15ba263761d3004a430fcf399fe3d3d0335d3f544dbff041304e622e50",
+  "elapsedMs": 84791.96221099999,
+  "canonicalAfter": {
+    "sha256": "6f21949e12b5cf806f6319e0e751a5b876d4cba3dd131cb6befdb5889e99b202",
+    "atlas": {
+      "campaign_id": "3b14ffee-6cc7-4e40-8aca-f6eeb74b05a1",
+      "revision": 21
+    }
+  },
+  "source": "da6c88eb44482a67bb692d14cb32fe29bc3e4eae",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-navigation-soak-vqK65c",
+  "artifacts": {
+    "main.cjs": "817ae99e8287c62d81f827772072ad3b78c2623d98061a26dced5c76747ec989",
+    "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+    "atlas-region-worker.cjs": "a7801b7a07e42ebe05b2c054c311bde0279947b0d45c56418aa82c4ca5b4f6ae",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "18a53edc094d1b07d62730e05e001fcdceea39d568188716637da11ec8abf7e2",
+    "backup-validation-worker.cjs": "d2785b47af781097a0a320e2cc4b1cdb4da1b2ac67fed3f84b783eaa564bee1b",
+    "ui/renderer.js": "145ecae77eb72b6caf8b49617a9c56c2b8f64c3036ea72870aaf2ac1537df7fb",
+    "ui/atlas-brush-worker.js": "65654c0ce309b475c62a2833dcd9fd382886d54e1f986bacad82a172857dbd41",
+    "ui/terrain-spatial-worker.js": "7159c12f3acc396119e82547d85cb60777a6815748a67a535de37a8e887a5de4",
+    "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+    "ui/app.css": "dffb54a6020e45d3648951764b8f30fdcd1bdcee35c041cf34982698110cd118"
+  },
+  "launches": [
+    {
+      "pid": 3549670,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ],
+  "errors": []
+}
