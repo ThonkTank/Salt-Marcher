@@ -48,8 +48,10 @@ export function terrainObjectSources(a:AtlasRenderView,display?:{mpp:number;roof
     const binding=a.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===e.scopeId);if(!binding)continue;
     const anchor=localToAtlas(e.outside,atlasFrame(a,binding));
     objects.push({kind:'entrance',id:e.id,roomId:e.roomId,name:'Eingang · '+(a.workspace.rooms.find(r=>r.id===e.roomId)?.name??'Dungeon'),
-      anchor,outline:[{x:-1,y:-.6},{x:1,y:-.6},{x:1,y:.6},{x:-1,y:.6}].map(p=>({x:p.x+anchor.x,y:p.y+anchor.y})),
-      binding:e.terrain??{mode:'ground',offsetM:0},wallM:2.5,roofM:.5,floorElevations:[],color:'#6c6255'});
+      // The ordinary Atlas already draws and picks an entrance marker. Keep its
+      // height anchor without inventing a building footprint or lifting it to a roof.
+      anchor,outline:[],binding:e.terrain??{mode:'ground',offsetM:0},
+      wallM:0,roofM:0,floorElevations:[],color:'#6c6255'});
   }
   return objects;
 }

@@ -7,7 +7,7 @@ import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-objects';export * from './src/app/terrain-object-view';export * from './src/app/terrain-profile';export * from './src/app/terrain-height';export * from './src/app/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-objects-test.cjs'});
-const {terrainObjectSources,resolveTerrainObjects,terrainObjectMeshes,terrainProfile,validateTerrainBuilding,heightRecord,CampaignStore,AtlasRegionReader,cellAt,weatherAt,weatherEffects,terrainGrid,TerrainSampler,TerrainSpatialView}=require('../.build/terrain-objects-test.cjs');
+const {terrainObjectSources,resolveTerrainObjects,terrainObjectMeshes,TerrainObjectLayer,terrainProfile,validateTerrainBuilding,heightRecord,CampaignStore,AtlasRegionReader,cellAt,weatherAt,weatherEffects,terrainGrid,TerrainSampler,TerrainSpatialView}=require('../.build/terrain-objects-test.cjs');
 const heights=(rise=0)=>heightRecord(0,0,1,Float32Array.from({length:4096},(_,i)=>100+rise+(i%64)*.5+Math.floor(i/64)*.25));
 const source={kind:'building',id:'house',cityId:'city',name:'Haus',anchor:{x:20,y:20},outline:[{x:16,y:16},{x:24,y:16},{x:24,y:24},{x:16,y:24}],binding:{mode:'ground',offsetM:1},wallM:3,roofM:2,floorElevations:[-3,0,4,7],color:'#9c604c'};
 test('terrain anchored buildings translate as a whole and keep exact floors and footprint; fixed buildings stay fixed',()=>{
@@ -61,6 +61,11 @@ test('canonical house/entrance bindings survive history and reopen; region input
  const resolved=()=>resolveTerrainObjects(terrainObjectSources(store.campaignAtlas(active.token)),records());
  const original=resolved().find(o=>o.id==='house');assert.equal(original.baseM,117);assert.equal(original.topM,125);
  const originalRooms=JSON.stringify(store.campaignAtlas(active.token).workspace.rooms),originalFloors=JSON.stringify(store.campaignAtlas(active.token).geometry.floors),entry=resolved().find(o=>o.kind==='entrance');
+ assert.deepEqual(entry.outline,[],'An entrance is a point, not an authored house');
+ assert.equal(entry.topM+entry.roofM,entry.baseM,'The existing marker stays at its actual anchor height');
+ assert.equal(terrainObjectMeshes(entry,{x:0,y:0,z:0},1).length,0,'No synthetic entrance volume');
+ const layer=new TerrainObjectLayer();layer.update([entry],{x:0,y:0,z:0},1);
+ assert.equal(layer.heights.get(entry.id),entry.baseM);assert.equal(layer.meshes.length,0);layer.dispose();
  write({kind:'landscape-put',record:heights(20),expectedRevision:1});
  assert.equal(resolved().find(o=>o.id==='house').baseM-original.baseM,20);assert(Math.abs(resolved().find(o=>o.kind==='entrance').baseM-entry.baseM-20)<1e-10,'fractional entrance height translates within floating-point precision');
  assert.equal(JSON.stringify(store.campaignAtlas(active.token).workspace.rooms),originalRooms);assert.equal(JSON.stringify(store.campaignAtlas(active.token).geometry.floors),originalFloors);write({kind:'undo'});
