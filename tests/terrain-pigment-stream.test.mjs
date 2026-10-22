@@ -7,7 +7,7 @@ import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 const require=createRequire(import.meta.url);
 buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/storage/landscape-record-stream';export * from './src/app/landscape-raster';export * from './src/app/terrain-height';export * from './src/app/vegetation';"},outfile:'.build/terrain-pigment-stream-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,AtlasLandscapeReader,LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,vegetationSpec,LandscapeRasterizer,heightRecord}=require('../.build/terrain-pigment-stream-test.cjs');
+const {CampaignStore,AtlasLandscapeReader,LANDSCAPE_COLOR_INDEX,LANDSCAPE_COVER_INDEX,vegetationSpec,LandscapeRasterizer,heightRecord,settingsRecord}=require('../.build/terrain-pigment-stream-test.cjs');
 const polygon=[{outer:[{x:-64,y:-64},{x:128,y:-64},{x:128,y:128},{x:-64,y:128}],holes:[]}];
 const pigment=(i,extra={})=>({id:'paint'+i,revision:1,kind:'patch',name:'',width:0,resolution:2**(i%4),order:i%2?i*13%19:undefined,points:[{x:0,y:0},{x:40,y:20}],polygons:polygon,values:{},paint:{version:2,operation:'paint',target:'ground',color:i%2?'#967755':'#778866',opacity:.3,flow:.7,tip:'soft',radius:30,seed:i,...extra}});
 
@@ -27,7 +27,9 @@ for(const kind of ['color','cover'])test(`paged ${kind} reads preserve canonical
 
 test('interruptible pigment composition retains textured dabs, legacy paint, erase and cropped output',()=>{
  const records=[pigment(1,{tip:'textured'}),pigment(2,{fill:true}),pigment(3,{version:1,tip:'round'}),pigment(4,{operation:'erase',tip:'soft'})],box={x:0,y:0,width:64,height:64};
- const create=()=>{const image=new LandscapeRasterizer(box,128,128);image.paint(heightRecord(0,0,2,new Float32Array(4096).fill(100)));return image;};
+ // This oracle isolates pigment composition under its historical relief profile.
+ const style=settingsRecord(0);style.terrainSettings.style={version:1,mode:'drawn',land:'#eee5cf',ink:'#685639',lightDegrees:315,strength:.65};
+ const create=()=>{const image=new LandscapeRasterizer(box,128,128);image.paint(style);image.paint(heightRecord(0,0,2,new Float32Array(4096).fill(100)));return image;};
  const sync=create(),stepped=create();for(const r of records)sync.paintColor(r);
  let checkpoints=0;function* checkpoint(){checkpoints++;yield;}
  for(const r of records){const steps=stepped.paintColorSteps(r,checkpoint);while(!steps.next().done){}}

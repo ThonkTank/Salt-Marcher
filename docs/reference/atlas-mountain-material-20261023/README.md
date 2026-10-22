@@ -35,6 +35,11 @@ Verglichene technische Ansätze:
 ## Prüfung
 
 15 gezielte Relief-/Farbkacheltests und 74 betroffene Regressionen bestanden.
+Die erste Candidate-CI fand zusätzlich den historischen Pigment-Bildvergleich:
+sein ungesetzter Stil aktivierte jetzt das neue Gebirgsmaterial. Die Probe
+verwendet deshalb ausdrücklich ihr altes Stilprofil; der vorhandene SHA-256-
+Bildreferenzwert bleibt unverändert. Alle drei Pigment-Streamtests bestehen.
+Ein vollständiger lokaler Diagnoselauf und eine neue Candidate-CI folgen.
 App- und Desktop-Typprüfung, Desktop-Build und Repositoryprüfung bestanden.
 Die Reliefprüfungen decken hohe ebene Flächen, Fels unterhalb der Schneegrenze,
 steile verschneite Hänge, Wasser, alte Profile, Analyse, negative Kachelränder,
