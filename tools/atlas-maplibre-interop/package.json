@@ -1,0 +1,12 @@
+{
+  "name": "saltmarcher-atlas-maplibre-interop-probe",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "maplibre-gl": "6.15.0",
+    "@deck.gl/maplibre": "9.4.0",
+    "@deck.gl/core": "9.4.0",
+    "@deck.gl/layers": "9.4.0",
+    "@math.gl/core": "4.1.0"
+  }
+}
