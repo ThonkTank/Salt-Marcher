@@ -38,6 +38,12 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   nach rund 1,2 s beobachtet. Vollständige Details folgen deutlich später.
   Ein Folgezug vor kompletter Nachladung ist belegt, sofortige Folgeeingabe und
   die Zielgeräte-/Gesamtabnahme bleiben offen. Messgrenzen stehen im Bericht.
+- **M1 in Arbeit:** Der [Meterraumvertrag](../../../src/app/atlas-metric-space.ts)
+  erhält Kamerapose und Kachelausdehnung beim Wachsen der Darstellungswurzel;
+  [fünf gezielte Tests](../../../tests/atlas-metric-space.test.mjs) und die Typprüfung
+  bestehen. Diese Mathematik ist noch kein Beleg für die gemeinsame GPU-Fläche.
+  Der native Anschluss mit eigenem deck.gl-Viewport wird separat erprobt;
+  Projektion, Picking und gemeinsamer Tiefenpuffer sind noch nachzuweisen.
 - **Ablösung des bisherigen Auftrags:** Die zuvor vorgesehene isolierte Kartenstilprobe
   ist nicht mehr die nächste Etappe. Bildqualität bleibt in M0 und der gemeinsamen
   Abnahme verpflichtend; die beschlossene Technikwahl wird dadurch nicht erneut geöffnet.
