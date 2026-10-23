@@ -12,8 +12,8 @@ import {buildHexGridProbe} from './terrain-hex-grid-probe.mjs';
 import {buildContourProbe,terrainContourPixels} from './terrain-contour-probe.mjs';
 import {buildDetailProbe,terrainDetailPixels} from './terrain-detail-probe.mjs';
 import {createRequire} from 'node:module';
-import {writeFile} from 'node:fs/promises';
-import {randomUUID} from 'node:crypto';
+import {readFile,writeFile,rm} from 'node:fs/promises';
+import {createHash,randomUUID} from 'node:crypto';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 const root=process.cwd(),require=createRequire(root+'/package.json');
@@ -21,15 +21,25 @@ const out=path.resolve(process.env.QA_EVIDENCE_DIR??'.build/world-navigation');
 const cameraTrace=process.env.WORLD_CAMERA_TRACE;
 assert(!cameraTrace||['1','current'].includes(cameraTrace),'Unknown camera trace mode');
 const readbackMode=process.env.WORLD_READBACK??'legacy',profileEnabled=process.env.WORLD_PROFILE===undefined?readbackMode==='legacy':process.env.WORLD_PROFILE==='1';
+const earlyRepeat=process.env.WORLD_EARLY_REPEAT==='1';
+assert(!earlyRepeat||(process.env.WORLD_REPEAT==='1'&&process.env.WORLD_OVERLAY!=='1'),'Early repeat requires a second stroke without intervening hover checks');
 assert(['off','legacy','sync','async'].includes(readbackMode),'Unknown pixel readback mode');
 require('esbuild').buildSync({stdin:{resolveDir:root,contents:"export {CampaignStore} from './src/app/storage/store';export {applyTerrainBrush} from './src/app/terrain-brush';export {heightRecord} from './src/app/terrain-height';export {emptyRecord,bounds} from './src/app/atlas-landscape';export {vegetationSpec} from './src/app/vegetation';"},outfile:'.build/world-navigation-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const {CampaignStore,applyTerrainBrush,heightRecord,emptyRecord,bounds,vegetationSpec}=require(root+'/.build/world-navigation-store.cjs');
-const native=await createNativeSession({root,output:out,name:'world-navigation'}),store=new CampaignStore(native.profile+'/workbench.sqlite');
-const campaign=store.create('Sparse world navigation'),token=store.activate(campaign.id).token,radius=4023360;
+const native=await createNativeSession({root,output:out,name:'world-navigation'});
+assert(!process.env.WORLD_SOURCE||path.resolve(process.env.WORLD_SOURCE)!==out+'/source.sqlite','Use a separate output directory to preserve the frozen input');
+const sourceBytes=process.env.WORLD_SOURCE?await readFile(process.env.WORLD_SOURCE):null;
+// Read a reused source before removing any snapshot left by an older run.
+await rm(out+'/source.sqlite',{force:true});
+if(sourceBytes)await writeFile(native.profile+'/workbench.sqlite',sourceBytes);
+const store=new CampaignStore(native.profile+'/workbench.sqlite');
+const sourceCampaigns=sourceBytes?store.db.prepare('SELECT id,name FROM campaign').all():null;
+if(sourceCampaigns){assert.equal(sourceCampaigns.length,1,'Frozen world must contain exactly one synthetic campaign');assert.equal(sourceCampaigns[0].name,'Sparse world navigation','Only this probe\'s synthetic fixture may be reused');}
+const campaign=sourceCampaigns?.[0]??store.create('Sparse world navigation'),token=store.activate(campaign.id).token,radius=4023360;
 const records=applyTerrainBrush([],{mode:'raise',radius,strength:500,feather:1,samples:[{x:0,y:0,t:0},{x:0,y:0,t:3000}]});
-for(const record of records)store.executeAtlasCommit({token,campaignId:campaign.id,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record}});
+if(!sourceBytes)for(const record of records)store.executeAtlasCommit({token,campaignId:campaign.id,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record}});
 const populated=process.env.WORLD_POPULATED==='1';
-if(populated){
+if(populated&&!sourceBytes){
  const put=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
  const save=record=>{const b=bounds(record);put.run(campaign.id,record.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(record));};
  store.db.transaction(()=>{for(let y=-16;y<16;y++)for(let x=-16;x<16;x++){
@@ -42,7 +52,7 @@ if(populated){
 const large=process.env.WORLD_LARGE==='1';
 const mixed=process.env.WORLD_MIXED==='1';
 assert(!mixed||large,'Mixed world includes the large-world place inventory');
-if(large){
+if(large&&!sourceBytes){
 const putLarge=store.db.prepare('INSERT INTO atlas_landscape VALUES(?,?,?,?,?,?,?,?)');
 const saveLarge=record=>{const b=bounds(record);putLarge.run(campaign.id,record.id,1,b.x,b.x+b.width,b.y,b.y+b.height,JSON.stringify(record));};
 store.db.transaction(()=>{
@@ -57,12 +67,18 @@ store.db.transaction(()=>{
 })();
 }
 let mixedFixture;
-if(mixed)try{mixedFixture=populateMixedWorld(store,campaign);await writeFile(out+'/setup.json',JSON.stringify(mixedFixture,null,2));console.log('mixed-world setup',JSON.stringify(mixedFixture));}
+if(mixed)try{mixedFixture=sourceBytes?{inventory:mixedWorldInventory(store.db,campaign.id),frozenSource:true}:populateMixedWorld(store,campaign);
+ if(sourceBytes){const expected={hexes:100000,sourceCells:100000,places:5000,buildings:5000,details:50,dungeonRooms:4001,cityDocuments:0};for(const [key,value] of Object.entries(expected))assert.equal(mixedFixture.inventory[key],value,'Frozen mixed-world inventory: '+key);}
+ await writeFile(out+'/setup.json',JSON.stringify(mixedFixture,null,2));console.log('mixed-world setup',JSON.stringify(mixedFixture));}
 catch(error){store.close();await native.fail(error);await native.dispose();throw error;}
 const recordCount=store.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(campaign.id).n;
-store.tutorial('skipped');store.close();
+store.tutorial('skipped');
+// Freeze the unedited synthetic input for later cold/reopen and candidate runs.
+if(process.env.WORLD_FREEZE_SOURCE==='1')await store.db.backup(out+'/source.sqlite');
+const fixtureBytes=sourceBytes??(process.env.WORLD_FREEZE_SOURCE==='1'?await readFile(out+'/source.sqlite'):null);
+store.close();
 if(mixed){const fresh=new CampaignStore(native.profile+'/workbench.sqlite');try{assert.deepEqual(mixedWorldInventory(fresh.db,campaign.id),mixedFixture.inventory);}finally{fresh.close();}}
-const result={radius,records:recordCount,populated,large,mixedFixture,measurement:{readbackMode,profileEnabled},metrics:[],errors:[]};let page;
+const result={radius,records:recordCount,populated,large,mixedFixture,fixtureSha256:fixtureBytes?createHash('sha256').update(fixtureBytes).digest('hex'):null,fixture:{reused:!!sourceBytes,frozen:process.env.WORLD_FREEZE_SOURCE==='1'},measurement:{readbackMode,profileEnabled},metrics:[],errors:[]};let page;
 const hexProbe=buildHexGridProbe();
 const contourProbe=buildContourProbe();
 const detailProbe=buildDetailProbe();
@@ -122,7 +138,11 @@ try{
   document.addEventListener('pointerdown',e=>{if(e.target===map&&e.button===0){pixelStart=e.timeStamp;pixelBefore=sample();}},true);
   document.addEventListener('pointerup',()=>{pixelBefore=null;},true);
   }
-  new MutationObserver(()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,tiles:map.dataset.terrainTiles,draft:map.dataset.terrainDraft})).observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-tiles','data-terrain-draft']});
+  const sampleState=()=>window.__worldChanges.push({time:performance.now(),view:map.dataset.atlasView,terrain:map.dataset.terrainRevision,quality:map.dataset.terrainQuality,tiles:map.dataset.terrainTiles,draft:map.dataset.terrainDraft,controlsEnabled:!document.querySelector('#land-tool').disabled,terrainReady:map.dataset.terrainReady,canvas:map.dataset.canvasState,region:document.querySelector('#campaign-atlas').dataset.regionState});
+  const stateObserver=new MutationObserver(sampleState);
+  stateObserver.observe(map,{attributes:true,attributeFilter:['data-atlas-view','data-terrain-revision','data-terrain-quality','data-terrain-tiles','data-terrain-draft','data-terrain-ready','data-canvas-state']});
+  stateObserver.observe(document.querySelector('#land-tool'),{attributes:true,attributeFilter:['disabled']});
+  stateObserver.observe(document.querySelector('#campaign-atlas'),{attributes:true,attributeFilter:['data-region-state']});
   for(const type of ['pointerdown','pointerup'])document.addEventListener(type,e=>{if(e.target===map&&e.button===0)window.__worldPointer.push({type,time:e.timeStamp});},true);
  },readbackMode==='legacy');
  if(responseProbe)await page.evaluate('(()=>{'+responseProbe+';TerrainResponseProbe.installTerrainResponseProbe('+JSON.stringify(readbackMode)+');})()');
@@ -162,9 +182,10 @@ try{
  await page.locator('#atlas-section').selectOption('terrain');await atlasCanvasReady(page);await page.locator('#atlas-units').selectOption('metric');await page.locator('[data-tool-group="land"]').click();
  await page.locator('[data-tool-select="land-tool"][data-tool-value="height"]').first().click();await setBrushWorldRadius(page,'land-radius',radius);await page.locator('#land-height-target-enabled').uncheck();await page.locator('#land-height-strength').fill('500');
  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainReady==='ready',null,{timeout:60000});
- async function sculpt(name){
+ async function sculpt(name,waitDetail=true){
   await measure(name,async()=>{
    await page.mouse.move(x,y);await wait(100);
+   (result.strokeStarts??=[]).push({name,...await page.locator('#campaign-map').evaluate(n=>({time:performance.now(),revision:n.dataset.terrainRevision,authorRevision:n.dataset.terrainAuthorRevision,quality:n.dataset.terrainQuality,tiles:n.dataset.terrainTiles}))});
    const scene=()=>page.locator('#campaign-map').evaluate(n=>({scene:n.dataset.sceneVersion,author:n.dataset.terrainAuthorRevision}));
    const before=process.env.WORLD_OVERLAY==='1'&&name==='sculpt-repeat'?await scene():null;
    await page.mouse.down();await wait(3000);await page.mouse.move(x+60,y+20,{steps:5});await wait(1000);
@@ -179,22 +200,33 @@ try{
    assert.notDeepEqual(after.view,before.view,'world camera must move while the released stroke is settling');
    navigation.after=after;
   }
-  await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});await atlasCanvasReady(page);
-  if(process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
+  const releasedAt=await page.evaluate(()=>window.__worldPointer.find(e=>e.type==='pointerup')?.time);
+  assert(Number.isFinite(releasedAt),'A released brush is required for settlement timing');
+  const observedSinceRelease=()=>page.evaluate(up=>performance.now()-up,releasedAt);
+  await page.waitForFunction(()=>!document.querySelector('#land-tool').disabled,null,{timeout:60000});
+  const controlsEnabledObservedMs=await observedSinceRelease();
+  await atlasCanvasReady(page);
+  const baseRevision=result.metrics.at(-1).baseRevision;
+  await page.waitForFunction(base=>{const d=document.querySelector('#campaign-map').dataset;return d.terrainReady==='ready'&&Number(d.terrainRevision)>base&&d.terrainRevision===d.terrainAuthorRevision;},baseRevision,{timeout:60000});
+  const editSurfaceReadyObservedMs=await observedSinceRelease();
+  if(waitDetail&&process.env.WORLD_PROGRESSIVE==='1')await page.waitForFunction(()=>{
    const map=document.querySelector('#campaign-map'),[done,total]=(map.dataset.terrainTiles??'').split('/').map(Number),up=window.__worldPointer.find(e=>e.type==='pointerup');
    // A refined live-brush frame can also say "detail". Require the complete
    // background tile set for the confirmed revision after this gesture.
-   return map.dataset.terrainQuality==='detail'&&done>0&&done===total&&up&&window.__worldChanges.some(c=>c.time>=up.time&&c.quality==='refining'&&c.terrain===map.dataset.terrainRevision&&c.tiles===map.dataset.terrainTiles);
+   return map.dataset.terrainRevision===map.dataset.terrainAuthorRevision&&map.dataset.terrainQuality==='detail'&&done>0&&done===total&&up&&window.__worldChanges.some(c=>c.time>=up.time&&c.quality==='refining'&&c.terrain===map.dataset.terrainRevision&&c.tiles===map.dataset.terrainTiles);
   },null,{timeout:60000});
+  const detailReadyObservedMs=waitDetail&&process.env.WORLD_PROGRESSIVE==='1'?await observedSinceRelease():null;
+  const revision=await page.locator('#campaign-map').getAttribute('data-terrain-revision');
+  (result.settlement??=[]).push({name,revision,controlsEnabledObservedMs,editSurfaceReadyObservedMs,detailReadyObservedMs,scope:'Observation upper bounds after pointerup; displayed revision must equal the newer author revision. Separate from first visible response and actual subsequent edit.'});
   await native.capture(page,'world-'+name);
   const status=await page.evaluate(()=>({text:document.querySelector('#land-status').textContent,revision:document.querySelector('#campaign-map').dataset.terrainRevision,quality:document.querySelector('#campaign-map').dataset.terrainQuality,tiles:document.querySelector('#campaign-map').dataset.terrainTiles}));
   const changes=await page.evaluate(()=>window.__worldChanges);
-  return {status,changes};
+  return {status,changes,releasedAt};
  }
- const first=await sculpt('sculpt');result.sculptStatus=first.status;result.presentationChanges=first.changes;
+ const first=await sculpt('sculpt',!earlyRepeat);result.sculptStatus=first.status;result.presentationChanges=first.changes;
  if(process.env.WORLD_PROGRESSIVE==='1'){
   assert(result.presentationChanges.some(c=>c.draft==='height'||c.quality==='interactive'),'draft or coherent first pass must be displayed');
-  assert(result.presentationChanges.some(c=>c.quality==='detail'),'fine output must replace the interactive pass after the stroke');
+  if(!earlyRepeat)assert(result.presentationChanges.some(c=>c.quality==='detail'),'fine output must replace the interactive pass after the stroke');
  }
  if(process.env.WORLD_DRAFT==='1'){
   assert(result.presentationChanges.some(c=>c.draft==='height'),'direct grid draft must be visible during the gesture');
@@ -217,6 +249,7 @@ try{
    assert.deepEqual(programs,{create:0,remove:0},'brush hover must retain its GPU programs');
   }
   result.repeatSculpt=await sculpt('sculpt-repeat');
+  result.repeatStart={early:earlyRepeat,afterReleaseMs:result.metrics.find(m=>m.name==='sculpt-repeat').pointer.find(e=>e.type==='pointerdown').time-first.releasedAt};
   assert(Number(result.repeatSculpt.status.revision)>Number(result.sculptStatus.revision),'the warm-world stroke must commit another revision');
   assert(!result.repeatSculpt.status.text.includes('gestoppt'));
   if(readbackMode!=='off')assert(result.metrics.find(m=>m.name==='sculpt-repeat').brushFeedback[readbackMode==='legacy'?'firstPixelMs':'firstBrushPixelMs']!==null,'the warm-world stroke must change actual pixels');

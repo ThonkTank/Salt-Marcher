@@ -1,0 +1,152 @@
+{
+  "frames": {
+    "resultSha256": "e60bad5002f70ac741e5ee22b766a2c0180f5b199352f7c607eb46a3ec37f94a",
+    "source": "d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30",
+    "dirty": true,
+    "launches": [
+      {
+        "pid": 961433,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      },
+      {
+        "pid": 961689,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "artifacts": {
+      "main.cjs": "405fc30e8da0979c1ffd182d867909d7233e7d7c7c7fde145b4414a4a3077220",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "4442bf8dff7f84f4327d1e7d3b76fcb82b607c0379bc35bed5b67b947a4cdfbf",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "42712fa4478813feee9cb44fa320bb5a00851e04482f82b15f6d6eac4f9f5bec",
+      "backup-validation-worker.cjs": "24d531cac7e9c821a34f1ccb37fd0b3dc5511b912379162487bf8e90c7bf9fcf",
+      "ui/renderer.js": "7ba6286f64ac2dd0f52f06cb94f3e127b9165c7bb3983bac0d099f91e8312e60",
+      "ui/atlas-brush-worker.js": "3b8fee99c4f4490adc1760eb0f1ef93d6af8d3cf102e62df52fda22b51f5ac0e",
+      "ui/terrain-spatial-worker.js": "1709f80091bfb67fc3bf3ea40491ee9ff1cceb351ce6f07abc044ff5ceaacc2c",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    }
+  },
+  "pixels": {
+    "resultSha256": "e98c9a6dc7500446f017f9460473c1369bea9ffd85f67973fdaba4fbc180d262",
+    "source": "d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30",
+    "dirty": true,
+    "launches": [
+      {
+        "pid": 962881,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      },
+      {
+        "pid": 963120,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "artifacts": {
+      "main.cjs": "405fc30e8da0979c1ffd182d867909d7233e7d7c7c7fde145b4414a4a3077220",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "4442bf8dff7f84f4327d1e7d3b76fcb82b607c0379bc35bed5b67b947a4cdfbf",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "42712fa4478813feee9cb44fa320bb5a00851e04482f82b15f6d6eac4f9f5bec",
+      "backup-validation-worker.cjs": "24d531cac7e9c821a34f1ccb37fd0b3dc5511b912379162487bf8e90c7bf9fcf",
+      "ui/renderer.js": "7ba6286f64ac2dd0f52f06cb94f3e127b9165c7bb3983bac0d099f91e8312e60",
+      "ui/atlas-brush-worker.js": "3b8fee99c4f4490adc1760eb0f1ef93d6af8d3cf102e62df52fda22b51f5ac0e",
+      "ui/terrain-spatial-worker.js": "1709f80091bfb67fc3bf3ea40491ee9ff1cceb351ce6f07abc044ff5ceaacc2c",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    }
+  },
+  "opening": {
+    "resultSha256": "c232ddc7ef1cbad649af1695a0cde2e42a74ae0ddb7f8cbe9092119a8f5df2e9",
+    "source": "d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30",
+    "dirty": true,
+    "launches": [
+      {
+        "pid": 963699,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      },
+      {
+        "pid": 963989,
+        "zoom": 1,
+        "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+        "platform": {
+          "requested": "default",
+          "desktopSession": "wayland"
+        },
+        "exit": {
+          "code": 0,
+          "signal": null
+        },
+        "pidAbsent": true
+      }
+    ],
+    "artifacts": {
+      "main.cjs": "405fc30e8da0979c1ffd182d867909d7233e7d7c7c7fde145b4414a4a3077220",
+      "preload.cjs": "07cfeaa772133a542f4294c54c8319083b76de90c8ee704bf2e1a2026b464538",
+      "atlas-region-worker.cjs": "4442bf8dff7f84f4327d1e7d3b76fcb82b607c0379bc35bed5b67b947a4cdfbf",
+      "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+      "terrain-route-worker.cjs": "42712fa4478813feee9cb44fa320bb5a00851e04482f82b15f6d6eac4f9f5bec",
+      "backup-validation-worker.cjs": "24d531cac7e9c821a34f1ccb37fd0b3dc5511b912379162487bf8e90c7bf9fcf",
+      "ui/renderer.js": "7ba6286f64ac2dd0f52f06cb94f3e127b9165c7bb3983bac0d099f91e8312e60",
+      "ui/atlas-brush-worker.js": "3b8fee99c4f4490adc1760eb0f1ef93d6af8d3cf102e62df52fda22b51f5ac0e",
+      "ui/terrain-spatial-worker.js": "1709f80091bfb67fc3bf3ea40491ee9ff1cceb351ce6f07abc044ff5ceaacc2c",
+      "ui/index.html": "62f4d7d2743e3f78a10756174805799b6e05c0941b6d8ee7d226fdc8c9b1ffa3",
+      "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+    }
+  },
+  "fixture": {
+    "file": "mixed-world.sqlite.gz",
+    "sha256": "19d4edc88b50d8074578a5c40c870a50331fec1c78a7a8b4f4feee5d463fdb12",
+    "bytes": 225546240,
+    "compressedBytes": 40236558
+  }
+}

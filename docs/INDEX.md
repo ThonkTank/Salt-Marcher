@@ -5,7 +5,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
 | den aktuellen Stand verstehen | [Produktstand](PRODUCT.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
-| selbstständig am Atlas weiterarbeiten | [Arbeitsweise und aktuelle Etappe](plans/maps/unified-spatial-atlas.md#arbeitsweise-ab-23102026) | Ausgangsbeleg, Entscheidung und Prüfweg direkt bei der Etappe; historische Fachbelege nur bei Bedarf |
+| selbstständig am Atlas weiterarbeiten | [Beschlossener Atlasumbau und aktuelle Etappe](plans/maps/unified-spatial-atlas.md#aktueller-arbeitsstand) | M0–M8, feste Rollen für MapLibre/deck.gl/WASM und gemeinsame Abnahme; historische Fachbelege nur bei Bedarf |
 | den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](ROADMAP.md#technischer-übergang) und [Fachabhängigkeiten](ROADMAP.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](../ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
 | die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](../ARCHITECTURE.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](../ARCHITECTURE.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](../ROADMAP-HEX-ATLAS.md#informationsarchitektur-der-oberfläche), [Bedienregeln](../ROADMAP-HEX-ATLAS.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
 | Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](development/atlas-rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](development/atlas-rendering.md#prüfwege-und-offene-qualifikation) |
@@ -18,7 +18,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | --- | --- |
 | Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
 | Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
-| Gemeinsamer räumlicher Atlas und semantischer Zoom | [Roadmap P0–P8](plans/maps/unified-spatial-atlas.md), [Ausgangsbasis und Prüfablauf](plans/maps/unified-atlas-baseline.md) |
+| Gemeinsamer räumlicher Atlas und semantischer Zoom | [Roadmap M0–M8: alle acht Ansätze](plans/maps/unified-spatial-atlas.md), [historische Ausgangsbasis und Werkzeugumfang](plans/maps/unified-atlas-baseline.md) |
 | Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](plans/maps/atlas-cartography.md) |
 | Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](plans/maps/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](plans/maps/terrain-routes.md) |
 | Höhenlandschaft und kippbarer Atlas | [Relief-Roadmap R0–R7](plans/maps/terrain-relief.md): gezeichnete Gebirge, gekoppelte Küsten, Höhenabfragen und räumliche Ansicht |

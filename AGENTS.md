@@ -12,11 +12,13 @@
 - Preserve the original requirements and source bindings in
   `docs/scope-sources.json`. Implemented behavior, automated evidence, native
   qualification, and owner acceptance remain separate claims.
-- For Atlas development, follow the current outcome-driven workflow and active
-  milestone in `docs/plans/maps/unified-spatial-atlas.md#arbeitsweise-ab-23102026`.
+- For Atlas development, follow the mandatory M0–M8 rebuild roadmap and active
+  milestone in `docs/plans/maps/unified-spatial-atlas.md#aktueller-arbeitsstand`.
+  All eight approaches are selected for production, including MapLibre, deck.gl,
+  GPU terrain and Rust/WASM; they are not merely optional comparison candidates.
   It supersedes historical incremental-only restrictions, mandatory alternatives
   for every small fix, clock-based releases, and the three-clean-audits rule.
-  A longer isolated replacement of the Atlas foundation is allowed; preserve
+  Develop the replacement in coherent stages; preserve
   the runnable reference, user data, restricted renderer privileges, and delivery
   gates. Do not resume paused automations merely because this workflow exists.
 

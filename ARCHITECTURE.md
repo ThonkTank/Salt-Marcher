@@ -31,6 +31,17 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 
 ## Gewählte Grundstruktur
 
+### Verbindlicher Atlasumbau (23.10.2026)
+
+Für den Atlas gilt die [Roadmap M0–M8](docs/plans/maps/unified-spatial-atlas.md)
+mit fest integrierten acht Ansätzen: persistente Detailstufen, GPU-Höhenfelder,
+gebündelte Geometrie, entkoppelte Bearbeitung, priorisierte Worker,
+MapLibre, deck.gl und Rust/WASM. Main/SQLite behalten die kanonische Schreibgrenze;
+Rendererrechte bleiben auf die Preload-Brücke beschränkt. Die folgende ältere
+Atlas-Technikmatrix ist für diese Auswahl historisch. Aktuelle Etappe und
+Nachweise stehen ausschließlich in der neuen Roadmap; der Beschluss ist noch
+kein implementierter oder qualifizierter Produktstand.
+
 ### Vorläufiges Atlasziel und überprüfbare Alternativen (16.10.2026)
 
 Der beauftragte Atlasumbau konkretisiert diese Grundlage; Lieferstand,

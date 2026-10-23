@@ -1,0 +1,56 @@
+{
+  "source": "d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30",
+  "branch": "atlas/rebuild-m0-20261023",
+  "runtimeSourceChanges": false,
+  "node": "v22.22.0",
+  "electron": "44.7.0",
+  "kernel": "7.2.9-200.fc44.x86_64",
+  "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+  "logicalCpus": 8,
+  "memoryKiB": {
+    "MemTotal": 40675680,
+    "MemAvailable": 22924084,
+    "SwapTotal": 8388604,
+    "SwapFree": 391356
+  },
+  "desktopSession": "wayland",
+  "ozoneOverride": null,
+  "loadAverage": [
+    1.91455078125,
+    1.67724609375,
+    1.8095703125
+  ],
+  "targetDeviceQualification": false,
+  "measurementScope": "Development host; not Pentium Gold 7505. Frames and pixel readback measured in separate runs.",
+  "postMeasurementCpuPolicy": {
+    "capturedAt": "2026-10-23T17:16:01.411387+00:00",
+    "scope": "Read after M0 runs; not a continuous clock or temperature trace",
+    "values": {
+      "/sys/devices/system/cpu/cpufreq/policy6/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy2/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy7/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy5/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy3/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy1/scaling_governor": "powersave",
+      "/sys/devices/system/cpu/cpufreq/policy6/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy2/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy7/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy5/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy3/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy1/scaling_min_freq": "400000",
+      "/sys/devices/system/cpu/cpufreq/policy6/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy4/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy2/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy7/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy5/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy3/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/cpufreq/policy1/scaling_max_freq": "4100000",
+      "/sys/devices/system/cpu/intel_pstate/no_turbo": "0"
+    }
+  }
+}
