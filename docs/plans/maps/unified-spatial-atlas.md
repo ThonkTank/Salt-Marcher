@@ -73,7 +73,7 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   begrenzten Kachelcache (96 MiB Nutzdaten, höchstens 64 MiB je Namensraum).
   [51 gezielte Tests und zwei native Wiederanläufe](../../reference/atlas-shared-tile-cache-20261023/README.md)
   belegen Verdrängung, Absturzrecovery, selektive Löschung und gemeinsame
-  Wiederverwendung. Die separaten Projektionsindizes sind noch nicht global budgetiert.
+  Wiederverwendung. Projektionsindizes sind seit dem folgenden Schritt ebenfalls einbezogen.
 - **M2-Materialdaten:** Grundfarbe, Wasser, Wald, Fels und Schnee haben eigene
   persistente Quellenabhängigkeiten. Lichtwechsel behalten alle Kanäle, Schneegrenze,
   Pigment und Dichte erneuern jeweils nur den betroffenen Kanal.
@@ -113,18 +113,23 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   7–12 statt 56–78 ms. Einpunktabtastung wurde wegen verlorener Fehlererkennung
   verworfen; `json_type` brachte keinen Gewinn. Der kalte Landschaftsindex bleibt
   mit etwa 1,16 s unverändert.
+- **M2-Gemeinsame Projektionen:** Gespeicherte Indizes teilen jetzt dasselbe
+  96-MiB-Gesamtbudget und 64-MiB-Namensraumbudget wie Terrain-/Geometriekacheln.
+  [67 Tests und native Wiederöffnungen](../../reference/atlas-shared-projection-cache-20261024/README.md)
+  belegen atomare Blockveröffentlichung, Absturzrecovery, laufende private Leser
+  nach Verdrängung und kalten Wiederaufbau. Aktive Workerdateien/TEMP/WAL bleiben
+  außerhalb dieses Retentionsbudgets. Unveränderte Meshes und Autoreninhalte;
+  native Geometriedaten 4.419 ms kalt / 456 ms warm / 555 ms fein. Die warme
+  Einzelprobe ist gegenüber 323 ms langsamer: kein Leistungsgewinn behauptet.
+  Normaler Atlas: Terrainübersicht 4.123 / 2.380 ms, Regionsbereitschaft
+  7.045 / 2.772 ms kalt/nach Neustart; gespeicherter Index identisch.
 - **Nächste Arbeit:** M2 bleibt aktiv; die erste Übersicht liegt weiterhin über
-  dem 2-s-Ziel. Die geprüften Abfragewiederholungen sind beseitigt; weiterer
-  Latenzgewinn ist nicht durch diese lokalen Änderungen allein belegt.
-  Als nächstes das Gesamtbudget auf die bisher ausgenommenen persistenten
-  Projektionsindizes ausdehnen und Wiederaufbau/Verdrängung bei offenen Lesern
-  prüfen. Quellen-Seiten begrenzen bisher 32 Datensätze, keine feste Bytezahl.
-  Danach bleiben weitere Objektklassen, Materialstufenreduktion und vollständige
-  Weltlast einschließlich kalter Erstansicht und frühem Detailwechsel. Die
-  kampagnenweiten Binding-/Bereichsmetadaten sind noch nicht seitenweise begrenzt.
-  Quellengestützte Auswahl aus der Übersicht bleibt vor der Werkzeugübernahme
-  offen. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf
-  dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
+  dem 2-s-Ziel. Die Planprüfung untersucht jetzt den Pflichtaufwand vor der
+  ersten nutzbaren Ansicht und den zusätzlichen Aufwand der warmen Indexkopie.
+  Weitere Objektklassen, Materialstufenreduktion, vollständige Weltlast,
+  Bytebudgets der aktiven Arbeit/Quellenseiten und kampagnenweite Metadaten
+  bleiben offen. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme
+  auf dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 

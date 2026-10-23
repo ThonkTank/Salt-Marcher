@@ -1,0 +1,11 @@
+{
+  "meshPositionsAndIndices": true,
+  "pixelStats": true,
+  "canonicalTables": true,
+  "fineSelectedRoom": true,
+  "screenshots": {
+    "overview-flat.png": true,
+    "overview-tilt45.png": true,
+    "fine-room.png": true
+  }
+}

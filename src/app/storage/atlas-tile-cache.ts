@@ -1,11 +1,12 @@
 import Database from 'better-sqlite3';
 import {createHash,randomUUID} from 'node:crypto';
-import {closeSync,existsSync,linkSync,lstatSync,mkdirSync,openSync,readdirSync,readSync,statSync,unlinkSync} from 'node:fs';
+import {closeSync,existsSync,fstatSync,linkSync,lstatSync,mkdirSync,openSync,readdirSync,readSync,statSync,unlinkSync,writeSync} from 'node:fs';
 import {join} from 'node:path';
 import {deserialize,serialize} from 'node:v8';
 
 const FORMAT=2,APPLICATION=0x534d5443,PAGE_BYTES=4096;
 const DEFAULT_NAMESPACE_BUDGET=64*1024*1024,DEFAULT_GLOBAL_BUDGET=96*1024*1024,DEFAULT_ENTRY=8*1024*1024,DEFAULT_PHYSICAL_BUDGET=256*1024*1024;
+const FILE_CHUNK_BYTES=1024*1024,FILE_FORMAT=1;
 // Disable cache spilling so each writer transaction keeps its original pages in
 // one rollback-journal segment until commit. The SQLite journal format stores
 // each changed page at most once per journal, with an 8-byte record header;
@@ -16,6 +17,7 @@ const DEFAULT_NAMESPACE_BUDGET=64*1024*1024,DEFAULT_GLOBAL_BUDGET=96*1024*1024,D
 const JOURNAL_RESERVE=2*1024*1024;
 const namespacePattern=/^[a-f0-9]{64}$/;
 const sha=(value:Buffer)=>createHash('sha256').update(value).digest('hex');
+const sameFileStats=(a:ReturnType<typeof fstatSync>,b:ReturnType<typeof fstatSync>)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeMs===b.mtimeMs&&a.ctimeMs===b.ctimeMs;
 type Options={maxBytes?:number;maxEntryBytes?:number;maxGlobalBytes?:number;maxPhysicalBytes?:number};
 type Limits={namespaceBytes:number;globalBytes:number;entryBytes:number;maxPages:number};
 const sharedRoot=(directory:string)=>join(directory,'tiles-v2');
@@ -110,7 +112,7 @@ export class AtlasTileCache {
  get<T>(key:string,source:string):T|undefined {
   const db=this.db;if(!db||!validText(key,512)||!validText(source,2048)){this.misses++;return;}
   let row:{blob:Buffer;digest:string;bytes:number}|undefined;
-  try{row=db.prepare('SELECT blob,digest,bytes FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=?').get(this.namespace,key,source) as typeof row;}
+  try{row=db.prepare("SELECT blob,digest,bytes FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND kind='tile'").get(this.namespace,key,source) as typeof row;}
   catch{this.misses++;return;}
   if(!row){this.misses++;return;}
   const blob=Buffer.from(row.blob);
@@ -123,7 +125,7 @@ export class AtlasTileCache {
    db.pragma('busy_timeout = 0');
    db.exec('BEGIN IMMEDIATE');
    try{db.prepare('UPDATE atlas_tile_meta SET sequence=sequence+1 WHERE id=1').run();
-    const touched=db.prepare('UPDATE atlas_tile_cache SET last_used=(SELECT sequence FROM atlas_tile_meta WHERE id=1) WHERE namespace=? AND key=? AND source=?').run(this.namespace,key,source).changes;
+    const touched=db.prepare("UPDATE atlas_tile_cache SET last_used=(SELECT sequence FROM atlas_tile_meta WHERE id=1) WHERE namespace=? AND key=? AND source=? AND kind='tile'").run(this.namespace,key,source).changes;
     if(!touched){sourceStillCurrent=false;db.exec('ROLLBACK');}else db.exec('COMMIT');
    }catch{if(db.inTransaction)db.exec('ROLLBACK');}
   }catch{/* LRU touch is advisory; preserve the verified value on lock contention. */}
@@ -141,25 +143,9 @@ export class AtlasTileCache {
    db.exec('BEGIN IMMEDIATE');
    try{
     const limits=this.persistedLimits();this.applyPageLimit(limits.maxPages);
-    this.bytes=this.namespaceBytes();let namespaceUsed=this.bytes,globalUsed=this.globalBytes();
     if(blob.length>limits.entryBytes||blob.length>limits.namespaceBytes||blob.length>limits.globalBytes)throw Error('Atlas-Kacheleintrag überschreitet das persistierte Budget.');
-    const old=db.prepare('SELECT bytes FROM atlas_tile_cache WHERE namespace=? AND key=?').get(this.namespace,key) as {bytes:number}|undefined;
-    db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(this.namespace,key);
-    this.bytes=Math.max(0,this.bytes-(old?.bytes??0));namespaceUsed=Math.max(0,namespaceUsed-(old?.bytes??0));globalUsed=Math.max(0,globalUsed-(old?.bytes??0));
-    db.prepare('UPDATE atlas_tile_meta SET sequence=sequence+1 WHERE id=1').run();
-    let evicted=0;
-    while(namespaceUsed+blob.length>limits.namespaceBytes){
-     const victim=db.prepare('SELECT key,bytes FROM atlas_tile_cache WHERE namespace=? ORDER BY last_used,key LIMIT 1').get(this.namespace) as {key:string;bytes:number}|undefined;
-     if(!victim)throw Error('Atlas-Kampagnenbudget kann nicht eingehalten werden.');
-     db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(this.namespace,victim.key);this.bytes=Math.max(0,this.bytes-victim.bytes);namespaceUsed-=victim.bytes;globalUsed-=victim.bytes;evicted++;
-    }
-    while(globalUsed+blob.length>limits.globalBytes){
-     const victim=db.prepare('SELECT namespace,key,bytes FROM atlas_tile_cache ORDER BY last_used,namespace,key LIMIT 1').get() as {namespace:string;key:string;bytes:number}|undefined;
-     if(!victim)throw Error('Atlas-Gesamtbudget kann nicht eingehalten werden.');
-     db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(victim.namespace,victim.key);
-     if(victim.namespace===this.namespace){this.bytes=Math.max(0,this.bytes-victim.bytes);namespaceUsed-=victim.bytes;}globalUsed-=victim.bytes;evicted++;
-    }
-    db.prepare('INSERT INTO atlas_tile_cache(namespace,key,source,blob,digest,bytes,last_used) VALUES(?,?,?,?,?,?,(SELECT sequence FROM atlas_tile_meta WHERE id=1))').run(this.namespace,key,source,blob,digest,blob.length);
+    const evicted=this.reserveEntry(key,blob.length,limits);
+    db.prepare("INSERT INTO atlas_tile_cache(namespace,key,source,blob,digest,bytes,last_used,kind) VALUES(?,?,?,?,?,?,(SELECT sequence FROM atlas_tile_meta WHERE id=1),'tile')").run(this.namespace,key,source,blob,digest,blob.length);
     this.bytes+=blob.length;
     db.exec('COMMIT');this.evictions+=evicted;this.writes++;
     try{db.exec('PRAGMA incremental_vacuum(8)');}catch{/* committed cache writes stay successful if reclamation fails */}
@@ -168,15 +154,99 @@ export class AtlasTileCache {
   }catch{return false;}
  }
 
+ /** Store an immutable file as bounded chunks in the same LRU and byte budget
+  * as tiles. The source file is hashed before and during the atomic insertion. */
+ putFile(key:string,source:string,filename:string):boolean {
+  const db=this.db;if(!db||!validText(key,512)||!validText(source,2048)||!validText(filename,4096))return false;
+  let fd:number|undefined,before:ReturnType<typeof fstatSync>,fileBytes:number,fullDigest:string;
+  try{
+   fd=openSync(filename,'r');before=fstatSync(fd);if(!before.isFile()||!Number.isSafeInteger(before.size)||before.size<0)return false;
+   fileBytes=before.size;
+   const earlyLimits=this.persistedLimits();if(fileBytes>earlyLimits.namespaceBytes||fileBytes>earlyLimits.globalBytes)return false;
+   fullDigest=hashFileDescriptor(fd,before.size);
+   if(!sameFileStats(before,fstatSync(fd)))return false;
+  }catch{return false;}finally{if(fd!==undefined)closeSync(fd);}
+  const descriptor=Buffer.from(JSON.stringify({format:FILE_FORMAT,bytes:fileBytes,chunkBytes:FILE_CHUNK_BYTES,digest:fullDigest}));
+  const rowBytes=fileBytes+descriptor.length,chunkCount=Math.ceil(fileBytes/FILE_CHUNK_BYTES),descriptorDigest=sha(descriptor);
+  try{
+   db.exec('BEGIN IMMEDIATE');
+   try{
+    const limits=this.persistedLimits();this.applyPageLimit(limits.maxPages);
+    if(rowBytes>limits.namespaceBytes||rowBytes>limits.globalBytes)throw Error('Atlas-Datei überschreitet das persistierte Budget.');
+    const evicted=this.reserveEntry(key,rowBytes,limits);
+    const current=openSync(filename,'r');
+    try{
+     const currentBefore=fstatSync(current);if(!sameFileStats(before,currentBefore))throw Error('Atlas-Datei wurde während des Speicherns geändert.');
+     const put=db.prepare('INSERT INTO atlas_tile_cache_chunks(namespace,key,ordinal,blob,digest,bytes) VALUES(?,?,?,?,?,?)');
+     const hash=createHash('sha256');let offset=0,ordinal=0;
+     while(offset<fileBytes){
+      const size=Math.min(FILE_CHUNK_BYTES,fileBytes-offset),blob=Buffer.allocUnsafe(size);let read=0;
+      while(read<size){const count=readSync(current,blob,read,size-read,offset+read);if(count<=0)throw Error('Atlas-Datei wurde unvollständig gelesen.');read+=count;}
+      hash.update(blob);put.run(this.namespace,key,ordinal,blob,sha(blob),blob.length);offset+=size;ordinal++;
+     }
+     if(ordinal!==chunkCount||hash.digest('hex')!==fullDigest||!sameFileStats(currentBefore,fstatSync(current)))throw Error('Atlas-Datei wurde während des Speicherns geändert.');
+    }finally{closeSync(current);}
+    db.prepare("INSERT INTO atlas_tile_cache(namespace,key,source,blob,digest,bytes,last_used,kind) VALUES(?,?,?,?,?,?,(SELECT sequence FROM atlas_tile_meta WHERE id=1),'file')").run(this.namespace,key,source,descriptor,descriptorDigest,rowBytes);
+    db.exec('COMMIT');this.bytes=this.namespaceBytes();this.evictions+=evicted;this.writes++;
+    try{db.exec('PRAGMA incremental_vacuum(8)');}catch{}
+    return true;
+   }catch(error){if(db.inTransaction)db.exec('ROLLBACK');this.bytes=this.namespaceBytes();throw error;}
+  }catch{return false;}
+ }
+
+ /** Reconstitute a verified file through a private wx destination. The SQLite
+  * read transaction pins one complete chunk generation until the copy closes. */
+ getFile(key:string,source:string,destination:string):boolean {
+  const db=this.db;if(!db||!validText(key,512)||!validText(source,2048)||!validText(destination,4096)){this.misses++;return false;}
+  let fd:number|undefined,ownedDestination=false,corrupt=false,entry:{blob:Buffer;digest:string;bytes:number}|undefined;
+  try{
+   db.exec('BEGIN');
+   try{
+    entry=db.prepare("SELECT blob,digest,bytes FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND kind='file'").get(this.namespace,key,source) as typeof entry;
+    if(!entry)throw Error('Atlas-Datei fehlt.');
+    const descriptorBytes=Buffer.from(entry.blob);
+    if(sha(descriptorBytes)!==entry.digest){corrupt=true;throw Error('Atlas-Dateiverweis ist beschädigt.');}
+    let descriptor:{format:number;bytes:number;chunkBytes:number;digest:string};
+    try{descriptor=JSON.parse(descriptorBytes.toString('utf8'));}catch{corrupt=true;throw Error('Atlas-Dateiverweis ist beschädigt.');}
+    if(descriptor?.format!==FILE_FORMAT||!Number.isSafeInteger(descriptor.bytes)||descriptor.bytes<0||descriptor.chunkBytes!==FILE_CHUNK_BYTES||!/^[a-f0-9]{64}$/.test(descriptor.digest)||entry.bytes!==descriptor.bytes+descriptorBytes.length){corrupt=true;throw Error('Atlas-Dateiverweis ist ungültig.');}
+    const expectedChunks=Math.ceil(descriptor.bytes/FILE_CHUNK_BYTES);
+    fd=openSync(destination,'wx',0o600);ownedDestination=true;
+    const chunks=db.prepare('SELECT ordinal,blob,digest,bytes FROM atlas_tile_cache_chunks WHERE namespace=? AND key=? ORDER BY ordinal').iterate(this.namespace,key);
+    const totalHash=createHash('sha256');let ordinal=0,total=0;
+    for(const item of chunks as Iterable<{ordinal:number;blob:Buffer;digest:string;bytes:number}>){
+     const blob=Buffer.from(item.blob),expectedBytes=Math.min(FILE_CHUNK_BYTES,descriptor.bytes-total);
+     if(item.ordinal!==ordinal||ordinal>=expectedChunks||item.bytes!==expectedBytes||blob.length!==item.bytes||sha(blob)!==item.digest){corrupt=true;throw Error('Atlas-Dateiblock ist beschädigt.');}
+     writeAll(fd,blob);totalHash.update(blob);total+=blob.length;ordinal++;
+    }
+    if(ordinal!==expectedChunks||total!==descriptor.bytes||totalHash.digest('hex')!==descriptor.digest){corrupt=true;throw Error('Atlas-Datei ist unvollständig.');}
+    closeSync(fd);fd=undefined;
+    db.exec('COMMIT');
+   }catch(error){if(db.inTransaction)db.exec('ROLLBACK');throw error;}
+  }catch{
+   if(fd!==undefined){try{closeSync(fd);}catch{}}
+   if(ownedDestination)try{unlinkSync(destination);}catch{}
+   if(entry&&corrupt)this.discardFile(key,source,entry.digest,entry.bytes);
+   this.misses++;return false;
+  }
+  // A touch is advisory: the verified private copy remains valid if a writer
+  // replaced or evicted this cache generation immediately after the read.
+  this.touchFile(key,source,entry!.digest,entry!.bytes);
+  this.hits++;return true;
+ }
+
  close():void {const db=this.db;this.db=null;if(db)try{db.close();}catch{/* cache shutdown cannot affect canonical data */}}
 
  private initialize(requested:Limits):Limits {
   const db=this.db!;db.exec('BEGIN IMMEDIATE');
   try{
    db.exec(`CREATE TABLE IF NOT EXISTS atlas_tile_meta(id INTEGER PRIMARY KEY CHECK(id=1),format INTEGER NOT NULL,sequence INTEGER NOT NULL,namespace_bytes INTEGER NOT NULL,global_bytes INTEGER NOT NULL,entry_bytes INTEGER NOT NULL,max_pages INTEGER NOT NULL);
-     CREATE TABLE IF NOT EXISTS atlas_tile_cache(namespace TEXT NOT NULL,key TEXT NOT NULL,source TEXT NOT NULL,blob BLOB NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,last_used INTEGER NOT NULL,PRIMARY KEY(namespace,key)) WITHOUT ROWID;
+     CREATE TABLE IF NOT EXISTS atlas_tile_cache(namespace TEXT NOT NULL,key TEXT NOT NULL,source TEXT NOT NULL,blob BLOB NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,last_used INTEGER NOT NULL,kind TEXT NOT NULL DEFAULT 'tile' CHECK(kind IN ('tile','file')),PRIMARY KEY(namespace,key)) WITHOUT ROWID;
      CREATE INDEX IF NOT EXISTS atlas_tile_cache_global_lru ON atlas_tile_cache(last_used,namespace,key);
      CREATE INDEX IF NOT EXISTS atlas_tile_cache_namespace_lru ON atlas_tile_cache(namespace,last_used,key);`);
+   const columns=db.prepare('PRAGMA table_info(atlas_tile_cache)').all() as {name:string}[];
+   if(!columns.some(column=>column.name==='kind'))db.exec("ALTER TABLE atlas_tile_cache ADD COLUMN kind TEXT NOT NULL DEFAULT 'tile' CHECK(kind IN ('tile','file'))");
+   db.exec(`CREATE TABLE IF NOT EXISTS atlas_tile_cache_chunks(namespace TEXT NOT NULL,key TEXT NOT NULL,ordinal INTEGER NOT NULL,blob BLOB NOT NULL,digest TEXT NOT NULL,bytes INTEGER NOT NULL,PRIMARY KEY(namespace,key,ordinal)) WITHOUT ROWID;
+     CREATE TRIGGER IF NOT EXISTS atlas_tile_cache_delete_chunks AFTER DELETE ON atlas_tile_cache BEGIN DELETE FROM atlas_tile_cache_chunks WHERE namespace=old.namespace AND key=old.key; END;`);
    const old=db.prepare('SELECT * FROM atlas_tile_meta WHERE id=1').get() as any;
    if(!old)db.prepare('INSERT INTO atlas_tile_meta VALUES(1,?,?,?,?,?,?)').run(FORMAT,0,requested.namespaceBytes,requested.globalBytes,requested.entryBytes,requested.maxPages);
    else{
@@ -202,6 +272,27 @@ export class AtlasTileCache {
  private applyPageLimit(maxPages:number){const result=this.db!.pragma('max_page_count = '+maxPages,{simple:true}) as number;if(result>maxPages)throw Error('Atlas-Kacheldatei überschreitet ihr physisches Limit.');}
  private globalBytes(){return(this.db!.prepare('SELECT coalesce(sum(bytes),0) bytes FROM atlas_tile_cache').get() as {bytes:number}).bytes;}
  private namespaceBytes(){return(this.db!.prepare('SELECT coalesce(sum(bytes),0) bytes FROM atlas_tile_cache WHERE namespace=?').get(this.namespace) as {bytes:number}).bytes;}
+ /** Reserve an entire parent entry in the shared LRU. File children are removed
+  * by the parent trigger, so replacement and eviction stay atomic. */
+ private reserveEntry(key:string,bytes:number,limits:Limits){
+  const db=this.db!;this.bytes=this.namespaceBytes();let namespaceUsed=this.bytes,globalUsed=this.globalBytes();
+  const old=db.prepare('SELECT bytes FROM atlas_tile_cache WHERE namespace=? AND key=?').get(this.namespace,key) as {bytes:number}|undefined;
+  db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(this.namespace,key);
+  this.bytes=Math.max(0,this.bytes-(old?.bytes??0));namespaceUsed=Math.max(0,namespaceUsed-(old?.bytes??0));globalUsed=Math.max(0,globalUsed-(old?.bytes??0));
+  db.prepare('UPDATE atlas_tile_meta SET sequence=sequence+1 WHERE id=1').run();let evicted=0;
+  while(namespaceUsed+bytes>limits.namespaceBytes){
+   const victim=db.prepare('SELECT key,bytes FROM atlas_tile_cache WHERE namespace=? ORDER BY last_used,key LIMIT 1').get(this.namespace) as {key:string;bytes:number}|undefined;
+   if(!victim)throw Error('Atlas-Kampagnenbudget kann nicht eingehalten werden.');
+   db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(this.namespace,victim.key);this.bytes=Math.max(0,this.bytes-victim.bytes);namespaceUsed-=victim.bytes;globalUsed-=victim.bytes;evicted++;
+  }
+  while(globalUsed+bytes>limits.globalBytes){
+   const victim=db.prepare('SELECT namespace,key,bytes FROM atlas_tile_cache ORDER BY last_used,namespace,key LIMIT 1').get() as {namespace:string;key:string;bytes:number}|undefined;
+   if(!victim)throw Error('Atlas-Gesamtbudget kann nicht eingehalten werden.');
+   db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(victim.namespace,victim.key);
+   if(victim.namespace===this.namespace){this.bytes=Math.max(0,this.bytes-victim.bytes);namespaceUsed-=victim.bytes;}globalUsed-=victim.bytes;evicted++;
+  }
+  return evicted;
+ }
  private prune(limits:Limits){
   const db=this.db!;
   const namespaceBytes=new Map<string,number>();for(const row of db.prepare('SELECT namespace,coalesce(sum(bytes),0) bytes FROM atlas_tile_cache GROUP BY namespace').all() as {namespace:string;bytes:number}[])namespaceBytes.set(row.namespace,row.bytes);
@@ -212,7 +303,9 @@ export class AtlasTileCache {
   let total=this.globalBytes();while(total>limits.globalBytes){const victim=db.prepare('SELECT namespace,key,bytes FROM atlas_tile_cache ORDER BY last_used,namespace,key LIMIT 1').get() as {namespace:string;key:string;bytes:number}|undefined;if(!victim)break;db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=?').run(victim.namespace,victim.key);total-=victim.bytes;}
  }
  private eraseNamespaceRows(){const db=this.db!;db.exec('BEGIN IMMEDIATE');try{db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=?').run(this.namespace);db.exec('COMMIT');}catch(error){if(db.inTransaction)db.exec('ROLLBACK');throw error;}}
- private discard(key:string,source:string,digest:string,bytes:number){const db=this.db;if(!db)return;try{db.exec('BEGIN IMMEDIATE');db.prepare('DELETE FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND digest=? AND bytes=?').run(this.namespace,key,source,digest,bytes);db.exec('COMMIT');this.bytes=this.namespaceBytes();try{db.exec('PRAGMA incremental_vacuum(8)');}catch{}}catch{if(db.inTransaction)try{db.exec('ROLLBACK');}catch{}}}
+ private discard(key:string,source:string,digest:string,bytes:number){const db=this.db;if(!db)return;try{db.exec('BEGIN IMMEDIATE');db.prepare("DELETE FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND digest=? AND bytes=? AND kind='tile'").run(this.namespace,key,source,digest,bytes);db.exec('COMMIT');this.bytes=this.namespaceBytes();try{db.exec('PRAGMA incremental_vacuum(8)');}catch{}}catch{if(db.inTransaction)try{db.exec('ROLLBACK');}catch{}}}
+ private discardFile(key:string,source:string,digest:string,bytes:number){const db=this.db;if(!db)return;try{db.exec('BEGIN IMMEDIATE');db.prepare("DELETE FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND digest=? AND bytes=? AND kind='file'").run(this.namespace,key,source,digest,bytes);db.exec('COMMIT');this.bytes=this.namespaceBytes();try{db.exec('PRAGMA incremental_vacuum(8)');}catch{}}catch{if(db.inTransaction)try{db.exec('ROLLBACK');}catch{}}}
+ private touchFile(key:string,source:string,digest:string,bytes:number){const db=this.db;if(!db)return;try{db.pragma('busy_timeout = 0');db.exec('BEGIN IMMEDIATE');try{db.prepare('UPDATE atlas_tile_meta SET sequence=sequence+1 WHERE id=1').run();db.prepare("UPDATE atlas_tile_cache SET last_used=(SELECT sequence FROM atlas_tile_meta WHERE id=1) WHERE namespace=? AND key=? AND source=? AND digest=? AND bytes=? AND kind='file'").run(this.namespace,key,source,digest,bytes);db.exec('COMMIT');}catch{if(db.inTransaction)db.exec('ROLLBACK');}}catch{}finally{try{db.pragma('busy_timeout = 250');}catch{}}}
  private namespaceBudget(){return this.persistedLimits().namespaceBytes;}
  private entryBudget(){return this.persistedLimits().entryBytes;}
 }
@@ -224,6 +317,12 @@ function readLimits(options:Options):Limits {
  if(maxPages<32)throw new Error('Ungültiges physisches Atlas-Kachelbudget.');
  return{namespaceBytes,globalBytes,entryBytes,maxPages};
 }
+function hashFileDescriptor(fd:number,size:number){
+ const hash=createHash('sha256');let offset=0;
+ while(offset<size){const length=Math.min(FILE_CHUNK_BYTES,size-offset),buffer=Buffer.allocUnsafe(length);let read=0;while(read<length){const count=readSync(fd,buffer,read,length-read,offset+read);if(count<=0)throw Error('Datei wurde unvollständig gelesen.');read+=count;}hash.update(buffer);offset+=length;}
+ return hash.digest('hex');
+}
+function writeAll(fd:number,buffer:Buffer){let offset=0;while(offset<buffer.length){const count=writeSync(fd,buffer,offset,buffer.length-offset);if(count<=0)throw Error('Datei konnte nicht vollständig geschrieben werden.');offset+=count;}}
 function readSqliteHeader(filename:string){
  const fd=openSync(filename,'r'),header=Buffer.alloc(100);
  try{const count=readSync(fd,header,0,header.length,0);if(count!==100||!header.subarray(0,16).equals(Buffer.from('SQLite format 3\0')))throw Error('Keine gültige SQLite-Kacheldatei.');}
