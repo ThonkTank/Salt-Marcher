@@ -23,10 +23,15 @@ export interface MetricQueryTransform {
   maxPitchScaleFactor(): number;
   readonly farZ: number;
   readonly cameraToCenterDistance: number;
+  readonly elevation: number;
+  screenPointToMercatorCoordinate(point: unknown, terrain?: unknown): unknown;
+  screenPointToMercatorCoordinateAtZ(point: unknown, z?: number): unknown;
 }
 
 /** Structural subset of a MapLibre map used by the guarded query adapter. */
 export interface MetricQueryMap<Geometry, Options, Result> {
+  /** MapLibre's active terrain object, or null/undefined when no terrain is set. */
+  readonly terrain?: unknown | null;
   queryRenderedFeatures(geometry: Geometry, options: Options): Result;
 }
 
@@ -37,6 +42,9 @@ export interface MetricQueryResult<Result> {
   adaptedScale: number;
   farZ: number;
   cameraDistance: number;
+  /** Offset from center elevation to the ground plane used by the no-terrain broadphase. */
+  groundPlaneOffset: number | null;
+  projectionRestored: boolean;
   /** True when the transform's original own-property state was restored. */
   restored: boolean;
 }
@@ -55,9 +63,11 @@ function isThenable(value: unknown): value is PromiseLike<unknown> {
 /**
  * Runs an exact MapLibre point/geometry query while repairing the negative
  * candidate-padding scale returned by MapLibre 6.15 at steep planar pitches.
- * Geometry and options pass through unchanged; the original scale method is
- * restored synchronously, including when the query throws or nests another
- * adapted query.
+ * For flat sources without MapLibre terrain, also intersect the screen ray at
+ * absolute ground height: MapLibre otherwise uses the camera's focus elevation
+ * even though these sources render at z=0. This does not provide 3D occlusion
+ * selection for Deck objects. Geometry and options pass through unchanged;
+ * both methods restore synchronously on success, errors and nested queries.
  */
 export function queryRenderedFeaturesMetricSafe<Geometry, Options, Result>(
   map: MetricQueryMap<Geometry, Options, Result>,
@@ -76,34 +86,83 @@ export function queryRenderedFeaturesMetricSafe<Geometry, Options, Result>(
     throw new Error('MapLibre metric query adapter private transform contract is unavailable');
 
   const originalDescriptor = Object.getOwnPropertyDescriptor(transform, 'maxPitchScaleFactor');
-  if (!originalDescriptor && !Object.isExtensible(transform))
-    throw new Error('MapLibre maxPitchScaleFactor cannot be safely overridden on a non-extensible transform');
-  if (originalDescriptor && !originalDescriptor.configurable &&
-    (!('value' in originalDescriptor) || !originalDescriptor.writable))
-    throw new Error('MapLibre maxPitchScaleFactor is immutable and cannot be safely overridden');
+  assertCanOverride(transform, 'maxPitchScaleFactor', originalDescriptor);
 
   const rawScale = originalMethod.call(transform);
   const farZ = transform.farZ;
   const cameraDistance = transform.cameraToCenterDistance;
   const adaptedScale = safeMetricQueryScale(rawScale, farZ, cameraDistance);
   const temporaryMethod = function metricSafeMaxPitchScaleFactor(): number { return adaptedScale; };
-  const temporaryDescriptor: PropertyDescriptor = originalDescriptor
-    ? originalDescriptor.configurable
-      ? {configurable: true, enumerable: originalDescriptor.enumerable, writable: true, value: temporaryMethod}
-      : {...originalDescriptor, value: temporaryMethod}
-    : {configurable: true, enumerable: false, writable: true, value: temporaryMethod};
+  const temporaryDescriptor = makeTemporaryDescriptor(originalDescriptor, temporaryMethod);
+
+  const noTerrain = map.terrain == null;
+  const originalScreenMethod = transform.screenPointToMercatorCoordinate;
+  const originalAtZMethod = transform.screenPointToMercatorCoordinateAtZ;
+  const originalScreenDescriptor = Object.getOwnPropertyDescriptor(transform, 'screenPointToMercatorCoordinate');
+  let groundPlaneOffset: number | null = null;
+  let temporaryScreenDescriptor: PropertyDescriptor | null = null;
+  if (noTerrain) {
+    if (typeof originalScreenMethod !== 'function' || typeof originalAtZMethod !== 'function')
+      throw new Error('MapLibre metric query adapter screen-projection contract is unavailable');
+    if (!Number.isFinite(transform.elevation)) throw new Error('Invalid MapLibre transform elevation for ground-plane query');
+    assertCanOverride(transform, 'screenPointToMercatorCoordinate', originalScreenDescriptor);
+    const offset = -transform.elevation;
+    groundPlaneOffset = offset;
+    if (!Number.isFinite(offset)) throw new Error('Invalid MapLibre ground-plane query offset');
+    const screenMethod = function metricGroundScreenPointToMercatorCoordinate(point: unknown, terrain?: unknown): unknown {
+      // Preserve terrain intersections exactly if a caller explicitly supplies one.
+      return terrain == null
+        ? originalAtZMethod.call(transform, point, offset)
+        : originalScreenMethod.call(transform, point, terrain);
+    };
+    temporaryScreenDescriptor = makeTemporaryDescriptor(originalScreenDescriptor, screenMethod);
+  }
 
   let features: Result;
+  let scaleInstalled = false;
+  let screenInstalled = false;
   try {
     Object.defineProperty(transform, 'maxPitchScaleFactor', temporaryDescriptor);
+    scaleInstalled = true;
+    if (temporaryScreenDescriptor) {
+      Object.defineProperty(transform, 'screenPointToMercatorCoordinate', temporaryScreenDescriptor);
+      screenInstalled = true;
+    }
     features = map.queryRenderedFeatures(geometry, options);
     if (isThenable(features)) throw new Error('MapLibre metric query adapter requires a synchronous query result');
   } finally {
-    if (originalDescriptor) Object.defineProperty(transform, 'maxPitchScaleFactor', originalDescriptor);
-    else delete (transform as unknown as Record<string, unknown>).maxPitchScaleFactor;
+    try {
+      if (screenInstalled) restoreDescriptor(transform, 'screenPointToMercatorCoordinate', originalScreenDescriptor);
+    } finally {
+      if (scaleInstalled) restoreDescriptor(transform, 'maxPitchScaleFactor', originalDescriptor);
+    }
   }
 
-  const restoredDescriptor = Object.getOwnPropertyDescriptor(transform, 'maxPitchScaleFactor');
-  const restored = descriptorsEqual(restoredDescriptor, originalDescriptor);
-  return {features: features!, rawScale, adaptedScale, farZ, cameraDistance, restored};
+  const restored = descriptorsEqual(Object.getOwnPropertyDescriptor(transform, 'maxPitchScaleFactor'), originalDescriptor);
+  const projectionRestored = !noTerrain || descriptorsEqual(Object.getOwnPropertyDescriptor(transform, 'screenPointToMercatorCoordinate'), originalScreenDescriptor);
+  return {features: features!, rawScale, adaptedScale, farZ, cameraDistance, groundPlaneOffset, projectionRestored, restored: restored && projectionRestored};
+}
+
+function assertCanOverride<Target extends object, Key extends keyof Target>(
+  target: Target, key: Key, descriptor: PropertyDescriptor | undefined
+): void {
+  if (!descriptor && !Object.isExtensible(target))
+    throw new Error(`MapLibre ${String(key)} cannot be safely overridden on a non-extensible transform`);
+  if (descriptor && !descriptor.configurable && (!('value' in descriptor) || !descriptor.writable))
+    throw new Error(`MapLibre ${String(key)} is immutable and cannot be safely overridden`);
+}
+
+function makeTemporaryDescriptor(descriptor: PropertyDescriptor | undefined, value: unknown): PropertyDescriptor {
+  return descriptor
+    ? descriptor.configurable
+      ? {configurable: true, enumerable: descriptor.enumerable, writable: true, value}
+      : {...descriptor, value}
+    : {configurable: true, enumerable: false, writable: true, value};
+}
+
+function restoreDescriptor<Target extends object, Key extends keyof Target>(
+  target: Target, key: Key, descriptor: PropertyDescriptor | undefined
+): void {
+  if (descriptor) Object.defineProperty(target, key, descriptor);
+  else delete (target as Record<PropertyKey, unknown>)[key];
 }

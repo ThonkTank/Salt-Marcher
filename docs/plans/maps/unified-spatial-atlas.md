@@ -2,7 +2,9 @@
 
 Verbindlicher Plan vom 23.10.2026. Er ersetzt die bisherige technische Atlas-Roadmap
 und deren nächsten Arbeitsauftrag. Alle acht Ansätze werden fest integriert;
-MapLibre, deck.gl und WASM sind Produktbestandteile, keine bloßen Vergleichskandidaten.
+Ansatz 6 wurde auf Nutzerauftrag durch eine metrische Atlas-Kamera mit stabilen
+Weltkacheln ersetzt. deck.gl und WASM bleiben Produktbestandteile. Die bisherige
+MapLibre-Pflicht ist ausdrücklich aufgehoben.
 Der [vorherige Stand](https://github.com/ThonkTank/Salt-Marcher/blob/d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30/docs/plans/maps/unified-spatial-atlas.md)
 bleibt als historischer Nachweis erhalten. Dieser Plan ist kein Implementierungs-
 oder Leistungsnachweis.
@@ -13,17 +15,17 @@ Der Atlas erhält eine zusammenhängende neue technische Grundlage für flüssig
 Navigation und unmittelbare Bearbeitung von Welt bis Innenraum. Alle acht
 besprochenen Ansätze werden produktiv integriert: persistente Detailstufen,
 GPU-Terrain, gebündelte Objektgeometrie, entkoppelte Bearbeitung, neue
-Auftragsverarbeitung, MapLibre, deck.gl und WASM.
+Auftragsverarbeitung, metrische Kamera und stabile Weltkacheln, deck.gl und WASM.
 
-**MapLibre und deck.gl erhalten unterschiedliche Aufgaben innerhalb derselben
-Kartenfläche.** Der bisherige Atlas bleibt während der Entwicklung als lauffähige
+**Die Atlas-Kamera besitzt Navigation und Projektion; deck.gl zeichnet direkt
+in einer gemeinsamen Kartenfläche.** Der bisherige Atlas bleibt während der Entwicklung als lauffähige
 Referenz erhalten. Nach vollständiger Ablösung werden ersetzte Produktpfade entfernt.
 Diese Datei bleibt die einzige aktuelle technische Atlas-Roadmap; es entsteht keine
 zusätzliche parallele Roadmap unter einem neuen Dateinamen.
 
 ## Aktueller Arbeitsstand
 
-- **Aktive Etappe:** M1 – MapLibre und deck.gl zu einer gemeinsamen Atlasfläche verbinden.
+- **Aktive Etappe:** M1 – metrische Kamera und deck.gl direkt verbinden.
 - **Status:** M0 abgeschlossen; M1–M8 offen. [Aktuelle Ausgangsmessungen und Etappenprüfung](../../reference/atlas-rebuild-m0-20261023/README.md)
   sowie [vollständige Übernahmeliste](../../reference/atlas-rebuild-m0-20261023/inventory.md)
   liegen vor. Produktcode und Leistungsstand sind durch M0 noch nicht verbessert.
@@ -38,32 +40,18 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   nach rund 1,2 s beobachtet. Vollständige Details folgen deutlich später.
   Ein Folgezug vor kompletter Nachladung ist belegt, sofortige Folgeeingabe und
   die Zielgeräte-/Gesamtabnahme bleiben offen. Messgrenzen stehen im Bericht.
-- **M1 in Arbeit:** Der [Meterraumvertrag](../../../src/app/atlas-metric-space.ts)
-  erhält Kamerapose und Kachelausdehnung beim Wachsen der Darstellungswurzel.
-  Der [instanzeigene Kartenanschluss und lokale Desktopbuild](../../reference/atlas-maplibre-bridge-20261023/README.md)
-  bestehen 17 native Integrationsprüfungen, 32 gezielte Unit-Tests und den
-  Laufzeit-/Protokolltest im regulären Desktopfenster. Fehler bei 75°-Auswahl und
-  während des Style-Neuladens wurden reproduziert, korrigiert und erneut geprüft.
-  Eine [kanonische Terrain-/Gebäude-/Raumszene](../../reference/atlas-maplibre-scene-20261023/README.md)
-  ist inzwischen über bestehende SQLite-/Preload-Wege angeschlossen. Gebäudeauswahl
-  bis 75° Neigung, zwei Geschosse, Terrainverdeckung sowie Resize und Style-Neuladen
-  sind nativ geprüft; 49 gezielte Tests bestehen. Ein gefundener Auswahlfehler durch
-  16-Bit-Tiefenpuffer ist mit einem versionsgebundenen 24-Bit-Adapter behoben.
-  [Erhöhte Kamera, genaue Treffer und lokale Kartenassets](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
-  sind zusätzlich nativ geprüft: fünf Kameramaßstäbe, physischer Raumfokus auf 145 m,
-  Überhöhung, echtes Ziehen/Zoomen sowie lokale Schriften und Marker. Auswahl und
-  Darstellung verwenden denselben Matrixadapter; nach einem gefundenen Dachspitzenfehler
-  liegen geprüfte Dach-/Raumtreffer unter 0,1 mm Abweichung. Veraltete Frames sperren
-  Auswahl bis zum neuen Rendern. 68 gezielte Tests bestehen. Die kleine Fixture ist
-  in den drei weitesten Ansichten subpixelgroß; deren Objektselektion und vollständige
-  Welt-LOD sind damit ausdrücklich nicht qualifiziert.
-  **Nächste Arbeit in M1:** laufender Wurzelwechsel mit gemeinsam vorbereiteten
-  Quellen, Bridge und Szene; danach vollständige Szenenauswahl und echte Autorenabläufe.
-  Der normale Atlas nutzt weiterhin den bisherigen Renderer; ein Produktleistungsgewinn
-  ist noch nicht nachgewiesen. M1 bleibt offen.
-- **Ablösung des bisherigen Auftrags:** Die zuvor vorgesehene isolierte Kartenstilprobe
-  ist nicht mehr die nächste Etappe. Bildqualität bleibt in M0 und der gemeinsamen
-  Abnahme verpflichtend; die beschlossene Technikwahl wird dadurch nicht erneut geöffnet.
+- **M1 in Arbeit:** Die vorherige MapLibre-Integration hat kanonische Terrain-,
+  Gebäude- und Raumszenen, Höhenfokus und genaue Auswahl qualifiziert, aber
+  Wurzelwechsel, Zoomübersetzungen und Eingriffe in Projektionsabfragen benötigt.
+  Diese datierten [Szenenbelege](../../reference/atlas-maplibre-scene-20261023/README.md)
+  und [Kamerabelege](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
+  bleiben historische Evidenz. Sie qualifizieren den neuen direkten Anschluss nicht.
+- **Nächste Arbeit:** metrische Kamera, direkte deck.gl-Fläche und stabile
+  Kacheladressen anschließen; anschließend dieselben nativen Prüfungen einschließlich
+  ferner Koordinaten, Ursprungswechsel und tatsächlich auswählbarer Objekte auf
+  allen fünf Maßstäben wiederholen. MapLibre erst nach bestandener Ersatzprüfung
+  aus dem Laufzeitpfad entfernen. Der normale Atlas bleibt bis zur vollständigen
+  Übernahme auf dem bisherigen Renderer; ein Produktleistungsgewinn ist nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 
@@ -73,20 +61,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
 | --- | --- |
 | **Main und SQLite** | Kanonische Autorendaten, validierte Änderungen, History, Receipts und Recovery. |
 | **Persistenter Darstellungsbestand** | Räumlich adressierte Höhen-, Material- und Geometriedetails in mehreren Auflösungen; aus Autorendaten wiederherstellbar. |
-| **MapLibre** | Kamera, Navigation, Kartenebenen, Kachelanbindung und kartografische Beschriftung. |
+| **Metrischer Atlas** | Kamera, Navigation, gemeinsame Projektion und Auswahlstrahlen; stabile Weltkacheladressen und sichtabhängige Nachladung. |
+| **Beschriftung** | Bestehende Quellen, Hierarchie und Rechteck-Kollisionsprüfung; Texte und Symbole über deck.gl, gemeinsame Regeln für Bildschirm und Export. |
 | **deck.gl** | Gebündelte Gebäude-, Raum-, Straßen-, Vegetations- und Objektschichten samt Auswahl. |
 | **GPU-Terrain** | Eigene deck.gl-Schicht mit Höhenfeld-Clipmaps, Materialdarstellung und unmittelbarer Pinselvorschau. |
 | **Rust/WASM** | Höhenabtastung, Materialrasterisierung und Aufbau gröberer Rasterstufen innerhalb begrenzter Workeraufträge. |
 | **Bearbeitungssitzung** | Sofortige lokale Arbeitsfassung, asynchrone Bestätigung und kontrollierte Zusammenführung. |
 
-MapLibre und deck.gl teilen **einen WebGL2-Kontext, eine Kamera und einen
-Tiefenpuffer**. Ausgangspunkt sind MapLibre 6.15.0 und deck.gl einschließlich
-`@deck.gl/maplibre` 9.4.0, exakt über die Sperrdatei gebunden. Der offizielle
-Anschluss unterstützt gemeinsames Rendering; die konkrete Eignung für unseren
-Meterraum wird in M1 geprüft. [MapLibreOverlay](https://deck.gl/docs/api-reference/maplibre/overview).
-Diese Versionen sind in der Haupt-Sperrdatei festgelegt und im lokalen Desktopbuild
-enthalten. Der eigene Meterraum verwendet einen auf diese Versionen begrenzten
-View-/Style-Adapter; die vollständige produktive Atlasübernahme bleibt offen.
+Terrain, Objekte und Beschriftung teilen **einen WebGL2-Kontext, eine Kamera und
+Tiefenverdeckung**. deck.gl 9.4.0 erhält eine öffentliche View-/Viewport-Anbindung
+mit kartesischen Meterkoordinaten. Weltkoordinaten bleiben doppelt genau;
+GPU-Puffer enthalten lokale Koordinaten pro Geometriebündel. Ein beweglicher
+Darstellungsursprung ändert Transformationen, nicht die gespeicherten Geometrien.
+MapLibre ist kein Bestandteil der Zielarchitektur. Der bisherige Anschluss bleibt
+nur bis zur bestandenen Ersatzqualifikation als überprüfbare Entwicklungsreferenz.
+[deck.gl-Koordinatensysteme](https://deck.gl/docs/developer-guide/coordinate-systems).
 
 Vier gemeinsame interne Verträge ersetzen verstreute Übergaben:
 
@@ -117,32 +106,39 @@ Preload-Brücke. WASM besitzt keine eigene Datenbank- oder Dateiautorität.
 **Abschluss:** Reproduzierbare Ausgangsmessungen und eine vollständige Übernahmeliste
 liegen vor. Historische Messungen werden nicht als neue Baseline übernommen.
 
-### M1 – MapLibre und deck.gl zu einer gemeinsamen Atlasfläche verbinden
+### M1 – Metrische Kamera und deck.gl direkt verbinden
 
-**Setzt Ansätze 6 und 7 um.**
+**Setzt Ansätze 6 (ersetzt) und 7 um.**
 
-- MapLibre als Kamerabesitzer integrieren; deck.gl über `MapLibreOverlay` im
-  gemeinsamen WebGL2-Kontext anschließen.
-- Planare Meterkoordinaten, 360° Drehung, 0–75° Neigung und Zoom am Weltpunkt übernehmen.
-- Einen gemeinsamen Projektionsadapter für Darstellung, Auswahl und Autorenwerkzeuge verwenden.
-- Die endliche MapLibre-Kachelwurzel als ausschließlich abgeleiteten
-  Darstellungsbereich behandeln: bei Bedarf erweitern, Kamerapose erhalten und
-  Kacheladressen übersetzen. Es entstehen keine fachlichen Weltgrenzen.
-- Alle Bibliotheken, Worker, Schriften und Symbole lokal bündeln.
+- Vorhandene Atlas-Kameramathematik als gemeinsamen Besitzer für Darstellung,
+  Auswahlstrahlen und Autorenwerkzeuge verwenden. Weltfokus einschließlich Höhe,
+  Meter pro Pixel, 360° Drehung, 0–75° Neigung, Überhöhung und Zoom am Mauspunkt erhalten.
+- deck.gl direkt über öffentliche View/Viewport-Schnittstellen anschließen;
+  Terrain und Objekte teilen WebGL2 und den Tiefenpuffer.
+- Stabile dyadische Weltkacheln mit vorzeichenbehafteten Rasteradressen verwenden:
+  256 m auf Stufe 0, Seitenlänge 256 × 2^LOD. Wachstum ergänzt Kacheln, ohne
+  vorhandene Adressen, Kamera oder GPU-Geometrie neu zu codieren.
+- Weltpositionen doppelt genau halten, lokale GPU-Puffer und kameranahen,
+  auf 256 m eingerasteten Darstellungsursprung verwenden. Ursprungswechsel dürfen
+  während einer Geste weder Kamera noch Auswahl versetzen.
+- Sichtbares Objekt per GPU bestimmen, seinen genauen Weltpunkt mit dem gemeinsamen
+  Strahl verfeinern. Veraltete Frames sperren Auswahl; Tiefenpräzision bleibt Pflicht.
+- Szenenmodelle, stabile IDs und Prüfungen übernehmen. Bibliotheken, Schriften und
+  Symbole lokal bündeln; Main/SQLite und eingeschränkte Rendererrechte erhalten.
 
-**Abschluss:** Terrainprobe, Gebäude und Raum liegen über alle fünf Maßstäbe
-(Welt, Kontinent, Königreich, Stadt, Innenraum) deckungsgleich; Auswahl und
-Tiefenverdeckung stimmen auch bei Neigung und erweitertem Darstellungsbereich.
-
-**Verbindliche technische Hürde:** MapLibres eigenes Koordinatensystem ist
-experimentell und sein Kachelbereich begrenzt. Diese Integration wird vor den
-großen Folgearbeiten gelöst. Bei Nichterfüllung bleibt M1 offen; weder Weltumfang
-noch eine der beauftragten Technologien werden stillschweigend gestrichen.
-[Koordinatenvertrag](https://maplibre.org/maplibre-gl-js/docs/guides/custom-crs/).
+**Abschluss:** Terrain, Gebäude und Räume stimmen auf fünf Maßstäben überein;
+auf jeder Stufe sind passend große Objekte tatsächlich auswählbar. Neigung,
+Höhenfokus, Geschosse, Verdeckung, Resize, Kontextverlust, negative und weit entfernte
+Koordinaten sowie Ursprungswechsel sind nativ geprüft. Unveränderte GPU-Puffer
+bleiben erhalten. Anschließend entfallen MapLibre-Anschluss, Wurzelwechsel,
+Projektionskorrekturen und ungenutzte Abhängigkeiten. Historische Belege bleiben.
 
 ### M2 – Persistente Darstellungspyramide aufbauen
 
 **Setzt Ansatz 1 um.**
+
+- Kachelanbindung vollständig im Atlas besitzen; persistente Daten, Nachladung,
+  Invalidierung und begrenzter Cache verwenden dieselben stabilen Weltadressen.
 
 - Vorhandene persistente räumliche Indizes um Höhen-, Grundfarben-, Material-,
   Vegetations- und Geometriedetailstufen ergänzen.
@@ -202,8 +198,9 @@ auch die Materialwirkung unmittelbar. Darstellung und Höhenauswahl stimmen übe
 - Maßstabsabhängige Darstellungen für Siedlung, Gebäude und Innenraum vorberechnen.
 - Gebäudehüllen, Geschosse, Räume, Ausstattung und Beschriftung mit stabilen Objekt-IDs verbinden.
 - Auswahl und Änderungen auf einzelne Objekte beziehungsweise betroffene Bündel begrenzen.
-- MapLibre übernimmt kartografische Namen; spezielle Innenraum- und
-  Autorenbeschriftungen verwenden eine abgestimmte Hierarchie ohne doppelte Namen.
+- Vorhandene Beschriftungsquellen, Prioritäten und Rechteck-Kollisionsprüfung
+  wiederverwenden; deck.gl zeichnet sämtliche Namen und Symbole. Bildschirm und
+  Export teilen Platzierungsregeln, ohne doppelte kartografische und Autorennamen.
 
 **Abschluss:** Die große Stadt lässt sich bis zum eingerichteten Innenraum
 durchgehend erkunden und bearbeiten. Detailreduktion verändert keine Autorendaten

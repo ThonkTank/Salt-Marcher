@@ -28,13 +28,21 @@ export interface AtlasMapLibreBridgeOptions {
   sourceIds?: readonly string[];
   layerId?: string;
   onError?: (error: unknown) => void;
+  /** Maximum wait for Deck's public onLoad readiness callback. Defaults to 15 seconds. */
+  deckReadyTimeoutMs?: number;
   /** A narrow seam for deterministic lifecycle tests. Production uses the pinned overlay. */
   createOverlay?: (props: OverlayProps) => MapLibreOverlay;
 }
 
 type AtlasView = View<any, any>;
 type BridgeLayer = Layer<any>;
-type OverlayProps = {interleaved: true; layers: BridgeLayer[]; views: AtlasView};
+type OverlayProps = {
+  interleaved: true;
+  layers: BridgeLayer[];
+  views: AtlasView;
+  onLoad: () => void;
+  onError: (error: Error) => void;
+};
 
 interface OverlayRuntime {
   setProps(props: {layers?: BridgeLayer[]; views?: AtlasView}): void;
@@ -46,6 +54,11 @@ interface OverlayRuntime {
 
 interface PendingWait {
   cancel(reason: Error): void;
+}
+
+interface DeckReadyWait extends PendingWait {
+  promise: Promise<void>;
+  resolve(): void;
 }
 
 function sameMatrix(left: readonly number[] | undefined, right: readonly number[]): boolean {
@@ -76,6 +89,7 @@ export class AtlasMapLibreBridge {
   private readonly map: MapLibreMap;
   private readonly sourceIds: readonly string[];
   private readonly onError: (error: unknown) => void;
+  private readonly deckReadyTimeoutMs: number;
   private readonly createOverlay: NonNullable<AtlasMapLibreBridgeOptions['createOverlay']>;
   private readonly captureLayer: CustomLayerInterface;
   private readonly waits = new Set<PendingWait>();
@@ -88,6 +102,8 @@ export class AtlasMapLibreBridge {
   private disposed = false;
   private attached = false;
   private attaching = false;
+  private controlInstalled = false;
+  private deckLoaded = false;
   private captureLayerInstalled = false;
   private captureReady = false;
   private frameInvalidationListenersInstalled = false;
@@ -112,6 +128,10 @@ export class AtlasMapLibreBridge {
     this.sourceIds = Object.freeze([...(options.sourceIds ?? [])]);
     this.layerId = options.layerId ?? 'atlas-projection-diagnostic';
     this.onError = options.onError ?? (error => console.error('Atlas MapLibre bridge error', error));
+    this.deckReadyTimeoutMs = options.deckReadyTimeoutMs ?? 15_000;
+    if (!Number.isFinite(this.deckReadyTimeoutMs) || this.deckReadyTimeoutMs <= 0) {
+      throw new Error('Atlas Deck readiness timeout must be a positive finite duration');
+    }
     this.createOverlay = options.createOverlay ?? (props => new MapLibreOverlay(props as unknown as ConstructorParameters<typeof MapLibreOverlay>[0]));
     this.captureLayer = {
       id: this.layerId,
@@ -136,6 +156,7 @@ export class AtlasMapLibreBridge {
     if (this.attached || this.attaching || this.overlayInstance) throw new Error('Atlas MapLibre bridge is already attached or attaching');
     this.attaching = true;
     let overlay: OverlayRuntime | null = null;
+    let deckReady: DeckReadyWait | null = null;
     try {
       this.installFrameInvalidationListeners();
       await this.waitForStyle();
@@ -147,24 +168,47 @@ export class AtlasMapLibreBridge {
       await this.waitForFrame();
       this.assertUsable();
 
-      overlay = this.createOverlay({interleaved: true, layers, views: this.makeView()}) as unknown as OverlayRuntime;
+      deckReady = this.createDeckReadyWait();
+      // Observe immediately because construction and addControl can fail synchronously.
+      void deckReady.promise.catch(() => undefined);
+      overlay = this.createOverlay({interleaved: true, layers, views: this.makeView(),
+        onLoad: () => {
+          if (this.disposed) return;
+          this.deckLoaded = true;
+          deckReady?.resolve();
+        },
+        onError: error => {
+          const failure = error instanceof Error ? error : new Error(String(error));
+          this.latestError = failure;
+          try { this.onError(failure); } catch { /* Keep the Deck error authoritative. */ }
+          deckReady?.cancel(failure);
+        }}) as unknown as OverlayRuntime;
       this.installStyleAdapter(overlay);
       this.overlayInstance = overlay;
       this.map.on('style.load', this.onStyleLoad);
       this.map.addControl(overlay as unknown as MapLibreOverlay);
+      this.controlInstalled = true;
+      await deckReady.promise;
+      this.assertUsable();
+      if (this.latestError) throw this.latestError;
+      await this.waitForStyleReconciliation();
+      this.assertUsable();
       this.attached = true;
       // Reconcile through the package's public path once its private style hook
       // has been replaced; setProps retains resolveMapLibreLayerGroups behavior.
       overlay.setProps({layers, views: this.makeView()});
       return overlay as unknown as MapLibreOverlay;
     } catch (error) {
+      deckReady?.cancel(error instanceof Error ? error : new Error(String(error)));
       this.map.off('style.load', this.onStyleLoad);
       this.removeFrameInvalidationListeners();
       if (overlay?._map === this.map) {
         try { this.map.removeControl(overlay as unknown as MapLibreOverlay); }
         catch (cleanupError) { this.onError(cleanupError); }
       }
+      this.controlInstalled = false;
       this.attached = false;
+      this.deckLoaded = false;
       this.overlayInstance = null;
       this.removeOwnedCaptureLayer();
       throw error;
@@ -196,8 +240,10 @@ export class AtlasMapLibreBridge {
     for (const wait of [...this.waits]) wait.cancel(reason);
     this.map.off('style.load', this.onStyleLoad);
     this.removeFrameInvalidationListeners();
-    if (this.attached && this.overlayInstance) this.map.removeControl(this.overlayInstance as unknown as MapLibreOverlay);
+    if (this.controlInstalled && this.overlayInstance) this.map.removeControl(this.overlayInstance as unknown as MapLibreOverlay);
+    this.controlInstalled = false;
     this.attached = false;
+    this.deckLoaded = false;
     this.overlayInstance = null;
     this.removeOwnedCaptureLayer();
     this.captureReady = false;
@@ -228,7 +274,7 @@ export class AtlasMapLibreBridge {
     await this.waitForFrame();
     this.assertGeneration(generation);
     const overlay = this.overlayInstance;
-    if (overlay && overlay._map === this.map && overlay._deck) {
+    if (overlay && this.deckLoaded && overlay._map === this.map && overlay._deck) {
       // Public setProps re-runs deck.gl's layer-group resolver after style.load.
       overlay.setProps({layers: overlay._props?.layers ?? [], views: this.makeView()});
     }
@@ -239,7 +285,7 @@ export class AtlasMapLibreBridge {
       throw new Error('Pinned MapLibreOverlay private style hook is unavailable');
     }
     overlay._handleStyleChange = (): void => {
-      if (overlay._map && overlay._deck) {
+      if (this.deckLoaded && overlay._map && overlay._deck) {
         overlay.setProps({layers: overlay._props?.layers ?? [], views: this.makeView()});
       }
     };
@@ -410,6 +456,33 @@ export class AtlasMapLibreBridge {
       this.frameWaiters.add(resolveWait);
       this.waits.add(waiter);
     });
+  }
+
+  private createDeckReadyWait(): DeckReadyWait {
+    let resolvePromise!: () => void;
+    let rejectPromise!: (error: Error) => void;
+    let settled = false;
+    const promise = new Promise<void>((resolve, reject) => {
+      resolvePromise = resolve;
+      rejectPromise = reject;
+    });
+    let timer: ReturnType<typeof setTimeout>;
+    const finish = (error?: Error): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      this.waits.delete(waiter);
+      if (error) rejectPromise(error);
+      else resolvePromise();
+    };
+    const waiter: DeckReadyWait = {
+      promise,
+      resolve: () => finish(),
+      cancel: error => finish(error)
+    };
+    timer = setTimeout(() => finish(new Error('Deck MapLibre overlay readiness timeout')), this.deckReadyTimeoutMs);
+    this.waits.add(waiter);
+    return waiter;
   }
 
   private readonly frameWaiters = new Set<() => void>();

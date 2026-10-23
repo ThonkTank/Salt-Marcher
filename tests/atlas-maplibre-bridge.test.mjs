@@ -25,6 +25,7 @@ class FakeMap {
   styleDataDuringAdd = false;
   holdNextFrame = false;
   nextFrameInput = null;
+  deckReadyMode = 'immediate';
 
   isStyleLoaded(){return this.styleLoaded;}
   getLayer(id){return this.layers.get(id);}
@@ -52,6 +53,8 @@ class FakeMap {
     control._deck={};
     this.on('styledata',control._handleStyleChange);
     control._handleStyleChange?.();
+    if(this.deckReadyMode==='immediate')control._props.onLoad?.();
+    if(this.deckReadyMode==='error')control._props.onError?.(new Error('synthetic Deck initialization failure'));
   }
   removeControl(control){
     this.controls.delete(control);
@@ -71,8 +74,10 @@ class FakeOverlay {
   _deck;
   _props;
   _handleStyleChange=()=>{};
+  loadCallback;
+  errorCallback;
   calls=[];
-  constructor(props){this._props={...props};}
+  constructor(props){this._props={...props};this.loadCallback=props.onLoad;this.errorCallback=props.onError;}
   setProps(props){this.calls.push(props);this._props={...this._props,...props};this._props.views?.makeViewport({width:320,height:240,viewState:{}});}
 }
 
@@ -86,6 +91,11 @@ const makeBridge = (map, root, sceneOrigin, more={}) => {
     ...more
   });
   return {bridge,get overlay(){return overlay;}};
+};
+const waitFor = async predicate => {
+  const deadline=Date.now()+500;
+  while(Date.now()<deadline){if(predicate())return;await new Promise(resolve=>setTimeout(resolve,1));}
+  throw new Error('condition did not become true');
 };
 
 test('bridge owns independent frozen roots, origins, frames and view revisions per map', async()=>{
@@ -328,4 +338,51 @@ test('late layer reconciliation failure blocks picks despite an already captured
   await fixture.bridge.waitForStyleReconciliation();
   assert.equal(fixture.bridge.frameUsable,true);
   fixture.bridge.dispose();
+});
+
+test('attach waits for Deck onLoad before its final public setProps reconciliation',async()=>{
+  const map=new FakeMap();map.deckReadyMode='never';
+  const fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0});
+  const attaching=fixture.bridge.attach([]);
+  await waitFor(()=>map.controls.size===1);
+  await new Promise(resolve=>setTimeout(resolve,5));
+  assert.equal(fixture.overlay.calls.length,0,'setProps must not overwrite MapLibreOverlay’s onLoad wrapper before Deck initializes');
+  let done=false;attaching.then(()=>{done=true;});
+  fixture.overlay.loadCallback();
+  await attaching;
+  assert.equal(done,true);
+  assert.equal(fixture.overlay.calls.length,1,'final layer reconciliation runs after Deck reports ready');
+  fixture.bridge.dispose();
+});
+
+test('attach propagates Deck initialization errors and removes control and capture layer',async()=>{
+  const map=new FakeMap();map.deckReadyMode='error';
+  const errors=[];
+  const fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0},{onError:error=>errors.push(error)});
+  await assert.rejects(fixture.bridge.attach([]),/synthetic Deck initialization failure/);
+  assert.equal(errors.length,1);
+  assert.equal(map.controls.size,0);
+  assert.equal(map.getLayer('atlas-projection-diagnostic'),undefined);
+  assert.equal(map.listenerCount,0);
+  fixture.bridge.dispose();
+});
+
+test('attach readiness timeout is bounded and disposal cancels a pending onLoad wait',async()=>{
+  const timedMap=new FakeMap();timedMap.deckReadyMode='never';
+  const timed=makeBridge(timedMap,{x:-64,y:-64,size:128},{x:0,y:0},{deckReadyTimeoutMs:12});
+  await assert.rejects(timed.bridge.attach([]),/Deck MapLibre overlay readiness timeout/);
+  assert.equal(timedMap.controls.size,0);
+  assert.equal(timedMap.getLayer('atlas-projection-diagnostic'),undefined);
+  assert.equal(timedMap.listenerCount,0);
+  timed.bridge.dispose();
+
+  const map=new FakeMap();map.deckReadyMode='never';
+  const fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0},{deckReadyTimeoutMs:5_000});
+  const attaching=fixture.bridge.attach([]);
+  await waitFor(()=>map.controls.size===1);
+  fixture.bridge.dispose();
+  await assert.rejects(attaching,/Atlas MapLibre bridge disposed/);
+  assert.equal(map.controls.size,0);
+  assert.equal(map.listenerCount,0);
+  assert.equal(map.getLayer('atlas-projection-diagnostic'),undefined);
 });

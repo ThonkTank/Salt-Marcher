@@ -14,8 +14,9 @@
   qualification, and owner acceptance remain separate claims.
 - For Atlas development, follow the mandatory M0–M8 rebuild roadmap and active
   milestone in `docs/plans/maps/unified-spatial-atlas.md#aktueller-arbeitsstand`.
-  All eight approaches are selected for production, including MapLibre, deck.gl,
-  GPU terrain and Rust/WASM; they are not merely optional comparison candidates.
+  All eight approaches are selected for production. Approach 6 now means a metric
+  Atlas camera and stable world tiles, replacing the former MapLibre requirement.
+  deck.gl, GPU terrain and Rust/WASM remain production components.
   It supersedes historical incremental-only restrictions, mandatory alternatives
   for every small fix, clock-based releases, and the three-clean-audits rule.
   Develop the replacement in coherent stages; preserve

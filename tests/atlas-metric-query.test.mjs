@@ -14,11 +14,16 @@ function assertSameDescriptor(actual,expected){
   for(const key of ['configurable','enumerable','writable','value','get','set'])assert.equal(actual[key],expected[key],`descriptor ${key}`);
 }
 function makeMap({rawScale=-4,query,descriptor='inherited'}={}){
-  const prototype={maxPitchScaleFactor(){return rawScale;}};
+  const prototype={
+    maxPitchScaleFactor(){return rawScale;},
+    screenPointToMercatorCoordinate(point,terrain){return {kind:'terrain-or-center-plane',point,terrain};},
+    screenPointToMercatorCoordinateAtZ(point,z){return {kind:'fixed-plane',point,z};}
+  };
   const transform=Object.create(prototype);
   Object.defineProperties(transform,{
     farZ:{configurable:true,enumerable:true,value:12000},
-    cameraToCenterDistance:{configurable:true,enumerable:true,value:1200}
+    cameraToCenterDistance:{configurable:true,enumerable:true,value:1200},
+    elevation:{configurable:true,enumerable:true,value:145}
   });
   if(descriptor==='configurable-data')Object.defineProperty(transform,'maxPitchScaleFactor',{
     configurable:true,enumerable:true,writable:false,value:function(){return rawScale;}
@@ -36,7 +41,7 @@ function makeMap({rawScale=-4,query,descriptor='inherited'}={}){
   if(descriptor==='nonconfig-accessor')Object.defineProperty(transform,'maxPitchScaleFactor',{
     configurable:false,enumerable:true,get(){return function(){return rawScale;};}
   });
-  const map={_camera:{transform},queryRenderedFeatures(geometry,options){return query?query.call(this,geometry,options):{geometry,options};}};
+  const map={terrain:null,_camera:{transform},queryRenderedFeatures(geometry,options){return query?query.call(this,geometry,options):{geometry,options};}};
   return {map,transform};
 }
 
@@ -133,19 +138,24 @@ test('thenable query results are rejected as asynchronous and restore the method
 });
 
 test('nested queries restore the outer temporary override before the outer call restores its descriptor',()=>{
-  const {map,transform}=makeMap();let nested=false,outerTemporary;
+  const {map,transform}=makeMap();let nested=false,outerTemporary,outerScreenTemporary;
   map.queryRenderedFeatures=function(geometry,options){
     if(!nested){
-      nested=true;outerTemporary=transform.maxPitchScaleFactor;
+      nested=true;outerTemporary=transform.maxPitchScaleFactor;outerScreenTemporary=transform.screenPointToMercatorCoordinate;
       const inner=queryRenderedFeaturesMetricSafe(map,geometry,options,supportedVersion);
       assert.equal(inner.restored,true);assert.strictEqual(transform.maxPitchScaleFactor,outerTemporary);
+      assert.strictEqual(transform.screenPointToMercatorCoordinate,outerScreenTemporary);
       nested=false;return inner.features;
     }
-    assert.equal(transform.maxPitchScaleFactor(),10);return {geometry,options};
+    assert.equal(transform.maxPitchScaleFactor(),10);
+    assert.equal(transform.screenPointToMercatorCoordinate({x:5,y:6}).z,-145);
+    return {geometry,options};
   };
-  const before=descriptorOf(transform),result=queryRenderedFeaturesMetricSafe(map,'g','o',supportedVersion);
+  const before=descriptorOf(transform),beforeScreen=Object.getOwnPropertyDescriptor(transform,'screenPointToMercatorCoordinate');
+  const result=queryRenderedFeaturesMetricSafe(map,'g','o',supportedVersion);
   assert.deepEqual(result.features,{geometry:'g',options:'o'});assert.equal(result.restored,true);
   assertSameDescriptor(descriptorOf(transform),before);
+  assertSameDescriptor(Object.getOwnPropertyDescriptor(transform,'screenPointToMercatorCoordinate'),beforeScreen);
 });
 
 test('separate map transforms do not share overrides and geometry/options are never widened',()=>{
@@ -157,4 +167,63 @@ test('separate map transforms do not share overrides and geometry/options are ne
   const b=queryRenderedFeaturesMetricSafe(second.map,geometry,options,supportedVersion);
   assert.equal(a.features,'first');assert.equal(a.adaptedScale,10);assert.equal(b.features,'second');assert.equal(b.adaptedScale,3);
   assert.equal(calls,2);assert.equal(a.restored&&b.restored,true);
+});
+
+test('no-terrain broadphase projects the unchanged screen pixel onto absolute ground z=0',()=>{
+  const point={x:450,y:527.93},geometry=[point],options={layers:['marker']};
+  const {map,transform}=makeMap();
+  const originalScreen=transform.screenPointToMercatorCoordinate;
+  const originalAtZ=transform.screenPointToMercatorCoordinateAtZ;
+  let projectedDuringQuery;
+  map.queryRenderedFeatures=function(receivedGeometry,receivedOptions){
+    assert.strictEqual(receivedGeometry,geometry);assert.strictEqual(receivedOptions,options);
+    projectedDuringQuery=transform.screenPointToMercatorCoordinate(point);
+    return [projectedDuringQuery];
+  };
+  const beforeScreen=descriptorOf(transform),beforeScale=descriptorOf(transform);
+  const result=queryRenderedFeaturesMetricSafe(map,geometry,options,supportedVersion);
+  assert.deepEqual(projectedDuringQuery,{kind:'fixed-plane',point,z:-145});
+  assert.strictEqual(projectedDuringQuery.point,point);
+  assert.equal(result.groundPlaneOffset,-145);
+  assert.equal(result.projectionRestored,true);assert.equal(result.restored,true);
+  assertSameDescriptor(descriptorOf(transform),beforeScreen);assertSameDescriptor(descriptorOf(transform),beforeScale);
+  assert.strictEqual(transform.screenPointToMercatorCoordinate,originalScreen);
+  assert.strictEqual(transform.screenPointToMercatorCoordinateAtZ,originalAtZ);
+});
+
+test('terrain queries keep MapLibre terrain intersection behavior and do not override screen projection',()=>{
+  const terrain={id:'dem'},point={x:450,y:527.93};
+  const {map,transform}=makeMap();map.terrain=terrain;
+  const original=transform.screenPointToMercatorCoordinate;
+  const before=descriptorOf(transform);let observed;
+  map.queryRenderedFeatures=()=>{observed=transform.screenPointToMercatorCoordinate(point,map.terrain);return observed;};
+  const result=queryRenderedFeaturesMetricSafe(map,[point],{},supportedVersion);
+  assert.deepEqual(observed,{kind:'terrain-or-center-plane',point,terrain});
+  assert.strictEqual(transform.screenPointToMercatorCoordinate,original);
+  assertSameDescriptor(descriptorOf(transform),before);
+  assert.equal(result.groundPlaneOffset,null);assert.equal(result.projectionRestored,true);assert.equal(result.restored,true);
+});
+
+test('screen projection immutable contract and non-finite center elevation fail before query',()=>{
+  for(const failure of ['immutable','elevation']){
+    const {map,transform}=makeMap();let called=false;
+    if(failure==='immutable')Object.defineProperty(transform,'screenPointToMercatorCoordinate',{configurable:false,writable:false,value:transform.screenPointToMercatorCoordinate});
+    else Object.defineProperty(transform,'elevation',{configurable:true,value:Infinity});
+    const before=descriptorOf(transform);
+    map.queryRenderedFeatures=()=>{called=true;};
+    assert.throws(()=>queryRenderedFeaturesMetricSafe(map,[],{},supportedVersion),failure==='immutable'?/immutable/i:/elevation/i);
+    assert.equal(called,false);
+    assertSameDescriptor(descriptorOf(transform),before);
+    assert.equal(Object.hasOwn(transform,'maxPitchScaleFactor'),false);
+  }
+});
+
+test('screen and padding overrides both restore when query throws',()=>{
+  const {map,transform}=makeMap();
+  const beforeScale=descriptorOf(transform);
+  const beforeScreen=Object.getOwnPropertyDescriptor(transform,'screenPointToMercatorCoordinate');
+  map.queryRenderedFeatures=()=>{transform.screenPointToMercatorCoordinate({x:1,y:2});throw new Error('screen query failure');};
+  assert.throws(()=>queryRenderedFeaturesMetricSafe(map,{}, {},supportedVersion),/screen query failure/);
+  assertSameDescriptor(descriptorOf(transform),beforeScale);
+  assertSameDescriptor(Object.getOwnPropertyDescriptor(transform,'screenPointToMercatorCoordinate'),beforeScreen);
 });

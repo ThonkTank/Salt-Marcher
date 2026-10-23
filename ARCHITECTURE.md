@@ -36,7 +36,7 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 Für den Atlas gilt die [Roadmap M0–M8](docs/plans/maps/unified-spatial-atlas.md)
 mit fest integrierten acht Ansätzen: persistente Detailstufen, GPU-Höhenfelder,
 gebündelte Geometrie, entkoppelte Bearbeitung, priorisierte Worker,
-MapLibre, deck.gl und Rust/WASM. Main/SQLite behalten die kanonische Schreibgrenze;
+metrische Atlas-Kamera mit stabilen Weltkacheln, deck.gl und Rust/WASM. Main/SQLite behalten die kanonische Schreibgrenze;
 Rendererrechte bleiben auf die Preload-Brücke beschränkt. Die folgende ältere
 Atlas-Technikmatrix ist für diese Auswahl historisch. Aktuelle Etappe und
 Nachweise stehen ausschließlich in der neuen Roadmap; der Beschluss ist noch

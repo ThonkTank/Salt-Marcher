@@ -7,6 +7,7 @@ export {atlasMetricCRS} from './atlas-maplibre-projection';
 export {queryRenderedFeaturesMetricSafe} from './atlas-metric-query';
 export {buildAtlasMapLibreSceneModel} from './atlas-maplibre-scene-model';
 export {AtlasMapLibreScene} from './atlas-maplibre-scene';
+export {AtlasMapLibreSurface} from './atlas-maplibre-surface';
 export {metricMapCamera, metricLngLat} from './atlas-metric-space';
 export {applyAtlasMapLibreCamera, readAtlasMapLibreCamera} from './atlas-maplibre-camera';
 export {atlasMapLibreFontStyle, installAtlasMapLibreSymbols,

@@ -9,29 +9,45 @@ Bereinigung nicht geändert. Fachziele: [gemeinsamer Atlas](../plans/maps/unifie
 ## Zuständigkeiten und Datenfluss
 
 Für den beschlossenen [Atlasumbau M0–M8](../plans/maps/unified-spatial-atlas.md)
-entsteht parallel der neue Kartenanschluss. Der Desktopbuild stellt
-`atlas-maplibre-runtime.js` als lokal ladbares Modul bereit; die normale
-Workbench verwendet weiterhin die unten beschriebenen Besitzer. Der neue
-[AtlasMapLibreBridge](../../src/app/atlas-maplibre-bridge.ts) besitzt pro Karte
-Viewport, Matrixaufnahme, Overlay und Style-Lebenszyklus. Vor `map.remove()` muss
-sein Besitzer `dispose()` aufrufen. Szenenursprung und Geometriepuffer gehören
-zusammen; Kamerabewegungen verschieben diesen Ursprung nicht.
-[Runtime](../../src/app/atlas-maplibre-runtime.ts) und
-[Workerdecoder](../../src/app/atlas-maplibre-projection-worker.ts) verwenden
-dieselben lokalen CRS-Definitionen. Die privaten Bibliotheksanschlüsse bleiben
-auf die exakt gepinnten Versionen begrenzt. Produktübernahme und vollständige
-M1-Abnahme sind weiterhin offen.
+entsteht der direkte metrische Kartenanschluss. Der Desktopbuild stellt
+`atlas-deck-runtime.js` als lokal ladbares Modul bereit; die normale Workbench
+verwendet bis zur vollständigen Werkzeugübernahme weiterhin die unten beschriebenen
+Besitzer. Die frühere MapLibre-Pflicht wurde am 23.10.2026 ausdrücklich ersetzt.
 
-Die neue [Kamera](../../src/app/atlas-maplibre-camera.ts) hält physische Fokus-
-und Darstellungshöhe getrennt. [Darstellung und Autorenstrahl](../../src/app/atlas-maplibre-matrices.ts)
-teilen dieselbe numerische Matrixberechnung. Die GPU bestimmt das sichtbare Objekt;
-der [Strahl](../../src/app/atlas-maplibre-ray.ts) verfeinert dessen Treffer auf den
-tatsächlich dargestellten Dreiecken. Autoren dürfen nur einen vorhandenen `point`
-verwenden. Nach Kamera-/Style-/Größenänderung sperrt `frameUsable` Treffer bis zum
-frischen Rendern. Szenenpuffer sind unveränderliche Aufnahmen; geänderte Geometrie
-erhält eine neue Aufnahme. [Lokale Schrift und Symbole](../../src/app/atlas-maplibre-assets.ts)
-gehören zum Desktopbuild und werden über die konkrete Asset-Freigabe in Main geladen.
-[Native Gegenprüfungen und verbleibende M1-Lücken](../reference/atlas-maplibre-camera-assets-20261023/README.md).
+[AtlasDeckSurface](../../src/app/atlas-deck-surface.ts) besitzt Canvas, Deck,
+Kamera, Resize, Eingaben und GPU-Lebenszyklus. `create` wartet auf GPU-Bereitschaft
+und die erste gerenderte Szene. `setScene` erhält eine unveränderliche kanonische
+Aufnahme; Kamerabewegungen erhalten Modell, Mesh- und GPU-Pufferidentität.
+`dispose` räumt Beobachter, Eingaben, ausstehende Frame-Warter und GPU-Zustand auf.
+Kontextverlust sperrt Auswahl und ersetzt ausschließlich abgeleitete GPU-Ressourcen;
+Kamera, Daten und Schreibstatus bleiben erhalten. Es wird kein Schreibvorgang wiederholt.
+
+Die [metrische Kamera](../../src/app/atlas-metric-camera.ts) liefert Darstellung
+und Auswahlstrahlen über dieselben öffentlichen Deck-Viewport-Matrizen. Weltfokus,
+physische Fokushöhe, Meter pro Pixel, Neigung, Drehung und Überhöhung bleiben
+explizit. Weltkoordinaten werden doppelt genau behandelt; Geometrien enthalten
+physische Float32-Meter relativ zu einem eigenen nahen Ursprung. Die Kamera
+verschiebt den Darstellungsursprung auf einem 256-m-Raster. Nur die Transformation
+der Geometrie ändert sich; eine wachsende Welt benötigt keinen Wurzelwechsel.
+[Weltkacheln](../../src/app/atlas-world-tiles.ts) verwenden vorzeichenbehaftete,
+stabile Adressen und 256 × 2^LOD Meter Kantenlänge. Nachladung/Persistenz folgen M2.
+
+Die [gemeinsame Geometrie](../../src/app/atlas-scene-geometry.ts) übernimmt
+kanonische Terrain-, Gebäude- und Raumdaten aus dem Preload-Pfad. Fehlende
+Objektklassen bleiben in `coverage.unsupported` sichtbar; die isolierte M1-Fläche
+ist noch kein vollständiger Atlas. Die GPU bestimmt das sichtbare Objekt;
+der [Strahl](../../src/app/atlas-deck-ray.ts) verfeinert den Treffer auf dessen
+wirklichen Dreiecken. Autoren dürfen nur einen vorhandenen `point` verwenden.
+Nach Kamera-/Szenen-/Größenänderung sperrt `frameUsable` bis zum frischen Rendern.
+Der geprüfte, versionsgebundene 24-Bit-Picking-Adapter bleibt erforderlich;
+die Entfernung von MapLibre beseitigt diese unabhängige Deck-Grenze nicht.
+
+[Beschriftung](../../src/app/atlas-deck-labels.ts) verwendet die vorhandene
+`MapLabelLayout`-Hierarchie und Rechteck-Kollisionen. Messung und TextLayer benutzen
+die gleiche lokal geladene Schrift. Ausgabe muss das gesamte Bild einmal platzieren,
+nicht jede Exportkachel getrennt. Vollständige Quellenübernahme und Exportanbindung
+bleiben M5/M7; die vorhandenen Arbeitsabläufe werden dadurch nicht vorzeitig ersetzt.
+[Lokale Assets](../../src/app/atlas-assets.ts) benötigen keine entfernten Schriftserver.
 
 `CampaignAtlasWorkbench` verbindet Arbeitsbereich, Werkzeugwechsel und die
 bestehende Schreibgrenze. Die Zustandsbesitzer bekommen gezielte typisierte

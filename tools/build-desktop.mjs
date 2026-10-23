@@ -31,6 +31,7 @@ await build({entryPoints:['src/app/atlas-brush-worker.ts'],outfile:'.build/deskt
 // The replacement Atlas remains a lazy, isolated module until its full handover.
 // Keep worker and CRS code local: MapLibre's implicit worker URL is not suitable
 // for the application's custom protocol or the existing renderer IIFE.
+await build({entryPoints:['src/app/atlas-deck-runtime.ts'],outfile:'.build/desktop/ui/atlas-deck-runtime.js',bundle:true,platform:'browser',format:'esm'});
 await build({entryPoints:['src/app/atlas-maplibre-runtime.ts'],outfile:'.build/desktop/ui/atlas-maplibre-runtime.js',bundle:true,platform:'browser',format:'esm'});
 await build({entryPoints:['src/app/atlas-maplibre-projection-worker.ts'],outfile:'.build/desktop/ui/atlas-maplibre-projection-worker.mjs',bundle:true,platform:'browser',format:'esm'});
 await copyFile('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','.build/desktop/ui/atlas-maplibre-worker.mjs');
