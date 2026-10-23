@@ -25,8 +25,8 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
 
 ## Aktueller Arbeitsstand
 
-- **Aktive Etappe:** M1 – metrische Kamera und deck.gl direkt verbinden.
-- **Status:** M0 abgeschlossen; M1–M8 offen. [Aktuelle Ausgangsmessungen und Etappenprüfung](../../reference/atlas-rebuild-m0-20261023/README.md)
+- **Aktive Etappe:** M2 – persistente Darstellungspyramide aufbauen.
+- **Status:** M0 und der isolierte M1-Kern abgeschlossen; M2–M8 offen. [Aktuelle Ausgangsmessungen und Etappenprüfung](../../reference/atlas-rebuild-m0-20261023/README.md)
   sowie [vollständige Übernahmeliste](../../reference/atlas-rebuild-m0-20261023/inventory.md)
   liegen vor. Produktcode und Leistungsstand sind durch M0 noch nicht verbessert.
 - **Ausgangsreferenz:** Repositorystand `d3d31363fc40cff1f0f2f5d0b6699dacd54e8b30`;
@@ -40,18 +40,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   nach rund 1,2 s beobachtet. Vollständige Details folgen deutlich später.
   Ein Folgezug vor kompletter Nachladung ist belegt, sofortige Folgeeingabe und
   die Zielgeräte-/Gesamtabnahme bleiben offen. Messgrenzen stehen im Bericht.
-- **M1 in Arbeit:** Die vorherige MapLibre-Integration hat kanonische Terrain-,
-  Gebäude- und Raumszenen, Höhenfokus und genaue Auswahl qualifiziert, aber
-  Wurzelwechsel, Zoomübersetzungen und Eingriffe in Projektionsabfragen benötigt.
-  Diese datierten [Szenenbelege](../../reference/atlas-maplibre-scene-20261023/README.md)
-  und [Kamerabelege](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
-  bleiben historische Evidenz. Sie qualifizieren den neuen direkten Anschluss nicht.
-- **Nächste Arbeit:** metrische Kamera, direkte deck.gl-Fläche und stabile
-  Kacheladressen anschließen; anschließend dieselben nativen Prüfungen einschließlich
-  ferner Koordinaten, Ursprungswechsel und tatsächlich auswählbarer Objekte auf
-  allen fünf Maßstäben wiederholen. MapLibre erst nach bestandener Ersatzprüfung
-  aus dem Laufzeitpfad entfernen. Der normale Atlas bleibt bis zur vollständigen
-  Übernahme auf dem bisherigen Renderer; ein Produktleistungsgewinn ist nicht belegt.
+- **M1-Ergebnis:** Metrische Kamera, direkte deck.gl-Fläche, lokale Geometriepuffer
+  und stabile vorzeichenbehaftete Weltkacheln ersetzen den MapLibre-Anschluss.
+  [Ersatzprüfung und Grenzen](../../reference/atlas-metric-core-20261023/README.md):
+  40 gezielte Tests, 15 native Objekttreffer auf fünf Maßstäben, kanonische
+  Höhen/Geschosse/Verdeckung, Ursprungswechsel während einer Geste mit behaltenen
+  GPU-Modellen, Resize, Kontextverlust und frisches Wiederöffnen bestanden.
+  MapLibre ist aus Quellcode, Build und Abhängigkeiten entfernt; datierte
+  [Szenenbelege](../../reference/atlas-maplibre-scene-20261023/README.md) und
+  [Kamerabelege](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
+  bleiben historische Evidenz.
+- **Nächste Arbeit:** M2 verbindet persistente Übersicht und Details, begrenzten
+  Cache sowie lokale Invalidierung mit den stabilen Weltadressen. Die fünf
+  Maßstabsproben verwenden passend skalierte Testgeometrie, keine vollständige
+  Weltlast. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme
+  auf dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 
@@ -73,8 +76,8 @@ Tiefenverdeckung**. deck.gl 9.4.0 erhält eine öffentliche View-/Viewport-Anbin
 mit kartesischen Meterkoordinaten. Weltkoordinaten bleiben doppelt genau;
 GPU-Puffer enthalten lokale Koordinaten pro Geometriebündel. Ein beweglicher
 Darstellungsursprung ändert Transformationen, nicht die gespeicherten Geometrien.
-MapLibre ist kein Bestandteil der Zielarchitektur. Der bisherige Anschluss bleibt
-nur bis zur bestandenen Ersatzqualifikation als überprüfbare Entwicklungsreferenz.
+MapLibre ist aus Quellcode, Laufzeitbuild und Abhängigkeiten entfernt. Der vorherige
+Anschluss bleibt in der Git-Historie als überprüfbare Entwicklungsreferenz erhalten.
 [deck.gl-Koordinatensysteme](https://deck.gl/docs/developer-guide/coordinate-systems).
 
 Vier gemeinsame interne Verträge ersetzen verstreute Übergaben:

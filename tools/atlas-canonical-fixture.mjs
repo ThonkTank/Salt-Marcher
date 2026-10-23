@@ -9,7 +9,7 @@ import {buildSync} from 'esbuild';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const require=createRequire(import.meta.url);
-const bundleDir=resolve(root,'.build/atlas-maplibre-canonical-fixture');
+const bundleDir=resolve(root,'.build/atlas-canonical-fixture');
 await mkdir(bundleDir,{recursive:true});
 buildSync({
   stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {heightRecord} from './src/app/terrain-height';export {terrainObjectSources,resolveTerrainObjects} from './src/app/terrain-objects';export {AtlasRegionReader} from './src/app/storage/atlas-region';",resolveDir:root},
@@ -19,21 +19,21 @@ const {CampaignStore,heightRecord,terrainObjectSources,resolveTerrainObjects,Atl
 const Database=require('better-sqlite3');
 
 /**
- * Create a disposable, durable canonical Atlas campaign for the MapLibre native
+ * Create a disposable, durable canonical Atlas campaign for the direct metric native
  * scene check. The returned profile directory is ready to pass to Electron as
  * `--data-dir`; this function closes and reopens CampaignStore before returning.
  *
  * @param {{profilePath?:string,campaignName?:string}} options
  */
-export async function createAtlasMapLibreCanonicalFixture(options={}){
+export async function createAtlasCanonicalFixture(options={}){
   const cache=join(homedir(),'.cache/saltmarcher');
   await mkdir(cache,{recursive:true});
-  const profilePath=options.profilePath?resolve(options.profilePath):await mkdtemp(join(cache,'atlas-maplibre-canonical-'));
+  const profilePath=options.profilePath?resolve(options.profilePath):await mkdtemp(join(cache,'atlas-canonical-'));
   await mkdir(profilePath,{recursive:true});
   const filename=join(profilePath,'workbench.sqlite');
   try{await access(filename);throw new Error(`Fixture database already exists: ${filename}`);}catch(error){if(error?.code!=='ENOENT')throw error;}
 
-  const campaignName=options.campaignName??'MapLibre canonical scene fixture';
+  const campaignName=options.campaignName??'Metric Atlas canonical scene fixture';
   const commandId=()=>randomUUID();
   const initialRoom={
     id:'atlas-entry-room',scopeId:'local',floorId:'ground',number:'1',name:'Atlas-Eingang',revision:0,
@@ -145,6 +145,6 @@ export async function createAtlasMapLibreCanonicalFixture(options={}){
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
-  const fixture=await createAtlasMapLibreCanonicalFixture();
+  const fixture=await createAtlasCanonicalFixture();
   process.stdout.write(JSON.stringify(fixture,null,2)+'\n');
 }

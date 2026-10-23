@@ -198,6 +198,7 @@ export class AtlasDeckSurface {
   }
   private fail(value: unknown): void {
     const error = value instanceof Error ? value : new Error(String(value));
+    ++this.generation; // Fence even a delayed onLoad after a failed GPU initialization.
     this.renderedRevision = -1; this.loaded = false;
     for (const waiter of [...this.waiters]) waiter.reject(error);
     this.options.onError?.(error);

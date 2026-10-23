@@ -1,7 +1,7 @@
 export const ATLAS_FONT_STACK = Object.freeze(['Atlas Noto Sans', 'Atlas Noto Symbols'] as const);
 export const ATLAS_FONT_FAMILY = ATLAS_FONT_STACK[0];
 export const ATLAS_SYMBOLS_FAMILY = ATLAS_FONT_STACK[1];
-export const ATLAS_FONT_DIRECTORY = 'atlas-maplibre-fonts/';
+export const ATLAS_FONT_DIRECTORY = 'atlas-fonts/';
 export const ATLAS_MARKER_IMAGE_ID = 'atlas-marker-pin';
 
 export const ATLAS_FONT_FILES = Object.freeze({

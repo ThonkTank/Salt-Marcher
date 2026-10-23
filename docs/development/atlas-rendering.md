@@ -13,6 +13,7 @@ entsteht der direkte metrische Kartenanschluss. Der Desktopbuild stellt
 `atlas-deck-runtime.js` als lokal ladbares Modul bereit; die normale Workbench
 verwendet bis zur vollständigen Werkzeugübernahme weiterhin die unten beschriebenen
 Besitzer. Die frühere MapLibre-Pflicht wurde am 23.10.2026 ausdrücklich ersetzt.
+[Isolierte M1-Abschlussprüfung und offene Grenzen](../reference/atlas-metric-core-20261023/README.md).
 
 [AtlasDeckSurface](../../src/app/atlas-deck-surface.ts) besitzt Canvas, Deck,
 Kamera, Resize, Eingaben und GPU-Lebenszyklus. `create` wartet auf GPU-Bereitschaft

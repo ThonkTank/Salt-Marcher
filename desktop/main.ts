@@ -87,8 +87,8 @@ else {
       const name = url.pathname.slice(1);
 
       if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'terrain-spatial-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css',
-        'atlas-deck-runtime.js','atlas-maplibre-runtime.js','atlas-maplibre-worker.mjs','atlas-maplibre-projection-worker.mjs','atlas-maplibre.css',
-        'atlas-maplibre-fonts/NotoSans-VF.ttf','atlas-maplibre-fonts/NotoSansSymbols-VF.ttf'].includes(name)) return new Response('Not found', { status: 404 });
+        'atlas-deck-runtime.js',
+        'atlas-fonts/NotoSans-VF.ttf','atlas-fonts/NotoSansSymbols-VF.ttf'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
     win = new BrowserWindow({ show:!updateRuntime.transaction, width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'SaltMarcher', backgroundColor: '#edf1f6',

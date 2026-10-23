@@ -1,5 +1,7 @@
 # M1: planarer MapLibre-/deck.gl-Anschluss
 
+Historischer Integrationsstand: MapLibre wurde anschließend durch den direkten metrischen Atlas ersetzt. Die historischen Codepfade beziehen sich auf den erhaltenen lokalen Übergangsstand `c891b74b0d6b9f91c4f5f746f93d3fa74db63768`; Wiederholungen dieser historischen Probe benötigen dessen Checkout. Einzeldateien lassen sich mit `git show c891b74b0:PFAD` lesen. Dieser Checkpoint ist noch nicht veröffentlicht.
+
 Stand 23.10.2026. **Isolierte Integrationsprobe bestanden; M1 als Produktetappe
 bleibt offen.** Maßgeblich ist die [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.md).
 Die Probe verwendet synthetische Geometrie in einer eigenen Electron-Anwendung;
@@ -132,12 +134,12 @@ Main öffnet nur einen lokalen Testserver, der Renderer bleibt sandboxed, ohne
 Node-Zugriff und mit Context-Isolation. Jeder Lauf erzeugt einen eigenen Ordner
 unter `.build/atlas-maplibre-interop/runs/`; Fehlerläufe werden nicht überschrieben.
 
-Quellen: [Meterraum](../../../src/app/atlas-metric-space.ts),
-[Auswahladapter](../../../src/app/atlas-metric-query.ts),
-[native Probe](../../../tools/atlas-maplibre-interop-probe.mjs),
-[Driver und Abschlussprüfung](../../../tools/atlas-maplibre-interop-driver.mjs),
-[Meterraumtests](../../../tests/atlas-metric-space.test.mjs),
-[Auswahltests](../../../tests/atlas-metric-query.test.mjs).
+Quellen: Meterraum (`src/app/atlas-metric-space.ts`, historischer Checkpoint),
+Auswahladapter (`src/app/atlas-metric-query.ts`, historischer Checkpoint),
+native Probe (`tools/atlas-maplibre-interop-probe.mjs`, historischer Checkpoint),
+Driver und Abschlussprüfung (`tools/atlas-maplibre-interop-driver.mjs`, historischer Checkpoint),
+Meterraumtests (`tests/atlas-metric-space.test.mjs`, historischer Checkpoint),
+Auswahltests (`tests/atlas-metric-query.test.mjs`, historischer Checkpoint).
 
 ## Abgleich mit M1 und nächste Arbeit
 

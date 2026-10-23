@@ -133,6 +133,21 @@ test('Deck errors fail closed and never permit stale picking',async t=>{
   surface.dispose();void waiting;
 });
 
+test('a late Deck load cannot revive a replacement generation after its startup error',async t=>{
+  const active=await readySurface(t),{surface,decks,env}=active;
+  const oldCanvas=surface.canvas;
+  oldCanvas.dispatchEvent(new env.window.Event('webglcontextlost',{cancelable:true}));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(decks.length,2);
+  const replacement=decks[1];
+  replacement.fireError(new Error('replacement startup failed'));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(surface.frameUsable,false);
+  replacement.fireLoad();replacement.fireRender();
+  assert.equal(surface.frameUsable,false,'callbacks from the failed replacement generation stay fenced');
+  surface.dispose();
+});
+
 test('mesh geometry and instance data survive camera, snapped-origin and exaggeration changes',()=>{
   const mesh=object('cached'),scene=model(mesh);
   const first=atlasDeckSceneLayers(scene,atlasMetricFrameForTest(camera,640,480))[0];

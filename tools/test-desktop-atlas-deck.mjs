@@ -3,17 +3,18 @@ import {createHash} from 'node:crypto';
 import {readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {createNativeSession} from './native-session.mjs';
-import {createAtlasMapLibreCanonicalFixture} from './atlas-maplibre-canonical-fixture.mjs';
+import {createAtlasCanonicalFixture} from './atlas-canonical-fixture.mjs';
 
 const root=process.cwd(),output=path.resolve('.build/atlas-deck-native',`${Date.now()}-${process.pid}`);
 const native=await createNativeSession({root,output,name:'atlas-deck'});
 const files=['src/app/atlas-deck-surface.ts','src/app/atlas-metric-camera.ts','src/app/atlas-world-tiles.ts',
   'src/app/atlas-deck-scene-model.ts','src/app/atlas-scene-geometry.ts','src/app/atlas-mesh-ray.ts',
   'src/app/atlas-deck-ray.ts','src/app/atlas-deck-picking.ts','src/app/atlas-deck-labels.ts','src/app/atlas-assets.ts',
-  'tools/test-desktop-atlas-deck.mjs','.build/desktop/ui/atlas-deck-runtime.js','package-lock.json'];
+  'tools/test-desktop-atlas-deck.mjs','tools/atlas-canonical-fixture.mjs','.build/desktop/ui/atlas-deck-runtime.js',
+  '.build/desktop/ui/atlas-fonts/NotoSans-VF.ttf','.build/desktop/ui/atlas-fonts/NotoSansSymbols-VF.ttf','package-lock.json'];
 const hashes=async()=>Object.fromEntries(await Promise.all(files.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])));
 try {
-  const fixture=await createAtlasMapLibreCanonicalFixture({profilePath:native.profile,campaignName:'Metric Atlas qualification'}),before=await hashes();
+  const fixture=await createAtlasCanonicalFixture({profilePath:native.profile,campaignName:'Metric Atlas qualification'}),before=await hashes();
   const page=await native.launch();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   const setup=await page.evaluate(async fixture=>{
@@ -87,15 +88,23 @@ try {
     // Each scale has a genuinely visible, pickable mesh. These are deliberately
     // derived scale fixtures, not a claim of complete authored world coverage.
     for(const [name,span] of [['world',40e6],['continent',16e6],['kingdom',4e6],['city',3000],['interior',20]]){
-      const mpp=span/900,size=mpp*60,target={kind:'room',id:`scale-${name}`,scopeId:'scale',floorId:'ground'};
-      const object={id:`scale:${name}`,target,origin:{x:70e6,y:-90e6,heightM:256},positions:new Float32Array([-size,-size,-111,size,-size,-111,size,size,-111,-size,size,-111]),indices:new Uint32Array([0,1,2,0,2,3])};
-      const model={objects:[object],targets:new Map([[object.id,target]]),coverage:{complete:true,supportedKinds:['room'],unsupported:[]},verticalExaggeration:1};
+      const mpp=span/900,size=mpp*40,objects=[],expected=[];
+      for(const [kind,offset] of [['building',-150],['room',0],['terrain',150]]){
+        const target=kind==='terrain'?{kind}:{kind,id:`scale-${kind}-${name}`,scopeId:'scale',floorId:'ground',cityId:'scale-city'};
+        const centerX=70e6+offset*mpp,top=kind==='building'?145+size:145;
+        const positions=new Float32Array([-size,-size,top-256,size,-size,top-256,size,size,top-256,-size,size,top-256,
+          -size,-size,145-256,size,-size,145-256,size,size,145-256,-size,size,145-256]);
+        const indices=new Uint32Array(kind==='building'?[0,1,2,0,2,3,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0]:[0,1,2,0,2,3]);
+        const object={id:`scale:${kind}:${name}`,target,origin:{x:centerX,y:-90e6,heightM:256},positions,indices};objects.push(object);
+        expected.push({id:object.id,kind,x:centerX,y:-90e6,heightM:256+positions[2]});
+      }
+      const model={objects,targets:new Map(objects.map(o=>[o.id,o.target])),coverage:{complete:true,supportedKinds:['terrain','building','room'],unsupported:[]},verticalExaggeration:1};
       s.setScene(model);s.setCamera({focus:{x:70e6,y:-90e6},focusHeightM:145,metersPerPixel:mpp,rotation:37,tilt:55,exaggeration:1});await s.waitForFrame();
-      const screen=s.frame.project({x:70e6,y:-90e6,heightM:145}),hit=s.pick(screen.x,screen.y);
-      rows.push({name,span,hit,screen,bufferKept:s.deckValue.props.layers[0].props.mesh.attributes.POSITION.value===object.positions});
+      const picks=expected.map(point=>{const screen=s.frame.project(point);return {expected:point,screen,hit:s.pick(screen.x,screen.y)};});
+      rows.push({name,span,picks,bufferKept:objects.every((object,i)=>s.deckValue.props.layers[i].props.mesh.attributes.POSITION.value===object.positions)});
     }return rows;
   });
-  for(const row of scales){assert.equal(row.hit?.target.id,`scale-${row.name}`,JSON.stringify(row));assert(Math.abs(row.hit.point.x-70e6)<.0001);assert(Math.abs(row.hit.point.y+90e6)<.0001);assert(Math.abs(row.hit.point.heightM-145)<.0001);assert(row.bufferKept);}
+  for(const row of scales){assert(row.bufferKept);for(const pick of row.picks){assert.equal(pick.hit?.id,pick.expected.id,JSON.stringify(row));assert(Math.abs(pick.hit.point.x-pick.expected.x)<.0001,JSON.stringify(pick));assert(Math.abs(pick.hit.point.y-pick.expected.y)<.0001,JSON.stringify(pick));assert(Math.abs(pick.hit.point.heightM-pick.expected.heightM)<.0001,JSON.stringify(pick));}}
   const prepared=await page.evaluate(async()=>{
     const f=window.__direct,s=f.surface;
     const shifted={...f.data.model,objects:f.data.model.objects.map(o=>({...o,origin:{...o.origin,x:o.origin.x+232,y:o.origin.y+232}}))};
@@ -145,6 +154,24 @@ try {
   await native.capture(page,'direct-labels.png');
   const cleanup=await page.evaluate(()=>{const f=window.__direct;f.surface.dispose();f.surface.dispose();const canvases=f.container.querySelectorAll('canvas').length;f.container.remove();delete window.__direct;return {canvases};});
   assert.equal(cleanup.canvases,0);assert.deepEqual(errors,[]);const after=await hashes();assert.deepEqual(after,before);
-  await native.close();await native.finish({complete:true,scope:'Direct metric renderer on canonical preload data and explicit scale fixtures; not complete Atlas product or target-device acceptance.',fixture,setup,cameras,occlusion,floors,scales,crossing,lifecycle,labels,cleanup,errors,hashes:{before,after}});
+  await native.close();
+  // Fresh native process reopens the saved canonical campaign after disposal
+  // and context recovery. This is persistence evidence, not a new author tool.
+  const fresh=await native.launch();
+  const reopened=await fresh.evaluate(async fixture=>{
+    const unwrap=r=>{if(!r.ok)throw Error(JSON.stringify(r));return r.value;};
+    const active=unwrap(await window.campaign.activate(fixture.campaignId));
+    const view=unwrap(await window.campaign.atlasRegion(active.token,{...fixture.query,width:900,height:650},'view'));
+    const projection=unwrap(await window.campaign.atlasTerrainProjection(active.token,{revision:view.revision,fence:view.region.fence,
+      view:{box:fixture.viewBox,frame:fixture.viewBox,columns:65,rows:65,focusM:140,tilt:0,rotation:0,exaggeration:1},
+      width:64,height:64,contours:0,displayMpp:1,objects:[]},'view'));
+    const runtime=await import('campaign://app/atlas-deck-runtime.js');
+    const model=runtime.buildAtlasDeckSceneModel({view,terrain:projection.grid,display:{metersPerPixel:.5,roofs:true,scopeId:null}});
+    const building=model.objects.find(o=>o.target.kind==='building'&&o.target.id===fixture.buildingId);
+    let maxHeight=-Infinity;for(let i=2;i<building.positions.length;i+=3)maxHeight=Math.max(maxHeight,building.origin.heightM+building.positions[i]);
+    return {targets:model.objects.map(o=>o.target),maxHeight,revision:view.revision,fence:view.region.fence};
+  },fixture);
+  assert.deepEqual(reopened.targets,setup.targets);assert.equal(reopened.maxHeight,152);assert.equal(reopened.revision,fixture.sourceRevision);
+  await native.close();await native.finish({complete:true,scope:'Direct metric renderer on canonical preload data and explicit scale fixtures; not complete Atlas product or target-device acceptance.',fixture,setup,cameras,occlusion,floors,scales,crossing,lifecycle,labels,cleanup,reopened,errors,hashes:{before,after}});
   console.log(JSON.stringify({complete:true,output}));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

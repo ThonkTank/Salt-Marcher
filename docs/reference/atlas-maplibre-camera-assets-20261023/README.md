@@ -1,5 +1,7 @@
 # M1: erhöhte Kamera, genaue Treffer und lokale Kartenassets
 
+Historischer Integrationsstand: MapLibre wurde anschließend durch den direkten metrischen Atlas ersetzt. Die historischen Codepfade beziehen sich auf den erhaltenen lokalen Übergangsstand `c891b74b0d6b9f91c4f5f746f93d3fa74db63768`; Wiederholungen dieser historischen Probe benötigen dessen Checkout. Einzeldateien lassen sich mit `git show c891b74b0:PFAD` lesen. Dieser Checkpoint ist noch nicht veröffentlicht.
+
 Lokaler Fortschritt auf Basis von `b98c8bdd6a3edc23a3f45c34bc61aa5ae79959cb`
 mit aufgezeichneten Arbeitskopie- und Buildhashes. Dies ergänzt die
 [kanonische Szenenprobe](../atlas-maplibre-scene-20261023/README.md).
@@ -8,7 +10,7 @@ Produktleistungs-, Zielgeräte-, Paketinstallations- oder Nutzerabnahme.
 
 ## Umsetzung und gefundene Fehler
 
-- Die [Kamera](../../../src/app/atlas-maplibre-camera.ts) führt den Weltfokus
+- Die Kamera (`src/app/atlas-maplibre-camera.ts`, historischer Checkpoint) führt den Weltfokus
   einschließlich physischer Höhe. MapLibres automatische Gelände-Höhenbindung
   wird vor der Pose deaktiviert: Ohne eigenes MapLibre-DEM setzte sie die
   gewünschte Höhe 145 m im nächsten Renderzyklus wieder auf 0 zurück.
@@ -16,7 +18,7 @@ Produktleistungs-, Zielgeräte-, Paketinstallations- oder Nutzerabnahme.
   weiterhin die physische Höhe.
 - Die GPU entscheidet weiterhin mit gemeinsamem Tiefenpuffer, welches Objekt
   sichtbar ist. Die zusätzliche GPU-Höhenrücklesung entfällt. Der
-  [Kamerastrahl](../../../src/app/atlas-maplibre-ray.ts) schneidet ausschließlich
+  Kamerastrahl (`src/app/atlas-maplibre-ray.ts`, historischer Checkpoint) schneidet ausschließlich
   das ausgewählte Mesh und dessen tatsächlich hochgeladene Float32-Dreiecke.
   Ein pro Objekt behaltenes räumliches Suchverzeichnis vermeidet wiederholte
   Vollscans. Ein verfehlter Teilpixel liefert keine erfundene Autorenposition.
@@ -25,7 +27,7 @@ Produktleistungs-, Zielgeräte-, Paketinstallations- oder Nutzerabnahme.
   bei 75° Neigung auf. Mathematisch gleiche, numerisch unterschiedlich
   ausgeführte Matrixprodukte lagen am Eckpunkt knapp auseinander. Darstellung
   und Strahl verwenden nun denselben
-  [Matrixadapter](../../../src/app/atlas-maplibre-matrices.ts).
+  Matrixadapter (`src/app/atlas-maplibre-matrices.ts`, historischer Checkpoint).
   Eine auf 10 Nanometer physische Entfernung begrenzte numerische Randkorrektur
   bleibt auf dem ausgewählten Dreieck; ein 20-nm-Fehltreffer bleibt in der
   Gegenprobe leer. Das ist eine numerische Toleranz, keine allgemeine
@@ -35,8 +37,8 @@ Produktleistungs-, Zielgeräte-, Paketinstallations- oder Nutzerabnahme.
   Deck behält währenddessen seinen letzten Frame. Auch unveränderte Matrizen
   werden nach einer neuen Aufnahme wieder freigegeben; Fehler und Dispose
   lassen keine gültige Trefferausgabe zurück.
-- [Lokale Assets](../../../src/app/atlas-maplibre-assets.ts) bündeln Noto Sans
-  und Noto Sans Symbols samt [Lizenz und Herkunft](../../../resources/atlas-maplibre-fonts/PROVENANCE.md).
+- Lokale Assets (`src/app/atlas-maplibre-assets.ts`, historischer Checkpoint) bündeln Noto Sans
+  und Noto Sans Symbols samt Lizenz und Herkunft (`resources/atlas-maplibre-fonts/PROVENANCE.md`, historischer Checkpoint).
   Ein erzeugter Marker benötigt keinen externen Sprite. Der Desktopbuild
   kopiert Fonts und Lizenztexte; Main gibt nur die beiden konkreten Fontpfade
   frei. MapLibre erhält lokale `font-faces`, keinen Glyph-PBF-Endpunkt.
@@ -77,16 +79,16 @@ Hügelfixture sind keine gestalterische Abnahme.
 ## Prüfungen, Rohdaten und nächste Etappe
 
 68 gezielte Tests bestanden ([vollständige Ausgabe](targeted-tests.txt)):
-[Kamera](../../../tests/atlas-maplibre-camera.test.mjs),
-[Strahl und aufgezeichnete Dachspitze](../../../tests/atlas-maplibre-ray.test.mjs),
-[Assets](../../../tests/atlas-maplibre-assets.test.mjs),
-[Bridge](../../../tests/atlas-maplibre-bridge.test.mjs),
-[Szene](../../../tests/atlas-maplibre-scene.test.mjs),
-[Szenenmodell](../../../tests/atlas-maplibre-scene-model.test.mjs),
-[Picking-Ressourcen](../../../tests/atlas-maplibre-picking.test.mjs),
-[Projektion](../../../tests/atlas-maplibre-projection.test.mjs),
-[Meterraum](../../../tests/atlas-metric-space.test.mjs) und
-[MapLibre-Abfrage](../../../tests/atlas-metric-query.test.mjs).
+Kamera (`tests/atlas-maplibre-camera.test.mjs`, historischer Checkpoint),
+Strahl und aufgezeichnete Dachspitze (`tests/atlas-maplibre-ray.test.mjs`, historischer Checkpoint),
+Assets (`tests/atlas-maplibre-assets.test.mjs`, historischer Checkpoint),
+Bridge (`tests/atlas-maplibre-bridge.test.mjs`, historischer Checkpoint),
+Szene (`tests/atlas-maplibre-scene.test.mjs`, historischer Checkpoint),
+Szenenmodell (`tests/atlas-maplibre-scene-model.test.mjs`, historischer Checkpoint),
+Picking-Ressourcen (`tests/atlas-maplibre-picking.test.mjs`, historischer Checkpoint),
+Projektion (`tests/atlas-maplibre-projection.test.mjs`, historischer Checkpoint),
+Meterraum (`tests/atlas-metric-space.test.mjs`, historischer Checkpoint) und
+MapLibre-Abfrage (`tests/atlas-metric-query.test.mjs`, historischer Checkpoint).
 `npm run check`, `npm run check:desktop`, `npm run build:desktop` und
 `npm run check:repo` bestanden. Die tatsächlichen Testdateien der beiden
 geprüften Abläufe wurden im Capability-Katalog mit `--geprueft` nachgeführt.

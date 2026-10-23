@@ -1,5 +1,7 @@
 # M1: instanzeigener Kartenanschluss und Desktop-Laufzeit
 
+Historischer Integrationsstand: MapLibre wurde anschließend durch den direkten metrischen Atlas ersetzt. Die historischen Codepfade beziehen sich auf den erhaltenen lokalen Übergangsstand `c891b74b0d6b9f91c4f5f746f93d3fa74db63768`; Wiederholungen dieser historischen Probe benötigen dessen Checkout. Einzeldateien lassen sich mit `git show c891b74b0:PFAD` lesen. Dieser Checkpoint ist noch nicht veröffentlicht.
+
 Stand 23.10.2026. **Der ausgelagerte Anschluss und sein Laden im Desktop sind
 geprüft; die vollständige M1-Produktetappe bleibt offen.** Grundlage ist die
 [vorherige Integrationsprobe](../atlas-maplibre-interop-20261023/README.md),
@@ -7,7 +9,7 @@ verbindlicher Umfang die [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.
 
 ## Umsetzung
 
-- [AtlasMapLibreBridge](../../../src/app/atlas-maplibre-bridge.ts) besitzt pro Karte
+- AtlasMapLibreBridge (`src/app/atlas-maplibre-bridge.ts`, historischer Checkpoint) besitzt pro Karte
   den festen Szenenursprung, Darstellungswurzel, Matrixaufnahme, Deck-Viewport,
   Overlay und Style-Lebenszyklus. Die Probe enthält diese Implementierung nicht
   mehr als globale Kopie. Der Besitzer ruft `dispose()` vor `map.remove()` auf.
@@ -15,10 +17,10 @@ verbindlicher Umfang die [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.
   Wiederholtes gleichzeitiges Anbinden und fremde Layer-IDs werden zurückgewiesen;
   Entfernen räumt nur eigene Layer, Listener und wartende Aufgaben auf.
   Überholte Style-Abschlüsse werden durch eine Generation entwertet.
-- Der gemeinsame [CRS-Decoder](../../../src/app/atlas-maplibre-projection.ts)
+- Der gemeinsame CRS-Decoder (`src/app/atlas-maplibre-projection.ts`, historischer Checkpoint)
   versorgt Renderer und den lokal gebauten GeoJSON-Worker. Er unterstützt auch
   kanonisch geschriebene Exponentialwerte für kleine/große Darstellungswurzeln.
-- [Runtime](../../../src/app/atlas-maplibre-runtime.ts), Worker, CRS-Handler und CSS
+- Runtime (`src/app/atlas-maplibre-runtime.ts`, historischer Checkpoint), Worker, CRS-Handler und CSS
   liegen im Desktopbuild. Die Runtime wird erst bei Bedarf geladen; die normale
   Atlas-Workbench verwendet weiterhin ihren bisherigen Renderer.
 - Die fünf direkten Bibliotheken sind jetzt in der Haupt-`package.json` und
@@ -70,7 +72,7 @@ ohne Signal, danach nicht mehr vorhanden. `shared-canvas.png` und
 ## Laden im regulären Desktopfenster
 
 `desktop-runtime.json.gz` stammt aus dem separaten Lauf
-`1792780627471-1024155`. Der [native Desktoptest](../../../tools/test-desktop-atlas-maplibre-runtime.mjs)
+`1792780627471-1024155`. Der native Desktoptest (`tools/test-desktop-atlas-maplibre-runtime.mjs`, historischer Checkpoint)
 startet den normalen gebauten Main-/Preload-/Rendererpfad mit einem frischen,
 eigenen Profil. Im bestehenden Kampagnenfenster lädt er die neue Runtime und
 stellt vorübergehend eine kleine Markerkarte bereit. Das ist ein

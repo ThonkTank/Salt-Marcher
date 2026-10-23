@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const roots=['maplibre-gl','@deck.gl/core','@deck.gl/layers','@deck.gl/mesh-layers','@deck.gl/maplibre','@math.gl/core'];
+const roots=['@deck.gl/core','@deck.gl/layers','@deck.gl/mesh-layers','@math.gl/core'];
 const licenseFile=/^(?:license|licence|copying|notice)(?:[._-].+)?$/i;
 const here=path.dirname(fileURLToPath(import.meta.url));
 
@@ -44,7 +44,7 @@ async function licenseSources(directory,name){
     const manifest=JSON.parse(await readFile(path.join(directory,'package.json'),'utf8'));
     if(manifest.version!=='1.5.7'||manifest.license!=='Apache-2.0')
       throw new Error(`Kein geprüfter Draco-Lizenzfallback für draco3d@${manifest.version} (${manifest.license})`);
-    const vendored=path.join(here,'atlas-maplibre-licenses','draco3d-1.5.7-LICENSE.txt');
+    const vendored=path.join(here,'atlas-runtime-licenses','draco3d-1.5.7-LICENSE.txt');
     const contents=await readFile(vendored,'utf8');
     const digest=createHash('sha256').update(contents).digest('hex');
     if(digest!=='d3709b0fb4b8a94bbb1d02b8a2e484f258b0d9c5c5a01f940391f3fe662cd1a4')
@@ -55,7 +55,7 @@ async function licenseSources(directory,name){
 }
 
 /** Copy license notices for the pinned Atlas map runtime and its installed runtime dependency graph. */
-export async function copyAtlasMapLibreLicenses(destination){
+export async function copyAtlasRuntimeLicenses(destination){
   const target=path.resolve(destination),seen=new Set(),queue=roots.map(name=>({name,from:here})),packages=[];
   await mkdir(target,{recursive:true});
   while(queue.length){
@@ -89,7 +89,7 @@ export async function copyAtlasMapLibreLicenses(destination){
       queue.push({name,from:directory,optional:manifest.peerDependenciesMeta?.[name]?.optional===true});
   }
   packages.sort((a,b)=>a.name.localeCompare(b.name)||a.version.localeCompare(b.version)||a.source.join(',').localeCompare(b.source.join(',')));
-  const manifest={format:'saltmarcher-atlas-maplibre-licenses-v1',packages};
+  const manifest={format:'saltmarcher-atlas-runtime-licenses-v1',packages};
   await writeFile(path.join(target,'manifest.json'),JSON.stringify(manifest,null,2)+'\n');
   return {destination:target,packageCount:packages.length,fileCount:packages.reduce((total,p)=>total+p.files.length,0),manifest};
 }
