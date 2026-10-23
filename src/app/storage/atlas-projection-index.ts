@@ -184,6 +184,7 @@ export async function eraseProjectionWork(directory:string,filename:string,campa
 export async function eraseAtlasProjection(directory:string,filename:string,campaignId:string){
  const key=projectionKey(filename,campaignId);let names:string[];
  try{names=await readdir(directory);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}
+ for(const suffix of ['', '-journal', '-wal', '-shm'])await rm(join(directory,'tiles-v1',key+'.sqlite'+suffix),{force:true});
  for(const name of names)if(name===key+'.json'||name===key+'.jsonl'||name.startsWith(key+'.candidate-')||name.startsWith(key+'.work-')||name.startsWith(key+'.json.candidate-')||new RegExp('^'+key+'\\.[a-f0-9]{64}\\.sqlite$').test(name))await rm(join(directory,name),{recursive:true,force:true});
 }
 export async function clearProjectionWork(directory:string){

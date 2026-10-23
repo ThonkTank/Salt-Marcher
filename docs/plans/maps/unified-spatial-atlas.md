@@ -50,11 +50,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   [Szenenbelege](../../reference/atlas-maplibre-scene-20261023/README.md) und
   [Kamerabelege](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
   bleiben historische Evidenz.
-- **Nächste Arbeit:** M2 verbindet persistente Übersicht und Details, begrenzten
-  Cache sowie lokale Invalidierung mit den stabilen Weltadressen. Die fünf
-  Maßstabsproben verwenden passend skalierte Testgeometrie, keine vollständige
-  Weltlast. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme
-  auf dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
+- **M2-Zwischenstand:** Persistente Terrainkacheln mit Höhen, Grundfarben und
+  Bewuchsmaske, Übersicht vor Detail, atomarem Stufenwechsel sowie begrenztem
+  RAM-/Kampagnen-Plattencache sind implementiert.
+  [32 gezielte Tests und native Wiederöffnung](../../reference/atlas-terrain-tiles-20261023/README.md)
+  belegen Wiederverwendung ohne neue Rasterisierung, lokale Änderungen samt
+  Eltern und Randbereich, Undo/Redo und aktuelle verknüpfte Ortsnamen.
+  Die native Detailabfrage dieser kleinen Probe sank von 291 auf 23 ms;
+  die erste Abfrage nach Prozessstart benötigte weiterhin 202 ms.
+- **Nächste Arbeit:** M2 bleibt aktiv: Geometriedetailstufen, eigenständige
+  Materialkanäle, kampagnenübergreifendes Plattenbudget, Übergänge bei Pan und
+  vollständige Weltlast fehlen noch. Auch die Abhängigkeitsprüfung nach einer
+  Quellenänderung muss unter Weltlast vermessen werden. Die bisherigen fünf
+  Maßstabsproben verwenden skalierte Testgeometrie. Der normale Atlas bleibt bis
+  zur vollständigen Werkzeugübernahme auf dem bisherigen Renderer; ein
+  Produktleistungsgewinn ist noch nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 

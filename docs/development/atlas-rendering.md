@@ -31,7 +31,32 @@ physische Float32-Meter relativ zu einem eigenen nahen Ursprung. Die Kamera
 verschiebt den Darstellungsursprung auf einem 256-m-Raster. Nur die Transformation
 der Geometrie ändert sich; eine wachsende Welt benötigt keinen Wurzelwechsel.
 [Weltkacheln](../../src/app/atlas-world-tiles.ts) verwenden vorzeichenbehaftete,
-stabile Adressen und 256 × 2^LOD Meter Kantenlänge. Nachladung/Persistenz folgen M2.
+stabile Adressen und 256 × 2^LOD Meter Kantenlänge.
+
+Der M2-[Kachelplan](../../src/app/atlas-tile-plan.ts) wählt eine begrenzte Anzahl
+sichtbarer Kacheln und gröbere Eltern. Der
+[Stream](../../src/app/atlas-tile-stream.ts) lädt zuerst Eltern und ersetzt sie
+erst nach vollständiger Bereitstellung ihrer benötigten Kinder. Quellenstand,
+Revision und Generation verhindern verspätete Veröffentlichungen. Das RAM-Budget
+zählt sichtbare, vorbereitete und wiederverwendbare Daten gemeinsam; derzeit
+beginnt eine neue Kameraplanung mit einem leeren Frame.
+
+`atlasTerrainTile` führt durch Preload/Main in den bestehenden Terrainworker.
+[Feste Kachelaufträge](../../src/app/atlas-terrain-tile.ts) erlauben keine vom
+Renderer gelieferten Autorendaten. Der Worker liest kanonisches SQLite nur lesend
+und speichert fertige Höhen-/Farb-/Bewuchspuffer in einem separaten
+[binären Cache](../../src/app/storage/atlas-tile-cache.ts). Atomare SQLite-Transaktionen,
+Prüfsummen, Formatversionen, LRU und Dateilimits schützen die abgeleiteten Daten.
+Unbekannte Dateien werden nicht repariert; beschädigte eigene Dateien dürfen
+nur vor Workerstart im exklusiven Appstart entfernt werden.
+
+[Terrainkacheln](../../src/app/storage/atlas-terrain-tiles.ts) verwenden bei
+unveränderter dauerhafter Quellenversion direkt den gespeicherten Puffer.
+Nach Änderungen prüfen sie lokale Quellen samt Rasterrand, verknüpften Namen
+und globalen Terrain-Einstellungen. Kamera und Fenstergröße gehören nicht zum
+Plattenschlüssel. Vorschauquellen ohne dauerhafte Version speichern keine Kacheln.
+[Prüfung und noch offene M2-Grenzen](../reference/atlas-terrain-tiles-20261023/README.md)
+trennen diese Terrainstrecke von vollständiger Geometrie- und Produktabnahme.
 
 Die [gemeinsame Geometrie](../../src/app/atlas-scene-geometry.ts) übernimmt
 kanonische Terrain-, Gebäude- und Raumdaten aus dem Preload-Pfad. Fehlende

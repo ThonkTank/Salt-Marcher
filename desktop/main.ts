@@ -1,3 +1,5 @@
+import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
+import {atlasTerrainTileQuery} from '../src/app/atlas-terrain-tile';
 import {eraseAtlasProjection,clearProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
@@ -78,7 +80,7 @@ else {
     const updates=new UpdateService({version:__APP_VERSION__,root:updateRuntime.root,settings:path.join(dataDir,'update-settings.json'),publicKey:updateRuntime.root?await updateRuntime.publicKey():'',emit:status=>{if(win&&!win.isDestroyed())win.webContents.send('update:status',status);}});
     await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
-    await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));
+    await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));await clearCorruptAtlasTileCaches(path.join(dataDir,'atlas-region-cache'));
     for(const id of store.pendingCampaignErasures())await finishPendingCampaignErasure(id);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);
@@ -414,6 +416,14 @@ else {
       if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
       const value=await atlasRegions.terrainColor(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
+    });
+    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest)=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasTerrainTileQuery(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Atlaskachel inzwischen geändert.');
+      const value=await atlasRegions.terrainTile(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Atlaskachel inzwischen geändert.');
+      return value;
     });
     handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:store.atlasRegionSource(token).revision};});
     handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{

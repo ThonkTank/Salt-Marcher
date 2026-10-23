@@ -1,0 +1,268 @@
+import {atlasTilePlan} from './atlas-tile-plan.js';
+import type {AtlasTerrainTile, AtlasTerrainTileRequest} from './atlas-terrain-tile.js';
+import type {LandscapeBox} from './atlas-landscape.js';
+import type {AtlasWorldTile} from './atlas-world-tiles.js';
+
+const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
+const DEFAULT_MAX_TILES = 64;
+const TILE_OBJECT_OVERHEAD = 256;
+
+export interface AtlasTileStreamOptions {readonly maxBytes?: number; readonly maxTiles?: number}
+export interface AtlasTileStreamInput {
+  readonly box: LandscapeBox;
+  readonly metersPerPixel: number;
+  readonly revision: number;
+  readonly source: string;
+  readonly contours?: number;
+}
+export interface AtlasTileStreamFrame {
+  readonly tiles: readonly AtlasTerrainTile[];
+  readonly complete: boolean;
+  readonly generation: number;
+}
+export type AtlasTerrainTileFetcher = (request: AtlasTerrainTileRequest) => Promise<AtlasTerrainTile>;
+export type AtlasTileStreamPublisher = (frame: AtlasTileStreamFrame) => void;
+
+interface CachedTile {readonly tile: AtlasTerrainTile; readonly key: string; readonly bytes: number}
+
+/** Sequential overview-first loading with atomic parent-to-children replacement. */
+export class AtlasTileStream {
+  private readonly maxBytes: number;
+  private readonly maxTiles: number;
+  private generation = 0;
+  private disposed = false;
+  private visible = new Map<string, CachedTile>();
+  private staged = new Map<string, CachedTile>();
+  /** Insertion order is LRU order, oldest first. */
+  private readonly cache = new Map<string, CachedTile>();
+
+  constructor(options: AtlasTileStreamOptions = {}) {
+    this.maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
+    this.maxTiles = options.maxTiles ?? DEFAULT_MAX_TILES;
+    if (!Number.isSafeInteger(this.maxBytes) || this.maxBytes < 1) throw new Error('Atlas tile stream maxBytes must be a positive safe integer');
+    if (!Number.isInteger(this.maxTiles) || this.maxTiles < 1 || this.maxTiles > 256) throw new Error('Atlas tile stream maxTiles must be an integer from 1 to 256');
+  }
+
+  async load(
+    input: AtlasTileStreamInput,
+    fetch: AtlasTerrainTileFetcher,
+    publish: AtlasTileStreamPublisher,
+  ): Promise<void> {
+    if (this.disposed) throw new Error('Atlas tile stream is disposed');
+    const generation = ++this.generation;
+    if (!input || !Number.isSafeInteger(input.revision) || input.revision < 0 || typeof input.source !== 'string' || !input.source
+      || typeof fetch !== 'function' || typeof publish !== 'function') {
+      throw new Error('Atlas tile stream input is invalid');
+    }
+    const contours = input.contours;
+    if (contours !== undefined && (!Number.isFinite(contours) || (contours < 0 && contours !== -1) || contours > 100000)) {
+      throw new Error('Atlas tile stream contours are invalid');
+    }
+    const plan = atlasTilePlan(input.box, input.metersPerPixel, {maxTiles: this.maxTiles});
+
+    // Begin every generation from an explicit empty frame. This also prevents
+    // pixels from a previous source or camera plan being mistaken for current data.
+    this.visible = new Map();
+    this.staged = new Map();
+    this.emit(generation, false, publish);
+
+    const detailsByParent = groupChildren(plan.detail);
+    const parentTileKeys = new Map(plan.overview.map(tile => [worldTileKey(tile), tile]));
+    const protectedKeys = () => this.activeKeys();
+
+    for (const tile of plan.overview) {
+      if (!this.isCurrent(generation)) return;
+      const request = makeRequest(tile, input.revision, contours);
+      const loaded = await this.getTile(request, input.source, fetch, generation, protectedKeys());
+      if (!this.isCurrent(generation)) return;
+      if (!loaded) return;
+      this.visible.set(worldTileKey(tile), loaded);
+      this.enforceBudget(protectedKeys());
+      this.emit(generation, false, publish);
+    }
+
+    for (const tile of plan.detail) {
+      if (!this.isCurrent(generation)) return;
+      const request = makeRequest(tile, input.revision, contours);
+      const key = cacheKey(input.source, request);
+      const loaded = await this.getTile(request, input.source, fetch, generation, new Set([...protectedKeys(), key]));
+      if (!this.isCurrent(generation)) return;
+      if (!loaded) return;
+      const detailKey = worldTileKey(tile);
+      this.staged.set(detailKey, loaded);
+
+      const parent = parentOf(tile);
+      const parentKey = worldTileKey(parent);
+      const requiredChildren = detailsByParent.get(parentKey);
+      const childrenReady = requiredChildren?.every(child => this.staged.has(worldTileKey(child))) ?? false;
+      if (requiredChildren && childrenReady && this.visible.has(parentKey)) {
+        // Replace in one map mutation block; no published frame can contain both
+        // the coarse parent and any of its fine children.
+        this.visible.delete(parentKey);
+        for (const child of requiredChildren) {
+          const childKey = worldTileKey(child);
+          const entry = this.staged.get(childKey);
+          if (entry) this.visible.set(childKey, entry);
+          this.staged.delete(childKey);
+        }
+        this.enforceBudget(protectedKeys());
+        this.emit(generation, false, publish);
+      } else if (!parentTileKeys.has(parentKey)) {
+        this.visible.set(detailKey, loaded);
+        this.staged.delete(detailKey);
+        this.enforceBudget(protectedKeys());
+        this.emit(generation, false, publish);
+      }
+    }
+
+    if (!this.isCurrent(generation)) return;
+    this.staged.clear();
+    this.enforceBudget(protectedKeys());
+    this.emit(generation, true, publish);
+  }
+
+  /** Invalidates in-flight loads and releases retained tile data. */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.generation++;
+    this.visible.clear();
+    this.staged.clear();
+    this.cache.clear();
+  }
+
+  private async getTile(
+    request: AtlasTerrainTileRequest,
+    source: string,
+    fetch: AtlasTerrainTileFetcher,
+    generation: number,
+    keepKeys: Set<string>,
+  ): Promise<CachedTile | undefined> {
+    const key = cacheKey(source, request);
+    const cached = this.cache.get(key);
+    if (cached) {
+      this.cache.delete(key);
+      this.cache.set(key, cached);
+      return cached;
+    }
+
+    const reply = await fetch(request);
+    if (!this.isCurrent(generation)) return undefined;
+    validateReply(reply, request, source);
+    const entry = {tile: reply, key, bytes: estimateBytes(reply)};
+    this.cache.set(key, entry);
+    keepKeys.add(key);
+    try {
+      this.enforceBudget(keepKeys);
+    } catch (error) {
+      if (this.cache.get(key) === entry) this.cache.delete(key);
+      throw error;
+    }
+    return entry;
+  }
+
+  private emit(generation: number, complete: boolean, publish: AtlasTileStreamPublisher): void {
+    if (!this.isCurrent(generation)) return;
+    const tiles = Object.freeze([...this.visible.values()].map(entry => entry.tile));
+    publish(Object.freeze({tiles, complete, generation}));
+  }
+
+  private isCurrent(generation: number): boolean {return !this.disposed && generation === this.generation;}
+
+  private activeKeys(): Set<string> {
+    return new Set([...this.visible.values(), ...this.staged.values()].map(entry => entry.key));
+  }
+
+  private enforceBudget(protectedKeys: Set<string>): void {
+    while (this.retainedBytes() > this.maxBytes) {
+      let evictKey: string | undefined;
+      for (const key of this.cache.keys()) {
+        if (!protectedKeys.has(key)) {evictKey = key; break;}
+      }
+      if (evictKey === undefined) throw new Error(`Atlas tile stream exceeds maxBytes (${this.maxBytes})`);
+      this.cache.delete(evictKey);
+    }
+  }
+
+  private retainedBytes(): number {
+    const seen = new Set<AtlasTerrainTile>();
+    let bytes = 0;
+    const add = (entry: CachedTile) => {
+      if (seen.has(entry.tile)) return;
+      seen.add(entry.tile);
+      bytes += entry.bytes;
+    };
+    for (const entry of this.cache.values()) add(entry);
+    for (const entry of this.visible.values()) add(entry);
+    for (const entry of this.staged.values()) add(entry);
+    return bytes;
+  }
+}
+
+function validateReply(reply: AtlasTerrainTile, request: AtlasTerrainTileRequest, source: string): void {
+  if (!reply || !reply.tile || reply.tile.lod !== request.tile.lod || reply.tile.x !== request.tile.x || reply.tile.y !== request.tile.y
+    || reply.revision !== request.revision || reply.fence !== source
+    || !reply.projection || reply.projection.revision !== request.revision
+    || reply.projection.source !== source || reply.projection.fence !== source) {
+    throw new Error('Atlas terrain tile reply does not match its requested source, revision, fence, or address');
+  }
+}
+
+function makeRequest(tile: AtlasWorldTile, revision: number, contours?: number): AtlasTerrainTileRequest {
+  return contours === undefined ? {tile, revision} : {tile, revision, contours};
+}
+
+function cacheKey(source: string, request: AtlasTerrainTileRequest): string {
+  return JSON.stringify([source, request.revision, request.contours ?? 0, request.tile.lod, request.tile.x, request.tile.y]);
+}
+
+function worldTileKey(tile: AtlasWorldTile): string {return `${tile.lod}/${tile.x}/${tile.y}`;}
+
+function parentOf(tile: AtlasWorldTile): AtlasWorldTile {
+  const lod = tile.lod + 2;
+  if (lod > 32) return {lod, x: tile.x, y: tile.y};
+  const divisor = 2 ** (lod - tile.lod);
+  return {lod, x: Math.floor(tile.x / divisor), y: Math.floor(tile.y / divisor)};
+}
+
+function groupChildren(tiles: readonly AtlasWorldTile[]): Map<string, AtlasWorldTile[]> {
+  const groups = new Map<string, AtlasWorldTile[]>();
+  for (const tile of tiles) {
+    const key = worldTileKey(parentOf(tile));
+    const children = groups.get(key) ?? [];
+    children.push(tile);
+    groups.set(key, children);
+  }
+  return groups;
+}
+
+/** Counts typed buffers exactly and JS containers conservatively for bounded caching. */
+function estimateBytes(value: unknown): number {
+  const objects = new Set<object>();
+  const buffers = new Set<ArrayBufferLike>();
+  const visit = (item: unknown): number => {
+    if (item === null || item === undefined) return 0;
+    if (typeof item === 'string') return item.length * 2;
+    if (typeof item === 'number') return 8;
+    if (typeof item === 'boolean') return 1;
+    if (typeof item !== 'object') return 0;
+    if (ArrayBuffer.isView(item)) {
+      const buffer = item.buffer;
+      if (buffers.has(buffer)) return 32;
+      buffers.add(buffer);
+      return buffer.byteLength + 32;
+    }
+    if (item instanceof ArrayBuffer) {
+      if (buffers.has(item)) return 0;
+      buffers.add(item);
+      return item.byteLength;
+    }
+    if (objects.has(item)) return 0;
+    objects.add(item);
+    if (Array.isArray(item)) return 24 + item.length * 8 + item.reduce((sum, child) => sum + visit(child), 0);
+    let bytes = 64;
+    for (const [key, child] of Object.entries(item)) bytes += key.length * 2 + visit(child);
+    return bytes;
+  };
+  return Math.max(TILE_OBJECT_OVERHEAD, visit(value));
+}
