@@ -1,9 +1,10 @@
 # Gemeinsamer räumlicher Atlas: Ausgangsbasis und Prüfablauf
 
-Arbeitsstand 20.10.2026, zu [P0 der Roadmap](unified-spatial-atlas.md#p0--umfang-und-vergleichbare-ausgangsbasis-sichern).
+Historischer Arbeitsstand vom 20.10.2026, zu [P0 der Roadmap](unified-spatial-atlas.md#p0--umfang-und-vergleichbare-ausgangsbasis-sichern).
 P0 ist in Arbeit. Native Leistungsmessungen, die vollständige große Prüfwelt
 und vollständige Bearbeitungsabläufe sind noch offen.
-Der externe Enginevergleich entfällt gemäß Nutzerentscheidung.
+Der damals eingestellte externe Enginevergleich ist wieder zulässig. Aktuelle
+Entscheidungen und Abschlussregeln stehen in der [Arbeitsweise vom 23.10.2026](unified-spatial-atlas.md#arbeitsweise-ab-23102026); die nachfolgenden Stände bleiben historische Ausgangsbelege.
 Die [ersten lokalen Prüfungen und der unvollständige native Lauf](../../reference/unified-atlas-p0-20261020/README.md)
 halten bestätigte Ergebnisse, korrigierte Fixturefehler und offene Grenzen fest.
 
@@ -59,7 +60,7 @@ Bestände nicht zurückstufen.
 
 Live-Pinselanzeige, partielle GPU-Updates und Höhenprofile sind jetzt an die
 gemeinsame Hauptkamera angeschlossen und [lokal geprüft](../../reference/atlas-live-main-camera-20261021/README.md).
-Objekt-Höhenbindung und perspektivische Ausgabe sind ebenfalls [an diese Hauptkamera angeschlossen und lokal geprüft](../../reference/atlas-objects-main-20261021/README.md). Die bisherigen Ausgabetests und Proben der separaten Ansicht werden dadurch nicht rückwirkend qualifiziert. Der oben verlinkte Nachweis dokumentiert Übernahme und Prüfung über den Repository-Start. Die drei abschließenden Produktaudits stehen weiterhin aus.
+Objekt-Höhenbindung und perspektivische Ausgabe sind ebenfalls [an diese Hauptkamera angeschlossen und lokal geprüft](../../reference/atlas-objects-main-20261021/README.md). Die bisherigen Ausgabetests und Proben der separaten Ansicht werden dadurch nicht rückwirkend qualifiziert. Der oben verlinkte Nachweis dokumentiert Übernahme und Prüfung über den Repository-Start. Die vollständige Produktabnahme war damit nicht erreicht. Die spätere Arbeitsweise ersetzt die damalige Forderung nach drei abschließenden Produktaudits durch überprüfbare Etappenergebnisse.
 
 ## Umfang und Quellenzuordnung
 

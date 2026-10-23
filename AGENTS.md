@@ -12,6 +12,13 @@
 - Preserve the original requirements and source bindings in
   `docs/scope-sources.json`. Implemented behavior, automated evidence, native
   qualification, and owner acceptance remain separate claims.
+- For Atlas development, follow the current outcome-driven workflow and active
+  milestone in `docs/plans/maps/unified-spatial-atlas.md#arbeitsweise-ab-23102026`.
+  It supersedes historical incremental-only restrictions, mandatory alternatives
+  for every small fix, clock-based releases, and the three-clean-audits rule.
+  A longer isolated replacement of the Atlas foundation is allowed; preserve
+  the runnable reference, user data, restricted renderer privileges, and delivery
+  gates. Do not resume paused automations merely because this workflow exists.
 
 ## Capability catalog and test files
 

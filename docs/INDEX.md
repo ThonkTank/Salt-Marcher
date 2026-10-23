@@ -5,6 +5,7 @@ Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
 | den aktuellen Stand verstehen | [Produktstand](PRODUCT.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
+| selbstständig am Atlas weiterarbeiten | [Arbeitsweise und aktuelle Etappe](plans/maps/unified-spatial-atlas.md#arbeitsweise-ab-23102026) | Ausgangsbeleg, Entscheidung und Prüfweg direkt bei der Etappe; historische Fachbelege nur bei Bedarf |
 | den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](ROADMAP.md#technischer-übergang) und [Fachabhängigkeiten](ROADMAP.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](../ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
 | die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](../ARCHITECTURE.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](../ARCHITECTURE.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](../ROADMAP-HEX-ATLAS.md#informationsarchitektur-der-oberfläche), [Bedienregeln](../ROADMAP-HEX-ATLAS.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
 | Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](development/atlas-rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](development/atlas-rendering.md#prüfwege-und-offene-qualifikation) |
