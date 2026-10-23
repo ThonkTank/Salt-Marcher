@@ -26,7 +26,10 @@ export interface AtlasCanonicalSceneModel {
   coverage:{complete:boolean;supportedKinds:readonly ('terrain'|'room'|'building')[];unsupported:{code:string;detail:string}[]};
   verticalExaggeration:number;
 }
+export const unmodeledDrawingSourcesWarning=(count:number)=>({code:'drawing-sources-not-modeled',detail:`${count} Dungeon-Zeichnungsquellen in der gesamten Kampagne (einschließlich archivierter oder ungeprüfter Quellen) sind nicht räumlich modelliert; keine Ausschnittzählung.`});
 export type AtlasSceneView = Pick<AtlasRegionView,'cities'|'bindings'|'region'> & {
+  /** Source count for a core-only storage read; no fabricated drawing objects. */
+  unmodeledDrawingSources?:number;
   geometry:Pick<AtlasRegionView['geometry'],'floors'|'drawing'>;
   workspace:Pick<AtlasRegionView['workspace'],'rooms'|'floors'>;
 };
@@ -94,6 +97,7 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
     'raster-images':'Rasterbilder und Rastermasken',
     'territories':'Gebietsmasken',
   };
+  if(view.unmodeledDrawingSources)unsupported.push(unmodeledDrawingSourcesWarning(view.unmodeledDrawingSources));
   const unsupportedPresent:string[]=[];
   if(view.cities.some(city=>city.units.some(unit=>unit.kind!=='building')))unsupportedPresent.push('city-units');
   if(view.geometry.drawing.elements?.length)unsupportedPresent.push('drawing-elements');

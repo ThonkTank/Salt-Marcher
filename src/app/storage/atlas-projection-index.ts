@@ -10,8 +10,8 @@ import {AtlasTileCache} from './atlas-tile-cache';
 const FORMAT=1,APPLICATION=0x534d5049,LIMIT=96*1024*1024;
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const ownedTables=/\btemp\.(?=(?:region_|landscape_))/g;
-type Part='geometry'|'landscape';
-const version=(part:Part,source:AtlasRegionSource)=>part==='geometry'?source.geometryVersion:source.shapeVersion;
+type Part='geometry'|'geometry-core'|'landscape';
+const version=(part:Part,source:AtlasRegionSource)=>part==='landscape'?source.shapeVersion:source.geometryVersion;
 type Manifest={format:number;key:string;file:string;hash:string;bytes:number};
 export const projectionKey=(filename:string,campaignId:string)=>createHash('sha256').update(JSON.stringify([filename,campaignId])).digest('hex');
 const digest=async(file:string)=>{

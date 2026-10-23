@@ -31,6 +31,7 @@ export class AtlasLandscapeReader {
  private indexed=true;private sampleMath=true;
  private placeLabelUnits=0;
  private terrainSignature="";private canonicalTerrain=false;
+ private terrainSettingsIdentity="";private terrainSeaLevelM=0;private terrainSettingsReady=false;
  private terrainKinds=new Set<string>();
  private projection:AtlasProjectionIndex;
  constructor(private db:any,private cacheLimit=8*1024*1024,projection?:AtlasProjectionIndex){
@@ -55,10 +56,11 @@ export class AtlasLandscapeReader {
  private storeBounds(row:any){this.meta('INSERT INTO temp.landscape_shape_bounds VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(row.id,row.source_row,row.kind,row.terrain_kind,row.resolution,row.paint_version,row.paint_order,row.payload_bytes,row.min_x,row.max_x,row.min_y,row.max_y);}
  sync(source:AtlasRegionSource){
   const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch]);
+  const settingsIdentity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]);
   let kindsChanged=this.identity!==identity||source.reset;
   this.invalidation={reset:this.identity!==identity||source.reset,bounds:[]};
   const settings=this.sql("SELECT json_extract(payload,'$.terrainSettings') settings FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
-  const signature=settings?.settings??'';if(this.terrainSignature!==signature){this.invalidation.reset=true;this.cache.clear();this.bytes=0;this.terrainSignature=signature;}
+  const signature=settings?.settings??'',seaLevelM=settings?JSON.parse(settings.settings).seaLevelM:0;if(this.terrainSignature!==signature){this.invalidation.reset=true;this.cache.clear();this.bytes=0;this.terrainSignature=signature;}
 
 
   let labelsChanged=this.identity!==identity||source.reset;
@@ -107,12 +109,15 @@ export class AtlasLandscapeReader {
   }
   this.canonicalTerrain=!!settings||this.terrainKinds.has('height')||this.terrainKinds.has('route');
   this.projectionCache.invalidate(this.invalidation.bounds,this.invalidation.reset);
-  this.identity=identity;
+  this.identity=identity;this.terrainSettingsIdentity=settingsIdentity;this.terrainSeaLevelM=seaLevelM;this.terrainSettingsReady=true;
   this.colorHistory.record(source,this.invalidation);
   this.projection.mark('landscape',source);
  }
 
- visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache);}
+ visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){
+  const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]),settings=this.terrainSettingsReady&&this.terrainSettingsIdentity===identity?{seaLevelM:this.terrainSeaLevelM}:undefined;
+  return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache,settings);
+ }
  private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'|'line'){
   if(kind&&kind!=='line'&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);

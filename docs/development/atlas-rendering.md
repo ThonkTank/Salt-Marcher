@@ -75,7 +75,14 @@ gezielt ergänzt, nur vollständige quellengültige Antworten veröffentlicht.
 trennen diese Datenstrecke von der späteren GPU-Komposition und Weltqualifikation.
 
 `atlasGeometryTile` nutzt denselben geprüften Main-/Workerpfad für persistente
-Gebäude- und Raummeshes. [Geometriequellen](../../src/app/storage/atlas-region.ts)
+Gebäude- und Raummeshes. Grobe und feine Meshaufträge synchronisieren nur den
+Raum-/Gebäudeteil des Projektionsindex (`geometry-core`). Der vollständige
+`geometry`-Stempel bleibt den bisherigen Regions-, Fokus- und Trefferabfragen
+vorbehalten. Getrennte Änderungsjournale behalten aufgeschobene Zeichnungsänderungen;
+ein vollständiger alter Cache darf beide Teile bestätigen, ein Teilcache niemals
+den vollständigen Index. Beim ersten vollständigen Zugriff werden die fehlenden
+Zeichnungen ergänzt, ohne gültige Räume nochmals zu projizieren.
+[Geometriequellen](../../src/app/storage/atlas-region.ts)
 filtern entfernte Besitzer zuerst über die vorhandenen Bereichsgrenzen aller
 Geschosse. Sie enthalten sichtbare Räume und die vollständigen physischen
 Geschosshöhen der Gebäude. Verbergen eines Geschosses verändert keine Bauhöhe.
@@ -103,8 +110,14 @@ Die Übersicht liest vollständig besessene Seiten von 32 Kandidaten, damit kein
 SQLite-Iterator eine Worker-Unterbrechung mit Snapshotabschluss überlebt.
 Räume und Gebäude gehen durch denselben kanonischen Höhen-/Geschossadapter wie
 Feinkacheln. Gebäude, die nur als Raumanker dienen, werden nicht doppelt gezeichnet.
-Nicht modellierte Zeichnungselemente werden gezählt und als Coverage-Lücke
-benannt, ohne ihre Nutzdaten vollständig zu laden. Bindings und Bereichsmetadaten
+Nicht modellierte Zeichnungsquellen werden kampagnenweit gezählt, einschließlich
+archivierter oder ungeprüfter Zeilen; die Warnung behauptet keine räumliche
+Ausschnittzählung. Auch Feinkacheln erhalten diese explizite Lücke, ohne erfundene
+Objekte einzufügen. Die Warnung besitzt einen eigenen Code, damit ihre Erneuerung
+andere fehlende Objektklassen nicht ausblendet und unveränderte Meshes nicht neu baut.
+Kanonische Meeresspiegelwerte werden innerhalb des synchronisierten Quellenstands
+wiederverwendet, statt für jeden physischen Höhenanker erneut SQL zu lesen.
+[Kaltstartprüfung und Detailübergang](../reference/atlas-geometry-cold-start-20261024/README.md). Bindings und Bereichsmetadaten
 werden weiterhin kampagnenweit gelesen; der Seitenumfang ist keine Gesamt-RAM-Grenze.
 Unveränderte Quellenversionen laden fertige Puffer; Änderungen prüfen lokale
 Quellen und höchstens 32.768 gespeicherte Höhenabhängigkeiten. Bei noch größeren

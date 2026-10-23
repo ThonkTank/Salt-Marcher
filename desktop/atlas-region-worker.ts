@@ -19,7 +19,7 @@ let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['te
 
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
-  const geometry=['region','focus','candidates','hit','geometry-tile'].includes(job.kind);
+  const geometry=job.kind==='geometry-tile'?'core':['region','focus','candidates','hit','geometry-tile'].includes(job.kind);
   let syncStarted=false,readStarted=false,endRead:(()=>void)|undefined;
   try {
     if(!reader){

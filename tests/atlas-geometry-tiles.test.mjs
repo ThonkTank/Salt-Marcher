@@ -41,7 +41,7 @@ function fixture(t){
   const read=async(address,overrides={})=>{
     cursor=store.atlasRegionSource(token,cursor);db.exec('BEGIN');
     try{
-      await reader.sync(cursor);
+      await reader.sync(cursor,'core');
       const steps=tiles.read({...cursor,...overrides},{tile:address,revision:cursor.revision},reader);
       for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}db.exec('COMMIT');db.exec('BEGIN');}
     }catch(error){db.exec('ROLLBACK');throw error;}
@@ -59,7 +59,7 @@ async function canonicalFixture(t){
   const read=async(address)=>{
     cursor=store.atlasRegionSource(token,cursor);db.exec('BEGIN');
     try{
-      await reader.sync(cursor);
+      await reader.sync(cursor,'core');
       const steps=tiles.read({...cursor},{tile:address,revision:cursor.revision},reader);
       for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}db.exec('COMMIT');db.exec('BEGIN');}
     }catch(error){db.exec('ROLLBACK');throw error;}
@@ -234,5 +234,31 @@ test('coarse batches never decode unsupported drawing payloads, count them, and 
  f.reader.shape=row=>{if(row.kind==='element'){attempted++;throw Error('unsupported element decoded');}return shape(row);};
  const result=await f.read(tile(0,0,1));
  assert.equal(attempted,0);assert(overview(result).modeledObjects>0);
- assert(result.model.coverage.unsupported.some(x=>x.code==='scene-feature-kinds-not-modeled'&&/Zeichnungselemente/.test(x.detail)));
+ assert(result.model.coverage.unsupported.some(x=>x.code==='drawing-sources-not-modeled'&&/gesamten Kampagne/.test(x.detail)));
+ const fine=await f.read(tile(0,0,0));
+ assert(fine.model.coverage.unsupported.some(x=>x.code==='drawing-sources-not-modeled'));
+ f.store.db.prepare('DELETE FROM drawing_element WHERE campaign_id=?').run(f.canonical.campaignId);
+ const removed=await f.read(tile(0,0,1));
+ assert.equal(removed.cache,'hit','a warning-count change must not rebuild unchanged room/building meshes');
+ assert.deepEqual(overviewBytes(removed),overviewBytes(result));
+ assert(!removed.model.coverage.unsupported.some(x=>x.code==='drawing-sources-not-modeled'));
+ const fineRemoved=await f.read(tile(0,0,0));
+ assert.equal(fineRemoved.cache,'hit');assert.deepEqual(fineRemoved.model.objects,fine.model.objects);
+ assert(!fineRemoved.model.coverage.unsupported.some(x=>x.code==='drawing-sources-not-modeled'));
+});
+
+test('overview cache refresh preserves city feature warnings independently of drawing-source counts',async t=>{
+ const f=await canonicalFixture(t),cityId=f.canonical.cityId,unit={id:'unmodeled-plaza',kind:'plaza',name:'Square',protected:true,outline:ring(40,40,4)};
+ const put=value=>{
+  const city=f.store.city(f.token,cityId),command={commandId:randomUUID(),campaignId:f.canonical.campaignId,token:f.token,cityId,expectedRevision:city.header.revision,action:{kind:'change',upsert:[value],remove:[],label:'Square name'}};
+  f.store.executeAtlasCommit({commandId:command.commandId,campaignId:f.canonical.campaignId,token:f.token,action:{kind:'city',command}});
+ };
+ put(unit);const first=await f.read(tile(0,0,1));
+ const cityWarning=result=>result.model.coverage.unsupported.find(x=>x.code==='scene-feature-kinds-not-modeled'&&/Stadtlinien und Stadtflächen/.test(x.detail));
+ assert(cityWarning(first));
+ put({...unit,name:'Renamed square'});const renamed=await f.read(tile(0,0,1));
+ assert.equal(renamed.cache,'hit');assert.deepEqual(overviewBytes(renamed),overviewBytes(first));assert.deepEqual(cityWarning(renamed),cityWarning(first));
+ f.store.db.prepare('DELETE FROM drawing_element WHERE campaign_id=?').run(f.canonical.campaignId);
+ const removed=await f.read(tile(0,0,1));assert.equal(removed.cache,'hit');assert.deepEqual(cityWarning(removed),cityWarning(first));
+ assert(!removed.model.coverage.unsupported.some(x=>x.code==='drawing-sources-not-modeled'));
 });

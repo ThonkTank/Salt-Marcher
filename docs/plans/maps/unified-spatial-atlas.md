@@ -92,11 +92,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   ohne direkte semantische Auswahl und ohne einzelne Geschoss-/Dachkomposition;
   diese Ansichten verlangen Detailkacheln. Andere Zeichnungselemente werden
   ausdrücklich als fehlende Darstellung gezählt.
-- **Nächste Arbeit:** M2 bleibt aktiv. Jetzt die kalte Weltaufbereitung verkürzen:
-  der Erstaufbau überschreitet das 2-s-Ziel deutlich. An der festen M0-Welt die
-  Kosten von Projektionsindex, Besitzer-/Höhenabfragen und Kachelaufbereitung
-  getrennt messen und den dominanten Pfad ersetzen; die unveränderte
-  Wiederöffnung darf keine vollständige Aufbereitung zurückbringen.
+- **M2-Kaltstart:** Raum-/Gebäudemeshes besitzen jetzt einen getrennten
+  Projektionsstempel; vollständige Regions-/Trefferabfragen ergänzen aufgeschobene
+  Zeichnungen. Kanonische Geländeeinstellungen werden je synchronisierter Quelle
+  wiederverwendet. [94 gezielte Tests und native Gegenprobe](../../reference/atlas-geometry-cold-start-20261024/README.md)
+  belegen Restart, vollständige Ergänzung, Deferred-Änderungen, Rollback und
+  unveränderte Meshpuffer. Native Übersichtsdaten 7,56 → 4,50 s, nach Neustart
+  320 ms; Feindaten 635 → 487 ms. Eine Zwischenvariante mit 2,60 s beim
+  Feinaufruf wurde verworfen. Unmodellierte Zeichnungen werden ausdrücklich
+  kampagnenweit einschließlich ungeprüfter Quellen gezählt, nicht als exakte
+  Ausschnittzahl. Separate Warnungscodes erhalten andere fehlende Objektklassen.
+- **Nächste Arbeit:** M2 bleibt aktiv; die erste Übersicht liegt weiterhin über
+  dem 2-s-Ziel. Jetzt die verbleibenden kalten Landschaftsmetadaten (instrumentiert
+  1,13 s), Quellenbatches (1,16 s) und physischen Höhenabfragen (1,31 s) gezielt
+  auf unnötige Wiederholungen prüfen und einen gebündelten, begrenzten Quellenpfad
+  umsetzen. Dabei exakte Höhen, frühe Feindetails und unveränderte Wiederöffnung
+  gegen dieselbe M0-Welt erhalten; Aufwand nicht bloß in den Detailwechsel verschieben.
   Danach bleiben weitere Objektklassen, Materialstufenreduktion, Gesamtbudget
   einschließlich Projektionsindizes und vollständige Weltlast. Die
   kampagnenweiten Binding-/Bereichsmetadaten sind noch nicht seitenweise begrenzt.
