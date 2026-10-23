@@ -133,7 +133,7 @@ export class AtlasRegionReader {
  private shape(row:any):Shape{
   let payload=this.shapePayloads.get(row.key);
   if(payload===undefined){
-   const table=row.kind==='room'?'room':row.kind==='unit'?'city_unit':'drawing_element',source=this.source(table,row.key.slice(row.key.indexOf(':')+1));
+   const table=row.kind==='room'?'room':row.kind==='unit'?'city_unit':'drawing_element',source=row.canonical??this.source(table,row.key.slice(row.key.indexOf(':')+1));
    const shape=source&&this.materialize(table,source);if(!shape)throw Error('Kartendaten beschädigt. Originaldaten bleiben erhalten.');
    payload=JSON.stringify(shape);this.shapePayloads.put(row.key,{x:row.min_x,y:row.min_y,width:row.max_x-row.min_x,height:row.max_y-row.min_y},payload,payload.length*2);
    // The cache owns an immutable string. New room/drawing shapes are already
@@ -339,8 +339,22 @@ export class AtlasRegionReader {
  private *geometryCandidates(kind:string,owner:string,scope:string,floor:string,box:Box):Generator<any[]> {
   let after='';
   for(;;){
-   const page=this.sql(`SELECT * FROM temp.region_shape INDEXED BY region_shape_owner WHERE kind=? AND owner=? AND scope=? AND floor=? AND key>? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? ORDER BY key LIMIT 32`).all(kind,owner,scope,floor,after,box.x,box.x+box.width,box.y,box.y+box.height);
+   const hidden=kind==='room'?`AND NOT EXISTS(SELECT 1 FROM temp.region_hidden h WHERE (h.kind='room' AND h.id=substr(s.key,6)) OR (h.kind='floor' AND h.scope=s.scope AND h.id=s.floor))`:'';
+   const source=kind==='room'?`LEFT JOIN room c ON c.campaign_id=? AND c.id=substr(s.key,6)`:
+    kind==='unit'?`LEFT JOIN city_unit c ON c.campaign_id=? AND c.id=substr(s.key,6)`:
+    `LEFT JOIN drawing_element c ON c.campaign_id=? AND c.id=substr(s.key,9)`;
+   const fields=kind==='room'?`c.id canonicalId,c.scope_id canonicalScope,c.floor_id canonicalFloor,c.name canonicalName,c.number canonicalNumber,c.revision canonicalRevision,c.payload canonicalPayload,c.checksum canonicalChecksum,CASE WHEN json_valid(c.payload) THEN json_extract(c.payload,'$.polygons') END canonicalPolygons`:
+    kind==='unit'?`c.id canonicalId,c.kind canonicalKind,c.city_id canonicalCity,c.payload canonicalPayload,c.checksum canonicalChecksum`:
+    `c.id canonicalId,c.scope_id canonicalScope,c.floor_id canonicalFloor,c.payload canonicalPayload,c.checksum canonicalChecksum`;
+   const query=`SELECT s.*,${fields} FROM temp.region_shape s INDEXED BY region_shape_owner ${source} WHERE s.kind=? AND s.owner=? AND s.scope=? AND s.floor=? AND s.key>? AND s.max_x>=? AND s.min_x<=? AND s.max_y>=? AND s.min_y<=? ${hidden} ORDER BY s.key LIMIT 32`;
+   const page=this.sql(query).all(this.campaign,kind,owner,scope,floor,after,box.x,box.x+box.width,box.y,box.y+box.height);
+   for(const row of page){
+    row.canonical=kind==='room'?{id:row.canonicalId,scope_id:row.canonicalScope,floor_id:row.canonicalFloor,name:row.canonicalName,number:row.canonicalNumber,revision:row.canonicalRevision,payload:row.canonicalPayload,checksum:row.canonicalChecksum,polygons:row.canonicalPolygons}:
+     kind==='unit'?{id:row.canonicalId,kind:row.canonicalKind,city_id:row.canonicalCity,payload:row.canonicalPayload,checksum:row.canonicalChecksum}:
+     {id:row.canonicalId,scope_id:row.canonicalScope,floor_id:row.canonicalFloor,payload:row.canonicalPayload,checksum:row.canonicalChecksum};
+   }
    if(!page.length)return;after=page[page.length-1]!.key;yield page;
+   if(page.length<32)return;
   }
  }
  *geometryTileSourceBatches(source:AtlasRegionSource,box:Box,stream=true,coreOnly=stream):Generator<{view:import('../atlas-scene-geometry').AtlasSceneView;anchorBuildings:boolean;unsupportedElements:number}> {
@@ -402,7 +416,8 @@ export class AtlasRegionReader {
     for(const floor of floors(b.ownerId)){
      for(const page of pages('room','',b.ownerId,floor.id,local)){
       for(const candidate of page){
-       const room=this.shape(candidate).value as RoomGeometry;if(!this.roomVisible(room.id,room.scopeId,room.floorId))continue;
+       const room=this.shape(candidate).value as RoomGeometry;
+       if(!stream&&!this.roomVisible(room.id,room.scopeId,room.floorId))continue;
        budget(room);metadata(b,f);addFloors(b.ownerId);region.rooms.push(room);
        // Parent geometry here supplies the physical base for displaced rooms.
        // Streaming callers must not emit these anchor-only buildings twice.
@@ -430,9 +445,8 @@ export class AtlasRegionReader {
  /** The point's fixed half-metre neighbourhood is independent of tile LOD.
   * Adjacent tiles therefore use identical physical anchors and wall bases. */
  geometryHeight(source:AtlasRegionSource,point:Point):number {
-  const box={x:point.x-.5,y:point.y-.5,width:1,height:1};
-  const grid=this.terrainVisibility(source,{box,frame:box,columns:3,rows:3,focusM:0,tilt:0,rotation:0,exaggeration:1});
-  return grid.heights[4]!;
+  if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');
+  return this.landscape.geometryHeight(source,point);
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,cancellation?:Int32Array):AtlasRegionGeometry{
   this.requireFullGeometry();

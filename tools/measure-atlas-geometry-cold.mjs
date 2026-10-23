@@ -18,13 +18,13 @@ buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store
 const require=createRequire(import.meta.url),Database=require('better-sqlite3'),{CampaignStore,AtlasRegionReader,AtlasGeometryTiles,AtlasGeometryOverviewBuilder}=require(bundle);
 const store=new CampaignStore(filename),db=new Database(filename,{readonly:true});
 const timings={},record=(name,ms)=>{const t=timings[name]??={calls:0,ms:0};t.calls++;t.ms+=ms;};
-let phase='setup';const sql={};
+let phase='setup';const sql={},sqlDetails=new Map();
 // Inclusive timings: nested materialization/SQL must not be summed blindly.
 const prepare=db.prepare.bind(db);db.prepare=text=>{
  const statement=prepare(text);
  return new Proxy(statement,{get(target,key){
   const value=Reflect.get(target,key);if(!['get','all','run'].includes(key))return typeof value==='function'?value.bind(target):value;
-  return(...args)=>{const start=performance.now();try{return value.apply(target,args);}finally{record('sql:'+phase,performance.now()-start);sql[phase]=(sql[phase]??0)+1;}};
+  return(...args)=>{const start=performance.now();try{return value.apply(target,args);}finally{const ms=performance.now()-start;record('sql:'+phase,ms);sql[phase]=(sql[phase]??0)+1;const id=phase+':'+text;let detail=sqlDetails.get(id);if(!detail&&sqlDetails.size<200){detail={phase,sql:text,calls:0,ms:0};sqlDetails.set(id,detail);}if(detail){detail.calls++;detail.ms+=ms;}}};
  }});
 };
 const wrap=(owner,key,name)=>{const original=owner[key];owner[key]=function(...args){const start=performance.now();try{return original.apply(this,args);}finally{record(typeof name==='function'?name(args):name,performance.now()-start);}};};
@@ -40,6 +40,6 @@ try{
  phase='tile';start=performance.now();const steps=tiles.read(source,{tile:{lod:4,x:0,y:0},revision:source.revision},reader);let value,yields=0;
  for(;;){const step=steps.next();if(step.done){value=step.value;break;}yields++;db.exec('COMMIT');db.exec('BEGIN');}
  const tileMs=performance.now()-start;db.exec('COMMIT');
- const result={scope:'Instrumented cold-path inclusive timings; not native, p95 or uninstrumented latency evidence.',inputHash:createHash('sha256').update(await readFile(input)).digest('hex'),bundleHash:createHash('sha256').update(await readFile(bundle)).digest('hex'),syncMs,tileMs,yields,sql,timings,modeledObjects:value.model.overviews[0].modeledObjects};
+ const result={scope:'Instrumented cold-path inclusive timings; not native, p95 or uninstrumented latency evidence.',inputHash:createHash('sha256').update(await readFile(input)).digest('hex'),bundleHash:createHash('sha256').update(await readFile(bundle)).digest('hex'),syncMs,tileMs,yields,sql,timings,sqlDetails:[...sqlDetails.values()].sort((a,b)=>b.ms-a.ms).slice(0,30),modeledObjects:value.model.overviews[0].modeledObjects};
  await writeFile(join(output,'result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({...result,output}));
 }finally{tiles.close();db.close();store.close();}

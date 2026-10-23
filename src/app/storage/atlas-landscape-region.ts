@@ -7,6 +7,7 @@ import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerrainGrid} from './terrain-grid';
+import {validateTerrainView} from '../terrain-spatial-model';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
 import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
@@ -117,6 +118,16 @@ export class AtlasLandscapeReader {
  visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){
   const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]),settings=this.terrainSettingsReady&&this.terrainSettingsIdentity===identity?{seaLevelM:this.terrainSeaLevelM}:undefined;
   return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache,settings);
+ }
+ /** Keep the full 3x3 source neighbourhood, including corruption checks, but
+  * retain only its scalar anchor for cross-tile reuse. Decoded height blocks
+  * and anchors share the existing bounded LRU with display rasters. */
+ geometryHeight(source:AtlasRegionSource,point:Point):number{
+  const box={x:point.x-.5,y:point.y-.5,width:1,height:1},view={box,frame:box,columns:3,rows:3,focusM:0,tilt:0,rotation:0,exaggeration:1};
+  validateTerrainView(view);
+  const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]);
+  if(!this.terrainSettingsReady||this.terrainSettingsIdentity!==identity)return this.visibility(source,view).heights[4]!;
+  return this.projectionCache.geometryAnchor(point.x,point.y,this.terrainSeaLevelM,()=>streamTerrainField({x:box.x,y:box.y,dx:.5,dy:.5,columns:3,rows:3},this.terrainSeaLevelM,this.terrainStream(source),true).surface![4]!);
  }
  private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'|'line'){
   if(kind&&kind!=='line'&&!this.terrainKinds.has(kind))return;

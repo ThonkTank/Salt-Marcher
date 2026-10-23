@@ -102,14 +102,25 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Feinaufruf wurde verworfen. Unmodellierte Zeichnungen werden ausdrücklich
   kampagnenweit einschließlich ungeprüfter Quellen gezählt, nicht als exakte
   Ausschnittzahl. Separate Warnungscodes erhalten andere fehlende Objektklassen.
+- **M2-Quellen und Höhenanker:** Kanonische Quellen werden seitenweise verbunden;
+  je Raum entfallen drei Einzelabfragen. Die volle 3×3-Höhenprüfung bleibt,
+  aber nur ein skalarer Anker wird im vorhandenen begrenzten LRU behalten.
+  [Tests, Gegenproben und native Prüfung](../../reference/atlas-geometry-source-pages-20261024/README.md)
+  belegen gleiche Meshpuffer, Fehlererkennung, lokale Invalidierung und History.
+  Gezählt 50.512 → 10.512 SQL-Aufrufe; native kalte Übersicht 4,50 → 4,35 s,
+  Restart 323 ms, Feindaten 518 ms. Einzelproben belegen keinen Geschwindigkeitsgewinn
+  für Restart oder Details. Wiederholte 5.000 Höhenanker benötigen isoliert
+  7–12 statt 56–78 ms. Einpunktabtastung wurde wegen verlorener Fehlererkennung
+  verworfen; `json_type` brachte keinen Gewinn. Der kalte Landschaftsindex bleibt
+  mit etwa 1,16 s unverändert.
 - **Nächste Arbeit:** M2 bleibt aktiv; die erste Übersicht liegt weiterhin über
-  dem 2-s-Ziel. Jetzt die verbleibenden kalten Landschaftsmetadaten (instrumentiert
-  1,13 s), Quellenbatches (1,16 s) und physischen Höhenabfragen (1,31 s) gezielt
-  auf unnötige Wiederholungen prüfen und einen gebündelten, begrenzten Quellenpfad
-  umsetzen. Dabei exakte Höhen, frühe Feindetails und unveränderte Wiederöffnung
-  gegen dieselbe M0-Welt erhalten; Aufwand nicht bloß in den Detailwechsel verschieben.
-  Danach bleiben weitere Objektklassen, Materialstufenreduktion, Gesamtbudget
-  einschließlich Projektionsindizes und vollständige Weltlast. Die
+  dem 2-s-Ziel. Die geprüften Abfragewiederholungen sind beseitigt; weiterer
+  Latenzgewinn ist nicht durch diese lokalen Änderungen allein belegt.
+  Als nächstes das Gesamtbudget auf die bisher ausgenommenen persistenten
+  Projektionsindizes ausdehnen und Wiederaufbau/Verdrängung bei offenen Lesern
+  prüfen. Quellen-Seiten begrenzen bisher 32 Datensätze, keine feste Bytezahl.
+  Danach bleiben weitere Objektklassen, Materialstufenreduktion und vollständige
+  Weltlast einschließlich kalter Erstansicht und frühem Detailwechsel. Die
   kampagnenweiten Binding-/Bereichsmetadaten sind noch nicht seitenweise begrenzt.
   Quellengestützte Auswahl aus der Übersicht bleibt vor der Werkzeugübernahme
   offen. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf

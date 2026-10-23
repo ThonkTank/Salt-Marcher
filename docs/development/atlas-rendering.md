@@ -108,6 +108,10 @@ quellengestützte Auswahl direkt aus der Übersicht ist noch offen.
 
 Die Übersicht liest vollständig besessene Seiten von 32 Kandidaten, damit kein
 SQLite-Iterator eine Worker-Unterbrechung mit Snapshotabschluss überlebt.
+Die Seiten verbinden Kandidaten über Kampagne und ID mit ihren kanonischen
+Quellen; Polygone und Prüfsumme kommen gemeinsam, versteckte Räume werden vor
+der Seitengrenze gefiltert. Eine kurze letzte Seite benötigt keine Leerabfrage.
+32 Datensätze begrenzen die Anzahl, nicht die gesamte Payload-Bytezahl.
 Räume und Gebäude gehen durch denselben kanonischen Höhen-/Geschossadapter wie
 Feinkacheln. Gebäude, die nur als Raumanker dienen, werden nicht doppelt gezeichnet.
 Nicht modellierte Zeichnungsquellen werden kampagnenweit gezählt, einschließlich
@@ -117,6 +121,12 @@ Objekte einzufügen. Die Warnung besitzt einen eigenen Code, damit ihre Erneueru
 andere fehlende Objektklassen nicht ausblendet und unveränderte Meshes nicht neu baut.
 Kanonische Meeresspiegelwerte werden innerhalb des synchronisierten Quellenstands
 wiederverwendet, statt für jeden physischen Höhenanker erneut SQL zu lesen.
+Höhenanker verwenden weiterhin dieselbe vollständige 3×3-Nachbarschaft mit
+kanonischer Interpolation und Fehlerprüfung. Der vorhandene 16-MiB-Projektionscache
+behält nur den skalaren Anker statt eines zusätzlichen Anzeigenrasters; sein
+gesamter 1,5-m-Abfragebereich bleibt für Invalidierungen maßgeblich. Dekodierte
+Höhenblöcke teilen dasselbe LRU-Budget. Änderungen am Meeresspiegel und Reset
+verwerfen die abgeleiteten Werte. [Quellen- und Höhenprüfung](../reference/atlas-geometry-source-pages-20261024/README.md).
 [Kaltstartprüfung und Detailübergang](../reference/atlas-geometry-cold-start-20261024/README.md). Bindings und Bereichsmetadaten
 werden weiterhin kampagnenweit gelesen; der Seitenumfang ist keine Gesamt-RAM-Grenze.
 Unveränderte Quellenversionen laden fertige Puffer; Änderungen prüfen lokale

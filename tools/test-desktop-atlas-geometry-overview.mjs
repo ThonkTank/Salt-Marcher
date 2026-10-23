@@ -19,7 +19,7 @@ const files=[
  'src/app/atlas-scene-geometry.ts','src/app/atlas-geometry-overview.ts','src/app/atlas-geometry-tile.ts','src/app/atlas-geometry-mesh.ts',
  'src/app/atlas-deck-scene-model.ts','src/app/atlas-deck-surface.ts','src/app/storage/atlas-geometry-tiles.ts',
  'src/app/storage/atlas-tile-cache.ts','src/app/storage/atlas-projection-index.ts','src/app/storage/atlas-region.ts',
- 'src/app/storage/terrain-grid.ts','src/app/storage/atlas-landscape-region.ts',
+ 'src/app/storage/terrain-grid.ts','src/app/storage/atlas-landscape-region.ts','src/app/terrain-projection-cache.ts',
  'desktop/atlas-region-worker.ts','desktop/atlas-region.ts','desktop/main.ts','desktop/preload.ts',
  'tools/test-desktop-atlas-geometry-overview.mjs','.build/desktop/main.cjs','.build/desktop/preload.cjs',
  '.build/desktop/atlas-region-worker.cjs','.build/desktop/ui/atlas-deck-runtime.js'

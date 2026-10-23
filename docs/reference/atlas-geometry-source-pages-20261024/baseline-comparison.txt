@@ -1,0 +1,1 @@
+Exact matches with previous qualified cold-start run: overview mesh digests, warm mesh digests, canonical table snapshot, flat pixel stats, and complete fine selection. All recorded source/build hashes match. Both native processes exited0 and PIDs are absent.
