@@ -1,0 +1,13 @@
+{
+  "productionHead": "2d17dbc92",
+  "files": {
+    ".build/atlas-spatial-preparation/1792798967944-1264627/result.json": "064b73a8dbc939e2cf027c72f5a05845ab204a6673b4da18d0c3b3fd4937b4ae",
+    ".build/atlas-geometry-cold/1792798629615-1259505/result.json": "7e294d5400f5e604f5dd07f087d0d4176fdee3e1bceb4c6fe25dd6e8c93bfa2b",
+    ".build/atlas-offscreen-final-tests.log": "75932a7fa69dc7a8181a0b2b319abecc783e89c372a1df1037af5e071db8eedd",
+    ".build/atlas-offscreen-anchor-tests.log": "a74873e7d0cd4c1748abb835b67691460a51e9d3b0447728995f2f0cfa289f1b",
+    ".build/atlas-spatial-capability.log": "a7f2f8f1c4af00fd9dd6c8f2f4ebebb7c1c67ad654ff00b758675921869a1457",
+    "tools/measure-atlas-spatial-preparation.mjs": "11af7e7a626a20d3913d9dc206d9ba79e8debd611dd81b1d3cd6106b8e1a9bd1",
+    "tests/atlas-geometry-tiles.test.mjs": "4f93474ccb207db4c40f508b32c75a40cc3780a2f24c3c123dcdb069cbd4b095",
+    ".build/atlas-spatial-preparation/1792798967944-1264627/probe.cjs": "1f51fd1e919da2f93cabb51eb12946d9e36aec95fe2e822309bdc71963b09e66"
+  }
+}

@@ -139,9 +139,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   nächste Feindaten 555 → 553 ms. Gleiche Meshes, Autoreninhalte und Auswahl,
   kein privater Index beim warmen Treffer. Kalte Daten 4.563 ms bleiben zu langsam.
   Einzelproben am isolierten Kern, kein p95-/Produktabschluss.
+- **Kalte Gegenprobe 24.10.:** Drei wechselnde Läufe vergleichen vollständige,
+  kameraabhängige und ausschließlich physische Landschaftsquellen. Auf der M0-Welt
+  gleiche Modelle/Warnungen für 11.500 Räume und 272 Feinobjekte; ein sichtbarer
+  Raum mit entferntem Workplane-Anker widerlegt jedoch den Kamerafilter.
+  Physische Quellen erhalten auch diesen Anker. Synchronisation im Median
+  1.571 → 768 ms, gesamte grobe Bibliotheksantwort 3.541 → 2.754 ms; keine native
+  Leistungszusage. [Gegenprobe und 20 gezielte Tests](../../reference/atlas-spatial-preparation-20261024/README.md)
+  sichern den entfernten Anker über Neustart, Höhenänderung und Undo/Redo.
+  Entscheidung: **Vorbereitung nach Produktbedarf**, kein pauschaler Kamerazuschnitt.
+  Der Produktionspfad ist noch unverändert; die Übergänge sind noch umzusetzen.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Als Nächstes kalte globale Quellenvorbereitung und räumlich begrenzte Übersicht
-  gegeneinander messen, bevor der kalte Pfad ersetzt wird. Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
+  Physische Landschaftsfelder für Geometrie getrennt vorbereiten, Vollständigkeit
+  ausdrücklich markieren und beim ersten vollständigen Auftrag sicher ergänzen.
+  Teilindizes dürfen nicht als vollständig veröffentlicht werden; Neustart,
+  Fehler, Änderungen und anschließende native Terrain-/Materialabfrage prüfen.
+  Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
   normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
   der native Kernnachweis ist getrennt vom gemessenen Produktgewinn zu führen.
@@ -255,8 +268,17 @@ konkreten Bedarf und keine übersprungenen Änderungen in bereits aktiven Reader
 | Indizes nach Produkt aufteilen/verzögert laden | Gleich bei vollständiger Abhängigkeitsabbildung | Kann Teilkopien und irrelevante Indexarbeit sparen | Neue Abhängigkeiten zwischen Terrainhöhe, Geometrie und Auswahl | Mehr Teilzustände und Publikationsgrenzen | Mittel; ohne Messung der neuen Grenzen kein Ersatz gerechtfertigt |
 | Räumlich begrenzte, inkrementelle Übersichtsquellen | Potenziell gleiche Qualität; vollständige Abdeckung/Fehlerhinweise zu beweisen | Größtes Potenzial für kalte Ansicht; noch ungemessen | Änderungen, Bindungen, Undo und Import brauchen räumliche Fortschreibung | Zusammenhängender neuer Quellenpfad statt globaler Erstkopie | Hoch; erst Gegenprobe für kalte Welt und exakte Details |
 
-Die dritte Alternative bleibt der nächste kalte Architekturversuch, keine bereits
-angenommene Leistungszusage. Der belegte warme Ersatz rechtfertigt weder einen
+Die kalte Gegenprobe grenzt diese Alternativen inzwischen genauer ein:
+
+| Kalte Vorbereitung | Kartenqualität | Reaktion | Bearbeitbarkeit | Wartbarkeit | Umstellungsrisiko |
+| --- | --- | --- | --- | --- | --- |
+| Vollständiger Landschaftsindex | Referenzverhalten | 1.571 ms Synchronisation im Versuch | Bestehende Invalidierung | Ein Bereitschaftszustand | Niedrig, bleibt Referenz |
+| Kamerakachel mit Rand | M0 gleich, entfernter Workplane-Anker nachweislich falsch | 441 ms, fachlich nicht verwendbar | Änderungen außerhalb der Kamera fehlen | Zusätzliche räumliche Abhängigkeitsberechnung nötig | Hoch; pauschalen Zuschnitt verworfen |
+| **Physische Felder zuerst (nächste Umsetzung)** | M0 und entfernter Anker gleich | 768 ms; vollständige Landschaft später erforderlich | Vollständige Ergänzung aus aktuellem Snapshot nötig | Explizite Teil-/Vollmarkierung statt Kameraheuristik | Mittel; Übergänge, Persistenz und Fehler noch offen |
+
+Eine spätere räumliche Vorbereitung mit vollständigen Abhängigkeiten bleibt
+möglich; der Versuch widerlegt nur den pauschalen Kamerafilter. Der belegte warme
+Ersatz und die kalte Bibliotheksgegenprobe rechtfertigen weder einen
 WASM-/Rendererwechsel noch eine vermeintlich abgeschlossene M2-Etappe.
 
 **Abschluss:** Eine unveränderte Welt benötigt beim erneuten Öffnen keine

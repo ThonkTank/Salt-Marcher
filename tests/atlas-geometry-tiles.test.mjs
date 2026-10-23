@@ -73,6 +73,34 @@ function positions(result,target='room'){
   return object.positions;
 }
 
+test('visible geometry retains an offscreen workplane height dependency through restart and edits',async t=>{
+  const f=fixture(t),far=1_000_000;
+  f.store.db.prepare("UPDATE atlas_binding SET x=?,y=? WHERE campaign_id=? AND kind='dungeon' AND owner_id='local'").run(far,far,f.campaign.id);
+  const room=f.store.atlasRoom(f.token,'near');
+  draw(f,{kind:'shape',roomId:'near',expectedRevision:room.revision,polygons:[{outer:ring(20-far,20-far),holes:[]}]});
+  const height=heightRecord(far-64,far-64,4,new Float32Array(4096).fill(80));
+  command(f,{kind:'landscape-put',expectedRevision:null,record:height});
+  const exactHeight=async expected=>{
+    const value=await f.read(tile(0)),object=value.model.objects.find(o=>o.target.id==='near');
+    assert(object,'the displaced room must still be visible in the origin tile');
+    for(let i=2;i<object.positions.length;i+=3)assert.equal(object.positions[i]+object.origin.heightM,expected);
+    return value;
+  };
+  await exactHeight(80);
+  const overview=await f.read(tile(0,0,4));
+  assert.equal(overview.model.overviews[0].modeledObjects,1);
+  f.reopen();
+  assert.equal((await exactHeight(80)).cache,'hit');
+  assert.equal((await f.read(tile(0,0,4))).cache,'hit');
+  const revision=f.store.db.prepare('SELECT revision FROM atlas_landscape WHERE campaign_id=? AND id=?').get(f.campaign.id,height.id).revision;
+  command(f,{kind:'landscape-put',expectedRevision:revision,record:{...height,height:heightRecord(far-64,far-64,4,new Float32Array(4096).fill(120)).height}});
+  assert.equal((await exactHeight(120)).cache,'built','an edit outside the tile changes its remote physical anchor');
+  const changed=await f.read(tile(0,0,4));
+  assert.equal(changed.cache,'built');assert.notDeepEqual(changed.model.overviews,overview.model.overviews);
+  command(f,{kind:'undo'});await exactHeight(80);
+  command(f,{kind:'redo'});await exactHeight(120);
+});
+
 test('warm reopen avoids source and height reads; local edits rebuild nearby tiles while remote tiles and renames hit',async t=>{
   const f=fixture(t),near=tile(0),far=tile(8);
   const original=await f.read(near),remote=await f.read(far),cold={...f.calls};
