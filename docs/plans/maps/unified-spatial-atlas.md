@@ -1,6 +1,100 @@
 # Roadmap: ein durchgehend räumlicher SaltMarcher-Atlas
 
-Stand: 20.10.2026. Im Gespräch vorgeschlagene und zur Umsetzung beauftragte Roadmap, anschließend auf Nutzerwunsch im Repository abgelegt. Die Ablage ist kein Implementierungs- oder Abnahmenachweis; P0–P8 sind durch diese Ablage nicht abgeschlossen.
+Ursprüngliche Roadmap vom 20.10.2026; Arbeitsweise am 23.10.2026 durch den Nutzer ersetzt. P0–P8 beschreiben weiterhin den Produktumfang. Datierte Implementierungsbefunde sind historische Belege, keine aktuellen Arbeitsaufträge oder vollständigen Abnahmen.
+
+## Arbeitsweise ab 23.10.2026
+
+**Verbindlicher Auftrag:** Eine überzeugende, bearbeitbare Fantasywelt mit einer
+zusammenhängenden Reise Welt → Kontinent → Königreich → Stadt → Gebäude.
+Darstellung, Navigation und Bearbeitung werden gemeinsam bewertet. Der Agent
+wählt die Etappen selbst nach den größten Hindernissen für diesen Ablauf;
+technische Teilaufgaben muss der Nutzer nicht vorgeben.
+
+### Etappen und Entscheidungen
+
+- Pro Etappe ein zusammenhängendes Nutzerergebnis mit Ausgangsbeleg und konkreten
+  Abschlusskriterien. Ein schnellerer Cache oder mehr grüne Tests ist ein Beitrag,
+  kein eigenständiger Produktabschluss. Fehlende Werkzeuge und Gestaltung bleiben
+  im vollständigen Umfang sichtbar; Performancearbeit verdrängt sie nicht dauerhaft.
+- Vor einem Arbeitsblock: Nutzerproblem, begründeter Ansatz und erwarteter Nachweis.
+  Danach ausdrücklich übernehmen, weiter untersuchen, verändern oder verwerfen.
+  Zwei aufeinanderfolgende Änderungen ohne relevanten Gewinn am Etappenziel lösen
+  eine Überprüfung der gemeinsamen Hypothese aus, bevor ähnliche Änderungen folgen.
+- Mindestens drei tragfähige Optionen bei wesentlichen Richtungsentscheidungen,
+  nicht vor jedem Fix. Ein Experiment beantwortet eine benannte Unsicherheit mit
+  dem kleinsten aussagekräftigen Vergleich; es wird kein vollständiges Nebenprodukt.
+- Eine längere isolierte Ersetzung der technischen Grundlage ist erlaubt. Vorher
+  strukturelle Grenze, erwarteten Gesamtnutzen und Risiken benennen. Alternativen
+  anhand gleicher Aufgaben, Daten und relevanter Bedingungen beurteilen: Kartenbild,
+  Reaktion, Bearbeitbarkeit und Wartbarkeit. Ein isolierter GPU-Gewinn genügt nicht.
+- Nach der Entscheidung den Ansatz zusammenhängend verfolgen. Zwischenstände
+  beseitigen wesentliche Unsicherheiten oder stellen benötigte Fähigkeiten her.
+  Keine erzwungene frühe Teilintegration; den bisherigen Atlas lauffähig erhalten,
+  Nutzerdaten und fremde Arbeiten schützen. Dauerhafte Doppelimplementierungen und
+  unbegründete Kompatibilitätsschichten vermeiden. Ein Technikwechsel ist erlaubt,
+  aber nicht schon durch diese Arbeitsweise beschlossen.
+- Nebenprobleme festhalten. Sofort beheben: Blockaden des Etappenziels, Datenrisiken
+  und selbst verursachte Regressionen. Andere Funde dürfen die Etappe nicht zerlegen.
+
+### Prüfen und liefern
+
+Eine feste Autorenwelt und eine große Lastfixture bilden die Vergleichsbasis.
+Gleiche Ausschnitte, Kameras, Bestände, Runtime und relevante Hostbedingungen
+festhalten; Darstellungsänderungen und bessere Quelldaten getrennt beurteilen.
+Die vorhandenen Autoren- und Weltproben weiterverwenden, statt eine neue allgemeine
+Prüfinfrastruktur aufzubauen. Korrigierte Prüffehler von Produktfehlern unterscheiden.
+
+Während der Entwicklung gezielte Prüfungen; am zusammenhängenden Lieferkandidaten
+betroffene vollständige Bedienabläufe, Typ-/Build-/Repositoryprüfungen und die
+verpflichtende exakte Candidate-CI. Kein routinemäßiger doppelter lokaler Volltest.
+Visuell nach erkennbaren Landformen, lesbaren Symbolen/Namen, stimmiger Detaildichte
+und nachvollziehbaren Übergängen urteilen. Eingabereaktion, Bildabstände und
+Detailnachladung getrennt messen; verlorene Details sind kein Leistungsgewinn.
+
+Integration nach fertigen Etappen. **Die Releasezeiten 0/6/12/18 Uhr und der ältere
+Fünf-Stunden-Takt entfallen.** Die Zehn-PR-Releasepflicht aus AGENTS.md bleibt.
+Keine neue Automatisierung und keine Wiederaufnahme pausierter Läufe ohne Auftrag.
+Ein Goal wird nur ausdrücklich aktiviert und benennt Ergebnis, Nachweis und Grenzen.
+Nach Unterbrechungen zuerst tatsächlichen Prozess-, Git- und Prüfstand prüfen.
+
+Eine Etappe endet bei erfüllten Abschlusskriterien ohne ungelöste wesentliche
+Regression. Danach folgt die nächste Etappe; die alte Forderung nach drei
+Untersuchungen ohne irgendeinen Arbeitsfund entfällt. Der Gesamtabschluss setzt
+weiterhin den vollständigen beauftragten Produktumfang voraus. Technische Prüfung,
+visuelle Bewertung, Pentium-Prüfung und persönliche Nutzerabnahme bleiben getrennt.
+
+### Aktueller Arbeitsstand
+
+Nur diesen Abschnitt fortschreiben; Detailbelege verlinken. Berichte nennen den
+Nutzergewinn, unveränderte/verschlechterte Punkte und die daraus folgende Entscheidung.
+
+- **Etappenziel:** Eine lesbare Referenzreise durch Asterfall: Kontinente, Relief und
+  Wald, Königreich, zusammenhängende Siedlung und nutzbarer Gebäudeinnenraum. Diese
+  erste Etappe verwendet vorhandene Autorenwerkzeuge; noch fehlende Werkzeuge und
+  übrige Produktanforderungen bleiben in der Umfangstabelle offen.
+- **Ausgangsbasis:** Main `86380f28292daf59901f8d85509d683eb234f724` nach dem
+  Gebirgsmaterialschritt. Die native Ausgangsprüfung und ihre Grenzen werden unter
+  [Arbeitsweise und Referenzreise](../../reference/atlas-workflow-20261023/README.md)
+  festgehalten. Historische Leistungszahlen sind keine neue Baseline.
+- **Abschlusskriterien:** Dieselbe gespeicherte Welt über alle fünf Stationen
+  zusammenhängend navigieren und neigen; Küsten, Gebirge, Wald und Gebietsnamen sind
+  auf ihrer jeweiligen Distanz erkennbar, Straßen verbinden die Siedlung, Raumgrenzen,
+  Namen und D&D-Raster sind im gewählten Geschoss nutzbar. Gelände und einen Raum
+  bearbeiten, Undo/Redo, Etagenwechsel, PNG, reguläres Beenden und frisches Öffnen
+  erhalten den Zustand. Vorher/Nachher mit festen Ausschnitten begründet vergleichen;
+  keine wesentliche Funktions- oder reproduzierbare Leistungsregression in der
+  großen Lastfixture. Die strengeren Gesamtleistungsziele unten bleiben separat offen.
+- **Entscheidung:** Die native Autorenreise und fünf vollständig geladene feste
+  Ansichten sind gesichert. Als nächster Arbeitsblock eine zusammenhängende
+  Kartenstilprobe auf denselben Daten erstellen: Gelände, Waldsignatur und
+  maßstabsabhängige Objekte/Namen. Bessere Quelldaten separat beurteilen. Die
+  [drei Richtungen und Auswahl](../../reference/atlas-workflow-20261023/README.md#fünf-feste-ansichten-aktueller-befund)
+  sind begründet; noch kein Renderer-/Backendersatz beschlossen.
+- **Ergebnis und nächster Schritt:** Arbeitsweise eingeführt, Ausgangsbasis geprüft;
+  Produktetappe noch offen. Die Kartenstilprobe gegen die eingefrorene Welt bewerten
+  und daraus die technische Grundlage wählen. Die Wirkung der Arbeitsweise erst
+  nach der abgeschlossenen Produktetappe anhand Nutzergewinn, Aufwand und
+  verbleibenden Mängeln bewerten.
 
 ## 1. Verbindliches Produktziel
 
@@ -19,7 +113,7 @@ Festgelegt:
 - Gesamter vorhandener Atlasumfang einschließlich Terrain, Bewuchs, Straßen, Gewässern, Regionen, Beschriftungen, Stadt-/Dungeonwerkzeugen, Ausgabe und Spieleranzeige.
 - Noch offene, davon unabhängige Stadt-/Dungeon-Paritätsfeatures bleiben in ihren Fachroadmaps.
 - Bestehende Kampagnen sind unwichtige Testdaten: neue Testkampagnen und erforderliche Schemaänderungen sind zulässig. Bestehende Dateien werden nicht gelöscht oder stillschweigend umgedeutet.
-- Electron, TypeScript, SQLite, lokale Offline-Nutzung und Main als einzige Schreibinstanz bleiben die Grundlage.
+- Electron, TypeScript und SQLite sind der aktuelle Lieferstand, keine Bindung für einen begründeten Atlasersatz. Lokale Offline-Nutzung, eingeschränkte Rendererrechte und eine kanonische Schreibautorität bleiben erforderlich; der bestehende Main besitzt diese Autorität bis zu einem geprüften Ersatz.
 
 Die neue Roadmap ersetzt die bisherigen Vorgaben für getrennte Drauf-/Kippdarstellung. Bereits belegte Fachfunktionen werden übernommen; ihre Eignung im neuen Atlas wird erneut geprüft.
 
@@ -32,15 +126,15 @@ Entscheidungen sind keine Bindung. Grundsätzlich andere Ansätze sollen anhand
 derselben Bedienfälle verglichen werden, bevor weitere Arbeit in einen
 möglicherweise ungeeigneten Weg fließt. Der normale Atlas bleibt der
 Produkteinstieg; technische Prototypen sind keine zweite Produktansicht.
-Jeder Arbeitszyklus berichtet im Chat die belegten Hauptprobleme, mindestens
-drei Optionen mit Vor-/Nachteilen und Auswahl, anschließend Verbesserungen,
-Rückschritte und unveränderte Punkte sowie die konkrete Aufräumarbeit.
+Die Arbeitsweise vom 23.10.2026 präzisiert diesen Auftrag: Optionen an wesentlichen
+Richtungsentscheidungen vergleichen; Berichte auf Nutzerergebnis und nächste
+Entscheidung konzentrieren statt vier Pflichtberichte bei jeder Kleinigkeit.
 Tests und Ergebnisse müssen nachvollziehbar und reproduzierbar abgelegt werden;
 frühere Tests und Entscheidungen dürfen mit neuer Evidenz neu bewertet werden.
 
 Bestehende, bewährte Implementierungen und Verfahren sind vor neuen eigenen Lösungen zu prüfen und soweit passend zu übernehmen. Die Verbesserung bleibt in der vorhandenen Atlasfläche und ihren Werkzeugen verankert. Für den nächsten Terrain-Schritt dienen insbesondere [GDALs begrenzter Rasterblockcache](https://gdal.org/en/stable/user/configoptions.html#performance-and-caching), [mehrstufige Rasterübersichten mit gezielter Aktualisierung](https://gdal.org/en/stable/programs/gdaladdo.html) und [MapLibres dokumentierter Kachellebenszyklus](https://github.com/maplibre/maplibre-gl-js/blob/main/developer-guides/life-of-a-tile.md) als technische Referenzen: wiederholte Blocklesungen vermeiden, passende Auflösung wählen und bereits geladene über-/untergeordnete Kacheln während des Nachladens verwenden. Die Quellen wurden am 21.10.2026 gelesen; daraus folgt noch keine Entscheidung für zusätzliche Laufzeitabhängigkeiten.
 
-Eine lokale Diagnose nach der frühen Geländeöffnung zählt für die erste Übersicht 4.950 Lesungen von 1.028 unterschiedlichen Höhenkacheln, rund 109,9 MB Nutzdaten bei einmalig 22,8 MB. Die nächsten Implementierungsversuche müssen diese Wiederholung innerhalb des vorhandenen Speicherbudgets reduzieren und gleiche Höhen, Küsten, Quelleninvalidierung und Undo/Redo nachweisen. Vorberechnete Auflösungsstufen benötigen zusätzlich eine explizite Strategie für Änderungen und Wiederöffnung. Die Diagnose misst Zugriffe, keine Bildrate oder Produktabnahme.
+Eine lokale Diagnose nach der frühen Geländeöffnung zählt für die erste Übersicht 4.950 Lesungen von 1.028 unterschiedlichen Höhenkacheln, rund 109,9 MB Nutzdaten bei einmalig 22,8 MB. Die damaligen Implementierungsversuche sollten diese Wiederholung innerhalb des vorhandenen Speicherbudgets reduzieren und gleiche Höhen, Küsten, Quelleninvalidierung und Undo/Redo nachweisen. Vorberechnete Auflösungsstufen benötigen zusätzlich eine explizite Strategie für Änderungen und Wiederöffnung. Die Diagnose misst Zugriffe, keine Bildrate oder Produktabnahme.
 
 ### Technische und gestalterische Referenz
 
@@ -93,8 +187,8 @@ Schritten gelten folgende fachliche Prüfungen:
   weder Straßen, Gebäude, Gewässer noch andere Objekte.
 
 Die Leistungs- und visuellen Kriterien aus Abschnitt 4 gelten für alle diese
-Abläufe. Bekannte Lücken verhindern den Abschluss; erst drei vollständige
-kritische Untersuchungen ohne weiteren Arbeitsfund erfüllen den Gesamtauftrag.
+Abläufe. Bekannte Lücken verhindern den Gesamtabschluss; Etappen enden nach den
+oben festgelegten Ergebnis- und Regressionskriterien, nicht nach einer Auditanzahl.
 
 ## 2. Technische Leitentscheidungen
 
@@ -121,26 +215,32 @@ Die gemeinsamen internen Schnittstellen werden entsprechend aufgeteilt:
 
 ### Beauftragte Umsetzung: vorhandenen Atlas weiterentwickeln
 
+Historischer Abschnitt vom 20.–22.10.2026; die Überschrift bleibt als Linkziel
+erhalten. Aktuelle Entscheidungen stehen im Arbeitsstand oben.
+
 [Gezielte Linienversorgung der Terrainprojektion](../../reference/terrain-line-stream-20261021/README.md): Orte und Vegetationsobjekte werden für Straßen-/Flussdurchläufe nicht mehr dekodiert. Die vollständige Projektion bleibt byteidentisch; die gesamte Öffnungszeit ist weiterhin offen.
 
 [Wiederverwendbarer räumlicher Objektindex](../../reference/atlas-persistent-region-index-20261021/README.md): unveränderte Objektgrenzen nach einem Neustart aus einem quellengebundenen Cache laden. Externe Änderungen, Undo, Sicherungsrückspielung und defekte Caches sind abgesichert. Die kalte Erfassung und die erste Terrainaufbereitung bleiben offene Öffnungskosten.
 
 [Aktueller Integrationsstand auf main-Basis und native Prüfungen](../../reference/atlas-main-integration-20261021/README.md): Entwicklungsstart, gemeinsame Kamera, freie Geschosskonturen, Bewuchs und Relief. Die visuelle Waldgestaltung bleibt ausdrücklich offen. [Folgekorrektur für große Wälder beim Detailzoom](../../reference/forest-detail-20261021/README.md): begrenzte Kandidatenauswahl statt Ausfall der Landschaftsschicht, nativ über vier Maßstäbe geprüft. Die Raster- und Kronengestaltung bleibt offen. [Bildkachel-Zuordnung](../../reference/atlas-image-orientation-20261021/README.md): gespiegelte Bitmapkacheln und verlorene Objektkacheln in der perspektivischen PNG-Ausgabe lokal korrigiert und nativ geprüft. Der damalige Export zeigte dichten Bewuchs noch als Rasterpunkte. [Kompakte Bewuchsprojektionen](../../reference/forest-geometry-20261021/README.md) erhalten inzwischen im geprüften größeren Ausschnitt dieselben räumlichen Kronen innerhalb des bestehenden Übertragungsbudgets. Allgemeine Detailgleichheit, Waldgestaltung und Leistungsqualifikation bleiben offen.
 
-Der Nutzer hat die inkrementelle Umsetzung auf dem bestehenden Atlas bestätigt; mit seiner jüngsten Anweisung entfällt der Enginevergleich. Vorhandene Oberfläche, Weltkoordinaten, Gelände-, Stadt- und Raummodelle, Werkzeughandler, stabile IDs, Main/SQLite-Befehle, Undo und Freigaben bleiben Grundlage. P0 ist eine begleitende Bestandsaufnahme, keine vorgeschaltete Neuentwicklung.
+**Historischer Entscheidungsverlauf:** Am 20.10.2026 wurde zunächst der
+inkrementelle Anschluss an den normalen Atlas priorisiert und der damalige
+Enginevergleich eingestellt. Die oben verlinkten Belege dokumentieren diesen
+Arbeitsweg. Der Auftrag vom 22.10.2026 öffnete die Technikwahl wieder; seit
+23.10.2026 ist auch eine längere isolierte Ersetzung ausdrücklich zulässig.
+Die frühere Pflicht zur frühen Teilintegration gilt nicht mehr. Der vollständige
+[damalige Text](https://github.com/ThonkTank/Salt-Marcher/blob/86380f28292daf59901f8d85509d683eb234f724/docs/plans/maps/unified-spatial-atlas.md)
+bleibt nachvollziehbar. Die historischen Befunde weiter unten enthalten ebenfalls
+zeitgebundene nächste Schritte; für aktuelle Arbeit gilt ausschließlich der
+Arbeitsstand am Anfang dieser Roadmap.
 
-Die jüngste Nutzerkorrektur priorisiert jetzt den Anschluss an die **normale Atlasfläche**: Kippen darf keine separate Geländeansicht aktivieren und ein Werkzeugwechsel darf die Kamera nicht zurücksetzen. Der bisherige Kamera-/Konturen-PR bleibt bis zum belegten Anschluss ein Entwurf.
-
-KISS, Single Responsibility, DRY und modulare Zuständigkeiten gelten ausdrücklich: vorhandene Werkzeughandler und numerische Zeichenkommandos werden weiterverwendet; eine kleine Präsentationsschnittstelle verbindet Kamera, Projektion und Treffer. GPU-Geometrie, Textdarstellung und Terrain-Datenversorgung bleiben getrennte Besitzer. Eine parallele Implementierung jedes Autorenwerkzeugs ist nicht vorgesehen.
-
-Kamera, Projektion, räumliche Treffer, Szenenaktualisierung und Ressourcenfreigabe werden direkt im bestehenden Atlas verbessert. Zuerst bleiben Kamerabewegungen von Nachladen und Geländeaufbau unabhängig. Danach folgen wiederverwendbare Bereichsdaten, scharfe Kartografie und unmittelbare Terrainbearbeitung. Vorhandene Gelände-/Objektmodule werden erweitert; bereits funktionierende Werkzeuge bleiben angeschlossen.
-
-Der aktualisierte Auftrag erlaubt freie technische Änderungen einschließlich des Backends, solange das geforderte Verhalten erreicht wird. Ein Abschluss erfordert anschließend drei vollständige kritische Untersuchungen ohne weiteren Arbeitsfund; einzelne grüne Tests zählen nicht als diese Abschlussprüfungen. Solange bekannte Lücken bestehen, bleibt die Optimierung in Arbeit.
-
-Für den ersten sichtbaren Ausschnitt werden bestehende Kampagnen und Prüfwelten verwendet; die bereits angelegte kleine Prüfwelt ergänzt Lücken. Große Lastfälle entstehen bei den jeweiligen Umsetzungsschritten. Der gesondert zu prüfende Landschaftsindex blockiert den Kameraanschluss nicht. Laufende Änderungen im gemeinsamen Checkout bleiben erhalten; benötigte Terrainverbesserungen werden gezielt in den isolierten Arbeitsstand übernommen.
-
-Nach jedem Schritt: betroffene Typ-/Buildprüfungen und Regressionen, tatsächlicher nativer Ablauf, visuelle Kontrolle sowie je nach Änderung Speichern, Undo und frisches Öffnen. Gefundene Fehler werden vor abhängigen Schritten korrigiert. Die Endkriterien von P2–P8 bleiben verbindlich; ihre technische Reihenfolge darf nach Wirkung und Abhängigkeiten angepasst werden. P1 und der frühe Kameraanschluss aus P2 werden zusammen entwickelt. Der integrierte Ausschnitt prüft die Verbesserungen am bestehenden Atlas; ein externer Enginevergleich ist keine Voraussetzung.
-
+P0–P8 bleiben fachliche Prüffelder, keine unveränderliche technische Reihenfolge.
+Funktionierende Werkzeuge, Daten und Quellenbindungen dürfen bei einem Ersatz
+nicht stillschweigend verloren gehen. Die Sicherheit der kanonischen Schreibgrenze,
+History, Freigaben und tatsächlicher App-Einstieg sind am neuen Gesamtstand zu
+prüfen. Zwischenstände dürfen isoliert bleiben, bis eine zusammenhängende Etappe
+lieferfähig ist; vollständige Lieferprüfungen erfolgen dann am Kandidaten.
 
 ### P0 — Umfang und vergleichbare Ausgangsbasis sichern
 
@@ -154,7 +254,7 @@ Eine reproduzierbare Prüfwelt erstellen: Küste, Inseln, Gebirge, Tal, Fluss, S
 
 ### P1 — Vorhandenen Atlas an einem vollständigen Ausschnitt verbessern
 
-Erster lokaler Teilanschluss: [perspektivische Kamera und Navigation mit ausstehenden Detailaufträgen im vorhandenen Three.js-Atlas](../../reference/atlas-perspective-camera-20261020/README.md). P1 bleibt offen; der Vergleich mit MapLibre wurde auf Nutzerwunsch eingestellt.
+Erster lokaler Teilanschluss: [perspektivische Kamera und Navigation mit ausstehenden Detailaufträgen im vorhandenen Three.js-Atlas](../../reference/atlas-perspective-camera-20261020/README.md). P1 bleibt offen; der damals eingestellte Vergleich ist durch die spätere freie Technikwahl wieder zulässig.
 
 Der bestehende Atlas wird schrittweise für diese kurze Aufgabe vervollständigt: Weltübersicht → Dorf → Gebäudeinnenraum, dabei drehen und neigen, Höhenlinien und Namen wechseln lassen, Gelände mit großem Pinsel bearbeiten, eine Wand ändern und beides rückgängig machen.
 

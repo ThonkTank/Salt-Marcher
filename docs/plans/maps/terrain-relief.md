@@ -2,11 +2,13 @@
 
 Zieländerung vom 20.10.2026: Die [Roadmap für den gemeinsamen räumlichen Atlas](unified-spatial-atlas.md) ersetzt getrennte Drauf-/Kippdarstellung durch eine gemeinsame perspektivische Kamera. Die folgenden Implementierungs- und Prüfbefunde beschreiben den bisherigen Stand; sie belegen den neuen Atlas noch nicht.
 
-Verbindlicher Arbeitsplan aus dem Nutzerentscheid vom 19.10.2026. Umsetzung phasenweise, eine Phase pro Durchlauf; nach jeder Phase Vollständigkeit und Zielabstimmung prüfen. R0 wurde visuell abgenommen. Seit der Nutzeranweisung „Warte bitte nicht auf abnahmen von mir. Arbeite einfach weiter.“ werden weitere Phasen ohne Abnahmepausen umgesetzt und selbst geprüft; eine Nutzerabnahme wird dadurch nicht behauptet. Der Status steht am Ende dieser Datei; ein Prototyp ist kein Produktnachweis.
+Ursprünglicher Arbeitsplan aus dem Nutzerentscheid vom 19.10.2026. Die damalige starre Phasenfolge wird durch die ergebnisbezogenen Etappen der aktuellen Atlas-Roadmap ersetzt. R0 wurde visuell abgenommen. Seit der Nutzeranweisung „Warte bitte nicht auf abnahmen von mir. Arbeite einfach weiter.“ werden weitere Phasen ohne Abnahmepausen umgesetzt und selbst geprüft; eine Nutzerabnahme wird dadurch nicht behauptet. Der Status steht am Ende dieser Datei; ein Prototyp ist kein Produktnachweis.
+
+Aktuelle Arbeit folgt der [Arbeitsweise und Etappe vom 23.10.2026](unified-spatial-atlas.md#arbeitsweise-ab-23102026). Ältere Implementierungsbelege unten bleiben historisch; die Phase R3 ist wegen des jüngeren Feature-Auftrags wieder offen. Größere isolierte Ersatzentwicklungen sind zulässig.
 
 ## Ziel und festgelegter Umfang
 
-Der Atlas erhält eine kontinuierliche Höhenlandschaft mit zusammenhängenden Gebirgen, Tälern, Pässen und Plateaus. Daraus entstehen eine gezeichnete Draufsicht und eine kippbare räumliche Ansicht. Gelände lässt sich in beiden Ansichten bearbeiten; Gebäude erscheinen als Baukörper mit Dächern. Grundrisse und Innenräume werden weiterhin in Draufsicht bearbeitet.
+Der Atlas erhält eine kontinuierliche Höhenlandschaft mit zusammenhängenden Gebirgen, Tälern, Pässen und Plateaus. Dieselbe perspektivische Kartenfläche zeigt das gezeichnete Gelände in Draufsicht oder geneigt; Gebäude erscheinen als Baukörper mit Dächern. Gelände, Grundrisse und Innenräume bleiben auch bei geneigter Kamera bearbeitbar.
 
 - Höhen bestimmen Land und Meer automatisch. Küsten entstehen am Schnitt mit dem Meeresspiegel.
 - Höhen, Steigungen und Streckenprofile sind abfragbar. Bestehende Höhennutzer werden angeschlossen; neue Reise- und Sichtregeln gehören nicht zu dieser Roadmap.
@@ -20,9 +22,9 @@ Der Atlas erhält eine kontinuierliche Höhenlandschaft mit zusammenhängenden G
 
 **Lokale Verfeinerung statt weltweiter Vollauflösung.** Höhen werden räumlich gekachelt und in mehreren Auflösungen verarbeitet. Feine, ausdrücklich bearbeitete Bereiche bleiben bei groben Änderungen geschützt. Zoom lädt oder vereinfacht Darstellung; er erzeugt keine Landschaft. Höhenabfragen verwenden den maßgeblichen Datenstand und melden ihre tatsächliche Auflösung.
 
-**Gemeinsame Daten, zwei Darstellungen.** Canvas2D trägt die bestehende Draufsicht. Die räumliche Ansicht erhält einen Three.js-Renderer mit orthografischer Kamera, Drehung und begrenzter Neigung. Mittelpunkt, Auswahl und Werkzeuge bleiben gemeinsam.
+**Eine gemeinsame Kartenfläche.** Die frühere Aufteilung in Canvas-Draufsicht und orthografische Geländeansicht ist durch die gemeinsame perspektivische Hauptkamera ersetzt. Draufsicht, Neigung und Drehung teilen Daten, Auswahl und Werkzeuge. Die Wahl der Engine ist gemäß aktueller Atlas-Roadmap offen.
 
-**Vorhandene Speichergrenze weiterverwenden.** Main/SQLite bleiben kanonisch; der Renderer bekommt begrenzte Bereichsdaten über Preload. Höhenänderungen nutzen bestehende Revisionen, Transaktionen, Undo/Redo und Archive. Geometrien, Schattierungen und Übersichtskacheln sind abgeleitete Daten.
+**Aktuelle Speichergrenze.** Bis zu einem geprüften Ersatz sind Main/SQLite kanonisch; der Renderer bekommt begrenzte Bereichsdaten über Preload. Höhenänderungen nutzen bestehende Revisionen, Transaktionen, Undo/Redo und Archive. Geometrien, Schattierungen und Übersichtskacheln sind abgeleitete Daten.
 
 Neue fachliche Schnittstellen:
 - Terrainänderungen durch Land formen und Glätten; Farbe bleibt getrennt.
@@ -55,9 +57,19 @@ Drei Landpinsel: Land formen mit Erhöhen/Absenken, Stärke, Roughness und optio
 
 Abnahme: Küstenregion mit Hügeln, Hochfläche und Tal vollständig erstellen, korrigieren, speichern und als Bild ausgeben. Erster produktiv nutzbarer Zwischenstand mit echten Geländeformen und Küstenkopplung.
 
-### R3 — Entfallen nach Nutzerentscheidung vom 20.10.2026
+### R3 — Geländeformen schnell erstellen (wieder offen)
 
-Höhenkartenimport und spezielle Werkzeuge oder parametrisierte Objekte für Gebirgskämme, Täler, Pässe und Plateaus werden nicht umgesetzt. Berge, Täler und Hochflächen entstehen ausschließlich mit den drei Landwerkzeugen aus R2. Lokale Verfeinerung und geschützte feine Pinselkorrekturen bleiben Teil des Höhenkerns; dafür wird kein zusätzlicher Formeneditor eingeführt. R4 schließt unmittelbar an R2 an; der aktuelle Phasenstand steht unten.
+Der Ausschluss spezieller Formenwerkzeuge vom 20.10.2026 ist durch den jüngeren
+[verbindlichen Feature-Auftrag](unified-spatial-atlas.md#verbindlicher-landschaftswerkzeugumfang-21102026)
+überholt. Hügel, Bergketten, Schluchten und vergleichbare Formen sollen mit wenigen
+Eingaben entstehen und anschließend mit Sculpt und Smooth bearbeitbar bleiben.
+Lokale Verfeinerung, geschützte Details, eine nachvollziehbare Vorschau und Undo/Redo
+bleiben erforderlich. Dieser Umfang ist nicht durch vorhandene Landpinsel erfüllt.
+Ein Höhenkartenimport wird durch den Feature-Auftrag nicht zusätzlich beauftragt.
+
+Abschluss: Gebirgskette und Schlucht erzeugen, lokal korrigieren, in Kontinent-,
+Regions- und Ortsmaßstab sowie geneigt prüfen; Undo/Redo und frisches Öffnen
+bewahren Form und feine Korrekturen. Die technische Umsetzung ist noch offen.
 
 ### R4 — Den gezeichneten Kartenstil ausarbeiten
 
@@ -99,7 +111,11 @@ Endabnahme: Neue Region vom leeren Meer bis Gebirge/Pass/Dorf/Eingang erstellen;
 - HEX-16 konkretisiert diese Etappen; HEX-06/08 tragen Maßstäbe/große Welten. Bergsymbole in HEX-18 durch native Geländeformen ergänzen/ersetzen; allgemeine Symbol-/Waldwerkzeuge erhalten. Ursprüngliche Quellenbindungen erhalten. Testdateien nach tatsächlichem Inhalt im Fähigkeitskatalog zuordnen.
 - Verlinkung aus docs/INDEX.md und ROADMAP-HEX-ATLAS.md. Terminprognose erst nach R0-Messungen.
 
-## Phasenstatus
+## Historischer Phasenstatus vom 19.–20.10.2026
+
+Die folgenden Befunde bleiben datiert erhalten. Insbesondere die damalige
+Streichung von R3 ist durch den oben beschriebenen Feature-Auftrag überholt;
+sie ist keine aktuelle Umfangsentscheidung.
 
 R0 technisch implementiert und lokal geprüft: [Vollständigkeitsprüfung und Zielabgleich](../../reference/terrain-relief-r0-20261019/README.md), [Bildvergleich](../../reference/terrain-relief-r0-20261019/comparison.html). Sechs Modelltests und der erweiterte native Bedienablauf bestanden; Intel UHD 620 über WebGL2 bestätigt, normaler Prozessabschluss. Eine Nachprüfung korrigierte Lücken in schnellen Pinselzügen und verglich wenige/viele Eingabeereignisse. Pinsel-Verarbeitungsmessungen von 189,5 ms im ursprünglichen Lauf und 34,8 ms im Nachlauf betreffen unterschiedliche Proben; die R7-Latenz-/FPS-/16-GiB-Ziele sind nicht qualifiziert.
 
