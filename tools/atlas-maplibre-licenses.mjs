@@ -1,8 +1,9 @@
 import {mkdir,readFile,readdir,copyFile,writeFile,realpath} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
-const roots=['maplibre-gl','@deck.gl/core','@deck.gl/layers','@deck.gl/maplibre','@math.gl/core'];
+const roots=['maplibre-gl','@deck.gl/core','@deck.gl/layers','@deck.gl/mesh-layers','@deck.gl/maplibre','@math.gl/core'];
 const licenseFile=/^(?:license|licence|copying|notice)(?:[._-].+)?$/i;
 const here=path.dirname(fileURLToPath(import.meta.url));
 
@@ -38,6 +39,17 @@ async function licenseSources(directory,name){
       const start=match.index,end=readme.indexOf('\n## ',start+match[0].length);
       return [{source:'README.md#License (MIT)',contents:readme.slice(start,end<0?undefined:end)}];
     }
+  }
+  if(name==='draco3d'){
+    const manifest=JSON.parse(await readFile(path.join(directory,'package.json'),'utf8'));
+    if(manifest.version!=='1.5.7'||manifest.license!=='Apache-2.0')
+      throw new Error(`Kein geprüfter Draco-Lizenzfallback für draco3d@${manifest.version} (${manifest.license})`);
+    const vendored=path.join(here,'atlas-maplibre-licenses','draco3d-1.5.7-LICENSE.txt');
+    const contents=await readFile(vendored,'utf8');
+    const digest=createHash('sha256').update(contents).digest('hex');
+    if(digest!=='d3709b0fb4b8a94bbb1d02b8a2e484f258b0d9c5c5a01f940391f3fe662cd1a4')
+      throw new Error(`Geprüfter Draco-Lizenztext wurde verändert: ${vendored}`);
+    return [{source:'https://github.com/google/draco/blob/1.5.7/LICENSE',contents}];
   }
   throw new Error(`Kein mitgelieferter LICENSE/LICENCE/COPYING/NOTICE-Text für ${name} in ${directory}`);
 }

@@ -3,7 +3,7 @@
 ## Atlas MapLibre/deck.gl runtime
 
 The replacement Atlas runtime includes MapLibre GL JS 6.15.0 (BSD-3-Clause),
-deck.gl core/layers/maplibre 9.4.0 (MIT), and math.gl core 4.1.0 (MIT).
+deck.gl core/layers/mesh-layers/maplibre 9.4.0 (MIT), and math.gl core 4.1.0 (MIT).
 Desktop builds include their shipped license texts and those of their installed
 runtime dependencies under `licenses/atlas/`, with package names and versions
 in `manifest.json`. Worker scripts and styles are bundled locally.

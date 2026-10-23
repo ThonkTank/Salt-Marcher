@@ -1,0 +1,165 @@
+{
+  "final": "1792782000004-1042176",
+  "source": "3be408dcc with the recorded source/build changes",
+  "runs": [
+    {
+      "run": "1792781566630-1036042",
+      "type": "result",
+      "artifact": "result-1792781566630-1036042.json.gz",
+      "sha256": "a5c2080c76fa144f65f85af80cb78bd2333f5f67dcc5a6a291c51c7fb4ce567c",
+      "launches": [
+        {
+          "pid": 1036096,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781610653-1036604",
+      "type": "failure",
+      "artifact": "failure-1792781610653-1036604.json.gz",
+      "sha256": "186cba14fd4baf0ead57c8ce1d3b15ae2520eeb197e50f867bd3f7bf0bfe0d09",
+      "launches": [
+        {
+          "pid": 1036714,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781651526-1037313",
+      "type": "failure",
+      "artifact": "failure-1792781651526-1037313.json.gz",
+      "sha256": "7d4becdf2ad5418fc678d75ce7705403f0e2c8a26ac6767bcc976234b82fdd47",
+      "launches": [
+        {
+          "pid": 1037371,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781683492-1037776",
+      "type": "failure",
+      "artifact": "failure-1792781683492-1037776.json.gz",
+      "sha256": "1b7fc6a0a455a9e9bc10ec8f20db7888fb49c6ab2605630d2c09c9a7dc1fae18",
+      "launches": [
+        {
+          "pid": 1037879,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781838124-1039730",
+      "type": "failure",
+      "artifact": "failure-1792781838124-1039730.json.gz",
+      "sha256": "37300ad988c115de48cc3466810555b784fb2a0b6fc62584b11cba13bf521381",
+      "launches": [
+        {
+          "pid": 1039784,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781889054-1040538",
+      "type": "result",
+      "artifact": "result-1792781889054-1040538.json.gz",
+      "sha256": "943da36f9339d210b6b76f1bf1c700e9d0977312f350fec4afe9bac0e919cb76",
+      "launches": [
+        {
+          "pid": 1040591,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792781975264-1041780",
+      "type": "failure",
+      "artifact": "failure-1792781975264-1041780.json.gz",
+      "sha256": "623753c24c1fb42704924261f42997d49dc0f00aeabb543490f6a55c29f8c53b",
+      "launches": [
+        {
+          "pid": 1041838,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "pidAbsentAtAudit": true
+        }
+      ]
+    },
+    {
+      "run": "1792782000004-1042176",
+      "type": "result",
+      "artifact": "native.json.gz",
+      "sha256": "183f96d0ac0a526f4d780d90ed58f4f79ca32b4a06aa1e2a7e36b810a56b17c9",
+      "launches": [
+        {
+          "pid": 1042279,
+          "zoom": 1,
+          "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+          "platform": {
+            "requested": "default",
+            "desktopSession": "wayland"
+          },
+          "exit": {
+            "code": 0,
+            "signal": null
+          },
+          "pidAbsent": true,
+          "pidAbsentAtAudit": true
+        }
+      ]
+    }
+  ]
+}

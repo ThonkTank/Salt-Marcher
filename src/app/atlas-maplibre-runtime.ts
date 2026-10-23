@@ -4,6 +4,9 @@ export {maplibre};
 export {AtlasMapLibreBridge} from './atlas-maplibre-bridge';
 export {atlasMetricCRS} from './atlas-maplibre-projection';
 export {queryRenderedFeaturesMetricSafe} from './atlas-metric-query';
+export {buildAtlasMapLibreSceneModel} from './atlas-maplibre-scene-model';
+export {AtlasMapLibreScene} from './atlas-maplibre-scene';
+export {metricMapCamera, metricLngLat} from './atlas-metric-space';
 
 let setup: {base: string; ready: Promise<void>} | undefined;
 

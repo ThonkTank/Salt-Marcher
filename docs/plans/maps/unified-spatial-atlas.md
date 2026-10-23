@@ -44,9 +44,14 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   bestehen 17 native Integrationsprüfungen, 32 gezielte Unit-Tests und den
   Laufzeit-/Protokolltest im regulären Desktopfenster. Fehler bei 75°-Auswahl und
   während des Style-Neuladens wurden reproduziert, korrigiert und erneut geprüft.
-  M1 bleibt offen: echte gemeinsame Terrain-/Gebäude-/Raumszene, sichtbare
-  Gesamtszenenauswahl, Autorenwerkzeuge, laufender Wurzelwechsel und lokale
-  Schrift-/Symbolpipeline fehlen. Der normale Atlas nutzt weiterhin den
+  Eine [kanonische Terrain-/Gebäude-/Raumszene](../../reference/atlas-maplibre-scene-20261023/README.md)
+  ist inzwischen über bestehende SQLite-/Preload-Wege angeschlossen. Gebäudeauswahl
+  bis 75° Neigung, zwei Geschosse, Terrainverdeckung sowie Resize und Style-Neuladen
+  sind nativ geprüft; 49 gezielte Tests bestehen. Ein gefundener Auswahlfehler durch
+  16-Bit-Tiefenpuffer ist mit einem versionsgebundenen 24-Bit-Adapter behoben.
+  M1 bleibt offen: dieselbe reale Szene über alle fünf Maßstäbe einschließlich erhöhter
+  Nahkamera, vollständige Szenenauswahl, Autorenwerkzeuge, laufender Wurzelwechsel
+  und lokale Schrift-/Symbolpipeline fehlen. Der normale Atlas nutzt weiterhin den
   bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht nachgewiesen.
 - **Ablösung des bisherigen Auftrags:** Die zuvor vorgesehene isolierte Kartenstilprobe
   ist nicht mehr die nächste Etappe. Bildqualität bleibt in M0 und der gemeinsamen
