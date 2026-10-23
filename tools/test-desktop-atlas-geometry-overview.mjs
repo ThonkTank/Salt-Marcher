@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createReadStream,createWriteStream} from 'node:fs';
-import {readFile,stat} from 'node:fs/promises';
+import {readFile,stat,readdir} from 'node:fs/promises';
 import {createGunzip} from 'node:zlib';
 import {pipeline} from 'node:stream/promises';
 import {createRequire} from 'node:module';
@@ -19,6 +19,7 @@ const files=[
  'src/app/atlas-scene-geometry.ts','src/app/atlas-geometry-overview.ts','src/app/atlas-geometry-tile.ts','src/app/atlas-geometry-mesh.ts',
  'src/app/atlas-deck-scene-model.ts','src/app/atlas-deck-surface.ts','src/app/storage/atlas-geometry-tiles.ts',
  'src/app/storage/atlas-tile-cache.ts','src/app/storage/atlas-projection-index.ts','src/app/storage/atlas-region.ts',
+ 'src/app/storage/atlas-shape-source.ts','src/app/storage/atlas-terrain-tiles.ts','src/app/storage/atlas-material-tiles.ts',
  'src/app/storage/terrain-grid.ts','src/app/storage/atlas-landscape-region.ts','src/app/terrain-projection-cache.ts',
  'desktop/atlas-region-worker.ts','desktop/atlas-region.ts','desktop/main.ts','desktop/preload.ts',
  'tools/test-desktop-atlas-geometry-overview.mjs','.build/desktop/main.cjs','.build/desktop/preload.cjs',
@@ -176,7 +177,14 @@ try{
   const start=performance.now(),value=unwrap(await window.campaign.atlasGeometryTile(active.token,{tile,revision})),readMs=performance.now()-start;
   const overviews=value.model.overviews??[],meshes=overviews.flatMap(entry=>entry.meshes),digests=[];
   for(const mesh of meshes)digests.push({id:mesh.id,kind:mesh.kind,origin:mesh.origin,positions:await digest(mesh.positions),indices:await digest(mesh.indices)});
-  return {revision,tile:value.tile,cache:value.cache,readMs,overviewCount:overviews.length,
+  const runtime=await import('campaign://app/atlas-deck-runtime.js'),container=document.createElement('div');
+  container.id='atlas-warm-overview';Object.assign(container.style,{position:'fixed',inset:'0',background:'#dce2df',zIndex:'99999'});document.body.append(container);
+  const renderStart=performance.now(),surface=await runtime.AtlasDeckSurface.create({container,
+   camera:{focus:{x:2048,y:2048},focusHeightM:0,metersPerPixel:8,rotation:0,tilt:45,exaggeration:1},
+   model:runtime.atlasGeometryTileModel(value),onError:error=>{throw error;}});
+  const firstUsableFrameMs=performance.now()-renderStart;await surface.waitForFrame();
+  window.__atlasWarmOverview=surface;
+  return {revision,tile:value.tile,cache:value.cache,readMs,firstUsableFrameMs,frameUsable:surface.frameUsable,overviewCount:overviews.length,
    modeledObjects:overviews.map(entry=>entry.modeledObjects),resolutions:overviews.map(entry=>entry.resolution),
    meshCount:meshes.length,meshBytes:meshes.reduce((sum,mesh)=>sum+mesh.positions.byteLength+mesh.indices.byteLength,0),
    typed:meshes.every(mesh=>mesh.positions instanceof Float32Array&&mesh.indices instanceof Uint32Array),digests};
@@ -185,6 +193,10 @@ try{
  assert.equal(warm.overviewCount,cold.overviewCount);assert.equal(warm.meshCount,cold.meshCount);assert.equal(warm.meshBytes,cold.meshBytes);assert(warm.typed);
  assert.deepEqual(warm.modeledObjects,cold.modeledObjects);assert.deepEqual(warm.resolutions,cold.resolutions);
  assert.deepEqual(warm.digests,cold.meshDigests,'Fresh-process overview typed buffers must retain identical content');
+ const warmProjectionWork=(await readdir(path.join(native.profile,'atlas-region-cache'))).filter(name=>name.includes('.work-'));
+ assert.deepEqual(warmProjectionWork,[],'An exact warm product must not open a private projection index');
+ assert(warm.frameUsable);await native.capture(reopened,'warm-overview.png');
+ await reopened.evaluate(()=>{window.__atlasWarmOverview.dispose();document.getElementById('atlas-warm-overview').remove();});
 
  const fine=await reopened.evaluate(async({campaignId})=>{
   const unwrap=result=>{if(!result.ok)throw Error(JSON.stringify(result));return result.value;};
@@ -247,6 +259,6 @@ try{
  assert.deepEqual(after,before,'Source and built code hashes must remain fixed throughout the run');
  assert.deepEqual(errors,[],'Renderer page errors prevent this probe from qualifying');
  await native.close();
- await native.finish({complete:true,scope:'Frozen M0 mixed-world coarse geometry overview through real preload/Main/worker IPC, visual nonsemantic Deck layers, warm fresh-process buffers, and exact fine-room picking; no full M2 or product acceptance.',fixture:{path:'docs/reference/atlas-rebuild-m0-20261023/mixed-world.sqlite.gz',sha256:sourceHash,bytes:sourceBytes,campaign,inventory},cold,flat,proxyPick,warm,fine,canonical:{before:canonicalBefore,after:canonicalAfter},errors,hashes:{before,after}});
+ await native.finish({complete:true,scope:'Frozen M0 mixed-world coarse geometry overview through real preload/Main/worker IPC, visual nonsemantic Deck layers, warm fresh-process buffers, and exact fine-room picking; no full M2 or product acceptance.',fixture:{path:'docs/reference/atlas-rebuild-m0-20261023/mixed-world.sqlite.gz',sha256:sourceHash,bytes:sourceBytes,campaign,inventory},cold,flat,proxyPick,warm,warmProjectionWork,fine,canonical:{before:canonicalBefore,after:canonicalAfter},errors,hashes:{before,after}});
  console.log(JSON.stringify({complete:true,output}));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

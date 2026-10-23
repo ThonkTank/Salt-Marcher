@@ -123,13 +123,28 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Einzelprobe ist gegenüber 323 ms langsamer: kein Leistungsgewinn behauptet.
   Normaler Atlas: Terrainübersicht 4.123 / 2.380 ms, Regionsbereitschaft
   7.045 / 2.772 ms kalt/nach Neustart; gespeicherter Index identisch.
-- **Nächste Arbeit:** M2 bleibt aktiv; die erste Übersicht liegt weiterhin über
-  dem 2-s-Ziel. Die Planprüfung untersucht jetzt den Pflichtaufwand vor der
-  ersten nutzbaren Ansicht und den zusätzlichen Aufwand der warmen Indexkopie.
-  Weitere Objektklassen, Materialstufenreduktion, vollständige Weltlast,
-  Bytebudgets der aktiven Arbeit/Quellenseiten und kampagnenweite Metadaten
-  bleiben offen. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme
-  auf dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
+- **Planprüfung 24.10., 01:19 Uhr:** Der unnötige Pflichtpfad „Projektionsindex
+  vorbereiten, dann fertige Kachel suchen“ ist als schwacher Teil belegt. Die
+  Gegenprobe mit vier wechselnden A/B-Runden liefert identische M0-Geometrie bei
+  41–93 statt 236–262 ms; Indexöffnung allein 164–175 ms. Entscheidung:
+  **quellengeprüftes Darstellungsprodukt zuerst, Projektion erst beim Bedarf**.
+  Neue Worker prüfen Terrainrevision und beide dauerhaften Quellenstempel im
+  gepinnten kanonischen Snapshot. Nur vollständige exakte Treffer umgehen den
+  Index; Miss/Korruption/Änderung benutzt den bisherigen Aufbau. Nach erstmaliger
+  Reader-Nutzung bleibt die laufende Invalidierung unverändert. Die erste spätere
+  Detailanfrage übernimmt den verschobenen Aufwand; 46 Tests prüfen Treffer,
+  Miss, Quellenwechsel und den Übergang zu Region/Auswahl/Fokus.
+  [Gegenprobe und native Prüfung](../../reference/atlas-first-product-20261024/README.md):
+  warmer Geometrieabruf 456 → 186 ms, danach 123 ms bis zur nutzbaren Übersicht;
+  nächste Feindaten 555 → 553 ms. Gleiche Meshes, Autoreninhalte und Auswahl,
+  kein privater Index beim warmen Treffer. Kalte Daten 4.563 ms bleiben zu langsam.
+  Einzelproben am isolierten Kern, kein p95-/Produktabschluss.
+- **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
+  Als Nächstes kalte globale Quellenvorbereitung und räumlich begrenzte Übersicht
+  gegeneinander messen, bevor der kalte Pfad ersetzt wird. Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
+  aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
+  normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
+  der native Kernnachweis ist getrennt vom gemessenen Produktgewinn zu führen.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 
@@ -227,6 +242,22 @@ Projektionskorrekturen und ungenutzte Abhängigkeiten. Historische Belege bleibe
   unveränderte Bereiche bleiben gültig.
 - Cacheversionen, atomare Veröffentlichung, Speicher-/Plattenlimits und Wiederaufbau
   beschädigter Bestände implementieren.
+
+**Geprüfter Ersatz der Vorbereitungspolitik (24.10.):** Gespeicherte,
+quellenidentische Darstellungsprodukte vor den globalen Projektionsindizes lesen.
+Kanonische Snapshot-/Revisionsprüfung bleibt Pflicht. Erst ein Miss benötigt
+Indexkopie, Synchronisation und Ableitung. Keine Hintergrundvorbereitung ohne
+konkreten Bedarf und keine übersprungenen Änderungen in bereits aktiven Readern.
+
+| Alternative | Kartenqualität | Reaktion | Bearbeitbarkeit | Wartbarkeit | Umstellungsrisiko |
+| --- | --- | --- | --- | --- | --- |
+| **Exakte Produkte zuerst (gewählt)** | Identische geprüfte Puffer | Warme Erstantwort deutlich kürzer; kalter Aufbau gleich | Bestehende Invalidierung; erste neue Detailanfrage trägt Vorbereitungsarbeit | Gemeinsame Quellenprüfung, kleine explizite Cachezugänge | Niedrig; Fallthrough und Übergang separat geprüft |
+| Indizes nach Produkt aufteilen/verzögert laden | Gleich bei vollständiger Abhängigkeitsabbildung | Kann Teilkopien und irrelevante Indexarbeit sparen | Neue Abhängigkeiten zwischen Terrainhöhe, Geometrie und Auswahl | Mehr Teilzustände und Publikationsgrenzen | Mittel; ohne Messung der neuen Grenzen kein Ersatz gerechtfertigt |
+| Räumlich begrenzte, inkrementelle Übersichtsquellen | Potenziell gleiche Qualität; vollständige Abdeckung/Fehlerhinweise zu beweisen | Größtes Potenzial für kalte Ansicht; noch ungemessen | Änderungen, Bindungen, Undo und Import brauchen räumliche Fortschreibung | Zusammenhängender neuer Quellenpfad statt globaler Erstkopie | Hoch; erst Gegenprobe für kalte Welt und exakte Details |
+
+Die dritte Alternative bleibt der nächste kalte Architekturversuch, keine bereits
+angenommene Leistungszusage. Der belegte warme Ersatz rechtfertigt weder einen
+WASM-/Rendererwechsel noch eine vermeintlich abgeschlossene M2-Etappe.
 
 **Abschluss:** Eine unveränderte Welt benötigt beim erneuten Öffnen keine
 vollständige Terrain- oder Geometrieaufbereitung. Lokale Änderungen erneuern

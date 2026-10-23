@@ -1,4 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto';
+import type {AtlasRegionSource} from '../atlas-region-contracts';
 
 const kind='atlas-shape-source',geometryKind='atlas-geometry-source';
 const geometryTables=new Set(['room','drawing_element','city_document','city_unit','dungeon_volume','drawing_hidden','drawing_floor','atlas_binding']);
@@ -30,6 +31,12 @@ export function atlasProjectionSource(db:any,campaignId:string):{shapeVersion?:s
  const result:{shapeVersion?:string;geometryVersion?:string}={};
  for(const row of db.prepare('SELECT kind,revision,payload,checksum FROM world_record WHERE campaign_id=? AND kind IN (?,?)').all(campaignId,kind,geometryKind))result[row.kind===kind?'shapeVersion':'geometryVersion']=checked(row);
  return result;
+}
+/** Must run inside the caller's pinned canonical read snapshot, including when
+ * returning a cached display product without opening any projection index. */
+export function assertAtlasProjectionSource(db:any,source:Pick<AtlasRegionSource,'campaignId'|'shapeVersion'|'geometryVersion'>){
+ const versions=atlasProjectionSource(db,source.campaignId);
+ if(source.shapeVersion!==undefined&&source.shapeVersion!==versions.shapeVersion||source.geometryVersion!==undefined&&source.geometryVersion!==versions.geometryVersion)throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
 }
 export function atlasShapeSource(db:any,campaignId:string){return atlasProjectionSource(db,campaignId).shapeVersion;}
 

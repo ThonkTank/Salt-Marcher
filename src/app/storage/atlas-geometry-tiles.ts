@@ -38,6 +38,13 @@ function valid(value:StoredGeometry|undefined):value is StoredGeometry{
   !!value.model&&Array.isArray(value.model.objects)&&value.model.targets instanceof Map&&!!value.model.coverage&&
   value.model.objects.every(o=>o.positions instanceof Float32Array&&o.indices instanceof Uint32Array);
 }
+function validOverview(value:StoredOverview|undefined):value is StoredOverview{
+ return valid(value)&&typeof value.samplesComplete==='boolean'&&value.model.overviews?.length===1&&
+  value.model.overviews[0]!.meshes.every(m=>m.positions instanceof Float32Array&&m.indices instanceof Uint32Array);
+}
+function reply(source:AtlasRegionSource,request:AtlasGeometryTileRequest,model:AtlasDeckSceneModel,status:AtlasGeometryTile['cache']):AtlasGeometryTile{
+ const {targets:_,...dto}=model;return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:status,model:dto};
+}
 /** Persistent clipped meshes, independent of camera pose, floors and roof UI.
  * Tile geometry is derived in the pinned read-only worker snapshot. */
 export class AtlasGeometryTiles {
@@ -49,13 +56,29 @@ export class AtlasGeometryTiles {
   if(namespace!==this.namespace){this.cache?.close();this.cache=AtlasTileCache.open(this.directory,namespace);this.namespace=namespace;}
   return this.cache?.enabled?this.cache:undefined;
  }
+ /** Exact-stamp warm lookup for worker callers that already validated the pinned
+  * source. Unlike read(), this never asks the reader to fingerprint source rows. */
+ cached(source:AtlasRegionSource,request:AtlasGeometryTileRequest):AtlasGeometryTile|undefined{
+  atlasGeometryTileBox(request);if(source.revision!==request.revision)throw Error('Geometriekachel inzwischen geändert.');
+  if(!source.shapeVersion||!source.geometryVersion||source.shadow)return undefined;
+  const cache=this.open(source);if(!cache)return undefined;
+  if(request.tile.lod>=1){
+   const key=JSON.stringify(['geometry-overview',request.tile.lod,request.tile.x,request.tile.y]);
+   const value=cache.get<StoredOverview>(key,'geometry-overview-v3');
+   if(!validOverview(value)||value.shapeVersion!==source.shapeVersion||value.geometryVersion!==source.geometryVersion)return undefined;
+   return reply(source,request,value.model,'hit');
+  }
+  const key=JSON.stringify(['geometry',request.tile.lod,request.tile.x,request.tile.y]);
+  const value=cache.get<StoredGeometry>(key,FORMAT);
+  if(!valid(value)||value.shapeVersion!==source.shapeVersion||value.geometryVersion!==source.geometryVersion)return undefined;
+  return reply(source,request,value.model,'hit');
+ }
  *read(source:AtlasRegionSource,request:AtlasGeometryTileRequest,reader:AtlasRegionReader):Generator<void,AtlasGeometryTile>{
   const box=atlasGeometryTileBox(request);if(source.revision!==request.revision)throw Error('Geometriekachel inzwischen geändert.');
   if(request.tile.lod>=1)return yield* this.readOverview(source,request,reader);
   const cache=this.open(source),key=JSON.stringify(['geometry',request.tile.lod,request.tile.x,request.tile.y]);
   const previous=cache?.get<StoredGeometry>(key,FORMAT),old=valid(previous)?previous:undefined;
-  const reply=(model:AtlasDeckSceneModel,status:AtlasGeometryTile['cache']):AtlasGeometryTile=>{const {targets:_,...dto}=model;return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:status,model:dto};};
-  if(old&&old.shapeVersion===source.shapeVersion&&old.geometryVersion===source.geometryVersion)return reply(old.model,'hit');
+  if(old&&old.shapeVersion===source.shapeVersion&&old.geometryVersion===source.geometryVersion)return reply(source,request,old.model,'hit');
   let view:AtlasSceneView|undefined,input=old?.input;
   if(!old||old.geometryVersion!==source.geometryVersion){view=reader.geometryTileSource(source,box,true);input=inputFingerprint(view);}
   yield;
@@ -68,7 +91,7 @@ export class AtlasGeometryTiles {
   if(old&&input===old.input){
    let same=true,count=0;
    for(const sample of old.samples){if(heightAt(sample.point)!==sample.heightM)same=false;if(++count%32===0)yield;}
-   if(same){const model=view?sourceCoverage(old.model,view):old.model;cache?.put(key,FORMAT,{...old,model,shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!});return reply(model,'hit');}
+   if(same){const model=view?sourceCoverage(old.model,view):old.model;cache?.put(key,FORMAT,{...old,model,shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!});return reply(source,request,model,'hit');}
   }
   view??=reader.geometryTileSource(source,box,true);input??=inputFingerprint(view);
   // Replayed old samples outside the new topology are not dependencies of it.
@@ -78,7 +101,7 @@ export class AtlasGeometryTiles {
    heightAt:p=>{const heightM=heightAt(p);used.set(JSON.stringify([p.x,p.y]),{point:{...p},heightM});return heightM;}
   });
   if(cache)cache.put(key,FORMAT,{shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!,input,samples:[...used.values()],model} satisfies StoredGeometry);
-  return reply(model,cache?'built':'disabled');
+  return reply(source,request,model,cache?'built':'disabled');
  }
  /** Coarse geometry is a bounded physical envelope, never a semantic pick
   * mesh. Exact unchanged stamps bypass all source work after worker restart. */
@@ -86,10 +109,8 @@ export class AtlasGeometryTiles {
   const box=atlasGeometryTileBox(request),cache=this.open(source),format='geometry-overview-v3';
   const key=JSON.stringify(['geometry-overview',request.tile.lod,request.tile.x,request.tile.y]);
   const previous=cache?.get<StoredOverview>(key,format);
-  const old=valid(previous)&&typeof previous.samplesComplete==='boolean'&&previous.model.overviews?.length===1&&
-   previous.model.overviews[0]!.meshes.every(m=>m.positions instanceof Float32Array&&m.indices instanceof Uint32Array)?previous:undefined;
-  const reply=(model:AtlasDeckSceneModel,status:AtlasGeometryTile['cache']):AtlasGeometryTile=>{const {targets:_,...dto}=model;return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:status,model:dto};};
-  if(old&&old.shapeVersion===source.shapeVersion&&old.geometryVersion===source.geometryVersion)return reply(old.model,'hit');
+  const old=validOverview(previous)?previous:undefined;
+  if(old&&old.shapeVersion===source.shapeVersion&&old.geometryVersion===source.geometryVersion)return reply(source,request,old.model,'hit');
   let input:string|undefined,unreadable=0,unsupportedElements=0,nextYield=performance.now()+8;
   const sourceInput=function*(build?:(chunk:ReturnType<AtlasRegionReader['geometryTileSourceBatches']> extends Generator<infer T>?T:never)=>void):Generator<void,string>{
    const hash=createHash('sha256');unsupportedElements=0;unreadable=0;
@@ -119,7 +140,7 @@ export class AtlasGeometryTiles {
      const model={...old.model,coverage:{...old.model.coverage,unsupported:old.model.coverage.unsupported.filter(w=>w.code!=='region-coverage-incomplete'&&w.code!=='drawing-sources-not-modeled')}};
      if(unsupportedElements)model.coverage.unsupported.push(unsupportedWarning());
      if(unreadable)model.coverage.unsupported.push({code:'region-coverage-incomplete',detail:`Atlasregion meldet ${unreadable} nicht lesbare Geometrien.`});
-     cache?.put(key,format,{...old,model,shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!});return reply(model,'hit');
+     cache?.put(key,format,{...old,model,shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!});return reply(source,request,model,'hit');
     }
    }
   }
@@ -139,7 +160,7 @@ export class AtlasGeometryTiles {
   if(unreadable)unsupported.push({code:'region-coverage-incomplete',detail:`Atlasregion meldet ${unreadable} nicht lesbare Geometrien.`});
   const model:AtlasDeckSceneModel={objects:[],targets:new Map(),overviews:[overview],coverage:{complete:false,supportedKinds:['room','building'],unsupported},verticalExaggeration:1};
   if(cache)cache.put(key,format,{shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!,input,samples:[...used.values()],samplesComplete,model} satisfies StoredOverview);
-  return reply(model,cache?'built':'disabled');
+  return reply(source,request,model,cache?'built':'disabled');
  }
  close(){this.cache?.close();this.cache=undefined;this.namespace='';}
 }

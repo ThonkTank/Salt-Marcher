@@ -1,7 +1,7 @@
 import {AtlasGeometryRaster} from './atlas-geometry-raster';
 import {AtlasReadCancelled,atlasReadCheckpoint} from './atlas-read-cancellation';
 import {AtlasDeferredGeometry} from './atlas-deferred-geometry';
-import {atlasProjectionSource} from './atlas-shape-source';
+import {assertAtlasProjectionSource} from './atlas-shape-source';
 import {AtlasProjectionIndex} from './atlas-projection-index';
 import {mapExtentVisible} from '../atlas-scale-policy';
 import {labelFromPolygon,lineLabels,boundedLabels,styledLabels,territoryLabels,labelScaleLimits,type MapLabelCandidate} from '../atlas-cartography';
@@ -194,8 +194,7 @@ export class AtlasRegionReader {
   catch(error){this.projection.rollback();this.rollback(geometry);throw error;}
  }
  private async syncProjection(source:AtlasRegionSource,geometry:boolean|'core'){
-  const versions=atlasProjectionSource(this.db,source.campaignId);
-  if(source.shapeVersion!==undefined&&source.shapeVersion!==versions.shapeVersion||source.geometryVersion!==undefined&&source.geometryVersion!==versions.geometryVersion)throw Error('Atlas inzwischen geändert. Ausschnitt erneut laden.');
+  assertAtlasProjectionSource(this.db,source);
   this.campaign=source.campaignId;
   this.geometryChanges.observe(source);this.elementChanges.observe(source);
   if(source.reset||source.changes.length)this.fullGeometryReady=false;

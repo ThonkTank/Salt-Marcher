@@ -2,6 +2,7 @@ import {AtlasGeometryTiles} from '../src/app/storage/atlas-geometry-tiles';
 import {AtlasTerrainTiles} from '../src/app/storage/atlas-terrain-tiles';
 import {AtlasMaterialTiles} from '../src/app/storage/atlas-material-tiles';
 import {AtlasProjectionIndex} from '../src/app/storage/atlas-projection-index';
+import {assertAtlasProjectionSource} from '../src/app/storage/atlas-shape-source';
 import {computeTerrainStroke,TerrainScalePyramid} from '../src/app/storage/terrain-scale';
 import {terrainTraceStart} from '../src/app/terrain-timing';
 import { parentPort, workerData } from 'node:worker_threads';
@@ -17,12 +18,30 @@ const terrainTiles=new AtlasTerrainTiles(db,workerData.cacheDirectory),materialT
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
 let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>|ReturnType<AtlasTerrainTiles['read']>|ReturnType<AtlasMaterialTiles['read']>|ReturnType<AtlasGeometryTiles['read']>}|undefined;
 
+function assertTerrainRevision(source:any){
+ const root=db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(source.campaignId) as {revision:number}|undefined;
+ if(root?.revision!==source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+}
+
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
   const geometry=job.kind==='geometry-tile'?'core':['region','focus','candidates','hit','geometry-tile'].includes(job.kind);
   let syncStarted=false,readStarted=false,endRead:(()=>void)|undefined;
   try {
+    // An exact retained product needs no global projection. Validate it against
+    // a pinned canonical snapshot before decoding the cache. Once a reader has
+    // observed changes, keep the ordinary synchronization path: skipping later
+    // source cursors would lose its incremental invalidations.
+    if(!reader&&!job.continuation&&['geometry-tile','terrain-tile','material-tile'].includes(job.kind)){
+      db.exec('BEGIN');assertTerrainRevision(job.source);assertAtlasProjectionSource(db,job.source);
+      const value=job.kind==='geometry-tile'?geometryTiles.cached(job.source,job.query):job.kind==='terrain-tile'?terrainTiles.cached(job.source,job.query):materialTiles.cached(job.source,job.query);
+      db.exec('COMMIT');
+      if(value){parentPort!.postMessage({value});return;}
+    }
     if(!reader){
+      // Earlier exact hits advanced Main's cursor without preparing a reader.
+      // The first miss must establish every derived dependency from this source.
+      job.source={...job.source,reset:true};
       index=await AtlasProjectionIndex.open(db,job.source,workerData.cacheDirectory,workerData.workId);
       reader=new AtlasRegionReader(db,workerData.shadow,index);
     }
@@ -30,8 +49,7 @@ parentPort!.on('message', async (job: any) => {
     // The first SELECT pins the WAL snapshot before async index maintenance.
     // A queued source must never label newer terrain rows as an older revision.
     if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='material-tile'||job.kind==='geometry-tile'){
-      const root=db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(job.source.campaignId) as {revision:number}|undefined;
-      if(root?.revision!==job.source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
+      assertTerrainRevision(job.source);
     }
     const endSync=terrainTraceStart("region.sync",job.source.revision);
     syncStarted=true;await reader.sync(job.source,geometry);pyramid.sync(db,job.source);endSync();

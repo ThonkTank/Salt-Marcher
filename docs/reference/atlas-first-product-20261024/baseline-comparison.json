@@ -1,0 +1,11 @@
+{
+  "meshDigests": true,
+  "pixels": true,
+  "canonical": true,
+  "fineSelection": true,
+  "screenshots": {
+    "overview-flat.png": true,
+    "overview-tilt45.png": true,
+    "fine-room.png": true
+  }
+}

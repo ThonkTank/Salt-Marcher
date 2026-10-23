@@ -48,6 +48,19 @@ export class AtlasTerrainTiles {
       p.grid?.heights instanceof Float32Array&&p.grid.heights.length===q.view.columns*q.view.rows&&
       JSON.stringify(p.grid.view.box)===JSON.stringify(q.view.box)&&p.grid.view.columns===q.view.columns&&p.grid.view.rows===q.view.rows;
   }
+  /** Exact durable-stamp lookup for callers that already validated the pinned
+   * source. It deliberately skips the local content fingerprint scan. */
+  cached(source:AtlasRegionSource,request:AtlasTerrainTileRequest):AtlasTerrainTile|undefined {
+    const query=atlasTerrainTileQuery(request,source.fence);
+    if(request.revision!==source.revision)throw Error('Atlaskachel inzwischen geändert.');
+    if(!this.directory||source.shadow||!source.shapeVersion)return undefined;
+    const cache=this.open(source);if(!cache)return undefined;
+    const key=JSON.stringify([request.tile.lod,request.tile.x,request.tile.y,query.contours]);
+    const old=cache.get<StoredTile>(key,FORMAT);
+    if(!this.valid(old,request)||old.version!==source.shapeVersion)return undefined;
+    const projection={...old.projection,revision:source.revision,fence:source.fence,source:source.fence};
+    return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:'hit',projection};
+  }
   *read(source:AtlasRegionSource,request:AtlasTerrainTileRequest,reader:AtlasRegionReader):Generator<void,AtlasTerrainTile> {
     const query=atlasTerrainTileQuery(request,source.fence);
     if(request.revision!==source.revision)throw Error('Atlaskachel inzwischen geändert.');

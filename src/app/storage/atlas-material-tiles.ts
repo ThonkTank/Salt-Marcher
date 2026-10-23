@@ -14,6 +14,14 @@ const FORMAT='material-tiles-v1';
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 type Stored={version:string;fingerprint:string;bytes:Uint8Array;waterTopology?:Uint8Array};
 type Inputs={water:string;baseColor:string;forest:string;rock:string;snow:string};
+function validStored(value:Stored|undefined,channel:TerrainMaterialChannel,width:number,height:number):value is Stored {
+ return !!value&&typeof value.version==='string'&&typeof value.fingerprint==='string'&&value.bytes instanceof Uint8Array&&
+  value.bytes.length===width*height*(channel==='baseColor'?4:1)&&
+  (channel!=='water'||value.waterTopology instanceof Uint8Array&&value.waterTopology.length===width*height);
+}
+function reply(source:AtlasRegionSource,request:AtlasMaterialTileRequest,width:number,height:number,channels:TerrainMaterialRaster,cache:AtlasMaterialTile['cache']):AtlasMaterialTile {
+ return {tile:{...request.tile},revision:source.revision,fence:source.fence,width,height,channels:channels as TerrainMaterialChannels,cache};
+}
 
 /** Independently reusable raw material products, never baked display pixels.
  * Cache rows are individually atomic. A complete, source-validated reply is the
@@ -26,6 +34,20 @@ export class AtlasMaterialTiles {
   const namespace=projectionKey(source.filename,source.campaignId);
   if(this.namespace!==namespace){this.cache?.close();this.cache=AtlasTileCache.open(this.directory,namespace);this.namespace=namespace;}
   return this.cache?.enabled?this.cache:undefined;
+ }
+ /** Exact-stamp hit for callers that already hold a validated durable source. */
+ cached(source:AtlasRegionSource,request:AtlasMaterialTileRequest):AtlasMaterialTile|undefined {
+  const q=atlasMaterialTileQuery(request);
+  if(source.revision!==request.revision)throw Error('Materialkachel inzwischen geändert.');
+  if(!this.directory||source.shadow||!source.shapeVersion)return undefined;
+  const cache=this.open(source);if(!cache)return undefined;
+  const channels:TerrainMaterialRaster={},states={} as AtlasMaterialTile['cache'];
+  for(const channel of CHANNEL_NAMES){
+   const item=cache.get<Stored>(JSON.stringify(['material',request.tile.lod,request.tile.x,request.tile.y,channel]),FORMAT);
+   if(!validStored(item,channel,q.width,q.height)||item.version!==source.shapeVersion)return undefined;
+   channels[channel]=item.bytes;states[channel]='hit';
+  }
+  return reply(source,request,q.width,q.height,channels,states);
  }
  private *inputs(source:AtlasRegionSource,request:AtlasMaterialTileRequest):Generator<void,Inputs>{
   const q=atlasMaterialTileQuery(request),box=landscapeRasterBounds(q.view.box,q.width,q.height);
@@ -77,7 +99,7 @@ export class AtlasMaterialTiles {
   const old=new Map<TerrainMaterialChannel,Stored>();
   for(const c of CHANNEL_NAMES){
    const item=cache?.get<Stored>(key(c),FORMAT);
-   if(item&&typeof item.version==='string'&&typeof item.fingerprint==='string'&&item.bytes instanceof Uint8Array&&item.bytes.length===q.width*q.height*(c==='baseColor'?4:1)&&(c!=='water'||item.waterTopology instanceof Uint8Array&&item.waterTopology.length===q.width*q.height))old.set(c,item);
+   if(validStored(item,c,q.width,q.height))old.set(c,item);
   }
   if(cache&&CHANNEL_NAMES.every(c=>old.get(c)?.version===source.shapeVersion)){
    for(const c of CHANNEL_NAMES){channels[c]=old.get(c)!.bytes;states[c]='hit';}
@@ -108,7 +130,7 @@ export class AtlasMaterialTiles {
    // No yield within publication: all channels describe the same revalidated source.
    if(cache&&fingerprints)for(const c of CHANNEL_NAMES)if(old.get(c)?.version!==source.shapeVersion||states[c]!=='hit')cache.put(key(c),FORMAT,{version:source.shapeVersion!,fingerprint:fingerprints[c],bytes:channels[c],...(c==='water'?{waterTopology}:{})});
   }
-  return {tile:{...request.tile},revision:source.revision,fence:source.fence,width:q.width,height:q.height,channels:channels as TerrainMaterialChannels,cache:states};
+  return reply(source,request,q.width,q.height,channels,states);
  }
  close(){this.cache?.close();this.cache=undefined;this.namespace='';}
 }
