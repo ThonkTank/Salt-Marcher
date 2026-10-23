@@ -84,10 +84,35 @@ Randwände gehören genau einer Kachel, semantische Objekt-IDs bleiben erhalten.
 [Persistenz](../../src/app/storage/atlas-geometry-tiles.ts) prüft lokale Topologie
 und verwendete kanonische Höhenpunkte; gleiche dauerhafte Quellenversionen laden
 fertige Puffer. Ein Warnungswechsel allein trianguliert keine Geometrie neu.
-Die Kachel enthält keine Kamera-, Dach- oder Geschossauswahl. Komposition erfolgt
-später im Renderer. Andere Objektklassen und übervolle grobe Kacheln bleiben
+Feinkacheln (`lod <= 0`, höchstens 256 m Kantenlänge) enthalten keine Kamera-,
+Dach- oder Geschossauswahl; ihre exakten Objekte werden im Renderer komponiert.
+Gröbere Kacheln verwenden den [Übersichtsakkumulator](../../src/app/atlas-geometry-overview.ts).
+Er reduziert kanonische Dreiecke einschließlich physischer Höhen zu einer
+begrenzten räumlichen Hülle, ausdrücklich ohne semantische Auswahlziele.
+256 × 256 feste Abtastzellen behalten die tatsächlich geschnittenen XY-Grenzen
+und Höhenhüllen. Nur bei mehr als 16.384 belegten Zellen werden 2×2-Nachbarn
+mit der geringsten zusätzlich belegten Fläche zusammengefasst. Höchstens zwei
+Meshes enthalten insgesamt 5.898.240 Byte numerische Puffer; Metadaten,
+Abhängigkeiten, Akkumulator und SQLite-Indizes sind darin nicht enthalten.
+`atlasGeometryTileModel(tile, presentation)` unterdrückt diese Hülle bei
+Scope-/Geschossauswahl oder geöffneten Dächern und meldet `geometry-detail-required`.
+Die Weltübersicht benötigt zum exakten Auswählen weiterhin Detailkacheln;
+quellengestützte Auswahl direkt aus der Übersicht ist noch offen.
+
+Die Übersicht liest vollständig besessene Seiten von 32 Kandidaten, damit kein
+SQLite-Iterator eine Worker-Unterbrechung mit Snapshotabschluss überlebt.
+Räume und Gebäude gehen durch denselben kanonischen Höhen-/Geschossadapter wie
+Feinkacheln. Gebäude, die nur als Raumanker dienen, werden nicht doppelt gezeichnet.
+Nicht modellierte Zeichnungselemente werden gezählt und als Coverage-Lücke
+benannt, ohne ihre Nutzdaten vollständig zu laden. Bindings und Bereichsmetadaten
+werden weiterhin kampagnenweit gelesen; der Seitenumfang ist keine Gesamt-RAM-Grenze.
+Unveränderte Quellenversionen laden fertige Puffer; Änderungen prüfen lokale
+Quellen und höchstens 32.768 gespeicherte Höhenabhängigkeiten. Bei noch größeren
+Ankersätzen erfolgt nach Änderungen ein konservativer Neuaufbau.
+Andere Objektklassen, vollständige Weltinteraktion und kalte Öffnungszeit bleiben
 explizite offene Grenzen, keine stillschweigend vollständigen Darstellungen.
-[Geometriebeleg](../reference/atlas-geometry-tiles-20261023/README.md).
+[Geometriebeleg](../reference/atlas-geometry-tiles-20261023/README.md) und
+[grobe Weltübersicht](../reference/atlas-geometry-overview-20261024/README.md).
 
 Die [gemeinsame Geometrie](../../src/app/atlas-scene-geometry.ts) übernimmt
 kanonische Terrain-, Gebäude- und Raumdaten aus dem Preload-Pfad. Fehlende

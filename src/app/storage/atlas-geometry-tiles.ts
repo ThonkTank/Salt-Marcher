@@ -1,5 +1,7 @@
 import {createHash} from 'node:crypto';
 import {atlasGeometryTileBox,type AtlasGeometryTile,type AtlasGeometryTileRequest} from '../atlas-geometry-tile';
+import {AtlasGeometryOverviewBuilder} from '../atlas-geometry-overview';
+import {buildAtlasCanonicalSceneModel} from '../atlas-scene-geometry';
 import {buildAtlasGeometryMesh} from '../atlas-geometry-mesh';
 import type {AtlasSceneView} from '../atlas-scene-geometry';
 import type {AtlasDeckSceneModel} from '../atlas-deck-scene-model';
@@ -12,6 +14,7 @@ import {projectionKey} from './atlas-projection-index';
 // Bump for mesh, sampling or physical-floor semantics, not only SQL schema.
 const FORMAT='geometry-tiles-v2';
 type Sample={point:Point;heightM:number};
+interface StoredOverview {shapeVersion:string;geometryVersion:string;input:string;samples:Sample[];samplesComplete:boolean;model:AtlasDeckSceneModel}
 interface StoredGeometry {shapeVersion:string;geometryVersion:string;input:string;samples:Sample[];model:AtlasDeckSceneModel}
 /** Geometry-only identity: names, labels and author revision counters do not
  * alter triangles. Frames, hidden floors/rooms and anchor data do. */
@@ -47,6 +50,7 @@ export class AtlasGeometryTiles {
  }
  *read(source:AtlasRegionSource,request:AtlasGeometryTileRequest,reader:AtlasRegionReader):Generator<void,AtlasGeometryTile>{
   const box=atlasGeometryTileBox(request);if(source.revision!==request.revision)throw Error('Geometriekachel inzwischen geändert.');
+  if(request.tile.lod>=1)return yield* this.readOverview(source,request,reader);
   const cache=this.open(source),key=JSON.stringify(['geometry',request.tile.lod,request.tile.x,request.tile.y]);
   const previous=cache?.get<StoredGeometry>(key,FORMAT),old=valid(previous)?previous:undefined;
   const reply=(model:AtlasDeckSceneModel,status:AtlasGeometryTile['cache']):AtlasGeometryTile=>{const {targets:_,...dto}=model;return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:status,model:dto};};
@@ -73,6 +77,65 @@ export class AtlasGeometryTiles {
    heightAt:p=>{const heightM=heightAt(p);used.set(JSON.stringify([p.x,p.y]),{point:{...p},heightM});return heightM;}
   });
   if(cache)cache.put(key,FORMAT,{shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!,input,samples:[...used.values()],model} satisfies StoredGeometry);
+  return reply(model,cache?'built':'disabled');
+ }
+ /** Coarse geometry is a bounded physical envelope, never a semantic pick
+  * mesh. Exact unchanged stamps bypass all source work after worker restart. */
+ private *readOverview(source:AtlasRegionSource,request:AtlasGeometryTileRequest,reader:AtlasRegionReader):Generator<void,AtlasGeometryTile>{
+  const box=atlasGeometryTileBox(request),cache=this.open(source),format='geometry-overview-v2';
+  const key=JSON.stringify(['geometry-overview',request.tile.lod,request.tile.x,request.tile.y]);
+  const previous=cache?.get<StoredOverview>(key,format);
+  const old=valid(previous)&&typeof previous.samplesComplete==='boolean'&&previous.model.overviews?.length===1&&
+   previous.model.overviews[0]!.meshes.every(m=>m.positions instanceof Float32Array&&m.indices instanceof Uint32Array)?previous:undefined;
+  const reply=(model:AtlasDeckSceneModel,status:AtlasGeometryTile['cache']):AtlasGeometryTile=>{const {targets:_,...dto}=model;return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:status,model:dto};};
+  if(old&&old.shapeVersion===source.shapeVersion&&old.geometryVersion===source.geometryVersion)return reply(old.model,'hit');
+  let input:string|undefined,unreadable=0,unsupportedElements=0,nextYield=performance.now()+8;
+  const sourceInput=function*(build?:(chunk:ReturnType<AtlasRegionReader['geometryTileSourceBatches']> extends Generator<infer T>?T:never)=>void):Generator<void,string>{
+   const hash=createHash('sha256');unsupportedElements=0;unreadable=0;
+   for(const chunk of reader.geometryTileSourceBatches(source,box)){
+    hash.update(chunk.anchorBuildings?'anchor':'visible').update(inputFingerprint(chunk.view));
+    unsupportedElements+=chunk.unsupportedElements;unreadable=chunk.view.region.coverage.unreadable;
+    build?.(chunk);
+    if(performance.now()>=nextYield){yield;nextYield=performance.now()+8;}
+   }
+   return hash.update(String(unsupportedElements)).digest('hex');
+  };
+  // Bounded dependency retention. Exceptionally large anchor sets still render
+  // completely and hit unchanged stamps; after edits they rebuild conservatively.
+  const limit=32768,heights=new Map<string,Sample>(),used=new Map<string,Sample>();let samplesComplete=true;
+  const heightAt=(point:Point)=>{
+   const address=JSON.stringify([point.x,point.y]);let sample=heights.get(address);
+   if(!sample){const heightM=reader.geometryHeight(source,point);if(!Number.isFinite(heightM))throw Error('Geometriehöhe ungültig.');sample={point:{...point},heightM};heights.set(address,sample);if(heights.size>limit)heights.delete(heights.keys().next().value!);}
+   return sample;
+  };
+  if(old){
+   input=yield* sourceInput();
+   if(input===old.input&&old.samplesComplete){
+    let same=true;
+    for(const sample of old.samples){if(heightAt(sample.point).heightM!==sample.heightM)same=false;if(performance.now()>=nextYield){yield;nextYield=performance.now()+8;}}
+    if(same){
+     const model={...old.model,coverage:{...old.model.coverage,unsupported:old.model.coverage.unsupported.filter(w=>w.code!=='region-coverage-incomplete')}};
+     if(unreadable)model.coverage.unsupported.push({code:'region-coverage-incomplete',detail:`Atlasregion meldet ${unreadable} nicht lesbare Geometrien.`});
+     cache?.put(key,format,{...old,model,shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!});return reply(model,'hit');
+    }
+   }
+  }
+  const builder=new AtlasGeometryOverviewBuilder(request.tile),warnings=new Map<string,{detail:string;count:number}>();
+  input=yield* sourceInput(chunk=>{
+   const canonical=buildAtlasCanonicalSceneModel({view:chunk.view,terrain:null,surface:{contains:p=>[p.x,p.y].every(Number.isFinite)&&Math.max(Math.abs(p.x),Math.abs(p.y))<1e12,
+    heightAt:p=>{const sample=heightAt(p);if(used.size<limit)used.set(JSON.stringify([p.x,p.y]),sample);else if(!used.has(JSON.stringify([p.x,p.y])))samplesComplete=false;return sample.heightM;}}});
+   for(const object of canonical.objects)if(!chunk.anchorBuildings||object.target.kind!=='building')builder.append(object);
+   for(const warning of canonical.coverage.unsupported){
+    if(warning.code==='region-coverage-incomplete')continue;
+    const previous=warnings.get(warning.code);warnings.set(warning.code,{detail:previous?.detail??warning.detail,count:(previous?.count??0)+1});
+   }
+  });
+  const overview=builder.finish(),unsupported=[{code:'geometry-overview',detail:`Vereinfachte Höhenhülle mit ${overview.resolution}-m-Abtastung und adaptiv zusammengefassten Zellen; Auswahl und einzelne Geschosse benötigen Detailgeometrie.`},
+   ...[...warnings].map(([code,w])=>({code,detail:`${w.detail} (${w.count} Quellenabschnitte)`}))];
+  if(unsupportedElements)unsupported.push({code:'scene-feature-kinds-not-modeled',detail:`${unsupportedElements} Dungeon-Zeichnungselemente sind gezählt, aber noch nicht räumlich modelliert.`});
+  if(unreadable)unsupported.push({code:'region-coverage-incomplete',detail:`Atlasregion meldet ${unreadable} nicht lesbare Geometrien.`});
+  const model:AtlasDeckSceneModel={objects:[],targets:new Map(),overviews:[overview],coverage:{complete:false,supportedKinds:['room','building'],unsupported},verticalExaggeration:1};
+  if(cache)cache.put(key,format,{shapeVersion:source.shapeVersion!,geometryVersion:source.geometryVersion!,input,samples:[...used.values()],samplesComplete,model} satisfies StoredOverview);
   return reply(model,cache?'built':'disabled');
  }
  close(){this.cache?.close();this.cache=undefined;this.namespace='';}

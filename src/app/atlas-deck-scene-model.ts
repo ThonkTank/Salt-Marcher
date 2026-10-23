@@ -1,6 +1,7 @@
 import {buildAtlasCanonicalSceneModel, type AtlasSceneSelectionTarget, type AtlasCanonicalSceneObject, type AtlasCanonicalSceneModel} from './atlas-scene-geometry';
 import type {AtlasSceneView} from './atlas-scene-geometry';
 import type {TerrainGrid} from './terrain-spatial-model';
+import type {AtlasGeometryOverview} from './atlas-geometry-overview';
 
 const ORIGIN_STEP_M=256;
 const FLOAT32_MAX=3.4028234663852886e38;
@@ -18,6 +19,8 @@ export interface AtlasDeckSceneObject {
 }
 export interface AtlasDeckSceneModel {
   readonly objects:readonly AtlasDeckSceneObject[];
+  /** Coarse visual-only geometry. These meshes do not create selection targets. */
+  readonly overviews?:readonly AtlasGeometryOverview[];
   readonly targets:ReadonlyMap<string,AtlasSceneSelectionTarget>;
   readonly coverage:Readonly<{
     complete:boolean;

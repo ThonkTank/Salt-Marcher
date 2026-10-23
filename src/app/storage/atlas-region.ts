@@ -306,9 +306,22 @@ export class AtlasRegionReader {
    }
   }
  }
- /** Camera-independent vector source for durable geometry. Never substitutes a
-  * raster for semantic objects; a dense tile must be refined by its caller. */
+ /** Exact vector source for fine tiles. Coarse reads use bounded batches and
+  * count unsupported drawing records instead of decoding invisible payloads. */
  geometryTileSource(source:AtlasRegionSource,box:Box):import('../atlas-scene-geometry').AtlasSceneView {
+  const step=this.geometryTileSourceBatches(source,box,false).next();
+  if(step.done)throw Error('Geometriequelle fehlt.');return step.value.view;
+ }
+ /** Pages are fully owned before yielding: a worker continuation commits its
+  * SQLite snapshot, so no live SQLite iterator may cross that boundary. */
+ private *geometryCandidates(kind:string,owner:string,scope:string,floor:string,box:Box):Generator<any[]> {
+  let after='';
+  for(;;){
+   const page=this.sql(`SELECT * FROM temp.region_shape INDEXED BY region_shape_owner WHERE kind=? AND owner=? AND scope=? AND floor=? AND key>? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=? ORDER BY key LIMIT 32`).all(kind,owner,scope,floor,after,box.x,box.x+box.width,box.y,box.y+box.height);
+   if(!page.length)return;after=page[page.length-1]!.key;yield page;
+  }
+ }
+ *geometryTileSourceBatches(source:AtlasRegionSource,box:Box,stream=true):Generator<{view:import('../atlas-scene-geometry').AtlasSceneView;anchorBuildings:boolean;unsupportedElements:number}> {
   const region:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box,slice:null,scopeId:null,floorId:'ground',rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
   const bindings=this.sql('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid').all(source.campaignId);
   // Reject distant owners before their floor/candidate queries. The existing
@@ -323,7 +336,7 @@ export class AtlasRegionReader {
   const children=new Map<string,any>(),cityBindings=new Map<string,any>(),unitIds=new Set<string>();
   for(const b of bindings){if(b.parent==='building')children.set(b.parent_id,b);if(b.kind==='city')cityBindings.set(b.owner_id,b);}
   let used=0;
-  const budget=(value:unknown)=>{used+=bytes(value);if(++region.coverage.objects>16384||used>16*1024*1024)throw Error('Geometriekachel benötigt feinere Detailstufe.');};
+  const budget=(value:unknown)=>{used+=bytes(value);region.coverage.objects++;if(!stream&&(region.coverage.objects>16384||used>16*1024*1024))throw Error('Geometriekachel benötigt feinere Detailstufe.');};
   const metadata=(b:AtlasBinding,f:Frame)=>{if(!bindingIds.has(b.id)){bindingIds.add(b.id);region.bindings.push(b);region.frames[b.id]=f;}};
   const floors=(scope:string)=>{let rows=floorCache.get(scope);if(!rows){rows=this.sql("SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY rowid").all(source.campaignId,scope) as AtlasRegionGeometry['floors'];floorCache.set(scope,rows);}return rows;};
   const addFloors=(scope:string)=>{if(!addedFloors.has(scope)){addedFloors.add(scope);region.floors.push(...floors(scope));}};
@@ -336,6 +349,20 @@ export class AtlasRegionReader {
    if(child){const cb=this.binding(child);metadata(cb,this.frame(cb));addFloors(cb.ownerId);unit.floorElevations=this.sql('SELECT source_elevation z FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid').all(source.campaignId,cb.ownerId).map((x:{z:number})=>x.z);region.interiors[unit.id]=cb.ownerId;}
    budget(unit);city.units.push(unit);
   };
+  const batch=(anchorBuildings:boolean,unsupportedElements=0)=>{
+   region.coverage.complete=region.coverage.unreadable===0;
+   const view:import('../atlas-scene-geometry').AtlasSceneView={cities:region.cities,bindings:region.bindings,region:{...region,coverage:{...region.coverage}},
+    workspace:{rooms:region.rooms,floors:region.floors},
+    geometry:{floors:region.floors.map(f=>({id:f.id,scopeId:f.scopeId,name:f.name,elevation:f.sourceElevation})),drawing:region.drawing}};
+   if(stream){
+    region.cities=[];region.bindings=[];region.rooms=[];region.floors=[];region.drawing=emptyDrawing();region.frames=Object.create(null);region.interiors=Object.create(null);
+    region.coverage.objects=0;used=0;bindingIds.clear();cityResults.clear();addedFloors.clear();unitIds.clear();
+   }
+   return {view,anchorBuildings,unsupportedElements};
+  };
+  // Fine reads retain their existing ordered iterator and complete DTO. Coarse
+  // pages retain at most 32 source records plus the current owner's metadata.
+  const pages=(kind:string,owner:string,scope:string,floor:string,local:Box)=>stream?this.geometryCandidates(kind,owner,scope,floor,local):[this.candidates(kind,owner,scope,floor,local)];
   for(const row of bindings){
    const b=this.binding(row);let f:Frame;
    try{f=this.frame(b);}catch{region.coverage.unreadable++;continue;}
@@ -343,30 +370,35 @@ export class AtlasRegionReader {
    const extent=extents.get(JSON.stringify([b.kind,b.ownerId]));
    if(!extent||!overlap(extent,local))continue;
    if(b.kind==='city'){
-    for(const candidate of this.candidates('unit',b.ownerId,'','',local))addBuilding(row,this.shape(candidate).value);
+    for(const page of pages('unit',b.ownerId,'','',local)){
+     for(const candidate of page)addBuilding(row,this.shape(candidate).value);
+     if(stream)yield batch(false);
+    }
    }else{
     for(const floor of floors(b.ownerId)){
-     for(const candidate of this.candidates('room','',b.ownerId,floor.id,local)){
-      const room=this.shape(candidate).value as RoomGeometry;if(!this.roomVisible(room.id,room.scopeId,room.floorId))continue;
-      budget(room);metadata(b,f);addFloors(b.ownerId);region.rooms.push(room);
-      // A room may extend beyond its parent building footprint. Its ground
-      // anchor still belongs to that building, even outside this tile's query.
-      if(b.parent==='building'){
-       const parent=this.source('city_unit',b.parentId!);if(!parent)throw Error('Elterngebäude fehlt.');
-       const city=cityBindings.get(parent.city_id);if(!city)throw Error('Stadtanker fehlt.');
-       addBuilding(city,this.materialize('city_unit',parent)!.value);
+     for(const page of pages('room','',b.ownerId,floor.id,local)){
+      for(const candidate of page){
+       const room=this.shape(candidate).value as RoomGeometry;if(!this.roomVisible(room.id,room.scopeId,room.floorId))continue;
+       budget(room);metadata(b,f);addFloors(b.ownerId);region.rooms.push(room);
+       // Parent geometry here supplies the physical base for displaced rooms.
+       // Streaming callers must not emit these anchor-only buildings twice.
+       if(b.parent==='building'){
+        const parent=this.source('city_unit',b.parentId!);if(!parent)throw Error('Elterngebäude fehlt.');
+        const city=cityBindings.get(parent.city_id);if(!city)throw Error('Stadtanker fehlt.');
+        addBuilding(city,this.materialize('city_unit',parent)!.value);
+       }
       }
+      if(stream)yield batch(true);
      }
-     for(const candidate of this.candidates('element','',b.ownerId,floor.id,local)){
-      const element=this.shape(candidate).value;budget(element);metadata(b,f);region.drawing.elements.push(element);
+     for(const page of pages('element','',b.ownerId,floor.id,local)){
+      if(stream){yield batch(true,(page as any[]).length);continue;}
+      for(const candidate of page){const element=this.shape(candidate).value;budget(element);metadata(b,f);region.drawing.elements.push(element);}
      }
     }
    }
+   if(stream)floorCache.clear();
   }
-  region.coverage.complete=region.coverage.unreadable===0;
-  return {cities:region.cities,bindings:region.bindings,region,
-   workspace:{rooms:region.rooms,floors:region.floors},
-   geometry:{floors:region.floors.map(f=>({id:f.id,scopeId:f.scopeId,name:f.name,elevation:f.sourceElevation})),drawing:region.drawing}};
+  yield batch(false);
  }
  /** The point's fixed half-metre neighbourhood is independent of tile LOD.
   * Adjacent tiles therefore use identical physical anchors and wall bases. */

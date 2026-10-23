@@ -10,8 +10,8 @@ import {createAtlasCanonicalFixture} from '../tools/atlas-canonical-fixture.mjs'
 
 const require=createRequire(import.meta.url);
 const Database=require('better-sqlite3');
-buildSync({stdin:{contents:`export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-geometry-tiles';export * from './src/app/terrain-height';`,resolveDir:process.cwd()},outfile:'.build/atlas-geometry-tiles-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,AtlasRegionReader,AtlasGeometryTiles,heightRecord}=require('../.build/atlas-geometry-tiles-test.cjs');
+buildSync({stdin:{contents:`export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-geometry-tiles';export * from './src/app/terrain-height';export * from './src/app/atlas-geometry-tile';`,resolveDir:process.cwd()},outfile:'.build/atlas-geometry-tiles-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,AtlasRegionReader,AtlasGeometryTiles,heightRecord,atlasGeometryTileModel}=require('../.build/atlas-geometry-tiles-test.cjs');
 
 const ring=(x,y,size=40)=>[{x,y},{x:x+size,y},{x:x+size,y:y+size},{x,y:y+size}];
 const room=(id,name,x,y,floorId='ground')=>({id,scopeId:'local',floorId,number:id,name,revision:0,polygons:[{outer:ring(x,y),holes:[]}],sections:[]});
@@ -25,10 +25,11 @@ function fixture(t){
   const store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Persistent geometry',[
     room('near','Near room',20,20),room('far','Far room',2060,20),room('upper','Upper room',80,20,'upper'),
   ]),token=store.activateShell(campaign.id).token;
-  const calls={source:0,height:0};let db,reader,tiles,cursor;
+  const calls={source:0,height:0,batches:0};let db,reader,tiles,cursor;
   const observe=()=>{
-    const geometryTileSource=reader.geometryTileSource.bind(reader),geometryHeight=reader.geometryHeight.bind(reader);
+    const geometryTileSource=reader.geometryTileSource.bind(reader),geometryHeight=reader.geometryHeight.bind(reader),geometryBatches=reader.geometryTileSourceBatches.bind(reader);
     reader.geometryTileSource=(...args)=>{calls.source++;return geometryTileSource(...args);};
+    reader.geometryTileSourceBatches=(...args)=>{calls.batches++;return geometryBatches(...args);};
     reader.geometryHeight=(...args)=>{calls.height++;return geometryHeight(...args);};
   };
   const reopen=()=>{
@@ -42,7 +43,7 @@ function fixture(t){
     try{
       await reader.sync(cursor);
       const steps=tiles.read({...cursor,...overrides},{tile:address,revision:cursor.revision},reader);
-      for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}}
+      for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}db.exec('COMMIT');db.exec('BEGIN');}
     }catch(error){db.exec('ROLLBACK');throw error;}
   };
   return{dir,store,campaign,token,calls,read,reopen,source:()=>store.atlasRegionSource(token,cursor),get reader(){return reader;},get tiles(){return tiles;}};
@@ -60,7 +61,7 @@ async function canonicalFixture(t){
     try{
       await reader.sync(cursor);
       const steps=tiles.read({...cursor},{tile:address,revision:cursor.revision},reader);
-      for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}}
+      for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}db.exec('COMMIT');db.exec('BEGIN');}
     }catch(error){db.exec('ROLLBACK');throw error;}
   };
   return{profile,canonical,store,token,db,reader,tiles,read,source:()=>store.atlasRegionSource(token,cursor)};
@@ -190,4 +191,48 @@ test('malformed or stale requests reject; shadow and untracked sources bypass pe
   const untracked=await f.read(address,{shapeVersion:undefined});
   assert.equal(untracked.cache,'disabled');
   assert.equal((await f.read(address)).cache,'built');
+});
+
+const overview=result=>{assert.equal(result.model.objects.length,0);assert.equal(result.model.overviews.length,1);return result.model.overviews[0];};
+const overviewBytes=result=>overview(result).meshes.flatMap(m=>[Buffer.from(m.positions.buffer,m.positions.byteOffset,m.positions.byteLength),Buffer.from(m.indices.buffer,m.indices.byteOffset,m.indices.byteLength)]);
+test('coarse tiles stream across snapshot boundaries, stay nonsemantic, persist, and invalidate locally',async t=>{
+ const f=fixture(t),near=tile(0,0,1),far=tile(4,0,1);
+ const before=await f.read(near),remote=await f.read(far),calls={...f.calls};
+ assert.equal(before.cache,'built');assert.equal(overview(before).modeledObjects,2);assert(overview(before).meshes.length<=2);
+ assert.equal(before.model.coverage.complete,false);assert(before.model.coverage.unsupported.some(x=>x.code==='geometry-overview'));
+ assert.equal(atlasGeometryTileModel(before).targets.size,0);
+ for(const presentation of [{scopeId:'local',roofs:true},{scopeId:null,roofs:false},{scopeId:null,roofs:true,floorId:'upper'}]){
+  const scene=atlasGeometryTileModel(before,presentation);assert.equal(scene.overviews.length,0);assert(scene.coverage.unsupported.some(w=>w.code==='geometry-detail-required'));
+ }
+ f.reopen();assert.equal((await f.read(near)).cache,'hit');assert.deepEqual(f.calls,calls);
+ const room=f.store.atlasRoom(f.token,'near');draw(f,{kind:'shape',roomId:room.id,expectedRevision:room.revision,polygons:[{outer:ring(120,120),holes:[]}]});
+ const changed=await f.read(near),unchanged=await f.read(far);
+ assert.equal(changed.cache,'built');assert.notDeepEqual(overviewBytes(changed),overviewBytes(before));
+ assert.equal(unchanged.cache,'hit');assert.deepEqual(overviewBytes(unchanged),overviewBytes(remote));
+ command(f,{kind:'undo'});assert.deepEqual(overviewBytes(await f.read(near)),overviewBytes(before));
+ command(f,{kind:'redo'});assert.deepEqual(overviewBytes(await f.read(near)),overviewBytes(changed));
+ const renamed=f.store.atlasRoom(f.token,'near');
+ f.store.atlasRoomCommit({commandId:randomUUID(),token:f.token,campaignId:f.campaign.id,roomId:'near',expectedRevision:renamed.revision,name:'Overview rename',polygons:renamed.polygons,sections:renamed.sections});
+ assert.equal((await f.read(near)).cache,'hit','renaming a room cannot change its overview');
+});
+
+test('coarse envelopes follow terrain, hidden membership and preserve physical upper building floors',async t=>{
+ const f=await canonicalFixture(t),address=tile(0,0,1),before=await f.read(address);
+ const maxZ=result=>Math.max(...overview(result).meshes.flatMap(m=>Array.from(m.positions).filter((_,i)=>i%3===2).map(z=>z+m.origin.heightM)));
+ const beforeTop=maxZ(before),beforeCount=overview(before).modeledObjects;
+ f.store.executeDrawing({commandId:randomUUID(),token:f.token,campaignId:f.canonical.campaignId,action:{kind:'floor',scopeId:f.canonical.scopeId,id:f.canonical.upperFloorId,name:'Upper',elevation:4,cloneId:null,hidden:true}});
+ const hidden=await f.read(address);assert.equal(hidden.cache,'built');assert.equal(maxZ(hidden),beforeTop);
+ assert(overview(hidden).modeledObjects<beforeCount,'hidden room disappears but its floor still supports the building height');
+ const plain=fixture(t),original=await plain.read(address);
+ command(plain,{kind:'landscape-put',expectedRevision:null,record:heightRecord(0,0,4,new Float32Array(4096).fill(80))});
+ const raised=await plain.read(address);assert.equal(raised.cache,'built');assert(maxZ(raised)>maxZ(original));
+ command(plain,{kind:'undo'});assert.deepEqual(overviewBytes(await plain.read(address)),overviewBytes(original));
+});
+
+test('coarse batches never decode unsupported drawing payloads, count them, and keep source pages bounded',async t=>{
+ const f=await canonicalFixture(t),shape=f.reader.shape.bind(f.reader);let attempted=0;
+ f.reader.shape=row=>{if(row.kind==='element'){attempted++;throw Error('unsupported element decoded');}return shape(row);};
+ const result=await f.read(tile(0,0,1));
+ assert.equal(attempted,0);assert(overview(result).modeledObjects>0);
+ assert(result.model.coverage.unsupported.some(x=>x.code==='scene-feature-kinds-not-modeled'&&/Zeichnungselemente/.test(x.detail)));
 });

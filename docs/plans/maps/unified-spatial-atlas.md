@@ -80,15 +80,29 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   [47 gezielte Tests und native Wiederöffnung](../../reference/atlas-material-tiles-20261023/README.md)
   belegen Rohdaten und Transport; GPU-Komposition und flächengetreue gemischte
   Material-LOD-Übergänge sind damit noch nicht qualifiziert.
-- **Nächste Arbeit:** M2 bleibt aktiv. Als Nächstes die nutzbare grobe
-  Geometrieübersicht am festen M0-Weltfall aufbauen: der dichte 4096-m-Ausschnitt
-  überschreitet weiter das Quellenbudget. Danach bleiben weitere Objektklassen,
-  Materialstufenreduktion, Gesamtbudget einschließlich Projektionsindizes und
-  vollständige Weltlast. Die lokale Quellenprüfung
-  und kalte Geometrieaufbereitung müssen unter Weltlast vermessen werden.
-  Die bisherigen fünf Maßstabsproben verwenden skalierte Testgeometrie.
-  Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf dem
-  bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
+- **M2-Grobe Geometrie:** Der feste 4096-m-Weltausschnitt überschreitet im
+  vollständigen DTO weiter das Quellenbudget, besitzt aber jetzt eine getrennte
+  begrenzte Übersicht: 11.500 Räume werden zu einem Mesh mit rund 956 KiB.
+  Adaptive Zellen erhalten Zwischenräume; die erste Variante mit voll belegten
+  Zellen wurde nach nativer Sichtprüfung ersetzt. [33 gezielte Tests und native
+  Weltprüfung](../../reference/atlas-geometry-overview-20261024/README.md) belegen
+  lokale Invalidierung, Restart, Revisionwechsel während der Aufbereitung und
+  separate exakte Feinauswahl. Übersichtspuffer sind nach Neustart identisch;
+  native Datenabfrage 7,56 s kalt / 401 ms nach Neustart. Die Übersicht bleibt
+  ohne direkte semantische Auswahl und ohne einzelne Geschoss-/Dachkomposition;
+  diese Ansichten verlangen Detailkacheln. Andere Zeichnungselemente werden
+  ausdrücklich als fehlende Darstellung gezählt.
+- **Nächste Arbeit:** M2 bleibt aktiv. Jetzt die kalte Weltaufbereitung verkürzen:
+  der Erstaufbau überschreitet das 2-s-Ziel deutlich. An der festen M0-Welt die
+  Kosten von Projektionsindex, Besitzer-/Höhenabfragen und Kachelaufbereitung
+  getrennt messen und den dominanten Pfad ersetzen; die unveränderte
+  Wiederöffnung darf keine vollständige Aufbereitung zurückbringen.
+  Danach bleiben weitere Objektklassen, Materialstufenreduktion, Gesamtbudget
+  einschließlich Projektionsindizes und vollständige Weltlast. Die
+  kampagnenweiten Binding-/Bereichsmetadaten sind noch nicht seitenweise begrenzt.
+  Quellengestützte Auswahl aus der Übersicht bleibt vor der Werkzeugübernahme
+  offen. Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf
+  dem bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 

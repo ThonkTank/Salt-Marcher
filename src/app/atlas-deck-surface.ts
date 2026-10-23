@@ -4,6 +4,7 @@ import {atlasMetricFrame, AtlasMetricView, atlasMetricZoomAt, atlasMetricPanAt,
   type AtlasMetricCamera} from './atlas-metric-camera';
 import {ensureAtlasDeckPickingDepth} from './atlas-deck-picking';
 import type {AtlasDeckSceneModel, AtlasDeckSceneObject, AtlasDeckSelectionTarget} from './atlas-deck-scene-model';
+import type {AtlasGeometryOverviewMesh} from './atlas-geometry-overview';
 import {refineAtlasDeckRayHit} from './atlas-deck-ray';
 import {createAtlasDeckLabels, type AtlasDeckLabel, type AtlasDeckLabels} from './atlas-deck-labels';
 
@@ -29,11 +30,15 @@ const colors: Record<AtlasDeckSelectionTarget['kind'], Color> = {
 };
 type SceneMesh = {attributes: {POSITION: {size: number; value: Float32Array}}; indices: {size: number; value: Uint32Array}};
 const meshes = new WeakMap<AtlasDeckSceneObject, {mesh: SceneMesh; data: AtlasDeckSceneObject[]}>();
+const overviewMeshes = new WeakMap<AtlasGeometryOverviewMesh, {mesh: SceneMesh; data: AtlasGeometryOverviewMesh[]}>();
+const overviewColors: Record<AtlasGeometryOverviewMesh['kind'], Color> = {
+  building: [153, 117, 89, 255], room: [189, 164, 123, 255]
+};
 
 /** Camera/origin changes only update instance transforms. Mesh and instance-data
  * identities survive; Deck retains the expensive geometry buffers. */
 export function atlasDeckSceneLayers(model: AtlasDeckSceneModel, frame: Frame): Layer[] {
-  return model.objects.map(object => {
+  const semanticLayers = model.objects.map(object => {
     let cached = meshes.get(object);
     if (!cached) {
       cached = {mesh: {attributes: {POSITION: {size: 3, value: object.positions}},
@@ -57,6 +62,31 @@ export function atlasDeckSceneLayers(model: AtlasDeckSceneModel, frame: Frame): 
       parameters: {depthWriteEnabled: true, depthCompare: 'less-equal', cullMode: 'none'}
     });
   });
+  const overviewLayers = (model.overviews ?? []).flatMap(overview => overview.meshes.map(object => {
+    let cached = overviewMeshes.get(object);
+    if (!cached) {
+      cached = {mesh: {attributes: {POSITION: {size: 3, value: object.positions}},
+        indices: {size: 1, value: object.indices}}, data: [object]};
+      overviewMeshes.set(object, cached);
+    }
+    const {lod, x, y} = overview.tile;
+    return new SimpleMeshLayer<AtlasGeometryOverviewMesh>({
+      id: `atlas-overview:${lod}/${x}/${y}:${overview.resolution}:${object.id}`,
+      data: cached.data, mesh: cached.mesh,
+      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      getPosition: [object.origin.x - frame.origin.x, object.origin.y - frame.origin.y,
+        (object.origin.heightM - frame.origin.z) * frame.camera.exaggeration],
+      getScale: [1, 1, frame.camera.exaggeration],
+      updateTriggers: {
+        getPosition: [frame.origin.x, frame.origin.y, frame.origin.z, frame.camera.exaggeration],
+        getScale: frame.camera.exaggeration
+      },
+      getColor: overviewColors[object.kind], material: false, pickable: false,
+      getPolygonOffset: () => [0, 0],
+      parameters: {depthWriteEnabled: true, depthCompare: 'less-equal', cullMode: 'none'}
+    });
+  }));
+  return [...overviewLayers, ...semanticLayers];
 }
 
 /** Standalone metric scene. Main/preload owns snapshots; this surface never
@@ -153,7 +183,9 @@ export class AtlasDeckSurface {
     ensureAtlasDeckPickingDepth(this.deckValue!);
     const info = this.deckValue!.pickObject({x, y, radius: 0});
     const object = info?.object as AtlasDeckSceneObject | undefined;
-    if (!info?.picked || info.index !== 0 || !object || !this.modelValue.objects.includes(object) ||
+    // Treat renderer output as untrusted: overview layers are non-pickable, and
+    // only the exact canonical scene object instances have semantic targets.
+    if (!info?.picked || info.index !== 0 || !object || !this.modelValue.objects.some(candidate => candidate === object) ||
       info.layer?.id !== `atlas-scene:${object.id}` || this.modelValue.targets.get(object.id) !== object.target) return null;
     const segment = this.frameValue.ray({x, y});
     const point = segment ? refineAtlasDeckRayHit({object, segment})?.point ?? null : null;
