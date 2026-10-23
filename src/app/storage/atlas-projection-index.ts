@@ -4,6 +4,7 @@ import {createReadStream,constants} from 'node:fs';
 import {copyFile,mkdir,readFile,writeFile,rename,rm,stat,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import type {AtlasRegionSource} from '../atlas-region-contracts';
+import {AtlasTileCache} from './atlas-tile-cache';
 
 // Bump when metadata columns, bounds, validation or derivation semantics change.
 const FORMAT=1,APPLICATION=0x534d5049,LIMIT=96*1024*1024;
@@ -184,7 +185,10 @@ export async function eraseProjectionWork(directory:string,filename:string,campa
 export async function eraseAtlasProjection(directory:string,filename:string,campaignId:string){
  const key=projectionKey(filename,campaignId);let names:string[];
  try{names=await readdir(directory);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}
- for(const suffix of ['', '-journal', '-wal', '-shm'])await rm(join(directory,'tiles-v1',key+'.sqlite'+suffix),{force:true});
+ // New tile caches share one SQLite file; campaign erasure removes only its
+ // namespace rows under SQLite's writer lock. Legacy shards are retired by
+ // the exclusive startup cleanup after no workers can own them.
+ AtlasTileCache.eraseNamespace(directory,key);
  for(const name of names)if(name===key+'.json'||name===key+'.jsonl'||name.startsWith(key+'.candidate-')||name.startsWith(key+'.work-')||name.startsWith(key+'.json.candidate-')||new RegExp('^'+key+'\\.[a-f0-9]{64}\\.sqlite$').test(name))await rm(join(directory,name),{recursive:true,force:true});
 }
 export async function clearProjectionWork(directory:string){

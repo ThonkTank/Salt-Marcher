@@ -108,6 +108,36 @@ eine gesteuerte Kameraänderung, keine vollständige Autorenreise oder Zielgerä
 ![Behaltene Kacheln während angehaltener Nachladung](pan-retained.png)
 ![Nachgeladene Kacheln nach der Verschiebung](pan-detail.png)
 
+## Quellenprüfung an der festen M0-Welt
+
+Die neue [Offline-Messung](../../../tools/measure-atlas-geometry-world.mjs) verwendet
+die eingefrorene M0-Welt: 5.000 Raumgruppen-Gebäude, 15.701 Räume, 5.052 Bindungen
+und 108.076 Landschaftsrecords. Sie misst ausschließlich die kanonische
+Geometriequellenauswahl; weder Meshaufbau noch IPC/GPU sind darin enthalten.
+Vorher und nachher sind Eingabehash sowie die Hashes der vollständigen ausgegebenen
+lokalen Geometriedaten identisch. [Vorher](world-source-before.json.gz),
+[nachher](world-source-after.json.gz).
+
+| Ausschnitt | Vorher | Nachher | Ausgeführte SQL-Anweisungen vorher → nachher |
+| --- | --- | --- | --- |
+| 256 m mit 272 Räumen / 64 Bindungen | 578 ms | 150 ms | 29.656 → 2.781 |
+| Leerer entfernter 256-m-Ausschnitt | 418 ms | 33 ms | 27.262 → 3 |
+| Dichte 4.096-m-Übersicht | 1.151 ms bis Budgetfehler | 1.222 ms bis Budgetfehler | 35.471 → 35.467 |
+
+Die vorherige Quelle fragte jedes Geschoss jeder Bindung einzeln ab. Sie nutzt
+jetzt zuerst die vorhandenen, zusammengefassten Bereichsgrenzen aller sichtbaren
+Geschosse und Zeichnungsüberhänge. Entfernte Besitzer werden vor den einzelnen
+Geschoss-/Kandidatenabfragen ausgesondert. Eine zusätzliche Regression erhält
+ein Obergeschoss außerhalb der Gebäudehülle und prüft, dass ein entfernter
+Ausschnitt keine Kandidatenabfrage ausführt. Alle sieben Geometriespeichertests
+bestehen nach der Änderung.
+
+Die Zeiten sind einzelne Offline-Läufe auf dem Entwicklungsrechner, keine
+Eingabelatenzperzentile. Kalter Indexaufbau blieb bei 4,3–4,4 s. Die dichte
+Übersicht wird weiterhin ausdrücklich abgewiesen; diese Messung rechtfertigt
+keine vollständige M2-Abnahme. Die bereits aggregierten Grenzen werden derzeit
+pro Anfrage gelesen; für feinere Optimierung sind weitere Lastbelege nötig.
+
 ## Nächste Grenze
 
 Die neue Quelle verwendet räumliche Kandidaten, durchläuft aber noch Bindungen

@@ -50,7 +50,7 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   [Szenenbelege](../../reference/atlas-maplibre-scene-20261023/README.md) und
   [Kamerabelege](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
   bleiben historische Evidenz.
-- **M2-Zwischenstand:** Persistente Terrainkacheln mit Höhen, Grundfarben und
+- **M2-Zwischenstand:** Persistente Terrainkacheln mit Höhen, fertig gerasterten Farben und
   Bewuchsmaske, Übersicht vor Detail, atomarem Stufenwechsel sowie begrenztem
   RAM-/Kampagnen-Plattencache sind implementiert.
   [32 gezielte Tests und native Wiederöffnung](../../reference/atlas-terrain-tiles-20261023/README.md)
@@ -65,9 +65,18 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   belegen lokale Änderungen, Terrainabhängigkeit, Undo/Redo, Geschosse und genaue
   native Treffer. Die unabhängige Prüfung trennte physische Bauhöhe von versteckten
   Geschossen und Warnungen beschädigter Quellen von der Meshidentität.
+  Die feste M0-Welt zeigte 27.262 SQL-Anweisungen selbst für einen leeren
+  Ausschnitt. Frühe Filterung über vorhandene Geschossgrenzen reduziert diese
+  auf drei (418 → 33 ms); der lokale Ausschnitt sank von 578 auf 150 ms bei
+  identischen Geometriedaten. Kalter Indexaufbau und dichte Übersicht bleiben offen.
+- **M2-Cachebudget:** Terrain und Geometrie teilen einen atomaren, kampagnenübergreifend
+  begrenzten Kachelcache (96 MiB Nutzdaten, höchstens 64 MiB je Namensraum).
+  [51 gezielte Tests und zwei native Wiederanläufe](../../reference/atlas-shared-tile-cache-20261023/README.md)
+  belegen Verdrängung, Absturzrecovery, selektive Löschung und gemeinsame
+  Wiederverwendung. Die separaten Projektionsindizes sind noch nicht global budgetiert.
 - **Nächste Arbeit:** M2 bleibt aktiv: dichte grobe Geometriedetailstufen und
-  weitere Objektklassen, eigenständige Materialkanäle, kampagnenübergreifendes
-  Plattenbudget und vollständige Weltlast fehlen noch. Die lokale Quellenprüfung
+  weitere Objektklassen, eigenständige Materialkanäle, Gesamtbudget einschließlich
+  Projektionsindizes und vollständige Weltlast fehlen noch. Die lokale Quellenprüfung
   und kalte Geometrieaufbereitung müssen unter Weltlast vermessen werden.
   Die bisherigen fünf Maßstabsproben verwenden skalierte Testgeometrie.
   Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf dem

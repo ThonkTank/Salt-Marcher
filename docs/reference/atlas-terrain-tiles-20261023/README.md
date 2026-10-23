@@ -3,7 +3,9 @@
 Dieser Bericht hält die erste Terrainlieferung fest. Die spätere
 [Geometrie- und Pan-Prüfung](../atlas-geometry-tiles-20261023/README.md) ergänzt
 persistente Gebäude/Räume und ersetzt den hier dokumentierten leeren Frame
-bei Kameraplanwechsel. Die übrigen offenen M2-Grenzen bleiben bestehen.
+bei Kameraplanwechsel. Der spätere [gemeinsame Kachelcache](../atlas-shared-tile-cache-20261023/README.md)
+ersetzt die hier beschriebenen V1-Dateien und ergänzt ein kampagnenübergreifendes
+Kachelbudget. Die folgenden Angaben dokumentieren den damaligen Prüfstand.
 
 Die Terrainstrecke der [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.md)
 speichert berechnete Kacheln dauerhaft und lädt zuerst eine gröbere Übersicht.

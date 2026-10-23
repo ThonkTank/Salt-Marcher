@@ -147,6 +147,21 @@ test('hiding an upper floor removes its room while retaining the building shell 
   assert.equal(maxZ(after),roofHeight,'the hidden floor still contributes to the physical shell top');
 });
 
+test('owner bounds keep an upper room outside the building footprint and skip distant floor queries',async t=>{
+  const f=await canonicalFixture(t),upper=f.store.atlasRoom(f.token,f.canonical.upperRoomId);
+  f.store.executeDrawing({commandId:randomUUID(),token:f.token,campaignId:f.canonical.campaignId,action:{
+    kind:'shape',roomId:upper.id,expectedRevision:upper.revision,polygons:[{outer:ring(600,20,5),holes:[]}],
+  }});
+  const displaced=await f.read(tile(2));
+  assert(displaced.model.objects.some(o=>o.target.kind==='room'&&o.target.id===upper.id),
+    'all-floor extents must retain rooms beyond both ground-floor and building bounds');
+  assert(!displaced.model.objects.some(o=>o.target.kind==='building'),'parent anchor metadata must not invent a remote building');
+  let candidates=0;const original=f.reader.candidates.bind(f.reader);
+  f.reader.candidates=(...args)=>{candidates++;return original(...args);};
+  const empty=await f.read(tile(200));
+  assert.equal(empty.model.objects.length,0);assert.equal(candidates,0,'distant owners must be rejected before per-floor candidate queries');
+});
+
 test('an externally inserted orphan building binding warns without rebuilding valid meshes',async t=>{
   const f=fixture(t),address=tile(0),before=await f.read(address),sourceBefore=f.source();
   assert(before.model.objects.some(object=>object.target.kind==='room'&&object.target.id==='near'));

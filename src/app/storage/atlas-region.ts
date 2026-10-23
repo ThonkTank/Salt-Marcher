@@ -310,6 +310,14 @@ export class AtlasRegionReader {
  geometryTileSource(source:AtlasRegionSource,box:Box):import('../atlas-scene-geometry').AtlasSceneView {
   const region:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box,slice:null,scopeId:null,floorId:'ground',rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
   const bindings=this.sql('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid').all(source.campaignId);
+  // Reject distant owners before their floor/candidate queries. The existing
+  // extent index includes all visible floors and drawing overhangs; ground-floor
+  // or building-footprint bounds alone would lose displaced upper rooms.
+  const extents=new Map<string,Box>();
+  for(const e of this.sql(`SELECT 'dungeon' kind,scope owner,min(x) x,min(y) y,max(x+width)-min(x) width,max(y+height)-min(y) height FROM temp.region_extent GROUP BY scope
+    UNION ALL SELECT 'city',owner,min(min_x),min(min_y),max(max_x)-min(min_x),max(max_y)-min(min_y) FROM temp.region_shape WHERE kind='unit' GROUP BY owner`).all()){
+   if(e.x!==null)extents.set(JSON.stringify([e.kind,e.owner]),{x:e.x,y:e.y,width:e.width,height:e.height});
+  }
   const bindingIds=new Set<string>(),cityResults=new Map<string,AtlasRegionGeometry['cities'][number]>(),floorCache=new Map<string,AtlasRegionGeometry['floors']>(),addedFloors=new Set<string>();
   const children=new Map<string,any>(),cityBindings=new Map<string,any>(),unitIds=new Set<string>();
   for(const b of bindings){if(b.parent==='building')children.set(b.parent_id,b);if(b.kind==='city')cityBindings.set(b.owner_id,b);}
@@ -331,6 +339,8 @@ export class AtlasRegionReader {
    const b=this.binding(row);let f:Frame;
    try{f=this.frame(b);}catch{region.coverage.unreadable++;continue;}
    const local=bounds(corners(box).map(p=>inverse(p,f)));
+   const extent=extents.get(JSON.stringify([b.kind,b.ownerId]));
+   if(!extent||!overlap(extent,local))continue;
    if(b.kind==='city'){
     for(const candidate of this.candidates('unit',b.ownerId,'','',local))addBuilding(row,this.shape(candidate).value);
    }else{

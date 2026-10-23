@@ -4,10 +4,11 @@ import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {mkdtempSync,mkdirSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3');
-buildSync({stdin:{contents:`export {vegetationSpec} from './src/app/vegetation';export {emptyRecord} from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/terrain-height';export * from './src/app/landscape-raster';export * from './src/app/atlas-terrain-tile';export * from './src/app/storage/atlas-projection-index';`,resolveDir:process.cwd()},outfile:'.build/atlas-terrain-tiles-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,AtlasRegionReader,AtlasTerrainTiles,heightRecord,vegetationSpec,emptyRecord,LandscapeRasterizer,atlasTerrainTileQuery,projectionKey,eraseAtlasProjection}=require('../.build/atlas-terrain-tiles-test.cjs');
+buildSync({stdin:{contents:`export {vegetationSpec} from './src/app/vegetation';export {emptyRecord} from './src/app/atlas-landscape';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';export * from './src/app/storage/atlas-terrain-tiles';export * from './src/app/storage/atlas-tile-cache';export * from './src/app/terrain-height';export * from './src/app/landscape-raster';export * from './src/app/atlas-terrain-tile';export * from './src/app/storage/atlas-projection-index';`,resolveDir:process.cwd()},outfile:'.build/atlas-terrain-tiles-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,AtlasRegionReader,AtlasTerrainTiles,AtlasTileCache,heightRecord,vegetationSpec,emptyRecord,LandscapeRasterizer,atlasTerrainTileQuery,projectionKey,eraseAtlasProjection}=require('../.build/atlas-terrain-tiles-test.cjs');
 function fixture(t){
   const base=homedir()+'/.cache/saltmarcher/tests';mkdirSync(base,{recursive:true});const dir=mkdtempSync(base+'/atlas-tiles-');
   const store=new CampaignStore(dir+'/world.sqlite'),campaign=store.create('Persistent tiles'),token=store.activateShell(campaign.id).token;
@@ -55,16 +56,20 @@ test('untracked or shadow sources never publish; malformed request and stale rev
   for(const request of [{tile:{...tile,lod:33},revision:0},{tile:{...tile,x:1.5},revision:0},{tile,revision:-1},{tile,revision:0,contours:NaN},{tile,revision:0,authorHeights:[1]}])assert.throws(()=>atlasTerrainTileQuery(request));
 });
 
-test('campaign erasure removes derived tile files together with old projection artifacts',async t=>{
+test('campaign erasure removes only its shared tile namespace and leaves canonical bytes unchanged',async t=>{
   const f=fixture(t);await f.read({lod:0,x:0,y:0});f.reopen();
-  // No active cache connection in the new reader; mirrors Main closing workers first.
-  const key=projectionKey(f.store.filename,f.campaign.id);
-  await eraseAtlasProjection(f.dir+'/cache',f.store.filename,f.campaign.id);
-  const {existsSync}=await import('node:fs');assert.equal(existsSync(f.dir+'/cache/tiles-v1/'+key+'.sqlite'),false);
+  const key=projectionKey(f.store.filename,f.campaign.id),other='d'.repeat(64),directory=f.dir+'/cache';
+  const owned=AtlasTileCache.open(directory,key),unrelated=AtlasTileCache.open(directory,other);
+  assert(owned.put('terrain','s',{heights:new Float32Array([1,2])}));assert(unrelated.put('terrain','s',{heights:new Float32Array([7,8])}));owned.close();unrelated.close();
+  const before=createHash('sha256').update(readFileSync(f.store.filename)).digest('hex');
+  await eraseAtlasProjection(directory,f.store.filename,f.campaign.id);
+  const after=createHash('sha256').update(readFileSync(f.store.filename)).digest('hex');assert.equal(after,before);
+  const checkOwned=AtlasTileCache.open(directory,key),checkOther=AtlasTileCache.open(directory,other);
+  assert.equal(checkOwned.get('terrain','s'),undefined);assert.deepEqual([...checkOther.get('terrain','s').heights],[7,8]);checkOwned.close();checkOther.close();
 });
 
 
-test('material/forest channels persist together and global sea settings invalidate distant tiles',async t=>{
+test('rendered colour and forest coverage persist together and global sea settings invalidate distant tiles',async t=>{
   const f=fixture(t),near={lod:0,x:0,y:0},far={lod:0,x:8,y:0};
   const original=await f.read(near);await f.read(far);
   f.write({kind:'landscape-put',expectedRevision:null,record:heightRecord(0,0,4,new Float32Array(4096).fill(50))});

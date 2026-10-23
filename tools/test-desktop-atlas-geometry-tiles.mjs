@@ -6,7 +6,7 @@ import {createNativeSession} from './native-session.mjs';
 import {createAtlasCanonicalFixture} from './atlas-canonical-fixture.mjs';
 const root=process.cwd(),output=path.resolve('.build/atlas-geometry-native',`${Date.now()}-${process.pid}`);
 const native=await createNativeSession({root,output,name:'atlas-geometry-tiles'});
-const files=['src/app/atlas-geometry-tile.ts','src/app/atlas-geometry-mesh.ts','src/app/atlas-scene-geometry.ts','src/app/atlas-deck-scene-model.ts','src/app/storage/atlas-geometry-tiles.ts','src/app/storage/atlas-region.ts','desktop/atlas-region-worker.ts','desktop/atlas-region.ts','desktop/main.ts','desktop/preload.ts','tools/test-desktop-atlas-geometry-tiles.mjs','.build/desktop/ui/atlas-deck-runtime.js'];
+const files=['src/app/atlas-geometry-tile.ts','src/app/atlas-geometry-mesh.ts','src/app/atlas-scene-geometry.ts','src/app/atlas-deck-scene-model.ts','src/app/storage/atlas-geometry-tiles.ts','src/app/storage/atlas-tile-cache.ts','src/app/storage/atlas-projection-index.ts','src/app/storage/atlas-region.ts','desktop/atlas-region-worker.ts','desktop/atlas-region.ts','desktop/main.ts','desktop/preload.ts','tools/test-desktop-atlas-geometry-tiles.mjs','.build/desktop/ui/atlas-deck-runtime.js'];
 const hashes=async()=>Object.fromEntries(await Promise.all(files.map(async p=>[p,createHash('sha256').update(await readFile(p)).digest('hex')])));
 try{
  const fixture=await createAtlasCanonicalFixture({profilePath:native.profile,campaignName:'Geometry tile qualification'}),before=await hashes();
@@ -16,17 +16,21 @@ try{
   const runtime=await import('campaign://app/atlas-deck-runtime.js'),revision=unwrap(await window.campaign.atlasTerrainSource(active.token)).revision;
   const addresses=[{lod:-2,x:0,y:0},...[2,3].flatMap(x=>[2,3].map(y=>({lod:-5,x,y})))],tiles=[],reads=[];
   for(const tile of addresses){const start=performance.now(),result=unwrap(await window.campaign.atlasGeometryTile(active.token,{tile,revision}));tiles.push(result);reads.push({tile,cache:result.cache,ms:performance.now()-start,objects:result.model.objects.length});}
+  // Terrain and geometry own separate worker cache handles but share this file
+  // and namespace. A terrain entry at the same world address must coexist.
+  const terrainTile=unwrap(await window.campaign.atlasTerrainTile(active.token,{tile:addresses[0],revision}));
   const fine=tiles.slice(1),objects=fine.flatMap(t=>t.model.objects),container=document.createElement('div');
   Object.assign(container.style,{position:'fixed',left:'20px',top:'60px',width:'800px',height:'600px',background:'#d8e0de',zIndex:'99999'});document.body.append(container);
   const makeModel=objects=>({...runtime.atlasGeometryTileModel(tiles[0]),objects,targets:new Map(objects.map(o=>[o.id,o.target]))});
   const surface=await runtime.AtlasDeckSurface.create({container,camera:{focus:{x:24,y:24},focusHeightM:130,metersPerPixel:.10,rotation:25,tilt:50,exaggeration:1},model:makeModel(objects)});
   const point={x:26,y:24.5,heightM:151},screen=surface.frame.project(point),hit=surface.pick(screen.x,screen.y);
   window.__geometry={surface,objects,makeModel,tiles,fixture};
-  return {revision,reads,hit,expected:point,buildingParts:objects.filter(o=>o.target.kind==='building').map(o=>({id:o.id,target:o.target})),floors:[...new Set(objects.filter(o=>o.target.kind==='room').map(o=>o.target.floorId))],coverage:tiles.map(t=>t.model.coverage)};
+  return {revision,reads,terrain:{cache:terrainTile.cache,nodes:terrainTile.projection.grid.heights.length},hit,expected:point,buildingParts:objects.filter(o=>o.target.kind==='building').map(o=>({id:o.id,target:o.target})),floors:[...new Set(objects.filter(o=>o.target.kind==='room').map(o=>o.target.floorId))],coverage:tiles.map(t=>t.model.coverage)};
  },fixture);
  assert.equal(cold.buildingParts.length,4);assert(cold.buildingParts.every(o=>o.target.id===fixture.buildingId));
  assert.equal(cold.hit?.target.id,fixture.buildingId);assert(Math.abs(cold.hit.point.heightM-cold.expected.heightM)<.001);
  assert(cold.floors.includes('ground')&&cold.floors.includes(fixture.upperFloorId));
+ assert.equal(cold.terrain.cache,'built');assert.equal(cold.terrain.nodes,65*65);
  await native.capture(page,'building-seams.png');
  const upper=await page.evaluate(async()=>{
   const f=window.__geometry,objects=f.objects.filter(o=>o.target.kind==='room'&&o.target.floorId===f.fixture.upperFloorId);
@@ -48,6 +52,13 @@ try{
   }return rows;
  },fixture);
  assert(warm.every(r=>r.cache==='hit'&&r.revision===cold.revision&&r.typed&&r.ids.includes(fixture.buildingId)));
+ const warmTerrain=await fresh.evaluate(async fixture=>{
+  const unwrap=r=>{if(!r.ok)throw Error(JSON.stringify(r));return r.value;},active=unwrap(await window.campaign.activate(fixture.campaignId));
+  const revision=unwrap(await window.campaign.atlasTerrainSource(active.token)).revision;
+  const value=unwrap(await window.campaign.atlasTerrainTile(active.token,{tile:{lod:-2,x:0,y:0},revision}));
+  return {cache:value.cache,revision:value.revision,nodes:value.projection.grid.heights.length};
+ },fixture);
+ assert.equal(warmTerrain.cache,'hit');assert.equal(warmTerrain.revision,cold.revision);assert.equal(warmTerrain.nodes,65*65);
  const hiddenFloor=await fresh.evaluate(async({fixture,commandId})=>{
   const unwrap=r=>{if(!r.ok)throw Error(JSON.stringify(r));return r.value;},active=unwrap(await window.campaign.activate(fixture.campaignId)),tile={lod:-2,x:0,y:0};
   const get=async()=>{const revision=unwrap(await window.campaign.atlasTerrainSource(active.token)).revision;return unwrap(await window.campaign.atlasGeometryTile(active.token,{tile,revision}));};
@@ -57,6 +68,6 @@ try{
  },{fixture,commandId:randomUUID()});
  assert.equal(hiddenFloor.beforeRoof,152);assert.equal(hiddenFloor.afterRoof,152);assert.equal(hiddenFloor.upperVisible,false);assert(hiddenFloor.afterRevision>hiddenFloor.beforeRevision);
  await native.close();const after=await hashes();assert.deepEqual(after,before);assert.deepEqual(errors,[]);
- await native.finish({complete:true,scope:'Persistent building/room geometry, four clipped tiles and all-floor composition; not full Atlas M2 acceptance.',fixture,cold,upper,warm,hiddenFloor,errors,hashes:{before,after}});
+ await native.finish({complete:true,scope:'Persistent building/room geometry, four clipped tiles, all-floor composition and shared terrain/geometry cache; not full Atlas M2 acceptance.',fixture,cold,upper,warm,warmTerrain,hiddenFloor,errors,hashes:{before,after}});
  console.log(JSON.stringify({complete:true,output}));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

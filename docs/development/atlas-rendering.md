@@ -51,6 +51,11 @@ und speichert fertige Höhen-/Farb-/Bewuchspuffer in einem separaten
 Prüfsummen, Formatversionen, LRU und Dateilimits schützen die abgeleiteten Daten.
 Unbekannte Dateien werden nicht repariert; beschädigte eigene Dateien dürfen
 nur vor Workerstart im exklusiven Appstart entfernt werden.
+Terrain und Geometrie teilen `tiles-v2/atlas-tiles.sqlite` mit 96 MiB Nutzdaten
+insgesamt und 64 MiB je Namensraum. Kampagnenlöschung entfernt nur eigene Zeilen;
+ein belegter Cache hält die Löschung zur Wiederaufnahme offen.
+[Cachebudgets, Absturzprüfung und native Wiederverwendung](../reference/atlas-shared-tile-cache-20261023/README.md)
+beschreiben die physische Dateigrenze und deren Abgrenzung zu Projektionsindizes.
 
 [Terrainkacheln](../../src/app/storage/atlas-terrain-tiles.ts) verwenden bei
 unveränderter dauerhafter Quellenversion direkt den gespeicherten Puffer.
@@ -62,7 +67,8 @@ trennen diese Terrainstrecke von vollständiger Geometrie- und Produktabnahme.
 
 `atlasGeometryTile` nutzt denselben geprüften Main-/Workerpfad für persistente
 Gebäude- und Raummeshes. [Geometriequellen](../../src/app/storage/atlas-region.ts)
-enthalten sichtbare Räume aller Geschosse und die vollständigen physischen
+filtern entfernte Besitzer zuerst über die vorhandenen Bereichsgrenzen aller
+Geschosse. Sie enthalten sichtbare Räume und die vollständigen physischen
 Geschosshöhen der Gebäude. Verbergen eines Geschosses verändert keine Bauhöhe.
 [Clipping](../../src/app/atlas-geometry-mesh.ts) erfolgt vor der Float32-Lokalisierung;
 Randwände gehören genau einer Kachel, semantische Objekt-IDs bleiben erhalten.
