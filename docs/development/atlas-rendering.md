@@ -38,8 +38,10 @@ sichtbarer Kacheln und gröbere Eltern. Der
 [Stream](../../src/app/atlas-tile-stream.ts) lädt zuerst Eltern und ersetzt sie
 erst nach vollständiger Bereitstellung ihrer benötigten Kinder. Quellenstand,
 Revision und Generation verhindern verspätete Veröffentlichungen. Das RAM-Budget
-zählt sichtbare, vorbereitete und wiederverwendbare Daten gemeinsam; derzeit
-beginnt eine neue Kameraplanung mit einem leeren Frame.
+zählt sichtbare, vorbereitete und wiederverwendbare Daten gemeinsam. Bei gleicher
+Quelle bleiben überlappende Kacheln während Pan/Zoom sichtbar, bis die neue
+Übersicht vollständig bereitliegt. Ein kalter Start veröffentlicht bereits die
+erste verfügbare Übersichtskachel. Geänderte Quellenstände entwerten alte Frames.
 
 `atlasTerrainTile` führt durch Preload/Main in den bestehenden Terrainworker.
 [Feste Kachelaufträge](../../src/app/atlas-terrain-tile.ts) erlauben keine vom
@@ -57,6 +59,20 @@ und globalen Terrain-Einstellungen. Kamera und Fenstergröße gehören nicht zum
 Plattenschlüssel. Vorschauquellen ohne dauerhafte Version speichern keine Kacheln.
 [Prüfung und noch offene M2-Grenzen](../reference/atlas-terrain-tiles-20261023/README.md)
 trennen diese Terrainstrecke von vollständiger Geometrie- und Produktabnahme.
+
+`atlasGeometryTile` nutzt denselben geprüften Main-/Workerpfad für persistente
+Gebäude- und Raummeshes. [Geometriequellen](../../src/app/storage/atlas-region.ts)
+enthalten sichtbare Räume aller Geschosse und die vollständigen physischen
+Geschosshöhen der Gebäude. Verbergen eines Geschosses verändert keine Bauhöhe.
+[Clipping](../../src/app/atlas-geometry-mesh.ts) erfolgt vor der Float32-Lokalisierung;
+Randwände gehören genau einer Kachel, semantische Objekt-IDs bleiben erhalten.
+[Persistenz](../../src/app/storage/atlas-geometry-tiles.ts) prüft lokale Topologie
+und verwendete kanonische Höhenpunkte; gleiche dauerhafte Quellenversionen laden
+fertige Puffer. Ein Warnungswechsel allein trianguliert keine Geometrie neu.
+Die Kachel enthält keine Kamera-, Dach- oder Geschossauswahl. Komposition erfolgt
+später im Renderer. Andere Objektklassen und übervolle grobe Kacheln bleiben
+explizite offene Grenzen, keine stillschweigend vollständigen Darstellungen.
+[Geometriebeleg](../reference/atlas-geometry-tiles-20261023/README.md).
 
 Die [gemeinsame Geometrie](../../src/app/atlas-scene-geometry.ts) übernimmt
 kanonische Terrain-, Gebäude- und Raumdaten aus dem Preload-Pfad. Fehlende

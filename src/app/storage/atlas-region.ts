@@ -305,6 +305,65 @@ export class AtlasRegionReader {
    }
   }
  }
+ /** Camera-independent vector source for durable geometry. Never substitutes a
+  * raster for semantic objects; a dense tile must be refined by its caller. */
+ geometryTileSource(source:AtlasRegionSource,box:Box):import('../atlas-scene-geometry').AtlasSceneView {
+  const region:AtlasRegionGeometry={campaignId:source.campaignId,token:source.token,revision:source.revision,fence:source.fence,box,slice:null,scopeId:null,floorId:'ground',rooms:[],floors:[],drawing:emptyDrawing(),cities:[],bindings:[],scopes:[],frames:Object.create(null),scopeBounds:Object.create(null),interiors:Object.create(null),coverage:{complete:true,mode:'detail',objects:0,unreadable:this.sql('SELECT count(*) n FROM temp.region_problem').get().n,index:this.indexed?'rtree':'scan'}};
+  const bindings=this.sql('SELECT * FROM atlas_binding WHERE campaign_id=? ORDER BY rowid').all(source.campaignId);
+  const bindingIds=new Set<string>(),cityResults=new Map<string,AtlasRegionGeometry['cities'][number]>(),floorCache=new Map<string,AtlasRegionGeometry['floors']>(),addedFloors=new Set<string>();
+  const children=new Map<string,any>(),cityBindings=new Map<string,any>(),unitIds=new Set<string>();
+  for(const b of bindings){if(b.parent==='building')children.set(b.parent_id,b);if(b.kind==='city')cityBindings.set(b.owner_id,b);}
+  let used=0;
+  const budget=(value:unknown)=>{used+=bytes(value);if(++region.coverage.objects>16384||used>16*1024*1024)throw Error('Geometriekachel benötigt feinere Detailstufe.');};
+  const metadata=(b:AtlasBinding,f:Frame)=>{if(!bindingIds.has(b.id)){bindingIds.add(b.id);region.bindings.push(b);region.frames[b.id]=f;}};
+  const floors=(scope:string)=>{let rows=floorCache.get(scope);if(!rows){rows=this.sql("SELECT id,scope_id scopeId,name,source_elevation sourceElevation FROM drawing_floor f WHERE campaign_id=? AND scope_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY rowid").all(source.campaignId,scope) as AtlasRegionGeometry['floors'];floorCache.set(scope,rows);}return rows;};
+  const addFloors=(scope:string)=>{if(!addedFloors.has(scope)){addedFloors.add(scope);region.floors.push(...floors(scope));}};
+  const addBuilding=(row:any,unit:any)=>{
+   const b=this.binding(row),f=this.frame(b);metadata(b,f);
+   let city=cityResults.get(b.ownerId);
+   if(!city){city={header:readCityHeader(this.db,source.campaignId,b.ownerId),units:[]};region.cities.push(city);cityResults.set(b.ownerId,city);}
+   if(unitIds.has(unit.id))return;unitIds.add(unit.id);
+   const child=children.get(unit.id);
+   if(child){const cb=this.binding(child);metadata(cb,this.frame(cb));addFloors(cb.ownerId);unit.floorElevations=this.sql('SELECT source_elevation z FROM drawing_floor WHERE campaign_id=? AND scope_id=? ORDER BY rowid').all(source.campaignId,cb.ownerId).map((x:{z:number})=>x.z);region.interiors[unit.id]=cb.ownerId;}
+   budget(unit);city.units.push(unit);
+  };
+  for(const row of bindings){
+   const b=this.binding(row);let f:Frame;
+   try{f=this.frame(b);}catch{region.coverage.unreadable++;continue;}
+   const local=bounds(corners(box).map(p=>inverse(p,f)));
+   if(b.kind==='city'){
+    for(const candidate of this.candidates('unit',b.ownerId,'','',local))addBuilding(row,this.shape(candidate).value);
+   }else{
+    for(const floor of floors(b.ownerId)){
+     for(const candidate of this.candidates('room','',b.ownerId,floor.id,local)){
+      const room=this.shape(candidate).value as RoomGeometry;if(!this.roomVisible(room.id,room.scopeId,room.floorId))continue;
+      budget(room);metadata(b,f);addFloors(b.ownerId);region.rooms.push(room);
+      // A room may extend beyond its parent building footprint. Its ground
+      // anchor still belongs to that building, even outside this tile's query.
+      if(b.parent==='building'){
+       const parent=this.source('city_unit',b.parentId!);if(!parent)throw Error('Elterngebäude fehlt.');
+       const city=cityBindings.get(parent.city_id);if(!city)throw Error('Stadtanker fehlt.');
+       addBuilding(city,this.materialize('city_unit',parent)!.value);
+      }
+     }
+     for(const candidate of this.candidates('element','',b.ownerId,floor.id,local)){
+      const element=this.shape(candidate).value;budget(element);metadata(b,f);region.drawing.elements.push(element);
+     }
+    }
+   }
+  }
+  region.coverage.complete=region.coverage.unreadable===0;
+  return {cities:region.cities,bindings:region.bindings,region,
+   workspace:{rooms:region.rooms,floors:region.floors},
+   geometry:{floors:region.floors.map(f=>({id:f.id,scopeId:f.scopeId,name:f.name,elevation:f.sourceElevation})),drawing:region.drawing}};
+ }
+ /** The point's fixed half-metre neighbourhood is independent of tile LOD.
+  * Adjacent tiles therefore use identical physical anchors and wall bases. */
+ geometryHeight(source:AtlasRegionSource,point:Point):number {
+  const box={x:point.x-.5,y:point.y-.5,width:1,height:1};
+  const grid=this.terrainVisibility(source,{box,frame:box,columns:3,rows:3,focusM:0,tilt:0,rotation:0,exaggeration:1});
+  return grid.heights[4]!;
+ }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,cancellation?:Int32Array):AtlasRegionGeometry{
   const checkpoint=atlasReadCheckpoint(cancellation);
   checkpoint?.();

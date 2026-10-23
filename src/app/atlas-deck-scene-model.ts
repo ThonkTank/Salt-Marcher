@@ -1,5 +1,5 @@
 import {buildAtlasCanonicalSceneModel, type AtlasSceneSelectionTarget, type AtlasCanonicalSceneObject, type AtlasCanonicalSceneModel} from './atlas-scene-geometry';
-import type {AtlasRegionView} from './atlas-region-contracts';
+import type {AtlasSceneView} from './atlas-scene-geometry';
 import type {TerrainGrid} from './terrain-spatial-model';
 
 const ORIGIN_STEP_M=256;
@@ -28,7 +28,7 @@ export interface AtlasDeckSceneModel {
   readonly verticalExaggeration:number;
 }
 export interface BuildAtlasDeckSceneModelOptions {
-  view:AtlasRegionView;
+  view:AtlasSceneView;
   terrain:TerrainGrid|null;
   display?:{metersPerPixel:number;roofs:boolean;scopeId:string|null};
 }
@@ -39,7 +39,7 @@ function snap256(value:number):number {
   return snapped;
 }
 
-function localize(object:AtlasCanonicalSceneObject):AtlasDeckSceneObject {
+export function localizeAtlasCanonicalSceneObject(object:AtlasCanonicalSceneObject):AtlasDeckSceneObject {
   if(object.positions.length===0||object.positions.length%3!==0||object.indices.length%3!==0)
     throw new Error(`Atlas Deck mesh ${object.id} has incomplete geometry`);
   let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
@@ -69,7 +69,7 @@ function localize(object:AtlasCanonicalSceneObject):AtlasDeckSceneObject {
  * root. World-space doubles are localized per mesh before Float32 upload. */
 export function buildAtlasDeckSceneModel(options:BuildAtlasDeckSceneModelOptions):AtlasDeckSceneModel {
   const canonical=buildAtlasCanonicalSceneModel(options);
-  const objects=canonical.objects.map(localize);
+  const objects=canonical.objects.map(localizeAtlasCanonicalSceneObject);
   return Object.freeze({objects:Object.freeze(objects),targets:canonical.targets,coverage:Object.freeze({
     complete:canonical.coverage.complete,
     supportedKinds:canonical.coverage.supportedKinds,

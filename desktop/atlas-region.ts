@@ -136,7 +136,7 @@ export class AtlasRegionService {
           if(cancellation&&(Atomics.load(cancellation,0)||value?.regionReadCancelled===true)){
             this.regionCancelled++;
             request.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
-          }else if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color','terrain-refine','terrain-tile'].includes((request.job as {kind:string}).kind)){
+          }else if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color','terrain-refine','terrain-tile','geometry-tile'].includes((request.job as {kind:string}).kind)){
             this.terrainYields++;
             if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
             else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
@@ -249,6 +249,7 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
 
+  geometryTile(source:AtlasRegionSource,query:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('../src/app/atlas-geometry-tile').AtlasGeometryTile>{return this.enqueue(source,{kind:'geometry-tile',query},'terrain');}
   terrainTile(source:AtlasRegionSource,query:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest):Promise<import('../src/app/atlas-terrain-tile').AtlasTerrainTile>{return this.enqueue(source,{kind:'terrain-tile',query},'terrain');}
   terrainColor(source:AtlasRegionSource,query:import('../src/app/terrain-color').TerrainColorRequest):Promise<import('../src/app/terrain-color').TerrainColorTile>{return this.enqueue(source,{kind:'terrain-color',query},'terrain');}
   terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain');}

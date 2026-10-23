@@ -43,6 +43,98 @@ test('overview remains until every planned child is ready, then swaps atomically
   for(const frame of frames)assertNoOverlap(frame);
 });
 
+test('cold start publishes the first overview tile while a later overview tile is blocked',async()=>{
+  const stream=new AtlasTileStream(),frames=[],blocked=deferred();
+  const loading=stream.load(input('world',{x:0,y:0,width:2048,height:256}),async request=>{
+    if(request.tile.lod===2&&request.tile.x===1)return blocked.promise;
+    return reply(request);
+  },frame=>frames.push(frame));
+  await turn();
+  const firstUseful=frames.find(frame=>frame.tiles.some(entry=>entry.tile.lod===2&&entry.tile.x===0));
+  assert.ok(firstUseful,'cold start should display the first ready parent without waiting for the full overview');
+  assert.equal(firstUseful.tiles.some(entry=>entry.tile.x===1),false);
+  assert.equal(firstUseful.complete,false);
+  for(const frame of frames)assertNoOverlap(frame);
+  blocked.resolve(reply({tile:{lod:2,x:1,y:0},revision:7,contours:0}));
+  await loading;
+  assert.equal(frames.at(-1).complete,true);
+  assert.ok(frames.at(-1).tiles.every(entry=>entry.tile.lod===0));
+});
+
+test('same-source pan keeps intersecting tiles visible while the new detail set loads',async()=>{
+  const stream=new AtlasTileStream(),frames=[],blocked=deferred();
+  await stream.load(input('world',{x:0,y:0,width:512,height:256}),async request=>reply(request),frame=>frames.push(frame));
+  const oldFrame=frames.at(-1);
+  assert.deepEqual(oldFrame.tiles.map(tile=>address(tile.tile)),['0/0/0','0/1/0']);
+
+  const moving=stream.load(input('world',{x:128,y:0,width:512,height:256}),async request=>{
+    if(request.tile.lod===0&&request.tile.x===2)return blocked.promise;
+    return reply(request);
+  },frame=>frames.push(frame));
+  const retained=frames.at(-1);
+  assert.ok(retained.tiles.length>0,'matching source content should remain published at pan start');
+  assert.deepEqual(retained.tiles.map(tile=>address(tile.tile)),['0/0/0','0/1/0']);
+  await turn();
+  const movingFrames=frames.filter(frame=>frame.generation===retained.generation);
+  assert.ok(movingFrames.some(frame=>frame.tiles.length>0),'valid data must remain visible while the target detail is blocked');
+  for(const frame of movingFrames)assertNoOverlap(frame);
+  blocked.resolve(reply({tile:{lod:0,x:2,y:0},revision:7,contours:0}));
+  await moving;
+  assert.deepEqual(frames.at(-1).tiles.map(tile=>address(tile.tile)),['0/1/0','0/0/0','0/2/0']);
+  assert.equal(frames.at(-1).complete,true);
+});
+
+test('same-source zoom retains the old frame until overview tiles arrive',async()=>{
+  const stream=new AtlasTileStream(),frames=[],blocked=deferred();
+  await stream.load(input('world',{x:0,y:0,width:512,height:256}),async request=>reply(request),frame=>frames.push(frame));
+  const oldAddresses=frames.at(-1).tiles.map(tile=>address(tile.tile));
+  const zoomed=stream.load({...input('world',{x:0,y:0,width:512,height:256}),metersPerPixel:0.5},async request=>{
+    if(request.tile.lod===1)return blocked.promise;
+    return reply(request);
+  },frame=>frames.push(frame));
+  const firstZoomFrame=frames.at(-1);
+  assert.deepEqual(firstZoomFrame.tiles.map(tile=>address(tile.tile)),oldAddresses);
+  await turn();
+  assert.ok(frames.filter(frame=>frame.generation===firstZoomFrame.generation).some(frame=>frame.tiles.length>0));
+  blocked.resolve(reply({tile:{lod:1,x:0,y:0},revision:7,contours:0}));
+  await zoomed;
+  assert.equal(frames.at(-1).complete,true);
+  assert.ok(frames.at(-1).tiles.every(tile=>tile.tile.lod===-1));
+  for(const frame of frames.filter(frame=>frame.generation===firstZoomFrame.generation))assertNoOverlap(frame);
+});
+
+test('source, revision, and contour changes revoke the prior visible frame immediately',async()=>{
+  const stream=new AtlasTileStream(),frames=[];
+  await stream.load(input('world',{x:0,y:0,width:256,height:256}),async request=>reply(request),frame=>frames.push(frame));
+  assert.ok(frames.at(-1).tiles.length>0);
+  const variants=[
+    {...input('other',{x:0,y:0,width:256,height:256})},
+    {...input('other',{x:0,y:0,width:256,height:256}),revision:8},
+    {...input('other',{x:0,y:0,width:256,height:256}),contours:5},
+  ];
+  for(const next of variants){
+    const before=frames.length;
+    await stream.load(next,async request=>reply(request,next.source),frame=>frames.push(frame));
+    assert.deepEqual(frames[before].tiles,[],'a different content identity must publish an empty revocation frame first');
+  }
+});
+
+test('a superseded same-source camera request cannot publish or cache its late overview',async()=>{
+  const stream=new AtlasTileStream(),late=deferred(),frames=[];let oldFetches=0,newFetches=0;
+  const oldLoad=stream.load(input('world',{x:0,y:0,width:256,height:256}),async()=>{oldFetches++;return late.promise;},frame=>frames.push(frame));
+  await turn();
+  const beforeReplacement=frames.length;
+  await stream.load(input('world',{x:512,y:0,width:256,height:256}),async request=>{newFetches++;return reply(request);},frame=>frames.push(frame));
+  const currentGeneration=frames.at(-1).generation;
+  late.resolve(reply({tile:{lod:2,x:0,y:0},revision:7,contours:0}));
+  await oldLoad;
+  assert.ok(frames.slice(beforeReplacement).every(frame=>frame.generation===currentGeneration));
+  const oldCount=oldFetches;
+  await stream.load(input('world',{x:0,y:0,width:256,height:256}),async request=>{oldFetches++;return reply(request);},()=>{});
+  assert.ok(oldFetches>oldCount,'a superseded reply must not be inserted into the cache');
+  assert.ok(newFetches>0);
+});
+
 test('several parents refine progressively without coarse/fine overlap',async()=>{
   const stream=new AtlasTileStream(),frames=[],blocked=deferred();
   const loading=stream.load(input('world',{x:0,y:0,width:2048,height:256}),async request=>{

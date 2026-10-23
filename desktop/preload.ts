@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   cancelRoomDirectory:(token,consumer)=>ipcRenderer.invoke('campaign:room-directory-cancel',token,consumer),
   atlasRoomCommit:edit=>ipcRenderer.invoke('atlas:room-commit',edit),
   workspaceInitial:token=>ipcRenderer.invoke('campaign:workspace-initial',token),
+  atlasGeometryTile:(token,request)=>ipcRenderer.invoke('atlas:geometry-tile',token,request),
   atlasTerrainTile:(token,request)=>ipcRenderer.invoke('atlas:terrain-tile',token,request),
   atlasTerrainSource:token=>ipcRenderer.invoke('atlas:terrain-source',token),
   atlasRegion:(token,query,consumer)=>ipcRenderer.invoke('atlas:geometry-region',token,query,consumer),

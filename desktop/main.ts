@@ -1,3 +1,4 @@
+import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
 import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
 import {atlasTerrainTileQuery} from '../src/app/atlas-terrain-tile';
 import {eraseAtlasProjection,clearProjectionWork} from '../src/app/storage/atlas-projection-index';
@@ -416,6 +417,14 @@ else {
       if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
       const value=await atlasRegions.terrainColor(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
+    });
+    handle('atlas:geometry-tile',async(token:string,q:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest)=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasGeometryTileBox(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Geometriekachel inzwischen geändert.');
+      const value=await atlasRegions.geometryTile(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Geometriekachel inzwischen geändert.');
+      return value;
     });
     handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest)=>{
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasTerrainTileQuery(q);

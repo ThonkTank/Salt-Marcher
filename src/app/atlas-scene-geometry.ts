@@ -26,9 +26,18 @@ export interface AtlasCanonicalSceneModel {
   coverage:{complete:boolean;supportedKinds:readonly ('terrain'|'room'|'building')[];unsupported:{code:string;detail:string}[]};
   verticalExaggeration:number;
 }
+export type AtlasSceneView = Pick<AtlasRegionView,'cities'|'bindings'|'region'> & {
+  geometry:Pick<AtlasRegionView['geometry'],'floors'|'drawing'>;
+  workspace:Pick<AtlasRegionView['workspace'],'rooms'|'floors'>;
+};
+export interface AtlasSceneSurfaceSampler {
+  contains(point:Point):boolean;
+  heightAt(point:Point):number;
+}
 export interface BuildAtlasCanonicalSceneModelOptions {
-  view:AtlasRegionView;
+  view:AtlasSceneView;
   terrain:TerrainGrid|null;
+  surface?:AtlasSceneSurfaceSampler;
   display?:{metersPerPixel:number;roofs:boolean;scopeId:string|null};
 }
 const finite=(...values:number[])=>values.every(Number.isFinite);
@@ -70,6 +79,10 @@ function addObject(objects:AtlasCanonicalSceneObject[],targets:Map<string,AtlasS
  * coverage can be reconstructed into semantic objects. */
 export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneModelOptions):AtlasCanonicalSceneModel{
   const {view,terrain,display}=options;
+  const surface=options.surface??(terrain?{
+    contains:(p:Point)=>inTerrain(terrain,p),
+    heightAt:(p:Point)=>gridHeight(terrain,p)
+  }:undefined);
   if(!view)throw new Error('Invalid Atlas canonical scene input');
   if(display&&(!finite(display.metersPerPixel)||display.metersPerPixel<0||typeof display.roofs!=='boolean'||display.scopeId!==null&&typeof display.scopeId!=='string'))throw new Error('Invalid Atlas scene display state');
   const unsupported:{code:string;detail:string}[]=[],objects:AtlasCanonicalSceneObject[]=[],targets=new Map<string,AtlasSceneSelectionTarget>();
@@ -93,7 +106,7 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
   if(view.region?.coverage.mode==='raster')unsupported.push({code:'region-raster-only',detail:'Die Atlasregion enthält nur Rastergeometrie; Räume und Gebäude bleiben semantisch nicht verfügbar.'});
   if(view.region?.coverage.mode==='detail'&&!view.region.coverage.complete)unsupported.push({code:'region-coverage-incomplete',detail:`Atlasregion meldet ${view.region.coverage.unreadable} nicht lesbare Geometrien.`});
   if(view.region?.landscape?.coverage.complete===false)unsupported.push({code:'landscape-coverage-incomplete',detail:'Landschaftscoverage ist unvollständig und wird von diesem Szenenmodell nicht rekonstruiert.'});
-  if(!terrain)unsupported.push({code:'terrain-grid-missing',detail:'Ohne TerrainGrid können Workplane- und Gebäudeanker nicht aus dem sichtbaren Terrain abgeleitet werden.'});
+  if(!surface)unsupported.push({code:'terrain-grid-missing',detail:'Ohne TerrainGrid oder Oberflächenabtastung können Workplane- und Gebäudeanker nicht aus dem sichtbaren Terrain abgeleitet werden.'});
   const verticalExaggeration=terrain?.view.exaggeration??1;
   if(terrain){
     const {view:v,heights}=terrain;
@@ -111,7 +124,7 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
   }
   // A raster response has intentionally dropped vector DTOs; do not invent
   // geometry from a painted image. The terrain mesh above remains usable.
-  if(view.region?.coverage.mode!=='raster'&&terrain){
+  if(view.region?.coverage.mode!=='raster'&&surface){
     const frameForScope=(scopeId:string)=>{
       const binding=view.bindings.find(b=>b.kind==='dungeon'&&b.ownerId===scopeId);
       const frame=binding&&view.region?.frames[binding.id];
@@ -133,8 +146,8 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
         const anchorLocal=unit.position,anchor=localToAtlas(anchorLocal,cityFrame);
         const footprint=posedFootprint(unit).map(poly=>({outer:poly.outer.map(p=>localToAtlas(p,cityFrame)),holes:poly.holes.map(r=>r.map(p=>localToAtlas(p,cityFrame)))}));
         if(!footprint.length||footprint.some(p=>!validRing(p.outer)||p.holes.some(h=>!validRing(h)))){unsupported.push({code:'building-footprint-incomplete',detail:`Gebäude ${unit.id} besitzt keine vollständige Flächengeometrie.`});continue;}
-        if(!inTerrain(terrain,anchor)||footprint.some(poly=>[poly.outer,...poly.holes].some(r=>r.some(p=>!inTerrain(terrain,p))))){unsupported.push({code:'building-outside-terrain',detail:`Terrain deckt Anker oder Umriss von Gebäude ${unit.id} nicht vollständig ab.`});continue;}
-        const baseM=(terrainBinding.mode==='fixed'?0:gridHeight(terrain,anchor))+terrainBinding.offsetM;
+        if(!surface.contains(anchor)||footprint.some(poly=>[poly.outer,...poly.holes].some(r=>r.some(p=>!surface.contains(p))))){unsupported.push({code:'building-outside-terrain',detail:`Terrain deckt Anker oder Umriss von Gebäude ${unit.id} nicht vollständig ab.`});continue;}
+        const baseM=(terrainBinding.mode==='fixed'?0:surface.heightAt(anchor))+terrainBinding.offsetM;
         const floorElevations=unit.floorElevations??(target.scopeId?view.geometry.floors.filter(f=>f.scopeId===target.scopeId).map(f=>f.elevation):[]);
         if(!floorElevations.every(Number.isFinite)){unsupported.push({code:'building-floors-invalid',detail:`Geschosshöhen von Gebäude ${unit.id} sind ungültig.`});continue;}
         const topM=baseM+Math.max(0,...floorElevations)+terrainBinding.wallM,roofM=terrainBinding.roofM;
@@ -145,7 +158,7 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
         const positions:number[]=[],indices:number[]=[];
         for(const poly of footprint){
           const rings=[poly.outer,...poly.holes];
-          const sampledGround=rings.map(r=>r.map(p=>gridHeight(terrain,p)));
+          const sampledGround=rings.map(r=>r.map(p=>surface.heightAt(p)));
           // Side walls preserve every disconnected component and courtyard edge.
           for(const ring of rings)for(let i=0;i<ring.length;i++){
             const a=ring[i]!,b=ring[(i+1)%ring.length]!,base=positions.length/3,groundA=Math.min(baseM,sampledGround[rings.indexOf(ring)]![i]!),groundB=Math.min(baseM,sampledGround[rings.indexOf(ring)]![(i+1)%ring.length]!);
@@ -184,9 +197,9 @@ export function buildAtlasCanonicalSceneModel(options:BuildAtlasCanonicalSceneMo
     for(const room of view.workspace.rooms){
       const frame=frameForScope(room.scopeId);if(!frame){unsupported.push({code:'room-frame-missing',detail:`Raum ${room.id} hat keinen verfügbaren Scope-Frame.`});continue;}
       if(!room.polygons.length){unsupported.push({code:'room-polygon-missing',detail:`Für Raum ${room.id} fehlt die Vektorfläche.`});continue;}
-      const anchor={x:frame.x,y:frame.y};if(!inTerrain(terrain,anchor)){unsupported.push({code:'room-anchor-outside-terrain',detail:`Terrain deckt den Workplane-Anker von Raum ${room.id} nicht ab.`});continue;}
+      const anchor={x:frame.x,y:frame.y};if(!surface.contains(anchor)){unsupported.push({code:'room-anchor-outside-terrain',detail:`Terrain deckt den Workplane-Anker von Raum ${room.id} nicht ab.`});continue;}
       const elevation=floorElevation(room);if(elevation===undefined||!Number.isFinite(elevation)){unsupported.push({code:'room-floor-elevation-missing',detail:`Für Raum ${room.id} fehlt die kanonische Geschosshöhe.`});continue;}
-      const base=buildingBases.get(room.scopeId)?.baseM??gridHeight(terrain,anchor),z=base+elevation,positions:number[]=[],indices:number[]=[];
+      const base=buildingBases.get(room.scopeId)?.baseM??surface.heightAt(anchor),z=base+elevation,positions:number[]=[],indices:number[]=[];
       try{for(const polygon of room.polygons)triangulatePolygon(polygon,p=>worldPosition(localToAtlas(p,frame),z),positions,indices);}
       catch(error){unsupported.push({code:'room-polygon-invalid',detail:`Raum ${room.id}: ${(error as Error).message}`});continue;}
       if(!indices.length){unsupported.push({code:'room-triangulation-empty',detail:`Die Raumfläche von ${room.id} konnte nicht trianguliert werden.`});continue;}

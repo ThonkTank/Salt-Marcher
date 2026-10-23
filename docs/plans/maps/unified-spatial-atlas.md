@@ -58,13 +58,20 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Eltern und Randbereich, Undo/Redo und aktuelle verknüpfte Ortsnamen.
   Die native Detailabfrage dieser kleinen Probe sank von 291 auf 23 ms;
   die erste Abfrage nach Prozessstart benötigte weiterhin 202 ms.
-- **Nächste Arbeit:** M2 bleibt aktiv: Geometriedetailstufen, eigenständige
-  Materialkanäle, kampagnenübergreifendes Plattenbudget, Übergänge bei Pan und
-  vollständige Weltlast fehlen noch. Auch die Abhängigkeitsprüfung nach einer
-  Quellenänderung muss unter Weltlast vermessen werden. Die bisherigen fünf
-  Maßstabsproben verwenden skalierte Testgeometrie. Der normale Atlas bleibt bis
-  zur vollständigen Werkzeugübernahme auf dem bisherigen Renderer; ein
-  Produktleistungsgewinn ist noch nicht belegt.
+- **M2-Geometrie und Übergänge:** Gebäude- und Raummeshes werden unabhängig
+  von Kamera und Anzeigeauswahl gespeichert, an Kachelgrenzen zugeschnitten und
+  nach Neustart wiederverwendet. Pan/Zoom behält gültige überlappende Kacheln,
+  während eine neue Übersicht aufgebaut wird. [Geometrieprüfung und Grenzen](../../reference/atlas-geometry-tiles-20261023/README.md)
+  belegen lokale Änderungen, Terrainabhängigkeit, Undo/Redo, Geschosse und genaue
+  native Treffer. Die unabhängige Prüfung trennte physische Bauhöhe von versteckten
+  Geschossen und Warnungen beschädigter Quellen von der Meshidentität.
+- **Nächste Arbeit:** M2 bleibt aktiv: dichte grobe Geometriedetailstufen und
+  weitere Objektklassen, eigenständige Materialkanäle, kampagnenübergreifendes
+  Plattenbudget und vollständige Weltlast fehlen noch. Die lokale Quellenprüfung
+  und kalte Geometrieaufbereitung müssen unter Weltlast vermessen werden.
+  Die bisherigen fünf Maßstabsproben verwenden skalierte Testgeometrie.
+  Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf dem
+  bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht belegt.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 

@@ -1,5 +1,10 @@
 # M2-Zwischenstand: persistente Terrainkacheln
 
+Dieser Bericht hält die erste Terrainlieferung fest. Die spätere
+[Geometrie- und Pan-Prüfung](../atlas-geometry-tiles-20261023/README.md) ergänzt
+persistente Gebäude/Räume und ersetzt den hier dokumentierten leeren Frame
+bei Kameraplanwechsel. Die übrigen offenen M2-Grenzen bleiben bestehen.
+
 Die Terrainstrecke der [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.md)
 speichert berechnete Kacheln dauerhaft und lädt zuerst eine gröbere Übersicht.
 M2 bleibt aktiv: Geometrie, eigenständige Materialkanäle, Gesamtbudget über alle

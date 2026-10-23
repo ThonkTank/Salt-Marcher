@@ -1,7 +1,7 @@
 import {atlasTilePlan} from './atlas-tile-plan.js';
 import type {AtlasTerrainTile, AtlasTerrainTileRequest} from './atlas-terrain-tile.js';
 import type {LandscapeBox} from './atlas-landscape.js';
-import type {AtlasWorldTile} from './atlas-world-tiles.js';
+import {atlasWorldTileBounds, type AtlasWorldTile} from './atlas-world-tiles.js';
 
 const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
 const DEFAULT_MAX_TILES = 64;
@@ -25,12 +25,13 @@ export type AtlasTileStreamPublisher = (frame: AtlasTileStreamFrame) => void;
 
 interface CachedTile {readonly tile: AtlasTerrainTile; readonly key: string; readonly bytes: number}
 
-/** Sequential overview-first loading with atomic parent-to-children replacement. */
+/** Overview-first loading with stable-camera retention and atomic refinement. */
 export class AtlasTileStream {
   private readonly maxBytes: number;
   private readonly maxTiles: number;
   private generation = 0;
   private disposed = false;
+  private identity: string | undefined;
   private visible = new Map<string, CachedTile>();
   private staged = new Map<string, CachedTile>();
   /** Insertion order is LRU order, oldest first. */
@@ -59,26 +60,66 @@ export class AtlasTileStream {
       throw new Error('Atlas tile stream contours are invalid');
     }
     const plan = atlasTilePlan(input.box, input.metersPerPixel, {maxTiles: this.maxTiles});
+    const identity = sourceIdentity(input.source, input.revision, contours);
+    const compatible = this.identity === identity;
+    this.identity = identity;
 
-    // Begin every generation from an explicit empty frame. This also prevents
-    // pixels from a previous source or camera plan being mistaken for current data.
-    this.visible = new Map();
+    // Camera movement does not invalidate terrain. Retain only old tiles that
+    // still intersect the new viewport; changes to source content revoke them.
+    if (compatible) {
+      this.visible = new Map([...this.visible].filter(([, entry]) => intersectsBox(entry.tile.tile, input.box)));
+    } else {
+      this.visible = new Map();
+    }
     this.staged = new Map();
     this.emit(generation, false, publish);
 
     const detailsByParent = groupChildren(plan.detail);
     const parentTileKeys = new Map(plan.overview.map(tile => [worldTileKey(tile), tile]));
     const protectedKeys = () => this.activeKeys();
+    const bridgeExistingFrame = this.visible.size > 0;
 
+    // With an existing valid frame, assemble a complete new overview off-screen
+    // and swap atomically. A cold start can publish each non-overlapping parent
+    // as soon as it arrives so the first useful view is not delayed.
     for (const tile of plan.overview) {
       if (!this.isCurrent(generation)) return;
       const request = makeRequest(tile, input.revision, contours);
       const loaded = await this.getTile(request, input.source, fetch, generation, protectedKeys());
       if (!this.isCurrent(generation)) return;
       if (!loaded) return;
-      this.visible.set(worldTileKey(tile), loaded);
+      const key = worldTileKey(tile);
+      if (bridgeExistingFrame) this.staged.set(key, loaded);
+      else {
+        this.visible.set(key, loaded);
+        this.enforceBudget(protectedKeys());
+        this.emit(generation, false, publish);
+      }
+    }
+
+    if (bridgeExistingFrame && plan.overview.length > 0) {
+      this.visible = new Map(this.staged);
+      this.staged.clear();
       this.enforceBudget(protectedKeys());
       this.emit(generation, false, publish);
+    } else if (plan.overview.length === 0 && plan.detail.length > 0) {
+      // At the pyramid's top edge there is no coarse level to bridge with.
+      // Assemble the requested tiles before replacing the retained frame.
+      for (const tile of plan.detail) {
+        if (!this.isCurrent(generation)) return;
+        const request = makeRequest(tile, input.revision, contours);
+        const key = cacheKey(input.source, request);
+        const loaded = await this.getTile(request, input.source, fetch, generation, new Set([...protectedKeys(), key]));
+        if (!this.isCurrent(generation)) return;
+        if (!loaded) return;
+        this.staged.set(worldTileKey(tile), loaded);
+      }
+      this.visible = new Map(this.staged);
+      this.staged.clear();
+      this.enforceBudget(protectedKeys());
+      this.emit(generation, false, publish);
+      this.emit(generation, true, publish);
+      return;
     }
 
     for (const tile of plan.detail) {
@@ -129,6 +170,7 @@ export class AtlasTileStream {
     this.visible.clear();
     this.staged.clear();
     this.cache.clear();
+    this.identity = undefined;
   }
 
   private async getTile(
@@ -210,6 +252,16 @@ function validateReply(reply: AtlasTerrainTile, request: AtlasTerrainTileRequest
 
 function makeRequest(tile: AtlasWorldTile, revision: number, contours?: number): AtlasTerrainTileRequest {
   return contours === undefined ? {tile, revision} : {tile, revision, contours};
+}
+
+function sourceIdentity(source: string, revision: number, contours?: number): string {
+  return JSON.stringify([source, revision, contours ?? 0]);
+}
+
+function intersectsBox(tile: AtlasWorldTile, box: LandscapeBox): boolean {
+  const bounds = atlasWorldTileBounds(tile);
+  return bounds.minX < box.x + box.width && bounds.maxX > box.x
+    && bounds.minY < box.y + box.height && bounds.maxY > box.y;
 }
 
 function cacheKey(source: string, request: AtlasTerrainTileRequest): string {
