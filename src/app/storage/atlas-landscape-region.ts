@@ -1,3 +1,4 @@
+import {readTerrainMaterialSteps} from './terrain-material';
 import {terrainHeightBlocks} from './terrain-height-blocks';
 import {AtlasProjectionIndex} from './atlas-projection-index';
 import {compactVegetation} from '../vegetation-projection';
@@ -160,6 +161,9 @@ export class AtlasLandscapeReader {
   const stream:import('./terrain-color-raster').ProjectionStream=(kind,box,samples)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,samples?{width:samples.columns/2,height:samples.rows/2}:0,0,kind);
   stream.heightSources=(box,samples)=>this.terrainKinds.has('height')?terrainHeightBlocks(text=>this.sql(text),this.projectionCache,source.campaignId,box,samples,this.sampleMath):[];
   return stream;
+ }
+ materialSteps(source:AtlasRegionSource,q:import('../atlas-material-tile').AtlasMaterialTileRequest,channels:ReadonlySet<import('../terrain-material').TerrainMaterialChannel>){
+  return readTerrainMaterialSteps(this.db,source,q,this.terrainStream(source),channels);
  }
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){
   const projection=readTerrainProjection(this.db,source,q,this.terrainStream(source),this.projectionCache);

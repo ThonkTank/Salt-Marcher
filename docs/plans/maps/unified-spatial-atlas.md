@@ -74,9 +74,17 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   [51 gezielte Tests und zwei native Wiederanläufe](../../reference/atlas-shared-tile-cache-20261023/README.md)
   belegen Verdrängung, Absturzrecovery, selektive Löschung und gemeinsame
   Wiederverwendung. Die separaten Projektionsindizes sind noch nicht global budgetiert.
-- **Nächste Arbeit:** M2 bleibt aktiv: dichte grobe Geometriedetailstufen und
-  weitere Objektklassen, eigenständige Materialkanäle, Gesamtbudget einschließlich
-  Projektionsindizes und vollständige Weltlast fehlen noch. Die lokale Quellenprüfung
+- **M2-Materialdaten:** Grundfarbe, Wasser, Wald, Fels und Schnee haben eigene
+  persistente Quellenabhängigkeiten. Lichtwechsel behalten alle Kanäle, Schneegrenze,
+  Pigment und Dichte erneuern jeweils nur den betroffenen Kanal.
+  [47 gezielte Tests und native Wiederöffnung](../../reference/atlas-material-tiles-20261023/README.md)
+  belegen Rohdaten und Transport; GPU-Komposition und flächengetreue gemischte
+  Material-LOD-Übergänge sind damit noch nicht qualifiziert.
+- **Nächste Arbeit:** M2 bleibt aktiv. Als Nächstes die nutzbare grobe
+  Geometrieübersicht am festen M0-Weltfall aufbauen: der dichte 4096-m-Ausschnitt
+  überschreitet weiter das Quellenbudget. Danach bleiben weitere Objektklassen,
+  Materialstufenreduktion, Gesamtbudget einschließlich Projektionsindizes und
+  vollständige Weltlast. Die lokale Quellenprüfung
   und kalte Geometrieaufbereitung müssen unter Weltlast vermessen werden.
   Die bisherigen fünf Maßstabsproben verwenden skalierte Testgeometrie.
   Der normale Atlas bleibt bis zur vollständigen Werkzeugübernahme auf dem

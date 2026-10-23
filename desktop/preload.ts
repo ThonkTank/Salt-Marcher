@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   workspaceInitial:token=>ipcRenderer.invoke('campaign:workspace-initial',token),
   atlasGeometryTile:(token,request)=>ipcRenderer.invoke('atlas:geometry-tile',token,request),
   atlasTerrainTile:(token,request)=>ipcRenderer.invoke('atlas:terrain-tile',token,request),
+  atlasMaterialTile:(token,request)=>ipcRenderer.invoke('atlas:material-tile',token,request),
   atlasTerrainSource:token=>ipcRenderer.invoke('atlas:terrain-source',token),
   atlasRegion:(token,query,consumer)=>ipcRenderer.invoke('atlas:geometry-region',token,query,consumer),
   atlasObjectFocus:(token,kind,id)=>ipcRenderer.invoke('atlas:focus',token,kind,id),

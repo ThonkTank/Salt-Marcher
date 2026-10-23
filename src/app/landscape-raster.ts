@@ -4,7 +4,7 @@ import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
 import {paintTerrainCoast} from './terrain-coast';
 import {terrainContourInk,terrainContourStep} from './terrain-contour-style';
 import type {TerrainField,TerrainLattice} from './terrain-field-stream';
-import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,mountainMaterial,type TerrainStyle} from './terrain-relief';
+import {DEFAULT_TERRAIN_STYLE,reliefRgb,reliefLighting,reliefMarks,elevationColor,mountainMaterial,rockCoverage,snowCoverage,type TerrainStyle} from './terrain-relief';
 import {TerrainSampler,DEFAULT_HEIGHT_M} from './terrain-height';
 import {maskAt,MASK_SEA_LEVEL} from './land-mask';
 import {lineParts} from "./landscape-line";
@@ -12,6 +12,7 @@ import {colorParts,mergePolygons} from "./landscape-brush";
 import {bounds,type LandscapeBox,type LandscapeRecord} from './atlas-landscape';
 import type { Polygon } from './contracts';
 import { terrainColors } from './world-model';
+import {CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialRaster} from './terrain-material';
 
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
 export const LANDSCAPE_RASTER_PAD = 16;
@@ -54,6 +55,9 @@ export class LandscapeRasterizer {
   private field:Pick<TerrainField,'heights'|'water'>|null=null;
   private terrainStyle:Readonly<TerrainStyle>=DEFAULT_TERRAIN_STYLE;
   private seaLevelM=0;
+  private materialCaptured=false;
+  private surfacePrepared=false;
+  private finished=false;
   readonly sampleBox:LandscapeBox;
   constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width,forest=false) {
     if(!box||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0||
@@ -71,6 +75,7 @@ export class LandscapeRasterizer {
     return {x:this.sampleBox.x+dx/2,y:this.sampleBox.y+dy/2,dx,dy,columns:this.w,rows:this.h};
   }
   setTerrainField(field:TerrainField){
+    this.assertMaterialNotCaptured();
     if(field.heights.length!==this.w*this.h||field.water.length!==this.w*this.h)throw Error('Geländerastergröße prüfen.');
     this.field={heights:field.heights,water:field.water};this.maskPending=true;this.coastPending=true;
   }
@@ -79,6 +84,7 @@ export class LandscapeRasterizer {
     for(const _ of this.paintCoverSteps(record,function*(){})){}
   }
   *paintCoverSteps(record:LandscapeRecord,checkpoint:()=>Generator<void>):Generator<void>{
+    this.assertMaterialNotCaptured();
     this.applyMasks();if(!record.vegetation)return;
     const preset=record.vegetation.preset,rgb=[1,3,5].map(i=>parseInt(preset.ground.slice(i,i+2),16));
     // Union only multipart display geometry: internal overlaps are not a forest edge.
@@ -106,6 +112,7 @@ export class LandscapeRasterizer {
     for(const polygon of polygons)yield* this.polygonSteps(polygon,rgb,.78,'ground',undefined,checkpoint,fade,coverage);
   }
   paint(record: LandscapeRecord) {
+    this.assertMaterialNotCaptured();
     if(record.terrainSettings){this.terrainStyle=record.terrainSettings.style??DEFAULT_TERRAIN_STYLE;this.seaLevelM=record.terrainSettings.seaLevelM;}
     if(record.vegetation){this.covers.push(record);this.coverPending=true;return;}
     if(record.height||record.terrainSettings||record.route){this.heights.push(record);this.maskPending=true;this.coastPending=true;return;}
@@ -160,6 +167,7 @@ export class LandscapeRasterizer {
   }
   /** Same pigment composition for synchronous previews and interruptible tiles. */
   *paintColorSteps(record:LandscapeRecord,checkpoint:()=>Generator<void>):Generator<void>{
+    this.assertMaterialNotCaptured();
     this.applyVegetation();yield* checkpoint();
     const p=record.paint;if(!p)return;
     this.colorBase??=this.samples.slice();this.colorLayer??=new Uint8Array(this.samples.length);
@@ -196,6 +204,7 @@ export class LandscapeRasterizer {
   }
   /** Complete ground shading before lines; yield only with owned in-memory data. */
   *prepareSurfaceSteps(checkpoint:()=>Generator<void>):Generator<void>{
+    this.surfacePrepared=true;
     this.applyVegetation();
     if(!this.coastPending)return;
     this.coastPending=false;
@@ -354,7 +363,79 @@ export class LandscapeRasterizer {
         this.pixels[out+3]=Math.round(alpha/4);
       }
     }
+    this.finished=true;
     return this.pixels;
+  }
+
+  /**
+   * Reduce the authored/sample materials before relief, coast shading and route overlays.
+   * Capture is deliberately single-use: once display composition has started the sample
+   * lattice no longer contains the independent source channels.
+   */
+  *materialChannelsSteps(
+    checkpoint:()=>Generator<void>,
+    requested?:ReadonlySet<TerrainMaterialChannel>,
+  ):Generator<void,TerrainMaterialRaster>{
+    if(this.materialCaptured||this.surfacePrepared||this.finished)
+      throw Error('Materialkanäle müssen vor Oberflächenbeleuchtung und Rasterabschluss erfasst werden.');
+    const names=requested??new Set<TerrainMaterialChannel>(CHANNEL_NAMES);
+    for(const name of names)if(!(CHANNEL_NAMES as readonly string[]).includes(name))throw Error('Unbekannter Geländekanal.');
+    if(names.has('forest')&&!this.forestSamples)throw Error('Waldkanal benötigt einen Raster mit aktivierter Walderfassung.');
+    this.applyMasks();
+    this.applyVegetation();
+    const channels:TerrainMaterialRaster={};
+    if(names.has('baseColor'))channels.baseColor=new Uint8Array(this.width*this.height*4);
+    if(names.has('water')){channels.water=new Uint8Array(this.width*this.height);channels.waterTopology=new Uint8Array(this.width*this.height);}
+    if(names.has('forest'))channels.forest=new Uint8Array(this.width*this.height);
+    if(names.has('rock'))channels.rock=new Uint8Array(this.width*this.height);
+    if(names.has('snow'))channels.snow=new Uint8Array(this.width*this.height);
+    const z=this.elevations,forest=this.forestSamples,lattice=this.sampleLattice(),step=4,stride=step*this.w;
+    const materialEnabled=this.terrainStyle.mountains===true;
+    const materialRequested=names.has('rock')||names.has('snow');
+    const snowline=this.terrainStyle.snowlineM??2500;
+    for(let y=0;y<this.height;y++){
+      for(let x=0;x<this.width;x++){
+        const out=y*this.width+x,top=(y+LANDSCAPE_RASTER_PAD)*2*this.w+(x+LANDSCAPE_RASTER_PAD)*2;
+        const indices=[top,top+1,top+this.w,top+this.w+1];
+        let waterSum=0,forestSum=0,rockSum=0,snowSum=0,alphaSum=0,topology=0;
+        const color=channels.baseColor;
+        const sums=color?[0,0,0]:undefined;
+        for(let sample=0;sample<4;sample++){
+          const i=indices[sample]!,isWater=!!this.water[i],at=i*4,alpha=this.samples[at+3]!;
+          if(isWater){waterSum+=255;topology|=1<<sample;}
+          if(forest&&!isWater)forestSum+=forest[i]!;
+          if(!isWater&&materialEnabled&&materialRequested&&z){
+            const sx=(z[i+step]!-z[i-step]!)/(2*lattice.dx*step);
+            const sy=(z[i+stride]!-z[i-stride]!)/(2*lattice.dy*step);
+            const slope=Math.hypot(sx,sy);
+            if(names.has('rock'))rockSum+=Math.round(rockCoverage(slope)*255);
+            if(names.has('snow'))snowSum+=Math.round(snowCoverage(z[i]!,slope,snowline)*255);
+          }
+          if(color&&sums&&alpha){
+            alphaSum+=alpha;
+            for(let c=0;c<3;c++)sums[c]=(sums[c]??0)+this.samples[at+c]!*alpha;
+          }
+        }
+        if(channels.water)channels.water[out]=Math.round(waterSum/4);
+        if(channels.waterTopology)channels.waterTopology[out]=topology;
+        if(channels.forest)channels.forest[out]=Math.round(forestSum/4);
+        if(channels.rock)channels.rock[out]=Math.round(rockSum/4);
+        if(channels.snow)channels.snow[out]=Math.round(snowSum/4);
+        if(color&&sums){
+          const at=out*4;
+          if(alphaSum){for(let c=0;c<3;c++)color[at+c]=Math.round(sums[c]!/alphaSum);}
+          color[at+3]=Math.round(alphaSum/4);
+        }
+      }
+      if(y%16===15)yield* checkpoint();
+    }
+    this.materialCaptured=true;
+    yield* checkpoint();
+    return channels;
+  }
+
+  private assertMaterialNotCaptured(){
+    if(this.materialCaptured)throw Error('Rasterquellen können nach Materialkanalerfassung nicht geändert werden.');
   }
 }
 export interface LandscapeRaster {

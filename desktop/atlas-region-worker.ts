@@ -1,5 +1,6 @@
 import {AtlasGeometryTiles} from '../src/app/storage/atlas-geometry-tiles';
 import {AtlasTerrainTiles} from '../src/app/storage/atlas-terrain-tiles';
+import {AtlasMaterialTiles} from '../src/app/storage/atlas-material-tiles';
 import {AtlasProjectionIndex} from '../src/app/storage/atlas-projection-index';
 import {computeTerrainStroke,TerrainScalePyramid} from '../src/app/storage/terrain-scale';
 import {terrainTraceStart} from '../src/app/terrain-timing';
@@ -11,10 +12,10 @@ import {AtlasReadCancelled} from '../src/app/storage/atlas-read-cancellation';
 
 const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),pyramid=new TerrainScalePyramid();
 let index:AtlasProjectionIndex,reader:AtlasRegionReader;
-const terrainTiles=new AtlasTerrainTiles(db,workerData.cacheDirectory),geometryTiles=new AtlasGeometryTiles(workerData.cacheDirectory);
+const terrainTiles=new AtlasTerrainTiles(db,workerData.cacheDirectory),materialTiles=new AtlasMaterialTiles(db,workerData.cacheDirectory),geometryTiles=new AtlasGeometryTiles(workerData.cacheDirectory);
 
 let preparation:{fence:string;stroke:string;steps:Generator<void>}|undefined;
-let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>|ReturnType<AtlasTerrainTiles['read']>|ReturnType<AtlasGeometryTiles['read']>}|undefined;
+let projection:{fence:string;query:string;steps:ReturnType<AtlasRegionReader['terrainSteps']>|ReturnType<AtlasRegionReader['colorSteps']>|ReturnType<AtlasRegionReader['liveTerrainSteps']>|ReturnType<AtlasTerrainTiles['read']>|ReturnType<AtlasMaterialTiles['read']>|ReturnType<AtlasGeometryTiles['read']>}|undefined;
 
 parentPort!.on('message', async (job: any) => {
   if(projection&&(projection.fence!==job.source.fence||['terrain-live','terrain-stroke','region'].includes(job.kind)))projection=undefined;
@@ -28,7 +29,7 @@ parentPort!.on('message', async (job: any) => {
     db.exec('BEGIN');
     // The first SELECT pins the WAL snapshot before async index maintenance.
     // A queued source must never label newer terrain rows as an older revision.
-    if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='geometry-tile'){
+    if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='material-tile'||job.kind==='geometry-tile'){
       const root=db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(job.source.campaignId) as {revision:number}|undefined;
       if(root?.revision!==job.source.revision)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
     }
@@ -43,9 +44,9 @@ parentPort!.on('message', async (job: any) => {
     }
     endRead=terrainTraceStart("region.read",job.source.revision);readStarted=true;
     let value;
-    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='geometry-tile'){
+    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='material-tile'||job.kind==='geometry-tile'){
       const query=JSON.stringify([job.kind,job.query,job.base]);
-      if(!job.continuation)projection={fence:job.source.fence,query,steps:job.kind==='geometry-tile'?geometryTiles.read(job.source,job.query,reader):job.kind==='terrain-tile'?terrainTiles.read(job.source,job.query,reader):job.kind==='terrain-refine'?reader.liveTerrainSteps(job.source,job.query,job.base):job.kind==='terrain-color'?reader.colorSteps(job.source,job.query):reader.terrainSteps(job.source,job.query)};
+      if(!job.continuation)projection={fence:job.source.fence,query,steps:job.kind==='geometry-tile'?geometryTiles.read(job.source,job.query,reader):job.kind==='material-tile'?materialTiles.read(job.source,job.query,reader):job.kind==='terrain-tile'?terrainTiles.read(job.source,job.query,reader):job.kind==='terrain-refine'?reader.liveTerrainSteps(job.source,job.query,job.base):job.kind==='terrain-color'?reader.colorSteps(job.source,job.query):reader.terrainSteps(job.source,job.query)};
       if(!projection||projection.fence!==job.source.fence||projection.query!==query)throw Error('Geländeberechnung inzwischen ersetzt.');
       const step=projection.steps.next();
       if(!step.done){
@@ -73,7 +74,7 @@ parentPort!.on('message', async (job: any) => {
       parentPort!.postMessage({value:{regionReadCancelled:true},...(terrainTrace?{terrainTrace}:{})});return;
     }
     if(job.kind==='terrain-stroke')preparation=undefined;
-    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='geometry-tile')projection=undefined;
+    if(job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='material-tile'||job.kind==='geometry-tile')projection=undefined;
     if (db.inTransaction) {
       db.exec('ROLLBACK');if(syncStarted)reader.rollback(geometry);
     }

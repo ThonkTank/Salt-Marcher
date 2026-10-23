@@ -1,0 +1,114 @@
+import {createHash} from 'node:crypto';
+import {atlasMaterialTileQuery,type AtlasMaterialTileRequest,type AtlasMaterialTile} from '../atlas-material-tile';
+import {CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialChannels,type TerrainMaterialRaster} from '../terrain-material';
+import {DEFAULT_TERRAIN_STYLE} from '../terrain-relief';
+import {landscapeRasterBounds} from '../landscape-raster';
+import type {LandscapeRecord} from '../atlas-landscape';
+import type {AtlasRegionSource} from '../atlas-region-contracts';
+import {AtlasTileCache} from './atlas-tile-cache';
+import {projectionKey} from './atlas-projection-index';
+import {readTerrainSettings} from './terrain-color-raster';
+import type {AtlasRegionReader} from './atlas-region';
+
+const FORMAT='material-tiles-v1';
+const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
+type Stored={version:string;fingerprint:string;bytes:Uint8Array;waterTopology?:Uint8Array};
+type Inputs={water:string;baseColor:string;forest:string;rock:string;snow:string};
+
+/** Independently reusable raw material products, never baked display pixels.
+ * Cache rows are individually atomic. A complete, source-validated reply is the
+ * publication boundary; interrupted/evicted subsets are never published as a tile. */
+export class AtlasMaterialTiles {
+ private cache?:AtlasTileCache;private namespace='';
+ constructor(private db:any,private directory?:string){}
+ private open(source:AtlasRegionSource){
+  if(!this.directory||source.shadow||!source.shapeVersion)return;
+  const namespace=projectionKey(source.filename,source.campaignId);
+  if(this.namespace!==namespace){this.cache?.close();this.cache=AtlasTileCache.open(this.directory,namespace);this.namespace=namespace;}
+  return this.cache?.enabled?this.cache:undefined;
+ }
+ private *inputs(source:AtlasRegionSource,request:AtlasMaterialTileRequest):Generator<void,Inputs>{
+  const q=atlasMaterialTileQuery(request),box=landscapeRasterBounds(q.view.box,q.width,q.height);
+  const settings=readTerrainSettings(this.db,source.campaignId).terrainSettings!,style=settings.style??DEFAULT_TERRAIN_STYLE;
+  const field=createHash('sha256').update(FORMAT+JSON.stringify(settings.seaLevelM));
+  const base=createHash('sha256').update(FORMAT+JSON.stringify(style.land));
+  const forest=createHash('sha256').update(FORMAT),waterBase=createHash('sha256').update(FORMAT);
+  // Page narrow keys, then one owned payload at a time. No SQLite iterator is
+  // suspended across a worker continuation and no world-sized author list lives in JS.
+  const keySql=`SELECT CAST(rowid AS TEXT) source_row FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?`;
+  const first=this.db.prepare(keySql+' ORDER BY rowid LIMIT 128'),next=this.db.prepare(keySql+' AND rowid>CAST(? AS INTEGER) ORDER BY rowid LIMIT 128');
+  const payload=this.db.prepare(`SELECT a.payload,l.trashed FROM atlas_landscape a LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND a.rowid=?`);
+  let after:string|undefined,start=performance.now();
+  for(;;){
+   const args=[source.campaignId,box.x,box.x+box.width,box.y,box.y+box.height];
+   const rows=(after===undefined?first.all(...args):next.all(...args,after)) as {source_row:string}[];
+   if(!rows.length)break;
+   for(const row of rows){
+    const stored=payload.get(source.campaignId,row.source_row);after=row.source_row;if(!stored||stored.trashed)continue;
+    const r=JSON.parse(stored.payload) as LandscapeRecord;
+    // Author IDs/revisions/names are not material. Row order and the properties
+    // actually consumed by each raster pass are; a trash transition changes membership.
+    const shape=[row.source_row,r.kind,r.resolution,r.order,r.polygons,r.points,r.width];
+    if(r.height||r.route||r.surface==='freshwater')field.update(JSON.stringify([shape,r.height,r.route,r.surface,r.waterLevelM]));
+    else if(r.paint)base.update(JSON.stringify([shape,r.paint]));
+    else if(r.vegetation){
+     const p=r.vegetation.preset;
+     base.update(JSON.stringify([shape,p.edge,p.ground]));
+     forest.update(JSON.stringify([shape,p.edge,p.density,r.vegetation.edits]));
+    }else if(r.kind==='patch'&&(r.values.terrain||r.mask)&&!r.terrainSettings){
+     base.update(JSON.stringify([shape,r.values.terrain,r.mask,r.maskManaged,r.propertyOnly]));
+     forest.update(JSON.stringify([shape,r.values.terrain==='forest',r.mask,r.maskManaged,r.propertyOnly]));
+     waterBase.update(JSON.stringify([shape,r.values.terrain==='water',r.mask,r.maskManaged,r.propertyOnly]));
+    }
+    if(performance.now()-start>=8){yield;start=performance.now();}
+   }
+   if(performance.now()-start>=8){yield;start=performance.now();}
+   if(rows.length<128)break;
+  }
+  const terrain=field.digest('hex'),water=digest(JSON.stringify([terrain,waterBase.digest('hex')]));
+  return {water,baseColor:base.digest('hex'),forest:forest.digest('hex'),
+   rock:digest(JSON.stringify([terrain,!!style.mountains])),snow:digest(JSON.stringify([terrain,!!style.mountains,style.snowlineM??2500]))};
+ }
+ *read(source:AtlasRegionSource,request:AtlasMaterialTileRequest,reader:AtlasRegionReader):Generator<void,AtlasMaterialTile>{
+  const q=atlasMaterialTileQuery(request);
+  if(source.revision!==request.revision)throw Error('Materialkachel inzwischen geändert.');
+  const cache=this.open(source),channels:TerrainMaterialRaster={},states={} as AtlasMaterialTile['cache'];
+  const key=(c:TerrainMaterialChannel)=>JSON.stringify(['material',request.tile.lod,request.tile.x,request.tile.y,c]);
+  const old=new Map<TerrainMaterialChannel,Stored>();
+  for(const c of CHANNEL_NAMES){
+   const item=cache?.get<Stored>(key(c),FORMAT);
+   if(item&&typeof item.version==='string'&&typeof item.fingerprint==='string'&&item.bytes instanceof Uint8Array&&item.bytes.length===q.width*q.height*(c==='baseColor'?4:1)&&(c!=='water'||item.waterTopology instanceof Uint8Array&&item.waterTopology.length===q.width*q.height))old.set(c,item);
+  }
+  if(cache&&CHANNEL_NAMES.every(c=>old.get(c)?.version===source.shapeVersion)){
+   for(const c of CHANNEL_NAMES){channels[c]=old.get(c)!.bytes;states[c]='hit';}
+  }else{
+   const inputs=cache?yield* this.inputs(source,request):undefined;
+   let built:TerrainMaterialRaster={},waterTopology:Uint8Array|undefined;
+   const water=old.get('water');
+   if(water&&inputs&&(water.version===source.shapeVersion||water.fingerprint===inputs.water)){channels.water=water.bytes;waterTopology=water.waterTopology;states.water='hit';}
+   else {
+    // A fully cold tile needs one shared raster pass, not five copies of its field.
+    built=yield* reader.materialSteps(source,request,new Set(old.size?['water'] as const:CHANNEL_NAMES));
+    channels.water=built.water!;waterTopology=built.waterTopology;states.water=cache?'built':'disabled';
+   }
+   // Ground colour and vegetation depend on water classification, not the exact
+   // elevation that produced it. Raising dry land leaves these channels reusable.
+   const waterIdentity=digest(waterTopology!),fingerprints=inputs?{water:inputs.water,
+    baseColor:digest(inputs.baseColor+waterIdentity),forest:digest(inputs.forest+waterIdentity),
+    rock:digest(inputs.rock+waterIdentity),snow:digest(inputs.snow+waterIdentity)}:undefined;
+   const missing=new Set<TerrainMaterialChannel>();
+   for(const c of CHANNEL_NAMES){
+    if(c==='water')continue;
+    const prior=old.get(c);
+    if(prior&&fingerprints&&(prior.version===source.shapeVersion||prior.fingerprint===fingerprints[c])){channels[c]=prior.bytes;states[c]='hit';}
+    else if(built[c]){channels[c]=built[c];states[c]=cache?'built':'disabled';}
+    else missing.add(c);
+   }
+   if(missing.size){const more=yield* reader.materialSteps(source,request,missing);for(const c of missing){channels[c]=more[c]!;states[c]=cache?'built':'disabled';}}
+   // No yield within publication: all channels describe the same revalidated source.
+   if(cache&&fingerprints)for(const c of CHANNEL_NAMES)if(old.get(c)?.version!==source.shapeVersion||states[c]!=='hit')cache.put(key(c),FORMAT,{version:source.shapeVersion!,fingerprint:fingerprints[c],bytes:channels[c],...(c==='water'?{waterTopology}:{})});
+  }
+  return {tile:{...request.tile},revision:source.revision,fence:source.fence,width:q.width,height:q.height,channels:channels as TerrainMaterialChannels,cache:states};
+ }
+ close(){this.cache?.close();this.cache=undefined;this.namespace='';}
+}

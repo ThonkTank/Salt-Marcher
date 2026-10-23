@@ -1,6 +1,7 @@
 import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
 import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
 import {atlasTerrainTileQuery} from '../src/app/atlas-terrain-tile';
+import {atlasMaterialTileQuery} from '../src/app/atlas-material-tile';
 import {eraseAtlasProjection,clearProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
@@ -432,6 +433,14 @@ else {
       if(source.revision!==q.revision)throw Error('Atlaskachel inzwischen geändert.');
       const value=await atlasRegions.terrainTile(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Atlaskachel inzwischen geändert.');
+      return value;
+    });
+    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest)=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasMaterialTileQuery(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Materialkachel inzwischen geändert.');
+      const value=await atlasRegions.materialTile(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
       return value;
     });
     handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:store.atlasRegionSource(token).revision};});

@@ -65,6 +65,15 @@ Plattenschlüssel. Vorschauquellen ohne dauerhafte Version speichern keine Kache
 [Prüfung und noch offene M2-Grenzen](../reference/atlas-terrain-tiles-20261023/README.md)
 trennen diese Terrainstrecke von vollständiger Geometrie- und Produktabnahme.
 
+`atlasMaterialTile` liest getrennte, unbeleuchtete Grundfarbe/Wasser/Wald/Fels/Schnee
+über denselben eingeschränkten Bridgepfad. [Materialpersistenz](../../src/app/storage/atlas-material-tiles.ts)
+führt Quellenfingerprints je Kanal; Kamera, Licht und Konturen gehören nicht dazu.
+Wasser-Topologie auf Supersample-Ebene schützt abhängige Pigment-/Waldkanäle vor
+falscher Wiederverwendung bei gleicher mittlerer Deckung. Fehlende Kanäle werden
+gezielt ergänzt, nur vollständige quellengültige Antworten veröffentlicht.
+[Materialprüfung und LOD-Grenzen](../reference/atlas-material-tiles-20261023/README.md)
+trennen diese Datenstrecke von der späteren GPU-Komposition und Weltqualifikation.
+
 `atlasGeometryTile` nutzt denselben geprüften Main-/Workerpfad für persistente
 Gebäude- und Raummeshes. [Geometriequellen](../../src/app/storage/atlas-region.ts)
 filtern entfernte Besitzer zuerst über die vorhandenen Bereichsgrenzen aller
