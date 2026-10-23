@@ -11,11 +11,15 @@ const assets=[
   '.build/desktop/ui/atlas-maplibre-runtime.js',
   '.build/desktop/ui/atlas-maplibre-worker.mjs',
   '.build/desktop/ui/atlas-maplibre-projection-worker.mjs',
-  '.build/desktop/ui/atlas-maplibre.css'
+  '.build/desktop/ui/atlas-maplibre.css',
+  '.build/desktop/ui/atlas-maplibre-fonts/NotoSans-VF.ttf',
+  '.build/desktop/ui/atlas-maplibre-fonts/NotoSansSymbols-VF.ttf'
 ];
 const sources=[
   'package.json','package-lock.json','desktop/main.ts','src/app/index.html',
-  'src/app/atlas-maplibre-runtime.ts','src/app/atlas-maplibre-bridge.ts',
+  'src/app/atlas-maplibre-runtime.ts','src/app/atlas-maplibre-bridge.ts','src/app/atlas-maplibre-assets.ts',
+  'resources/atlas-maplibre-fonts/NotoSans-VF.ttf','resources/atlas-maplibre-fonts/NotoSansSymbols-VF.ttf',
+  'resources/atlas-maplibre-fonts/OFL-1.1.txt','resources/atlas-maplibre-fonts/PROVENANCE.md',
   'src/app/atlas-maplibre-projection.ts','src/app/atlas-maplibre-projection-worker.ts',
   'src/app/atlas-metric-space.ts','src/app/atlas-metric-query.ts','tools/build-desktop.mjs'
 ];
@@ -45,7 +49,7 @@ try{
     const preferences=win.webContents.getLastWebPreferences();
     return {url:win.webContents.getURL(),webPreferences:{nodeIntegration:preferences.nodeIntegration,
       contextIsolation:preferences.contextIsolation,sandbox:preferences.sandbox}};
-  },assets.map(file=>path.basename(file)));
+  },assets.map(file=>file.slice('.build/desktop/ui/'.length)));
   assert.match(responseCapture.url,/^campaign:\/\/app\/index\.html$/);
   assert.deepEqual(responseCapture.webPreferences,{nodeIntegration:false,contextIsolation:true,sandbox:true});
 
@@ -68,7 +72,7 @@ try{
     runtime.maplibre.addProjection(crs);
     const map=new runtime.maplibre.Map({container,center:[0,0],zoom:Math.log2(root.size*720/(512*3000)),bearing:0,pitch:75,
       maxPitch:75,attributionControl:false,renderWorldCopies:false,
-      style:{version:8,projection:{type:crs.name},sources:{marker:{type:'geojson',maxzoom:24,data:{type:'FeatureCollection',features:[
+      style:{version:8,...runtime.atlasMapLibreFontStyle('campaign://app/'),projection:{type:crs.name},sources:{marker:{type:'geojson',maxzoom:24,data:{type:'FeatureCollection',features:[
         {type:'Feature',id:'runtime-marker',properties:{id:'runtime-marker'},geometry:{type:'Point',coordinates:[0,0]}}
       ]}}},layers:[{id:'smoke-background',type:'background',paint:{'background-color':'#c3d0c5'}},
         {id:'runtime-marker-layer',type:'circle',source:'marker',paint:{'circle-radius':10,'circle-color':'#b63345','circle-stroke-width':2,'circle-stroke-color':'#ffffff'}}]}});
@@ -116,11 +120,36 @@ try{
   assert.equal(pageBridge.sharedWebgl2,true);
   assert(pageBridge.frameRevision>0);
   await native.capture(page,'atlas-maplibre-runtime.png');
+  const localTypography=await page.evaluate(async()=>{
+    const f=window.__atlasMapLibreRuntimeSmoke;
+    f.map.jumpTo({pitch:0});
+    const first=f.runtime.installAtlasMapLibreSymbols(f.map),second=f.runtime.installAtlasMapLibreSymbols(f.map);
+    f.map.addLayer({id:'atlas-local-label',type:'symbol',source:'marker',layout:{
+      'text-field':'Äußere Wälder · Ελληνικά · Кириллица · ← ↔',
+      'text-font':[...f.runtime.ATLAS_MAPLIBRE_FONT_STACK],'text-size':20,
+      'text-offset':[0,1.5],'text-anchor':'top','text-allow-overlap':true,
+      'icon-image':f.runtime.ATLAS_MAPLIBRE_MARKER_IMAGE_ID,'icon-anchor':'bottom','icon-allow-overlap':true
+    },paint:{'text-color':'#18352e','text-halo-color':'#fff8e9','text-halo-width':1}});
+    await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{f.map.off('idle',done);reject(Error('Local font and symbol render timed out'));},15000);
+      function done(){clearTimeout(timer);resolve();}
+      f.map.once('idle',done);f.map.triggerRepaint();
+    });
+    const features=f.runtime.queryRenderedFeaturesMetricSafe(f.map,[[0,0],[720,480]],{layers:['atlas-local-label']},f.runtime.maplibre.getVersion()).features;
+    return {first,second,fontFaces:Array.from(document.fonts).filter(face=>face.family.startsWith('Atlas Noto')).map(face=>({family:face.family,status:face.status})),
+      symbol:f.map.hasImage(f.runtime.ATLAS_MAPLIBRE_MARKER_IMAGE_ID),labelIds:features.map(feature=>feature.properties.id),
+      glyphs:f.map.getStyle().glyphs??null,fontStyle:f.map.getStyle()['font-faces']};
+  });
+  assert.equal(localTypography.first,true);assert.equal(localTypography.second,false);
+  assert.equal(localTypography.symbol,true);assert.equal(localTypography.glyphs,null);
+  assert(localTypography.labelIds.includes('runtime-marker'),JSON.stringify(localTypography));
+  assert(localTypography.fontFaces.length>=2&&localTypography.fontFaces.every(face=>face.status==='loaded'),JSON.stringify(localTypography));
+  await native.capture(page,'atlas-maplibre-local-typography.png');
 
-  const expectedNames=assets.map(file=>path.basename(file));
+  const expectedNames=assets.map(file=>file.slice('.build/desktop/ui/'.length));
   const responses=await bounded(native.app.evaluate(()=>globalThis.__atlasMapLibreResourceResponses??[]),5_000,'Resource response read timed out');
   // Electron does not report worker-internal requests through this session's
-  // onCompleted hook. Verify all four protocol routes and exact built bytes by
+  // onCompleted hook. Verify all bundled protocol routes and exact built bytes by
   // an explicit same-origin read, separately from the worker-execution checks.
   const resourceReads=await bounded(page.evaluate(async names=>Promise.all(names.map(async name=>{
     const url=new URL(name,location.href).href,response=await fetch(url),bytes=await response.arrayBuffer();
@@ -152,7 +181,7 @@ try{
   assert.deepEqual(after,before,'Atlas runtime build assets, source files, and root lock must remain unchanged');
   await native.close();
   await native.finish({complete:true,scope:'Built desktop runtime/protocol/CSP smoke only; not Atlas product acceptance.',
-    hashes:{before,after},webPreferences:responseCapture.webPreferences,resources:responses,resourceReads,bridge:pageBridge,
+    hashes:{before,after},webPreferences:responseCapture.webPreferences,resources:responses,resourceReads,bridge:pageBridge,localTypography,
     cleanup:teardown,mainStillOpen,consoleErrors});
   console.log(JSON.stringify({complete:true,output,packageSource:native.source,resources:resourceReads.map(item=>({name:item.name,statusCode:item.status})),bridge:pageBridge}));
 }catch(error){

@@ -22,6 +22,17 @@ dieselben lokalen CRS-Definitionen. Die privaten Bibliotheksanschlüsse bleiben
 auf die exakt gepinnten Versionen begrenzt. Produktübernahme und vollständige
 M1-Abnahme sind weiterhin offen.
 
+Die neue [Kamera](../../src/app/atlas-maplibre-camera.ts) hält physische Fokus-
+und Darstellungshöhe getrennt. [Darstellung und Autorenstrahl](../../src/app/atlas-maplibre-matrices.ts)
+teilen dieselbe numerische Matrixberechnung. Die GPU bestimmt das sichtbare Objekt;
+der [Strahl](../../src/app/atlas-maplibre-ray.ts) verfeinert dessen Treffer auf den
+tatsächlich dargestellten Dreiecken. Autoren dürfen nur einen vorhandenen `point`
+verwenden. Nach Kamera-/Style-/Größenänderung sperrt `frameUsable` Treffer bis zum
+frischen Rendern. Szenenpuffer sind unveränderliche Aufnahmen; geänderte Geometrie
+erhält eine neue Aufnahme. [Lokale Schrift und Symbole](../../src/app/atlas-maplibre-assets.ts)
+gehören zum Desktopbuild und werden über die konkrete Asset-Freigabe in Main geladen.
+[Native Gegenprüfungen und verbleibende M1-Lücken](../reference/atlas-maplibre-camera-assets-20261023/README.md).
+
 `CampaignAtlasWorkbench` verbindet Arbeitsbereich, Werkzeugwechsel und die
 bestehende Schreibgrenze. Die Zustandsbesitzer bekommen gezielte typisierte
 Ports, niemals die gesamte Workbench:

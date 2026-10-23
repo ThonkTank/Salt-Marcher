@@ -6,6 +6,8 @@ import type { LandscapeBox } from './atlas-landscape';
 export interface AtlasMetricRoot { x: number; y: number; size: number }
 export interface AtlasMetricPose {
   focus: Point;
+  /** Physical altitude of the focus plane; defaults to sea level. */
+  focusHeightM?: number;
   metersPerPixel: number;
   rotation: number;
   tilt: number;
@@ -90,21 +92,23 @@ export function metricProjectionParameters(root: AtlasMetricRoot) {
     tileMatrixSet: {origin: [-root.size / 2, root.size / 2] as [number, number], extentAtZoom0: root.size}};
 }
 
-export function metricMapCamera(root: AtlasMetricRoot, pose: AtlasMetricPose) {
-  if (!finite(pose.metersPerPixel, pose.rotation, pose.tilt) || pose.metersPerPixel <= 0
+export function metricMapCamera(root: AtlasMetricRoot, pose: AtlasMetricPose, exaggeration = 1) {
+  const elevation = (pose.focusHeightM ?? 0) * exaggeration;
+  if (!finite(pose.metersPerPixel, pose.rotation, pose.tilt, elevation, exaggeration) || exaggeration <= 0 || pose.metersPerPixel <= 0
     || pose.tilt < 0 || pose.tilt > 75) throw new Error('Invalid metric camera pose');
   return {center: metricLngLat(root, pose.focus), zoom: Math.log2(root.size) - Math.log2(TILE_PIXELS) - Math.log2(pose.metersPerPixel),
-    bearing: pose.rotation, pitch: pose.tilt};
+    bearing: pose.rotation, pitch: pose.tilt, elevation};
 }
 
 export function metricCameraPose(root: AtlasMetricRoot, camera: {
-  center: readonly [number, number]; zoom: number; bearing: number; pitch: number;
-}): AtlasMetricPose {
-  if (!finite(camera.zoom, camera.bearing, camera.pitch) || camera.pitch < 0 || camera.pitch > 75)
+  center: readonly [number, number]; zoom: number; bearing: number; pitch: number; elevation?: number;
+}, exaggeration = 1): AtlasMetricPose {
+  const focusHeightM = (camera.elevation ?? 0) / exaggeration;
+  if (!finite(camera.zoom, camera.bearing, camera.pitch, focusHeightM, exaggeration) || exaggeration <= 0 || camera.pitch < 0 || camera.pitch > 75)
     throw new Error('Invalid planar camera');
   const metersPerPixel = 2 ** (Math.log2(root.size) - Math.log2(TILE_PIXELS) - camera.zoom);
   if (!Number.isFinite(metersPerPixel) || metersPerPixel <= 0) throw new Error('Invalid planar camera scale');
-  return {focus: metricPoint(root, camera.center), metersPerPixel, rotation: camera.bearing, tilt: camera.pitch};
+  return {focus: metricPoint(root, camera.center), focusHeightM, metersPerPixel, rotation: camera.bearing, tilt: camera.pitch};
 }
 
 /** Translate an old tile to the expanded root without changing its metre extent.

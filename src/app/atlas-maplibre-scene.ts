@@ -3,11 +3,13 @@ import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
 import type {AtlasMapLibreBridge} from './atlas-maplibre-bridge';
 import type {AtlasMapLibreSceneModel, AtlasMapLibreSceneObject, AtlasMapLibreSelectionTarget} from './atlas-maplibre-scene-model';
 import {ensureAtlasPickingDepth} from './atlas-maplibre-picking';
+import {refineAtlasMapLibreRayHit, type AtlasMapLibreRayQuery} from './atlas-maplibre-ray';
 
 export interface AtlasMapLibreSceneHit {
   id: string;
   target: AtlasMapLibreSelectionTarget;
-  /** Canonical metres reconstructed from the GPU depth hit, not a terrain cell ID. */
+  /** Exact shared-camera ray intersection with the selected mesh, in canonical
+   * metres. Null when the requested subpixel misses that GPU-selected mesh. */
   point: {x: number; y: number; heightM: number} | null;
 }
 
@@ -38,19 +40,19 @@ export function atlasMapLibreSceneLayers(model: AtlasMapLibreSceneModel): Simple
 }
 
 /** Reject picks from other layer groups or an older scene snapshot. */
-export function atlasMapLibreSceneHit(model: AtlasMapLibreSceneModel, info: PickingInfo | null): AtlasMapLibreSceneHit | null {
+export function atlasMapLibreSceneHit(model: AtlasMapLibreSceneModel, info: PickingInfo | null,
+  ray?: Pick<AtlasMapLibreRayQuery, 'frame' | 'viewport' | 'pixel'>): AtlasMapLibreSceneHit | null {
   if (!info?.picked || info.index !== 0) return null;
   const object = info.object as AtlasMapLibreSceneObject | undefined;
   if (!object || !model.objects.includes(object) || info.layer?.id !== `atlas-scene:${object.id}`) return null;
   const target = model.targets.get(object.id);
   if (!target || target !== object.target) return null;
-  const coordinate = info.coordinate;
-  const point = coordinate?.length === 3 && coordinate.every(Number.isFinite) ? {
-    x: model.sceneOrigin.x + coordinate[0]! * model.root.size,
-    y: model.sceneOrigin.y + coordinate[1]! * model.root.size,
-    heightM: model.verticalOriginM + coordinate[2]! * model.root.size / model.verticalExaggeration
-  } : null;
-  return {id: object.id, target, point: point && Object.values(point).every(Number.isFinite) ? point : null};
+  // GPU depth identifies visibility but its quantized position is too coarse
+  // for room authoring. Never substitute that approximation for a missing ray.
+  const point = ray ? refineAtlasMapLibreRayHit({...ray, object, root: model.root,
+    sceneOrigin: model.sceneOrigin, verticalOriginM: model.verticalOriginM,
+    verticalExaggeration: model.verticalExaggeration})?.point ?? null : null;
+  return {id: object.id, target, point};
 }
 
 /** Owns the canonical scene snapshot and its Deck layers on one attached bridge.
@@ -77,12 +79,16 @@ export class AtlasMapLibreScene {
   pick(x: number, y: number): AtlasMapLibreSceneHit | null {
     if (this.disposed) throw new Error('Atlas scene disposed');
     if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Atlas pick requires finite canvas coordinates');
-    if (!this.model || !this.bridge.overlay) return null;
+    if (!this.model || !this.bridge.overlay || !this.bridge.frameUsable) return null;
     ensureAtlasPickingDepth(this.bridge.overlay);
     // Do not filter out opaque terrain or ask for all overlapping objects.
     // The first shared-depth hit is the visible semantic object.
-    const info = this.bridge.overlay.pickObject({x, y, radius: 0, unproject3D: true});
-    return atlasMapLibreSceneHit(this.model, info);
+    // No second GPU pass/readback for approximate Z: the selected mesh and
+    // shared camera already provide the precise author point below.
+    const info = this.bridge.overlay.pickObject({x, y, radius: 0});
+    const frame = this.bridge.frame, viewport = info?.viewport;
+    return atlasMapLibreSceneHit(this.model, info,
+      frame && viewport ? {frame, viewport, pixel: {x, y}} : undefined);
   }
 
   dispose(): void {

@@ -19,6 +19,8 @@ export interface AtlasMapLibreSceneObject {
   /** Stable canonical identity; render and picking consume this same geometry. */
   id:string;
   target:AtlasMapLibreSelectionTarget;
+  /** Immutable snapshot buffers: changes require a new scene/object snapshot,
+   * so retained GPU geometry and spatial lookup indexes cannot diverge. */
   positions:Float32Array;
   indices:Uint32Array;
 }

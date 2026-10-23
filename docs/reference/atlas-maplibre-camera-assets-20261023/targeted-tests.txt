@@ -1,0 +1,418 @@
+TAP version 13
+# Subtest: MapLibre style declares only bundled scoped font faces and no glyph PBF fallback
+ok 1 - MapLibre style declares only bundled scoped font faces and no glyph PBF fallback
+  ---
+  duration_ms: 2.622526
+  type: 'test'
+  ...
+# Subtest: font preflight fetches only same-origin assets and waits for loaded faces before resolving
+ok 2 - font preflight fetches only same-origin assets and waits for loaded faces before resolving
+  ---
+  duration_ms: 1.165953
+  type: 'test'
+  ...
+# Subtest: vendored font bytes match the recorded provenance and include the full OFL license
+ok 3 - vendored font bytes match the recorded provenance and include the full OFL license
+  ---
+  duration_ms: 4.483491
+  type: 'test'
+  ...
+# Subtest: generated marker is deterministic RGBA and installs idempotently through MapLibre addImage
+ok 4 - generated marker is deterministic RGBA and installs idempotently through MapLibre addImage
+  ---
+  duration_ms: 28.709112
+  type: 'test'
+  ...
+# Subtest: bridge owns independent frozen roots, origins, frames and view revisions per map
+ok 5 - bridge owns independent frozen roots, origins, frames and view revisions per map
+  ---
+  duration_ms: 8.889969
+  type: 'test'
+  ...
+# Subtest: matrix capture invalidates Deck view cache when either public matrix changes
+ok 6 - matrix capture invalidates Deck view cache when either public matrix changes
+  ---
+  duration_ms: 1.482214
+  type: 'test'
+  ...
+# Subtest: fresh-frame epoch gates picks after move and resize until unchanged matrices are captured again
+ok 7 - fresh-frame epoch gates picks after move and resize until unchanged matrices are captured again
+  ---
+  duration_ms: 1.199371
+  type: 'test'
+  ...
+# Subtest: style reload keeps retained Deck matrices but blocks picks until a post-reload capture
+ok 8 - style reload keeps retained Deck matrices but blocks picks until a post-reload capture
+  ---
+  duration_ms: 8.874079
+  type: 'test'
+  ...
+# Subtest: style reload reinstalls capture before public layer-group reconciliation
+ok 9 - style reload reinstalls capture before public layer-group reconciliation
+  ---
+  duration_ms: 1.273215
+  type: 'test'
+  ...
+# Subtest: styledata can build a view from the retained frame while reconciliation waits for the new capture frame
+ok 10 - styledata can build a view from the retained frame while reconciliation waits for the new capture frame
+  ---
+  duration_ms: 5.966671
+  type: 'test'
+  ...
+# Subtest: dispose cancels bridge ownership and removes its control, capture layer and listener
+ok 11 - dispose cancels bridge ownership and removes its control, capture layer and listener
+  ---
+  duration_ms: 0.861014
+  type: 'test'
+  ...
+# Subtest: style reload failures are retained and reported through onError
+ok 12 - style reload failures are retained and reported through onError
+  ---
+  duration_ms: 1.62325
+  type: 'test'
+  ...
+# Subtest: missing pinned private style hook fails closed before adding the overlay
+ok 13 - missing pinned private style hook fails closed before adding the overlay
+  ---
+  duration_ms: 0.861831
+  type: 'test'
+  ...
+# Subtest: constructor rejects malformed roots and non-finite origins
+ok 14 - constructor rejects malformed roots and non-finite origins
+  ---
+  duration_ms: 0.797264
+  type: 'test'
+  ...
+# Subtest: finite scene origin outside the current root still yields finite local viewport coordinates
+ok 15 - finite scene origin outside the current root still yields finite local viewport coordinates
+  ---
+  duration_ms: 0.939792
+  type: 'test'
+  ...
+# Subtest: attach rejects a foreign capture id and disposal preserves that layer
+ok 16 - attach rejects a foreign capture id and disposal preserves that layer
+  ---
+  duration_ms: 0.296325
+  type: 'test'
+  ...
+# Subtest: concurrent attach fails synchronously without creating a second owner
+ok 17 - concurrent attach fails synchronously without creating a second owner
+  ---
+  duration_ms: 0.896461
+  type: 'test'
+  ...
+# Subtest: overlay creation failure removes only the capture layer it installed
+ok 18 - overlay creation failure removes only the capture layer it installed
+  ---
+  duration_ms: 0.389851
+  type: 'test'
+  ...
+# Subtest: superseded style waits cannot install a stale capture layer
+ok 19 - superseded style waits cannot install a stale capture layer
+  ---
+  duration_ms: 1.121606
+  type: 'test'
+  ...
+# Subtest: late layer reconciliation failure blocks picks despite an already captured fresh frame
+ok 20 - late layer reconciliation failure blocks picks despite an already captured fresh frame
+  ---
+  duration_ms: 1.068149
+  type: 'test'
+  ...
+# Subtest: elevated room camera disables DEM clamp before applying metres, not root-normalized Z
+ok 21 - elevated room camera disables DEM clamp before applying metres, not root-normalized Z
+  ---
+  duration_ms: 2.614093
+  type: 'test'
+  ...
+# Subtest: physical focus height survives root replacement and vertical exaggeration
+ok 22 - physical focus height survives root replacement and vertical exaggeration
+  ---
+  duration_ms: 0.588473
+  type: 'test'
+  ...
+# Subtest: invalid altitude, scale and exaggeration fail before touching the map
+ok 23 - invalid altitude, scale and exaggeration fail before touching the map
+  ---
+  duration_ms: 0.685805
+  type: 'test'
+  ...
+# Subtest: upgrades both picking passes atomically and releases old external color textures
+ok 24 - upgrades both picking passes atomically and releases old external color textures
+  ---
+  duration_ms: 3.686828
+  type: 'test'
+  ...
+# Subtest: allocates before the first Deck pick and does not alter global device methods
+ok 25 - allocates before the first Deck pick and does not alter global device methods
+  ---
+  duration_ms: 0.441239
+  type: 'test'
+  ...
+# Subtest: failed allocation preserves usable original buffers and releases only the candidate
+ok 26 - failed allocation preserves usable original buffers and releases only the candidate
+  ---
+  duration_ms: 1.249662
+  type: 'test'
+  ...
+# Subtest: missing capabilities and unknown private contracts fail before resource replacement
+ok 27 - missing capabilities and unknown private contracts fail before resource replacement
+  ---
+  duration_ms: 0.52105
+  type: 'test'
+  ...
+# Subtest: renderer and worker decode the same metric CRS, including exponent-sized roots
+ok 28 - renderer and worker decode the same metric CRS, including exponent-sized roots
+  ---
+  duration_ms: 4.464155
+  type: 'test'
+  ...
+# Subtest: unknown, noncanonical and invalid projection scales fail before creating a converter
+ok 29 - unknown, noncanonical and invalid projection scales fail before creating a converter
+  ---
+  duration_ms: 2.000359
+  type: 'test'
+  ...
+# Subtest: unprojects a canvas point through viewport offset and OpenGL near/far clip planes
+ok 30 - unprojects a canvas point through viewport offset and OpenGL near/far clip planes
+  ---
+  duration_ms: 3.31311
+  type: 'test'
+  ...
+# Subtest: refines an oblique elevated room triangle in the exact uploaded Float32 mesh
+ok 31 - refines an oblique elevated room triangle in the exact uploaded Float32 mesh
+  ---
+  duration_ms: 1.82425
+  type: 'test'
+  ...
+# Subtest: intersects indexed terrain triangles and returns interpolated elevated surface height
+ok 32 - intersects indexed terrain triangles and returns interpolated elevated surface height
+  ---
+  duration_ms: 0.746687
+  type: 'test'
+  ...
+# Subtest: mesh holes and requested subpixel misses return null instead of a GPU-depth approximation
+ok 33 - mesh holes and requested subpixel misses return null instead of a GPU-depth approximation
+  ---
+  duration_ms: 1.788479
+  type: 'test'
+  ...
+# Subtest: near/far clipping excludes geometry outside the captured clip segment
+ok 34 - near/far clipping excludes geometry outside the captured clip segment
+  ---
+  duration_ms: 0.76518
+  type: 'test'
+  ...
+# Subtest: large-world small-metre geometry preserves local precision and BVH is reused across camera frames
+ok 35 - large-world small-metre geometry preserves local precision and BVH is reused across camera frames
+  ---
+  duration_ms: 1.486695
+  type: 'test'
+  ...
+# Subtest: expanded 2^44 root still refines a 20-metre mesh without a near-camera ray threshold
+ok 36 - expanded 2^44 root still refines a 20-metre mesh without a near-camera ray threshold
+  ---
+  duration_ms: 0.526106
+  type: 'test'
+  ...
+# Subtest: native rotated roof-apex pixel follows Deck matrix rounding and corrects only nanometre-scale edge error
+ok 37 - native rotated roof-apex pixel follows Deck matrix rounding and corrects only nanometre-scale edge error
+  ---
+  duration_ms: 0.392778
+  type: 'test'
+  ...
+# Subtest: a requested ray more than the 10-nanometre edge bound outside the selected mesh remains a miss
+ok 38 - a requested ray more than the 10-nanometre edge bound outside the selected mesh remains a miss
+  ---
+  duration_ms: 0.505854
+  type: 'test'
+  ...
+# Subtest: terrain mesh retains terrainGridLayout topology, height datum and root-local metric coordinates
+ok 39 - terrain mesh retains terrainGridLayout topology, height datum and root-local metric coordinates
+  ---
+  duration_ms: 7.020846
+  type: 'test'
+  ...
+# Subtest: rooms preserve holes, rotate through the canonical scope frame and sit on the elevated terrain workplane without mutating input
+ok 40 - rooms preserve holes, rotate through the canonical scope frame and sit on the elevated terrain workplane without mutating input
+  ---
+  duration_ms: 4.455493
+  type: 'test'
+  ...
+# Subtest: building exteriors preserve rotated footprint holes, terrain anchor and floor-derived wall height
+ok 41 - building exteriors preserve rotated footprint holes, terrain anchor and floor-derived wall height
+  ---
+  duration_ms: 4.219762
+  type: 'test'
+  ...
+# Subtest: open building shells remain absent while their interior room uses the building terrain base
+ok 42 - open building shells remain absent while their interior room uses the building terrain base
+  ---
+  duration_ms: 1.416579
+  type: 'test'
+  ...
+# Subtest: raster-only geometry and missing terrain are reported as incomplete instead of invented vectors
+ok 43 - raster-only geometry and missing terrain are reported as incomplete instead of invented vectors
+  ---
+  duration_ms: 0.929561
+  type: 'test'
+  ...
+# Subtest: refined terrain vertices and triangles use the real continuous terrainGridLayout
+ok 44 - refined terrain vertices and triangles use the real continuous terrainGridLayout
+  ---
+  duration_ms: 2.450937
+  type: 'test'
+  ...
+# Subtest: positive scene-local Y matches the CRS tile-matrix Y after a nonzero and out-of-root fixed origin
+ok 45 - positive scene-local Y matches the CRS tile-matrix Y after a nonzero and out-of-root fixed origin
+  ---
+  duration_ms: 0.946034
+  type: 'test'
+  ...
+# Subtest: canonical Store and AtlasRegionReader DTOs preserve both floor elevations through the scene adapter
+ok 46 - canonical Store and AtlasRegionReader DTOs preserve both floor elevations through the scene adapter
+  ---
+  duration_ms: 280.408234
+  type: 'test'
+  ...
+# Subtest: renderer and picking share the exact indexed buffers and write opaque depth
+ok 47 - renderer and picking share the exact indexed buffers and write opaque depth
+  ---
+  duration_ms: 4.156404
+  type: 'test'
+  ...
+# Subtest: author point intersects selected geometry and never trusts the approximate GPU depth coordinate
+ok 48 - author point intersects selected geometry and never trusts the approximate GPU depth coordinate
+  ---
+  duration_ms: 2.872492
+  type: 'test'
+  ...
+# Subtest: foreign, stale and missed picks never become canonical selections
+ok 49 - foreign, stale and missed picks never become canonical selections
+  ---
+  duration_ms: 0.323575
+  type: 'test'
+  ...
+# Subtest: scene retains buffers across repeated updates and camera-only picking, and releases layers on disposal
+ok 50 - scene retains buffers across repeated updates and camera-only picking, and releases layers on disposal
+  ---
+  duration_ms: 1.475314
+  type: 'test'
+  ...
+# Subtest: coordinate domain mismatch and failed layer replacement preserve the previous pick snapshot
+ok 51 - coordinate domain mismatch and failed layer replacement preserve the previous pick snapshot
+  ---
+  duration_ms: 0.734844
+  type: 'test'
+  ...
+# Subtest: ordinary query padding is preserved and cannot shrink candidate bounds
+ok 52 - ordinary query padding is preserved and cannot shrink candidate bounds
+  ---
+  duration_ms: 1.521686
+  type: 'test'
+  ...
+# Subtest: above-horizon corner uses the positive visible clipping bound
+ok 53 - above-horizon corner uses the positive visible clipping bound
+  ---
+  duration_ms: 0.325805
+  type: 'test'
+  ...
+# Subtest: invalid clipping ranges fail explicitly instead of masking broken projection state
+ok 54 - invalid clipping ranges fail explicitly instead of masking broken projection state
+  ---
+  duration_ms: 0.860996
+  type: 'test'
+  ...
+# Subtest: inherited MapLibre method gets a synchronous exact query and is removed afterward
+ok 55 - inherited MapLibre method gets a synchronous exact query and is removed afterward
+  ---
+  duration_ms: 0.760668
+  type: 'test'
+  ...
+# Subtest: configurable own data and accessor descriptors are restored exactly
+ok 56 - configurable own data and accessor descriptors are restored exactly
+  ---
+  duration_ms: 0.429085
+  type: 'test'
+  ...
+# Subtest: nonconfigurable writable data method is temporarily replaced and restored exactly
+ok 57 - nonconfigurable writable data method is temporarily replaced and restored exactly
+  ---
+  duration_ms: 0.412677
+  type: 'test'
+  ...
+# Subtest: immutable overrides and wrong versions reject before query or mutation
+ok 58 - immutable overrides and wrong versions reject before query or mutation
+  ---
+  duration_ms: 0.57545
+  type: 'test'
+  ...
+# Subtest: private-contract and invalid clip-range failures do not mutate the transform
+ok 59 - private-contract and invalid clip-range failures do not mutate the transform
+  ---
+  duration_ms: 0.70883
+  type: 'test'
+  ...
+# Subtest: query exceptions restore inherited and own descriptors in finally
+ok 60 - query exceptions restore inherited and own descriptors in finally
+  ---
+  duration_ms: 0.689106
+  type: 'test'
+  ...
+# Subtest: thenable query results are rejected as asynchronous and restore the method
+ok 61 - thenable query results are rejected as asynchronous and restore the method
+  ---
+  duration_ms: 0.713037
+  type: 'test'
+  ...
+# Subtest: nested queries restore the outer temporary override before the outer call restores its descriptor
+ok 62 - nested queries restore the outer temporary override before the outer call restores its descriptor
+  ---
+  duration_ms: 1.143733
+  type: 'test'
+  ...
+# Subtest: separate map transforms do not share overrides and geometry/options are never widened
+ok 63 - separate map transforms do not share overrides and geometry/options are never widened
+  ---
+  duration_ms: 0.347673
+  type: 'test'
+  ...
+# Subtest: all five scales retain sub-centimetre metric coordinates without geographic latitude limits
+ok 64 - all five scales retain sub-centimetre metric coordinates without geographic latitude limits
+  ---
+  duration_ms: 1.95485
+  type: 'test'
+  ...
+# Subtest: root expansion preserves world pose and tile extents in every direction including beyond the original root
+ok 65 - root expansion preserves world pose and tile extents in every direction including beyond the original root
+  ---
+  duration_ms: 1.476164
+  type: 'test'
+  ...
+# Subtest: negative bounds, repeated growth and unchanged views keep valid roots without modifying authored coordinates
+ok 66 - negative bounds, repeated growth and unchanged views keep valid roots without modifying authored coordinates
+  ---
+  duration_ms: 1.075639
+  type: 'test'
+  ...
+# Subtest: invalid, overflowing and incompatible display domains fail instead of clipping world data
+ok 67 - invalid, overflowing and incompatible display domains fail instead of clipping world data
+  ---
+  duration_ms: 3.078852
+  type: 'test'
+  ...
+# Subtest: finite inputs cannot leak singular CRS scales or infinite output coordinates
+ok 68 - finite inputs cannot leak singular CRS scales or infinite output coordinates
+  ---
+  duration_ms: 0.682268
+  type: 'test'
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3939.722759

@@ -2,7 +2,7 @@ import * as maplibre from 'maplibre-gl';
 import type {CustomLayerInterface, CustomRenderMethodInput, Map as MapLibreMap} from 'maplibre-gl';
 import {MapLibreOverlay} from '@deck.gl/maplibre';
 import {VERSION as DECK_VERSION, Layer, View, Viewport} from '@deck.gl/core';
-import {Matrix4} from '@math.gl/core';
+import {atlasMapLibreViewMatrices} from './atlas-maplibre-matrices';
 import type {AtlasMetricRoot} from './atlas-metric-space';
 import {metricProjectionParameters} from './atlas-metric-space';
 
@@ -82,12 +82,15 @@ export class AtlasMapLibreBridge {
   private overlayInstance: OverlayRuntime | null = null;
   private frameSnapshot: AtlasMapLibreFrame | null = null;
   private viewRevision = 0;
+  private frameEpoch = 0;
+  private capturedFrameEpoch = -1;
   private styleGeneration = 0;
   private disposed = false;
   private attached = false;
   private attaching = false;
   private captureLayerInstalled = false;
   private captureReady = false;
+  private frameInvalidationListenersInstalled = false;
   private styleTask: Promise<void> = Promise.resolve();
   private latestError: unknown = null;
 
@@ -119,6 +122,11 @@ export class AtlasMapLibreBridge {
   }
 
   get frame(): AtlasMapLibreFrame | null { return this.frameSnapshot; }
+  /** True only after the capture layer rendered following the latest view/style invalidation. */
+  get frameUsable(): boolean {
+    return this.attached && this.latestError === null && this.frameSnapshot !== null
+      && this.capturedFrameEpoch === this.frameEpoch;
+  }
   get overlay(): MapLibreOverlay | null { return this.overlayInstance as unknown as MapLibreOverlay | null; }
   get error(): unknown { return this.latestError; }
 
@@ -129,6 +137,7 @@ export class AtlasMapLibreBridge {
     this.attaching = true;
     let overlay: OverlayRuntime | null = null;
     try {
+      this.installFrameInvalidationListeners();
       await this.waitForStyle();
       await this.waitForSources();
       this.assertUsable();
@@ -150,6 +159,7 @@ export class AtlasMapLibreBridge {
       return overlay as unknown as MapLibreOverlay;
     } catch (error) {
       this.map.off('style.load', this.onStyleLoad);
+      this.removeFrameInvalidationListeners();
       if (overlay?._map === this.map) {
         try { this.map.removeControl(overlay as unknown as MapLibreOverlay); }
         catch (cleanupError) { this.onError(cleanupError); }
@@ -185,16 +195,19 @@ export class AtlasMapLibreBridge {
     const reason = new Error('Atlas MapLibre bridge disposed');
     for (const wait of [...this.waits]) wait.cancel(reason);
     this.map.off('style.load', this.onStyleLoad);
+    this.removeFrameInvalidationListeners();
     if (this.attached && this.overlayInstance) this.map.removeControl(this.overlayInstance as unknown as MapLibreOverlay);
     this.attached = false;
     this.overlayInstance = null;
     this.removeOwnedCaptureLayer();
     this.captureReady = false;
+    this.capturedFrameEpoch = -1;
     this.frameSnapshot = null;
   }
 
   private readonly onStyleLoad = (): void => {
     if (this.disposed || !this.overlayInstance) return;
+    this.invalidateFrame();
     const generation = ++this.styleGeneration;
     this.latestError = null;
     this.styleTask = this.reconcileStyle(generation).catch(error => {
@@ -235,6 +248,7 @@ export class AtlasMapLibreBridge {
   private captureFrame(input: CustomRenderMethodInput): void {
     if (this.disposed) return;
     this.captureReady = true;
+    this.capturedFrameEpoch = this.frameEpoch;
     const next = {
       mvp: Array.from(input.modelViewProjectionMatrix),
       projection: Array.from(input.projectionMatrix),
@@ -251,6 +265,31 @@ export class AtlasMapLibreBridge {
     this.resolveFrameWaiters();
   }
 
+  /**
+   * MapLibre emits `move` before its queued repaint, and `resize` synchronously
+   * after updating the transform. Keep the old matrices available to Deck while
+   * marking them unusable for picks until the custom layer captures a new frame.
+   */
+  private readonly invalidateFrame = (): void => { this.frameEpoch++; };
+
+  private installFrameInvalidationListeners(): void {
+    if (this.frameInvalidationListenersInstalled) return;
+    this.map.on('move', this.invalidateFrame);
+    this.map.on('resize', this.invalidateFrame);
+    // MapLibre fires this synchronously from setStyle's full-style load path,
+    // before style.load (which may arrive after JSON/workers finish).
+    this.map.on('styledataloading', this.invalidateFrame);
+    this.frameInvalidationListenersInstalled = true;
+  }
+
+  private removeFrameInvalidationListeners(): void {
+    if (!this.frameInvalidationListenersInstalled) return;
+    this.map.off('move', this.invalidateFrame);
+    this.map.off('resize', this.invalidateFrame);
+    this.map.off('styledataloading', this.invalidateFrame);
+    this.frameInvalidationListenersInstalled = false;
+  }
+
   private makeView(): AtlasView {
     const bridge = this;
     class AtlasMapLibreView extends View<any, any> {
@@ -260,14 +299,9 @@ export class AtlasMapLibreBridge {
       makeViewport({width, height}: {width: number; height: number; viewState?: unknown}): Viewport {
         const frame = bridge.frameSnapshot;
         if (!frame) throw new Error('MapLibre custom-layer frame has not been captured');
-        const originX = (bridge.sceneOrigin.x - bridge.root.x) / bridge.root.size;
-        const originY = (bridge.sceneOrigin.y - bridge.root.y) / bridge.root.size;
-        const localToGlobal = new Matrix4();
-        localToGlobal[12] = originX;
-        localToGlobal[13] = originY;
-        const projectionMatrix = new Matrix4(frame.projection);
-        const viewMatrix = new Matrix4(frame.projection).invert()
-          .multiplyRight(frame.mainMatrix).multiplyRight(localToGlobal);
+        const matrices = atlasMapLibreViewMatrices(frame, bridge.root, bridge.sceneOrigin);
+        if (!matrices) throw new Error('MapLibre captured an invalid Atlas camera matrix');
+        const {projectionMatrix, viewMatrix} = matrices;
         return new Viewport({id: this.id, width, height, viewMatrix, projectionMatrix});
       }
     }

@@ -16,7 +16,7 @@ function hit(model,coordinate=[.125,.25,.0625]){
 }
 function bridge(model){
   const precise=color=>({depthStencilAttachment:{texture:{format:'depth24plus'}},colorAttachments:[{texture:{format:color}}]});
-  return {root:model.root,sceneOrigin:model.sceneOrigin,calls:[],overlay:{pickObject:()=>hit(model),
+  return {root:model.root,sceneOrigin:model.sceneOrigin,frameUsable:true,calls:[],overlay:{pickObject:()=>hit(model),
     _deck:{deckPicker:{device:{},_resizeBuffer(){},pickingFBO:precise('rgba8unorm'),depthFBO:precise('rgba32float')}}},
     setLayers(layers){this.calls.push(layers);}};
 }
@@ -33,12 +33,16 @@ test('renderer and picking share the exact indexed buffers and write opaque dept
   assert.deepEqual(layer.props.getPosition,[0,0,0]);
 });
 
-test('depth hit decodes positive canonical Y and physical height independently of exaggeration',()=>{
-  const model=fixture(),result=atlasMapLibreSceneHit(model,hit(model));
-  assert.deepEqual(result.point,{x:328,y:556,heightM:32});
-  assert.equal(result.target,model.objects[0].target);
-  assert.equal(atlasMapLibreSceneHit(model,hit(model,[0,0])).point,null);
-  assert.equal(atlasMapLibreSceneHit(model,hit(model,[0,Infinity,0])).point,null);
+test('author point intersects selected geometry and never trusts the approximate GPU depth coordinate',()=>{
+  const model=fixture();
+  for(let i=2;i<model.objects[0].positions.length;i+=3)model.objects[0].positions[i]=.0625;
+  const ray={frame:{projection:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],mainMatrix:[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],nearZ:.1,farZ:100},
+    viewport:{x:0,y:0,width:100,height:100},pixel:{x:(.02+200/1024+1)*50,y:(1-.03-300/1024)*50}};
+  const result=atlasMapLibreSceneHit(model,hit(model),ray);
+  assert(Math.abs(result.point.x-220.48)<1e-8);assert(Math.abs(result.point.y-330.72)<1e-8);
+  assert.equal(result.point.heightM,32);assert.equal(result.target,model.objects[0].target);
+  assert.equal(atlasMapLibreSceneHit(model,hit(model)).point,null);
+  assert.equal(atlasMapLibreSceneHit(model,hit(model),{...ray,pixel:{x:99,y:99}}).point,null);
 });
 
 test('foreign, stale and missed picks never become canonical selections',()=>{
@@ -53,6 +57,8 @@ test('scene retains buffers across repeated updates and camera-only picking, and
   scene.update(model);const layers=mapBridge.calls[0];
   scene.update(model);assert.equal(mapBridge.calls.length,1);
   scene.pick(10,20);scene.pick(100,200);assert.equal(mapBridge.calls[0],layers);
+  mapBridge.frameUsable=false;assert.equal(scene.pick(10,20),null);
+  mapBridge.frameUsable=true;assert.equal(scene.pick(10,20).target,model.objects[0].target);
   assert.throws(()=>scene.pick(NaN,0),/finite/);
   scene.dispose();scene.dispose();assert.deepEqual(mapBridge.calls.at(-1),[]);
   assert.equal(mapBridge.calls.length,2);

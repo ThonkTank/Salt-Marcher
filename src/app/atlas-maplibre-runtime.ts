@@ -1,4 +1,5 @@
 import * as maplibre from 'maplibre-gl';
+import {preloadAtlasMapLibreFonts} from './atlas-maplibre-assets';
 
 export {maplibre};
 export {AtlasMapLibreBridge} from './atlas-maplibre-bridge';
@@ -7,6 +8,9 @@ export {queryRenderedFeaturesMetricSafe} from './atlas-metric-query';
 export {buildAtlasMapLibreSceneModel} from './atlas-maplibre-scene-model';
 export {AtlasMapLibreScene} from './atlas-maplibre-scene';
 export {metricMapCamera, metricLngLat} from './atlas-metric-space';
+export {applyAtlasMapLibreCamera, readAtlasMapLibreCamera} from './atlas-maplibre-camera';
+export {atlasMapLibreFontStyle, installAtlasMapLibreSymbols,
+  ATLAS_MAPLIBRE_FONT_STACK, ATLAS_MAPLIBRE_MARKER_IMAGE_ID} from './atlas-maplibre-assets';
 
 let setup: {base: string; ready: Promise<void>} | undefined;
 
@@ -24,7 +28,10 @@ export function initializeAtlasMapLibre(base = new URL('./', location.href).href
   }
   if (maplibre.getVersion() !== '6.15.0') throw new Error('Unsupported Atlas MapLibre runtime');
   maplibre.setWorkerUrl(new URL('atlas-maplibre-worker.mjs', resolved).href);
-  const ready = maplibre.importScriptInWorkers(new URL('atlas-maplibre-projection-worker.mjs', resolved).href);
+  const ready = Promise.all([
+    maplibre.importScriptInWorkers(new URL('atlas-maplibre-projection-worker.mjs', resolved).href),
+    preloadAtlasMapLibreFonts({base: resolved.href, document})
+  ]).then(() => undefined);
   setup = {base: resolved.href, ready};
   return ready;
 }

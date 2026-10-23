@@ -35,6 +35,11 @@ await build({entryPoints:['src/app/atlas-maplibre-runtime.ts'],outfile:'.build/d
 await build({entryPoints:['src/app/atlas-maplibre-projection-worker.ts'],outfile:'.build/desktop/ui/atlas-maplibre-projection-worker.mjs',bundle:true,platform:'browser',format:'esm'});
 await copyFile('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','.build/desktop/ui/atlas-maplibre-worker.mjs');
 await copyFile('node_modules/maplibre-gl/dist/maplibre-gl.css','.build/desktop/ui/atlas-maplibre.css');
+await mkdir('.build/desktop/ui/atlas-maplibre-fonts',{recursive:true});
+for(const name of ['NotoSans-VF.ttf','NotoSansSymbols-VF.ttf'])
+  await copyFile(`resources/atlas-maplibre-fonts/${name}`,`.build/desktop/ui/atlas-maplibre-fonts/${name}`);
+for(const name of ['OFL-1.1.txt','PROVENANCE.md'])
+  await copyFile(`resources/atlas-maplibre-fonts/${name}`,`.build/desktop/licenses/atlas/fonts-${name}`);
 await build({ entryPoints: ['src/app/renderer.ts'], outfile: '.build/desktop/ui/renderer.js', bundle: true, platform: 'browser', format: 'iife',plugins:[{name:'lazy-generator-settings',setup(build){build.onResolve({filter:/^\.\/preset-settings-ui$/},()=>({path:'./preset-settings.js',external:true}));}}] });
 await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/desktop/ui/preset-settings.js',bundle:true,platform:'browser',format:'esm'});
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');

@@ -123,6 +123,44 @@ test('matrix capture invalidates Deck view cache when either public matrix chang
   fixture.bridge.dispose();
 });
 
+test('fresh-frame epoch gates picks after move and resize until unchanged matrices are captured again',async()=>{
+  const map=new FakeMap(),fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0});
+  await fixture.bridge.attach([]);
+  const captured=fixture.bridge.frame;
+  assert.equal(fixture.bridge.frameUsable,true);
+  for(const event of ['move','resize']){
+    map.emit(event);
+    assert.equal(fixture.bridge.frameUsable,false,`${event} must invalidate the pick frame synchronously`);
+    assert.equal(fixture.bridge.frame,captured,'the previous frame remains available to Deck while repaint is pending');
+    map.render(input());
+    assert.equal(fixture.bridge.frameUsable,true,`${event} must recover after a custom-layer capture`);
+    assert.equal(fixture.bridge.frame,captured,'an unchanged matrix still captures the current epoch');
+  }
+  fixture.bridge.dispose();
+});
+
+test('style reload keeps retained Deck matrices but blocks picks until a post-reload capture',async()=>{
+  const map=new FakeMap(),fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0});
+  await fixture.bridge.attach([]);
+  const captured=fixture.bridge.frame;
+  map.layers.clear();
+  map.holdNextFrame=true;
+  map.emit('styledataloading');
+  assert.equal(fixture.bridge.frameUsable,false,'the public style-loading event invalidates synchronously at setStyle start');
+  assert.equal(fixture.bridge.frame,captured,'the retained frame remains available while MapLibre loads replacement style data');
+  map.emit('style.load');
+  assert.equal(fixture.bridge.frameUsable,false,'style.load invalidates before asynchronous reconciliation');
+  assert.equal(fixture.bridge.frame,captured,'retained matrices keep Deck view construction alive during reconciliation');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.ok(map.getLayer('atlas-projection-diagnostic'));
+  assert.equal(fixture.bridge.frameUsable,false,'layer installation alone is not a fresh render');
+  map.flushFrame(input());
+  await fixture.bridge.waitForStyleReconciliation();
+  assert.equal(fixture.bridge.frameUsable,true,'a new capture restores pick readiness even when its matrices are unchanged');
+  assert.equal(fixture.bridge.frame,captured);
+  fixture.bridge.dispose();
+});
+
 test('style reload reinstalls capture before public layer-group reconciliation', async()=>{
   const map=new FakeMap(),fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0});
   await fixture.bridge.attach([]);
@@ -168,7 +206,7 @@ test('dispose cancels bridge ownership and removes its control, capture layer an
   const map=new FakeMap(),fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0});
   await fixture.bridge.attach([]);
   assert.equal(map.controls.size,1);
-  assert.equal(map.listenerCount,2);
+  assert.equal(map.listenerCount,5);
   fixture.bridge.dispose();
   fixture.bridge.dispose();
   assert.equal(map.controls.size,0);
@@ -272,5 +310,22 @@ test('superseded style waits cannot install a stale capture layer',async()=>{
   map.emit('sourcedata',{dataType:'source',sourceId:'catalog'});
   await fixture.bridge.waitForStyleReconciliation();
   assert.equal(map.getLayersOrder().filter(id=>id==='atlas-projection-diagnostic').length,1);
+  fixture.bridge.dispose();
+});
+
+test('late layer reconciliation failure blocks picks despite an already captured fresh frame',async()=>{
+  const map=new FakeMap(),errors=[];
+  const fixture=makeBridge(map,{x:-64,y:-64,size:128},{x:0,y:0},{onError:error=>errors.push(error)});
+  await fixture.bridge.attach([]);
+  const original=fixture.overlay.setProps.bind(fixture.overlay);
+  fixture.overlay.setProps=()=>{throw new Error('late layer reconciliation failure');};
+  map.layers.clear();map.emit('style.load');
+  await assert.rejects(fixture.bridge.waitForStyleReconciliation(),/late layer reconciliation failure/);
+  assert(fixture.bridge.frame,'the retained frame is still needed by Deck');
+  assert.equal(fixture.bridge.frameUsable,false,'a captured frame cannot authorize picks after reconciliation failed');
+  assert.equal(errors.length,1);
+  fixture.overlay.setProps=original;map.emit('style.load');
+  await fixture.bridge.waitForStyleReconciliation();
+  assert.equal(fixture.bridge.frameUsable,true);
   fixture.bridge.dispose();
 });

@@ -49,10 +49,18 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   bis 75° Neigung, zwei Geschosse, Terrainverdeckung sowie Resize und Style-Neuladen
   sind nativ geprüft; 49 gezielte Tests bestehen. Ein gefundener Auswahlfehler durch
   16-Bit-Tiefenpuffer ist mit einem versionsgebundenen 24-Bit-Adapter behoben.
-  M1 bleibt offen: dieselbe reale Szene über alle fünf Maßstäbe einschließlich erhöhter
-  Nahkamera, vollständige Szenenauswahl, Autorenwerkzeuge, laufender Wurzelwechsel
-  und lokale Schrift-/Symbolpipeline fehlen. Der normale Atlas nutzt weiterhin den
-  bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht nachgewiesen.
+  [Erhöhte Kamera, genaue Treffer und lokale Kartenassets](../../reference/atlas-maplibre-camera-assets-20261023/README.md)
+  sind zusätzlich nativ geprüft: fünf Kameramaßstäbe, physischer Raumfokus auf 145 m,
+  Überhöhung, echtes Ziehen/Zoomen sowie lokale Schriften und Marker. Auswahl und
+  Darstellung verwenden denselben Matrixadapter; nach einem gefundenen Dachspitzenfehler
+  liegen geprüfte Dach-/Raumtreffer unter 0,1 mm Abweichung. Veraltete Frames sperren
+  Auswahl bis zum neuen Rendern. 68 gezielte Tests bestehen. Die kleine Fixture ist
+  in den drei weitesten Ansichten subpixelgroß; deren Objektselektion und vollständige
+  Welt-LOD sind damit ausdrücklich nicht qualifiziert.
+  **Nächste Arbeit in M1:** laufender Wurzelwechsel mit gemeinsam vorbereiteten
+  Quellen, Bridge und Szene; danach vollständige Szenenauswahl und echte Autorenabläufe.
+  Der normale Atlas nutzt weiterhin den bisherigen Renderer; ein Produktleistungsgewinn
+  ist noch nicht nachgewiesen. M1 bleibt offen.
 - **Ablösung des bisherigen Auftrags:** Die zuvor vorgesehene isolierte Kartenstilprobe
   ist nicht mehr die nächste Etappe. Bildqualität bleibt in M0 und der gemeinsamen
   Abnahme verpflichtend; die beschlossene Technikwahl wird dadurch nicht erneut geöffnet.
