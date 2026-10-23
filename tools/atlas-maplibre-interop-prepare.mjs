@@ -1,14 +1,12 @@
-import {mkdir,copyFile} from 'node:fs/promises';
-import {spawnSync} from 'node:child_process';
+import {mkdir,readFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
-const root=resolve('.build/atlas-maplibre-interop');
-await mkdir(root,{recursive:true});
-// Keep the complete transitive graph reproducible while the new renderer is
-// isolated from the runnable product reference. Never resolve fresh ranges here.
-for(const name of ['package.json','package-lock.json']){
-  await copyFile(resolve('tools/atlas-maplibre-interop',name),resolve(root,name));
+// The probe now shares the product's pinned dependency graph. Install it with
+// the repository's npm ci; do not maintain a second resolution under .build.
+const versions={'maplibre-gl':'6.15.0','@deck.gl/maplibre':'9.4.0','@deck.gl/core':'9.4.0','@deck.gl/layers':'9.4.0','@math.gl/core':'4.1.0'};
+for(const [name,expected] of Object.entries(versions)){
+  const actual=JSON.parse(await readFile(resolve('node_modules',name,'package.json'),'utf8')).version;
+  if(actual!==expected)throw Error(`Atlas requires ${name}@${expected}; found ${actual}. Run npm ci.`);
 }
-const result=spawnSync('npm',['ci','--no-audit','--no-fund','--ignore-scripts'],{cwd:root,stdio:'inherit'});
-if(result.status!==0)process.exit(result.status??1);
-console.log(`Pinned isolated dependencies prepared in ${root}`);
+await mkdir('.build/atlas-maplibre-interop',{recursive:true});
+console.log('Pinned product dependencies ready for the Atlas interop probe');

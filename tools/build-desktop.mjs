@@ -1,6 +1,7 @@
 import {execFileSync} from 'node:child_process';
 import { build } from 'esbuild';
 import { mkdir, copyFile, rm, readFile, writeFile } from 'node:fs/promises';
+import {copyAtlasMapLibreLicenses} from './atlas-maplibre-licenses.mjs';
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const schema=Number((await readFile('src/app/storage/store.ts','utf8')).match(/if \(schema > (\d+)\)/)?.[1]);
 if(!Number.isSafeInteger(schema))throw new Error('Store-Datenformatgrenze nicht gefunden.');
@@ -11,6 +12,7 @@ await mkdir('.build/desktop/ui', { recursive: true });
 await mkdir('.build/desktop/catalog', { recursive: true });
 await mkdir('.build/desktop/licenses', { recursive: true });
 await copyFile('node_modules/three/LICENSE', '.build/desktop/licenses/three-LICENSE.txt');
+await copyAtlasMapLibreLicenses('.build/desktop/licenses/atlas');
 await copyFile('src/features/catalog/data/srd-5.1.generated.json','.build/desktop/catalog/srd-5.1.generated.json');
 await copyFile('src/features/catalog/SRD-5.1-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ATTRIBUTION.md');
 await copyFile('src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md','.build/desktop/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md');
@@ -26,6 +28,13 @@ await build({entryPoints:['src/app/player-display.ts'],outfile:'.build/desktop/u
 await build({ entryPoints: ['desktop/preload.ts'], outfile: '.build/desktop/preload.cjs', bundle: true, platform: 'node', format: 'cjs', external: ['electron'] });
 await build({entryPoints:['src/app/terrain-spatial-worker.ts'],outfile:'.build/desktop/ui/terrain-spatial-worker.js',bundle:true,platform:'browser',format:'iife'});
 await build({entryPoints:['src/app/atlas-brush-worker.ts'],outfile:'.build/desktop/ui/atlas-brush-worker.js',bundle:true,platform:'browser',format:'iife'});
+// The replacement Atlas remains a lazy, isolated module until its full handover.
+// Keep worker and CRS code local: MapLibre's implicit worker URL is not suitable
+// for the application's custom protocol or the existing renderer IIFE.
+await build({entryPoints:['src/app/atlas-maplibre-runtime.ts'],outfile:'.build/desktop/ui/atlas-maplibre-runtime.js',bundle:true,platform:'browser',format:'esm'});
+await build({entryPoints:['src/app/atlas-maplibre-projection-worker.ts'],outfile:'.build/desktop/ui/atlas-maplibre-projection-worker.mjs',bundle:true,platform:'browser',format:'esm'});
+await copyFile('node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs','.build/desktop/ui/atlas-maplibre-worker.mjs');
+await copyFile('node_modules/maplibre-gl/dist/maplibre-gl.css','.build/desktop/ui/atlas-maplibre.css');
 await build({ entryPoints: ['src/app/renderer.ts'], outfile: '.build/desktop/ui/renderer.js', bundle: true, platform: 'browser', format: 'iife',plugins:[{name:'lazy-generator-settings',setup(build){build.onResolve({filter:/^\.\/preset-settings-ui$/},()=>({path:'./preset-settings.js',external:true}));}}] });
 await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/desktop/ui/preset-settings.js',bundle:true,platform:'browser',format:'esm'});
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');

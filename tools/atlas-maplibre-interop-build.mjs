@@ -7,6 +7,7 @@ await mkdir(root,{recursive:true});
 await build({
   entryPoints:['tools/atlas-maplibre-interop-probe.mjs'],
   bundle:true,format:'esm',platform:'browser',target:'chrome130',
-  nodePaths:[resolve(root,'node_modules')],
   outfile:resolve(root,'probe.bundle.mjs'),sourcemap:true,logLevel:'info'
 });
+
+await build({entryPoints:['src/app/atlas-maplibre-projection-worker.ts'],bundle:true,format:'esm',platform:'browser',target:'chrome130',outfile:resolve(root,'atlas-maplibre-projection-worker.mjs')});

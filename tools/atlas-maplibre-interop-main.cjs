@@ -27,10 +27,10 @@ function handler(req,res){
   const files={
     '/':path.join(repo,'tools/atlas-maplibre-interop.html'),
     '/atlas-maplibre-interop.css':path.join(repo,'tools/atlas-maplibre-interop.css'),
-    '/maplibre-gl.css':path.join(build,'node_modules/maplibre-gl/dist/maplibre-gl.css'),
+    '/maplibre-gl.css':path.join(repo,'node_modules/maplibre-gl/dist/maplibre-gl.css'),
     '/probe.bundle.mjs':path.join(build,'probe.bundle.mjs'),
-    '/projection-handler.mjs':path.join(repo,'tools/atlas-maplibre-interop-projection-handler.mjs'),
-    '/maplibre-worker.mjs':path.join(build,'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs')
+    '/atlas-maplibre-projection-worker.mjs':path.join(build,'atlas-maplibre-projection-worker.mjs'),
+    '/atlas-maplibre-worker.mjs':path.join(repo,'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs')
   };
   if(/^\/(dem|dem-elevated)\/\d+\/\d+\/\d+\.png$/.test(pathname)){
     res.writeHead(200,{'content-type':'image/png','cache-control':'no-store'});res.end(pathname.startsWith('/dem-elevated/')?elevatedDem:dem);return;

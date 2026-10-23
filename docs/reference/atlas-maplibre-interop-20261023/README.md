@@ -3,7 +3,9 @@
 Stand 23.10.2026. **Isolierte Integrationsprobe bestanden; M1 als Produktetappe
 bleibt offen.** Maßgeblich ist die [Atlas-Roadmap](../../plans/maps/unified-spatial-atlas.md).
 Die Probe verwendet synthetische Geometrie in einer eigenen Electron-Anwendung;
-sie ersetzt weder den regulären Atlas noch dessen Autorendaten.
+sie ersetzt weder den regulären Atlas noch dessen Autorendaten. Der
+[Nachfolgestand mit instanzeigener Bridge und lokalem Desktopmodul](../atlas-maplibre-bridge-20261023/README.md)
+führt die inzwischen erledigte Auslagerung und die verbleibenden M1-Arbeiten fort.
 
 ## Gesicherter Ausgangslauf
 
@@ -120,9 +122,11 @@ npm run check
 npm run check:repo
 ```
 
-Die Vorbereitung verwendet `npm ci` mit der eingecheckten separaten Sperrdatei
-unter `tools/atlas-maplibre-interop/`. MapLibre 6.15.0, deck.gl 9.4.0 und math.gl
-4.1.0 sind festgelegt. Runtime, Worker und Styles werden lokal ausgeliefert.
+Die ursprünglichen gespeicherten Läufe verwendeten eine separate Sperrdatei
+unter `tools/atlas-maplibre-interop/` (Quellenstand `5ee895c10`). Die aktuelle
+Probe verwendet nach der Auslagerung in den Produktbuild die Haupt-Sperrdatei;
+`npm ci` im Repository installiert ihre Abhängigkeiten, die Vorbereitung prüft
+nur noch die Versionen. MapLibre 6.15.0, deck.gl 9.4.0 und math.gl 4.1.0 bleiben festgelegt. Runtime, Worker und Styles werden lokal ausgeliefert.
 Die Probe bewahrt den normalen Produktbuild und verwendet ein eigenes Profil;
 Main öffnet nur einen lokalen Testserver, der Renderer bleibt sandboxed, ohne
 Node-Zugriff und mit Context-Isolation. Jeder Lauf erzeugt einen eigenen Ordner

@@ -80,24 +80,29 @@
     "test:desktop-key-lookup-ui": "npm run build:desktop && node tools/test-desktop-key-lookup.mjs"
   },
   "dependencies": {
+    "@deck.gl/core": "9.4.0",
+    "@deck.gl/layers": "9.4.0",
+    "@deck.gl/maplibre": "9.4.0",
+    "@math.gl/core": "4.1.0",
     "@noble/hashes": "2.4.0",
     "clipper-lib": "^6.4.2",
     "entities": "8.1.0",
     "fflate": "0.8.3",
+    "maplibre-gl": "6.15.0",
     "marked": "18.0.14",
     "pixi.js": "8.22.0",
     "png-tools": "1.1.1",
     "pngjs": "^7.0.0",
     "polygon-clipping": "^0.15.7",
-    "yauzl": "3.4.0",
-    "three": "0.186.1"
+    "three": "0.186.1",
+    "yauzl": "3.4.0"
   },
   "devDependencies": {
     "@types/clipper-lib": "^6.4.0",
     "@types/node": "^22.0.0",
     "@types/pngjs": "^6.0.5",
-    "@types/yauzl": "^3.4.0",
     "@types/three": "^0.183.1",
+    "@types/yauzl": "^3.4.0",
     "ajv": "8.20.0",
     "better-sqlite3": "13.0.3",
     "electron": "44.7.0",

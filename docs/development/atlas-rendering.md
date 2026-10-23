@@ -8,6 +8,20 @@ Bereinigung nicht geändert. Fachziele: [gemeinsamer Atlas](../plans/maps/unifie
 
 ## Zuständigkeiten und Datenfluss
 
+Für den beschlossenen [Atlasumbau M0–M8](../plans/maps/unified-spatial-atlas.md)
+entsteht parallel der neue Kartenanschluss. Der Desktopbuild stellt
+`atlas-maplibre-runtime.js` als lokal ladbares Modul bereit; die normale
+Workbench verwendet weiterhin die unten beschriebenen Besitzer. Der neue
+[AtlasMapLibreBridge](../../src/app/atlas-maplibre-bridge.ts) besitzt pro Karte
+Viewport, Matrixaufnahme, Overlay und Style-Lebenszyklus. Vor `map.remove()` muss
+sein Besitzer `dispose()` aufrufen. Szenenursprung und Geometriepuffer gehören
+zusammen; Kamerabewegungen verschieben diesen Ursprung nicht.
+[Runtime](../../src/app/atlas-maplibre-runtime.ts) und
+[Workerdecoder](../../src/app/atlas-maplibre-projection-worker.ts) verwenden
+dieselben lokalen CRS-Definitionen. Die privaten Bibliotheksanschlüsse bleiben
+auf die exakt gepinnten Versionen begrenzt. Produktübernahme und vollständige
+M1-Abnahme sind weiterhin offen.
+
 `CampaignAtlasWorkbench` verbindet Arbeitsbereich, Werkzeugwechsel und die
 bestehende Schreibgrenze. Die Zustandsbesitzer bekommen gezielte typisierte
 Ports, niemals die gesamte Workbench:

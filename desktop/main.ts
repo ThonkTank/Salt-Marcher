@@ -86,7 +86,8 @@ else {
       if(url.pathname.startsWith('/player/art/')&&url.host==='app'){try{const id=decodeURIComponent(url.pathname.split('/').at(-1)!),frame=store.currentPlayerFrame();if(frame.mode!=='image'||frame.imageId!==id)return new Response('Image unavailable',{status:404});return net.fetch(pathToFileURL(store.playerImageFile(id)).href);}catch{return new Response('Image unavailable',{status:404});}}
       const name = url.pathname.slice(1);
 
-      if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'terrain-spatial-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css'].includes(name)) return new Response('Not found', { status: 404 });
+      if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'terrain-spatial-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css',
+        'atlas-maplibre-runtime.js','atlas-maplibre-worker.mjs','atlas-maplibre-projection-worker.mjs','atlas-maplibre.css'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
     win = new BrowserWindow({ show:!updateRuntime.transaction, width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'SaltMarcher', backgroundColor: '#edf1f6',

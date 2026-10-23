@@ -40,16 +40,14 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   die Zielgeräte-/Gesamtabnahme bleiben offen. Messgrenzen stehen im Bericht.
 - **M1 in Arbeit:** Der [Meterraumvertrag](../../../src/app/atlas-metric-space.ts)
   erhält Kamerapose und Kachelausdehnung beim Wachsen der Darstellungswurzel.
-  Die [isolierte native Integrationsprobe](../../reference/atlas-maplibre-interop-20261023/README.md)
-  besteht 17 Prüfungen für fünf Maßstäbe, gemeinsamen WebGL2-Kontext,
-  Projektion, synthetische Geometrieauswahl, Tiefenverdeckung, Style-Neuladen und
-  eine neu aufgebaute größere Darstellungswurzel sowie native Maus-/Mausradgesten
-  und Fenstergrößenwechsel. Eine negative Suchbereichsskalierung
-  bei 75° Neigung wurde reproduziert und korrigiert. M1 bleibt offen: Der
-  instanzeigene Produktanschluss, gemeinsame Terrain-/Gebäude-/Raumdarstellung,
-  sichtbare Szenenauswahl, Bedienung mit Autorenwerkzeugen, laufender Wurzelwechsel und vollständige
-  lokale Schrift-/Symbolpipeline sind noch zu qualifizieren. Die Probe ist kein
-  Nachweis verbesserter Produktleistung.
+  Der [instanzeigene Kartenanschluss und lokale Desktopbuild](../../reference/atlas-maplibre-bridge-20261023/README.md)
+  bestehen 17 native Integrationsprüfungen, 32 gezielte Unit-Tests und den
+  Laufzeit-/Protokolltest im regulären Desktopfenster. Fehler bei 75°-Auswahl und
+  während des Style-Neuladens wurden reproduziert, korrigiert und erneut geprüft.
+  M1 bleibt offen: echte gemeinsame Terrain-/Gebäude-/Raumszene, sichtbare
+  Gesamtszenenauswahl, Autorenwerkzeuge, laufender Wurzelwechsel und lokale
+  Schrift-/Symbolpipeline fehlen. Der normale Atlas nutzt weiterhin den
+  bisherigen Renderer; ein Produktleistungsgewinn ist noch nicht nachgewiesen.
 - **Ablösung des bisherigen Auftrags:** Die zuvor vorgesehene isolierte Kartenstilprobe
   ist nicht mehr die nächste Etappe. Bildqualität bleibt in M0 und der gemeinsamen
   Abnahme verpflichtend; die beschlossene Technikwahl wird dadurch nicht erneut geöffnet.
@@ -73,7 +71,9 @@ Tiefenpuffer**. Ausgangspunkt sind MapLibre 6.15.0 und deck.gl einschließlich
 `@deck.gl/maplibre` 9.4.0, exakt über die Sperrdatei gebunden. Der offizielle
 Anschluss unterstützt gemeinsames Rendering; die konkrete Eignung für unseren
 Meterraum wird in M1 geprüft. [MapLibreOverlay](https://deck.gl/docs/api-reference/maplibre/overview).
-Diese Versionen sind Planvorgaben, keine Behauptung bereits installierter Abhängigkeiten.
+Diese Versionen sind in der Haupt-Sperrdatei festgelegt und im lokalen Desktopbuild
+enthalten. Der eigene Meterraum verwendet einen auf diese Versionen begrenzten
+View-/Style-Adapter; die vollständige produktive Atlasübernahme bleibt offen.
 
 Vier gemeinsame interne Verträge ersetzen verstreute Übergaben:
 

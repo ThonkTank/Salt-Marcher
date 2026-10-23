@@ -1,9 +1,9 @@
-import * as maplibre from 'maplibre-gl';
+import {maplibre,initializeAtlasMapLibre,AtlasMapLibreBridge} from '../src/app/atlas-maplibre-runtime.ts';
+import {atlasMetricCRS} from '../src/app/atlas-maplibre-projection.ts';
 import {MapLibreOverlay} from '@deck.gl/maplibre';
-import {VERSION as DECK_VERSION,View,Viewport,COORDINATE_SYSTEM} from '@deck.gl/core';
+import {VERSION as DECK_VERSION,COORDINATE_SYSTEM} from '@deck.gl/core';
 import {GeoJsonLayer} from '@deck.gl/layers';
-import {Matrix4} from '@math.gl/core';
-import {metricCameraPose,metricLngLat,metricMapCamera,metricPoint,metricProjectionParameters,translateMetricTile} from '../src/app/atlas-metric-space.ts';
+import {metricCameraPose,metricLngLat,metricMapCamera,metricPoint,translateMetricTile} from '../src/app/atlas-metric-space.ts';
 import {queryRenderedFeaturesMetricSafe as queryMetricFeatures} from '../src/app/atlas-metric-query.ts';
 
 const initialRootM=2**26,width=1152;
@@ -18,19 +18,25 @@ const errors=[],results={versions:{maplibre:maplibre.getVersion(),deck:DECK_VERS
 window.atlasMapLibreInterop=results;
 const rootFor=size=>({x:-size/2,y:-size/2,size});
 const initialRoot=rootFor(initialRootM);
-let activeRoot=rootFor(initialRootM),diagnosticFrame=null,diagnosticGl=null;
+let activeRoot=rootFor(initialRootM),projectionFrame=null,diagnosticGl=null;
 function lngLat([x,y],root=activeRoot){return metricLngLat(root,{x,y});}
 function cameraZoom(root,span){return Math.log2(root*width/(512*span));}
 function camera(root,focus,span,bearing,pitch){return metricMapCamera(root,{focus:{x:focus[0],y:focus[1]},metersPerPixel:metersPerPixel(root.size,cameraZoom(root.size,span)),rotation:bearing,tilt:pitch});}
-function registerCRS(name,root){
-  const parameters=metricProjectionParameters(root),units=parameters.unitsPerCoordinate;
-  maplibre.addProjection({name,definition:`saltmarcher-meter-plane-v1:${units}`,
-    projection:{forward:([lng,lat])=>[lng*units,lat*units],inverse:([x,y])=>[x/units,y/units]},
-    tileMatrixSet:parameters.tileMatrixSet});
-}
+function registerCRS(name,root){maplibre.addProjection(atlasMetricCRS(name,root));}
 function markerFeature(root){return {type:'Feature',id:'maplibre-marker',properties:{id:'maplibre-marker'},geometry:{type:'Point',coordinates:lngLat([0,0],root)}};}
-let interopMap=null,activeDeckRoot=null,activeDeckSceneOrigin={x:0,y:0},bridgeOverlay=null,viewRevision=0,lastViewMatrix=null;
-let styleReconcilePromise=Promise.resolve();
+let activeBridge=null;
+function currentFrame(){return activeBridge?.frame??projectionFrame;}
+async function attachBridge(map,root,layers,sceneOrigin={x:0,y:0},sourceIds=['occluder','marker']){
+  // Remove only this probe's independent matrix witness before installing the
+  // production bridge, which owns its own capture layer and lifecycle.
+  if(map.getLayer('atlas-projection-diagnostic'))map.removeLayer('atlas-projection-diagnostic');
+  const bridge=new AtlasMapLibreBridge({map,root,sceneOrigin,sourceIds,onError:error=>errors.push(error?.stack??String(error))});
+  activeBridge=bridge;
+  const overlay=await bridge.attach(layers);
+  await rendered(map,sourceIds);
+  return {bridge,overlay};
+}
+function disposeBridge(){activeBridge?.dispose();activeBridge=null;}
 function makeMap(container,projection,root){
   activeRoot=root;
   const center=lngLat([0,0],root);
@@ -56,11 +62,9 @@ function makeMap(container,projection,root){
 function addProjectionDiagnostic(map){
   map.addLayer({id:'atlas-projection-diagnostic',type:'custom',renderingMode:'3d',onAdd(_map,gl){diagnosticGl=gl;},
     render(gl,options){
-      diagnosticGl=gl;diagnosticFrame={mvp:Array.from(options.modelViewProjectionMatrix),projection:Array.from(options.projectionMatrix),
+      diagnosticGl=gl;projectionFrame={mvp:Array.from(options.modelViewProjectionMatrix),projection:Array.from(options.projectionMatrix),
         mainMatrix:Array.from(options.defaultProjectionData.mainMatrix),nearZ:options.nearZ,farZ:options.farZ};
-      if(!lastViewMatrix||diagnosticFrame.mainMatrix.some((value,index)=>value!==lastViewMatrix[index])){
-        lastViewMatrix=diagnosticFrame.mainMatrix.slice();refreshDeckView();
-      }
+
     }});
 }
 async function updateScene(map,root,span,focus=[0,0]){
@@ -142,66 +146,10 @@ function matrixPoint(matrix,[x,y,z]){
   for(let row=0;row<4;row++)for(let col=0;col<4;col++)out[row]+=matrix[col*4+row]*v[col];
   return {x:(out[0]/out[3]+1)*width/2,y:(1-out[1]/out[3])*852/2,z:out[2]/out[3],w:out[3]};
 }
-function makeAtlasView(){
-  class AtlasMapLibreView extends View {
-    getViewportType(){return Viewport;}
-    get ControllerType(){return class NoController{};}
-    makeViewport({width:viewportWidth,height:viewportHeight}){
-      if(!diagnosticFrame||!interopMap||!activeDeckRoot)throw new Error('MapLibre custom-layer matrices have not been captured yet');
-      const originX=(activeDeckSceneOrigin.x-activeDeckRoot.x)/activeDeckRoot.size,originY=(activeDeckSceneOrigin.y-activeDeckRoot.y)/activeDeckRoot.size;
-      const localToGlobal=new Matrix4();localToGlobal[12]=originX;localToGlobal[13]=originY;
-      const projectionMatrix=new Matrix4(diagnosticFrame.projection);
-      const viewMatrix=new Matrix4(diagnosticFrame.projection).invert()
-        .multiplyRight(diagnosticFrame.mainMatrix).multiplyRight(localToGlobal);
-      return new Viewport({id:this.id,width:viewportWidth,height:viewportHeight,viewMatrix,projectionMatrix});
-    }
-  }
-  return AtlasMapLibreView;
-}
-function refreshDeckView(){
-  if(!bridgeOverlay?._deck||!activeDeckRoot)return;
-  const AtlasMapLibreView=makeAtlasView();
-  bridgeOverlay.setProps({views:new AtlasMapLibreView({id:'maplibre',matrixRevision:++viewRevision})});
-}
 function deckViewBridgeContract(){
-  const AtlasMapLibreView=makeAtlasView();
-  return {publicViewBase:typeof View==='function',publicViewport:typeof Viewport==='function',adapterClassConstructible:!!new AtlasMapLibreView({id:'maplibre'}),
-    matrixSource:'MapLibre CustomLayerInterface.render defaultProjectionData.mainMatrix accepts global custom-CRS world-square coordinates; under the registered CRS, one metre is 1/extentAtZoom0 in x, y, and z. The adapter exposes view=inverse(P)*mainMatrix*T(localOrigin) and the original P separately.',
-    capturedMapLibreMatrix:!!diagnosticFrame,sharedGlObject:!!diagnosticGl,
-    caveat:'The same custom View supplies Deck rendering and its picking pass. The probe keeps all geometry coordinates scene-relative in root-normalized meters to preserve local precision.'};
-}
-function installStyleGuardAdapter(overlay,map,root,sceneOrigin={x:0,y:0}){
-  if(maplibre.getVersion()!=='6.15.0'||DECK_VERSION!=='9.4.0'||typeof overlay._handleStyleChange!=='function')
-    throw new Error(`Probe compatibility guard failed: expected MapLibre 6.15.0 + deck.gl 9.4.0 with _handleStyleChange; received ${maplibre.getVersion()} + ${DECK_VERSION}`);
-  overlay._handleStyleChange=function(){
-    if(this._map&&this._deck){
-      const AtlasMapLibreView=makeAtlasView();
-      this.setProps({layers:this._props.layers,views:new AtlasMapLibreView({id:'maplibre',matrixRevision:++viewRevision})});
-    }
-  };
-  interopMap=map;activeDeckRoot=root;activeDeckSceneOrigin=sceneOrigin;
-  bridgeOverlay=overlay;
-  const onStyleLoad=()=>{
-    styleReconcilePromise=(async()=>{
-      await rendered(map,['occluder','marker']);
-      if(overlay._map===map&&overlay._deck){
-        overlay.setProps({layers:overlay._props.layers,views:new (makeAtlasView())({id:'maplibre',matrixRevision:++viewRevision})});
-        results.integration.push({check:'style-reload-source-ready-reconciliation',passed:map.getLayer('deck-maplibre-layer-group-last')!=null,
-          styleLoaded:true,sourcesReady:true,groupPresent:map.getLayer('deck-maplibre-layer-group-last')!=null});
-      }
-    })().catch(error=>results.integration.push({check:'style-reload-source-ready-reconciliation',passed:false,error:String(error),stack:error?.stack??null}));
-  };
-  map.on('style.load',onStyleLoad);
-  const originalOnRemove=overlay.onRemove.bind(overlay);
-  overlay.onRemove=function(targetMap){
-    map.off('style.load',onStyleLoad);
-    if(bridgeOverlay===overlay)bridgeOverlay=null;
-    return originalOnRemove(targetMap);
-  };
-  overlay.__atlasStyleReconcile=()=>styleReconcilePromise;
-  return {patchedSurface:'MapLibreOverlay._handleStyleChange',versionGuard:'MapLibre 6.15.0 + deck.gl 9.4.0',sceneOrigin,
-    preservesLayerGroupReconciliation:true,styleReloadStrategy:'after style.load and source readiness, rerun package layer-group reconciliation through public setProps; listener removed by overlay.onRemove',
-    viewportInvalidation:'when the captured MapLibre mainMatrix changes, replace the custom View with a revisioned public view prop to invalidate Deck ViewManager cache'};
+  return {adapter:'src/app/atlas-maplibre-bridge.ts',instanceOwned:true,
+    matrixSource:'MapLibre defaultProjectionData.mainMatrix, with view=inverse(P)*mainMatrix*T(fixed scene origin) and original projection P.',
+    capturedMapLibreMatrix:!!currentFrame(),sharedGlObject:!!diagnosticGl};
 }
 function readPixel(gl,canvas,point){
   const rect=canvas.getBoundingClientRect();
@@ -228,12 +176,10 @@ async function tryDeckOverlay(map){
     try{defaultOverlay?.finalize();}catch{}}
   let injectedOverlay;
   try{
-    // Official overlay supports caller-provided views; the special id avoids its built-in MapView insertion.
-    const AtlasMapLibreView=makeAtlasView();
-    injectedOverlay=new MapLibreOverlay({interleaved:true,views:new AtlasMapLibreView({id:'maplibre'}),layers:deckLayers(scales[0].span)});
-    results.integration.push({check:'pinned-styledata-guard-adapter',passed:true,deckVersion:'9.4.0',maplibreVersion:'6.15.0',...installStyleGuardAdapter(injectedOverlay,map,initialRoot),
-      note:'This feasibility hook keeps layer-group reconciliation and removes only the unsupported projection query.'});
-    map.addControl(injectedOverlay);refreshDeckView();await rendered(map,['occluder','marker']);
+    const attached=await attachBridge(map,initialRoot,deckLayers(scales[0].span));
+    injectedOverlay=attached.overlay;
+    results.integration.push({check:'pinned-styledata-guard-adapter',passed:true,deckVersion:'9.4.0',maplibreVersion:'6.15.0',
+      module:'src/app/atlas-maplibre-bridge.ts',instanceOwned:true});
     const deckGl=injectedOverlay._deck?.device?.gl??injectedOverlay._deck?.device?.handle;
     results.integration.push({check:'caller-view-overlay',passed:injectedOverlay.getCanvas()===map.getCanvas()&&deckGl===gl,sharedCanvas:injectedOverlay.getCanvas()===map.getCanvas(),
       mapWebgl2:gl instanceof WebGL2RenderingContext,deckUsesSameWebgl2:deckGl===gl,deckContextType:deckGl?.constructor?.name??null,
@@ -246,8 +192,8 @@ async function tryDeckOverlay(map){
       map.jumpTo({center:lngLat([0,0],initialRoot),zoom:cameraZoom(initialRoot.size,scale.span),bearing:137,pitch:scale.name==='world'?0:75});
       await updateScene(map,initialRoot,scale.span);
       injectedOverlay.setProps({layers:deckLayers(scale.span)});await rendered(map,['occluder']);
-      const visibleRoof=matrixPoint(diagnosticFrame.mainMatrix,[.5+scale.span*.32/initialRoot.size,.5,.12*scale.span/initialRoot.size]);
-      const hiddenRoof=matrixPoint(diagnosticFrame.mainMatrix,[.5,.5,.05*scale.span/initialRoot.size]);
+      const visibleRoof=matrixPoint(currentFrame().mainMatrix,[.5+scale.span*.32/initialRoot.size,.5,.12*scale.span/initialRoot.size]);
+      const hiddenRoof=matrixPoint(currentFrame().mainMatrix,[.5,.5,.05*scale.span/initialRoot.size]);
       const visiblePick=injectedOverlay.pickObject({x:visibleRoof.x,y:visibleRoof.y,radius:3,unproject3D:true});
       const hiddenPick=injectedOverlay.pickObject({x:hiddenRoof.x,y:hiddenRoof.y,radius:3,unproject3D:true});
       const viewport=injectedOverlay._deck.getViewports().find(item=>item.id==='maplibre');
@@ -291,19 +237,18 @@ async function tryDeckOverlay(map){
     const canonicalWorldPoint=[panScale.span*.32,0,0],panLocalPoint=[panScale.span*.32/initialRoot.size,0,0];
     const panDeckPoint=panViewport?.project(panLocalPoint),panMapPoint=map.project(lngLat(canonicalWorldPoint,initialRoot));
     const panScreenErrorPx=panDeckPoint?Math.hypot(panDeckPoint[0]-panMapPoint.x,panDeckPoint[1]-panMapPoint.y):Infinity;
-    results.integration.push({check:'pan-zoom-preserves-fixed-deck-world-geometry',passed:panScreenErrorPx<.1&&JSON.stringify(panLayers[0].props.data)===panGeometry&&activeDeckSceneOrigin.x===0&&activeDeckSceneOrigin.y===0,
-      panCenterM:[150,-100],sceneOriginM:activeDeckSceneOrigin,panScreenErrorPx,deckLocalPoint:panLocalPoint,mapLibreWorldPoint:canonicalWorldPoint,
+    results.integration.push({check:'pan-zoom-preserves-fixed-deck-world-geometry',passed:panScreenErrorPx<.1&&JSON.stringify(panLayers[0].props.data)===panGeometry&&activeBridge.sceneOrigin.x===0&&activeBridge.sceneOrigin.y===0,
+      panCenterM:[150,-100],sceneOriginM:activeBridge.sceneOrigin,panScreenErrorPx,deckLocalPoint:panLocalPoint,mapLibreWorldPoint:canonicalWorldPoint,
       semantics:'The camera pans and zooms while the Deck layer data and explicit scene origin remain unchanged; its projected canonical point must continue to match MapLibre.'});
     const groupReloadStart=performance.now();results.stage='full-style-reload';
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('MapLibre full style reload timeout')),45_000);map.once('style.load',()=>{clearTimeout(timer);resolve();});map.setStyle(map.getStyle(),{diff:false});});
-    await injectedOverlay.__atlasStyleReconcile?.();
-    if(!map.getLayer('atlas-projection-diagnostic'))addProjectionDiagnostic(map);
+    await activeBridge.waitForStyleReconciliation();
     await rendered(map,['occluder','marker']);
     const groupOrder=map.getLayersOrder(),groupCount=groupOrder.filter(id=>id==='deck-maplibre-layer-group-last').length;
     const groupAfterMapLibre=groupOrder.indexOf('deck-maplibre-layer-group-last')>groupOrder.indexOf('maplibre-occluder-layer');
     results.stage='style-reload-layer-group-reconciliation';
-    results.integration.push({check:'style-reload-layer-group-reconciliation',passed:groupCount===1&&groupAfterMapLibre&&!!diagnosticFrame&&map.getLayer('deck-maplibre-layer-group-last')!=null,
-      elapsedMs:performance.now()-groupReloadStart,groupCount,groupAfterMapLibre,groupOrder,diagnosticFrameCaptured:!!diagnosticFrame,
+    results.integration.push({check:'style-reload-layer-group-reconciliation',passed:groupCount===1&&groupAfterMapLibre&&!!currentFrame()&&map.getLayer('deck-maplibre-layer-group-last')!=null,
+      elapsedMs:performance.now()-groupReloadStart,groupCount,groupAfterMapLibre,groupOrder,diagnosticFrameCaptured:!!currentFrame(),
       adapter:'version-guarded _handleStyleChange calls public setProps to retain resolveMapLibreLayerGroups'});
     const pickWorldPass=measured.every(row=>{const s=scales.find(item=>item.name===row.scale);return row.visibleDeckWorld&&row.hiddenDeckWorld&&row.visibleInViewport&&row.hiddenInViewport&&
       Math.abs(row.visibleDeckWorld.x-s.span*.32)<s.span*.12&&Math.abs(row.visibleDeckWorld.y)<s.span*.12&&
@@ -340,7 +285,7 @@ async function rootExpansion(map){
       tileAddressPreserved:translated.z===z+2&&translated.x===oldTile[0]&&translated.y===oldTile[1],
       metersPerPixelPreserved:Math.abs(metersPerPixel(from.size,oldZoom)-metersPerPixel(expanded,newZoom))<1e-9,
       oldRootBoundsM:[from.x,from.y,from.x+from.size,from.y+from.size],focusBeyondOldRootM:focus};
-    if(map){map.remove();map=null;}
+    if(map){disposeBridge();map.remove();map=null;}
     map=makeMap(document.querySelector('#map'),'atlas:metres',from);await idle(map);
     map.jumpTo(camera(from,focus,scale.span,137,tilt));await idle(map);
     const oldCenter=map.getCenter(),oldFocus=metricPoint(from,[oldCenter.lng,oldCenter.lat]);
@@ -355,14 +300,13 @@ async function rootExpansion(map){
     row.passes=row.tileAddressPreserved&&row.metersPerPixelPreserved&&!row.oldRootCanCenterAtFocus&&row.expandedRootCanCenterAtFocus&&row.cameraPosePreserved;
     checks.push(row);
     results.rootExpansion.checks=checks;results.rootExpansion.stage=`map-expansion-${scale.name}`;
-    addProjectionDiagnostic(map);await idle(map);interopMap=map;activeDeckRoot=to;
+
     await updateScene(map,to,scale.span,focus);
     await rendered(map,['occluder']);
-    const AtlasMapLibreView=makeAtlasView(),overlay=new MapLibreOverlay({interleaved:true,views:new AtlasMapLibreView({id:'maplibre'}),layers:deckLayers(scale.span,expanded)});
-    installStyleGuardAdapter(overlay,map,to,{x:focus[0],y:focus[1]});map.addControl(overlay);refreshDeckView();await rendered(map,['occluder']);
+    const {overlay}=await attachBridge(map,to,deckLayers(scale.span,expanded),{x:focus[0],y:focus[1]},['occluder']);
     const rootX=(focus[0]-to.x)/expanded,rootY=(focus[1]-to.y)/expanded;
-    const visibleRoof=matrixPoint(diagnosticFrame.mainMatrix,[rootX+scale.span*.32/expanded,rootY,.12*scale.span/expanded]);
-    const hiddenRoof=matrixPoint(diagnosticFrame.mainMatrix,[rootX,rootY,.05*scale.span/expanded]);
+    const visibleRoof=matrixPoint(currentFrame().mainMatrix,[rootX+scale.span*.32/expanded,rootY,.12*scale.span/expanded]);
+    const hiddenRoof=matrixPoint(currentFrame().mainMatrix,[rootX,rootY,.05*scale.span/expanded]);
     const visiblePick=overlay.pickObject({x:visibleRoof.x,y:visibleRoof.y,radius:3,unproject3D:true}),hiddenPick=overlay.pickObject({x:hiddenRoof.x,y:hiddenRoof.y,radius:3,unproject3D:true});
     const viewport=overlay._deck.getViewports().find(item=>item.id==='maplibre'),visibleLocal=[scale.span*.32/expanded,0,.12*scale.span/expanded];
     const projected=viewport?.project(visibleLocal),unprojected=projected&&viewport.unproject(projected);
@@ -380,8 +324,8 @@ async function rootExpansion(map){
     const layerOrder=map.getLayersOrder(),deckGroupIds=layerOrder.filter(id=>id.startsWith('deck-maplibre-layer-group')),
       deckGroupAfterOccluder=deckGroupIds.some(id=>layerOrder.indexOf(id)>layerOrder.indexOf('maplibre-occluder-layer'));
     const local125=Math.fround(.125/expanded),local250=Math.fround(.25/expanded),global125=Math.fround(rootX+.125/expanded),globalOrigin=Math.fround(rootX);
-    const localMvp=diagnosticFrame.mainMatrix.slice();
-    for(let r=0;r<4;r++)localMvp[12+r]+=diagnosticFrame.mainMatrix[r]*rootX+diagnosticFrame.mainMatrix[4+r]*rootY;
+    const localMvp=currentFrame().mainMatrix.slice();
+    for(let r=0;r<4;r++)localMvp[12+r]+=currentFrame().mainMatrix[r]*rootX+currentFrame().mainMatrix[4+r]*rootY;
     const localPrecisionShiftPx=Math.hypot(matrixPoint(localMvp,[local125,0,0]).x-matrixPoint(localMvp,[local250,0,0]).x,
       matrixPoint(localMvp,[local125,0,0]).y-matrixPoint(localMvp,[local250,0,0]).y);
     const rect=map.getCanvas().getBoundingClientRect();
@@ -397,7 +341,7 @@ async function rootExpansion(map){
       local125mAnd250mDistinct:local125!==local250,globalOriginLoses125m:global125===globalOrigin,localPrecisionShiftPx,adapterViewId:overlay._deck?.getViewports()?.map(view=>view.id)});
     results.rootExpansion.deckChecks=deckChecks;results.rootExpansion.stage=`deck-expansion-${scale.name}`;
     if(scale.name==='interior')results.visualDataUrl=map.getCanvas().toDataURL();
-    overlay.finalize();
+    disposeBridge();
   }
   results.rootExpansion={passed:checks.every(c=>c.passes)&&deckChecks.every(c=>c.deckVisiblePick==='visible-room'&&c.deckHiddenPick==='hidden-room'&&c.visibleInViewport&&c.hiddenInViewport&&c.deckGroupAfterOccluder&&c.maplibreOccluderAtHiddenPixel&&!c.maplibreOccluderAtVisiblePixel&&c.hiddenOcclusionDelta>40&&c.hiddenRestoreDelta<12&&c.visibleStabilityDelta<12&&c.viewTransformErrorPx<.1&&c.viewRoundTripError<1e-5&&c.local125mAnd250mDistinct&&c.globalOriginLoses125m),checks,deckChecks,stage:'complete',
     policy:'Recreate the map on a power-of-two root four times larger, preserve its old top-left origin, translate tiles dyadically, preserve camera pose and scale, and reattach Deck at a 100 Mm focus. Deck features use scene-local meters normalized on CPU before Float32 upload.'};
@@ -405,9 +349,8 @@ async function rootExpansion(map){
 }
 window.runAtlasMapLibreInterop=async()=>{
   const projection='atlas:metres';
-  maplibre.setWorkerUrl(`${location.origin}/maplibre-worker.mjs`);
-  results.workerSetup={workerUrl:`${location.origin}/maplibre-worker.mjs`,workerPoolSetupBeforeProjectionHandler:true};
-  await maplibre.importScriptInWorkers(`${location.origin}/projection-handler.mjs`);
+  await initializeAtlasMapLibre();
+  results.workerSetup={workerUrl:maplibre.getWorkerUrl(),workerPoolSetupBeforeProjectionHandler:true};
   registerCRS(projection,initialRoot);
   let map=makeMap(document.querySelector('#map'),projection,initialRoot);
   try{
@@ -431,7 +374,7 @@ window.runAtlasMapLibreInterop=async()=>{
     map=await rootExpansion(map);
     return results;
   }catch(error){errors.push(error?.stack??String(error));throw error;}
-  finally{map?.remove();}
+  finally{disposeBridge();map?.remove();}
 };
 window.__atlasMapLibreInteropReady=true;
 
@@ -444,17 +387,14 @@ window.prepareAtlasMetricGestureProbe=async()=>{
   await idle(map);addProjectionDiagnostic(map);await rendered(map);
   map.jumpTo(camera(root,[0,0],span,0,0));
   await updateScene(map,root,span);await rendered(map,['occluder','marker']);
-  const AtlasMapLibreView=makeAtlasView();
-  const overlay=new MapLibreOverlay({interleaved:true,views:new AtlasMapLibreView({id:'maplibre'}),layers:deckLayers(span)});
-  installStyleGuardAdapter(overlay,map,root);map.addControl(overlay);refreshDeckView();
-  await rendered(map,['occluder','marker']);
+  const {bridge,overlay}=await attachBridge(map,root,deckLayers(span));
   const trusted={pointerdown:0,pointermove:0,wheel:0};
   const canvas=map.getCanvas();
   const listeners=Object.keys(trusted).map(type=>{
     const listener=event=>{if(event.isTrusted)trusted[type]++;};
     canvas.addEventListener(type,listener);return [type,listener];
   });
-  gestureFixture={map,overlay,root,span,trusted,listeners};
+  gestureFixture={map,bridge,overlay,root,span,trusted,listeners};
 };
 window.observeAtlasMetricGesture=async(point)=>{
   const f=gestureFixture;if(!f)throw Error('Gesture fixture is not prepared');
@@ -476,5 +416,5 @@ window.projectAtlasMetricGesturePoint=world=>{
 window.finishAtlasMetricGestureProbe=()=>{
   const f=gestureFixture;if(!f)return;
   for(const [type,listener] of f.listeners)f.map.getCanvas().removeEventListener(type,listener);
-  f.overlay.finalize();f.map.remove();gestureFixture=null;
+  f.bridge.dispose();activeBridge=null;f.map.remove();gestureFixture=null;
 };

@@ -16,12 +16,13 @@ const profile=await mkdtemp(join(profiles,'ami-')),bus=join(profile,'bus');
 const result={source:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),
   dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),profile,errors:[],console:[],lifecycle:{normalExit:false}};
 const inputs=['tools/atlas-maplibre-interop-main.cjs','tools/atlas-maplibre-interop-driver.mjs',
-  'tools/atlas-maplibre-interop/package.json','tools/atlas-maplibre-interop/package-lock.json',
+  'package.json','package-lock.json',
   'tools/atlas-maplibre-interop-probe.mjs','src/app/atlas-metric-space.ts','src/app/atlas-metric-query.ts',
-  'tools/atlas-maplibre-interop.html','tools/atlas-maplibre-interop.css','tools/atlas-maplibre-interop-projection-handler.mjs',
-  '.build/atlas-maplibre-interop/probe.bundle.mjs','.build/atlas-maplibre-interop/package-lock.json',
-  '.build/atlas-maplibre-interop/node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs',
-  '.build/atlas-maplibre-interop/node_modules/maplibre-gl/dist/maplibre-gl.css'];
+  'tools/atlas-maplibre-interop.html','tools/atlas-maplibre-interop.css',
+  'src/app/atlas-maplibre-projection.ts','src/app/atlas-maplibre-projection-worker.ts','src/app/atlas-maplibre-runtime.ts','src/app/atlas-maplibre-bridge.ts',
+  '.build/atlas-maplibre-interop/probe.bundle.mjs','.build/atlas-maplibre-interop/atlas-maplibre-projection-worker.mjs',
+  'node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs',
+  'node_modules/maplibre-gl/dist/maplibre-gl.css'];
 const hashInputs=()=>Promise.all(inputs.map(async name=>[name,createHash('sha256').update(await readFile(name)).digest('hex')]));
 result.artifacts=Object.fromEntries(await hashInputs());
 let app,child,exitPromise,exitState=null,proxy,proxyError;
