@@ -30,6 +30,8 @@ Kennung und liest Seiten. Kampagnenannahme, Medienbereinigung, Datei-Fences und
 abschließende Veröffentlichung laufen mit lokalen Callbacks im Worker. Zwischen
 abschließender Quellenprüfung und synchroner Umbenennung beziehungsweise zwischen
 Referenzprüfung und Löschen gibt es keinen asynchronen Unterbrechungspunkt.
+Main entzieht abgebrochenen Transfer-Tickets sofort ihre Berechtigung; ihre
+Stagingdateien werden erst nach Ende einer bereits angenommenen Übernahme entfernt.
 
 ## Aufträge, Fehler und Schließen
 
@@ -61,6 +63,7 @@ deren Quellenabfrage erst während der Sperre aus dem Store zurückkommt.
 
 - `tests/desktop-store-worker.test.mjs`: echte Worker, Binärdaten, Doppelzustellung,
   Abbruch vor/nach Commit, Receipt-Auflösung, Pending-Rennen, Backup-Epoche und Exit.
+- `tests/desktop-review-data-retention.test.mjs`: Ticketentzug ohne vorzeitiges Löschen aktiver Stagingdateien.
 - `tests/desktop-player-visual-host.test.mjs`: verspätete Antworten und Fensterwechsel.
 - `tests/desktop-backup-worker.test.mjs`: unabhängige Snapshotprüfung und Veröffentlichung.
 - `tools/test-desktop-store-responsiveness.mjs`: Main-Timerverzögerung während einer

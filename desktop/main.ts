@@ -1,6 +1,6 @@
 import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
 import {AtlasWriteActivity} from './atlas-write-activity';
-import {clearCampaignStaging,discardCampaignTickets} from './campaign-erasure';
+import {clearCampaignStaging,discardCampaignTickets,cancelCampaignTicket} from './campaign-erasure';
 import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
 import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
 import {atlasTerrainTileQuery} from '../src/app/atlas-terrain-tile';
@@ -281,7 +281,7 @@ else {
     handle('campaign:ledger-item', async (token: string, id: string) => (await store.ledgerItem(token, id)));
     const campaignJobsRoot=path.join(dataDir,'campaign-jobs');await mkdirSync(campaignJobsRoot,{recursive:true});
     type CampaignTicket={dir:string;manifest:CampaignManifest;copy:boolean;fence:{id:string;revision:number}|null;basis?:string;problems?:string[]};
-    const campaignTickets=new Map<string,CampaignTicket>();let campaignBusy=false,campaignCancelled=false,audioBusy=false,audioCancelled=false,currentCampaignSource:string|null=null,acceptingTicket:string|null=null;
+    const campaignTickets=new Map<string,CampaignTicket>();let campaignBusy=false,campaignCancelled=false,audioBusy=false,audioCancelled=false,currentCampaignSource:string|null=null,acceptingTicket:string|null=null;let acceptanceFinished:Promise<void>|null=null;
     const campaignProgress=(p:import('../src/app/campaign-contracts').CampaignTransferProgress)=>{if(!win.isDestroyed())win.webContents.send('campaign:transfer-progress',p);};
     async function campaignJob<T>(fn:()=>Promise<T>){
       if(campaignBusy||audioBusy)throw new Error('Eine Kampagnen- oder Medienübertragung läuft bereits.');
@@ -338,15 +338,15 @@ else {
       return campaign?{state:'applied' as const,campaign}:{state:pending||acceptingTicket===ticketId?'pending' as const:'not-applied' as const};
     });
     handle('campaign:transfer-accept',(ticketId:string,name:string,choices:Record<string,import('../src/app/campaign-contracts').ConflictChoice>)=>campaignJob(async()=>{
-      acceptingTicket=ticketId;
+      acceptingTicket=ticketId;let finishAcceptance!:()=>void;acceptanceFinished=new Promise<void>(resolve=>{finishAcceptance=resolve;});
       try{
         const confirmed=(await store.campaignTransferOutcome(ticketId,{name,choices}));if(confirmed)return confirmed;
         const ticket=campaignTickets.get(ticketId);if(!ticket)throw new Error('Importvorschau nicht mehr verfügbar.');
         const campaign=await store.acceptPreparedCampaignFile({...ticket,acceptanceId:ticketId},name,choices,campaignAuthority(ticket.fence));
         campaignTickets.delete(ticketId);try{await rm(ticket.dir,{recursive:true,force:true});}catch(e){console.error('Kampagne übernommen; temporäre Paketbereinigung steht aus.',e instanceof Error?e.message:e);}return campaign;
-      }finally{acceptingTicket=null;}
+      }finally{acceptingTicket=null;acceptanceFinished=null;finishAcceptance();}
     }));
-    handle('campaign:transfer-cancel',async(ticketId?:string)=>{campaignCancelled=true;Atomics.store(new Int32Array(campaignCancel),0,1);if(ticketId){const ticket=campaignTickets.get(ticketId);if(ticket){campaignTickets.delete(ticketId);await rm(ticket.dir,{recursive:true,force:true});}}});
+    handle('campaign:transfer-cancel',async(ticketId?:string)=>{campaignCancelled=true;Atomics.store(new Int32Array(campaignCancel),0,1);if(ticketId)await cancelCampaignTicket(campaignTickets,ticketId,acceptingTicket===ticketId?acceptanceFinished:null);});
     const hooks:TransferHooks={cancelled:()=>audioCancelled,progress:p=>{if(!win.isDestroyed())win.webContents.send('music:progress',p);}};
     async function transfer<T>(task:()=>Promise<T>){if(audioBusy||campaignBusy)throw new Error('Eine Kampagnen- oder Medienübertragung läuft bereits.');audioBusy=true;audioCancelled=false;try{return await task();}finally{audioBusy=false;hooks.progress({phase:audioCancelled?'Abgebrochen':'Fertig',bytes:0,files:0,busy:false});}}
     handle('campaign:music-favorites',async (token:string,after:string|null)=>(await store.musicFavorites(token,after)));

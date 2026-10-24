@@ -1,4 +1,5 @@
 import {readdirSync,rmSync} from 'node:fs';
+import {rm} from 'node:fs/promises';
 import path from 'node:path';
 import type {CampaignStore} from '../src/app/storage/store';
 import {campaignMediaPath} from './campaign-files';
@@ -35,4 +36,11 @@ export async function finishCampaignErasure(store:Store,dataDir:string,id:string
   if(!store.campaignMediaReferenced(name))rmSync(campaignMediaPath(dataDir,name),{force:true});
  }
  store.finishCampaignErasure(id);
+}
+
+/** Retire authority immediately, but keep files until their admitted acceptance ends. */
+export async function cancelCampaignTicket(tickets:Map<string,{dir:string}>,id:string,acceptance:Promise<void>|null){
+ const ticket=tickets.get(id);if(!ticket)return;tickets.delete(id);
+ if(acceptance)await acceptance;
+ await rm(ticket.dir,{recursive:true,force:true});
 }
