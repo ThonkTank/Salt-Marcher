@@ -53,26 +53,60 @@ function distanceSampler(edges,radius,curve,origin,scale){
  };
  // The triangle is already clipped to this region. A certificate uses all
  // true boundary segments, never the edges introduced by triangulation.
- const polynomialDegreeOnTriangle=worldTriangle=>{
+ let lastTriangle,lastCoordinates,lastFeature;
+ const classifyTriangle=worldTriangle=>{
   const points=worldTriangle.map(normalize);
   const center={x:points.reduce((s,p)=>s+p.x,0)/3,y:points.reduce((s,p)=>s+p.y,0)/3};
   const reach=Math.max(...points.map(p=>Math.hypot(p.x-center.x,p.y-center.y)));
   const guard=64*Number.EPSILON*Math.max(1,...points.flatMap(p=>[Math.abs(p.x),Math.abs(p.y)]),Math.abs(origin[0])/scale,Math.abs(origin[1])/scale);
   const {best,second,edge}=nearest(center,Infinity,true);
-  if(best-reach>radius+guard)return 0;
-  if(!edge||second-best<=2*reach+guard)return undefined;
-  const signed=[];
-  for(const p of points){
-   const x=p.x-edge.x,y=p.y-edge.y,projection=x*edge.ux+y*edge.uy;
-   if(projection<=guard||projection>=edge.length-guard)return undefined;
-   signed.push(x*edge.uy-y*edge.ux);
+  if(best-reach>radius+guard)return {kind:'constant'};
+  if(!edge)return undefined;
+  if(second-best>2*reach+guard){
+   const signed=[];
+   for(const p of points){
+    const x=p.x-edge.x,y=p.y-edge.y,projection=x*edge.ux+y*edge.uy;
+    if(projection<=guard||projection>=edge.length-guard)break;
+    signed.push(x*edge.uy-y*edge.ux);
+   }
+   if(signed.length===3&&(Math.min(...signed)>guard||Math.max(...signed)<-guard)&&Math.max(...signed.map(Math.abs))<radius-guard)return {kind:'affine'};
   }
-  if(!(Math.min(...signed)>guard||Math.max(...signed)<-guard))return undefined;
-  // A nearest affine distance can still cross the clamped full-strength edge.
-  if(Math.max(...signed.map(Math.abs))>=radius-guard)return undefined;
-  return curve==='linear'?1:3;
+  // Adjacent segments can both induce the SAME radial distance to their
+  // common endpoint. A tie is safe only if every nearby segment continues to
+  // project to that exact endpoint throughout the triangle.
+  const projection=(center.x-edge.x)*edge.ux+(center.y-edge.y)*edge.uy;
+  const q=projection<=0?{x:edge.x,y:edge.y}:projection>=edge.length?{x:edge.endX,y:edge.endY}:undefined;
+  if(!q||best-reach<=guard||best+reach>=radius-guard)return undefined;
+  const cutoff=best+2*reach+guard,pending=[tree];
+  while(pending.length){
+   const node=pending.pop();if(distanceToBox(center,node)>cutoff)continue;
+   if(!node.edges){pending.push(node.left,node.right);continue;}
+   for(const e of node.edges){
+    if(distanceToSegment(center,e)>cutoff)continue;
+    const start=e.x===q.x&&e.y===q.y,end=e.endX===q.x&&e.endY===q.y;
+    if(!start&&!end)return undefined;
+    for(const p of points){
+     const t=(p.x-e.x)*e.ux+(p.y-e.y)*e.uy;
+     if(start?t>=-guard:t<=e.length+guard)return undefined;
+    }
+   }
+  }
+  return {kind:'point',minDistance:(best-reach-guard)*scale};
  };
- return {fade,polynomialDegreeOnTriangle};
+ // Retain one query only. Compare coordinates too so reused mutable arrays do
+ // not inherit a certificate for a different triangle.
+ const featureOnTriangle=triangle=>{
+  if(triangle!==lastTriangle||triangle.some((p,i)=>p.x!==lastCoordinates[i*2]||p.y!==lastCoordinates[i*2+1])){
+   const feature=classifyTriangle(triangle);
+   lastTriangle=triangle;lastCoordinates=triangle.flatMap(p=>[p.x,p.y]);lastFeature=feature;
+  }
+  return lastFeature;
+ };
+ const polynomialDegreeOnTriangle=triangle=>{
+  const feature=featureOnTriangle(triangle);
+  return feature?.kind==='constant'?0:feature?.kind==='affine'?(curve==='linear'?1:3):undefined;
+ };
+ return {fade,polynomialDegreeOnTriangle,featureOnTriangle};
 }
 function coordinates(input){
  if(!Array.isArray(input))throw Error('Feather polygons must be an array');
@@ -139,15 +173,15 @@ export function authoredFeatherRegions(polygons,radius,curve='linear'){
   const a=ring[i].map((v,c)=>(v-origin[c])/scale),b=ring[i+1].map((v,c)=>(v-origin[c])/scale),dx=b[0]-a[0],dy=b[1]-a[1];
   if(dx===0&&dy===0)continue;
   const length=Math.hypot(dx,dy);
-  edges.push({x:a[0],y:a[1],ux:dx/length,uy:dy/length,length,minX:Math.min(a[0],b[0]),minY:Math.min(a[1],b[1]),maxX:Math.max(a[0],b[0]),maxY:Math.max(a[1],b[1])});
+  edges.push({x:a[0],y:a[1],endX:b[0],endY:b[1],ux:dx/length,uy:dy/length,length,minX:Math.min(a[0],b[0]),minY:Math.min(a[1],b[1]),maxX:Math.max(a[0],b[0]),maxY:Math.max(a[1],b[1])});
  }
  if(!edges.length)throw Error('Feather union has no valid boundary');
- const {fade,polynomialDegreeOnTriangle}=distanceSampler(edges,localRadius,curve,origin,scale),regions=[];
+ const {fade,polynomialDegreeOnTriangle,featureOnTriangle}=distanceSampler(edges,localRadius,curve,origin,scale),regions=[];
  for(const polygon of union){
   if(polygon.length===1&&isConvex(polygon[0])){
    regions.push(...convexFeatherRegions(pointPolygon(polygon),radius,curve));
   }else{
-   regions.push({geometry:[polygon],fade,polynomialDegreeOnTriangle,varying:radius>0});
+   regions.push({geometry:[polygon],fade,polynomialDegreeOnTriangle,featureOnTriangle,varying:radius>0});
   }
  }
  return regions;

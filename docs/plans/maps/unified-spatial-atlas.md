@@ -221,12 +221,20 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   nur die Kombination erreicht 1/255 im Budget, jeweils 190067 Arbeitsschritte,
   Median 367 ms. Eine synthetische 16×16-Ausgabe benötigt 862122 Schritte;
   256×256 überschreitet weiterhin das Budget. Kein nativer Produktgewinn belegt.
+- **M2-Gekrümmte Ränder:** [Krümmungsschranken und volle synthetische Kachel](../../reference/atlas-material-curvature-20261024/README.md)
+  erweitern die lokale Integration um nachgewiesen gemeinsame Endpunkte
+  benachbarter Kanten. Eine konservative Schranke des fertig komponierten
+  Materials ersetzt dort die zu grobe Lipschitz-Näherung. 61 gezielte Tests
+  einschließlich unabhängiger Überlagerungsgegenprobe bestehen. Drei wechselnde
+  Messrunden bei gleichem 1/255-Ziel und unveränderten Budgets: 16×16 benötigt
+  im Median 1900 → 475 ms; 256×256 endet jetzt mit 1717443 Arbeitsschritten
+  und 2768 ms statt Budgetabbruch. Die synthetische Kachel ist damit berechenbar,
+  aber weder schnell genug als Produktnachweis noch unter vollständiger Weltlast
+  oder nativ qualifiziert.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Die Restkosten gekrümmter Innen-/Lochkanten bei voller Kachelauflösung senken:
-  konservative lokale Krümmungsfehler oder direkte Punktabstandsintegration
-  gegen die aktuelle Lipschitz-Referenz prüfen; Fehlergarantie und Arbeitsbudget
-  erhalten. Den Quellenvertrag um Version-2-
-  Pinselzüge vervollständigen. Feld-/Quellenseiten anschließen und Restkosten
+  Den Quellenvertrag um Version-2-Pinselzüge samt Kreis-/Texturgrenzen und
+  gespeicherter Deckkraftfolge vervollständigen. Feld-/Quellenseiten anschließen
+  und die weiterhin hohen Materialkosten
   unter tatsächlicher Weltlast messen, bevor Kachelcacheversion und produktiver
   Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.

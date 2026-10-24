@@ -83,15 +83,19 @@ function classifyCells(geometry,width,height,tick){
  * `tolerance` bounds the area-weighted error of each completed output cell.
  * Trusted triangle classifiers can prove local degrees; unknown triangles are
  * refined largest weighted error first. `uniform` retains the earlier reference.
+ * Optional centroidErrorBound(activeLayers, worldTriangle) certifies the mean
+ * error of ALL final channels on that triangle (not already area weighted).
+ * undefined retains the Lipschitz bound; malformed bounds fail explicitly.
  */
-export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error'}) {
+export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error',centroidErrorBound}) {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>1024||height>1024||
     ![box.x,box.y,box.width,box.height,...background,tolerance,lipschitz].every(Number.isFinite)||box.width<=0||box.height<=0||tolerance<=0||lipschitz<0)
     throw Error('Invalid area prototype input');
   if(!['cell-error','uniform'].includes(adaptiveStrategy))throw Error('Invalid adaptive strategy');
+  if(centroidErrorBound!==undefined&&typeof centroidErrorBound!=='function')throw Error('Invalid centroid error callback');
   const budget={inputVertices:65536,cellVertices:16384,cachedVertices:65536,cachedPieces:4096,faces:256,work:2000000,depth:16,pendingTriangles:65536,classifierBytes:16*1024*1024,...limits};
   for(const value of Object.values(budget))if(!Number.isSafeInteger(value)||value<1)throw Error('Invalid area budget');
-  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,degreeQueries:0,localPolynomialTriangles:0,localConstantTriangles:0,peakPendingTriangles:0,errorSumRechecks:0,work:0,classifierBytes:0};
+  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,degreeQueries:0,localPolynomialTriangles:0,localConstantTriangles:0,curvatureQueries:0,curvatureBounds:0,peakPendingTriangles:0,errorSumRechecks:0,work:0,classifierBytes:0};
   const tick=()=>{if(++stats.work>budget.work)throw new AreaBudgetExceeded('Area work budget exceeded');};
   const dx=box.width/width,dy=box.height/height,scale=Math.max(dx,dy);
   const prepared=layers.map(layer=>{
@@ -171,14 +175,16 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       // Degree contributions add under source-over multiplication; declarations
       // must include the channel state transform, not just a standalone colour.
       const degree=face.active.reduce((sum,index)=>sum+(prepared[index].varying?(prepared[index].polynomialDegree??Infinity):0),0);
+      const active=face.active.map(index=>prepared[index]);
       if(degree>3&&lipschitz===0)throw Error('Composed variable material needs a final-channel Lipschitz bound');
       const visit=(points,depth)=>{
           tick();const [a,b,c]=points,weight=triangleArea(a,b,c);
           if(!weight)return;
           const center=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];
+          let worldTriangle;
           let triangleDegree=degree;
           if(degree>3&&face.active.some(index=>prepared[index].polynomialDegreeOnTriangle)){
-            const worldTriangle=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
+            worldTriangle=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
             triangleDegree=0;
             for(const index of face.active){
               const layer=prepared[index];if(!layer.varying)continue;
@@ -204,8 +210,16 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
             return;
           }
           const radius=Math.max(...[a,b,c].map(p=>Math.hypot((p[0]-center[0])*dx,(p[1]-center[1])*dy)));
-          const error=lipschitz*radius*weight;
-          if(adaptiveStrategy==='uniform'&&lipschitz*radius>tolerance){
+          let meanError=lipschitz*radius;
+          if(centroidErrorBound){
+            tick();stats.curvatureQueries++;
+            worldTriangle??=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
+            const bound=centroidErrorBound(active,worldTriangle);
+            if(bound!==undefined&&(!Number.isFinite(bound)||bound<0))throw Error('Invalid centroid error bound');
+            if(bound!==undefined&&bound<meanError){meanError=bound;stats.curvatureBounds++;}
+          }
+          const error=meanError*weight;
+          if(adaptiveStrategy==='uniform'&&meanError>tolerance){
             if(depth>=budget.depth)throw new AreaBudgetExceeded('Area integration depth exceeded');
             stats.subdivisions++;
             const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);

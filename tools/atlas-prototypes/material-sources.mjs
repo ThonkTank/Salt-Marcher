@@ -81,7 +81,16 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
           const local=region.polynomialDegreeOnTriangle(triangle);
           return local===0?0:local===1?3:undefined;
         }:undefined;
-        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,polynomialDegreeOnTriangle,paint(vect,point){
+        const materialDerivativesOnTriangle=triangle=>{
+          const feature=region.varying?(region.featureOnTriangle?.(triangle)??(region.polynomialDegree===1?{kind:'affine'}:undefined)):{kind:'constant'};
+          if(!feature)return undefined;
+          if(feature.kind==='constant')return {gradient:0,hessian:0};
+          // Radial smoothstep has Hessian eigenvalues bounded by 6/r²;
+          // linear forest distance needs separation from its endpoint.
+          const gradient=1.17/p.edge,hessian=Math.max(4.68/p.edge**2,feature.kind==='point'?1/(p.edge*feature.minDistance):0);
+          return Number.isFinite(gradient)&&Number.isFinite(hessian)?{gradient,hessian}:undefined;
+        };
+        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,polynomialDegreeOnTriangle,materialDerivativesOnTriangle,paint(vect,point){
           if(vect[3]!==1)throw Error('Material adapter requires its opaque canonical background');
           const t=region.fade(point),smooth=t*t*(3-2*t),a=.78*smooth;
           for(let c=0;c<3;c++)vect[c]=color[c]*a+vect[c]*(1-a);
@@ -136,7 +145,25 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
       }});
     }else throw Error('Unsupported pigment version');
   }
+  // All other operations are spatially constant on their partition face.
+  // They set/contract base and final channels; pigment scratch stays constant.
+  for(const layer of layers)if(!layer.varying&&!layer.materialDerivativesOnTriangle)layer.materialDerivativesOnTriangle=()=>({gradient:0,hessian:0});
   return layers;
+}
+
+/** Trusted final-channel mean error for THIS adapter's normalized, opaque
+ * composition. Unknown layer/feature means no second-order certificate. */
+export function landscapeMaterialCentroidError(activeLayers,triangle){
+  let gradient=0,hessian=0;
+  for(const layer of activeLayers){
+    const bound=layer.materialDerivativesOnTriangle?.(triangle);if(!bound)return undefined;
+    hessian+=bound.hessian+2*gradient*bound.gradient;
+    gradient+=bound.gradient;
+  }
+  const local=triangle.map(p=>({x:p.x-triangle[0].x,y:p.y-triangle[0].y}));
+  const center={x:local.reduce((s,p)=>s+p.x,0)/3,y:local.reduce((s,p)=>s+p.y,0)/3};
+  const moment=local.reduce((s,p)=>s+(p.x-center.x)**2+(p.y-center.y)**2,0)/24;
+  const error=hessian*moment;return Number.isFinite(error)?error:undefined;
 }
 
 /** Opaque canonical default land, before authored base patches and field water. */
