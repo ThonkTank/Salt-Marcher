@@ -65,6 +65,7 @@ export function openTerrainRoute(host:Host){
   };
   const limits=['corridor','cut','fill','shoulder','grade','depth','clearance'] as const;
   const setFields=()=>{
+    record.line??=newLine(host.kind);
     prominence.refresh();
     field<HTMLInputElement>('name').value=record.name;
     setAtlasFieldValue(field<HTMLInputElement>('width'),record.width);

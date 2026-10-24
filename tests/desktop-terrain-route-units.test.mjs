@@ -47,6 +47,10 @@ test('route editor converts lengths and exact points while units remain passive 
   field('prominence').value='';field('prominence').onchange();button('save').onclick();await settle();
   assert.equal(writes.at(-1).prominence,null);assert.equal(record.prominence,undefined);assert.deepEqual(record.route,planned);
   button('close').onclick();
+  delete record.line;await api.openTerrainRoute({...host,record}).ready;await settle();
+  field('prominence').value='5';field('prominence').onchange();button('save').onclick();await settle();
+  assert.equal(writes.at(-1).kind,'landscape-prominence');assert.equal(record.line,undefined,'UI defaults must not become authored style during metadata save');
+  assert.equal(field('status').textContent,'Verlauf und Geländeform gespeichert.');assert(field('color').value);button('close').onclick();
   record={...record,points:planned.anchors};delete record.route;
   await api.openTerrainRoute({...host,record}).ready;await settle();button('save').onclick();await settle();
   assert.equal(writes.at(-1).kind,'landscape-route','planning an ordinary line must still create its first terrain route');
