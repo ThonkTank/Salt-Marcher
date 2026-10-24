@@ -250,11 +250,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   sinkt von 4023 auf 58 ms. Runde Vollkacheln scheitern weiterhin; die neuen
   Schätzwerte bringen ihnen keinen Gewinn. Synthetischer Prototypfortschritt,
   keine native Weltlast- oder Produktabnahme.
+- **M2-Runde Flächenmittel:** [120 Prüfungen und Kostenvergleich](../../reference/atlas-material-round-mean-20261024/README.md)
+  verbinden analytische Kreisflächen mit Trefferzahlhüllen und einer Komposition
+  von Wertebereichen und Mittelwertintervallen. Überlappungen, wiederholte Stempel,
+  gespeicherte Float32-/Byte-Deckkraft und Mal-/Radierreihenfolge bleiben erhalten.
+  Volle einzelne und überlappende Rundstempelkacheln sind damit in drei von drei
+  Runden innerhalb der unveränderten Budgets berechenbar: Median 640/700 ms statt
+  Budgetabbruch. Die volle Mischkachel bleibt zu teuer;
+  der neue Mittelweg spart dort Verfeinerungen, verursacht aber eigene Laufzeitkosten.
+  Prototypgewinn belegt, keine native Weltlast- oder Produktabnahme.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Für harte Kreisgrenzen eine stärkere Flächenmittel-Schranke entwickeln und gegen
-  dieselbe Rundstempelprobe prüfen. Überlappungen und gespeicherte Deckkraftfolge
-  berücksichtigen; einzelne Kreisflächen nicht einfach addieren. Danach gemischte
-  Quellen und tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
+  Die volle Mischprobe aus Bewuchs, Rund-/Weichauftrag und strukturiertem Radierer
+  scheitert weiter am Arbeitsbudget. Als nächsten Ansatz aktive Pinselquellen
+  konservativ auf ihre tatsächlichen Wirkungsbereiche begrenzen und dieselbe
+  Mischprobe erneut messen; außerhalb dieser Bereiche muss die gespeicherte Quelle
+  nachweislich null sein. Keine Budgeterhöhung als Ersatz für diesen Nachweis.
+  Danach tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
   und Kachelcacheversion sowie produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets

@@ -7,6 +7,7 @@ import {authoredFeatherRegions} from './general-feather.mjs';
 import {pigmentStrokeSource} from './pigment-stroke.mjs';
 import {baseRange,scratchRange,editRange,legacyPartRange,coverRange,pigmentRange,materialIntervalError} from './material-interval.mjs';
 import {makeSmoothState,baseSmooth,scratchSmooth,editSmooth,legacyPartSmooth,coverSmooth,pigmentSmooth} from './material-smooth.mjs';
+import {makeMeanState,baseMean,scratchMean,editMean,legacyPartMean,coverMean,pigmentMean} from './material-mean.mjs';
 
 const rgb = value => {
   if (typeof value !== 'string' || !/^#[\da-f]{6}$/i.test(value)) throw Error('Material color missing or invalid');
@@ -35,7 +36,7 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
   seaColor ??= palette.water;
   const land=rgb(landColor),sea=rgb(seaColor),layers = [];
   const setFinal = v => { for(let c=0;c<4;c++)v[9+c]=v[c]; };
-  if(water.length)layers.push({geometry:water,materialRange:baseRange(sea,0),materialSmooth:baseSmooth(sea,0),paint(v){for(let c=0;c<3;c++)v[c]=sea[c];v[3]=1;v[4]=0;setFinal(v);}});
+  if(water.length)layers.push({geometry:water,materialRange:baseRange(sea,0),materialSmooth:baseSmooth(sea,0),materialMean:baseMean(sea,0),paint(v){for(let c=0;c<3;c++)v[c]=sea[c];v[3]=1;v[4]=0;setFinal(v);}});
 
   for (const r of baseRecords) {
     if (r.propertyOnly) continue;
@@ -50,8 +51,8 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
       v[0]=c[0];v[1]=c[1];v[2]=c[2];v[3]=alpha;setFinal(v);
       v[4]=forest;
     };
-    if(dry.length)layers.push({geometry:dry,materialRange:baseRange(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],r.values.terrain==='forest'?1:0),materialSmooth:baseSmooth(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],r.values.terrain==='forest'?1:0),paint:basePaint(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],1,r.values.terrain==='forest'?1:0)});
-    if(wet.length)layers.push({geometry:wet,materialRange:baseRange(sea,0),materialSmooth:baseSmooth(sea,0),paint:basePaint(rgb(seaColor),1,0)});
+    if(dry.length)layers.push({geometry:dry,materialRange:baseRange(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],r.values.terrain==='forest'?1:0),materialSmooth:baseSmooth(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],r.values.terrain==='forest'?1:0),materialMean:baseMean(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],r.values.terrain==='forest'?1:0),paint:basePaint(cr===sea[0]&&cg===sea[1]&&cb===sea[2]?land:[cr,cg,cb],1,r.values.terrain==='forest'?1:0)});
+    if(wet.length)layers.push({geometry:wet,materialRange:baseRange(sea,0),materialSmooth:baseSmooth(sea,0),materialMean:baseMean(sea,0),paint:basePaint(rgb(seaColor),1,0)});
   }
 
   for (const r of coverRecords) {
@@ -68,10 +69,10 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
     // contains(point) inside a constant face would lose subpixel edit boundaries.
     const dry=clip('difference',g,water);
     if(dry.length){
-      layers.push({geometry:dry,materialRange:scratchRange(p.density),materialSmooth:scratchSmooth(p.density),paint(vect){vect[13]=p.density;}});
+      layers.push({geometry:dry,materialRange:scratchRange(p.density),materialSmooth:scratchSmooth(p.density),materialMean:scratchMean(p.density),paint(vect){vect[13]=p.density;}});
       for(const edit of edits){
         const affected=clip('intersection',dry,edit.geometry);
-        if(affected.length)layers.push({geometry:affected,materialRange:editRange(edit.mode),materialSmooth:editSmooth(edit.mode),paint(vect){
+        if(affected.length)layers.push({geometry:affected,materialRange:editRange(edit.mode),materialSmooth:editSmooth(edit.mode),materialMean:editMean(edit.mode),paint(vect){
           vect[13]=edit.mode==='clear'?0:edit.mode==='thin'?vect[13]*.3:Math.min(1,vect[13]+.5);
         }});
       }
@@ -94,7 +95,7 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
           const gradient=1.17/p.edge,hessian=Math.max(4.68/p.edge**2,feature.kind==='point'?1/(p.edge*feature.minDistance):0);
           return Number.isFinite(gradient)&&Number.isFinite(hessian)?{gradient,hessian}:undefined;
         };
-        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,polynomialDegreeOnTriangle,materialDerivativesOnTriangle,materialRange:coverRange(color,region,p.edge),materialSmooth:coverSmooth(color,region,p.edge),paint(vect,point){
+        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,polynomialDegreeOnTriangle,materialDerivativesOnTriangle,materialRange:coverRange(color,region,p.edge),materialSmooth:coverSmooth(color,region,p.edge),materialMean:coverMean(color,region,p.edge),paint(vect,point){
           if(vect[3]!==1)throw Error('Material adapter requires its opaque canonical background');
           const t=region.fade(point),smooth=t*t*(3-2*t),a=.78*smooth;
           for(let c=0;c<3;c++)vect[c]=color[c]*a+vect[c]*(1-a);
@@ -118,15 +119,15 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
       const parts=colorParts(r);if(!parts.length)continue;
       // colorParts already clips every stamp to the record polygon. Reset and
       // composite over that target so empty/zero-coverage stamps have no effect.
-      layers.push({geometry:target,materialRange:scratchRange(0),materialSmooth:scratchSmooth(0),paint(v){v[13]=0;}});
+      layers.push({geometry:target,materialRange:scratchRange(0),materialSmooth:scratchSmooth(0),materialMean:scratchMean(0),paint(v){v[13]=0;}});
       for(const part of parts){
         if(part.color!==p.color)throw Error('Legacy pigment parts must preserve the record color');
         const g=geometry(part.polygons).map(poly=>p.target==='water'?clip('intersection',[poly],waterG):clip('difference',[poly],waterG)).flat();if(!g.length||!part.opacity)continue;
         // Match polygonSteps: use raw opacity in source-over, then round the
         // composed alpha to Uint8 after each part.
-        layers.push({geometry:g,materialRange:legacyPartRange(part.opacity),materialSmooth:legacyPartSmooth(part.opacity),paint(v){v[13]=Math.round((part.opacity+v[13]*(1-part.opacity))*255)/255;}});
+        layers.push({geometry:g,materialRange:legacyPartRange(part.opacity),materialSmooth:legacyPartSmooth(part.opacity),materialMean:legacyPartMean(part.opacity),paint(v){v[13]=Math.round((part.opacity+v[13]*(1-part.opacity))*255)/255;}});
       }
-      layers.push({geometry:target,materialRange:pigmentRange(color,'paint',v=>v[13].map(x=>x*p.opacity)),materialSmooth:pigmentSmooth(color,'paint',state=>constantAlpha(state.value[13]*p.opacity)),paint(v){
+      layers.push({geometry:target,materialRange:pigmentRange(color,'paint',v=>v[13].map(x=>x*p.opacity)),materialSmooth:pigmentSmooth(color,'paint',state=>constantAlpha(state.value[13]*p.opacity)),materialMean:pigmentMean(color,'paint',state=>({range:state.range[13].map(x=>x*p.opacity),mean:state.mean[13].map(x=>x*p.opacity)})),paint(v){
         const recordAlpha=v[13]*p.opacity;
         if(!recordAlpha)return;
         for(let c=0;c<3;c++){
@@ -143,6 +144,8 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
         polynomialDegreeOnTriangle:stroke?triangle=>{const [lo,hi]=stroke.alphaRange(triangle);return lo===hi?0:undefined;}:undefined,
         materialRange:pigmentRange(color,p.operation,(_v,triangle)=>stroke?stroke.alphaRange(triangle):[alpha,alpha]),
         materialSmooth:pigmentSmooth(color,p.operation,(_state,triangle,point)=>stroke?stroke.smooth(triangle,point):constantAlpha(alpha)),
+        analyticMean:!!stroke&&p.tip==='round',
+        materialMean:pigmentMean(color,p.operation,(_state,triangle,point)=>stroke?stroke.mean(triangle,point):({range:[alpha,alpha],mean:[alpha,alpha]})),
         paint(v,point){
         const alpha=stroke?stroke.alpha(point):p.opacity;
         if(!alpha)return;
@@ -187,14 +190,26 @@ export function landscapeMaterialLipschitz(coverRecords){
   return coverRecords.reduce((sum,r)=>sum+(r.vegetation.preset.edge>0?1.17/r.vegetation.preset.edge:0),0);
 }
 
-/** Alternative mean estimate with an explicit source-rounding error budget. */
+/** Alternative mean estimates: smooth source rounding and correlation-safe
+ * analytic area moments. Use the tighter complete channel certificate. */
 export function landscapeMaterialTriangleEstimate(active,triangle,context){
   if(!active.some(layer=>layer.discontinuous))return undefined;
-  const state=makeSmoothState(context.background);
   const a=triangle[0],center={x:a.x+(triangle[1].x-a.x)/3+(triangle[2].x-a.x)/3,y:a.y+(triangle[1].y-a.y)/3+(triangle[2].y-a.y)/3};
-  for(const layer of active)if(!layer.materialSmooth?.(state,triangle,center))return undefined;
-  const moment=triangle.reduce((s,p)=>s+(p.x-center.x)**2+(p.y-center.y)**2,0)/24;
-  const coordinateGuard=64*Number.EPSILON*Math.max(1,...triangle.flatMap(p=>[Math.abs(p.x),Math.abs(p.y)]));
-  const error=Math.max(...state.hessian.map((h,c)=>h*moment+state.error[c]+state.gradient[c]*coordinateGuard))+active.length*64*Number.EPSILON;
-  return Number.isFinite(error)?{value:state.value,error}:undefined;
+  const state=makeSmoothState(context.background);
+  let best;
+  if(active.every(layer=>layer.materialSmooth?.(state,triangle,center))){
+    const moment=triangle.reduce((s,p)=>s+(p.x-center.x)**2+(p.y-center.y)**2,0)/24;
+    const coordinateGuard=64*Number.EPSILON*Math.max(1,...triangle.flatMap(p=>[Math.abs(p.x),Math.abs(p.y)]));
+    const error=Math.max(...state.hessian.map((h,c)=>h*moment+state.error[c]+state.gradient[c]*coordinateGuard))+active.length*64*Number.EPSILON;
+    if(Number.isFinite(error))best={value:state.value,error};
+  }
+  if(active.some(layer=>layer.analyticMean)){
+    const moments=makeMeanState(context.background);
+    if(active.every(layer=>layer.materialMean?.(moments,triangle,center))){
+      const value=moments.mean.map(([lo,hi])=>(lo+hi)/2);
+      const error=Math.max(...moments.mean.map(([lo,hi])=>(hi-lo)/2))+active.length*64*Number.EPSILON;
+      if(Number.isFinite(error)&&(!best||error<best.error))best={value,error};
+    }
+  }
+  return best;
 }

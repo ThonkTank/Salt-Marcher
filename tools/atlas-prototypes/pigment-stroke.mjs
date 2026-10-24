@@ -1,6 +1,7 @@
 // Scalar, conservative source for version-2 landscape pigment strokes.
 // Keep stamp generation and Float32 accumulation aligned with
 // src/app/landscape-pigment-coverage.ts.
+import {roundStrokeMean} from './round-stroke-mean.mjs';
 const f32 = Math.fround;
 const MAX_STAMPS = 4000;
 const EPS = Number.EPSILON;
@@ -162,6 +163,18 @@ export function pigmentStrokeSource(record) {
       range:[Math.max(0,range[0]-error),Math.min(1,range[1]+error)]};
     return [result.value,result.gradient,result.hessian,error].every(Number.isFinite)?result:undefined;
   }
-  return { coverage, alpha, alphaRange, stampCount: stamps.length, smooth,
+  const roundMean=p.tip==='round'?roundStrokeMean(stamps,p):undefined;
+  function mean(triangle,point){
+    if(roundMean)return roundMean(triangle);
+    const range=alphaRange(triangle),estimate=smooth(triangle,point);
+    if(!estimate)return {range,mean:[...range]};
+    const moment=triangle.reduce((s,p)=>s+(p.x-point.x)**2+(p.y-point.y)**2,0)/24;
+    const guard=64*EPS*Math.max(1,...triangle.flatMap(p=>[Math.abs(p.x),Math.abs(p.y)]));
+    const error=estimate.error+estimate.hessian*moment+estimate.gradient*guard;
+    if(!Number.isFinite(error))return {range,mean:[...range]};
+    const lo=Math.max(range[0],estimate.value-error),hi=Math.min(range[1],estimate.value+error);
+    return lo<=hi?{range,mean:[lo,hi]}:undefined;
+  }
+  return { coverage, alpha, alphaRange, stampCount: stamps.length, smooth, mean,
     integrationCut:p.tip==='textured'?triangle=>textureCut(triangle,p.radius):undefined };
 }
