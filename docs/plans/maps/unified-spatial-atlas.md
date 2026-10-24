@@ -180,10 +180,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   priorisiert Flächenintegration aus Quellen als nächsten Prototyp: Kindmittelung
   bewahrt den Feinfehler und verzögert die Übersicht; feste Mehrfachabtastung
   erhöht Kosten ohne Flächengarantie. Noch kein ungeprüfter Ersatz im Produktpfad.
+- **M2-Flächenprototyp:** [16 analytische Prüfungen und Kostenvergleich](../../reference/atlas-material-area-prototype-20261024/README.md)
+  belegen die Komposition räumlicher Teilflächen vor der Mittelung: 150 m² in
+  grober und feiner Stufe, nach 8-Bit-Quantisierung jeweils 150,588 m². Löcher,
+  Überlappung, Wasser-/Pigmentkorrelation und Dichtefolge sind als Modelle geprüft.
+  Naives Clipping jeder Zelle gegen die ganze Quelle wurde verworfen. Sichere
+  Innenzellen und hierarchische Quellstücke erhalten identische Ergebnisse;
+  detaillierte Grenze in drei wechselnden Runden im Median 5.698 → 300 ms.
+  Isolierter Prototyp, keine Produkt- oder native Leistungsbehauptung.
+  Adaptive weiche Integration ist noch zu teuer; der bisherige Bildschirmradius
+  im Waldkanal verändert zudem die semantische Abdeckung je Zoomstufe.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Flächengetreue Materialabdeckung prototypisieren und gegen schmale Flächen,
-  Löcher, überlappende Autorenflächen, Wasser-/Pigmentfolge und weiche Vegetation
-  prüfen; Laufzeit und Speicher begrenzen. Physische Höhenfelder erhalten.
+  Den Quellenadapter und Kanalvertrag für weltbezogene Materialabdeckung mit
+  Autorenradius prüfen; Bildschirmweichheit separat in M4 behandeln. Reale
+  Wasser-/Pigment-/Dichtefolge gegen die Produktionsreferenz nachweisen und eine
+  tragbare Fehlerschranke für weiche Ränder entwickeln, bevor der Prototyp in
+  den Produktpfad wechselt. Physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
   normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
