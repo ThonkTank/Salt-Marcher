@@ -115,3 +115,7 @@ sichtbare Ergebnisse, erste Eingabereaktion, Folgezug, Undo/Redo und Wiederöffn
 Die große Mischwelt prüft Last; kleine Szenen lokalisieren Fehler. Ein Link oder
 eine Testanzahl belegt keine vollständige Produktabnahme. Tatsächliche Testdateien
 und geprüfte Abläufe stehen im gemeinsamen Capability-Katalog.
+
+Beim Rechteckabschluss unterscheidet `AtlasAuthor` Schreiben und bestätigte
+Nachauswahl. Die Nachauswahl darf den Workspace-Flush passieren; Kameraeingaben
+und automatisches Öffnen der Eigenschaften bleiben bis zum Abschluss gesperrt.

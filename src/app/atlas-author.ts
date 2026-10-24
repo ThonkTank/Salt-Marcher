@@ -87,7 +87,8 @@ export class AtlasAuthor {
         start?: Point;
     } | null = null;
     pathDrag: AtlasPathDrag | null = null;
-    rectangleCommit = false;
+    private rectanglePhase: 'idle' | 'writing' | 'selecting' = 'idle';
+    get rectangleCommit() { return this.rectanglePhase !== 'idle'; }
     roomDrag: AtlasRoomDrag | null = null;
     brushId: number | null = null;
     brushQueue = Promise.resolve();
@@ -107,9 +108,9 @@ export class AtlasAuthor {
     entranceDraft: Point[] | null = null;
     hasDraft() {
         return !!(this.draft.length || this.brushId !== null || this.drag || this.vertexDrag ||
-            this.pathDrag || this.roomDrag || this.partyDrag || this.entranceDraft || this.placeIntent || this.rectangleCommit);
+            this.pathDrag || this.roomDrag || this.partyDrag || this.entranceDraft || this.placeIntent || this.rectanglePhase === 'writing');
     }
-    blocksNavigation() { return this.hasDraft(); }
+    blocksNavigation() { return this.hasDraft() || this.rectangleCommit; }
     cancelGesture() {
         this.brushId = null;
         this.vertexDrag = null;
@@ -375,7 +376,7 @@ export class AtlasAuthor {
             this.draft = [a];
             throw new Error("Raum benötigt eine Fläche. Zweite Ecke erneut wählen.");
         }
-        this.rectangleCommit = true;
+        this.rectanglePhase = 'writing';
         try {
             let result;
             try {
@@ -389,7 +390,7 @@ export class AtlasAuthor {
             if (result && current()) {
                 this.host.cancel();
                 // The write is confirmed; room selection flushes this same author.
-                this.rectangleCommit = false;
+                this.rectanglePhase = 'selecting';
                 const id = result.workspace.selectedId!;
                 await this.host.opts.selectRoom(id);
                 if (!current())
@@ -410,7 +411,7 @@ export class AtlasAuthor {
                 this.draft = [a];
         }
         finally {
-            this.rectangleCommit = false;
+            this.rectanglePhase = 'idle';
         }
     }
     suppressClick() {
