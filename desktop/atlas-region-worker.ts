@@ -52,7 +52,7 @@ parentPort!.on('message', async (job: any) => {
       assertTerrainRevision(job.source);
     }
     const endSync=terrainTraceStart("region.sync",job.source.revision);
-    syncStarted=true;await reader.sync(job.source,geometry);pyramid.sync(db,job.source);endSync();
+    syncStarted=true;await reader.sync(job.source,geometry,job.kind==='geometry-tile'?'field':'full');pyramid.sync(db,job.source);endSync();
     if(job.kind==='terrain-stroke'){
       const stroke=JSON.stringify(job.stroke);
       if(!job.continuation)preparation={fence:job.source.fence,stroke,steps:pyramid.warm(db,job.source.campaignId,job.stroke)};

@@ -9,8 +9,8 @@ import {AtlasTileCache} from './atlas-tile-cache';
 const FORMAT=1,APPLICATION=0x534d5049,LIMIT=96*1024*1024;
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const ownedTables=/\btemp\.(?=(?:region_|landscape_))/g;
-type Part='geometry'|'geometry-core'|'landscape';
-const version=(part:Part,source:AtlasRegionSource)=>part==='landscape'?source.shapeVersion:source.geometryVersion;
+type Part='geometry'|'geometry-core'|'landscape'|'landscape-field';
+const version=(part:Part,source:AtlasRegionSource)=>part==='landscape'||part==='landscape-field'?source.shapeVersion:source.geometryVersion;
 export const projectionKey=(filename:string,campaignId:string)=>createHash('sha256').update(JSON.stringify([filename,campaignId])).digest('hex');
 export const PROJECTION_CACHE_KEY='projection-index',PROJECTION_CACHE_SOURCE='projection-sqlite-v1';
 
@@ -88,12 +88,20 @@ export class AtlasProjectionIndex {
  }
  /** Transfer derived metadata without materializing an entire source table.
   * TEMP can copy within SQLite; a private file streams through two connections.
+  * Fixed blocks amortize the JS/SQLite boundary. Keep only full-block and
+  * single-row statements cached, rather than one statement per tail length.
   * Canonical rowids must be selected as text to preserve all 64 bits in JS. */
  copy(table:'landscape_shape_bounds'|'region_hidden',columns:number,select:string,args:unknown[]){
   const insert='INSERT INTO temp.'+table;
   if(!this.separate){this.prepare(insert+' '+select).run(...args);return;}
-  const put=this.prepare(insert+' VALUES('+Array(columns).fill('?').join(',')+')');
-  for(const row of this.source.prepare(select).raw().iterate(...args))put.run(...row);
+  const tuple='('+Array(columns).fill('?').join(',')+')',blockRows=256;
+  const put=this.prepare(insert+' VALUES'+tuple),block=this.prepare(insert+' VALUES'+Array(blockRows).fill(tuple).join(','));
+  let values:unknown[]=[];
+  for(const row of this.source.prepare(select).raw().iterate(...args)){
+   values.push(...row);
+   if(values.length===columns*blockRows){block.run(...values);values=[];}
+  }
+  for(let offset=0;offset<values.length;offset+=columns)put.run(...values.slice(offset,offset+columns));
  }
  transaction<T extends (...args:any[])=>any>(fn:T){return this.writer.transaction(fn);}
  begin(){

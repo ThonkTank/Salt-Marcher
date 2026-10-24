@@ -186,21 +186,21 @@ export class AtlasRegionReader {
  /** A rolled-back worker snapshot also rolls back TEMP tables, not JS state. */
  rollback(geometry:boolean|'core'=true){
   if(geometry){this.coreReady=false;this.elementsReady=false;this.fullGeometryReady=false;this.geometryChanges.invalidate();this.elementChanges.invalidate();this.shapePayloads.clear();}
-  if(this.landscapeSyncChanged)this.landscapeFailure=true;
+  if(this.landscapeSyncChanged){this.landscapeFailure=true;this.landscape.rollback();}
  }
- async sync(source:AtlasRegionSource,geometry:boolean|'core'=true){
+ async sync(source:AtlasRegionSource,geometry:boolean|'core'=true,landscape:'full'|'field'='full'){
   this.projection.begin();
-  try{await this.syncProjection(source,geometry);this.projection.commit();}
+  try{await this.syncProjection(source,geometry,landscape);this.projection.commit();}
   catch(error){this.projection.rollback();this.rollback(geometry);throw error;}
  }
- private async syncProjection(source:AtlasRegionSource,geometry:boolean|'core'){
+ private async syncProjection(source:AtlasRegionSource,geometry:boolean|'core',landscape:'full'|'field'){
   assertAtlasProjectionSource(this.db,source);
   this.campaign=source.campaignId;
   this.geometryChanges.observe(source);this.elementChanges.observe(source);
   if(source.reset||source.changes.length)this.fullGeometryReady=false;
   // An invalid query on an unchanged snapshot must not discard precise terrain invalidation.
-  this.landscapeSyncChanged=this.landscapeFailure||source.reset||source.changes.length>0;
-  try{this.projection.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
+  this.landscapeSyncChanged=this.landscapeFailure||source.reset||source.changes.length>0||this.landscape.needsPreparation(landscape);
+  try{this.projection.transaction(()=>this.landscape.sync(this.landscapeFailure?{...source,reset:true}:source,landscape))();if(this.landscape.invalidation.reset)this.terrainBases.clear();this.landscapeFailure=false;}
   catch{this.landscapeFailure=true;}
   if(!geometry)return;
   const coreSource=this.geometryChanges.source(source),elementSource=this.elementChanges.source(source);

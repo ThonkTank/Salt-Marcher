@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createReadStream,createWriteStream} from 'node:fs';
-import {readFile,stat,readdir} from 'node:fs/promises';
+import {readFile,stat,readdir,rename} from 'node:fs/promises';
 import {createGunzip} from 'node:zlib';
 import {pipeline} from 'node:stream/promises';
 import {createRequire} from 'node:module';
@@ -33,6 +33,26 @@ const hashStream=async file=>{
  return hash.digest('hex');
 };
 const canonicalTables=['campaign_atlas','atlas_binding','atlas_landscape','room_group','room','drawing_element','scope','drawing_floor','city_document','location','location_map','world_record'];
+// Playwright serializes this top-level function for each isolated evaluation.
+async function captureTerrainMaterial(pageArgs){
+ const {token,kind,tile}=pageArgs,unwrap=result=>{if(!result.ok)throw Error(JSON.stringify(result));return result.value;};
+ const revision=unwrap(await window.campaign.atlasTerrainSource(token)).revision;
+ const start=performance.now(),value=unwrap(await (kind==='terrain'?window.campaign.atlasTerrainTile(token,{tile,revision}):window.campaign.atlasMaterialTile(token,{tile,revision}))),ms=performance.now()-start;
+ const digest=async typed=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new Uint8Array(typed.buffer,typed.byteOffset,typed.byteLength)))).map(byte=>byte.toString(16).padStart(2,'0')).join('');
+ if(kind==='terrain'){
+  const projection=value.projection,grid=projection.grid,buffers={heights:grid.heights,pixels:projection.pixels};
+  if(grid.editing){buffers.editingGround=grid.editing.ground;buffers.editingWater=grid.editing.water;}
+  if(projection.forest)buffers.forest=projection.forest;
+  return {kind,tile:value.tile,revision:value.revision,fence:value.fence,cache:value.cache,ms,width:projection.width,height:projection.height,
+   metadata:{generation:projection.generation,draft:projection.draft,seaLevelM:grid.seaLevelM,view:grid.view,
+    landColor:projection.landColor,contourInk:projection.contourInk,rasterRouteKey:projection.rasterRouteKey,
+    objects:projection.objects,routes:projection.routes,protectedLimit:projection.protectedLimit,heightM:projection.heightM},
+   buffers:Object.fromEntries(await Promise.all(Object.entries(buffers).map(async([name,typed])=>[name,{type:typed.constructor.name,length:typed.length,byteLength:typed.byteLength,sha256:await digest(typed)}])))};
+ }
+ const channelNames=['baseColor','water','forest','rock','snow'];
+ return {kind,tile:value.tile,revision:value.revision,fence:value.fence,cache:value.cache,ms,width:value.width,height:value.height,
+  channels:Object.fromEntries(await Promise.all(channelNames.map(async name=>{const typed=value.channels[name];return[name,{type:typed.constructor.name,length:typed.length,byteLength:typed.byteLength,sha256:await digest(typed)}];})))};
+}
 function canonicalSnapshot(campaignId){
  const db=new Database(databasePath,{readonly:true}),hash=createHash('sha256');
  try{
@@ -102,7 +122,7 @@ try{
   const firstUsableFrameMs=performance.now()-renderStart;
   await surface.waitForFrame();
   const layerIds=surface.deckValue.props.layers.filter(layer=>layer.id.startsWith('atlas-overview:')).map(layer=>({id:layer.id,pickable:layer.props.pickable}));
-  window.__atlasGeometryOverview={surface,runtime,fixture:{campaignId,tile},errors};
+  window.__atlasGeometryOverview={surface,runtime,fixture:{campaignId,tile},token:active.token,errors};
   return {revision,tile,cache:value.cache,readMs,firstUsableFrameMs,frameUsable:surface.frameUsable,
    semanticObjects:model.objects.length,targetCount:model.targets.size,overviewCount:overview.length,
    modeledObjects:overview.map(entry=>entry.modeledObjects),resolutions:overview.map(entry=>entry.resolution),meshDigests,
@@ -242,7 +262,7 @@ try{
    if(selected)break;
   }
   if(!selected)throw Error(`No visible topmost room triangle produced its own canonical pick after ${tested} samples`);
-  window.__atlasGeometryOverview={surface,runtime,fixture:{campaignId,tile},errors};
+  window.__atlasGeometryOverview={surface,runtime,fixture:{campaignId,tile},token:active.token,errors};
   return {revision,tile,cache:value.cache,readMs,firstUsableFrameMs,frameUsable:surface.frameUsable,
    objectCount:model.objects.length,targetCount:model.targets.size,roomCount:rooms.length,selected,tested,errors};
  },{campaignId:campaign.id});
@@ -254,11 +274,44 @@ try{
  });
  assert(fineScreenshot.frameUsable&&fineScreenshot.modelObjects===fine.objectCount);
  await native.capture(reopened,'fine-room.png');
+
+ const tileAddress={lod:0,x:0,y:0},fieldToken=await reopened.evaluate(()=>window.__atlasGeometryOverview.token);
+ const fieldTerrain=await reopened.evaluate(captureTerrainMaterial,{token:fieldToken,kind:'terrain',tile:tileAddress});
+ const fieldMaterial=await reopened.evaluate(captureTerrainMaterial,{token:fieldToken,kind:'material',tile:tileAddress});
+ const fieldOnly={terrain:fieldTerrain,material:fieldMaterial};
+ assert.equal(fieldOnly.terrain.cache,'built','The first terrain miss after the warm geometry and fine miss must promote the worker to full readiness');
+ assert.deepEqual(Object.keys(fieldOnly.material.cache).sort(),['baseColor','forest','rock','snow','water']);
+ assert(Object.values(fieldOnly.material.cache).every(state=>state==='built'),'Every first material channel miss must be built after full promotion');
+ assert.equal(fieldOnly.terrain.revision,cold.revision);assert.equal(fieldOnly.material.revision,cold.revision);
+ assert.deepEqual(fieldOnly.terrain.tile,tileAddress);assert.deepEqual(fieldOnly.material.tile,tileAddress);
+ assert.equal(fieldOnly.terrain.width,256);assert.equal(fieldOnly.terrain.height,256);
+ assert.equal(fieldOnly.material.width,256);assert.equal(fieldOnly.material.height,256);
+ assert.deepEqual(Object.keys(fieldOnly.material.channels).sort(),['baseColor','forest','rock','snow','water']);
+ assert(fieldOnly.terrain.buffers.heights&&fieldOnly.terrain.buffers.pixels);
+ assert(fieldOnly.terrain.ms>=0&&fieldOnly.material.ms>=0);
+ await native.close();
+
+ const geometryCache=path.join(native.profile,'atlas-region-cache'),evidenceCache=path.join(native.profile,'atlas-region-cache-field-only-evidence');
+ await rename(geometryCache,evidenceCache);
+ const oraclePage=await native.launch();oraclePage.on('pageerror',error=>errors.push(error.stack??String(error)));
+ const oracleToken=await oraclePage.evaluate(async campaignId=>{
+  const result=await window.campaign.activate(campaignId);if(!result.ok)throw Error(JSON.stringify(result));
+  window.__atlasFieldProbeToken=result.value.token;return window.__atlasFieldProbeToken;
+ },campaign.id);
+ const oracleTerrain=await oraclePage.evaluate(captureTerrainMaterial,{token:oracleToken,kind:'terrain',tile:tileAddress});
+ const oracleMaterial=await oraclePage.evaluate(captureTerrainMaterial,{token:oracleToken,kind:'material',tile:tileAddress});
+ const fullFirst={terrain:oracleTerrain,material:oracleMaterial};
+ assert.equal(fullFirst.terrain.cache,'built','The cache-free oracle must build terrain');
+ assert(Object.values(fullFirst.material.cache).every(state=>state==='built'),'The cache-free oracle must build all material channels');
+ assert.equal(fullFirst.terrain.revision,cold.revision);assert.equal(fullFirst.material.revision,cold.revision);
+ const parityView=({fence,ms,...stable})=>stable;
+ assert.deepEqual(parityView(fieldOnly.terrain),parityView(fullFirst.terrain),'Field-only prepared-index terrain must match a fresh full-first projection');
+ assert.deepEqual(parityView(fieldOnly.material),parityView(fullFirst.material),'Field-only prepared-index materials must match fresh full-first channel bytes');
  const canonicalAfter=canonicalSnapshot(campaign.id),after=await hashes();
  assert.deepEqual(canonicalAfter,canonicalBefore,'Canonical world, room, drawing and Atlas revision data must remain unchanged');
  assert.deepEqual(after,before,'Source and built code hashes must remain fixed throughout the run');
  assert.deepEqual(errors,[],'Renderer page errors prevent this probe from qualifying');
  await native.close();
- await native.finish({complete:true,scope:'Frozen M0 mixed-world coarse geometry overview through real preload/Main/worker IPC, visual nonsemantic Deck layers, warm fresh-process buffers, and exact fine-room picking; no full M2 or product acceptance.',fixture:{path:'docs/reference/atlas-rebuild-m0-20261023/mixed-world.sqlite.gz',sha256:sourceHash,bytes:sourceBytes,campaign,inventory},cold,flat,proxyPick,warm,warmProjectionWork,fine,canonical:{before:canonicalBefore,after:canonicalAfter},errors,hashes:{before,after}});
+ await native.finish({complete:true,scope:'Frozen M0 mixed-world coarse geometry overview through real preload/Main/worker IPC, visual nonsemantic Deck layers, warm fresh-process buffers, exact fine-room picking, and field-only readiness promotion compared with a cache-free full-first terrain/material oracle; no full M2 or product acceptance.',fixture:{path:'docs/reference/atlas-rebuild-m0-20261023/mixed-world.sqlite.gz',sha256:sourceHash,bytes:sourceBytes,campaign,inventory},cold,flat,proxyPick,warm,warmProjectionWork,fine,fieldOnly,fullFirst,evidenceCache,canonical:{before:canonicalBefore,after:canonicalAfter},errors,hashes:{before,after}});
  console.log(JSON.stringify({complete:true,output}));
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

@@ -47,7 +47,7 @@ test('cold index is reused after reopening without reading all shape payloads',a
  const warm=await f.read(source);assert.equal(warm.projected,0);assert.deepEqual(warm.view,cold.view);assert.equal(warm.count,1000);
  const snapshot=cachedSnapshot(f);try{
   assert.equal(snapshot.digest,original.digest,'reopening reused the same complete projection snapshot');
-  const stored=new Database(snapshot.filename,{readonly:true});try{assert.deepEqual(stored.prepare('SELECT part FROM projection_meta ORDER BY part').all().map(row=>row.part),['geometry','geometry-core','landscape']);}finally{stored.close();}
+  const stored=new Database(snapshot.filename,{readonly:true});try{assert.deepEqual(stored.prepare('SELECT part FROM projection_meta ORDER BY part').all().map(row=>row.part),['geometry','geometry-core','landscape','landscape-field']);}finally{stored.close();}
  }finally{snapshot.close();}
 });
 test('projection snapshots evict older tile entries under one shared global budget',async t=>{

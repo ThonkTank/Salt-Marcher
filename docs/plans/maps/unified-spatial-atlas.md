@@ -148,12 +148,24 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Leistungszusage. [Gegenprobe und 20 gezielte Tests](../../reference/atlas-spatial-preparation-20261024/README.md)
   sichern den entfernten Anker über Neustart, Höhenänderung und Undo/Redo.
   Entscheidung: **Vorbereitung nach Produktbedarf**, kein pauschaler Kamerazuschnitt.
-  Der Produktionspfad ist noch unverändert; die Übergänge sind noch umzusetzen.
+  Die nachfolgende Umsetzung prüft jetzt die Übergänge im Produktionspfad.
+- **M2-Vorbereitung nach Produktbedarf:** Geometrie bereitet nur physische
+  Landschaftsfelder vor; Teil-/Vollstempel und Snapshot-basierte Ergänzung erhalten
+  aufgeschobene Inhalte. [85 gezielte Tests, Gegenprobe und native Nachprüfung](../../reference/atlas-field-preparation-20261024/README.md)
+  belegen gleiche Meshes, aktuelle Ortsnamen/Farben, entfernte Höhenanker,
+  Kategorieänderungen, Undo/Redo und Rollback. Native kalte Geometriedaten
+  4.563 → 3.642 ms, Restart 193 ms, Feindaten 435 ms; Einzelproben am isolierten
+  Kern. Terrain-/Materialpuffer nach Ergänzung entsprechen dem frischen Vollaufbau.
+  Die erste Variante verlagerte zu viel Aufwand in die Ergänzung (4.491 ms).
+  Drei wechselnde Gegenproben lokalisieren den Engpass im Einzelzeilenkopieren;
+  ID-Reihenfolge und begrenzte 256er-Blöcke senken den Syncmedian 4.138 → 1.688 ms.
+  Native Terrainantwort nach Ergänzung jetzt 2.190 ms, frischer Vollaufbau
+  1.822 ms. Gleiche Puffer, Screenshots und Autoreninhalte; alle drei Prozesse
+  regulär beendet. Snapshot, 64-Bit-Rowids und Rollback über Blockgrenzen geprüft.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Physische Landschaftsfelder für Geometrie getrennt vorbereiten, Vollständigkeit
-  ausdrücklich markieren und beim ersten vollständigen Auftrag sicher ergänzen.
-  Teilindizes dürfen nicht als vollständig veröffentlicht werden; Neustart,
-  Fehler, Änderungen und anschließende native Terrain-/Materialabfrage prüfen.
+  Die Materialstufen in wechselnden Maßstäben der vollständigen Mischwelt prüfen:
+  gröbere Daten während der Nachladung, lokale Änderungen bis zu Elternkacheln
+  und Wiederverwendung nach Neustart müssen gemeinsam funktionieren.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
   normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
@@ -274,7 +286,7 @@ Die kalte Gegenprobe grenzt diese Alternativen inzwischen genauer ein:
 | --- | --- | --- | --- | --- | --- |
 | Vollständiger Landschaftsindex | Referenzverhalten | 1.571 ms Synchronisation im Versuch | Bestehende Invalidierung | Ein Bereitschaftszustand | Niedrig, bleibt Referenz |
 | Kamerakachel mit Rand | M0 gleich, entfernter Workplane-Anker nachweislich falsch | 441 ms, fachlich nicht verwendbar | Änderungen außerhalb der Kamera fehlen | Zusätzliche räumliche Abhängigkeitsberechnung nötig | Hoch; pauschalen Zuschnitt verworfen |
-| **Physische Felder zuerst (nächste Umsetzung)** | M0 und entfernter Anker gleich | 768 ms; vollständige Landschaft später erforderlich | Vollständige Ergänzung aus aktuellem Snapshot nötig | Explizite Teil-/Vollmarkierung statt Kameraheuristik | Mittel; Übergänge, Persistenz und Fehler noch offen |
+| **Physische Felder zuerst (implementiert und nachgeprüft)** | M0, entfernter Anker und native Terrain-/Materialpuffer gleich | Native Geometrie 3.642 ms; sortierte Kopierblöcke begrenzen die verzögerte Ergänzung auf 2.190 ms Terrainantwort | Vollständige Ergänzung aus aktuellem Snapshot; Kategorieänderungen, Undo/Redo, 64-Bit-Rowids und Rollback geprüft | Explizite Teil-/Vollmarkierung und feste Kopierblöcke statt Kameraheuristik | Übergänge lokal/native geprüft; volle M2-Welt-/Ressourcenabnahme offen |
 
 Eine spätere räumliche Vorbereitung mit vollständigen Abhängigkeiten bleibt
 möglich; der Versuch widerlegt nur den pauschalen Kamerafilter. Der belegte warme
