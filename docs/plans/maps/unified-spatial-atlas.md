@@ -277,10 +277,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   4.356 Weltpunkte einschließlich 891 Wasserpunkten stimmen mit dem bestehenden
   Stream überein. Nachbarknoten und Wasserentscheidung vor Float32-Rundung sind
   durch Gegenproben abgesichert. Noch keine Flächenintegration oder Produktbeschleunigung.
+- **M2-Physische Flächen und Planprüfung:** [46 Tests, Alternativenvergleich und drei Messrunden](../../reference/atlas-material-field-area-20261024/README.md)
+  verbinden kanonische Höhen-/Wasserintervalle mit Grundfarbe, Bewuchs, Pigment
+  und Radieren. Allgemeine Operationsintervalle plus weitere Dreiecke erwiesen
+  sich als zu teuer: Der erste Insel-Fix scheiterte noch am zweidimensionalen
+  Sattel und an der vollen Küstenkachel. Geteilte Quellausdrücke, gewichtete
+  Hermite-Hüllen mit Rundungsaufschlag und gezielte Schnitte ersetzen diesen
+  schwachen Ansatz. Sattel und volle Küste bestehen nun in drei von drei Runden
+  innerhalb unveränderter Fehler-/Arbeitsbudgets. Die volle synthetische Küste
+  benötigt aber weiterhin 4,52 s; auf konstantem Land entsteht kein belegter
+  Gewinn. Trassenintervalle bleiben ausdrücklich unbekannt. Prototypfortschritt,
+  keine native Produktbeschleunigung; Produktionspfad und Liefergates unverändert.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Den geprüften Punktanschluss um konservative Höhen-/Wasserintervalle und
-  Quellenzellen-Schnitte für die adaptive Flächenintegration ergänzen; Hermite-Extrema
-  und geerbte NaN-Knoten als entscheidende Gegenprobe verwenden.
+  Zuerst konvergierende Intervalle für physische Trassen und feldabhängige
+  Materialstufen ergänzen; Flussufer, Kreuzungen, Masken sowie Fels/Schnee mit
+  eigenen Gegenproben absichern. Anschließend die vollen physischen Materialkacheln
+  unter tatsächlicher Weltlast messen und die verbleibenden Küstenkosten senken.
   Physisches Wasser und feldabhängige Grundmaterialien
   über `AtlasRegionReader.materialSteps`/`readTerrainMaterialSteps` beziehungsweise
   dieselben kanonischen Feldsemantiken anbinden; gezeichnete Wasserpolygone allein
