@@ -21,20 +21,28 @@ try{
   if(await page.locator('#atlas-secondary').isVisible())await page.locator('#atlas-secondary-close').click();
   await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.keyboard.press('Escape');
   if(process.env.QA_DRAWN==='1')await setTerrainContours(page,'0');
+  if(process.env.QA_EXACT_SCALE==='1'){
+   const current=await page.locator('#campaign-map').evaluate(c=>JSON.parse(c.dataset.atlasView).width/c.clientWidth),rect=await page.locator('#campaign-map').boundingBox();
+   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.wheel(0,Math.log(mpp/current)/.002);
+   await page.waitForFunction(mpp=>{const c=document.querySelector('#campaign-map');return Math.abs(JSON.parse(c.dataset.atlasView).width/c.clientWidth/mpp-1)<.01;},mpp);
+   await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:120000});
+  }
+
  };
  for(const zoom of (process.env.QA_ZOOMS??'1,2').split(',').map(Number)){
   page=await native.launch(zoom);page.on('console',m=>{if(/Link error|Compilation error|initialization of/.test(m.text()))shaderErrors.push(m.text());});await native.app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1920,1080));
   for(const mpp of (process.env.QA_SCALES??'2048,128,16,4,1,0.25').split(',').map(Number)){
-   const started=performance.now();await open(mpp);
+   const started=performance.now();await open(mpp);const openingMs=performance.now()-started;
    for(const tilt of (process.env.QA_TILTS??'0,45,75').split(',').map(Number)){
+    const poseStarted=performance.now();
     if(tilt){await page.locator('#atlas-view').click();await page.locator('#terrain-tilt').fill(String(tilt));await page.locator('#terrain-tilt').dispatchEvent('input');await page.keyboard.press('Escape');}
     await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:120000});
     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    const view=await page.evaluate(()=>{const c=document.querySelector('#campaign-map'),v=JSON.parse(c.dataset.atlasView);return{box:v,mpp:v.width/c.clientWidth,renderer:c.dataset.renderer,cache:JSON.parse(c.dataset.terrainCache??'null'),gpu:JSON.parse(c.dataset.terrainGpu??'null')};});
-    assert.equal(view.renderer,'deck');assert.deepEqual(shaderErrors,[]);
+    const view=await page.evaluate(()=>{const c=document.querySelector('#campaign-map'),v=JSON.parse(c.dataset.atlasView);return{tilt:Number(document.querySelector('#terrain-tilt').value),box:v,mpp:v.width/c.clientWidth,renderer:c.dataset.renderer,cache:JSON.parse(c.dataset.terrainCache??'null'),gpu:JSON.parse(c.dataset.terrainGpu??'null')};});
+    assert.equal(view.renderer,'deck');assert.equal(view.tilt,tilt);assert.deepEqual(shaderErrors,[]);
     if(view.cache){assert(view.cache.tiles<=64);assert(view.cache.bytes<=64*1024*1024);}
     const name=`zoom-${zoom}-mpp-${mpp}-tilt-${tilt}`;await native.capture(page,name);
-    views.push({name,...view,readyMs:performance.now()-started});console.log(name,Math.round(performance.now()-started)+'ms');
+    views.push({name,...view,openingMs,poseReadyMs:performance.now()-poseStarted,readyMs:performance.now()-started});console.log(name,Math.round(performance.now()-started)+'ms');
    }
   }
   if(process.env.QA_PERF==='1'||process.env.QA_EXPORT==='1'){

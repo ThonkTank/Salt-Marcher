@@ -143,7 +143,7 @@ node build.mjs --test
 npm run check
 npm run check:desktop
 npm run build:desktop
-QA_DRAWN=1 node tools/test-desktop-atlas-multiscale.mjs
+QA_DRAWN=1 QA_EXACT_SCALE=1 node tools/test-desktop-atlas-multiscale.mjs
 node tools/test-desktop-atlas-prominence.mjs
 node tools/test-desktop-atlas-raster-workbench.mjs
 node tools/test-desktop-atlas-cleanup.mjs
@@ -169,7 +169,7 @@ Automatische Regressionen für diese Darstellung liegen in
 `tests/atlas-fantasy-cartography.test.mjs`, `tests/atlas-prominence-editor.test.mjs`,
 `tests/atlas-material-tiles.test.mjs`, `tests/atlas-surface-draft.test.mjs` und
 `tests/desktop-terrain-route-units.test.mjs`. Die native Maßstabsprobe nimmt mit
-`QA_DRAWN=1` sechs Maßstäbe (2048, 128, 16, 4, 1, 0,25 m/Pixel), drei Neigungen
+`QA_DRAWN=1 QA_EXACT_SCALE=1` sechs Maßstäbe (2048, 128, 16, 4, 1, 0,25 m/Pixel), drei Neigungen
 (0°, 45°, 75°) und 100/200 % UI-Skalierung auf. `QA_PERF=1` misst Kameragesten;
 `QA_EXPORT=1 QA_EXPORT_SIZES=1024,2048,8192` prüft gekachelte Ausgaben.
 Messwerte und Bilder liegen im gewählten `QA_EVIDENCE_DIR`; die Zielwerte
