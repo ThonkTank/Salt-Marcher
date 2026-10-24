@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {openTreasureDistribution,closeStaleTreasureDistribution} from './treasury-ui';
 import {finishDraftCommit} from './finish-draft-ui';
 import type { WorkspaceGeometry } from "./contracts";
@@ -11,19 +12,15 @@ import {
   refreshProgress,
 } from "./progression-ui";
 import { rewardItemsEditor } from "./reward-items-ui";
+export const editorSession = new EditorSession();
+const taskWork = editorSession.operation<Promise<boolean>>();
+
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
-let request = 0,
-  ownerKey = "",
-  data: NarrativeView | null = null,
-  progress: ProgressView | null = null,
-  places: { id: string; name: string }[] = [],
-  pending = false,
-  dirty = false;
-let saveHook: (() => Promise<boolean>) | null = null,
-  task: Promise<boolean> | null = null;
+let ownerKey = "", data: NarrativeView | null = null, progress: ProgressView | null = null, places: { id: string; name: string }[] = [], pending = false, dirty = false;
+let saveHook: (() => Promise<boolean>) | null = null;
 let placeHook:((id:string)=>Promise<boolean>)|null=null;
-export async function prepareNarrativeLocation(token:string,noteId:string,locationId:string){if(data?.state.noteId!==noteId||!ownerKey.endsWith(':'+token+':'+noteId)||!placeHook||pending||task)throw new Error('Narrativer Ortskontext nicht verfügbar.');if(!await placeHook(locationId))throw new Error('Ortsbindung konnte nicht vorbereitet werden.');}
+export async function prepareNarrativeLocation(token:string,noteId:string,locationId:string){if(data?.state.noteId!==noteId||!ownerKey.endsWith(':'+token+':'+noteId)||!placeHook||pending||taskWork.value)throw new Error('Narrativer Ortskontext nicht verfügbar.');if(!await placeHook(locationId))throw new Error('Ortsbindung konnte nicht vorbereitet werden.');}
 let readyHook: (() => boolean) | null = null;
 let draftVersion = 0,
   persistHook: (() => Promise<boolean>) | null = null,
@@ -44,8 +41,8 @@ function markDirty() {
 }
 export async function flushNarrative() {
   if (persistHook && !(await persistHook())) return false;
-  if (task) {
-    if (!(await task)) return false;
+  if (taskWork.value) {
+    if (!(await taskWork.value)) return false;
     return flushNarrative();
   }
   if (dirty && saveHook) {
@@ -71,13 +68,13 @@ export async function showNarrative(
     !w || !note || trashed || !["quest", "rumor"].includes(note.kind);
   if (!panel.hidden && key === ownerKey && (dirty || pending)) {
     if(pending||note!.revision===displayedNoteRevision)return;
-    const prior=request;
+    const prior=editorSession.generation;
     if(persistHook&&!await persistHook())return;
-    if(ownerKey!==key||request!==prior)return;
+    if(ownerKey!==key||editorSession.generation!==prior)return;
   }
   ownNoteReceipt=null;
   resumeOwner=panel.hidden?null:()=>showNarrative(w,note,trashed,drain,tell,panel,onSaved);
-  const n = ++request;
+  const n = ++editorSession.generation;
   closeStaleTreasureDistribution();
   if (panel.hidden) {
     ownerKey = "";
@@ -153,7 +150,7 @@ export async function showNarrative(
   };
   const draftStatus = document.createElement("p");
   persistHook = persist;
-  const current = () => ownerKey === key && request === n;
+  const current = () => ownerKey === key && editorSession.generation === n;
   try {
     const r = await window.campaign.narrative(w!.token, note!.id),
       p = await window.campaign.progress(w!.token),
@@ -187,12 +184,10 @@ export async function showNarrative(
     }
   }
   function execute(action: ProgressAction): Promise<boolean> {
-    if (task) return task;
+    if (taskWork.value) return taskWork.value;
     const run = writeAction(structuredClone(action));
-    task = run;
-    void run.finally(() => {
-      if (task === run) task = null;
-    });
+    taskWork.value = run;
+    void run;
     return run;
   }
   async function writeAction(action: ProgressAction) {
@@ -249,7 +244,7 @@ export async function showNarrative(
       if (current()) tell((e as Error).message, true);
       return false;
     } finally {
-      pending = false;
+      if(current())pending = false;
     }
   }
   function draw() {
@@ -562,7 +557,7 @@ export async function showNarrative(
         distribute.textContent='Beute gemeinsam verteilen…';distribute.disabled=openingDistribution;
         const ownsAward=()=>current()&&!panel.hidden&&data?.award?.id===award.id&&data.award.treasureId===treasureId;
         distribute.onclick=()=>void(async()=>{
-          if(!active()||openingDistribution||pending||task)return;
+          if(!active()||openingDistribution||pending||taskWork.value)return;
           openingDistribution=true;distribute.disabled=true;
           try{
             if(!await flushNarrative()||!ownsAward()||!await drain()||!ownsAward())return;
@@ -575,3 +570,7 @@ export async function showNarrative(
     }
   }
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});
+
+editorSession.observeDraft(()=>({openInput:dirty,retainedDraft:false,unresolvedCommand:pending}));

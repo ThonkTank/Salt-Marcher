@@ -1,20 +1,27 @@
+import {EditorSession} from './editor-session';
 import {atlasGraphWrite} from './campaign-atlas-author';
-const nodeOrder=new Intl.Collator('de',{numeric:true});
 import {initDungeonBudget,drawDungeonBudget,resetDungeonBudget,hasDungeonBudgetDrafts,confirmDungeonBudget} from './dungeon-budget-ui';
-import type {WorkspaceGeometry,Room,Point} from './contracts';import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts} from './graph-contracts';import {graphDisplay} from './graph-model';
+import type {WorkspaceGeometry,Room,Point} from './contracts';
+import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts} from './graph-contracts';
+import {graphDisplay} from './graph-model';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
+const nodeOrder=new Intl.Collator('de',{numeric:true});
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),select=(id:string)=>el<HTMLSelectElement>(id),uuid=()=>crypto.randomUUID();
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,publish:(w:WorkspaceGeometry)=>Promise<void>,raster:()=>void,navigate:(id:string)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
-let data:GraphView|null=null,scopeId='',generation=0,readVersion=0,openVersion=0,pending:Promise<boolean>|null=null,writing=false,failed=false;
+let data:GraphView|null=null, scopeId='', readVersion=0, openVersion=0, writing=false, failed=false;
 let display:GraphDisplay={nodes:[],edges:[],decisions:0,loops:0},picked=new Set<string>(),edgeId:string|null=null,viewBox:{x:number;y:number;width:number;height:number}|null=null,drag:{point:Point;node:string}|null=null;
 const cancelled=Symbol('obsolete graph operation');
-function owner(){const w=workspace();return {generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
 function run(fn:()=>Promise<unknown>){
- if(pending)return;
+ if(pendingWork.value)return;
  const o=owner();failed=false;
- const job=fn().then(()=>true).catch(e=>{if(e!==cancelled&&owns(o)){failed=true;tell(e instanceof Error?e.message:String(e),true);}return false;}).finally(()=>{if(pending===job)pending=null;});
- pending=job;
+ const job=fn().then(()=>true).catch(e=>{if(e!==cancelled&&owns(o)){failed=true;tell(e instanceof Error?e.message:String(e),true);}return false;});
+ pendingWork.value=job;
 }
 function canLeave(){if(writing||hasDungeonBudgetDrafts()){tell('Laufende Änderung oder offene Budgeteingaben zuerst abschließen.',true);return false;}return true;}
 function closeGraph(){if(!canLeave())return;openVersion++;readVersion++;drag=null;el<HTMLDialogElement>('graph-dialog').close();}
@@ -81,7 +88,7 @@ export function initGraph(status:typeof tell,w:typeof workspace,r:typeof selecte
    await command({kind:'raster'});
    el<HTMLDialogElement>('graph-dialog').close();raster();
   });
-  const job=pending,o=owner();
+  const job=pendingWork.value,o=owner();
   void job?.then(ok=>{if(ok&&owns(o)&&workspace()?.graphPreview?.phase==='raster')el('dungeon-content-open').click();});
  };
  el('graph-close').onclick=closeGraph;
@@ -142,8 +149,8 @@ export function initGraph(status:typeof tell,w:typeof workspace,r:typeof selecte
   viewBox={x:center.x-viewBox.width*scale/2,y:center.y-viewBox.height*scale/2,width:viewBox.width*scale,height:viewBox.height*scale};drawMap();
  },{passive:false});
 }
-export function activateGraph(){resetDungeonBudget();generation++;readVersion++;openVersion++;pending=null;writing=false;failed=false;scopeId='';data=null;picked.clear();edgeId=null;drag=null;viewBox=null;el<HTMLDialogElement>('graph-dialog').close();syncGraphBanner(workspace());}
-export async function flushGraph(){const o=owner(),job=pending;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!hasDungeonBudgetDrafts();}
+export function activateGraph(){resetDungeonBudget();editorSession.generation++;readVersion++;openVersion++;pendingWork.value=null;writing=false;failed=false;scopeId='';data=null;picked.clear();edgeId=null;drag=null;viewBox=null;el<HTMLDialogElement>('graph-dialog').close();syncGraphBanner(workspace());}
+export async function flushGraph(){const o=owner(),job=pendingWork.value;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!hasDungeonBudgetDrafts();}
 
 export async function refreshOpenGraph(){if(el<HTMLDialogElement>('graph-dialog').open)await refresh();}
 

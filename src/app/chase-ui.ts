@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {openMaskHistory,closeMaskHistory} from './mask-history-ui';
 import {ChaseDraftCache} from './chase-draft-cache';
 import {chaseDraftFields,type ChaseWorkingDraft} from './chase-draft-contracts';
@@ -5,11 +6,13 @@ import type {WorkspaceGeometry} from './contracts';
 import type {Character,LiveScene} from './live-contracts';
 import {chaseActionControls,checkedChaseView,type ChaseCommand,type ChaseView} from './chase-contracts';
 import {hasPendingCommit,onCommitResolved,onCommitState,writeConfirmed,type CommitResolution} from './commit-confirmation';
+export const editorSession = new EditorSession();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const val=(id:string)=>el<HTMLInputElement>(id).value;
 let w:WorkspaceGeometry|null=null,scene:LiveScene|null=null,roster:Character[]=[],rosterBasis='',view:ChaseView|null=null,tell:(s:string,e?:boolean)=>void,busy=false,afterConfirmed:(()=>Promise<void>)|undefined;
 let clockText='';
-let nonce=0,requestedId:string|undefined,loading=false,loadError='',rendered='';
+let requestedId:string|undefined, loading=false, loadError='', rendered='';
 type Draft={fields:Record<string,string>;rows:Record<string,{distance?:string;exhaustion?:string}>};
 // Unconfirmed rounds remain explicit proposals, separate from the durable round counter.
 // Persist raw input independently; a confirmed round consumes its fields atomically.
@@ -33,9 +36,9 @@ export function initChase(status:typeof tell,refreshScene?:()=>Promise<void>){
  document.querySelector('#combat-panel')!.after(root);onCommitState(draw);onCommitResolved(recovered);
  root.addEventListener('input',event=>{const input=event.target as HTMLInputElement;if(!ready()||pending())return;const d=draft();if(!d)return;if(fieldIds.includes(input.id))d.fields[input.id]=input.value;const row=input.closest<HTMLElement>('[data-id]');if(row&&(input.hasAttribute('data-distance')||input.hasAttribute('data-exhaustion'))){const r=d.rows[row.dataset.id!]??={};r[input.hasAttribute('data-distance')?'distance':'exhaustion']=input.value;}queueDraft();syncActions();});
  el('chase-side').onchange=()=>{if(ready()&&!pending()){const d=draft();if(d){d.fields['chase-side']=val('chase-side');queueDraft();}}};
- el('chase-draft-retry').onclick=()=>void(async()=>{if(!w||pending()||loading)return;const token=w.token,request=nonce;if(await cache.retry(token,w.campaign.id)&&w?.token===token&&nonce===request)await load(requestedId??view?.chase?.id);})();
- el('chase-new').onclick=()=>void(async()=>{if(!w||!scene||pending()||loading)return;const currentToken=w.token,request=++nonce;loading=true;draw();const saved=await cache.flush(w.campaign.id);if(nonce!==request||w?.token!==currentToken)return;loading=false;if(!saved){draw();return;}requestedId=undefined;loadError='';if(view)view={...view,chase:null,draft:null};rendered='';clearWorkInput();draw();})();
- el('chase-history-open').onclick=()=>void(async()=>{if(!w||!scene||pending()||loading)return;const token=w.token,campaignId=w.campaign.id,sceneId=scene.id,request=nonce;if(!await flushChase()||w?.token!==token||scene?.id!==sceneId||nonce!==request)return;openMaskHistory({token,campaignId,sceneId,kind:'chase',current:()=>w?.token===token&&scene?.id===sceneId&&nonce===request,select:item=>load(item.id)});})();
+ el('chase-draft-retry').onclick=()=>void(async()=>{if(!w||pending()||loading)return;const token=w.token,request=editorSession.generation;if(await cache.retry(token,w.campaign.id)&&w?.token===token&&editorSession.generation===request)await load(requestedId??view?.chase?.id);})();
+ el('chase-new').onclick=()=>void(async()=>{if(!w||!scene||pending()||loading)return;const currentToken=w.token,request=++editorSession.generation;loading=true;draw();const saved=await cache.flush(w.campaign.id);if(editorSession.generation!==request||w?.token!==currentToken)return;loading=false;if(!saved){draw();return;}requestedId=undefined;loadError='';if(view)view={...view,chase:null,draft:null};rendered='';clearWorkInput();draw();})();
+ el('chase-history-open').onclick=()=>void(async()=>{if(!w||!scene||pending()||loading)return;const token=w.token,campaignId=w.campaign.id,sceneId=scene.id,request=editorSession.generation;if(!await flushChase()||w?.token!==token||scene?.id!==sceneId||editorSession.generation!==request)return;openMaskHistory({token,campaignId,sceneId,kind:'chase',current:()=>w?.token===token&&scene?.id===sceneId&&editorSession.generation===request,select:item=>load(item.id)});})();
  el('chase-refresh').onclick=()=>{if(!pending())void load(requestedId??view?.chase?.id);};
  el<HTMLSelectElement>('chase-recent').onchange=()=>{if(!pending())void load(val('chase-recent')||undefined);};
  el('chase-title').oninput=syncActions;
@@ -48,22 +51,22 @@ export function initChase(status:typeof tell,refreshScene?:()=>Promise<void>){
 export function chaseContext(next:WorkspaceGeometry|null,current:LiveScene|null,characters:Character[]=[],formattedClock=''){
  const workspaceChanged=next?.token!==w?.token,changed=workspaceChanged||current?.id!==scene?.id,nextBasis=JSON.stringify(characters.filter(c=>c.active&&c.sceneId===current?.id).map(c=>[c.id,c.membershipRevision])),partyChanged=nextBasis!==rosterBasis;
  if(workspaceChanged){if(w)cache.release(w.campaign.id);drafts.clear();}w=next;scene=current;clockText=current?formattedClock:'';roster=characters;rosterBasis=nextBasis;el('chase-panel').hidden=!current;
- if(changed){closeMaskHistory();nonce++;requestedId=undefined;loading=false;loadError='';rendered='';clearWorkInput();el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';view=null;draw();if(current)void load();}
+ if(changed){closeMaskHistory();editorSession.generation++;requestedId=undefined;loading=false;loadError='';rendered='';clearWorkInput();el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';view=null;draw();if(current)void load();}
  else{draw();if(partyChanged&&current&&view?.chase?.status==='running'&&!pending())void load(view.chase.id);}
 }
 function sceneCharacters(){const linked=new Set(view?.chase?.participants.map(p=>p.characterId).filter(Boolean));return roster.filter(c=>c.active&&c.sceneId===scene?.id&&!linked.has(c.id));}
 async function addSceneParty(){if(!ready()||pending())return;const side=val('chase-side') as 'pursuer'|'quarry',participants=sceneCharacters().map(c=>({id:crypto.randomUUID(),characterId:c.id,name:c.profile.name,side,distance:0,speed:Math.round((c.profile.speedFeet??30)*0.3),exhaustion:0,notes:''}));if(!participants.length){tell('Alle Figuren dieser Scene sind bereits in der Verfolgung.',true);return;}await command({kind:'participants',participants});}
 async function load(id?:string){
- if(!w||!scene)return;const token=w.token,campaignId=w.campaign.id,sceneId=scene.id,previousId=view?.chase?.id,request=++nonce;requestedId=id;loading=true;loadError='';draw();
- const current=()=>nonce===request&&w?.token===token&&scene?.id===sceneId;
+ if(!w||!scene)return;const token=w.token,campaignId=w.campaign.id,sceneId=scene.id,previousId=view?.chase?.id,request=++editorSession.generation;requestedId=id;loading=true;loadError='';draw();
+ const current=()=>editorSession.generation===request&&w?.token===token&&scene?.id===sceneId;
  try{if(!await cache.flush(campaignId)){if(current()){requestedId=previousId;loading=false;draw();}return;}if(!current())return;const r=await window.campaign.chase(token,sceneId,id);if(!current())return;if(!r.ok)throw new Error(r.error);const next=checkedChaseView(r.value);if(next.chase&&(next.chase.sceneId!==sceneId||id&&next.chase.id!==id)||id&&!next.chase)throw new Error('Antwort gehört zu einer anderen Verfolgung. Erneut laden.');acceptDraft(next);view=next;requestedId=next.chase?.id;restoreWorkInput();}
  catch(e){if(!current())return;loadError=(e as Error).message;tell(loadError,true);}
  finally{if(current()){loading=false;draw();}}
 }
 async function command(action:ChaseCommand['action'],ownerId=view?.chase?.id){
  if(!ready()||pending()||action.kind==='round'&&!roundInputsValid()||action.kind==='participant'&&!speedValid())return;const c=view?.chase,creating=action.kind==='create';if(!creating&&(!c||c.id!==ownerId||c.status!=='running'))return;
- const token=w!.token,campaignId=w!.campaign.id,sceneId=scene!.id,requestNonce=nonce,request:ChaseCommand={commandId:crypto.randomUUID(),campaignId,token,sceneId,chaseId:creating?null:c!.id,expectedRevision:creating?null:c!.revision,action};
- const current=()=>w?.token===token&&scene?.id===sceneId&&nonce===requestNonce;
+ const token=w!.token,campaignId=w!.campaign.id,sceneId=scene!.id,requestNonce=editorSession.generation,request:ChaseCommand={commandId:crypto.randomUUID(),campaignId,token,sceneId,chaseId:creating?null:c!.id,expectedRevision:creating?null:c!.revision,action};
+ const current=()=>w?.token===token&&scene?.id===sceneId&&editorSession.generation===requestNonce;
  busy=true;draw();
  try{if(!await cache.flush(campaignId))throw new Error('Verfolgungsentwurf zuerst sichern. Rohwerte bleiben offen.');if(!current())return;const saved=!creating&&c?cache.current(campaignId,c.id):null;if(saved)request.draftWriteId=saved.writeId;const result=checkedChaseView(await writeConfirmed('chase',request,()=>window.campaign.executeChase(request),current,{owner:'chase',token,sceneId,chaseId:request.chaseId,actionKind:action.kind}));if(!current())return;if(!result.chase||result.chase.sceneId!==sceneId||!creating&&result.chase.id!==c!.id){loadError='Buchungsantwort gehört zu einer anderen Verfolgung. Neu laden.';throw new Error(loadError);}
   if(creating){el<HTMLInputElement>('chase-title').value='Verfolgungsjagd';el<HTMLInputElement>('chase-goal').value='';clearWorkInput();}

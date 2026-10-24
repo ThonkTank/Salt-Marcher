@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {dungeonTravelReadState,renderDungeonTravelContext} from './dungeon-travel-console';
 import {canonicalJson} from './generation/canonical-json';
 import {journeyPlayback,type PlaybackFrame,type JourneySpeed} from './journey-playback';
@@ -8,12 +9,15 @@ import type {WorkspaceGeometry} from './contracts';
 import type {DungeonView,DungeonPose,DungeonPreview,DungeonAction,DungeonSenseAction,DungeonTraceRules,DungeonCommand} from './dungeon-contracts';
 import {centerInRoom} from './dungeon-model';
 import {trackAt} from './track-model';
+export const editorSession = new EditorSession();
+const jobWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const select=(id:string)=>el<HTMLSelectElement>(id),number=(id:string)=>Number(el<HTMLInputElement>(id).value);
 let traceStart:DungeonPose|null=null;
 let workspace:WorkspaceGeometry|null=null,data:DungeonView|null=null,target:DungeonPose|null=null,preview:DungeonPreview|null=null;
 let contextReady=true,liveContext:string|null=null;
-let generation=0,readRequest=0,routeIntent=0,job:Promise<boolean>|null=null;
+let readRequest=0, routeIntent=0;
 let status:(s:string,error?:boolean)=>void=()=>{};let navigateCombat:(id:string)=>void=()=>{};
 type FieldValue=string|boolean;
 const traceFields=['dungeon-trace-generate','dungeon-trace-movement','dungeon-trace-surface','dungeon-trace-environment','dungeon-trace-strength','dungeon-trace-sg','dungeon-trace-life','dungeon-trace-decay'];
@@ -33,7 +37,7 @@ function paintField(id:string,next:FieldValue){
  }else if(own)fieldBase.set(id,next);
 }
 function dirtyFields(ids?:readonly string[]){return(!ids&&dungeonPaceDirty())||(ids??[...traceFields,...senseFields]).some(id=>fieldBase.has(id)&&fieldValue(id)!==fieldBase.get(id));}
-function owner(){return{generation,token:workspace?.token,sceneId:data?.sceneId};}
+function owner(){return{generation:editorSession.generation,token:workspace?.token,sceneId:data?.sceneId};}
 type Owner=ReturnType<typeof owner>;
 interface Attempt {command:DungeonCommand;fields:Map<string,FieldValue>;track:TrackFields|null;after?:((o:Owner)=>void);outcome?:'applied'|'not-applied'}
 let uncertain:Attempt|null=null;
@@ -41,11 +45,11 @@ function recoveryNotice(text='Ausgang des Dungeonauftrags unbekannt. Speichersta
  el('dungeon-reconcile').hidden=!uncertain;dungeonTravelReadState(contextReady&&!uncertain,text);
 }
 
-function current(o:Owner){return generation===o.generation&&workspace?.token===o.token&&data?.sceneId===o.sceneId;}
+function current(o:Owner){return editorSession.generation===o.generation&&workspace?.token===o.token&&data?.sceneId===o.sceneId;}
 function run(fn:(o:Owner)=>Promise<boolean>,recovery=false){
- if(job||!recovery&&(!contextReady||uncertain))return Promise.resolve(false);const o=owner();
- const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))status(e.message,true);return false;}).finally(()=>{if(job===task)job=null;});
- job=task;return task;
+ if(jobWork.value||!recovery&&(!contextReady||uncertain))return Promise.resolve(false);const o=owner();
+ const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))status(e.message,true);return false;});
+ jobWork.value=task;return task;
 }
 function invalidatePreview(){routeIntent++;preview=null;el('dungeon-preview').textContent='';el<HTMLButtonElement>('dungeon-confirm').disabled=true;}
 function acceptReply(attempt:Attempt,value:DungeonView,o:Owner,recovered=false){
@@ -194,7 +198,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
   drawTraceRules();
  };
  el('dungeon-input-discard').onclick=()=>{
-  if(job||uncertain){status('Laufende Aktion abwarten oder Speicherstand klären.',true);return;}
+  if(jobWork.value||uncertain){status('Laufende Aktion abwarten oder Speicherstand klären.',true);return;}
   fieldBase.clear();trackDrafts.clear();clearDungeonPace();if(!contextReady){void openDungeon(liveContext??undefined).catch(e=>status(e.message,true));return;}renderDungeonPace(data?.travelPace,invalidatePreview,true);draw();
  };
  bind('dungeon-trace-rules-save',()=>{
@@ -223,7 +227,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  el('dungeon-round-seconds').oninput=()=>{select('dungeon-round-preset').value='custom';playback.stop();invalidatePreview();renderPlayback();};
  for(const id of ['dungeon-speed','dungeon-factor','dungeon-duration'])el(id).oninput=()=>{playback.stop();invalidatePreview();};
  select('dungeon-room').onchange=()=>{playback.stop();invalidatePreview();chosen();draw();};
- el('dungeon-refresh').onclick=()=>{if(!job)void openDungeon(liveContext??undefined).catch(e=>status(e.message,true));};
+ el('dungeon-refresh').onclick=()=>{if(!jobWork.value)void openDungeon(liveContext??undefined).catch(e=>status(e.message,true));};
  bind('dungeon-place',()=>data?.sceneId&&target?{kind:'place',sceneId:data.sceneId,expectedPositionRevision:data.positionRevision,pose:target}:null);
  bind('dungeon-leave',()=>data?.sceneId?{kind:'place',sceneId:data.sceneId,expectedPositionRevision:data.positionRevision,pose:null}:null);
  el('dungeon-plan').onclick=()=>{
@@ -267,7 +271,7 @@ export function initDungeon(notify:typeof status,combatNavigation:(id:string)=>v
  el('dungeon-edit').onclick=()=>el('atlas-tab').click();
 }
 export function activateDungeon(w:WorkspaceGeometry){
- playback.stop();uncertain=null;el('dungeon-reconcile').hidden=true;contextReady=false;liveContext=null;dungeonTravelReadState(false,'Dungeonkontext noch nicht geladen.');generation++;readRequest++;routeIntent++;job=null;workspace=w;data=null;target=null;preview=null;traceStart=null;fieldBase.clear();trackDrafts.clear();confirmedFields=null;clearDungeonPace();
+ playback.stop();uncertain=null;el('dungeon-reconcile').hidden=true;contextReady=false;liveContext=null;dungeonTravelReadState(false,'Dungeonkontext noch nicht geladen.');editorSession.generation++;readRequest++;routeIntent++;jobWork.value=null;workspace=w;data=null;target=null;preview=null;traceStart=null;fieldBase.clear();trackDrafts.clear();confirmedFields=null;clearDungeonPace();
  el('dungeon-trace-start-label').textContent='';
 }
 export async function openDungeon(expectedSceneId?:string){
@@ -285,7 +289,7 @@ export async function openDungeon(expectedSceneId?:string){
 }
 export async function flushDungeon(){
  if(uncertain){status('Ausgang des Dungeonauftrags zuerst mit Speicherstand klären prüfen.',true);return false;}
- playback.stop();await playback.settled();const o=owner(),pending=job;if(pending&&!await pending)return false;
+ playback.stop();await playback.settled();const o=owner(),pending=jobWork.value;if(pending&&!await pending)return false;
  if(!current(o)||uncertain)return false;
  if(dirtyFields()||trackDrafts.size){status('Offene Dungeon-Einstellungen zuerst anwenden oder verwerfen.',true);return false;}
  return true;

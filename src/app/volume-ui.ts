@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room,RoomGeometry} from './contracts';
@@ -7,11 +8,14 @@ import {VOXEL_METERS as U} from './volume-contracts';
 import {volumeFromRoom,volumeProjection,isometricVolume} from './volume-model';
 import {roomPath} from './drawing-model';
 import {brushStroke,volumeArea,extendStroke,voxelKey,type VolumeBrush} from './volume-stroke';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id));
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
-let data:DrawingView|null=null,generation=0,readRequest=0,roomId:string|null=null,gesture:number|null=null;
-let pending:Promise<boolean>|null=null,writing=false;
+let data:DrawingView|null=null, readRequest=0, roomId:string|null=null, gesture:number|null=null;
+let writing=false;
 let cells=new Map<string,VolumeCell>();
 type EditOptions=Pick<Extract<VolumeAction,{kind:'volume-edit'}>,'operation'|'enabled'|'medium'|'side'>;
 let basis:{roomRevision:number;volumeRevision:number|null;options:EditOptions}|null=null;
@@ -23,11 +27,11 @@ function editOptions():EditOptions{return{operation:value('volume-operation') as
 function brush():VolumeBrush{return{tool:value('volume-tool') as VolumeBrush['tool'],shape:value('volume-brush-shape') as VolumeBrush['shape'],radius:Number(value('volume-brush-radius'))};}
 function captureBasis(){const r=room()!;basis={roomRevision:r.revision,volumeRevision:data?.volumes?.find(v=>v.roomId===r.id)?.revision??null,options:editOptions()};}
 function syncControls(){
- const locked=!!pending||gesture!==null||!!cells.size;
+ const locked=!!pendingWork.value||gesture!==null||!!cells.size;
  for(const id of ['volume-initialize','volume-height','volume-operation','volume-enabled','volume-side','volume-medium','volume-tool','volume-brush-shape','volume-brush-radius','volume-box-preview','volume-reload'])el<HTMLButtonElement>(id).disabled=locked;
- el<HTMLButtonElement>('volume-apply').disabled=!!pending||gesture!==null||!cells.size;
- el<HTMLButtonElement>('volume-discard').disabled=!!pending||gesture===null&&!cells.size;
- el<HTMLButtonElement>('volume-close').disabled=!!pending;
+ el<HTMLButtonElement>('volume-apply').disabled=!!pendingWork.value||gesture!==null||!cells.size;
+ el<HTMLButtonElement>('volume-discard').disabled=!!pendingWork.value||gesture===null&&!cells.size;
+ el<HTMLButtonElement>('volume-close').disabled=!!pendingWork.value;
 }
 function setCamera(){if(camera)el('volume-slice-map').setAttribute('viewBox',`${camera.x} ${camera.y} ${camera.width} ${camera.height}`);}
 function zoom(factor:number,point?:{x:number;y:number}){if(!camera)return;const center=point??{x:camera.x+camera.width/2,y:camera.y+camera.height/2},width=Math.max(U*2,Math.min(U*10000,camera.width*factor)),height=width*camera.height/camera.width,ratio=width/camera.width;camera={x:center.x-(center.x-camera.x)*ratio,y:center.y-(center.y-camera.y)*ratio,width,height};setCamera();}
@@ -46,13 +50,13 @@ function currentVolume(){
  if(!derived||derived.room!==r||derived.height!==height)derived={room:r,height,volume:volumeFromRoom(r,height)};
  return derived.volume;
 }
-function owner(){return{generation,token:workspace()?.token,roomId};}
+function owner(){return{generation:editorSession.generation,token:workspace()?.token,roomId};}
 type Owner=ReturnType<typeof owner>;
-function current(o:Owner){return generation===o.generation&&workspace()?.token===o.token&&roomId===o.roomId;}
+function current(o:Owner){return editorSession.generation===o.generation&&workspace()?.token===o.token&&roomId===o.roomId;}
 function run(fn:(o:Owner)=>Promise<boolean>){
- if(pending)return;const o=owner();
- const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o)){tell(e.message,true);message(e.message,true);}return false;}).finally(()=>{if(pending===task){pending=null;writing=false;syncControls();}});
- pending=task;syncControls();
+ if(pendingWork.value)return;const o=owner();
+ const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o)){tell(e.message,true);message(e.message,true);}return false;}).finally(()=>{if(pendingWork.value===task){pendingWork.clear(task);writing=false;syncControls();}});
+ pendingWork.value=task;syncControls();
 }
 async function command(a:VolumeAction,o:Owner){
  const w=workspace();if(!w||!current(o))return false;
@@ -74,7 +78,7 @@ function renderCells(){
  svg.append(group);
  const zs=[...cells.values()].map(c=>c.z),currentCount=zs.filter(z=>z===slice).length;
  if(cells.size)message(`${cells.size} markierte Zellen · ${currentCount} im Schnitt · ${Math.min(...zs)*5} bis ${Math.max(...zs)*5} Fuß. ${gesture!==null?'Loslassen speichert den ganzen Zug; Escape verwirft ihn.':'Vorschau übernehmen oder verwerfen.'}`);
- else if(!pending)message('Ziehen zeichnet direkt. Mausrad zoomt, mittlere Maustaste verschiebt; Escape verwirft den laufenden Zug.');
+ else if(!pendingWork.value)message('Ziehen zeichnet direkt. Mausrad zoomt, mittlere Maustaste verschiebt; Escape verwirft den laufenden Zug.');
  syncControls();
 }
 function render(){
@@ -128,7 +132,7 @@ function paintCell(cell:VolumeCell){
  }catch(e){clearStroke();message((e as Error).message,true);tell((e as Error).message,true);}
 }
 function applyCells(){
- const r=room();if(!r||!data||!cells.size||!basis||gesture!==null||pending)return;
+ const r=room();if(!r||!data||!cells.size||!basis||gesture!==null||pendingWork.value)return;
  const submitted=new Map(cells),captured=basis;
  const action:VolumeAction={kind:'volume-edit',roomId:r.id,expectedRoomRevision:captured.roomRevision,expectedVolumeRevision:captured.volumeRevision,cells:[...submitted.values()],...captured.options};
  run(async o=>{
@@ -137,15 +141,15 @@ function applyCells(){
  });
 }
 function close(){
- if(pending||writing||gesture!==null||cells.size){tell('Volumenzug zuerst übernehmen oder verwerfen; laufende Speicherung abwarten.',true);return false;}
- generation++;readRequest++;pending=null;data=null;roomId=null;acknowledgedRoom=null;derived=null;camera=null;pan=null;
+ if(pendingWork.value||writing||gesture!==null||cells.size){tell('Volumenzug zuerst übernehmen oder verwerfen; laufende Speicherung abwarten.',true);return false;}
+ editorSession.generation++;readRequest++;pendingWork.value=null;data=null;roomId=null;acknowledgedRoom=null;derived=null;camera=null;pan=null;
  el<HTMLDialogElement>('volume-dialog').close();return true;
 }
 function safeRender(){try{render();}catch(e){tell((e as Error).message,true);}}
 export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getRoom:typeof selected,drain:typeof before,publish:typeof changed){
  tell=status;workspace=getWorkspace;selected=getRoom;before=drain;changed=publish;
  el('volume-open').onclick=()=>{
-  if(pending)return;const r=selected();if(!r){tell('Zuerst einen Raum wählen.',true);return;}
+  if(pendingWork.value)return;const r=selected();if(!r){tell('Zuerst einen Raum wählen.',true);return;}
   roomId=r.id;el('volume-status').textContent='Volumen wird geladen …';el<HTMLDialogElement>('volume-dialog').showModal();
   run(async o=>{if(!await before()||!current(o))return false;await openVolume();return current(o);});
  };
@@ -160,11 +164,11 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
   const action:VolumeAction={kind:'volume-initialize',roomId:r.id,expectedRoomRevision:r.revision,expectedVolumeRevision:data.volumes?.find(v=>v.roomId===r.id)?.revision??null,heightSteps:Number(value('volume-height')),medium:value('volume-medium') as 'air'|'water'};
   run(async o=>await before()&&current(o)?command(action,o):false);
  };
- el('volume-discard').onclick=()=>{if(pending)return;clearStroke();};
+ el('volume-discard').onclick=()=>{if(pendingWork.value)return;clearStroke();};
  el('volume-apply').onclick=applyCells;
- el('volume-reload').onclick=()=>{if(!pending&&!cells.size)run(async()=>{await openVolume();return true;});};
+ el('volume-reload').onclick=()=>{if(!pendingWork.value&&!cells.size)run(async()=>{await openVolume();return true;});};
  el('volume-box-preview').onclick=()=>{
-  if(!data||!room()||pending||cells.size||gesture!==null)return;
+  if(!data||!room()||pendingWork.value||cells.size||gesture!==null)return;
   try{const corner=(suffix:string)=>({x:Number(value('volume-box-x'+suffix)),y:Number(value('volume-box-y'+suffix)),z:Number(value('volume-box-z'+suffix))});
    const shape=value('volume-tool')==='ellipse'?'ellipse':'rectangle',area=volumeArea(corner('0'),corner('1'),shape);captureBasis();cells=new Map(area.map(p=>[voxelKey(p),p]));renderCells();
   }catch(e){message((e as Error).message,true);}
@@ -174,7 +178,7 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
  const svg=el<SVGSVGElement&HTMLElement>('volume-slice-map');
  svg.onpointerdown=e=>{
   if(e.button===1&&camera){e.preventDefault();pan={id:e.pointerId,x:e.clientX,y:e.clientY,camera:{...camera}};svg.setPointerCapture(e.pointerId);return;}
-  if(e.button!==0||!data||pending||gesture!==null)return;
+  if(e.button!==0||!data||pendingWork.value||gesture!==null)return;
   if(cells.size){message('Vorhandene Bereichsvorschau zuerst übernehmen oder verwerfen.',true);return;}
   e.preventDefault();svg.focus();
   try{const cell=eventCell(e);captureBasis();stroke={start:cell,last:cell,brush:brush()};gesture=e.pointerId;svg.setPointerCapture(e.pointerId);paintCell(cell);}catch(error){clearStroke();message((error as Error).message,true);}
@@ -193,7 +197,7 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
  svg.onlostpointercapture=e=>{if(pan?.id===e.pointerId)pan=null;if(gesture===e.pointerId){clearStroke();message('Zeichenbewegung abgebrochen; nichts gespeichert.');}};
  svg.addEventListener('wheel',e=>{e.preventDefault();const matrix=svg.getScreenCTM();if(!matrix||gesture!==null)return;const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());zoom(e.deltaY>0?1.15:1/1.15,p);},{passive:false});
  el('volume-dialog').addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&(gesture!==null||cells.size)){event.preventDefault();event.stopPropagation();if(!pending)clearStroke();return;}
+  if(event.key==='Escape'&&(gesture!==null||cells.size)){event.preventDefault();event.stopPropagation();if(!pendingWork.value)clearStroke();return;}
   if((event.key==='PageUp'||event.key==='PageDown')&&!['INPUT','TEXTAREA','SELECT'].includes((event.target as HTMLElement).tagName)){event.preventDefault();shift(event.key==='PageUp'?1:-1);}
   if(event.target===svg&&camera&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();camera.x+=event.key==='ArrowRight'?U:event.key==='ArrowLeft'?-U:0;camera.y+=event.key==='ArrowDown'?U:event.key==='ArrowUp'?-U:0;setCamera();}
  });
@@ -209,11 +213,11 @@ export async function openVolume(){
  data=result.value.drawing;render();syncControls();
 }
 export function activateVolume(){
- generation++;readRequest++;data=null;roomId=null;acknowledgedRoom=null;gesture=null;stroke=null;basis=null;camera=null;pan=null;cells.clear();pending=null;writing=false;syncControls();derived=null;renderedVolume=null;isometricSource=null;renderedSlice=NaN;
+ editorSession.generation++;readRequest++;data=null;roomId=null;acknowledgedRoom=null;gesture=null;stroke=null;basis=null;camera=null;pan=null;cells.clear();pendingWork.value=null;writing=false;syncControls();derived=null;renderedVolume=null;isometricSource=null;renderedSlice=NaN;
  el<HTMLDialogElement>('volume-dialog').close();
 }
 export async function flushVolume(){
- const o=owner(),task=pending;
+ const o=owner(),task=pendingWork.value;
  if(task&&!await task)return false;
  if(!current(o))return false;
  if(gesture!==null||cells.size){tell('Volumenzug übernehmen oder verwerfen.',true);return false;}

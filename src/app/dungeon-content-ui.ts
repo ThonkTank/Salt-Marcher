@@ -1,27 +1,31 @@
+import {EditorSession} from './editor-session';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
 import type {GraphView} from './graph-contracts';
 import type {DrawingElement} from './drawing-contracts';
 import type {DungeonContent} from './dungeon-budget-contracts';
 import {dungeonContentAnchor} from './dungeon-content-model';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),select=(id:string)=>el<HTMLSelectElement>(id);
 const fields=['content-room','content-kind','content-reference','content-name','content-public','content-notes','content-tags','content-categories','content-x','content-y','content-z','content-xp','content-encounter-owner','content-search-method','content-search-dc','content-search-notes','content-revealed'] as const;
 type Form={values:string[];secret:boolean};
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,publish:(w:WorkspaceGeometry)=>Promise<void>,notify:()=>Promise<void>,tell:(s:string,error?:boolean)=>void;
-let data:GraphView|null=null,element:DrawingElement|null=null,scopeId='',generation=0,readVersion=0,openVersion=0,frame=0;
-let pending:Promise<boolean>|null=null,writing=false,failed=false,baseline:Form|null=null;
+let data:GraphView|null=null, element:DrawingElement|null=null, scopeId='', readVersion=0, openVersion=0, frame=0;
+let writing=false, failed=false, baseline:Form|null=null;
 const cancelled=Symbol('obsolete content operation');
 const snapshot=():Form=>({values:fields.map(id=>field(id).value),secret:field('content-secret').checked});
 const same=(a:Form,b:Form)=>a.secret===b.secret&&a.values.every((v,i)=>v===b.values[i]);
 const dirty=()=>baseline!==null&&!same(snapshot(),baseline);
-function owner(){const w=workspace();return {generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
 function run(fn:()=>Promise<void>){
- if(pending)return;
+ if(pendingWork.value)return;
  const o=owner();failed=false;
- const job=fn().then(()=>true).catch(e=>{if(e!==cancelled&&owns(o)){failed=true;tell(e instanceof Error?e.message:String(e),true);}return false;}).finally(()=>{if(pending===job)pending=null;});
- pending=job;
+ const job=fn().then(()=>true).catch(e=>{if(e!==cancelled&&owns(o)){failed=true;tell(e instanceof Error?e.message:String(e),true);}return false;});
+ pendingWork.value=job;
 }
 function canLeave(){if(writing||dirty()){tell('Laufende Änderung oder offene Inhaltseingaben zuerst übernehmen oder verwerfen.',true);return false;}return true;}
 function close(){if(!canLeave())return;openVersion++;readVersion++;el<HTMLDialogElement>('content-dialog').close();}
@@ -144,5 +148,5 @@ export function initDungeonContent(status:typeof tell,w:typeof workspace,r:typeo
   });
  };
 }
-export function activateDungeonContent(){generation++;readVersion++;openVersion++;frame++;pending=null;writing=false;failed=false;baseline=null;data=null;element=null;scopeId='';el('content-reference-detail').textContent='';el<HTMLDialogElement>('content-dialog').close();}
-export async function flushDungeonContent(){const o=owner(),job=pending;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!dirty();}
+export function activateDungeonContent(){editorSession.generation++;readVersion++;openVersion++;frame++;pendingWork.value=null;writing=false;failed=false;baseline=null;data=null;element=null;scopeId='';el('content-reference-detail').textContent='';el<HTMLDialogElement>('content-dialog').close();}
+export async function flushDungeonContent(){const o=owner(),job=pendingWork.value;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!dirty();}

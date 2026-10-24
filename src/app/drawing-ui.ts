@@ -1,29 +1,38 @@
+import {EditorSession} from './editor-session';
 import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
 import {AtlasPaint,atlasPaint} from './atlas-paint';
 import {appendPaint,paintElement,type PaintTarget} from './atlas-paint-svg';
 import {drawingGeometryOnly} from './atlas-render-view';
 import {atlasDrawingWrite} from './campaign-atlas-author';
-import type {WorkspaceGeometry,Room,RoomGeometry,Point,Polygon,Result} from './contracts';import type {DrawingMapView,DrawingElement,DrawingAction,RoomStyle} from './drawing-contracts';import {newElement,elementPaint,nearestAnchor,carveRoom} from './drawing-model';import {drawingToolControls} from './drawing-tool-controls';import {paint} from '../compute';
+import type {WorkspaceGeometry,Room,RoomGeometry,Point,Polygon,Result} from './contracts';
+import type {DrawingMapView,DrawingElement,DrawingAction,RoomStyle} from './drawing-contracts';
+import {newElement,elementPaint,nearestAnchor,carveRoom} from './drawing-model';
+import {drawingToolControls} from './drawing-tool-controls';
+import {paint} from '../compute';
+export const editorSession = new EditorSession();
+const pendingStyleWork = editorSession.operation<{token:string;generation:number;id:string;task:Promise<boolean>}>();
+const pendingElementWork = editorSession.operation<{token:string;generation:number;id:string;task:Promise<boolean>}>();
+
 let draftRevision=0;
 function clearDraft(){draftRevision++;path=[];preview=null;stroke=null;}
 const el=<T extends Element=HTMLElement>(id:string)=>document.getElementById(id) as unknown as T,field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id)),unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
-let context:()=>WorkspaceGeometry|null,selectedRoom:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,redraw:()=>void,tell:(s:string,error?:boolean)=>void,data:DrawingMapView|null=null,element:DrawingElement|null=null,path:Point[]=[],preview:Polygon[]|null=null,stroke:number|null=null,busy=false,dirty=false,styleDirty=false,loadGeneration=0;
-let styleBasis:{id:string;revision:number|null}|null=null,pendingStyle:{token:string;generation:number;id:string;task:Promise<boolean>}|null=null;
-let readRequest=0,pendingElement:{token:string;generation:number;id:string;task:Promise<boolean>}|null=null;
-const owned=(token:string|undefined,generation:number)=>generation===loadGeneration&&token===context()?.token;
-const run=(fn:()=>Promise<unknown>|void)=>{const token=context()?.token,generation=loadGeneration;void Promise.resolve().then(()=>{if(owned(token,generation))return fn();}).catch(e=>{if(owned(token,generation))tell(e.message,true);});};
+let context:()=>WorkspaceGeometry|null, selectedRoom:()=>Room|null, before:()=>Promise<boolean>, changed:(w:WorkspaceGeometry)=>Promise<void>, redraw:()=>void, tell:(s:string,error?:boolean)=>void, data:DrawingMapView|null=null, element:DrawingElement|null=null, path:Point[]=[], preview:Polygon[]|null=null, stroke:number|null=null, busy=false, dirty=false, styleDirty=false;
+let styleBasis:{id:string;revision:number|null}|null=null;
+let readRequest=0;
+const owned=(token:string|undefined,generation:number)=>generation===editorSession.generation&&token===context()?.token;
+const run=(fn:()=>Promise<unknown>|void)=>{const token=context()?.token,generation=editorSession.generation;void Promise.resolve().then(()=>{if(owned(token,generation))return fn();}).catch(e=>{if(owned(token,generation))tell(e.message,true);});};
 
-async function prepare(){const token=context()?.token,generation=loadGeneration;return await before()&&owned(token,generation);}
+async function prepare(){const token=context()?.token,generation=editorSession.generation;return await before()&&owned(token,generation);}
 function floor(){const w=context();if(!w)throw new Error('Kampagne öffnen.');try{const [scopeId,floorId]=JSON.parse(el<HTMLSelectElement>('floors').value);return{scopeId,floorId};}catch{const f=w.floors[0];if(!f)throw new Error('Geschoss anlegen.');return{scopeId:f.scopeId,floorId:f.id};}}
 function roomOnFloor(){const room=selectedRoom(),current=floor();return room&&room.scopeId===current.scopeId&&room.floorId===current.floorId?room:null;}
 function options(id:string,rows:{id:string;name:string}[],selected:string|null,empty=true){const s=el<HTMLSelectElement>(id);s.replaceChildren();for(const row of [...(empty?[{id:'',name:'Keine Bindung'}]:[]),...rows]){const o=document.createElement('option');o.value=row.id;o.textContent=row.name;s.append(o);}if(selected&&rows.some(r=>r.id===selected))s.value=selected;}
 function syncToolControls(){field('drawing-snap').closest('label')!.hidden=value('drawing-tool')==='door';const atlas=el('campaign-atlas');if(atlas)(atlas as HTMLElement).dataset.drawingTool=value('drawing-tool');const atlasRectangle=(atlas as HTMLElement|null)?.dataset.roomDraw==='true',append=field('drawing-append'),state=drawingToolControls(value('drawing-tool'),!!roomOnFloor(),append.checked,path.length);if(!state.append)append.checked=false;el('drawing-brush-field').toggleAttribute('hidden',!state.brush);el('drawing-append-field').toggleAttribute('hidden',!state.append);el('drawing-room-name-field').toggleAttribute('hidden',!state.roomName);el<HTMLButtonElement>('drawing-finish').toggleAttribute('hidden',!state.active||!path.length||value('drawing-tool')==='door'||atlasRectangle);el<HTMLButtonElement>('drawing-cancel').toggleAttribute('hidden',!state.active||!path.length||value('drawing-tool')==='door'||atlasRectangle);el<HTMLButtonElement>('drawing-finish').disabled=!state.actionEnabled;el<HTMLButtonElement>('drawing-cancel').disabled=!path.length&&value('drawing-tool')!=='door';el('drawing-tool-options').toggleAttribute('hidden',!state.options);el('drawing-object-field').toggleAttribute('hidden',!state.object);el('drawing-element-size-field').toggleAttribute('hidden',!state.object);el('drawing-light-radius-field').toggleAttribute('hidden',!state.light);el('drawing-text-field').toggleAttribute('hidden',!state.text);el('map-hint').textContent=atlasRectangle?'Rechteck ziehen oder zwei gegenüberliegende Ecken anklicken. Escape verwirft.':state.instruction;}
-export async function activateDrawing(w:WorkspaceGeometry,load=true){const generation=++loadGeneration;readRequest++;pendingElement=null;pendingStyle=null;styleBasis=null;busy=false;data=null;element=null;clearDraft();dirty=false;styleDirty=false;if(!load)return;const r=await window.campaign.drawingMap(w.token,selectedRoom()?.id??'');if(generation!==loadGeneration||context()?.token!==w.token)return;data=unwrap(r);renderInspector();redraw();}
-export async function reloadDrawing(full=false){const w=context(),generation=loadGeneration,request=++readRequest;if(!w)return;const response=await window.campaign.drawingMap(w.token,full?undefined:selectedRoom()?.id??'');if(!owned(w.token,generation)||request!==readRequest)return;data=unwrap(response);if(element&&!dirty)await selectElement(element.id);inspectedRoom=null;renderInspector();redraw();}
+export async function activateDrawing(w:WorkspaceGeometry,load=true){const generation=++editorSession.generation;readRequest++;pendingElementWork.value=null;pendingStyleWork.value=null;styleBasis=null;busy=false;data=null;element=null;clearDraft();dirty=false;styleDirty=false;if(!load)return;const r=await window.campaign.drawingMap(w.token,selectedRoom()?.id??'');if(generation!==editorSession.generation||context()?.token!==w.token)return;data=unwrap(r);renderInspector();redraw();}
+export async function reloadDrawing(full=false){const w=context(),generation=editorSession.generation,request=++readRequest;if(!w)return;const response=await window.campaign.drawingMap(w.token,full?undefined:selectedRoom()?.id??'');if(!owned(w.token,generation)||request!==readRequest)return;data=unwrap(response);if(element&&!dirty)await selectElement(element.id);inspectedRoom=null;renderInspector();redraw();}
 let elementRead=0;
 export function selectedDrawingElementId(){return element?.id??null;}
 export async function selectElement(id:string){
- const w=context(),generation=loadGeneration,request=++elementRead;if(!w)return;
+ const w=context(),generation=editorSession.generation,request=++elementRead;if(!w)return;
  element=null;dirty=false;renderInspector();
  const result=await window.campaign.drawingElement(w.token,id);
  if(!owned(w.token,generation)||request!==elementRead)return;
@@ -36,7 +45,7 @@ export async function selectElement(id:string){
  element=structuredClone(source);dirty=false;if(data){const {notes:unused,content:unusedContent,...projection}=element;data.elements=[...data.elements.filter(e=>e.id!==id),projection];}renderInspector();
 }
 async function execute(action:DrawingAction){
- const w=context(),generation=loadGeneration;if(!w)throw new Error('Kampagne öffnen.');
+ const w=context(),generation=editorSession.generation;if(!w)throw new Error('Kampagne öffnen.');
  const command={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action};
  if(!await prepare())throw new Error('Vorherige Eingabe abschließen.');
  if(!owned(w.token,generation))throw new Error('Zeichnungskontext gewechselt.');
@@ -72,7 +81,7 @@ function point(event:PointerEvent){const svg=el<SVGSVGElement>('map'),p=new DOMP
 function shape(){const tool=value('drawing-tool'),r=selectedRoom();if(tool==='room-rectangle'&&path.length>=2){const a=path[0]!,b=path.at(-1)!;return[{outer:[{x:a.x,y:a.y},{x:b.x,y:a.y},{x:b.x,y:b.y},{x:a.x,y:b.y}],holes:[]}];}if(tool==='room-cave'||tool==='room-erase'){return paint({kind:'paint',polygons:tool==='room-erase'?r?.polygons??[]:field('drawing-append').checked?r?.polygons??[]:[],points:path,radius:Number(value('drawing-brush')),erase:tool==='room-erase'}).map(p=>({outer:[...p.outer],holes:p.holes.map(h=>[...h])}));}if(tool==='room-hole')return r&&path.length>=3?carveRoom(r.polygons,[{outer:path,holes:[]}]):null;if(tool==='room-polygon'&&path.length>=3)return[{outer:[...path],holes:[]}];return null;}
 async function finish(){
  if(!context()||!drawingToolControls(value('drawing-tool'),!!roomOnFloor(),field('drawing-append').checked,path.length).actionEnabled||busy)return;
- const token=context()!.token,generation=loadGeneration;busy=true;
+ const token=context()!.token,generation=editorSession.generation;busy=true;
  try{
   const tool=value('drawing-tool'),f=floor(),r=roomOnFloor();let result;
   if(tool.startsWith('room-')){
@@ -99,8 +108,8 @@ async function finish(){
 function elementFields(){return JSON.stringify([...el('drawing-element-form').querySelectorAll<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>('input,textarea,select')].map(i=>[i.id,i.type==='checkbox'?(i as HTMLInputElement).checked:atlasFieldValue(i)]));}
 function collectElement(base:DrawingElement){const points=value('drawing-element-points').split(/\r?\n/).filter(s=>s.trim()).map(s=>{const [x,y]=s.split(',').map(Number);if(!Number.isFinite(x)||!Number.isFinite(y))throw new Error('Ein Punkt pro Zeile: x, y.');return{x:x!,y:y!};}),e={...base,name:value('drawing-element-name'),notes:value('drawing-element-notes'),points,width:Number(value('drawing-width')),height:Number(value('drawing-height')),zOffsetMeters:Number(value('drawing-z-offset')),verticalMeters:Number(value('drawing-vertical')),angle:Number(value('drawing-angle')),color:value('drawing-color'),variant:value('drawing-variant'),secret:field('drawing-secret').checked,blocksSight:field('drawing-blocks-sight').checked,blocksSound:field('drawing-blocks-sound').checked,passable:field('drawing-passable').checked,state:value('drawing-state') as DrawingElement['state'],roomId:value('drawing-room-bind')||null,targetRoomId:value('drawing-target-room')||null,targetFloorId:value('drawing-target-floor')||null,feature:value('drawing-feature-type') as DrawingElement['feature'],maxCharges:Number(value('drawing-max-charges')),resetSeconds:Math.round(Number(value('drawing-reset-minutes'))*60),resetMode:value('drawing-reset-mode') as DrawingElement['resetMode'],triggerRadius:Number(value('drawing-trigger-radius')),sound:{enabled:field('drawing-sound-enabled').checked,rangeMeters:Number(value('drawing-sound-range')),dc:Number(value('drawing-sound-dc')),publicText:value('drawing-sound-text')}};return e;}
 function saveElement():Promise<boolean>{
- const w=context(),generation=loadGeneration,id=element?.id;if(!w||!id||!dirty)return Promise.resolve(true);
- if(pendingElement?.token===w.token&&pendingElement.generation===generation&&pendingElement.id===id)return pendingElement.task;
+ const w=context(),generation=editorSession.generation,id=element?.id;if(!w||!id||!dirty)return Promise.resolve(true);
+ if(pendingElementWork.value?.token===w.token&&pendingElementWork.value.generation===generation&&pendingElementWork.value.id===id)return pendingElementWork.value.task;
  const state={token:w.token,generation,id,task:Promise.resolve(false)};
  state.task=Promise.resolve().then(async()=>{
   try{
@@ -113,14 +122,13 @@ function saveElement():Promise<boolean>{
    }
    return owned(w.token,generation);
   }catch(error){if(owned(w.token,generation))tell((error as Error).message,true);return false;}
-  finally{if(pendingElement===state)pendingElement=null;}
- });pendingElement=state;return state.task;
+ });pendingElementWork.value=state;return state.task;
 }
 
 const styleFields=()=>JSON.stringify(['drawing-ceiling','drawing-fill','drawing-wall-color','drawing-public-label','drawing-room-secret','drawing-track-surface'].map(id=>[id,id==='drawing-room-secret'?field(id).checked:value(id)]));
 function saveStyle():Promise<boolean>{
- const w=context(),r=selectedRoom(),generation=loadGeneration;if(!styleDirty)return Promise.resolve(true);if(!w||!r)return Promise.resolve(false);
- if(pendingStyle?.token===w.token&&pendingStyle.generation===generation&&pendingStyle.id===r.id)return pendingStyle.task;
+ const w=context(),r=selectedRoom(),generation=editorSession.generation;if(!styleDirty)return Promise.resolve(true);if(!w||!r)return Promise.resolve(false);
+ if(pendingStyleWork.value?.token===w.token&&pendingStyleWork.value.generation===generation&&pendingStyleWork.value.id===r.id)return pendingStyleWork.value.task;
  const state={token:w.token,generation,id:r.id,task:Promise.resolve(false)};
  state.task=Promise.resolve().then(async()=>{try{
   while(owned(w.token,generation)&&selectedRoom()?.id===r.id&&styleDirty){
@@ -132,10 +140,10 @@ function saveStyle():Promise<boolean>{
    styleBasis={id:r.id,revision:saved.revision};styleDirty=fields!==styleFields();renderInspector();
   }
   return owned(w.token,generation)&&selectedRoom()?.id===r.id;
- }catch(error){if(owned(w.token,generation))tell((error as Error).message,true);return false;}finally{if(pendingStyle===state)pendingStyle=null;}});
- pendingStyle=state;return state.task;
+ }catch(error){if(owned(w.token,generation))tell((error as Error).message,true);return false;}});
+ pendingStyleWork.value=state;return state.task;
 }
-export async function flushDrawing(){const token=context()?.token,generation=loadGeneration;if(busy||stroke!==null||path.length){tell('Dungeonzug zuerst abschließen oder verwerfen.',true);return false;}if(!await saveStyle()||!owned(token,generation))return false;return await saveElement()&&owned(token,generation);}
+export async function flushDrawing(){const token=context()?.token,generation=editorSession.generation;if(busy||stroke!==null||path.length){tell('Dungeonzug zuerst abschließen oder verwerfen.',true);return false;}if(!await saveStyle()||!owned(token,generation))return false;return await saveElement()&&owned(token,generation);}
 export function atlasDrawingUndoPoint(){path.pop();draftRevision++;preview=shape();redraw();}
 export function atlasDrawingMeasurement(hover?:Point){
  const tool=value('drawing-tool'),points=[...path];
@@ -150,15 +158,15 @@ export function atlasDrawingMeasurement(hover?:Point){
  if(draft&&tool!=='select'){if(kind==='light')draft.width=Number(value('drawing-light-radius'));if(kind==='object')draft.width=draft.height=Number(value('drawing-element-size'));}
  return {tool,points,polygons,element:draft,radius:Number(value('drawing-brush')),floor:floor()};
 }
-export function atlasDrawingHasDraft(){return busy||dirty||styleDirty||!!pendingElement||!!pendingStyle||path.length>0||preview!==null;}
-export function atlasDrawingDraft(){return{polygons:preview,path:[...path],floor:floor(),element:!dirty&&!pendingElement&&value('drawing-tool')==='select'?element:null};}
+export function atlasDrawingHasDraft(){return busy||dirty||styleDirty||!!pendingElementWork.value||!!pendingStyleWork.value||path.length>0||preview!==null;}
+export function atlasDrawingDraft(){return{polygons:preview,path:[...path],floor:floor(),element:!dirty&&!pendingElementWork.value&&value('drawing-tool')==='select'?element:null};}
 /** The Atlas drag adapter shares the same name, grid, append rules and writer as point tools. */
 export function atlasDrawingSnapPoint(p:Point):Point {
  const grid=field('drawing-snap').checked?Number(value('drawing-grid')):0;
  return {x:grid>0?Math.round(p.x/grid)*grid:p.x,y:grid>0?Math.round(p.y/grid)*grid:p.y};
 }
 export async function atlasDrawingRectangle(a:Point,b:Point){
- const w=context(),generation=loadGeneration,revision=draftRevision;
+ const w=context(),generation=editorSession.generation,revision=draftRevision;
  if(!w||busy||path.length||value('drawing-tool')!=='room-rectangle')return;const f=floor();
  if(!await prepare()||!owned(w.token,generation)||revision!==draftRevision||value('drawing-tool')!=='room-rectangle'||f.scopeId!==floor().scopeId||f.floorId!==floor().floorId)return;
  const start=atlasDrawingSnapPoint(a),end=atlasDrawingSnapPoint(b);
@@ -168,7 +176,7 @@ export async function atlasDrawingRectangle(a:Point,b:Point){
 }
 /** Capture draft ownership before waiting for earlier brush points or preparation. */
 export async function atlasDrawingPoint(p:Point,after?:Promise<unknown>,doorRoom?:()=>Promise<{room:RoomGeometry;maxDistance:number}>){
- const w=context(),generation=loadGeneration,revision=draftRevision;if(!w)return;
+ const w=context(),generation=editorSession.generation,revision=draftRevision;if(!w)return;
  const current=()=>owned(w.token,generation)&&revision===draftRevision&&value('drawing-tool')!=='select'&&!busy;
  if(after)await after;if(!current())return;
  if(!path.length&&!(await prepare()))return;if(!current())return;
@@ -203,9 +211,9 @@ export function initDrawing(status:typeof tell,getContext:typeof context,getSele
  for(const id of ['drawing-ceiling','drawing-fill','drawing-wall-color','drawing-public-label','drawing-room-secret','drawing-track-surface'])el(id).addEventListener('input',()=>{styleDirty=true;});
  el('drawing-save-style').onclick=()=>run(async()=>{styleDirty=true;await saveStyle();});
  for(const kind of ['add','clone','clone-all','rename','hide'])el('drawing-floor-'+kind).onclick=()=>run(async()=>{const f=floor(),w=context()!,current=w.floors.find(x=>x.id===f.floorId&&x.scopeId===f.scopeId),id=kind==='add'||kind==='clone'||kind==='clone-all'?crypto.randomUUID():f.floorId;await execute({kind:'floor',scopeId:f.scopeId,id,name:value('drawing-floor-name')||current?.name||'Neues Geschoss',elevation:Number(value('drawing-floor-elevation')),cloneId:kind==='clone'||kind==='clone-all'?f.floorId:null,copyKeys:kind==='clone-all',hidden:kind==='hide'});if(kind==='add'||kind==='clone'||kind==='clone-all'){el<HTMLSelectElement>('floors').value=JSON.stringify([f.scopeId,id]);el('floors').dispatchEvent(new Event('change'));redraw();}});
- for(const format of ['svg','json','keys','document'] as const)el('drawing-export-'+format).onclick=()=>run(async()=>{const w=context(),generation=loadGeneration;if(!w)return;const f=floor(),publicOnly=field('drawing-public-export').checked;if(!await prepare())return;const response=await window.campaign.exportDrawing(w.token,f.scopeId,f.floorId,format,publicOnly);if(owned(w.token,generation)){const result=unwrap(response);tell(result.cancelled?'Dungeon-Ausgabe abgebrochen.':'Dungeon ausgegeben.');}});
+ for(const format of ['svg','json','keys','document'] as const)el('drawing-export-'+format).onclick=()=>run(async()=>{const w=context(),generation=editorSession.generation;if(!w)return;const f=floor(),publicOnly=field('drawing-public-export').checked;if(!await prepare())return;const response=await window.campaign.exportDrawing(w.token,f.scopeId,f.floorId,format,publicOnly);if(owned(w.token,generation)){const result=unwrap(response);tell(result.cancelled?'Dungeon-Ausgabe abgebrochen.':'Dungeon ausgegeben.');}});
  for(const action of ['activate','reset','correct'] as const)el('drawing-feature-'+action).onclick=()=>run(async()=>{
-  const w=context(),generation=loadGeneration,id=element?.id,charges=action==='correct'?Number(value('drawing-correct-charges')):null;if(!w||!id)return;
+  const w=context(),generation=editorSession.generation,id=element?.id,charges=action==='correct'?Number(value('drawing-correct-charges')):null;if(!w||!id)return;
   if(!await flushDrawing()||!owned(w.token,generation)||element?.id!==id||!data)return;
   const expected=data.features.find(s=>s.id===id)?.revision??0,response=await window.campaign.live(w.token);
   if(!owned(w.token,generation)||element?.id!==id)return;const live=unwrap(response);if(!live.focusId)throw new Error('Gruppe zuerst unter Party & Leiten fortsetzen.');
@@ -213,3 +221,5 @@ export function initDrawing(status:typeof tell,getContext:typeof context,getSele
   if(!owned(w.token,generation)||element?.id!==id)return;data=unwrap(result);readRequest++;renderInspector();redraw();tell(action==='activate'?'Tatsächliche Feature-Aktivierung bestätigt.':'Featurezustand aktualisiert.');
  });
 }
+
+editorSession.observeDraft(()=>({openInput:dirty||styleDirty||path.length>0||stroke!==null,retainedDraft:false,unresolvedCommand:false}));

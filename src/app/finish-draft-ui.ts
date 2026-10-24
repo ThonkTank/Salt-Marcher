@@ -1,9 +1,12 @@
+import {EditorSession, type EditorOperation} from './editor-session';
 import type { WorkspaceGeometry } from "./contracts";
 import type {
   FinishDraft,
   FinishOwner,
   RewardItemDraft,
 } from "./finish-draft-contracts";
+export const editorSession = new EditorSession();
+
 const get = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 type Values = Pick<
@@ -24,9 +27,8 @@ type Session = {
   readItems: () => RewardItemDraft[];
   restoreItems: (items: RewardItemDraft[]) => void;
   preview: () => void;
-  version: number;
-  saved: number;
-  pending: Promise<boolean> | null;
+  input: EditorSession['input'];
+  operation: EditorOperation<Promise<boolean>>;
   error: string | null;
   loading: boolean;
 };
@@ -85,19 +87,19 @@ function status(s: Session, text?: string) {
 export function markFinishDraft() {
   const s = active;
   if (!s) return;
-  s.version++;
+  s.input.version++;
   status(s, "Abschlusseingabe wird gesichert…");
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => void save(s), 250);
 }
 async function save(s: Session): Promise<boolean> {
   if(active!==s||s.loading)return false;
-  if (s.pending) {
-    if (!(await s.pending)||active!==s) return false;
-    return s.version === s.saved ? true : save(s);
+  if (s.operation.value) {
+    if (!(await s.operation.value)||active!==s) return false;
+    return s.input.version === s.input.retained ? true : save(s);
   }
-  if (s.version === s.saved) return true;
-  const version = s.version,
+  if (s.input.version === s.input.retained) return true;
+  const version = s.input.version,
     d: FinishDraft = {
       ...s.owner,
       revision: s.draft?.revision ?? s.owner.revision,
@@ -115,7 +117,7 @@ async function save(s: Session): Promise<boolean> {
       if(active!==s)return false;
       if (!r.ok) throw new Error(r.error);
       s.draft = d;
-      s.saved = version;
+      s.input.retained = version;
       s.error = null;
       status(
         s,
@@ -129,23 +131,24 @@ async function save(s: Session): Promise<boolean> {
       return false;
     }
   })();
-  s.pending = run;
+  s.operation.value = run;
   const ok = await run;
-  s.pending = null;
-  return active===s&&(ok && s.version !== s.saved ? await save(s) : ok);
+  s.operation.value = null;
+  return active===s&&(ok && s.input.version !== s.input.retained ? await save(s) : ok);
 }
 export async function flushFinishDraft() {
   const s=active;
   return !s||await save(s)&&active===s;
 }
 export function deactivateFinishDraft(){
+  editorSession.deactivate();
   active=null;
   if(timer)clearTimeout(timer);
   timer=null;
 }
 export async function resetFinishDraft() {
   const s=active;
-  if(s?.loading&&s.version===0){deactivateFinishDraft();return true;}
+  if(s?.loading&&s.input.version===0){deactivateFinishDraft();return true;}
   if(s&&!(await save(s))&&active===s)
     throw new Error(s.error??"Abschlusseingabe noch nicht gesichert.");
   if(active!==s)return active===null;
@@ -168,12 +171,12 @@ export async function beginFinishDraft(
     readItems,
     restoreItems,
     preview,
-    version: 0,
-    saved: 0,
-    pending: null,
+    input: {version:0,retained:0},
+    operation: editorSession.operation<Promise<boolean>>(),
     error: null,
     loading: true,
   };
+  editorSession.generation++;
   active=s;
   let r;
   try{
@@ -186,7 +189,7 @@ export async function beginFinishDraft(
   if(!r.ok)throw new Error(r.error);
   s.loading=false;
   s.draft = r.value;
-  if (s.draft&&s.version===0) restore(s, s.draft);
+  if (s.draft&&s.input.version===0) restore(s, s.draft);
   status(s);
   return true;
 }
@@ -224,7 +227,7 @@ function init() {
     const s=active;
     void (async()=>{
       if(!s||!(await save(s))||active!==s)return;
-      const version=s.version;
+      const version=s.input.version;
       const run=(async()=>{
         try{
           if(s.draft){
@@ -233,8 +236,8 @@ function init() {
             if(!r.ok)throw new Error(r.error);
           }
           s.draft=null;s.error=null;
-          if(s.version===version){
-            restore(s,s.defaults);s.saved=s.version;
+          if(s.input.version===version){
+            restore(s,s.defaults);s.input.retained=s.input.version;
             status(s,"Entwurf verworfen · vorbereitete Vorgaben wieder geladen.");
           }else status(s,"Voriger Entwurf verworfen; neuere Eingaben bleiben erhalten.");
           return true;
@@ -243,10 +246,10 @@ function init() {
           return false;
         }
       })();
-      s.pending=run;
+      s.operation.value=run;
       const ok=await run;
-      if(s.pending===run)s.pending=null;
-      if(ok&&active===s&&s.version!==s.saved)await save(s);
+      if(s.operation.value===run)s.operation.value=null;
+      if(ok&&active===s&&s.input.version!==s.input.retained)await save(s);
     })().catch(e=>{
       if(s&&active===s){s.error=e.message;status(s);}
     });
@@ -258,9 +261,12 @@ function init() {
       if(s.owner.kind === "narrative" && s.owner.noteRevision === undefined){s.error="Notizbasis zuerst erneut lesen.";status(s);return;}
       s.draft.revision = s.owner.revision;
       if (s.owner.kind === "narrative") s.draft.noteRevision = s.owner.noteRevision;
-      s.version++;
+      s.input.version++;
       await save(s);
       status(s);
     })();
   };
 }
+
+editorSession.onDeactivate(()=>{active=null;if(timer)clearTimeout(timer);timer=null;});
+editorSession.observeDraft(()=>({openInput:!!active&&active.input.version!==active.input.retained,retainedDraft:!!active?.draft,unresolvedCommand:false}));

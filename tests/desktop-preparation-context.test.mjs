@@ -822,3 +822,17 @@ test('editing a resumed handoff visit preserves its literal notes and identity t
  const field=x.el('scene-notes');field.value=raw.replace(/\r\n?/g,'\n')+'\nZusatz';field.dispatchEvent(new x.window.Event('input'));assert.equal(await x.ui.flushPreparation(),true);
  const after=x.store.preparation(x.workspace.token).plans[0];assert.equal(after.id,before.id);assert.equal(after.scenes[0].id,before.scenes[0].id);assert.equal(after.scenes[0].notes,raw+'\rZusatz');
 });
+
+test('a retired draft read cannot unlock preparation while the next session is still reading',async t=>{
+ const x=await fixture(t);await x.activate();await settle();
+ let releaseOld,releaseNew,reads=0;
+ const old=new Promise(resolve=>releaseOld=resolve),next=new Promise(resolve=>releaseNew=resolve),original=x.window.campaign.preparationDraft;
+ x.window.campaign.preparationDraft=async(...args)=>{const result=await original(...args);reads++;if(reads===1)await old;else if(reads===2)await next;return result;};
+ try{
+  const first=x.ui.openPreparedNote(x.ids.borin);await until(()=>reads===1);
+  const renewed=x.ui.activatePreparation(x.workspace);await until(()=>reads>=2);
+  releaseOld();await first;
+  assert.equal(x.ui.editorSession.reading,1);assert.equal(x.el('preparation').inert,true);
+  releaseNew();await renewed;assert.equal(x.ui.editorSession.reading,0);assert.equal(x.el('preparation').inert,false);
+ }finally{releaseOld();releaseNew();await settle();}
+});
