@@ -31,6 +31,7 @@ try{
   await page.locator('#route-prominence').selectOption('5');await page.locator('#terrain-route-editor [data-action="save"]').click();
   await page.waitForFunction(()=>document.querySelector('#route-status')?.textContent==='Verlauf und Geländeform gespeichert.',null,{timeout:120000});
   assert.equal(read('Dorfbrücke').prominence,5);assert.deepEqual(read('Dorfbrücke').route,route.route);assert.deepEqual(records().filter(r=>r.id!=='Dorfbrücke'),physical);
+  if(!await page.locator('#terrain-route-editor [data-action="close"]').isVisible())await page.locator('#atlas-secondary-close').click();
   await native.capture(page,'prominence-route-'+zoom);await page.locator('#terrain-route-editor [data-action="close"]').click();await native.close();
   page=await native.launch(zoom);await open();await focus('Dorfbrücke');assert.equal(await page.locator('#land-prominence').inputValue(),'5');
   await page.locator('#land-prominence').selectOption('');await page.getByRole('button',{name:'Kartenprominenz speichern',exact:true}).click();await settled('Dorfbrücke',undefined);assert.equal(read('Dorfbrücke').prominence,undefined);
