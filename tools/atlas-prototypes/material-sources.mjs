@@ -77,7 +77,11 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
         // Only affine boundary distance yields cubic ground opacity. General
         // segment distance includes corner arcs and must retain unknown degree.
         const degree=region.varying?(region.polynomialDegree===1?3:undefined):0;
-        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,paint(vect,point){
+        const polynomialDegreeOnTriangle=region.polynomialDegreeOnTriangle?triangle=>{
+          const local=region.polynomialDegreeOnTriangle(triangle);
+          return local===0?0:local===1?3:undefined;
+        }:undefined;
+        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,polynomialDegreeOnTriangle,paint(vect,point){
           if(vect[3]!==1)throw Error('Material adapter requires its opaque canonical background');
           const t=region.fade(point),smooth=t*t*(3-2*t),a=.78*smooth;
           for(let c=0;c<3;c++)vect[c]=color[c]*a+vect[c]*(1-a);

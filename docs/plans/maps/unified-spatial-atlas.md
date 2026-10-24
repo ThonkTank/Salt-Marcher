@@ -211,10 +211,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Waldmittel bis auf 0,000002; bereits bei 0,02 und beim Ziel 1/255 überschreitet
   die gleichmäßige adaptive Unterteilung das Arbeitsbudget von zwei Millionen.
   Fachliche Erweiterung belegt, produktiver Leistungsgewinn weiterhin offen.
+- **M2-Lokale Integration:** [Geometrische Zertifikate, Zellfehlerbudget und Gegenprobe](../../reference/atlas-material-local-integration-20261024/README.md)
+  beseitigen diesen Ein-Zellen-Abbruch ohne höhere Toleranz oder mehr erlaubte
+  Arbeit. Konstante Innenbereiche und nachgewiesen affine Randabstände werden
+  direkt integriert; unbekannte Dreiecke nach ihrem größten gewichteten
+  Fehlerbeitrag verfeinert. Vor Freigabe wird die Fehlersumme aller Teilflächen
+  neu berechnet. 56 gezielte Tests bestehen, einschließlich Gradaddition,
+  Rand-/Klemmübergängen und Ressourcenabbrüchen. Drei wechselnde Vergleichsrunden:
+  nur die Kombination erreicht 1/255 im Budget, jeweils 190067 Arbeitsschritte,
+  Median 367 ms. Eine synthetische 16×16-Ausgabe benötigt 862122 Schritte;
+  256×256 überschreitet weiterhin das Budget. Kein nativer Produktgewinn belegt.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Zuerst die belegte Überunterteilung komplexer weicher Flächen beseitigen:
-  unveränderliche Innenbereiche und lokal beschränkte Randvariation unterscheiden,
-  Fehlergarantie und Arbeitsbudget erhalten. Den Quellenvertrag um Version-2-
+  Die Restkosten gekrümmter Innen-/Lochkanten bei voller Kachelauflösung senken:
+  konservative lokale Krümmungsfehler oder direkte Punktabstandsintegration
+  gegen die aktuelle Lipschitz-Referenz prüfen; Fehlergarantie und Arbeitsbudget
+  erhalten. Den Quellenvertrag um Version-2-
   Pinselzüge vervollständigen. Feld-/Quellenseiten anschließen und Restkosten
   unter tatsächlicher Weltlast messen, bevor Kachelcacheversion und produktiver
   Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;

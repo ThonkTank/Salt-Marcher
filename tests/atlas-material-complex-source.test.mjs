@@ -51,3 +51,14 @@ test('physical water masks a concave cover without becoming an authored forest e
  assert.equal(fullyWet.pixels[4],0);
  assert.deepEqual([...fullyWet.pixels.slice(9,13)],[0,0,1,1]);
 });
+
+test('the holed cover meets 1/255 cell accuracy within the unchanged work budget',()=>{
+ const polygon=rect(0,0,6,6);polygon.holes=[rect(2,2,2,2).outer];
+ const result=integrate({x:0,y:0,width:6,height:6},[cover([polygon])],{tolerance:1/255});
+ const expected=.5*(32-16*.5+(4-Math.PI)*.5**2/3)/36;
+ close(result.pixels[4],expected,result.errorBounds[0]);
+ assert.ok(result.errorBounds[0]<=1/255);
+ assert.ok(result.stats.work<=2000000);
+ assert.ok(result.stats.localConstantTriangles>0);
+ assert.ok(result.stats.peakPendingTriangles<=65536);
+});

@@ -24,22 +24,55 @@ function edgeTree(edges){
 }
 function distanceSampler(edges,radius,curve,origin,scale){
  const tree=edgeTree(edges),stack=[],point={x:0,y:0};
- return worldPoint=>{
+ const normalize=worldPoint=>{
   if(!worldPoint||!Number.isFinite(worldPoint.x)||!Number.isFinite(worldPoint.y))throw Error('Feather sample point must be finite');
-  point.x=(worldPoint.x-origin[0])/scale;point.y=(worldPoint.y-origin[1])/scale;
-  if(!Number.isFinite(point.x)||!Number.isFinite(point.y))throw Error('Feather sample exceeds numeric extent');
-  let best=radius;stack.length=0;stack.push(tree);
+  const p={x:(worldPoint.x-origin[0])/scale,y:(worldPoint.y-origin[1])/scale};
+  if(!Number.isFinite(p.x)||!Number.isFinite(p.y))throw Error('Feather sample exceeds numeric extent');
+  return p;
+ };
+ const nearest=(p,cutoff,two=false)=>{
+  point.x=p.x;point.y=p.y;
+  let best=cutoff,second=cutoff,nearestEdge;stack.length=0;stack.push(tree);
   while(stack.length){
-   const node=stack.pop();if(distanceToBox(point,node)>=best)continue;
-   if(node.edges){for(const edge of node.edges){const d=distanceToSegment(point,edge);if(d<best)best=d;}}
+   const node=stack.pop(),limit=two?second:best;if(distanceToBox(point,node)>=limit)continue;
+   if(node.edges){for(const edge of node.edges){
+    const d=distanceToSegment(point,edge);
+    if(d<best){second=best;best=d;nearestEdge=edge;}else if(d<second)second=d;
+   }}
    else{
     const a=node.left,b=node.right,da=distanceToBox(point,a),db=distanceToBox(point,b);
-    if(da<db){if(db<best)stack.push(b);if(da<best)stack.push(a);}else{if(da<best)stack.push(a);if(db<best)stack.push(b);}
+    if(da<db){if(db<limit)stack.push(b);if(da<limit)stack.push(a);}else{if(da<limit)stack.push(a);if(db<limit)stack.push(b);}
    }
   }
+  return {best,second,edge:nearestEdge};
+ };
+ const fade=worldPoint=>{
+  const {best}=nearest(normalize(worldPoint),radius);
   const t=radius===0?1:Math.min(1,best/radius);
   return curve==='linear'?t:t*t*(3-2*t);
  };
+ // The triangle is already clipped to this region. A certificate uses all
+ // true boundary segments, never the edges introduced by triangulation.
+ const polynomialDegreeOnTriangle=worldTriangle=>{
+  const points=worldTriangle.map(normalize);
+  const center={x:points.reduce((s,p)=>s+p.x,0)/3,y:points.reduce((s,p)=>s+p.y,0)/3};
+  const reach=Math.max(...points.map(p=>Math.hypot(p.x-center.x,p.y-center.y)));
+  const guard=64*Number.EPSILON*Math.max(1,...points.flatMap(p=>[Math.abs(p.x),Math.abs(p.y)]),Math.abs(origin[0])/scale,Math.abs(origin[1])/scale);
+  const {best,second,edge}=nearest(center,Infinity,true);
+  if(best-reach>radius+guard)return 0;
+  if(!edge||second-best<=2*reach+guard)return undefined;
+  const signed=[];
+  for(const p of points){
+   const x=p.x-edge.x,y=p.y-edge.y,projection=x*edge.ux+y*edge.uy;
+   if(projection<=guard||projection>=edge.length-guard)return undefined;
+   signed.push(x*edge.uy-y*edge.ux);
+  }
+  if(!(Math.min(...signed)>guard||Math.max(...signed)<-guard))return undefined;
+  // A nearest affine distance can still cross the clamped full-strength edge.
+  if(Math.max(...signed.map(Math.abs))>=radius-guard)return undefined;
+  return curve==='linear'?1:3;
+ };
+ return {fade,polynomialDegreeOnTriangle};
 }
 function coordinates(input){
  if(!Array.isArray(input))throw Error('Feather polygons must be an array');
@@ -109,12 +142,12 @@ export function authoredFeatherRegions(polygons,radius,curve='linear'){
   edges.push({x:a[0],y:a[1],ux:dx/length,uy:dy/length,length,minX:Math.min(a[0],b[0]),minY:Math.min(a[1],b[1]),maxX:Math.max(a[0],b[0]),maxY:Math.max(a[1],b[1])});
  }
  if(!edges.length)throw Error('Feather union has no valid boundary');
- const fade=distanceSampler(edges,localRadius,curve,origin,scale),regions=[];
+ const {fade,polynomialDegreeOnTriangle}=distanceSampler(edges,localRadius,curve,origin,scale),regions=[];
  for(const polygon of union){
   if(polygon.length===1&&isConvex(polygon[0])){
    regions.push(...convexFeatherRegions(pointPolygon(polygon),radius,curve));
   }else{
-   regions.push({geometry:[polygon],fade,varying:radius>0});
+   regions.push({geometry:[polygon],fade,polynomialDegreeOnTriangle,varying:radius>0});
   }
  }
  return regions;

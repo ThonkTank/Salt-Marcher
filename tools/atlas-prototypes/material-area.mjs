@@ -21,6 +21,27 @@ const triangleArea=(a,b,c)=>Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a
 const midpoint=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
 export class AreaBudgetExceeded extends Error {}
 
+function pushError(heap,node){
+ let i=heap.length;heap.push(node);
+ while(i){const p=(i-1)>>1;if(heap[p].error>=node.error)break;heap[i]=heap[p];i=p;}
+ heap[i]=node;
+}
+function popError(heap){
+ const first=heap[0],last=heap.pop();if(!heap.length)return first;
+ let i=0;
+ while(2*i+1<heap.length){
+  let child=2*i+1;if(child+1<heap.length&&heap[child+1].error>heap[child].error)child++;
+  if(heap[child].error<=last.error)break;heap[i]=heap[child];i=child;
+ }
+ heap[i]=last;return first;
+}
+function queuedErrorUpperBound(heap){
+ let sum=0;for(const node of heap)sum+=node.error;
+ // Re-sum only positive leaf errors before accepting a cell. The factor
+ // bounds summation rounding for the bounded queue; include subnormal loss.
+ return sum*(1+2*heap.length*Number.EPSILON)+heap.length*Number.MIN_VALUE;
+}
+
 // Center classification is used only where NO source boundary touches the cell.
 // Boundary cells still use exact face clipping, including subpixel holes/islands.
 function classifyCells(geometry,width,height,tick){
@@ -59,14 +80,18 @@ function classifyCells(geometry,width,height,tick){
  * caller must supply a conservative Lipschitz bound for FINAL composed channels.
  * Geometry is pixel-local to avoid cancellation at large world coordinates.
  * No approximate fallback: an exceeded work/face/vertex budget rejects the tile.
+ * `tolerance` bounds the area-weighted error of each completed output cell.
+ * Trusted triangle classifiers can prove local degrees; unknown triangles are
+ * refined largest weighted error first. `uniform` retains the earlier reference.
  */
-export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true}) {
+export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error'}) {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>1024||height>1024||
     ![box.x,box.y,box.width,box.height,...background,tolerance,lipschitz].every(Number.isFinite)||box.width<=0||box.height<=0||tolerance<=0||lipschitz<0)
     throw Error('Invalid area prototype input');
-  const budget={inputVertices:65536,cellVertices:16384,cachedVertices:65536,cachedPieces:4096,faces:256,work:2000000,depth:16,classifierBytes:16*1024*1024,...limits};
+  if(!['cell-error','uniform'].includes(adaptiveStrategy))throw Error('Invalid adaptive strategy');
+  const budget={inputVertices:65536,cellVertices:16384,cachedVertices:65536,cachedPieces:4096,faces:256,work:2000000,depth:16,pendingTriangles:65536,classifierBytes:16*1024*1024,...limits};
   for(const value of Object.values(budget))if(!Number.isSafeInteger(value)||value<1)throw Error('Invalid area budget');
-  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,work:0,classifierBytes:0};
+  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,degreeQueries:0,localPolynomialTriangles:0,localConstantTriangles:0,peakPendingTriangles:0,errorSumRechecks:0,work:0,classifierBytes:0};
   const tick=()=>{if(++stats.work>budget.work)throw new AreaBudgetExceeded('Area work budget exceeded');};
   const dx=box.width/width,dy=box.height/height,scale=Math.max(dx,dy);
   const prepared=layers.map(layer=>{
@@ -76,6 +101,7 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       return [(x-box.x)/dx,(y-box.y)/dy];
     })));
     if(layer.polynomialDegree!==undefined&&(!Number.isInteger(layer.polynomialDegree)||layer.polynomialDegree<0||layer.polynomialDegree>3))throw Error('Invalid material polynomial degree');
+    if(layer.polynomialDegreeOnTriangle!==undefined&&typeof layer.polynomialDegreeOnTriangle!=='function')throw Error('Invalid material triangle classifier');
     if(layer.varying&&layer.polynomialDegree===undefined&&lipschitz===0)throw Error('Varying material needs a final-channel Lipschitz bound');
     let cells;
     if(interiorFastPath){
@@ -128,7 +154,7 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       stats.peakFaces=Math.max(stats.peakFaces,faces.length);stats.peakCellVertices=Math.max(stats.peakCellVertices,count);
       if(count>budget.cellVertices)throw new AreaBudgetExceeded('Area cell vertex budget exceeded');
     }
-    const out=(y*width+x)*channels;
+    const out=(y*width+x)*channels,queue=[];let remainingError=0;
     for(const face of faces){
       const evaluate=point=>{
         tick();stats.evaluations++;const value=[...background],world={x:box.x+point[0]*dx,y:box.y+point[1]*dy};
@@ -146,38 +172,78 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       // must include the channel state transform, not just a standalone colour.
       const degree=face.active.reduce((sum,index)=>sum+(prepared[index].varying?(prepared[index].polynomialDegree??Infinity):0),0);
       if(degree>3&&lipschitz===0)throw Error('Composed variable material needs a final-channel Lipschitz bound');
-      for(const polygon of face.geometry){
-        const rings=polygon.map(r=>r.slice(0,-1).map(p=>new Vector2(...p))),flat=rings.flat();
-        const triangles=ShapeUtils.triangulateShape(rings[0],rings.slice(1));
-        const stack=triangles.map(t=>({points:t.map(i=>[flat[i].x,flat[i].y]),depth:0}));
-        while(stack.length){
-          tick();const {points:[a,b,c],depth}=stack.pop(),weight=triangleArea(a,b,c);
-          if(!weight)continue;
+      const visit=(points,depth)=>{
+          tick();const [a,b,c]=points,weight=triangleArea(a,b,c);
+          if(!weight)return;
           const center=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];
-          if(degree<=3){
-            const rule=degree<=1?[[1/3,1/3,1/3,1]]:degree===2?
+          let triangleDegree=degree;
+          if(degree>3&&face.active.some(index=>prepared[index].polynomialDegreeOnTriangle)){
+            const worldTriangle=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
+            triangleDegree=0;
+            for(const index of face.active){
+              const layer=prepared[index];if(!layer.varying)continue;
+              let localDegree=layer.polynomialDegree;
+              if(layer.polynomialDegreeOnTriangle){
+                tick();stats.degreeQueries++;
+                const classified=layer.polynomialDegreeOnTriangle(worldTriangle);
+                if(classified!==undefined&&(!Number.isInteger(classified)||classified<0||classified>3))throw Error('Invalid classified material polynomial degree');
+                if(classified!==undefined)localDegree=classified;
+              }
+              triangleDegree+=localDegree??Infinity;
+            }
+            if(triangleDegree<=3){stats.localPolynomialTriangles++;if(triangleDegree===0)stats.localConstantTriangles++;}
+          }
+          if(triangleDegree<=3){
+            const rule=triangleDegree<=1?[[1/3,1/3,1/3,1]]:triangleDegree===2?
               [[2/3,1/6,1/6,1/3],[1/6,2/3,1/6,1/3],[1/6,1/6,2/3,1/3]]:
               [[1/3,1/3,1/3,-27/48],[.6,.2,.2,25/48],[.2,.6,.2,25/48],[.2,.2,.6,25/48]];
             for(const [u,v,w,factor] of rule){
               const value=evaluate([a[0]*u+b[0]*v+c[0]*w,a[1]*u+b[1]*v+c[1]*w]);
               for(let k=0;k<channels;k++)pixels[out+k]+=value[k]*weight*factor;
             }
-            continue;
+            return;
           }
           const radius=Math.max(...[a,b,c].map(p=>Math.hypot((p[0]-center[0])*dx,(p[1]-center[1])*dy)));
-          const error=lipschitz*radius;
-          if(error<=tolerance){
-            const value=evaluate(center);for(let k=0;k<channels;k++)pixels[out+k]+=value[k]*weight;
-            errorBounds[y*width+x]+=error*weight;
-          }else{
+          const error=lipschitz*radius*weight;
+          if(adaptiveStrategy==='uniform'&&lipschitz*radius>tolerance){
             if(depth>=budget.depth)throw new AreaBudgetExceeded('Area integration depth exceeded');
             stats.subdivisions++;
             const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
-            for(const points of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])stack.push({points,depth:depth+1});
+            for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])visit(child,depth+1);
+            return;
           }
-        }
+          const value=evaluate(center).map(v=>v*weight);
+          for(let k=0;k<channels;k++)pixels[out+k]+=value[k];
+          remainingError+=error;
+          if(adaptiveStrategy==='cell-error'&&error>0){
+            if(queue.length>=budget.pendingTriangles)throw new AreaBudgetExceeded('Area pending triangle budget exceeded');
+            pushError(queue,{points,depth,error,value,visit});
+            stats.peakPendingTriangles=Math.max(stats.peakPendingTriangles,queue.length);
+          }
+      };
+      for(const polygon of face.geometry){
+        const rings=polygon.map(r=>r.slice(0,-1).map(p=>new Vector2(...p))),flat=rings.flat();
+        const triangles=ShapeUtils.triangulateShape(rings[0],rings.slice(1));
+        for(const t of triangles)visit(t.map(i=>[flat[i].x,flat[i].y]),0);
       }
     }
+    // One error budget covers ALL faces in the cell, including disconnected
+    // pieces. Remove a parent's estimate before inserting its four children.
+    while(adaptiveStrategy==='cell-error'){
+      if(remainingError<=tolerance){
+        tick();stats.errorSumRechecks++;
+        remainingError=queuedErrorUpperBound(queue);
+        if(remainingError<=tolerance)break;
+      }
+      if(!queue.length)throw Error('Area refinement lost its error queue');
+      const node=popError(queue),{points:[a,b,c],depth}=node;
+      if(depth>=budget.depth)throw new AreaBudgetExceeded('Area integration depth exceeded');
+      remainingError-=node.error;for(let k=0;k<channels;k++)pixels[out+k]-=node.value[k];
+      stats.subdivisions++;
+      const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
+      for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])node.visit(child,depth+1);
+    }
+    errorBounds[y*width+x]=remainingError;
    }
   }
   return {pixels,errorBounds,stats,pixelArea:dx*dy,scale};
