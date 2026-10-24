@@ -1,8 +1,9 @@
 // Isolated adapter prototype: authored LandscapeRecord materials -> generic
-// material-area layers. Hard covers and filled v2 pigment follow the reference.
-// Convex soft covers opt into the authored-world contract. Not in production.
+// material-area layers. Hard covers, legacy pigment and filled v2 pigment
+// follow the reference's source rules (final composition uses float channels).
+// Soft covers opt into the authored-world contract. Not in production.
 import polygonClipping from 'polygon-clipping';
-import {convexFeatherRegions} from './convex-feather.mjs';
+import {authoredFeatherRegions} from './general-feather.mjs';
 
 const rgb = value => {
   if (typeof value !== 'string' || !/^#[\da-f]{6}$/i.test(value)) throw Error('Material color missing or invalid');
@@ -20,9 +21,10 @@ const isPaint = r => !!r.paint;
  * the forest or the ground beneath it. Supply the palette from terrainColors.
  * `waterGeometry` is an already-supplied physical footprint; this adapter
  * never samples or interpolates heights. Arrays are consumed in their given
- * order, matching the caller's stream order.
+ * order, matching the caller's stream order. Legacy records require the actual
+ * production colorParts helper; its original stamp geometry is not regenerated.
  */
-export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorRecords=[], palette, waterGeometry=[], seaColor, landColor, edgePolicy='reject'}={}) {
+export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorRecords=[], palette, colorParts, waterGeometry=[], seaColor, landColor, edgePolicy='reject'}={}) {
   if (!palette || typeof palette !== 'object') throw Error('Inject production terrainColors as palette');
   if(!['reject','authored-world'].includes(edgePolicy))throw Error('Unknown material edge policy');
   const water = geometry(waterGeometry);
@@ -52,7 +54,6 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
     if(!r.vegetation)throw Error('Cover record has no vegetation specification');
     const v=r.vegetation,p=v.preset;
     if(p.edge>0&&edgePolicy!=='authored-world')throw Error('Soft-edged vegetation covers require the explicit authored-world policy');
-    if(p.edge>0&&r.polygons.length!==1)throw Error('Soft multipart vegetation is unsupported by this prototype');
     const g=geometry(r.polygons);if(!g.length)continue;
     const edits=(v.edits??[]).map(e=>{
       if(!['clear','thin','dense'].includes(e.mode))throw Error(`Unsupported vegetation edit: ${e.mode}`);
@@ -70,10 +71,13 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
           vect[13]=edit.mode==='clear'?0:edit.mode==='thin'?vect[13]*.3:Math.min(1,vect[13]+.5);
         }});
       }
-      const regions=p.edge>0?convexFeatherRegions(r.polygons[0],p.edge):[{geometry:g,fade:()=>1,varying:false}];
+      const regions=p.edge>0?authoredFeatherRegions(r.polygons,p.edge):[{geometry:g,fade:()=>1,varying:false}];
       for(const region of regions){
         const visible=clip('difference',region.geometry,water);if(!visible.length)continue;
-        layers.push({geometry:visible,varying:region.varying,polynomialDegree:region.varying?3:0,paint(vect,point){
+        // Only affine boundary distance yields cubic ground opacity. General
+        // segment distance includes corner arcs and must retain unknown degree.
+        const degree=region.varying?(region.polynomialDegree===1?3:undefined):0;
+        layers.push({geometry:visible,varying:region.varying,polynomialDegree:degree,paint(vect,point){
           if(vect[3]!==1)throw Error('Material adapter requires its opaque canonical background');
           const t=region.fade(point),smooth=t*t*(3-2*t),a=.78*smooth;
           for(let c=0;c<3;c++)vect[c]=color[c]*a+vect[c]*(1-a);
@@ -87,23 +91,46 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
   for (const r of colorRecords) {
     if(!isPaint(r))throw Error('Color record has no pigment specification');
     const p=r.paint;
-    if(p.version!==2 || !p.fill)throw Error('Only filled version-2 pigment is supported');
     if(r.mask || p.visibility)throw Error('Pigment masks require a supplied resolved field');
-    if(!['paint','erase'].includes(p.operation))throw Error('Unsupported pigment operation');
     const source=geometry(r.polygons),target=p.target==='water'?clip('intersection',source,waterG):p.target==='ground'?clip('difference',source,waterG):null;
     if(!target)throw Error('Unknown pigment target'); if(!target.length)continue;
     const color=rgb(p.color),alpha=p.opacity;
-    layers.push({geometry:target,paint(v){
-      const old=v[8];
-      if(p.operation==='erase')v[8]=old*(1-alpha);
-      else {
-        const combined=alpha+old*(1-alpha);
-        for(let c=0;c<3;c++)v[5+c]=(color[c]*alpha+v[5+c]*old*(1-alpha))/(combined||1);
-        v[8]=combined;
+    if(p.version===1){
+      if(typeof colorParts!=='function')throw Error('Inject production colorParts for legacy pigment');
+      if(typeof p.opacity!=='number'||!Number.isFinite(p.opacity)||p.opacity<0||p.opacity>1)throw Error('Invalid legacy pigment opacity');
+      const parts=colorParts(r);if(!parts.length)continue;
+      // colorParts already clips every stamp to the record polygon. Reset and
+      // composite over that target so empty/zero-coverage stamps have no effect.
+      layers.push({geometry:target,paint(v){v[13]=0;}});
+      for(const part of parts){
+        if(part.color!==p.color)throw Error('Legacy pigment parts must preserve the record color');
+        const g=geometry(part.polygons).map(poly=>p.target==='water'?clip('intersection',[poly],waterG):clip('difference',[poly],waterG)).flat();if(!g.length||!part.opacity)continue;
+        // Match polygonSteps: use raw opacity in source-over, then round the
+        // composed alpha to Uint8 after each part.
+        layers.push({geometry:g,paint(v){v[13]=Math.round((part.opacity+v[13]*(1-part.opacity))*255)/255;}});
       }
-      for(let c=0;c<3;c++)v[9+c]=v[5+c]*v[8]+v[c]*(1-v[8]);
-      v[12]=v[8]+v[3]*(1-v[8]);
-    }});
+      layers.push({geometry:target,paint(v){
+        const recordAlpha=v[13]*p.opacity;
+        if(!recordAlpha)return;
+        const old=v[8],combined=recordAlpha+old*(1-recordAlpha);
+        for(let c=0;c<3;c++)v[5+c]=(color[c]*recordAlpha+v[5+c]*old*(1-recordAlpha))/(combined||1);
+        v[8]=combined;for(let c=0;c<3;c++)v[9+c]=v[5+c]*v[8]+v[c]*(1-v[8]);v[12]=v[8]+v[3]*(1-v[8]);
+      }});
+    }else if(p.version===2){
+      if(!p.fill)throw Error('Only filled version-2 pigment is supported');
+      if(!['paint','erase'].includes(p.operation))throw Error('Unsupported pigment operation');
+      layers.push({geometry:target,paint(v){
+        const old=v[8];
+        if(p.operation==='erase')v[8]=old*(1-alpha);
+        else {
+          const combined=alpha+old*(1-alpha);
+          for(let c=0;c<3;c++)v[5+c]=(color[c]*alpha+v[5+c]*old*(1-alpha))/(combined||1);
+          v[8]=combined;
+        }
+        for(let c=0;c<3;c++)v[9+c]=v[5+c]*v[8]+v[c]*(1-v[8]);
+        v[12]=v[8]+v[3]*(1-v[8]);
+      }});
+    }else throw Error('Unsupported pigment version');
   }
   return layers;
 }

@@ -200,9 +200,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   direkt integriert: Ein-Zellen-Gegenprobe im Median 196,7 → 3,93 ms, 131.072 → 16
   Auswertungen bei analytisch richtigem Ergebnis. Höhere Grade bleiben adaptiv.
   Noch kein produktiver Anschluss oder nativer Leistungsgewinn.
+- **M2-Komplexe Quellen:** [48 gezielte Prüfungen und Restkostenprobe](../../reference/atlas-material-complex-source-20261024/README.md)
+  erweitern den Prototyp um Legacy-Füllung und ursprüngliche Pinselabdrücke sowie
+  konkave, mehrteilige und gelochte Bewuchsflächen. Quellen werden vor der
+  Randmessung vereinigt; Überlappungen und gefüllte Löcher hinterlassen keine
+  künstlichen Innenränder. Konvexe Teile behalten direkte Integration, sonst gilt
+  eine konservative Fehlerschranke. Nacharbeit korrigiert vorzeitige
+  Pigmentrundung und stabilisiert Randabstände über Maßstäbe und Translationen.
+  **Gegenprobe:** Ein 6×6-m-Ring mit Loch erreicht bei Toleranz 0,08 das analytische
+  Waldmittel bis auf 0,000002; bereits bei 0,02 und beim Ziel 1/255 überschreitet
+  die gleichmäßige adaptive Unterteilung das Arbeitsbudget von zwei Millionen.
+  Fachliche Erweiterung belegt, produktiver Leistungsgewinn weiterhin offen.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Den Quellenvertrag um Legacy-Pigment, echte Pinselzüge und komplexe weiche
-  Bewuchsflächen vervollständigen. Feld-/Quellenseiten anschließen und Restkosten
+  Zuerst die belegte Überunterteilung komplexer weicher Flächen beseitigen:
+  unveränderliche Innenbereiche und lokal beschränkte Randvariation unterscheiden,
+  Fehlergarantie und Arbeitsbudget erhalten. Den Quellenvertrag um Version-2-
+  Pinselzüge vervollständigen. Feld-/Quellenseiten anschließen und Restkosten
   unter tatsächlicher Weltlast messen, bevor Kachelcacheversion und produktiver
   Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.

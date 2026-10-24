@@ -11,7 +11,7 @@ let production;
 test.before(async()=>{
   const out=resolve('.build/atlas-material-source-raster.mjs');
   await mkdir(resolve('.build'),{recursive:true});
-  const built=await build({stdin:{contents:`import {LandscapeRasterizer} from ${JSON.stringify(resolve('src/app/landscape-raster.ts'))};\nimport {terrainColors} from ${JSON.stringify(resolve('src/app/world-model.ts'))};\nimport {DEFAULT_TERRAIN_STYLE} from ${JSON.stringify(resolve('src/app/terrain-relief.ts'))};\nexport {LandscapeRasterizer,terrainColors,DEFAULT_TERRAIN_STYLE};`,resolveDir:process.cwd(),sourcefile:'material-source-test-entry.ts'},bundle:true,platform:'node',format:'esm',write:false});
+  const built=await build({stdin:{contents:`import {LandscapeRasterizer} from ${JSON.stringify(resolve('src/app/landscape-raster.ts'))};\nimport {terrainColors} from ${JSON.stringify(resolve('src/app/world-model.ts'))};\nimport {DEFAULT_TERRAIN_STYLE} from ${JSON.stringify(resolve('src/app/terrain-relief.ts'))};\nimport {colorParts} from ${JSON.stringify(resolve('src/app/landscape-brush.ts'))};\nexport {LandscapeRasterizer,terrainColors,DEFAULT_TERRAIN_STYLE,colorParts};`,resolveDir:process.cwd(),sourcefile:'material-source-test-entry.ts'},bundle:true,platform:'node',format:'esm',write:false});
   await writeFile(out,built.outputFiles[0].contents);
   production=await import(pathToFileURL(out).href+`?t=${Date.now()}`);
 });
@@ -21,7 +21,8 @@ const full=box=>[{outer:[{x:box.x,y:box.y},{x:box.x+box.width,y:box.y},{x:box.x+
 const record=(id,polygons,values={})=>({id,revision:0,kind:'patch',name:id,points:[],polygons,resolution:1,width:1,values});
 const cover=(polygons,edits=[],preset={})=>({...record('cover',polygons,{terrain:'forest'}),kind:'vegetation',vegetation:{preset:{ground:'#89956b',density:.4,edge:0,...preset},edits}});
 const pigment=(polygons,operation='paint',color='#c04080',target='ground',opacity=.6)=>({...record('pigment',polygons),paint:{version:2,operation,color,target,opacity,fill:true}});
-const areaPixel=(args)=>integrateMaterialArea({box:args.box,width:1,height:1,background:landscapeMaterialBackground(production.DEFAULT_TERRAIN_STYLE.land),layers:landscapeMaterialLayers({...args,palette:production.terrainColors,landColor:production.DEFAULT_TERRAIN_STYLE.land})}).pixels;
+const legacyPigment=(polygons,{color='#c04080',target='ground',opacity=.6,fill=true,tip='round',radius=5,flow=.7,seed=17,strokes}={})=>({...record('legacy-pigment',polygons),paint:{version:1,color,target,opacity,flow,tip,radius,seed,fill,strokes}});
+const areaPixel=(args)=>integrateMaterialArea({box:args.box,width:1,height:1,background:landscapeMaterialBackground(production.DEFAULT_TERRAIN_STYLE.land),layers:landscapeMaterialLayers({...args,colorParts:production.colorParts,palette:production.terrainColors,landColor:production.DEFAULT_TERRAIN_STYLE.land})}).pixels;
 const actualPixel=({box,baseRecords,coverRecords=[],colorRecords=[],water=false})=>{
   const image=new production.LandscapeRasterizer(box,1,1,0,1,true),lattice=image.sampleLattice(),n=lattice.columns*lattice.rows;
   image.setTerrainField({heights:new Float32Array(n),water:new Uint8Array(n).fill(water?1:0)});
@@ -78,6 +79,52 @@ test('supplied water footprint gates water pigment and semantic forest on the sa
     for(let c=0;c<4;c++)close(pixel[9+c]*255,expected.color[c],1.1,`${wet?'wet':'dry'} water-target channel ${c}`);
     close(pixel[4]*255,expected.forest,1.1,`${wet?'wet':'dry'} forest channel`);
   }
+});
+
+test('legacy v1 fill and round, soft and textured overlapping stamps match production in interior pixels',()=>{
+  const box={x:0,y:0,width:1,height:1},polygons=full(box),strokeRecords=[];
+  strokeRecords.push(legacyPigment(polygons,{fill:true,opacity:.37,color:'#d05a2c'}));
+  for(const tip of ['round','soft','textured'])strokeRecords.push(legacyPigment(polygons,{fill:false,tip,radius:5,flow:.65,opacity:.43,color:'#305ac0',strokes:[[{x:.47,y:.5},{x:.53,y:.5}],[{x:.5,y:.5}]]}));
+  for(const colorRecord of strokeRecords){
+    const expected=actualPixel({box,colorRecords:[colorRecord]}),pixel=areaPixel({box,colorRecords:[colorRecord]});
+    for(let c=0;c<4;c++)close(pixel[9+c]*255,expected.color[c],1.1,`legacy v1 ${colorRecord.paint.fill?'fill':colorRecord.paint.tip} channel ${c}`);
+  }
+});
+
+test('legacy scratch alpha rounds only after each raw-opacity part and resets after cover density',()=>{
+  const box={x:0,y:0,width:1,height:1},polygons=full(box),record=legacyPigment(polygons,{fill:false,tip:'soft',radius:5,flow:.37,opacity:.43,strokes:[[{x:.5,y:.5}],[{x:.5,y:.5}]]});
+  let expected=0,incorrect=0;
+  for(const part of production.colorParts(record)){
+    expected=Math.round((part.opacity+expected*(1-part.opacity))*255)/255;
+    const quantizedPart=Math.round(part.opacity*255)/255;
+    incorrect=Math.round((quantizedPart+incorrect*(1-quantizedPart))*255)/255;
+  }
+  assert.equal(expected*255,156,'chosen two-stamp flow separates raw-opacity blending from pre-quantized parts');
+  assert.equal(incorrect*255,155);
+  const pixel=areaPixel({box,coverRecords:[cover(polygons,[],{density:.4})],colorRecords:[record]});
+  close(pixel[13],expected,1e-12,'legacy scratch alpha after cover-density reset');
+  close(pixel[8],expected*.43,1e-12,'record opacity applies once after all stamp parts');
+});
+
+test('legacy filled pigment preserves exact subpixel coverage',()=>{
+  const box={x:0,y:0,width:1,height:1},whole=full(box),half=[poly(rectangle(0,0,.5,1))],base=[record('base',whole,{terrain:'plains'})];
+  const colorRecord=legacyPigment(half,{fill:true,color:'#000000',opacity:.5}),pixel=areaPixel({box,baseRecords:base,colorRecords:[colorRecord]});
+  const baseRgb=[1,3,5].map(i=>parseInt(production.terrainColors.plains.slice(i,i+2),16)/255);
+  for(let c=0;c<3;c++)close(pixel[9+c],baseRgb[c]*.75,1e-12,`half-cell legacy pigment channel ${c}`);
+  close(pixel[13],.5,1e-12,'half-cell scratch alpha coverage');
+});
+
+test('legacy water target and empty strokes preserve the reference behavior',()=>{
+ const box={x:0,y:0,width:1,height:1},probe=new production.LandscapeRasterizer(box,1,1),polygons=full(probe.sampleBox);
+ for(const wet of [false,true]){
+  const paint=legacyPigment(polygons,{target:'water',opacity:.45});
+  paint.paint.operation='erase'; // Only version 2 defines erase; legacy remains paint.
+  const expected=actualPixel({box,colorRecords:[paint],water:wet});
+  const pixel=areaPixel({box,colorRecords:[paint],waterGeometry:wet?polygons:[]});
+  for(let c=0;c<4;c++)close(pixel[9+c]*255,expected.color[c],1.1,`legacy water ${wet} channel ${c}`);
+ }
+ const prior=pigment(polygons),empty=legacyPigment(polygons,{fill:false,strokes:[[]]});
+ assert.deepEqual([...areaPixel({box,colorRecords:[prior,empty]})],[...areaPixel({box,colorRecords:[prior]})]);
 });
 
 test('exact half-cell cover and pigment preserve analytic subpixel area',()=>{
