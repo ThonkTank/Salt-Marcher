@@ -13,10 +13,6 @@ function blend(a,b,t){
   return a[0]===a[1]&&b[0]===b[1]&&t[0]===t[1]?singleton(lo):pad(lo,hi);
 }
 const finishBase=v=>{for(let c=0;c<4;c++)v[9+c]=v[c];};
-const finishPigment=v=>{
-  for(let c=0;c<3;c++)v[9+c]=blend(v[c],v[5+c],v[8]);
-  v[12]=[1,1]; // Canonical base is opaque throughout this adapter.
-};
 export const baseRange=(color,forest)=>v=>{
   for(let c=0;c<3;c++)v[c]=singleton(color[c]);v[3]=[1,1];v[4]=singleton(forest);finishBase(v);
 };
@@ -41,20 +37,14 @@ export function coverRange(color,region,radius){
 }
 export function pigmentRange(color,operation,getAlpha){
   return (v,triangle)=>{
-    const a=getAlpha(v,triangle),old=v[8];
+    const a=getAlpha(v,triangle);
     if(a[1]===0)return;
-    if(operation==='erase')v[8]=blend(old,[0,0],a);
-    else{
-      // Fraction contributed by the new pigment is increasing in its alpha
-      // and decreasing in old alpha. At zero combined alpha the old RGB stays.
-      const weight=(alpha,prior)=>alpha/(alpha+prior*(1-alpha));
-      const lower=a[0]===0?0:weight(a[0],old[1]);
-      const upper=weight(a[1],old[0]);
-      const fraction=a[0]===a[1]&&old[0]===old[1]?singleton(upper):pad(lower,upper);
-      for(let c=0;c<3;c++)v[5+c]=blend(v[5+c],singleton(color[c]),fraction);
-      v[8]=blend(old,[1,1],a);
+    for(let c=0;c<3;c++){
+      v[5+c]=blend(v[5+c],singleton(operation==='erase'?0:color[c]),a);
+      v[9+c]=blend(v[9+c],operation==='erase'?v[c]:singleton(color[c]),a);
     }
-    finishPigment(v);
+    v[8]=blend(v[8],singleton(operation==='erase'?0:1),a);
+    v[12]=[1,1];
   };
 }
 export function materialIntervalError(active,triangle,context){

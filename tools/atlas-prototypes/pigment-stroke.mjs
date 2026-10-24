@@ -21,6 +21,39 @@ function cell(x, radius) { return Math.floor(x / radius * 24); }
 function lowerGuard(x) { return Math.max(0, x * (1 - 8 * EPS)); }
 function upperGuard(x) { return x * (1 + 8 * EPS); }
 
+// Adjacent finite binary64 values bracket a texture transition. Both sides
+// are retained as cuts: the narrow uncertain strip keeps its range bound.
+const bits = new DataView(new ArrayBuffer(8));
+function adjacent(value,direction){
+  if(value===0)return direction*Number.MIN_VALUE;
+  bits.setFloat64(0,value);let raw=bits.getBigUint64(0);
+  raw+=(value>0)===(direction>0)?1n:-1n;
+  bits.setBigUint64(0,raw);return bits.getFloat64(0);
+}
+function textureCut(points,radius){
+  for(const axis of ['x','y']){
+    const min=Math.min(...points.map(q=>q[axis])),max=Math.max(...points.map(q=>q[axis]));
+    const first=cell(min,radius),last=cell(max,radius);
+    if(first===last||!Number.isSafeInteger(first)||!Number.isSafeInteger(last))continue;
+    const boundary=first+Math.floor((last-first)/2)+1;
+    const edge=boundary/24*radius;
+    if(!Number.isFinite(edge))continue;
+    // Leave a visible binary64 uncertainty strip across local/world conversion.
+    // Adjacent world values alone can collapse to the same pixel-local value.
+    const coordinateScale=Math.max(Math.abs(edge),Math.abs(radius),Number.MIN_VALUE);
+    const guard=64*EPS*coordinateScale,margin=8*EPS*coordinateScale;
+    let lo=edge-guard,hi=edge+guard;
+    // Bounded search only. Extreme coordinate resolution can force the normal
+    // interval path; never invent a constant texture value or loop unboundedly.
+    for(let i=0;i<8&&cell(lo,radius)>=boundary;i++)lo=adjacent(lo,-1);
+    for(let i=0;i<8&&cell(hi,radius)<boundary;i++)hi=adjacent(hi,1);
+    if(cell(lo,radius)>=boundary||cell(hi,radius)<boundary)continue;
+    if(lo>min+margin&&lo<max-margin)return {axis,value:lo};
+    if(hi>min+margin&&hi<max-margin)return {axis,value:hi};
+  }
+  return undefined;
+}
+
 export function pigmentStrokeSource(record) {
   const p = record?.paint;
   if (!p || p.version !== 2 || !['round', 'soft', 'textured'].includes(p.tip) ||
@@ -98,5 +131,37 @@ export function pigmentStrokeSource(record) {
     const byteHi = Math.round(255 * hi) / 255 * p.opacity;
     return [byteLo, byteHi];
   }
-  return { coverage, alpha, alphaRange, stampCount: stamps.length };
+  function smooth(triangle,point){
+    const range=alphaRange(triangle);
+    if(range[0]===range[1])return {value:range[0],gradient:0,hessian:0,error:0,range};
+    if(p.tip==='round')return undefined;
+    const minX=Math.min(...triangle.map(q=>q.x)),maxX=Math.max(...triangle.map(q=>q.x));
+    const minY=Math.min(...triangle.map(q=>q.y)),maxY=Math.max(...triangle.map(q=>q.y));
+    if(p.tip==='textured'&&(cell(minX,p.radius)!==cell(maxX,p.radius)||cell(minY,p.radius)!==cell(maxY,p.radius)))return undefined;
+    const factor=p.flow*(p.tip==='textured'?textureValue(point.x,point.y,p):1);
+    let value=0,gradient=0,hessian=0,count=0;
+    let coordinateScale=Math.max(1,Math.abs(point.x),Math.abs(point.y));
+    for(const stamp of stamps){
+      const dx=stamp.x<minX?minX-stamp.x:stamp.x>maxX?stamp.x-maxX:0;
+      const dy=stamp.y<minY?minY-stamp.y:stamp.y>maxY?stamp.y-maxY:0;
+      if(lowerGuard((dx*dx+dy*dy)/radius2)>1)continue;
+      count++;coordinateScale=Math.max(coordinateScale,Math.abs(stamp.x),Math.abs(stamp.y));
+      // max(0,1-d²/r²)² is C1, including its circle boundary. Its gradient
+      // maximum is 8/(3sqrt(3)r), and Hessian operator norm is at most 8/r².
+      const g=factor*8/(3*Math.sqrt(3)*p.radius),h=factor*8/radius2;
+      hessian+=h+2*gradient*g;gradient+=g;
+      const r2=((point.x-stamp.x)**2+(point.y-stamp.y)**2)/radius2;
+      const strength=Math.max(0,1-r2)**2*factor;
+      value=1-(1-value)*(1-strength);
+    }
+    // Each Float32 recurrence is nonexpansive in previous coverage. Half an
+    // ulp on [0,1] is at most 2^-25; the final byte contributes half a byte.
+    // Binary64 arithmetic receives a separate conservative operation allowance.
+    const error=(count*2**-25+1/510+count*32*EPS+gradient*64*EPS*coordinateScale)*p.opacity;
+    const result={value:value*p.opacity,gradient:gradient*p.opacity,hessian:hessian*p.opacity,error,
+      range:[Math.max(0,range[0]-error),Math.min(1,range[1]+error)]};
+    return [result.value,result.gradient,result.hessian,error].every(Number.isFinite)?result:undefined;
+  }
+  return { coverage, alpha, alphaRange, stampCount: stamps.length, smooth,
+    integrationCut:p.tip==='textured'?triangle=>textureCut(triangle,p.radius):undefined };
 }

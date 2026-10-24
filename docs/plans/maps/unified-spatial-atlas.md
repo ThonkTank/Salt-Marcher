@@ -241,13 +241,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   1×1 rund/weich im Median 59/172 ms, strukturiert bereits Budgetabbruch;
   256×256 scheitert für alle drei Spitzen. Quellenverhalten implementiert,
   Ressourcen- und Produktgewinn nicht abgenommen.
+- **M2-Quellenbewusste Integration:** [102 Prüfungen und drei Vergleichsrunden](../../reference/atlas-material-source-integration-20261024/README.md)
+  verbinden stabile Texturzellschnitte mit einer glatten Kernnäherung und explizit
+  fortgeführtem Float32-/Byte-Quellenfehler. Vormultiplizierte private Pigmentkanäle
+  vermeiden die Division bei Deckkraft null; sichtbare Floatkomposition bleibt gleich.
+  256×256 weich/strukturiert ist jetzt in allen drei Runden berechenbar, im Median
+  846/2512 ms bei 644086/1622625 Arbeitsschritten statt Budgetabbruch. 16×16 weich
+  sinkt von 4023 auf 58 ms. Runde Vollkacheln scheitern weiterhin; die neuen
+  Schätzwerte bringen ihnen keinen Gewinn. Synthetischer Prototypfortschritt,
+  keine native Weltlast- oder Produktabnahme.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Die Quellengrenzen gezielt zerlegen und den kontinuierlichen Pinselkern
-  gesondert integrieren; zuerst gegen dieselbe Version-2-Probe mit unverändertem
-  Qualitäts-/Ressourcenziel prüfen. Textur, Byte-Stufen und Autorenfolge dürfen
-  dabei nicht verloren gehen. Danach Feld-/Quellenseiten anschließen und die
-  Materialkosten unter tatsächlicher Weltlast messen, bevor Kachelcacheversion
-  und produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
+  Für harte Kreisgrenzen eine stärkere Flächenmittel-Schranke entwickeln und gegen
+  dieselbe Rundstempelprobe prüfen. Überlappungen und gespeicherte Deckkraftfolge
+  berücksichtigen; einzelne Kreisflächen nicht einfach addieren. Danach gemischte
+  Quellen und tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
+  und Kachelcacheversion sowie produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der

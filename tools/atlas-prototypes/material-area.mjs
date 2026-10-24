@@ -19,6 +19,27 @@ function bounds(geometry) {
 const overlap=(a,b)=>a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y;
 const triangleArea=(a,b,c)=>Math.abs((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]))/2;
 const midpoint=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+function clipTriangleAt(points,axis,value,tick){
+  const coordinate=axis==='x'?0:1;
+  const clip=keepLow=>{
+    const output=[];
+    for(let i=0;i<points.length;i++){
+      tick();const a=points[i],b=points[(i+1)%points.length],av=a[coordinate],bv=b[coordinate];
+      const insideA=keepLow?av<=value:av>=value,insideB=keepLow?bv<=value:bv>=value;
+      if(insideA)output.push(a);
+      if(insideA!==insideB){const t=(value-av)/(bv-av),p=[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])];p[coordinate]=value;output.push(p);}
+    }
+    return output;
+  };
+  const triangles=[];
+  for(const polygon of [clip(true),clip(false)])for(let i=1;i+1<polygon.length;i++){
+    tick();const triangle=[polygon[0],polygon[i],polygon[i+1]];
+    if(triangleArea(...triangle)>0)triangles.push(triangle);
+  }
+  const originalArea=triangleArea(...points),splitArea=triangles.reduce((sum,triangle)=>sum+triangleArea(...triangle),0);
+  if(Math.abs(splitArea-originalArea)>Math.max(originalArea*1e-12,Number.MIN_VALUE*32))return undefined;
+  return triangles;
+}
 export class AreaBudgetExceeded extends Error {}
 
 function pushError(heap,node){
@@ -88,33 +109,38 @@ function classifyCells(geometry,width,height,tick){
  * weighted). For discontinuous layers it is mandatory on unknown triangles;
  * context.evaluateCenter() lazily evaluates and caches the centroid estimate.
  * undefined retains the Lipschitz bound; malformed bounds fail explicitly.
+ * triangleEstimate(activeLayers, worldTriangle, context) may additionally
+ * provide a certified mean vector and absolute mean error for all channels.
  */
-export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error',centroidErrorBound}) {
+export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error',centroidErrorBound,triangleEstimate}) {
   if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||width>1024||height>1024||
     ![box.x,box.y,box.width,box.height,...background,tolerance,lipschitz].every(Number.isFinite)||box.width<=0||box.height<=0||tolerance<=0||lipschitz<0)
     throw Error('Invalid area prototype input');
   if(!['cell-error','uniform'].includes(adaptiveStrategy))throw Error('Invalid adaptive strategy');
   if(centroidErrorBound!==undefined&&typeof centroidErrorBound!=='function')throw Error('Invalid centroid error callback');
-  const budget={inputVertices:65536,cellVertices:16384,cachedVertices:65536,cachedPieces:4096,faces:256,work:2000000,depth:16,pendingTriangles:65536,classifierBytes:16*1024*1024,...limits};
+  if(triangleEstimate!==undefined&&typeof triangleEstimate!=='function')throw Error('Invalid triangle estimate callback');
+  const budget={inputVertices:65536,cellVertices:16384,cachedVertices:65536,cachedPieces:4096,faces:256,work:2000000,depth:16,sourceDepth:64,pendingTriangles:65536,classifierBytes:16*1024*1024,...limits};
   for(const value of Object.values(budget))if(!Number.isSafeInteger(value)||value<1)throw Error('Invalid area budget');
-  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,degreeQueries:0,localPolynomialTriangles:0,localConstantTriangles:0,curvatureQueries:0,curvatureBounds:0,peakPendingTriangles:0,errorSumRechecks:0,work:0,classifierBytes:0};
-  const tick=()=>{if(++stats.work>budget.work)throw new AreaBudgetExceeded('Area work budget exceeded');};
+  const stats={inputVertices:0,clipCalls:0,localClipCalls:0,cachedVertices:0,cachedPieces:0,peakClipSourceVertices:0,peakFaces:1,peakCellVertices:0,evaluations:0,subdivisions:0,sourceCuts:0,sourceCutQueries:0,rejectedSourceCuts:0,degreeQueries:0,localPolynomialTriangles:0,localConstantTriangles:0,curvatureQueries:0,curvatureBounds:0,estimateQueries:0,estimateBounds:0,peakPendingTriangles:0,errorSumRechecks:0,work:0,classifierBytes:0};
+  const budgetFailure=message=>Object.assign(new AreaBudgetExceeded(message),{stats:{...stats}});
+  const tick=()=>{if(++stats.work>budget.work)throw budgetFailure('Area work budget exceeded');};
   const dx=box.width/width,dy=box.height/height,scale=Math.max(dx,dy);
   const prepared=layers.map(layer=>{
-    stats.inputVertices+=vertices(layer.geometry);if(stats.inputVertices>budget.inputVertices)throw new AreaBudgetExceeded('Area input vertex budget exceeded');
+    stats.inputVertices+=vertices(layer.geometry);if(stats.inputVertices>budget.inputVertices)throw budgetFailure('Area input vertex budget exceeded');
     const local=layer.geometry.map(p=>p.map(r=>r.map(([x,y])=>{
       if(!Number.isFinite(x)||!Number.isFinite(y))throw Error('Nonfinite source coordinate');
       return [(x-box.x)/dx,(y-box.y)/dy];
     })));
     if(layer.polynomialDegree!==undefined&&(!Number.isInteger(layer.polynomialDegree)||layer.polynomialDegree<0||layer.polynomialDegree>3))throw Error('Invalid material polynomial degree');
     if(layer.polynomialDegreeOnTriangle!==undefined&&typeof layer.polynomialDegreeOnTriangle!=='function')throw Error('Invalid material triangle classifier');
+    if(layer.integrationCut!==undefined&&typeof layer.integrationCut!=='function')throw Error('Invalid material integration cut callback');
     if(layer.discontinuous&&(!layer.varying||typeof layer.discontinuous!=='boolean'))throw Error('Discontinuous material must declare varying:true');
     if(layer.discontinuous&&!centroidErrorBound)throw Error('Discontinuous material requires a centroid error callback');
     if(layer.varying&&layer.polynomialDegree===undefined&&lipschitz===0&&!layer.discontinuous)throw Error('Varying material needs a final-channel Lipschitz bound');
     let cells;
     if(interiorFastPath){
       stats.classifierBytes+=width*height;
-      if(stats.classifierBytes>budget.classifierBytes)throw new AreaBudgetExceeded('Area classifier byte budget exceeded');
+      if(stats.classifierBytes>budget.classifierBytes)throw budgetFailure('Area classifier byte budget exceeded');
       cells=classifyCells(local,width,height,tick);
     }
     return {...layer,geometry:local,bounds:bounds(local),cells,pieces:new Map()};
@@ -127,10 +153,10 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
     const bx=Math.floor(x/size),by=Math.floor(y/size),key=`${size}/${bx}/${by}`;
     if(layer.pieces.has(key))return layer.pieces.get(key);
     const parent=localGeometry(layer,x,y,size*2);tick();stats.localClipCalls++;
-    if(++stats.cachedPieces>budget.cachedPieces)throw new AreaBudgetExceeded('Area clipped source piece budget exceeded');
+    if(++stats.cachedPieces>budget.cachedPieces)throw budgetFailure('Area clipped source piece budget exceeded');
     const clipped=polygonClipping.intersection(parent,rectangle(bx*size,by*size,size,size));
     stats.cachedVertices+=vertices(clipped);
-    if(stats.cachedVertices>budget.cachedVertices)throw new AreaBudgetExceeded('Area clipped source vertex budget exceeded');
+    if(stats.cachedVertices>budget.cachedVertices)throw budgetFailure('Area clipped source vertex budget exceeded');
     layer.pieces.set(key,clipped);return clipped;
   };
   const channels=background.length,pixels=new Float64Array(width*height*channels),errorBounds=new Float64Array(width*height);
@@ -156,11 +182,11 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
         stats.clipCalls++;const outside=polygonClipping.difference(face.geometry,sourceGeometry);
         if(outside.length)next.push({geometry:outside,active:face.active});
         next.push({geometry:inside,active:[...face.active,index]});
-        if(next.length>budget.faces)throw new AreaBudgetExceeded('Area face budget exceeded');
+        if(next.length>budget.faces)throw budgetFailure('Area face budget exceeded');
       }
       faces=next;const count=faces.reduce((n,f)=>n+vertices(f.geometry),0);
       stats.peakFaces=Math.max(stats.peakFaces,faces.length);stats.peakCellVertices=Math.max(stats.peakCellVertices,count);
-      if(count>budget.cellVertices)throw new AreaBudgetExceeded('Area cell vertex budget exceeded');
+      if(count>budget.cellVertices)throw budgetFailure('Area cell vertex budget exceeded');
     }
     const out=(y*width+x)*channels,queue=[];let remainingError=0;
     for(const face of faces){
@@ -180,9 +206,28 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       // must include the channel state transform, not just a standalone colour.
       const degree=face.active.reduce((sum,index)=>sum+(prepared[index].varying?(prepared[index].polynomialDegree??Infinity):0),0);
       const active=face.active.map(index=>prepared[index]);
+      const trySourceCut=(points,sourceDepth)=>{
+        const worldTriangle=points.map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
+        const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
+        for(const layer of active){
+          if(!layer.integrationCut)continue;
+          tick();stats.sourceCutQueries++;
+          const cut=layer.integrationCut(worldTriangle);
+          if(cut===undefined)continue;
+          if(!cut||typeof cut!=='object'||!['x','y'].includes(cut.axis)||!Number.isFinite(cut.value))throw Error('Invalid material integration cut');
+          const coordinate=cut.axis==='x'?0:1,local=(cut.value-(cut.axis==='x'?box.x:box.y))/(cut.axis==='x'?dx:dy);
+          const values=coordinate===0?xs:ys,min=Math.min(...values),max=Math.max(...values);
+          if(!(local>min&&local<max))continue;
+          const children=clipTriangleAt(points,cut.axis,local,tick);
+          if(!children){stats.rejectedSourceCuts++;continue;}
+          if(sourceDepth>=budget.sourceDepth)throw budgetFailure('Area source cut depth exceeded');
+          if(children.length){stats.sourceCuts++;return children;}
+        }
+        return undefined;
+      };
       const hasDiscontinuous=active.some(layer=>layer.discontinuous);
       if(degree>3&&lipschitz===0&&!hasDiscontinuous)throw Error('Composed variable material needs a final-channel Lipschitz bound');
-      const visit=(points,depth)=>{
+      const visit=(points,depth,sourceDepth=0)=>{
           tick();const [a,b,c]=points,weight=triangleArea(a,b,c);
           if(!weight)return;
           const center=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];
@@ -216,33 +261,47 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
           }
           const radius=Math.max(...[a,b,c].map(p=>Math.hypot((p[0]-center[0])*dx,(p[1]-center[1])*dy)));
           let meanError=lipschitz*radius;
-          let centerValue;
-          if(centroidErrorBound){
-            tick();stats.curvatureQueries++;
+          let centerValue,triangleMean;
+          let context;
+          if(centroidErrorBound||triangleEstimate){
             worldTriangle??=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
-            const context={background:[...background],evaluateCenter(){
+            context={background:[...background],evaluateCenter(){
               if(centerValue===undefined)centerValue=evaluate(center);
               return [...centerValue];
             }};
+          }
+          if(centroidErrorBound){
+            tick();stats.curvatureQueries++;
             const bound=centroidErrorBound(active,worldTriangle,context);
             if(bound!==undefined&&(!Number.isFinite(bound)||bound<0))throw Error('Invalid centroid error bound');
             if(hasDiscontinuous&&bound===undefined)throw Error('Discontinuous material needs a finite centroid error bound on unknown triangles');
             if(bound!==undefined&&(hasDiscontinuous||bound<meanError)){meanError=bound;stats.curvatureBounds++;}
           }
+          if(triangleEstimate){
+            tick();stats.estimateQueries++;
+            const estimate=triangleEstimate(active,worldTriangle,context);
+            if(estimate!==undefined){
+              if(!estimate||typeof estimate!=='object'||!Array.isArray(estimate.value)||estimate.value.length!==channels||!estimate.value.every(Number.isFinite)||!Number.isFinite(estimate.error)||estimate.error<0)
+                throw Error('Invalid triangle mean estimate');
+              if(estimate.error<meanError){meanError=estimate.error;triangleMean=estimate.value;stats.estimateBounds++;}
+            }
+          }
           const error=meanError*weight;
           if(adaptiveStrategy==='uniform'&&meanError>tolerance){
-            if(depth>=budget.depth)throw new AreaBudgetExceeded('Area integration depth exceeded');
+            const cutChildren=trySourceCut(points,sourceDepth);
+            if(cutChildren){for(const child of cutChildren)visit(child,depth,sourceDepth+1);return;}
+            if(depth>=budget.depth)throw budgetFailure('Area integration depth exceeded');
             stats.subdivisions++;
             const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
-            for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])visit(child,depth+1);
+            for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])visit(child,depth+1,sourceDepth);
             return;
           }
-          const value=(centerValue??evaluate(center)).map(v=>v*weight);
+          const value=(triangleMean??centerValue??evaluate(center)).map(v=>v*weight);
           for(let k=0;k<channels;k++)pixels[out+k]+=value[k];
           remainingError+=error;
           if(adaptiveStrategy==='cell-error'&&error>0){
-            if(queue.length>=budget.pendingTriangles)throw new AreaBudgetExceeded('Area pending triangle budget exceeded');
-            pushError(queue,{points,depth,error,value,visit});
+            if(queue.length>=budget.pendingTriangles)throw budgetFailure('Area pending triangle budget exceeded');
+            pushError(queue,{points,depth,sourceDepth,error,value,visit,trySourceCut});
             stats.peakPendingTriangles=Math.max(stats.peakPendingTriangles,queue.length);
           }
       };
@@ -261,12 +320,14 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
         if(remainingError<=tolerance)break;
       }
       if(!queue.length)throw Error('Area refinement lost its error queue');
-      const node=popError(queue),{points:[a,b,c],depth}=node;
-      if(depth>=budget.depth)throw new AreaBudgetExceeded('Area integration depth exceeded');
+      const node=popError(queue),{points:[a,b,c],depth,sourceDepth}=node;
+      const cutChildren=node.trySourceCut(node.points,sourceDepth);
+      if(cutChildren){remainingError-=node.error;for(let k=0;k<channels;k++)pixels[out+k]-=node.value[k];for(const child of cutChildren)node.visit(child,depth,sourceDepth+1);continue;}
+      if(depth>=budget.depth)throw budgetFailure('Area integration depth exceeded');
       remainingError-=node.error;for(let k=0;k<channels;k++)pixels[out+k]-=node.value[k];
       stats.subdivisions++;
       const ab=midpoint(a,b),bc=midpoint(b,c),ca=midpoint(c,a);
-      for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])node.visit(child,depth+1);
+      for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])node.visit(child,depth+1,sourceDepth);
     }
     errorBounds[y*width+x]=remainingError;
    }
