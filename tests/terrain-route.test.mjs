@@ -6,9 +6,9 @@ import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});
-buildSync({stdin:{contents:`export * from './src/app/terrain-route';export * from './src/app/terrain-route-planner';export * from './src/app/terrain-route-view';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/landscape-line';export * from './src/app/atlas-landscape';export * from './src/app/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';`,resolveDir:process.cwd()},outfile:'.build/terrain-route-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+buildSync({stdin:{contents:`export * from './src/app/terrain-route';export * from './src/app/terrain-route-planner';export * from './src/app/atlas-route-geometry';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/landscape-line';export * from './src/app/atlas-landscape';export * from './src/app/spatial-terrain';export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';`,resolveDir:process.cwd()},outfile:'.build/terrain-route-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
 const api=createRequire(import.meta.url)('../.build/terrain-route-test.cjs');
-const {emptyRecord,heightRecord,TerrainSampler,routeSpec,planRoute,linePoints,applyTerrainBrush,decodeHeights,CampaignStore,routeMeshes,replanRoutes,routeBounds}=api;
+const {emptyRecord,heightRecord,TerrainSampler,routeSpec,planRoute,linePoints,applyTerrainBrush,decodeHeights,CampaignStore,atlasRouteGeometry,replanRoutes,routeBounds}=api;
 const terrain=(fn=()=>60)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*512,y*512,8,Float32Array.from({length:4096},(_,i)=>fn(x*512+i%64*8,y*512+Math.floor(i/64)*8)))));
 const route=(kind='road',points=[{x:-200,y:0},{x:200,y:0}])=>({...emptyRecord(kind),id:randomUUID(),name:'Probe',width:kind==='road'?6:12,line:api.newLine(kind),points,route:routeSpec(kind,points)});
 const brush=(x=0,y=0,strength=120)=>({mode:'raise',radius:40,strength,feather:.5,roughness:0,seed:1,samples:[{x,y,t:0},{x,y,t:1000}]});
@@ -63,10 +63,10 @@ test('tunnels preserve the mountain surface and bridges have elevated decks',()=
 });
 test('legacy curved styles and terrain edge heights survive 3D meshing',()=>{
  const r=route();delete r.route;r.points=[{x:-60,y:0},{x:0,y:30},{x:60,y:0}];r.line.style='dashed';r.line.roughness=0;
- const meshes=routeMeshes(r,p=>p.x*.1+p.y*.5,{x:0,y:0,z:0},1,2);
+ const meshes=atlasRouteGeometry(r,p=>p.x*.1+p.y*.5,{x:0,y:0,z:0},1,2);
  assert(meshes.length);let vertices=0;
- for(const mesh of meshes.filter(m=>!m.userData.routeOverview)){const pos=mesh.geometry.getAttribute('position');vertices+=pos.count;for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-(pos.getX(i)*.1-pos.getY(i)*.5+.025))<1e-4);}
- assert(vertices>12);assert(meshes.every(m=>m.userData.landscapeId===r.id));
+ for(const mesh of meshes){const pos=mesh.positions;vertices+=pos.length/3;for(let i=0;i<pos.length;i+=3)assert(Math.abs(pos[i+2]-(pos[i]*.1+pos[i+1]*.5+.025))<1e-4);}
+ assert(vertices>12);
 });
 function fixture(t){
  const dir=mkdtempSync(cache+'/route-store-'),store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('Verläufe'),active=store.activate(cam.id);

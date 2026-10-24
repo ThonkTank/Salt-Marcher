@@ -1,4 +1,0 @@
-Initial camera {"view":{"x":-300,"y":-281.77570093457945,"width":600,"height":563.5514018691589},"left":424,"top":48,"width":856,"height":804}
-Queued camera gestures retain their final viewport and release authoring; painting and undo restore the exact vegetation payloads
-Native rotation, pan and zoom performance measured and Electron exited normally
-{"complete":true,"out":"/home/aaron/Schreibtisch/projects/SaltMarcher/.build/vegetation-navigation","checks":["Queued camera gestures retain their final viewport and release authoring; painting and undo restore the exact vegetation payloads","Native rotation, pan and zoom performance measured and Electron exited normally"],"profile":"/home/aaron/.cache/saltmarcher/vegetation-qualification-LxPfXo","navigation":{"frames":218,"meanFps":59.914800054967706,"frameP95Ms":16.80000000000291,"scope":"visible rotation slider during real mouse drag","targetMet":true}}

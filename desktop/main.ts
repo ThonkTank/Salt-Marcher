@@ -1,5 +1,10 @@
+import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
 import {AtlasWriteActivity} from './atlas-write-activity';
 import {clearCampaignStaging,discardCampaignTickets,finishCampaignErasure} from './campaign-erasure';
+import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
+import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
+import {atlasTerrainTileQuery} from '../src/app/atlas-terrain-tile';
+import {atlasMaterialTileQuery} from '../src/app/atlas-material-tile';
 import {clearProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
@@ -81,7 +86,7 @@ else {
     const updates=new UpdateService({version:__APP_VERSION__,root:updateRuntime.root,settings:path.join(dataDir,'update-settings.json'),publicKey:updateRuntime.root?await updateRuntime.publicKey():'',emit:status=>{if(win&&!win.isDestroyed())win.webContents.send('update:status',status);}});
     await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
-    await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));
+    await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));await clearCorruptAtlasTileCaches(path.join(dataDir,'atlas-region-cache'));
     clearCampaignStaging(dataDir);
     for(const id of store.pendingCampaignErasures())await finishPendingCampaignErasure(id);
     protocol.handle('campaign', request => {
@@ -90,7 +95,9 @@ else {
       if(url.pathname.startsWith('/player/art/')&&url.host==='app'){try{const id=decodeURIComponent(url.pathname.split('/').at(-1)!),frame=store.currentPlayerFrame();if(frame.mode!=='image'||frame.imageId!==id)return new Response('Image unavailable',{status:404});return net.fetch(pathToFileURL(store.playerImageFile(id)).href);}catch{return new Response('Image unavailable',{status:404});}}
       const name = url.pathname.slice(1);
 
-      if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'terrain-spatial-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css'].includes(name)) return new Response('Not found', { status: 404 });
+      if (url.host !== 'app' || !['index.html', 'renderer.js', 'atlas-brush-worker.js', 'preset-settings.js','preset-settings.css','app.css','player.css',
+        'atlas-deck-runtime.js',
+        'atlas-fonts/NotoSans-VF.ttf','atlas-fonts/NotoSansSymbols-VF.ttf'].includes(name)) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(root, name)).href);
     });
     win = new BrowserWindow({ show:!updateRuntime.transaction, width: 1280, height: 880, minWidth: 640, minHeight: 480, title: 'SaltMarcher', backgroundColor: '#edf1f6',
@@ -436,12 +443,40 @@ else {
       const value=await atlasRegions.terrainColor(source,q);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');return value;
     });
-    handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:store.atlasRegionSource(token).revision};});
-    handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view')=>{
+    handle('atlas:geometry-tile',async(token:string,q:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest)=>{
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasGeometryTileBox(q);
+      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Geometriekachel inzwischen geändert.');
+      const value=await atlasRegions.geometryTile(source,q);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Geometriekachel inzwischen geändert.');
+      return value;
+    });
+    handle('atlas:cancel-read',(token:string,control:AtlasReadRequest)=>{store.atlasRegionSource(token);if(!control)throw Error('Kartenleseauftrag fehlt.');validateAtlasReadRequest(control);atlasRegions.cancelRead(control,token);atlasExportRegions.cancelRead(control,token);});
+    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest)=>{
+      validateAtlasReadRequest(control);
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasTerrainTileQuery(q);
+      const source=store.atlasRegionSource(token,atlasExportRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Atlaskachel inzwischen geändert.');
+      const value=await atlasExportRegions.terrainTile(source,q,control);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Atlaskachel inzwischen geändert.');
+      return value;
+    });
+    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest)=>{
+      validateAtlasReadRequest(control);
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasMaterialTileQuery(q);
+      const source=store.atlasRegionSource(token,atlasExportRegions.cursor);
+      if(source.revision!==q.revision)throw Error('Materialkachel inzwischen geändert.');
+      const value=await atlasExportRegions.materialTile(source,q,control);
+      if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
+      return value;
+    });
+    handle('atlas:terrain-source',(token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');const source=store.atlasRegionSource(token);return{revision:source.revision,fence:source.fence};});
+    handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view',control?:AtlasReadRequest)=>{
+      validateAtlasReadRequest(control);
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
       const reader=consumer==='view'?atlasRegions:atlasExportRegions,source=store.atlasRegionSource(token,reader.cursor);
       if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
-      const value=await reader.terrain(source,q);if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');if(!value.draft)store.rememberTerrainGrid(token,source.fence,value.grid);return value;
+      const value=await reader.terrain(source,q,control);if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');if(!value.draft&&!value.heightOnly)store.rememberTerrainGrid(token,source.fence,value.grid);return value;
     });
     handle('atlas:mask-region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox)=>store.atlasMaskRegion(token,box));
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));

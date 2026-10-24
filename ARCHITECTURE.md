@@ -31,59 +31,19 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 
 ## Gewählte Grundstruktur
 
-### Vorläufiges Atlasziel und überprüfbare Alternativen (16.10.2026)
+### Atlas
 
-Der beauftragte Atlasumbau konkretisiert diese Grundlage; Lieferstand,
-Migrationsschritte und direkte Abnahmen stehen ausschließlich im
-[Runtimeplan](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#umstellung-auf-das-vorläufige-atlaszielsystem).
-Produktregeln bleiben verbindlich: ein wachsender ebener Meterraum, gemeinsame
-Kamera/Auswahl/History, geschützte grobe/feine Bearbeitung, stabile Identitäten
-und Texte, lokale Offline-Nutzung, sichere passive Anzeige und unabhängiger
-Kampagnentransfer. Referenzziel sind gewöhnliche 16-GiB-Laptops; Speicherlimits
-auf größeren Rechnern ersetzen deren physische Qualifikation nicht.
+Der [Atlasplan](docs/plans/maps/unified-spatial-atlas.md) beschreibt den vollständigen
+GPU-Umstieg und die technische Bereinigung. Die frühere M0–M8-Technikpflicht ist
+aufgehoben. [Zuständigkeiten und Prüfwege](docs/development/atlas-rendering.md)
+stehen an einem Ort; Main/SQLite bleiben die kanonische Schreibgrenze.
 
-Die folgenden Technikentscheidungen sind ausdrücklich vorläufig. Ein Wechsel
-erhält die Fachregeln und benötigt einen passenden Vergleich, keine neue
-allgemeine Freigabeschranke. Reihenfolge: Korrektheit/Inhaltsschutz, Fähigkeiten,
-Reaktionszeit/Speicher, Gesamtaufwand. Bei gleich geeigneten Lösungen die
-einfachere behalten; fehlende Nachweise als offen führen.
-
-| ID | Arbeitsrichtung | Weiter betrachtete Alternative / Wechselnachweis |
-| --- | --- | --- |
-| B01 | Atlas: Canvas2D-Draufsicht und orthografische Three.js-Geländeansicht | [Darstellungs-, Auswahl- und Ausgabevertrag](docs/development/atlas-rendering.md). Für die Draufsicht: Pixi/WebGL bei belegten Zeichen-/Kompositionsgrenzen; OffscreenCanvas-Worker bei belegter UI-Blockade. Hardware-/Präsentationsqualifikation bleibt offen. |
-| B02 | SQLite-Rtree für Raum-/Stadtgeometrie und Landschaftsobjekte; kanonische Bounds-Btrees für Terrain | Bestehender Btree, Suchraster/Quadtree, BVH für genaue Tests; Grenzen, Dichte, lange Geometrie und Änderungskosten messen. Exakte Geometrie bleibt getrennt. |
-| B03 | Exakte 1000-m-Bereichsadresse plus lokaler Offset, versionierter Codec | Andere Bereichsgröße/lokales Festkomma nur mit Präzisions- und Transfernachweis; kein vorzeitiges globales Double. |
-| B04 | Wirksame Landschaft vor maßstabsabhängiger Zusammenfassung bestimmen | Raster-/Vektorkacheln, vereinfachte Konturen und Kombination; Landschaftserhalt, Ränder und lokale Invalidierung entscheiden. |
-| B05 | Austauschbare feste Ladeeinheiten und getrennte Bytecaches | Adaptive Bereiche/statisch-dynamische Indizes nach Dichtemessung. Cachevergleich 64/128/256 MiB je Klasse; kleinste geeignete Variante wählen. |
-| B06 | Hashadressierte Assetdateien gemäß Speicherziel | Bestehende SQLite-BLOBs und begründete Mischform bis zum Medien-/Backup-/Transfervergleich erhalten. Kein bloßer Dateiformatwechsel ohne Gesamtnutzen. |
-| B07 | Begrenzte Worker, genau ein Writer; abbrechbare Raumtextscans je Suchoberfläche | DBthread/isolierter Medienprozess; WASM nur für gemessene Kerne. Kopien, Speicher, Cancel und Fehlerisolation entscheiden. |
-| B08 | Dungeon-Zellvolumes und metrische Gebäudeprismen | Intervall-/Chunkrepräsentation und spezialisierte Geometriekerne optimierbar; keine zweite physische Wahrheit oder freie universelle CSGpflicht. |
-| B09 | Transaktionen, Deltas und Receipts weiterführen | Kompaktere Patches/Checkpoints nach Langzeitmessung. Alte History muss weiter lesbar und kausal rücknehmbar bleiben. |
-| B10 | Lokale/regionale Navigation mit gemeinsamen Übergängen und Zeit | Navmesh/hierarchischer Graph/Kostenfelder nach echten Aufgaben; keine vorsorgliche Dauersimulation. |
-| B11 | Electron/TypeScript/SQLite | Andere WebView/native2D erst bei belegtem unerfüllbarem Speicher-/Grafik-/OS-/Installationsziel. |
-
-[Bereichsworker und Quellinvalidierung](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#bereichsworker-und-quellinvalidierung)
-sowie [Darstellungs- und Cachebudgets](ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#darstellungsbudgets-und-caches)
-stehen im Runtimeplan. [Framefreigabe](docs/development/atlas-rendering.md#welcher-frame-darf-eingaben-annehmen)
-und [Wiederverwendung beim Pan](docs/development/atlas-rendering.md#was-bleibt-bei-rasterwechsel-und-pan-erhalten)
-stehen im Darstellungsvertrag.
-
-[Prüfwege und offene Qualifikation](docs/development/atlas-rendering.md#prüfwege-und-offene-qualifikation)
-trennen native Laufzeitbelege von Hardware-/Präsentationsabnahme und weiteren
-Architekturentscheidungen.
-
-Die Raumlesegrenze unterscheidet kleine Aktivierungsdaten, Metadaten,
-Darstellungsgeometrie und vollständigen ausgewählten Autoreninhalt. Diese
-Projektionen sind keine zweite Schreibautorität. Die aktuelle Volltextsuche
-scannt unveränderliche Quelldaten im Worker; ein abgeleiteter Volltextindex
-bleibt eine messungsabhängige Alternative. Persistente Text-/Geometrietrennung
-und Byte-/Geometriebudgets bleiben offen; reine Metadatenseiten schließen die
-Speicherqualifikation nicht ab.
-
-Kugelprojektion, Serverpflicht, allgemeines Multiuser-Editing und freie
-3D-Meshmodellierung werden derzeit nicht verfolgt; ein veränderter Produktauftrag
-kann sie wieder relevant machen. Beobachtung der Technik ist keine Erlaubnis,
-Atlasumfang oder externe Datenbindungen zu verkleinern.
+Ein ebener Meterraum, gemeinsame Kamera und History sowie eindeutige Objekt-
+identitäten verbinden die Werkzeuge. Die lokale Offline-Anwendung bleibt auf
+gewöhnliche Laptops mit 16 GiB RAM ausgerichtet; größere Entwicklungsrechner
+ersetzen deren Qualifikation nicht. Begrenzte Leseprodukte und Caches sind
+ableitbar. Raumtexte, Geometrie und Metadaten besitzen gezielte Lesezugänge;
+keiner davon wird zu einer zweiten Schreibautorität.
 
 ### Prozesse und Verantwortlichkeiten
 
@@ -189,7 +149,7 @@ Prüfung liegt in `src/app/storage/snapshot-validation.ts`, zustandsfreie
 Payloadleser in `stored-records.ts`. Der Store besitzt Kopie, Epochenschutz,
 Synchronisierung und Veröffentlichung; er wartet auf das tatsächliche Workerende.
 Beim Schließen wird eine laufende Prüfung beendet und ihr Kandidat verworfen.
-[Große Welt und verbleibende Commitlast](docs/reference/atlas-backup-worker-20261021/README.md).
+[Große Welt und verbleibende Commitlast](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-backup-worker-20261021/README.md).
 
 Backup nutzt einen konsistenten DBsnapshot über die
 [SQLite-Backup-API](https://www.sqlite.org/backup.html) sowie ein hashgebundenes
@@ -371,7 +331,7 @@ Leakprüfung umfasst DTO, IPC, Assets, DOM, Fehler, Protokolle und Neustart.
 
 ### Kippbare Geländeansicht
 
-[Gemeinsame Daten, Draufsicht und Geländeprojektion](docs/development/atlas-rendering.md#draufsicht-und-geländeprojektion)
+[Gemeinsame Daten, Draufsicht und Geländeprojektion](docs/development/atlas-rendering.md#geometrie-material-und-auswahl)
 benennen Besitzer und Grenzen. Die [Relief-Roadmap](docs/plans/maps/terrain-relief.md)
 besitzt Fachlieferungen und R7-Abnahme.
 

@@ -1,12 +1,12 @@
 import type {Session} from 'electron';
 /** The player session exposes only its own static shell and explicitly published art. */
-export type PlayerResource = {kind:'static';name:'player-display.html'|'player-display.js'|'player.css'}|{kind:'image';id:string};
+export type PlayerResource = {kind:'static';name:'player-display.html'|'player-display.js'|'player.css'|'atlas-deck-runtime.js'}|{kind:'image';id:string};
 export function playerResource(address:string):PlayerResource|null {
  try {
   const url=new URL(address);
   if(url.protocol!=='campaign:'||url.hostname!=='player'||url.port||url.username||url.password||url.search||url.hash)return null;
   const name=url.pathname.slice(1);
-  if(name==='player-display.html'||name==='player-display.js'||name==='player.css')return{kind:'static',name};
+  if(name==='player-display.html'||name==='player-display.js'||name==='player.css'||name==='atlas-deck-runtime.js')return{kind:'static',name};
   if(!url.pathname.startsWith('/art/'))return null;
   const id=decodeURIComponent(url.pathname.slice(5));
   return id&&!/[\u0000/\\]/.test(id)&&url.pathname==='/art/'+encodeURIComponent(id)?{kind:'image',id}:null;

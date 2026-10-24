@@ -3,8 +3,8 @@ import {deflateSync,inflateSync} from 'fflate';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/vegetation-projection';export * from './src/app/atlas-spatial-vegetation';export * from './src/app/vegetation';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';export * as THREE from 'three';"},outfile:'.build/vegetation-projection-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {compactVegetation,vegetationInstances,AtlasSpatialVegetation,vegetationSpec,drawVegetation,atlasPaint,THREE}=createRequire(import.meta.url)('../.build/vegetation-projection-test.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/vegetation-projection';export * from './src/app/atlas-deck-vegetation';export * from './src/app/vegetation';export * from './src/app/vegetation-view';export * from './src/app/atlas-paint';export {atlasMetricFrame} from './src/app/atlas-metric-camera';"},outfile:'.build/vegetation-projection-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {compactVegetation,vegetationInstances,AtlasDeckVegetation,vegetationSpec,drawVegetation,atlasPaint,atlasMetricFrame}=createRequire(import.meta.url)('../.build/vegetation-projection-test.cjs');
 const plant=(n=0)=>({id:'tree:'+n,asset:['oak','pine','rock','shrub','grass'][n%5],x:n*11.625,y:n*12.1875,z:50.123456789,size:14.123456789,angle:n/11,normal:{x:.123456789,y:-.0623456789,z:.9987654321}});
 const view=()=>({mode:'individual',instances:Array.from({length:100},(_,n)=>plant(n))});
 test('JSON transport preserves distant doubles, order, protected metadata and decode identity',()=>{
@@ -31,13 +31,12 @@ test('invalid compact payloads fail instead of publishing displaced or missing g
 });
 test('compact projections produce the same instance matrices, selection IDs and flat scene',()=>{
  const v=view(),spec=vegetationSpec(),record={id:'wood',vegetation:spec,polygons:[],vegetationView:v},packed={...record,vegetationView:JSON.parse(JSON.stringify(compactVegetation(v)))};
- const surface={origin:{x:0,y:0},focusM:50,exaggeration:1},a=new AtlasSpatialVegetation([record],surface),b=new AtlasSpatialVegetation([packed],surface);
+ const surface={origin:{x:0,y:0},focusM:50,exaggeration:1},a=new AtlasDeckVegetation([record],surface),b=new AtlasDeckVegetation([packed],surface);
  try{
-  assert.deepEqual(b.group.children.map(m=>Array.from(m.instanceMatrix.array)),a.group.children.map(m=>Array.from(m.instanceMatrix.array)));
-  const camera=new THREE.PerspectiveCamera(45,1,.01,10000);camera.position.set(0,0,100);camera.lookAt(0,0,0);camera.updateMatrixWorld(true);
-  const ray=new THREE.Raycaster();ray.setFromCamera(new THREE.Vector2(0,0),camera);
-  for(const g of [a,b]){g.group.updateMatrixWorld(true);for(const m of g.group.children)m.onBeforeRender({getSize:v=>v.set(1000,1000)});}
-  assert.equal(a.hit(ray,['vegetation-trees'])?.data.vegetationInstance,'tree:0');assert.deepEqual(b.hit(ray,['vegetation-trees']),a.hit(ray,['vegetation-trees']));
+  const frame=atlasMetricFrame({focus:{x:0,y:0},focusHeightM:50,metersPerPixel:.2,rotation:0,tilt:0,exaggeration:1},1000,1000);
+  const transforms=v=>v.layers(frame,'test').map(layer=>layer.props.data.map(i=>layer.props.getTransformMatrix(i)));
+  assert.deepEqual(transforms(b),transforms(a));
+  assert.equal(a.hit(frame,{x:500,y:500},['vegetation-trees'])?.data.vegetationInstance,'tree:0');assert.deepEqual(b.hit(frame,{x:500,y:500},['vegetation-trees']),a.hit(frame,{x:500,y:500},['vegetation-trees']));
   const box={x:0,y:0,width:1000,height:1000},x=atlasPaint('group'),y=atlasPaint('group');drawVegetation(x,record,box,.3);drawVegetation(y,packed,box,.3);assert.equal(JSON.stringify(y),JSON.stringify(x));
  }finally{a.dispose();b.dispose();}
 });

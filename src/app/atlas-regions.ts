@@ -1,7 +1,7 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
 import type { AtlasJourney } from './atlas-journey';
-import { TerrainPresentation, type TerrainIdentity } from './terrain-presentation';
-import type { TerrainSpatialUI } from './terrain-spatial-ui';
+import type {TerrainIdentity} from './terrain-frame';
+import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { atlasFieldValue } from './atlas-units';
 import type { AtlasRegionQuery } from './atlas-region-contracts';
 import { atlasGeometryOnly } from './atlas-render-view';
@@ -10,7 +10,7 @@ import type { AtlasCanvas } from "./atlas-canvas";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry } from "./contracts";
 interface AtlasRegionsHost {
-    readonly spatial: Pick<TerrainSpatialUI, "needsTerrainRaster" | "openSurface"> | undefined;
+    readonly spatial: Pick<AtlasRasterPresentation, "needsTerrainRaster" | "openSurface" | "pauseReads"> | undefined;
     readonly camera: Pick<AtlasCanvas, "view" | "destination">;
     readonly canvas: HTMLCanvasElement;
     readonly scopeId: string | null;
@@ -20,10 +20,7 @@ interface AtlasRegionsHost {
     readonly scheduleRender: () => void;
     readonly root: HTMLElement;
     readonly owner: WorkspaceGeometry | null;
-    terrainAuthor: TerrainIdentity | null;
-    readonly terrainPresentation: TerrainPresentation | null;
-    hitVersion: number;
-    readonly hitDialog: HTMLDialogElement;
+    readonly invalidateHits:()=>void;
     readonly render: (preview?: boolean) => void;
     readonly error: (error: unknown) => void;
     readonly opts: {
@@ -34,6 +31,7 @@ interface AtlasRegionsHost {
 /** Owns region reads, source publication and geometry readiness. */
 export class AtlasRegions {
     constructor(private host: AtlasRegionsHost) { }
+    authorSource:TerrainIdentity|null=null;
     /** Invalidate replies before releasing the old campaign's read lane. */
     cancel() {
         this.request++;
@@ -62,7 +60,7 @@ export class AtlasRegions {
     }
     async refreshSpatialSource() {
         // A stale terrain reply must wait for the current geometry owner. Returning
-        // false keeps TerrainSpatialUI's existing source-recovery latch closed until
+        // false keeps AtlasRasterPresentation's existing source-recovery latch closed until
         // that read publishes a confirmed source (or the explicit retry succeeds).
         if (this.regionReading === this.request)
             return false;
@@ -122,7 +120,7 @@ export class AtlasRegions {
         return old.scopeId === q.scopeId && old.floorId === q.floorId && old.slice === q.slice && old.roofs === q.roofs && old.perception === q.perception && old.terrainRaster === q.terrainRaster && old.contours === q.contours && old.box.x <= q.box.x && old.box.y <= q.box.y && old.box.x + old.box.width >= q.box.x + q.box.width && old.box.y + old.box.height >= q.box.y + q.box.height;
     }
     geometryCurrent() {
-        if (this.host.terrainAuthor && this.host.terrainAuthor.revision !== this.data?.region?.revision)
+        if (this.authorSource && this.authorSource.revision !== this.data?.region?.revision)
             return false;
         const old = this.loadedRegionQuery, q = this.regionQuery();
         if (!old)
@@ -150,7 +148,7 @@ export class AtlasRegions {
             if (!reply.ok)
                 return; // The complete region owns the final loading/error result.
             opening.revision = reply.value.revision;
-            await this.host.spatial.openSurface(owner.token, this.host.camera.view, reply.value.revision, this.host.landscape.contours());
+            await this.host.spatial.openSurface(owner.token, this.host.camera.view, reply.value.revision, this.host.landscape.contours(),reply.value.fence);
         }
         catch {
             // Bootstrap is optional. The complete region request reports any durable error.
@@ -161,7 +159,7 @@ export class AtlasRegions {
         }
     }
     async refresh(keepScene = false) {
-        if (this.host.landscape.livePainting && this.host.terrainPresentation)
+        if (this.host.landscape.livePainting)
             return false;
         if (this.regionTimer) {
             clearTimeout(this.regionTimer);
@@ -171,14 +169,14 @@ export class AtlasRegions {
         if (!w)
             return;
         this.regionReading = request;
+        this.host.spatial?.pauseReads?.();
         let completed = false;
         const cameraPreview = keepScene ? this.host.journey.localPreview : null, previewFence = this.data?.region?.fence;
         const retry = this.host.journey.travelReadState === "failed";
         get("atlas-region-retry").hidden = true;
         if (!this.data)
             get("atlas-save-status").textContent = "Kartenausschnitt wird geladen…";
-        this.host.hitVersion++;
-        this.host.hitDialog.close();
+        this.host.invalidateHits();
         this.host.journey.travelReadState = "loading";
         this.loadedRegionQuery = null;
         this.host.root.dataset.regionState = 'loading';
@@ -199,10 +197,9 @@ export class AtlasRegions {
                 return;
             if (!r.ok)
                 throw new Error(r.error);
-            this.host.hitVersion++;
-            this.host.hitDialog.close();
+            this.host.invalidateHits();
             this.data = r.value;
-            this.host.terrainAuthor = null;
+            this.authorSource = null;
             this.host.canvas.dataset.atlasRegionRevision = String(r.value.region.revision);
             this.loadedRegionQuery = query;
             this.host.canvas.dataset.atlasTerrainRaster = String(query.terrainRaster !== false);
@@ -232,6 +229,8 @@ export class AtlasRegions {
             if (cameraPreview && previewFence && r.value.region.fence === previewFence)
                 this.host.journey.localPreview = cameraPreview;
             completed = true;
+            this.regionReading = null;
+            this.regionReadingQuery = null;
             this.host.render(keepScene);
             return true;
         }

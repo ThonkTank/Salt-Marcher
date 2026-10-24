@@ -1,8 +1,0 @@
-Raise hill with a soft edge; native worker preview shows height before commit
-Create a plateau at the exact target height
-Lower valley/coast and undo or redo the entire gesture in one step
-Smooth the hill through the real toolbar and pointer gesture
-Escape discards the gesture without a storage change
-A rejected native write retains the draft; retry commits it and one undo restores the original
-Contour display and PNG export preserve canonical heights
-Fresh native process reads the authored hills, plateau and valley

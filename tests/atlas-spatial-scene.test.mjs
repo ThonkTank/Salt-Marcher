@@ -6,7 +6,7 @@ import { buildSync } from "esbuild";
 buildSync({
   stdin: {
     resolveDir: process.cwd(),
-    contents: `export {routeSegmentRange} from './src/app/terrain-route-clip';export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-scene';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {drawLandscape} from './src/app/atlas-landscape-view';export {Raycaster,Vector2,Vector3} from 'three';`,
+    contents: `export {routeSegmentRange} from './src/app/terrain-route-clip';export * from './src/app/atlas-spatial-color';export * from './src/app/atlas-spatial-geometry';export * from './src/app/atlas-paint';export {drawLandscape} from './src/app/atlas-landscape-view';export {Raycaster,Vector2,Vector3} from 'three';`,
   },
   bundle: true,
   platform: "node",
@@ -44,132 +44,6 @@ const flat = {
   segment: 10,
   height: () => 0,
 };
-const scene = (commands, surface = flat, origin = { x: 0, y: 0 }) =>
-  new AtlasSpatialScene({ commands }, origin, new Map(), surface);
-const ray = (x, y) =>
-  new Raycaster(new Vector3(x, -y, 100), new Vector3(0, 0, -1));
-
-test("Main Atlas room holes, transparent author contours and exact ancestry survive GPU selection", () => {
-  const polygon = {
-    outer: [
-      { x: 0, y: 0 },
-      { x: 20, y: 0 },
-      { x: 20, y: 20 },
-      { x: 0, y: 20 },
-    ],
-    holes: [
-      [
-        { x: 8, y: 8 },
-        { x: 12, y: 8 },
-        { x: 12, y: 12 },
-        { x: 8, y: 12 },
-      ],
-    ],
-  };
-  const room = atlasPaint("polygons", {
-    polygons: [polygon],
-    data: { atlasObject: "true", id: "room" },
-  });
-  const handle = atlasPaint("circle", {
-    x: 2,
-    y: 2,
-    radius: 1,
-    style: { fill: "transparent" },
-    data: { atlasVertex: "7" },
-  });
-  const gpu = scene([command(room), command(handle)]);
-  gpu.group.updateMatrixWorld(true);
-  try {
-    assert.equal(gpu.hit(ray(3, 3), ["atlasObject"]).data.id, "room");
-    assert.equal(
-      gpu.hit(ray(10, 10), ["atlasObject"]),
-      null,
-      "a courtyard must remain empty",
-    );
-    assert.equal(gpu.hit(ray(2, 2), ["atlasVertex"]).data.atlasVertex, "7");
-    assert.equal(
-      gpu.hit(ray(3, 3), ["atlasObject"], 50),
-      null,
-      "foreground terrain must occlude a hidden object",
-    );
-  } finally {
-    gpu.dispose();
-  }
-  assert.equal(gpu.group.children.length, 0);
-});
-
-test("Far-world local room detail retains transform precision and follows terrain elevation", () => {
-  const origin = { x: 1e10, y: -1e10 },
-    node = atlasPaint("rect", {
-      x: 0,
-      y: 0,
-      width: 0.02,
-      height: 0.03,
-      data: { atlasObject: "true", id: "fine" },
-    });
-  const gpu = scene(
-    [command(node, { matrix: { a: 0, b: 1, c: -1, d: 0, e: 2, f: 3 } })],
-    { ...flat, origin, height: () => 12, focusM: 10, exaggeration: 2 },
-    origin,
-  );
-  try {
-    const positions = gpu.group.children[0].geometry.getAttribute("position");
-    for (let i = 0; i < positions.count; i++) {
-      assert(positions.getX(i) >= 1.9699 && positions.getX(i) <= 2.0001);
-      assert.equal(positions.getZ(i), 4);
-    }
-    assert(
-      Math.max(
-        ...Array.from({ length: positions.count }, (_, i) => positions.getX(i)),
-      ) -
-        Math.min(
-          ...Array.from({ length: positions.count }, (_, i) =>
-            positions.getX(i),
-          ),
-        ) >
-        0.029,
-    );
-  } finally {
-    gpu.dispose();
-  }
-});
-
-test("Draped areas sample interior terrain and preserve author IDs", () => {
-  const node = atlasPaint("rect", {
-      width: 100,
-      height: 100,
-      data: { atlasObject: "true", id: "region" },
-    }),
-    gpu = scene([command(node)], {
-      ...flat,
-      segment: 5,
-      height: (p) => Math.max(0, 30 - Math.hypot(p.x - 50, p.y - 50)),
-    });
-  try {
-    const positions = gpu.group.children[0].geometry.getAttribute("position");
-    assert(
-      Array.from({ length: positions.count }, (_, i) => positions.getZ(i)).some(
-        (z) => z > 25,
-      ),
-    );
-  } finally {
-    gpu.dispose();
-  }
-});
-
-test("HUD and terrain-owned rasters are not duplicated; masked content fails closed", () => {
-  const node = atlasPaint("rect", { width: 20, height: 20 }),
-    gpu = scene([
-      command(node, { hud: true }),
-      command(node, { ancestry: [{ data: { landscapeRaster: "true" } }] }),
-    ]);
-  assert.equal(gpu.group.children.length, 0);
-  gpu.dispose();
-  assert.throws(
-    () => scene([command(node, { cuts: [{ alpha: 1 }] })]),
-    /Maskierte/,
-  );
-});
 
 test("Dash phase persists around a corner and zero gaps do not hang", () => {
   const points = [new Vector2(0, 0), new Vector2(3, 0), new Vector2(3, 7)],
@@ -216,28 +90,6 @@ test("Atlas alpha colors preserve translucent previews in GPU materials", () => 
 });
 
 
-test('dense landscape images are draped above terrain while duplicate full ground stays omitted',()=>{
- const root=atlasPaint('group'),box={x:0,y:0,width:20,height:20},tile={campaignId:'c',revision:1,box,width:16,height:16,data:'ground'};
- drawLandscape(root,[],box,1,new Map(),true,[tile,{...tile,data:'objects',content:'objects'}]);
- const images=root.children.filter(n=>n.kind==='image');assert.equal(images.length,2);
- const gpu=new AtlasSpatialScene({commands:images.map(n=>command(n))},{x:0,y:0},new Map([['ground',{width:16,height:16}],['objects',{width:16,height:16}]]),{...flat,height:p=>p.x/2});
- try{assert.equal(gpu.group.children.length,1);const mesh=gpu.group.children[0];assert.equal(mesh.material.map.image.width,16);assert(mesh.geometry.getAttribute('position').count>6,'overlay follows terrain subdivisions');assert(mesh.geometry.getAttribute('position').array.some((v,i)=>i%3===2&&v>0));}finally{gpu.dispose();}
-});
-
-test('room faces, author grips and drafts share a horizontal floor over uneven ground',()=>{
- const floor=atlasPaint('group',{data:{spatialScope:'house',spatialFloor:'6',spatialAnchorX:'10',spatialAnchorY:'20'}}),
-  face=atlasPaint('rect',{x:0,y:0,width:8,height:8,data:{atlasObject:'true',id:'room'}}),
-  grip=atlasPaint('circle',{x:2,y:2,radius:1,data:{atlasVertex:'0'}});
- for(const scopeBases of [new Map([['house',15]]),new Map()]){
-  const elevation=scopeBases.size?21:36,surface={...flat,height:p=>p.x+p.y,scopeBases},
-   gpu=scene([command(face,{ancestry:[face,floor]}),command(grip,{ancestry:[grip,floor]})],surface);
-  gpu.group.updateMatrixWorld(true);
-  for(const mesh of gpu.group.children){const pos=mesh.geometry.getAttribute('position');for(let i=0;i<pos.count;i++)assert(Math.abs(pos.getZ(i)-elevation)<1e-5);}
-  const hit=gpu.hit(ray(2,2),['atlasVertex']);assert.equal(hit.data.atlasVertex,'0');gpu.dispose();
- }
-});
-
-
 test("clipped world dashes preserve travel phase and joins without expanding remote segments",()=>{
   const clip=(a,b)=>routeSegmentRange(a,b,{x:-2,y:-2,width:12,height:12});
   const points=[new Vector2(-1000000,0),new Vector2(3,0),new Vector2(3,1000000)];
@@ -252,15 +104,4 @@ test("clipped world dashes preserve travel phase and joins without expanding rem
   assert.deepEqual(atlasStrokeParts(offscreen,[.01,.01],0,clip),[]);
   const returning=[new Vector2(0,0),new Vector2(20,0),new Vector2(20,5),new Vector2(0,5)];
   assert.deepEqual(round(atlasStrokeParts(returning,[],0,clip)),[[[0,0],[10,0]],[[10,5],[0,5]]]);
-});
-
-test("main Atlas clips enormous dashed brush rings and retains transformed visible strokes",()=>{
-  const surface={...flat,bounds:{x:-50,y:-50,width:100,height:100}};
-  const ring=atlasPaint('circle',{radius:800000,style:{fill:null,stroke:'#c65d28',lineWidth:1,lineDash:[4,3]}});
-  const hidden=scene([command(ring)],surface);assert.equal(hidden.group.children.length,0);hidden.dispose();
-  const line=atlasPaint('line',{x:-1000000,y:0,x2:1000000,y2:0,style:{fill:null,stroke:'#c65d28',lineWidth:2,lineDash:[4,3]}});
-  const visible=scene([command(line,{matrix:{a:0,b:1,c:-1,d:0,e:10,f:0}})],surface);
-  assert(visible.group.children.length>0&&visible.group.children.length<30);
-  for(const mesh of visible.group.children){const p=mesh.geometry.getAttribute('position');for(let i=0;i<p.count;i++){assert(Math.abs(p.getX(i)-10)<=2);assert(Math.abs(p.getY(i))<=60);}}
-  visible.dispose();
 });

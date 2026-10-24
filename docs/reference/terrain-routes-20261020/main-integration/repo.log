@@ -1,5 +1,0 @@
-
-> saltmarcher@0.167.0 check:repo
-> node tools/check-repository.mjs
-
-Repository check PASS (offline links, JSON, source references and core test registration)

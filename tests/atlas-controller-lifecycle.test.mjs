@@ -46,7 +46,7 @@ test('closing an output owner cancels only its export lane and retains the sessi
 test('A–B–A region activation rejects both retired replies even when A reuses its owner object',async t=>{
  const {window,document}=dom(t,'<p id="atlas-hint"></p><button id="atlas-region-retry"></button>'),reads=[],cancelled=[],errors=[],loads=[];
  const a={token:'a'},b={token:'b'},root=document.createElement('section'),canvas=document.createElement('canvas');
- const host={owner:a,root,canvas,hitVersion:0,hitDialog:{close(){}},landscape:{load:async()=>loads.push('load')},
+ const host={owner:a,root,canvas,invalidateHits(){},landscape:{load:async()=>loads.push('load')},
   journey:{travelReadState:'ready',previewRequest:0,localPreview:null,playback:{stop(){}},renderTravel(){}},
   render(){},error:e=>errors.push(e),opts:{status(){}}};
  window.campaign={cancelAtlasRegion:token=>cancelled.push(token),atlasRegion:token=>{const read=deferred();reads.push({...read,token});return read.promise;}};

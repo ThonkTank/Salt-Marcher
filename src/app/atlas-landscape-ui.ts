@@ -471,7 +471,7 @@ export class LandscapeWorkbench {
   terrainDetail(box:LandscapeBox){return terrainDetailBox(this.lastPoint,Number(atlasFieldValue(html<HTMLInputElement>('land-radius'))),box);}
   get spatialTool(){return this.tool;}
   get spatialSelection(){return this.details.selected?.points[0]??this.details.selected?.polygons[0]?.outer[0]??null;}
-  spatialDraft():import("./terrain-spatial-ui").TerrainDraft|null {return this.routes.routeRecords?{routeRecords:this.routes.routeRecords}:null;}
+  spatialDraft():import("./atlas-presentation-host").TerrainDraft|null {return this.routes.routeRecords?{routeRecords:this.routes.routeRecords}:null;}
   private installReliefStyle(){
     const root=document.createElement('details');root.id='land-relief-style';
     root.innerHTML='<summary>Reliefstil</summary><label>Darstellung<select id="land-relief-mode"><option value="drawn">Gezeichnet</option><option value="shaded">Nur Schattierung</option><option value="height">Höhenfarben</option></select></label><label>Unbemaltes Land<input id="land-relief-land" type="color" value="#eee5cf"></label><label>Felsstriche<input id="land-relief-ink" type="color" value="#685639"></label><label>Licht aus Richtung (Grad)<input id="land-relief-light" type="number" min="0" max="359" value="315"></label><label>Strich- und Schattenstärke<input id="land-relief-strength" type="range" min="0" max="1" step="0.05" value="0.65"></label><label><input id="land-relief-mountains" type="checkbox" checked> Fels und Schnee</label><label>Schneegrenze in m<input id="land-relief-snowline" type="number" min="-1000000" max="1000000" step="any" value="2500"></label><button id="land-relief-apply" type="button">Reliefstil übernehmen</button><p>Fels folgt der Hangneigung, Schnee der Höhe in Weltmetern. Gemalte Farben bleiben erhalten. Höhenfarben zeigen die Analyse ohne Gebirgsmaterial.</p>';
@@ -733,6 +733,7 @@ export class LandscapeWorkbench {
       node.children[background.selectedSlot]=selected.children.find(n=>n.data.landscapeId===this.details.selected!.id)!;
     }
     retained.append(node);root.append(retained);
+    if(this.routes.routeRecords){const preview=atlasPaint('group',{pointer:false,data:{editorOnly:'true'}});drawLandscape(preview,this.routes.routeRecords,box,mpp,this.assets);root.append(preview);}
     if(this.routes.routeAnchors.length){
       const points=this.routes.routeAnchors.map(p=>({x:p.x-box.x,y:p.y-box.y}));
       root.append(atlasPaint('polyline',{points,pointer:false,style:{stroke:'#c77d32',fill:null,lineWidth:mpp*2},data:{editorOnly:'true'}}));

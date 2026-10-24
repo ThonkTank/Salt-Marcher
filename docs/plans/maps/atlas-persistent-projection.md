@@ -109,5 +109,5 @@ entfernt der Start unter der App-Einzelsperre unveröffentlichte Arbeitskopien u
 nicht referenzierte Snapshotdateien. Fehlende Quellenmarkierung, Graphvorschau und
 ein nicht beschreibbarer Cache verwenden ausschließlich den TEMP-Anschluss.
 
-[Prüfstand und offene Leistungsziele](../../reference/atlas-persistent-index-20261022/README.md):
+[Prüfstand und offene Leistungsziele](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-persistent-index-20261022/README.md):
 103 betroffene Tests, große Lesemessung und native Wiederöffnung.

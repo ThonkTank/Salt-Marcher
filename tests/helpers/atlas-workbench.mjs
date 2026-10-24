@@ -3,6 +3,9 @@
 // their state moves; production has no compatibility properties.
 export function atlasFixture(Workbench){
  const ui=Object.create(Workbench.prototype);
+ ui.writing=false;
+ Object.defineProperty(ui,'busy',{configurable:true,get(){return ui.writing||ui.journey.busy;},set(value){ui.writing=value;}});
+ Object.defineProperty(ui,'terrainAuthor',{configurable:true,get(){return ui.regions.authorSource;},set(value){ui.regions.authorSource=value;}});
  ui.output=ui.createAtlasOutput();
  ui.journey=ui.createAtlasJourney();
  ui.regions=ui.createAtlasRegions();

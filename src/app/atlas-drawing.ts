@@ -1,13 +1,12 @@
 import { atlasPaint as shape } from './atlas-canvas-scene';
 import { atlasElement as get } from './atlas-dom';
-import type { AtlasSelection as Selection, AtlasRoomDrag, AtlasPathDrag } from './atlas-workbench-types';
 import type { AtlasRegions } from './atlas-regions';
 import type { AtlasOutput } from './atlas-output';
 import { mapExtentVisible } from './atlas-scale-policy';
 import { atlasWorkplaneData, type AtlasWorkplane } from './atlas-workplane';
 import { posedFootprint } from './city-model';
 import { MapLabelLayout, measureMapText, paintMapLabels, drawTerritories } from './atlas-cartography';
-import type { TerrainSpatialUI } from './terrain-spatial-ui';
+import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { drawMeasurements, areaMeasures, pathMeasures, radiusMeasures, elementMeasures } from './atlas-measurements';
 import { atlasFieldValue } from './atlas-units';
 import { regionValue } from './atlas-region-contracts';
@@ -34,36 +33,27 @@ import type { AtlasJourney } from './atlas-journey';
 import type { TerritoryWorkbench } from './atlas-territories-ui';
 import { atlasWorldTravelState } from './world-ui';
 interface AtlasDrawingHost {
-    readonly drag: AtlasAuthor['drag'];
+    readonly author:Readonly<Pick<AtlasAuthor,'drag'|'measurementHover'|'roomDrag'|'draft'|'selection'|'pathDrag'|'partyDrag'>>;
     readonly territories: Pick<TerritoryWorkbench, 'selectedLabel' | 'draw'>;
     readonly journey: Pick<AtlasJourney, 'localPreview'>;
     readonly scheduleRender: () => void;
     readonly regions: Pick<AtlasRegions, "data" | "geometryCurrent">;
     readonly output: Pick<AtlasOutput, "exportOpen" | "exportDrag" | "exportRectangle" | "exportDungeon" | "dungeonOutputBox" | "exportBox">;
     readonly landscape: Pick<LandscapeWorkbench, "livePainting" | "drawMeasurements" | "draw" | "selectedLabel">;
-    readonly spatial: Pick<TerrainSpatialUI, "screenAnchor" | "active"> | undefined;
+    readonly spatial: Pick<AtlasRasterPresentation, "screenAnchor" | "active"> | undefined;
     readonly canvas: HTMLCanvasElement;
     readonly root: HTMLElement;
     readonly family: string;
-    readonly measurementHover: Point | null;
     readonly scopeId: string | null;
     readonly frame: (scopeId: string) => ReturnType<typeof atlasFrame>;
     readonly floorId: string;
-    readonly roomDrag: AtlasRoomDrag | null;
-    readonly draft: Point[];
     readonly floorPlane: (scopeId?: string, floorId?: string) => AtlasWorkplane | null;
-    readonly selection: Selection;
     readonly opts: {
         roomDraft: () => Room | null;
     };
     readonly roomPreview: <T extends import("./contracts").RoomGeometry>(original: T) => T;
     readonly camera: Pick<AtlasCanvas, "view" | "hitAt">;
-    readonly pathDrag: AtlasPathDrag | null;
-    readonly partyDrag: {
-        id: number;
-        start: Point;
-        last: Point;
-    } | null;
+
 }
 /** Builds map and author paint commands and owns reusable base geometry. */
 export class AtlasDrawing {
@@ -79,8 +69,8 @@ export class AtlasDrawing {
     draw(root: AtlasPaint, data: AtlasRenderView, box: CanvasBox, mpp: number) {
       this.drawTerrain(root, box, mpp);
       this.host.landscape.draw(root,box,mpp);
-      const draft=this.host.opts.roomDraft(),cacheable=!this.host.drag&&!atlasCityState()&&!atlasDungeonState().preview&&!get<HTMLInputElement>('atlas-perception').checked;
-      const key=[data,this.host.scopeId,this.host.floorId,this.host.family,this.host.selection?.kind,this.host.selection?.id,get<HTMLInputElement>('atlas-roofs').checked,get<HTMLInputElement>('atlas-slice-enabled').checked,atlasFieldValue(get<HTMLInputElement>('atlas-slice')),get<HTMLInputElement>('atlas-perception').checked,mpp,draft?.id,draft?.name,draft?.number,draft?.polygons];
+      const draft=this.host.opts.roomDraft(),cacheable=!this.host.author.drag&&!atlasCityState()&&!atlasDungeonState().preview&&!get<HTMLInputElement>('atlas-perception').checked;
+      const key=[data,this.host.scopeId,this.host.floorId,this.host.family,this.host.author.selection?.kind,this.host.author.selection?.id,get<HTMLInputElement>('atlas-roofs').checked,get<HTMLInputElement>('atlas-slice-enabled').checked,atlasFieldValue(get<HTMLInputElement>('atlas-slice')),get<HTMLInputElement>('atlas-perception').checked,mpp,draft?.id,draft?.name,draft?.number,draft?.polygons];
       let base=this.baseGeometry;
       if(!cacheable||!base||!base.key.every((v,i)=>v===key[i])){
         const root=shape('group',{retainGeometry:true,data:{mapScene:'true'}});
@@ -99,10 +89,10 @@ export class AtlasDrawing {
           g = shape("group", {matrix: frameMatrix(this.relative(f))});
         let shownCity = city;
         if (
-          this.host.drag?.selection?.kind === "building" &&
-          this.host.drag.selection.cityId === city.header.id
+          this.host.author.drag?.selection?.kind === "building" &&
+          this.host.author.drag.selection.cityId === city.header.id
         ) {
-          const drag = this.host.drag,
+          const drag = this.host.author.drag,
             a = atlasToLocal(drag.start, f),
             b = atlasToLocal(drag.last, f);
           shownCity = {
@@ -203,7 +193,7 @@ export class AtlasDrawing {
                   ? roadPoints(u, shownCity.units)
                   : (u.outline ?? []),
             path = shape(line ? "polyline" : u.kind==='building'?"polygons":"polygon", {
-              ...(u.kind==='building'?{polygons:posedFootprint(u)}:{points}),style:{fill:line?null:"transparent",stroke:this.host.selection?.id===u.id?"#b85525":"transparent",lineWidth:line?Math.max(u.width??6,mpp*8):2*mpp},
+              ...(u.kind==='building'?{polygons:posedFootprint(u)}:{points}),style:{fill:line?null:"transparent",stroke:this.host.author.selection?.id===u.id?"#b85525":"transparent",lineWidth:line?Math.max(u.width??6,mpp*8):2*mpp},
             });
           path.data.atlasObject = "true";
           path.data.kind = u.kind === "building" ? "building" : "city-unit";
@@ -225,19 +215,19 @@ export class AtlasDrawing {
       }
       const retained=shape('group',{matrix:[1,0,0,1,base.origin.x-box.x,base.origin.y-box.y],data:{atlasBase:'true'}});
       retained.append(base.authorSlot?this.withAuthorFace(base.node,base.authorSlot,mpp):base.node);root.append(retained);
-      if (this.host.roomDrag?.moved) {
-        const f=this.host.frame(this.host.roomDrag.scopeId),a=atlasDrawingSnapPoint(atlasToLocal(this.host.roomDrag.start,f)),b=atlasDrawingSnapPoint(atlasToLocal(this.host.roomDrag.last,f));
-        root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true",...atlasWorkplaneData(this.host.floorPlane(this.host.roomDrag.scopeId))}}));
+      if (this.host.author.roomDrag?.moved) {
+        const f=this.host.frame(this.host.author.roomDrag.scopeId),a=atlasDrawingSnapPoint(atlasToLocal(this.host.author.roomDrag.start,f)),b=atlasDrawingSnapPoint(atlasToLocal(this.host.author.roomDrag.last,f));
+        root.append(shape("polygon", {polygons:[{outer:[a,{x:b.x,y:a.y},b,{x:a.x,y:b.y}].map(p=>this.relativePoint(localToAtlas(p,f))),holes:[]}],style:{fill:"#ead9a5",stroke:"#c65d28",lineWidth:2*mpp},data:{editorOnly:"true",...atlasWorkplaneData(this.host.floorPlane(this.host.author.roomDrag.scopeId))}}));
       }
-      if (this.host.draft.length && this.host.scopeId) {
+      if (this.host.author.draft.length && this.host.scopeId) {
         const f = this.host.frame(this.host.scopeId),
-          p = localToAtlas(this.host.draft[0]!, f);
+          p = localToAtlas(this.host.author.draft[0]!, f);
         root.append(
           shape("circle", {x: p.x - box.x, y: p.y - box.y, radius: mpp * 4, style: {fill: "#c65d28"},data:atlasWorkplaneData(this.host.floorPlane())}),
         );
       }
 
-      if(!get<HTMLInputElement>('atlas-perception').checked){const raster=data.region?.territoryRaster;if(raster)root.append(shape('image',{source:raster.data,x:raster.box.x-box.x,y:raster.box.y-box.y,width:raster.box.width,height:raster.box.height,pointer:false}));const state=data.region?.territories;if(state)drawTerritories(root,state,box,mpp);const candidates=[...(data.region?.labels??[]),...(data.region?.landscape?.labels??[])];const selected=this.host.territories.selectedLabel??this.host.landscape.selectedLabel??(this.host.selection?(['building','city-unit'].includes(this.host.selection.kind)?'unit':this.host.selection.kind)+':'+this.host.selection.id:undefined);paintMapLabels(root,this.labelLayout.layout(candidates,box,mpp,measureMapText,selected, !this.host.spatial?.active&&!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),box,mpp,{candidates,selected});if(this.labelLayout.animating)this.host.scheduleRender();}
+      if(!get<HTMLInputElement>('atlas-perception').checked){const raster=data.region?.territoryRaster;if(raster)root.append(shape('image',{source:raster.data,x:raster.box.x-box.x,y:raster.box.y-box.y,width:raster.box.width,height:raster.box.height,pointer:false}));const state=data.region?.territories;if(state)drawTerritories(root,state,box,mpp);const candidates=[...(data.region?.labels??[]),...(data.region?.landscape?.labels??[])];const selected=this.host.territories.selectedLabel??this.host.landscape.selectedLabel??(this.host.author.selection?(['building','city-unit'].includes(this.host.author.selection.kind)?'unit':this.host.author.selection.kind)+':'+this.host.author.selection.id:undefined);paintMapLabels(root,this.labelLayout.layout(candidates,box,mpp,measureMapText,selected, !this.host.spatial?.active&&!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),box,mpp,{candidates,selected});if(this.labelLayout.animating)this.host.scheduleRender();}
       if(!this.host.output.exportOpen){this.drawInteriorAuthor(root,mpp);this.host.territories.draw(root,box,mpp);}
       if(this.host.output.exportOpen){
         const b=this.host.output.exportDrag?.moved?this.host.output.exportRectangle(this.host.output.exportDrag.start,this.host.output.exportDrag.last):this.host.output.exportDungeon?this.host.output.dungeonOutputBox():this.host.output.exportBox;
@@ -293,7 +283,7 @@ export class AtlasDrawing {
             this.host.landscape.drawMeasurements(root, box, mpp, project);
             return;
         }
-        const hover = this.host.measurementHover;
+        const hover = this.host.author.measurementHover;
         if (this.host.family === 'city') {
             const state = atlasCityMeasurement();
             if (!state)
@@ -329,13 +319,13 @@ export class AtlasDrawing {
         if (!state || state.floor.scopeId !== this.host.scopeId || state.floor.floorId !== this.host.floorId)
             return;
         let points = state.points, lines: string[] = [];
-        if (this.host.roomDrag?.moved) {
-            const a = atlasDrawingSnapPoint(atlasToLocal(this.host.roomDrag.start, frame)), b = atlasDrawingSnapPoint(atlasToLocal(this.host.roomDrag.last, frame));
+        if (this.host.author.roomDrag?.moved) {
+            const a = atlasDrawingSnapPoint(atlasToLocal(this.host.author.roomDrag.start, frame)), b = atlasDrawingSnapPoint(atlasToLocal(this.host.author.roomDrag.last, frame));
             points = [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
             lines = areaMeasures([{ outer: points, holes: [] }]);
         }
-        else if (this.host.draft.length && state.tool === 'room-rectangle' && hover) {
-            const a = this.host.draft[0]!, b = atlasDrawingSnapPoint(atlasToLocal(hover, frame));
+        else if (this.host.author.draft.length && state.tool === 'room-rectangle' && hover) {
+            const a = this.host.author.draft[0]!, b = atlasDrawingSnapPoint(atlasToLocal(hover, frame));
             points = [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
             lines = areaMeasures([{ outer: points, holes: [] }]);
             root.append(shape('polygon', { points: points.map(p => this.relativePoint(localToAtlas(p, frame))), pointer: false, style: { fill: null, stroke: '#b85c23', lineWidth: mpp * 2 }, data: { editorOnly: 'true', ...atlasWorkplaneData(this.host.floorPlane()) } }));
@@ -346,15 +336,15 @@ export class AtlasDrawing {
             root.append(shape('circle', { x: hover.x - box.x, y: hover.y - box.y, radius: state.radius, pointer: false, style: { fill: null, stroke: '#364354', lineWidth: mpp }, data: { editorOnly: 'true', ...atlasWorkplaneData(this.host.floorPlane()) } }));
         }
         else if (state.tool === 'select') {
-            if (this.host.selection?.kind === 'room') {
+            if (this.host.author.selection?.kind === 'room') {
                 const room = this.host.opts.roomDraft();
-                if (room && room.id === this.host.selection.id) {
+                if (room && room.id === this.host.author.selection.id) {
                     const preview = this.host.roomPreview(room);
                     points = preview.polygons.flatMap(p => p.outer);
                     lines = areaMeasures(preview.polygons);
                 }
             }
-            else if (state.element && state.element.id === this.host.selection?.id) {
+            else if (state.element && state.element.id === this.host.author.selection?.id) {
                 const e = this.pathPreview(state.element);
                 points = e.points;
                 lines = elementMeasures(e);
@@ -370,7 +360,7 @@ export class AtlasDrawing {
         }
         else if (points.length > 1)
             lines = pathMeasures(points);
-        if (state.tool !== 'select' && state.points.length > 1 && !this.host.roomDrag && !['room-cave', 'room-erase', 'scatter', 'room-hole'].includes(state.tool))
+        if (state.tool !== 'select' && state.points.length > 1 && !this.host.author.roomDrag && !['room-cave', 'room-erase', 'scatter', 'room-hole'].includes(state.tool))
             root.append(shape(state.polygons?.length || ['terrain', 'water', 'roof'].includes(state.tool) ? 'polygon' : 'polyline', { points: points.map(p => this.relativePoint(localToAtlas(p, frame))), pointer: false, style: { fill: null, stroke: '#b85c23', lineWidth: mpp * 2 }, data: { editorOnly: 'true', ...atlasWorkplaneData(this.host.floorPlane()) } }));
         if (points.length)
             drawMeasurements(root, box, mpp, localToAtlas(points.at(-1)!, frame), lines, project);
@@ -458,7 +448,7 @@ export class AtlasDrawing {
         root.append(g);
     }
     authorRoom(room: import('./contracts').RoomGeometry) {
-        return !this.host.output.exportOpen && this.host.family === 'interior' && this.host.selection?.kind === 'room' && this.host.selection.id === room.id &&
+        return !this.host.output.exportOpen && this.host.family === 'interior' && this.host.author.selection?.kind === 'room' && this.host.author.selection.id === room.id &&
             this.host.opts.roomDraft()?.id === room.id && room.scopeId === this.host.scopeId && room.floorId === this.host.floorId &&
             !get<HTMLInputElement>('atlas-slice-enabled').checked && !get<HTMLInputElement>('atlas-perception').checked;
     }
@@ -490,7 +480,7 @@ export class AtlasDrawing {
         return copy;
     }
     drawRoomFace(g: AtlasPaint, room: import('./contracts').RoomGeometry, mpp: number) {
-        const path = roomFacePaint(room, mpp, this.host.regions.data?.geometry.drawing.styles.find(s => s.id === room.id), this.host.selection?.id === room.id);
+        const path = roomFacePaint(room, mpp, this.host.regions.data?.geometry.drawing.styles.find(s => s.id === room.id), this.host.author.selection?.id === room.id);
         path.data.atlasObject = "true";
         path.data.kind = "room";
         path.data.id = room.id;
@@ -508,7 +498,7 @@ export class AtlasDrawing {
             }, mpp);
     }
     pathPreview(original: import('./drawing-contracts').DrawingElement) {
-        const drag = this.host.pathDrag;
+        const drag = this.host.author.pathDrag;
         if (!drag || drag.element.id !== original.id)
             return original;
         // The snapshot stays read-only; only the edited point needs a new object.
@@ -532,8 +522,8 @@ export class AtlasDrawing {
             data: { editorOnly: 'true', ...atlasWorkplaneData(this.host.floorPlane()) },
         });
         const original = this.host.opts.roomDraft();
-        if (this.host.family === 'interior' && this.host.selection?.kind === 'room' &&
-            original?.id === this.host.selection.id && original.scopeId === this.host.scopeId &&
+        if (this.host.family === 'interior' && this.host.author.selection?.kind === 'room' &&
+            original?.id === this.host.author.selection.id && original.scopeId === this.host.scopeId &&
             original.floorId === this.host.floorId && !get<HTMLInputElement>('atlas-slice-enabled').checked) {
             const room = this.host.roomPreview(original);
             if (data.region?.raster)
@@ -598,13 +588,13 @@ export class AtlasDrawing {
                 }));
         }
         const selected = atlasDrawingDraft().element;
-        if (this.host.selection?.kind === 'element' && selected?.id === this.host.selection.id && selected.kind === 'path' && selected.scopeId === this.host.scopeId && selected.floorId === this.host.floorId && this.host.regions.geometryCurrent() && get<HTMLSelectElement>('drawing-tool').value === 'select' && !get<HTMLInputElement>('atlas-slice-enabled').checked) {
+        if (this.host.author.selection?.kind === 'element' && selected?.id === this.host.author.selection.id && selected.kind === 'path' && selected.scopeId === this.host.scopeId && selected.floorId === this.host.floorId && this.host.regions.geometryCurrent() && get<HTMLSelectElement>('drawing-tool').value === 'select' && !get<HTMLInputElement>('atlas-slice-enabled').checked) {
             const path = this.pathPreview(selected);
             g.append(shape('polyline', { points: path.points, pointer: false, style: { fill: null, stroke: '#236871', lineWidth: Math.max(mpp * 2, .08) } }));
             const cells = new Set<string>(), cover = this.host.camera.view;
             const grip = (p: Point, index: number, insert: boolean) => { const at = localToAtlas(p, frame), cell = Math.floor(at.x / (mpp * 12)) + ':' + Math.floor(at.y / (mpp * 12)); if (cells.size >= 1500 || cells.has(cell) || at.x < cover.x || at.y < cover.y || at.x > cover.x + cover.width || at.y > cover.y + cover.height)
                 return; cells.add(cell); g.append(shape('circle', { x: p.x, y: p.y, radius: mpp * 5, title: insert ? 'Ziehen fügt einen Knickpunkt ein' : 'Pfadpunkt ziehen · Escape verwirft', style: { fill: insert ? '#244f87' : 'white', stroke: insert ? 'white' : '#244f87', lineWidth: mpp }, data: { atlasObject: 'true', kind: 'path-grip', id: selected.id, [insert ? 'atlasPathInsert' : 'atlasPathVertex']: String(index) } })); };
-            path.points.forEach((p, i) => { grip(p, i, false); const next = path.points[i + 1]; if (!this.host.pathDrag && next && Math.hypot(next.x - p.x, next.y - p.y) > mpp * 24)
+            path.points.forEach((p, i) => { grip(p, i, false); const next = path.points[i + 1]; if (!this.host.author.pathDrag && next && Math.hypot(next.x - p.x, next.y - p.y) > mpp * 24)
                 grip({ x: (p.x + next.x) / 2, y: (p.y + next.y) / 2 }, i, true); });
         }
         if (g.children.length)
@@ -658,7 +648,7 @@ export class AtlasDrawing {
         }
     }
     drawParty(root: AtlasPaint, mpp: number) {
-        const d = this.host.regions.data!, position = this.host.partyDrag?.last ?? atlasPartyPoint(d);
+        const d = this.host.regions.data!, position = this.host.author.partyDrag?.last ?? atlasPartyPoint(d);
         if (!position)
             return;
         const token = shape("circle", { x: position.x - this.host.camera.view.x, y: position.y - this.host.camera.view.y, radius: mpp * 7, style: { fill: "#244f87", stroke: "white", lineWidth: mpp * 2 } });

@@ -1,19 +1,15 @@
-import { atlasPaint as shape } from './atlas-canvas-scene';
+import {terrainCoverageBox,terrainCoverageLevel} from './terrain-coverage';
 import { atlasElement as get } from './atlas-dom';
 import { atlasTerrainExport } from './atlas-terrain-export';
-import { MapLabelLayout, measureMapText, paintMapLabels, drawTerritories } from './atlas-cartography';
-import type { TerrainSpatialUI } from './terrain-spatial-ui';
+import type { AtlasRasterPresentation } from './atlas-raster-presentation';
 import { lengthLabel, atlasUnits } from './atlas-units';
 import type { AtlasWorkspaceLayout } from './atlas-workspace-layout';
 import type { AtlasReferenceUI } from "./atlas-reference-ui";
 import type { AtlasRegionQuery } from './atlas-region-contracts';
-import { atlasExportTiles, type AtlasExportTile } from "./atlas-landscape-export";
-import { atlasRegionPaint } from "./atlas-region-export";
 import type { LandscapeWorkbench } from "./atlas-landscape-ui";
-import { atlasExportScale, atlasImage, publicAtlasPaint, dungeonExportBox } from "./campaign-atlas-export";
+import { atlasExportScale, dungeonExportBox } from "./campaign-atlas-export";
 import type { CanvasBox } from "./passive-map-canvas";
 import type { AtlasCanvas } from "./atlas-canvas";
-import { AtlasPaint } from "./atlas-canvas-scene";
 import type { AtlasRenderView } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point } from "./contracts";
 interface AtlasOutputHost {
@@ -37,7 +33,7 @@ interface AtlasOutputHost {
     readonly canvas: HTMLCanvasElement;
     readonly camera: Pick<AtlasCanvas, "view" | "set">;
     readonly geometryCurrent: () => boolean;
-    readonly spatial: Pick<TerrainSpatialUI, "active" | "visibility"> | undefined;
+    readonly spatial: Pick<AtlasRasterPresentation, "active" | "visibility"> | undefined;
     readonly regionQuery: (buffered?: boolean) => AtlasRegionQuery;
 }
 /** Owns output selection and one cancellable export request. */
@@ -84,6 +80,24 @@ export class AtlasOutput {
         y: number;
         moved: boolean;
     } | null = null;
+    beginArea(event:PointerEvent,point:Point){
+        if(!this.exportChoosing||this.exporting)return;
+        this.exportDrag={id:event.pointerId,start:point,last:point,x:event.clientX,y:event.clientY,moved:false};
+        this.host.canvas.setPointerCapture(event.pointerId);
+    }
+    moveArea(event:PointerEvent,point:Point){
+        const drag=this.exportDrag;if(drag?.id!==event.pointerId)return false;
+        drag.last=point;drag.moved ||= Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>=4;
+        this.host.render();return true;
+    }
+    endArea(event:PointerEvent,end:Point){
+        const drag=this.exportDrag;if(drag?.id!==event.pointerId)return false;
+        this.exportDrag=null;const start=drag.moved?drag.start:this.exportCorner;
+        const box=start?this.exportRectangle(start,end):null;
+        if(box&&box.width>0&&box.height>0){this.exportDungeon=false;this.exportBox=box;this.exportChoosing=false;this.exportCorner=null;}
+        else this.exportCorner=end;
+        this.exportAreaStatus();this.host.render();return true;
+    }
     async setOutput(open: boolean) {
         if (this.host.reference.active)
             this.host.reference.close();
@@ -202,7 +216,7 @@ export class AtlasOutput {
             if (!chosenBox)
                 throw new Error("Dungeon-Grundriss wird geladen. Ausschnitt erneut laden.");
             const box = { ...chosenBox }, pose = this.host.spatial?.active ? this.host.spatial.visibility() : undefined;
-            const surfaceBox = pose ? { x: box.x - box.width, y: box.y - box.height, width: box.width * 3, height: box.height * 3 } : box;
+            const surfaceBox = pose ? terrainCoverageBox(box,terrainCoverageLevel(pose.tilt)) : box;
             const exportQuery = { ...this.host.regionQuery(), box: { ...surfaceBox }, perception: audience === 'public', terrainRaster: !pose || audience === 'public' }, references = get<HTMLInputElement>('atlas-export-reference').checked, grid = get<HTMLInputElement>('atlas-export-grid').checked, level = get<HTMLSelectElement>('atlas-hex-level').value, units = atlasUnits(), scale = (document.getElementById('atlas-export-scale') as HTMLInputElement | null)?.checked ?? false;
             const format = get<HTMLSelectElement>("atlas-export-format").value as 'png' | 'jpeg', size = Number(get<HTMLInputElement>("atlas-export-size").value);
             if (!Number.isInteger(size) || size < 256 || size > 8192)
@@ -216,57 +230,8 @@ export class AtlasOutput {
             if (!current())
                 return;
             const snapshot = fresh.value;
-            let source: AtlasPaint | AsyncIterable<AtlasExportTile> | undefined, spatialBytes: Uint8Array | undefined;
-            if (pose) {
-                spatialBytes = await atlasTerrainExport(owner.token, snapshot, { ...pose, box: surfaceBox, frame: box, projection: 'perspective' }, { audience, width, height, format, references, grid, level, floorId: exportQuery.floorId, roofs: exportQuery.roofs, contours: this.host.landscape.contours(), overlay: scale ? atlasExportScale(box, width, height, grid ? level : undefined, units) : undefined }, current, (done, total) => status(`Atlas wird ausgegeben: ${done}/${total}`));
-            }
-            else if (audience === 'public') {
-                if (snapshot.geometry.position && snapshot.perception)
-                    source = publicAtlasPaint(snapshot, box);
-                else {
-                    const frame = await window.campaign.playerView(owner.token);
-                    if (!frame.ok)
-                        throw new Error(frame.error);
-                    if (!current())
-                        return;
-                    source = publicAtlasPaint(snapshot, box, frame.value.frame);
-                }
-            }
-            else {
-                // Higher image resolution sharpens one composition instead of shrinking its labels.
-                const labelMpp = Math.max(box.width, box.height) / Math.min(size, 1024);
-                const labels = new MapLabelLayout().layout([...(snapshot.region?.labels ?? []), ...(snapshot.region?.landscape?.labels ?? [])], box, labelMpp, measureMapText);
-                source = atlasExportTiles(box, width, height, snapshot.campaignId, snapshot.revision, async (part, w, h) => {
-                    const response = await window.campaign.atlasRegion(owner.token, { ...exportQuery, box: part, width: w, height: h, revision: snapshot.revision, fence: snapshot.region!.fence, references }, 'export');
-                    if (!response.ok)
-                        return response;
-                    const tile = response.value, layer = tile.region.landscape;
-                    if (tile.revision !== snapshot.revision || tile.region.fence !== snapshot.region!.fence)
-                        throw new Error('Atlas wurde während der Ausgabe geändert. Erneut ausgeben.');
-                    if (!layer || layer.state !== 'ready' || !layer.coverage.complete)
-                        throw new Error(layer?.error ?? 'Landschaftsausgabe nicht vollständig. Erneut laden.');
-                    const assets = new Map<string, string>();
-                    if (references)
-                        for (const r of layer.records)
-                            if (r.assetId && !assets.has(r.assetId)) {
-                                const image = await window.campaign.referenceAssetPreview(owner.token, r.assetId, 2048);
-                                if (!image.ok)
-                                    throw new Error(image.error);
-                                assets.set(r.assetId, image.value);
-                            }
-                    const scene = atlasRegionPaint(tile, layer.records, part, w, assets, { automaticLabels: true, rasters: layer.tiles, grid, level, references, floorId: exportQuery.floorId, roofs: exportQuery.roofs });
-                    const raster = tile.region?.territoryRaster;
-                    if (raster)
-                        scene.append(shape('image', { source: raster.data, x: raster.box.x - part.x, y: raster.box.y - part.y, width: raster.box.width, height: raster.box.height, pointer: false }));
-                    if (tile.region?.territories)
-                        drawTerritories(scene, tile.region.territories, part, part.width / w);
-                    paintMapLabels(scene, labels, part, labelMpp);
-                    return { ok: true, value: { campaignId: tile.campaignId, revision: tile.revision, box: tile.region.box, width: w, height: h, scene } };
-                }, current, (done, total) => { status(`Atlas wird ausgegeben: ${done}/${total}`); });
-                if (references && snapshot.region?.landscape?.coverage.mode === 'raster')
-                    status('Dichte Landschaft als Übersicht; Vorlagen als Umrisse.');
-            }
-            const bytes = spatialBytes ?? await atlasImage(source!, width, height, box, format, current, scale ? atlasExportScale(box, width, height, grid ? level : undefined, units) : undefined);
+            const view = pose ?? {box:surfaceBox,frame:box,columns:65,rows:65,focusM:0,tilt:0,rotation:0,exaggeration:1};
+            const bytes = await atlasTerrainExport(owner.token, snapshot, { ...view, box: surfaceBox, frame: box, projection: 'perspective' }, { audience, width, height, format, references, grid, level, floorId: exportQuery.floorId, roofs: exportQuery.roofs, contours: this.host.landscape.contours(), overlay: scale ? atlasExportScale(box, width, height, grid ? level : undefined, units) : undefined }, current, (done, total) => status(`Atlas wird ausgegeben: ${done}/${total}`));
             if (!current())
                 return;
             const r = await window.campaign.exportAtlasPNG(owner.token, bytes, audience, format, snapshot.region!.fence);

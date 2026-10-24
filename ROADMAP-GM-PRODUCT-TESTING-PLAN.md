@@ -26,6 +26,6 @@ Die Annahme, dass Raum-/Keyzugriff, Navigation, Auswahl, wiederholtes Platzieren
 
 ## Befunde und Nachweise
 
-Die bestehenden GM-Befunde, Korrekturen und begrenzten Abnahmen stehen in `acceptance.json.gmProductFollowups`. Portable Nachweise bleiben unter [docs/reference](docs/reference/), darunter die [Dungeon-am-Ort-Belege](docs/reference/atlas-detail-binding-d01/README.md), [Cloud-N04-Prüfung](docs/reference/gm-cloud-n04-20261011/README.md) und [Planner-Fokusprüfung](docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/README.md).
+Die bestehenden GM-Befunde, Korrekturen und begrenzten Abnahmen stehen in `acceptance.json.gmProductFollowups`. Portable Nachweise bleiben unter [docs/reference](docs/reference/), darunter die [Dungeon-am-Ort-Belege](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/README.md), [Cloud-N04-Prüfung](docs/reference/gm-cloud-n04-20261011/README.md) und [Planner-Fokusprüfung](docs/reference/gm-cloud-manual-planner-pr144-focus-retest-20261011-01/README.md).
 
 Ein Teilablauf bestätigt weder vollständige Originalparität noch physische Eingabe, Großkarten, 200-Prozent-Skalierung oder die gesamte E2E-Kette. Fehlende und widersprüchliche Nachweise bleiben offen.

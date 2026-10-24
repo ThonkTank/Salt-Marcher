@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-lod';export * from './src/app/atlas-spatial-vegetation';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/vegetation-lod-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {vegetationSpec,vegetationRepresentative,vegetationStride,vegetationGrid,vegetationScaleLimit,vegetationOpacity,AtlasSpatialVegetation,THREE}=require('../.build/vegetation-lod-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/vegetation';export * from './src/app/vegetation-lod';export * from './src/app/atlas-deck-vegetation';export {atlasMetricFrame} from './src/app/atlas-metric-camera';",resolveDir:process.cwd()},outfile:'.build/vegetation-lod-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {vegetationSpec,vegetationRepresentative,vegetationStride,vegetationGrid,vegetationScaleLimit,vegetationOpacity,AtlasDeckVegetation,atlasMetricFrame}=require('../.build/vegetation-lod-test.cjs');
 test('every coarse representative survives from its child, including negative cells and multiple seeds',()=>{
  for(const seed of [0,1,123,4294967295])for(const stride of [2,4,8,16,64,256])for(let x=-4*stride;x<=4*stride;x+=stride)for(let y=-4*stride;y<=4*stride;y+=stride){
   const p=vegetationRepresentative(seed,x,y,stride),half=stride/2;
@@ -36,24 +36,17 @@ test('undergrowth fades at detail scale and protected objects stay visible',()=>
 function fixture(protectedObject=false){
  const i={id:'row:1',asset:'oak',x:0,y:0,z:0,size:10,angle:0,normal:{x:0,y:0,z:1},protected:protectedObject};
  const spec=vegetationSpec();spec.spacing=12;spec.layout='row';
- const vegetation=new AtlasSpatialVegetation([{id:'wood',vegetation:spec,vegetationView:{mode:'individual',instances:[i]}}],{origin:{x:0,y:0},focusM:0,exaggeration:1});
- vegetation.group.updateMatrixWorld(true);
- const camera=new THREE.PerspectiveCamera(45,1,.01,10000),ray=new THREE.Raycaster();
- for(const mesh of vegetation.group.children)mesh.onBeforeRender({getSize:v=>v.set(100,100)});
- const pick=(mpp,x)=>{
-  camera.position.set(0,0,50*mpp/Math.tan(Math.PI/8));camera.lookAt(0,0,0);camera.updateMatrixWorld(true);
-  ray.setFromCamera(new THREE.Vector2(x/(50*mpp),0),camera);
-  return vegetation.hit(ray,['vegetation-trees']);
- };
+ const vegetation=new AtlasDeckVegetation([{id:'wood',vegetation:spec,vegetationView:{mode:'individual',instances:[i]}}],{origin:{x:0,y:0},focusM:0,exaggeration:1});
+ const pick=(mpp,x)=>vegetation.hit(atlasMetricFrame({focus:{x:0,y:0},focusHeightM:0,metersPerPixel:mpp,rotation:0,tilt:0,exaggeration:1},100,100),{x:50+x/mpp,y:50},['vegetation-trees']);
  return {vegetation,pick};
 }
 test('picking follows expanded crown pixels during camera-only zoom, then ignores faded trees',()=>{
  const {vegetation,pick}=fixture();
  try{
-  const before=vegetation.group.children.map(m=>Array.from(m.instanceMatrix.array));
+  const before=vegetation.batches.map(b=>b.data);
   assert.equal(pick(.5,4.2),null);assert.equal(pick(1.5,4.2)?.data.vegetationInstance,'row:1');
   assert.equal(pick(2.1,0),null);
-  assert.deepEqual(vegetation.group.children.map(m=>Array.from(m.instanceMatrix.array)),before);
+  assert.deepEqual(vegetation.batches.map(b=>b.data),before);
  }finally{vegetation.dispose();}
 });
 test('protected crowns retain physical size and remain pickable beyond automatic levels',()=>{

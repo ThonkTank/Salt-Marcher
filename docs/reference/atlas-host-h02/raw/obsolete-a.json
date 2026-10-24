@@ -1,7 +1,0 @@
-{
-  "lease": "Error: Atlas-Context, Mount oder Source ist veraltet.",
-  "undo": "Error: Die Kampagnenbindung dieses Atlas wurde widerrufen.",
-  "redo": "Error: Die Kampagnenbindung dieses Atlas wurde widerrufen.",
-  "callback": "Error: Die Kampagnenbindung dieses Atlas wurde widerrufen.",
-  "lateCaptureUse": "Error: Die Kampagnenbindung dieses Atlas wurde widerrufen."
-}

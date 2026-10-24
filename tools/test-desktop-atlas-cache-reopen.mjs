@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import {createRequire} from 'node:module';
 import {createHash} from 'node:crypto';
-import {readdir,stat} from 'node:fs/promises';
 import {waitForAtlasProjection} from './atlas-projection-probe.mjs';
 import {createNativeSession} from './native-session.mjs';
 import {atlasCanvasReady} from './atlas-canvas-probe.mjs';
@@ -37,10 +36,10 @@ try{
    detailReadyMs=performance.now()-start;detailState=await page.locator('#campaign-map').evaluate(m=>({quality:m.dataset.terrainQuality,tiles:m.dataset.terrainTiles}));
   }
   await native.capture(page,label);
-  await waitForAtlasProjection(native.profile+'/atlas-region-cache');await native.close();const files=[];for(const name of await readdir(native.profile+'/atlas-region-cache')){const info=await stat(native.profile+'/atlas-region-cache/'+name);files.push({name,bytes:info.size,mtimeMs:info.mtimeMs});}
-  const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,files,...(detailState?{firstDetailMs,detailReadyMs,detailState}:{})};runs.push(run);console.log(JSON.stringify(run));
+  const projection=await waitForAtlasProjection(native.profile+'/atlas-region-cache');await native.close();
+  const run={label,firstTerrainMs,regionReadyMs,firstRegionState,state,projection,...(detailState?{firstDetailMs,detailReadyMs,detailState}:{})};runs.push(run);console.log(JSON.stringify(run));
  }
- assert.equal(runs[0].files.length,2);assert.deepEqual(runs[1].files,runs[0].files,'unchanged restart must reuse the cache without rewriting it');assert.deepEqual(runs[1].state,runs[0].state);
+ assert.deepEqual(runs[1].projection,runs[0].projection,'unchanged restart must reuse the same published projection bytes and source stamps');assert.deepEqual(runs[1].state,runs[0].state);
  const check=new Database(native.profile+'/workbench.sqlite',{readonly:true});let canonicalAfter;try{canonicalAfter=canonical(check);}finally{check.close();}
  assert.deepEqual(canonicalAfter,canonicalBefore);await native.finish({runs,canonicalBefore,canonicalAfter});
 }catch(error){await native.fail(error);throw error;}finally{await native.dispose();}

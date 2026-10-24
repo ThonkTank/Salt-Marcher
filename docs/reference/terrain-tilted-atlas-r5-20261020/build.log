@@ -1,5 +1,0 @@
-
-> saltmarcher@0.164.0 build:desktop
-> node tools/build-desktop.mjs
-
-Desktop build ready: .build/desktop/main.cjs

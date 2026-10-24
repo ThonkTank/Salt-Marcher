@@ -10,7 +10,7 @@ import { atlasDungeonState, openDungeon } from "./dungeon-ui";
 interface AtlasJourneyHost {
     readonly data: AtlasRenderView | null;
     readonly owner: WorkspaceGeometry | null;
-    busy: boolean;
+    readonly busy: boolean;
     readonly family: string;
     readonly refresh: (keepScene?: boolean) => Promise<boolean | undefined>;
     readonly render: (preview?: boolean) => void;
@@ -26,6 +26,7 @@ interface AtlasJourneyHost {
 /** Owns travel previews, unresolved commands and journey playback. */
 export class AtlasJourney {
     constructor(private host: AtlasJourneyHost) { }
+    busy=false;
     invalidatePreview() {
         this.previewRequest++;
         this.localPreview = null;
@@ -164,7 +165,7 @@ export class AtlasJourney {
             action,
         };
         let acknowledged = false;
-        this.host.busy = true;
+        this.busy = true;
         try {
             const r = await window.campaign.executeAtlasTravelCommit(command);
             acknowledged = true;
@@ -200,7 +201,7 @@ export class AtlasJourney {
         }
         finally {
             if (this.host.owner === w) {
-                this.host.busy = false;
+                this.busy = false;
                 this.renderTravel();
             }
         }

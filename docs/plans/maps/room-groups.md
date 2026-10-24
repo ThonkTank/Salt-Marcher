@@ -30,7 +30,7 @@ ist lokal und reproduzierbar; er erzeugt keine Encounter oder Bewohnergeschichte
 
 Freie Raumneuanlagen erhalten die gezeichneten Punkte und Löcher exakt.
 Die Neuanlage erzeugt kein Volumenraster; dessen ausdrückliche Initialisierung
-oder Bearbeitung bleibt eine eigene, rücknehmbare Aktion. [Prüfung](../../reference/atlas-free-room-contours-20261021/README.md).
+oder Bearbeitung bleibt eine eigene, rücknehmbare Aktion. [Prüfung](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-free-room-contours-20261021/README.md).
 
 Räume bearbeiten, Türen und Gegenstände versetzen, Raumtexte schreiben und
 Geschosse wechseln funktionieren für beide Arten gleich. Raumteilung erhält

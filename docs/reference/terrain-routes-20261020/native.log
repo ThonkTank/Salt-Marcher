@@ -1,8 +1,0 @@
-Straße aus bestehender Linie planen, beide Ansichten und atomare Übernahme
-Fluss mit echten Punktklicks und Koordinatenkorrektur, abfließendes Profil und verbundenes Bett
-Schutz ist pro Verlauf schaltbar und gespeichert
-Löschen und Atlas-Undo stellen Verlauf samt Geländeform wieder her
-Gemeinsamer gekippter Atlas zeigt dieselben gespeicherten Verläufe
-Echter Geländepinselzug erhält geschützte Verläufe; ein Undo nimmt Gelände und Profile zurück
-Frischer Prozess erhält Straßen, Flüsse, Profile und Schutz
-{"complete":true,"out":"/home/aaron/Schreibtisch/projects/SaltMarcher/.build/terrain-routes-native","checks":7}

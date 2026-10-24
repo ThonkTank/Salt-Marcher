@@ -1,3 +1,5 @@
+import {isProjectionJob,isWorkerControl,type AtlasJob,type AtlasJobResults,type AtlasWorkerValue,type AtlasWorkerReply} from './atlas-worker-contract';
+import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
 import {randomUUID} from 'node:crypto';
 import {eraseProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {terrainTraceStart} from '../src/app/terrain-timing';
@@ -9,10 +11,12 @@ import type {
 import { REGION_CACHE_BYTES } from '../src/app/atlas-region-contracts';
 
 type Queued = {
+  control?:AtlasReadRequest;
+  cancellation?:Int32Array;
   endQueue:()=>void;
   source: AtlasRegionSource;
-  job: object;
-  resolve: (value: any) => void;
+  job: AtlasJob;
+  resolve: (value: AtlasWorkerValue) => void;
   reject: (error: Error) => void;
 };
 type Lane='selection'|'camera'|'terrain'|'author'|'live';
@@ -23,13 +27,14 @@ export class AtlasRegionService {
   private worker: Worker | null = null;
   private identity = '';
   private exit: Promise<unknown> = Promise.resolve();
-  private pending: { resolve: (v: any) => void; reject: (e: Error) => void } | null = null;
+  private pending: { resolve: (v: AtlasWorkerValue) => void; reject: (e: Error) => void } | null = null;
   private generation = 0;
   private closed = false;
   private source: AtlasRegionSource | null = null;
   private queued = new Map<Lane, Queued>();
   private draining = false;
   private starts = 0;
+  private activeRead:{token:string;control:AtlasReadRequest;signal:Int32Array}|undefined;
   private terrainYields=0;
   private regionCancellation: Int32Array | null = null;
   private regionCancelled = 0;
@@ -100,7 +105,17 @@ export class AtlasRegionService {
     this.cacheBytes = 0;
   }
 
-  private enqueue(source: AtlasRegionSource, job: object, lane: Lane = "selection") {
+  cancelRead(control:AtlasReadRequest,token?:string){
+    validateAtlasReadRequest(control);
+    const active=this.activeRead;
+    if(active&&(token===undefined||active.token===token)&&active.control.owner===control.owner&&active.control.id===control.id)Atomics.store(active.signal,0,1);
+    for(const [lane,queued] of this.queued)if((token===undefined||queued.source.token===token)&&queued.control?.owner===control.owner&&queued.control.id===control.id){
+      queued.endQueue();queued.reject(new Error('Kartenausschnitt abgebrochen.'));this.queued.delete(lane);
+    }
+  }
+  private enqueue<J extends AtlasJob>(source: AtlasRegionSource, job: J, lane: Lane = "selection",control?:AtlasReadRequest) {
+    validateAtlasReadRequest(control);
+    if(control&&this.activeRead?.token===source.token&&this.activeRead.control.owner===control.owner)Atomics.store(this.activeRead.signal,0,1);
     if (this.closed) {
       return Promise.reject(new Error('Kartenausschnitt abgebrochen.'));
     }
@@ -112,8 +127,8 @@ export class AtlasRegionService {
       this.queued.delete('terrain');
     }
     this.queued.get(lane)?.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
-    const promise = new Promise<any>((resolve, reject) => {
-      this.queued.set(lane, { source, job, resolve, reject, endQueue:terrainTraceStart("region.queue",source.revision) });
+    const promise = new Promise<AtlasJobResults[J['kind']]>((resolve, reject) => {
+      this.queued.set(lane, { source, job, control, cancellation:control?new Int32Array(new SharedArrayBuffer(4)):undefined, resolve:value=>resolve(value as AtlasJobResults[J['kind']]), reject, endQueue:terrainTraceStart("region.queue",source.revision) });
     });
     void this.drain();
     return promise;
@@ -129,18 +144,19 @@ export class AtlasRegionService {
         const lane = LANE_PRIORITY.find(lane=>this.queued.has(lane))!,
           request = this.queued.get(lane)!;
         this.queued.delete(lane);request.endQueue();
-        const cancellation=lane==='camera'?new Int32Array(new SharedArrayBuffer(4)):null;
+        const cancellation=request.cancellation??(lane==='camera'?new Int32Array(new SharedArrayBuffer(4)):null);
+        if(request.control&&cancellation)this.activeRead={token:request.source.token,control:request.control,signal:cancellation};
         if(cancellation)this.regionCancellation=cancellation;
         try {
           const value=await this.run(request.source, cancellation?{...request.job,cancellation}:request.job);
-          if(cancellation&&(Atomics.load(cancellation,0)||value?.regionReadCancelled===true)){
+          if(cancellation&&(Atomics.load(cancellation,0)||isWorkerControl(value,'regionReadCancelled'))){
             this.regionCancelled++;
             request.reject(new Error('Kartenausschnitt durch neuere Anfrage ersetzt.'));
-          }else if(value?.terrainProjectionContinuation===true&&['terrain','terrain-color','terrain-refine'].includes((request.job as {kind:string}).kind)){
+          }else if(isWorkerControl(value,'terrainProjectionContinuation')&&isProjectionJob(request.job)){
             this.terrainYields++;
             if(['terrain','live','camera','author'].some(lane=>this.queued.has(lane as Lane)))request.reject(new Error('Geländeberechnung durch neuere Anfrage ersetzt.'));
             else this.queued.set('terrain',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
-          }else if(value?.terrainContinuation===true&&(request.job as {kind?:string}).kind==='terrain-stroke'){
+          }else if(isWorkerControl(value,'terrainContinuation')&&request.job.kind==='terrain-stroke'){
             if(this.queued.has('author'))request.reject(new Error('Geländeberechnung durch neueren Auftrag ersetzt.'));
             else this.queued.set('author',{...request,job:{...request.job,continuation:true},endQueue:()=>{}});
           }else request.resolve(value);
@@ -148,6 +164,7 @@ export class AtlasRegionService {
           request.reject(e as Error);
         } finally {
           if(this.regionCancellation===cancellation)this.regionCancellation=null;
+          if(this.activeRead?.signal===cancellation)this.activeRead=undefined;
         }
       }
     } finally {
@@ -155,7 +172,7 @@ export class AtlasRegionService {
     }
   }
 
-  private async run(source: AtlasRegionSource, job: object) {
+  private async run(source: AtlasRegionSource, job: AtlasJob) {
     const identity = this.sourceIdentity(source), generation = this.generation;
     // A cancelled worker must release its database connection before its replacement starts.
     if (!this.worker) {
@@ -175,13 +192,13 @@ export class AtlasRegionService {
       this.exit = new Promise(resolve => worker.once('exit', resolve)).then(async()=>{
         if(this.cacheDirectory)await eraseProjectionWork(this.cacheDirectory,source.filename,source.campaignId,workId).catch(()=>{});
       });
-      worker.on('message', result => {
+      worker.on('message', (result:AtlasWorkerReply) => {
         if (this.worker !== worker) {
           return;
         }
         const pending = this.pending;
         this.pending = null;
-        if (result.error) {
+        if ('error' in result) {
           pending?.reject(new Error(result.error));
         } else {
           pending?.resolve(result.value);
@@ -205,7 +222,7 @@ export class AtlasRegionService {
       source = { ...source, reset: false, changes: [] };
     }
     const endRoundtrip=terrainTraceStart("worker.roundtrip",source.revision);
-    const value = await new Promise<any>((resolve, reject) => {
+    const value = await new Promise<AtlasWorkerValue>((resolve, reject) => {
       this.pending = { resolve, reject };
       this.worker!.postMessage({ ...job, source });
     });
@@ -249,8 +266,11 @@ export class AtlasRegionService {
 
   prepareTerrainStroke(source:AtlasRegionSource,stroke:import('../src/app/terrain-brush').HeightStroke):Promise<import('../src/app/storage/terrain-scale').PreparedTerrainStroke>{return this.enqueue(source,{kind:'terrain-stroke',stroke},'author');}
 
+  geometryTile(source:AtlasRegionSource,query:import('../src/app/atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('../src/app/atlas-geometry-tile').AtlasGeometryTile>{return this.enqueue(source,{kind:'geometry-tile',query},'terrain');}
+  terrainTile(source:AtlasRegionSource,query:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-terrain-tile').AtlasTerrainTile>{return this.enqueue(source,{kind:'terrain-tile',query},'terrain',control);}
+  materialTile(source:AtlasRegionSource,query:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest):Promise<import('../src/app/atlas-material-tile').AtlasMaterialTile>{return this.enqueue(source,{kind:'material-tile',query},'terrain',control);}
   terrainColor(source:AtlasRegionSource,query:import('../src/app/terrain-color').TerrainColorRequest):Promise<import('../src/app/terrain-color').TerrainColorTile>{return this.enqueue(source,{kind:'terrain-color',query},'terrain');}
-  terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain');}
+  terrain(source:AtlasRegionSource,query:import('../src/app/terrain-projection').TerrainProjectionRequest,control?:AtlasReadRequest):Promise<import('../src/app/terrain-projection').TerrainProjection>{return this.enqueue(source,{kind:'terrain',query},'terrain',control);}
 
   liveTerrain(source:AtlasRegionSource,query:import('../src/app/terrain-presentation').TerrainFrameQuery,base?:import('../src/app/terrain-frame').TerrainFrameIdentity,refinement=false):Promise<import('../src/app/terrain-presentation').TerrainFrame>{return this.enqueue(source,{kind:refinement?'terrain-refine':'terrain-live',query,base},refinement?'terrain':'live');}
 

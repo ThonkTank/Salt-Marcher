@@ -1,9 +1,0 @@
-{
-  "body": "vault\nNeuer Tab\nNeuer Tab\nNeue Notiz\nCtrl + N\nNeue Base\nNeuer Canvas\nGehe zu Datei\nCtrl + O\nVertraust du dem Ersteller dieses Vaults?\n\nDu öffnest diesen Vault zum ersten Mal und er enthält einige Erweiterungen.\n\nWenn du diesen Vault nicht selbst erstellt hast, beachte bitte, dass Erweiterungen unbekannter Herkunft ein Sicherheitsrisiko darstellen können.\n\nFalls du dem Ersteller dieses Vaults nicht komplett vertraust, empfehlen wir, im eingeschränkten Modus zu bleiben, damit Erweiterungen in diesem Vault nicht ausgeführt werden.\n\nVault im eingeschränkten Modus betrachten\nDem Ersteller vertrauen und Erweiterungen aktivieren",
-  "plugins": [
-    "dungeon-editor"
-  ],
-  "enabled": [
-    "dungeon-editor"
-  ]
-}

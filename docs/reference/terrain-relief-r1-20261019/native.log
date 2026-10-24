@@ -1,5 +1,0 @@
-Native land stroke stores metres without a second mask
-Lower a strait, undo and redo restore exact heights
-Escape discards height preview
-Campaign sea level changes coast without rewriting heights and is undoable
-Fresh native process reads the exact authored height field

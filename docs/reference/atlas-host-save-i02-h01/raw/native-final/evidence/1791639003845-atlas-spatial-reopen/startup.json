@@ -1,9 +1,0 @@
-{
-  "body": "vault\nGemeinsamer-Testatlas\nAtlanten\n/\nGemeinsamer-Testatlas\nKampagne\nE2E-01 Atlas Save\nAktiv\nErneut versuchen\nListe neu laden\nGemeinsamer Testatlas\nAuswahl\nHand\nLand\nMeer\nWald\nZurücksetzen\nLandfarbe\nRückgängig\nWiederholen\n−\n+\nEinpassen\nStadt +\nPOI +\nSpeichern\nKarte ▾\n3 Meilen pro Hex\n\nLand, Meer oder Wald wählen und Hexes zeichnen.\n\nGespeichertPinsel: 3-Meilen-Hexes. Mitte oder Leertaste ziehen verschiebt. Strg + Mausrad zoomt.\n0 Rückverweise",
-  "plugins": [
-    "dungeon-editor"
-  ],
-  "enabled": [
-    "dungeon-editor"
-  ]
-}

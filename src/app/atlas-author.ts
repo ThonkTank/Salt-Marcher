@@ -22,7 +22,7 @@ interface AtlasAuthorHost {
     creation: "city" | "dungeon" | null;
     readonly root: HTMLElement;
     readonly family: Family;
-    readonly output: Pick<AtlasOutput, "exportOpen" | "exportChoosing" | "exporting" | "exportDrag" | "exportCorner" | "exportDungeon" | "exportBox" | "exportRectangle" | "exportAreaStatus">;
+    readonly output: Pick<AtlasOutput, "exportOpen" | "exportChoosing" | "exporting" | "exportDrag" | "exportCorner" | "exportDungeon" | "exportBox" | "exportRectangle" | "exportAreaStatus" | "beginArea" | "moveArea" | "endArea">;
     readonly busy: boolean;
     readonly spacePan: boolean;
     readonly camera: Pick<AtlasCanvas, "ready" | "hitAt" | "stopZoom" | "redrawOverlay">;
@@ -422,11 +422,7 @@ export class AtlasAuthor {
             return;
         }
         if (this.host.output.exportOpen) {
-            if (this.host.output.exportChoosing && !this.host.output.exporting) {
-                const p = this.host.point(e);
-                this.host.output.exportDrag = { id: e.pointerId, start: p, last: p, x: e.clientX, y: e.clientY, moved: false };
-                this.host.canvas.setPointerCapture(e.pointerId);
-            }
+            this.host.output.beginArea(e,this.host.point(e));
             return;
         }
         if (this.host.creation || this.host.family === "terrain" && this.host.regions.data)
@@ -512,12 +508,7 @@ export class AtlasAuthor {
             this.host.render();
             return;
         }
-        if (this.host.output.exportDrag?.id === e.pointerId) {
-            this.host.output.exportDrag.last = this.host.point(e);
-            this.host.output.exportDrag.moved ||= Math.hypot(e.clientX - this.host.output.exportDrag.x, e.clientY - this.host.output.exportDrag.y) >= 4;
-            this.host.render();
-            return;
-        }
+        if(this.host.output.moveArea(e,this.host.point(e)))return;
         if (this.roomDrag?.id === e.pointerId) {
             this.roomDrag.last = this.host.point(e);
             this.roomDrag.moved ||= Math.hypot(e.clientX - this.roomDrag.x, e.clientY - this.roomDrag.y) >= 4;
@@ -542,28 +533,7 @@ export class AtlasAuthor {
         }
     }
     async up(e: PointerEvent) {
-        if (this.host.output.exportDrag?.id === e.pointerId) {
-            const drag = this.host.output.exportDrag;
-            this.host.output.exportDrag = null;
-            this.suppressClick();
-            const end = this.host.point(e), start = drag.moved ? drag.start : this.host.output.exportCorner;
-            if (start) {
-                const b = this.host.output.exportRectangle(start, end);
-                if (b.width > 0 && b.height > 0) {
-                    this.host.output.exportDungeon = false;
-                    this.host.output.exportBox = b;
-                    this.host.output.exportChoosing = false;
-                    this.host.output.exportCorner = null;
-                }
-                else
-                    this.host.output.exportCorner = end;
-            }
-            else
-                this.host.output.exportCorner = end;
-            this.host.output.exportAreaStatus();
-            this.host.render();
-            return;
-        }
+        if(this.host.output.exportDrag?.id===e.pointerId&&this.host.output.endArea(e,this.host.point(e))){this.suppressClick();return;}
         if (!this.host.regions.geometryCurrent() && (this.pathDrag || this.vertexDrag || this.drag || this.roomDrag || this.brushId !== null)) {
             this.host.cancel();
             this.host.opts.status('Kartengeometrie inzwischen geändert. Zug nach dem Laden erneut beginnen.', true);

@@ -1,4 +1,6 @@
 import type { LandscapeHost } from './landscape-workbench-types';
+import {TerrainDraftStroke} from './terrain-stroke-queue';
+import {terrainTraceMeasure} from './terrain-timing';
 import { TerrainLiveStroke } from './terrain-live-stroke';
 import { type HeightStroke } from './terrain-brush';
 import type { LandscapeToolSettings } from "./landscape-tool-settings";
@@ -6,7 +8,7 @@ import { pendingAtlasWrite } from "./campaign-atlas-author";
 import type { Point } from "./contracts";
 import { type LandscapeRecord } from "./atlas-landscape";
 interface LandscapeBrushSessionHost {
-    readonly effects: Pick<LandscapeHost, 'data' | 'error' | 'previewHeight' | 'redraw' | 'terrainGesture' | 'writeTerrain'>;
+    readonly effects: Pick<LandscapeHost, 'data' | 'error' | 'previewHeight' | 'redraw' | 'terrainGesture' | 'writeTerrain' | 'localTerrain'>;
     pointer: number | null;
     readonly disable: (disabled: boolean) => void;
     readonly say: (message: string) => void;
@@ -32,7 +34,7 @@ export class LandscapeBrushSession {
     liveFrame: number | undefined;
     liveWriteRequested = false;
     maskTimer: ReturnType<typeof setTimeout> | undefined;
-    live: TerrainLiveStroke | null = null;
+    live: TerrainLiveStroke | TerrainDraftStroke | null = null;
     liveColorCount = 0;
     liveId = "";
     get livePainting() { return this.live !== null; }
@@ -44,7 +46,8 @@ export class LandscapeBrushSession {
         this.liveId = crypto.randomUUID();
         this.liveColorCount = 0;
         this.liveFailureMessage = undefined;
-        this.live = new TerrainLiveStroke({ id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence }, (a, c) => this.host.effects.writeTerrain(a, c), error => {
+        const local=this.host.effects.localTerrain?.(),id=this.liveId;
+        this.live = local ? new TerrainDraftStroke(a=>local.enqueue(a,id)) : new TerrainLiveStroke({ id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence }, (a, c) => this.host.effects.writeTerrain(a, c), error => {
             this.liveFailureMessage = error instanceof Error ? error.message : String(error);
             this.host.pointer = null;
             clearTimeout(this.maskTimer);
@@ -56,6 +59,7 @@ export class LandscapeBrushSession {
         // Sample the first real elapsed frame, just like subsequent stationary
         // samples. A near-zero pointerdown dose can commit without changing a pixel.
         // Releasing before that frame still flushes the actual elapsed input below.
+        if(local&&!this.maskStroke)this.sampleLive();
         this.scheduleLive();
     }
     sampleHeight() {
@@ -73,9 +77,10 @@ export class LandscapeBrushSession {
         if (this.maskStroke)
             this.live.update({ kind: 'landscape-height-stroke', stroke: this.maskStroke });
         else if (this.host.points.length !== this.liveColorCount) {
-            const record = this.host.colorRecord();
+            const record = terrainTraceMeasure('draft.colorRecord',()=>this.host.colorRecord());
             record.id = this.liveId;
             this.liveColorCount = this.host.points.length;
+            this.host.effects.localTerrain?.()?.previewColor(record);
             this.live.update({ kind: 'landscape-color-stroke', record });
         }
     }
@@ -115,6 +120,19 @@ export class LandscapeBrushSession {
         this.endLiveInput();
         if (!stop)
             this.sampleLive();
+        if(live instanceof TerrainDraftStroke){
+            // Close author input synchronously. The queue owns the immutable
+            // snapshot; an immediately following gesture owns fresh local state.
+            if(stop)this.host.effects.localTerrain?.()?.cancel();
+            const completion=stop?live.stop():live.finish();
+            this.live=null;this.clearMask();this.host.points=[];this.host.brushStrokes=[];
+            this.host.draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;
+            this.host.disable(false);this.host.say(stop?'Pinsel gestoppt.':'Wird gespeichert…');
+            void Promise.resolve(this.host.effects.terrainGesture(false)).catch(e=>this.host.effects.error(e));
+            try{await completion;if(!this.live)this.host.say('Gespeichert');}
+            catch(error){this.liveFailureMessage=error instanceof Error?error.message:String(error);this.host.disable(true);this.host.effects.error(error);}
+            this.host.effects.redraw();return;
+        }
         this.host.saving = true;
         let failed = stop;
         try {

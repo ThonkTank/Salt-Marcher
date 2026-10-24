@@ -9,13 +9,13 @@ import {AtlasOutput} from './atlas-output';
 import type {AtlasWorkplane} from './atlas-workplane';
 
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
-import {TerrainPresentation,interactiveTerrainFrame,type TerrainIdentity} from './terrain-presentation';
 import {terrainTraceStart} from './terrain-timing';
 import {BrushSizeControl} from './atlas-brush-size';
 import {chooseRoomGroup} from './room-group-ui';
 import {MapLabelLayout} from './atlas-cartography';
 import {TerritoryWorkbench} from './atlas-territories-ui';
-import {TerrainSpatialUI} from './terrain-spatial-ui';
+import {AtlasRasterPresentation} from './atlas-raster-presentation';
+import {TerrainStrokeQueue} from './terrain-stroke-queue';
 
 import {atlasFieldValue,setAtlasFieldValue,lengthLabel,atlasUnits} from './atlas-units';
 import {AtlasWorkspaceLayout} from './atlas-workspace-layout';
@@ -85,7 +85,7 @@ export class CampaignAtlasWorkbench {
       return new AtlasJourney({
           get data() { return source.regions.data; },
           get owner() { return source.owner; },
-          get busy() { return source.busy; }, set busy(value) { source.busy = value; },
+          get busy() { return source.busy; },
           get family() { return source.family; },
           refresh: (...args) => this.regions.refresh(...args),
           render: (...args) => this.render(...args),
@@ -111,10 +111,7 @@ export class CampaignAtlasWorkbench {
           scheduleRender: (...args) => this.scheduleRender(...args),
           get root() { return source.root; },
           get owner() { return source.owner; },
-          get terrainAuthor() { return source.terrainAuthor; }, set terrainAuthor(value) { source.terrainAuthor = value; },
-          get terrainPresentation() { return source.terrainPresentation; },
-          get hitVersion() { return source.hitVersion; }, set hitVersion(value) { source.hitVersion = value; },
-          get hitDialog() { return source.hitDialog; },
+          invalidateHits:()=>{this.hitVersion++;this.hitDialog.close();},
           render: (...args) => this.render(...args),
           error: (...args) => this.error(...args),
           get opts() { return source.opts; }
@@ -125,7 +122,7 @@ export class CampaignAtlasWorkbench {
   private createAtlasDrawing(): AtlasDrawing {
       const source = this;
       return new AtlasDrawing({
-          get drag() { return source.author.drag; },
+          get author(){return source.author;},
           get territories() { return source.territories; },
           get journey() { return source.journey; },
           scheduleRender: () => this.scheduleRender(),
@@ -136,19 +133,13 @@ export class CampaignAtlasWorkbench {
           get canvas() { return source.canvas; },
           get root() { return source.root; },
           get family() { return source.family; },
-          get measurementHover() { return source.author.measurementHover; },
           get scopeId() { return source.scopeId; },
           frame: (...args) => this.frame(...args),
           get floorId() { return source.floorId; },
-          get roomDrag() { return source.author.roomDrag; },
-          get draft() { return source.author.draft; },
           floorPlane: (...args) => this.floorPlane(...args),
-          get selection() { return source.author.selection; },
           get opts() { return source.opts; },
           roomPreview: original => this.author.roomPreview(original),
           get camera() { return source.camera; },
-          get pathDrag() { return source.author.pathDrag; },
-          get partyDrag() { return source.author.partyDrag; }
       });
   }
 
@@ -197,10 +188,29 @@ export class CampaignAtlasWorkbench {
   private canvas: HTMLCanvasElement;
   private camera: AtlasCanvas;
   private landscape: LandscapeWorkbench;
-  private spatial?:TerrainSpatialUI;
+  private spatial?:AtlasRasterPresentation;
+  private strokeQueue:TerrainStrokeQueue|null=null;
+  private strokeOwner:string|null=null;
+  private get raster(){return this.spatial??null;}
+  private async enqueueRasterStroke(action:import('./terrain-live-stroke').TerrainLiveAction,id:string){
+    const owner=this.owner,data=this.regions.data;
+    if(!owner||!data?.region)throw Error('Kartenausschnitt fehlt. Erneut laden.');
+    if(this.strokeOwner!==owner.token){this.strokeQueue=null;this.strokeOwner=owner.token;}
+    if(this.strokeQueue&&!this.strokeQueue.pending&&!this.strokeQueue.failed&&data.region.revision===data.revision&&data.revision>=this.strokeQueue.confirmedSource.expectedRevision)this.strokeQueue=null;
+    this.strokeQueue??=new TerrainStrokeQueue({expectedRevision:data.revision,sourceFence:data.region.fence},async(a,c)=>{
+      if(this.owner!==owner)throw Error('Kampagne inzwischen gewechselt.');
+      const result=await this.write(a,false,true,c);if(!result)throw Error('Pinselzug nicht gespeichert.');return result.ack;
+    });
+    try{await this.strokeQueue.enqueue(action,id);}catch(error){
+      if(this.owner===owner){this.landscape.cancel();get('atlas-region-retry').hidden=false;this.opts.status('Pinsel gestoppt. Nicht bestätigte Folgezüge sind nicht gespeichert. Speicherstand klären oder Ansicht erneut laden.',true);}
+      throw error;
+    }
+    if(this.owner===owner&&!this.strokeQueue.pending&&!this.landscape.livePainting){
+      const source=this.strokeQueue.confirmedSource;this.raster?.reconcile(source.expectedRevision,source.sourceFence);
+      await this.regions.refresh();
+    }
+  }
   private terrainAnalysis?:TerrainAnalysisUI;
-  private terrainAuthor:TerrainIdentity|null=null;
-  private terrainPresentation:TerrainPresentation|null=null;
   private reference: AtlasReferenceUI;
   private owner: WorkspaceGeometry | null = null;
   private hitDialog=document.createElement('dialog');
@@ -209,7 +219,8 @@ export class CampaignAtlasWorkbench {
   private opening:{owner:WorkspaceGeometry;task:Promise<void>}|null=null;
   private livePortal:LiveAtlasPortal|null=null;
   private liveVisible=false;
-  private busy = false;
+  private writing=false;
+  private get busy(){return this.writing||this.journey.busy;}
   private bindingDirty = false;
   private family: Family = "navigation";
   private cityId: string | null = null;
@@ -331,7 +342,7 @@ export class CampaignAtlasWorkbench {
       get('atlas-reference-open').setAttribute('aria-expanded','true');
     })().catch(e=>this.error(e));
     this.territories=new TerritoryWorkbench(this.canvas,{focus:b=>{const aspect=this.canvas.clientWidth/Math.max(1,this.canvas.clientHeight),width=Math.max(b.width,b.height*aspect,10)*1.2,height=width/aspect;this.camera.set({x:b.x+b.width/2-width/2,y:b.y+b.height/2-height/2,width,height},true);},data:()=>this.regions.data,enabled:()=>this.family==='terrain'&&!this.output.exportOpen,point:e=>this.camera.point(e),box:()=>this.camera.view,current:()=>this.regions.geometryCurrent()&&this.camera.ready,write:a=>this.write(a,false,true),redraw:()=>this.scheduleRender(),error:e=>this.error(e)});
-    this.landscape=new LandscapeWorkbench(this.canvas,{selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),terrainGesture:active=>this.terrainGesture(active),previewHeight:stroke=>this.spatial?.previewHeight(stroke),writeTerrain:async(a,c)=>{const r=await this.write(a,false,true,c);if(!r)throw Error('Pinselzug nicht gespeichert.');return r.ack;},planning:()=>{this.author.selection=null;this.layout?.selectionChanged(null);this.layout?.showPane('tool');},navigation:e=>this.camera.navigationRequested(e),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),redrawOverlay:()=>this.camera.redrawOverlay(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.regions.data,refresh:()=>this.regions.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.regions.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
+    this.landscape=new LandscapeWorkbench(this.canvas,{localTerrain:()=>this.raster?.active?{cancel:()=>this.raster?.cancelDraft(),enqueue:(a,id)=>this.enqueueRasterStroke(a,id),previewColor:r=>this.raster?.previewColor(r)}:null,selected:(id,kind)=>this.layout?.landscapeSelectionChanged(id,kind),terrainGesture:active=>this.terrainGesture(active),previewHeight:stroke=>this.spatial?.previewHeight(stroke),writeTerrain:async(a,c)=>{const r=await this.write(a,false,true,c);if(!r)throw Error('Pinselzug nicht gespeichert.');return r.ack;},planning:()=>{this.author.selection=null;this.layout?.selectionChanged(null);this.layout?.showPane('tool');},navigation:e=>this.camera.navigationRequested(e),hit:(e,s)=>this.camera.hitAt(e,s),point:e=>this.camera.point(e),visibility:()=>this.spatial?.visibility(),box:()=>this.camera.view,navigate:b=>this.camera.set(b,true),redraw:()=>this.scheduleRender(),redrawOverlay:()=>this.camera.redrawOverlay(),write:a=>this.write(a,false,true),error:e=>this.error(e),data:()=>this.regions.data,refresh:()=>this.regions.refresh(),choose:p=>this.chooseAt(p,'landscape'),current:()=>this.raster?.active&&['height','smooth','color'].includes(this.landscape.spatialTool)?this.raster.ready&&!(this.strokeOwner===this.owner?.token&&this.strokeQueue?.failed):this.regions.geometryCurrent()&&this.camera.ready&&(!this.spatial?.active||this.spatial.ready)});
     this.landscape.panel.append(this.territories.panel);
     get<HTMLSelectElement>('land-tool').add(new Option('Regionen','territory'));
     get('land-tool').addEventListener('change',e=>{if(this.territories.hasDraft()){get<HTMLSelectElement>('land-tool').value='territory';e.stopImmediatePropagation();this.opts.status('Regionsänderung zuerst übernehmen oder verwerfen.');}else this.territories.sync(this.owner?.token??'');},true);
@@ -359,7 +370,13 @@ export class CampaignAtlasWorkbench {
         get<HTMLSelectElement>("atlas-entrance-choice").value || null;
       this.journey.renderTravel();
     };
-    get("atlas-region-retry").onclick=()=>void this.regions.refresh();
+    get("atlas-region-retry").onclick=()=>void (async()=>{
+      if(this.raster&&this.strokeQueue?.failed){
+        if(this.owner&&pendingAtlasWrite(this.owner.token)){this.opts.status('Zuerst Speicherstand klären.',true);return;}
+        this.strokeQueue=null;this.raster.setActive(false);this.landscape.recovered();
+      }
+      await this.regions.refresh();
+    })();
     get("atlas-export-png").onclick = () => void this.output.exportPNG();
     for (const id of [
       "atlas-binding-x",
@@ -421,7 +438,7 @@ export class CampaignAtlasWorkbench {
     get("atlas-recover").onclick = () =>
       void (async () => {
         if (!this.owner || this.busy) return;
-        this.busy = true;
+        this.writing = true;
         const owner = this.owner;
         try {
           if (this.journey.pendingTravel) {
@@ -437,14 +454,14 @@ export class CampaignAtlasWorkbench {
             if (!r.ok) throw new Error(r.error);
             const initial=await window.campaign.workspaceInitial(owner.token);if(!initial.ok)throw new Error("Gespeichert. Arbeitsansicht erneut laden: "+initial.error);await this.opts.updated(initial.value);await this.regions.refresh();
             this.cancel();
-            this.landscape.recovered();
+            this.strokeQueue=null;this.raster?.setActive(false);this.landscape.recovered();
           }
           get("atlas-save-status").textContent = "Speicherstand geklärt";
         } catch (e) {
           if (this.owner === owner) this.error(e);
         } finally {
           if (this.owner === owner) {
-            this.busy = false;
+            this.writing = false;
             this.render();
           }
         }
@@ -561,8 +578,8 @@ export class CampaignAtlasWorkbench {
       this.camera.stopZoom();syncBrushes();
       if(control.wheel(e,this.canvas.clientHeight))this.spatial?.refreshBrushCursor(e.clientX,e.clientY);
     },{capture:true,passive:false});
-    this.spatial=new TerrainSpatialUI(this.canvas,{
-      route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy,hasDraft:()=>this.cameraDraftPending(),navigationLocked:()=>this.cameraDraftPending(true),cancel:()=>{this.landscape.cancel();this.cancel();},
+    this.spatial=new AtlasRasterPresentation(this.canvas,{
+      route:async kind=>{await this.setFamily('terrain',false);if(this.family==='terrain')await this.landscape.planTerrainRoute(kind);},live:()=>this.landscape.livePainting,draft:()=>this.landscape.spatialDraft(),writing:()=>this.busy||this.regions.regionReading===this.regions.request,hasDraft:()=>this.cameraDraftPending(),navigationLocked:()=>this.cameraDraftPending(true),cancel:()=>{this.landscape.cancel();this.cancel();},
       workplane:()=>['interior','decoration'].includes(this.family)&&!this.creation?this.floorPlane():null,
       objectPicking:()=>!this.author.pointToolActive()&&['navigation','interior','decoration','city'].includes(this.family),tool:()=>this.family==='terrain'?this.landscape.spatialTool:'select',navigation:e=>this.camera.navigationRequested(e),panning:()=>this.camera.panning,
       refresh:()=>this.regions.refreshSpatialSource(),redraw:()=>this.redrawSpatial(),error:e=>this.error(e),recovered:message=>this.recoverPresentation(message),selection:()=>this.landscape.spatialSelection,
@@ -660,7 +677,7 @@ export class CampaignAtlasWorkbench {
   hide() {
     this.regions.openingSurface=null;
     this.terrainAnalysis?.cancel();
-    this.terrainPresentation?.stop();this.terrainPresentation=null;
+
     this.spatial?.setActive(false);
     this.regions.cancel();
     this.output.cancel();
@@ -671,7 +688,7 @@ export class CampaignAtlasWorkbench {
   }
   activate(w: WorkspaceGeometry) {
     this.regions.openingSurface=null;
-    this.terrainPresentation?.stop();this.terrainPresentation=null;this.terrainAuthor=null;
+this.regions.authorSource=null;
     this.regions.cancel();
     this.hitVersion++;this.hitDialog.close();
     this.journey.activate();
@@ -735,6 +752,8 @@ export class CampaignAtlasWorkbench {
   refresh(keepScene=false) { return this.regions.refresh(keepScene); }
 
   async flush() {
+    if(this.raster&&this.strokeQueue?.failed)return false;
+    if(this.raster&&this.strokeQueue?.pending){try{await this.strokeQueue.finish();}catch{return false;}}
     this.journey.playback.stop();
     await this.journey.playback.settled();
     if (
@@ -766,37 +785,20 @@ export class CampaignAtlasWorkbench {
     return editEntranceHeight(entrances,async entrance=>{valid();const result=await this.write({kind:'entrance',entrance},false,true);if(!result)throw Error('Eingang nicht gespeichert. Offene Bearbeitung abschließen.');},async id=>{valid();await this.navigate('room',id);},e=>this.error(e));
   }
   private async terrainGesture(active:boolean){
-    if(active){
-      this.spatial?.gesture(true);
-      const owner=this.owner!,query=this.spatial?.liveQuery()??{kind:'top' as const,query:this.regions.regionQuery(true)};
-      this.terrainAuthor=null;
-      this.terrainPresentation=new TerrainPresentation(async(source,base,refinement=false)=>{
-        const end=terrainTraceStart('terrain.frame');
-        let frame=this.spatial?.liveQuery(box=>this.landscape.terrainDetail(box))??(query.kind==='top'?{...query,detail:this.landscape.terrainDetail(query.query.box)}:query);
-        // Keep the requested fine dimensions independent of the last displayed coarse pass.
-        if(frame.kind==='tilted'&&query.kind==='tilted')frame={...frame,query:{...frame.query,width:query.query.width,height:query.query.height}};
-        if(!refinement)frame=interactiveTerrainFrame(frame);
-        const reply=await window.campaign.atlasTerrainFrame(owner.token,{source,frame,base,refinement}).finally(end);
-        if(!reply.ok)throw Error(reply.error);return reply.value;
-      },(frame,refined)=>{
-        if(this.owner!==owner)return;
-        if(frame.view==='tilted'){if(!this.spatial?.presentLive({...frame.projection,identity:frame.target},refined))return;}
-        else this.landscape.presentTerrain(frame.layer);
-        this.canvas.dataset.terrainRevision=String(frame.target.revision);
-      },error=>{if(this.owner===owner)this.opts.status('Gespeichert. Geländeanzeige folgt beim Abschluss: '+(error as Error).message,true);},query.kind==='tilted');
+    if(this.raster?.active){
+      this.raster.gesture(active);
+      if(!active&&this.strokeQueue&&!this.strokeQueue.pending&&!this.strokeQueue.failed&&this.strokeOwner===this.owner?.token){
+        const source=this.strokeQueue.confirmedSource;this.raster.reconcile(source.expectedRevision,source.sourceFence);await this.regions.refresh();
+      }
       return;
     }
-    const presentation=this.terrainPresentation,owner=this.owner;
-    await presentation?.finish();
-    if(this.owner!==owner||this.terrainPresentation!==presentation)return;
-    this.terrainPresentation=null;
-    const end=terrainTraceStart('atlas.refresh',this.terrainAuthor?.revision);
-    try{await this.regions.refresh();}finally{end();this.spatial?.gesture(false);}
   }
+
   private async write(action: AtlasAction, applyWorkspace = false, propagateError = false, terrain?:import("./terrain-live-stroke").TerrainLiveContext) {
     const w = this.owner;
-    if (!w || this.busy) return null;
-    this.busy = true;
+    if (!w || this.busy || !terrain&&this.raster&&(this.strokeQueue?.pending||this.strokeQueue?.failed)) return null;
+    this.raster?.pauseReads();
+    this.writing = true;
     get("atlas-save-status").textContent = "Wird gespeichert…";
     try {
       const commandId = crypto.randomUUID(),
@@ -813,9 +815,8 @@ export class CampaignAtlasWorkbench {
       this.journey.playback.stop();this.journey.localPreview=null;
       if(terrain){
         if(!ack.value.sourceFence)throw Error('Speicherbestätigung des Pinselzugs unvollständig. Speicherstand klären.');
-        this.terrainAuthor={revision:ack.value.revision,fence:ack.value.sourceFence};
+        this.regions.authorSource={revision:ack.value.revision,fence:ack.value.sourceFence};
         this.canvas.dataset.terrainAuthorRevision=String(ack.value.revision);
-        this.terrainPresentation?.update(this.terrainAuthor);
         return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value};
       }
       this.regions.loadedRegionQuery=null;
@@ -833,13 +834,16 @@ export class CampaignAtlasWorkbench {
       return null;
     } finally {
       if (this.owner === w) {
-        this.busy = false;
-        this.render();
+        this.writing = false;
+        // A local stroke already owns its pixels; queue drain refreshes the
+        // canonical scene. Rebuilding it on each receipt stalls the next input.
+        if(!terrain||!this.raster)this.render();
       }
     }
   }
   private async history(kind: "undo" | "redo") {
     if(this.landscape.livePainting)return;
+    if(this.raster&&this.strokeQueue){try{await this.strokeQueue.finish();if(!await this.regions.refresh())return;this.strokeQueue=null;}catch(e){this.error(e);return;}}
     if(this.landscape.routeHistory(kind))return;
     if (!(await this.opts.flush())) return;
     const result = await this.write({ kind }, true);
@@ -1325,14 +1329,8 @@ export class CampaignAtlasWorkbench {
       if(opening?.owner===this.owner&&opening.revision!==undefined)this.spatial?.sync(this.owner!.token,this.camera.view,opening.revision,[],this.landscape.contours());
       return;
     }
+    if(this.raster&&this.landscape.livePainting){this.camera.redrawOverlay();return;}
     this.renderPanel(data);this.journey.renderTravel();this.layout?.sync();this.territories.sync(this.owner?.token??'');
-    // During a direct GPU gesture TerrainPresentation owns confirmed frames
-    // and the spatial view owns the draft. Save-state notifications only need
-    // controls/HUD here. Finish clears the presentation before refreshing the
-    // author scene; the Canvas fallback still needs its ordinary scene rebuild.
-    // Radius controls share the ensuing frame measurement. Do not schedule an
-    // additional old-scene frame when the ordinary scene is being rebuilt below.
-    if(this.landscape.livePainting&&this.terrainPresentation&&this.spatial?.active){this.camera.redrawOverlay();return;}
     const box = this.camera.view;
     get('atlas-entrance-height').hidden=!(this.author.selection?.kind==='room'&&data.entrances.some(e=>e.roomId===this.author.selection!.id));
     this.spatial?.sync(this.owner!.token,box,data.revision,data.region?.landscape?.records??[],this.landscape.contours(),data,{mpp:box.width/Math.max(1,this.canvas.clientWidth),roofs:get<HTMLInputElement>('atlas-roofs').checked,scopeId:this.scopeId});

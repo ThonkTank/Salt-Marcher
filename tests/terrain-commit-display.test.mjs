@@ -32,7 +32,7 @@ test('external refresh requests cannot read the full Atlas in the middle of a di
  assert.equal(await ui.refresh(),false);
  assert.equal(await ui.refresh(true),false);
 });
-test('save-state rendering preserves an active GPU brush scene while updating controls; finish and fallback rebuild normally',()=>{
+test('save-state rendering retains the GPU brush scene until the gesture finishes',()=>{
  const seen=[],sceneReached=Error('ordinary scene path');
  const ui=Object.assign(Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{revision:10}}),{
   root:{hidden:false},owner:{token:'t'},landscape:{livePainting:true},terrainPresentation:{},spatial:{active:true},
@@ -40,10 +40,8 @@ test('save-state rendering preserves an active GPU brush scene while updating co
   layout:{sync(){seen.push('layout');}},territories:{sync(){seen.push('territories');}},
   camera:{redrawOverlay(){seen.push('overlay');},get view(){throw sceneReached;}},
  });
- ui.render();assert.deepEqual(seen,['panel','travel','layout','territories','overlay']);
- ui.spatial.active=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'fallback frames must still publish their scene');
- ui.spatial.active=true;ui.terrainPresentation=null;assert.throws(()=>ui.render(),e=>e===sceneReached,'finish must publish the refreshed author scene');
- ui.terrainPresentation={};ui.landscape.livePainting=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'ordinary edits must rebuild');
+ ui.render();assert.deepEqual(seen,['overlay']);
+ui.landscape.livePainting=false;assert.throws(()=>ui.render(),e=>e===sceneReached,'ordinary edits must rebuild');
 });
 test('commits advance author identity without relabelling the Atlas or awaiting display; finish refreshes once',async t=>{
  const old={document:global.document,window:global.window,CustomEvent:global.CustomEvent},status={dataset:{}},shown=[];
@@ -55,16 +53,17 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
  const atlas={revision:10,region:{revision:10,fence:'original'}},owner={token:'token',campaign:{id:'c'}};
  const ui=Object.assign(Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:atlas}),{
    owner,projection:atlas,svg:{dataset:{}},busy:false,opts:{status(){}},playback:{stop(){}},render(){},
-   terrainPresentation:{update:s=>shown.push(s),async finish(){finishes++;},stop(){}},spatial:{gesture(){}},
+   terrainPresentation:{update:s=>shown.push(s),async finish(){finishes++;},stop(){}},spatial:{gesture(){},pauseReads(){}},
    async refresh(){refreshes++;},error:e=>{throw e;},
  });
  const action={kind:'landscape-height-stroke',stroke:{}};
  const first=await ui.write(action,false,true,{id:'g',expectedRevision:10,sourceFence:'original'});
  assert.equal(first.ack.revision,11);assert.equal(ui.data,atlas);assert.equal(ui.data.region.revision,10);assert.equal(refreshes,0);
  const second=await ui.write(action,false,true,{id:'g',expectedRevision:11,sourceFence:'f1'});
- assert.equal(second.ack.revision,12);assert.deepEqual(shown,[{revision:11,fence:'f1'},{revision:12,fence:'f2'}]);
+ assert.equal(second.ack.revision,12);assert.deepEqual(ui.regions.authorSource,{revision:12,fence:'f2'});
  assert.equal(ui.data.revision,10);assert.equal(ui.busy,false);
- await ui.terrainGesture(false);assert.equal(finishes,1);assert.equal(refreshes,1);assert.equal(ui.terrainPresentation,null);
+ ui.spatial.active=true;ui.spatial.reconcile=(revision,fence)=>shown.push({revision,fence});ui.strokeOwner=owner.token;ui.strokeQueue={pending:false,failed:false,confirmedSource:{expectedRevision:12,sourceFence:'f2'}};
+ await ui.terrainGesture(false);assert.deepEqual(shown,[{revision:12,fence:'f2'}]);assert.equal(refreshes,1);
 });
 
 test('a failed final display refresh releases the brush lock and preserves the saved-prefix status',async()=>{
