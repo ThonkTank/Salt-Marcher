@@ -1,0 +1,71 @@
+{
+  "sourceCommit": "16eb0aa8807ac21704abfea5412ac3a22033a23a",
+  "viewport": {
+    "width": 1280,
+    "height": 852
+  },
+  "artifacts": {
+    "main.cjs": "ff59135ad2469a12a6c417d54573ab4a521e4e1f079e51e06428b9bd0bc8db71",
+    "preload.cjs": "92995db547b3aae307d7b84af9d469ad14d8ede7b73a110d2d146332a91b9c35",
+    "atlas-region-worker.cjs": "5a63b36f6d9e4a997025135e6521e3a68cf8ab98cf408beabd77b3620d6ff7cf",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "2505e179f0ae02bb15da3ea6cf02f50e844be01f418b215edc0b1c09d259db4c",
+    "backup-validation-worker.cjs": "7e2d6ae9728e2488dc63c48fb9b1b6a85b4fb1ba733fa54101704e38263fc903",
+    "ui/renderer.js": "c691ac4dea23c2faf7e3b60670b1e8a008897650b92104a4366a9499625d94ae",
+    "ui/atlas-brush-worker.js": "22a04376ccd39a4c8b431e80ed32c4f366e9cf65ae8a2a5f244fd0b3d736ef65",
+    "ui/index.html": "86ad43fe210bd1c23fab901655bec943a0e86f8b28b90a2c73444b53009527a3",
+    "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+  },
+  "views": [
+    {
+      "target": 32768,
+      "view": {
+        "x": -16354,
+        "y": -13248.967741935483,
+        "width": 32768,
+        "height": 26557.935483870966
+      },
+      "imageSha256": "0aab7a333added58855e804509c7fdb24c3435efd024376d95a94cbf7cc26ceb"
+    },
+    {
+      "target": 4096,
+      "view": {
+        "x": -1080.1857635675542,
+        "y": -869.7876551495095,
+        "width": 2220.3715271351084,
+        "height": 1799.575310299019
+      },
+      "imageSha256": "0f1aec4e1e8d4582898d7358e6701890bde6edf6ee318388d6d2188449671ef7"
+    },
+    {
+      "target": 512,
+      "view": {
+        "x": -117.44411389593651,
+        "y": -89.50107618178723,
+        "width": 294.888227791873,
+        "height": 239.00215236357445
+      },
+      "imageSha256": "7664db04488ab81a3d4c3fa22bf16b4563460c58afda964685a594d777a65a38"
+    },
+    {
+      "target": 64,
+      "view": {
+        "x": 10.41790172781742,
+        "y": 14.129025190690728,
+        "width": 39.16419654436516,
+        "height": 31.741949618618545
+      },
+      "imageSha256": "9862d7ec746e40f459bef29d26493923ba65fbc86857b0cc08b115b25c09849e"
+    },
+    {
+      "target": 16,
+      "view": {
+        "x": 24.90261915030649,
+        "y": 25.868655037143565,
+        "width": 10.194761699387017,
+        "height": 8.262689925712866
+      },
+      "imageSha256": "117c7581735d53d6164b2d4112a7963eae8dfa5f2df8e689f9cf1c458f5ecb94"
+    }
+  ]
+}
