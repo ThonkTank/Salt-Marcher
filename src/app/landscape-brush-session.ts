@@ -9,20 +9,18 @@ import type { Point } from "./contracts";
 import { type LandscapeRecord } from "./atlas-landscape";
 interface LandscapeBrushSessionHost {
     readonly effects: Pick<LandscapeHost, 'data' | 'error' | 'previewHeight' | 'redraw' | 'terrainGesture' | 'writeTerrain' | 'localTerrain'>;
-    pointer: number | null;
+    readonly pointer: number | null;
+    endInput(): void;
     readonly disable: (disabled: boolean) => void;
     readonly say: (message: string) => void;
     readonly lastPoint: Point;
-    points: Point[];
+    readonly points: readonly Point[];
+    clearDraft(): void;
     readonly colorRecord: () => LandscapeRecord;
-    saving: boolean;
-    brushStrokes: Point[][];
-    draftSeed: number;
+    readonly saving: boolean;
+    setSaving(saving: boolean): void;
     readonly token: string;
-    heightPreviewM: number | null;
-    readonly active: boolean;
-    readonly hovering: boolean;
-    readonly cursorHeight: () => void;
+    clearHeightPreview(): void;
 }
 /** Owns live brush sampling, frame scheduling and stroke completion. */
 export class LandscapeBrushSession {
@@ -49,7 +47,7 @@ export class LandscapeBrushSession {
         const local=this.host.effects.localTerrain?.(),id=this.liveId;
         this.live = local ? new TerrainDraftStroke(a=>local.enqueue(a,id)) : new TerrainLiveStroke({ id: this.liveId, expectedRevision: data.revision, sourceFence: data.region.fence }, (a, c) => this.host.effects.writeTerrain(a, c), error => {
             this.liveFailureMessage = error instanceof Error ? error.message : String(error);
-            this.host.pointer = null;
+            this.host.endInput();
             clearTimeout(this.maskTimer);
             void this.finishLive(true);
             this.host.effects.error(error);
@@ -110,7 +108,7 @@ export class LandscapeBrushSession {
         this.liveWriteRequested = false;
         if (this.maskStroke && this.host.pointer !== null)
             this.maskStroke.samples.push({ ...this.host.lastPoint, t: Math.min(300000, Math.max(this.maskStroke.samples.at(-1)!.t, performance.now() - this.maskStart)) });
-        this.host.pointer = null;
+        this.host.endInput();
         clearTimeout(this.maskTimer);
     }
     async finishLive(stop = false) {
@@ -125,15 +123,14 @@ export class LandscapeBrushSession {
             // snapshot; an immediately following gesture owns fresh local state.
             if(stop)this.host.effects.localTerrain?.()?.cancel();
             const completion=stop?live.stop():live.finish();
-            this.live=null;this.clearMask();this.host.points=[];this.host.brushStrokes=[];
-            this.host.draftSeed=crypto.getRandomValues(new Uint32Array(1))[0]!;
+            this.live=null;this.clearMask();this.host.clearDraft();
             this.host.disable(false);this.host.say(stop?'Pinsel gestoppt.':'Wird gespeichert…');
             void Promise.resolve(this.host.effects.terrainGesture(false)).catch(e=>this.host.effects.error(e));
             try{await completion;if(!this.live)this.host.say('Gespeichert');}
             catch(error){this.liveFailureMessage=error instanceof Error?error.message:String(error);this.host.disable(true);this.host.effects.error(error);}
             this.host.effects.redraw();return;
         }
-        this.host.saving = true;
+        this.host.setSaving(true);
         let failed = stop;
         try {
             if (stop)
@@ -156,13 +153,10 @@ export class LandscapeBrushSession {
                 }
                 finally {
                     this.live = null;
-                    this.host.saving = false;
+                    this.host.setSaving(false);
                 }
                 this.clearMask();
-                this.host.points = [];
-                this.host.brushStrokes = [];
-                this.host.draftSeed = crypto.getRandomValues(new Uint32Array(1))[0]!;
-                this.host.saving = false;
+                this.host.clearDraft();
                 const pending = !!pendingAtlasWrite(this.host.token);
                 this.host.disable(pending);
                 const saved = pending ? 'Speicherstand des Pinselzugs noch ungeklärt.' : live.hasCommittedChanges ? 'Gespeicherte Änderungen bleiben; Rückgängig nimmt den Zug zurück.' : 'Keine Änderung dieses Pinselzugs gespeichert.';
@@ -171,6 +165,5 @@ export class LandscapeBrushSession {
             }
         }
     }
-    clearMask() { clearTimeout(this.maskTimer); this.maskGeneration++; this.host.heightPreviewM = null; this.maskStroke = null; this.colorDraft = null; if (this.host.active && this.host.hovering)
-        this.host.cursorHeight(); }
+    clearMask() { clearTimeout(this.maskTimer); this.maskGeneration++; this.maskStroke = null; this.colorDraft = null; this.host.clearHeightPreview(); }
 }

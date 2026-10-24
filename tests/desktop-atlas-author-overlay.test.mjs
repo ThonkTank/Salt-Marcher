@@ -6,12 +6,12 @@ import {createRequire} from 'node:module';
 import {parseHTML} from './helpers/dom.mjs';
 // Real workbench render/author layer. Only the independently owned drawing tool
 // is replaced, to supply a draft without mounting its complete inspector.
-await build({entryPoints:['src/app/campaign-atlas-ui.ts'],outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
+await build({stdin:{contents:"export * from './src/app/campaign-atlas-ui';export * from './src/app/atlas-path-draft';",resolveDir:process.cwd(),loader:'ts'},outfile:'.build/atlas-author-overlay.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'drawing-draft',setup(b){b.onLoad({filter:/\/drawing-ui\.ts$/},()=>({loader:'ts',contents:`
 export function atlasDrawingHasDraft(){return false;}export function atlasDrawingMeasurement(){return null;}export function atlasDrawingDraft(){return globalThis.atlasAuthorDraft;}
 export function drawingOverlay(root){globalThis.atlasOverlayCalls++;root.append(globalThis.atlasDraftNode);}
 export const atlasDrawingSnapPoint=p=>globalThis.atlasSnap?globalThis.atlasSnap(p):p,atlasDrawingRectangle=async(a,b)=>{globalThis.atlasRectangleWrites.push([a,b]);return{workspace:{selectedId:'created'}};};
 export const selectedDrawingElementId=()=>null,selectElement=()=>{},atlasDrawingPoint=p=>globalThis.atlasAuthorPoints.push(p),atlasDrawingScope=()=>{},atlasDrawingUndoPoint=()=>{},reloadDrawing=()=>{};`}));}}]});
-const {CampaignAtlasWorkbench}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
+const {CampaignAtlasWorkbench,atlasPathPreview}=createRequire(import.meta.url)('../.build/atlas-author-overlay.cjs');
 function fixture(t){
  const previous={window:global.window,document:global.document,atlasAuthorDraft:global.atlasAuthorDraft,atlasOverlayCalls:global.atlasOverlayCalls,atlasDraftNode:global.atlasDraftNode,atlasAuthorPoints:global.atlasAuthorPoints};t.after(()=>Object.assign(global,previous));
  const ids=['entrance-height','recover','placement','binding-pose','group-size','split-controls','scale','undo','redo','connect-entrance','local-console','create-tools','create-city','create-dungeon','floor-field','selection-title','room-draw'];
@@ -96,7 +96,7 @@ test('an object-only interior paints its geometry instead of reducing it to an e
 function rectangleGesture(t){
  const f=fixture(t),writes=[],selected=[],captures=[];const previous=global.atlasRectangleWrites;global.atlasRectangleWrites=writes;t.after(()=>global.atlasRectangleWrites=previous);
  for(const id of ['atlas-draft-cancel','drawing-cancel','drawing-append']){const n=f.document.createElement('button');n.id=id;f.document.body.append(n);}
- Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>selected.push(id),status(){}},error:e=>{throw e;}});
+ Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>{assert.equal(f.ui.author.hasDraft(),false,"confirmed room selection must pass the workspace flush guard");assert.equal(f.ui.author.rectangleCommit,true,"selection must still suppress the properties pane");assert.equal(f.ui.author.blocksNavigation(),true,"camera stays fixed during follow-up selection");selected.push(id);},status(){}},error:e=>{throw e;}});
  f.document.getElementById('atlas-room-draw').onclick=()=>{f.ui.root.dataset.roomDraw='true';};
  f.ui.reference={active:false};f.ui.camera.stopZoom=()=>{};f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
  const event=(x,y)=>({button:0,pointerId:3,clientX:x,clientY:y,altKey:false,preventDefault(){}});
@@ -219,7 +219,7 @@ function pathGesture(t){
 }
 test('path midpoint drag inserts one editable bend, preserves metadata and never transforms the building',async t=>{
  const f=pathGesture(t),before=structuredClone(f.original),source=structuredClone(f.path);
- f.ui.down(f.event(5,0));f.ui.move(f.event(5,8));assert.equal(f.writes.length,0);assert.deepEqual(f.ui.pathPreview(f.path).points,[{x:0,y:0},{x:5,y:8},{x:10,y:0}]);
+ f.ui.down(f.event(5,0));f.ui.move(f.event(5,8));assert.equal(f.writes.length,0);assert.deepEqual(atlasPathPreview(f.path,f.ui.pathDrag).points,[{x:0,y:0},{x:5,y:8},{x:10,y:0}]);
  await f.ui.up(f.event(5,8));assert.equal(f.writes.length,1);const action=f.writes[0].command.action;assert.equal(action.kind,'element');assert.equal(action.expectedRevision,9);assert.deepEqual(action.element,{...source,points:[{x:0,y:0},{x:5,y:8},{x:10,y:0}]});assert.deepEqual(f.original,before);assert.deepEqual(f.path,source);assert.equal(f.ui.pathDrag,null);assert.equal(f.ui.ignoreClick,true);
 });
 test('returning a dragged path vertex to its original position creates no history entry',async t=>{

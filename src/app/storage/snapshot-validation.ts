@@ -1,3 +1,4 @@
+import DATA_FORMAT from '../data-format.json';
 import {checkedWorldNoteRow} from "./world-note-row";
 import {validateRoomGroups} from './room-groups';
 import {readLiveMomentDraft} from './live-moment-drafts';
@@ -44,7 +45,8 @@ type Row = Record<string, any>;
 const json = JSON.stringify;
 
 export function validateDatabase(db: any) {
-  if(db.pragma('user_version',{simple:true})>=51&&!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_opponent_group'").get())throw Error('Szenengegner-Zuordnung fehlt.');
+  if(db.pragma('user_version',{simple:true})!==DATA_FORMAT.schema)throw Error('Nicht unterstütztes Testdatenformat.');
+  if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='scene_opponent_group'").get())throw Error('Szenengegner-Zuordnung fehlt.');
   validateCampaignAtlases(db);
   for(const row of db.prepare("SELECT value FROM settings WHERE key LIKE 'session-recap:%'").iterate())checkedSessionRecapDraft(JSON.parse(row.value));
   for(const row of db.prepare('SELECT campaign_id,scene_id FROM live_moment_draft').iterate())readLiveMomentDraft(db,row.campaign_id,row.scene_id);
@@ -106,7 +108,7 @@ export function validateDatabase(db: any) {
 /** Validate an already copied candidate without opening or migrating the live store. */
 export function validateBackupCandidate(filename: string): void {
 const db = new Database(filename, {readonly:true,fileMustExist:true});
-try {validateDatabase(db);if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);}
+try {validateDatabase(db);validateRoomGroups(db);}
 finally {db.close();}
 }
 

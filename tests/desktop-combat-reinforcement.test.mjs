@@ -467,11 +467,11 @@ test('scene opponent identities and health survive a complete campaign copy with
   const combat=target.combat(w.token,scene.id).combat;assert.equal(combat.participants[0].worldActorId,groups[0].actors[0].id);assert.equal(combat.outcome,'Ergeben sich');await target.backup(x.root+'/safe.sqlite');
  }finally{target.close();}
 });
-test('schema 50 upgrades without changing records and missing schema 51 scene links fail closed',t=>{
+test('current schema reopens without changing records and missing scene links fail closed',t=>{
  const root=mkdtempSync(tmpdir()+'/scene-opponent-upgrade-'),file=root+'/workbench.sqlite';let store=new CampaignStore(file);t.after(()=>{store.close();rmSync(root,{recursive:true,force:true});});
  const cam=store.create('Bestehende Kampagne'),w=store.activate(cam.id);store.executeLive({commandId:randomUUID(),campaignId:cam.id,token:w.token,action:{kind:'initialize',expectedRosterRevision:0}});
- store.db.exec('DROP TABLE scene_opponent_group;PRAGMA user_version=50');const before=store.db.prepare('SELECT * FROM live_scene').all();store.close();store=new CampaignStore(file);
- assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),54);
+ const before=store.db.prepare('SELECT * FROM live_scene').all();store.close();store=new CampaignStore(file);
+ assert.deepEqual(store.db.prepare('SELECT * FROM live_scene').all(),before);assert.equal(store.db.pragma('user_version',{simple:true}),55);
  store.db.exec('DROP TABLE scene_opponent_group');store.close();assert.throws(()=>new CampaignStore(file),/Szenengegner-Zuordnung fehlt/);
 });
 

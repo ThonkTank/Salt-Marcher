@@ -6,10 +6,7 @@ const fields=(v:any,keys:string[])=>v&&typeof v==='object'&&!Array.isArray(v)&&O
 const id=(v:unknown)=>typeof v==='string'&&!!v&&v.length<=1000;
 function kind(k:unknown):asserts k is CombatDraftKind{if(k!=='fighter'&&k!=='notes'&&k!=='initiative')throw new Error('Unbekannter Kampfeingabeentwurf.');}
 export function installCombatDraftSchema(db:any){
- const create=(table:string)=>`CREATE TABLE ${table}(campaign_id TEXT NOT NULL,combat_id TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('fighter','notes','initiative')),target_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,combat_id,kind,target_id),FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;`;
- const old=db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='combat_working_draft'").get();
- if(!old)db.exec(create('combat_working_draft'));
- else if(!old.sql.includes("'initiative'"))db.transaction(()=>{db.exec(create('combat_working_draft_next'));db.exec('INSERT INTO combat_working_draft_next(rowid,campaign_id,combat_id,kind,target_id,payload,checksum) SELECT rowid,campaign_id,combat_id,kind,target_id,payload,checksum FROM combat_working_draft; DROP TABLE combat_working_draft; ALTER TABLE combat_working_draft_next RENAME TO combat_working_draft;');})();
+ db.exec("CREATE TABLE IF NOT EXISTS combat_working_draft(campaign_id TEXT NOT NULL,combat_id TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('fighter','notes','initiative')),target_id TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,combat_id,kind,target_id),FOREIGN KEY(campaign_id,combat_id) REFERENCES combat(campaign_id,id)) STRICT;");
 }
 export function checkedCombatDraft(d:any):CombatWorkingDraft{
  kind(d?.kind);

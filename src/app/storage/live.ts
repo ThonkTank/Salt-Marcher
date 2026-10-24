@@ -36,14 +36,6 @@ export function ensureLiveOwners(db: any, campaignId: string) {
   db.prepare('INSERT OR IGNORE INTO roster_state VALUES(?,0)').run(campaignId);
   db.prepare("INSERT OR IGNORE INTO campaign_time VALUES(?,?,'0')").run(campaignId, campaignId);
 }
-export function migrateLiveClock(db: any) {
-  if (db.pragma('foreign_key_list(scene_clock)').some((fk: any) => fk.from === 'epoch_id')) return;
-  // Check original bindings first; never repair an unknown epoch by guessing.
-  for (const row of db.prepare('SELECT campaign_id,id FROM live_scene').all()) clock(db, row.campaign_id, row.id);
-  db.exec(`CREATE TABLE scene_clock_v7(campaign_id TEXT NOT NULL, scene_id TEXT NOT NULL, revision INTEGER NOT NULL, epoch_id TEXT NOT NULL, instant_ms TEXT NOT NULL, PRIMARY KEY(campaign_id,scene_id), FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id), FOREIGN KEY(campaign_id,epoch_id) REFERENCES campaign_time(campaign_id,epoch_id)) STRICT;
-    INSERT INTO scene_clock_v7(campaign_id,scene_id,revision,epoch_id,instant_ms) SELECT campaign_id,scene_id,revision,epoch_id,instant_ms FROM scene_clock;
-    DROP TABLE scene_clock; ALTER TABLE scene_clock_v7 RENAME TO scene_clock;`);
-}
 const profileQuery = 'SELECT m.*,p.revision AS profile_revision,p.payload,p.checksum FROM roster_member m LEFT JOIN character_profile p ON p.campaign_id=m.campaign_id AND p.id=m.id';
 function checkedCharacterRow(row: any): Character {
   if (!row || typeof row.payload !== 'string' || hash(row.payload) !== row.checksum) throw new Error('Charakterprofil nicht verfügbar oder beschädigt.');

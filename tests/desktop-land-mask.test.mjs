@@ -314,59 +314,7 @@ test("a thin diagonal stroke allocates along its path rather than its bounding r
   assert.equal(terrain(rs, -80, 80), "water");
 });
 
-test("format 46 conversion preserves explicit terrain and establishes one checkpoint only", (t) => {
-  const f = fixture(t),
-    r = {
-      id: "legacy-land",
-      revision: 0,
-      kind: "patch",
-      name: "Originalname",
-      points: [],
-      polygons: [
-        {
-          outer: [
-            { x: -100, y: -100 },
-            { x: 100, y: -100 },
-            { x: 100, y: 100 },
-            { x: -100, y: 100 },
-          ],
-          holes: [],
-        },
-      ],
-      resolution: 100,
-      width: 0,
-      values: { terrain: "forest", elevationM: 42 },
-    };
-  f.write({ kind: "landscape-put", record: r, expectedRevision: null });
-  f.store.db
-    .prepare(
-      "DELETE FROM atlas_landscape WHERE json_extract(payload,'$.mask') IS NOT NULL",
-    )
-    .run();
-  f.store.db
-    .prepare(
-      "UPDATE atlas_landscape SET payload=json_remove(payload,'$.maskManaged')",
-    )
-    .run();
-  f.store.db.pragma("user_version=46");
-  f.reopen();
-  assert.equal(terrain(f.records()), "forest");
-  assert.equal(terrain(f.records(), 200, 200), "water");
-  assert.equal(
-    f.records().find((r) => r.id === "legacy-land").name,
-    "Originalname",
-  );
-  assert.ok(f.store.db.pragma("user_version", { simple: true }) >= 50);
-  assert.equal(
-    f.store.db.prepare("SELECT count(*) n FROM atlas_command").get().n,
-    0,
-  );
-  f.write(command(stroke("land-erase")));
-  f.reopen();
-  assert.equal(terrain(f.records()), "water");
-  f.write({ kind: "undo" });
-  assert.equal(terrain(f.records()), "forest");
-});
+
 test("malformed archived height is rejected before a campaign is published", async (t) => {
   const f = fixture(t);
   f.write(command(stroke("land")));

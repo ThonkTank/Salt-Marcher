@@ -35,6 +35,18 @@ interface LandscapeInspectorHost {
 /** Owns selected landscape records and their editable inspector draft. */
 export class LandscapeInspector {
     constructor(private host: LandscapeInspectorHost) { }
+    clearSelection() {
+        this.selected = null;
+        this.selectionRecords.clear();
+        this.vegetationInstance = undefined;
+        this.doc = null;
+        this.docRevision = null;
+        this.vertex = 0;
+        this.dirty = false;
+        this.host.inspectorRoot.replaceChildren();
+        delete this.host.inspectorRoot.dataset.selectionId;
+        this.host.background = null;
+    }
     vegetationInstance: VegetationInstance | undefined;
     selectionRecords = new Map<string, LandscapeRecord>();
     selected: LandscapeRecord | null = null;

@@ -29,8 +29,32 @@ export class AtlasJourney {
     busy=false;
     invalidatePreview() {
         this.previewRequest++;
+        this.retainedPreview = null;
         this.localPreview = null;
         this.playback.stop();
+    }
+    private retainedPreview: {preview: AtlasLocalPreview; fence: string} | null = null;
+    beginContextRead(keepPreview = false) {
+        const retry = this.travelReadState === 'failed';
+        const preview = keepPreview ? this.localPreview : null;
+        const fence = this.host.data?.region?.fence;
+        this.invalidatePreview();
+        this.retainedPreview = preview && fence ? {preview, fence} : null;
+        this.travelReadState = 'loading';
+        return retry;
+    }
+    completeContextRead(fence: string) {
+        this.travelReadState = 'ready';
+        this.localPreview = this.retainedPreview && this.retainedPreview.fence === fence ? this.retainedPreview.preview : null;
+        this.retainedPreview = null;
+    }
+    failContextRead() {
+        this.retainedPreview = null;
+        this.travelReadState = 'failed';
+    }
+    selectEntrance(id: string | null) {
+        this.invalidatePreview();
+        this.entranceId = id;
     }
     activate() {
         this.invalidatePreview();

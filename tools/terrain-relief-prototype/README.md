@@ -1,6 +1,6 @@
 # R0: Reliefstudie
 
-Isolierter Prototyp zur [verbindlichen Roadmap](../../docs/plans/maps/terrain-relief.md). Kein Zugriff auf CampaignWorkbench, kein Produktformat, keine Persistenz. Ein endliches synthetisches Gelände demonstriert Küste, verzweigte Bergkämme, Pass, Tal, Plateau, Fluss und Dorf. Maßstabsnamen sind Ansichten dieser Testlandschaft, kein Beleg für weltweites Streaming.
+Isolierter Prototyp zur [verbindlichen Roadmap](../../docs/atlas/requirements/terrain-relief.md). Kein Zugriff auf CampaignWorkbench, kein Produktformat, keine Persistenz. Ein endliches synthetisches Gelände demonstriert Küste, verzweigte Bergkämme, Pass, Tal, Plateau, Fluss und Dorf. Maßstabsnamen sind Ansichten dieser Testlandschaft, kein Beleg für weltweites Streaming.
 
 ## Starten und prüfen
 

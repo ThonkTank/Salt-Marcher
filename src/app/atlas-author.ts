@@ -1,5 +1,5 @@
+import {atlasPathPreview} from './atlas-path-draft';
 import { atlasElement as get } from './atlas-dom';
-import type { AtlasDrawing } from './atlas-drawing';
 import type { AtlasSelection as Selection, AtlasFamily as Family, AtlasRoomDrag, AtlasPathDrag } from './atlas-workbench-types';
 import type { AtlasRegions } from './atlas-regions';
 import type { AtlasJourney } from './atlas-journey';
@@ -51,7 +51,7 @@ interface AtlasAuthorHost {
         ack: import('./campaign-atlas-contracts').AtlasCommitAck;
     } | null>;
     readonly render: (preview?: boolean) => void;
-    readonly journey: Pick<AtlasJourney, "entranceId" | "localPreview" | "travelReadState" | "previewRequest" | "playback" | "travel" | "renderTravel">;
+    readonly journey: Pick<AtlasJourney, "entranceId" | "localPreview" | "travelReadState" | "invalidatePreview" | "selectEntrance" | "travel" | "renderTravel">;
     cityId: string | null;
     readonly doorRoomAt: (point: Point) => Promise<{
         room: import('./contracts').RoomGeometry;
@@ -63,7 +63,6 @@ interface AtlasAuthorHost {
     readonly error: (error: unknown) => void;
     readonly cancel: () => void;
     readonly canvas: HTMLCanvasElement;
-    readonly drawing: Pick<AtlasDrawing, "pathPreview">;
 }
 /** Owns author selection, pointer gestures and temporary geometry. */
 export class AtlasAuthor {
@@ -88,7 +87,8 @@ export class AtlasAuthor {
         start?: Point;
     } | null = null;
     pathDrag: AtlasPathDrag | null = null;
-    rectangleCommit = false;
+    private rectanglePhase: 'idle' | 'writing' | 'selecting' = 'idle';
+    get rectangleCommit() { return this.rectanglePhase !== 'idle'; }
     roomDrag: AtlasRoomDrag | null = null;
     brushId: number | null = null;
     brushQueue = Promise.resolve();
@@ -106,6 +106,27 @@ export class AtlasAuthor {
         membership: number;
     } | null = null;
     entranceDraft: Point[] | null = null;
+    hasDraft() {
+        return !!(this.draft.length || this.brushId !== null || this.drag || this.vertexDrag ||
+            this.pathDrag || this.roomDrag || this.partyDrag || this.entranceDraft || this.placeIntent || this.rectanglePhase === 'writing');
+    }
+    blocksNavigation() { return this.hasDraft() || this.rectangleCommit; }
+    cancelGesture() {
+        this.brushId = null;
+        this.vertexDrag = null;
+        this.pathDrag = null;
+        this.roomDrag = null;
+        this.partyDrag = null;
+        this.entranceDraft = null;
+        this.placeIntent = null;
+        this.draft = [];
+        this.drag = null;
+    }
+    resetContext() {
+        this.cancelGesture();
+        this.selection = null;
+        this.measurementHover = null;
+    }
     roomPreview<T extends import("./contracts").RoomGeometry>(original: T): T {
         const drag = this.vertexDrag;
         if (!drag || drag.room.id !== original.id)
@@ -233,15 +254,13 @@ export class AtlasAuthor {
                 return;
             }
             if (this.host.family === "travel") {
-                this.host.journey.playback.stop();
-                this.host.journey.previewRequest++;
-                this.host.journey.localPreview = null;
+                this.host.journey.invalidatePreview();
                 if (kind === "entrance" && id) {
-                    this.host.journey.entranceId = id;
+                    this.host.journey.selectEntrance(id);
                     this.host.render();
                     return;
                 }
-                this.host.journey.entranceId = null;
+                this.host.journey.selectEntrance(null);
                 this.host.journey.renderTravel();
             }
             if (this.host.root.dataset.roomDraw === "true") {
@@ -294,7 +313,7 @@ export class AtlasAuthor {
                     return Math.hypot(point.x - at.x, point.y - at.y) <= 3.048;
                 });
                 if (near.length === 1)
-                    this.host.journey.entranceId = near[0]!.id;
+                    this.host.journey.selectEntrance(near[0]!.id);
                 this.host.journey.renderTravel();
                 return;
             }
@@ -357,7 +376,7 @@ export class AtlasAuthor {
             this.draft = [a];
             throw new Error("Raum benötigt eine Fläche. Zweite Ecke erneut wählen.");
         }
-        this.rectangleCommit = true;
+        this.rectanglePhase = 'writing';
         try {
             let result;
             try {
@@ -370,6 +389,8 @@ export class AtlasAuthor {
             }
             if (result && current()) {
                 this.host.cancel();
+                // The write is confirmed; room selection flushes this same author.
+                this.rectanglePhase = 'selecting';
                 const id = result.workspace.selectedId!;
                 await this.host.opts.selectRoom(id);
                 if (!current())
@@ -390,7 +411,7 @@ export class AtlasAuthor {
                 this.draft = [a];
         }
         finally {
-            this.rectangleCommit = false;
+            this.rectanglePhase = 'idle';
         }
     }
     suppressClick() {
@@ -540,7 +561,7 @@ export class AtlasAuthor {
             return;
         }
         if (this.pathDrag?.id === e.pointerId) {
-            const drag = this.pathDrag, element = this.host.drawing.pathPreview(drag.element);
+            const drag = this.pathDrag, element = atlasPathPreview(drag.element, drag);
             this.pathDrag = null;
             this.suppressClick();
             if (drag.token !== this.host.owner?.token || element.scopeId !== this.host.scopeId || element.floorId !== this.host.floorId || this.selection?.id !== element.id) {

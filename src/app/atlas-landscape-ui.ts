@@ -47,20 +47,18 @@ export class LandscapeWorkbench {
       const source = this;
       return new LandscapeBrushSession({
           get effects() { return source.host; },
-          get pointer() { return source.pointer; }, set pointer(value) { source.pointer = value; },
+          get pointer() { return source.pointer; },
+          endInput: () => { this.pointer = null; },
           disable: (...args) => this.disable(...args),
           say: (...args) => this.say(...args),
           get lastPoint() { return source.lastPoint; },
-          get points() { return source.points; }, set points(value) { source.points = value; },
+          get points() { return source.points; },
+          clearDraft: () => { this.points = []; this.brushStrokes = []; this.draftSeed = crypto.getRandomValues(new Uint32Array(1))[0]!; },
           colorRecord: (...args) => this.colorRecord(...args),
-          get saving() { return source.saving; }, set saving(value) { source.saving = value; },
-          get brushStrokes() { return source.brushStrokes; }, set brushStrokes(value) { source.brushStrokes = value; },
-          get draftSeed() { return source.draftSeed; }, set draftSeed(value) { source.draftSeed = value; },
+          get saving() { return source.saving; },
+          setSaving: value => { this.saving = value; },
           get token() { return source.token; },
-          get heightPreviewM() { return source.heightPreviewM; }, set heightPreviewM(value) { source.heightPreviewM = value; },
-          get active() { return source.active; },
-          get hovering() { return source.hovering; },
-          cursorHeight: (...args) => this.cursorHeight(...args)
+          clearHeightPreview: () => { this.heightPreviewM = null; if (this.active && this.hovering) this.cursorHeight(); }
       });
   }
 
@@ -71,9 +69,7 @@ export class LandscapeWorkbench {
           get tool() { return source.tool; },
           hasDraft: (...args) => this.hasDraft(...args),
           say: (...args) => this.say(...args),
-          get selected() { return source.details.selected; }, set selected(value) { source.details.selected = value; },
-          get selectionRecords() { return source.details.selectionRecords; },
-          get inspectorRoot() { return source.inspectorRoot; },
+          clearSelection: () => this.details.clearSelection(),
           get effects() { return source.host; },
           get token() { return source.token; },
           get panel() { return source.panel; },

@@ -80,6 +80,37 @@ export class AtlasOutput {
         y: number;
         moved: boolean;
     } | null = null;
+    cancelAreaSelection() {
+        this.exportDrag = null;
+        this.exportCorner = null;
+        this.exportChoosing = false;
+        this.exportAreaStatus();
+    }
+    chooseArea() {
+        if (this.exporting) return;
+        this.exportDungeon = false;
+        this.exportChoosing = true;
+        this.exportCorner = null;
+        this.exportAreaStatus();
+        this.host.canvas.focus();
+    }
+    useViewport() {
+        if (this.exporting) return;
+        this.exportDungeon = false;
+        this.exportBox = null;
+        this.cancelAreaSelection();
+        this.host.render();
+    }
+    useDungeon() {
+        if (this.exporting || !this.host.geometryCurrent()) return;
+        const box = this.dungeonOutputBox();
+        if (!box) return;
+        this.exportBox = null;
+        this.exportDungeon = true;
+        this.cancelAreaSelection();
+        this.frameOutput(box);
+        this.host.render();
+    }
     beginArea(event:PointerEvent,point:Point){
         if(!this.exportChoosing||this.exporting)return;
         this.exportDrag={id:event.pointerId,start:point,last:point,x:event.clientX,y:event.clientY,moved:false};

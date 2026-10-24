@@ -16,7 +16,7 @@ export function markdownLinks(text) {
     }
     return fence ? '' : line.replace(/(`+)[\s\S]*?\1/g, '');
   }).join('\n');
-  const inline = [...visible.matchAll(/!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)\n]*)?\)/g)].map(m => m[1]);
+  const inline = [...visible.matchAll(/!?\[[^\]]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)\n]*)?\)/g)].map(m => m[1]);
   const references = [...visible.matchAll(/^\s{0,3}\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)/gm)].map(m => m[1]);
   return [...inline, ...references].map(s => s.replace(/^<|>$/g, ''));
 }
@@ -70,7 +70,7 @@ export function checkRepository(root, suppliedFiles) {
       errors.push(`${file}: invalid or missing normativeFor target ${target}`);
     }
   }
-  const scope = json('docs/scope-sources.json');
+  const scope = json('docs/project/requirements/sources.json');
   if (!scope) return errors;
   const managed = [...files].filter(isMarkdown);
   for (const file of managed) {
@@ -87,28 +87,28 @@ export function checkRepository(root, suppliedFiles) {
     }
   }
   // The register is a pinned audit, so historic hashes must not be compared to today's product bytes.
-  if (scope.schema_version !== 1 || !/^[a-f0-9]{40}$/.test(scope.source_revision)) errors.push('docs/scope-sources.json: invalid pinned source revision/schema');
+  if (scope.schema_version !== 1 || !/^[a-f0-9]{40}$/.test(scope.source_revision)) errors.push('docs/project/requirements/sources.json: invalid pinned source revision/schema');
   let invalidCollections = false;
   for (const key of ['source_requirements', 'additional_primary_sources', 'local_reference_files', 'technical_needs', 'capability_subsections', 'capability_acceptance_references', 'target_smr_phases', 'target_smr_acceptance_cases']) {
     const rows = scope[key];
-    if (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row))) { errors.push(`docs/scope-sources.json: invalid collection ${key}`); invalidCollections = true; continue; }
+    if (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object' || Array.isArray(row))) { errors.push(`docs/project/requirements/sources.json: invalid collection ${key}`); invalidCollections = true; continue; }
     const ids = rows.map(r => r.id ?? r.path);
-    if (ids.some(id => !id) || new Set(ids).size !== ids.length) errors.push(`docs/scope-sources.json: missing/duplicate identity in ${key}`);
+    if (ids.some(id => !id) || new Set(ids).size !== ids.length) errors.push(`docs/project/requirements/sources.json: missing/duplicate identity in ${key}`);
   }
   if (invalidCollections) return errors;
   for (const row of [...(scope.source_requirements ?? []), ...(scope.additional_primary_sources ?? []), ...(scope.local_reference_files ?? [])])
-    if (!/^[a-f0-9]{64}$/.test(row.sha256 ?? '')) errors.push(`docs/scope-sources.json: invalid SHA-256 for ${row.path}`);
-  for (const row of scope.local_reference_files ?? []) if (!exists(row.path)) errors.push(`docs/scope-sources.json: missing local reference ${row.path}`);
+    if (!/^[a-f0-9]{64}$/.test(row.sha256 ?? '')) errors.push(`docs/project/requirements/sources.json: invalid SHA-256 for ${row.path}`);
+  for (const row of scope.local_reference_files ?? []) if (!exists(row.currentPath ?? row.path)) errors.push(`docs/project/requirements/sources.json: missing local reference ${row.path}`);
   const needs = new Set((scope.technical_needs ?? []).map(r => r.id));
   const sources = new Set((scope.capability_subsections ?? []).map(r => r.id));
   const phases = new Set((scope.target_smr_phases ?? []).map(r => r.id));
   for (const row of [...(scope.capability_subsections ?? []), ...(scope.capability_acceptance_references ?? [])])
-    for (const id of row.technical_needs ?? []) if (!needs.has(id)) errors.push(`docs/scope-sources.json: ${row.id} references unknown need ${id}`);
+    for (const id of row.technical_needs ?? []) if (!needs.has(id)) errors.push(`docs/project/requirements/sources.json: ${row.id} references unknown need ${id}`);
   for (const row of scope.technical_needs ?? [])
-    for (const id of row.source_ids ?? []) if (!sources.has(id) && !['EXT-DND2014', 'EXT-NNG', 'EXT-WCAG'].includes(id)) errors.push(`docs/scope-sources.json: ${row.id} references unknown source ${id}`);
+    for (const id of row.source_ids ?? []) if (!sources.has(id) && !['EXT-DND2014', 'EXT-NNG', 'EXT-WCAG'].includes(id)) errors.push(`docs/project/requirements/sources.json: ${row.id} references unknown source ${id}`);
   for (const row of scope.source_requirements ?? []) {
-    if (!row.url?.includes(`/blob/${scope.source_revision}/${row.path}`)) errors.push(`docs/scope-sources.json: unpinned requirement ${row.path}`);
-    for (const id of row.target_phases ?? []) if (!phases.has(id)) errors.push(`docs/scope-sources.json: unknown target phase ${id}`);
+    if (!row.url?.includes(`/blob/${scope.source_revision}/${row.path}`)) errors.push(`docs/project/requirements/sources.json: unpinned requirement ${row.path}`);
+    for (const id of row.target_phases ?? []) if (!phases.has(id)) errors.push(`docs/project/requirements/sources.json: unknown target phase ${id}`);
   }
   return errors;
 }

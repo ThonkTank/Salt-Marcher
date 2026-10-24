@@ -6,10 +6,11 @@ import {parseHTML} from './helpers/dom.mjs';
 
 await build({stdin:{contents:`export {AtlasRegions} from './src/app/atlas-regions';
 export {AtlasOutput} from './src/app/atlas-output';
+export {AtlasJourney} from './src/app/atlas-journey';
 export {LandscapeRoutes} from './src/app/landscape-routes';`,resolveDir:process.cwd()},
  outfile:'.build/atlas-controller-lifecycle.cjs',bundle:true,platform:'node',format:'cjs',
  plugins:[{name:'controlled-route-session',setup(build){build.onLoad({filter:/\/terrain-route-ui\.ts$/},()=>({contents:'export const openTerrainRoute = options => globalThis.openTestRoute(options);',loader:'ts'}));}}]});
-const {AtlasRegions,AtlasOutput,LandscapeRoutes}=createRequire(import.meta.url)('../.build/atlas-controller-lifecycle.cjs');
+const {AtlasRegions,AtlasOutput,AtlasJourney,LandscapeRoutes}=createRequire(import.meta.url)('../.build/atlas-controller-lifecycle.cjs');
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return{promise,resolve};};
 function dom(t,extra=''){
  const previous={document:global.document,window:global.window,openTestRoute:global.openTestRoute};
@@ -25,7 +26,7 @@ test('hiding a region owner cancels its read lane and rejects a late first surfa
  const regions=new AtlasRegions({owner,root:{hidden:false},spatial:{needsTerrainRaster:false,openSurface:(...args)=>published.push(args)},camera:{view:{}},landscape:{contours:()=>0}});
  const pending=regions.openTerrain(owner);
  regions.regionTimer=setTimeout(()=>assert.fail('cancelled read timer fired'),25);
- regions.loadedRegionQuery={};regions.regionReading=1;regions.regionReadingQuery={};
+ regions.loadedQuery={};regions.regionReading=1;regions.regionReadingQuery={};
  regions.cancel();
  read.resolve({ok:true,value:{revision:4}});await pending;
  assert.deepEqual(cancelled,['old']);assert.deepEqual(published,[]);
@@ -47,7 +48,7 @@ test('A–B–A region activation rejects both retired replies even when A reuse
  const {window,document}=dom(t,'<p id="atlas-hint"></p><button id="atlas-region-retry"></button>'),reads=[],cancelled=[],errors=[],loads=[];
  const a={token:'a'},b={token:'b'},root=document.createElement('section'),canvas=document.createElement('canvas');
  const host={owner:a,root,canvas,invalidateHits(){},landscape:{load:async()=>loads.push('load')},
-  journey:{travelReadState:'ready',previewRequest:0,localPreview:null,playback:{stop(){}},renderTravel(){}},
+  journey:Object.assign(new AtlasJourney({data:null}),{renderTravel(){}}),
   render(){},error:e=>errors.push(e),opts:{status(){}}};
  window.campaign={cancelAtlasRegion:token=>cancelled.push(token),atlasRegion:token=>{const read=deferred();reads.push({...read,token});return read.promise;}};
  const regions=new AtlasRegions(host),q={box:{x:0,y:0,width:10,height:10},width:100,height:100,scopeId:null,floorId:'ground',terrainRaster:false};
@@ -67,7 +68,7 @@ test('A–B–A region activation rejects both retired replies even when A reuse
 test('an old route completion and close cannot clear the next route session or preview',async t=>{
  dom(t);const opened=[];
  global.openTestRoute=options=>{const ready=deferred(),session={ready:ready.promise,close(){options.closed();},gesturing:()=>false};opened.push({options,ready,session});return session;};
- const routes=new LandscapeRoutes({tool:'road',hasDraft:()=>false,say(){},selected:null,selectionRecords:new Map(),inspectorRoot:{replaceChildren(){}},effects:{planning(){},box:()=>({}),redraw(){}},token:'first',panel:{},canvas:{},point:e=>e,hit:()=>null,spacePan:false,commit:async()=>{}});
+ const routes=new LandscapeRoutes({tool:'road',hasDraft:()=>false,say(){},clearSelection(){},effects:{planning(){},box:()=>({}),redraw(){}},token:'first',panel:{},canvas:{},point:e=>e,hit:()=>null,spacePan:false,commit:async()=>{}});
  const first=routes.openRoute();routes.close();const second=routes.openRoute();
  const current=opened[1];current.options.preview([{id:'new'}],[{x:1,y:2}]);
  opened[0].options.preview([{id:'old'}],[]);opened[0].options.closed();opened[0].ready.resolve();await first;

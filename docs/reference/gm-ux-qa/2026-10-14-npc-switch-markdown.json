@@ -1,7 +1,0 @@
-{
-  "control": "Two real Markdown files; append a note to A, read B, return to A",
-  "newNoteRetained": true,
-  "otherFileUnchangedSha256": "ee116f618c8f126aa69f143b1d85b0bd39912eb5b6938501fe39feb11de41b75",
-  "noteAAfterSha256": "fd396ce2e15ef1cf81ce3955eb592df72272a8f8b5fd51110c6cde846f3a34de",
-  "humanTimingMeasured": false
-}

@@ -55,21 +55,6 @@ export function readProgressCharacter(db: any, cam: string, id: string): Progres
   if(p.combatStatus!==undefined)checkedHealthStatus(p.combatStatus);
   return p;
 }
-export function migrateProgress(db: any) {
-  for (const row of db.prepare('SELECT campaign_id,id FROM roster_member').all()) createProgress(db,row.campaign_id,row.id,false);
-  const seen = new Set<string>();
-  for (const row of db.prepare("SELECT * FROM combat WHERE phase='finished' ORDER BY ordinal DESC").all()) {
-    const combat = checkedCombat(decoded<CombatState>(row));
-    for (const actor of combat.participants) {
-      if (!actor.characterId) continue;
-      const key = JSON.stringify([row.campaign_id,actor.characterId]); if (seen.has(key)) continue; seen.add(key);
-      const p = readProgressCharacter(db,row.campaign_id,actor.characterId);
-      if (p.health !== null || p.combatStatus!==undefined || actor.healthKnown === false) continue;
-      p.health = healthFromActor(actor);
-      const payload = json(p); db.prepare('UPDATE character_progress SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),row.campaign_id,p.characterId);
-    }
-  }
-}
 export function saveProgress(db: any, cam: string, p: Progress) {
   p.revision++; const payload = json(p); db.prepare('UPDATE character_progress SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(p.revision, payload, hash(payload), cam, p.characterId);
 }

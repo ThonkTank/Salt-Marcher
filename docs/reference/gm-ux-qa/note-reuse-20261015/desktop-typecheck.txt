@@ -1,4 +1,0 @@
-
-> dungeon-editor@0.133.0 check:desktop
-> tsc --noEmit -p desktop/tsconfig.json
-

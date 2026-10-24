@@ -34,6 +34,7 @@ const historicalRoles = new Set(['original_gui_screenshot', 'original_saved_map'
 // Checks provenance and mapping consistency, never decides visual completeness.
 export function validateInventory(document, options = {}) {
   const catalog = document.wonderdraftParity || document;
+  if (!catalog.uiInventory && catalog.historicalInventories) throw new Error("Das historische Referenzinventar liegt in der Git-Historie. acceptance.json aus dem unter history.revision angegebenen Commit als Eingabe verwenden.");
   const readFile = typeof options === 'function' ? options : options.readFile || (file => fs.readFileSync(file));
   const allowOpen = document.wonderdraftParity ? options.allowOpen === true : true;
   const groups = catalog.groups || [];

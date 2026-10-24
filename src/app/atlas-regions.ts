@@ -7,7 +7,7 @@ import type { AtlasRegionQuery } from './atlas-region-contracts';
 import { atlasGeometryOnly } from './atlas-render-view';
 import type { LandscapeWorkbench } from "./atlas-landscape-ui";
 import type { AtlasCanvas } from "./atlas-canvas";
-import type { AtlasRenderView } from "./campaign-atlas-contracts";
+import type { AtlasRenderView, AtlasCommitAck } from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry } from "./contracts";
 interface AtlasRegionsHost {
     readonly spatial: Pick<AtlasRasterPresentation, "needsTerrainRaster" | "openSurface" | "pauseReads"> | undefined;
@@ -15,7 +15,7 @@ interface AtlasRegionsHost {
     readonly canvas: HTMLCanvasElement;
     readonly scopeId: string | null;
     readonly floorId: string;
-    readonly journey: Pick<AtlasJourney, "entranceId" | "localPreview" | "travelReadState" | "previewRequest" | "playback" | "renderTravel">;
+    readonly journey: Pick<AtlasJourney, "entranceId" | "beginContextRead" | "completeContextRead" | "failContextRead" | "renderTravel">;
     readonly landscape: Pick<LandscapeWorkbench, "contours" | "livePainting" | "load">;
     readonly scheduleRender: () => void;
     readonly root: HTMLElement;
@@ -31,7 +31,27 @@ interface AtlasRegionsHost {
 /** Owns region reads, source publication and geometry readiness. */
 export class AtlasRegions {
     constructor(private host: AtlasRegionsHost) { }
-    authorSource:TerrainIdentity|null=null;
+    private authorSource:TerrainIdentity|null=null;
+    get reading() { return this.regionReading === this.request; }
+    get presentationQuery() { return this.reading ? this.regionReadingQuery : this.loadedQuery; }
+    get opening() { return this.openingSurface; }
+    invalidate() { this.loadedQuery = null; }
+    invalidatePendingRead() { this.request++; this.invalidate(); }
+    resetContext() {
+        this.cancel();
+        this.authorSource = null;
+        this.data = null;
+    }
+    acceptCommit(ack: AtlasCommitAck, terrain: boolean) {
+        if (terrain) {
+            if (!ack.sourceFence) throw Error('Speicherbestätigung des Pinselzugs unvollständig. Speicherstand klären.');
+            this.authorSource = {revision: ack.revision, fence: ack.sourceFence};
+            this.host.canvas.dataset.terrainAuthorRevision = String(ack.revision);
+        } else {
+            this.invalidate();
+            if (this.data) this.data = {...this.data, revision: ack.revision, canUndo: ack.canUndo, canRedo: ack.canRedo};
+        }
+    }
     /** Invalidate replies before releasing the old campaign's read lane. */
     cancel() {
         this.request++;
@@ -39,20 +59,21 @@ export class AtlasRegions {
         if (this.regionTimer !== null)
             clearTimeout(this.regionTimer);
         this.regionTimer = null;
-        this.loadedRegionQuery = null;
+        this.loadedQuery = null;
         this.regionReading = null;
         this.regionReadingQuery = null;
         if (this.host.owner)
             void window.campaign.cancelAtlasRegion(this.host.owner.token);
     }
-    projection: AtlasRenderView | null = null;
+    private projection: AtlasRenderView | null = null;
     get data() { return this.projection; }
-    set data(value: AtlasRenderView | null) { this.projection = value ? atlasGeometryOnly(value) : null; }
-    request = 0;
-    regionTimer: ReturnType<typeof setTimeout> | null = null;
-    loadedRegionQuery: AtlasRegionQuery | null = null;
-    regionReading: number | null = null;
-    regionReadingQuery: AtlasRegionQuery | null = null;
+    private set data(value: AtlasRenderView | null) { this.projection = value ? atlasGeometryOnly(value) : null; }
+    private request = 0;
+    private regionTimer: ReturnType<typeof setTimeout> | null = null;
+    private loadedQuery: AtlasRegionQuery | null = null;
+    get loadedRegionQuery() { return this.loadedQuery; }
+    private regionReading: number | null = null;
+    private regionReadingQuery: AtlasRegionQuery | null = null;
     regionQuery(buffered = false): AtlasRegionQuery {
         const terrainRaster = this.host.spatial?.needsTerrainRaster ?? true;
         const box = buffered ? this.host.camera.destination : this.host.camera.view, width = Math.max(1, Math.min(4096, Math.round(this.host.canvas.clientWidth) || 1024)), height = Math.max(1, Math.min(4096, Math.round(this.host.canvas.clientHeight) || 768));
@@ -66,7 +87,7 @@ export class AtlasRegions {
             return false;
         return this.refresh();
     }
-    openingSurface: {
+    private openingSurface: {
         owner: WorkspaceGeometry;
         revision?: number;
     } | null = null;
@@ -171,21 +192,16 @@ export class AtlasRegions {
         this.regionReading = request;
         this.host.spatial?.pauseReads?.();
         let completed = false;
-        const cameraPreview = keepScene ? this.host.journey.localPreview : null, previewFence = this.data?.region?.fence;
-        const retry = this.host.journey.travelReadState === "failed";
+        const retry = this.host.journey.beginContextRead(keepScene);
         get("atlas-region-retry").hidden = true;
         if (!this.data)
             get("atlas-save-status").textContent = "Kartenausschnitt wird geladen…";
         this.host.invalidateHits();
-        this.host.journey.travelReadState = "loading";
-        this.loadedRegionQuery = null;
+        this.loadedQuery = null;
         this.host.root.dataset.regionState = 'loading';
         this.host.canvas.setAttribute('aria-busy', 'true');
         get("atlas-hint").dataset.idle = "false";
         setText("atlas-hint", this.data ? "Vorheriger Kartenstand · Ansicht wird geladen. Auswahl und Bearbeitung sind vorübergehend gesperrt." : "Ansicht wird geladen.");
-        this.host.journey.previewRequest++;
-        this.host.journey.localPreview = null;
-        this.host.journey.playback.stop();
         if (!keepScene)
             this.host.render();
         this.host.journey.renderTravel();
@@ -201,7 +217,7 @@ export class AtlasRegions {
             this.data = r.value;
             this.authorSource = null;
             this.host.canvas.dataset.atlasRegionRevision = String(r.value.region.revision);
-            this.loadedRegionQuery = query;
+            this.loadedQuery = query;
             this.host.canvas.dataset.atlasTerrainRaster = String(query.terrainRaster !== false);
             this.host.canvas.dataset.atlasLandscapeTiles = String(r.value.region.landscape?.tiles.length ?? 0);
             void this.host.landscape.load().catch(e => this.host.error(e));
@@ -216,7 +232,7 @@ export class AtlasRegions {
             else if (layer?.coverage.mode === 'raster')
                 get('atlas-hint').textContent += ' Dichte Landschaft als Übersicht; genaue Auswahl per Klick.' + (layer.coverage.references > layer.records.filter(r => r.kind === 'reference').length ? ' Bildvorlagen als Umrisse.' : '');
             get("atlas-hint").dataset.idle = String(get("atlas-hint").textContent === "Zoome von der Landschaft bis zum Innenraum. Ziehen verschiebt die Ansicht.");
-            this.host.journey.travelReadState = "ready";
+            this.host.journey.completeContextRead(r.value.region.fence);
             if (get("atlas-save-status").textContent === "Kartenausschnitt wird geladen…")
                 get("atlas-save-status").textContent = "Kartenausschnitt geladen";
             if (retry) {
@@ -224,10 +240,6 @@ export class AtlasRegions {
                 get("atlas-save-status").dataset.error = "false";
                 this.host.opts.status("Reisekontext aktualisiert");
             }
-            // Camera reads do not change the intended route. Restore it only after
-            // confirming exactly the same source; pending/failed reads stay locked.
-            if (cameraPreview && previewFence && r.value.region.fence === previewFence)
-                this.host.journey.localPreview = cameraPreview;
             completed = true;
             this.regionReading = null;
             this.regionReadingQuery = null;
@@ -236,7 +248,7 @@ export class AtlasRegions {
         }
         catch (e) {
             if (this.host.owner === w && request === this.request) {
-                this.host.journey.travelReadState = "failed";
+                this.host.journey.failContextRead();
                 this.host.root.dataset.regionState = 'failed';
                 this.host.canvas.setAttribute('aria-busy', 'false');
                 this.host.error(e);

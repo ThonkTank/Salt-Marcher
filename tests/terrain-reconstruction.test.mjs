@@ -1,13 +1,13 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {createHash,randomUUID} from 'node:crypto';
-import {mkdtempSync,mkdirSync,rmSync,readFileSync} from 'node:fs';
+import {randomUUID} from 'node:crypto';
+import {mkdtempSync,mkdirSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3');
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/storage/store';export * from './src/app/storage/terrain-reconstruction';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/terrain-height';export * from './src/app/terrain-interpolation';export * from './src/app/terrain-field-stream';export * from './src/app/terrain-projection-cache';export * from './src/app/storage/terrain-invalidation';"},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-reconstruction-test.cjs'});
-const {CampaignStore,installTerrainReconstruction,AtlasLandscapeReader,heightRecord,TerrainSampler,interpolateHeight,heightPatch,streamTerrainField,TerrainProjectionCache,changedHeightBounds,decodeHeights}=require('../.build/terrain-reconstruction-test.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/storage/store';export * from './src/app/storage/atlas-landscape-region';export * from './src/app/terrain-height';export * from './src/app/terrain-interpolation';export * from './src/app/terrain-field-stream';export * from './src/app/terrain-projection-cache';export * from './src/app/storage/terrain-invalidation';"},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-reconstruction-test.cjs'});
+const {CampaignStore,AtlasLandscapeReader,heightRecord,TerrainSampler,interpolateHeight,heightPatch,streamTerrainField,TerrainProjectionCache,changedHeightBounds,decodeHeights}=require('../.build/terrain-reconstruction-test.cjs');
 const field=(pixel,fn)=>[-1,0].flatMap(y=>[-1,0].map(x=>heightRecord(x*64*pixel,y*64*pixel,pixel,Float32Array.from({length:4096},(_,i)=>fn((x*64+i%64)*pixel,(y*64+Math.floor(i/64))*pixel)))));
 const plane=()=>field(1,(x,y)=>40+2*x+.25*y),point={x:.5,y:7.125};
 test('bounded reconstruction keeps exact nodes, affine slopes and plateau extrema without Catmull overshoot',()=>{
@@ -30,21 +30,6 @@ test('analytic hill error improves and derivatives remain continuous at interior
   assert(Math.abs(left-right)<1e-5,{x,left,right});
  }
 });
-const fp=row=>createHash('sha256').update(JSON.stringify(row)).digest('hex');
-const oldRow=row=>{
- if(!row)return row;const t=JSON.parse(row.payload).height;if(!t)return row;
- return{...row,min_x:t.x-t.pixel,max_x:t.x+64*t.pixel,min_y:t.y-t.pixel,max_y:t.y+64*t.pixel};
-};
-// Reconstruct schema-53 derived metadata, including the exact historical guards.
-// The payloads and authored heights are deliberately unchanged.
-function downgrade(db){
- const rows=db.prepare('SELECT * FROM atlas_landscape').all(),commands=db.prepare('SELECT * FROM atlas_command').all();
- db.transaction(()=>{
-  for(const command of commands){const changes=JSON.parse(command.payload);for(const d of changes){if(d.table!=='atlas_landscape')continue;const live=rows.find(r=>r.campaign_id===d.key.campaign_id&&r.id===d.key.id)??null;for(const old of [d.before,d.after,live])if(fp(old)===d.guard){d.guard=fp(oldRow(old));break;}d.before=oldRow(d.before);d.after=oldRow(d.after);}db.prepare('UPDATE atlas_command SET payload=? WHERE campaign_id=? AND ordinal=?').run(JSON.stringify(changes),command.campaign_id,command.ordinal);}
-  for(const r of rows){const old=oldRow(r);db.prepare('UPDATE atlas_landscape SET min_x=?,max_x=?,min_y=?,max_y=? WHERE campaign_id=? AND id=?').run(old.min_x,old.max_x,old.min_y,old.max_y,r.campaign_id,r.id);}
-  db.pragma('user_version=53');
- })();
-}
 function fixture(t){
  const root=homedir()+'/.cache/saltmarcher/tests';mkdirSync(root,{recursive:true});const dir=mkdtempSync(root+'/reconstruction-'),file=dir+'/world.sqlite';
  const f={dir,file,store:new CampaignStore(file)};f.cam=f.store.create('Reconstruction');f.token=f.store.activateShell(f.cam.id).token;
@@ -58,33 +43,18 @@ function checkBounds(db){for(const r of db.prepare('SELECT * FROM atlas_landscap
 function readPoint(f){
  const db=new Database(f.file,{readonly:true});try{const reader=new AtlasLandscapeReader(db),source=f.store.atlasRegionSource(f.token);reader.sync(source);return streamTerrainField({x:point.x,y:point.y,dx:.1,dy:.1,columns:1,rows:1},0,(kind,box)=>reader.rows(source,box,true,0,0,kind),false).heights[0];}finally{db.close();}
 }
-test('schema 53 expands SQL reads without changing author bytes; undo/redo keeps the expanded footprint',t=>{
- const f=fixture(t),before=payloads(f.store.db);downgrade(f.store.db);
- assert(Math.abs(readPoint(f)-42.78125)>.001,'old footprints omit the outer neighbour');
- f.reopen();assert.equal(f.store.db.pragma('user_version',{simple:true}),54);assert.deepEqual(payloads(f.store.db),before);checkBounds(f.store.db);assert.equal(readPoint(f),42.78125);assert.equal(f.store.atlasHeight(f.token,point).heightM,42.78125);
- f.write({kind:'undo'});assert.equal(payloads(f.store.db).length,0);f.write({kind:'redo'});checkBounds(f.store.db);assert.equal(readPoint(f),42.78125);f.reopen();assert.equal(readPoint(f),42.78125);
+test('current terrain keeps interpolation support through undo, redo and fresh reopen',t=>{
+ const f=fixture(t),before=payloads(f.store.db);checkBounds(f.store.db);
+ assert.equal(readPoint(f),42.78125);f.reopen();assert.deepEqual(payloads(f.store.db),before);
+ f.write({kind:'undo'});assert.equal(payloads(f.store.db).length,0);
+ f.write({kind:'redo'});checkBounds(f.store.db);assert.equal(readPoint(f),42.78125);
+ f.reopen();assert.equal(readPoint(f),42.78125);
 });
-test('schema 53 migrates a redo cursor whose guard was rebased by an earlier undo',t=>{
- const f=fixture(t),record=plane().at(-1);record.height=heightRecord(0,0,1,new Float32Array(4096).fill(300)).height;
- f.write({kind:'landscape-put',record,expectedRevision:1});f.write({kind:'undo'});const before=payloads(f.store.db);downgrade(f.store.db);f.reopen();assert.deepEqual(payloads(f.store.db),before);
- f.write({kind:'redo'});assert.equal(f.store.atlasHeight(f.token,{x:10,y:10}).heightM,300);checkBounds(f.store.db);
- f.write({kind:'undo'});assert.equal(readPoint(f),42.78125);f.write({kind:'undo'});assert.equal(payloads(f.store.db).length,0);f.write({kind:'redo'});checkBounds(f.store.db);
-});
-test('migration never repairs an unknown conflicting history guard',t=>{
- const f=fixture(t);downgrade(f.store.db);const row=f.store.db.prepare('SELECT * FROM atlas_command').get(),changes=JSON.parse(row.payload);changes[0].guard='conflicting external change';f.store.db.prepare('UPDATE atlas_command SET payload=?').run(JSON.stringify(changes));f.reopen();
- assert.equal(JSON.parse(f.store.db.prepare('SELECT payload FROM atlas_command').get().payload)[0].guard,'conflicting external change');const before=payloads(f.store.db);assert.throws(()=>f.write({kind:'undo'}),/Spätere Änderung/);assert.deepEqual(payloads(f.store.db),before);
-});
-test('failed metadata migration rolls history, heights and schema back together',t=>{
- const f=fixture(t);downgrade(f.store.db);const before=f.store.db.prepare('SELECT * FROM atlas_landscape ORDER BY id').all(),history=f.store.db.prepare('SELECT * FROM atlas_command').all();
- f.store.db.exec("CREATE TEMP TRIGGER reject_reconstruction BEFORE UPDATE ON atlas_landscape BEGIN SELECT RAISE(ABORT,'migration failure'); END");
- assert.throws(()=>f.store.db.transaction(()=>{installTerrainReconstruction(f.store.db);f.store.db.pragma('user_version=54');})(),/migration failure/);
- assert.deepEqual(f.store.db.prepare('SELECT * FROM atlas_landscape ORDER BY id').all(),before);assert.deepEqual(f.store.db.prepare('SELECT * FROM atlas_command').all(),history);assert.equal(f.store.db.pragma('user_version',{simple:true}),53);
-});
-test('schema 53 archive preview stays read-only and imported heights receive full support',async t=>{
- const f=fixture(t),file=f.dir+'/old-archive.sqlite';await f.store.campaignSnapshot(f.token,file);const db=new Database(file);downgrade(db);db.close();const bytes=readFileSync(file);
- assert.equal(f.store.campaignPreview(file).schema,53);assert.deepEqual(readFileSync(file),bytes);
- const copy=f.store.acceptCampaignSnapshot(file,'Copied',{});assert.deepEqual(readFileSync(file),bytes);checkBounds(f.store.db);
- f.cam=copy;f.token=f.store.activateShell(copy.id).token;assert.equal(readPoint(f),42.78125);f.reopen();assert.equal(readPoint(f),42.78125);
+test('current archive preserves terrain and interpolation support',async t=>{
+ const f=fixture(t),file=f.dir+'/archive.sqlite';await f.store.campaignSnapshot(f.token,file);
+ const copy=f.store.acceptCampaignSnapshot(file,'Copied',{});checkBounds(f.store.db);
+ f.cam=copy;f.token=f.store.activateShell(copy.id).token;assert.equal(readPoint(f),42.78125);
+ f.reopen();assert.equal(readPoint(f),42.78125);
 });
 
 test('a changed outer tangent invalidates warm field, mesh and colour caches beyond the former one-cell support',()=>{

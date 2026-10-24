@@ -15,16 +15,6 @@ function decoded(row: any, id: string, revision: number): ItemDefinition {
 function legacyDefinition(row: any): ItemDefinition {
   return checkedDefinition({ id: row.id, revision: row.revision, name: row.name, category: row.category, magic: row.category === 'magic', rarity: '', attunement: 'unspecified', unitCopper: row.unit_copper, weightText: '', properties: [], description: '', source: { kind: 'authored', label: 'Eigener Gegenstand', license: null, url: null }, trashed: false });
 }
-function* migrationRows(db: any, table: string, columns: string, condition = '1') {
-  let cursor: string | null = null;
-  const query = db.prepare(`SELECT CAST(rowid AS TEXT) AS migration_cursor,${columns} FROM ${table} WHERE (? IS NULL OR rowid>?) AND ${condition} ORDER BY rowid LIMIT 50`);
-  for (;;) {
-    const rows: any[] = query.all(cursor, cursor);
-    if (!rows.length) return;
-    for (const row of rows) yield row;
-    cursor = rows[rows.length - 1].migration_cursor;
-  }
-}
 /** Immutable snapshots retain only genuinely observed versions, never invented past states. */
 export function recordItemDefinitionVersion(db: any, d: ItemDefinition) {
   checkedDefinition(d);
@@ -37,23 +27,8 @@ export function recordItemDefinitionVersion(db: any, d: ItemDefinition) {
   db.prepare('INSERT INTO item_definition_version(id,revision,payload,checksum) VALUES(?,?,?,?)').run(d.id, d.revision, payload, hash(payload));
 }
 export function installItemDefinitions(db: any) {
-  const existed = !!db.prepare("SELECT 1 FROM sqlite_schema WHERE name='item_definition_version'").get();
   db.exec(`CREATE TABLE IF NOT EXISTS item_definition(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
     CREATE TABLE IF NOT EXISTS item_definition_version(id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(id,revision)) STRICT;`);
-  if (existed) {installSrdItems(db);return;}
-  // Preserve readable historical snapshots already present in verified receipts.
-  // Invalid units stay untouched and will fail their own reader/backup qualification.
-  if (db.prepare("SELECT 1 FROM sqlite_schema WHERE name='shop_receipt'").get()) {
-    for (const r of migrationRows(db, 'shop_receipt', 'payload,checksum')) {
-      try { if (hash(r.payload) !== r.checksum) continue; const ack = JSON.parse(r.payload); const definitions = [ack.definition, ...(Array.isArray(ack.shop?.items) ? ack.shop.items : [])].filter(Boolean); for (const d of definitions) recordItemDefinitionVersion(db, checkedDefinition(d)); } catch { /* No invented recovery from an unreadable unit. */ }
-    }
-  }
-  for (const row of migrationRows(db, 'item_definition', 'id,revision,payload,checksum')) {
-    try { recordItemDefinitionVersion(db, decoded(row, row.id, row.revision)); } catch { /* Keep the original invalid head. */ }
-  }
-  for (const row of migrationRows(db, 'authored_item', 'id,revision,name,category,unit_copper', 'id NOT IN(SELECT id FROM item_definition)')) {
-    try { recordItemDefinitionVersion(db, legacyDefinition(row)); } catch { /* Legacy corruption is isolated too. */ }
-  }
   installSrdItems(db);
 }
 function installSrdItems(db:any){

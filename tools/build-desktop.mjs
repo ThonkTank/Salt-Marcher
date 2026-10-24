@@ -3,8 +3,8 @@ import { build } from 'esbuild';
 import { mkdir, copyFile, rm, readFile, writeFile } from 'node:fs/promises';
 import {copyAtlasRuntimeLicenses} from './atlas-runtime-licenses.mjs';
 const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-const schema=Number((await readFile('src/app/storage/store.ts','utf8')).match(/if \(schema > (\d+)\)/)?.[1]);
-if(!Number.isSafeInteger(schema))throw new Error('Store-Datenformatgrenze nicht gefunden.');
+const {schema}=JSON.parse(await readFile('src/app/data-format.json','utf8'));
+if(!Number.isSafeInteger(schema)||schema<1)throw new Error('Ungültiges Datenformat.');
 const applicationVersion = JSON.parse(await readFile('package.json', 'utf8')).version;
 if (typeof applicationVersion !== 'string' || !applicationVersion.trim()) throw new Error('Releaseversion fehlt.');
 await rm('.build/desktop', { recursive: true, force: true });
@@ -39,5 +39,5 @@ await build({entryPoints:['src/app/preset-settings-ui.ts'],outfile:'.build/deskt
 await copyFile('src/app/preset-settings.css','.build/desktop/ui/preset-settings.css');
 for (const file of ['index.html', 'app.css','player-display.html','player.css']) await copyFile(`src/app/${file}`, `.build/desktop/ui/${file}`);
 await writeFile('.build/desktop/ui/app.css', (await readFile('src/app/app.css','utf8'))+'\n'+(await readFile('src/app/key-notes.css','utf8'))+'\n'+(await readFile('src/app/markdown-view.css','utf8'))+'\n'+(await readFile('src/app/atlas-workspace.css','utf8')));
-await writeFile('.build/desktop/build-info.json', JSON.stringify({ applicationVersion,commit,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',schema:{min:0,max:schema,target:schema} }) + '\n');
+await writeFile('.build/desktop/build-info.json', JSON.stringify({ applicationVersion,commit,product:'saltmarcher-workbench',dataLine:'CampaignWorkbench',schema:{min:schema,max:schema,target:schema} }) + '\n');
 console.log('Desktop build ready: .build/desktop/main.cjs');

@@ -183,7 +183,6 @@ export function executeTerritory(db: any, cam: string, a: TerritoryAction) {
     });
 }
 export function validateTerritories(db: any) {
-  if (db.pragma("user_version", { simple: true }) < 49) return;
   for (const table of ["atlas_territory", "atlas_territory_layer"])
     if (!db.prepare("SELECT 1 FROM sqlite_master WHERE name=?").get(table))
       throw Error("Regionsspeicher fehlt.");

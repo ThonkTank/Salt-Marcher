@@ -2,8 +2,8 @@
 
 Status: Aktuell
 Owner: SaltMarcher
-Last Reviewed: 2026-10-16
-Source of Truth: docs/PRODUCT.md, docs/SCOPE.md und ARCHITECTURE.md
+Last Reviewed: 2026-10-24
+Source of Truth: docs/INDEX.md (Facheinstiege), package.json (Befehle)
 
 Ein lokaler Arbeitsraum für Spielleitungen: Eine Kampagnenkarte und ihre Raum-Keys bearbeiten, Kampagnen vorbereiten und zusammenhängend live spielen. Das Produkt ist eine eigenständige Desktopanwendung mit Electron, TypeScript und SQLite. Obsidian wird nicht weitergeführt; sein Code und frühere Nachweise bleiben als historische Quellen im Repository.
 
@@ -13,12 +13,12 @@ SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwer
 
 ## Hier anfangen
 
-- [Produktziele](docs/PRODUCT.md#für-wen-und-wozu): Zweck und Nutzungsergebnisse.
-- [Umfang und Quellenvorrang](docs/SCOPE.md#quellen-und-vorrang): Anforderungen und ihre verbindlichen Quellen.
-- [Lieferfolge](docs/ROADMAP.md#lieferfolge-des-gesamtprodukts): Abnahmefolge und fachliche Abhängigkeiten.
-- [Atlas auf einen Blick](ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
+- [Produktziele](docs/project/requirements/product.md#für-wen-und-wozu): Zweck und Nutzungsergebnisse.
+- [Umfang und Quellenvorrang](docs/project/requirements/scope.md#quellen-und-vorrang): Anforderungen und ihre verbindlichen Quellen.
+- [Lieferfolge](docs/project/delivery/roadmap.md#lieferfolge-des-gesamtprodukts): Abnahmefolge und fachliche Abhängigkeiten.
+- [Atlas auf einen Blick](docs/atlas/requirements/atlas.md#atlas-auf-einen-blick): integrierter Atlasstand und offene Lücken.
 - [Dokumentationsindex](docs/INDEX.md): Fachanforderungen und Nachweise.
-- [Architektur](ARCHITECTURE.md#prozesse-und-verantwortlichkeiten): Prozesse, Fachbesitzer und Schutzgrenzen.
+- [Architektur](docs/project/architecture/overview.md#prozesse-und-verantwortlichkeiten): Prozesse, Fachbesitzer und Schutzgrenzen.
 
 
 ## Lokal entwickeln
@@ -39,7 +39,7 @@ npm run build:desktop
 
 `npm run build` bleibt der historische Pluginbuild; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
 `npm test` erneuert die Testvorbereitung und führt die aktive Suite standardmäßig mit bis zu vier Testprozessen (begrenzt durch verfügbare CPUs) aus.
-Die [Testanleitung](docs/development/testing.md) beschreibt Einzeltests, serielle Diagnose und Laufberichte.
+Die [Testanleitung](docs/project/verification/testing.md) beschreibt Einzeltests, serielle Diagnose und Laufberichte.
 Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.
 
@@ -60,7 +60,7 @@ npm run package:desktop -- /tmp/saltmarcher-linux-x64
 Der Linux-Updatepfad mit Erstinstallation und bewusster Releasefreigabe steht unter
 [GitHub-Updates](docs/project/delivery/github-updates.md).
 
-Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen gilt das [gemeinsame Atlasmodell](docs/ATLAS.md); alte Testbestände ohne Atlaswurzel werden nicht als mehrere Karten migriert.
+Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen gilt das [gemeinsame Atlasmodell](docs/atlas/guide.md); alte Testbestände ohne Atlaswurzel werden nicht als mehrere Karten migriert.
 
 ## Repositorykarte
 
@@ -68,8 +68,8 @@ Die ursprünglichen Produktanforderungen bleiben erhalten. Für neue Kampagnen g
 - `desktop/`: privilegierter Desktopprozess und schmale Preload-Brücken.
 - `tests/`: automatisierte Prüfungen und synthetische Fixtures.
 - `tools/`: Build-, Paket-, Referenz-, Fixture- und Hostwerkzeuge.
-- `docs/` und `ROADMAP-*.md`: Produktziele, Fachanforderungen und direkte Nachweise.
-- `ARCHITECTURE.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und Abnahmen.
+- `docs/`: Produktziele, Fachanforderungen, Architektur und Prüfwege; Einstieg in `docs/INDEX.md`.
+- `docs/project/architecture/overview.md`: Architekturentscheidungen; `acceptance.json`: Anforderungen und Abnahmen.
 
 Historische Laufstände und Einzelpläne bleiben im Git-Verlauf zugänglich. Quellen- und Datenattribution: [NOTICE.md](NOTICE.md), [SRD 5.1](src/features/catalog/SRD-5.1-ATTRIBUTION.md) und [Itemquellen](src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).
 

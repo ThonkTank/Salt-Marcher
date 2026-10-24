@@ -1,5 +1,10 @@
 # Linux-Updates über GitHub Releases
 
+Status: Current; offene Ziele sind als solche beschrieben.
+Owner: project
+Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
 SaltMarcher verwendet für Linux x64 signierte ZIP-Pakete der aktuellen
 Kampagnenwerkstatt-Datenlinie. Die frühere SaltMarcher-Anwendung und deren
 AppImages sind keine Updatequelle. Daten bleiben in `CampaignWorkbench` oder

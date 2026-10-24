@@ -1,7 +1,0 @@
-{
-  "nera.md": "# Nera die Quartiermeisterin\n\n## Zum Vorlesen\n  Original zum Vorlesen\n\n## GM-Notizen\nNeras Originalwissen: Die Nachtwache zahlt mit kupfernen Marken.\n\n",
-  "siegel.md": "# Das blaue Siegel\n\nOffen: Wer führt die Küfergilde?\n\n",
-  "aufzug.md": "# Die Aufzug-Verschwörung\n\n## Zum Vorlesen\n  Ein Aushang erwähnt [[nera.md|Nera]].\n\n## GM-Notizen\n  Ziel: Die Übergabe stoppen.\nEin alter Verweis auf [[nera.md|Nera]] gehört nicht zu diesem Auftrag.\n\nBeispielcode: `[[nera.md|Nera]]` bleibt unverändert.\n\n## Beziehungen\n- Quelle: [[nera.md|Nera]]\n- kennt: [[nera.md|Nera]]\n- Quelle: [[siegel.md|Das blaue Siegel]]\n\n",
-  "torwache.md": "# Die Torwache\n\nNera wird am Nordtor gebraucht.\n\nQuelle: [[nera.md|Nera]]\n\n",
-  "alter-abend.md": "# Bisheriger Abend\n\n## Die Nachtwache befragen\n  Alter Plan bleibt.\n\n[[torwache.md|Die Torwache]]\n[[nera.md|Nera]]\n\n"
-}
