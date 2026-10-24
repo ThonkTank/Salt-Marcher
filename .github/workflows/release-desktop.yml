@@ -43,11 +43,11 @@ jobs:
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
       - name: Test packaged update from the start screen through Settings
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --software-gpu
       - name: Test packaged update with an open workspace through Settings
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --software-gpu
       - name: Test explicitly confirmed update after a blocked editor
-        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --force
+        run: xvfb-run -a node tools/test-desktop-updates.mjs .build/release-package --workspace --force --software-gpu
       - name: Upload verified assets as a draft
         run: gh release create "$GITHUB_REF_NAME" .build/release-assets/* --draft --verify-tag --title "SaltMarcher $GITHUB_REF_NAME" --generate-notes
         env:

@@ -1,6 +1,6 @@
 {
   "name": "saltmarcher",
-  "version": "0.190.0",
+  "version": "0.190.1",
   "private": true,
   "type": "module",
   "scripts": {
