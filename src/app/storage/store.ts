@@ -37,7 +37,7 @@ import {readNoteRoomUses} from './note-room-uses';
 import {installAtlasTravel,atlasEntrances,atlasDisplayEntrances,atlasLocalJourney,putAtlasEntrance,previewAtlasLocal,executeAtlasTravel,atlasLocalGeometryBasis} from './atlas-travel';
 import {atlasHexAt,atlasFrame,localToAtlas} from '../campaign-atlas-model';
 import {newLocation} from '../../features/location/location-schema';
-import {installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,atlasCapturedChanges,bindAtlas,executeAtlasWrite} from './campaign-atlas';
+import {hasAtlasReceipt,installCampaignAtlas,createCampaignAtlas,atlasRoot,atlasBindings,atlasHistoryState,atlasCapturedChanges,bindAtlas,executeAtlasWrite} from './campaign-atlas';
 import type {AtlasCommand,CampaignAtlas} from '../campaign-atlas-contracts';
 import {catalogOutcome,catalogCommand,catalogReceipt,noteCampaignCreated,noteCampaignOpened} from './campaign-catalog';
 import type {CampaignCatalogCommand,CampaignCatalogReceipt} from '../campaign-contracts';
@@ -67,7 +67,7 @@ import {installNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
 import {readWorldSources,installWorldSources} from './world-sources';
-import {removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
+import {assertNpcOutsideOpenCombat,removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,applySceneCreation,readSceneCreationDraft,keepSceneCreationDraft} from './scene-desk';
@@ -411,6 +411,16 @@ export class CampaignStore {
     const value=terrainTraceMeasure("author.transaction-history",()=>prepared?this.db.transaction(()=>this.applyAtlas(c,prepared))():this.applyAtlas(c)) as {id?:string}|undefined;
     const root=atlasRoot(this.db,c.campaignId);
     return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
+  }
+  reconcileAtlasCommit(c:AtlasCommand,pending=false):import('../campaign-atlas-contracts').AtlasCommitOutcome {
+    this.guard(c.token,c.campaignId);
+    // Main must exclude in-flight async terrain preparation before absence is definitive.
+    if(pending)return{outcome:'unknown'};
+    return this.db.transaction(()=>{
+      if(!hasAtlasReceipt(this.db,c))return{outcome:'not-applied' as const};
+      const root=atlasRoot(this.db,c.campaignId);
+      return{outcome:'applied' as const,ack:{campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...atlasHistoryState(this.db,c.campaignId)}};
+    })();
   }
   atlasRegionSource(token:string,cursor?:import('../atlas-region-contracts').AtlasRegionCursor):AtlasRegionSource {
     const campaignId=this.guard(token),preview=this.graphShadow,version=this.committedSources.version(this.db),shadowVersion=preview?this.committedSources.version(preview.db):undefined;
@@ -1409,6 +1419,7 @@ export class CampaignStore {
         if (!old || old.revision !== change.expectedRevision || !!old.trashed === change.trashed) throw new Error('Papierkorbkonflikt: Notizstand hat sich geändert.');
         const note = checkedWorldNoteRow(old, 'Beschädigte Notiz bleibt gesperrt.'); revision = old.revision + 1;
         if(change.trashed&&note.kind==='npc'&&this.db.prepare(`SELECT 1 FROM city_unit WHERE campaign_id=? AND (EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.residentIds') WHERE value=?) OR EXISTS(SELECT 1 FROM json_each(city_unit.payload,'$.workerIds') WHERE value=?)) LIMIT 1`).get(campaignId,targetId,targetId))throw new Error('NPC ist noch als Stadtbewohner oder Arbeitsplatzbindung verwendet. Bindung zuerst am Haus lösen.');
+        if(change.trashed&&note.kind==='npc')assertNpcOutsideOpenCombat(this.db,campaignId,targetId);
         const payload = json({ ...note, revision });
         this.db.prepare('UPDATE world_note SET trashed=?,revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(Number(change.trashed), revision, payload, hash(payload), campaignId, targetId);
       } else if (change.kind === 'location') {

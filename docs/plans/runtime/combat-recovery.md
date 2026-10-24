@@ -14,7 +14,7 @@ Pfade: `src/app/`; Prüfungen: `tests/`.
 | Spontane Katalogübernahme | `combat-contracts.ts`, `combat.ts`, `storage/combat.ts` | `desktop-combat-reinforcement.test.mjs`, `tools/test-desktop-catalog-combat.mjs` |
 | Teilnehmer-/Notizentwurf | `combat-draft-contracts.ts`, `combat-draft-cache.ts`, `storage/combat-drafts.ts` | `desktop-combat-drafts.test.mjs` |
 | Szenen-/Mehrgruppenauswahl | `storage/scene-encounter-selection.ts`, `combat-selection-ui.ts`, `storage/combat.ts` | `desktop-scene-encounter-selection.test.mjs` |
-| Gemeinsame PC-Gesundheit | `storage/mask-health.ts` | `desktop-combat-hit.test.mjs` |
+| Gemeinsame PC-Gesundheit | `progression.ts`, `storage/mask-health.ts` | `desktop-combat-hit.test.mjs`, `desktop-review-integrity.test.mjs` |
 | Konzentrationswarteschlange und SG | [storage/combat.ts](../../../src/app/storage/combat.ts): `applyCombatDamage`, Commands `concentration`/`concentration-roll`; [combat-contracts.ts](../../../src/app/combat-contracts.ts): `concentrationDc`, `checkedCombat` | [desktop-combat-hit.test.mjs](../../../tests/desktop-combat-hit.test.mjs) |
 | CON-Vorschlag und Feldkorrektur | [combat.ts](../../../src/app/combat.ts): `creatureConstitutionSave`, `renderConcentrationEffect`, `execute`, `recoveredCombat` | [desktop-combat-switch.test.mjs](../../../tests/desktop-combat-switch.test.mjs), [native Konzentrationsprobe](../../../tools/test-desktop-concentration.mjs) |
 | Legendäre Aktion nach Kopie | `storage/campaign-data.ts`, `storage/mask-health.ts` | `desktop-legendary-transfer-integrity.test.mjs` |
@@ -175,6 +175,14 @@ Antwort bis zur Statusklärung, zum Abschluss und zum normalen Wiederöffnen aus
 Fehlenden flüchtigen Zielkontext prüft zusätzlich die Controllerprobe.
 
 ## Gemeinsame Gesundheitsfakten über Kampfmasken
+
+Reguläre Party- und Kampfaktionen verwenden dieselben Übergänge für Schaden und
+Heilung: Schaden bei 0 HP hebt Stabilisierung auf und zählt Fehlschläge; massiver
+Schaden setzt den Todeszustand, 0 HP beendet Konzentration. Temporäre HP werden
+zuerst verbraucht. Normale Heilung belebt Tote nicht wieder. Bewusste Party-Korrektur
+(`set`) und ausdrückliche Wiederbelebung bleiben getrennte Aktionen. Die normalen
+Eingabegrenzen gehören zum jeweiligen Command; bereits regelgerecht verstärkter
+Flächenschaden darf diese Eingabegrenze überschreiten.
 
 Bei 0 HP stehen Todesrettungen unmittelbar neben den HP-Aktionen, vor Zustands-
 und Werteverwaltung. Erfolg, Fehlschlag und interner W20 bleiben direkt erreichbar;

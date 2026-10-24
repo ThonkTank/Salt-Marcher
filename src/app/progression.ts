@@ -63,6 +63,33 @@ export function applyDeathSave(health:CharacterHealth,result:DeathSaveResult):Ch
  else{const failures=Math.min(3,d.failures+(result==='natural-1'?2:result==='failure'?1:0)),successes=Math.min(3,d.successes+(result==='success'?1:0));h.death={successes,failures,stable:successes===3,dead:failures===3};}
  return checkedHealth(h);
 }
+/** Ordinary damage uses the same health facts in Party and combat; mask-only roll prompts stay outside. */
+export function applyHealthDamage(health:CharacterHealth,amount:number,deathSaves=true,critical=false):{health:CharacterHealth;deathResult?:'failure'|'dead'}{
+ let h=structuredClone(checkedHealth(health));
+ if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('Betrag benötigt eine positive ganze Zahl.');
+ const absorbed=Math.min(h.tempHp,amount),remaining=amount-absorbed,beforeHp=h.hp;
+ h.tempHp-=absorbed;h.hp=Math.max(0,beforeHp-remaining);
+ let deathResult:'failure'|'dead'|undefined;
+ if(deathSaves&&remaining>0){
+  if(beforeHp>0&&h.hp===0)delete h.death;
+  const overflow=Math.max(0,remaining-beforeHp);
+  const result=(beforeHp===0?remaining:overflow)>=h.maxHp?'dead':beforeHp===0?'failure':undefined;
+  if(result&&!h.death?.dead){
+   if(h.death?.stable)h=applyDeathSave(h,'reset');
+   h=applyDeathSave(h,result);deathResult=result;
+   if(result==='failure'&&critical&&!h.death?.dead)h=applyDeathSave(h,'failure');
+  }
+ }
+ if(h.hp===0)h.concentrating=false;
+ return{health:checkedHealth(h),...(deathResult?{deathResult}:{})};
+}
+export function applyHealthHealing(health:CharacterHealth,amount:number):CharacterHealth{
+ const h=structuredClone(checkedHealth(health));
+ if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('Betrag benötigt eine positive ganze Zahl.');
+ if(h.death?.dead)throw new Error('Tote können nicht geheilt werden. Wiederbelebung oder ausdrückliche Korrektur erforderlich.');
+ h.hp=Math.min(h.maxHp,h.hp+amount);if(h.hp>0)delete h.death;
+ return checkedHealth(h);
+}
 /** Party-owned rest transition shared by confirmed writes and read-only day planning. */
 export function restAfter(rest:Progress['rest'],kind:'short'|'long'):Progress['rest'] {
  if(kind==='long')return{known:true,longXp:0,shortXp:0,baseline:0,sections:0};

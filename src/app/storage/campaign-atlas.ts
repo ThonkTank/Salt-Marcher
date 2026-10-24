@@ -430,6 +430,15 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'group-room-split':true,'group-scale':true,'group-generate':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-route':true,'landscape-vegetation-edit':true,'landscape-terrain-style':true,'landscape-height-stroke':true,'landscape-sea-level':true,'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
+export const atlasCommandFingerprint=(c:AtlasCommand)=>fp(c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action);
+/** No replay or projection reads: the transaction receipt alone establishes application. */
+export function hasAtlasReceipt(db:any,c:AtlasCommand):boolean{
+ if(!c||typeof c.commandId!=='string'||!c.commandId||!c.action||!Object.hasOwn(atlasActionKinds,c.action.kind))throw new Error('Unbekannten oder unvollständigen Atlasauftrag nicht geprüft.');
+ const row=db.prepare('SELECT * FROM atlas_receipt WHERE command_id=?').get(c.commandId);
+ if(!row)return false;
+ if(row.campaign_id!==c.campaignId||row.fingerprint!==atlasCommandFingerprint(c))throw new Error('Atlasbefehlskennung anders verwendet.');
+ return true;
+}
 export function executeAtlasWrite(
   db: any,
   c: AtlasCommand,
@@ -441,7 +450,7 @@ export function executeAtlasWrite(
   captureSetup(db);
   return db
     .transaction(() => {
-      const fingerprint = fp(c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action),
+      const fingerprint = atlasCommandFingerprint(c),
         old = db
           .prepare("SELECT * FROM atlas_receipt WHERE command_id=?")
           .get(c.commandId);
