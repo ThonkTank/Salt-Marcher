@@ -269,9 +269,19 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Maßnahme Laufzeit in der Auswertung: Median 9,96 → 6,87 s für 256×256.
   Alle Materialkanäle, Land-/Wasserclips,
   Aussparungen und Malen/Radieren sind nachgeprüft. Native Weltlast bleibt offen.
+- **M2-Quelleninventur und physischer Feldanschluss:** [Vollständige Inventur, 30 Tests und Weltgegenprobe](../../reference/atlas-material-physical-field-20261024/README.md)
+  erfassen alle 108.076 Datensätze. 100.000 davon sind reine Metadatenflächen;
+  die Welt enthält keine Pigmentzüge, Masken, physischen Trassen oder Seen und
+  ersetzt deshalb deren Zusatzproben nicht. Ein begrenzter Quellen-Snapshot nutzt
+  den kanonischen Hermite-/Wasserpfad mit ausdrücklich gelesenen Kampagneneinstellungen.
+  4.356 Weltpunkte einschließlich 891 Wasserpunkten stimmen mit dem bestehenden
+  Stream überein. Nachbarknoten und Wasserentscheidung vor Float32-Rundung sind
+  durch Gegenproben abgesichert. Noch keine Flächenintegration oder Produktbeschleunigung.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Jetzt die eingefrorene M0-Welt vollständig nach Quellenarten und noch abgelehnten
-  Masken/Feldfällen inventarisieren. Physisches Wasser und feldabhängige Grundmaterialien
+  Den geprüften Punktanschluss um konservative Höhen-/Wasserintervalle und
+  Quellenzellen-Schnitte für die adaptive Flächenintegration ergänzen; Hermite-Extrema
+  und geerbte NaN-Knoten als entscheidende Gegenprobe verwenden.
+  Physisches Wasser und feldabhängige Grundmaterialien
   über `AtlasRegionReader.materialSteps`/`readTerrainMaterialSteps` beziehungsweise
   dieselben kanonischen Feldsemantiken anbinden; gezeichnete Wasserpolygone allein
   sind kein Ersatz. Die Probe muss auch bisher nicht unterstützte Datensätze
