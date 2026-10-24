@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "scene_check": {"owner":"src/app/storage/scene-checks.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"scene_check"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "scene_check_receipt": {"owner":"src/app/storage/scene-checks.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"check_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"scene_check_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "scene_check_state": {"owner":"src/app/storage/scene-checks.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"}}}
+ }
+}

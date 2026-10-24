@@ -1,0 +1,9 @@
+{
+ "tables": {
+  "campaign_capability": {"owner":"src/app/storage/campaign-data.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"capability":{"type":"TEXT","transfer":"opaque"},"version":{"type":"INTEGER","transfer":"opaque"},"references_json":{"type":"TEXT","transfer":"capability-references"},"body":{"type":"BLOB","transfer":"opaque"},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "campaign_erasure": {"owner":"src/app/storage/campaign-data.ts","mode":"discard","columns":{"id":{"type":"TEXT","transfer":"opaque"},"name":{"type":"TEXT","transfer":"text"},"phase":{"type":"TEXT","transfer":"opaque"},"recorded_at":{"type":"TEXT","transfer":"opaque"}}},
+  "campaign_lifecycle": {"owner":"src/app/storage/campaign-data.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"trashed":{"type":"INTEGER","transfer":"opaque"}}},
+  "campaign_management_receipt": {"owner":"src/app/storage/campaign-data.ts","mode":"discard","columns":{"command_id":{"type":"TEXT","transfer":"opaque"},"subject_id":{"type":"TEXT","transfer":"opaque"},"fingerprint":{"type":"TEXT","transfer":"opaque"}}},
+  "campaign_origin": {"owner":"src/app/storage/campaign-data.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"source_id":{"type":"TEXT","transfer":"opaque"},"source_name":{"type":"TEXT","transfer":"opaque"},"local_map":{"type":"TEXT","transfer":"opaque"},"original_database":{"type":"BLOB","transfer":"opaque"},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

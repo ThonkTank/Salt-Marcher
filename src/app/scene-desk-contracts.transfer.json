@@ -1,0 +1,7 @@
+{
+  "roles": {
+    "SceneCreationDraft.writeId": "local",
+    "SceneCreationInput.name": "text",
+    "SceneCreationInput.notes": "text"
+  }
+}

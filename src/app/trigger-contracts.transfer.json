@@ -1,0 +1,19 @@
+{
+ "roles": {
+  "TriggerEvent.activatedMs": "text",
+  "TriggerEvent.fieldIds[]": "local",
+  "TriggerEvent.fieldNames[]": "text",
+  "TriggerEvent.id": "local",
+  "TriggerEvent.instantMs": "text",
+  "TriggerEvent.journeyId": "local",
+  "TriggerEvent.sceneId": "local",
+  "TriggerEvent.trapId": "local",
+  "TriggerField.id": "local",
+  "TriggerField.name": "text",
+  "TriggerField.scopeId": "local",
+  "TriggerField.trapId": "local",
+  "TriggerFragment.id": "local",
+  "TriggerFragment.orphanedWorld.floorId": "local",
+  "TriggerFragment.volumeId": "local"
+ }
+}

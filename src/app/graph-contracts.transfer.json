@@ -1,0 +1,15 @@
+{
+ "roles": {
+  "GraphIntent.fromGroupId": "local",
+  "GraphIntent.fromRoomId": "local",
+  "GraphIntent.id": "local",
+  "GraphIntent.name": "text",
+  "GraphIntent.problem": "text",
+  "GraphIntent.toGroupId": "local",
+  "GraphIntent.toRoomId": "local",
+  "GraphLayout.id": "local",
+  "GraphLayout.positions[].roomId": "local",
+  "GraphLayout.scopeId": "local",
+  "GraphPreviewState.scopeId": "local"
+ }
+}

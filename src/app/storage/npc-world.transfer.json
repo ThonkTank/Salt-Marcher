@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "npc_position": {"owner":"src/app/storage/npc-world.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"actor_id":{"type":"TEXT","transfer":"local"},"location_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"}}},
+  "npc_route": {"owner":"src/app/storage/npc-world.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"from_location_id":{"type":"TEXT","transfer":"local"},"to_location_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"npc_route"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

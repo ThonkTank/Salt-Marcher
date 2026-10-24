@@ -17,6 +17,7 @@ Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project
 | den Nutzerzweck oder die Priorität klären | [Produktziele](project/requirements/product.md) und [fachliche Lieferfolge](project/delivery/roadmap.md) | [Atlasabläufe und Work → Efficient → Beautiful / KISS](atlas/requirements/atlas.md#wie-kommen-wir-zum-ziel), konkreter Fachplan |
 | eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](project/architecture/overview.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
 | eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](project/verification/end-to-end.md) | [Atlas-Bedienproben](atlas/requirements/atlas-2.md#spätere-bedienabnahme), [GM-Aufgaben](project/verification/gm-workflows.md) und `acceptance.json` |
+| Datenfelder oder unabhängige Kampagnenkopien ändern | [Transferverträge bei den Fachmodellen](campaign/contract/transfer-ownership.md) | [Archivvertrag](campaign/contract/archive.md) und Fachtests |
 | Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |

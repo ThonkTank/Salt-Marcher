@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "atlas_entrance": {"owner":"src/app/storage/atlas-travel.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"atlas_entrance"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "atlas_local_journey": {"owner":"src/app/storage/atlas-travel.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"atlas_local_journey"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "atlas_travel_receipt": {"owner":"src/app/storage/atlas-travel.ts","mode":"discard","columns":{"command_id":{"type":"TEXT","transfer":"opaque"},"campaign_id":{"type":"TEXT","transfer":"opaque"},"fingerprint":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

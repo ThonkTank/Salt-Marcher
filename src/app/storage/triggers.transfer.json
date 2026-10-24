@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "dungeon_trigger_event": {"owner":"src/app/storage/triggers.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"journey_id":{"type":"TEXT","transfer":"local"},"trap_id":{"type":"TEXT","transfer":"local"},"route_index":{"type":"INTEGER","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_trigger_event"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "dungeon_trigger_field": {"owner":"src/app/storage/triggers.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"trap_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_trigger_field"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

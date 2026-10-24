@@ -8,7 +8,8 @@ import type {ManualPlan} from '../features/planner/manual-planner';
 export interface SessionProfile {planId:string;revision:number;party:EncounterParty[];adventureDayFraction:string;seed:string;encounterCount?:number|null}
 export interface VisitDetail {allocationXp?:number;restAfter?:{beforeVisitId:string;kind:'short'|'long'};visitId:string;revision:number;readAloud:string;noteIds:string[];groupIds:string[];reward:{id:string;poolXp:number;items:ItemInput[];placedTreasureId:string|null;awarded:boolean}|null}
 export interface WorldActor {defeated?:boolean;disposition?:number;role?:import('./npc-contracts').NpcRole;id:string;name:string;creatureId:string;revision:number;hp:number;maxHp:number;tempHp:number;conditions:string;concentrating:boolean;unavailable:boolean;entryId:string}
-export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:EncounterPlan;actors:WorldActor[]}
+export interface PreparedEncounterPlan extends EncounterPlan {assessment?:EncounterAssessment;composition?:import('./generation/selector').EncounterComposition}
+export interface PreparedGroup {id:string;revision:number;title:string;notes:string;sourceEncounterId:string;sourceRevision:number;locationId:string|null;plan:PreparedEncounterPlan;actors:WorldActor[]}
 export interface SessionView {replacementBasis?:string;profile:SessionProfile;visits:VisitDetail[];groups:PreparedGroup[];encounters:{id:string;revision:number;name:string}[]}
 export interface SessionSnapshot extends SessionView {plan:ManualPlan;replacementBasis:string}
 export interface ScenePreparation {noteIds:string[];groups:PreparedGroup[];treasures:{id:string;title:string}[];nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null}
@@ -18,10 +19,10 @@ export interface SessionMagicPoolItem {definitionId:string;revision:number;name:
 export interface SessionMagicGuidance {pool?:SessionMagicPoolItem[];expectedBefore:Record<BudgetRarity,number>;expectedAfter:Record<BudgetRarity,number>;received:Record<BudgetRarity,number>;target:Record<BudgetRarity,number>;allocations:Record<BudgetRarity,number>[];missing:Record<BudgetRarity,number>;warnings:string[];characters:{characterId:string;received:Record<BudgetRarity,number>}[]}
 export interface SessionLootGuidance {basis?:SessionLootBasis;magic?:SessionMagicGuidance;version:'cumulative-gold-v1'|'cumulative-gold-magic-v2';preset:{id:string;revision:number;hash:string};rewardXp:number;expectedBeforeCopper:string;expectedAfterCopper:string;receivedCopper:string;baselineCopper:string;differenceCopper:string;targetCopper:string;allocationsCopper:string[];characters:{characterId:string;name:string;xp:number;revision:number;receivedCopper:string;expectedBeforeCopper:string;expectedAfterCopper:string}[]}
 export interface SessionGenerationOrigin {
- version:'session-origin-v1'; request:SessionGenerationRequest;
+ version:'session-origin-v1'; request:StoredSessionGenerationRequest;
  itemCatalog?:{definitionId:string;revision:number}[];
  locations:{id:string;revision:number}[]; notes:{id:string;revision:number}[];
- encounters:{runId:string;seed:string;catalogHash:string;preset:{id:string;name:string;revision:number;hash:string}}[];
+ encounters:{runId:string;seed:string;catalogHash:string;preset:{id:string;name:string;revision:number;hash:string;mobThreshold?:number}}[];
  rewards:({poolXp:number;items:ItemInput[]}|null)[];
 }
 export interface SessionRun {origin?:SessionGenerationOrigin;targets?:import('./generation/session-targets').SessionTargets;lootGuidance?:SessionLootGuidance;worldSourcesByLocation?:boolean;id:string;planId:string;profileRevision:number;seed:string;dayBudget:number;budget:number;usedXp:number;generationRunId:string;proposals:SessionProposal[];warnings:string[]}
@@ -42,6 +43,8 @@ export type SessionAction=
  |{kind:'award-reward';planId:string;visitId:string;expectedVisitRevision:number;recipients:ProgressGuard[];noXp:boolean}
  |{kind:'accept-proposal';planId:string;expectedPlanRevision:number;runId:string;index:number};
 export interface SessionCommand {commandId:string;campaignId:string;token:string;action:SessionAction}
+// A stored origin can retain the complete generator request supplied by a caller.
+export interface StoredSessionGenerationRequest extends Omit<SessionGenerationRequest,'encounter'> {encounter:SessionGenerationRequest['encounter']&Partial<Pick<GenerationRequest,'party'|'seed'|'count'|'title'>>}
 export interface SessionGenerationRequest {magicPool?:{definitionId:string;revision:number}[];compensateMagic?:boolean;compensateLoot?:boolean;worldSourcesByLocation?:boolean;planId:string;expectedProfileRevision:number;count?:number|null;locationIds:string[];noteIds:string[];encounter:Omit<GenerationRequest,'party'|'seed'|'count'|'title'>}
 export interface SessionAPI {sceneVisits(token:string,sceneId:string,after:string|null):Promise<Result<import('./scene-visit-contracts').SceneVisitPage>>;sessionProgress(token:string,planId:string,sceneId?:string):Promise<Result<SessionProgress>>;
 preparedGroup(token:string,id:string):Promise<Result<PreparedGroup>>;

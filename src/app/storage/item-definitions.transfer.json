@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "item_definition": {"owner":"src/app/storage/item-definitions.ts","mode":"copy","columns":{"id":{"type":"TEXT","transfer":"shared"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"item_definition"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "item_definition_version": {"owner":"src/app/storage/item-definitions.ts","mode":"copy","columns":{"id":{"type":"TEXT","transfer":"shared"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"item_definition_version"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

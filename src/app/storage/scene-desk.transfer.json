@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "scene_creation_draft": {"owner":"src/app/storage/scene-desk.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"scene_creation_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "scene_desk": {"owner":"src/app/storage/scene-desk.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"scene_desk"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

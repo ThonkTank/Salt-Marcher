@@ -1,0 +1,15 @@
+{
+  "roles": {
+    "SceneCheck.actor": "text",
+    "SceneCheck.formula": "text",
+    "SceneCheck.id": "local",
+    "SceneCheck.label": "text",
+    "SceneCheck.recordedAt": "text",
+    "SceneCheck.ruleNoteId": "local",
+    "SceneCheck.ruleTitle": "text",
+    "SceneCheck.sceneId": "local",
+    "SceneCheck.sceneInstantMs": "text",
+    "SceneCheck.sourceActionId": "text",
+    "SceneCheck.sourceCreatureId": "text"
+  }
+}

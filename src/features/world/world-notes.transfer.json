@@ -1,0 +1,11 @@
+{
+ "roles": {
+  "WorldNoteRelation.label": "text",
+  "WorldNoteRelation.targetId": "local",
+  "WorldNoteV1.creatureId": "external",
+  "WorldNoteV1.gmNotes": "text",
+  "WorldNoteV1.id": "local",
+  "WorldNoteV1.readAloud": "text",
+  "WorldNoteV1.title": "text"
+ }
+}

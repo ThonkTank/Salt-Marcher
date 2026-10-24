@@ -1,0 +1,15 @@
+{
+ "roles": {
+  "DungeonBudgetSetting.dayFraction": "text",
+  "DungeonBudgetSetting.ownerId": "local",
+  "DungeonContent.anchor.volumeId": "local",
+  "DungeonContent.categories[]": "text",
+  "DungeonContent.publicText": "text",
+  "DungeonContent.reference.id": "local",
+  "DungeonContent.search.method": "text",
+  "DungeonContent.search.notes": "text",
+  "DungeonContent.search.revealedText": "text",
+  "DungeonContent.sourceReference.id": "local",
+  "DungeonContent.tags[]": "text"
+ }
+}

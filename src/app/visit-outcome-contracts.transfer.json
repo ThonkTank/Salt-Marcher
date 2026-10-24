@@ -1,0 +1,6 @@
+{
+ "roles": {
+  "VisitOutcome.recordedAt": "text",
+  "VisitOutcome.text": "text"
+ }
+}

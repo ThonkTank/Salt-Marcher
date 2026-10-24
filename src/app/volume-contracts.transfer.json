@@ -1,0 +1,9 @@
+{
+ "roles": {
+  "DungeonVolume.faces{}": "external",
+  "DungeonVolume.floorId": "local",
+  "DungeonVolume.id": "local",
+  "DungeonVolume.roomId": "local",
+  "DungeonVolume.scopeId": "local"
+ }
+}

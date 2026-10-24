@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "dungeon_key_content": {"owner":"src/app/storage/dungeon-key.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_key_content"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "dungeon_key_discovery": {"owner":"src/app/storage/dungeon-key.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"character_id":{"type":"TEXT","transfer":"local"},"subject_id":{"type":"TEXT","transfer":"local"},"known":{"type":"INTEGER","transfer":"opaque"}}}
+ }
+}

@@ -58,7 +58,7 @@ export function readProgressCharacter(db: any, cam: string, id: string): Progres
 export function saveProgress(db: any, cam: string, p: Progress) {
   p.revision++; const payload = json(p); db.prepare('UPDATE character_progress SET revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(p.revision, payload, hash(payload), cam, p.characterId);
 }
-export function event(db: any, cam: string, characterId: string | null, kind: string, facts: unknown, id: string = randomUUID()) {
+export function event(db: any, cam: string, characterId: string | null, kind: keyof typeof import('./progression.transfer.json').tables.progress_event.columns.payload.transfer.models, facts: unknown, id: string = randomUUID()) {
   const payload = json({ recordedAt: new Date().toISOString(), ...facts as object }); db.prepare('INSERT INTO progress_event VALUES(?,?,?,?,?,?)').run(cam, id, characterId, kind, payload, hash(payload)); return id;
 }
 function notice(db: any, cam: string, characterId: string, amount: number) {
@@ -491,7 +491,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       } else {
         if (!['sold','given'].includes(a.operation) || l.status !== 'received' || !Number.isSafeInteger(a.quantity) || a.quantity <= 0 || a.quantity > l.quantity) throw new Error('Verkauf/Weitergabe benötigt eine verfügbare Teilmenge.');
         const part: LedgerItem = { ...l, id: randomUUID(), revision: 1, quantity: a.quantity, status: a.operation, actualSaleCopper: a.operation === 'sold' ? copper(a.actualGold) : null, counterparty: a.counterparty, parentId: l.id, recordedAt: new Date().toISOString(),counterpartyLink:checkedCounterparty(db,cam,a.counterpartyLink) };
-        partitionLedgerPaidPrice(l,part);l.quantity -= a.quantity; l.revision++; saveLedger(db,cam,l); saveLedger(db,cam,part); event(db,cam,l.characterId,'loot-'+a.operation,{ originalId: l.id, before, after: l, portion: part, reason: a.reason });
+        partitionLedgerPaidPrice(l,part);l.quantity -= a.quantity; l.revision++; saveLedger(db,cam,l); saveLedger(db,cam,part); event(db,cam,l.characterId,`loot-${a.operation}`,{ originalId: l.id, before, after: l, portion: part, reason: a.reason });
         ledgerIds.push(part.id);
       }
     } else if (a.kind === 'notice') {

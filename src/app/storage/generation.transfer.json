@@ -1,0 +1,13 @@
+{
+ "tables": {
+  "encounter_table": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"id":{"type":"TEXT","transfer":"mixed"},"campaign_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"trashed":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"encounter_table"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "generation_acceptance": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"run_id":{"type":"TEXT","transfer":"local"},"proposal_index":{"type":"INTEGER","transfer":"opaque"},"plan_id":{"type":"TEXT","transfer":"local"}}},
+  "generation_receipt": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"generation_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "generation_run": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"generation_run"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "generator_assignment": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"preset_id":{"type":"TEXT","transfer":"shared"}}},
+  "generator_meta": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"id":{"type":"INTEGER","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"}}},
+  "generator_preset": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"id":{"type":"TEXT","transfer":"shared"},"revision":{"type":"INTEGER","transfer":"opaque"},"system":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"generator_preset"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "generator_registry_receipt": {"owner":"src/app/storage/generation.ts","mode":"discard","columns":{"command_id":{"type":"TEXT","transfer":"opaque"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":"opaque"},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "loot_table": {"owner":"src/app/storage/generation.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"trashed":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"loot_table"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

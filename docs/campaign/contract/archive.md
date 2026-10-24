@@ -94,6 +94,8 @@ Bildzuordnungen werden nicht durch pauschale Löschung geraten.
 
 ### Copy-/Complete-Import-Remap und Ownerlieferung
 
+Die [Transferverträge bei den Fachmodellen](transfer-ownership.md) beschreiben die aktuelle Zuordnung aller Tabellen und Referenzen, die gemeinsame Vorprüfung und den Pflegeweg für neue Felder.
+
 Ein SQLite-Snapshot ist noch kein `.kwcampaign`-Archiv. Der Dateiweg beginnt in
 [`desktop/main.ts`](../../../desktop/main.ts): `captureCampaign` verbindet den validierten
 Snapshot und die Medienliste aus

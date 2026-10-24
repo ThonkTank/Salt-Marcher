@@ -1,0 +1,9 @@
+{
+ "tables": {
+  "world_relation_pair_draft": {"owner":"src/app/storage/world-relation-pair.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"source_id":{"type":"TEXT","transfer":"local"},"write_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"world_relation_pair_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "world_relation_pair_history": {"owner":"src/app/storage/world-relation-pair.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"world_relation_pair_history"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "world_relation_pair_history_receipt": {"owner":"src/app/storage/world-relation-pair.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"world_relation_pair_history_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "world_relation_pair_history_state": {"owner":"src/app/storage/world-relation-pair.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"cursor":{"type":"INTEGER","transfer":"opaque"}}},
+  "world_relation_pair_receipt": {"owner":"src/app/storage/world-relation-pair.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"source_id":{"type":"TEXT","transfer":"local"},"target_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"world_relation_pair_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

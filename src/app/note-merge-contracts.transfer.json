@@ -1,0 +1,9 @@
+{
+ "roles": {
+  "NoteMergeChange.basis": "external",
+  "NoteMergeChange.gmNotes": "text",
+  "NoteMergeChange.id": "local",
+  "NoteMergeChange.readAloud": "text",
+  "NoteMergeChange.targetId": "local"
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "roles": {
+  "FinishDraft.items[].name": "text",
+  "FinishDraft.items[].quantity": "text",
+  "FinishDraft.items[].valueGold": "text",
+  "FinishDraft.loadXp": "text",
+  "FinishDraft.outcome": "text",
+  "FinishDraft.poolXp": "text",
+  "FinishDraft.recipientIds[]": "local",
+  "FinishDraft.targetId": "local",
+  "FinishDraft.writeId": "local"
+ }
+}

@@ -1,0 +1,11 @@
+{
+ "roles": {
+  "PlayerAsset.id": "local",
+  "PlayerAsset.sha256": "external",
+  "PlayerAsset.subjectId": "local",
+  "PlayerAsset.title": "text",
+  "PlayerSettings.boundSceneId": "local",
+  "PlayerSettings.imageId": "local",
+  "PlayerSettings.title": "text"
+ }
+}

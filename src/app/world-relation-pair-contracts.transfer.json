@@ -1,0 +1,15 @@
+{
+ "roles": {
+  "WorldRelationPairAction.forwardLabel": "text",
+  "WorldRelationPairAction.reverseLabel": "text",
+  "WorldRelationPairAction.sourceId": "local",
+  "WorldRelationPairAction.targetId": "local",
+  "WorldRelationPairCommand.campaignId": "local",
+  "WorldRelationPairCommand.commandId": "local",
+  "WorldRelationPairCommand.draftWriteId": "local",
+  "WorldRelationPairCommand.token": "token",
+  "WorldRelationPairDraft.writeId": "local",
+  "WorldRelationPairHistoryView.redoLabel": "text",
+  "WorldRelationPairHistoryView.undoLabel": "text"
+ }
+}

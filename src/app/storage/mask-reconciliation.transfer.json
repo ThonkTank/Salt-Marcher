@@ -1,0 +1,12 @@
+{
+ "roles": {
+  "MaskReconciliationReceipt.campaignId": "local",
+  "MaskReconciliationReceipt.commandId": "local",
+  "MaskReconciliationReceipt.ownerId": "local",
+  "MaskReconciliationReceipt.removedCharacterIds[]": "local",
+  "MaskReconciliationReceipt.sceneId": "local"
+ },
+ "tables": {
+  "mask_reconciliation_receipt": {"owner":"src/app/storage/mask-reconciliation.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"owner_kind":{"type":"TEXT","transfer":"opaque"},"owner_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"mask_reconciliation_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

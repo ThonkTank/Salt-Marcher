@@ -1,0 +1,7 @@
+{
+ "roles": {
+  "NoteThreadSelection.entries[].id": "local",
+  "NoteThreadSelection.entries[].stamp": "text",
+  "NoteThreadSelection.rootId": "local"
+ }
+}

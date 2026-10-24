@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "chase": {"owner":"src/app/storage/chase.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"status":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"chase"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "chase_receipt": {"owner":"src/app/storage/chase.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"chase_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

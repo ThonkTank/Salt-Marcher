@@ -1,0 +1,18 @@
+{
+ "roles": {
+  "Creature": "opaque",
+  "CreatureCatalogQuery.alignments[]": "text",
+  "CreatureCatalogQuery.conditionImmunities": "text",
+  "CreatureCatalogQuery.habitats[]": "text",
+  "CreatureCatalogQuery.immunities": "text",
+  "CreatureCatalogQuery.movement": "text",
+  "CreatureCatalogQuery.resistances": "text",
+  "CreatureCatalogQuery.senses": "text",
+  "CreatureCatalogQuery.sizes[]": "text",
+  "CreatureCatalogQuery.sourceIds[]": "text",
+  "CreatureCatalogQuery.subtypes[]": "text",
+  "CreatureCatalogQuery.text": "text",
+  "CreatureCatalogQuery.types[]": "text",
+  "CreatureCatalogQuery.vulnerabilities": "text"
+ }
+}

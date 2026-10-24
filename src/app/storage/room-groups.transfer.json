@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "room_group": {"owner":"src/app/storage/room-groups.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"room_group"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

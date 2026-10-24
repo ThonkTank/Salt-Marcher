@@ -1,3 +1,4 @@
+import {validateTransferSnapshot} from '../transfer/registry';
 import {installSourceCellIndex} from './atlas-source-cell';
 import DATA_FORMAT from '../data-format.json';
 import {atlasProjectionSource,installAtlasShapeSource} from './atlas-shape-source';
@@ -1149,7 +1150,7 @@ export class CampaignStore {
       await this.db.backup(candidate);this.campaignFence(id,fence);
       const db=new Database(candidate,{fileMustExist:true});let snapshot;
       try{
-        db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);validateDatabase(db);
+        db.pragma('journal_mode=DELETE');pruneCampaignSnapshot(db,id);validateDatabase(db);validateTransferSnapshot(db);
         const c:Pick<Campaign,'id'|'name'>=db.prepare('SELECT id,name FROM campaign').get();
         snapshot={...c,fence,schema:db.pragma('user_version',{simple:true}),counts:snapshotCounts(db),media:[...audioMediaFiles(db),...playerMediaFiles(db,id)]};
       }finally{db.close();}
@@ -1166,7 +1167,7 @@ export class CampaignStore {
     validateRoomGroups(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
-    validateCampaignSnapshotSettings(db,c.id);
+    validateCampaignSnapshotSettings(db,c.id);validateTransferSnapshot(db);
     return{...c,schema,counts:snapshotCounts(db),media:[...audioMediaFiles(db),...playerMediaFiles(db,rows[0].id)],conflicts:definitionConflicts(this.db,db)};
   }
   campaignPreview(filename:string){const db=new Database(filename,{readonly:true,fileMustExist:true});try{return this.inspectCampaignDatabase(db);}finally{db.close();}}

@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "treasury_draft": {"owner":"src/app/storage/treasury.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"treasure_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"treasury_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

@@ -1,0 +1,8 @@
+{
+ "tables": {
+  "player_asset": {"owner":"src/app/storage/player.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"subject_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"player_asset"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "player_discovery": {"owner":"src/app/storage/player.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"character_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"subject_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"player_discovery"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "player_receipt": {"owner":"src/app/storage/player.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"command_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"}}},
+  "player_record": {"owner":"src/app/storage/player.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"id":{"type":"TEXT","transfer":{"role":"local","fixed":{"kind":["settings"]}}},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"variant":"kind","models":{"settings":"player_record_settings","observer":"player_record_observer","mask":"player_record_mask"}}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}
