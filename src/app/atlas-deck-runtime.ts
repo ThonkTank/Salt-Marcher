@@ -7,4 +7,5 @@ export {AtlasDeckLabels} from './atlas-deck-labels';
 
 export {atlasTilePlan} from './atlas-tile-plan';
 export {AtlasTileStream} from './atlas-tile-stream';
+export {AtlasMaterialTileStream} from './atlas-material-tile-stream';
 export {atlasGeometryTileModel} from './atlas-geometry-tile';

@@ -162,10 +162,28 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Native Terrainantwort nach Ergänzung jetzt 2.190 ms, frischer Vollaufbau
   1.822 ms. Gleiche Puffer, Screenshots und Autoreninhalte; alle drei Prozesse
   regulär beendet. Snapshot, 64-Bit-Rowids und Rollback über Blockgrenzen geprüft.
+- **M2-Materialnachladung:** Terrain und Material teilen jetzt einen begrenzten
+  Rasterkachelstrom. [36 Regressionen und native M0-Prüfung](../../reference/atlas-material-stream-20261024/README.md)
+  belegen die sichtbare Elternkachel während verzögerter Nachladung, den atomaren
+  Wechsel auf vier Kinder, gröberen Wiederbesuch und fünf unveränderte Materialkanäle
+  aus dem Cache nach Neustart. Zwei reguläre Prozessenden, gleiche Autoreninhalte.
+  Lokale Invalidierung samt Eltern und Undo/Redo ist separat automatisiert geprüft;
+  die native Probe schreibt keine Autorenänderung. Technische Rohfarbenansicht,
+  keine GPU-Komposition oder Zeitmessung des normalen Atlas.
+  Unabhängig bestätigt: 20 überholende Aufträge lassen 20 Fetches offen; ihre
+  Antworten werden verworfen, laufende Arbeit ist damit noch nicht begrenzt.
+  Schon im Terrain-Vorgänger vorhanden; Abbruch/Parallelität in M3 qualifizieren.
+- **Qualitätsgegenprobe 24.10.:** Ein exakt 150 m² großer Waldstreifen verschwindet
+  im Produktionsraster bei LOD2 vollständig, während LOD0-Kinder rund 301 m²
+  Waldabdeckung liefern. Die Alpha-Fläche bleibt gleich und hätte den Fehler
+  verdeckt. Der [Vergleich dreier Ansätze](../../reference/atlas-material-stream-20261024/README.md#entscheidende-qualitätsgegenprobe)
+  priorisiert Flächenintegration aus Quellen als nächsten Prototyp: Kindmittelung
+  bewahrt den Feinfehler und verzögert die Übersicht; feste Mehrfachabtastung
+  erhöht Kosten ohne Flächengarantie. Noch kein ungeprüfter Ersatz im Produktpfad.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Die Materialstufen in wechselnden Maßstäben der vollständigen Mischwelt prüfen:
-  gröbere Daten während der Nachladung, lokale Änderungen bis zu Elternkacheln
-  und Wiederverwendung nach Neustart müssen gemeinsam funktionieren.
+  Flächengetreue Materialabdeckung prototypisieren und gegen schmale Flächen,
+  Löcher, überlappende Autorenflächen, Wasser-/Pigmentfolge und weiche Vegetation
+  prüfen; Laufzeit und Speicher begrenzen. Physische Höhenfelder erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
   normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;

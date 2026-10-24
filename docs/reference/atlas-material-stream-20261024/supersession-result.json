@@ -1,0 +1,12 @@
+{
+  "probe": "docs/reference/atlas-material-stream-20261024/supersession-probe.mjs",
+  "supersedingLoads": 20,
+  "callsBeforeResolve": 20,
+  "outstandingBeforeResolve": 20,
+  "maximumOutstanding": 20,
+  "lateRepliesResolved": 21,
+  "stalePostSupersessionFrames": 0,
+  "finalGeneration": 20,
+  "complete": true,
+  "waves": 2
+}
