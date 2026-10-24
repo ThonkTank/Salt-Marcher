@@ -9,7 +9,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import Database from 'better-sqlite3';
 import {takeTerrainTrace} from '../src/app/terrain-timing';
 import { AtlasRegionReader } from '../src/app/storage/atlas-region';
-import {AtlasReadCancelled} from '../src/app/storage/atlas-read-cancellation';
+import {atlasReadCheckpoint,AtlasReadCancelled} from '../src/app/storage/atlas-read-cancellation';
 
 const db = new Database(workerData.filename, { readonly: true, fileMustExist: true }),pyramid=new TerrainScalePyramid();
 let index:AtlasProjectionIndex,reader:AtlasRegionReader;
@@ -51,6 +51,7 @@ parentPort!.on('message', async (job: any) => {
     if(job.kind==='terrain-live'||job.kind==='terrain-stroke'||job.kind==='terrain'||job.kind==='terrain-color'||job.kind==='terrain-refine'||job.kind==='terrain-tile'||job.kind==='material-tile'||job.kind==='geometry-tile'){
       assertTerrainRevision(job.source);
     }
+    atlasReadCheckpoint(job.cancellation)();
     const endSync=terrainTraceStart("region.sync",job.source.revision);
     syncStarted=true;await reader.sync(job.source,geometry,job.kind==='geometry-tile'?'field':'full');pyramid.sync(db,job.source);endSync();
     if(job.kind==='terrain-stroke'){
@@ -66,7 +67,9 @@ parentPort!.on('message', async (job: any) => {
       const query=JSON.stringify([job.kind,job.query,job.base]);
       if(!job.continuation)projection={fence:job.source.fence,query,steps:job.kind==='geometry-tile'?geometryTiles.read(job.source,job.query,reader):job.kind==='material-tile'?materialTiles.read(job.source,job.query,reader):job.kind==='terrain-tile'?terrainTiles.read(job.source,job.query,reader):job.kind==='terrain-refine'?reader.liveTerrainSteps(job.source,job.query,job.base):job.kind==='terrain-color'?reader.colorSteps(job.source,job.query):reader.terrainSteps(job.source,job.query)};
       if(!projection||projection.fence!==job.source.fence||projection.query!==query)throw Error('Geländeberechnung inzwischen ersetzt.');
+      atlasReadCheckpoint(job.cancellation)();
       const step=projection.steps.next();
+      atlasReadCheckpoint(job.cancellation)();
       if(!step.done){
         endRead();db.exec('COMMIT');
         const terrainTrace=takeTerrainTrace();parentPort!.postMessage({value:{terrainProjectionContinuation:true},...(terrainTrace?{terrainTrace}:{})});return;
@@ -85,6 +88,7 @@ parentPort!.on('message', async (job: any) => {
   } catch (error) {
     endRead?.();
     if(error instanceof AtlasReadCancelled&&readStarted){
+      projection=undefined;
       // Read iterators have unwound. Keep the completed TEMP index maintenance:
       // rolling it back would make every camera successor rebuild the world.
       db.exec('COMMIT');

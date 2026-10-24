@@ -1,3 +1,4 @@
+import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
 import {AtlasWriteActivity} from './atlas-write-activity';
 import {clearCampaignStaging,discardCampaignTickets,finishCampaignErasure} from './campaign-erasure';
 import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
@@ -450,19 +451,22 @@ else {
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Geometriekachel inzwischen geändert.');
       return value;
     });
-    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest)=>{
+    handle('atlas:cancel-read',(token:string,control:AtlasReadRequest)=>{store.atlasRegionSource(token);if(!control)throw Error('Kartenleseauftrag fehlt.');validateAtlasReadRequest(control);atlasRegions.cancelRead(control,token);atlasExportRegions.cancelRead(control,token);});
+    handle('atlas:terrain-tile',async(token:string,q:import('../src/app/atlas-terrain-tile').AtlasTerrainTileRequest,control?:AtlasReadRequest)=>{
+      validateAtlasReadRequest(control);
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasTerrainTileQuery(q);
-      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      const source=store.atlasRegionSource(token,atlasExportRegions.cursor);
       if(source.revision!==q.revision)throw Error('Atlaskachel inzwischen geändert.');
-      const value=await atlasRegions.terrainTile(source,q);
+      const value=await atlasExportRegions.terrainTile(source,q,control);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Atlaskachel inzwischen geändert.');
       return value;
     });
-    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest)=>{
+    handle('atlas:material-tile',async(token:string,q:import('../src/app/atlas-material-tile').AtlasMaterialTileRequest,control?:AtlasReadRequest)=>{
+      validateAtlasReadRequest(control);
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');atlasMaterialTileQuery(q);
-      const source=store.atlasRegionSource(token,atlasRegions.cursor);
+      const source=store.atlasRegionSource(token,atlasExportRegions.cursor);
       if(source.revision!==q.revision)throw Error('Materialkachel inzwischen geändert.');
-      const value=await atlasRegions.materialTile(source,q);
+      const value=await atlasExportRegions.materialTile(source,q,control);
       if(store.atlasRegionSource(token).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
       return value;
     });

@@ -1,0 +1,124 @@
+{
+  "runtimeSha256": "566735701a4016586ecaaf183358fe5fe88b6dab440aa63ffd74139d236e2052",
+  "result": {
+    "changed": 163910,
+    "sameGpuModel": true,
+    "samePositions": true,
+    "frames": [
+      {
+        "tiles": 0,
+        "complete": false
+      },
+      {
+        "tiles": 1,
+        "complete": false
+      },
+      {
+        "tiles": 1,
+        "complete": false
+      },
+      {
+        "tiles": 1,
+        "complete": true
+      }
+    ],
+    "hit": {
+      "id": "terrain-tile:-2/0/0",
+      "target": {
+        "kind": "terrain"
+      },
+      "point": {
+        "x": 24,
+        "y": 24,
+        "heightM": 140
+      }
+    },
+    "heightSum": 119599.32503509521,
+    "materialCache": {
+      "water": "built",
+      "baseColor": "built",
+      "forest": "built",
+      "rock": "built",
+      "snow": "built"
+    }
+  },
+  "contours": {
+    "loaded": true,
+    "modelRetained": true
+  },
+  "recovery": {
+    "beforeSize": [
+      800,
+      600
+    ],
+    "afterSize": [
+      800,
+      600
+    ],
+    "newCanvas": true,
+    "canvases": 1,
+    "sameCamera": true,
+    "samePixels": true,
+    "changedBytes": 0
+  },
+  "reopen": {
+    "heightCache": "hit",
+    "materialCache": {
+      "baseColor": "hit",
+      "water": "hit",
+      "forest": "hit",
+      "rock": "hit",
+      "snow": "hit"
+    },
+    "heightSum": 119599.32503509521
+  },
+  "errors": [],
+  "complete": true,
+  "scope": "Isolated GPU material and canonical tile bridge; not Workbench tool qualification.",
+  "source": "bdd3e3de30f9f4b77611e4929ae46cec53c30920",
+  "dirty": true,
+  "profile": "/home/aaron/.cache/saltmarcher/ui/atlas-raster-gpu-5wPX8y",
+  "artifacts": {
+    "main.cjs": "85be392a5ec497c459931a5226a93472e5d6516e3ae95452c6d52c2af4e1ab97",
+    "preload.cjs": "344d475107f8297ff1274b2f31d07a2832a493d8bb3d9ca03a3b454653220fcd",
+    "atlas-region-worker.cjs": "4f1ec355abda077e77af4e5f229fb8673f974cc8321258eca71200e8dd0e88c4",
+    "room-directory-worker.cjs": "b61b58757865fc64921204032a5ced3953e07f3c081e17022c44be4e663bc968",
+    "terrain-route-worker.cjs": "425ac662e26d3d763edd68f538abd73fee2017f22fe2a6a5144e7f983be06de9",
+    "backup-validation-worker.cjs": "7e2d6ae9728e2488dc63c48fb9b1b6a85b4fb1ba733fa54101704e38263fc903",
+    "ui/renderer.js": "3f9f944edf9985f117a899c4cafd8ddb857c28df9b93a84128655a5e906d3856",
+    "ui/atlas-brush-worker.js": "b5522a0b10dd5a64190856471e4f6d5db2426b4465edd3cd3ff5e7a0d8b349bd",
+    "ui/terrain-spatial-worker.js": "3989b2656a354747214a4ab18e371df6a206a82a3d8035e3cd5fc1c7d46bdfc5",
+    "ui/index.html": "86ad43fe210bd1c23fab901655bec943a0e86f8b28b90a2c73444b53009527a3",
+    "ui/app.css": "c004535d90f8b9256ac903048a42b94f61ca40364c12cfbe773ac7b6a6199bb5"
+  },
+  "launches": [
+    {
+      "pid": 1721279,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "platform": {
+        "requested": "default",
+        "desktopSession": "wayland"
+      },
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    },
+    {
+      "pid": 1721445,
+      "zoom": 1,
+      "cgroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.chromium.Chromium-3009.scope",
+      "platform": {
+        "requested": "default",
+        "desktopSession": "wayland"
+      },
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "pidAbsent": true
+    }
+  ]
+}

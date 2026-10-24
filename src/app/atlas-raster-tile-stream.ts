@@ -33,6 +33,8 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
   private readonly maxBytes: number;
   private readonly maxTiles: number;
   private generation = 0;
+  private fetchTail:Promise<unknown>=Promise.resolve();
+  private controller=new AbortController();
   private disposed = false;
   private identity: string | undefined;
   private visible = new Map<string, CachedTile<T>>();
@@ -49,11 +51,12 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
 
   async load(
     input: AtlasRasterStreamInput,
-    fetch: (request: R) => Promise<T>,
+    fetch: (request: R, signal:AbortSignal) => Promise<T>,
     publish: (frame: AtlasRasterStreamFrame<T>) => void,
   ): Promise<void> {
     if (this.disposed) throw new Error('Atlas tile stream is disposed');
     const generation = ++this.generation;
+    this.controller.abort();this.controller=new AbortController();
     if (!input || !Number.isSafeInteger(input.revision) || input.revision < 0 || typeof input.source !== 'string' || !input.source
       || typeof fetch !== 'function' || typeof publish !== 'function') {
       throw new Error('Atlas tile stream input is invalid');
@@ -169,6 +172,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.controller.abort();
     this.generation++;
     this.visible.clear();
     this.staged.clear();
@@ -179,7 +183,7 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
   private async getTile(
     request: R,
     source: string,
-    fetch: (request: R) => Promise<T>,
+    fetch: (request: R, signal:AbortSignal) => Promise<T>,
     generation: number,
     keepKeys: Set<string>,
   ): Promise<CachedTile<T> | undefined> {
@@ -191,7 +195,18 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
       return cached;
     }
 
-    const reply = await fetch(request);
+    // A superseded load cannot launch another physical fetch. Even consumers
+    // that do not support cancellation have at most one outstanding request.
+    const signal=this.controller.signal,previous=this.fetchTail;
+    let release!:()=>void;
+    this.fetchTail=new Promise<void>(resolve=>{release=resolve;});
+    let reply:T;
+    try{
+      await previous;
+      if(!this.isCurrent(generation)||signal.aborted)return undefined;
+      reply=await fetch(request,signal);
+    }catch(error){if(!this.isCurrent(generation)||signal.aborted)return undefined;throw error;}
+    finally{release();}
     if (!this.isCurrent(generation)) return undefined;
     this.adapter.validate(reply, request, source);
     const entry = {tile: reply, key, bytes: estimateBytes(reply)};

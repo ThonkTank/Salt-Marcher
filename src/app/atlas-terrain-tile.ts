@@ -3,14 +3,15 @@ import type {TerrainProjection,TerrainProjectionRequest} from './terrain-project
 
 export const ATLAS_TERRAIN_TILE_PIXELS=256;
 export const ATLAS_TERRAIN_TILE_NODES=65;
-export interface AtlasTerrainTileRequest {tile:AtlasWorldTile;revision:number;contours?:number}
+export interface AtlasTerrainTileRequest {tile:AtlasWorldTile;revision:number;contours?:number;product?:'height'}
 export interface AtlasTerrainTile {
   tile:AtlasWorldTile;revision:number;fence:string;
   cache:'hit'|'built'|'disabled';projection:TerrainProjection;
 }
 /** Display tiles have a fixed lattice; neither camera pose nor window size is a key. */
 export function atlasTerrainTileQuery(request:AtlasTerrainTileRequest,fence?:string):TerrainProjectionRequest {
-  if(!request||Object.keys(request).some(k=>!['tile','revision','contours'].includes(k))||
+  if(!request||Object.keys(request).some(k=>!['tile','revision','contours','product'].includes(k))||
+    request.product!==undefined&&request.product!=='height'||
     !request.tile||Object.keys(request.tile).some(k=>!['lod','x','y'].includes(k))||
     !Number.isSafeInteger(request.revision)||request.revision<0||request.tile.lod< -8||request.tile.lod>32||
     request.contours!==undefined&&(!Number.isFinite(request.contours)||request.contours<0&&request.contours!==-1||request.contours>100000))throw Error('Atlaskachel prüfen.');

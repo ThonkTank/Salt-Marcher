@@ -12,7 +12,7 @@ export interface TerrainProjectionRequest {
  detail?:import('./atlas-landscape').LandscapeBox;detailResolution?:number;view:TerrainView;width:number;height:number;contours:number;displayMpp:number;
  revision:number;fence?:string;objects?:TerrainObjectSource[];heightStroke?:HeightStroke;color?:LandscapeRecord;
 }
-export interface TerrainProjection extends SpatialReply {revision:number;fence:string;colorChange?:import('./terrain-change-history').TerrainColorChange}
+export interface TerrainProjection extends SpatialReply {/** Height-only tile: no colour payload is present. */ heightOnly?:true;revision:number;fence:string;colorChange?:import('./terrain-change-history').TerrainColorChange}
 /** Display-only request: source heights never cross this boundary from the caller. */
 export function validateTerrainProjection(q:TerrainProjectionRequest){
  if(!q)throw Error('Geländeansicht prüfen.');

@@ -124,10 +124,10 @@ test('a superseded same-source camera request cannot publish or cache its late o
   const oldLoad=stream.load(input('world',{x:0,y:0,width:256,height:256}),async()=>{oldFetches++;return late.promise;},frame=>frames.push(frame));
   await turn();
   const beforeReplacement=frames.length;
-  await stream.load(input('world',{x:512,y:0,width:256,height:256}),async request=>{newFetches++;return reply(request);},frame=>frames.push(frame));
+  const replacement=stream.load(input('world',{x:512,y:0,width:256,height:256}),async request=>{newFetches++;return reply(request);},frame=>frames.push(frame));
   const currentGeneration=frames.at(-1).generation;
   late.resolve(reply({tile:{lod:2,x:0,y:0},revision:7,contours:0}));
-  await oldLoad;
+  await Promise.all([oldLoad,replacement]);
   assert.ok(frames.slice(beforeReplacement).every(frame=>frame.generation===currentGeneration));
   const oldCount=oldFetches;
   await stream.load(input('world',{x:0,y:0,width:256,height:256}),async request=>{oldFetches++;return reply(request);},()=>{});
@@ -159,10 +159,10 @@ test('new source and same tile address invalidate blocked prior generations',asy
   const first=stream.load(input('old'),async request=>{calls.old++;return oldPending.promise;},frame=>frames.push(frame));
   await turn();
   const afterOldStart=frames.length;
-  await stream.load(input('new'),async request=>{calls.new++;return reply(request,'new');},frame=>frames.push(frame));
+  const second=stream.load(input('new'),async request=>{calls.new++;return reply(request,'new');},frame=>frames.push(frame));
   const newGeneration=frames.at(-1).generation;
   oldPending.resolve(reply({tile:{lod:2,x:0,y:0},revision:7,contours:0},'old'));
-  await first;
+  await Promise.all([first,second]);
   assert.ok(frames.slice(afterOldStart).every(frame=>frame.generation===newGeneration));
   const oldCallsBefore=calls.old;
   await stream.load(input('old'),async request=>{calls.old++;return reply(request,'old');},()=>{});

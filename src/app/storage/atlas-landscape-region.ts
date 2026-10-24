@@ -1,3 +1,4 @@
+import {readTerrainGridSteps} from './terrain-grid';
 import {readTerrainMaterialSteps} from './terrain-material';
 import {terrainHeightBlocks} from './terrain-height-blocks';
 import {AtlasProjectionIndex} from './atlas-projection-index';
@@ -202,6 +203,12 @@ export class AtlasLandscapeReader {
   const stream:import('./terrain-color-raster').ProjectionStream=(kind,box,samples)=>kind==='line'?this.lines(source,box):this.rows(source,box,true,samples?{width:samples.columns/2,height:samples.rows/2}:0,0,kind);
   stream.heightSources=(box,samples)=>this.terrainKinds.has('height')?terrainHeightBlocks(text=>this.sql(text),this.projectionCache,source.campaignId,box,samples,this.sampleMath):[];
   return stream;
+ }
+ *heightSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
+  this.requireFull();
+  let start=performance.now();function* checkpoint(){if(performance.now()-start>=8){yield;start=performance.now();}}
+  const grid=yield* readTerrainGridSteps(this.db,source.campaignId,q.view,checkpoint,this.terrainStream(source),this.projectionCache);
+  return {heightOnly:true,revision:source.revision,fence:source.fence,source:source.fence,generation:0,grid,pixels:new Uint8Array(0),width:0,height:0,draft:false};
  }
  materialSteps(source:AtlasRegionSource,q:import('../atlas-material-tile').AtlasMaterialTileRequest,channels:ReadonlySet<import('../terrain-material').TerrainMaterialChannel>){
   this.requireFull();

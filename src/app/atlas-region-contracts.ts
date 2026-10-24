@@ -59,8 +59,9 @@ export interface AtlasRegionSource {
 export interface AtlasCitySite {header:CityHeader;unit:CityUnit|null;related:CityUnit[];factions:{id:string;name:string}[];canUndo:boolean;canRedo:boolean}
 export interface AtlasRegionAPI {
  atlasGeometryTile(token:string,request:import('./atlas-geometry-tile').AtlasGeometryTileRequest):Promise<import('./contracts').Result<import('./atlas-geometry-tile').AtlasGeometryTile>>;
- atlasTerrainTile(token:string,request:import('./atlas-terrain-tile').AtlasTerrainTileRequest):Promise<import('./contracts').Result<import('./atlas-terrain-tile').AtlasTerrainTile>>;
- atlasMaterialTile(token:string,request:import('./atlas-material-tile').AtlasMaterialTileRequest):Promise<import('./contracts').Result<import('./atlas-material-tile').AtlasMaterialTile>>;
+ atlasCancelRead(token:string,control:import('./atlas-read-request').AtlasReadRequest):Promise<import('./contracts').Result<void>>;
+ atlasTerrainTile(token:string,request:import('./atlas-terrain-tile').AtlasTerrainTileRequest,control?:import('./atlas-read-request').AtlasReadRequest):Promise<import('./contracts').Result<import('./atlas-terrain-tile').AtlasTerrainTile>>;
+ atlasMaterialTile(token:string,request:import('./atlas-material-tile').AtlasMaterialTileRequest,control?:import('./atlas-read-request').AtlasReadRequest):Promise<import('./contracts').Result<import('./atlas-material-tile').AtlasMaterialTile>>;
  /** Cheap terrain bootstrap; no object index or geometry response is implied. */
  atlasTerrainSource(token:string):Promise<import('./contracts').Result<{revision:number}>>;
  atlasRegion(token:string,query:AtlasRegionQuery,consumer?:'view'|'export'):Promise<import('./contracts').Result<AtlasRegionView>>;

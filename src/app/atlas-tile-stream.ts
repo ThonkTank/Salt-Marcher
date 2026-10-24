@@ -5,7 +5,7 @@ import type {AtlasWorldTile} from './atlas-world-tiles.js';
 export type AtlasTileStreamOptions = AtlasRasterStreamOptions;
 export type AtlasTileStreamInput = AtlasRasterStreamInput;
 export type AtlasTileStreamFrame = AtlasRasterStreamFrame<AtlasTerrainTile>;
-export type AtlasTerrainTileFetcher = (request: AtlasTerrainTileRequest) => Promise<AtlasTerrainTile>;
+export type AtlasTerrainTileFetcher = (request: AtlasTerrainTileRequest, signal:AbortSignal) => Promise<AtlasTerrainTile>;
 export type AtlasTileStreamPublisher = (frame: AtlasTileStreamFrame) => void;
 
 /** Terrain specialization of the shared bounded raster pyramid. */

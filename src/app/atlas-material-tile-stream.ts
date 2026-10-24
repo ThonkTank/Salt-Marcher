@@ -6,7 +6,7 @@ import {CHANNEL_NAMES} from './terrain-material.js';
 export type AtlasMaterialTileStreamOptions = AtlasRasterStreamOptions;
 export type AtlasMaterialTileStreamInput = Omit<AtlasRasterStreamInput,'contours'>;
 export type AtlasMaterialTileStreamFrame = AtlasRasterStreamFrame<AtlasMaterialTile>;
-export type AtlasMaterialTileFetcher = (request: AtlasMaterialTileRequest) => Promise<AtlasMaterialTile>;
+export type AtlasMaterialTileFetcher = (request: AtlasMaterialTileRequest, signal:AbortSignal) => Promise<AtlasMaterialTile>;
 export type AtlasMaterialTilePublisher = (frame: AtlasMaterialTileStreamFrame) => void;
 
 /** Complete raw material channels refine together under the same raster budget. */

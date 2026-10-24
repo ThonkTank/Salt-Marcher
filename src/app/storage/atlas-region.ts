@@ -96,6 +96,7 @@ export class AtlasRegionReader {
  private navigationTerrain(){if(this.landscapeFailure)throw Error('Geländequelle konnte nicht gelesen werden.');this.landscape.projectionCache.tiles.clearRetained();return this.landscape;}
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return this.navigationTerrain().terrain(source,q);}
  colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){return this.navigationTerrain().colorSteps(source,q);}
+ heightSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return this.navigationTerrain().heightSteps(source,q);}
  materialSteps(source:AtlasRegionSource,q:import('../atlas-material-tile').AtlasMaterialTileRequest,channels:ReadonlySet<import('../terrain-material').TerrainMaterialChannel>){return this.navigationTerrain().materialSteps(source,q,channels);}
  terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){return this.navigationTerrain().terrainSteps(source,q);}
  liveTerrain(source:AtlasRegionSource,q:import('../terrain-presentation').TerrainFrameQuery,base?:TerrainFrameIdentity):import('../terrain-presentation').TerrainFrame{

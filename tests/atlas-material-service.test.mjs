@@ -37,6 +37,13 @@ test('real worker returns five independent material channels, reuses them after 
   assert.equal(warm.cache[name],'hit',`${name} is reused after worker restart`);
   assert.deepEqual(Buffer.from(warm.channels[name]),firstBytes[name],`${name} bytes survive restart`);
  }
+ const control={owner:'terrain-test',id:'cancel-me'};
+ const onYield=reply=>{if(reply?.value?.terrainProjectionContinuation){service.worker.off('message',onYield);service.cancelRead(control,'another-campaign-token');assert.equal(Atomics.load(service.activeRead.signal,0),0,'another campaign cannot cancel the read');service.cancelRead({...control,id:'old-request'},token);assert.equal(Atomics.load(service.activeRead.signal,0),0,'an obsolete request cannot cancel its successor');service.cancelRead(control,token);}};
+ service.worker.on('message',onYield);
+ await assert.rejects(service.materialTile(warmSource,{tile:{lod:0,x:1,y:0},revision:warmSource.revision},control),/abgebrochen|ersetzt/);
+ assert.equal(store.atlasRegionSource(token).revision,warmSource.revision,'read cancellation never changes author data');
+ const afterCancel=await service.materialTile(store.atlasRegionSource(token,service.cursor),{tile,revision:warmSource.revision});
+ assert.deepEqual(afterCancel.channels,warm.channels,'cancelled work leaves cached exact tiles reusable');
  store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'undo'}});
  await assert.rejects(service.materialTile(warmSource,{tile,revision:warmSource.revision}),/inzwischen geändert/);
  // A commit after an actual worker yield must also reject the partially prepared

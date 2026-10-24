@@ -1,3 +1,7 @@
+import {terrainContourStep} from './terrain-contour-style';
+import {AtlasTerrainMaterialLayer} from './atlas-terrain-material-layer';
+import type {AtlasTerrainTileModel} from './atlas-terrain-tile-model';
+import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
 import {Deck, COORDINATE_SYSTEM, type Color, type DeckProps, type Layer} from '@deck.gl/core';
 import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
 import {atlasMetricFrame, AtlasMetricView, atlasMetricZoomAt, atlasMetricPanAt,
@@ -21,6 +25,8 @@ export interface AtlasDeckSurfaceOptions {
   onCamera?: (camera: AtlasMetricCamera) => void;
   onError?: (error: Error) => void;
   timeoutMs?: number;
+  /** Existing Workbench owns input when used through AtlasPresentation. */
+  externalInput?:boolean;
   /** Unit-test seam; production always uses the pinned Deck runtime. */
   createDeck?: (props: DeckProps<AtlasMetricView[]>) => Deck<AtlasMetricView[]>;
 }
@@ -98,10 +104,14 @@ export class AtlasDeckSurface {
   private modelValue: AtlasDeckSceneModel;
   private frameValue: Frame;
   private labels: readonly AtlasDeckLabel[];
+  private terrain:readonly AtlasTerrainTileModel[]=[];
+  private terrainStyle:Readonly<TerrainStyle>=DEFAULT_TERRAIN_STYLE;
+  private terrainDisplay={contours:0,seaLevelM:0};
   private labelLayout: AtlasDeckLabels | null = null;
   private disposed = false;
   private loaded = false;
   private lost = false;
+  private failure:Error|null=null;
   private generation = 0;
   private revision = 0;
   private renderedRevision = -1;
@@ -133,6 +143,11 @@ export class AtlasDeckSurface {
 
   private makeCanvas(): HTMLCanvasElement {
     const canvas = this.options.container.ownerDocument.createElement('canvas');
+    // Deck can emit its first afterRender before its ResizeObserver runs. Give
+    // the recreated context the real framebuffer dimensions before that frame.
+    const ratio=globalThis.devicePixelRatio??1;
+    canvas.width=Math.max(1,Math.round(this.frameValue.viewport.width*ratio));
+    canvas.height=Math.max(1,Math.round(this.frameValue.viewport.height*ratio));
     canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Atlas');
     Object.assign(canvas.style, {width: '100%', height: '100%', display: 'block', touchAction: 'none'});
     this.options.container.append(canvas);
@@ -146,7 +161,7 @@ export class AtlasDeckSurface {
     if (!this.loaded || this.lost) return;
     this.deckValue!.setProps({width: this.frameValue.viewport.width, height: this.frameValue.viewport.height,
       views: [new AtlasMetricView({id: 'atlas-metric', frame: this.frameValue})],
-      viewState: {}, layers: [...atlasDeckSceneLayers(this.modelValue, this.frameValue), ...this.labelLayers()]});
+      viewState: {}, layers: [...this.terrainLayers(), ...atlasDeckSceneLayers(this.modelValue, this.frameValue), ...this.labelLayers()]});
   }
   setCamera(camera: AtlasMetricCamera): void {
     this.guard();
@@ -159,6 +174,23 @@ export class AtlasDeckSurface {
     this.guard();
     if (model === this.modelValue) return;
     this.modelValue = model; this.publish();
+  }
+  setTerrain(tiles:readonly AtlasTerrainTileModel[],style:Readonly<TerrainStyle>=this.terrainStyle,display=this.terrainDisplay):void {
+    this.guard();this.terrain=tiles;this.terrainStyle=style;this.terrainDisplay=display;this.publish();
+  }
+  private terrainLayers():Layer[]{
+    const frame=this.frameValue;
+    return this.terrain.map(tile=>new AtlasTerrainMaterialLayer({
+      id:`atlas-scene:${tile.object.id}`,data:tile.data,mesh:tile.mesh,baseColor:tile.texture,
+      masks:tile.masks,terrainStyle:this.terrainStyle,heightOrigin:tile.object.origin.heightM,
+      ...this.terrainDisplay,automaticStep:terrainContourStep(frame.camera.metersPerPixel),pixelRatio:globalThis.devicePixelRatio??1,
+      coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,
+      getPosition:[tile.object.origin.x-frame.origin.x,tile.object.origin.y-frame.origin.y,(tile.object.origin.heightM-frame.origin.z)*frame.camera.exaggeration],
+      getScale:[1,1,frame.camera.exaggeration],getColor:[255,255,255,255],material:false,pickable:'3d',
+      textureParameters:{minFilter:'linear',magFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'},
+      updateTriggers:{getPosition:[frame.origin.x,frame.origin.y,frame.origin.z,frame.camera.exaggeration],getScale:frame.camera.exaggeration},
+      getPolygonOffset:()=>[0,0],parameters:{depthWriteEnabled:true,depthCompare:'less-equal',cullMode:'none'}
+    }));
   }
   setLabels(labels: readonly AtlasDeckLabel[]): void {
     this.guard(); this.labels = labels; this.publish();
@@ -185,25 +217,27 @@ export class AtlasDeckSurface {
     const object = info?.object as AtlasDeckSceneObject | undefined;
     // Treat renderer output as untrusted: overview layers are non-pickable, and
     // only the exact canonical scene object instances have semantic targets.
-    if (!info?.picked || info.index !== 0 || !object || !this.modelValue.objects.some(candidate => candidate === object) ||
-      info.layer?.id !== `atlas-scene:${object.id}` || this.modelValue.targets.get(object.id) !== object.target) return null;
+    const terrainHit=object&&this.terrain.some(tile=>tile.object===object);
+    if (!info?.picked || info.index !== 0 || !object || (!terrainHit&&(!this.modelValue.objects.some(candidate => candidate === object)||this.modelValue.targets.get(object.id)!==object.target)) ||
+      info.layer?.id !== `atlas-scene:${object.id}`) return null;
     const segment = this.frameValue.ray({x, y});
     const point = segment ? refineAtlasDeckRayHit({object, segment})?.point ?? null : null;
     return {id: object.id, target: object.target, point};
   }
   waitForFrame(): Promise<void> {
     this.guard();
+    if(this.failure)return Promise.reject(this.failure);
     if (this.frameUsable) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const waiter = {resolve: () => { clearTimeout(timer); this.waiters.delete(waiter); resolve(); },
         reject: (error: Error) => { clearTimeout(timer); this.waiters.delete(waiter); reject(error); }};
-      const timer = setTimeout(() => waiter.reject(new Error('Atlas frame readiness timeout')), this.options.timeoutMs ?? 15000);
+      const timer = setTimeout(() => waiter.reject(new Error(`Atlas frame readiness timeout (loaded=${this.loaded}, lost=${this.lost}, revision=${this.revision}, rendered=${this.renderedRevision})`)), this.options.timeoutMs ?? 15000);
       this.waiters.add(waiter);
     });
   }
   private async start(): Promise<void> {
     const generation = ++this.generation;
-    this.loaded = false; this.lost = false; this.renderedRevision = -1;
+    this.loaded = false; this.lost = false; this.failure=null; this.renderedRevision = -1;
     this.bindInput();
     const ready = this.waitForFrame();
     try {
@@ -220,6 +254,7 @@ export class AtlasDeckSurface {
         },
         onAfterRender: () => {
           if (this.disposed || !this.loaded || this.lost || generation !== this.generation) return;
+          if((this.deckValue?.props.layers??[]).some(layer=>layer&&'isLoaded' in layer&&layer.isLoaded===false))return;
           this.renderedRevision = this.revision;
           for (const waiter of [...this.waiters]) waiter.resolve();
         },
@@ -230,6 +265,7 @@ export class AtlasDeckSurface {
   }
   private fail(value: unknown): void {
     const error = value instanceof Error ? value : new Error(String(value));
+    this.failure=error;
     ++this.generation; // Fence even a delayed onLoad after a failed GPU initialization.
     this.renderedRevision = -1; this.loaded = false;
     for (const waiter of [...this.waiters]) waiter.reject(error);
@@ -239,6 +275,7 @@ export class AtlasDeckSurface {
     const canvas = this.canvasValue;
     type Events = HTMLElementEventMap & {webglcontextlost: Event};
     const listen = <K extends keyof Events>(type: K, callback: (event: Events[K]) => void, options?: AddEventListenerOptions) => {
+      if(this.options.externalInput&&type!=='webglcontextlost')return;
       canvas.addEventListener(type, callback as EventListener, options); this.listeners.push(() => canvas.removeEventListener(type, callback as EventListener, options));
     };
     const pixel = (event: MouseEvent) => { const r = canvas.getBoundingClientRect(); return {x: event.clientX - r.left, y: event.clientY - r.top}; };

@@ -14,7 +14,7 @@ export interface TerrainMaterialChannels {
 
 export type PartialTerrainMaterialChannels = {-readonly [K in keyof TerrainMaterialChannels]?:TerrainMaterialChannels[K]};
 
-/** Internal raster result; topology fingerprints the four water samples for dependent channels. */
+/** Internal raster result; topology fingerprints the water samples for dependent channels. */
 export type TerrainMaterialRaster = PartialTerrainMaterialChannels & {
-  waterTopology?: Uint8Array;
+  waterTopology?: Uint16Array;
 };

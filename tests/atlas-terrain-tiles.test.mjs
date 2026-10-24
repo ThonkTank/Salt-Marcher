@@ -16,9 +16,9 @@ function fixture(t){
   let db,reader,tiles,cursor;
   const reopen=()=>{tiles?.close();db?.close();db=new Database(store.filename,{readonly:true});reader=new AtlasRegionReader(db);tiles=new AtlasTerrainTiles(db,dir+'/cache');cursor=undefined;};reopen();
   t.after(()=>{tiles.close();db.close();store.close();rmSync(dir,{recursive:true,force:true});});
-  const read=async(tile,overrides={})=>{
+  const read=async(tile,overrides={},product)=>{
     cursor=store.atlasRegionSource(token,cursor);db.exec('BEGIN');
-    try{await reader.sync(cursor,false);const steps=tiles.read({...cursor,...overrides},{tile,revision:cursor.revision},reader);
+    try{await reader.sync(cursor,false);const steps=tiles.read({...cursor,...overrides},{tile,revision:cursor.revision,...(product?{product}:{})},reader);
       for(;;){const step=steps.next();if(step.done){db.exec('COMMIT');return step.value;}}
     }catch(e){db.exec('ROLLBACK');throw e;}
   };
@@ -95,4 +95,19 @@ test('an edit across a tile boundary refreshes both halos with identical shared 
   const n=l.projection.grid.view.columns;
   for(let y=0;y<n;y++)assert.equal(l.projection.grid.heights[y*n+n-1],r.projection.grid.heights[y*n]);
   f.reopen();assert.equal((await f.read(left)).cache,'hit');assert.equal((await f.read(right)).cache,'hit');
+});
+
+
+test('height-only tiles bypass colour rasterization and remain separate from reference tiles on reopen',async t=>{
+ const f=fixture(t),tile={lod:0,x:0,y:0};
+ f.write({kind:'landscape-put',expectedRevision:null,record:heightRecord(0,0,4,new Float32Array(4096).fill(75))});
+ const original=LandscapeRasterizer.prototype.finish;let calls=0;
+ LandscapeRasterizer.prototype.finish=function(...args){calls++;return original.apply(this,args);};
+ t.after(()=>{LandscapeRasterizer.prototype.finish=original;});
+ const height=await f.read(tile,{},'height');
+ assert.equal(calls,0);assert.equal(height.projection.heightOnly,true);assert.equal(height.projection.pixels.length,0);
+ const reference=await f.read(tile);assert(calls>0);assert.deepEqual(height.projection.grid.heights,reference.projection.grid.heights);
+ const before=calls;f.reopen();const warm=await f.read(tile,{},'height');assert.equal(warm.cache,'hit');assert.equal(calls,before);
+ assert.equal(warm.projection.heightOnly,true);assert.deepEqual(warm.projection.grid.heights,height.projection.grid.heights);
+ assert.equal((await f.read(tile)).projection.heightOnly,undefined);
 });

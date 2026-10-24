@@ -27,7 +27,7 @@ class FakeDeck {
   setProps(props){this.setPropsCalls.push(props);this.props={...this.props,...props};}
   redraw(reason){this.redrawCalls.push(reason);}
   fireLoad(){this.props.onLoad?.();}
-  fireRender(){this.props.onAfterRender?.();}
+  fireRender(){for(const layer of this.props.layers??[])Object.defineProperty(layer,'isLoaded',{value:true,configurable:true});this.props.onAfterRender?.();}
   fireError(error=new Error('fake Deck failure')){this.props.onError?.(error);}
   pickObject(args){this.pickCalls.push(args);return this.pickResult;}
   finalize(){this.finalizeCalls++;}
@@ -173,4 +173,16 @@ test('foreign, stale and wrong-layer pick results are rejected',async t=>{
   deck.pickResult=picked(current);
   assert.equal(surface.pick(320,240)?.id,current.id);
   surface.dispose();
+});
+
+
+test('pending textures delay readiness and the original GPU failure rejects later waiters immediately',async t=>{
+ const {surface,deck}=await readySurface(t);
+ surface.setCamera({...camera,rotation:20});
+ let done=false;const pending=surface.waitForFrame().then(()=>{done=true;});
+ // Deck has not yet uploaded this layer's asynchronous texture.
+ deck.props.onAfterRender();await Promise.resolve();assert.equal(done,false);
+ deck.fireRender();await pending;assert.equal(done,true);
+ const error=new Error('texture allocation failed');deck.fireError(error);
+ await assert.rejects(surface.waitForFrame(),e=>e===error);assert.equal(surface.frameUsable,false);surface.dispose();
 });

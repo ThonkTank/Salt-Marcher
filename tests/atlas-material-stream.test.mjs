@@ -183,13 +183,14 @@ test('a superseded material load cannot publish or cache its late reply',async()
   const oldLoad=stream.load(input({x:0,y:0,width:256,height:256}),async()=>{oldFetches++;return late.promise;},frame=>frames.push(frame));
   await turn();
   const beforeReplacement=frames.length;
-  await stream.load({...input({x:512,y:0,width:256,height:256}),source:'replacement'},async request=>{
+  const replacement=stream.load({...input({x:512,y:0,width:256,height:256}),source:'replacement'},async request=>{
     newFetches++;
     return materialReply(request,1,'replacement');
   },frame=>frames.push(frame));
   const currentGeneration=frames.at(-1).generation;
+  await turn();assert.equal(newFetches,0,'replacement waits for physical ownership');
   late.resolve(materialReply({tile:{lod:2,x:0,y:0},revision:19}));
-  await oldLoad;
+  await Promise.all([oldLoad,replacement]);
   assert.ok(frames.slice(beforeReplacement).every(frame=>frame.generation===currentGeneration));
   const oldCount=oldFetches;
   await stream.load(input({x:0,y:0,width:256,height:256}),async request=>{oldFetches++;return materialReply(request);},()=>{});
@@ -208,3 +209,14 @@ test('disposed material stream drops blocked replies without publishing them',as
   assert.deepEqual(frames[0].tiles,[]);
   await assert.rejects(stream.load(input(),async request=>materialReply(request),()=>{}),/disposed/i);
 });
+
+ test('twenty camera supersessions keep one physical fetch and abort obsolete ownership',async()=>{
+  const stream=new AtlasMaterialTileStream(),gate=deferred(),frames=[];let calls=0,signal;
+  const first=stream.load(input(),async(request,s)=>{calls++;signal=s;await gate.promise;return materialReply(request);},frame=>frames.push(frame));
+  await turn();const loads=[first];
+  for(let i=1;i<=20;i++)loads.push(stream.load(input({x:i*256,y:0,width:256,height:256}),async request=>{calls++;return materialReply(request);},frame=>frames.push(frame)));
+  await turn();assert.equal(calls,1);assert(signal.aborted);
+  gate.resolve();await Promise.all(loads);
+  assert.equal(calls,3,'only final overview and detail follow the initial fetch');
+  assert.equal(frames.at(-1).complete,true);assert.equal(frames.at(-1).generation,21);
+ });

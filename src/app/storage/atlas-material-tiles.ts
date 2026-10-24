@@ -10,14 +10,14 @@ import {projectionKey} from './atlas-projection-index';
 import {readTerrainSettings} from './terrain-color-raster';
 import type {AtlasRegionReader} from './atlas-region';
 
-const FORMAT='material-tiles-v1';
+const FORMAT='material-tiles-v2-area4';
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
-type Stored={version:string;fingerprint:string;bytes:Uint8Array;waterTopology?:Uint8Array};
+type Stored={version:string;fingerprint:string;bytes:Uint8Array;waterTopology?:Uint16Array};
 type Inputs={water:string;baseColor:string;forest:string;rock:string;snow:string};
 function validStored(value:Stored|undefined,channel:TerrainMaterialChannel,width:number,height:number):value is Stored {
  return !!value&&typeof value.version==='string'&&typeof value.fingerprint==='string'&&value.bytes instanceof Uint8Array&&
   value.bytes.length===width*height*(channel==='baseColor'?4:1)&&
-  (channel!=='water'||value.waterTopology instanceof Uint8Array&&value.waterTopology.length===width*height);
+  (channel!=='water'||value.waterTopology instanceof Uint16Array&&value.waterTopology.length===width*height);
 }
 function reply(source:AtlasRegionSource,request:AtlasMaterialTileRequest,width:number,height:number,channels:TerrainMaterialRaster,cache:AtlasMaterialTile['cache']):AtlasMaterialTile {
  return {tile:{...request.tile},revision:source.revision,fence:source.fence,width,height,channels:channels as TerrainMaterialChannels,cache};
@@ -105,7 +105,7 @@ export class AtlasMaterialTiles {
    for(const c of CHANNEL_NAMES){channels[c]=old.get(c)!.bytes;states[c]='hit';}
   }else{
    const inputs=cache?yield* this.inputs(source,request):undefined;
-   let built:TerrainMaterialRaster={},waterTopology:Uint8Array|undefined;
+   let built:TerrainMaterialRaster={},waterTopology:Uint16Array|undefined;
    const water=old.get('water');
    if(water&&inputs&&(water.version===source.shapeVersion||water.fingerprint===inputs.water)){channels.water=water.bytes;waterTopology=water.waterTopology;states.water='hit';}
    else {
@@ -115,7 +115,7 @@ export class AtlasMaterialTiles {
    }
    // Ground colour and vegetation depend on water classification, not the exact
    // elevation that produced it. Raising dry land leaves these channels reusable.
-   const waterIdentity=digest(waterTopology!),fingerprints=inputs?{water:inputs.water,
+   const waterIdentity=digest(new Uint8Array(waterTopology!.buffer,waterTopology!.byteOffset,waterTopology!.byteLength)),fingerprints=inputs?{water:inputs.water,
     baseColor:digest(inputs.baseColor+waterIdentity),forest:digest(inputs.forest+waterIdentity),
     rock:digest(inputs.rock+waterIdentity),snow:digest(inputs.snow+waterIdentity)}:undefined;
    const missing=new Set<TerrainMaterialChannel>();

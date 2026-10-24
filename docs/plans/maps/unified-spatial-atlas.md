@@ -25,7 +25,8 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
 
 ## Aktueller Arbeitsstand
 
-- **Aktive Etappe:** M2 – persistente Darstellungspyramide aufbauen.
+- **Aktive Etappe:** M2/M3/M4 als zusammenhängender Raster-/GPU-Pfad; danach
+  einen vollständigen Bearbeitungsablauf aus M6 im normalen Workbench anschließen.
 - **Status:** M0 und der isolierte M1-Kern abgeschlossen; M2–M8 offen. [Aktuelle Ausgangsmessungen und Etappenprüfung](../../reference/atlas-rebuild-m0-20261023/README.md)
   sowie [vollständige Übernahmeliste](../../reference/atlas-rebuild-m0-20261023/inventory.md)
   liegen vor. Produktcode und Leistungsstand sind durch M0 noch nicht verbessert.
@@ -298,23 +299,31 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   9.678 auf 713 ms. Die volle Flusskachel bleibt mit 7,30 s zu langsam, ihre
   Arbeitszahl sinkt nicht. Kanonische Punktberechnung und Produktpfad bleiben
   unverändert; keine native Produktbeschleunigung oder vollständige Weltabnahme.
-- **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Die noch fehlenden feldabhängigen Materialstufen, Masken sowie Fels/Schnee
-  ergänzen und mit eigenen Gegenproben absichern. Die jetzt auswertbaren vollen
-  physischen Materialkacheln unter tatsächlicher Weltlast messen; dabei Küsten- und
-  Flusskosten sowie die aktiven Quellen-/Index-/Arbeitsspeicherbudgets prüfen.
-  Physisches Wasser und feldabhängige Grundmaterialien
-  über `AtlasRegionReader.materialSteps`/`readTerrainMaterialSteps` beziehungsweise
-  dieselben kanonischen Feldsemantiken anbinden; gezeichnete Wasserpolygone allein
-  sind kein Ersatz. Die Probe muss auch bisher nicht unterstützte Datensätze
-  korrekt behandeln, statt sie aus einer vermeintlichen Weltabnahme auszufiltern.
-  Anschließend tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
-  und Kachelcacheversion sowie produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
-  physische Höhenfelder und Autorenabsicht erhalten.
-  Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
-  aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
-  normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
-  der native Kernnachweis ist getrennt vom gemessenen Produktgewinn zu führen.
+- **Vereinfachung auf Nutzerauftrag (24.10.):** Feste 256×256-Kacheln mit
+  mehreren Detailstufen ersetzen die geplante allgemeine adaptive Materialintegration
+  im Laufzeitpfad. Polygonränder erhalten geometrische Pixeldeckung; variable
+  Materialien verwenden ein festes 4×4-Abtastraster. Die bisherigen Prototypen
+  bleiben Referenzversuche, sind aber keine vorgeschaltete Lieferbedingung mehr.
+  Kanonische Höhen, Werkzeuge und gespeicherte Autorenabsicht bleiben exakt nach
+  den bestehenden Regeln; ihre Bildschirmdarstellung ist eine begrenzte Näherung.
+  Eine universelle garantierte Materialabweichung von 1/255 ist kein Laufzeitziel.
+- **Raster-/GPU-Zwischenstand:** [57 Regressionen und native Probe](../../reference/atlas-raster-gpu-20261024/README.md). Flächendeckung, versionierte Materialkacheln,
+  separate Höhenkacheln ohne Farbraster, gemeinsamer Höhen-/Materialstrom sowie
+  besitzergebundener Leseabbruch sind implementiert. Eine native isolierte
+  deck.gl-Probe zeigt Materialänderung ohne Meshneubau und kanonisches Picking.
+  Der normale Atlas verwendet weiterhin seinen Referenzrenderer. Werkzeugübernahme,
+  vollständiger Export, WASM und Zielgeräte-Leistung sind damit nicht abgenommen.
+- **Nächste Arbeit:** Den gemeinsamen Kachelstrom über `AtlasPresentation` mit
+  dem normalen Atlas und den vorhandenen Werkzeugen verbinden. Zuerst Gelände
+  öffnen, bearbeiten, unmittelbar einen Folgezug beginnen, Undo/Redo und
+  Save/Reopen zusammenhängend prüfen. Dann sämtliche M0-Objekte und Ausgaben
+  übernehmen. Fels, Schnee, Licht und Höhenlinien werden auf der GPU erzeugt;
+  die verbleibenden CPU-Fels-/Schneekanäle gehören nur zur Übergangsreferenz.
+  Rust/WASM übernimmt anschließend den gemessenen begrenzten Rasterkern.
+  Kalte Übersicht, LOD-Nähte, Küsten, kleine Inseln, dünne Flüsse, weiche Ränder,
+  gekrümmtes Relief und aktive Ressourcen bleiben verpflichtende Gegenproben.
+  Erst vollständige Funktionsübernahme und Qualifikation erlauben den
+  Standardwechsel und das Entfernen ersetzter Pfade.
 - **Fortschrittsführung:** Nur diesen Abschnitt für aktive Etappe, Beleg, Ergebnis
   und nächste Arbeit fortschreiben. Produktgewinn und offene Grenzen ausdrücklich benennen.
 
@@ -403,6 +412,10 @@ Projektionskorrekturen und ungenutzte Abhängigkeiten. Historische Belege bleibe
 - Kachelanbindung vollständig im Atlas besitzen; persistente Daten, Nachladung,
   Invalidierung und begrenzter Cache verwenden dieselben stabilen Weltadressen.
 
+- 256×256-Pixel-Materialkacheln mit festen Weltadressen ableiten; harte Polygonränder
+  geometrisch integrieren, variable Felder mit festem 4×4-Raster abtasten.
+  Grobe Kacheln direkt aus Quellen oder vorhandenen feineren Produkten gewinnen;
+  niemals alle Kinder allein für eine Übersicht zwangsweise aufbauen.
 - Vorhandene persistente räumliche Indizes um Höhen-, Grundfarben-, Material-,
   Vegetations- und Geometriedetailstufen ergänzen.
 - Zuerst eine kleine nutzbare Übersicht bereitstellen; benötigte Details nach
@@ -435,8 +448,8 @@ Die kalte Gegenprobe grenzt diese Alternativen inzwischen genauer ein:
 
 Eine spätere räumliche Vorbereitung mit vollständigen Abhängigkeiten bleibt
 möglich; der Versuch widerlegt nur den pauschalen Kamerafilter. Der belegte warme
-Ersatz und die kalte Bibliotheksgegenprobe rechtfertigen weder einen
-WASM-/Rendererwechsel noch eine vermeintlich abgeschlossene M2-Etappe.
+Ersatz und die kalte Bibliotheksgegenprobe schließen M2 nicht ab. Der neue
+Raster-/GPU-Pfad wird aufgrund des Nutzerauftrags vorgezogen und separat geprüft.
 
 **Abschluss:** Eine unveränderte Welt benötigt beim erneuten Öffnen keine
 vollständige Terrain- oder Geometrieaufbereitung. Lokale Änderungen erneuern
@@ -467,7 +480,7 @@ WASM liefert fachlich gleichwertige Ergebnisse und übernimmt reale Produktberec
 
 **Setzt Ansatz 2 um.**
 
-- Kamerazentrierte Höhenfeld-Clipmaps mit wiederverwendeten GPU-Puffern implementieren.
+- Stabile Weltkacheln und Detailstufen mit wiederverwendeten GPU-Puffern implementieren.
 - Höhe, Wasser, Grundfarbe und Materialmasken getrennt laden und lokal aktualisieren.
 - Fels, Schnee, Beleuchtung und Höhenlinien aus den aktuellen Daten auf der GPU darstellen.
 - Übergänge zwischen Auflösungen, Küsten, Wassergrenzen und große Koordinaten ohne
@@ -541,9 +554,13 @@ Funktion benötigt den alten Atlas.
 **Abschluss:** Alle acht Ansätze haben eine nachgewiesene Produktfunktion; die
 vollständige Atlasfläche erfüllt die gemeinsamen Abnahmekriterien.
 
-**Reihenfolge:** M0 → M1 → M2 → M3 → M4 → M5 → M6 → M7 → M8.
-Jede Etappe wird an einem vollständigen Nutzerablauf beurteilt. Zwischenstände
-dürfen isoliert bleiben, bis sie zusammenhängend lieferfähig sind.
+**Umsetzungsfolge nach Vereinfachung:** Auf M0/M1 folgen die benötigten Teile von
+M2/M3/M4 gemeinsam und unmittelbar ein vollständiger Bearbeitungsablauf aus M6.
+Anschließend folgen die übrige Objekt-/Werkzeugübernahme aus M5/M7, der
+Rust/WASM-Rasterkern aus M3 und die vollständige M8-Qualifikation. Alle acht
+Produktansätze und Liefergates bleiben verbindlich; Materialprototypen blockieren
+keinen praktisch prüfbaren Arbeitsablauf mehr. Isolierte technische Belege zählen
+weiterhin nicht als Funktionsübernahme oder gemessene Produktbeschleunigung.
 
 <a id="4-verbindliche-abnahme-und-testfälle"></a>
 

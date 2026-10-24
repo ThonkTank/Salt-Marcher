@@ -1,0 +1,353 @@
+TAP version 13
+# Subtest: 150 square metre subpixel forest survives overview and all sixteen children
+ok 1 - 150 square metre subpixel forest survives overview and all sixteen children
+  ---
+  duration_ms: 6367.866623
+  type: 'test'
+  ...
+# Subtest: pixel clipping retains holes, concave disconnected pieces and translated thin polygons
+ok 2 - pixel clipping retains holes, concave disconnected pieces and translated thin polygons
+  ---
+  duration_ms: 312.182102
+  type: 'test'
+  ...
+# Subtest: curved relief finishes with fixed sampling and finite channels without an adaptive work budget
+ok 3 - curved relief finishes with fixed sampling and finite channels without an adaptive work budget
+  ---
+  duration_ms: 512.589297
+  type: 'test'
+  ...
+# Subtest: polygons outside a tile do not wrap typed-array fill ranges into visible pixels
+ok 4 - polygons outside a tile do not wrap typed-array fill ranges into visible pixels
+  ---
+  duration_ms: 0.757424
+  type: 'test'
+  ...
+# Subtest: fixed 64-pixel batches retain the unsplit tile sample phase and polygon edge coverage
+ok 5 - fixed 64-pixel batches retain the unsplit tile sample phase and polygon edge coverage
+  ---
+  duration_ms: 1234.147751
+  type: 'test'
+  ...
+# Subtest: create waits for Deck onLoad and a real afterRender before resolving
+ok 6 - create waits for Deck onLoad and a real afterRender before resolving
+  ---
+  duration_ms: 45.599601
+  type: 'test'
+  ...
+# Subtest: camera, scene and resize revisions invalidate picking until latest Deck render
+ok 7 - camera, scene and resize revisions invalidate picking until latest Deck render
+  ---
+  duration_ms: 17.526187
+  type: 'test'
+  ...
+# Subtest: timeout cleans Deck, observer and canvas; disposed surfaces ignore late callbacks
+ok 8 - timeout cleans Deck, observer and canvas; disposed surfaces ignore late callbacks
+  ---
+  duration_ms: 24.414588
+  type: 'test'
+  ...
+# Subtest: GPU context recovery retains camera/model and replaces one canvas with a fresh Deck
+ok 9 - GPU context recovery retains camera/model and replaces one canvas with a fresh Deck
+  ---
+  duration_ms: 6.325132
+  type: 'test'
+  ...
+# Subtest: Deck errors fail closed and never permit stale picking
+ok 10 - Deck errors fail closed and never permit stale picking
+  ---
+  duration_ms: 3.717503
+  type: 'test'
+  ...
+# Subtest: a late Deck load cannot revive a replacement generation after its startup error
+ok 11 - a late Deck load cannot revive a replacement generation after its startup error
+  ---
+  duration_ms: 4.305193
+  type: 'test'
+  ...
+# Subtest: mesh geometry and instance data survive camera, snapped-origin and exaggeration changes
+ok 12 - mesh geometry and instance data survive camera, snapped-origin and exaggeration changes
+  ---
+  duration_ms: 3.743342
+  type: 'test'
+  ...
+# Subtest: foreign, stale and wrong-layer pick results are rejected
+ok 13 - foreign, stale and wrong-layer pick results are rejected
+  ---
+  duration_ms: 3.522349
+  type: 'test'
+  ...
+# Subtest: pending textures delay readiness and the original GPU failure rejects later waiters immediately
+ok 14 - pending textures delay readiness and the original GPU failure rejects later waiters immediately
+  ---
+  duration_ms: 3.547705
+  type: 'test'
+  ...
+# Subtest: real worker returns five independent material channels, reuses them after restart, and rejects stale revisions
+ok 15 - real worker returns five independent material channels, reuses them after restart, and rejects stale revisions
+  ---
+  duration_ms: 3597.996246
+  type: 'test'
+  ...
+# Subtest: material frames publish complete, address-matched channels and replace a parent only after all detail children arrive
+ok 16 - material frames publish complete, address-matched channels and replace a parent only after all detail children arrive
+  ---
+  duration_ms: 23.185731
+  type: 'test'
+  ...
+# Subtest: a malformed material channel cannot be published or cached
+ok 17 - a malformed material channel cannot be published or cached
+  ---
+  duration_ms: 15.231305
+  type: 'test'
+  ...
+# Subtest: stale material revision, fence, and address replies are rejected before publication or caching
+ok 18 - stale material revision, fence, and address replies are rejected before publication or caching
+  ---
+  duration_ms: 6.092461
+  type: 'test'
+  ...
+# Subtest: same-source pan retains intersecting material tiles while newly exposed detail loads
+ok 19 - same-source pan retains intersecting material tiles while newly exposed detail loads
+  ---
+  duration_ms: 7.943267
+  type: 'test'
+  ...
+# Subtest: default tile cap coarsens a dense viewport to a bounded completed material frame
+ok 20 - default tile cap coarsens a dense viewport to a bounded completed material frame
+  ---
+  duration_ms: 6.241096
+  type: 'test'
+  ...
+# Subtest: material byte limits count oversized backing buffers behind exact-size channel views
+ok 21 - material byte limits count oversized backing buffers behind exact-size channel views
+  ---
+  duration_ms: 2.875324
+  type: 'test'
+  ...
+# Subtest: a superseded material load cannot publish or cache its late reply
+ok 22 - a superseded material load cannot publish or cache its late reply
+  ---
+  duration_ms: 7.458905
+  type: 'test'
+  ...
+# Subtest: disposed material stream drops blocked replies without publishing them
+ok 23 - disposed material stream drops blocked replies without publishing them
+  ---
+  duration_ms: 2.941722
+  type: 'test'
+  ...
+# Subtest: twenty camera supersessions keep one physical fetch and abort obsolete ownership
+ok 24 - twenty camera supersessions keep one physical fetch and abort obsolete ownership
+  ---
+  duration_ms: 8.116522
+  type: 'test'
+  ...
+# Subtest: raw channels persist across restart; lighting, analysis mode, contours and names cannot invalidate them
+ok 25 - raw channels persist across restart; lighting, analysis mode, contours and names cannot invalidate them
+  ---
+  duration_ms: 2433.823884
+  type: 'test'
+  ...
+# Subtest: snowline rebuilds only snow, pigment only base colour, vegetation density only forest
+ok 26 - snowline rebuilds only snow, pigment only base colour, vegetation density only forest
+  ---
+  duration_ms: 5035.560978
+  type: 'test'
+  ...
+# Subtest: dry height changes preserve ground colour and forest; local parents update while distant tiles reuse; Undo restores
+ok 27 - dry height changes preserve ground colour and forest; local parents update while distant tiles reuse; Undo restores
+  ---
+  duration_ms: 5502.865589
+  type: 'test'
+  ...
+# Subtest: equal water coverage with different subpixel topology cannot reuse the old painted colour
+ok 28 - equal water coverage with different subpixel topology cannot reuse the old painted colour
+  ---
+  duration_ms: 2155.185392
+  type: 'test'
+  ...
+# Subtest: one missing cache channel rebuilds only that product and never publishes an incomplete tile
+ok 29 - one missing cache channel rebuilds only that product and never publishes an incomplete tile
+  ---
+  duration_ms: 943.387449
+  type: 'test'
+  ...
+# Subtest: shadow and untracked material sources stay ephemeral; stale revisions reject
+ok 30 - shadow and untracked material sources stay ephemeral; stale revisions reject
+  ---
+  duration_ms: 606.637322
+  type: 'test'
+  ...
+# Subtest: material fingerprints preserve adjacent SQLite rowids beyond JavaScript integer precision
+ok 31 - material fingerprints preserve adjacent SQLite rowids beyond JavaScript integer precision
+  ---
+  duration_ms: 1667.028552
+  type: 'test'
+  ...
+# Subtest: a surface publishes and caches height/material together, rejecting mixed sources
+ok 32 - a surface publishes and caches height/material together, rejecting mixed sources
+  ---
+  duration_ms: 13.565306
+  type: 'test'
+  ...
+# Subtest: preload adapter cancels only its current read and never starts material after an aborted height
+ok 33 - preload adapter cancels only its current read and never starts material after an aborted height
+  ---
+  duration_ms: 2.899165
+  type: 'test'
+  ...
+# Subtest: 20 superseded paired loads launch only the blocked old request and final source
+ok 34 - 20 superseded paired loads launch only the blocked old request and final source
+  ---
+  duration_ms: 15.746417
+  type: 'test'
+  ...
+# Subtest: warm reopen reuses binary products; local edits rebuild affected leaf and parent only; Undo restores pixels
+ok 35 - warm reopen reuses binary products; local edits rebuild affected leaf and parent only; Undo restores pixels
+  ---
+  duration_ms: 2673.728237
+  type: 'test'
+  ...
+# {"coldRasterCalls":48,"totalRasterCalls":112,"cacheFileNamespace":"2d1f7a184b52222a5806233fd7abb05aff8d967e4af24aef97490837491793a2"}
+# Subtest: untracked or shadow sources never publish; malformed request and stale revision reject
+ok 36 - untracked or shadow sources never publish; malformed request and stale revision reject
+  ---
+  duration_ms: 591.122877
+  type: 'test'
+  ...
+# Subtest: campaign erasure removes only its shared tile namespace and leaves canonical bytes unchanged
+ok 37 - campaign erasure removes only its shared tile namespace and leaves canonical bytes unchanged
+  ---
+  duration_ms: 758.947346
+  type: 'test'
+  ...
+# Subtest: rendered colour and forest coverage persist together and global sea settings invalidate distant tiles
+ok 38 - rendered colour and forest coverage persist together and global sea settings invalidate distant tiles
+  ---
+  duration_ms: 1525.831439
+  type: 'test'
+  ...
+# Subtest: an edit across a tile boundary refreshes both halos with identical shared height nodes
+ok 39 - an edit across a tile boundary refreshes both halos with identical shared height nodes
+  ---
+  duration_ms: 1403.758424
+  type: 'test'
+  ...
+# Subtest: height-only tiles bypass colour rasterization and remain separate from reference tiles on reopen
+ok 40 - height-only tiles bypass colour rasterization and remain separate from reference tiles on reopen
+  ---
+  duration_ms: 784.802174
+  type: 'test'
+  ...
+# Subtest: overview remains until every planned child is ready, then swaps atomically
+ok 41 - overview remains until every planned child is ready, then swaps atomically
+  ---
+  duration_ms: 19.098141
+  type: 'test'
+  ...
+# Subtest: cold start publishes the first overview tile while a later overview tile is blocked
+ok 42 - cold start publishes the first overview tile while a later overview tile is blocked
+  ---
+  duration_ms: 5.228295
+  type: 'test'
+  ...
+# Subtest: same-source pan keeps intersecting tiles visible while the new detail set loads
+ok 43 - same-source pan keeps intersecting tiles visible while the new detail set loads
+  ---
+  duration_ms: 6.114773
+  type: 'test'
+  ...
+# Subtest: same-source zoom retains the old frame until overview tiles arrive
+ok 44 - same-source zoom retains the old frame until overview tiles arrive
+  ---
+  duration_ms: 3.700829
+  type: 'test'
+  ...
+# Subtest: source, revision, and contour changes revoke the prior visible frame immediately
+ok 45 - source, revision, and contour changes revoke the prior visible frame immediately
+  ---
+  duration_ms: 1.893107
+  type: 'test'
+  ...
+# Subtest: a superseded same-source camera request cannot publish or cache its late overview
+ok 46 - a superseded same-source camera request cannot publish or cache its late overview
+  ---
+  duration_ms: 2.772085
+  type: 'test'
+  ...
+# Subtest: several parents refine progressively without coarse/fine overlap
+ok 47 - several parents refine progressively without coarse/fine overlap
+  ---
+  duration_ms: 2.373951
+  type: 'test'
+  ...
+# Subtest: new source and same tile address invalidate blocked prior generations
+ok 48 - new source and same tile address invalidate blocked prior generations
+  ---
+  duration_ms: 2.493047
+  type: 'test'
+  ...
+# Subtest: reply address, revision, top-level fence and projection fence are all checked before caching
+ok 49 - reply address, revision, top-level fence and projection fence are all checked before caching
+  ---
+  duration_ms: 3.619031
+  type: 'test'
+  ...
+# Subtest: dispose invalidates an in-flight result and stops later publication
+ok 50 - dispose invalidates an in-flight result and stops later publication
+  ---
+  duration_ms: 4.376206
+  type: 'test'
+  ...
+# Subtest: same-key revisits hit the LRU cache and source churn stays within its byte budget
+ok 51 - same-key revisits hit the LRU cache and source churn stays within its byte budget
+  ---
+  duration_ms: 2.548421
+  type: 'test'
+  ...
+# Subtest: captures independent raw channels with height, water, forest and ground pigment coverage
+ok 52 - captures independent raw channels with height, water, forest and ground pigment coverage
+  ---
+  duration_ms: 76.847644
+  type: 'test'
+  ...
+# Subtest: light, contour, ink, strength and relief mode do not change material bytes
+ok 53 - light, contour, ink, strength and relief mode do not change material bytes
+  ---
+  duration_ms: 30.147074
+  type: 'test'
+  ...
+# Subtest: moving the snowline changes only snow; disabling mountains clears only material weights
+ok 54 - moving the snowline changes only snow; disabling mountains clears only material weights
+  ---
+  duration_ms: 44.56782
+  type: 'test'
+  ...
+# Subtest: requested channel set avoids unrelated allocation and requires forest tracking only when requested
+ok 55 - requested channel set avoids unrelated allocation and requires forest tracking only when requested
+  ---
+  duration_ms: 19.481192
+  type: 'test'
+  ...
+# Subtest: capturing channels leaves legacy finish pixels byte-identical and cannot run after display composition
+ok 56 - capturing channels leaves legacy finish pixels byte-identical and cannot run after display composition
+  ---
+  duration_ms: 139.565358
+  type: 'test'
+  ...
+# Subtest: same-LOD neighboring crops match the corresponding complete-raster channel bytes
+ok 57 - same-LOD neighboring crops match the corresponding complete-raster channel bytes
+  ---
+  duration_ms: 45.62926
+  type: 'test'
+  ...
+1..57
+# tests 57
+# suites 0
+# pass 57
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 26019.860438

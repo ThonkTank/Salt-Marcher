@@ -9,6 +9,7 @@ import type {AtlasRegionReader} from './atlas-region';
 
 // Change for any lattice, material, source-selection or serialization semantic change.
 const FORMAT='terrain-tiles-v1';
+const tileKey=(request:AtlasTerrainTileRequest)=>JSON.stringify([request.tile.lod,request.tile.x,request.tile.y,request.contours??0,...(request.product?['height']:[])]);
 interface StoredTile {version:string;fingerprint:string;projection:TerrainProjection}
 
 /** Durable display-only products. Canonical SQLite remains read-only in this worker. */
@@ -42,20 +43,20 @@ export class AtlasTerrainTiles {
   private valid(value:StoredTile|undefined,request:AtlasTerrainTileRequest):value is StoredTile {
     if(!value||typeof value.version!=='string'||typeof value.fingerprint!=='string')return false;
     const p=value.projection,q=atlasTerrainTileQuery(request);
-    return !!p&&p.width===q.width&&p.height===q.height&&!p.draft&&
-      p.pixels instanceof Uint8Array&&p.pixels.length===q.width*q.height*4&&
-      p.forest instanceof Uint8Array&&p.forest.length===q.width*q.height&&
+    return !!p&&!p.draft&&(request.product==='height'
+      ?p.heightOnly===true&&p.width===0&&p.height===0&&p.pixels instanceof Uint8Array&&p.pixels.length===0
+      :!p.heightOnly&&p.width===q.width&&p.height===q.height&&p.pixels instanceof Uint8Array&&p.pixels.length===q.width*q.height*4&&p.forest instanceof Uint8Array&&p.forest.length===q.width*q.height)&&
       p.grid?.heights instanceof Float32Array&&p.grid.heights.length===q.view.columns*q.view.rows&&
       JSON.stringify(p.grid.view.box)===JSON.stringify(q.view.box)&&p.grid.view.columns===q.view.columns&&p.grid.view.rows===q.view.rows;
   }
   /** Exact durable-stamp lookup for callers that already validated the pinned
    * source. It deliberately skips the local content fingerprint scan. */
   cached(source:AtlasRegionSource,request:AtlasTerrainTileRequest):AtlasTerrainTile|undefined {
-    const query=atlasTerrainTileQuery(request,source.fence);
+    atlasTerrainTileQuery(request,source.fence);
     if(request.revision!==source.revision)throw Error('Atlaskachel inzwischen geändert.');
     if(!this.directory||source.shadow||!source.shapeVersion)return undefined;
     const cache=this.open(source);if(!cache)return undefined;
-    const key=JSON.stringify([request.tile.lod,request.tile.x,request.tile.y,query.contours]);
+    const key=tileKey(request);
     const old=cache.get<StoredTile>(key,FORMAT);
     if(!this.valid(old,request)||old.version!==source.shapeVersion)return undefined;
     const projection={...old.projection,revision:source.revision,fence:source.fence,source:source.fence};
@@ -64,7 +65,7 @@ export class AtlasTerrainTiles {
   *read(source:AtlasRegionSource,request:AtlasTerrainTileRequest,reader:AtlasRegionReader):Generator<void,AtlasTerrainTile> {
     const query=atlasTerrainTileQuery(request,source.fence);
     if(request.revision!==source.revision)throw Error('Atlaskachel inzwischen geändert.');
-    const cache=this.open(source),key=JSON.stringify([request.tile.lod,request.tile.x,request.tile.y,query.contours]);
+    const cache=this.open(source),key=tileKey(request);
     const old=cache?.get<StoredTile>(key,FORMAT),valid=this.valid(old,request);
     let fingerprint:string|undefined;
     if(valid&&(old.version===source.shapeVersion||(fingerprint=this.fingerprint(source,request))===old.fingerprint)){
@@ -73,7 +74,7 @@ export class AtlasTerrainTiles {
       return {tile:{...request.tile},revision:source.revision,fence:source.fence,cache:'hit',projection};
     }
     if(cache)fingerprint??=this.fingerprint(source,request);
-    const projection=yield* reader.terrainSteps(source,query);
+    const projection=yield* (request.product==='height'?reader.heightSteps(source,query):reader.terrainSteps(source,query));
     // Only complete projections are published. Every resumed worker step pins
     // and revalidates the source snapshot before reaching this point.
     if(cache)cache.put(key,FORMAT,{version:source.shapeVersion!,fingerprint:fingerprint!,projection});

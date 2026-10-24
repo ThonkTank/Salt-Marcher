@@ -13,13 +13,13 @@ export function* readTerrainMaterialSteps(db:any,source:AtlasRegionSource,reques
  let start=performance.now();function* checkpoint(){if(performance.now()-start>=8){yield;start=performance.now();}}
  const settings=readTerrainSettings(db,source.campaignId),channels:TerrainMaterialRaster={};
  for(const channel of requested)channels[channel]=new Uint8Array(q.width*q.height*(channel==='baseColor'?4:1));
- if(requested.has('water'))channels.waterTopology=new Uint8Array(q.width*q.height);
- // Fixed 128-pixel batches limit scratch buffers; their aligned sample lattices
+ if(requested.has('water'))channels.waterTopology=new Uint16Array(q.width*q.height);
+ // Fixed 64-pixel batches limit scratch buffers; their aligned sample lattices
  // and full halo produce the same pixels as an unsplit tile.
- const edge=128,colour=requested.has('baseColor'),forest=requested.has('forest');
+ const edge=64,colour=requested.has('baseColor'),forest=requested.has('forest');
  for(let y=0;y<q.height;y+=edge)for(let x=0;x<q.width;x+=edge){
   const width=Math.min(edge,q.width-x),height=Math.min(edge,q.height-y),box={x:q.view.box.x+x*q.displayMpp,y:q.view.box.y+y*q.displayMpp,width:width*q.displayMpp,height:height*q.displayMpp};
-  const image=new LandscapeRasterizer(box,width,height,0,q.displayMpp,forest),samples=image.sampleLattice();
+  const image=new LandscapeRasterizer(box,width,height,0,q.displayMpp,forest,{samples:4,areaCoverage:true,worldFeather:true}),samples=image.sampleLattice();
   image.paint(settings);
   image.setTerrainField(yield* streamTerrainFieldSteps(samples,settings.terrainSettings!.seaLevelM,stream,false,checkpoint));
   for(const r of stream('base',image.sampleBox,samples))image.paint(r);

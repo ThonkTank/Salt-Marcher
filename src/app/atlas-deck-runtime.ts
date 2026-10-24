@@ -9,3 +9,6 @@ export {atlasTilePlan} from './atlas-tile-plan';
 export {AtlasTileStream} from './atlas-tile-stream';
 export {AtlasMaterialTileStream} from './atlas-material-tile-stream';
 export {atlasGeometryTileModel} from './atlas-geometry-tile';
+
+export {atlasTerrainTileModel} from './atlas-terrain-tile-model';
+export {AtlasSurfaceTileStream,atlasSurfaceTileFetcher} from './atlas-surface-tile-stream';
