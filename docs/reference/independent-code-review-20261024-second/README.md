@@ -80,3 +80,20 @@ korrekt bedienen; deren abgebrochene Durchläufe zählen nicht als Erfolg.
 Die native Evidenz nennt den ursprünglichen HEAD und Dirty-Status sowie genaue
 Runtimehashes. Die gesonderte Integrationskopie übernimmt ausschließlich diese
 Reviewkorrekturen; die 33 zusätzlichen Atlas-Branchcommits werden nicht geliefert.
+
+## Main-basierte Lieferprüfung
+
+Die Korrekturen wurden allein auf `origin/main` (`21d250123`) übertragen.
+Dort bestanden erneut [68 gezielte Fälle](integration-tests.log.gz), beide
+Typechecks, Repositorycheck und Desktopbuild. Die
+[native Integrationsprobe](native-integration.json.gz) besteht ebenfalls mit
+allen sieben Fach-/IPC-Assertions und drei regulären Prozessenden. Ihre Quelle
+ist `aabbb8557` mit vorbereitetem Versionsbump 0.189.0; Runtimehashes stehen im
+Beleg. In der frischen Kopie wurde der zunächst fehlende Electron-Runtime über
+`npm run desktop:runtime` installiert, bevor die Probe erfolgreich lief.
+
+Die Capability-Links wurden nach tatsächlichem Testinhalt für Beziehungen,
+Partygesundheit, offene NPC-Kampfbindungen und Atlas-Belegklärung eingetragen
+und mit `--geprueft` dokumentiert. Ein Link behauptet keine vollständige Abnahme
+des gesamten jeweiligen Ablaufs. Candidate-CI und signierter Release bleiben
+gesonderte GitHub-Nachweise.
