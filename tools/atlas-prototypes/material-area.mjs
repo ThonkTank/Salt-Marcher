@@ -75,7 +75,8 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       if(!Number.isFinite(x)||!Number.isFinite(y))throw Error('Nonfinite source coordinate');
       return [(x-box.x)/dx,(y-box.y)/dy];
     })));
-    if(layer.varying&&lipschitz===0)throw Error('Varying material needs a final-channel Lipschitz bound');
+    if(layer.polynomialDegree!==undefined&&(!Number.isInteger(layer.polynomialDegree)||layer.polynomialDegree<0||layer.polynomialDegree>3))throw Error('Invalid material polynomial degree');
+    if(layer.varying&&layer.polynomialDegree===undefined&&lipschitz===0)throw Error('Varying material needs a final-channel Lipschitz bound');
     let cells;
     if(interiorFastPath){
       stats.classifierBytes+=width*height;
@@ -140,6 +141,11 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
         for(let c=0;c<channels;c++)pixels[out+c]+=value[c]*weight;
         continue;
       }
+      // Trusted source adapters may prove a polynomial degree on a whole face.
+      // Degree contributions add under source-over multiplication; declarations
+      // must include the channel state transform, not just a standalone colour.
+      const degree=face.active.reduce((sum,index)=>sum+(prepared[index].varying?(prepared[index].polynomialDegree??Infinity):0),0);
+      if(degree>3&&lipschitz===0)throw Error('Composed variable material needs a final-channel Lipschitz bound');
       for(const polygon of face.geometry){
         const rings=polygon.map(r=>r.slice(0,-1).map(p=>new Vector2(...p))),flat=rings.flat();
         const triangles=ShapeUtils.triangulateShape(rings[0],rings.slice(1));
@@ -148,6 +154,16 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
           tick();const {points:[a,b,c],depth}=stack.pop(),weight=triangleArea(a,b,c);
           if(!weight)continue;
           const center=[(a[0]+b[0]+c[0])/3,(a[1]+b[1]+c[1])/3];
+          if(degree<=3){
+            const rule=degree<=1?[[1/3,1/3,1/3,1]]:degree===2?
+              [[2/3,1/6,1/6,1/3],[1/6,2/3,1/6,1/3],[1/6,1/6,2/3,1/3]]:
+              [[1/3,1/3,1/3,-27/48],[.6,.2,.2,25/48],[.2,.6,.2,25/48],[.2,.2,.6,25/48]];
+            for(const [u,v,w,factor] of rule){
+              const value=evaluate([a[0]*u+b[0]*v+c[0]*w,a[1]*u+b[1]*v+c[1]*w]);
+              for(let k=0;k<channels;k++)pixels[out+k]+=value[k]*weight*factor;
+            }
+            continue;
+          }
           const radius=Math.max(...[a,b,c].map(p=>Math.hypot((p[0]-center[0])*dx,(p[1]-center[1])*dy)));
           const error=lipschitz*radius;
           if(error<=tolerance){

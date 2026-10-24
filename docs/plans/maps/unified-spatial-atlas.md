@@ -190,12 +190,22 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Isolierter Prototyp, keine Produkt- oder native Leistungsbehauptung.
   Adaptive weiche Integration ist noch zu teuer; der bisherige Bildschirmradius
   im Waldkanal verändert zudem die semantische Abdeckung je Zoomstufe.
+- **M2-Quellen-/Randprototyp:** [35 Prüfungen und direkte Randintegration](../../reference/atlas-material-source-prototype-20261024/README.md)
+  verbinden echte Basis-/Bewuchs-/Füllpigmentdatensätze mit der Flächenkomposition.
+  Dichtekorrekturen besitzen eigene Teilflächengrenzen; Grundmaterial und löschbares
+  Pigment bleiben getrennt. Harte Fixtures sind gegen den Produktionsraster geprüft.
+  „Waldrand in m“ und die lineare Dichtekante des Generators bestätigen den
+  Autorenradius; drei Bildpixel sind eine Darstellungsheuristik. Der explizite
+  Weltvertrag trennt diese Regeln. Konvexe Randstücke bis Polynomgrad drei werden
+  direkt integriert: Ein-Zellen-Gegenprobe im Median 196,7 → 3,93 ms, 131.072 → 16
+  Auswertungen bei analytisch richtigem Ergebnis. Höhere Grade bleiben adaptiv.
+  Noch kein produktiver Anschluss oder nativer Leistungsgewinn.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Den Quellenadapter und Kanalvertrag für weltbezogene Materialabdeckung mit
-  Autorenradius prüfen; Bildschirmweichheit separat in M4 behandeln. Reale
-  Wasser-/Pigment-/Dichtefolge gegen die Produktionsreferenz nachweisen und eine
-  tragbare Fehlerschranke für weiche Ränder entwickeln, bevor der Prototyp in
-  den Produktpfad wechselt. Physische Höhenfelder und Autorenabsicht erhalten.
+  Den Quellenvertrag um Legacy-Pigment, echte Pinselzüge und komplexe weiche
+  Bewuchsflächen vervollständigen. Feld-/Quellenseiten anschließen und Restkosten
+  unter tatsächlicher Weltlast messen, bevor Kachelcacheversion und produktiver
+  Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
+  physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der
   normale Atlas bleibt bis zur Werkzeugübernahme auf dem bisherigen Renderer;
