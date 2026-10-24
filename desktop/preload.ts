@@ -226,6 +226,7 @@ contextBridge.exposeInMainWorld('campaign', Object.freeze({
   atlasRoom:(token,id)=>ipcRenderer.invoke('atlas:room',token,id),
   atlasDrawingCommit:command=>ipcRenderer.invoke('atlas:drawing-commit',command),
   executeAtlasCommit:command=>ipcRenderer.invoke('atlas:commit',command),
+  reconcileAtlasCommit:command=>ipcRenderer.invoke('atlas:reconcile-commit',command),
   campaignAtlas:(token:string)=>ipcRenderer.invoke('atlas:view',token),
   executeAtlas:(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>ipcRenderer.invoke('atlas:execute',c),
   world:(token:string)=>ipcRenderer.invoke('world:view',token),

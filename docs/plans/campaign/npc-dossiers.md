@@ -10,6 +10,17 @@ Quest- oder Ereignisauflösung.
 
 ## Aktueller Vertrag
 
+Familienbeziehungen bleiben beim Verschieben einer NPC-Notiz in den Papierkorb
+beidseitig gespeichert. Auch archivierte Endpunkte müssen vorhandene NPCs mit
+passender Gegenrichtung sein; Restore, Backup und unabhängige Kampagnenkopie
+erhalten die Beziehungen. Die Paaridentität bleibt `targetId + label`, unabhängig
+von einer Familienklassifikation. Beide Ergebnisnotizen werden vor dem Schreiben
+validiert. Eine Notiz mit Teilnehmerbindung in einer vorbereiteten oder laufenden
+Begegnung kann erst nach Teilnehmerentfernung oder Kampfabschluss in den Papierkorb;
+abgeschlossene Kampfstände bleiben historisch.
+Regression: `tests/desktop-review-integrity.test.mjs`; Grenzen und Befunde im
+[Review vom 24.10.2026](../../reference/independent-code-review-20261024-second/README.md).
+
 `storage/npc-cast.ts` liest Ortsliste und Dossier über die Transaktionen von
 `CampaignStore.npcCast/npcDossier`. Der Rückgabestand verbindet Worldnotiz,
 NPC-Record, Fraktionshaltung, Actor/HP, Ort, Beziehungen, Gruppen, Autonomie und

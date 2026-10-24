@@ -109,6 +109,7 @@ export interface AtlasCommitAck {
   sourceFence?:string;
   canUndo: boolean; canRedo: boolean;
 }
+export type AtlasCommitOutcome = {outcome:'applied';ack:AtlasCommitAck}|{outcome:'not-applied'}|{outcome:'unknown'};
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
 export interface AtlasAPI extends importAtlasRegionAPI {
   atlasTerritories(token:string,box?:import("./atlas-landscape").LandscapeBox):Promise<Result<import("./atlas-territories").TerritoryState>>;
@@ -128,6 +129,7 @@ export interface AtlasAPI extends importAtlasRegionAPI {
   atlasLandscapeObject(token: string, id: string): Promise<Result<import('./atlas-landscape').LandscapeRecord>>;
   atlasRoom(token: string, id: string): Promise<Result<import('./contracts').Room>>;
   executeAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitAck>>;
+  reconcileAtlasCommit(command: AtlasCommand): Promise<Result<AtlasCommitOutcome>>;
 
   landscapeFind(
     token: string,

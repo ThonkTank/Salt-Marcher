@@ -139,3 +139,10 @@ test('separate troops of the same creature remain distinguishable and select onl
  const selection=root.querySelector('#combat-area-selection'),choices=[...selection.options].filter(o=>o.value.startsWith('group:'));assert.equal(choices.length,2);assert.notEqual(choices[0].textContent,choices[1].textContent);
  for(const choice of choices){selection.value=choice.value;selection.onchange();const expected=x.combat.participants.filter(p=>'group:'+p.groupId===choice.value).map(p=>p.id);assert.deepEqual([...root.querySelectorAll('.combat-area-row input')].filter(c=>c.checked).map(c=>c.value),expected);}
 });
+
+test('vulnerability may double valid area input above one million before health is applied',t=>{
+ const x=fixture(t),id=x.combat.participants[0].id;
+ x.act({kind:'edit',participantId:id,changes:{maxHp:1000000,hp:1000000}});
+ x.act({kind:'area-damage',amount:800000,damageType:'fire',targets:[{participantId:id,scale:'full',defense:'double'}]});
+ assert.equal(x.combat.participants.find(p=>p.id===id).hp,0);
+});

@@ -41,8 +41,8 @@ async function writeAtlas(
 }
 
 /** Terrain changes need a durable receipt, not another complete campaign copy. */
-export async function writeAtlasCommit(c: AtlasCommand,recovery=false): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
-  if(pending.has(c.token)&&!recovery) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
+  if(pending.has(c.token)) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try {
     const result=await window.campaign.executeAtlasCommit(c);
     if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value}));}
@@ -54,7 +54,19 @@ export async function writeAtlasCommit(c: AtlasCommand,recovery=false): Promise<
   }
 }
 
-export async function recoverAtlasCommit(token:string){const command=pending.get(token);return command?writeAtlasCommit(command,true):null;}
+export async function recoverAtlasCommit(token:string):Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>|null>{
+  const command=pending.get(token);if(!command)return null;
+  try{
+    const result=await window.campaign.reconcileAtlasCommit(command);
+    if(pending.get(token)!==command)return{ok:false,error:'Atlasauftrag inzwischen geändert. Speicherstand erneut klären.'};
+    if(!result.ok)return result;
+    if(result.value.outcome==='unknown')return{ok:false,error:'Atlasauftrag läuft noch. Speicherstand anschließend erneut klären.'};
+    pending.delete(token);document.dispatchEvent(new Event('atlas-write-state'));
+    if(result.value.outcome==='not-applied')return{ok:false,error:'Atlasauftrag wurde nicht gespeichert. Eingaben bleiben erhalten; Stand aktualisieren und erneut speichern.'};
+    document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value.ack}));
+    return{ok:true,value:result.value.ack};
+  }catch(e){return{ok:false,error:'Ausgang des Atlasauftrags weiter unbekannt. '+(e as Error).message};}
+}
 
 const wrap = (
   c: { commandId: string; token: string; campaignId: string },

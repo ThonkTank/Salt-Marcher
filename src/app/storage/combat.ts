@@ -12,7 +12,7 @@ import { randomUUID, randomInt, createHash } from 'node:crypto';
 import { checkedCombat, combatOrder, combatStartIssue, concentrationDc, type CombatState, type CombatView, type CombatCommand, type Combatant } from '../combat-contracts';
 import { readLiveScene, readLive } from './live';
 import { readProgressCharacter, finishCombatRewards, latestCombatStatuses, detachCombatHealth, resumeCombatHealth, lastCombatPartyParticipant, event } from './progression';
-import {applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
+import {applyHealthDamage,applyHealthHealing,applyDeathSave,checkedHealth,xpLevel,type DeathSaveResult} from '../progression';
 import { assessEncounter } from '../encounter-contracts';
 import { readCreature, readEncounterPlan } from './encounters';
 import { readGeneratorRegistry,readGenerationRun,acceptGeneration } from './generation';
@@ -24,12 +24,6 @@ import {creatureActionForRolls,creatureActionRolls,creatureRollKey,parseDiceForm
 import {initiativeBasisMatches,initiativeNumber} from '../combat-initiative';
 import {fighterDraftBasisMatches} from '../combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
-function applyDamageDeath(p:Combatant,result:'failure'|'dead'){
-  let health=checkedHealth({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})});
-  if(health.death?.dead)return;
-  if(health.death?.stable)health=applyDeathSave(health,'reset');
-  health=applyDeathSave(health,result);p.hp=health.hp;p.death=health.death;p.deathLast={result,roll:null};
-}
 function addNamedActor(db:any,cam:string,state:CombatState,actorId:string,locationId:string|null,entryId?:string,groupId?:string,source?:Creature){
  const actor=readWorldActor(db,cam,actorId),position=npcPosition(db,cam,actorId);
  if(actor.unavailable||actor.defeated||actor.hp<=0)throw new Error('Benannter NPC ist nicht verfügbar. Weltprofil prüfen.');
@@ -149,8 +143,10 @@ export function readCombat(db: any, campaignId: string, sceneId: string, id?: st
 }
 function applyCombatDamage(p:Combatant,amount:number,critical=false){
   const wasConcentrating=p.concentrating;
-  const absorbed=Math.min(p.tempHp,amount),remaining=amount-absorbed,beforeHp=p.hp;p.tempHp-=absorbed;p.hp=Math.max(0,beforeHp-remaining);
-  if(p.characterId&&remaining>0){const overflow=Math.max(0,remaining-beforeHp);if(beforeHp>0&&p.hp===0){delete p.death;delete p.deathLast;}if((beforeHp===0?remaining:overflow)>=p.maxHp)applyDamageDeath(p,'dead');else if(beforeHp===0){applyDamageDeath(p,'failure');if(critical)applyDamageDeath(p,'failure');}}
+  const beforeHp=p.hp,next=applyHealthDamage({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})},amount,!!p.characterId,critical);
+  Object.assign(p,next.health);if(!next.health.death)delete p.death;
+  if(beforeHp>0&&p.hp===0)delete p.deathLast;
+  if(next.deathResult)p.deathLast={result:next.deathResult,roll:null};
   if(wasConcentrating){if(p.hp===0){p.concentrating=false;delete p.concentrationChecks;}else{p.concentrationChecks??=[];if(p.concentrationChecks.length>=100)throw new Error('Zu viele offene Konzentrationsprüfungen.');p.concentrationChecks.push({damage:amount,dc:concentrationDc(amount)});}}
 }
 function spendLegendaryAction(state:CombatState,participantId:string,actionId:string,cost:number){
@@ -352,7 +348,7 @@ export function executeCombat(db: any, command: CombatCommand, guard: () => void
             }
             applyCombatDamage(p,a.amount);
           }
-          else {if(p.death?.dead)throw new Error('Tote können nicht geheilt werden. Zum Wiederbeleben „Ins Leben zurückholen“ verwenden.');p.hp = Math.min(p.maxHp, p.hp + a.amount);if(p.hp>0){delete p.death;delete p.deathLast;}}
+          else {const health=applyHealthHealing({hp:p.hp,maxHp:p.maxHp,tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating,...(p.death?{death:p.death}:{})},a.amount);Object.assign(p,health);if(p.hp>0){delete p.death;delete p.deathLast;}}
         } else if(a.kind==='revive'){
           const p=participant();if(!p.characterId||p.healthKnown===false||p.hp!==0||!p.death?.dead)throw new Error('Wiederbelebung benötigt eine tote Party-Figur mit bekannten HP.');
           if(!Number.isSafeInteger(a.hp)||a.hp<1||a.hp>p.maxHp)throw new Error('HP nach Wiederbelebung müssen zwischen 1 und den maximalen HP liegen.');
