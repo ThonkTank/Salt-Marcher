@@ -41,7 +41,8 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 Der [Atlasplan](../../atlas/architecture/unified-spatial-atlas.md) beschreibt den vollständigen
 GPU-Umstieg und die technische Bereinigung. Die frühere M0–M8-Technikpflicht ist
 aufgehoben. [Zuständigkeiten und Prüfwege](../../atlas/architecture/rendering.md)
-stehen an einem Ort; Main/SQLite bleiben die kanonische Schreibgrenze.
+stehen an einem Ort; der [Store-Worker](canonical-store-worker.md) besitzt die
+kanonische SQLite-Schreibgrenze. Main vermittelt ausschließlich privilegierte Host-Aufrufe.
 
 Ein ebener Meterraum, gemeinsame Kamera und History sowie eindeutige Objekt-
 identitäten verbinden die Werkzeuge. Die lokale Offline-Anwendung bleibt auf
@@ -62,7 +63,8 @@ die noch erforderlichen Implementationsbeweise.
 | --- | --- | --- |
 | Fachmodule | Werttypen, Invarianten, reine Berechnungen, Commandplanung | Kein Electron/Obsidian, SQL, Dateisystem, DOM oder Netz; reproduzierbare Resultate auf identischen Inputs |
 | Anwendung | Aktivierung, Zugriffsprüfung, Command, betroffene Records, Konflikt/Cancel, Projektionen | Eine Änderung kann mehrere Fachmodule betreffen, besitzt aber eine gemeinsame Commitentscheidung |
-| Lokaler Schreibdienst | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
+| Electron-Main | Fenster, Dialoge, Rechteprüfung, Ressourcenfreigabe und geordnetes Schließen | Enger Preload-Vertrag; typisierter asynchroner Store-Client statt SQLite-Zugriff |
+| Lokaler Schreibdienst im Node-Worker | SQLite, Validierung an der Schreibgrenze, Revisionen, Receipts, Assets, Recovery und Migration | Ausschließlich dieser Dienst schreibt Produktdaten; UI und Extensions erhalten keine DB-Verbindung |
 | GM-Oberfläche | Native DOM-Controls, Auswahl/Inspector/Text, gemeinsame Kamera/Werkzeuge, Canvas2D-Draufsicht und abgeleitete Three.js-Geländeansicht | Eingabe und Vorschau ohne Autorenmutation; keine Geschäftslogik in Popup/Dialog/Meter |
 | Hintergrundjobs | Abbrechbare Geometrie, Generatoren, Suche/Export, Medienprüfung | Unveränderlicher Input, gebundene Basisrevision und Aktivierung; Resultate erhalten keine eigene Schreibberechtigung |
 | Passive Anzeige / Extensions | Redigierte Anzeige bzw. ausdrücklich erlaubte Fähigkeiten | Getrennte Prozesse und enge DTOs; keine versteckten GM-Daten oder ungeprüften privilegierten Aufrufe |

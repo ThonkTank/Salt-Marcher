@@ -5,8 +5,8 @@ Owner: atlas
 Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
-Der Atlas verbindet Landschaft, Städte und Räume in Weltmetern. Main besitzt die
-kanonischen SQLite-Daten und alle Schreibvorgänge. Der Renderer erhält ausschließlich
+Der Atlas verbindet Landschaft, Städte und Räume in Weltmetern. Der [kanonische Store-Worker](../../project/architecture/canonical-store-worker.md)
+besitzt SQLite und alle Store-Schreibvorgänge; Main besitzt den privilegierten Hostanschluss. Der Renderer erhält ausschließlich
 die geprüften Fähigkeiten der Preload-Brücke.
 
 ## Zuständigkeiten und Datenfluss

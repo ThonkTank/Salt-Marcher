@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import syncFs from 'node:fs';
 import {mkdtempSync,rmSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
@@ -44,7 +45,7 @@ test('an already stale source never creates a candidate or changes the destinati
 });
 for(const fault of ['sync','rename'])test('packet '+fault+' failure retains the previous destination and cleans its candidate',async t=>{
  const x=fixture(t);
- if(fault==='rename')t.mock.method(fs,'rename',async()=>{throw new Error('controlled rename failure');});
+ if(fault==='rename')t.mock.method(syncFs,'renameSync',()=>{throw new Error('controlled rename failure');});
  else{const original=fs.open.bind(fs);t.mock.method(fs,'open',async(...args)=>{const file=await original(...args);file.sync=async()=>{throw new Error('controlled sync failure');};return file;});}
  await assert.rejects(exportSessionPacketFile(x.destination,x.packet,()=>{}),new RegExp('controlled '+fault+' failure'));unchanged(x);
 });

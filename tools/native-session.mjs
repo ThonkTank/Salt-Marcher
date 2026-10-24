@@ -7,7 +7,7 @@ import {homedir} from 'node:os';
 import path from 'node:path';
 import {currentProcessGroup} from './process-group.mjs';
 
-const artifacts=['main.cjs','preload.cjs','atlas-region-worker.cjs','room-directory-worker.cjs','terrain-route-worker.cjs','backup-validation-worker.cjs','ui/renderer.js','ui/atlas-brush-worker.js','ui/index.html','ui/app.css'];
+const artifacts=['main.cjs','preload.cjs','atlas-region-worker.cjs','room-directory-worker.cjs','terrain-route-worker.cjs','backup-validation-worker.cjs','store-worker.cjs','ui/renderer.js','ui/atlas-brush-worker.js','ui/index.html','ui/app.css'];
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bounded(promise,ms,message){
  let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(message)),ms);})]);}finally{clearTimeout(timer);}
@@ -32,7 +32,7 @@ export async function createNativeSession({root=process.cwd(),output,name,result
  const profile=await mkdtemp(path.join(profiles,name+'-')),group=await currentProcessGroup();
  const source=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
  const dirty=!!execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim();
- const hashes=async()=>Object.fromEntries(await Promise.all(artifacts.map(async file=>[file,createHash('sha256').update(await readFile(path.join(root,'.build/desktop',file))).digest('hex')])));
+ const hashes=async()=>Object.fromEntries(await Promise.all(artifacts.map(async file=>{const bytes=await readFile(path.join(root,'.build/desktop',file)).catch(error=>{if(file==='store-worker.cjs'&&error.code==='ENOENT')return null;throw error;});return[file,bytes?createHash('sha256').update(bytes).digest('hex'):null];})));
  const build=await hashes(),launches=[],errors=[];let app=null,processHandle=null,proxy=null,proxyError=null;
  const bus=path.join(profile,'bus');
  const evidence=()=>({source,dirty,profile,artifacts:build,launches,errors});

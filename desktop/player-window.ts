@@ -3,11 +3,11 @@ import type {BrowserWindow,Rectangle} from 'electron';
 import type {PlayerFrame,PlayerSettings} from '../src/app/player-contracts';
 export interface PlayerDisplayState {owner:{id:string;token:string};settings:PlayerSettings;frame:PlayerFrame}
 interface Options {
- current:()=>PlayerDisplayState|null;
+ current:()=>PlayerDisplayState|null|Promise<PlayerDisplayState|null>;
  create:()=>BrowserWindow;
  origin:string;
  layout:(settings:PlayerSettings)=>{bounds:Rectangle;fullscreen:boolean};
- closed:(token:string)=>void;
+ closed:(token:string)=>void|Promise<void>;
  stopping:()=>boolean;
  error:(error:unknown)=>void;
 }
@@ -19,6 +19,7 @@ export class PlayerDisplay {
  private instances=new Set<Entry>();
  private generation=0;
  private stopped=false;
+ private refresh=0;
  constructor(private options:Options){}
  get window(){return this.active&&!this.active.window.isDestroyed()?this.active.window:null;}
  private sameOwner(state:PlayerDisplayState,entry:Entry){return state.owner.id===entry.owner.id&&state.owner.token===entry.owner.token;}
@@ -39,24 +40,24 @@ export class PlayerDisplay {
  private open(state:PlayerDisplayState){
   const window=this.options.create(),entry:Entry={window,owner:{...state.owner},ready:false,shown:false,retired:false,fingerprint:'',layout:''};
   this.active=entry;this.instances.add(entry);
-  window.on('closed',()=>{
+  window.on('closed',async()=>{
    this.instances.delete(entry);
    if(entry.retired||this.active!==entry)return;
-   this.active=null;
+   this.active=null;const refresh=++this.refresh;
    if(this.stopped||this.options.stopping())return;
-   try{const current=this.options.current();if(current&&this.sameOwner(current,entry))this.options.closed(entry.owner.token);}
+   try{const current=await this.options.current();if(!this.stopped&&!this.options.stopping()&&refresh===this.refresh&&!this.active&&current&&this.sameOwner(current,entry))await this.options.closed(entry.owner.token);}
    catch(error){this.options.error(error);}
   });
   // Do not retain settings or the global window reference across the asynchronous load.
   void window.loadURL(this.options.origin).then(()=>{
    if(this.stopped||entry.retired||this.active!==entry||window.isDestroyed())return;
-   entry.ready=true;this.sync();
+   entry.ready=true;void this.sync();
   }).catch(error=>{if(this.stopped||entry.retired||this.active!==entry)return;this.retire(entry);this.options.error(error);});
  }
- sync(){
-  if(this.stopped)return;
+ async sync(){
+  if(this.stopped)return;const refresh=++this.refresh;
   try{
-   const state=this.options.current();
+   const state=await this.options.current();if(this.stopped||refresh!==this.refresh)return;
    if(this.active&&(!state||!state.settings.windowOpen||!this.sameOwner(state,this.active)))this.retire(this.active);
    if(!state?.settings.windowOpen)return;
    if(!this.active)this.open(state);
@@ -65,11 +66,11 @@ export class PlayerDisplay {
    if(fingerprint!==entry.layout){entry.window.setFullScreen(false);entry.window.setBounds(layout.bounds);entry.window.setFullScreen(layout.fullscreen);entry.layout=fingerprint;}
    this.emit(entry,state.frame);
    if(!entry.shown){entry.window.showInactive();entry.shown=true;}
-  }catch(error){if(this.active)this.retire(this.active);this.options.error(error);}
+  }catch(error){if(this.stopped||refresh!==this.refresh)return;if(this.active)this.retire(this.active);this.options.error(error);}
  }
- frame(){
-  try{const state=this.options.current();return{generation:++this.generation,frame:!this.stopped&&this.active&&!this.active.window.isDestroyed()&&state&&state.settings.windowOpen&&this.sameOwner(state,this.active)?visualPlayerFrame(state.frame):blank};}
-  catch(error){this.options.error(error);return{generation:++this.generation,frame:blank};}
+ async frame(){
+  const entry=this.active,generation=++this.generation;try{const state=await this.options.current();return{generation,frame:!this.stopped&&this.active===entry&&this.active&&!this.active.window.isDestroyed()&&state&&state.settings.windowOpen&&this.sameOwner(state,this.active)?visualPlayerFrame(state.frame):blank};}
+  catch(error){this.options.error(error);return{generation,frame:blank};}
  }
- shutdown(){this.stopped=true;for(const entry of this.instances)this.retire(entry);}
+ shutdown(){this.stopped=true;this.refresh++;for(const entry of this.instances)this.retire(entry);}
 }

@@ -5,7 +5,7 @@ import type { ChronicleCategory, ChronicleCursor } from '../src/app/chronicle-co
 import { chronicleMarkdownHeader, chronicleMarkdownEntries } from '../src/app/storage/chronicle';
 
 export async function exportChronicleFile(
-  snapshot: ChronicleReadSession,
+  snapshot: {read:(...args:Parameters<ChronicleReadSession['read']>)=>ReturnType<ChronicleReadSession['read']>|Promise<ReturnType<ChronicleReadSession['read']>>},
   category: ChronicleCategory | 'all',
   search: string,
   destination: string,
@@ -26,7 +26,7 @@ export async function exportChronicleFile(
 
     do {
       hooks.check();
-      const page = snapshot.read(category, search, cursor, 1000);
+      const page = await snapshot.read(category, search, cursor, 1000);
       hooks.check();
 
       if (first) {

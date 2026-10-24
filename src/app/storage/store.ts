@@ -1136,6 +1136,7 @@ export class CampaignStore {
   }
   campaignCatalogWorkspace(commandId:string):Workspace;
   campaignCatalogWorkspace(commandId:string,projection:true):WorkspaceShell;
+  campaignCatalogWorkspace(commandId:string,projection?:boolean):Workspace|WorkspaceShell;
   campaignCatalogWorkspace(commandId:string,projection=false):Workspace|WorkspaceShell{
     const row=this.db.prepare('SELECT payload,checksum FROM campaign_catalog_receipt WHERE command_id=?').get(commandId);if(!row||hash(row.payload)!==row.checksum)throw new Error('Öffnungsbeleg fehlt.');const receipt=JSON.parse(row.payload) as CampaignCatalogReceipt;
     if(!['open','create'].includes(receipt.kind)||this.list().activeId!==receipt.campaignId||!this.list().campaigns.some(c=>c.id===receipt.campaignId))throw new Error('Die aktive Kampagne wurde inzwischen gewechselt. Kampagne ausdrücklich neu öffnen.');

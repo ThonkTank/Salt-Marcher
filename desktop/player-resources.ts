@@ -16,9 +16,9 @@ export function playerRequestAllowed(address:string,requestWindowId:number|undef
  return currentWindowId!==null&&requestWindowId===currentWindowId&&playerResource(address)!==null;
 }
 interface ResourceOptions {
- current:()=>{windowId:number;imageId:string|null}|null;
+ current:()=>{windowId:number;imageId:string|null}|null|Promise<{windowId:number;imageId:string|null}|null>;
  uiFile:(name:string)=>string;
- imageFile:(id:string)=>string;
+ imageFile:(id:string)=>string|Promise<string>;
  fetchFile:(filename:string)=>Promise<Response>;
 }
 const unavailable=()=>new Response('Not available',{status:404});
@@ -26,8 +26,8 @@ export async function servePlayerResource(address:string,options:ResourceOptions
  const resource=playerResource(address);if(!resource)return unavailable();
  try {
   if(resource.kind==='static')return await options.fetchFile(options.uiFile(resource.name));
-  const before=options.current();if(!before||before.imageId!==resource.id)return unavailable();
-  const response=await options.fetchFile(options.imageFile(resource.id)),after=options.current();
+  const before=await options.current();if(!before||before.imageId!==resource.id)return unavailable();
+  const response=await options.fetchFile(await options.imageFile(resource.id)),after=await options.current();
   if(!after||after.windowId!==before.windowId||after.imageId!==resource.id){void response.body?.cancel().catch(()=>{});return unavailable();}
   const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');headers.set('X-Content-Type-Options','nosniff');
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});

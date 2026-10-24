@@ -105,7 +105,7 @@ try {
   await page.locator('#atlas-undo').click();await atlasCanvasReady(page);
   await page.locator('#atlas-redo').click();await atlasCanvasReady(page);
   checks.push('Höhenzug, gesperrte Kamera/Größe während des Zugs, Undo/Redo');
-  for(const [group,tool]of [['land','land-smooth'],['land','land-color'],['water','water-add'],['water','water-erase'],['water','water-color'],['properties','property'],['properties','reset'],['vegetation','vegetation'],['vegetation','vegetation-clear'],['vegetation','vegetation-thin'],['vegetation','vegetation-dense']]){
+  for(const [group,tool]of [['land','land-smooth'],['land','land-color'],['water','water-add'],['water','water-erase'],['water','water-color'],['properties','property'],['properties','reset'],['vegetation','vegetation'],['vegetation','vegetation-erase'],['vegetation','vegetation-thin'],['vegetation','vegetation-dense']]){
     await page.locator(`[data-tool-group="${group}"]`).click();
     await page.locator(`[data-atlas-tool="${tool}"]`).click();await atlasCanvasReady(page);
     await shiftRadius();

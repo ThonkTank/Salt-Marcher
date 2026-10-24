@@ -10,7 +10,7 @@ import {
 export class CommitTracker {
   private pending = new Map<string, { ref: CommitReference; task: Promise<unknown> }>();
 
-  constructor(private read: (ref: CommitReference, token: string) => CommitOutcome) {}
+  constructor(private read: (ref: CommitReference, token: string) => CommitOutcome | Promise<CommitOutcome>) {}
 
   execute<T>(family: CommitFamily, command: CommitCommand, apply: () => T | Promise<T>): Promise<T> {
     const ref: CommitReference = {
@@ -21,11 +21,6 @@ export class CommitTracker {
         .update(commitFingerprintInput(family, command))
         .digest('hex'),
     };
-    const confirmed = this.read(ref, command.token);
-    if (confirmed.outcome === 'applied') {
-      return Promise.resolve(confirmed.value as T);
-    }
-
     const key = family + ':' + command.commandId;
     const prior = this.pending.get(key);
     if (prior) {
@@ -38,7 +33,7 @@ export class CommitTracker {
     const state = { ref, task: Promise.resolve(undefined) as Promise<unknown> };
     // Publish the pending entry before apply runs; retries must share this promise.
     const task = Promise.resolve()
-      .then(apply)
+      .then(async()=>{const confirmed=await this.read(ref,command.token);return confirmed.outcome==='applied'?confirmed.value as T:apply();})
       .finally(() => {
         if (this.pending.get(key) === state) {
           this.pending.delete(key);
@@ -49,13 +44,14 @@ export class CommitTracker {
     return task;
   }
 
-  status(ref: CommitReference, token: string): CommitOutcome {
-    const result = this.read(ref, token);
+  async status(ref: CommitReference, token: string): Promise<CommitOutcome> {
+    const before=this.pending.get(ref.family + ':' + ref.commandId);
+    const result = await this.read(ref, token);
     if (result.outcome === 'applied') {
       return result;
     }
 
-    const pending = this.pending.get(ref.family + ':' + ref.commandId);
+    const pending = before??this.pending.get(ref.family + ':' + ref.commandId);
     if (!pending) {
       return result;
     }
