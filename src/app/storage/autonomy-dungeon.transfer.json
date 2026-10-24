@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "autonomy_dungeon_basis": {"owner":"src/app/storage/autonomy-dungeon.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"stamp":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"autonomy_dungeon_basis"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

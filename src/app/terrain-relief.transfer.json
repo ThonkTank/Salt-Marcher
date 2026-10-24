@@ -1,0 +1,6 @@
+{
+ "roles": {
+  "TerrainStyle.ink": "text",
+  "TerrainStyle.land": "text"
+ }
+}

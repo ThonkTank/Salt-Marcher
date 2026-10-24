@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "atlas_landscape": {"owner":"src/app/storage/atlas-landscape.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"min_x":{"type":"REAL","transfer":"opaque"},"max_x":{"type":"REAL","transfer":"opaque"},"min_y":{"type":"REAL","transfer":"opaque"},"max_y":{"type":"REAL","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"atlas_landscape"}}}},
+  "atlas_reference_asset": {"owner":"src/app/storage/atlas-landscape.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"mime":{"type":"TEXT","transfer":"opaque"},"bytes":{"type":"BLOB","transfer":"opaque"}}}
+ }
+}

@@ -1,0 +1,6 @@
+{
+ "roles": {
+  "SessionTargets.fraction": "text",
+  "SessionTargets.seed": "external"
+ }
+}

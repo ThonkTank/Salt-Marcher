@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "dungeon_travel_settings": {"owner":"src/app/storage/dungeon-pace.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_travel_settings"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

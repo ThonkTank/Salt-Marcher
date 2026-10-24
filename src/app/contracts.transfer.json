@@ -1,0 +1,18 @@
+{
+ "roles": {
+  "Edit.campaignId": "local",
+  "Edit.commandId": "local",
+  "Edit.name": "text",
+  "Edit.roomId": "local",
+  "Edit.token": "token",
+  "Room.floorId": "local",
+  "Room.id": "local",
+  "Room.name": "text",
+  "Room.number": "text",
+  "Room.scopeId": "local",
+  "Section.doorId": "local",
+  "Section.id": "local",
+  "Section.markdown": "text",
+  "WorkingRoomDraft.points": "text"
+ }
+}

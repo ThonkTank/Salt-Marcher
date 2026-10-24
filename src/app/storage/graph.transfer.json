@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "dungeon_graph_layout": {"owner":"src/app/storage/graph.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_graph_layout"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

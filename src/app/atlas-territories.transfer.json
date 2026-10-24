@@ -1,0 +1,27 @@
+{
+  "roles": {
+    "AtlasTerritory.color": "text",
+    "AtlasTerritory.id": "local",
+    "AtlasTerritory.layerId": {
+      "keep": [
+        "geography",
+        "politics"
+      ],
+      "otherwise": "local"
+    },
+    "AtlasTerritory.locationId": "local",
+    "AtlasTerritory.name": "text",
+    "AtlasTerritory.parentId": "local",
+    "AtlasTerritory.typeId": "external",
+    "AtlasTerritoryLayer.id": {
+      "keep": [
+        "geography",
+        "politics"
+      ],
+      "otherwise": "local"
+    },
+    "AtlasTerritoryLayer.name": "text",
+    "TerritoryType.id": "external",
+    "TerritoryType.name": "external"
+  }
+}

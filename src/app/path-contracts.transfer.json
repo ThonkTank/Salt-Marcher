@@ -1,0 +1,23 @@
+{
+ "roles": {
+  "DungeonPassage.id": "local",
+  "DungeonPassage.otherRoomId": "local",
+  "DungeonPassage.pathId": "local",
+  "DungeonPassage.roomId": "local",
+  "DungeonPassage.scopeId": "local",
+  "DungeonPassage.volumeId": "local",
+  "DungeonPath.basis": "external",
+  "DungeonPath.fromPassageId": "local",
+  "DungeonPath.id": "local",
+  "DungeonPath.name": "text",
+  "DungeonPath.notes": "text",
+  "DungeonPath.roomId": "local",
+  "DungeonPath.scopeId": "local",
+  "DungeonPath.toPassageId": "local",
+  "DungeonPath.volumeId": "local",
+  "PassageSide.description": "text",
+  "PassageSide.target.id": "local",
+  "PathAnchor.roomId": "local",
+  "PathAnchor.volumeId": "local"
+ }
+}

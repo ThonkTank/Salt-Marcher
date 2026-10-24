@@ -1,0 +1,29 @@
+{
+ "roles": {
+  "AutonomyActor.assignedJobId": "local",
+  "AutonomyActor.id": "local",
+  "AutonomyActor.jobId": "local",
+  "AutonomyActor.jobPriorities{}": "local",
+  "AutonomyActor.pending": "text",
+  "AutonomyActor.positionBasis.locationId": "local",
+  "AutonomyActor.role": "text",
+  "AutonomyDungeonTravel.jobId": "local",
+  "AutonomyDungeonTravel.snapshotId": "local",
+  "AutonomyJob.featureId": "local",
+  "AutonomyJob.id": "local",
+  "AutonomyJob.locationId": "local",
+  "AutonomyJob.name": "text",
+  "AutonomyJob.needEffects{}": "external",
+  "AutonomyJob.patrolRoomId": "local",
+  "AutonomyJob.roles[]": "text",
+  "AutonomyJob.roomId": "local",
+  "AutonomyJob.routeId": "local",
+  "AutonomyJob.targetActorId": "local",
+  "AutonomyNeed.id": "external",
+  "AutonomyNeed.name": "text",
+  "NpcRoute.fromLocationId": "local",
+  "NpcRoute.id": "local",
+  "NpcRoute.name": "text",
+  "NpcRoute.toLocationId": "local"
+ }
+}

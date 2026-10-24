@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "narrative_award": {"owner":"src/app/storage/narrative.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"note_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"narrative_award"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "narrative_draft": {"owner":"src/app/storage/narrative.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"note_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"narrative_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "narrative_state": {"owner":"src/app/storage/narrative.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"note_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"narrative_state"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "roles": {
+  "CampaignCatalogReceipt.campaignId": "local",
+  "CampaignCatalogReceipt.commandId": "local",
+  "CampaignCatalogReceipt.createdAt": "text",
+  "CampaignCatalogReceipt.lastOpenedAt": "text",
+  "CampaignCatalogReceipt.name": "text"
+ }
+}

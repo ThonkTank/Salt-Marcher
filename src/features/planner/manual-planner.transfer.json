@@ -1,0 +1,10 @@
+{
+ "roles": {
+  "ManualPlan.id": "local",
+  "ManualPlan.name": "text",
+  "ManualScene.id": "local",
+  "ManualScene.locationId": "local",
+  "ManualScene.notes": "text",
+  "ManualScene.title": "text"
+ }
+}

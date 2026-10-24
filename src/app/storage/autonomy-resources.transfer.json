@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "autonomy_target_booking": {"owner":"src/app/storage/autonomy-resources.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"job_id":{"type":"TEXT","transfer":"local"},"actor_id":{"type":"TEXT","transfer":"local"},"resource_kind":{"type":"TEXT","transfer":"opaque"},"resource_id":{"type":"TEXT","transfer":"local"},"epoch_id":{"type":"TEXT","transfer":"local"},"from_ms":{"type":"TEXT","transfer":"opaque"},"to_ms":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

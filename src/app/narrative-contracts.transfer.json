@@ -1,0 +1,24 @@
+{
+ "roles": {
+  "NarrativeAward.id": "local",
+  "NarrativeAward.noteId": "local",
+  "NarrativeAward.outcome": "text",
+  "NarrativeAward.recipientIds[]": "local",
+  "NarrativeAward.recordedAt": "text",
+  "NarrativeAward.sceneId": "local",
+  "NarrativeAward.title": "text",
+  "NarrativeAward.treasureId": "local",
+  "NarrativeDraft.contributors[]": "local",
+  "NarrativeDraft.items[].name": "text",
+  "NarrativeDraft.items[].quantity": "text",
+  "NarrativeDraft.items[].valueGold": "text",
+  "NarrativeDraft.locationId": "local",
+  "NarrativeDraft.noteId": "local",
+  "NarrativeDraft.poolXp": "text",
+  "NarrativeDraft.writeId": "local",
+  "NarrativeState.awardId": "local",
+  "NarrativeState.contributors[]": "local",
+  "NarrativeState.locationId": "local",
+  "NarrativeState.noteId": "local"
+ }
+}

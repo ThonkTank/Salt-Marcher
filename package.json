@@ -17,7 +17,7 @@
     "test:desktop-legendary-transfer": "node --test --test-concurrency=1 tests/desktop-legendary-transfer-integrity.test.mjs",
     "test:desktop-extension-references": "node --test --test-concurrency=1 tests/desktop-extension-reference-transfer.test.mjs",
     "test:desktop-autonomy-time": "node --test --test-concurrency=1 tests/desktop-autonomy-disable-time.test.mjs",
-    "check:repo": "node tools/check-repository.mjs",
+    "check:repo": "node tools/check-repository.mjs && node tools/build-transfer-contracts.mjs",
     "bench:autonomy": "esbuild tools/measure-autonomy-scale.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --outfile=.build/measure-autonomy-scale.cjs && node tools/run-autonomy-scale.mjs",
     "test:repo": "node --test --test-concurrency=1 tests/repository-structure.test.mjs",
     "test:adr-p02": "node --test --test-concurrency=1 tests/adr-prototypes/p02-contract.test.mjs tests/adr-prototypes/p02-concurrency.test.mjs tests/adr-prototypes/p02-process.test.mjs",

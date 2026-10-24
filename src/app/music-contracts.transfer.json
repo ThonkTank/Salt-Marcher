@@ -1,0 +1,42 @@
+{
+  "roles": {
+    "AudioAsset.genres[]": "text",
+    "AudioAsset.id": "shared",
+    "AudioAsset.media": "opaque",
+    "AudioAsset.moodTags[]": "text",
+    "AudioAsset.moods{}": "shared",
+    "AudioAsset.name": "text",
+    "AudioAsset.notes": "text",
+    "AudioAsset.problem": "text",
+    "AudioAsset.vibes[]": "text",
+    "MoodAxis.highLabel": "text",
+    "MoodAxis.id": "shared",
+    "MoodAxis.lowLabel": "text",
+    "MoodAxis.name": "text",
+    "MusicSceneSettings.genres[]": "text",
+    "MusicSceneSettings.moods{}": "shared",
+    "MusicSceneSettings.sceneId": "local",
+    "MusicSceneSettings.vibes[]": "text",
+    "MusicState.automaticAmbience[]": "shared",
+    "MusicState.contextSignature": "text",
+    "MusicState.current.assetId": "shared",
+    "MusicState.current.playbackId": "local",
+    "MusicState.favoriteAssets[]": "shared",
+    "MusicState.forcedAmbience[]": "shared",
+    "MusicState.history[]": "shared",
+    "MusicState.lastError": "text",
+    "MusicState.mutedAmbience[]": "shared",
+    "MusicSubject.genres[]": "text",
+    "MusicSubject.id": {
+      "by": "kind",
+      "cases": {
+        "creature": "external"
+      },
+      "otherwise": "local"
+    },
+    "MusicSubject.name": "text",
+    "MusicSubject.vibes[]": "text",
+    "QueueEntry.assetId": "shared",
+    "QueueEntry.id": "local"
+  }
+}

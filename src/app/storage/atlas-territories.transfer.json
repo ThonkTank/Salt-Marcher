@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "atlas_territory": {"owner":"src/app/storage/atlas-territories.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"min_x":{"type":"REAL","transfer":"opaque"},"max_x":{"type":"REAL","transfer":"opaque"},"min_y":{"type":"REAL","transfer":"opaque"},"max_y":{"type":"REAL","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"atlas_territory"}}}},
+  "atlas_territory_layer": {"owner":"src/app/storage/atlas-territories.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":{"role":"local","fixed":{"id":["geography","politics"]}}},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"atlas_territory_layer"}}}}
+ }
+}

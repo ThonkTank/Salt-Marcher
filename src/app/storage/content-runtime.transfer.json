@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "dungeon_content_signal": {"owner":"src/app/storage/content-runtime.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"feature_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_content_signal"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "dungeon_content_state": {"owner":"src/app/storage/content-runtime.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"feature_id":{"type":"TEXT","transfer":"local"},"group_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_content_state"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "dungeon_feature_knowledge": {"owner":"src/app/storage/content-runtime.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"character_id":{"type":"TEXT","transfer":"local"},"feature_id":{"type":"TEXT","transfer":"local"},"known":{"type":"INTEGER","transfer":"opaque"},"override":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

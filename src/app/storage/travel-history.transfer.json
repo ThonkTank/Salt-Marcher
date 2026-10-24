@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "travel_checkpoint": {"owner":"src/app/storage/travel-history.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"applied":{"type":"INTEGER","transfer":"opaque"},"abandoned":{"type":"INTEGER","transfer":"opaque"},"retained":{"type":"INTEGER","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"travel_checkpoint"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

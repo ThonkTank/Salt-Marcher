@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "npc_draft": {"owner":"src/app/storage/npc-record.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"npc_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "npc_receipt": {"owner":"src/app/storage/npc-record.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"npc_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "npc_record": {"owner":"src/app/storage/npc-record.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"faction_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"npc_record"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

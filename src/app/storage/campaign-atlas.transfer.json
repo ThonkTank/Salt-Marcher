@@ -1,0 +1,9 @@
+{
+ "tables": {
+  "atlas_binding": {"owner":"src/app/storage/campaign-atlas.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"owner_id":{"type":"TEXT","transfer":"local"},"parent":{"type":"TEXT","transfer":"opaque"},"parent_id":{"type":"TEXT","transfer":"local"},"x":{"type":"REAL","transfer":"opaque"},"y":{"type":"REAL","transfer":"opaque"},"angle":{"type":"REAL","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"}}},
+  "atlas_command": {"owner":"src/app/storage/campaign-atlas.ts","mode":"discard","columns":{"campaign_id":{"type":"TEXT","transfer":"opaque"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"command_id":{"type":"TEXT","transfer":"opaque"},"label":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":"opaque"}}},
+  "atlas_import_source": {"owner":"src/app/storage/campaign-atlas.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"source":{"type":"TEXT","transfer":"opaque"},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "atlas_receipt": {"owner":"src/app/storage/campaign-atlas.ts","mode":"discard","columns":{"command_id":{"type":"TEXT","transfer":"opaque"},"campaign_id":{"type":"TEXT","transfer":"opaque"},"fingerprint":{"type":"TEXT","transfer":"opaque"}}},
+  "campaign_atlas": {"owner":"src/app/storage/campaign-atlas.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"map_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"cursor":{"type":"INTEGER","transfer":"opaque"}}}
+ }
+}

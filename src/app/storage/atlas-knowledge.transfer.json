@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "player_hex_memory": {"owner":"src/app/storage/atlas-knowledge.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"character_id":{"type":"TEXT","transfer":"local"},"map_id":{"type":"TEXT","transfer":"local"},"q":{"type":"INTEGER","transfer":"opaque"},"r":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"player_hex_memory"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

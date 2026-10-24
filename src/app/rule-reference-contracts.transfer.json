@@ -1,0 +1,9 @@
+{
+ "roles": {
+  "SceneRulePin.gmNotes": "text",
+  "SceneRulePin.noteId": "local",
+  "SceneRulePin.readAloud": "text",
+  "SceneRulePin.title": "text",
+  "SceneRules.sceneId": "local"
+ }
+}

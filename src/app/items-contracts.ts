@@ -14,7 +14,16 @@ export interface ShopRestockCatalog {filter:ItemCatalogFilter;minimum:number;max
 export interface ShopRestockTable {id:string;revision:number;name:string;seed:string;rolls:number;entries:{entryId:string;weight:string;minimum:number;maximum:number}[];catalog?:ShopRestockCatalog|null;schedule:ShopRestockSchedule|null}
 export interface Shop {id:string;revision:number;name:string;owner:{kind:'npc'|'location';id:string};notes:string;trashed:boolean;stock:ShopStock[];restockTables?:ShopRestockTable[]}
 export interface ShopSummary {id:string;name:string;ownerName:string;unavailable:boolean;revision:number|null;problem:string|null}
-export interface ShopHistoryEntry {id:string;time:string;description:string;facts?:{entry?:LedgerItem}}
+/** Facts retained in shop history, including automatic and weighted deliveries. */
+export interface ShopHistoryFacts {
+ entry?:LedgerItem;shop?:Shop;entryId?:string;before?:number;quantity?:number;reason?:string;
+ intervals?:string;instantMs?:string;firstDueMs?:string;lastDueMs?:string;
+ tableId?:string;tableRevision?:number;seed?:string;eventId?:string;eventRevision?:number;eventName?:string;
+ rule?:ShopRestockTable|{mode:'fill'|'add';quantity:number;intervalMs:string};
+ outcomes?:{entryId:string;reference:ItemReference;name:string;before:number;added:number;quantity:number;buyCopper?:string;sellCopper?:string}[];
+ catalogPool?:{eligible:number;excludedDamaged:number;fingerprint:string};
+}
+export interface ShopHistoryEntry {id:string;time:string;description:string;facts?:ShopHistoryFacts}
 export interface ShopHistoryPage {shopId:string;entries:ShopHistoryEntry[];next:string|null}
 export interface ShopView {shop:Shop;ownerName:string;unavailable:boolean;timeNotice:string|null;restockEvents?:Pick<import('./world-contracts').CalendarEvent,'id'|'revision'|'name'|'startMs'|'repeatMs'|'trashed'>[];items:ItemDefinition[];history:ShopHistoryEntry[];historyNext?:string|null}
 export type ItemShopAction=

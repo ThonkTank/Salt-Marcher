@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "encounter_plan": {"owner":"src/app/storage/encounters.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"name":{"type":"TEXT","transfer":"text"},"payload":{"type":"TEXT","transfer":{"model":"encounter_plan"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "encounter_plan_receipt": {"owner":"src/app/storage/encounters.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"encounter_plan_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

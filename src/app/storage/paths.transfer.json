@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "dungeon_passage": {"owner":"src/app/storage/paths.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"room_id":{"type":"TEXT","transfer":"room-key"},"volume_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_passage"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "dungeon_path": {"owner":"src/app/storage/paths.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"room_id":{"type":"TEXT","transfer":"room-key"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_path"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

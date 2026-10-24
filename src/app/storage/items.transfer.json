@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "shop": {"owner":"src/app/storage/items.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"shop"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "shop_event": {"owner":"src/app/storage/items.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"shop_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"shop_event"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "shop_receipt": {"owner":"src/app/storage/items.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"shop_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

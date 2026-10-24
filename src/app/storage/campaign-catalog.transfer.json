@@ -1,0 +1,6 @@
+{
+ "tables": {
+  "campaign_catalog_receipt": {"owner":"src/app/storage/campaign-catalog.ts","mode":"discard","columns":{"command_id":{"type":"TEXT","transfer":"opaque"},"subject_id":{"type":"TEXT","transfer":"opaque"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":"opaque"},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "campaign_usage": {"owner":"src/app/storage/campaign-catalog.ts","mode":"discard","columns":{"campaign_id":{"type":"TEXT","transfer":"opaque"},"created_at":{"type":"TEXT","transfer":"opaque"},"last_opened_at":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

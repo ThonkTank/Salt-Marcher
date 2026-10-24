@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "combat": {"owner":"src/app/storage/combat.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"revision":{"type":"INTEGER","transfer":"opaque"},"phase":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"combat"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "combat_receipt": {"owner":"src/app/storage/combat.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"combat_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "combat_undo": {"owner":"src/app/storage/combat.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"combat_id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"combat_undo"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

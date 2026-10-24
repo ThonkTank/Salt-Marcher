@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "note_source_history": {"owner":"src/app/storage/note-source-history.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"note_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"note_source_history"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

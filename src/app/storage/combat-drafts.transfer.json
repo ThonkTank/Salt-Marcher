@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "combat_working_draft": {"owner":"src/app/storage/combat-drafts.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"combat_id":{"type":"TEXT","transfer":"local"},"kind":{"type":"TEXT","transfer":"opaque"},"target_id":{"type":"TEXT","transfer":"local"},"payload":{"type":"TEXT","transfer":{"model":"combat_working_draft"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

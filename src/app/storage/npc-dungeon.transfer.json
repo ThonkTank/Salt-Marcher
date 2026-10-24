@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "dungeon_track": {"owner":"src/app/storage/npc-dungeon.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"actor_id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"floor_id":{"type":"TEXT","transfer":"local"},"epoch_id":{"type":"TEXT","transfer":"local"},"instant_ms":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_track"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

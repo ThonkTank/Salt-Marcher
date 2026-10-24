@@ -1,0 +1,5 @@
+{
+ "tables": {
+  "dungeon_volume": {"owner":"src/app/storage/volume.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"id":{"type":"TEXT","transfer":"local"},"scope_id":{"type":"TEXT","transfer":"local"},"room_id":{"type":"TEXT","transfer":"room-key"},"revision":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"dungeon_volume"}},"checksum":{"type":"TEXT","transfer":"opaque"}}}
+ }
+}

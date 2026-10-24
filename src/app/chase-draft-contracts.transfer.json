@@ -1,0 +1,15 @@
+{
+ "roles": {
+  "ChaseWorkingDraft.chaseId": "local",
+  "ChaseWorkingDraft.fields.chase-complication": "text",
+  "ChaseWorkingDraft.fields.chase-name": "text",
+  "ChaseWorkingDraft.fields.chase-outcome": "text",
+  "ChaseWorkingDraft.fields.chase-side": "text",
+  "ChaseWorkingDraft.fields.chase-speed": "text",
+  "ChaseWorkingDraft.rows[].distance": "text",
+  "ChaseWorkingDraft.rows[].exhaustion": "text",
+  "ChaseWorkingDraft.rows[].participantId": "local",
+  "ChaseWorkingDraft.sceneId": "local",
+  "ChaseWorkingDraft.writeId": "local"
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "roles": {
+  "ChaseParticipant.characterId": "local",
+  "ChaseParticipant.id": "local",
+  "ChaseParticipant.name": "text",
+  "ChaseParticipant.notes": "text",
+  "ChaseState.complication": "text",
+  "ChaseState.goal": "text",
+  "ChaseState.id": "local",
+  "ChaseState.outcome": "text",
+  "ChaseState.sceneId": "local",
+  "ChaseState.title": "text",
+  "ChaseView.recent[].id": "local",
+  "ChaseView.recent[].title": "text"
+ }
+}

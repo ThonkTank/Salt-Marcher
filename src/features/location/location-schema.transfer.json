@@ -1,0 +1,15 @@
+{
+ "roles": {
+  "LocationDetailMap.documentId": "local",
+  "LocationDocument.id": "local",
+  "LocationDocument.keyLinks[].anchor": "text",
+  "LocationDocument.keyLinks[].atlasId": "local",
+  "LocationDocument.keyLinks[].documentId": "local",
+  "LocationDocument.keyLinks[].roomId": "local",
+  "LocationDocument.keyLinks[].sectionId": "local",
+  "LocationDocument.name": "text",
+  "LocationSection.id": "local",
+  "LocationSection.markdown": "text",
+  "LocationSection.title": "text"
+ }
+}

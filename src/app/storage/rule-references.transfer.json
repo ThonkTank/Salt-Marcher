@@ -1,0 +1,7 @@
+{
+ "tables": {
+  "scene_rule_pin": {"owner":"src/app/storage/rule-references.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"note_id":{"type":"TEXT","transfer":"local"},"ordinal":{"type":"INTEGER","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"scene_rule_pin"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "scene_rule_receipt": {"owner":"src/app/storage/rule-references.ts","mode":"copy","columns":{"command_id":{"type":"TEXT","transfer":"local"},"campaign_id":{"type":"TEXT","transfer":"local"},"fingerprint":{"type":"TEXT","transfer":"opaque"},"payload":{"type":"TEXT","transfer":{"model":"scene_rule_receipt"}},"checksum":{"type":"TEXT","transfer":"opaque"}}},
+  "scene_rule_state": {"owner":"src/app/storage/rule-references.ts","mode":"copy","columns":{"campaign_id":{"type":"TEXT","transfer":"local"},"scene_id":{"type":"TEXT","transfer":"local"},"revision":{"type":"INTEGER","transfer":"opaque"}}}
+ }
+}

@@ -1,0 +1,23 @@
+{
+  "roles": {
+    "NoteExcerptSource.id": "local",
+    "PreparationCommand.campaignId": "local",
+    "PreparationCommand.change.id": "local",
+    "PreparationCommand.change.opening.noteIds[]": "local",
+    "PreparationCommand.change.opening.readAloud": "text",
+    "PreparationCommand.change.opening.visitId": "local",
+    "PreparationCommand.commandId": "local",
+    "PreparationCommand.draftWriteId": "local",
+    "PreparationCommand.token": "token",
+    "PreparationDraft.change.opening.noteIds[]": "local",
+    "PreparationDraft.change.opening.readAloud": "text",
+    "PreparationDraft.change.opening.visitId": "local",
+    "PreparationDraft.writeId": "local",
+    "PreparationSelection.locationId": "local",
+    "PreparationSelection.noteId": "local",
+    "PreparationSelection.planId": "local",
+    "PreparationSelection.sceneId": "local",
+    "SceneCreation.contributors[]": "local",
+    "SceneCreation.sceneId": "local"
+  }
+}

@@ -1,0 +1,18 @@
+{
+ "roles": {
+  "GroupDraft.groupId": "local",
+  "GroupDraft.locationId": "local",
+  "GroupDraft.notes": "text",
+  "GroupDraft.title": "text",
+  "GroupDraft.writeId": "local",
+  "GroupRow.conditions": "text",
+  "GroupRow.creatureId": "external",
+  "GroupRow.gmNotes": "text",
+  "GroupRow.hp": "text",
+  "GroupRow.id": "local",
+  "GroupRow.maxHp": "text",
+  "GroupRow.name": "text",
+  "GroupRow.readAloud": "text",
+  "GroupRow.tempHp": "text"
+ }
+}

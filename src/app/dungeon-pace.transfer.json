@@ -1,0 +1,10 @@
+{
+ "roles": {
+  "DungeonPace.limitingIds[]": "local",
+  "DungeonPace.members[].characterId": "local",
+  "DungeonPace.members[].name": "text",
+  "DungeonPace.reason": "text",
+  "DungeonPaceSettings.members[].characterId": "local",
+  "DungeonPaceSettings.sceneId": "local"
+ }
+}
