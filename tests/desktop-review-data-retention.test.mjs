@@ -9,7 +9,7 @@ import {buildSync} from './helpers/build.mjs';
 const require=createRequire(import.meta.url);
 function bundle(entry,name){buildSync({entryPoints:[entry],outfile:'.build/review-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});return require('../.build/review-'+name+'.cjs');}
 const {CampaignStore}=bundle('src/app/storage/store.ts','retention-store');
-const {finishCampaignErasure,clearCampaignStaging,discardCampaignTickets}=bundle('desktop/campaign-erasure.ts','erasure');
+const {finishCampaignErasure,clearCampaignStaging,discardCampaignTickets,cancelCampaignTicket}=bundle('desktop/campaign-erasure.ts','erasure');
 const {newDocument}=bundle('src/model.ts','document');
 const {inspectDungeon}=bundle('src/app/import-dungeon.ts','import');
 const {newElement}=bundle('src/app/drawing-model.ts','element');
@@ -70,4 +70,12 @@ test('copied interrupted journey resolves its remapped trigger and can finish af
  const copied=action=>({commandId:randomUUID(),campaignId:copy.id,token:w.token,action});x.store.executeDungeon(copied({kind:'trigger-event',sceneId:view.sceneId,eventId:event.id,expectedRevision:event.revision,operation:'dismiss'}));view=x.store.dungeon(w.token);assert.equal(view.journey.status,'active');x.store.executeDungeon(copied({kind:'step',sceneId:view.sceneId,id:view.journey.id,expectedRevision:view.journey.revision,maxSteps:24}));assert.equal(x.store.dungeon(w.token).journey.status,'arrived');
  // Corruption must fail closed even with a valid payload checksum.
  const row=x.store.db.prepare('SELECT * FROM dungeon_journey WHERE campaign_id=?').get(cam.id),broken=JSON.parse(row.payload);broken.triggerEventId=randomUUID();const payload=JSON.stringify(broken);x.store.db.prepare('UPDATE dungeon_journey SET payload=?,checksum=? WHERE campaign_id=? AND id=?').run(payload,hash(payload),cam.id,row.id);assert.throws(()=>validateDatabase(x.store.db),/Triggerkontext/);
+});
+
+
+test('cancelling a transfer retires its ticket immediately but retains staging until accepted work settles',async t=>{
+ const x=fixture(t),dir=path.join(x.root,'pending-import');mkdirSync(dir);writeFileSync(path.join(dir,'campaign.sqlite'),'in-use');
+ const tickets=new Map([['ticket',{dir}]]);let release;const accepted=new Promise(resolve=>release=resolve);
+ const cancelled=cancelCampaignTicket(tickets,'ticket',accepted);assert.equal(tickets.has('ticket'),false);await new Promise(r=>setImmediate(r));
+ assert.equal(readFileSync(path.join(dir,'campaign.sqlite'),'utf8'),'in-use');release();await cancelled;assert.equal(existsSync(dir),false);
 });

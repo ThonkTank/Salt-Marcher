@@ -80,7 +80,7 @@ Planungssnapshot beim Kampfstart.
 
 Die Generationtransaktion ist der Writer; Auswahl bleibt read-only, bestehender
 Scope erhalten. Neue und geänderte Begegnungsgewichte folgen dem ursprünglichen Ganzzahlbereich
-1..10. Dialog und Main-Writer verwenden dieselbe Regel; unveränderte Altgewichte
+1..10. Dialog und Store-Worker verwenden dieselbe Regel; unveränderte Altgewichte
 bleiben pro Kreatur und Tabellenrevision exakt erhalten. Lesen, Vorschläge und
 Archive unterstützen diese Altgewichte weiter, ohne Migration oder Rundung.
 Beutegewichte bleiben unabhängig davon exakte Dezimalzahlen.

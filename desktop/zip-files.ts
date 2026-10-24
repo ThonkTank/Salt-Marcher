@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 import {createReadStream,createWriteStream,mkdirSync} from 'node:fs';
-import {mkdir,mkdtemp,rename,rm} from 'node:fs/promises';
+import {renameSync} from 'node:fs';
+import {mkdir,mkdtemp,rm} from 'node:fs/promises';
 import {finished} from 'node:stream/promises';
 import path from 'node:path';
 import {Zip,ZipPassThrough,Unzip,UnzipInflate} from 'fflate';
@@ -38,7 +39,7 @@ export async function writeArchive(destination:string,manifest:unknown,entries:(
    if(count!==entry.bytes)throw new Error('Dateigröße stimmt nicht: '+entry.name);
    file.push(new Uint8Array(),true);files++;await drain();
   }
-  zip.end();await done;h.check();await rename(temp,destination);
+  zip.end();await done;h.check();renameSync(temp,destination);
  }finally{zip.terminate();await closeOutput(output,done);await Promise.allSettled(drains);await rm(dir,{recursive:true,force:true});}
 }
 

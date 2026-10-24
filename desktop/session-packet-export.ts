@@ -1,4 +1,5 @@
-import {open,rename,rm} from 'node:fs/promises';
+import {open,rm} from 'node:fs/promises';
+import {renameSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import path from 'node:path';
 import {sessionPacketMarkdown,type SessionPacket} from '../src/app/session-packet-contracts';
@@ -10,7 +11,7 @@ export async function exportSessionPacketFile(destination:string,packet:SessionP
   check();file=await open(candidate,'wx');created=true;
   await file.writeFile(sessionPacketMarkdown(packet),'utf8');await file.sync();
   await file.close();file=null;
-  check();await rename(candidate,destination);
+  check();renameSync(candidate,destination);
  }finally{
   try{if(file)await file.close();}finally{if(created)await rm(candidate,{force:true});}
  }
