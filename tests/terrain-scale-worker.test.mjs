@@ -17,7 +17,7 @@ async function fixture(t){
  const command=()=>({token,campaignId:cam.id,commandId:randomUUID(),action});
  return{store,service,command,token,cam};
 }
-test('readonly worker prepares the real large brush; Main alone writes and replays the receipt',async t=>{
+test('readonly worker prepares the real large brush; the canonical Store alone writes and replays the receipt',async t=>{
  const f=await fixture(t),c=f.command(),source=f.store.terrainStrokeSource(c,f.service.cursor);
  let ticks=0;const timer=setInterval(()=>ticks++,1);
  const prepared=await f.service.prepareTerrainStroke(source,c.action.stroke);clearInterval(timer);

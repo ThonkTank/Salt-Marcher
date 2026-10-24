@@ -36,7 +36,7 @@ Die Grenzen sind editierbar. **Beim Geländeformen schützen** ist je Objekt sta
 
 `TerrainSampler` und `RouteSurface` liefern die wirksame Gelände-/Wasserhöhe. `linePoints` verwendet gespeicherte Profilpunkte ohne erneute Mäanderbildung. `terrain-route-view.ts` erzeugt die gemeinsamen räumlichen Bänder und Bauwerke für den Editor und den gekippten Atlas. Quellverjüngung gilt auch für Bett und Wasserbreite. Konfliktgeometrie wird rot angezeigt.
 
-Vorschauen laufen in einem abbrechbaren Read-only-Worker mit Quellrevision und Bereichs-Fence. Die kanonische `landscape-route`-Aktion prüft diese Revision, berechnet im Main erneut und schreibt alle betroffenen Verläufe in einer Transaktion. Direkte generische Put-/Batch-Aktionen dürfen geplante Objekte nicht an dieser Prüfung vorbeischreiben. Format 52 verhindert, dass ältere Appversionen diese Regeln umgehen; Format-50/51-Kampagnen bleiben importierbar.
+Vorschauen laufen in einem abbrechbaren Read-only-Worker mit Quellrevision und Bereichs-Fence. Die kanonische `landscape-route`-Aktion prüft diese Revision, berechnet im kanonischen Store-Worker erneut und schreibt alle betroffenen Verläufe in einer Transaktion. Direkte generische Put-/Batch-Aktionen dürfen geplante Objekte nicht an dieser Prüfung vorbeischreiben. Format 52 verhindert, dass ältere Appversionen diese Regeln umgehen; Format-50/51-Kampagnen bleiben importierbar.
 
 Bereiche werden um betroffene Verläufe und ihre Anschlüsse erweitert. Grenzen: 128 Anker pro Objekt, 4096 Profilpunkte, 128 verbundene Verläufe, 4 MiB Verlaufsdaten und 16 MiB gelesene Bereichsdaten. Überschreitungen brechen vor Teiländerungen ab. Weltkoordinaten bleiben unabhängig von der Kamera.
 

@@ -29,7 +29,7 @@ Der Atlas erhält eine kontinuierliche Höhenlandschaft mit zusammenhängenden G
 
 **Eine gemeinsame Kartenfläche.** Die frühere Aufteilung in Canvas-Draufsicht und orthografische Geländeansicht ist durch die gemeinsame perspektivische Hauptkamera ersetzt. Draufsicht, Neigung und Drehung teilen Daten, Auswahl und Werkzeuge. Die Wahl der Engine ist gemäß aktueller Atlas-Roadmap offen.
 
-**Aktuelle Speichergrenze.** Bis zu einem geprüften Ersatz sind Main/SQLite kanonisch; der Renderer bekommt begrenzte Bereichsdaten über Preload. Höhenänderungen nutzen bestehende Revisionen, Transaktionen, Undo/Redo und Archive. Geometrien, Schattierungen und Übersichtskacheln sind abgeleitete Daten.
+**Aktuelle Speichergrenze.** Der [kanonische Store-Worker](../../project/architecture/canonical-store-worker.md) besitzt SQLite; der Renderer bekommt begrenzte Bereichsdaten über Preload. Höhenänderungen nutzen bestehende Revisionen, Transaktionen, Undo/Redo und Archive. Geometrien, Schattierungen und Übersichtskacheln sind abgeleitete Daten.
 
 Neue fachliche Schnittstellen:
 - Terrainänderungen durch Land formen und Glätten; Farbe bleibt getrennt.

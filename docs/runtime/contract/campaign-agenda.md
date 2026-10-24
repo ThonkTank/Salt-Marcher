@@ -110,7 +110,7 @@ sichtbare Konflikte. Ein offener Auftrag blockiert weitere Saves und Schließen;
 fehlgeschlagene Receiptlesungen lassen denselben Auftrag erneut prüfen.
 Rohentwürfe und unbekannte Ausgänge sind noch nicht über Fresh/Neustart gesichert.
 
-Der Mainwriter führt die SQLite-Transaktion synchron aus. Bei späteren externen
+Der Store-Worker führt die SQLite-Transaktion synchron aus. Bei späteren externen
 Writern darf Receiptabwesenheit keine abgeschlossene Nichtausführung beweisen.
 Receiptidentität, Eventrevision und Kalender-/Clockautorität bleiben getrennt.
 Die tatsächlichen DOM-/Worldbridge-/SQLite-Prüfungen stehen gemeinsam in

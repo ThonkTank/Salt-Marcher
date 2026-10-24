@@ -86,7 +86,7 @@ Die reinen Shop-/Bestands-/Auffülltabellenprüfungen liegen gemeinsam in
 `shop-validation.ts`. Der Renderer verwendet dieselben Regeln vor dem Erzeugen
 einer Buchung; unvollständige Namen, Mengen oder Tabellen bleiben im bisherigen
 Editor korrigierbar, ohne Prüfsumme, Buchungsmarker, IPC oder Statusabfrage.
-Der Main-Writer prüft dieselbe Struktur erneut und behält Besitzerexistenz,
+Der Store-Worker prüft dieselbe Struktur erneut und behält Besitzerexistenz,
 Revisionen, Definitionen, Fälligkeiten, Receipts und Transaktion als Autorität.
 Eine gültige Korrektur verwendet weiterhin die vollständige Buchungsbestätigung;
 während einer verzögerten Prüfsumme bleiben weitere Buchungen und der Wechsel
