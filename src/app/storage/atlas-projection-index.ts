@@ -1,25 +1,18 @@
 import Database from 'better-sqlite3';
 import {createHash,randomUUID} from 'node:crypto';
-import {createReadStream,constants} from 'node:fs';
-import {copyFile,mkdir,readFile,writeFile,rename,rm,stat,readdir} from 'node:fs/promises';
+import {mkdir,rm,stat,readdir} from 'node:fs/promises';
 import {join} from 'node:path';
 import type {AtlasRegionSource} from '../atlas-region-contracts';
+import {AtlasTileCache} from './atlas-tile-cache';
 
 // Bump when metadata columns, bounds, validation or derivation semantics change.
 const FORMAT=1,APPLICATION=0x534d5049,LIMIT=96*1024*1024;
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const ownedTables=/\btemp\.(?=(?:region_|landscape_))/g;
-type Part='geometry'|'landscape';
-const version=(part:Part,source:AtlasRegionSource)=>part==='geometry'?source.geometryVersion:source.shapeVersion;
-type Manifest={format:number;key:string;file:string;hash:string;bytes:number};
+type Part='geometry'|'geometry-core'|'landscape'|'landscape-field';
+const version=(part:Part,source:AtlasRegionSource)=>part==='landscape'||part==='landscape-field'?source.shapeVersion:source.geometryVersion;
 export const projectionKey=(filename:string,campaignId:string)=>createHash('sha256').update(JSON.stringify([filename,campaignId])).digest('hex');
-const digest=async(file:string)=>{
- const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);
- return hash.digest('hex');
-};
-function manifest(value:any,key:string):value is Manifest{
- return value?.format===FORMAT&&value.key===key&&/^[a-f0-9]{64}$/.test(value.hash)&&value.file===key+'.'+value.hash+'.sqlite'&&Number.isSafeInteger(value.bytes)&&value.bytes>0&&value.bytes<=LIMIT;
-}
+export const PROJECTION_CACHE_KEY='projection-index',PROJECTION_CACHE_SOURCE='projection-sqlite-v1';
 
 /** Source stays readonly. Only this worker's private, disposable index is writable.
  * Sync reads canonical values from the pinned source snapshot, commits the index,
@@ -35,10 +28,10 @@ export class AtlasProjectionIndex {
  private separate:boolean;
  private ownsTransaction=false;
  readonly persistent:boolean;
- private constructor(readonly source:any,readonly writer:any,readonly workingDirectory?:string,private directory?:string,private key?:string){
+ private constructor(readonly source:any,readonly writer:any,readonly workingDirectory?:string,private cache?:AtlasTileCache){
   if(!source.readonly)throw Error('Atlasprojektion benötigt eine readonly Datenbank.');
   source.pragma('cache_size = -8192');source.pragma('temp_store = FILE');source.pragma('temp.cache_size = -8192');
-  this.separate=source!==writer;this.persistent=!!directory;
+  this.separate=source!==writer;this.persistent=!!cache?.enabled;
   if(this.persistent)this.writer.exec('CREATE '+(this.separate?'':'TEMP ')+'TABLE IF NOT EXISTS projection_meta(part TEXT PRIMARY KEY,source TEXT NOT NULL) WITHOUT ROWID');
  }
  static temporary(source:any){return new AtlasProjectionIndex(source,source);}
@@ -46,21 +39,16 @@ export class AtlasProjectionIndex {
   if(!directory||snapshot.shadow||!snapshot.shapeVersion)return this.temporary(source);
   if(!uuid.test(workId))throw Error('Ungültige Index-Arbeitskennung.');
   const key=projectionKey(snapshot.filename,snapshot.campaignId),working=join(directory,key+'.work-'+workId),file=join(working,'index.sqlite');
-  let owned=false,loaded=false,writer:any;
+  let owned=false,loaded=false,writer:any,cache:AtlasTileCache|undefined;
   try{
    await mkdir(directory,{recursive:true});await mkdir(working);owned=true;
+   cache=AtlasTileCache.open(directory,key);
    try{
-    const reference=join(directory,key+'.json');
-    if((await stat(reference)).size>4096)throw Error('Cacheverweis zu groß.');
-    const entry=JSON.parse(await readFile(reference,'utf8'));
-    if(!manifest(entry,key))throw Error('Cacheformat passt nicht.');
-    const original=join(directory,entry.file);
-    if((await stat(original)).size!==entry.bytes)throw Error('Cachegröße passt nicht.');
-    await copyFile(original,file,constants.COPYFILE_FICLONE);
-    if(await digest(file)!==entry.hash)throw Error('Cacheinhalt beschädigt.');
+    if(!cache.getFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,file))throw Error('Projektionscache fehlt.');
     const checked=new Database(file,{readonly:true});
     try{
      if(checked.pragma('application_id',{simple:true})!==APPLICATION||checked.pragma('user_version',{simple:true})!==FORMAT)throw Error('Cacheformat passt nicht.');
+     if((await stat(file)).size!==checked.pragma('page_size',{simple:true})*checked.pragma('page_count',{simple:true}))throw Error('Cachedatei ist unvollständig.');
      if(!checked.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name='projection_meta'").get())throw Error('Cachemarkierung fehlt.');
      if(!checked.prepare('SELECT 1 FROM projection_meta WHERE source IN (?,?) LIMIT 1').get(snapshot.shapeVersion,snapshot.geometryVersion??''))throw Error('Cachequelle überholt.');
     }finally{checked.close();}
@@ -68,15 +56,15 @@ export class AtlasProjectionIndex {
    }catch{await rm(file,{force:true});}
    // Cold construction keeps SQLite's fast INSERT SELECT path. Its TEMP
    // snapshot is published through the same backup/lifecycle below.
-   if(!loaded)return new AtlasProjectionIndex(source,source,working,directory,key);
+   if(!loaded)return new AtlasProjectionIndex(source,source,working,cache);
    writer=new Database(file);
    writer.pragma('journal_mode = WAL');writer.pragma('cache_size = -8192');
    writer.pragma('application_id = '+APPLICATION);writer.pragma('user_version = '+FORMAT);
-   const index=new AtlasProjectionIndex(source,writer,working,directory,key);
+   const index=new AtlasProjectionIndex(source,writer,working,cache);
    source.prepare('ATTACH DATABASE ? AS atlas_index').run(file);
    return index;
   }catch{
-   writer?.close();if(owned)await rm(working,{recursive:true,force:true}).catch(()=>{});
+   writer?.close();cache?.close();if(owned)await rm(working,{recursive:true,force:true}).catch(()=>{});
    return this.temporary(source);
   }
  }
@@ -100,12 +88,20 @@ export class AtlasProjectionIndex {
  }
  /** Transfer derived metadata without materializing an entire source table.
   * TEMP can copy within SQLite; a private file streams through two connections.
+  * Fixed blocks amortize the JS/SQLite boundary. Keep only full-block and
+  * single-row statements cached, rather than one statement per tail length.
   * Canonical rowids must be selected as text to preserve all 64 bits in JS. */
  copy(table:'landscape_shape_bounds'|'region_hidden',columns:number,select:string,args:unknown[]){
   const insert='INSERT INTO temp.'+table;
   if(!this.separate){this.prepare(insert+' '+select).run(...args);return;}
-  const put=this.prepare(insert+' VALUES('+Array(columns).fill('?').join(',')+')');
-  for(const row of this.source.prepare(select).raw().iterate(...args))put.run(...row);
+  const tuple='('+Array(columns).fill('?').join(',')+')',blockRows=256;
+  const put=this.prepare(insert+' VALUES'+tuple),block=this.prepare(insert+' VALUES'+Array(blockRows).fill(tuple).join(','));
+  let values:unknown[]=[];
+  for(const row of this.source.prepare(select).raw().iterate(...args)){
+   values.push(...row);
+   if(values.length===columns*blockRows){block.run(...values);values=[];}
+  }
+  for(let offset=0;offset<values.length;offset+=columns)put.run(...values.slice(offset,offset+columns));
  }
  transaction<T extends (...args:any[])=>any>(fn:T){return this.writer.transaction(fn);}
  begin(){
@@ -145,28 +141,21 @@ export class AtlasProjectionIndex {
   return this.saving;
  }
  private async save(){
-  const key=this.key!,directory=this.directory!,candidate=join(this.workingDirectory!,'candidate-'+randomUUID()+'.sqlite'),reference=join(directory,key+'.json'),next=join(this.workingDirectory!,'reference-'+randomUUID()+'.json');
+  const candidate=join(this.workingDirectory!,'candidate-'+randomUUID()+'.sqlite');
   try{
    // The binding copies bounded page batches between event-loop turns. Only
    // this connection mutates the index, so later committed changes remain coherent.
    const attached=this.separate?'main':'temp',pageSize=this.writer.pragma(attached+'.page_size',{simple:true});
    await this.writer.backup(candidate,{attached,progress:({totalPages}:{totalPages:number})=>{if(totalPages*pageSize>LIMIT||this.closed)throw Error('Index-Snapshot abgebrochen.');return 100;}});
-   // Published files are self-contained: readonly inspections must not create
-   // WAL sidecars beside an immutable, content-addressed snapshot.
+   // The retained payload is self-contained; warm workers extract their own
+   // private writable copy before attaching it to the readonly source.
    const snapshot=new Database(candidate);
    try{snapshot.pragma('journal_mode = DELETE');snapshot.pragma('application_id = '+APPLICATION);snapshot.pragma('user_version = '+FORMAT);}finally{snapshot.close();}
    const bytes=(await stat(candidate)).size;if(bytes>LIMIT)throw Error('Indexbudget überschritten.');
-   const hash=await digest(candidate),file=key+'.'+hash+'.sqlite';
-   let old:unknown;try{old=JSON.parse(await readFile(reference,'utf8'));}catch{old=null;}
-   await rename(candidate,join(directory,file));
-   await writeFile(next,JSON.stringify({format:FORMAT,key,file,hash,bytes})+'\n',{flag:'wx',mode:0o600});
-   await rename(next,reference);
-   if(manifest(old,key)&&old.file!==file)await rm(join(directory,old.file),{force:true});
-   // Superseded text cache is derived data too; remove it only after publication.
-   await rm(join(directory,key+'.jsonl'),{force:true});
-   return true;
+   if(this.closed)return false;
+   return this.cache!.putFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,candidate);
   }catch{return false;}
-  finally{await rm(candidate,{force:true}).catch(()=>{});await rm(next,{force:true}).catch(()=>{});}
+  finally{await rm(candidate,{force:true}).catch(()=>{});}
  }
  async close(){
   this.closed=true;clearTimeout(this.timer);await this.saving;
@@ -174,6 +163,7 @@ export class AtlasProjectionIndex {
   if(this.separate){if(this.source.open&&!this.source.inTransaction)this.source.exec('DETACH DATABASE atlas_index');
    this.writer.close();
   }
+  this.cache?.close();
   if(this.workingDirectory)await rm(this.workingDirectory,{recursive:true,force:true});
  }
 }
@@ -184,22 +174,17 @@ export async function eraseProjectionWork(directory:string,filename:string,campa
 export async function eraseAtlasProjection(directory:string,filename:string,campaignId:string){
  const key=projectionKey(filename,campaignId);let names:string[];
  try{names=await readdir(directory);}catch(error){if((error as NodeJS.ErrnoException).code==='ENOENT')return;throw error;}
+ // New tile caches share one SQLite file; campaign erasure removes only its
+ // namespace rows under SQLite's writer lock. Legacy shards are retired by
+ // the exclusive startup cleanup after no workers can own them.
+ AtlasTileCache.eraseNamespace(directory,key);
  for(const name of names)if(name===key+'.json'||name===key+'.jsonl'||name.startsWith(key+'.candidate-')||name.startsWith(key+'.work-')||name.startsWith(key+'.json.candidate-')||new RegExp('^'+key+'\\.[a-f0-9]{64}\\.sqlite$').test(name))await rm(join(directory,name),{recursive:true,force:true});
 }
 export async function clearProjectionWork(directory:string){
  let names:string[];try{names=await readdir(directory);}catch{return;}
  for(const name of names)if(/^[a-f0-9]{64}\.(?:work-[a-f0-9-]{36}|candidate-[a-f0-9-]{36}\.sqlite|json\.candidate-[a-f0-9-]{36}|jsonl\.candidate-[a-f0-9-]{36})$/.test(name))await rm(join(directory,name),{recursive:true,force:true}).catch(()=>{});
  // Startup runs under the application's single-instance lock, before workers.
- // A crash between publishing a file and its reference can leave an orphan.
- const referenced=new Map<string,string|null>();
- for(const name of names){
-  const key=name.match(/^([a-f0-9]{64})\.[a-f0-9]{64}\.sqlite$/)?.[1];if(!key)continue;
-  if(!referenced.has(key)){
-   let file:string|null=null;
-   try{const reference=join(directory,key+'.json');if((await stat(reference)).size<=4096){const value=JSON.parse(await readFile(reference,'utf8'));if(manifest(value,key))file=value.file;}}catch{/* Incomplete references are disposable too. */}
-   referenced.set(key,file);
-  }
-  if(referenced.get(key)!==name)await rm(join(directory,name),{force:true}).catch(()=>{});
- }
-
+ // Retire the former per-campaign snapshots: retaining them alongside the shared
+ // cache would bypass its global budget. They rebuild from canonical sources.
+ for(const name of names)if(/^[a-f0-9]{64}\.(?:json|jsonl|[a-f0-9]{64}\.sqlite)$/.test(name))await rm(join(directory,name),{force:true}).catch(()=>{});
 }

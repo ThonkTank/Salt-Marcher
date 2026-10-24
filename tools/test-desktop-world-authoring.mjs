@@ -183,6 +183,11 @@ async function stroke(points, hold = 400) {
     null,
     { timeout: 60000 },
   );
+  // The next local gesture may begin before its predecessor is acknowledged.
+  // Qualification must await the canonical write, not an enabled tool control.
+  const deadline=Date.now()+120000;
+  while(inventory().revision<=before&&Date.now()<deadline)await wait(50);
+  await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainDraft===undefined,null,{timeout:60000});
   await ready();
   assert(
     inventory().revision > before,

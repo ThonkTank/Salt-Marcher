@@ -2,15 +2,26 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from './helpers/build.mjs';
 import {createRequire} from 'node:module';
-import {mkdtempSync,rmSync,readFileSync,writeFileSync,readdirSync,mkdirSync,copyFileSync} from 'node:fs';
+import {mkdtempSync,rmSync,readFileSync,writeFileSync,readdirSync,mkdirSync,copyFileSync,unlinkSync,renameSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {join} from 'node:path';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash,randomBytes} from 'node:crypto';
 const require=createRequire(import.meta.url),Database=require('better-sqlite3');
 for(const [name,file]of [['store','src/app/storage/store.ts'],['reader','src/app/storage/atlas-region.ts'],['cache','src/app/storage/atlas-projection-index.ts'],['version','src/app/storage/atlas-shape-source.ts'],['service','desktop/atlas-region.ts'],['worker','desktop/atlas-region-worker.ts']])buildSync({entryPoints:[file],outfile:'.build/region-cache-'+name+'.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore}=require('../.build/region-cache-store.cjs'),{AtlasRegionReader}=require('../.build/region-cache-reader.cjs'),{AtlasProjectionIndex,eraseAtlasProjection,projectionKey,clearProjectionWork}=require('../.build/region-cache-cache.cjs'),{atlasShapeSource}=require('../.build/region-cache-version.cjs');
+buildSync({stdin:{contents:"export * from './src/app/storage/atlas-tile-cache';",resolveDir:process.cwd()},outfile:'.build/region-cache-tile-cache.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore}=require('../.build/region-cache-store.cjs'),{AtlasRegionReader}=require('../.build/region-cache-reader.cjs'),{AtlasProjectionIndex,eraseAtlasProjection,projectionKey,clearProjectionWork,PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE}=require('../.build/region-cache-cache.cjs'),{AtlasTileCache}=require('../.build/region-cache-tile-cache.cjs'),{atlasShapeSource}=require('../.build/region-cache-version.cjs');
 const {AtlasRegionService}=require('../.build/region-cache-service.cjs');
 const query={box:{x:-1,y:-1,width:500,height:10},width:1024,height:768,scopeId:'local',floorId:'ground',slice:null,roofs:true};
+function cachedSnapshot(f,namespace=projectionKey(f.filename,f.campaign.id)){
+ const cache=AtlasTileCache.open(f.cacheDir,namespace),filename=join(f.dir,'projection-snapshot-'+randomUUID()+'.sqlite');
+ assert.equal(cache.getFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,filename),true,'the published projection snapshot is available through the shared cache');
+ const bytes=readFileSync(filename),digest=createHash('sha256').update(bytes).digest('hex');
+ return{cache,filename,bytes,digest,close(){cache.close();try{unlinkSync(filename);}catch{}}};
+}
+function projectionPublished(directory,namespace){
+ let db;try{db=new Database(join(directory,'tiles-v2','atlas-tiles.sqlite'),{readonly:true});return!!db.prepare("SELECT 1 FROM atlas_tile_cache WHERE namespace=? AND key=? AND source=? AND kind='file'").get(namespace,PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE);}
+ catch{return false;}finally{db?.close();}
+}
 function fixture(t,n=30){
  const base=join(homedir(),'.cache/saltmarcher/tests');mkdirSync(base,{recursive:true});
  const dir=mkdtempSync(join(base,'atlas-cache-')),filename=join(dir,'campaign.sqlite'),cacheDir=join(dir,'cache');let store=new CampaignStore(filename);
@@ -30,11 +41,41 @@ function fixture(t,n=30){
  };
 }
 test('cold index is reused after reopening without reading all shape payloads',async t=>{
- const f=fixture(t,1000),source=f.source(),cold=await f.read(source);assert.equal(cold.projected,1000);assert.equal(readdirSync(f.cacheDir).length,2);
+ const f=fixture(t,1000),source=f.source(),cold=await f.read(source);assert.equal(cold.projected,1000);assert(projectionPublished(f.cacheDir,projectionKey(f.filename,f.campaign.id)));
+ const original=cachedSnapshot(f);try{assert(!original.bytes.includes(Buffer.from('Room 999')),'cache contains bounds, not room payloads');}finally{original.close();}
  f.reopen();assert.equal(f.source().shapeVersion,source.shapeVersion,'ordinary reopening preserves durable identity');
  const warm=await f.read(source);assert.equal(warm.projected,0);assert.deepEqual(warm.view,cold.view);assert.equal(warm.count,1000);
- const entry=JSON.parse(readFileSync(join(f.cacheDir,projectionKey(f.filename,f.campaign.id)+'.json'),'utf8'));
- assert(!readFileSync(join(f.cacheDir,entry.file)).includes(Buffer.from('Room 999')),'cache contains bounds, not room payloads');
+ const snapshot=cachedSnapshot(f);try{
+  assert.equal(snapshot.digest,original.digest,'reopening reused the same complete projection snapshot');
+  const stored=new Database(snapshot.filename,{readonly:true});try{assert.deepEqual(stored.prepare('SELECT part FROM projection_meta ORDER BY part').all().map(row=>row.part),['geometry','geometry-core','landscape','landscape-field']);}finally{stored.close();}
+ }finally{snapshot.close();}
+});
+test('projection snapshots evict older tile entries under one shared global budget',async t=>{
+ const f=fixture(t,1000),namespace=projectionKey(f.filename,f.campaign.id),otherNamespace='e'.repeat(64),budget=900*1024;
+ const other=AtlasTileCache.open(f.cacheDir,otherNamespace,{maxBytes:budget,maxGlobalBytes:budget,maxEntryBytes:budget});
+ assert(other.put('older-tile','rev-1',randomBytes(budget-1024)));other.close();
+ const result=await f.read();assert.equal(result.projected,1000);assert.equal(result.count,1000);
+ const tile=AtlasTileCache.open(f.cacheDir,otherNamespace);assert.equal(tile.get('older-tile','rev-1'),undefined,'index snapshot publication evicts the older tile from the shared budget');tile.close();
+ const stats=new Database(join(f.cacheDir,'tiles-v2','atlas-tiles.sqlite'),{readonly:true});try{
+  const total=stats.prepare('SELECT coalesce(sum(bytes),0) bytes FROM atlas_tile_cache').get().bytes;
+  assert(total<=budget,'combined tile and projection bytes stay below the persisted global cap');
+  assert.equal(stats.prepare("SELECT kind FROM atlas_tile_cache WHERE namespace=? AND key=?").get(namespace,PROJECTION_CACHE_KEY).kind,'file');
+ }finally{stats.close();}
+ assert.equal((await f.read()).projected,0,'the retained projection snapshot is still reusable');
+});
+test('an open private reader survives snapshot eviction while a fresh reader rebuilds',async t=>{
+ const f=fixture(t,1000),namespace=projectionKey(f.filename,f.campaign.id),budget=900*1024;
+ const limits=AtlasTileCache.open(f.cacheDir,namespace,{maxBytes:budget,maxGlobalBytes:budget,maxEntryBytes:budget});limits.close();
+ const source=f.source(),cold=await f.read(source);assert.equal(cold.projected,1000);
+ const db=new Database(f.filename,{readonly:true}),index=await AtlasProjectionIndex.open(db,source,f.cacheDir);
+ try{
+  const reader=new AtlasRegionReader(db,undefined,index);db.exec('BEGIN');await reader.sync(source);const before=reader.read(source,query);db.exec('COMMIT');
+  const pressure=AtlasTileCache.open(f.cacheDir,namespace);assert(pressure.put('eviction-pressure','tile-source',randomBytes(budget-1024)));pressure.close();
+  assert.equal(projectionPublished(f.cacheDir,namespace),false,'shared LRU eviction removed the retained file generation');
+  db.exec('BEGIN');const stillReadable=reader.read(source,query);db.exec('COMMIT');assert.deepEqual(stillReadable,before,'the worker-local snapshot remains readable after shared eviction');
+ }finally{db.close();await index.close();}
+ const rebuilt=await f.read(source);assert.equal(rebuilt.projected,1000,'a new reader cannot use an evicted snapshot and rebuilds from canonical rows');assert.deepEqual(rebuilt.view,cold.view);
+ assert(projectionPublished(f.cacheDir,namespace),'the complete rebuilt projection is republished');
 });
 test('committed external writes, replace and delete invalidate while rollback preserves reuse',async t=>{
  const f=fixture(t),initial=f.source();await f.read(initial);
@@ -52,14 +93,22 @@ test('missing tracking triggers disable cache immediately and revoke its epoch o
  f.reopen();const current=f.source();assert(current.shapeVersion);assert.notEqual(current.shapeVersion,old.shapeVersion);assert.notEqual(current.geometryVersion,old.geometryVersion);assert.equal((await f.read()).view.rooms.find(r=>r.id==='r0').name,'untracked');assert.equal((await f.read()).projected,0);
 });
 test('truncated, modified and wrong-format caches rebuild without trusting stored rows',async t=>{
- const f=fixture(t);await f.read();const reference=join(f.cacheDir,projectionKey(f.filename,f.campaign.id)+'.json');
- for(const corrupt of ['truncated','modified','format','manifest']){
-  const entry=JSON.parse(readFileSync(reference,'utf8')),file=join(f.cacheDir,entry.file),bytes=readFileSync(file);
-  if(corrupt==='truncated')writeFileSync(file,bytes.subarray(0,bytes.length-120));
-  if(corrupt==='modified'){bytes[bytes.length-12]^=1;writeFileSync(file,bytes);}
-  if(corrupt==='format')writeFileSync(reference,JSON.stringify({...entry,format:99}));
-  if(corrupt==='manifest')writeFileSync(reference,'{broken');
-  const rebuilt=await f.read();assert.equal(rebuilt.projected,30);assert.equal(rebuilt.count,30);assert.equal(rebuilt.view.coverage.complete,true);assert.equal((await f.read()).projected,0);
+ const f=fixture(t);await f.read();const namespace=projectionKey(f.filename,f.campaign.id);
+ for(const corrupt of ['truncated','wrong-application','format','missing-marker','damaged-chunk']){
+  const cache=AtlasTileCache.open(f.cacheDir,namespace);
+  const file=join(f.dir,'damaged-'+randomUUID()+'.sqlite');assert(cache.getFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,file));
+  if(corrupt==='truncated'){const bytes=readFileSync(file);writeFileSync(file,bytes.subarray(0,bytes.length-120));}
+  if(corrupt==='wrong-application'){const damaged=new Database(file);damaged.pragma('application_id=0x534d0000');damaged.close();}
+  if(corrupt==='format'){const damaged=new Database(file);damaged.pragma('user_version=99');damaged.close();}
+  if(corrupt==='missing-marker'){const damaged=new Database(file);damaged.exec('DROP TABLE projection_meta');damaged.close();}
+  if(corrupt==='damaged-chunk'){
+   cache.close();const shared=new Database(join(f.cacheDir,'tiles-v2','atlas-tiles.sqlite'));
+   try{const chunk=shared.prepare('SELECT ordinal,blob FROM atlas_tile_cache_chunks WHERE namespace=? AND key=? ORDER BY ordinal LIMIT 1').get(namespace,PROJECTION_CACHE_KEY),bytes=Buffer.from(chunk.blob);bytes[0]^=1;shared.prepare('UPDATE atlas_tile_cache_chunks SET blob=? WHERE namespace=? AND key=? AND ordinal=?').run(bytes,namespace,PROJECTION_CACHE_KEY,chunk.ordinal);}finally{shared.close();}
+  }else{
+   assert.equal(cache.putFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,file),true,'a complete damaged SQLite file can be republished with a valid chunk descriptor');cache.close();
+  }
+  unlinkSync(file);
+  const rebuilt=await f.read();assert.equal(rebuilt.projected,30,`damaged cache was reused for ${corrupt}`);assert.equal(rebuilt.count,30);assert.equal(rebuilt.view.coverage.complete,true);assert.equal((await f.read()).projected,0);
  }
 });
 test('undo and hidden extents survive cached reopen; canonical corruption stays explicit',async t=>{
@@ -72,8 +121,13 @@ test('undo and hidden extents survive cached reopen; canonical corruption stays 
 test('unwritable cache and shadow previews cannot change canonical opening; erasure is scoped',async t=>{
  const f=fixture(t);writeFileSync(join(f.dir,'blocked'),'file');const uncached=await f.read(undefined,join(f.dir,'blocked'));assert.equal(uncached.view.coverage.complete,true);
  const source=f.source();await f.read(source);const db=new Database(f.filename,{readonly:true});try{const index=await AtlasProjectionIndex.open(db,{...source,shadow:{filename:'preview',scopeId:'local'}},f.cacheDir);assert.equal(index.persistent,false);await index.close();}finally{db.close();}
- writeFileSync(join(f.cacheDir,'unrelated.jsonl'),'keep');writeFileSync(join(f.cacheDir,projectionKey(f.filename,f.campaign.id)+'.candidate-orphan'),'partial');
- await eraseAtlasProjection(f.cacheDir,f.filename,f.campaign.id);assert.deepEqual(readdirSync(f.cacheDir),['unrelated.jsonl']);assert.equal(atlasShapeSource(f.store.db,f.campaign.id),source.shapeVersion);
+ const own=projectionKey(f.filename,f.campaign.id),otherNamespace='f'.repeat(64),other=AtlasTileCache.open(f.cacheDir,otherNamespace);
+ assert(other.put('unrelated-tile','rev-1',{keep:true}));other.close();
+ writeFileSync(join(f.cacheDir,'unrelated.jsonl'),'keep');writeFileSync(join(f.cacheDir,own+'.jsonl'),'retired');
+ await eraseAtlasProjection(f.cacheDir,f.filename,f.campaign.id);
+ const ownCache=AtlasTileCache.open(f.cacheDir,own),otherCache=AtlasTileCache.open(f.cacheDir,otherNamespace);
+ try{const destination=join(f.dir,'erased-projection.sqlite');assert.equal(ownCache.getFile(PROJECTION_CACHE_KEY,PROJECTION_CACHE_SOURCE,destination),false);assert.deepEqual(otherCache.get('unrelated-tile','rev-1'),{keep:true});}finally{ownCache.close();otherCache.close();}
+ assert.deepEqual(readdirSync(f.cacheDir).sort(),['tiles-v2','unrelated.jsonl'].sort());assert.equal(atlasShapeSource(f.store.db,f.campaign.id),source.shapeVersion);
 });
 test('campaign archives remap cache metadata and reject damaged source identities',async t=>{
  const f=fixture(t,3),snapshot=join(f.dir,'snapshot.sqlite');await f.store.campaignSnapshot(f.shell.token,snapshot);
@@ -107,13 +161,17 @@ test('interactive changes persist incrementally and a fresh reader reuses the co
  }finally{db.close();await index.close();}
  }
 });
-test('startup removes interrupted private work and candidates, preserving completed and unrelated files',async t=>{
+test('startup removes interrupted work and retires old snapshots, preserving unrelated files',async t=>{
  const f=fixture(t);writeFileSync(join(f.dir,'blocked'),'file');await clearProjectionWork(join(f.dir,'blocked'));await f.read();
  const original=readdirSync(f.cacheDir),key=projectionKey(f.filename,f.campaign.id);
  writeFileSync(join(f.cacheDir,key+'.'+ 'a'.repeat(64)+'.sqlite'),'orphan');
+ writeFileSync(join(f.cacheDir,key+'.jsonl'),'legacy projections');
+ const legacyPath=join(f.cacheDir,key+'.legacy.sqlite'),legacy=new Database(legacyPath);legacy.pragma('application_id=0x534d5049');legacy.pragma('user_version=1');legacy.exec("CREATE TABLE projection_meta(part TEXT PRIMARY KEY,source TEXT NOT NULL) WITHOUT ROWID; INSERT INTO projection_meta VALUES('geometry','legacy-source'),('landscape','legacy-source')");legacy.close();
+ const legacyBytes=readFileSync(legacyPath),legacyHash=createHash('sha256').update(legacyBytes).digest('hex'),legacyName=key+'.'+legacyHash+'.sqlite';renameSync(legacyPath,join(f.cacheDir,legacyName));writeFileSync(join(f.cacheDir,key+'.json'),JSON.stringify({format:1,key,file:legacyName,hash:legacyHash,bytes:legacyBytes.length}));
  writeFileSync(join(f.cacheDir,key+'.candidate-'+randomUUID()+'.sqlite'),'partial');mkdirSync(join(f.cacheDir,key+'.work-'+randomUUID()));
- writeFileSync(join(f.cacheDir,'unrelated'),'keep');await clearProjectionWork(f.cacheDir);
- assert.deepEqual(readdirSync(f.cacheDir).sort(),[...original,'unrelated'].sort());assert.equal((await f.read()).projected,0);
+ for(const [name,value]of [['unrelated','keep'],['unrelated.jsonl','keep'],['arbitrary-hash.sqlite','keep'],['keep.json','keep']])writeFileSync(join(f.cacheDir,name),value);
+ await clearProjectionWork(f.cacheDir);
+ assert.deepEqual(readdirSync(f.cacheDir).sort(),[...original,'unrelated','unrelated.jsonl','arbitrary-hash.sqlite','keep.json'].sort());assert.equal((await f.read()).projected,0);
 });
 test('landscape bounds persist, update and delete locally, including exact 64-bit rowids',async t=>{
  const f=fixture(t),record={id:'road',revision:0,kind:'road',name:'Lane',points:[{x:0,y:0},{x:10,y:0}],polygons:[],resolution:1,width:1,values:{}};
@@ -148,9 +206,9 @@ test('independent workers share published snapshots and clean only their own wor
  const f=fixture(t,1000),worker=new URL('../.build/region-cache-worker.cjs',import.meta.url).pathname;
  const a=new AtlasRegionService(worker,undefined,f.cacheDir),b=new AtlasRegionService(worker,undefined,f.cacheDir);
  try{
-  const source=f.source();const first=await a.read(source,query),key=projectionKey(f.filename,f.campaign.id),reference=join(f.cacheDir,key+'.json');
-  const until=Date.now()+4000;while(!readdirSync(f.cacheDir).includes(key+'.json')&&Date.now()<until)await new Promise(resolve=>setTimeout(resolve,25));
-  assert(readFileSync(reference).length);assert.deepEqual(await b.read(source,query),first);assert.equal(readdirSync(f.cacheDir).filter(n=>n.includes('.work-')).length,2);
+  const source=f.source();const first=await a.read(source,query),key=projectionKey(f.filename,f.campaign.id);
+  const until=Date.now()+4000;while(!projectionPublished(f.cacheDir,key)&&Date.now()<until)await new Promise(resolve=>setTimeout(resolve,25));
+  assert(projectionPublished(f.cacheDir,key));assert.deepEqual(await b.read(source,query),first);assert.equal(readdirSync(f.cacheDir).filter(n=>n.includes('.work-')).length,2);
   const stale=a.read(source,{...query,box:{...query.box,x:10}});a.cancel();await assert.rejects(stale,/abgebrochen/);await a.cancelAndWait();
   assert.equal(readdirSync(f.cacheDir).filter(n=>n.includes('.work-')).length,1);assert.equal((await b.focus(source,'room','r0')).id,'r0');
   assert.deepEqual(await a.read(source,query),first);
@@ -175,10 +233,10 @@ test('steady camera requests do not starve publication of the completed index',a
  const f=fixture(t,300),worker=new URL('../.build/region-cache-worker.cjs',import.meta.url).pathname;
  const service=new AtlasRegionService(worker,undefined,f.cacheDir);let observed=false;
  try{
-  const source=f.source();await service.read(source,query);const reference=projectionKey(f.filename,f.campaign.id)+'.json',deadline=Date.now()+4000;let requests=0;
+  const source=f.source();await service.read(source,query);const namespace=projectionKey(f.filename,f.campaign.id),deadline=Date.now()+4000;let requests=0;
   while(Date.now()<deadline){
    await service.read(source,{...query,box:{...query.box,x:requests++/1000}});
-   if(readdirSync(f.cacheDir).includes(reference)){observed=true;break;}
+   if(projectionPublished(f.cacheDir,namespace)){observed=true;break;}
    await new Promise(resolve=>setTimeout(resolve,10));
   }
   assert(requests>1);assert(observed,'A stable source must publish while camera requests continue');

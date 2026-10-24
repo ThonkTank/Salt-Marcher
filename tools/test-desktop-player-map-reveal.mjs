@@ -96,10 +96,11 @@ try {
         await page.locator('#player-show-follow').click();
         await until(() => app.windows().some(w => w.url().endsWith('/player-display.html')));
         let player = app.windows().find(w => w.url().endsWith('/player-display.html'));
-        await player.waitForFunction(() => document.body.innerText.includes('Eichenfurt'));
-        assert(!await player.locator('body').innerText().then(s => s.includes('Nordpass')));
+        await player.waitForFunction(async()=>document.querySelector('.player-atlas')?.dataset.ready==='true'&&(await window.playerDisplay.frame()).value.frame.map?.cells.some(c=>c.label==='Eichenfurt'));
+        assert(!await player.evaluate(async()=>(await window.playerDisplay.frame()).value.frame.map.cells.some(c=>c.label==='Nordpass')));
         await discover(1, 'Nordpass');
-        await player.waitForFunction(() => document.body.innerText.includes('Nordpass'));
+        await player.waitForFunction(async()=>document.querySelector('.player-atlas')?.dataset.ready==='true'&&(await window.playerDisplay.frame()).value.frame.map?.cells.some(c=>c.label==='Nordpass'));
+        await player.waitForFunction(()=>document.querySelector('.player-atlas')?.dataset.ready==='true');
         let frame = await player.evaluate(async () => { const r = await window.playerDisplay.frame(); return r.value.frame; });
         assert.equal(frame.mode, 'map');
         assert.deepEqual(frame.map.cells.map(c => [c.q, c.label]), [[0, 'Eichenfurt'], [1, 'Nordpass']]);
@@ -120,7 +121,7 @@ try {
         await page.locator('#player-show-follow').click();
         await until(() => app.windows().some(w => w.url().endsWith('/player-display.html')));
         player = app.windows().find(w => w.url().endsWith('/player-display.html'));
-        await player.waitForFunction(() => document.body.innerText.includes('Eichenfurt') && document.body.innerText.includes('Nordpass'));
+        await player.waitForFunction(async()=>document.querySelector('.player-atlas')?.dataset.ready==='true'&&(await window.playerDisplay.frame()).value.frame.map?.cells.length===2);
         frame = await player.evaluate(async () => { const r = await window.playerDisplay.frame(); return r.value.frame; });
         assert.equal(frame.map.cells.length, 2);
         assert.doesNotMatch(JSON.stringify(frame), /GM_GEHEIM/);

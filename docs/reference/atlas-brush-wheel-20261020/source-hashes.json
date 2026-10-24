@@ -1,9 +1,0 @@
-{
-  "src/app/atlas-brush-size.ts": "0c89a159bdb4b645775a63b67060694a090c9fd1ecbf450dcc07ef8648c8d71b",
-  "src/app/campaign-atlas-ui.ts": "7eb2b67552dbfec48baf55e552a2ac285ae8a3c8f3f9c89708c9fdb1ee4733a3",
-  "src/app/terrain-spatial-ui.ts": "b3f011e5d6453716fbe78465a4d186b5308127d9820c8e42671232dcc0276644",
-  "src/app/vegetation-spatial.ts": "cfd5a4f2283c4956f58de7a4059d460d7421fa0de2747f71476099a4e7869f90",
-  "tests/atlas-brush-size.test.mjs": "dd82305ad09a222d502c42b3d78952faab696d9849e7e623f952ec4af33c7779",
-  "tools/test-desktop-atlas-brush-ux.mjs": "9ef46f60776084237e95350171e1f87acefae3b3dc70fa0f47ff5c589a11a48b",
-  "tools/test-desktop-terrain-spatial.mjs": "da68ae995f0866db67b694f12a37476426bbe80ddc2a116fdc4d9db61d3a8fe2"
-}

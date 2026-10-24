@@ -1,6 +1,6 @@
 # Produktroadmap und fachliche Abhängigkeiten
 
-Der beauftragte [Atlasumbau](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#umstellung-auf-das-vorläufige-atlaszielsystem) folgt gezielten Reads → räumlicher Präzision/Index → Detailstufen/Frame → Fachanschlüssen → Medien/Jobs → Verbrauchern → qualifizierter Ablösung. Bestehende Fachfähigkeiten werden übernommen; der volle Produktumfang bleibt erhalten. Vorläufige Technik und Alternativen stehen ausschließlich im [Beobachtungsregister B01–B11](../ARCHITECTURE.md#vorläufiges-atlasziel-und-überprüfbare-alternativen-16102026).
+Der beauftragte [Atlasumbau](development/atlas-rendering.md) folgt gezielten Reads → räumlicher Präzision/Index → Detailstufen/Frame → Fachanschlüssen → Medien/Jobs → Verbrauchern → qualifizierter Ablösung. Bestehende Fachfähigkeiten werden übernommen; der volle Produktumfang bleibt erhalten. Vorläufige Technik und Alternativen stehen ausschließlich im [Beobachtungsregister B01–B11](../ARCHITECTURE.md#atlas).
 
 Diese Datei führt die fachliche Lieferfolge. Der [Atlasstand](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) unterscheidet integrierte Funktionen, Kandidaten und offene Lücken.
 

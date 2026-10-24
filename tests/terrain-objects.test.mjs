@@ -6,8 +6,8 @@ import {mkdtempSync,mkdirSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-view';export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-objects';export * from './src/app/terrain-object-view';export * from './src/app/terrain-profile';export * from './src/app/terrain-height';export * from './src/app/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-objects-test.cjs'});
-const {terrainObjectSources,resolveTerrainObjects,terrainObjectMeshes,TerrainObjectLayer,terrainProfile,validateTerrainBuilding,heightRecord,CampaignStore,AtlasRegionReader,cellAt,weatherAt,weatherEffects,terrainGrid,TerrainSampler,TerrainSpatialView}=require('../.build/terrain-objects-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-objects';export * from './src/app/atlas-object-geometry';export * from './src/app/terrain-profile';export * from './src/app/terrain-height';export * from './src/app/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",resolveDir:process.cwd()},bundle:true,platform:'node',format:'cjs',external:['better-sqlite3'],outfile:'.build/terrain-objects-test.cjs'});
+const {terrainObjectSources,resolveTerrainObjects,atlasObjectGeometry,AtlasObjectGeometry,terrainProfile,validateTerrainBuilding,heightRecord,CampaignStore,AtlasRegionReader,cellAt,weatherAt,weatherEffects,terrainGrid,TerrainSampler}=require('../.build/terrain-objects-test.cjs');
 const heights=(rise=0)=>heightRecord(0,0,1,Float32Array.from({length:4096},(_,i)=>100+rise+(i%64)*.5+Math.floor(i/64)*.25));
 const source={kind:'building',id:'house',cityId:'city',name:'Haus',anchor:{x:20,y:20},outline:[{x:16,y:16},{x:24,y:16},{x:24,y:24},{x:16,y:24}],binding:{mode:'ground',offsetM:1},wallM:3,roofM:2,floorElevations:[-3,0,4,7],color:'#9c604c'};
 test('terrain anchored buildings translate as a whole and keep exact floors and footprint; fixed buildings stay fixed',()=>{
@@ -15,20 +15,20 @@ test('terrain anchored buildings translate as a whole and keep exact floors and 
  assert.equal(b.baseM-a.baseM,15);assert.equal(a.topM-a.baseM,10);assert.deepEqual(a.floorsM.map(z=>z-a.baseM),[-3,0,4,7]);assert.deepEqual(a.outline,b.outline);
  assert.deepEqual(b.floorsM.map((z,i)=>z-a.floorsM[i]),[15,15,15,15]);
  assert.equal(resolveTerrainObjects([{...source,binding:{mode:'fixed',offsetM:45}}],[heights(30)])[0].baseM,45);
- const meshes=terrainObjectMeshes(a,{x:0,y:0,z:100},3);assert.equal(meshes.length,3);
- const walls=meshes[1].geometry.attributes.position.array;assert.equal(Math.max(...[...walls].filter((_,i)=>i%3===2)),(a.topM-100)*3);
- for(const mesh of meshes){mesh.geometry.dispose();mesh.material.dispose();}
+ const meshes=atlasObjectGeometry(a,{x:0,y:0,z:100},3);assert.equal(meshes.length,3);
+ const walls=meshes[1].positions;assert.equal(Math.max(...[...walls].filter((_,i)=>i%3===2)),(a.topM-100)*3);
+
 });
 test('concave building roofs use footprint triangulation, not a fan extending outside the footprint',()=>{
  const outline=[{x:0,y:0},{x:8,y:0},{x:8,y:2},{x:2,y:2},{x:2,y:8},{x:0,y:8}];
- const object=resolveTerrainObjects([{...source,outline}],[heights()])[0],meshes=terrainObjectMeshes(object,{x:0,y:0,z:0},1);
- const vertices=meshes[2].geometry.attributes.position.array;let area=0;
+ const object=resolveTerrainObjects([{...source,outline}],[heights()])[0],meshes=atlasObjectGeometry(object,{x:0,y:0,z:0},1);
+ const vertices=meshes[2].positions;let area=0;
  for(let i=0;i<vertices.length;i+=9)area+=Math.abs((vertices[i+3]-vertices[i])*(vertices[i+7]-vertices[i+1])-(vertices[i+6]-vertices[i])*(vertices[i+4]-vertices[i+1]))/2;
- assert.equal(area,28);const zs=[...vertices].filter((_,i)=>i%3===2);assert.equal(Math.min(...zs),object.topM);assert.equal(Math.max(...zs),object.topM+object.roofM);for(const m of meshes){m.geometry.dispose();m.material.dispose();}
+ assert.equal(area,28);const zs=[...vertices].filter((_,i)=>i%3===2);assert.equal(Math.min(...zs),object.topM);assert.equal(Math.max(...zs),object.topM+object.roofM);
 });
 test('marker-only terrain entries retain their height through mesh replacement without renderer errors',t=>{
  const errors=[];t.mock.method(console,'error',(...args)=>errors.push(args));
- const layer=new TerrainObjectLayer();t.after(()=>layer.dispose());
+ const layer=new AtlasObjectGeometry();t.after(()=>layer.dispose());
  const building=resolveTerrainObjects([source],[heights()])[0];
  const marker={...building,kind:'entrance',outline:[],wallM:0,roofM:0,topM:building.baseM};
  const origin={x:0,y:0,z:100};
@@ -76,8 +76,8 @@ test('canonical house/entrance bindings survive history and reopen; region input
  const originalRooms=JSON.stringify(store.campaignAtlas(active.token).workspace.rooms),originalFloors=JSON.stringify(store.campaignAtlas(active.token).geometry.floors),entry=resolved().find(o=>o.kind==='entrance');
  assert.deepEqual(entry.outline,[],'An entrance is a point, not an authored house');
  assert.equal(entry.topM+entry.roofM,entry.baseM,'The existing marker stays at its actual anchor height');
- assert.equal(terrainObjectMeshes(entry,{x:0,y:0,z:0},1).length,0,'No synthetic entrance volume');
- const layer=new TerrainObjectLayer();layer.update([entry],{x:0,y:0,z:0},1);
+ assert.equal(atlasObjectGeometry(entry,{x:0,y:0,z:0},1).length,0,'No synthetic entrance volume');
+ const layer=new AtlasObjectGeometry();layer.update([entry],{x:0,y:0,z:0},1);
  assert.equal(layer.heights.get(entry.id),entry.baseM);assert.equal(layer.meshes.length,0);layer.dispose();
  write({kind:'landscape-put',record:heights(20),expectedRevision:1});
  assert.equal(resolved().find(o=>o.id==='house').baseM-original.baseM,20);assert(Math.abs(resolved().find(o=>o.kind==='entrance').baseM-entry.baseM-20)<1e-10,'fractional entrance height translates within floating-point precision');

@@ -1,7 +1,0 @@
-{
-  pass: 30,
-  fail: 0,
-  ms: 436.998289,
-  samples100: { ms: 57.46162400000003, polygons: 1, vertices: 538 },
-  samples2000: { ms: 6458.026178, polygons: 1, vertices: 10203 }
-}

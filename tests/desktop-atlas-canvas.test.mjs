@@ -1,10 +1,10 @@
 import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSync } from "esbuild";
+import { build } from "esbuild";
 import { createRequire } from "node:module";
 import { parseHTML } from './helpers/dom.mjs';
-buildSync({
+await build({
   stdin: {
     contents:
       "export * from './src/app/atlas-canvas';export * from './src/app/atlas-canvas-scene';export * from './src/app/campaign-atlas-export';export * from './src/app/atlas-landscape-export';export {atlasRegionPaint} from './src/app/atlas-region-export';export {CampaignAtlasWorkbench} from './src/app/campaign-atlas-ui';",
@@ -14,6 +14,10 @@ buildSync({
   bundle: true,
   platform: "node",
   format: "cjs",
+  plugins:[{name:'output-boundary',setup(b){
+    b.onResolve({filter:/^\.\/atlas-terrain-export$/},()=>({path:'output',namespace:'probe'}));
+    b.onLoad({filter:/.*/,namespace:'probe'},()=>({contents:'export async function atlasTerrainExport(...args){return globalThis.captureAtlasOutput?.(...args)??new Uint8Array([1,2,3]);}'}));
+  }}],
 });
 const { AtlasCanvas, AtlasCanvasScene, atlasPaint, atlasImage, dungeonExportBox, atlasExportScale, atlasExportTiles, atlasRegionPaint, CampaignAtlasWorkbench } = createRequire(
   import.meta.url,
@@ -564,45 +568,17 @@ test('one GM export freezes floor, grid, scale, reference, box, size and format 
  const f=fixture(t),controls=f.document.createElement('div');
  controls.innerHTML='<input id="atlas-export-size" value="1025"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><button id="atlas-output-save-campaign"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p>';
  f.document.body.append(controls);f.document.querySelector('#atlas-export-grid').checked=true;f.document.querySelector('#atlas-export-reference').checked=false;
- const box={x:0,y:0,width:1025,height:2},created=[],copies=[],queries=[],errors=[],encodings=[],create=f.document.createElement.bind(f.document);let strokes=0,saved=0;
- f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas'){
-  created.push(n);const ctx=new Proxy({canvas:n,stroke(){strokes++;},drawImage(){copies.push(strokes);strokes=0;}},{get(o,k){return k in o?o[k]:()=>{};}});
-  n.getContext=()=>ctx;n.toBlob=(done,type)=>{encodings.push({width:n.width,height:n.height,type});done(new Blob(['png']));};
- }return n;};
- const frame=q=>({campaignId:'c',revision:7,region:{box:q.box,fence:'f',scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
- const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{},owner:{token:'t'},outputRun:null,floorId:'ground',landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ const box={x:0,y:0,width:1025,height:2},queries=[],errors=[],captures=[];let saved=0;
+ const previous=globalThis.captureAtlasOutput;t.after(()=>globalThis.captureAtlasOutput=previous);
+ globalThis.captureAtlasOutput=async(...args)=>{captures.push(args);return new Uint8Array([1,2,3]);};
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{},owner:{token:'t'},outputRun:null,floorId:'ground',landscape:{contours:()=>0},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  f.window.campaign={atlasRegion:async(token,q)=>{
-  queries.push(q);
-  if(queries.length===1){f.document.querySelector('#atlas-export-grid').checked=false;f.document.querySelector('#atlas-hex-level').value='10';f.document.querySelector('#atlas-export-reference').checked=true;f.document.querySelector('#atlas-export-size').value='2048';f.document.querySelector('#atlas-export-format').value='jpeg';ui.floorId='upper';box.x=20000;}
-  return{ok:true,value:frame(q)};
- },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert(bytes instanceof Uint8Array);assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
- await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,4);assert(queries.slice(1).every(q=>q.references===false));assert.deepEqual(encodings,[{width:1025,height:2,type:'image/png'}]);assert.equal(copies.length,3);assert(copies.every(n=>n>0),'All tiles use the originally selected grid/level');assert(queries.every(q=>q.floorId==='ground'));assert.deepEqual(queries.slice(1).map(q=>q.box.x),[0,512,1024]);assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');assert(created.every(c=>c.width===0&&c.height===0));
+  queries.push(q);f.document.querySelector('#atlas-export-grid').checked=false;f.document.querySelector('#atlas-hex-level').value='10';f.document.querySelector('#atlas-export-reference').checked=true;f.document.querySelector('#atlas-export-size').value='2048';f.document.querySelector('#atlas-export-format').value='jpeg';ui.floorId='upper';box.x=20000;
+  return{ok:true,value:{revision:7,region:{fence:'f'}}};
+ },exportAtlasPNG:async(token,bytes,audience,format,fence)=>{assert.deepEqual(bytes,new Uint8Array([1,2,3]));assert.equal(format,'png');assert.equal(fence,'f');saved++;return{ok:true,value:{cancelled:false}};}};
+ await ui.exportPNG();assert.deepEqual(errors,[]);assert.equal(saved,1);assert.equal(queries.length,1);assert.equal(captures.length,1);
+ const [,snapshot,view,options]=captures[0];assert.equal(snapshot.revision,7);assert.deepEqual(view.frame,{x:0,y:0,width:1025,height:2});assert.equal(options.width,1025);assert.equal(options.height,2);assert.equal(options.grid,true);assert.equal(options.level,'0');assert.equal(options.references,false);assert.equal(options.floorId,'ground');assert.equal(options.format,'png');assert.equal(f.document.querySelector('#atlas-save-status').textContent,'Atlas-PNG gespeichert');
 });
-
-
-test('GM image resolution preserves label composition and scales text across tiles in both orientations',async t=>{
- const f=fixture(t),controls=f.document.createElement('div');
- controls.innerHTML='<input id="atlas-export-size"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference"><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><button id="atlas-output-save-campaign"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p>';
- f.document.body.append(controls);
- const painted=[],errors=[],create=f.document.createElement.bind(f.document);let matrix=new Matrix(),saves=0;
- f.ctx.measureText=text=>({width:text.length*Number(f.ctx.font.match(/([\d.]+)px/)[1])*0.6});
- f.ctx.setTransform=m=>{matrix=m;};
- f.ctx.fillText=text=>painted.push({text,pixels:Number(f.ctx.font.match(/([\d.]+)px/)[1])*Math.hypot(matrix.a,matrix.b)});
- f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
- for(const [width,height]of [[1024,512],[512,1024]]){
-  const box={x:0,y:0,width,height},labels=[{id:'a',kind:'room',rank:0,text:'Torhalle',point:{x:250,y:250}},{id:'b',kind:'room',rank:0,text:'Wachstube',point:{x:295,y:250}}];
-  const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:{},owner:{token:'t'},outputRun:null,landscape:{exportBox:null},camera:{view:box},opts:{flush:async()=>true,status(){}},regionQuery:()=>({box,width:100,height:100,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
-  f.window.campaign={atlasRegion:async(token,q)=>({ok:true,value:{campaignId:'c',revision:7,region:{box:q.box,fence:'f',labels,scopeId:null,floorId:'ground',landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}}}),exportAtlasPNG:async()=>{saves++;return{ok:true,value:{cancelled:false}};}};
-  for(const size of [1024,2048]){
-   painted.length=0;f.document.querySelector('#atlas-export-size').value=String(size);await ui.exportPNG();assert.deepEqual(errors,[]);
-   assert.deepEqual([...new Set(painted.map(p=>p.text))],['Torhalle'],'Resolution must not change collision decisions');
-   assert(painted.length>1,'The label is composed through multiple export tiles');
-   assert(painted.every(p=>Math.abs(p.pixels-12*size/1024)<1e-6),'Text scales with the exported map');
-  }
- }
- assert.equal(saves,4);
-});
-
 
 test('explicitly retained local paths survive rebase; dynamic paths and context caches remain independent',t=>{
  fixture(t);const cache=new WeakMap(),base=atlasPaint('group',{retainGeometry:true}),fixed=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:10,y:0},{x:10,y:10}],holes:[]}]}),dynamic=atlasPaint('polyline',{points:[{x:1,y:1},{x:2,y:2}]}),wrap=atlasPaint('group');base.append(fixed);wrap.append(base,dynamic);
@@ -884,7 +860,7 @@ for(const transition of ['other','same','A–B–A'])for(const heldStage of ['re
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),create=f.document.createElement.bind(f.document),messages=[],errors=[],saved=[],held=[];
  f.document.createElement=tag=>{const n=create(tag);if(tag==='canvas')n.toBlob=done=>done(new Blob(['png']));return n;};
  const box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'campaign'}},next=sameToken?owner:{token:'second',campaign:{id:'other'}},frame=(token,q)=>({campaignId:token==='second'?'other':'campaign',revision:7,region:{box:q.box,fence:'f-'+token,scopeId:null,floorId:q.floorId,landscape:{state:'ready',coverage:{complete:true,mode:'detail'},records:[],tiles:[]}},cities:[],bindings:[],workspace:{rooms:[]},geometry:{drawing:{elements:[]}}});
- const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{},owner,outputRun:null,floorId:'ground',landscape:{context(){},contours:()=>0},camera:{view:box,context(){}},opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  let initial=0;
  f.window.campaign={cancelAtlasRegion:async()=>{},atlasRegion:async(token,q)=>{if(q.revision===undefined){initial++;if((initial===1&&heldStage==='read')||initial===2)return new Promise(resolve=>held.push(()=>resolve({ok:true,value:frame(token,q)})));}return{ok:true,value:frame(token,q)};},exportAtlasPNG:async token=>{saved.push(token);if(saved.length===1&&heldStage==='save')return new Promise(resolve=>held.push(()=>resolve({ok:true,value:{cancelled:false}})));return{ok:true,value:{cancelled:false}};}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held export stage');};
@@ -902,7 +878,7 @@ function editableExportFixture(t){
  const f=fixture(t),controls=f.document.createElement('div');
  controls.innerHTML='<section id="atlas-output"></section><button id="atlas-output-open"></button><input id="atlas-export-kind" value="campaign"><div id="atlas-output-editable"></div><div id="atlas-output-image"></div><button id="atlas-output-save-campaign"></button><p id="atlas-output-save-status"></p><button id="atlas-export-png"></button><button id="atlas-export-cancel"></button><p id="atlas-save-status"></p><p id="atlas-output-area"></p><div id="atlas-search-results"></div><input id="atlas-export-size" value="256"><input id="atlas-export-audience" value="gm"><input id="atlas-export-format" value="png"><input id="atlas-export-grid"><input id="atlas-hex-level" value="0"><input id="atlas-export-reference">';
  f.document.body.append(controls);const get=id=>f.document.getElementById(id),messages=[],errors=[],held=[],saved=[],box={x:0,y:0,width:10,height:10},owner={token:'first',campaign:{id:'first'}};
- const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{workspace:{floors:[]}},owner,outputRun:null,floorId:'ground',landscape:{context(){}},camera:{view:box,context(){}},flush:async()=>true,opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
+ const ui=Object.assign(atlasFixture(CampaignAtlasWorkbench),{root:f.root,svg:f.root,hitVersion:0,previewRequest:0,searchRequest:0,request:0,hitDialog:{close(){}},playback:{stop(){}},reference:{close(){}},projection:{workspace:{floors:[]}},owner,outputRun:null,floorId:'ground',landscape:{context(){},contours:()=>0},camera:{view:box,context(){}},flush:async()=>true,opts:{flush:async()=>true,status:s=>messages.push(s)},regionQuery:()=>({box,width:256,height:256,scopeId:null,floorId:'ground',slice:null,roofs:true}),error:e=>errors.push(e.message)});
  f.window.campaign={cancelAtlasRegion:async()=>{},exportCampaign:token=>{saved.push(token);return new Promise(resolve=>held.push(resolve));}};
  const until=async check=>{for(let i=0;i<50&&!check();i++)await settle();assert(check(),'Expected held campaign export');};
  return{...f,ui,get,messages,errors,held,saved,owner,until};

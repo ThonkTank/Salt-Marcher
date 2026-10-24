@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {buildSync} from 'esbuild';
 const require=createRequire(import.meta.url);
-buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/terrain-color-visibility';export * from './src/app/terrain-spatial-worker';",resolveDir:process.cwd()},outfile:'.build/terrain-tilted-atlas-test.cjs',bundle:true,platform:'node',format:'cjs'});
-const {terrainSourceBounds,heightBrushBounds,terrainGrid,terrainVisible,gridHeight,projectTerrain,validateTerrainView,heightRecord,applyTerrainBrush,TerrainSampler,visibleTerrainColor,renderTerrainSpatial}=require('../.build/terrain-tilted-atlas-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/terrain-spatial-model';export * from './src/app/terrain-height';export * from './src/app/terrain-brush';export * from './src/app/terrain-color-visibility';export {terrainPreview} from './tests/helpers/terrain-preview';",resolveDir:process.cwd()},outfile:'.build/terrain-tilted-atlas-test.cjs',bundle:true,platform:'node',format:'cjs'});
+const {terrainSourceBounds,heightBrushBounds,terrainGrid,terrainVisible,gridHeight,projectTerrain,validateTerrainView,heightRecord,applyTerrainBrush,TerrainSampler,visibleTerrainColor,terrainPreview}=require('../.build/terrain-tilted-atlas-test.cjs');
 import * as THREE from 'three';
 const view=(extra={})=>({box:{x:-64,y:-64,width:128,height:128},frame:{x:-64,y:-64,width:128,height:128},columns:33,rows:33,focusM:100,tilt:60,rotation:0,exaggeration:1,...extra});
 const surface=fn=>{const result=[];for(let y=-1;y<=1;y++)for(let x=-1;x<=1;x++)result.push(heightRecord(x*64,y*64,1,Float32Array.from({length:4096},(_,i)=>fn(x*64+i%64,y*64+Math.floor(i/64)))));return result;};
@@ -42,7 +42,7 @@ test('colour stores a visible footprint once, not a camera-dependent paint layer
 });
 test('spatial preview reads the same height operation as the canonical field; no new terrain is invented by zoom',()=>{
  const records=mountain(),v=view(),s=stroke('raise',v),job={source:'fixture',generation:1,records,view:v,box:v.box,width:64,height:64,heightStroke:s};
- const image=renderTerrainSpatial(job),next=merged(records,applyTerrainBrush(records,s));assert.deepEqual(image.grid.heights,terrainGrid(next,v).heights);assert.equal(image.pixels.length,64*64*4);
+ const image=terrainPreview(job),next=merged(records,applyTerrainBrush(records,s));assert.deepEqual(image.grid.heights,terrainGrid(next,v).heights);assert.equal(image.pixels.length,64*64*4);
  assert.deepEqual(terrainGrid(records,v).heights,terrainGrid(structuredClone(records),v).heights);
 });
 test('unbounded meshes and invalid projections are rejected before generation',()=>{
@@ -70,15 +70,4 @@ test('wide smoothing reads neighbouring tiles beyond the displayed mesh without 
  const b=terrainSourceBounds(v,s.radius/2);assert.deepEqual(heightBrushBounds(s),b);
  const read=records.filter(r=>r.height.x+64>=b.x&&r.height.x-1<=b.x+b.width&&r.height.y+64>=b.y&&r.height.y-1<=b.y+b.height),next=merged(records,applyTerrainBrush(read,s)),sampler=new TerrainSampler(next);
  assert.equal(sampler.sample({x:61,y:1}).heightM,200);assert.equal(sampler.sample({x:69,y:1}).heightM,400);
-});
-
-test('spatial contour ink is drawn at display time, not baked into background pixels',()=>{
- const records=mountain(),v=view(),job={source:'contours',generation:1,records,view:v,box:v.box,width:64,height:64};
- const plain=renderTerrainSpatial({...job,contours:0}),ink=renderTerrainSpatial({...job,contours:50});
- assert.deepEqual(plain.pixels,ink.pixels);assert.deepEqual(plain.grid.heights,ink.grid.heights);assert.equal(ink.contourInk,'#685639');
-});
-
-test('main Atlas empty terrain is opaque ocean behind ordinary map objects',()=>{
- const v=view({focusM:0,tilt:0}),r=renderTerrainSpatial({generation:1,source:'empty',view:v,records:[],box:v.box,width:16,height:16,contours:0});
- for(let i=0;i<r.pixels.length;i+=4)assert.deepEqual([...r.pixels.slice(i,i+4)],[127,168,189,255]);
 });

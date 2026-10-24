@@ -1,2 +1,0 @@
-Running as unit: dungeon-native-3244554.service; invocation ID: a618a850148f418eb9f94b3a57134217
-{"run":"1791664455627-atlas-spatial-reopen","checks":["Fresh actual Obsidian process reopens saved same Atlas/Location/placement/section IDs and exact Key text on one canvas"],"errors":[],"failure":null,"shutdownFailure":null,"peakBytes":437334016,"passed":true}

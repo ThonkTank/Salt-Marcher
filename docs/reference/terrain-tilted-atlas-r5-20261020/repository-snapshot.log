@@ -1,6 +1,0 @@
-
-> saltmarcher@0.164.0 check:repo
-> node tools/check-repository.mjs
-
-docs/plans/maps/vegetation.md: missing local link target ../../reference/vegetation-20261020/README.md
-Repository check FAILED: 1 problem(s)

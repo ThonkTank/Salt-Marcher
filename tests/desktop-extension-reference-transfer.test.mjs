@@ -7,7 +7,7 @@ buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store
 const {CampaignStore,inspectDungeon}=createRequire(import.meta.url)('../.build/extension-reference-transfer.cjs'),hash=b=>createHash('sha256').update(b).digest('hex');
 for(const variant of ['token','payload','checksum','metadata','historical'])test(`missing extension transfer preserves opaque reference ${variant} while remapping the declared room slot`,async t=>{
  const root=mkdtempSync(path.join(tmpdir(),'extension-reference-')),source=new CampaignStore(path.join(root,'source.sqlite'));let target=new CampaignStore(path.join(root,'target.sqlite'));t.after(()=>{source.close();target.close();rmSync(root,{recursive:true,force:true});});
- const campaign=source.create('Original',inspectDungeon(readFileSync('docs/reference/atlas-host-h02/native-input/Dungeons/E2E-01-Testdungeon/Karte.dungeon','utf8')).rooms),w=source.activate(campaign.id),roomId=w.rooms[0].id,id=randomUUID(),body=Buffer.from([0,255,17,0,42]);
+ const campaign=source.create('Original',inspectDungeon(readFileSync('tests/fixtures/atlas/reference-transfer.dungeon','utf8')).rooms),w=source.activate(campaign.id),roomId=w.rooms[0].id,id=randomUUID(),body=Buffer.from([0,255,17,0,42]);
  const payload=JSON.stringify({token:'provider-secret-context',roomId,title:'  Originaltext '+roomId+'\r\n'}),refs={roomId};
  if(variant==='token')refs.token='opaque-provider-token '+roomId;
  else if(variant==='payload')refs.payload=payload;

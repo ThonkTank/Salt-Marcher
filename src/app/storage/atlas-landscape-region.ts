@@ -1,3 +1,7 @@
+import {readRouteTerrain} from './terrain-route';
+import {resolveTerrainObjects,terrainObjectPoints,type TerrainObject} from '../terrain-objects';
+import {readTerrainGridSteps} from './terrain-grid';
+import {readTerrainMaterialSteps} from './terrain-material';
 import {terrainHeightBlocks} from './terrain-height-blocks';
 import {AtlasProjectionIndex} from './atlas-projection-index';
 import {compactVegetation} from '../vegetation-projection';
@@ -6,6 +10,7 @@ import {TerrainChangeHistory} from '../terrain-change-history';
 import {mapRecordVisible} from '../atlas-scale-policy';
 import {landscapeLabels,boundedLabels,type MapLabelCandidate} from '../atlas-cartography';
 import {readTerrainGrid} from './terrain-grid';
+import {validateTerrainView} from '../terrain-spatial-model';
 import {TerrainProjectionCache} from '../terrain-projection-cache';
 import {readTerrainColorSteps} from './terrain-color';
 import {readTerrainProjection,readTerrainProjectionSteps} from './terrain-projection';
@@ -30,11 +35,15 @@ export class AtlasLandscapeReader {
  private indexed=true;private sampleMath=true;
  private placeLabelUnits=0;
  private terrainSignature="";private canonicalTerrain=false;
+ private terrainSettingsIdentity="";private terrainSeaLevelM=0;private terrainSettingsReady=false;
  private terrainKinds=new Set<string>();
+ private completeness:'none'|'field'|'full'='none';
+ get complete(){return this.completeness==='full';}
+ needsPreparation(mode:'full'|'field'){return this.completeness==='none'||mode==='full'&&!this.complete;}
  private projection:AtlasProjectionIndex;
  constructor(private db:any,private cacheLimit=8*1024*1024,projection?:AtlasProjectionIndex){
   this.projection=projection??AtlasProjectionIndex.temporary(db);
-  const init=(sql:string)=>{if(this.projection.init(sql))this.projection.forget('landscape');};
+  const init=(sql:string)=>{if(this.projection.init(sql)){this.projection.forget('landscape');this.projection.forget('landscape-field');}};
   try{db.prepare('SELECT ceil(0),floor(0)').get();}catch{this.sampleMath=false;}
   init('CREATE TEMP TABLE landscape_shape_bounds(id TEXT PRIMARY KEY,source_row INTEGER NOT NULL,kind TEXT,terrain_kind TEXT,resolution REAL,paint_version INTEGER,paint_order REAL,payload_bytes INTEGER,min_x REAL NOT NULL,max_x REAL NOT NULL,min_y REAL NOT NULL,max_y REAL NOT NULL,CHECK(min_x<=max_x AND min_y<=max_y AND max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))<=1.7976931348623157e308)) WITHOUT ROWID');
   init(LANDSCAPE_COLOR_INDEX);init(LANDSCAPE_COVER_INDEX);
@@ -52,20 +61,35 @@ export class AtlasLandscapeReader {
  private sql(text:string){let s=this.statements.get(text);if(!s){s=this.db.prepare(this.projection.readSql(text));this.statements.set(text,s);}return s;}
  private meta(text:string){return this.projection.prepare(text);}
  private storeBounds(row:any){this.meta('INSERT INTO temp.landscape_shape_bounds VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(row.id,row.source_row,row.kind,row.terrain_kind,row.resolution,row.paint_version,row.paint_order,row.payload_bytes,row.min_x,row.max_x,row.min_y,row.max_y);}
- sync(source:AtlasRegionSource){
+ /** A field snapshot contains every physical anchor dependency, even outside
+  * the camera. Promotion rebuilds from the current source rather than replaying
+  * a cursor that already consumed omitted colour/place changes. */
+ sync(source:AtlasRegionSource,requested:'full'|'field'='full'){
   const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch]);
-  let kindsChanged=this.identity!==identity||source.reset;
-  this.invalidation={reset:this.identity!==identity||source.reset,bounds:[]};
+  const full=requested==='full'||this.identity===identity&&this.complete||this.projection.valid('landscape',source);
+  const part=full?'landscape':'landscape-field';
+  const reset=this.identity!==identity||source.reset||this.completeness==='none'||full&&!this.complete;
+  const settingsIdentity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]);
+  let kindsChanged=reset;
+  this.invalidation={reset,bounds:[]};
   const settings=this.sql("SELECT json_extract(payload,'$.terrainSettings') settings FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
-  const signature=settings?.settings??'';if(this.terrainSignature!==signature){this.invalidation.reset=true;this.cache.clear();this.bytes=0;this.terrainSignature=signature;}
+  const signature=settings?.settings??'',seaLevelM=settings?JSON.parse(settings.settings).seaLevelM:0;if(this.terrainSignature!==signature){this.invalidation.reset=true;this.cache.clear();this.bytes=0;this.terrainSignature=signature;}
 
 
-  let labelsChanged=this.identity!==identity||source.reset;
-  if(this.identity!==identity||source.reset){
+  let labelsChanged=reset;
+  if(reset){
    this.cache.clear();this.bytes=0;
-   if(!this.projection.valid('landscape',source)){
+   if(!this.projection.valid(part,source)){
+    if(!full){
+     // Preserve the global failures the full metadata copy would have exposed,
+     // including unreadable offscreen records omitted by this field filter.
+     if(this.sql('SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND NOT json_valid(payload) LIMIT 1').get(source.campaignId)||
+        this.sql('SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND (min_x>max_x OR min_y>max_y OR max(abs(min_x),abs(max_x),abs(min_y),abs(max_y))>1.7976931348623157e308) LIMIT 1').get(source.campaignId))throw Error('Geländequelle beschädigt.');
+    }
     this.projection.exec('DELETE FROM temp.landscape_shape_bounds');
-    this.projection.copy('landscape_shape_bounds',12,`SELECT id,CAST(rowid AS TEXT),CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END,${this.metadata},min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=?`,[source.campaignId]);
+    // Stream in the destination primary-key order. The canonical campaign/id
+    // index supplies it without a global sort, keeping private-file writes local.
+    this.projection.copy('landscape_shape_bounds',12,`SELECT id,CAST(rowid AS TEXT),CASE WHEN json_valid(payload) THEN json_extract(payload,'$.kind') END,${this.metadata},min_x,max_x,min_y,max_y FROM atlas_landscape WHERE campaign_id=?${full?'':" AND terrain_kind IN ('height','route','lake')"} ORDER BY id`,[source.campaignId]);
    }
   }else for(const c of source.changes){
    if(c.table==='location'){this.invalidation.reset=true;this.cache.clear();this.bytes=0;labelsChanged=true;continue;}
@@ -85,11 +109,14 @@ export class AtlasLandscapeReader {
    if(old?.kind==='place'||row?.kind==='place')labelsChanged=true;
    for(const [key,v]of this.cache)if(dirty.some(b=>overlap(v.box,b))){this.bytes-=v.bytes;this.cache.delete(key);}
    this.meta('DELETE FROM temp.landscape_shape_bounds WHERE id=?').run(c.id);
-   if(row)this.storeBounds(row);
+   if(row){
+    if(![row.min_x,row.max_x,row.min_y,row.max_y].every(Number.isFinite)||row.min_x>row.max_x||row.min_y>row.max_y)throw Error('Geländequelle beschädigt.');
+    if(full||['height','route','lake'].includes(row.terrain_kind))this.storeBounds(row);
+   }
   }
   // UTF-8 bytes conservatively bound JS text units too. Read only sparse place
   // rows on source/name changes; camera reads never rescan the author corpus.
-  if(labelsChanged){
+  if(full&&labelsChanged){
    this.placeLabelUnits=0;
    const names=this.sql(`SELECT coalesce(max(length(CAST(coalesce(json_extract(l.payload,'$.name'),json_extract(a.payload,'$.name'),'') AS BLOB))),0) n FROM json_each(?) ids CROSS JOIN atlas_landscape a ON a.rowid=ids.value LEFT JOIN location l ON l.campaign_id=a.campaign_id AND l.id=json_extract(a.payload,'$.locationId') WHERE a.campaign_id=? AND coalesce(l.trashed,0)=0`);
    const read=(ids:string[])=>{if(ids.length)this.placeLabelUnits=Math.max(this.placeLabelUnits,names.get(JSON.stringify(ids),source.campaignId).n);};
@@ -106,12 +133,30 @@ export class AtlasLandscapeReader {
   }
   this.canonicalTerrain=!!settings||this.terrainKinds.has('height')||this.terrainKinds.has('route');
   this.projectionCache.invalidate(this.invalidation.bounds,this.invalidation.reset);
-  this.identity=identity;
+  this.identity=identity;this.terrainSettingsIdentity=settingsIdentity;this.terrainSeaLevelM=seaLevelM;this.terrainSettingsReady=true;
   this.colorHistory.record(source,this.invalidation);
-  this.projection.mark('landscape',source);
+  if(full)this.projection.mark('landscape',source);else this.projection.forget('landscape');
+  this.projection.mark('landscape-field',source);
+  this.completeness=full?'full':'field';
  }
 
- visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache);}
+ rollback(){this.completeness='none';this.identity='';this.terrainSettingsReady=false;this.projectionCache.invalidate([],true);}
+ private requireFull(){if(!this.complete)throw Error('Vollständige Landschaft muss zuerst synchronisiert werden.');}
+
+ visibility(source:AtlasRegionSource,view:import('../terrain-spatial-model').TerrainView){
+  const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]),settings=this.terrainSettingsReady&&this.terrainSettingsIdentity===identity?{seaLevelM:this.terrainSeaLevelM}:undefined;
+  return readTerrainGrid(this.db,source.campaignId,view,this.terrainStream(source),this.projectionCache,settings);
+ }
+ /** Keep the full 3x3 source neighbourhood, including corruption checks, but
+  * retain only its scalar anchor for cross-tile reuse. Decoded height blocks
+  * and anchors share the existing bounded LRU with display rasters. */
+ geometryHeight(source:AtlasRegionSource,point:Point):number{
+  const box={x:point.x-.5,y:point.y-.5,width:1,height:1},view={box,frame:box,columns:3,rows:3,focusM:0,tilt:0,rotation:0,exaggeration:1};
+  validateTerrainView(view);
+  const identity=JSON.stringify([source.campaignId,source.epoch,source.shadow?.epoch,source.fence]);
+  if(!this.terrainSettingsReady||this.terrainSettingsIdentity!==identity)return this.visibility(source,view).heights[4]!;
+  return this.projectionCache.geometryAnchor(point.x,point.y,this.terrainSeaLevelM,()=>streamTerrainField({x:box.x,y:box.y,dx:.5,dy:.5,columns:3,rows:3},this.terrainSeaLevelM,this.terrainStream(source),true).surface![4]!);
+ }
  private *rows(source:AtlasRegionSource,box:LandscapeBox,patches:boolean,pixels:RasterSamples=0,mpp=0,kind?:'height'|'route'|'lake'|'color'|'cover'|'base'|'line'){
   if(kind&&kind!=='line'&&!this.terrainKinds.has(kind))return;
   const search=landscapePaintBox(box,mpp,this.placeLabelUnits);
@@ -161,22 +206,45 @@ export class AtlasLandscapeReader {
   stream.heightSources=(box,samples)=>this.terrainKinds.has('height')?terrainHeightBlocks(text=>this.sql(text),this.projectionCache,source.campaignId,box,samples,this.sampleMath):[];
   return stream;
  }
+ *heightSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
+  this.requireFull();
+  let start=performance.now();function* checkpoint(){if(performance.now()-start>=8){yield;start=performance.now();}}
+  const grid=yield* readTerrainGridSteps(this.db,source.campaignId,q.view,checkpoint,this.terrainStream(source),this.projectionCache);
+  const objects:TerrainObject[]=[];
+  for(const object of q.objects??[]){
+   const points=terrainObjectPoints(object),xs=points.map(p=>p.x),ys=points.map(p=>p.y),x=Math.min(...xs),y=Math.min(...ys);
+   // Resolve the complete physical anchor/footprint, including remote anchors;
+   // the display tile's interpolation is never the canonical object foundation.
+   const records=readRouteTerrain(this.db,source.campaignId,{x:x-1,y:y-1,width:Math.max(...xs)-x+2,height:Math.max(...ys)-y+2});
+   objects.push(...resolveTerrainObjects([object],records));yield* checkpoint();
+  }
+  return {heightOnly:true,revision:source.revision,fence:source.fence,source:source.fence,generation:0,grid,pixels:new Uint8Array(0),width:0,height:0,draft:false,objects};
+ }
+ materialSteps(source:AtlasRegionSource,q:import('../atlas-material-tile').AtlasMaterialTileRequest,channels:ReadonlySet<import('../terrain-material').TerrainMaterialChannel>){
+  this.requireFull();
+  return readTerrainMaterialSteps(this.db,source,q,this.terrainStream(source),channels);
+ }
  terrain(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest){
+  this.requireFull();
   const projection=readTerrainProjection(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange:q.colorBase?this.colorHistory.since(q.colorBase):undefined};
  }
  colorSteps(source:AtlasRegionSource,q:import('../terrain-color').TerrainColorRequest){
+  this.requireFull();
   // Leave the first terrain overview unblocked. SQLite owns maintenance and
   // rollback; no separate build cursor or index-validity state is needed.
   if(this.terrainKinds.has('base'))this.projection.init(LANDSCAPE_BASE_INDEX);
   return readTerrainColorSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
  }
  *terrainSteps(source:AtlasRegionSource,q:import('../terrain-projection').TerrainProjectionRequest):Generator<void,import('../terrain-projection').TerrainProjection>{
+  this.requireFull();
+  if(q.product==='height')return yield* this.heightSteps(source,q);
   const colorChange=q.colorBase?this.colorHistory.since(q.colorBase):undefined;
   const projection=yield* readTerrainProjectionSteps(this.db,source,q,this.terrainStream(source),this.projectionCache);
   return {...projection,colorChange};
  }
  read(source:AtlasRegionSource,q:AtlasRegionQuery,budget:number,forceRaster=false,checkpoint?:()=>void):AtlasLandscapeLayer{
+  this.requireFull();
   checkpoint?.();
   const terrain=q.terrainRaster!==false||q.perception===true;
   const setting=this.sql("SELECT payload FROM atlas_landscape WHERE campaign_id=? AND json_valid(payload) AND json_extract(payload,'$.terrainSettings') IS NOT NULL").get(source.campaignId);
@@ -278,6 +346,7 @@ export class AtlasLandscapeReader {
   return{state:'error',records:[],tiles:[],coverage:{...layer.coverage,complete:false},error:'Landschaftsausschnitt nicht verfügbar. Kleineren Ausschnitt wählen oder erneut laden.'};
  }
  hits(source:AtlasRegionSource,q:AtlasRegionQuery,p:Point,offset=0):AtlasHitPage{
+  this.requireFull();
   const mpp=q.box.width/q.width,tolerance=mpp*6,box={x:p.x-tolerance,y:p.y-tolerance,width:tolerance*2,height:tolerance*2},items:AtlasHit[]=[];let skipped=0,more=false;
   for(const r of this.rows(source,box,false)){
    const touch=r.kind==='vegetation'?contains(p,r.polygons):r.kind==='reference'?(()=>{const a=-(r.angle??0),dx=p.x-r.points[0]!.x,dy=p.y-r.points[0]!.y,x=dx*Math.cos(a)-dy*Math.sin(a),y=dx*Math.sin(a)+dy*Math.cos(a);return x>=0&&x<=r.width&&y>=0&&y<=r.width*(r.imageHeight??1)/(r.imageWidth??1);})():r.kind==='place'?Math.hypot(p.x-r.points[0]!.x,p.y-r.points[0]!.y)<=tolerance:lineContains(r,p,tolerance);

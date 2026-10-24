@@ -32,6 +32,11 @@ export function reliefLighting(style:TerrainStyle){
 export function reliefLight(sx:number,sy:number,style:TerrainStyle){return reliefLighting(style)(sx,sy);}
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
 const smooth=(lo:number,hi:number,value:number)=>{const t=Math.max(0,Math.min(1,(value-lo)/(hi-lo)));return t*t*(3-2*t);};
+/** Pure material coverages shared by raster channels and the legacy colour path. */
+export function rockCoverage(slope:number){return .85*smooth(.35,1.2,slope);}
+export function snowCoverage(heightM:number,slope:number,snowlineM:number){
+  return smooth(snowlineM,snowlineM+300,heightM)*(1-.8*smooth(1,2.5,slope));
+}
 /** Display-only material, before lighting/contours. Physical height and slope,
  * not camera tilt, exaggeration or the loaded height range, choose coverage.
  * Fixed world grain fades below its sampling limit; zoom never moves snow.
@@ -41,8 +46,8 @@ export function mountainMaterial(style:TerrainStyle,footprintM:number){
   const snowline=style.snowlineM??2500,grainScale=160;
   const grainWeight=1-smooth(grainScale/8,grainScale/2,footprintM);
   return (pixels:Uint8Array,at:number,x:number,y:number,height:number,sx:number,sy:number)=>{
-    const slope=Math.hypot(sx,sy),rock=.85*smooth(.35,1.2,slope);
-    const snow=smooth(snowline,snowline+300,height)*(1-.8*smooth(1,2.5,slope));
+    const slope=Math.hypot(sx,sy),rock=rockCoverage(slope);
+    const snow=snowCoverage(height,slope,snowline);
     if(!rock&&!snow)return;
     let grain=0;
     if(grainWeight){

@@ -1,6 +1,0 @@
-Top-down sculpt persists before release, has no confirmation controls and undoes in one step
-Main Atlas profile intercepts the active brush and measures without writing
-Smoothing updates directly and one Undo restores the prior terrain
-Cumulative color keeps one half-opacity layer; Escape stops input and Undo removes the committed gesture
-Blur finishes the saved prefix without leaving an uncommitted terrain draft
-Main-camera tilted sculpt persists across a fresh process and one Undo restores the pre-gesture terrain

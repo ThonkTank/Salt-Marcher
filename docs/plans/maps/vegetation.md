@@ -26,7 +26,7 @@ insbesondere ersetzt sie die damals getrennten Ansichten durch die Hauptkamera.
 | V0 – Prototyp | Wald am Hang, Lichtung mit Straße und Geröll; stilisierte Modelle; gleiche Bestände in Draufsicht und räumlich | Prototyp vorhanden und nativ geprüft; drei Maßstäbe zusätzlich im Produkt unter V3 geprüft. |
 | V1 – Landschaftsbestand | Sechs Vorlagen mit Boden und Geländeart; stabile Flächen, lokale Korrekturen, geschützte Einzelobjekte, Ortsverknüpfung; Wasser, Straßen, Gebäude und Hangneigung; Vorlagenschnappschuss; Main/SQLite, History und begrenzte Bereichsabfrage | Implementiert; lokale Daten- und Bedienbelege vorhanden. |
 | V2 – Linien | Natürliche Säume und regelmäßige Reihen mit Breite und Meterabstand; gleicher Bestand und dieselbe History | Implementiert; lokale Daten- und Bedienbelege vorhanden. |
-| V3 – Darstellung und Bedienqualifikation | Drei Maßstäbe und beide Ansichten; brauchbare Auswahl unter Baumkronen; Editor-/Exportgleichheit; Anpassung nach Gelände-, Straßen- und Gebäudeänderungen; Erhalt feiner Bereiche, Lichtungen und Einzelkorrekturen; Undo/Redo, Neustart und Transfer; Navigation mindestens 30 FPS, Pinselrückmeldung höchstens 100 ms messen | Lokal funktional qualifiziert; 58–60 FPS bei geladenen Kameragesten, beide Pinsel unter 38 ms. Folgegesten bleiben beim Nachladen erhalten. [Vollständiger Zielabgleich](../../reference/vegetation-20261020/qualification/README.md). Kaltes Öffnen der großen Prüfkarte dauerte 34–97 s, Karten-PNG 54 s; diese Ladezeiten bleiben eine wesentliche Leistungsgrenze. |
+| V3 – Darstellung und Bedienqualifikation | Drei Maßstäbe und beide Ansichten; brauchbare Auswahl unter Baumkronen; Editor-/Exportgleichheit; Anpassung nach Gelände-, Straßen- und Gebäudeänderungen; Erhalt feiner Bereiche, Lichtungen und Einzelkorrekturen; Undo/Redo, Neustart und Transfer; Navigation mindestens 30 FPS, Pinselrückmeldung höchstens 100 ms messen | Lokal funktional qualifiziert; 58–60 FPS bei geladenen Kameragesten, beide Pinsel unter 38 ms. Folgegesten bleiben beim Nachladen erhalten. [Vollständiger Zielabgleich](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/qualification/README.md). Kaltes Öffnen der großen Prüfkarte dauerte 34–97 s, Karten-PNG 54 s; diese Ladezeiten bleiben eine wesentliche Leistungsgrenze. |
 
 Zum Abschluss ist jede ursprüngliche Regel nochmals einzeln abzugleichen:
 Vorlagenabhängige Abstände, stabile Kandidaten beim Zoomen, geschützte
@@ -103,7 +103,7 @@ Instanzmatrizen. Die CPU-Trefferprüfung verwendet dieselben Regeln.
 Große gepufferte Ausschnitte wählen nötigenfalls eine gröbere Stufe derselben
 Hierarchie, bevor mehr als 24.000 natürliche Kandidaten geprüft würden.
 Unterwuchs entfällt in diesen zusammengefassten Stufen; die Autorenbestände
-bleiben unverändert. [Detailzoom-Regression](../../reference/forest-detail-20261021/README.md).
+bleiben unverändert. [Detailzoom-Regression](https://github.com/ThonkTank/Salt-Marcher/blob/2282731d25f61f44bd9113e1916307be8c24287e/docs/reference/forest-detail-20261021/README.md).
 Geschützte Einzelobjekte behalten ihre Maße und bleiben erhalten. Der
 Canvas-Fallback verwendet dieselben Ausblendschwellen. Die Hauptansicht verwendet
 instanzierte, geometrisch erzeugte Low-Poly-Meshes. Gras und Unterwuchs sind
@@ -135,7 +135,7 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 | Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/spatial-terrain.ts` |
 | Datenregression, Auswahl und echte Desktop-Bedienung | `tests/vegetation.test.mjs`, `tests/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
 
-Der [lokale Prüfbeleg](../../reference/vegetation-20261020/README.md) trennt
+Der [lokale Prüfbeleg](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/vegetation-20261020/README.md) trennt
 automatische Tests, native Bedienung und Leistungsbeobachtung. Die vollständige
 Relief-Roadmap bleibt eigenständig: R5 betrifft die direkte räumliche
 Geländebearbeitung, R6 unter anderem Dächer und Objektbindungen, R7 große

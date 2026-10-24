@@ -106,21 +106,21 @@ for (const file of [
   "src/app/storage/drawing.ts",
   "src/app/drawing-ui.ts",
   "src/app/atlas-workplane.ts",
-  "src/app/atlas-spatial-labels.ts",
+
   "src/app/atlas-label-source.ts",
   "src/app/atlas-region-export.ts",
   "src/app/atlas-presentation.ts",
   "src/app/atlas-spatial-geometry.ts",
   "src/app/atlas-spatial-surface.ts",
-  "src/app/atlas-spatial-label.ts",
+
   "src/app/atlas-spatial-color.ts",
-  "src/app/terrain-spatial-worker.ts",
+
   "src/app/city-model.ts",
   "src/app/storage/atlas-region.ts",
-  "src/app/atlas-spatial-scene.ts",
+
   "src/app/atlas-canvas.ts",
-  "src/app/terrain-spatial-view.ts",
-  "src/app/terrain-spatial-ui.ts",
+
+
   "src/app/campaign-atlas-ui.ts",
   ".build/desktop/ui/renderer.js",
 ])

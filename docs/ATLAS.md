@@ -14,7 +14,7 @@ Breiten und Sichtbarkeit der linken Leisten bleiben als eigene lokale Ansichtspr
 
 Das Mausrad zoomt am Zeiger. Mittlere Maustaste oder **Leertaste + Ziehen** verschieben vorübergehend die Kamera. Enter schließt einen Punktzug ab, Backspace entfernt seinen letzten Punkt, Escape verwirft ihn. Kartenkürzel wirken auf der Karte, nicht während Texteingaben. Werkzeuge und Werkzeugfamilien dürfen einen begonnenen Zug nicht stillschweigend verwerfen.
 
-[Historische Layoutprobe vom 18.10.2026](reference/atlas-workspace-layout-20261018/README.md).
+[Historische Layoutprobe vom 18.10.2026](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-workspace-layout-20261018/README.md).
 
 ## Vorbereiten
 
@@ -40,7 +40,7 @@ zeigt und bearbeitet dieselben Bestände auf dem Höhengelände.
 
 **Ansicht → Atlas kippen** zeigt denselben Höhenbestand räumlich. Neigung, Drehung und Höhenüberhöhung ändern nur die Darstellung. Die drei Landpinsel bearbeiten die sichtbare Oberfläche in Weltmetern; verdeckte Höhenknoten werden geschützt. **Draufsicht** kehrt unmittelbar zurück, mit derselben Kamera, Auswahl und gemeinsamen Rückgängig-Schritten. Andere Gelände- und Grundrisswerkzeuge sowie der bestehende Bildexport führen zur Draufsicht. Wissens- und Sichtmasken verwenden weiterhin die gefilterte Draufsicht.
 
-[Lokale R5-Prüfung und offene R6-/R7-Grenzen](reference/terrain-tilted-atlas-r5-20261020/README.md).
+[Lokale R5-Prüfung und offene R6-/R7-Grenzen](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-tilted-atlas-r5-20261020/README.md).
 
 ## Leiten
 

@@ -150651,8 +150651,8 @@
           "consumedShared": "5b57706b68f131c2d292bed6159cd6d3221f2ef8",
           "finding": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/13#issuecomment-6099834538",
           "originalReceiptSha256": "4ed1f2b2da15c5715498399a4c6c32369c6aaa36261a1382ebc5cdd359d34820",
-          "repositoryEvidence": "docs/reference/atlas-host-h02/binding-r02.json",
-          "artifactIndex": "docs/reference/atlas-host-h02/ARTIFACTS.json",
+          "repositoryEvidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-host-h02/binding-r02.json",
+          "artifactIndex": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-host-h02/ARTIFACTS.json",
           "sha256": "53b7c0b56c635b97ea8ef60644c01e206254e9bdc5a034c5e9df0ddc3f8a05c4",
           "checks": {
             "allOriginalArtifactsByteExact": 10,
@@ -150703,8 +150703,8 @@
         "nativeSaveFreshRecoveryEvidenceAccess": {
           "id": "HEX-E2E01-SAVE-FRESH-RECOVERY-EVIDENCE-BINDING-01",
           "state": "original_artifacts_access_delivered_independent_scope_review_pending",
-          "repositoryEvidence": "docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
-          "binding": "docs/reference/atlas-host-save-i02-h01/binding.json",
+          "repositoryEvidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-host-save-i02-h01/SAVE-PROVENANCE.md",
+          "binding": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-host-save-i02-h01/binding.json",
           "bindingSha256": "d77e2ceb2919be1e78291bdcd91b63cabe8e03efe7e11b6b9c39f5c1fccc9846",
           "finding": "E2E01-PROMOTION-01",
           "independentApproval": false,
@@ -150737,7 +150737,7 @@
           "issue": 40,
           "sourceCommit": "b87a066e38f1a0000def253bf50e45ee4a5d604f",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
-          "evidence": "docs/reference/atlas-shared-location-h01/receipt.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-h01/receipt.json",
           "sha256": "da3014cddb3bc886af0d188ce75989ec66d9b8d6bde8d9e3c3c7362a6fa758ad",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "freshProcessStarted": false,
@@ -150751,7 +150751,7 @@
           "owner": "Hex",
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-          "evidence": "docs/reference/atlas-shared-location-d01/receipt.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-d01/receipt.json",
           "finding": "SHARED-LOCATION-H01-SAVE-01",
           "diagnosisSourceCommit": "a6c4d89df40746bcce1cc0726f725c97708bc4b7",
           "consumedShared": "93b670aca7927e1915f4c299eb131b4faa8b9fe3",
@@ -150774,7 +150774,7 @@
           "issue": 40,
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-          "evidence": "docs/reference/atlas-shared-location-r01/receipt.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-r01/receipt.json",
           "sha256": "0be7b90d1a4b00582a5e107f6e6d5802fdac6d4a33ae65b648a93274c821683e",
           "consumedShared": "113e37f21670abb42c19b62f4f4480b511e65544",
           "consumedCampaign": "32dc3e8f205421dd8e7c6309b75868c7622cb79f",
@@ -150786,7 +150786,7 @@
           "independentReview": "not independently reviewed in this run",
           "fullE2E": false,
           "latestComposition": {
-            "evidence": "docs/reference/atlas-shared-location-r01/composition.json",
+            "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-r01/composition.json",
             "sha256": "8ea01a86886be2b1e7650101cb1d494d5b71e9e28a90fa8d336cbe76aa85210b",
             "consumedShared": "315f09b610af22984652ff17a304eafbce11ed88",
             "testsPassed": 558,
@@ -150800,7 +150800,7 @@
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
           "state": "targeted_noop_Save_repair_checks_pass_independent_review_native_pending",
-          "evidence": "docs/reference/atlas-shared-location-r01/noop-repair.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-r01/noop-repair.json",
           "sha256": "112afd3b9c4e6107dcd5d20eb97776ce6870f8ddef24819a760577a3cdb69a5f",
           "sourceCommit": "bc98b720d742693025563df7f93282be9936eb62",
           "consumedShared": "11b40200bd0fa3a86de2a81c85ce62e4edb2afcd",
@@ -150885,10 +150885,10 @@
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
           "priorReceiptHashes": {
-            "docs/reference/atlas-shared-location-h01/receipt.json": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
-            "docs/reference/atlas-shared-location-d01/receipt.json": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01",
-            "docs/reference/atlas-shared-location-r01/receipt.json": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
-            "docs/reference/atlas-shared-location-r01/noop-repair.json": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
+            "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-h01/receipt.json": "e628cacae0c0c9bf2c646dc3ec345ee743181133685962efe3cd458002bcf144",
+            "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-d01/receipt.json": "7bde44397cd9e3b3a586a5e8fdf88d6c757145fb9cc0e0afdcfe357af27b4e01",
+            "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-r01/receipt.json": "a2a0545702efc7f69eaa65c8964b9a9bf49bd82914d6765682b41e6d76ef3160",
+            "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-r01/noop-repair.json": "ca29a6cb1da09bd7aa92e47dde3b227e1eac80aa65bfa933426a08e932bbf221"
           },
           "qaRoot": "/home/aaron/.cache/dungeon-native-qa/hex-03/shared-location-r02-consume-20261010-2019",
           "productEdited": false,
@@ -150905,7 +150905,7 @@
           "e2e01UserLine": 13,
           "gate": "E2E01-HEX-SPACE-RUNTIME-NAVIGATION-001",
           "sourcePlan": "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
-          "evidence": "docs/reference/atlas-shared-location-h02/receipt.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-h02/receipt.json",
           "sha256": "1cd55f83db169ec7e6a48955d369dd6ff3044b770ede7008f0ccb1bb22f181cc",
           "sourceCommit": "4515088772b759cda2e19d249367699c9868c72c",
           "buildSha256": "76bb453acca65f260e2276a385da66c5039a643fa10681b9b7a20fc5209c1322",
@@ -150992,7 +150992,7 @@
           "limits": "Only #40 scoped Location Save/fresh-process acceptance. Synthetic native input, no physical GM acceptance. No new Copy/Discard/Recovery fault matrix, Detail/CITY/P02/P04/E2E02-04/original parity/large-world/installation/full-E2E acceptance. Later Shared docs and unrelated package changes are not a new native run.",
           "fullE2E": false,
           "commonGateClosed": false,
-          "evidence": "docs/reference/atlas-shared-location-h02/qualification.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-shared-location-h02/qualification.json",
           "sha256": "85681f0b43221d6fb04da67f5f74e7a0c49744bc798ad6d9aaeb76da702ee35c",
           "originalReceiptSha256": "12856a4f351af562952cd50ce8616dae734f14b91fc8abbaabed6eab17ab94bf",
           "nativeRepeated": false
@@ -151024,9 +151024,9 @@
           "nativeElectronReopen": false,
           "fullE2E": false,
           "qualifiedLocationScopeReopened": false,
-          "evidence": "docs/reference/atlas-detail-binding-d01/receipt.json",
+          "evidence": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/receipt.json",
           "sha256": "d813ce69b295b1f10310da4ac647027c24b992e0468b44f68eea00e7dab6cc6a",
-          "reproduction": "docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
+          "reproduction": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/diagnostic.entry.ts",
           "modelCases": 4
         },
         "detailReferenceRepairN01": {
@@ -151086,7 +151086,7 @@
             "newPlacementIdentityAuthority": false,
             "visibleDungeonPlacementUI": false
           },
-          "receipt": "docs/reference/atlas-detail-binding-d01/repair-n01.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/repair-n01.json",
           "sha256": "b94957c3d9a63afa6c9dd55750dc0eaca1b14d5ec6d41c103d3739e88d28163d"
         },
         "dungeonAtLocationI01": {
@@ -151179,7 +151179,7 @@
           },
           "reproduction": "Checkout the exact source; npm ci, npm run check, npm test, npm run build. CI exposes portable full logs; local raw logs remain at the named QA root.",
           "finishedAt": "2026-10-10T22:14:26.436662+00:00",
-          "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/dungeon-at-location-i01.json",
           "sha256": "a7188acee3017b3cbbc716ead23699ddf69650fc22f9beb14ee3f0846e03f3fc"
         },
         "dungeonAtLocationN02": {
@@ -151285,7 +151285,7 @@
           },
           "reproduction": "Checkout exact sourceCommit; npm ci; npm run check; npm test; npm run build. Core/DOM fresh models are distinct from actual Obsidian/Electron.",
           "finishedAt": "2026-10-10T22:29:57.555698+00:00",
-          "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/dungeon-at-location-n02.json",
           "sha256": "7ccbcb066e0e104d36b4fc7b65bdee339ae6b28b4a49f2b7b4fbb9fedf048c81"
         },
         "dungeonAtLocationQualification": {
@@ -151333,7 +151333,7 @@
             "fullE2E": false
           },
           "finishedAt": "2026-10-10T23:34:50.676462+00:00",
-          "receipt": "docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/dungeon-at-location-h01.json",
           "sha256": "7ea12f49127fd9284ab575acdf889a20f9a3d0239e6f0d75286377afeac8ab3c",
           "nativeEditRun": "1791675129674-atlas-spatial-edit",
           "freshProcessRun": "1791675181265-atlas-spatial-reopen"
@@ -151591,7 +151591,7 @@
           "productBase": "ca290326a35bb792c22ef8f02e215a3dd9ef121d",
           "productBuildSource": "dba7d559044f9e8b072a329f2efacd7452b333b4",
           "fixtureVersion": "e2e01-spatial-v2",
-          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
           "receiptSha256": "3c9e425c38fbf34531ca8c70443327078bd56bd88a9e65be9262b35d7de09003",
           "checks": {
             "nativeEditPassed": 5,
@@ -152050,7 +152050,7 @@
           "state": "native_zoom_geometry_diagnosed_horizontal_controls_overflow_repair_next",
           "sourceCommit": "bca790c22bdab5f76a28d3f1d4699f1f464c1572",
           "qualifiedShared": "a4f20a553060ec84941b97cbb71bd105d5ca5a62",
-          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-zoom-geometry-d01.json",
           "receiptSha256": "42268ad16d73858c11bbef555e53240f7382c32a56cf0886f96bd90f8d9e9a17",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
@@ -152085,7 +152085,7 @@
           "sourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
           "fixtureVersion": "e2e01-spatial-v2",
           "fixtureManifestSha256": "23735bb6c95107b7dec93ffa56ec66405a0f4fe0ec3822fc0476d90d2920188d",
-          "receipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+          "receipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
           "receiptSha256": "b873bced4c6937551b4d63395a8d5f98c4ff5a5f6d4b9292434c2ffc91c7ef90",
           "result": "existing Location/Room actions and detail/binding targets fit available dock width; native seven-sample horizontal-layout regression PASS, 131% sidebar-open153/153 versus D01 153/276 CSSpx",
           "checks": {
@@ -152122,7 +152122,7 @@
           "state": "bounded_free_GM_same_session_and_fresh_reuse_consumed_IME_R01_S01_integrated_native_IME_open",
           "pullRequest": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/pull/110",
           "producerRecord": "acceptance.json#/hexAtlas/requirements/30/dungeonAtLocationInspectorHorizontalFitN04",
-          "nativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
+          "nativeReceipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json",
           "nativeReceiptSha256": "b873bced4c6937551b4d63395a8d5f98c4ff5a5f6d4b9292434c2ffc91c7ef90",
           "nativeSourceCommit": "da3e06adefdcad20bdeaf57019c54f7b0fe08e0a",
           "independentReview": {
@@ -152147,7 +152147,7 @@
               "ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md",
               "acceptance.json",
               "checkpoint.json",
-              "docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json"
+              "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-horizontal-fit-n04.json"
             ],
             "reviewedHeadCi": "https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/actions/runs/38108190000",
             "reviewedHeadCiResult": "SUCCESS"
@@ -154238,7 +154238,7 @@
           "currentSharedCi": 38121790069,
           "directlyVerifiedCi": "All three SUCCESS on their exact stated SHAs.",
           "authorNativeSource": "e1bda0a08e985ef74ba1777d1e1588d507f838b7",
-          "authorNativeReceipt": "docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
+          "authorNativeReceipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-save-routing-r01.json",
           "nativeReceiptUnchanged": true,
           "relevantNativeSourceBlobsUnchanged": {
             "src/ui/atlas-view.ts": "add61220c8cc3d1a16004f99aae6255e8658244e",
@@ -154482,7 +154482,7 @@
             "sourceVault": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-n02-native-20261011/vault",
             "savedOracle": "/home/aaron/.cache/dungeon-native-qa/hex-04/inspector-n02-native-20261011/inspector-n02-baseline.json",
             "savedOracleSha256": "bdd9360d37be5237bf9c5b0258d61d8873a1fa2d8b1a520c5137319c58740f04",
-            "canonicalReceipt": "docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
+            "canonicalReceipt": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/inspector-n02-native-h02.json",
             "noFixtureReseeding": true,
             "existingLocatedDungeonAndRoom": true
           },
@@ -156601,70 +156601,70 @@
             "freshBlockedByFirstProbeFailure": true
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/README.md",
                 "sha256": "21ab6308764025d108fd9bd9501392d28f0e762d39f5fd0c36f491e23709d6a8",
                 "bytes": 2688
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/build.json",
                 "sha256": "3ff0a84bd71dce102023ae24fd0b3b0407a8a038517ad46fac0a5ef12e5d84b1",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-modal-before-cancel.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-modal-before-cancel.png",
                 "sha256": "b012578bca7e25bc944d627dea12975cd8c3eeccb9306974896749505674fa4d",
                 "bytes": 90246
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-preload.cjs",
                 "sha256": "f9a4ded3649d47b34c2d64caeccecf48ae9a867162cd45640727f61bb166f2a9",
                 "bytes": 357
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-c02-probe.cjs",
                 "sha256": "ae1cf90e49357619d085b2a5c02671f071f1ec0874a7d2021241e1b38c5d332a",
                 "bytes": 16270
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-copy-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/copy-room-copy-probe.json",
                 "sha256": "85dbbbaea44b77043a83a768032c4ca8fa20e3122aed8ba7c2c89c8b54a47da2",
                 "bytes": 39553
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/failure.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/failure.png",
                 "sha256": "4af3bd2b23c1ab1b550bbd0cf3e9537045298cdd552fae697fe94959258b8796",
                 "bytes": 76391
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-lineage.json",
                 "sha256": "a8e823d48efaa1b1506654bf8333b443f03b4a5bfe9fadbbd24ba1252bc1e7bc",
                 "bytes": 836
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/input-native-hashes.json",
                 "sha256": "c5197abf8ea73b55a3e37b6f2bf7167d733848d02a460334b9d877267a9c19bc",
                 "bytes": 1015
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/invocation.json",
                 "sha256": "ffa95521ddcd144cc7cde7d92ca680be41792d60152d2999d7dbb156b7e37afb",
                 "bytes": 2858
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/process-lifecycle.json",
                 "sha256": "83cc4f9f81003e1fc16993d200aaa2b907e96b8690b7de7792bcc469b150cbe5",
                 "bytes": 7087
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/result.json",
                 "sha256": "e689cc5d1731c28dc62943ff24f9c200236fcc23f8d7c2df8d165d70118c0a7a",
                 "bytes": 3820
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/runner-result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c02/runner-result.json",
                 "sha256": "54e63b7a820f7ba5adc1931452126198c5003168f1e7ae9eb0992892163b1631",
                 "bytes": 5164
               }
@@ -156908,105 +156908,105 @@
             }
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/README.md",
                 "sha256": "4e6fb793d3fcee9dab07e882284223ed5efc801e0aafd5fe6d525d5e7866e2ac",
                 "bytes": 4302
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-after-normal-quit.json",
                 "sha256": "0e035f6a3ddbae5a352dd1e99d70b9b1072e2acd0dc518093ed38e67071c6e4e",
                 "bytes": 2834
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-preload.cjs",
                 "sha256": "98c51ae0c61fe0b3de9ea236adc97231d6c9ad650c608ff3863d8e2f94cce437",
                 "bytes": 357
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy-room-c03-probe.cjs",
                 "sha256": "7ec78d7903ed37a2aab5858075ff747992b44f25125332352d415ffaf32cdad6",
                 "bytes": 16418
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/build.json",
                 "sha256": "324f886de4ef88103b2880368dedcc091c1dc1cb592347f26184e5aec45d22ef",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-modal-before-cancel.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-modal-before-cancel.png",
                 "sha256": "cbccaaa223d915e3aa6461204c7d4d67b7c12407d73c03dca79ff4e0b8f46fa3",
                 "bytes": 90138
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-room-copy-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/copy-room-copy-probe.json",
                 "sha256": "01cc8dfbbab155f5e113058fa913e0924e2e6573d50a588572345fa4ae52eecc",
                 "bytes": 46586
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/process-lifecycle.json",
                 "sha256": "ec306ea1115fe484a32b2a48664b631fd7216fc6b2b768e9752b148514c2282a",
                 "bytes": 7099
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/result.json",
                 "sha256": "d4567acf722172405ef2bc00887185eae1065e322d691f218bc2548e837c3092",
                 "bytes": 545
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/visible-copied-room-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/copy/visible-copied-room-key.png",
                 "sha256": "34c44a22f348925b3730ea33b762963a1029400f3d1f4fa307c1494df61752a5",
                 "bytes": 76293
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh-after-normal-quit.json",
                 "sha256": "63e85a4a4a70fa68cdb54031ab3ae07b92076a45a1e03bbb544755e6cb1cb837",
                 "bytes": 2835
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/build.json",
                 "sha256": "324f886de4ef88103b2880368dedcc091c1dc1cb592347f26184e5aec45d22ef",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/copy-room-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/copy-room-fresh-probe.json",
                 "sha256": "cde25eeaeab57ab24e42252890acb451c96c5b2d2a180b6bddb3f83a43e0de2c",
                 "bytes": 35881
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/fresh-process-copied-room-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/fresh-process-copied-room-key.png",
                 "sha256": "15ad54a9896074a553f9866c81947d52a9367393d8ef725b0421cf8cac441246",
                 "bytes": 72112
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/process-lifecycle.json",
                 "sha256": "0ee5eae826924de8be240651cd759fa06150a88993ee434fd3c29cd6b3e6f237",
                 "bytes": 7090
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/fresh/result.json",
                 "sha256": "dd59eb8e2148363728dd44f073bc49ff1f414bf169c4afa9c5d6beccd2e9c800",
                 "bytes": 546
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-lineage.json",
                 "sha256": "8997f0e0ed637284413f9ba2588e6768ad3e271a6c95dec0d8d00735725ba1f0",
                 "bytes": 839
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/invocation.json",
                 "sha256": "f87267df71b0aa68a03f82e180381f18dac3d64792e9577b586d9ee5000258f9",
                 "bytes": 3138
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-draft-copy-c03/protected-inputs-before.json",
                 "sha256": "8172a227cc36c0dfb139e7c268c30f052b4339c077c8d0fb80448b77466f27f9",
                 "bytes": 18318
               }
@@ -157226,120 +157226,120 @@
             }
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/README.md",
                 "sha256": "9a23637894616b0ccaf031f66b123b032271dc42f172b15e76617dbc3d8e7078",
                 "bytes": 5379
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/copy-journal-p01-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/copy-journal-p01-preload.cjs",
                 "sha256": "0b297062e8d1edfc02392893a687b0d3ffe63e47509312a1075215d41ccdc83b",
                 "bytes": 360
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/copy-journal-p01-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/copy-journal-p01-probe.cjs",
                 "sha256": "7a69d3ef69553887acbf9e300e2eefb727f38aec3df1db3e42b65fd5aad60035",
                 "bytes": 20626
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault-after-normal-quit.json",
                 "sha256": "d2278b247277cf4161f411fcaec8edcc7f2e080383a243643fbd11d6a47782d1",
                 "bytes": 13423
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/actual-prepared-copy-journal.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/actual-prepared-copy-journal.json",
                 "sha256": "24c8ca8725a4ae99da9e76277e76a504cf2913ea46d02a15e9d2c7e0af37a2a9",
                 "bytes": 10394
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/build.json",
                 "sha256": "78fb7bdabde3fc6e898d8b60eccebd3d3b8fe6a8e434c69b5599c80456ad3d49",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/copy-journal-fault-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/copy-journal-fault-probe.json",
                 "sha256": "1c54e4203e75cdb911384b547d764dac1fbea9ffef72c8bdec57ed617ac101d4",
                 "bytes": 42434
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/process-lifecycle.json",
                 "sha256": "216f1d02e12886e74ddd240db97136b905b8132bbd9f4c57aca7fd30da57a623",
                 "bytes": 7104
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/result.json",
                 "sha256": "6987f3e71377c89e8a8df045663593d64858a6fb441920b5fa345da41939a6e5",
                 "bytes": 503
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/visible-copy-write-failure.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fault/visible-copy-write-failure.png",
                 "sha256": "60e5b7b23263dc68c20f06b2ad58d51d500df7f030e9aec7dc6db60f6f09592c",
                 "bytes": 98547
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh-after-normal-quit.json",
                 "sha256": "dec94d169a3088073b42add042ac63395298345d307f29bb2fa3f5bf4029b1d1",
                 "bytes": 3464
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/build.json",
                 "sha256": "78fb7bdabde3fc6e898d8b60eccebd3d3b8fe6a8e434c69b5599c80456ad3d49",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/copy-journal-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/copy-journal-fresh-probe.json",
                 "sha256": "84aa8d335ba8e81d7595bfd36ffc63aa5fe29ba0cfa1d97cc92b24d4a24d58f4",
                 "bytes": 67865
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/fresh-recovered-retried-copy-room-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/fresh-recovered-retried-copy-room-key.png",
                 "sha256": "30140af0764327308ab1b71092f7a8cb113ca6e38a96a2fac68304373f77ab33",
                 "bytes": 75516
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/fresh-visible-copy-recovery.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/fresh-visible-copy-recovery.png",
                 "sha256": "6b70655455a5767a744d6ace8d17a2da89b633e832f0f212d34ee3edb842697a",
                 "bytes": 88452
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/process-lifecycle.json",
                 "sha256": "b4bb9eb4ee4c18dd90a9c34d9eff62c3a63667ee7effcb3d35731a4fcbcfa6f6",
                 "bytes": 7098
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/fresh/result.json",
                 "sha256": "29206adb4ecaf1f9ec567b02761cc3af87779e9fd5d8220d6dc49a3724fe73f6",
                 "bytes": 602
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/input-lineage.json",
                 "sha256": "e3a361587529d48f8d16eadfb55dfe7fb17747c7fd2b671812ca30bb4df2069d",
                 "bytes": 958
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/invocation.json",
                 "sha256": "1d10675061652fb2b7b0be1c9251eaeae23d97cd1942b438b72ed5ef6c443590",
                 "bytes": 1141
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/post-quit-verifier.py",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/post-quit-verifier.py",
                 "sha256": "059dc799c705aca550db44919e9c7d914960e4756d0d460b8ab408c30a73c843",
                 "bytes": 4888
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/product-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/product-lineage.json",
                 "sha256": "a3d4542b94936eec53c7a94b8d471b7125dc43c386897de4e09c050dc2845abb",
                 "bytes": 488
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-journal-p01/protected-inputs-before.json",
                 "sha256": "e4b792a981e1a94b53d86dc2d3e6c58f58e7fe9f59138240561d7b080c6485ca",
                 "bytes": 126495
               }
@@ -157578,115 +157578,115 @@
             }
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/README.md",
                 "sha256": "9bfd4c38fb332b13f37e2c848d7f205b2a0a1622fafc537b17802f8d5794a79d",
                 "bytes": 4761
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/copy-committed-journal-c01-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/copy-committed-journal-c01-preload.cjs",
                 "sha256": "6661a969a54ed558d1f49448dba9cf9712367fbe808ad838056230bb536ccf79",
                 "bytes": 370
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/copy-committed-journal-c01-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/copy-committed-journal-c01-probe.cjs",
                 "sha256": "03ea2806a02a3b46789f3e7f1670d3f2faef5bf78de91f6b38afad9c1143cec4",
                 "bytes": 19543
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault-after-normal-quit.json",
                 "sha256": "bf1fdf14b873ed810c3af384894ddc96c0385b3f9511b143d09948ad360adc75",
                 "bytes": 13683
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/actual-committed-copy-journal.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/actual-committed-copy-journal.json",
                 "sha256": "61457a3dd4b4a419dd83bda6372e6c6f3dd8bde696078376f8ae96c87e23fc5d",
                 "bytes": 10395
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/build.json",
                 "sha256": "1c4125c718564fe07e5d578740ea26c55d941105ab706c5f447311e5fa2dff12",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/committed-copy-fault-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/committed-copy-fault-probe.json",
                 "sha256": "188539db2cb76a8672ba4dbcc885d489ae8ac252662d10a2af9e202856e10fb1",
                 "bytes": 47843
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/process-lifecycle.json",
                 "sha256": "9516eac099dfcef7c63698890f07f4962a19e0aac366fb27eabffd96b1c79919",
                 "bytes": 7147
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/result.json",
                 "sha256": "102a3010ab81e78778dca759621975ebbd2515c8cd5262487a4f72919bf8b60e",
                 "bytes": 551
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/visible-committed-copy-cleanup-failure.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fault/visible-committed-copy-cleanup-failure.png",
                 "sha256": "1a0a37915eb37fe0038515a5d5e21052cc3f65a2004e099de6e6f73a2c56fd48",
                 "bytes": 97578
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh-after-normal-quit.json",
                 "sha256": "0f7f51292b5231d3d5951e6fc743f0c2426a3509892f24f5799ea497999a0cc7",
                 "bytes": 3000
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/build.json",
                 "sha256": "1c4125c718564fe07e5d578740ea26c55d941105ab706c5f447311e5fa2dff12",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/committed-copy-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/committed-copy-fresh-probe.json",
                 "sha256": "16976ef5ddd0ed2dfe1ab32f79162e47d0fbbd43655f8afb07ab8ca3927f548c",
                 "bytes": 60912
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/fresh-recovered-committed-copy-room-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/fresh-recovered-committed-copy-room-key.png",
                 "sha256": "db2b1fcc095d35823dab7872ba63d0e88c01615fdda2ba0ae150dbbbcbec3109",
                 "bytes": 75560
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/process-lifecycle.json",
                 "sha256": "ecf3977ea0bb810bca63a2a068f9ea78c9362edf417acb2b75cba98708019157",
                 "bytes": 7135
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/fresh/result.json",
                 "sha256": "0af831e79b3438200764b492b07e1f53fafe20d212d6d8384c1693c5e813e00c",
                 "bytes": 633
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/input-lineage.json",
                 "sha256": "c18af7647281bbfe16637a5ee828cec97eebc1c51c05e7fc2c62303e2bb0196f",
                 "bytes": 977
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/invocation.json",
                 "sha256": "d977676c7acb78c0ae1e361684162c0225b77d28b7c64ca2e030b84bca2a8347",
                 "bytes": 1286
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/post-quit-verifier.py",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/post-quit-verifier.py",
                 "sha256": "419a1b523f8ba261610e1454d25f17de709864784455b7b6d2f1bd82ac75476d",
                 "bytes": 4477
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/product-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/product-lineage.json",
                 "sha256": "553c16969de9328ca52bdcefc7a0dfa25000892bda3c4d8931b4a842db568a75",
                 "bytes": 515
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-copy-committed-journal-c01/protected-inputs-before.json",
                 "sha256": "e6341e4f0cb65d8a58ea976038bddc276832bb13446bbba4e3a249af08e963dc",
                 "bytes": 161057
               }
@@ -157852,7 +157852,7 @@
             "impact": "misleading ongoing Save status in retained read-only editor; persisted committed After data and fresh recovery remain intact",
             "owner": "Hex",
             "issue": 80,
-            "probe": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
+            "probe": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
             "fullSaveUxPassed": false
           },
           "lifecycle": {
@@ -157916,115 +157916,115 @@
             }
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/README.md",
                 "sha256": "3ddca8e2d60e671ce2c3a167e44b5f00ec4b1aa210b2388675b15bb48aacd838",
                 "bytes": 5251
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault-after-normal-quit.json",
                 "sha256": "af10597fbc6b08efa48f91f16b2281c65724bb938f270ed6f3e4f58421c2fd24",
                 "bytes": 77013
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/actual-committed-room-save-journal.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/actual-committed-room-save-journal.json",
                 "sha256": "272607f05206751e5584d1ddba0d9f85a058ec2cd827536e4a02372a1d0bf588",
                 "bytes": 67424
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/build.json",
                 "sha256": "f4f2f8c8b24c95454eed6f8282684518729b2b058378729b5cb26a969e8c86ce",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/process-lifecycle.json",
                 "sha256": "4288d37c00e04839042f40415a56fabf1462e0d7a944dd7f2870a1c1b01d8316",
                 "bytes": 7147
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/result.json",
                 "sha256": "b00ce5ffdd4279e37b98c5fcd4f963a40a8d71e18ddbfe9cb11d840cdbac987e",
                 "bytes": 545
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/room-save-committed-fault-probe.json",
                 "sha256": "83a986c69628a828c306ed63c3cf36eff1e7fd2807dd4d00d0a918e4c9e9c259",
                 "bytes": 92444
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/visible-room-save-cleanup-failure-retained-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fault/visible-room-save-cleanup-failure-retained-key.png",
                 "sha256": "49ca73fecdcf08b037622b8bdc18610902a773c046b65b494d735cfbdb695195",
                 "bytes": 52521
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh-after-normal-quit.json",
                 "sha256": "3e4983db61c13766079f2f4e0a6cef1d6c374e4f3540d4dddeb37f98e2b90b09",
                 "bytes": 9229
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/build.json",
                 "sha256": "f4f2f8c8b24c95454eed6f8282684518729b2b058378729b5cb26a969e8c86ce",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/fresh-recovered-committed-room-save-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/fresh-recovered-committed-room-save-key.png",
                 "sha256": "42b6d6bdb764dd4d8f2f41abe95f5c38cb398ea7cda11ae94cc20bed2a068151",
                 "bytes": 72631
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/process-lifecycle.json",
                 "sha256": "7112e91ea6b0563bbc9f858a9e87e738bb1e85be773c98d34f3ece353c8213dd",
                 "bytes": 7144
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/result.json",
                 "sha256": "fb5217c0c052617d9356eac59b5444b03985288ca32cccba5cfa54cd8798060d",
                 "bytes": 593
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/room-save-committed-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/fresh/room-save-committed-fresh-probe.json",
                 "sha256": "d804821f3ba8252e3d08cfa54ab88645c282c641c5192d960f2700ca00a2f083",
                 "bytes": 93887
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-lineage.json",
                 "sha256": "37ca644947658107c5a50de98aafa1670e6c1df0c8863d53956972710b18ffc2",
                 "bytes": 986
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/invocation.json",
                 "sha256": "7e7cd6068edb1934a1f6ee2f3b3259bb55763045a2dcdc3ea476387b0ba76b22",
                 "bytes": 1280
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/post-quit-verifier.py",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/post-quit-verifier.py",
                 "sha256": "19ffb5a5bc2ec51324b5d86327d4083367a3ffb4a693911e5db073b552a6c2f8",
                 "bytes": 4953
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/product-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/product-lineage.json",
                 "sha256": "90641139077697f695116d37f556a29a5714bfdccdf1300d226d4881d225e6a4",
                 "bytes": 516
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/protected-inputs-before.json",
                 "sha256": "3a244af41dba0448b56bfa4ea73b637635796d698b8e392c3dc86ce89c3e2be2",
                 "bytes": 196095
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-preload.cjs",
                 "sha256": "711f50a92efbddf926c8a0ef04ca76fe724123fd1c866f99d44246d79223ea56",
                 "bytes": 367
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-committed-journal-j01/room-save-committed-j01-probe.cjs",
                 "sha256": "7404458230f52858b6238ab1169730aa0fd519bff4138b03a66ace516e93122e",
                 "bytes": 13150
               }
@@ -158245,155 +158245,155 @@
             }
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/README.md",
                 "sha256": "883aea9444f9ad2a7f59a9d87ece0cabf907b2da4185bdff10a48a202b7cfb02",
                 "bytes": 5642
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/composed-atlas-host-tests.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/composed-atlas-host-tests.log",
                 "sha256": "1819d64c296ec5bffb8b9521dda2afebb14ce8ff9e91f8c1f6ba3f8f4da147f3",
                 "bytes": 31276
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-green.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-green.log",
                 "sha256": "b5d56dba218f1d6121dbfd3b37cacb4130a3d4dd78cdb4a78e0cd105edd54279",
                 "bytes": 678
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-host-tests.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-host-tests.log",
                 "sha256": "4919a59d7c26839514793e67389e51b3bcdd0d830b04d7fbfa3f1a7d37f72c01",
                 "bytes": 31294
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-product-build.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-product-build.log",
                 "sha256": "e3d7d74bcc663c4722a1f24523c0aaea486ca72c322f07fc24bf7c8eab0e00b1",
                 "bytes": 745
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-red.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-red.log",
                 "sha256": "ae5e351e3134dc247b44ebdd40414e24a603c61b30382bae606605e595e52242",
                 "bytes": 2256
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-typecheck-final.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/checks/hex-retained-save-status-typecheck-final.log",
                 "sha256": "079b4802c6da64fa1d4244b135be0c1fad7ce6c952c6dda76f3320c685743d4c",
                 "bytes": 46
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault-after-normal-quit.json",
                 "sha256": "2a5cf1797a5b3273e7d46e6ac14e1df7cdb9396a32bf47f8dcb258dababd572a",
                 "bytes": 77026
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/actual-committed-room-save-journal.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/actual-committed-room-save-journal.json",
                 "sha256": "1f98f039383b8c70f7e276797ca53e7e4183e2496eab22ffaea966d2a34caf73",
                 "bytes": 67424
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/build.json",
                 "sha256": "fe8613838ef018cec0d04714453194af1420fefbedd64a2d3f3e3b85ffdc014f",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/process-lifecycle.json",
                 "sha256": "d77ce29940947641408ee242b4e378b5cf03e389108d710092615fd019033cdb",
                 "bytes": 7130
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/result.json",
                 "sha256": "b2aaea8ee7840338be41680c2e32711ac75dcaaefbaaaad9a28e10841b0dc29a",
                 "bytes": 545
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/room-save-committed-fault-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/room-save-committed-fault-probe.json",
                 "sha256": "9ae8e7734315a779ecbeafbcf644775132ebf06b1472d76bb60ca5f9ff400b01",
                 "bytes": 92498
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/visible-retained-save-status.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/visible-retained-save-status.png",
                 "sha256": "20ab157546be953e1187ed1e113b9d7b17fcec8118233cd8abbd542fa17e0297",
                 "bytes": 51913
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/visible-room-save-cleanup-failure-retained-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fault/visible-room-save-cleanup-failure-retained-key.png",
                 "sha256": "49ca73fecdcf08b037622b8bdc18610902a773c046b65b494d735cfbdb695195",
                 "bytes": 52521
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh-after-normal-quit.json",
                 "sha256": "e4f635cfd156e24df6833bb81765684ff92c910e9d16a47ade4dc48efd4c3d12",
                 "bytes": 9227
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/build.json",
                 "sha256": "fe8613838ef018cec0d04714453194af1420fefbedd64a2d3f3e3b85ffdc014f",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/fresh-recovered-committed-room-save-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/fresh-recovered-committed-room-save-key.png",
                 "sha256": "42b6d6bdb764dd4d8f2f41abe95f5c38cb398ea7cda11ae94cc20bed2a068151",
                 "bytes": 72631
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/process-lifecycle.json",
                 "sha256": "d2277e5762d0a4bf495a4ae22dbceb1c53e6ceef964546f2ec8639b9ba0f8d35",
                 "bytes": 7127
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/result.json",
                 "sha256": "d026d22d3f2de019cb3324544ac3546313e635f3fa013dc0a052735dafe938f2",
                 "bytes": 593
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/room-save-committed-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/fresh/room-save-committed-fresh-probe.json",
                 "sha256": "e71672cf8a82ced02aab92c000417ea7f3708bb3f592a150d4855db5ebad7342",
                 "bytes": 93887
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/input-lineage.json",
                 "sha256": "09baa13c3f29179093e2aeef4e9ec2c97f5ca5e38670304b32a13e2a3c3f0d6a",
                 "bytes": 984
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/invocation.json",
                 "sha256": "7e71ff846de76dfaaef89a21229cb8e9163ade2de20183be736d5f16e170b7ba",
                 "bytes": 1417
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/post-quit-verifier.py",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/post-quit-verifier.py",
                 "sha256": "4053f3a0d4d12dae306a63f10771cc45353c36339e2a731bcf93ec5ad04f8443",
                 "bytes": 5070
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/product-fix.patch",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/product-fix.patch",
                 "sha256": "5a695511b782822244bba15da384d205409fcfdf24544d1a77ebb96d83c26127",
                 "bytes": 6215
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/protected-inputs-before.json",
                 "sha256": "818353b0088eaf1ea3d1628c8cf522f6cb9f824858c6ddd97896f033f9e7a5e5",
                 "bytes": 229116
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/room-save-committed-j02-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/room-save-committed-j02-preload.cjs",
                 "sha256": "cfe8e0ffa68e907bd9bbb481b5eca84a73c5e400e4be765e0a8b5f9be9e31d5f",
                 "bytes": 367
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/room-save-committed-j02-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/room-save-committed-j02-probe.cjs",
                 "sha256": "bebb74f9128627a7dabb45b3275944c1db6abe6857ed7859cbdc6ba43e33a265",
                 "bytes": 13439
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/shared-composition.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-retained-status-j02/shared-composition.json",
                 "sha256": "0e8682e9c56690d7aa25c5d9ecb797ae17fb33268931bab88bb068dadf5a9916",
                 "bytes": 1787
               }
@@ -158649,165 +158649,165 @@
             "checkedAt": "2026-10-11T13:04:00.148139+00:00"
           },
           "portableEvidence": {
-            "entry": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md",
+            "entry": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md",
             "files": [
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/README.md",
                 "sha256": "7a3db4442a74f34056bafcf324129e439012019d2cbff7fe29d12d5025a58584",
                 "bytes": 5495
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/actual-prepared-room-save-journal.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/actual-prepared-room-save-journal.json",
                 "sha256": "680070e0ae37503927041c1dc337421f09823febef999d11d462809f83d42a8a",
                 "bytes": 67423
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/build.json",
                 "sha256": "ef00c78885ba8b9ffdbc2eb100b004ba41176d388876b964e3134e554302856d",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/process-lifecycle.json",
                 "sha256": "05c9bf948694def8e53a507285c64aae502aa863229cc699c0e80b37dbcc299c",
                 "bytes": 7143
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/result.json",
                 "sha256": "37132f305cff55d19f1e79b165be80b8c0025f4c73f49d5cf4aefaaa3dd3e1f2",
                 "bytes": 554
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/room-save-prepared-fault-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/room-save-prepared-fault-probe.json",
                 "sha256": "4720b601238ce46568c5cd12627f3f6cc6929e7608373d910dc59e7915c279d0",
                 "bytes": 92022
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/visible-retained-save-status.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/visible-retained-save-status.png",
                 "sha256": "20ab157546be953e1187ed1e113b9d7b17fcec8118233cd8abbd542fa17e0297",
                 "bytes": 51913
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/visible-room-save-prepared-failure-retained-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault/visible-room-save-prepared-failure-retained-key.png",
                 "sha256": "49ca73fecdcf08b037622b8bdc18610902a773c046b65b494d735cfbdb695195",
                 "bytes": 52521
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-after-normal-quit.json",
                 "sha256": "d96af049025f044bc4c90dae05f3a9e2b174ae636bc4f7da2f38f4f735445ed0",
                 "bytes": 77069
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-runner.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-runner.log",
                 "sha256": "f9dfdef3927a6292525b29c47f7884ad44c8d60380bb8fb580a40b095d229647",
                 "bytes": 614
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-unlaunched-runner-permission.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fault-unlaunched-runner-permission.log",
                 "sha256": "3970bc41cb7e38531590b2e2041b89a2b6f16816687d0cc47ab4ad5ad7cb8be4",
                 "bytes": 50
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/build.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/build.json",
                 "sha256": "ef00c78885ba8b9ffdbc2eb100b004ba41176d388876b964e3134e554302856d",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/fresh-rolled-back-room-save-unsaved-key.png",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/fresh-rolled-back-room-save-unsaved-key.png",
                 "sha256": "f910726ac8e80b2b7522f752fcc4e1dfe007aba29ac5ac54c95830df24aa281b",
                 "bytes": 72983
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/process-lifecycle.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/process-lifecycle.json",
                 "sha256": "7765ef570c3003e95d0681db00ec18ecfcb7ed20b7ffb31c45e9c6032ce1c242",
                 "bytes": 7143
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/result.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/result.json",
                 "sha256": "d6919faea8d4191d2746b68201382f9928aa4c25d5d0960420476859bf7c5c0e",
                 "bytes": 582
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/room-save-prepared-fresh-probe.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh/room-save-prepared-fresh-probe.json",
                 "sha256": "43df1a623252b20d76ed5b4a8dd24803fbb3b3aea678b5b1e24aeb60e387b9bc",
                 "bytes": 94024
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh-after-normal-quit.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh-after-normal-quit.json",
                 "sha256": "d05cf201b0bb0f56e9bc5afac32c26d7983a7d9c4db932eede7af4925999a17d",
                 "bytes": 9271
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh-runner.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/fresh-runner.log",
                 "sha256": "4dd79e338f12b4c801f5484cc55bc2943e88b051cfab45e4bbb273810e460674",
                 "bytes": 642
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/input-lineage.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/input-lineage.json",
                 "sha256": "209717d3a441c07f4741988c066813035c0a8c04fdcd2325e2ca43707fc28ecc",
                 "bytes": 988
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/input-native-hashes.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/input-native-hashes.json",
                 "sha256": "e20fd0dcb3bcace7327075035bd7210fe7248431cdea4dd0291ee5ef9d96b008",
                 "bytes": 1011
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/invocation.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/invocation.json",
                 "sha256": "15c85267f4a164d91dbf79b5f5b10de10ce0a552d88aead93fa33eb9bd82bf9a",
                 "bytes": 1748
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/post-quit-verifier.py",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/post-quit-verifier.py",
                 "sha256": "fbe17e7e544d27a449e2fc5de091060ccf3d9f946b33630421c814e7b619023e",
                 "bytes": 7395
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight-observations.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight-observations.json",
                 "sha256": "a31960fc0072dda9ca2fb07ce2b6b0086e9c9cf6ff3c129423390bff136f1e1b",
                 "bytes": 1601
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight-test.ts",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight-test.ts",
                 "sha256": "05fc50b01404fb1fa9cda6d127f0044f5b04479200a8d6aea50c127fa6dab882",
                 "bytes": 4934
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight.entry.ts",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight.entry.ts",
                 "sha256": "d37b16510d10592d64b411460ef1d26bf7fd7163603650acd1d423da77031736",
                 "bytes": 16024
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/preflight/preflight.log",
                 "sha256": "8c95d28706ed28e844145c4d196d1efe6b11279e38879502d2072ca775492dda",
                 "bytes": 458
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/prepared-save-fault.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/prepared-save-fault.cjs",
                 "sha256": "3882bb898efc9f6ddbbe0edcfccddbf6e90de55ca63aab5d0fac601b4df07f86",
                 "bytes": 1642
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/protected-inputs-before.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/protected-inputs-before.json",
                 "sha256": "7abbbb5083e90cd689c7ca55de8275685b5cf7920989408df002190981c89bb1",
                 "bytes": 262851
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/room-save-prepared-j03-preload.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/room-save-prepared-j03-preload.cjs",
                 "sha256": "e1e585a73608e7f61ab4c1f462729817a199ec626446db3fd8d6095b8e8a5290",
                 "bytes": 366
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/room-save-prepared-j03-probe.cjs",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/room-save-prepared-j03-probe.cjs",
                 "sha256": "cb4105c768411b55028b9514b6bd69069c029ad074d698f7049b218ecc6c3dca",
                 "bytes": 12947
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/process-end.json",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/process-end.json",
                 "sha256": "1209e491c7df3bad409d7ba8dfda7fac251fdfc02f1a52dba22ec4f534252fef",
                 "bytes": 198
               },
               {
-                "path": "docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/source-build.log",
+                "path": "https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/atlas-detail-binding-d01/room-save-prepared-journal-j03/source-build.log",
                 "sha256": "6be3871d16aa721ff498c3d8fa7d896b3c2fab90f667a7eb2a710f8dba5eb5af",
                 "bytes": 740
               }

@@ -6,8 +6,8 @@ import {mkdirSync,mkdtempSync,rmSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {randomUUID} from 'node:crypto';
 const require=createRequire(import.meta.url),cache=homedir()+'/.cache/saltmarcher';mkdirSync(cache,{recursive:true});
-buildSync({stdin:{contents:"export * from './src/app/spatial-terrain';export * from './src/app/terrain-spatial-view';export * from './src/app/terrain-ring';export * from './src/app/terrain-route-visibility';export {TerrainHexGrid} from './src/app/terrain-hex-grid';export {AtlasSpatialLabels} from './src/app/atlas-spatial-labels';export {ATLAS_CAMERA_FOV} from './src/app/atlas-camera';export * from './tools/atlas-preview-scene';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';export * as THREE from 'three';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,heightRecord,emptyRecord,spatialTerrainSurface,TerrainSpatialView,TerrainRing,TerrainRouteVisibility,TerrainHexGrid,AtlasSpatialLabels,atlasPreviewScene,ATLAS_CAMERA_FOV,THREE}=require('../.build/terrain-spatial-test.cjs');
+buildSync({stdin:{contents:"export * from './src/app/spatial-terrain';export * from './src/app/terrain-height';export * from './src/app/atlas-landscape';export * from './src/app/storage/store';",resolveDir:process.cwd()},outfile:'.build/terrain-spatial-test.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,heightRecord,emptyRecord,spatialTerrainSurface}=require('../.build/terrain-spatial-test.cjs');
 const box={x:-128,y:-128,width:256,height:256};
 function setup(t){const dir=mkdtempSync(cache+'/r5-data-'),store=new CampaignStore(dir+'/world.sqlite'),cam=store.create('R5'),w=store.activate(cam.id);t.after(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
  const write=action=>store.executeAtlasCommit({commandId:randomUUID(),campaignId:cam.id,token:w.token,action});
@@ -36,17 +36,4 @@ test('display tessellation follows source resolution and camera scale with a str
  const fine=[heightRecord(0,0,.25,new Float32Array(4096).fill(60))],coarse=[heightRecord(0,0,128,new Float32Array(4096).fill(60))];
  const small={x:0,y:0,width:16,height:16};assert(spatialTerrainSurface(fine,small,.01).grid.columns>spatialTerrainSurface(coarse,small,1).grid.columns);
  assert(spatialTerrainSurface(fine,{x:0,y:0,width:1000,height:1000},.01).grid.columns<=257);
-});
-function mockView(scene){const view=Object.create(TerrainSpatialView.prototype);Object.assign(view,{labels:new AtlasSpatialLabels(),hexGrid:new TerrainHexGrid(),camera:new THREE.PerspectiveCamera(ATLAS_CAMERA_FOV),scene:new THREE.Scene(),canvas:{clientWidth:1000,clientHeight:800,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:800})},renderer:{getPixelRatio(){return 1;},getSize(v){return v.set(1000,800);},setSize(){},render(scene,camera){scene.updateMatrixWorld(true);scene.traverse(o=>o.onBeforeRender(this,scene,camera,o.geometry,o.material,null));}},routes:[],cursor:new TerrainRing('#a65f30'),selection:new TerrainRing('#e68a28'),routeVisibility:new TerrainRouteVisibility()});view.scene.add(view.cursor.line,view.selection.line);view.setData(atlasPreviewScene(scene));return view;}
-const screen=(view,p)=>{const s=view.project(p);return {x:s.x*1000,y:s.y*800};};
-function flatScene(x=0,y=0){return{revision:1,box:{x:x-200,y:y-200,width:400,height:400},records:[],instances:[],buildings:[],grid:{columns:5,rows:5,heights:Array(25).fill(60),colors:Array(25).fill('#ffffff')}};}
-test('projected world hits survive tilt, rotation, exaggeration and very distant coordinates',()=>{
- for(const offset of [0,1e10]){const view=mockView(flatScene(offset,-offset));for(const tilt of [0,45,65])for(const rotation of [-120,0,90])for(const exaggeration of [.25,1,8]){view.setData(atlasPreviewScene(flatScene(offset,-offset),tilt,rotation,exaggeration));const p={x:offset+30,y:-offset+20},at=screen(view,p),hit=view.hit(at.x,at.y);assert(hit);assert(Math.hypot(p.x-hit.x,p.y-hit.y)<.001);}}
-});
-test('terrain raycast returns the front surface instead of a hidden far slope',()=>{
- const scene=flatScene();for(let x=0;x<5;x++)scene.grid.heights[3*5+x]=220;const view=mockView(scene);view.reframe(scene.box,65,0);const p={x:0,y:-100},at=screen(view,p),hit=view.hit(at.x,at.y);assert(hit);assert(hit.y>p.y+50,'the foreground ridge occludes the far point');
-});
-
-test('displayed road selection resolves the same canonical atlas record',()=>{
- const scene=flatScene();scene.records=[{...emptyRecord('road'),id:'road',points:[{x:-150,y:0},{x:150,y:0}],width:12}];const view=mockView(scene);const point=screen(view,{x:0,y:0});assert.equal(view.hitAt(point.x,point.y,['landscapeId'])?.data.landscapeId,'road');
 });

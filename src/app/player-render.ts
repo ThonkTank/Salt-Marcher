@@ -1,22 +1,31 @@
-import {roomPath} from './drawing-model';
 import type {PlayerFrame} from './player-contracts';
-import {hexPoint,terrainColors} from './world-model';
-import type {Terrain} from './world-contracts';
+import {playerAtlas} from './player-atlas';
+import {AtlasCanvasScene} from './atlas-canvas-scene';
+
+const displays=new WeakMap<HTMLElement,()=>void>();
 export function renderPlayer(container:HTMLElement,frame:PlayerFrame,origin='campaign://player'){
- container.replaceChildren();container.className='player-stage';
- if(!frame||!['blank','image','map','dungeon'].includes(frame.mode))return;
- container.className+=' player-'+frame.mode;
- if(frame.mode==='blank')return;
- if(frame.title){const title=document.createElement('h1');title.textContent=frame.title;container.append(title);}
- if(frame.mode==='image'){const image=document.createElement('img');image.alt=frame.title||'Freigegebenes Bild';image.src=origin+'/art/'+encodeURIComponent(frame.imageId!);container.append(image);return;}
- if(frame.mode==='dungeon'&&frame.dungeon){const d=frame.dungeon,ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg'),make=(tag:string,attrs:Record<string,string>)=>{const e=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);svg.append(e);return e;};let minX=d.position.x,maxX=d.position.x,minY=d.position.y,maxY=d.position.y;
- for(const polygon of d.known)for(const point of polygon.outer){minX=Math.min(minX,point.x);maxX=Math.max(maxX,point.x);minY=Math.min(minY,point.y);maxY=Math.max(maxY,point.y);}
- minX-=2;maxX+=2;minY-=2;maxY+=2;svg.setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);svg.setAttribute('aria-label','Bekannter Dungeon und aktuelle Wahrnehmung');make('path',{d:roomPath(d.known),fill:'#555d60','fill-rule':'evenodd',stroke:'#8e9695','stroke-width':'.08'});make('path',{d:roomPath(d.visible),fill:'#c7c6ab','fill-rule':'evenodd',stroke:'#ede8cf','stroke-width':'.06'});for(const t of d.tracks??[])make('path',{d:'M'+t.from.x+','+t.from.y+'L'+t.to.x+','+t.to.y,stroke:'#ad7149','stroke-width':'.1','stroke-dasharray':'.12 .16',fill:'none'});for(const m of d.markers)make('circle',{cx:String(m.point.x),cy:String(m.point.y),r:'.18',fill:m.kind==='npc'?'#a26caa':m.kind==='stairs'?'#a6bce4':m.open?'#4f8866':'#ac7251'});for(const l of d.labels){const t=make('text',{x:String(l.point.x),y:String(l.point.y),'font-size':'.65','text-anchor':'middle',fill:'#fff'});t.textContent=l.text;}make('circle',{cx:String(d.position.x),cy:String(d.position.y),r:'.28',fill:'#edcb6c',stroke:'#fff','stroke-width':'.1'});container.append(svg);return;}
- const map=frame.map;if(!map)return;const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('role','img');svg.setAttribute('aria-label',frame.title||'Bekannte Reisekarte');const shape=(tag:string,attrs:Record<string,string>)=>{const e=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);svg.append(e);return e;};
- const center=hexPoint(map.position,100);let minX=center.x,maxX=center.x,minY=center.y,maxY=center.y;
- for(const cell of map.cells){const point=hexPoint(cell,100);minX=Math.min(minX,point.x);maxX=Math.max(maxX,point.x);minY=Math.min(minY,point.y);maxY=Math.max(maxY,point.y);}
- minX-=75;maxX+=75;minY-=75;maxY+=75;svg.setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
- for(const cell of map.cells){const p=hexPoint(cell,100),vertices=Array.from({length:6},(_,i)=>{const angle=(i*60+30)*Math.PI/180;return`${p.x+57*Math.cos(angle)},${p.y+57*Math.sin(angle)}`;}).join(' ');const tile=shape('polygon',{points:vertices,fill:terrainColors[cell.terrain as Terrain]??'#8e9c8b',stroke:'#15232b','stroke-width':'1.5',opacity:cell.visible?'1':'0.5'});if(cell.terrain==='unknown'){const hint=document.createElementNS(ns,'title');hint.textContent='Landschaftsdetails derzeit unbekannt.';tile.append(hint);tile.setAttribute('aria-label',hint.textContent);}if(cell.road)shape('path',{d:`M${p.x-38},${p.y+8} Q${p.x},${p.y-12} ${p.x+38},${p.y-8}`,fill:'none',stroke:'#d1b684','stroke-width':'5',opacity:cell.visible?'1':'0.4'});if(cell.river)shape('path',{d:`M${p.x-12},${p.y-45} Q${p.x+25},${p.y} ${p.x-5},${p.y+45}`,fill:'none',stroke:'#559dc7','stroke-width':'5',opacity:cell.visible?'1':'0.4'});if(cell.label){const text=shape('text',{x:String(p.x),y:String(p.y+34),'text-anchor':'middle','font-size':'10',fill:'#fff4d4',stroke:'#080c10','stroke-width':'.7','paint-order':'stroke'});text.textContent=cell.label;}}
- for(const m of map.markers){const p=hexPoint(m,100);shape('circle',{cx:String(p.x),cy:String(p.y),r:'7',fill:m.visible?'#f5dc93':'#af9d69',stroke:'#18252b','stroke-width':'2'});if(m.label){const text=shape('text',{x:String(p.x),y:String(p.y-12),'font-size':'12','text-anchor':'middle',fill:'#fff4d4'});text.textContent=m.label;}}
- shape('circle',{cx:String(center.x),cy:String(center.y),r:'12',fill:'none',stroke:'#fff','stroke-width':'4'});container.append(svg);
+  displays.get(container)?.();displays.delete(container);
+  container.replaceChildren();container.className='player-stage';
+  if(!frame||!['blank','image','map','dungeon'].includes(frame.mode))return;
+  container.className+=' player-'+frame.mode;
+  if(frame.mode==='blank')return;
+  if(frame.title){const title=document.createElement('h1');title.textContent=frame.title;container.append(title);}
+  if(frame.mode==='image'){const image=document.createElement('img');image.alt=frame.title||'Freigegebenes Bild';image.src=origin+'/art/'+encodeURIComponent(frame.imageId!);container.append(image);return;}
+  const projection=playerAtlas(frame);if(!projection)return;
+  const host=document.createElement('div');host.className='player-atlas';host.setAttribute('role','img');host.setAttribute('aria-label',frame.title||(frame.mode==='dungeon'?'Bekannter Dungeon und aktuelle Wahrnehmung':'Bekannte Reisekarte'));container.append(host);
+  let disposed=false,release=()=>{};
+  displays.set(container,()=>{disposed=true;release();});
+  return import('./atlas-deck-runtime').then(async({AtlasDeckSurface,AtlasDeckDrawing})=>{
+    if(disposed)return;
+    const {box}=projection,scene=new AtlasCanvasScene(projection.scene);
+    release=()=>scene.dispose();
+    const camera=()=>({focus:{x:box.x+box.width/2,y:box.y+box.height/2},focusHeightM:0,metersPerPixel:Math.max(box.width/Math.max(1,host.clientWidth),box.height/Math.max(1,host.clientHeight)),tilt:0,rotation:0,exaggeration:1});
+    const surface=await AtlasDeckSurface.create({container:host,camera:camera(),model:{objects:[],targets:new Map(),coverage:{complete:true,supportedKinds:[],unsupported:[]},verticalExaggeration:1},externalInput:true});
+    if(disposed){surface.dispose();scene.dispose();return;}
+    const drawing=new AtlasDeckDrawing(scene,{x:0,y:0},new Map(),{origin:{x:box.x,y:box.y},focusM:0,exaggeration:1,height:()=>0,segment:Math.max(box.width,box.height),bounds:box});
+    surface.setDrawing(frame=>drawing.layers(frame,'player'));
+    const observer=new ResizeObserver(()=>surface.setCamera(camera()));observer.observe(host);
+    release=()=>{observer.disconnect();surface.dispose();drawing.dispose();scene.dispose();};
+    await surface.waitForFrame();if(!disposed)host.dataset.ready='true';
+  }).catch(error=>{if(disposed)return;release();host.replaceChildren();host.dataset.ready='failed';host.textContent='Kartenanzeige nicht verfügbar.';console.error(error);});
 }

@@ -592,4 +592,4 @@ Kernprüfungen, Build, Zielhost-Bedienung, Großkartenlauf und physische Maus-/T
 
 Der [Hex-Beitrag zum gemeinsamen End-to-End-Fertigstellungsplan](ROADMAP-E2E-GATES-CANDIDATE.md#räumliche-end-to-end-kriterien) verbindet die nächsten sichtbaren Phasen mit Campaign, Dungeon/City, Live-Spiel und Fehler-/Displaygates aus den [E2E-Kriterien](ROADMAP-E2E-GATES-CANDIDATE.md). Die vier gemeinsamen Abläufe ersetzen keine der hier verpflichtenden Fachphasen oder Wonderdraft-Vergleiche. Neue Integration erfolgt über geprüfte Kandidaten-SHAs mit unabhängigem Review.
 
-R5 der Relief-Roadmap ist lokal implementiert und geprüft: [gekippter Atlas mit denselben drei Landpinseln](docs/reference/terrain-tilted-atlas-r5-20261020/README.md). R6/R7, Main-/Candidate-CI und Paket-/Installationsqualifikation bleiben offen.
+R5 der Relief-Roadmap ist lokal implementiert und geprüft: [gekippter Atlas mit denselben drei Landpinseln](https://github.com/ThonkTank/Salt-Marcher/blob/ed51f20e912b8e3a80123adc68f36fd94d4a0be2/docs/reference/terrain-tilted-atlas-r5-20261020/README.md). R6/R7, Main-/Candidate-CI und Paket-/Installationsqualifikation bleiben offen.
