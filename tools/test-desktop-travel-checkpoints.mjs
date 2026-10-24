@@ -51,17 +51,21 @@ async function close(){
  assert.deepEqual(exit,{code:0,signal:null});closed=true;result.launches.at(-1).exit=exit;
  assert.equal(await stat('/proc/'+process.pid).then(()=>true).catch(()=>false),false);result.launches.at(-1).pidAbsent=true;
 }
-// Read actual Canvas pixels at known physical hex coordinates, independent of renderer objects.
-// A ready read can precede its animation-frame paint; wait for the published pixels as well.
+// Sample the composited map: runtime markers are drawn above the Deck surface.
+// Reading only the input canvas misses these visible pixels.
 async function mapState(q,route,name){
  if(!await page.locator('#campaign-map').isVisible()){assert.equal(await page.locator('#live-center-scene').isVisible(),true);await page.locator('#live-travel-map-open').click();}
- await page.waitForFunction(({q,route})=>{
-  const root=document.getElementById('campaign-atlas'),canvas=document.getElementById('campaign-map');
-  if(root.dataset.regionState!=='ready'||canvas.dataset.canvasState!=='loaded')return false;
-  const box=JSON.parse(canvas.dataset.atlasView),scale=Math.min(canvas.width/box.width,canvas.height/box.height),context=canvas.getContext('2d');
-  const pixel=q=>{const x=Math.round((canvas.width-box.width*scale)/2+(q*4828.032-box.x)*scale),y=Math.round((canvas.height-box.height*scale)/2-box.y*scale);if(x<0||x>=canvas.width||y<0||y>=canvas.height)return [];return [...context.getImageData(x,y,1,1).data].slice(0,3);};
-  window.__travelPixelProbe={box,scale,width:canvas.width,height:canvas.height,q,party:pixel(q),route:pixel(1.4)};return JSON.stringify(pixel(q))==='[36,79,135]'&&(JSON.stringify(pixel(1.4))==='[190,89,57]')===route;
- },{q,route},{timeout:20000});
+ await page.waitForFunction(()=>document.getElementById('campaign-atlas').dataset.regionState==='ready'&&document.getElementById('campaign-map').dataset.canvasState==='loaded');
+ const {PNG}=require('pngjs'),deadline=Date.now()+20000;let matched=false;
+ while(Date.now()<deadline){
+  const box=await page.locator('#campaign-map').evaluate(c=>JSON.parse(c.dataset.atlasView));
+  const png=PNG.sync.read(await page.locator('#campaign-map').screenshot()),scale=Math.min(png.width/box.width,png.height/box.height);
+  const pixel=q=>{const x=Math.round((png.width-box.width*scale)/2+(q*4828.032-box.x)*scale),y=Math.round((png.height-box.height*scale)/2-box.y*scale);if(x<0||x>=png.width||y<0||y>=png.height)return [];const offset=(y*png.width+x)*4;return [...png.data.subarray(offset,offset+3)];};
+  result.lastPixelProbe={box,scale,width:png.width,height:png.height,q,party:pixel(q),route:pixel(1.4)};
+  matched=JSON.stringify(pixel(q))==='[36,79,135]'&&(JSON.stringify(pixel(1.4))==='[190,89,57]')===route;
+  if(matched)break;await page.waitForTimeout(100);
+ }
+ assert(matched,JSON.stringify(result.lastPixelProbe));
  result.maps.push({name,q,remainingRoute:route,canvas:await page.locator('#campaign-map').evaluate(c=>({view:JSON.parse(c.dataset.atlasView),version:c.dataset.sceneVersion,width:c.width,height:c.height}))});
  await page.locator('#campaign-map').evaluate(c=>c.scrollIntoView({block:'center'}));
  const visible=await page.locator('#campaign-map').evaluate(c=>{const r=c.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,height:innerHeight,hit:document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id};});assert(visible.y>0&&visible.y<visible.height);assert.equal(visible.hit,'campaign-map');
