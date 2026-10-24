@@ -1,6 +1,8 @@
 import {ATLAS_UNLIT_MATERIAL} from './atlas-deck-material';
 import {Ray,Vector3,Triangle} from 'three';
 import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
+import {AtlasPublicForestLayer} from './atlas-public-forest-layer';
+import {cartographicPhase} from './atlas-cartographic-style';
 import {COORDINATE_SYSTEM,type Layer} from '@deck.gl/core';
 import {atlasDrawingGeometry,type AtlasDrawingMesh} from './atlas-drawing-geometry';
 import type {AtlasCanvasScene,PaintHit} from './atlas-canvas-scene';
@@ -17,11 +19,13 @@ export class AtlasDeckDrawing {
     this.entries.push(...objects);
     this.batches=drawingBatches(this.entries);
   }
-  layers(frame:AtlasMetricFrame,prefix:string):Layer[]{
+  layers(frame:AtlasMetricFrame,prefix:string,styleScale=1):Layer[]{
     const o=this.surface.origin;
     return this.batches.map((batch,i)=>{const {entry:e,mesh,data}=batch;
       if(e.billboard){const key=[frame.camera.rotation,frame.camera.tilt,frame.camera.exaggeration].join('/');if(key!==batch.key){batch.key=key;batch.oriented={...mesh,attributes:{...mesh.attributes,POSITION:{size:3,value:billboardPositions(e,frame)}}};}}
-      return new SimpleMeshLayer({id:`atlas-drawing:${prefix}:${i}`,data,mesh:batch.oriented??mesh,
+      const MeshLayer=e.publicForestScale?AtlasPublicForestLayer:SimpleMeshLayer;
+      return new MeshLayer({id:`atlas-drawing:${prefix}:${i}`,data,mesh:batch.oriented??mesh,
+      forestOrigin:[cartographicPhase(o.x*(e.publicForestScale??1)),cartographicPhase(o.y*(e.publicForestScale??1))],forestScale:e.publicForestScale??1,forestPixelRatio:styleScale*(prefix==='output'?1:globalThis.devicePixelRatio??1),
       ...(e.texture?{texture:e.texture as HTMLCanvasElement}:{}),
       coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,getPosition:[o.x-frame.origin.x,o.y-frame.origin.y,(this.surface.focusM-frame.origin.z)*frame.camera.exaggeration],
       getScale:[1,1,frame.camera.exaggeration],getColor:e.color,material:ATLAS_UNLIT_MATERIAL,pickable:false,
@@ -62,7 +66,7 @@ function drawingBatches(entries:AtlasDrawingMesh[]){
   const groups:AtlasDrawingMesh[][]=[];
   for(const entry of entries){
     const group=groups.at(-1),last=group?.[0];
-    if(last&&!last.texture&&!entry.texture&&!last.colors&&!entry.colors&&last.solid===entry.solid&&last.color.every((v,i)=>v===entry.color[i]))group!.push(entry);
+    if(last&&!last.texture&&!entry.texture&&!last.colors&&!entry.colors&&last.publicForestScale===entry.publicForestScale&&last.solid===entry.solid&&last.color.every((v,i)=>v===entry.color[i]))group!.push(entry);
     else groups.push([entry]);
   }
   return groups.map(group=>{

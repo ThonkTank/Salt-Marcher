@@ -64,3 +64,19 @@ test('output text textures grow with pixel density without changing their metric
  const render=density=>atlasDrawingGeometry({commands:[command(text)]},{x:0,y:0},new Map(),{...flat,textPixelsPerMeter:density})[0];
  const small=render(24),large=render(48);assert.equal(large.texture.width,small.texture.width*2);assert.equal(large.texture.height,small.texture.height*2);assert.deepEqual(large.billboard.offsets,small.billboard.offsets);
 });
+
+test('public forest ink remains clipped to disclosed geometry and separate from ordinary polygons',()=>{
+ const forest=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:20,y:0},{x:20,y:20},{x:0,y:20}],holes:[[{x:8,y:8},{x:12,y:8},{x:12,y:12},{x:8,y:12}]]}],data:{publicForestScale:'48',knownCell:'0,0'}});
+ const plain=atlasPaint('rect',{x:30,y:0,width:20,height:20,data:{knownCell:'1,0'}});
+ const drawing=new AtlasDeckDrawing({commands:[command(forest),command(plain)]},{x:0,y:0},new Map(),flat);
+ const camera=atlasMetricFrame({focus:{x:20,y:10},focusHeightM:0,metersPerPixel:1,rotation:0,tilt:0,exaggeration:1},800,600);
+ const layers=drawing.layers(camera,'player');
+ assert.equal(layers.length,2);
+ assert.equal(layers[0].constructor.layerName,'AtlasPublicForestLayer');
+ assert.equal(layers[0].props.forestScale,48);
+ assert.equal(layers[1].constructor.layerName,'SimpleMeshLayer');
+ assert.equal(drawing.hit(frame,{x:3,y:3},['knownCell']).data.knownCell,'0,0');
+ assert.equal(drawing.hit(frame,{x:10,y:10},['knownCell']),null);
+ assert.equal(drawing.hit(frame,{x:25,y:10},['knownCell']),null);
+ drawing.dispose();
+});

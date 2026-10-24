@@ -1,4 +1,4 @@
-import {mapRecordVisible,mapLineWidth} from './atlas-scale-policy';
+import {mapRecordVisible,mapLineWidth,mapRecordOpacity} from './atlas-scale-policy';
 import {drawVegetation} from './vegetation-view';
 import {wrapMeasurementLines} from './atlas-measurements';
 import {lengthLabel,atlasUnits,type AtlasUnits} from './atlas-units';
@@ -54,7 +54,7 @@ export function drawLandscape(
     if(r.kind!=="reference")drawRaster();
     if(!mapRecordVisible(r,mpp))continue;
     if(r.kind!=="reference"&&r.kind!=="patch")drawColors();
-    const g = landscapeNode("group", {data: {landscapeId: String(r.id)}});
+    const g = landscapeNode("group", {opacity:mapRecordOpacity(r,mpp),data: {landscapeId: String(r.id)}});
     root.append(g);
     if (r.kind === "reference") {
       if (references && r.visible !== false && assets.has(r.assetId!))

@@ -28,7 +28,7 @@ try {
         const profile = await mkdtemp('/tmp/native-player-map-'), store = new CampaignStore(profile + '/workbench.sqlite'), cam = store.create('Spielerkarte am Nordpass'), w = store.activate(cam.id), command = action => ({ commandId: randomUUID(), token: w.token, campaignId: cam.id, action }), hero = store.executeLive(command({ kind: 'create-character', profile: { name: 'Mira' } })).character, scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 1 })).scene;
         store.executeLive(command({ kind: 'membership', characterId: hero.id, expectedRevision: hero.membershipRevision, expectedRosterRevision: 1, active: true, targetSceneId: scene.id, expectedFocusRevision: 0 }));
         let map = store.world(w.token).maps[0];
-        map = { ...map, name: 'Nordpass', cells: ['Eichenfurt', 'Nordpass', 'GM_GEHEIM_Drache'].map((label, q) => ({ q, r: 0, level: 0, terrain: ['plains', 'hills', 'mountains'][q], elevationM: 0, climate: null, road: false, river: false, label, faction: 'GM_GEHEIM_Kult', interrupt: '' })) };
+        map = { ...map, name: 'Nordpass', cells: ['Eichenfurt', 'Nordpass', 'GM_GEHEIM_Drache'].map((label, q) => ({ q, r: 0, level: 0, terrain: ['forest', 'hills', 'mountains'][q], elevationM: 0, climate: null, road: false, river: false, label, faction: 'GM_GEHEIM_Kult', interrupt: '' })) };
         store.executeWorld(command({ kind: 'map', map, expectedRevision: map.revision }));
         const position = store.sceneWorld(w.token, scene.id).position;
         store.executeWorld(command({ kind: 'place-scene', sceneId: scene.id, expectedSceneRevision: scene.revision, expectedPositionRevision: position.revision, position: { mapId: map.id, q: 0, r: 0, locationId: null, dungeon: null } }));
@@ -103,6 +103,7 @@ try {
         await player.waitForFunction(()=>document.querySelector('.player-atlas')?.dataset.ready==='true');
         let frame = await player.evaluate(async () => { const r = await window.playerDisplay.frame(); return r.value.frame; });
         assert.equal(frame.mode, 'map');
+        assert.equal(frame.map.cells[0].terrain,'forest','Public forest uses only disclosed terrain');
         assert.deepEqual(frame.map.cells.map(c => [c.q, c.label]), [[0, 'Eichenfurt'], [1, 'Nordpass']]);
         assert.doesNotMatch(JSON.stringify(frame), /GM_GEHEIM/);
         assert.equal(await player.evaluate(() => typeof window.campaign), 'undefined');

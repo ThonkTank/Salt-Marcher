@@ -5,8 +5,9 @@ import {lineParts,linePoints} from './landscape-line';
 import {nearestRoute} from './terrain-route';
 import type {AtlasDrawingMesh} from './atlas-drawing-geometry';
 import {routeSegmentRange,routeSampleSections} from './terrain-route-clip';
+import {mapLineWidth} from './atlas-scale-policy';
 
-export function atlasRouteGeometry(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,selected=false,coverage?:LandscapeBox,layout?:import('./terrain-grid-layout').TerrainRouteLayout):AtlasDrawingMesh[]{
+export function atlasRouteGeometry(r:LandscapeRecord,height:(p:Point)=>number,origin:{x:number;y:number;z:number},exaggeration:number,step:number,selected=false,coverage?:LandscapeBox,layout?:import('./terrain-grid-layout').TerrainRouteLayout,displayMpp=0):AtlasDrawingMesh[]{
   const meshes:AtlasDrawingMesh[]=[],curve=linePoints(r),nodes=r.route?.nodes;
   const box=coverage?{x:coverage.x-r.width*2,y:coverage.y-r.width*2,width:coverage.width+r.width*4,height:coverage.height+r.width*4}:undefined;
   const position=(p:Point,z:number)=>[p.x-origin.x,origin.y-p.y,(z-origin.z)*exaggeration+.025];
@@ -41,7 +42,7 @@ export function atlasRouteGeometry(r:LandscapeRecord,height:(p:Point)=>number,or
             const p={x:a.x+dx*t,y:a.y+dy*t};
             const fade=r.kind==='river'&&r.line?.fadeIn?Math.min(1,(travel+length*t)/(r.width*8)):1;
             const worn=r.kind==='road'&&r.line?.style==='worn'?.84+.24*Math.sin((travel+length*t)/(r.width*2)+r.line.seed):1;
-            const radius=part.width/2*fade*worn;
+            const radius=mapLineWidth(part.width,displayMpp)/2*fade*worn;
             const before=points[Math.max(0,i-2)]!,after=points[Math.min(points.length-1,i+1)]!;
             const miter=(ux:number,uy:number)=>{const n=Math.hypot(ux,uy);if(!n)return {x:-dy/length,y:dx/length};ux/=n;uy/=n;const divisor=Math.max(.5,1+ux*dx/length+uy*dy/length);return{x:(-uy-dy/length)/divisor,y:(ux+dx/length)/divisor};};
             const start=miter(a.x-before.x,a.y-before.y),end=miter(after.x-b.x,after.y-b.y);

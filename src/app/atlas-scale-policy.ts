@@ -47,3 +47,13 @@ export function mapFootprintVisible(
 export function mapExtentVisible(width:number,height:number,mpp:number){
   return mpp<=0||Math.max(width,height)/mpp>=2;
 }
+
+/** Fade the last readable interval without changing topology or physical widths. */
+export function mapLineOpacity(kind:'road'|'river',width:number,mpp:number,minor=false){
+ if(mpp<=0)return 1;
+ const threshold=mapLineThreshold(kind,minor),t=Math.max(0,Math.min(1,(width/mpp/threshold-1)/.5));
+ return t*t*(3-2*t);
+}
+export function mapRecordOpacity(record:LandscapeRecord,mpp:number){
+ return record.kind==='road'||record.kind==='river'?mapLineOpacity(record.kind,record.width,mpp,record.style==='path'||record.style==='stream'):1;
+}

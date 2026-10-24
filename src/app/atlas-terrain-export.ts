@@ -21,7 +21,7 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   const {atlasDeckImage}=await import('./atlas-deck-runtime');check();
   const {width,height,format,overlay}=options,box=view.box;
   const camera={focus:{x:view.frame.x+view.frame.width/2,y:view.frame.y+view.frame.height/2},focusHeightM:view.focusM,metersPerPixel:view.frame.width/width,tilt:view.tilt,rotation:view.rotation,exaggeration:view.exaggeration};
-  const baseSurface={textPixelsPerMeter:width/view.frame.width,origin:{x:box.x,y:box.y},focusM:0,exaggeration:1,height:()=>0,segment:Math.max(box.width,box.height)/64,bounds:box};
+  const baseSurface={displayMpp:Math.max(view.frame.width,view.frame.height)/Math.min(1024,Math.max(width,height)),textPixelsPerMeter:width/view.frame.width,origin:{x:box.x,y:box.y},focusM:0,exaggeration:1,height:()=>0,segment:Math.max(box.width,box.height)/64,bounds:box};
   if(options.audience==='public'){
     const reply=await window.campaign.playerView(token);if(!reply.ok)throw Error(reply.error);check();
     const scene=publicAtlasPaint(snapshot,box,reply.value.frame),grid=publicTerrainGrid(reply.value.frame,view);
@@ -31,7 +31,7 @@ export async function atlasTerrainExport(token:string,snapshot:AtlasRenderView,v
   }
   const layer=snapshot.region?.landscape;
   if(!layer||layer.state!=='ready'||!layer.coverage.complete)throw Error(layer?.error??'Landschaftsausgabe nicht vollständig. Erneut laden.');
-  const stream=new AtlasSurfaceTileStream({maxTiles:64,maxBytes:64*1024*1024}),objects=new AtlasObjectGeometry();
+  const stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024}),objects=new AtlasObjectGeometry();
   try{
     let tiles:readonly AtlasSurfaceTile[]=[];
     const fetch=atlasSurfaceTileFetcher(window.campaign,token,'export:'+crypto.randomUUID());

@@ -1,11 +1,13 @@
 import {ATLAS_HORIZON_EXTENSION,atlasHorizonRange} from './atlas-horizon';
 import {ATLAS_UNLIT_MATERIAL} from './atlas-deck-material';
 import {terrainContourStep} from './terrain-contour-style';
+import {cartographicPhase} from './atlas-cartographic-style';
 import {AtlasTerrainMaterialLayer} from './atlas-terrain-material-layer';
 import type {AtlasTerrainTileModel} from './atlas-terrain-tile-model';
 import {DEFAULT_TERRAIN_STYLE,type TerrainStyle} from './terrain-relief';
 import {Deck, COORDINATE_SYSTEM, type Color, type DeckProps, type Layer} from '@deck.gl/core';
 import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
+import type {Device} from '@luma.gl/core';
 import {atlasMetricFrame, AtlasMetricView, atlasMetricZoomAt, atlasMetricPanAt,
   type AtlasMetricCamera} from './atlas-metric-camera';
 import {ensureAtlasDeckPickingDepth} from './atlas-deck-picking';
@@ -30,6 +32,8 @@ export interface AtlasDeckSurfaceOptions {
   /** Existing Workbench owns input when used through AtlasPresentation. */
   externalInput?:boolean;
   pixelRatio?:number;
+  /** Output pixels per logical style pixel; independent of framebuffer density. */
+  styleScale?:number;
   /** Unit-test seam; production always uses the pinned Deck runtime. */
   createDeck?: (props: DeckProps<AtlasMetricView[]>) => Deck<AtlasMetricView[]>;
 }
@@ -103,6 +107,7 @@ export function atlasDeckSceneLayers(model: AtlasDeckSceneModel, frame: Frame): 
 export class AtlasDeckSurface {
   private canvasValue: HTMLCanvasElement;
   private deckValue: Deck<AtlasMetricView[]> | null = null;
+  private gpuDevice:Device|null=null;
   private cameraValue: AtlasMetricCamera;
   private crop?:{width:number;height:number;x:number;y:number};
   private modelValue: AtlasDeckSceneModel;
@@ -144,6 +149,10 @@ export class AtlasDeckSurface {
   get camera(): AtlasMetricCamera { return {...this.cameraValue, focus: {...this.cameraValue.focus}}; }
   get model(): AtlasDeckSceneModel { return this.modelValue; }
   get frame(): Frame { return this.frameValue; }
+  get gpuMemory(){
+    const stats=this.gpuDevice?.statsManager.getStats('GPU Time and Memory');
+    return {bytes:stats?.get('GPU Memory').count??0,buffers:stats?.get('Buffer Memory').count??0,textures:stats?.get('Texture Memory').count??0};
+  }
   get frameUsable(): boolean { return !this.disposed && !this.lost && this.loaded && this.renderedRevision === this.revision; }
 
   private makeCanvas(): HTMLCanvasElement {
@@ -189,7 +198,8 @@ export class AtlasDeckSurface {
     return this.terrain.map(tile=>new AtlasTerrainMaterialLayer({
       id:`atlas-scene:${tile.object.id}`,data:tile.data,mesh:tile.mesh,baseColor:tile.texture,
       masks:tile.masks,terrainStyle:this.terrainStyle,heightOrigin:tile.object.origin.heightM,
-      ...this.terrainDisplay,automaticStep:terrainContourStep(frame.camera.metersPerPixel),pixelRatio:this.options.pixelRatio??globalThis.devicePixelRatio??1,
+      materialOrigin:[cartographicPhase(tile.object.origin.x),cartographicPhase(tile.object.origin.y)],
+      ...this.terrainDisplay,automaticStep:terrainContourStep(frame.camera.metersPerPixel*(this.options.styleScale??1)),pixelRatio:(this.options.pixelRatio??globalThis.devicePixelRatio??1)*(this.options.styleScale??1),
       coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,
       getPosition:[tile.object.origin.x-frame.origin.x,tile.object.origin.y-frame.origin.y,(tile.object.origin.heightM-frame.origin.z)*frame.camera.exaggeration],
       getScale:[1,1,frame.camera.exaggeration],getColor:[255,255,255,255],material:ATLAS_UNLIT_MATERIAL,pickable:'3d',
@@ -253,6 +263,7 @@ export class AtlasDeckSurface {
         useDevicePixels: this.options.pixelRatio??true, controller: false, viewState: {},
         views: [new AtlasMetricView({id: 'atlas-metric', frame: this.frameValue})], layers: [],
         deviceProps: {type: 'webgl', webgl: {antialias: true, preserveDrawingBuffer: true}},
+        onDeviceInitialized: device=>{if(generation===this.generation)this.gpuDevice=device;},
         onLoad: () => {
           if (this.disposed || generation !== this.generation) return;
           this.loaded = true;

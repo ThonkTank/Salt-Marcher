@@ -107,7 +107,7 @@ export function vegetationBlocked(env:VegetationEnvironment,p:Point,radius=0) {
   return contains(p,env.buildings)||radius>0&&edgeDistance(p,env.buildings)<radius;
 }
 const inBox=(p:Point,b:LandscapeBox,pad=0)=>p.x>=b.x-pad&&p.y>=b.y-pad&&p.x<=b.x+b.width+pad&&p.y<=b.y+b.height+pad;
-export const VEGETATION_SURFACE_MPP=80;
+export const VEGETATION_SURFACE_MPP=8;
 export function generateVegetation(r:LandscapeRecord,environment:VegetationEnvironment|((point:Point,radius:number)=>VegetationEnvironment),box:LandscapeBox,mpp:number):VegetationView {
   const sourceAt=(point:Point,radius:number)=>typeof environment==='function'?environment(point,radius):environment;
   const v=r.vegetation!;
