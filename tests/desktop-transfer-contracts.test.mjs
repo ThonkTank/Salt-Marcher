@@ -23,7 +23,8 @@ test('all canonical tables and columns have contracts; schema additions fail clo
  const format=JSON.parse(readFileSync('src/app/data-format.json','utf8'));
  assert.deepEqual(Object.keys(transferTables).sort(),[...format.tables].sort());
  store.db.exec('CREATE TABLE undeclared_transfer_owner(id TEXT)');assert.throws(()=>assertTransferCoverage(store.db),/Datenbanktabellen/);
- store.db.exec('DROP TABLE undeclared_transfer_owner; ALTER TABLE scope ADD COLUMN undeclared_reference TEXT');assert.throws(()=>assertTransferCoverage(store.db),/scope Spalten/);
+ store.db.exec('DROP TABLE undeclared_transfer_owner; CREATE TABLE sqliteExtra(id TEXT)');assert.throws(()=>assertTransferCoverage(store.db),/Datenbanktabellen/);
+ store.db.exec('DROP TABLE sqliteExtra; ALTER TABLE scope ADD COLUMN undeclared_reference TEXT');assert.throws(()=>assertTransferCoverage(store.db),/scope Spalten/);
 });
 
 test('same spelling has domain-specific meaning: local floor, shared sound and stable vegetation identity',()=>{

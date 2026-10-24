@@ -14,7 +14,7 @@ function fail(message:string):never {throw Error('Kampagnentransfer ist nicht vo
 export function assertTransferCoverage(db:any){
  const canonical=[...DATA_FORMAT.tables].sort(),registered=Object.keys(transferTables).sort();
  if(JSON.stringify(canonical)!==JSON.stringify(registered))fail('Tabellenkatalog');
- const actual=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'").all();
+ const actual=db.prepare("SELECT name FROM sqlite_schema WHERE type='table' AND name NOT GLOB 'sqlite_*'").all();
  if(JSON.stringify(actual.map((t:{name:string})=>t.name).sort())!==JSON.stringify(canonical))fail('Datenbanktabellen');
  for(const {name} of actual){
   const contract=transferTables[name]!;
