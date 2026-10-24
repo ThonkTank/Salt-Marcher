@@ -55,7 +55,7 @@ function applyRuntime(value:MusicView){
  const layers=ambienceRevision>stopRevision?value.layers:value.layers.filter(layer=>authorizedLayers.has(layer.assetId)),scale=layers.length?Math.sqrt(value.layers.length/layers.length):1;
  player.apply({...value,state:playSong?value.state:{...value.state,current:null,status:'stopped'},layers:layers.map(layer=>({...layer,gain:Math.min(1,layer.gain*scale)}))});
 }
-async function checkpoint(owner=workspace){if(!owner||!current(owner)||!player)return;const p=player.position();if(p)unwrap(await window.campaign.musicPosition(owner.token,p.playbackId,p.seconds));}
+async function checkpoint(owner=workspace){if(!owner||!current(owner)||!player)return;const p=player.position();if(p)unwrap(await editorSession.start(()=>window.campaign.musicPosition(owner.token,p.playbackId,p.seconds)));}
 function isStop(action:MusicAction){return action.kind==='transport'&&action.operation==='stop';}
 async function preparePlayback(owner:WorkspaceGeometry){
  const stoppedAt=stopRevision;
@@ -70,7 +70,7 @@ async function change(action:MusicAction,quiet=false,owner=workspace){
  if(!owner||!current(owner))return null;
  const stoppedAt=stopRevision,command={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token:owner.token,action:structuredClone(action)};
  if(!isStop(action))await checkpoint(owner);if(!current(owner)||!isStop(action)&&stoppedAt!==stopRevision)return null;
- const response=await window.campaign.executeMusic(command);if(!current(owner))return null;const result=unwrap(response);
+ const response=await editorSession.start(()=>window.campaign.executeMusic(command));if(!current(owner))return null;const result=unwrap(response);
  grantOutput(action,result.state.revision);
  if(view&&(result.state.revision<view.state.revision||result.registry.catalogRevision<view.registry.catalogRevision)){applyRuntime(view);renderRuntime();return result;}
  request++;refreshPending=null;view=result;applyRuntime(result);renderRuntime();if(!quiet)tell(isStop(action)?'Wiedergabe gestoppt.':'Musik gespeichert.');return result;

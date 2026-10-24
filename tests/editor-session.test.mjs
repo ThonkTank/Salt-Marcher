@@ -105,3 +105,12 @@ test('the matching confirmed writer can release its drain before entering a navi
  const task=session.run(async()=>{committed++;slot.clear(task);return registry.flush('navigation');});
  slot.value=task;assert.equal(await task,true);assert.equal(committed,1);
 });
+
+test('immediate dispatch reserves the accepted task before starting the first raw draft write',async()=>{
+ const session=new EditorSession(),held=deferred();let calls=0;
+ const task=session.start(()=>{calls++;assert.equal(session.status.saving,true);return held.promise;});
+ assert.equal(calls,1);session.deactivate();let done=false;const drain=session.settle().then(()=>done=true);await tick();assert.equal(done,false);
+ held.resolve(true);assert.equal(await task,true);await drain;
+ const failed=session.start(()=>{assert.equal(session.status.saving,true);throw Error('synchronous bridge failure');});
+ await assert.rejects(failed,/synchronous bridge failure/);await session.settle();assert.equal(session.status.saving,false);
+});

@@ -115,6 +115,7 @@ const bus = profile + "/bus",
 for (let i = 0; i < 100 && !(await stat(bus).catch(() => null)); i++)
   await new Promise((r) => setTimeout(r, 20));
 let app,
+  child,
   page,
   closed = true;
 const exits = [],
@@ -130,9 +131,10 @@ async function launch() {
     ],
     env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: "unix:path=" + bus },
   });
+  child=app.process();
   closed = false;
   page = await app.firstWindow();
-  const pid=app.process().pid,zoom=process.argv.includes('--zoom200')?2:1;
+  const pid=child.pid,zoom=process.argv.includes('--zoom200')?2:1;
   assert((await readFile(`/proc/${pid}/cmdline`,'utf8')).includes(profile));
   assert.equal((await readFile(`/proc/${pid}/cgroup`,'utf8')).trim().split('::')[1],group);
   launches.push({pid,zoom,cgroup:group});
@@ -147,7 +149,7 @@ async function launch() {
 async function close() {
   assert.deepEqual(errors, []);
   const done = new Promise((r) =>
-    app.process().once("exit", (code, signal) => r({ code, signal })),
+    child.once("exit", (code, signal) => r({ code, signal })),
   );
   await app.evaluate(({ BrowserWindow }) =>
     BrowserWindow.getAllWindows()[0].close(),
@@ -155,7 +157,7 @@ async function close() {
   let timer;try{
     const exit=await Promise.race([done,new Promise((_,reject)=>timer=setTimeout(()=>reject(Error('Normal close timed out')),10000))]);
     assert.deepEqual(exit,{code:0,signal:null});exits.push(exit);launches.at(-1).exit=exit;
-    await assert.rejects(stat('/proc/'+app.process().pid),{code:'ENOENT'});launches.at(-1).pidAbsent=true;closed=true;
+    await assert.rejects(stat('/proc/'+launches.at(-1).pid),{code:'ENOENT'});launches.at(-1).pidAbsent=true;closed=true;
   }finally{clearTimeout(timer);}
 }
 async function open(id) {
@@ -235,4 +237,4 @@ try {
  assert.deepEqual(await readFile(profile+'/transfer.kwcampaign'),archive); assert.deepEqual(errors,[]);
  await writeFile(out+'/result.json',JSON.stringify({head:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty:!!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),profile,launches,exits,artifactHashes,observations,linkedNotesAndMapIndependent:true,archiveUnchanged:true,errors},null,2));
  console.log(JSON.stringify({out,exits,linkedNotesAndMapIndependent:true,errors}));
-}catch(error){await writeFile(out+'/failure.json',JSON.stringify({error:error.stack,profile,launches,errors},null,2));if(app&&!closed)await shot('failure').catch(()=>{});throw error;}finally{if(app&&!closed){const child=app.process(),timer=setTimeout(()=>{if(child.exitCode===null)child.kill('SIGKILL');},5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy.kill();}
+}catch(error){await writeFile(out+'/failure.json',JSON.stringify({error:error.stack,profile,launches,errors},null,2));if(app&&!closed)await shot('failure').catch(()=>{});throw error;}finally{if(app&&!closed){const timer=setTimeout(()=>{if(child.exitCode===null)child.kill('SIGKILL');},5000);try{await app.close().catch(()=>{});}finally{clearTimeout(timer);}}proxy.kill();}

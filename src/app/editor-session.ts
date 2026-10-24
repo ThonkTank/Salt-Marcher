@@ -61,6 +61,16 @@ export class EditorSession {
     return task;
   }
 
+  /** Reserve before synchronous dispatch. Draft queues use this to preserve
+   * the first in-flight value when more input arrives in the same event turn. */
+  start<T>(dispatch: () => Promise<T>): Promise<T> {
+    let resolve!: (value: T | PromiseLike<T>) => void, reject!: (error: unknown) => void;
+    const task = new Promise<T>((yes,no) => { resolve=yes; reject=no; });
+    this.track(task);
+    try { void dispatch().then(resolve,reject); } catch (error) { reject(error); }
+    return task;
+  }
+
   track<T>(task: Promise<T>): Promise<T> {
     this.operations.add(task);
     const settled = () => this.operations.delete(task);

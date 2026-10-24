@@ -23,7 +23,7 @@ export class CombatDraftCache {
  put(token:string,cam:string,d:CombatWorkingDraft):Promise<boolean>{
   const key=combatDraftKey(cam,d.combatId,d.kind,d.targetId);this.values.set(key,d);this.dirty.add(key);
   const existing=this.tasks.get(key);if(existing)return existing;
-  const task=this.editorSession.run(async()=>{
+  const task=this.editorSession.start(async()=>{
    // Retain at most the in-flight value and the latest edit for this target.
    while(this.dirty.has(key)){
     const current=this.values.get(key)!;
