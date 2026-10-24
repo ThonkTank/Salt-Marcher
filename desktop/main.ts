@@ -1,4 +1,5 @@
-import {eraseAtlasProjection,clearProjectionWork} from '../src/app/storage/atlas-projection-index';
+import {clearCampaignStaging,discardCampaignTickets,finishCampaignErasure} from './campaign-erasure';
+import {clearProjectionWork} from '../src/app/storage/atlas-projection-index';
 import {openUpdateRuntime} from './update-runtime';
 import {UpdateService} from './update-service';
 import {terrainSnapshotStillValid} from '../src/app/terrain-presentation';
@@ -23,7 +24,7 @@ import {citySvg} from '../src/app/city-model';
 import {writeFile,mkdir,open} from 'node:fs/promises';
 import {acceptPreparedCampaign} from './campaign-accept';
 import {exportCampaignArchive,extractCampaignArchive,fileDigest,checkCampaignContents,campaignMediaPath,type CampaignManifest,type CampaignFileHooks} from './campaign-files';
-import {mkdtemp,readdir,stat,rm} from 'node:fs/promises';
+import {mkdtemp,stat,rm} from 'node:fs/promises';
 import {copyAudio,exportAudioBundle,importAudioBundle,type TransferHooks} from './audio-files';
 import { app, BrowserWindow, dialog,shell, ipcMain, protocol, net,screen,nativeImage,session } from 'electron';
 import { randomUUID, createHash } from 'node:crypto';
@@ -68,7 +69,8 @@ else {
   let updateRuntime:Awaited<ReturnType<typeof openUpdateRuntime>>|null=null;
   let backupRunning = false;
   let backupError: string | null = null;
-  async function finishPendingCampaignErasure(id:string){if(!store.pendingCampaignErasures().includes(id))return;for(const name of await readdir(dataDir))if(name==='recovery.sqlite'||name.startsWith('recovery.sqlite.candidate-'))await rm(path.join(dataDir,name),{force:true});await eraseAtlasProjection(path.join(dataDir,'atlas-region-cache'),store.filename,id);store.finishCampaignErasure(id);}
+  let campaignErasing=false;
+  const finishPendingCampaignErasure=(id:string)=>finishCampaignErasure(store,dataDir,id);
   const dungeonImportPreviews = new Map<string, { bytes: Buffer; name: string; rooms: Room[] }>();
   const root = path.join(__dirname, 'ui');
   const origin = 'campaign://app/index.html';
@@ -79,6 +81,7 @@ else {
     await updates.init();
     store = new CampaignStore(path.join(dataDir, 'workbench.sqlite'), __APP_VERSION__);
     await clearProjectionWork(path.join(dataDir,'atlas-region-cache'));
+    clearCampaignStaging(dataDir);
     for(const id of store.pendingCampaignErasures())await finishPendingCampaignErasure(id);
     protocol.handle('campaign', request => {
       const url = new URL(request.url);
@@ -116,15 +119,33 @@ else {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
         if(stopping&&!name.startsWith('update:'))return {ok:false,error:'SaltMarcher wird für das Update oder Schließen angehalten.'};
-        const task=Promise.resolve().then(()=>operation(...args));if(!name.startsWith('update:'))activeOperations.add(task);
+        const task=Promise.resolve().then(()=>{if(campaignErasing)throw Error('Kampagnenlöschung läuft. Danach erneut versuchen.');return operation(...args);});if(!name.startsWith('update:'))activeOperations.add(task);
         try { const value=await task;if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','atlas:drawing-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))playerDisplay.sync();return { ok: true, value }; }
         catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
         finally{activeOperations.delete(task);}
       });
     }
     handle('campaign:installation-settings',()=>store.campaignInstallationSettings());
-    handle('campaign:catalog',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalog(c);if(c.kind==='open'||c.kind==='create')dungeonImportPreviews.clear();if((c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;if(c.kind==='erase'){await Promise.all([atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);for(const [id,ticket]of campaignTickets)if(ticket.fence?.id===c.id){campaignTickets.delete(id);await rm(ticket.dir,{recursive:true,force:true});}await finishPendingCampaignErasure(c.id);}return result;});
-    handle('campaign:catalog-outcome',async(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>{const result=store.campaignCatalogOutcome(c);if(result?.kind==='erase'){await Promise.all([atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);await finishPendingCampaignErasure(result.campaignId);}return result;});
+    async function catalogOperation(c:import('../src/app/campaign-contracts').CampaignCatalogCommand,outcome=false){
+      const erasing=c.kind==='erase';
+      // Native file operations may await dialogs or streams. Do not delete their bytes mid-flight.
+      if(erasing&&(activeOperations.size>1||campaignBusy||audioBusy))throw Error('Laufende Vorgänge zuerst abschließen. Kampagnenlöschung danach erneut versuchen.');
+      if(erasing)campaignErasing=true;
+      try{
+        const result=outcome?store.campaignCatalogOutcome(c):store.campaignCatalog(c);
+        if(!outcome&&(c.kind==='open'||c.kind==='create'))dungeonImportPreviews.clear();
+        if(!outcome&&(c.kind==='trash'||c.kind==='erase')&&currentCampaignSource===c.id)campaignCancelled=true;
+        if(erasing&&result){
+          await backupTask;
+          await Promise.all([atlasRegions.cancelAndWait(),atlasExportRegions.cancelAndWait()]);
+          discardCampaignTickets(campaignTickets,c.id);
+          await finishPendingCampaignErasure(c.id);
+        }
+        return result;
+      }finally{if(erasing)campaignErasing=false;}
+    }
+    handle('campaign:catalog',(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>catalogOperation(c));
+    handle('campaign:catalog-outcome',(c:import('../src/app/campaign-contracts').CampaignCatalogCommand)=>catalogOperation(c,true));
     handle('campaign:catalog-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();return store.campaignCatalogWorkspace(id,true);});
     handle('campaign:activate-shell',(id:string)=>{roomDirectory.cancel();atlasRoomDirectory.cancel();atlasRegions.cancel();atlasExportRegions.cancel();dungeonImportPreviews.clear();return store.activateShell(id);});
     handle('campaign:workspace-geometry',(token:string)=>store.workspaceGeometry(token));
@@ -563,7 +584,7 @@ else {
     });
     win.on('close',event=>{if(!closeAllowed){event.preventDefault();if(!stopping)win.webContents.send('campaign:close');}});
     timer=setInterval(()=>{
-      if(backupRunning||stopping)return;
+      if(campaignErasing||backupRunning||stopping)return;
       backupRunning=true;
       backupTask=store.backup(path.join(dataDir,'recovery.sqlite'),filename=>backupValidation.validate(filename)).then(()=>{backupError=null;},()=>{backupError='Wiederherstellungskopie fehlgeschlagen. Die gespeicherten Änderungen liegen im Arbeitsstore.';}).finally(()=>{backupRunning=false;});
     },30000);

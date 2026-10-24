@@ -146,3 +146,10 @@ export function activateGraph(){resetDungeonBudget();generation++;readVersion++;
 export async function flushGraph(){const o=owner(),job=pending;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!hasDungeonBudgetDrafts();}
 
 export async function refreshOpenGraph(){if(el<HTMLDialogElement>('graph-dialog').open)await refresh();}
+
+/** The shadow is intentionally temporary; only explicit accept/restore may discard it. */
+export function canLeaveGraphPreview(){
+ if(!workspace()?.graphPreview)return true;
+ tell('Geschützte Graph-/Rastervorschau zuerst übernehmen oder mit „Ursprung vollständig wiederherstellen“ verwerfen. Danach Kampagne wechseln oder schließen.',true);
+ return false;
+}

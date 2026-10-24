@@ -79,6 +79,14 @@ Ausführen nach `npm run build:desktop` mit
 Bilder und das Ergebnis mit Commit-/Artefaktbindung fest. Die Probe bestätigt weder
 eine erfolgreiche permanente Löschung noch Paketinstallation oder Ownerabnahme.
 
+Die [unabhängige Datenhaltungsprüfung vom 24. Oktober](docs/reference/independent-code-review-20261024/README.md)
+ergänzt den Schutz offener Atlas-/Graphentwürfe, kopierte Triggerreisen und
+identifiergleiche Importtexte. Ihre eigene native Probe führt außerdem eine
+permanente Löschung mit privaten und gemeinsam verwendeten Bildern aus und
+prüft die Bereinigung eines alten verwalteten Transfersnapshots beim Start.
+Dateifehler bleiben zur Wiederaufnahme offen; schon historisch verlorene
+Bildzuordnungen werden nicht durch pauschale Löschung geraten.
+
 ### Copy-/Complete-Import-Remap und Ownerlieferung
 
 Ein SQLite-Snapshot ist noch kein `.kwcampaign`-Archiv. Der Dateiweg beginnt in

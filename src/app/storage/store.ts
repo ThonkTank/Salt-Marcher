@@ -523,7 +523,8 @@ export class CampaignStore {
         const id=(s:string)=>{if(!ids.has(s))ids.set(s,randomUUID());return ids.get(s)!;};
         for(const r of a.rooms){id(r.scopeId);id(r.floorId);id(r.id);for(const section of r.sections)id(section.id);}
         for(const f of doc.floors??[])id(f.id);if(doc.id)id(doc.id);
-        const rewrite=(v:any):any=>typeof v==='string'?(ids.get(v)??v):Array.isArray(v)?v.map(rewrite):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,v])=>[k,rewrite(v)])):v;
+        // Identity fields are references; authored prose and room numbers are not.
+        const rewrite=(room:Room):Room=>({...room,id:id(room.id),scopeId:id(room.scopeId),floorId:id(room.floorId),sections:room.sections.map(section=>({...section,id:id(section.id),...(section.doorId?{doorId:ids.get(section.doorId)??section.doorId}:{})}))});
         const scopes=new Set(a.rooms.map(r=>r.scopeId));
         for(const original of scopes){const scopeId=id(original);this.db.prepare('INSERT INTO scope VALUES(?,?,?)').run(cam,scopeId,a.name);
           const floors=new Map((doc.floors??[]).filter((f:any)=>Number.isFinite(f.elevation)).map((f:any)=>[f.id,{id:id(f.id),name:f.name,elevation:f.elevation}]));
@@ -1197,7 +1198,13 @@ export class CampaignStore {
   trashCampaign(command:{commandId:string;id:string;expectedRevision:number;trashed:boolean}){trashCampaign(this.db,command);this.backupEpoch++;if(command.trashed&&this.active?.campaignId===command.id){this.active=null;this.db.prepare("DELETE FROM settings WHERE key='active'").run();}}
   eraseCampaign(command:{commandId:string;id:string;expectedRevision:number;confirmName:string}){this.backupEpoch++;eraseCampaignRows(this.db,command);if(this.active?.campaignId===command.id)this.active=null;this.db.exec("INSERT INTO note_search(note_search) VALUES('optimize')");this.db.pragma('wal_checkpoint(TRUNCATE)');}
   pendingCampaignErasures():string[]{return this.db.prepare("SELECT id FROM campaign_erasure WHERE phase='cleanup'").all().map((r:any)=>r.id);}
-  finishCampaignErasure(id:string){this.db.prepare("UPDATE campaign_erasure SET phase='complete' WHERE id=?").run(id);}
+  campaignErasureFiles(id:string):string[]{
+    const value=this.db.prepare('SELECT value FROM settings WHERE key=?').get('campaign-erasure-files:'+id)?.value;
+    const files:unknown=value===undefined?[]:JSON.parse(value);
+    if(!Array.isArray(files)||files.some(name=>typeof name!=='string'||!/^images\/[a-f0-9]{64}\.[a-z0-9]{1,8}$/.test(name)))throw Error('Dateizuordnung der Kampagnenlöschung beschädigt.');
+    return files;
+  }
+  finishCampaignErasure(id:string){this.db.transaction(()=>{this.db.prepare("UPDATE campaign_erasure SET phase='complete' WHERE id=?").run(id);this.db.prepare('DELETE FROM settings WHERE key=?').run('campaign-erasure-files:'+id);}).immediate();}
   private get audioRoot(){return dirname(this.filename)+'/audio';}
   private updateMusic(campaignId:string){try{this.db.transaction(()=>refreshMusicContext(this.db,this.audioRoot,campaignId))();}catch{/* Music failure does not invalidate the core action. */}}
   audioAssets(query:AudioQuery){return readAudioAssets(this.db,this.audioRoot,query);}
