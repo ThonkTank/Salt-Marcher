@@ -125,7 +125,7 @@ const editors = createWorkspaceEditors({
     {id:'dungeon-binder',order:17,activate:()=>dungeonBinder.reset()},
     {id:'campaign-agenda',order:18,activate:()=>campaignAgenda.reset()},
     {id:'soundboard',order:27,activate:activateSoundboard},
-    {id:'player-display',order:30,activate:()=>{},deactivate:deactivatePlayer},
+    {id:'player-display',order:30,activate:()=>{},deactivate:deactivatePlayer,suspendBeforeActivation:true},
   ],
 });
 for(const event of ['input','change','compositionstart','compositionend','pointerdown','pointerup'])
@@ -262,9 +262,9 @@ async function refreshCampaignShell(){const list=await refreshCampaigns();if(!li
  el('campaign-header-name').textContent=workspace?.campaign.name??'Kampagnen';return list;}
 initCampaignManager(status,()=>workspace,leaveCampaign,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed)hideCampaignScreen();}});
 void initTutorial();
-async function flushAll() { return editors.flush('checkpoint'); }
-async function leaveCampaign() { return editors.flush('campaign'); }
-async function leaveWorkspace() { return editors.flush('navigation'); }
+async function flushAll() { return !workspace||editors.flush('checkpoint'); }
+async function leaveCampaign() { return !workspace||editors.flush('campaign'); }
+async function leaveWorkspace() { return !workspace||editors.flush('navigation'); }
 async function leaveRoom() {
   if (await flush()) return true;
   if (!workspace || !draft || pointer || composing) return false;
@@ -553,7 +553,7 @@ async function drainActivation(): Promise<void> {
     // Reserve the transition before this asynchronous drain, so a second request joins it.
     if (!queuedActivation?.entryCommandId&&!(await leaveCampaign())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
     rememberView();
-    activating = true; activationFailed = false; editors.deactivate();
+    activating = true; activationFailed = false; editors.suspend();
     status('Kampagne wird geladen.');
     while (queuedActivation !== null) {
       const {id,entryCommandId} = queuedActivation; queuedActivation = null;
@@ -562,6 +562,7 @@ async function drainActivation(): Promise<void> {
         if(queuedActivation!==null)continue;
         const next=unwrap(await api.workspaceInitial(shell.token));
         if (queuedActivation !== null) continue; // A newer intent owns the forthcoming projection.
+        editors.deactivate();
         workspace = geometryOnly(next); el('campaign-header-name').textContent=next.campaign.name;setWorkspaceAvailable(true); el<HTMLSelectElement>('campaigns').value = id;
         await editors.activate(next);
         if (queuedActivation !== null) continue;
@@ -690,7 +691,7 @@ el('confirm-import').onclick = () => {
   })();
 };
 initCommitControls(()=>workspace,status);
-api.onClose(() => { void (async () => { await stopWorldPlayback();await activationJob; rememberView(); if (await editors.flush('close')) { editors.deactivate(); api.closeReady(); } })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
+api.onClose(() => { void (async () => { await stopWorldPlayback();await activationJob; rememberView(); if (!workspace || await editors.flush('close')) { editors.deactivate(); api.closeReady(); } })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
 for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async () => {
   if (await leaveWorkspace()) await reopenView(id);
 })().catch(error => status(error.message, true)); };

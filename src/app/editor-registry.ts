@@ -8,6 +8,7 @@ export type EditorRegistration<Context, Id extends string> = {
   activate?: { order: number; run: (context: Context) => void | Promise<void> };
   flush?: (reason: EditorTransition) => EditorBoundary | Promise<EditorBoundary>;
   deactivate?: () => void;
+  suspendBeforeActivation?: boolean;
 };
 
 /** Ordered ownership table, shared by activation and every exit reason. A flush
@@ -45,6 +46,11 @@ export class EditorRegistry<Context, Id extends string> {
     }
   }
   changed() { this.inputRevision++; }
+  /** Silence native output while reading the new context. Keep the drained
+   * source session attached until that read succeeds, so failed loads can retry. */
+  suspend() {
+    for (const entry of this.entries) if (entry.suspendBeforeActivation) entry.deactivate?.();
+  }
   deactivate() {
     this.contextRevision++;
     for (const entry of this.entries) {

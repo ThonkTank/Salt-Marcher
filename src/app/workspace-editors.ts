@@ -34,7 +34,7 @@ type Host = {
   room: {session: EditorSession; flush: () => Promise<boolean>; leave: () => Promise<boolean>};
   gate: () => EditorBoundary;
   beforeTool: () => boolean;
-  views: readonly {id: string; order: number; activate: (w: WorkspaceGeometry) => void; deactivate?: () => void}[];
+  views: readonly {id: string; order: number; activate: (w: WorkspaceGeometry) => void; deactivate?: () => void; suspendBeforeActivation?: boolean}[];
 };
 
 /** Declaration order is the historical drain order. Activation order differs
@@ -57,7 +57,7 @@ export function createWorkspaceEditors(host: Host) {
     {id:'autonomy',session:autonomy.editorSession,activate:{order:15,run:autonomy.activateAutonomy},flush:autonomy.flushAutonomy},
     {id:'city',session:city.editorSession,activate:{order:14,run:city.activateCity},flush:city.flushCity},
     {id:'activation-gate',flush:r=>r==='checkpoint'||host.gate()},
-    {id:'music',session:music.editorSession,activate:{order:28,run:music.activateMusic},flush:music.flushMusic,deactivate:music.deactivateMusic},
+    {id:'music',session:music.editorSession,activate:{order:28,run:music.activateMusic},flush:music.flushMusic,deactivate:music.deactivateMusic,suspendBeforeActivation:true},
     {id:'world',session:world.editorSession,activate:{order:13,run:world.activateWorld},flush:world.flushWorld},
     {id:'items',session:items.editorSession,activate:{order:9,run:items.activateItems},flush:items.flushItems},
     {id:'catalog',session:catalog.editorSession,activate:{order:8,run:catalog.activateCatalog},flush:catalog.flushCatalog},
@@ -66,13 +66,14 @@ export function createWorkspaceEditors(host: Host) {
     {id:'room',session:host.room.session,flush:r=>r==='checkpoint'?host.room.flush():host.room.leave()},
     // Subeditor flush/context hooks stay with their parent and keep its lock scope.
     ...[finishSession,combatSession,chaseSession,progressionSession,deskSession,narrativeSession,planningSession,generationSession].map((session,i)=>({id:'child-'+i,session})),
-    ...host.views.map(view=>({id:view.id,activate:{order:view.order,run:view.activate},deactivate:view.deactivate})),
+    ...host.views.map(view=>({id:view.id,activate:{order:view.order,run:view.activate},deactivate:view.deactivate,suspendBeforeActivation:view.suspendBeforeActivation})),
   ]);
   const tools = ['triggers','content','graph','keys','paths','volume','drawing','autonomy','city','music','world','items','catalog','live','preparation','room'] as const;
   return {
     activate:(w:WorkspaceGeometry)=>registry.activate(w),
     flush:async (reason:import('./editor-registry').EditorTransition)=>await registry.flush(reason)&&(!(reason==='campaign'||reason==='close')||graph.canLeaveGraphPreview()),
     deactivate:()=>registry.deactivate(),
+    suspend:()=>registry.suspend(),
     changed:()=>registry.changed(),
     before:async (editor:typeof tools[number])=>host.beforeTool()&&await registry.flush('navigation',tools.slice(tools.indexOf(editor)+1).filter(id=>id!=='room'))&&host.room.flush(),
   };

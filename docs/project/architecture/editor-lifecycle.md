@@ -55,7 +55,10 @@ entwertet eine noch laufende alte Grenze.
 Die Aktivierungsreihenfolge unterscheidet sich absichtlich von der Flushreihenfolge.
 Live aktiviert seine Untereditoren, Katalog seine Generierung, Vorbereitung ihre
 Sessionplanung. Die Registrierung kennt diese Sitzungen für Abmeldung und Drain,
-wiederholt aber nicht die fachlichen Unterketten. Kampf, Verfolgung, Fortschritt,
+wiederholt aber nicht die fachlichen Unterketten. Native Ausgabe wird bereits
+vor dem Laden pausiert; die gesicherte Quellsitzung wird erst nach erfolgreichem
+Lesen des neuen Kontexts abgemeldet. Ein fehlgeschlagener Ladevorgang bleibt
+schreibgeschützt und kann erneut geöffnet werden. Kampf, Verfolgung, Fortschritt,
 Scene-Desk, narrative Bearbeitung, Sessionplanung, Generierung und Abschlussentwurf
 verwenden ebenfalls den gemeinsamen Kern. Reine Anzeige-/Kontextbeobachter erhalten
 Aktivierungshooks ohne künstliche Schreibsitzung. Atlas-Gesten, Pinselqueue und
@@ -66,6 +69,9 @@ Buchungsjournal behalten ihre speziellen Commands und Lockgrenzen.
 - `tests/editor-session.test.mjs`: Generationen, getrennte Entwurfszustände,
   parallele Writes, verlorene Antworten ohne Wiederholung, Abmeldung, reale
   Auftragsbeendigung und erneuter Drain bei neuer Eingabe.
+- `tests/desktop-editor-activation.test.mjs`: fehlgeschlagenes Laden und erneutes
+  Öffnen, verweigerte Quellsicherung, konkurrierende Wechsel und Öffnen nach
+  Entfernen des bisherigen Kontexts.
 - `tests/workspace-editor-registry.test.mjs`: konkrete Reihenfolgen, alle vier
   Grenzarten, Graph-/Aktivierungs-Ausnahmen und Werkzeugvorbereitung.
 - `tests/desktop-npc-switch.test.mjs`: echter Renderer/SQLite-Draft mit alter
