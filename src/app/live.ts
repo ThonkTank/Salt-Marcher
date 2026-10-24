@@ -1,4 +1,5 @@
-import {acknowledgeFields,captureView} from './editor-transition';
+import {EditorSession, type EditorOperation} from './editor-session';
+import {acknowledgeFields} from './editor-transition';
 import {preserveLiteralEdit} from './literal-text-edit';
 import {partySceneLabels} from './party-overview';
 import {bindSceneGroupDrag} from './combat-group-ui';
@@ -42,6 +43,11 @@ import {agendaCountdown} from './agenda-model';
 import type {SceneWorld} from './world-contracts';
 import type {SessionPacket,SessionPacketVisit} from './session-packet-contracts';
 import {restFrame} from './progression';
+export const editorSession = new EditorSession();
+const failedState = editorSession.command<{command:LiveCommand;submittedProfile?:CharacterProfile}>();
+const requestWork = editorSession.operation<Promise<LiveAck | null>>();
+const flushingWork = editorSession.operation<Promise<boolean>>();
+
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(result: Result<T>): T => { if (!result.ok) throw new Error(result.error); return result.value; };
@@ -50,7 +56,7 @@ let context: WorkspaceGeometry | null = null, data: LiveView | null = null, sour
 let liveSourcesLoading=false,liveSourcesProblem='';
 let sessionChronicle:ChronicleView|null=null,sessionChronicleError='',sessionChronicleRequest=0;
 type RecapText=import('./live-contracts').SessionRecapDraft;
-type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;publishing?:boolean;saving?:Promise<boolean>};
+type RecapWork={text:RecapText;basis:RecapText|null;dirty:boolean;error:string;readError?:string;publishing?:boolean;saving:EditorOperation<Promise<boolean>>};
 const recapDrafts=new Map<string,RecapWork>();
 function recapFields(review=(document.getElementById('live-session-close-dialog') as HTMLDialogElement|null)?.open):RecapText{
  const before=context&&recapDrafts.get(context.campaign.id)?.text;
@@ -66,7 +72,7 @@ function showRecapSave(){
 }
 async function retryRecapSave(){
  const w=context,state=w&&recapDrafts.get(w.campaign.id);if(!w||!state)return;
- try{if(state.saving)await state.saving;if(context!==w)return;const text={...state.text},basis=state.basis,readError=state.readError;const view=unwrap(await window.campaign.live(w.token));if(context!==w||state.saving||!equal(text,state.text)||!equal(basis,state.basis)||readError!==state.readError)return;
+ try{if(state.saving.value)await state.saving.value;if(context!==w)return;const text={...state.text},basis=state.basis,readError=state.readError;const view=unwrap(await window.campaign.live(w.token));if(context!==w||state.saving.value||!equal(text,state.text)||!equal(basis,state.basis)||readError!==state.readError)return;
   if(view.recapDraftError)throw new Error(view.recapDraftError);const saved=view.recapDraft??null;
   if(state.readError&&!state.dirty){state.text=saved??{summary:'',handoff:''};state.basis=saved;state.readError='';state.error='';for(const id of ['live-session-summary','live-session-handoff','live-session-close-summary','live-session-close-handoff']){const field=document.getElementById(id) as HTMLTextAreaElement|null;if(field)field.value=id.endsWith('handoff')?state.text.handoff:state.text.summary;}showRecapSave();renderLiveSession();return;}
   state.readError='';showRecapSave();renderLiveSession();
@@ -78,23 +84,23 @@ function queueRecapSave(text?:RecapText){if(!context)return;const w=context,stat
 async function saveRecap(w:WorkspaceGeometry,state:RecapWork):Promise<boolean>{
  // The ending owns the draft until its receipt supplies the next CAS basis.
  if(state.publishing)return false;
- if(state.saving)return state.saving;
+ if(state.saving.value)return state.saving.value;
  if(!state.dirty)return true;
  if(state.readError)return false;
- const current=captureView(()=>[context?.token,recapDrafts.get(w.campaign.id)]);
+ const current=editorSession.capture(()=>[context?.token,recapDrafts.get(w.campaign.id)]);
  const task=(async()=>{while(state.dirty){const text={...state.text};try{unwrap(await window.campaign.keepSessionRecapDraft(w.token,text,state.basis));}catch(error){try{const view=unwrap(await window.campaign.live(w.token)),saved=view.recapDraft;if(view.recapDraftError||!saved||!equal(saved,text))throw error;}catch{state.error='Rückblickentwurf nicht gesichert: '+(error as Error).message;if(current())showRecapSave();return false;}}
  const accepted=acknowledgeFields(text,text,state.text,['summary','handoff']);state.basis=accepted.basis;state.text=accepted.value;state.dirty=accepted.dirty;state.error='';if(current())showRecapSave();}return true;})();
- state.saving=task;try{return await task;}finally{if(state.saving===task)state.saving=undefined;}
+ state.saving.value=task;try{return await task;}finally{if(state.saving.value===task)state.saving.clear(task);}
 }
 let readAloudOwner: string | null = null;
 let selected: string | null = null, characterDraft: Character | null = null, sceneDraft: LiveScene | null = null;
 let resumed = false, composing = false, blocked = false, timer: ReturnType<typeof setTimeout> | null = null;
-let request: Promise<LiveAck | null> | null = null, flushing: Promise<boolean> | null = null, failed: {command:LiveCommand;submittedProfile?:CharacterProfile} | null = null;
+
 let requestIsTextSave = false;
-type MomentWork={w:WorkspaceGeometry;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving?:Promise<boolean>};
+type MomentWork={w:WorkspaceGeometry;sceneId:string;text:LiveMomentDraft;basis:LiveMomentDraft|null;dirty:boolean;error:string;readError:string;publishing?:boolean;saving:EditorOperation<Promise<boolean>>};
 const momentWorks=new Map<string,MomentWork>();let momentOwner:MomentWork|null=null;
 let narrativeGeneration=0,narrativeCache=new Map<string,NarrativeView>(),narrativeProblems=new Map<string,string>(),narrativeLoading=new Set<string>();
-const intentBlocked = () => !!request && !requestIsTextSave;
+const intentBlocked = () => !!requestWork.value && !requestIsTextSave;
 let adoption: Extract<LiveAction, { kind: 'apply-visit' }> | null = null;
 let moveBasis: Omit<Extract<LiveAction, { kind: 'move' }>, 'memberIds' | 'target'> | null = null;
 let moveTargets: LiveView['scenes'] = [],preparedNotesSceneId:string|null=null,preparedNoteIds=new Set<string>();
@@ -122,6 +128,7 @@ const sceneEdited = () => !!sceneDraft && (!data?.scene || !equal(content(sceneD
 const changed = () => characterEdited() || sceneEdited();
 const playerFocus=()=>data?{focusId:data.focusId,focusRevision:data.focusRevision,focusMembershipRevision:data.scene?.membershipRevision??null,focusLocationId:sceneDraft?.id===data.scene?.id?sceneDraft?.locationId??null:data.scene?.locationId??null}:null;
 export function activateLive(workspace: WorkspaceGeometry) {
+ editorSession.generation++;
   liveReadRequest++;liveSourcesRequest++;liveSourcesLoading=false;liveSourcesProblem='';
   if(context){const retained=recapDrafts.get(context.campaign.id),text=recapFields();if(retained&&!equal(retained.text,text)){retained.text=text;retained.dirty=true;}}
   const draft=workspace?recapDrafts.get(workspace.campaign.id):undefined;
@@ -132,7 +139,7 @@ export function activateLive(workspace: WorkspaceGeometry) {
   visitBinder?.reset();timeNavigator?.reset();manualTimePreview=null;clockCalendar=null;timePreviewRequest++;liveGenerator?.reset();closeSessionPacket();syncLiveSessionPacket(null);resetLiveArchives();sessionNavigatorContext(null,null,null,false);
   sceneDeskContext(null,null);combatContext(null,null);chaseContext(null,null,[]);progressionContext(null,null,null);
   timeDrafts.clear();timeDraftOwner=null;
-  context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failed = null;
+  context = workspace; data = null; sources = null;sessionChronicle=null;sessionChronicleError='';sessionChronicleRequest++; selected = null; characterDraft = null; sceneDraft = null; resumed = false; blocked = false; failedState.value = null;
   activateRuleReferences(workspace);
   get<HTMLInputElement>('live-knowledge-search').value='';
   get('live-sources-state').hidden=true;get('adoption-plan').replaceChildren();get('adoption-visit').replaceChildren();
@@ -157,7 +164,7 @@ export async function openLive(planId?: string, visitId?: string) {
     const liveResult=await liveRead;
     if (!current()||!context) return false;
     const live=unwrap(liveResult);
-    let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
+    let recap=recapDrafts.get(context.campaign.id);if(!recap){recap={saving:editorSession.operation<Promise<boolean>>(),text:live.recapDraft??{summary:'',handoff:''},basis:live.recapDraft??null,dirty:false,error:''};recapDrafts.set(context.campaign.id,recap);get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     if(recap.readError&&!live.recapDraftError&&!recap.dirty){recap.text=live.recapDraft??{summary:'',handoff:''};recap.basis=live.recapDraft??null;get<HTMLTextAreaElement>('live-session-summary').value=recap.text.summary;get<HTMLTextAreaElement>('live-session-handoff').value=recap.text.handoff;}
     recap.readError=live.recapDraftError;showRecapSave();
     const dirtyScene=sceneEdited(),dirtyCharacter=characterEdited();
@@ -290,7 +297,7 @@ function mergeAck(ack: LiveAck, action: LiveAction, submittedProfile?: Character
   document.dispatchEvent(new Event('campaign-party-changed'));
 }
 async function execute(action: LiveAction): Promise<LiveAck | null> {
-  if (!context || blocked || request) return null;
+  if (!context || blocked || requestWork.value) return null;
   liveReadRequest++;
   const submittedProfile=characterDraft?.profile,focusRevision = data?.focusRevision,previousLocationId=data?.scene?.locationId, token = context.token, command: LiveCommand = { commandId: crypto.randomUUID(), campaignId: context.campaign.id, token, action };
   const structural = ['focus', 'move', 'membership', 'scene-roster', 'archive-character'].includes(action.kind);
@@ -298,19 +305,21 @@ async function execute(action: LiveAction): Promise<LiveAck | null> {
   // intents available; their handlers await flushLive before writing.
   requestIsTextSave = action.kind === 'profile' || action.kind === 'scene-content';
   busy(true, structural, requestIsTextSave); tell('Wird gespeichert…');
-  request = (async () => {
+  const current=editorSession.capture();
+  const task = editorSession.run(async () => {
     try {
       const ack = unwrap(await window.campaign.executeLive(command));
-      if (context?.token !== token) return null;
+      if (!current() || context?.token !== token) return null;
       if((action.kind==='live-moment'||action.kind==='scene-content'||action.kind==='session-marker')&&(data?.scene?.id!==action.sceneId||data?.focusRevision!==focusRevision))return ack;
       mergeAck(ack, action, submittedProfile);if(liveActionUpdatesRecap(action)||action.kind==='scene-content'&&ack.scene?.locationId!==previousLocationId)void refreshLiveSession();tell(changed() ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.'); return ack;
     } catch (error) {
-      if (context?.token !== token) return null;
-      failed = {command,submittedProfile}; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
+      if (!current() || context?.token !== token) return null;
+      failedState.value = {command,submittedProfile}; blocked = true; get('live-reconcile').hidden = false; get('live-refresh').hidden = false;
       tell((error as Error).message + ' Entwurf bleibt offen. Zuerst den Speicherstatus prüfen.', true); return null;
-    } finally { request = null; requestIsTextSave = false; busy(false, structural); renderGroups(); }
-  })();
-  return request;
+    } finally { requestWork.clear(task); if(current()){requestIsTextSave = false; busy(false, structural); renderGroups();} }
+  });
+  requestWork.value=task;
+  return task;
 }
 export async function flushLive(): Promise<boolean> {
   captureMomentDraft();for(const work of momentWorks.values())if(!await saveMomentWork(work))return false;
@@ -318,12 +327,12 @@ export async function flushLive(): Promise<boolean> {
   if(!await flushSceneDesk())return false;
   if(!(await flushProgress())||!(await flushCombat())||!(await flushChase()))return false;
   if (timer) clearTimeout(timer); timer = null;
-  if (flushing) { const okay = await flushing; return okay ? flushLive() : false; }
-  if (request) { if (!(await request)) return false; return flushLive(); }
+  if (flushingWork.value) { const okay = await flushingWork.value; return okay ? flushLive() : false; }
+  if (requestWork.value) { if (!(await requestWork.value)) return false; return flushLive(); }
   if (!context || !data) return true;
   if (blocked || composing) return false;
   if (!changed()) return true;
-  flushing = (async () => {
+  flushingWork.value = (async () => {
     if (characterDraft && originalCharacter() && !equal(characterDraft.profile, originalCharacter()!.profile)) {
       try { checkedCharacterProfile(characterDraft.profile); }
       catch (error) { tell((error as Error).message + ' Entwurf bleibt offen.', true); return false; }
@@ -333,8 +342,8 @@ export async function flushLive(): Promise<boolean> {
       if (!(await execute({ kind: 'scene-content', sceneId: sceneDraft.id, expectedRevision: sceneDraft.revision, ...content(sceneDraft) }))) return false;
     }
     return true;
-  })().finally(() => { flushing = null; });
-  const okay = await flushing;
+  })();
+  const okay = await flushingWork.value;
   return okay ? flushLive() : false;
 }
 function schedule() {
@@ -611,16 +620,16 @@ function captureMomentDraft(){
  const text=currentLiveMomentDraft();if(!equal(text,work.text)){work.text=text;work.dirty=!sameLiveMomentDraft(liveMomentDraftValue(text),work.basis);if(!work.dirty)work.error='';showMomentDraftState();}
 }
 async function saveMomentWork(work:MomentWork):Promise<boolean>{
- if(work.saving)return work.saving;if(!work.dirty)return true;if(work.readError)return false;
+ if(work.saving.value)return work.saving.value;if(!work.dirty)return true;if(work.readError)return false;
  const task=(async()=>{while(work.dirty){const text=liveMomentDraftValue(work.text);
   try{unwrap(await window.campaign.keepLiveMomentDraft(work.w.token,work.sceneId,text,work.basis));}
   catch(error){try{const saved=unwrap(await window.campaign.liveScene(work.w.token,work.sceneId));if(saved.momentDraftError||!sameLiveMomentDraft(saved.momentDraft??null,text))throw error;}catch{work.error='Momententwurf nicht gesichert: '+(error as Error).message;if(momentOwner===work)showMomentDraftState();tell(work.error,true);return false;}}
   work.basis=text;work.error='';work.dirty=!sameLiveMomentDraft(liveMomentDraftValue(work.text),text);if(momentOwner===work)showMomentDraftState();
- }return true;})();work.saving=task;try{return await task;}finally{if(work.saving===task)work.saving=undefined;}
+ }return true;})();work.saving.value=task;try{return await task;}finally{if(work.saving.value===task)work.saving.clear(task);}
 }
 async function retryMomentDraft(){
  const work=momentOwner;if(!work)return;captureMomentDraft();const text={...work.text};
- try{if(work.saving)await work.saving;const scene=unwrap(await window.campaign.liveScene(work.w.token,work.sceneId));if(momentOwner!==work||!equal(text,work.text))return;if(scene.momentDraftError)throw new Error(scene.momentDraftError);const saved=scene.momentDraft??null;
+ try{if(work.saving.value)await work.saving.value;const scene=unwrap(await window.campaign.liveScene(work.w.token,work.sceneId));if(momentOwner!==work||!equal(text,work.text))return;if(scene.momentDraftError)throw new Error(scene.momentDraftError);const saved=scene.momentDraft??null;
   if(work.readError){work.text=saved??emptyLiveMomentDraft();work.basis=saved;work.readError='';work.error='';work.dirty=false;writeLiveMomentDraft(work.text);showMomentDraftState();return;}
   if(!sameLiveMomentDraft(saved,work.basis)&&!sameLiveMomentDraft(saved,liveMomentDraftValue(text))&&!window.confirm('Ein anderer Momententwurf ist gesichert:\n'+(saved?.title??'')+'\n'+(saved?.summary??'')+'\n\nDurch deine weiterhin sichtbare Eingabe ersetzen?'))return;
   work.basis=saved;work.dirty=true;await saveMomentWork(work);
@@ -630,7 +639,7 @@ function renderLiveMomentDraft(){
  const scene=data?.scene;if(momentOwner?.sceneId===scene?.id&&momentOwner?.w.token===context?.token)return;
  captureMomentDraft();if(momentOwner?.dirty)void saveMomentWork(momentOwner);
  momentOwner=null;
- if(scene&&context){let work=momentWorks.get(scene.id);if(!work){work={w:context,sceneId:scene.id,text:scene.momentDraft??emptyLiveMomentDraft(),basis:scene.momentDraft??null,dirty:false,error:'',readError:scene.momentDraftError??''};momentWorks.set(scene.id,work);}momentOwner=work;}
+ if(scene&&context){let work=momentWorks.get(scene.id);if(!work){work={saving:editorSession.operation<Promise<boolean>>(),w:context,sceneId:scene.id,text:scene.momentDraft??emptyLiveMomentDraft(),basis:scene.momentDraft??null,dirty:false,error:'',readError:scene.momentDraftError??''};momentWorks.set(scene.id,work);}momentOwner=work;}
  writeLiveMomentDraft(momentOwner?.text??emptyLiveMomentDraft());get('live-moment-result').textContent='';showMomentDraftState();
  if(momentOwner&&liveMomentDraftValue(momentOwner.text))get<HTMLDetailsElement>('live-moment-panel').open=true;
 }
@@ -976,26 +985,26 @@ export function initLive(status: typeof tell, navigate: typeof openLocation,open
   get('adoption-confirm-packet').onclick=()=>confirmAdoption(true);
   get('live-apply').onclick = () => { void flushLive(); };
   get('live-reconcile').onclick = () => { void (async () => {
-    const pending = failed, command = pending?.command, token = context?.token; if (!pending || !command || !token) return;
+    const pending = failedState.value, command = pending?.command, token = context?.token; if (!pending || !command || !token) return;
     try {
       const result = unwrap(await window.campaign.liveStatus(command, token));
-      if (context?.token !== token || failed !== pending) return;
+      if (context?.token !== token || failedState.value !== pending) return;
       if (result.targetChanged) {
         tell(result.receipt ? 'Speicherung bestätigt, inzwischen liegt ein neuerer Zielstand vor. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.' : 'Konflikt bestätigt. Entwurf bleibt offen; vor dem Aktualisieren eigenen Text sichern.', true);
         return;
       }
       if (result.receipt) mergeAck({ ...result.receipt, ...(result.currentScene ? { scene: result.currentScene } : {}), ...(result.currentCharacter ? { character: result.currentCharacter } : {}) }, command.action, pending.submittedProfile);
-      blocked = false; failed = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
+      blocked = false; failedState.value = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
       tell(result.outcome === 'applied' ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.' : 'Änderung nicht gespeichert. Eingabe abschließen, um den Entwurf erneut zu übernehmen.');
     } catch (error) { tell((error as Error).message + ' Status bleibt ungeklärt.', true); }
   })(); };
   get('live-refresh').onclick = () => { void (async () => {
-    blocked = false; failed = null; characterDraft = null; sceneDraft = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
+    blocked = false; failedState.value = null; characterDraft = null; sceneDraft = null; get('live-reconcile').hidden = true; get('live-refresh').hidden = true;
     await openLive(); tell('Gespeicherter Sitzungsstand geöffnet. Entwurf verworfen.');
   })(); };
   get('live').addEventListener('compositionstart', () => { composing = true; if (timer) clearTimeout(timer); });
   get('live').addEventListener('compositionend', () => { composing = false; schedule(); });
-  for (const id of ['character-dialog', 'adoption-dialog', 'move-dialog']) get<HTMLDialogElement>(id).addEventListener('cancel', event => { if (request) event.preventDefault(); });
+  for (const id of ['character-dialog', 'adoption-dialog', 'move-dialog']) get<HTMLDialogElement>(id).addEventListener('cancel', event => { if (requestWork.value) event.preventDefault(); });
 }
 let scenePreparationRequest=0, nextVisit:{planId:string;planRevision:number;visitId:string;title:string}|null=null;
 let openTreasure:((id:string)=>Promise<void>)|null=null;export function setTreasureNavigation(open:(id:string)=>Promise<void>){openTreasure=open;}
@@ -1078,7 +1087,7 @@ async function openLivePacket(){const source=livePacketSource();if(!source){tell
 export async function openTimeNavigator(target?:{eventId:string;expectedRevision:number;phase:'start'|'end';sceneId:string;title?:string},expectedSceneId?:string){if(!await ensureLiveRuntime())return;if(expectedSceneId&&data?.scene?.id!==expectedSceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await timeNavigator.open(target);}
 export async function openTravelRest(sceneId:string){if(!await ensureLiveRuntime()||!await flushLive())return;if(data?.scene?.id!==sceneId)throw new Error('Reisegruppe gewechselt. Reise neu öffnen.');await openPartyRest(sceneId);}
 
-async function recoverTimeWrite(){const pending=failed,command=pending?.command,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failed!==pending)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failed=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
+async function recoverTimeWrite(){const pending=failedState.value,command=pending?.command,token=context?.token;if(!command)return !blocked;if(!token||command.action.kind!=='advance-clock'||command.action.calendarVersion!=='campaign-calendar-v1'){tell('Anderen offenen Live-Auftrag zuerst im Leitbereich klären.',true);return false;}try{const result=unwrap(await window.campaign.liveStatus(command,token));if(context?.token!==token||failedState.value!==pending)return false;if(result.receipt)mergeAck({...result.receipt,...(result.currentScene?{scene:result.currentScene}:{})},command.action);blocked=false;failedState.value=null;manualTimePreview=null;get('live-reconcile').hidden=true;get('live-refresh').hidden=true;await openLive();tell(result.receipt?'Zeitauftrag als gespeichert bestätigt. Neue Vorschau prüfen.':'Zeitauftrag nicht gespeichert. Zeitwahl bleibt im Dialog; neue Vorschau prüfen.');return true;}catch(e){tell((e as Error).message+' Zeitstatus bleibt ungeklärt.',true);return false;}}
 
 async function readSessionChronicle(token:string):Promise<Result<ChronicleView>>{try{return await window.campaign.chronicle(token);}catch(error){return{ok:false,error:(error as Error).message};}}
 
@@ -1139,3 +1148,7 @@ function renderPartyMoveTime(){
  if(!target||!source)return;
  get('move-time').textContent='Ausgangsgruppe: '+formatSceneInstant(source.clock.instantMs)+'. Zielgruppe: '+formatSceneInstant(target.clock.instantMs)+'. Mit „Zur Zielzeit verschieben“ wechseln die gewählten Figuren zur Zeit der Zielgruppe. Beide Gruppenzeiten bleiben unverändert. Eine Rast wird dadurch nicht gebucht.';
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});
+
+editorSession.observeDraft(()=>({openInput:changed(),retainedDraft:[...momentWorks.values()].some(w=>!!w.basis)||[...recapDrafts.values()].some(w=>!!w.basis),unresolvedCommand:!!failedState.value}));

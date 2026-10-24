@@ -1,3 +1,4 @@
+import {editorSession as atlasEditorSession} from './campaign-atlas-author';
 import {atlasElement as get} from './atlas-dom';
 import {AtlasAuthor} from './atlas-author';
 import {AtlasDrawing} from './atlas-drawing';
@@ -5,9 +6,7 @@ import type {AtlasFamily as Family} from './atlas-workbench-types';
 import {AtlasRegions} from './atlas-regions';
 import {AtlasJourney} from './atlas-journey';
 import {AtlasOutput} from './atlas-output';
-
 import type {AtlasWorkplane} from './atlas-workplane';
-
 import {TerrainAnalysisUI,editEntranceHeight} from './terrain-analysis-ui';
 import {terrainTraceStart} from './terrain-timing';
 import {BrushSizeControl} from './atlas-brush-size';
@@ -16,25 +15,18 @@ import {MapLabelLayout} from './atlas-cartography';
 import {TerritoryWorkbench} from './atlas-territories-ui';
 import {AtlasRasterPresentation} from './atlas-raster-presentation';
 import {TerrainStrokeQueue} from './terrain-stroke-queue';
-
 import {atlasFieldValue,setAtlasFieldValue,lengthLabel,atlasUnits} from './atlas-units';
 import {AtlasWorkspaceLayout} from './atlas-workspace-layout';
 import { AtlasReferenceUI } from "./atlas-reference-ui";
 import { travelHexSizes } from "./atlas-navigation-scale";
 import {regionValue} from './atlas-region-contracts';
 import {selectElement} from './drawing-ui';
-
 import {mountDungeonTravelConsole} from './dungeon-travel-console';
-
 import {LiveAtlasPortal} from './live-atlas-portal';
-
 import {LandscapeWorkbench} from "./atlas-landscape-ui";
 import {earthView} from "./atlas-landscape";
-
 import { atlasPartyPoint } from "./atlas-runtime-model";
-
 import {openWorld} from "./world-ui";
-
 import {AtlasCanvas} from "./atlas-canvas";
 import {atlasFrame,localToAtlas,atlasToLocal} from "./campaign-atlas-model";
 import {
@@ -45,13 +37,10 @@ import {
 import type {AtlasRenderView,AtlasAction} from "./campaign-atlas-contracts";
 import type { WorkspaceGeometry, Point, Room } from "./contracts";
 import { terrainNames } from "./world-model";
-
 import {nearestAnchor} from "./drawing-model";
 import {atlasCityState,atlasCityUndoPoint,openCityReference} from "./city-ui";
 import {selectedDrawingElementId,atlasDrawingDraft,atlasDrawingHasDraft,atlasDrawingUndoPoint,reloadDrawing} from "./drawing-ui";
 import {openDungeon,stopDungeonPlayback} from "./dungeon-ui";
-
-
 export class CampaignAtlasWorkbench {
   private output: AtlasOutput = this.createAtlasOutput();
   private createAtlasOutput(): AtlasOutput {
@@ -680,6 +669,7 @@ export class CampaignAtlasWorkbench {
     this.layout?.setActive(false);
   }
   activate(w: WorkspaceGeometry) {
+    atlasEditorSession.generation++;
     this.regions.resetContext();
     this.hitVersion++;this.hitDialog.close();
     this.journey.activate();

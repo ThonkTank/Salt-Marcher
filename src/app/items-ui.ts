@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {shopStockForItem} from './items-contracts';
 import {nextAuthoredDefinition} from './item-definition-validation';
 import {validateShopShape} from './shop-validation';
@@ -10,15 +11,19 @@ import type {Preparation} from './preparation-contracts';
 import {formatInstant,type LiveView} from './live-contracts';
 import {copper,gold,type LedgerItem,type LedgerInventoryPage} from './progression';
 import {refreshProgress} from './progression-ui';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+const tradePendingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const amount=(s:string)=>(BigInt(s)/100n).toString()+'.'+(BigInt(s)%100n).toString().padStart(2,'0');
 let workspace:WorkspaceGeometry|null=null,definition:ItemDefinition|null=null,shop:ShopView|null=null,sources:Preparation|null=null,roster:LiveView['roster']=[],ledger:LedgerItem[]=[];
 let shopClock:{sceneId:string;expectedRevision:number;instantMs:string;title:string}|null=null;
-let dirtyDefinition=false,dirtyShop=false,pending:Promise<boolean>|null=null,offset=0,next:number|null=null;
+let dirtyDefinition=false, dirtyShop=false, offset=0, next:number|null=null;
 let tell:(text:string,error?:boolean)=>void,enter:(shopId?:string)=>Promise<void>;
-let epoch=0,openRequest=0,searchRequest=0,definitionRequest=0,shopsRequest=0,shopRequest=0,sellerRequest=0,clockRequest=0;
+let openRequest=0, searchRequest=0, definitionRequest=0, shopsRequest=0, shopRequest=0, sellerRequest=0, clockRequest=0;
 let requestedShop:string|null=null,shopLoading=false,shopError='',sellerLoading=false,sellerError='',loadedSeller:string|null=null;
 let requestedDefinition:string|null=null,definitionLoading=false,definitionError='';
 let searchTimer:ReturnType<typeof setTimeout>|null=null;
@@ -27,16 +32,16 @@ function clearItemResults(text:string){el('items-results').replaceChildren();el(
 let contextReady=false,contextLoading=false,contextError='';
 let historyRequest=0,historyLoading=false;
 let tradeConfirmed=false;const lockedButtons=new Map<HTMLButtonElement,boolean>();
-let tradePending:Promise<boolean>|null=null,lastDefinitionSave:{id:string;fields:string;revision:number}|null=null;
+let lastDefinitionSave:{id:string;fields:string;revision:number}|null=null;
 const sceneShopRequests=new WeakMap<HTMLElement,number>();
-const owned=(token:string|undefined,g:number)=>workspace?.token===token&&epoch===g;
+const owned=(token:string|undefined,g:number)=>workspace?.token===token&&editorSession.generation===g;
 
 const categories:{[k:string]:string}={coins:'Münzen',equipment:'Ausrüstung','trade-goods':'Handelswaren',magic:'Magischer Gegenstand',other:'Sonstiges'};
 function option(s:HTMLSelectElement,id:string,name:string){const o=document.createElement('option');o.value=id;o.textContent=name;s.append(o);}
 function button(label:string,action:()=>Promise<unknown>|void,ownerShop?:string){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{if(ownerShop&&(!shopReady()||shop?.shop.id!==ownerShop))return;if(b.closest('#shop-editor')&&!shopReady())return;run(action);};return b;}
-function run(action:()=>Promise<unknown>|void){const token=workspace?.token,g=epoch;void Promise.resolve().then(()=>{if(owned(token,g))return action();}).catch(error=>{if(owned(token,g))tell(error.message,true);});}
+function run(action:()=>Promise<unknown>|void){const token=workspace?.token,g=editorSession.generation;void Promise.resolve().then(()=>{if(owned(token,g))return action();}).catch(error=>{if(owned(token,g))tell(error.message,true);});}
 async function command(action:ItemShopAction,snapshot:Shop|null=null):Promise<ItemShopAck>{
- const owner=workspace,g=epoch;if(!owner)throw new Error('Öffne eine Kampagne.');
+ const owner=workspace,g=editorSession.generation;if(!owner)throw new Error('Öffne eine Kampagne.');
  if(action.kind!=='definition'&&action.kind!=='definition-trash'&&(!contextReady||contextLoading))throw new Error('Vergabe- und Shopkontext zuerst laden.');
  if(['purchase','sell','restock','random-restock'].includes(action.kind)&&!shopReady())throw new Error('Ausgewählten Shop zuerst laden.');
  if(action.kind==='sell'&&!sellerReady())throw new Error('Inventar der ausgewählten Figur zuerst laden.');
@@ -57,7 +62,7 @@ function renderShopTime(){
  el('shop-time').textContent='Zeitbasis für neue Auffüllregeln (Tage zu je 24 Stunden): '+(shopClock?shopClock.title+' · '+formatInstant(shopClock.instantMs):'Vorbereitungszeit vor Spielbeginn')+'.';
 }
 async function refreshShopClock(){
- const owner=workspace,g=epoch,id=shop?.shop.id,request=++clockRequest;if(!owner)return;
+ const owner=workspace,g=editorSession.generation,id=shop?.shop.id,request=++clockRequest;if(!owner)return;
  const response=await window.campaign.live(owner.token);if(!owned(owner.token,g)||request!==clockRequest)return;const live=unwrap(response);
  if(id&&shop?.shop.id===id){const response=await window.campaign.shop(owner.token,id);if(!owned(owner.token,g)||request!==clockRequest||shop?.shop.id!==id)return;shop.timeNotice=unwrap(response).timeNotice;}
  if(!owned(owner.token,g)||request!==clockRequest)return;setShopClock(live);el('shop-availability').textContent=(shop?.unavailable?'Shop pausiert.':'Besitzer: '+(shop?.ownerName??''))+(shop?.timeNotice?' · '+shop.timeNotice:'');
@@ -78,7 +83,7 @@ function mergeShop(saved:ShopView,snapshot:Shop){
 }
 function applyTradeShop(saved:ShopView,snapshot:Shop){if(dirtyShop)mergeShop(saved,snapshot);else shop=saved;renderShop();}
 function flushDrafts():Promise<boolean>{
- if(pending)return pending;const w=workspace,g=epoch;if(!w)return Promise.resolve(true);
+ if(pendingWork.value)return pendingWork.value;const w=workspace,g=editorSession.generation;if(!w)return Promise.resolve(true);
  const task=Promise.resolve().then(async()=>{try{
   while(owned(w.token,g)&&(dirtyDefinition||dirtyShop)){
    if(dirtyDefinition&&!definition||dirtyShop&&!shop)throw new Error('Entwurf gehört zu keiner aktiven Auswahl.');
@@ -95,21 +100,21 @@ function flushDrafts():Promise<boolean>{
    }
   }
   return owned(w.token,g);
- }catch(error){if(owned(w.token,g))tell((error as Error).message+' Eingaben bleiben offen.',true);return false;}finally{if(pending===task)pending=null;}});pending=task;return task;
+ }catch(error){if(owned(w.token,g))tell((error as Error).message+' Eingaben bleiben offen.',true);return false;}});pendingWork.value=task;return task;
 }
-export async function flushItems():Promise<boolean>{if(workspace&&hasPendingCommit(workspace.campaign.id)&&!tradePending&&!pending)return false;const token=workspace?.token,g=epoch;if(tradePending&&!await tradePending)return false;if(!owned(token,g))return false;return await flushDrafts()&&owned(token,g);}
+export async function flushItems():Promise<boolean>{if(workspace&&hasPendingCommit(workspace.campaign.id)&&!tradePendingWork.value&&!pendingWork.value)return false;const token=workspace?.token,g=editorSession.generation;if(tradePendingWork.value&&!await tradePendingWork.value)return false;if(!owned(token,g))return false;return await flushDrafts()&&owned(token,g);}
 function performTrade(action:()=>Promise<void>){
- if(tradePending)return tradePending;const token=workspace?.token,g=epoch;tradeConfirmed=false;
- const task=Promise.resolve().then(async()=>{if(!owned(token,g))return false;await action();return owned(token,g);}).catch(error=>{if(owned(token,g))tell((tradeConfirmed?'Buchung bestätigt; Anzeige konnte nicht aktualisiert werden: ':'')+error.message,true);return tradeConfirmed&&owned(token,g);}).finally(()=>{if(tradePending===task)tradePending=null;});tradePending=task;lockShopContext();void task.finally(lockShopContext);return task;
+ if(tradePendingWork.value)return tradePendingWork.value;const token=workspace?.token,g=editorSession.generation;tradeConfirmed=false;
+ const task=Promise.resolve().then(async()=>{if(!owned(token,g))return false;await action();return owned(token,g);}).catch(error=>{if(owned(token,g))tell((tradeConfirmed?'Buchung bestätigt; Anzeige konnte nicht aktualisiert werden: ':'')+error.message,true);return tradeConfirmed&&owned(token,g);});tradePendingWork.value=task;lockShopContext();void task.finally(lockShopContext);return task;
 }
-export function activateItems(w:WorkspaceGeometry){historyRequest++;historyLoading=false;clearSearchTimer();workspace=w;contextReady=false;contextLoading=false;contextError='';requestedDefinition=null;definitionLoading=false;definitionError='';requestedShop=null;shopLoading=false;shopError='';sellerLoading=false;sellerError='';loadedSeller=null;epoch++;openRequest++;searchRequest++;definitionRequest++;shopsRequest++;shopRequest++;sellerRequest++;clockRequest++;pending=null;tradePending=null;tradeConfirmed=false;lastDefinitionSave=null;shopClock=null;definition=null;shop=null;sources=null;roster=[];ledger=[];dirtyDefinition=false;dirtyShop=false;offset=0;clearItemResults('');el('shops-list').replaceChildren();el('shop-stock').replaceChildren();el('shop-sale-problems').textContent='';el('shop-sale-problem-details').hidden=true;el('shop-sale-problem-list').textContent='';for(const id of ['item-recipient','shop-seller','shop-sale-item'])el(id).replaceChildren();renderDefinition();renderShop();renderItemContext();updateCommitControls();}
+export function activateItems(w:WorkspaceGeometry){historyRequest++;historyLoading=false;clearSearchTimer();workspace=w;contextReady=false;contextLoading=false;contextError='';requestedDefinition=null;definitionLoading=false;definitionError='';requestedShop=null;shopLoading=false;shopError='';sellerLoading=false;sellerError='';loadedSeller=null;editorSession.generation++;openRequest++;searchRequest++;definitionRequest++;shopsRequest++;shopRequest++;sellerRequest++;clockRequest++;pendingWork.value=null;tradePendingWork.value=null;tradeConfirmed=false;lastDefinitionSave=null;shopClock=null;definition=null;shop=null;sources=null;roster=[];ledger=[];dirtyDefinition=false;dirtyShop=false;offset=0;clearItemResults('');el('shops-list').replaceChildren();el('shop-stock').replaceChildren();el('shop-sale-problems').textContent='';el('shop-sale-problem-details').hidden=true;el('shop-sale-problem-list').textContent='';for(const id of ['item-recipient','shop-seller','shop-sale-item'])el(id).replaceChildren();renderDefinition();renderShop();renderItemContext();updateCommitControls();}
 function renderItemContext(){
  const status=el('item-context-status');status.hidden=!contextLoading&&!contextError;status.setAttribute('role',contextError?'alert':'status');status.textContent=contextError?('Vergabe und Shops nicht verfügbar: '+contextError+' Die Gegenstandssuche bleibt nutzbar.'):(contextLoading?'Vergabe und Shops werden geladen. Die Gegenstandssuche bleibt nutzbar.':'');
  el('item-context-retry').hidden=!contextError;el<HTMLButtonElement>('item-context-retry').disabled=contextLoading;
  el<HTMLButtonElement>('shop-new').disabled=!contextReady||contextLoading;el<HTMLInputElement>('shops-trash-filter').disabled=!contextReady||contextLoading;lockShopContext();
 }
 export async function openItems(shopId?:string,reference?:{id:string;stillCurrent:()=>boolean}){
- const w=workspace,g=epoch,request=++openRequest;if(!w||!await flushItems()||!owned(w.token,g)||request!==openRequest||reference&&!reference.stillCurrent())return;
+ const w=workspace,g=editorSession.generation,request=++openRequest;if(!w||!await flushItems()||!owned(w.token,g)||request!==openRequest||reference&&!reference.stillCurrent())return;
  const current=()=>owned(w.token,g)&&request===openRequest;
  if(shopId)showItemsArea('shops');else if(reference)showItemsArea('catalog');
  contextReady=false;contextLoading=true;contextError='';sources=null;roster=[];shopClock=null;ledger=[];loadedSeller=null;shopLoading=false;shopError='';sellerLoading=false;sellerError='';sellerRequest++;shopRequest++;clockRequest++;renderItemContext();
@@ -127,7 +132,7 @@ export async function openItems(shopId?:string,reference?:{id:string;stillCurren
  await Promise.all([references,detail,context]);
 }
 export async function createShopAtLocation(locationId:string,name:string){
- const w=workspace,g=epoch;await openItems();if(!w||!owned(w.token,g)||!await flushItems())throw new Error('Shop-Kontext geändert.');
+ const w=workspace,g=editorSession.generation;await openItems();if(!w||!owned(w.token,g)||!await flushItems())throw new Error('Shop-Kontext geändert.');
  const location=sources?.locations.find(l=>l.document.id===locationId&&!l.trashed);if(!location)throw new Error('Ort für neuen Shop nicht verfügbar.');
  const next:Shop={id:crypto.randomUUID(),revision:0,name,owner:{kind:'location',id:locationId},notes:'',trashed:false,stock:[]};
  shopRequest++;requestedShop=next.id;shopLoading=false;shopError='';shop={shop:next,ownerName:location.document.name,unavailable:false,timeNotice:null,items:[],history:[]};dirtyShop=false;renderShop();lockShopContext();dirtyShop=true;
@@ -135,13 +140,13 @@ export async function createShopAtLocation(locationId:string,name:string){
  await loadShops();if(!owned(w.token,g))return next.id;showItemsArea('shops');el<HTMLDetailsElement>('shop-settings').open=true;el('shop-editor').scrollIntoView({block:'start'});el('shop-notes').focus();return next.id;
 }
 export async function prepareShopLocation(id:string,locationId:string){
- const w=workspace,g=epoch;await openItems(id);if(!w||!owned(w.token,g)||!shopReady()||shop?.shop.id!==id)throw new Error('Shop für Ortsbindung nicht verfügbar.');
+ const w=workspace,g=editorSession.generation;await openItems(id);if(!w||!owned(w.token,g)||!shopReady()||shop?.shop.id!==id)throw new Error('Shop für Ortsbindung nicht verfügbar.');
  if(!sources?.locations.some(l=>l.document.id===locationId&&!l.trashed))throw new Error('Zielort nicht verfügbar.');
  el<HTMLDetailsElement>('shop-settings').open=true;el<HTMLSelectElement>('shop-owner').value='location:'+locationId;dirtyShop=true;el('shop-owner').focus();tell('Zielort als Shopbesitzer vorbelegt. Shop speichern bestätigt die Zuordnung.');
 }
-export async function openItemReference(id:string,stillCurrent=()=>true){const token=workspace?.token,g=epoch;if(!stillCurrent())return;await openItems(undefined,{id,stillCurrent:()=>owned(token,g)&&stillCurrent()});}
+export async function openItemReference(id:string,stillCurrent=()=>true){const token=workspace?.token,g=editorSession.generation;if(!stillCurrent())return;await openItems(undefined,{id,stillCurrent:()=>owned(token,g)&&stillCurrent()});}
 async function search(){
- clearSearchTimer();const token=workspace?.token,g=epoch,request=++searchRequest,current=()=>owned(token,g)&&request===searchRequest;
+ clearSearchTimer();const token=workspace?.token,g=editorSession.generation,request=++searchRequest,current=()=>owned(token,g)&&request===searchRequest;
  const q:ItemQuery={search:value('item-search'),category:value('item-filter-category'),magic:value('item-filter-magic') as ItemQuery['magic'],rarity:value('item-filter-rarity'),attunement:value('item-filter-attunement'),sort:value('item-sort') as ItemQuery['sort'],direction:value('item-direction') as ItemQuery['direction'],after:offset,includeTrashed:el<HTMLInputElement>('item-trash-filter').checked};
  const root=el('items-results'),status=el('items-page');clearItemResults('Gegenstände werden geladen.');
  try{
@@ -155,7 +160,7 @@ function markDefinitionSelection(){for(const row of el('items-results').querySel
 function definitionReady(){return !!definition&&definition.id===requestedDefinition&&!definitionLoading&&!definitionError;}
 function lockDefinition(){
  markDefinitionSelection();
- const blocked=!!tradePending||!!workspace&&hasPendingCommit(workspace.campaign.id),ready=definitionReady();
+ const blocked=!!tradePendingWork.value||!!workspace&&hasPendingCommit(workspace.campaign.id),ready=definitionReady();
  for(const input of el('item-form').querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>('input,select,textarea'))input.disabled=blocked||!ready||definition?.source.kind==='srd51';
  for(const id of ['item-save','item-trash'])el<HTMLButtonElement>(id).disabled=blocked||!ready||definition?.source.kind==='srd51';
  el<HTMLButtonElement>('item-copy').disabled=blocked||!ready;
@@ -164,7 +169,7 @@ function lockDefinition(){
  const status=el('item-load-status');status.hidden=!definitionLoading&&!definitionError;status.setAttribute('role',definitionError?'alert':'status');status.textContent=definitionError||(definitionLoading?'Gegenstand wird geladen.':'');el('item-load-retry').hidden=!definitionError||!requestedDefinition;el<HTMLButtonElement>('item-load-retry').disabled=blocked||definitionLoading;
 }
 async function selectDefinition(id:string,stillCurrent=()=>true){
- const token=workspace?.token,g=epoch,request=++definitionRequest;
+ const token=workspace?.token,g=editorSession.generation,request=++definitionRequest;
  requestedDefinition=id;definitionLoading=true;definitionError='';lockDefinition();
  const current=()=>owned(token,g)&&request===definitionRequest&&stillCurrent();
  try{
@@ -193,7 +198,7 @@ function renderDefinition(){
 }
 function shopProblem(s:ShopSummary,scene=false){const p=document.createElement('p');p.className='error';p.setAttribute('role','status');p.textContent=(scene?'Zuordnung zu dieser Gruppe nicht prüfbar: ':'Shop nicht verfügbar: ')+s.name+' · '+s.problem;return p;}
 async function loadShops(){
- const w=workspace,g=epoch,request=++shopsRequest;if(!w)return;const response=await window.campaign.shops(w.token,el<HTMLInputElement>('shops-trash-filter').checked);if(!owned(w.token,g)||request!==shopsRequest)return;
+ const w=workspace,g=editorSession.generation,request=++shopsRequest;if(!w)return;const response=await window.campaign.shops(w.token,el<HTMLInputElement>('shops-trash-filter').checked);if(!owned(w.token,g)||request!==shopsRequest)return;
  const list=unwrap(response),root=el('shops-list');root.replaceChildren();for(const s of list)root.append(s.problem?shopProblem(s):button(s.name+' · '+s.ownerName+(s.unavailable?' · pausiert / Papierkorb':''),()=>selectShop(s.id)));
 }
 function shopReady(){return contextReady&&!contextLoading&&!!shop&&shop.shop.id===requestedShop&&!shopLoading&&!shopError;}
@@ -201,7 +206,7 @@ function sellerReady(){return !sellerLoading&&!sellerError&&loadedSeller===value
 function lockShopContext(){
  lockDefinition();
  el('shop-editor').hidden=!shop&&!shopLoading&&!shopError;el('shop-fields').hidden=!shop;
- const blocked=!!tradePending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+ const blocked=!!tradePendingWork.value||!!workspace&&hasPendingCommit(workspace.campaign.id);
  const trader=roster.find(c=>c.id===value('shop-seller')),activeBuyer=!!trader?.active;
  for(const b of el('shop-stock').querySelectorAll<HTMLButtonElement>('button[data-purchase-available]')){b.disabled=!activeBuyer||b.dataset.purchaseAvailable!=='true';b.textContent='Für '+(trader?.profile.name??'Figur')+' kaufen';}
  el<HTMLButtonElement>('shop-sale-submit').textContent='Verkauf für '+(trader?.profile.name??'Figur')+' buchen';
@@ -217,7 +222,7 @@ function lockShopContext(){
  const sellerStatus=el('shop-seller-status');sellerStatus.hidden=!sellerLoading&&!sellerError;sellerStatus.setAttribute('role',sellerError?'alert':'status');sellerStatus.textContent=sellerError||(sellerLoading?'Inventar wird geladen.':'');el('shop-seller-retry').hidden=!sellerError;
 }
 async function selectShop(id:string){
- const w=workspace,g=epoch,request=++shopRequest;if(!w||!contextReady)return;
+ const w=workspace,g=editorSession.generation,request=++shopRequest;if(!w||!contextReady)return;
  historyRequest++;historyLoading=false;requestedShop=id;shopLoading=true;shopError='';lockShopContext();
  const current=()=>owned(w.token,g)&&request===shopRequest;
  try{
@@ -246,16 +251,16 @@ function renderShop(force=false){el('shop-editor').hidden=!shop;if(!shop){el<HTM
    input('Intervall in Tagen zu je 24 Stunden',(Number(e.restock.intervalMs)/86400000).toString(),'number',v=>{const days=Number(v);if(!Number.isSafeInteger(days)||days<1)throw new Error('Intervall benötigt positive ganze 24-Stunden-Tage.');e.restock!.intervalMs=(BigInt(days)*86400000n).toString();e.restock!.nextDueMs='0';});
   }
   const quantity=input('Manuell hinzufügen','1','number',()=>{},false,config);
-  config.append(shopButton('Auffüllen',()=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id,added=Number(quantity.value);if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const snapshot=structuredClone(shop.shop);const result=await command({kind:'restock',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,mode:'add',quantity:added,reason:'Manuell im Shop aufgefüllt'},snapshot);if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);})));
+  config.append(shopButton('Auffüllen',()=>performTrade(async()=>{const w=workspace,g=editorSession.generation,id=shop?.shop.id,added=Number(quantity.value);if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const snapshot=structuredClone(shop.shop);const result=await command({kind:'restock',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,mode:'add',quantity:added,reason:'Manuell im Shop aufgefüllt'},snapshot);if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);})));
  }
  const q=input('Kaufmenge','1','number',()=>{},false),paid=input('Tatsächlich gezahlt (GM gesamt)',amount(e.buyCopper),'text',()=>{},false);q.oninput=()=>{if(/^[0-9]+$/.test(q.value))paid.value=amount(BigInt(e.buyCopper)*BigInt(q.value)+'');};const buy=shopButton('Für '+(roster.find(c=>c.id===value('shop-seller'))?.profile.name??'Figur')+' kaufen',()=>performTrade(async()=>{
- const w=workspace,g=epoch,id=shop?.shop.id,buyer=roster.find(c=>c.id===value('shop-seller')),quantity=Number(q.value),actualGold=paid.value,definitionFieldsAtClick=dirtyDefinition&&definition?.id===d?.id?definitionFields():null;if(!w||!id||!buyer?.active||!d)return;
+ const w=workspace,g=editorSession.generation,id=shop?.shop.id,buyer=roster.find(c=>c.id===value('shop-seller')),quantity=Number(q.value),actualGold=paid.value,definitionFieldsAtClick=dirtyDefinition&&definition?.id===d?.id?definitionFields():null;if(!w||!id||!buyer?.active||!d)return;
  if(!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;
  const expectedDefinitionRevision=definitionFieldsAtClick!==null&&lastDefinitionSave?.id===d.id&&lastDefinitionSave.fields===definitionFieldsAtClick?lastDefinitionSave.revision:d.revision;
  const snapshot=structuredClone(shop.shop);const result=await command({kind:'purchase',shopId:id,expectedRevision:shop.shop.revision,entryId:e.id,expectedDefinitionRevision,quantity,characterId:buyer.id,expectedMembershipRevision:buyer.membershipRevision,actualGold},snapshot);
  if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);await loadSeller();if(!owned(w.token,g))return;await refreshProgress();if(owned(w.token,g))tell('Kauf gebucht.');
 }));buy.dataset.purchaseAvailable=String(!shop.unavailable&&!!e.quantity&&!d?.trashed);buy.disabled=buy.dataset.purchaseAvailable!=='true'||!roster.some(c=>c.id===value('shop-seller')&&c.active);card.append(buy);config.append(shopButton('Bestandszeile entfernen',()=>{collectShop();shop!.shop.stock=shop!.shop.stock.filter(s=>s.id!==e.id);dirtyShop=true;renderShop(true);}));root.append(card);}
- const restock=el('shop-restock');restock.replaceChildren();renderShopRestockTables(restock,shop,{changed:()=>{dirtyShop=true;},rebuild:()=>renderStockKeepingText(),button:shopButton,roll:tableId=>performTrade(async()=>{const w=workspace,g=epoch,id=shop?.shop.id;if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const table=shop.shop.restockTables?.find(t=>t.id===tableId);if(!table)return;const snapshot=structuredClone(shop.shop),result=await command({kind:'random-restock',shopId:id,expectedRevision:shop.shop.revision,tableId,expectedTableRevision:table.revision},snapshot);if(owned(w.token,g)&&shop?.shop.id===id)applyTradeShop(result.shop!,snapshot);}).then(()=>{})});
+ const restock=el('shop-restock');restock.replaceChildren();renderShopRestockTables(restock,shop,{changed:()=>{dirtyShop=true;},rebuild:()=>renderStockKeepingText(),button:shopButton,roll:tableId=>performTrade(async()=>{const w=workspace,g=editorSession.generation,id=shop?.shop.id;if(!w||!id||!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;const table=shop.shop.restockTables?.find(t=>t.id===tableId);if(!table)return;const snapshot=structuredClone(shop.shop),result=await command({kind:'random-restock',shopId:id,expectedRevision:shop.shop.revision,tableId,expectedTableRevision:table.revision},snapshot);if(owned(w.token,g)&&shop?.shop.id===id)applyTradeShop(result.shop!,snapshot);}).then(()=>{})});
  renderShopHistory(shop.history);}
 function renderShopHistory(history:ShopView['history']){
  historyRequest++;historyLoading=false;
@@ -278,8 +283,8 @@ function renderShopHistory(history:ShopView['history']){
 // Old immutable receipts have no continuation field; their last full page is still a valid cursor.
 function historyCursor(){return shop?.historyNext===undefined&&shop?.history.length===50?shop.history.at(-1)!.id:shop?.historyNext??null;}
 async function loadOlderShopHistory(){
- const w=workspace,g=epoch,id=shop?.shop.id,after=historyCursor();
- if(!w||!id||!after||!shopReady()||historyLoading||tradePending||hasPendingCommit(w.campaign.id))return;
+ const w=workspace,g=editorSession.generation,id=shop?.shop.id,after=historyCursor();
+ if(!w||!id||!after||!shopReady()||historyLoading||tradePendingWork.value||hasPendingCommit(w.campaign.id))return;
  const request=++historyRequest,current=()=>owned(w.token,g)&&request===historyRequest&&shop?.shop.id===id&&shopReady();
  historyLoading=true;lockShopContext();const status=el('shop-history-status');status.setAttribute('role','status');status.textContent='Ältere Einträge werden geladen…';
  try{
@@ -294,7 +299,7 @@ async function loadOlderShopHistory(){
 
 let stockIntent:{token:string;epoch:number;shopId:string;definitionId:string;revision:number}|null=null;
 async function addShopItem(prices?:{buy:string;sell:string}){
- const token=workspace?.token,g=epoch,id=shop?.shop.id,definitionId=definition?.id;if(!token||!id||!definitionId||!shopReady()||!definitionReady())throw new Error('Gegenstand und Shop auswählen.');
+ const token=workspace?.token,g=editorSession.generation,id=shop?.shop.id,definitionId=definition?.id;if(!token||!id||!definitionId||!shopReady()||!definitionReady())throw new Error('Gegenstand und Shop auswählen.');
  if(!await flushItems()||!owned(token,g)||shop?.shop.id!==id||definition?.id!==definitionId||!definitionReady())return;
  if(prices&&(!stockIntent||stockIntent.token!==token||stockIntent.epoch!==g||stockIntent.shopId!==id||stockIntent.definitionId!==definitionId||stockIntent.revision!==definition.revision))throw new Error('Gegenstand oder Shop inzwischen geändert. Preise erneut eingeben.');
  if(definition.unitCopper===null&&!prices){stockIntent={token,epoch:g,shopId:id,definitionId,revision:definition.revision};el('stock-price-title').textContent=definition.name+' · kein veröffentlichter Richtwert';el<HTMLInputElement>('stock-buy').value='';el<HTMLInputElement>('stock-sell').value='';el<HTMLDialogElement>('stock-price-dialog').showModal();return;}
@@ -302,7 +307,7 @@ async function addShopItem(prices?:{buy:string;sell:string}){
 }
 function renderStockKeepingText(){collectShop();renderShop(true);}
 async function loadSeller(){
- const w=workspace,g=epoch,id=value('shop-seller'),request=++sellerRequest;if(!w||!contextReady)return;
+ const w=workspace,g=editorSession.generation,id=value('shop-seller'),request=++sellerRequest;if(!w||!contextReady)return;
  const select=el<HTMLSelectElement>('shop-sale-item'),old=select.value;
  sellerLoading=true;sellerError='';loadedSeller=null;ledger=[];select.replaceChildren();lockShopContext();
  const current=()=>owned(w.token,g)&&request===sellerRequest&&value('shop-seller')===id;
@@ -326,7 +331,7 @@ function lockItemActions(){
  for(const button of el('items').querySelectorAll<HTMLButtonElement>('button')){if(!lockedButtons.has(button))lockedButtons.set(button,button.disabled);button.disabled=true;}lockShopContext();
 }
 async function recoveredItems(event:CommitResolution){
- const w=workspace,g=epoch;if(!w||event.ref.campaignId!==w.campaign.id)return;
+ const w=workspace,g=editorSession.generation;if(!w||event.ref.campaignId!==w.campaign.id)return;
  if(!definition&&!shop&&!dirtyDefinition&&!dirtyShop){
   const ack=event.ref.family==='items'?event.value as ItemShopAck:null;await openItems(ack?.shop?.shop.id);
   if(owned(w.token,g)&&ack?.definition)await selectDefinition(ack.definition.id);return;
@@ -355,35 +360,37 @@ export function initItems(status:typeof tell,open:typeof enter){tell=status;ente
  el('item-search').oninput=scheduleSearch;for(const id of [...filters,'item-sort','item-direction','item-trash-filter']){el(id).oninput=scheduleSearch;el(id).onchange=scheduleSearch;}
  el('item-filter-reset').onclick=()=>{for(const id of filters)el<HTMLInputElement>(id).value='';el<HTMLSelectElement>('item-sort').value='name';el<HTMLSelectElement>('item-direction').value='asc';el<HTMLInputElement>('item-trash-filter').checked=false;summarizeFilters();offset=0;void search();};
  el('items-search-form').onsubmit=e=>{e.preventDefault();summarizeFilters();offset=0;void search();};el('items-prev').onclick=()=>{const b=el<HTMLButtonElement>('items-prev');if(b.disabled)return;b.disabled=true;offset=Math.max(0,offset-40);void search();};el('items-next').onclick=()=>{const b=el<HTMLButtonElement>('items-next');if(b.disabled||next===null)return;b.disabled=true;offset=next;void search();};
- el('item-form').onsubmit=e=>{e.preventDefault();if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=epoch,id=definition?.id;if(await flushItems()&&owned(token,g)&&definition?.id===id){renderDefinition();renderShop();await search();tell('Gegenstand gespeichert.');}});};el('shop-form').onsubmit=e=>{e.preventDefault();if(!shopReady())return;run(async()=>{const token=workspace?.token,g=epoch,id=shop?.shop.id;if(await flushItems()&&owned(token,g)&&shop?.shop.id===id){renderShop();await loadShops();tell('Shop gespeichert.');}});};
- el('item-new').onclick=()=>run(async()=>{const token=workspace?.token,g=epoch,intent=++definitionRequest;if(!await flushItems()||!owned(token,g)||intent!==definitionRequest)return;const fresh:ItemDefinition={id:crypto.randomUUID(),revision:0,name:'',category:'equipment',magic:false,rarity:'',attunement:'unspecified',unitCopper:null,weightText:'',properties:[],description:'',source:{kind:'authored',label:'Eigener Gegenstand',license:null,url:null},trashed:false};showDefinition(fresh);el('item-name').focus();});
- el('item-copy').onclick=()=>{if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=epoch,id=definition?.id;if(!id||!await flushItems()||!owned(token,g)||definition?.id!==id||!definitionReady())return;showDefinition({...structuredClone(definition),id:crypto.randomUUID(),revision:0,name:definition.name+' – Kopie',source:{...definition.source,kind:'authored',label:definition.source.kind==='srd51'?'Eigene Kopie aus '+definition.source.label:'Eigener Gegenstand'},trashed:false},true);el('item-name').focus();});};
- el('item-trash').onclick=()=>{if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=epoch,id=definition?.id;if(!id||!await flushItems()||!owned(token,g)||definition?.id!==id||!definitionReady())return;const result=await command({kind:'definition-trash',id,expectedRevision:definition.revision,trashed:!definition.trashed});if(!owned(token,g)||definition?.id!==id||!definitionReady())return;definition=result.definition!;renderDefinition();await search();});};
+ el('item-form').onsubmit=e=>{e.preventDefault();if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=editorSession.generation,id=definition?.id;if(await flushItems()&&owned(token,g)&&definition?.id===id){renderDefinition();renderShop();await search();tell('Gegenstand gespeichert.');}});};el('shop-form').onsubmit=e=>{e.preventDefault();if(!shopReady())return;run(async()=>{const token=workspace?.token,g=editorSession.generation,id=shop?.shop.id;if(await flushItems()&&owned(token,g)&&shop?.shop.id===id){renderShop();await loadShops();tell('Shop gespeichert.');}});};
+ el('item-new').onclick=()=>run(async()=>{const token=workspace?.token,g=editorSession.generation,intent=++definitionRequest;if(!await flushItems()||!owned(token,g)||intent!==definitionRequest)return;const fresh:ItemDefinition={id:crypto.randomUUID(),revision:0,name:'',category:'equipment',magic:false,rarity:'',attunement:'unspecified',unitCopper:null,weightText:'',properties:[],description:'',source:{kind:'authored',label:'Eigener Gegenstand',license:null,url:null},trashed:false};showDefinition(fresh);el('item-name').focus();});
+ el('item-copy').onclick=()=>{if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=editorSession.generation,id=definition?.id;if(!id||!await flushItems()||!owned(token,g)||definition?.id!==id||!definitionReady())return;showDefinition({...structuredClone(definition),id:crypto.randomUUID(),revision:0,name:definition.name+' – Kopie',source:{...definition.source,kind:'authored',label:definition.source.kind==='srd51'?'Eigene Kopie aus '+definition.source.label:'Eigener Gegenstand'},trashed:false},true);el('item-name').focus();});};
+ el('item-trash').onclick=()=>{if(!definitionReady())return;run(async()=>{const token=workspace?.token,g=editorSession.generation,id=definition?.id;if(!id||!await flushItems()||!owned(token,g)||definition?.id!==id||!definitionReady())return;const result=await command({kind:'definition-trash',id,expectedRevision:definition.revision,trashed:!definition.trashed});if(!owned(token,g)||definition?.id!==id||!definitionReady())return;definition=result.definition!;renderDefinition();await search();});};
  const itemInput=(d:ItemDefinition,quantity:string,valueGold:string)=>({name:d.name,category:d.category,quantity:Number(quantity),valueGold,reference:{kind:'authored' as const,definitionId:d.id,revision:d.revision}});
  el('item-award').onclick=()=>{if(!definitionReady())return;run(()=>performTrade(async()=>{
-  const w=workspace,g=epoch,id=definition?.id,c=roster.find(c=>c.id===value('item-recipient')),quantity=value('item-award-quantity'),price=value('item-award-value');if(!w||!id||!c||!definitionReady()||!contextReady||contextLoading)return;
+  const w=workspace,g=editorSession.generation,id=definition?.id,c=roster.find(c=>c.id===value('item-recipient')),quantity=value('item-award-quantity'),price=value('item-award-value');if(!w||!id||!c||!definitionReady()||!contextReady||contextLoading)return;
   if(!await flushDrafts()||!owned(w.token,g)||definition?.id!==id||!definitionReady())return;
   const request={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,action:{kind:'manual-item' as const,characterId:c.id,expectedMembershipRevision:c.membershipRevision,origin:'award' as const,item:itemInput(definition,quantity,price),note:'Aus dem Itemkatalog vergeben'}};const result=await writeConfirmed<ProgressAck>('progress',request,()=>window.campaign.executeProgress(request),()=>owned(w.token,g),{owner:'items',token:w.token,epoch:g});
   if(!owned(w.token,g))return;void result;tradeConfirmed=true;await refreshProgress();if(!owned(w.token,g))return;await loadSeller();if(owned(w.token,g))tell('Persönliche Beute vergeben.');
  }));};
  el('item-treasure').onclick=()=>{if(!definitionReady())return;run(()=>performTrade(async()=>{
-  const w=workspace,g=epoch,id=definition?.id,quantity=value('item-award-quantity'),price=value('item-award-value');if(!w||!id||!definitionReady()||!contextReady||contextLoading)return;
+  const w=workspace,g=editorSession.generation,id=definition?.id,quantity=value('item-award-quantity'),price=value('item-award-value');if(!w||!id||!definitionReady()||!contextReady||contextLoading)return;
   if(!await flushDrafts()||!owned(w.token,g)||definition?.id!==id||!definitionReady())return;const response=await window.campaign.live(w.token);if(!owned(w.token,g)||definition?.id!==id||!definitionReady())return;const live=unwrap(response);
   const request={commandId:crypto.randomUUID(),campaignId:w.campaign.id,token:w.token,action:{kind:'treasure' as const,title:definition.name,sceneId:live.scene?.id??null,items:[itemInput(definition,quantity,price)]}};await writeConfirmed<ProgressAck>('progress',request,()=>window.campaign.executeProgress(request),()=>owned(w.token,g),{owner:'items',token:w.token,epoch:g});
   if(!owned(w.token,g))return;tradeConfirmed=true;await refreshProgress();if(owned(w.token,g))tell('Unverteilte Beute angelegt.');
  }));};
- el('shop-new').onclick=()=>run(async()=>{const token=workspace?.token,g=epoch,intent=++shopRequest;if(!await flushItems()||!owned(token,g)||intent!==shopRequest||!sources||!contextReady||contextLoading)return;const location=sources.locations.find(l=>!l.trashed),npc=sources.notes.find(n=>n.note.kind==='npc'&&!n.trashed);if(!location&&!npc)throw new Error('Lege zuerst einen Ort oder NPC in der Welt an.');const s:Shop={id:crypto.randomUUID(),revision:0,name:'',owner:location?{kind:'location',id:location.document.id}:{kind:'npc',id:npc!.note.id},notes:'',trashed:false,stock:[]};requestedShop=s.id;shopLoading=false;shopError='';el<HTMLDetailsElement>('shop-settings').open=true;shop={shop:s,ownerName:location?.document.name??npc!.note.title,unavailable:false,timeNotice:null,items:[],history:[]};renderShop();lockShopContext();el('shop-name').focus();});
+ el('shop-new').onclick=()=>run(async()=>{const token=workspace?.token,g=editorSession.generation,intent=++shopRequest;if(!await flushItems()||!owned(token,g)||intent!==shopRequest||!sources||!contextReady||contextLoading)return;const location=sources.locations.find(l=>!l.trashed),npc=sources.notes.find(n=>n.note.kind==='npc'&&!n.trashed);if(!location&&!npc)throw new Error('Lege zuerst einen Ort oder NPC in der Welt an.');const s:Shop={id:crypto.randomUUID(),revision:0,name:'',owner:location?{kind:'location',id:location.document.id}:{kind:'npc',id:npc!.note.id},notes:'',trashed:false,stock:[]};requestedShop=s.id;shopLoading=false;shopError='';el<HTMLDetailsElement>('shop-settings').open=true;shop={shop:s,ownerName:location?.document.name??npc!.note.title,unavailable:false,timeNotice:null,items:[],history:[]};renderShop();lockShopContext();el('shop-name').focus();});
  el('shop-add-item').onclick=()=>run(()=>addShopItem());
- el('shops-trash-filter').onchange=()=>run(loadShops);el('shop-trash').onclick=()=>run(async()=>{if(!shopReady())return;const token=workspace?.token,g=epoch,id=shop?.shop.id;if(!id||!await flushItems()||!owned(token,g)||shop?.shop.id!==id)return;shop.shop.trashed=!shop.shop.trashed;dirtyShop=true;if(await flushItems()&&owned(token,g)&&shop?.shop.id===id){renderShop();await loadShops();}});
+ el('shops-trash-filter').onchange=()=>run(loadShops);el('shop-trash').onclick=()=>run(async()=>{if(!shopReady())return;const token=workspace?.token,g=editorSession.generation,id=shop?.shop.id;if(!id||!await flushItems()||!owned(token,g)||shop?.shop.id!==id)return;shop.shop.trashed=!shop.shop.trashed;dirtyShop=true;if(await flushItems()&&owned(token,g)&&shop?.shop.id===id){renderShop();await loadShops();}});
  el('shop-history-more').onclick=()=>void loadOlderShopHistory();
  el('shop-load-retry').onclick=()=>{if(requestedShop)run(()=>selectShop(requestedShop!));};el('shop-seller-retry').onclick=()=>run(loadSeller);
  el('shop-seller').onchange=()=>{void loadSeller();};
  el('items-show-catalog').onclick=()=>run(async()=>{if(await flushItems())showItemsArea('catalog');});el('items-show-shops').onclick=()=>run(async()=>{if(await flushItems())showItemsArea('shops');});el('item-open-shop').onclick=()=>run(async()=>{if(await flushItems())showItemsArea('shops');});el('shop-sale-item').onchange=salePrice;el('shop-sale-quantity').oninput=salePrice;el('shop-sale-form').onsubmit=e=>{e.preventDefault();if(!shopReady()||!sellerReady())return;run(()=>performTrade(async()=>{
- const w=workspace,g=epoch,id=shop?.shop.id,l=ledger.find(l=>l.id===value('shop-sale-item')),quantity=Number(value('shop-sale-quantity')),actualGold=value('shop-sale-price'),notes=value('shop-sale-note'),newStockPrices=value('shop-new-buy-price')||value('shop-new-sell-price')?{buyGold:value('shop-new-buy-price'),sellGold:value('shop-new-sell-price')}:undefined;
+ const w=workspace,g=editorSession.generation,id=shop?.shop.id,l=ledger.find(l=>l.id===value('shop-sale-item')),quantity=Number(value('shop-sale-quantity')),actualGold=value('shop-sale-price'),notes=value('shop-sale-note'),newStockPrices=value('shop-new-buy-price')||value('shop-new-sell-price')?{buyGold:value('shop-new-buy-price'),sellGold:value('shop-new-sell-price')}:undefined;
  if(!w||!id||!l||l.characterId!==value('shop-seller'))return;const seller=value('shop-seller');if(!await flushDrafts()||!owned(w.token,g)||shop?.shop.id!==id)return;
  const response=await window.campaign.itemDefinition(l.reference.definitionId);if(!owned(w.token,g)||shop?.shop.id!==id)return;const d=unwrap(response);if(!sellerReady()||value('shop-seller')!==seller)return;
  const snapshot=structuredClone(shop.shop);const result=await command({kind:'sell',shopId:id,expectedRevision:shop.shop.revision,ledgerId:l.id,expectedLedgerRevision:l.revision,expectedDefinitionRevision:d.revision,quantity,actualGold,notes,...(newStockPrices?{newStockPrices}:{})},snapshot);
  if(!owned(w.token,g)||shop?.shop.id!==id)return;applyTradeShop(result.shop!,snapshot);await loadSeller();if(!owned(w.token,g))return;await refreshProgress();if(owned(w.token,g))tell('Verkauf gebucht.');
  }));};
 }
-export async function renderSceneShops(token:string,sceneId:string,root:HTMLElement){const g=epoch,request=(sceneShopRequests.get(root)??0)+1;sceneShopRequests.set(root,request);const response=await window.campaign.sceneShops(token,sceneId);if(!owned(token,g)||sceneShopRequests.get(root)!==request)return;const list=unwrap(response);root.replaceChildren();for(const s of list)root.append(s.problem?shopProblem(s,true):button('Shop öffnen: '+s.name+' · '+s.ownerName,()=>enter(s.id)));}
+export async function renderSceneShops(token:string,sceneId:string,root:HTMLElement){const g=editorSession.generation,request=(sceneShopRequests.get(root)??0)+1;sceneShopRequests.set(root,request);const response=await window.campaign.sceneShops(token,sceneId);if(!owned(token,g)||sceneShopRequests.get(root)!==request)return;const list=unwrap(response);root.replaceChildren();for(const s of list)root.append(s.problem?shopProblem(s,true):button('Shop öffnen: '+s.name+' · '+s.ownerName,()=>enter(s.id)));}
+
+editorSession.observeDraft(()=>({openInput:dirtyDefinition||dirtyShop,retainedDraft:false,unresolvedCommand:!!workspace&&hasPendingCommit(workspace.campaign.id)}));

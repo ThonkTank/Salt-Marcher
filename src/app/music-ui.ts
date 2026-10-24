@@ -1,8 +1,12 @@
+import {EditorSession} from './editor-session';
 import type {WorkspaceGeometry,Result} from './contracts';
 import type {Preparation} from './preparation-contracts';
 import type {AudioAsset,AudioPage,AudioQuery,MusicView,MusicAction,MusicSceneSettings,MusicSubject,MoodAxis} from './music-contracts';
 import {LocalAudioPlayer} from './music-player';
 import {preserveLiteralEdit} from './literal-text-edit';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const tags=(s:string)=>[...new Set(s.split(',').map(t=>t.trim()).filter(Boolean))];
@@ -17,7 +21,7 @@ export async function runLiveMusic(token:string,build:(value:MusicView)=>MusicAc
  await refreshMusic();if(!current(owner)||!view||stoppedAt!==stopRevision)return false;return !!await change(build(view),false,owner);
 }
 let workspace:WorkspaceGeometry|null=null,view:MusicView|null=null,sources:Preparation|null=null,page:AudioPage={items:[],next:null,problems:[]},selected:AudioAsset|null=null,sceneDraft:MusicSceneSettings|null=null,subjectDraft:MusicSubject|null=null,axisDraft:MoodAxis[]=[];
-let assetDirty=false,sceneDirty=false,subjectDirty=false,axesDirty=false,pending:Promise<boolean>|null=null,timer:ReturnType<typeof setTimeout>|null=null,request=0,libraryRequest=0,openRequest=0,subjectRequest=0,assetRequest=0,axisRevision=0,transferBusy=false;
+let assetDirty=false, sceneDirty=false, subjectDirty=false, axesDirty=false, timer:ReturnType<typeof setTimeout>|null=null, request=0, libraryRequest=0, openRequest=0, subjectRequest=0, assetRequest=0, axisRevision=0, transferBusy=false;
 let combatSources:{id:string;name:string}[]=[];
 let tell:(text:string,error?:boolean)=>void,open:()=>Promise<void>,player:LocalAudioPlayer,duration=0;
 let stopRevision=-1,songRevision=-1,ambienceRevision=-1;const authorizedLayers=new Set<string>(),layerRevisions=new Map<string,number>();
@@ -51,7 +55,7 @@ function applyRuntime(value:MusicView){
  const layers=ambienceRevision>stopRevision?value.layers:value.layers.filter(layer=>authorizedLayers.has(layer.assetId)),scale=layers.length?Math.sqrt(value.layers.length/layers.length):1;
  player.apply({...value,state:playSong?value.state:{...value.state,current:null,status:'stopped'},layers:layers.map(layer=>({...layer,gain:Math.min(1,layer.gain*scale)}))});
 }
-async function checkpoint(owner=workspace){if(!owner||!current(owner)||!player)return;const p=player.position();if(p)unwrap(await window.campaign.musicPosition(owner.token,p.playbackId,p.seconds));}
+async function checkpoint(owner=workspace){if(!owner||!current(owner)||!player)return;const p=player.position();if(p)unwrap(await editorSession.start(()=>window.campaign.musicPosition(owner.token,p.playbackId,p.seconds)));}
 function isStop(action:MusicAction){return action.kind==='transport'&&action.operation==='stop';}
 async function preparePlayback(owner:WorkspaceGeometry){
  const stoppedAt=stopRevision;
@@ -66,7 +70,7 @@ async function change(action:MusicAction,quiet=false,owner=workspace){
  if(!owner||!current(owner))return null;
  const stoppedAt=stopRevision,command={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token:owner.token,action:structuredClone(action)};
  if(!isStop(action))await checkpoint(owner);if(!current(owner)||!isStop(action)&&stoppedAt!==stopRevision)return null;
- const response=await window.campaign.executeMusic(command);if(!current(owner))return null;const result=unwrap(response);
+ const response=await editorSession.start(()=>window.campaign.executeMusic(command));if(!current(owner))return null;const result=unwrap(response);
  grantOutput(action,result.state.revision);
  if(view&&(result.state.revision<view.state.revision||result.registry.catalogRevision<view.registry.catalogRevision)){applyRuntime(view);renderRuntime();return result;}
  request++;refreshPending=null;view=result;applyRuntime(result);renderRuntime();if(!quiet)tell(isStop(action)?'Wiedergabe gestoppt.':'Musik gespeichert.');return result;
@@ -84,7 +88,8 @@ export async function refreshMusic(){
 }
 export function deactivateMusic(){resetOutputAuthority();workspace=null;view=null;request++;player.reset();el('music-mini').hidden=true;}
 export function activateMusic(w:WorkspaceGeometry){
- request++;openRequest++;subjectRequest++;assetRequest++;refreshPending=null;if(timer)clearTimeout(timer);timer=null;pending=null;
+ editorSession.generation++;
+ request++;openRequest++;subjectRequest++;assetRequest++;refreshPending=null;if(timer)clearTimeout(timer);timer=null;pendingWork.value=null;
  libraryRequest++;resetOutputAuthority();workspace={...w};view=null;sources=null;selected=null;sceneDraft=null;subjectDraft=null;axisDraft=[];axisRevision=0;page={items:[],next:null,problems:[]};
  assetDirty=sceneDirty=subjectDirty=axesDirty=false;player.reset();
  renderAsset();renderScene();renderSubject();el<HTMLSelectElement>('music-subject-select').value='';renderSubjects();renderLibrary();el('music-axes').replaceChildren();el('music-queue').replaceChildren();el('music-layers').replaceChildren();
@@ -104,7 +109,7 @@ function collectSubject():MusicSubject{
 }
 export async function flushMusic():Promise<boolean>{
  if(timer)clearTimeout(timer);timer=null;const owner=workspace;if(!owner)return true;
- if(pending){const running=pending;if(!await running||!current(owner))return false;return flushMusic();}
+ if(pendingWork.value){const running=pendingWork.value;if(!await running||!current(owner))return false;return flushMusic();}
  const task=Promise.resolve().then(async()=>{
   try{
    if(!current(owner))return false;
@@ -131,7 +136,7 @@ export async function flushMusic():Promise<boolean>{
    await checkpoint(owner);return current(owner);
   }catch(error){if(current(owner))tell((error as Error).message+' Musikeingabe bleibt offen.',true);return false;}
  });
- pending=task;const ok=await task;if(pending===task)pending=null;
+ pendingWork.value=task;const ok=await task;if(pendingWork.value===task)pendingWork.value=null;
  if(!ok||!current(owner))return false;
  return assetDirty||axesDirty||sceneDirty||subjectDirty?flushMusic():true;
 }
@@ -242,3 +247,7 @@ export function initMusic(status:typeof tell,show:typeof open){tell=status;open=
  window.campaign.onAudioTransfer(progress=>{transferBusy=progress.busy;el('audio-transfer-status').textContent=progress.phase+(progress.busy?' · '+(progress.bytes/1048576).toFixed(1)+' MB':'');el('audio-cancel-transfer').hidden=!transferBusy;for(const id of ['audio-pick','audio-export','audio-import'])el<HTMLButtonElement>(id).disabled=transferBusy;});
  setInterval(()=>{if(workspace){void checkpoint().catch(()=>{});void refreshMusic();}},5000);
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});
+
+editorSession.observeDraft(()=>({openInput:assetDirty||sceneDirty||subjectDirty||axesDirty,retainedDraft:false,unresolvedCommand:false}));

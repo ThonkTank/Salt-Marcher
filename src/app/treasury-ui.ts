@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {TreasureDistribution} from "./treasure-distribution-ui";
 import type { ItemDefinition } from "./items-contracts";
 import type { WorkspaceGeometry, Result } from "./contracts";
@@ -17,6 +18,10 @@ import {
   onCommitResolved,
   onCommitState,
 } from "./commit-confirmation";
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+const keepingWork = editorSession.operation<Promise<boolean>>();
+
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const unwrap = <T>(r: Result<T>): T => {
@@ -35,30 +40,15 @@ function anchorChoices(){const controls=[el<HTMLSelectElement>('treasury-filter-
 function queryKey(){return JSON.stringify(listQuery);}
 async function readList(token:string,after:string|null){const query=structuredClone(listQuery),key=queryKey(),request=++listRequest,response=await window.campaign.treasures(token,after,query);if(w?.token!==token||key!==queryKey()||request!==listRequest)return null;return unwrap(response);}
 
-let w: WorkspaceGeometry | null = null,
-  book: Treasure | null = null,
-  draft: TreasuryDraft | null = null,
-  writeId: string | null = null,
-  list: TreasurePage = { items: [], next: null },
-  people: ProgressView | null = null,
-  places: { id: string; name: string }[] = [],
-  dirty = false,
-  version = 0,
-  savedVersion = 0,
-  generation = 0,
-  editing = 0,
-  reading = 0;
-let pending: Promise<boolean> | null = null,
-  keeping: Promise<boolean> | null = null,
-  timer: ReturnType<typeof setTimeout> | null = null,
-  historyCursor: string | null = null;
+let w: WorkspaceGeometry | null = null, book: Treasure | null = null, draft: TreasuryDraft | null = null, writeId: string | null = null, list: TreasurePage = { items: [], next: null }, people: ProgressView | null = null, places: { id: string; name: string }[] = [], dirty = false, editing = 0, reading = 0;
+let timer: ReturnType<typeof setTimeout> | null = null, historyCursor: string | null = null;
 let tell: (s: string, error?: boolean) => void,
   after: () => Promise<void>,
   enter: (id?: string) => Promise<void>,
   ready = false;
 function editorOwner() {
-  const g = generation, e = editing;
-  return () => generation === g && editing === e;
+  const g = editorSession.generation, e = editing;
+  return () => editorSession.generation === g && editing === e;
 }
 function run(fn: () => Promise<unknown>) {
   const current = editorOwner();
@@ -73,7 +63,7 @@ function option(s: HTMLSelectElement, id: string, title: string) {
 function mark() {
   if (!draft) return;
   dirty = true;
-  version++;
+  editorSession.input.version++;
   if (timer) clearTimeout(timer);
   const current = editorOwner();
   timer = setTimeout(() => { if (current()) void keep(); }, 250);
@@ -90,16 +80,16 @@ function snapshot(): TreasuryDraft {
 }
 export function activateTreasury(next: WorkspaceGeometry | null) {
   distribution?.reset();w = next;
-  generation++;
+  editorSession.generation++;
   editing++;
   reading++;
   book = null;
   draft = null;
   writeId = null;
   dirty = false;
-  pending = null;
-  keeping = null;
-  version = savedVersion = 0;
+  pendingWork.value = null;
+  keepingWork.value = null;
+  editorSession.input.version = editorSession.input.retained = 0;
   people = null;
   places = [];
   historyCursor = null;
@@ -130,20 +120,20 @@ async function select(id: string) {
   if (!w) return;
   const current = editorOwner(), token = w.token;
   if (!(await flushTreasury()) || !current()) return;
-  const r = ++reading, n = version;
+  const r = ++reading, n = editorSession.input.version;
   const [t, d] = await Promise.all([
     window.campaign.treasure(token, id),
     window.campaign.treasuryDraft(token, id),
   ]);
-  if (!current() || r !== reading || n !== version) return;
+  if (!current() || r !== reading || n !== editorSession.input.version) return;
   const nextBook = unwrap(t), nextDraft = unwrap(d);
   editing++;
-  version = savedVersion = 0;
+  editorSession.input.version = editorSession.input.retained = 0;
   book = nextBook;
   draft = nextDraft;
   dirty = !!draft;
   writeId = draft?.writeId ?? null;
-  savedVersion = version;
+  editorSession.input.retained = editorSession.input.version;
   draw();
   await history(false);
 }
@@ -252,19 +242,19 @@ function draw() {
 }
 async function keep(): Promise<boolean> {
   const current = editorOwner();
-  if (keeping) {
-    if (!(await keeping) || !current()) return false;
-    return dirty && savedVersion !== version ? keep() : true;
+  if (keepingWork.value) {
+    if (!(await keepingWork.value) || !current()) return false;
+    return dirty && editorSession.input.retained !== editorSession.input.version ? keep() : true;
   }
-  if (!dirty || !draft || !w || savedVersion === version) return true;
-  const token = w.token, n = version, d = snapshot(), expected = writeId;
+  if (!dirty || !draft || !w || editorSession.input.retained === editorSession.input.version) return true;
+  const token = w.token, n = editorSession.input.version, d = snapshot(), expected = writeId;
   d.writeId = crypto.randomUUID();
   const task = (async () => {
     try {
       unwrap(await window.campaign.keepTreasuryDraft(token, d, expected));
       if (!current()) return false;
       writeId = d.writeId;
-      savedVersion = n;
+      editorSession.input.retained = n;
       el("treasury-draft-status").textContent = "Schatzeingabe gesichert · noch nicht übernommen.";
       return true;
     } catch (e) {
@@ -272,24 +262,24 @@ async function keep(): Promise<boolean> {
       return false;
     }
   })();
-  keeping = task;
+  keepingWork.value = task;
   const ok = await task;
-  if (keeping === task) keeping = null;
+  if (keepingWork.value === task) keepingWork.value = null;
   if (!current()) return false;
-  return ok && savedVersion !== version ? keep() : ok;
+  return ok && editorSession.input.retained !== editorSession.input.version ? keep() : ok;
 }
 export async function flushTreasury() {
   const current = editorOwner();
-  if (pending && !(await pending)) return false;
+  if (pendingWork.value && !(await pendingWork.value)) return false;
   if (!current()) return false;
   if (timer) clearTimeout(timer);
   return (await keep()) && current() && (!w || !hasPendingCommit(w.campaign.id));
 }
 async function execute(action: ProgressAction,failed?:(message:string)=>void) {
-  if (!w || pending) return false;
+  if (!w || pendingWork.value) return false;
   if(hasPendingCommit(w.campaign.id)){failed?.('Eine Buchung ist noch ungeklärt. Schließen und den Buchungsstatus prüfen; keinen neuen Schreibversuch starten.');return false;}
   const token = w.token,
-    g = generation,
+    g = editorSession.generation,
     current = editorOwner(),
     command: ProgressCommand = {
       commandId: crypto.randomUUID(),
@@ -304,7 +294,7 @@ async function execute(action: ProgressAction,failed?:(message:string)=>void) {
         "progress",
         command,
         () => window.campaign.executeProgress(command),
-        () => current() && w?.token === token && generation === g,
+        () => current() && w?.token === token && editorSession.generation === g,
         { owner: "treasury", action: command.action, token, generation: g, editing },
       );
       confirmed = true;
@@ -347,16 +337,16 @@ async function execute(action: ProgressAction,failed?:(message:string)=>void) {
       }
       return confirmed && current();
     } finally {
-      if (pending === task) pending = null;
-      lock();
+      pendingWork.clear(task);
+      if(current())lock();
     }
   });
-  pending = task;
+  pendingWork.value = task;
   lock();
   return task;
 }
 function lock() {
-  const blocked = !!pending || (!!w && hasPendingCommit(w.campaign.id));
+  const blocked = !!pendingWork.value || (!!w && hasPendingCommit(w.campaign.id));
   for (const e of el("treasury").querySelectorAll<
     | HTMLInputElement
     | HTMLSelectElement
@@ -368,8 +358,8 @@ function lock() {
 }
 async function apply() {
   if (!w || !book || !draft) return false;
-  const current = editorOwner(), n = version, d = snapshot();
-  if (!(await keep()) || !current() || version !== n) return false;
+  const current = editorOwner(), n = editorSession.input.version, d = snapshot();
+  if (!(await keep()) || !current() || editorSession.input.version !== n) return false;
   if (d.revision !== book.revision)
     throw new Error("Schatzentwurf und bestätigten Stand zuerst abgleichen.");
   const items = d.items.map((i) => {
@@ -395,12 +385,12 @@ async function reload() {
   if (!w || !book) return;
   const current = editorOwner(), token = w.token, id = book.id;
   if (!(await keep()) || !current()) return;
-  const n = version;
+  const n = editorSession.input.version;
   if (writeId) unwrap(await window.campaign.discardTreasuryDraft(token, id, writeId));
   if (!current()) return;
   writeId = null;
-  savedVersion = -1;
-  if (version !== n) { await keep(); return; }
+  editorSession.input.retained = -1;
+  if (editorSession.input.version !== n) { await keep(); return; }
   dirty = false;
   draft = null;
   await select(id);
@@ -485,7 +475,7 @@ function drawCatalogResults() {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = d.name + (d.unitCopper === null ? " · Wert offen" : "");
-    b.disabled = !!pending || (!!w && hasPendingCommit(w.campaign.id));
+    b.disabled = !!pendingWork.value || (!!w && hasPendingCommit(w.campaign.id));
     b.onclick = () => { if (current()) addDefinition(d); };
     el("treasury-catalog-results").append(b);
   }
@@ -520,7 +510,7 @@ export function initTreasury(
     const meta = event.meta as { owner?: string; token?: string; generation?: number; editing?: number } | undefined;
     if (
       meta?.owner === "treasury" &&
-      w && meta.token === w.token && meta.generation === generation && meta.editing === editing &&
+      w && meta.token === w.token && meta.generation === editorSession.generation && meta.editing === editing &&
       event.ref.campaignId === w.campaign.id
     ) {
       dirty = false;
@@ -532,7 +522,7 @@ export function initTreasury(
   el("treasury-new").onclick = () =>
     run(async () => {
       const current = editorOwner();
-      if (!(await flushTreasury()) || !current() || pending || !w || hasPendingCommit(w.campaign.id)) return;
+      if (!(await flushTreasury()) || !current() || pendingWork.value || !w || hasPendingCommit(w.campaign.id)) return;
       editing++; // Revoke reads and timers belonging to the previous treasure editor.
       await execute({
         kind: "treasure-create",
@@ -623,3 +613,7 @@ export function initTreasury(
 
 export async function openTreasureDistribution(id?:string,sceneId?:string,current:()=>boolean=()=>true){await distribution?.open(id,sceneId,current);}
 export function closeStaleTreasureDistribution(){distribution?.closeStale();}
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});
+
+editorSession.observeDraft(()=>({openInput:dirty,retainedDraft:!!draft&&!!writeId,unresolvedCommand:!!w&&hasPendingCommit(w.campaign.id)}));

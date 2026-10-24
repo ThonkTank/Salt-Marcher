@@ -196,3 +196,20 @@ test('copied pending NPC conversation references bind to copied identities witho
   assert.equal(d.fields.contact,expected);assert.equal(d.pendingCommand.npc.record.history,expected);assert.equal(target.npc(w.token,d.id).record.history,expected);assert.equal(target.reconcileNpc(d.pendingCommand,w.token).outcome,'applied');assert.equal(x.store.npcDraft(x.w.token,x.a.id).fields.contact,raw);
  }finally{target?.close();await x.cleanup();}
 });
+
+test('shared session drains a detached NPC save without letting its late answer release a newer draft save',async()=>{
+ const x=await fixture(),old=deferred(),next=deferred(),original=window.campaign.keepNpcDraft;let calls=0;
+ try{
+  window.campaign.keepNpcDraft=async(...args)=>{const result=await original(...args);calls++;if(calls===1){await old.promise;return result;}if(calls===2){await next.promise;return result;}return result;};
+  x.input('npc-name','');x.input('npc-gmNotes','alter Rohtext\r\nbleibt erhalten');const first=x.ui.flushNpcs();await until(()=>calls===1);
+  assert.equal(x.ui.editorSession.status.saving,true);x.ui.editorSession.deactivate();x.ui.activateNpcs(x.w);
+  await x.ui.openNpcProfile(x.b.id);x.input('npc-gmNotes','neuer Rohtext');const second=x.ui.flushNpcs();await until(()=>calls===2);
+  old.resolve();await first;assert.equal(x.ui.editorSession.status.saving,true);assert.equal(x.el('npc-name').value,x.b.name);
+  const joined=x.ui.flushNpcs();await tick();assert.equal(calls,2,'late settlement must not start a second writer for the newer draft');
+  x.input('npc-gmNotes','weitere Eingabe während Sicherung');next.resolve();assert.equal(await second,true);assert.equal(await joined,true);
+  await x.ui.editorSession.settle();assert.equal(x.ui.editorSession.status.saving,false);assert.equal(x.ui.editorSession.status.retainedDraft,true);
+  assert.equal(x.ui.editorSession.status.openInput,false);assert.equal(x.ui.editorSession.status.unresolvedCommand,false);
+  assert.equal(x.store.npcDraft(x.w.token,x.a.id).fields.gmNotes,'alter Rohtext\r\nbleibt erhalten');
+  assert.equal(x.store.npcDraft(x.w.token,x.b.id).fields.gmNotes,'weitere Eingabe während Sicherung');assert.equal(x.writes.length,0);
+ }finally{old.resolve();next.resolve();await x.cleanup();}
+});

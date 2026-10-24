@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import type { Result, Edit, RoomCommit } from "./contracts";
 import type { CityCommand, CityView } from "./city-contracts";
 import type { DrawingCommand, DrawingView } from "./drawing-contracts";
@@ -7,7 +8,10 @@ import type {
   AtlasCommand,
   CampaignAtlas,
 } from "./campaign-atlas-contracts";
+export const editorSession = new EditorSession();
+
 const pending = new Map<string, AtlasCommand>();
+editorSession.observeDraft(()=>({openInput:false,retainedDraft:false,unresolvedCommand:pending.size>0}));
 export const pendingAtlasWrite = (token: string) => pending.get(token) ?? null;
 async function writeAtlas(
   c: AtlasCommand,
@@ -19,7 +23,7 @@ async function writeAtlas(
         "Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst im Atlas „Speicherstand klären“ wählen.",
     };
   try {
-    const result = await window.campaign.executeAtlas(c);
+    const result = await editorSession.run(()=>window.campaign.executeAtlas(c));
     if (result.ok) {
       pending.delete(c.token);
       document.dispatchEvent(
@@ -44,7 +48,7 @@ async function writeAtlas(
 export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>> {
   if(pending.has(c.token)) return {ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try {
-    const result=await window.campaign.executeAtlasCommit(c);
+    const result=await editorSession.run(()=>window.campaign.executeAtlasCommit(c));
     if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:result.value}));}
     document.dispatchEvent(new Event('atlas-write-state'));
     return result;
@@ -57,7 +61,7 @@ export async function writeAtlasCommit(c: AtlasCommand): Promise<Result<import('
 export async function recoverAtlasCommit(token:string):Promise<Result<import('./campaign-atlas-contracts').AtlasCommitAck>|null>{
   const command=pending.get(token);if(!command)return null;
   try{
-    const result=await window.campaign.reconcileAtlasCommit(command);
+    const result=await editorSession.run(()=>window.campaign.reconcileAtlasCommit(command));
     if(pending.get(token)!==command)return{ok:false,error:'Atlasauftrag inzwischen geändert. Speicherstand erneut klären.'};
     if(!result.ok)return result;
     if(result.value.outcome==='unknown')return{ok:false,error:'Atlasauftrag läuft noch. Speicherstand anschließend erneut klären.'};
@@ -101,7 +105,7 @@ export async function atlasDrawingWrite(
 > {
   if(pending.has(c.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try{
-    const result=await window.campaign.atlasDrawingCommit(c);
+    const result=await editorSession.run(()=>window.campaign.atlasDrawingCommit(c));
     if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:c.token,campaignId:c.campaignId,revision:result.value.atlasRevision}}));}
     document.dispatchEvent(new Event('atlas-write-state'));
     return result;
@@ -114,7 +118,7 @@ export async function atlasDrawingWrite(
 export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
   if(pending.has(edit.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try{
-    const result=await window.campaign.atlasRoomCommit(edit);
+    const result=await editorSession.run(()=>window.campaign.atlasRoomCommit(edit));
     if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:edit.token,campaignId:edit.campaignId,revision:result.value.atlasRevision}}));
     return result;
   }catch(e){

@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {ScenePlaceBinder} from './scene-place-binder';
 import {campaignLocalId} from '../features/campaign/campaign-contracts';
 import { worldNoteDocument } from "../features/world/world-notes";
@@ -13,31 +14,21 @@ import { newLocation } from "../features/location/location-schema";
 import { showNarrative, flushNarrative } from "./narrative-ui";
 import { renderCreatureDetail } from "./creature-detail-ui";
 import type { EncounterPlan } from "./encounter-contracts";
+export const editorSession = new EditorSession();
+const savingWork = editorSession.operation<Promise<boolean>>();
+const applyingWork = editorSession.operation<Promise<boolean>>();
+const creationSavingWork = editorSession.operation<Promise<boolean>>();
+
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
 const unwrap = <T>(r: Result<T>) => {
   if (!r.ok) throw new Error(r.error);
   return r.value;
 };
-let w: WorkspaceGeometry | null = null,
-  scene: LiveScene | null = null,
-  desk: SceneDesk | null = null,
-  content: DeskContent | null = null,
-  draft: PreparationDraft | null = null,
-  writeId: string | null = null,
-  dirty = false,
-  version = 0,
-  savedVersion = 0,
-  key = "",
-  editorEpoch = 0,
-  request = 0,
-  searchRequest = 0,
-  next: number | null = null;
+let w: WorkspaceGeometry | null = null, scene: LiveScene | null = null, desk: SceneDesk | null = null, content: DeskContent | null = null, draft: PreparationDraft | null = null, writeId: string | null = null, dirty = false, key = "", request = 0, searchRequest = 0, next: number | null = null;
 let placeBinder:ScenePlaceBinder|null=null,placeKey='';
 let searchPage: { kind: string; query: string } | null = null, searchBusy = false;
-let saving: Promise<boolean> | null = null,
-  timer: ReturnType<typeof setTimeout> | null = null,
-  initialized = false;
+let timer: ReturnType<typeof setTimeout> | null = null, initialized = false;
 type PlayerCues = { showNpc(id:string,current:()=>boolean):Promise<boolean>; blank():Promise<boolean> };
 let playerCues:PlayerCues|undefined,playerCueIntent=0;
 let tell: (s: string, error?: boolean) => void,
@@ -50,7 +41,7 @@ function button(text: string, action: () => Promise<unknown>) {
   b.onclick = () => void action().catch((e) => tell(e.message, true));
   return b;
 }
-const editorOwner=()=>{const epoch=editorEpoch;return()=>epoch===editorEpoch;};
+const editorOwner=()=>{const epoch=editorSession.generation;return()=>epoch===editorSession.generation;};
 const owns = (token: string, id: string) =>
   w?.token === token && scene?.id === id;
 export function initSceneDesk(
@@ -104,7 +95,7 @@ export function sceneDeskContext(
   }
   key = changed;
   const creationLoad=loadCreation(),creationOwner=creationEpoch;
-  editorEpoch++;version=0;savedVersion=0;saving=null;applying=null;
+  editorSession.generation++;editorSession.input.version=0;editorSession.input.retained=0;savingWork.value=null;applyingWork.value=null;
   request++;
   invalidateSearch();
   if (timer) clearTimeout(timer);
@@ -247,7 +238,7 @@ async function open(ref: DeskRef,stillCurrent:()=>boolean=()=>true) {
   if(!w||!scene)return;
   const current=editorOwner(),token=w.token,id=scene.id,n=++request;
   if(!await flushSceneDesk()||!current()||n!==request||!stillCurrent())return;
-  const readVersion=version;
+  const readVersion=editorSession.input.version;
   const read=await window.campaign.deskContent(token,ref);
   if(!current()||!owns(token,id)||n!==request||!stillCurrent())return;
   const c=unwrap(read);
@@ -259,13 +250,13 @@ async function open(ref: DeskRef,stillCurrent:()=>boolean=()=>true) {
     retained=unwrap(read);
   }
   if (!owns(token, id) || n !== request || !stillCurrent()) return;
-  if(version!==readVersion)return;
-  editorEpoch++;version=0;savedVersion=0;
+  if(editorSession.input.version!==readVersion)return;
+  editorSession.generation++;editorSession.input.version=0;editorSession.input.retained=0;
   content = c;
   draft = retained;
   writeId = retained?.writeId ?? null;
   dirty = !!retained;
-  savedVersion = version;
+  editorSession.input.retained = editorSession.input.version;
   drawEditor();
   await drawNarrative();
 }
@@ -288,7 +279,7 @@ function edit(): PreparationEdit | null {
 }
 function mark() {
   dirty = true;
-  version++;
+  editorSession.input.version++;
   if (timer) clearTimeout(timer);
   const current=editorOwner();
   timer = setTimeout(() => {if(current())void keep();}, 250);
@@ -450,13 +441,13 @@ async function drawNarrative() {
 }
 async function keep(): Promise<boolean> {
   const current=editorOwner();
-  if (saving) {
-    if (!(await saving)||!current()) return false;
-    return dirty && savedVersion !== version ? keep() : true;
+  if (savingWork.value) {
+    if (!(await savingWork.value)||!current()) return false;
+    return dirty && editorSession.input.retained !== editorSession.input.version ? keep() : true;
   }
-  if (!dirty || savedVersion === version || !draft || !w) return true;
+  if (!dirty || editorSession.input.retained === editorSession.input.version || !draft || !w) return true;
   const token = w.token,
-    n = version,
+    n = editorSession.input.version,
     value = structuredClone(draft);
   value.writeId = crypto.randomUUID();
   const run = (async () => {
@@ -464,7 +455,7 @@ async function keep(): Promise<boolean> {
       unwrap(await window.campaign.keepDeskDraft(token, value, writeId));
       if(!current())return false;
       writeId = value.writeId;
-      savedVersion = n;
+      editorSession.input.retained = n;
       el("desk-note-status").textContent = "Eingabe gesichert.";
       return true;
     } catch (e) {
@@ -472,22 +463,22 @@ async function keep(): Promise<boolean> {
       return false;
     }
   })();
-  saving = run;
+  savingWork.value = run;
   const ok = await run;
-  if(saving===run)saving=null;
-  return current()&&(ok&&savedVersion!==version?await keep():ok);
+  if(savingWork.value===run)savingWork.value=null;
+  return current()&&(ok&&editorSession.input.retained!==editorSession.input.version?await keep():ok);
 }
-let applying:Promise<boolean>|null=null;
+
 export async function flushSceneDesk(narrative=true):Promise<boolean>{
   const current=editorOwner();
-  if(applying){const ok=await applying;return ok&&current()?flushSceneDesk(narrative):false;}
+  if(applyingWork.value){const ok=await applyingWork.value;return ok&&current()?flushSceneDesk(narrative):false;}
   if(!await keepCreation()||!current())return false;
   if(narrative&&!(await flushNarrative())||!current())return false;
   if(timer)clearTimeout(timer);
   if(!await keep()||!current())return false;
   if(!dirty||!draft||!w||!content)return true;
-  const run=applyContent();applying=run;
-  try{return await run;}finally{if(applying===run)applying=null;}
+  const run=applyContent();applyingWork.value=run;
+  return await run;
 }
 async function applyContent():Promise<boolean>{
  const current=editorOwner();
@@ -506,7 +497,7 @@ async function applyContent():Promise<boolean>{
   }
   const token = w.token,
     c = content,
-    n = version;
+    n = editorSession.input.version;
   try {
     const fresh = unwrap(
       await window.campaign.changePreparationContent({
@@ -521,7 +512,7 @@ async function applyContent():Promise<boolean>{
     if(fresh.revision!==c.revision+1)throw new Error("Inhalt nach Speicherung erneut geändert. Gesicherte Eingabe zuerst prüfen.");
     content = fresh;
     writeId = null;
-    if (n === version) {
+    if (n === editorSession.input.version) {
       dirty = false;
       draft = null;
       drawEditor();
@@ -532,7 +523,7 @@ async function applyContent():Promise<boolean>{
       draft.change.expectedRevision = fresh.revision;
       if (draft.change.kind === "note")
         draft.change.note = { ...draft.change.note, revision: fresh.revision };
-      savedVersion = -1;
+      editorSession.input.retained = -1;
       await keep();
     }
     if (desk) {
@@ -553,17 +544,17 @@ async function reloadContent(){
   if(!w||!content)return;
   const current=editorOwner(),token=w.token,c=content;
   if(!await keep()||!current())return;
-  const n=version;
+  const n=editorSession.input.version;
   if(writeId)unwrap(await window.campaign.discardPreparationDraft(token,c.note?"note":"location",c.ref.id,writeId));
   if(!current())return;
   writeId=null;
-  if(n!==version){savedVersion=-1;await keep();return;}
+  if(n!==editorSession.input.version){editorSession.input.retained=-1;await keep();return;}
   dirty=false;draft=null;
   await open(c.ref);
 }
 
 let creation:SceneCreationDraft|null=null,creationBusy=false,creationRead=false,creationEpoch=0,creationStored:string|null=null,creationVersion=0,creationSaved=0;
-let creationSaving:Promise<boolean>|null=null,creationTimer:ReturnType<typeof setTimeout>|null=null;
+let creationTimer:ReturnType<typeof setTimeout>|null=null;
 function creationInput():SceneCreationInput{return{kind:el<HTMLSelectElement>('desk-new-kind').value as SceneCreationInput['kind'],name:el<HTMLInputElement>('desk-new-title').value,notes:el<HTMLTextAreaElement>('desk-new-notes').value,pin:el<HTMLInputElement>('desk-new-pin').checked,contributors:el<HTMLInputElement>('desk-new-contributors').checked};}
 function creationControls(){
  const pending=!!creation?.command;
@@ -583,7 +574,7 @@ async function loadCreation(){
  try{await loading;}finally{if(creationLoading===loading)creationLoading=null;}
 }
 async function readCreation(){
- const epoch=++creationEpoch,owner=w,source=scene;creationBusy=false;creation=null;creationRead=!!owner&&!!source;creationStored=null;creationVersion=creationSaved=0;creationSaving=null;el('desk-create-reload').hidden=true;
+ const epoch=++creationEpoch,owner=w,source=scene;creationBusy=false;creation=null;creationRead=!!owner&&!!source;creationStored=null;creationVersion=creationSaved=0;creationSavingWork.value=null;el('desk-create-reload').hidden=true;
  if(creationTimer)clearTimeout(creationTimer);creationTimer=null;el('desk-create-edit').hidden=true;drawCreation();el('desk-create-status').textContent=creationRead?'Schnellanlage-Eingabe wird gelesen…':'';
  if(!owner||!source)return;
  try{const d=unwrap(await window.campaign.sceneCreationDraft(owner.token,source.id));if(epoch!==creationEpoch)return;creation=d;creationStored=d?.writeId??null;drawCreation();el('desk-create-status').textContent=d?.command?'Ausgang offen · Originalauftrag prüfen.':d?'Eingabe wieder geöffnet · noch nicht angelegt.':'';}
@@ -598,10 +589,10 @@ async function keepCreation():Promise<boolean>{
   await loading;if(epoch!==creationEpoch||creationRead)return false;
  }
  if(!w||!scene||creationVersion===creationSaved)return true;
- if(creationSaving){if(!await creationSaving||epoch!==creationEpoch)return false;return keepCreation();}
+ if(creationSavingWork.value){if(!await creationSavingWork.value||epoch!==creationEpoch)return false;return keepCreation();}
  const owner=w,source=scene,version=creationVersion,value=creation?{...structuredClone(creation),writeId:crypto.randomUUID()}:null,expected=creationStored;
- const task=Promise.resolve().then(async()=>{try{unwrap(await window.campaign.keepSceneCreationDraft(owner.token,source.id,value,expected));if(epoch!==creationEpoch)return false;creationStored=value?.writeId??null;if(creation)creation.writeId=value!.writeId;creationSaved=version;if(!creation?.command)el('desk-create-status').textContent='Eingabe gesichert · noch nicht angelegt.';return true;}catch(e){if(epoch===creationEpoch){el('desk-create-reload').hidden=false;el('desk-create-status').textContent='Eingabe nicht gesichert. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}return false;}});creationSaving=task;
- try{return await task;}finally{if(creationSaving===task)creationSaving=null;}
+ const task=Promise.resolve().then(async()=>{try{unwrap(await window.campaign.keepSceneCreationDraft(owner.token,source.id,value,expected));if(epoch!==creationEpoch)return false;creationStored=value?.writeId??null;if(creation)creation.writeId=value!.writeId;creationSaved=version;if(!creation?.command)el('desk-create-status').textContent='Eingabe gesichert · noch nicht angelegt.';return true;}catch(e){if(epoch===creationEpoch){el('desk-create-reload').hidden=false;el('desk-create-status').textContent='Eingabe nicht gesichert. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}return false;}});creationSavingWork.value=task;
+ return await task;
 }
 async function finishCreation(command:PreparationCommand,input:SceneCreationInput,epoch:number){
  if(epoch!==creationEpoch||!w||!scene)return;
@@ -638,3 +629,7 @@ async function create(){
  }catch(e){if(epoch===creationEpoch){el('desk-create-status').textContent=creation?.command?'Ausgang prüfen · keine erneute Anlage senden. '+(e as Error).message:'Anlage nicht abgeschlossen. '+(e as Error).message;tell(el('desk-create-status').textContent!,true);}}
  finally{if(epoch===creationEpoch){creationBusy=false;creationControls();}}
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});
+
+editorSession.observeDraft(()=>({openInput:dirty,retainedDraft:!!draft&&!!writeId,unresolvedCommand:!!draft?.failedCommand}));

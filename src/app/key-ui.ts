@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {scrollTextareaToOffset} from './textarea-position';
 import {editTextareaText,type KeyPassageTarget} from './key-reading-model';
 import {KeyNoteCapture} from './key-note-capture';
@@ -8,8 +9,16 @@ import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import {initKeyCopy,invalidateKeyCopy,syncKeyCopyControl} from './key-copy-ui';
 import {drawSurfaceKey} from './surface-key-ui';
-import type {WorkspaceGeometry,Workspace,Room} from './contracts';import type {DrawingView,DrawingAction} from './drawing-contracts';import type {KeyContent,KeyBlock,KeyBatch,KeyTextEdit} from './key-contracts';import {emptyKey} from './key-contracts';import {renderDungeonKey,expandedKeyBlocks,keyAttributes} from './key-model';import type {DungeonGeometry} from './dungeon-contracts';
-const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,field=(id:string)=>el<HTMLInputElement>(id),select=(id:string)=>el<HTMLSelectElement>(id),uuid=()=>crypto.randomUUID();let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,publish:(w:WorkspaceGeometry)=>Promise<void>,navigate:(id:string)=>Promise<void>,tell:(s:string,error?:boolean)=>void,data:DrawingView|null=null,geometry:DungeonGeometry|null=null,draft:KeyContent|null=null,roomId:string|null=null,scopeId='',generation=0,pending:Promise<void>|null=null;let references:{kind:string;id:string;label:string}[]=[];const picked=new Set<string>();let matchedRooms:Room[]=[],listPage=0;const listPageSize=100,roomNumberOrder=new Intl.Collator(undefined,{numeric:true});
+import type {WorkspaceGeometry,Workspace,Room} from './contracts';
+import type {DrawingView,DrawingAction} from './drawing-contracts';
+import type {KeyContent,KeyBlock,KeyBatch,KeyTextEdit} from './key-contracts';
+import {emptyKey} from './key-contracts';
+import {renderDungeonKey,expandedKeyBlocks,keyAttributes} from './key-model';
+import type {DungeonGeometry} from './dungeon-contracts';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<void>>();
+
+const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,field=(id:string)=>el<HTMLInputElement>(id),select=(id:string)=>el<HTMLSelectElement>(id),uuid=()=>crypto.randomUUID();let workspace:()=>WorkspaceGeometry|null, selected:()=>Room|null, before:()=>Promise<boolean>, publish:(w:WorkspaceGeometry)=>Promise<void>, navigate:(id:string)=>Promise<void>, tell:(s:string,error?:boolean)=>void, data:DrawingView|null=null, geometry:DungeonGeometry|null=null, draft:KeyContent|null=null, roomId:string|null=null, scopeId='';let references:{kind:string;id:string;label:string}[]=[];const picked=new Set<string>();let matchedRooms:Room[]=[],listPage=0;const listPageSize=100,roomNumberOrder=new Intl.Collator(undefined,{numeric:true});
 let readVersion=0,editVersion=0,composing=false;
 let searchIndex:RoomKeySearchIndex|null=null,searchData:DrawingView|null=null,searchReferences:typeof references|null=null;
 let noteContext:KeyNoteContext|null=null;
@@ -35,21 +44,21 @@ function dirty(){return !!draft&&currentSignature()!==baseSignature;}
 function establishBase(force=false){if(timer)clearTimeout(timer);timer=null;baseKeyRevision=draft?records().find(k=>k.id===draft!.id)?.revision??null:null;baseRoomRevision=draft?.kind==='room'?keyRooms().find(r=>r.id===draft!.id)?.revision??null:null;baseSignature=force?'':currentSignature();blocked=false;saveState(force?'dirty':'saved',force?'Eingabe offen – wird automatisch gespeichert.':'Keine offenen Änderungen.');}
 function lockEditor(){for(const c of el('key-dialog').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement|HTMLTextAreaElement>('input,button,select,textarea'))c.disabled=editorLocked;if(!editorLocked){field('key-number').disabled=draft?.kind!=='room';field('key-zsteps').disabled=draft?.kind!=='level';select('key-level').disabled=!draft||!['room','group'].includes(draft.kind);select('key-group').disabled=draft?.kind!=='room';el<HTMLButtonElement>('key-map').disabled=!geometry?.rooms.some(r=>r.id===roomId);}updateSelectionCount();updateListControls();if(!editorLocked)syncKeyCopyControl();syncTemplateTargets();}
 function reportFailure(error:unknown){blocked=true;saveState('error','Eingabe bleibt offen: '+(error as Error).message);tell((error as Error).message+' Eingabe bleibt erhalten.',true);}
-function owner(){const w=workspace();return{generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return{generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
 function schedule(){
  if(timer)clearTimeout(timer);timer=null;if(!draft)return;if(composing){saveState('dirty','Texteingabe läuft noch.');return;}
  try{if(!dirty()){saveState('saved','Keine offenen Änderungen.');return;}}catch{}
  saveState('dirty','Eingabe offen – wird automatisch gespeichert.');
- const o=owner(),handle=setTimeout(()=>{if(!owns(o)||timer!==handle)return;timer=null;if(!blocked&&!pending)run(save);},350);timer=handle;
+ const o=owner(),handle=setTimeout(()=>{if(!owns(o)||timer!==handle)return;timer=null;if(!blocked&&!pendingWork.value)run(save);},350);timer=handle;
 }
 function run(fn:()=>Promise<void>,lock=false){
- if(pending)return;
+ if(pendingWork.value)return;
  const o=owner();editorLocked=lock;lockEditor();
  const task=Promise.resolve().then(()=>{if(owns(o))return fn();}).catch(e=>{if(owns(o))reportFailure(e);}).finally(()=>{
-  if(pending===task)pending=null;if(!owns(o))return;
+  pendingWork.clear(task);if(!owns(o))return;
   editorLocked=false;lockEditor();if(!blocked)try{if(dirty())schedule();}catch(e){reportFailure(e);}
- });pending=task;
+ });pendingWork.value=task;
 }
 async function moveEditor(action:()=>Promise<void>|void){const o=owner(),intent=++transition;if(!(await flushKeys())||!owns(o)||intent!==transition)return false;await action();return owns(o)&&intent===transition;}
 const records=()=>data?.keyContent??[];const keyRooms=()=>{const w=workspace(),latest=new Map<string,Room>();for(const r of [...(geometry?.rooms??[]),...(acknowledged?.token===w?.token?acknowledged?.rooms??[]:[])])if((latest.get(r.id)?.revision??-1)<r.revision)latest.set(r.id,r);const visible=[...latest.values()],ids=new Set(visible.map(r=>r.id));return [...visible,...(data?.hiddenRooms??[]).filter(r=>!ids.has(r.id))];};function block(kind:KeyBlock['kind']='text',visibility:KeyBlock['visibility']='public'):KeyBlock{return{id:uuid(),kind,visibility,text:'',templateId:null,suppressed:[],searchMethod:'',dc:null,discoveryNotes:'',revealedText:''};}
@@ -90,7 +99,7 @@ async function reload(){
  const o=owner(),intent=++transition,version=editVersion,id=draft?.id,kind=draft?.kind;
  if(timer)clearTimeout(timer);timer=null;
  try{
-  await pending;if(!owns(o)||intent!==transition)return;
+  await pendingWork.value;if(!owns(o)||intent!==transition)return;
   if(version!==editVersion){tell('Neuere Key-Eingaben bleiben erhalten.');return;}
   if(!await refresh()||!owns(o)||intent!==transition)return;
   if(version!==editVersion){tell('Neuere Key-Eingaben bleiben erhalten.');return;}
@@ -337,7 +346,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
 
  el('key-dialog').addEventListener('close',()=>{const returned=keyReturn;keyReturn=null;keyLeave=null;el('key-close').textContent='Schließen';returned?.();});
  if(notes)noteContext=new KeyNoteContext(el<HTMLDialogElement>('key-dialog'),{open:notes.open,flush:notes.flush,beforeClose:flushKeys,closed:async()=>{const o=owner();if(await refresh()&&owns(o))drawReferences();},focusKey:()=>{const text=field('key-gm-notes');text.focus({preventScroll:true});text.scrollIntoView({block:'center'});},tell:status});
- initKeyCopy({context:()=>{const o=owner(),source=keyRooms().find(r=>r.id===roomId);return draft?.kind==='room'&&source&&geometry?{identity:JSON.stringify(o)+':'+source.id,source,rooms:keyRooms(),records:records(),geometry,targets:[...picked]}:null;},prepare:async()=>await flushKeys()&&await refresh(),commit:async action=>{let ok=false;run(async()=>{const result=await command(action);if(!result)return;if(roomId)openRoom(roomId);ok=true;tell(action.rooms.length+' Räume als unabhängige Inhaltskopien bearbeitet.');},true);await pending;return ok;}});
+ initKeyCopy({context:()=>{const o=owner(),source=keyRooms().find(r=>r.id===roomId);return draft?.kind==='room'&&source&&geometry?{identity:JSON.stringify(o)+':'+source.id,source,rooms:keyRooms(),records:records(),geometry,targets:[...picked]}:null;},prepare:async()=>await flushKeys()&&await refresh(),commit:async action=>{let ok=false;run(async()=>{const result=await command(action);if(!result)return;if(roomId)openRoom(roomId);ok=true;tell(action.rooms.length+' Räume als unabhängige Inhaltskopien bearbeitet.');},true);await pendingWork.value;return ok;}});
 
  const editing=new Set(['key-name','key-number','key-read-aloud','key-gm-notes','key-attributes','key-zsteps','key-tags','key-status','key-secret','key-level','key-group']);
  for(const type of ['input','change','click'] as const)el('key-dialog').addEventListener(type,event=>{
@@ -357,7 +366,7 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
    const room=result.value.rooms.find(r=>r.id===result.value.selectedId);if(!room)throw new Error('Neuer Raum konnte nicht geöffnet werden.');
    field('key-search').value='';select('key-filter-level').value='';select('key-filter-group').value='';select('key-filter').value='';listPage=0;openRoom(room.id);
    el('key-dialog').scrollTop=0;saveState('saved','Neuer Raum angelegt. Name, Vorlesetext und GM-Notizen direkt eingeben.');
-  },true);await pending;
+  },true);await pendingWork.value;
  }).then(ok=>{if(ok&&!blocked&&el<HTMLDialogElement>('key-dialog').open){field('key-name').focus();field('key-name').select();}}).catch(reportFailure);};
  el('key-close').onclick=()=>{void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);};
  el('key-save').onclick=()=>{blocked=false;void flushKeys();};
@@ -393,18 +402,20 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  el('key-select-visible').onclick=()=>{for(const room of matchedRooms)picked.add(room.id);for(const input of el('key-room-list').querySelectorAll<HTMLInputElement>('input')){input.checked=true;if(input.dataset.roomId)picked.add(input.dataset.roomId);}updateSelectionCount();};
  el('key-select-none').onclick=()=>{picked.clear();drawList();};
  el('key-batch-apply').onclick=applyBatch;}
-export function activateKeys(){field('key-reference-query').value='';el<HTMLDetailsElement>('key-reference-picker').open=false;composing=false;noteCapture?.reset();planContext?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();generation++;transition++;readVersion++;editVersion++;pending=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
+export function activateKeys(){field('key-reference-query').value='';el<HTMLDetailsElement>('key-reference-picker').open=false;composing=false;noteCapture?.reset();planContext?.reset();searchIndex=null;searchData=null;searchReferences=null;noteContext?.reset();invalidateKeyCopy();editorSession.generation++;transition++;readVersion++;editVersion++;pendingWork.value=null;roomId=null;scopeId='';preparedBatch=null;if(timer)clearTimeout(timer);timer=null;blocked=false;editorLocked=false;draft=null;legacyDraft.clear();data=null;geometry=null;acknowledged=null;baseSignature='';baseRoomRevision=null;baseKeyRevision=null;matchedRooms=[];listPage=0;picked.clear();el<HTMLDialogElement>('key-dialog').close();}
 export function setKeyReferenceStatus(text:string,error=false){noteContext?.setStatus(text,error);}
 export async function flushKeys():Promise<boolean>{
  if(composing){tell('Texteingabe zuerst abschließen.',true);return false;}
  if(noteCapture?.active){tell('Neue Notiz zuerst anlegen oder abbrechen.',true);return false;}
  const o=owner();if(noteContext?.active&&!await noteContext.flush()||!owns(o))return false;
  if(timer){clearTimeout(timer);timer=null;}
- await pending;if(!owns(o)||blocked)return false;
+ await pendingWork.value;if(!owns(o)||blocked)return false;
  try{
   while(dirty()){
-   if(composing)return false;run(save);await pending;if(!owns(o)||blocked)return false;
+   if(composing)return false;run(save);await pendingWork.value;if(!owns(o)||blocked)return false;
   }
   if(timer){clearTimeout(timer);timer=null;}return true;
  }catch(e){if(owns(o))reportFailure(e);return false;}
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});

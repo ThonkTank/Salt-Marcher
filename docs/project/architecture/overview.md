@@ -51,6 +51,11 @@ ersetzen deren Qualifikation nicht. Begrenzte Leseprodukte und Caches sind
 ableitbar. Raumtexte, Geometrie und Metadaten besitzen gezielte Lesezugänge;
 keiner davon wird zu einer zweiten Schreibautorität.
 
+Die [gemeinsame Editor-Sitzung](editor-lifecycle.md) bündelt Kontextgeneration,
+angenommene Aufträge und Abmeldung. Die zentrale Registrierung unterscheidet
+Checkpoint, Navigation, Kampagnenwechsel und Schließen; Fachmodule behalten
+Validierung, Rohentwürfe und Receipt-Auswertung.
+
 ### Prozesse und Verantwortlichkeiten
 
 **Ein modularer TypeScript-Kern in einer eigenständigen Electron-Anwendung,

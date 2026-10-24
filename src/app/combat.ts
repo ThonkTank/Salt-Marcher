@@ -1,5 +1,5 @@
+import {EditorSession} from './editor-session';
 import {BookingDialog} from './booking-dialog';
-import {captureView} from './editor-transition';
 import {CombatSelectionPanel} from './combat-selection-ui';
 import {combatMobs,combatMobRow,canReinforceTroop} from './combat-mob-ui';
 import {CombatGroupPicker,sceneGroupDragType,sceneGroupTray} from './combat-group-ui';
@@ -27,6 +27,9 @@ import type {SceneCheck} from './scene-check-contracts';
 import {deathSaveControls,type DeathSaveResult} from './progression';
 import {isLegendaryAction,creatureActionForRolls,creatureActionRolls,creatureRollKey,legendaryActionCost,type CreatureRollPreset} from './dice-formula';
 import type {Creature,CreatureAction} from '../features/catalog/creature-catalog';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
@@ -45,7 +48,7 @@ let initiativePanel:CombatInitiativePanel|null=null;
 let reinforcementRequest=0,reinforcementBusy=false,reinforcementSourceChosen=false;
 // null uses the combat's sources; an empty search must remain empty, even on failure.
 let reinforcementResults:{id:string;name:string;challengeRating:string;hp?:number;ac?:number}[]|null=null;
-let selected: string | null = null, pending: Promise<boolean> | null = null, generation = 0;
+let selected: string | null = null;
 type PendingLegendary={participantId:string;actionId:string;cost:number};
 type PendingDamage={check:SceneCheck;combatId:string;attackerId:string;targetId?:string;appliedTargets?:string[]};
 export function enqueuePendingDamage(queue:readonly PendingDamage[],next:PendingDamage,currentCombatId:string){return next.combatId!==currentCombatId||queue.some(damage=>damage.check.id===next.check.id)?[...queue]:[...queue,next];}
@@ -79,14 +82,14 @@ function keepNotesDraft(){
  void draftCache.put(workspace.token,workspace.campaign.id,d);get('combat-notes-draft-status').textContent='Notizeingabe offen – noch nicht übernommen.';
 }
 async function chooseFighter(id:string){
- if(!workspace||!view?.combat)return;selected=id;const token=workspace.token,cam=workspace.campaign.id,combatId=view.combat.id,g=generation,r=++editorRequest;editorLoading=true;renderEditor();renderSelection();lock();
- try{await draftCache.load(token,cam,combatId,'fighter',id);}catch(error){if(g===generation&&r===editorRequest)tell((error as Error).message,true);}
- finally{if(g===generation&&r===editorRequest&&selected===id&&view?.combat?.id===combatId){editorLoading=false;renderEditor();lock();if(typeof window.matchMedia==='function'&&window.matchMedia('(max-width:1099px)').matches)get('combat-participant').scrollIntoView({block:'start'});}}
+ if(!workspace||!view?.combat)return;selected=id;const token=workspace.token,cam=workspace.campaign.id,combatId=view.combat.id,g=editorSession.generation,r=++editorRequest;editorLoading=true;renderEditor();renderSelection();lock();
+ try{await draftCache.load(token,cam,combatId,'fighter',id);}catch(error){if(g===editorSession.generation&&r===editorRequest)tell((error as Error).message,true);}
+ finally{if(g===editorSession.generation&&r===editorRequest&&selected===id&&view?.combat?.id===combatId){editorLoading=false;renderEditor();lock();if(typeof window.matchMedia==='function'&&window.matchMedia('(max-width:1099px)').matches)get('combat-participant').scrollIntoView({block:'start'});}}
 }
 async function loadNotes(){
- if(!workspace||!view?.combat)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,g=generation;notesLoading=true;lock();
- try{await draftCache.load(token,cam,id,'notes',id);}catch(error){if(g===generation)tell((error as Error).message,true);}
- finally{if(g===generation&&view?.combat?.id===id){notesLoading=false;renderNotes();lock();}}
+ if(!workspace||!view?.combat)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,g=editorSession.generation;notesLoading=true;lock();
+ try{await draftCache.load(token,cam,id,'notes',id);}catch(error){if(g===editorSession.generation)tell((error as Error).message,true);}
+ finally{if(g===editorSession.generation&&view?.combat?.id===id){notesLoading=false;renderNotes();lock();}}
 }
 function renderNotes(){
  const c=view?.combat,d=notesDraft();
@@ -94,21 +97,21 @@ function renderNotes(){
  get('combat-notes-draft-status').textContent=d?(JSON.stringify(d.basis)===JSON.stringify({title:c?.title,notes:c?.notes})?'Notizeingabe offen – noch nicht übernommen.':'Gespeicherte Notizen wurden geändert. Eingabe bleibt offen; zuerst abgleichen.') : '';
 }
 async function listDrafts(more=false){
- if(!workspace||!view?.combat)return;const token=workspace.token,id=view.combat.id,g=generation,r=++draftPageRequest;
- try{const page=unwrap(await window.campaign.combatDrafts(token,id,more?draftCursor:null));if(g!==generation||r!==draftPageRequest||view?.combat?.id!==id)return;
+ if(!workspace||!view?.combat)return;const token=workspace.token,id=view.combat.id,g=editorSession.generation,r=++draftPageRequest;
+ try{const page=unwrap(await window.campaign.combatDrafts(token,id,more?draftCursor:null));if(g!==editorSession.generation||r!==draftPageRequest||view?.combat?.id!==id)return;
   const root=get('combat-draft-list');if(!more)root.replaceChildren();for(const entry of page.items){const row=document.createElement('p'),show=document.createElement('button'),discard=document.createElement('button');show.type=discard.type='button';show.textContent='Entwurf: '+(entry.label||'Ohne Titel');discard.textContent='Verwerfen';
-   show.onclick=()=>{void(async()=>{const d=unwrap(await window.campaign.combatDraft(token,id,entry.kind,entry.targetId));if(g!==generation||view?.combat?.id!==id)return;if(!d||d.writeId!==entry.writeId)throw new Error('Entwurf inzwischen geändert. Liste aktualisieren.');get<HTMLTextAreaElement>('combat-draft-preview').value=d.kind==='initiative'?d.values.map(v=>(view?.combat?.participants.find(p=>p.id===v.participantId)?.name??v.participantId)+': '+v.raw).join('\n'):d.kind==='notes'?d.values.title+'\n\n'+d.values.notes:Object.entries(d.values).map(([key,text])=>({'fighter-name':'Name','fighter-group-name':'Truppname','fighter-initiative':'Initiative','fighter-bonus':'Initiativebonus','fighter-ac':'Rüstungsklasse','fighter-hp':'Aktuelle HP','fighter-max-hp':'Maximale HP','fighter-temp-hp':'Temporäre HP','fighter-conditions':'Zustände','fighter-xp':'Kreatur-XP'} as Record<string,string>)[key]+': '+text).join('\n')+'\nKonzentration: '+(d.concentrating?'ja':'nein')+'\nFür Schwierigkeit zählen: '+(d.counted?'ja':'nein');get('combat-draft-preview').hidden=false;})().catch(error=>tell(error.message,true));};
-   discard.onclick=()=>{void(async()=>{if(!workspace||workspace.token!==token||!await draftCache.flush(workspace.campaign.id))return;unwrap(await window.campaign.discardCombatDraft(token,id,entry.kind,entry.targetId,entry.writeId));const key=combatDraftKey(workspace.campaign.id,id,entry.kind,entry.targetId),d=draftCache.values.get(key);if(d?.writeId===entry.writeId)draftCache.consumed(workspace.campaign.id,d);if(g===generation){renderEditor();renderNotes();await listDrafts();}})().catch(error=>tell(error.message,true));};row.append(show,discard);root.append(row);}
+   show.onclick=()=>{void(async()=>{const d=unwrap(await window.campaign.combatDraft(token,id,entry.kind,entry.targetId));if(g!==editorSession.generation||view?.combat?.id!==id)return;if(!d||d.writeId!==entry.writeId)throw new Error('Entwurf inzwischen geändert. Liste aktualisieren.');get<HTMLTextAreaElement>('combat-draft-preview').value=d.kind==='initiative'?d.values.map(v=>(view?.combat?.participants.find(p=>p.id===v.participantId)?.name??v.participantId)+': '+v.raw).join('\n'):d.kind==='notes'?d.values.title+'\n\n'+d.values.notes:Object.entries(d.values).map(([key,text])=>({'fighter-name':'Name','fighter-group-name':'Truppname','fighter-initiative':'Initiative','fighter-bonus':'Initiativebonus','fighter-ac':'Rüstungsklasse','fighter-hp':'Aktuelle HP','fighter-max-hp':'Maximale HP','fighter-temp-hp':'Temporäre HP','fighter-conditions':'Zustände','fighter-xp':'Kreatur-XP'} as Record<string,string>)[key]+': '+text).join('\n')+'\nKonzentration: '+(d.concentrating?'ja':'nein')+'\nFür Schwierigkeit zählen: '+(d.counted?'ja':'nein');get('combat-draft-preview').hidden=false;})().catch(error=>tell(error.message,true));};
+   discard.onclick=()=>{void(async()=>{if(!workspace||workspace.token!==token||!await draftCache.flush(workspace.campaign.id))return;unwrap(await window.campaign.discardCombatDraft(token,id,entry.kind,entry.targetId,entry.writeId));const key=combatDraftKey(workspace.campaign.id,id,entry.kind,entry.targetId),d=draftCache.values.get(key);if(d?.writeId===entry.writeId)draftCache.consumed(workspace.campaign.id,d);if(g===editorSession.generation){renderEditor();renderNotes();await listDrafts();}})().catch(error=>tell(error.message,true));};row.append(show,discard);root.append(row);}
   for(const problem of page.problems){const p=document.createElement('p');p.textContent='Entwurf nicht lesbar: '+problem.message;root.append(p);}draftCursor=page.next;get('combat-draft-more').hidden=!draftCursor;
- }catch(error){if(g===generation)tell((error as Error).message,true);}
+ }catch(error){if(g===editorSession.generation)tell((error as Error).message,true);}
 }
 function renderPartyCandidates(){const select=get<HTMLSelectElement>('combat-party-select'),previous=select.value,items=view?.partyCandidates??[];select.replaceChildren();for(const p of items){const option=document.createElement('option');option.value=p.characterId;option.textContent=p.name+' · '+(p.health?p.health.hp+'/'+p.health.maxHp+' HP':'HP offen');select.append(option);}select.value=items.some(p=>p.characterId===previous)?previous:items[0]?.characterId??'';if(select.value!==previous)get<HTMLInputElement>('combat-party-initiative').value='';get('combat-party-form').hidden=!editableCombat(view?.combat??null)||!items.length;}
 async function refreshPartyCandidates(){
- if(pending){candidatePending=true;return;}const combat=view?.combat;if(!workspace||!scene||!editableCombat(combat??null)||!combat)return;
- const gen=generation,request=++candidateRequest,id=combat.id,token=workspace.token;candidateLoading=true;lock();
- try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==generation||request!==candidateRequest||view?.combat?.id!==id||pending)return;if(result.combat?.revision!==combat.revision){await load(id);return;}view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
- catch(error){if(gen===generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
- finally{if(gen===generation&&request===candidateRequest){candidateLoading=false;lock();}}
+ if(pendingWork.value){candidatePending=true;return;}const combat=view?.combat;if(!workspace||!scene||!editableCombat(combat??null)||!combat)return;
+ const gen=editorSession.generation,request=++candidateRequest,id=combat.id,token=workspace.token;candidateLoading=true;lock();
+ try{const result=unwrap(await window.campaign.combat(token,scene.id,id));if(gen!==editorSession.generation||request!==candidateRequest||view?.combat?.id!==id||pendingWork.value)return;if(result.combat?.revision!==combat.revision){await load(id);return;}view.partyCandidates=result.partyCandidates;renderPartyCandidates();lock();}
+ catch(error){if(gen===editorSession.generation&&request===candidateRequest)tell('Party-Auswahl konnte nicht aktualisiert werden: '+(error as Error).message,true);}
+ finally{if(gen===editorSession.generation&&request===candidateRequest){candidateLoading=false;lock();}}
 }
 export function combatContext(next: WorkspaceGeometry | null, current: LiveScene | null, rosterRevision?:number) {
   const changed = next?.token !== workspace?.token || current?.id !== scene?.id;
@@ -119,16 +122,16 @@ export function combatContext(next: WorkspaceGeometry | null, current: LiveScene
   workspace = next; scene = current;
   if(changed||preparationChanged){selectionPanel?.reset();if(next&&current&&get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();}
   get('combat-panel').hidden = !current;
-  if (changed) { expandedMobs.clear();groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
+  if (changed) { expandedMobs.clear();groupPicker.reset();const tray=get<HTMLDetailsElement>('combat-scene-groups');if(tray){tray.open=false;get('combat-scene-group-cards').replaceChildren();}closeMaskHistory();if (get<HTMLDialogElement>('combat-finish-dialog').open) get<HTMLDialogElement>('combat-finish-dialog').close(); editorSession.generation++;loadNumber++;loadPending=false;loadError=null;requestedCombatId=null;knownRecent=[];candidateRequest++;candidatePending=false;candidateLoading=false;editorLoading=false;notesLoading=false;editorRequest++;draftPageRequest++;draftCursor=null;get('combat-draft-list').replaceChildren();get('combat-draft-preview').hidden=true; selected = null;pendingDamage=[];pendingAttack=null;attackPending=false;pendingSave=null;savePending=false; view = null; render(); if (next && current) void load(); }
   else if(partyChanged){if(view?.combat)void load(view.combat.id);else void refreshPartyCandidates();}
   resolution?.context(workspace,scene,view?.combat??null);
 }
 async function load(id?: string):Promise<boolean> {
   if (!workspace || !scene) return false;
   candidateRequest++;candidateLoading=false;
-  const gen=generation,request=++loadNumber,basis=partyContext,token=workspace.token,sceneId=scene.id,target=id??view?.combat?.id??requestedCombatId;
+  const gen=editorSession.generation,request=++loadNumber,basis=partyContext,token=workspace.token,sceneId=scene.id,target=id??view?.combat?.id??requestedCombatId;
   requestedCombatId=target??null;loadPending=true;loadError=null;lock();
-  const current=()=>generation===gen&&request===loadNumber&&workspace?.token===token&&scene?.id===sceneId;
+  const current=()=>editorSession.generation===gen&&request===loadNumber&&workspace?.token===token&&scene?.id===sceneId;
   try {
     const result=unwrap(await window.campaign.combat(token,sceneId,target??undefined));if(!current())return false;
     if(result.combat&&(result.combat.sceneId!==sceneId||target&&result.combat.id!==target)||target&&!result.combat)throw new Error('Begegnungsantwort passt nicht zur gewählten Begegnung.');
@@ -148,17 +151,17 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
   loadNumber++;candidateRequest++;candidateLoading=false;const editKey=action.kind==='edit'?fighterKey():null,editDraft=editKey?fighterDrafts.get(editKey):undefined,editorDraft:CombatWorkingDraft|undefined=action.kind==='initiative'&&workspace&&view?.combat?draftCache.values.get(combatDraftKey(workspace.campaign.id,view.combat.id,'initiative',view.combat.id)):action.kind==='notes'?notesDraft():editDraft;
   const priorDamageDeath=action.kind==='damage'||action.kind==='hit'?structuredClone(view?.combat?.participants.find(p=>p.id===action.participantId)?.death):undefined;
   const priorEffects=action.kind==='next'||action.kind==='start'?view?.combat?.participants.flatMap(actor=>(actor.timedEffects??[]).map(effect=>({actorId:actor.id,actor:actor.name,...effect})))??[]:[];
-  const gen = generation,resetConcentration=['concentration','concentration-roll','undo'].includes(action.kind);
+  const gen = editorSession.generation,resetConcentration=['concentration','concentration-roll','undo'].includes(action.kind);
   const command: CombatCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token,
     combatId: action.kind === 'create' ? null : view?.combat?.id ?? null,
     expectedRevision: action.kind === 'create' ? null : expectedRevision??view?.combat?.revision ?? null, action,...(editorDraft?{draftWriteId:editorDraft.writeId}:{}) };
   let applied = false,revealConcentration=false;
-  pending = (async () => {
+  const task = editorSession.run(async () => {
     try {
-      if(!await draftCache.flush(command.campaignId)||generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
+      if(!await draftCache.flush(command.campaignId)||editorSession.generation!==gen)throw new Error('Offene Eingaben zuerst dauerhaft sichern.');
       if(!stillCurrent())return false;
-      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,resetConcentration,...(action.kind==='area-damage'?{areaTargetIds:action.targets.map(target=>target.participantId)}:{})});
-      if (generation !== gen) return false;
+      const result = await writeConfirmed<CombatView>('combat',command,()=>window.campaign.executeCombat(command),()=>editorSession.generation===gen&&workspace?.token===command.token,{token:command.token,editKey,editDraft,editorDraft,resetConcentration,...(action.kind==='area-damage'?{areaTargetIds:action.targets.map(target=>target.participantId)}:{})});
+      if (editorSession.generation !== gen) return false;
       if(resetConcentration)delete get('combat-concentration-modifier').dataset.checkKey;
       acceptCombat(result);applied = true;if(action.kind==='add-party')get<HTMLInputElement>('combat-party-initiative').value='';if(editorDraft)draftCache.consumed(command.campaignId,editorDraft);void listDrafts();
       if(action.kind==='area-damage'&&result.combat)revealResultMembers(result.combat,action.targets.map(target=>target.participantId));
@@ -175,19 +178,20 @@ async function execute(action: CombatAction, expectedRevision?:number,stillCurre
       }).join(' · ')+(openConcentration?' · Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.':'.'):null;
       revealConcentration=!!openConcentration;
       tell(areaResult??(action.kind==='hit'?('Treffer gespeichert · '+(action.critical?'kritisch · ':'')+actor!.name+' '+actor!.hp+'/'+actor!.maxHp+' HP'+(actor!.death?.dead?' · tot':actor!.death?' · Todesrettung '+actor!.death.successes+' Erfolge / '+actor!.death.failures+' Fehlschläge':'')+(openConcentration?' · Konzentration SG '+openConcentration.dc+' offen.':'.')):death?(action.kind==='damage'?'Schadensfolge: ':death.roll===null?'':('Todesrettungswurf '+death.roll+': '))+deathResultText(death.result)+'.':concentration?('Konzentration: '+(concentration.roll===null?'manuell':concentration.roll+(concentration.modifier>=0?' + ':' − ')+Math.abs(concentration.modifier)+' = '+concentration.total)+' gegen SG '+concentration.dc+' · '+(concentration.success?'bestanden.':'verloren.')):openConcentration?('Schaden gespeichert. Konzentrationswurf für '+concentrationActor!.name+' gegen SG '+openConcentration.dc+' offen.'):legendary?('Legendäre Aktion eingesetzt · '+legendary.remaining+' von '+legendary.maximum+' Punkten verbleiben.'):effectTicks.length?'Rundeneffekte: '+effectTicks.join(' · ')+'.':'Kampf gespeichert.')); return true;
-    } catch (error) { if (generation === gen) {
+    } catch (error) { if (editorSession.generation === gen) {
       const message=(error as Error).message;
       failed?.(message);
       tell(message + ' Aktualisiere den Kampfstand, bevor du weiterarbeitest.', true);
     } return false; }
-    finally { pending = null; if (generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
-  })();
-  lock(); return pending;
+    finally { pendingWork.clear(task); if (editorSession.generation === gen) { if (applied){render();if(revealConcentration)get('combat-concentration-effect').scrollIntoView({block:'nearest'});}else lock();if(candidatePending){candidatePending=false;void refreshPartyCandidates();} } }
+  });
+  pendingWork.value=task;
+  lock(); return pendingWork.value;
 }
 function preparationOwner(){
   if(!workspace||!scene)return null;
-  const token=workspace.token,id=scene.id,revision=scene.membershipRevision,preparation=preparationContext,gen=generation;
-  return {sceneId:id,revision,current:()=>workspace?.token===token&&scene?.id===id&&scene.membershipRevision===revision&&preparationContext===preparation&&generation===gen};
+  const token=workspace.token,id=scene.id,revision=scene.membershipRevision,preparation=preparationContext,gen=editorSession.generation;
+  return {sceneId:id,revision,current:()=>workspace?.token===token&&scene?.id===id&&scene.membershipRevision===revision&&preparationContext===preparation&&editorSession.generation===gen};
 }
 export async function prepareWorldGroup(group:PreparedGroup,worldActorIds?:string[],stillCurrent:()=>boolean=()=>true){
   const {id,title,revision}=group;
@@ -233,8 +237,8 @@ export async function addCatalogCreature(creatureId:string,count:number,grouped:
     window.requestAnimationFrame(()=>{if(owner.current())get('combat-panel').scrollIntoView({block:'start'});});
   }
 }
-export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pending)return await pending;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
-const blocked=()=>loadPending||!!loadError||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+export async function flushCombat(): Promise<boolean> { if(!await flushFinishDraft())return false; if(pendingWork.value)return await pendingWork.value;if(!workspace)return true;return await draftCache.flush(workspace.campaign.id)&&!hasPendingCommit(workspace.campaign.id); }
+const blocked=()=>loadPending||!!loadError||!!pendingWork.value||!!workspace&&hasPendingCommit(workspace.campaign.id);
 function stageAttack(action:CreatureAction,preset:CreatureRollPreset,attackerId:string,actor:string,creatureId:string,combatId:string,legendary?:PendingLegendary){
   if(attackPending||view?.combat?.id!==combatId)return;const next:PendingAttack={combatId,attackerId,creatureId,actionId:action.id,actor,preset,damages:creatureActionRolls(action).filter(p=>p.kind==='damage'),rolledDamage:[],targetId:null,check:null,...(legendary?{legendary}:{})},retained=retainPendingAttack(pendingAttack,next);if(retained===pendingAttack){renderAttackEffect();get('combat-attack-effect').scrollIntoView({block:'nearest'});tell(pendingAttack.check?'Offenen Angriff zuerst abschließen.':'Offenen Angriff zuerst würfeln oder verwerfen.',true);return;}pendingAttack=retained;renderAttackEffect();get('combat-attack-effect').scrollIntoView({block:'nearest'});
 }
@@ -316,7 +320,7 @@ function closeReinforcements(){
 async function submitReinforcement(send:(failed:(message:string)=>void)=>Promise<boolean>,confirmed=closeReinforcements){
  if(!workspace)return false;
  return reinforcementBooking.run({campaignId:workspace.campaign.id,
-  current:captureView(()=>[workspace?.token,scene?.id,generation],()=>get('combat-add-dialog').hasAttribute('open')),
+  current:editorSession.capture(()=>[workspace?.token,scene?.id,editorSession.generation],()=>get('combat-add-dialog').hasAttribute('open')),
   send,lock:()=>lock(),report:message=>{get('combat-add-status').textContent=message;},confirmed});
 }
 /** Preparation collects several confirmed species before moving on to initiative. */
@@ -370,15 +374,15 @@ function renderReinforcements(){
 }
 async function searchReinforcements(){
  const w=workspace,combat=view?.combat;if(!w||!scene||blocked()||reinforcementBusy)return;
- const g=generation,id=combat?.id,load=loadNumber,request=++reinforcementRequest;
+ const g=editorSession.generation,id=combat?.id,load=loadNumber,request=++reinforcementRequest;
  get<HTMLSelectElement>('combat-creature-source').value='catalog';reinforcementSourceChosen=true;
  reinforcementBusy=true;reinforcementResults=[];get('combat-creature-status').textContent='Monster werden gesucht…';renderReinforcements();lock();
  try{
   const result=unwrap(await window.campaign.creatures({text:value('combat-creature-search'),offset:0,limit:25,sort:'name',direction:'asc'}));
-  if(g!==generation||request!==reinforcementRequest||workspace?.token!==w.token||view?.combat?.id!==id||load!==loadNumber)return;
+  if(g!==editorSession.generation||request!==reinforcementRequest||workspace?.token!==w.token||view?.combat?.id!==id||load!==loadNumber)return;
   reinforcementResults=result.rows;get('combat-creature-status').textContent=result.total?Math.min(25,result.total)+' von '+result.total+' Treffern.':'Keine Treffer. Suche ändern oder einen vorhandenen Trupp wählen.';
- }catch(error){if(g===generation&&request===reinforcementRequest&&view?.combat?.id===id&&load===loadNumber)get('combat-creature-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;}
- finally{if(g===generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
+ }catch(error){if(g===editorSession.generation&&request===reinforcementRequest&&view?.combat?.id===id&&load===loadNumber)get('combat-creature-status').textContent='Suche fehlgeschlagen: '+(error as Error).message;}
+ finally{if(g===editorSession.generation&&request===reinforcementRequest){reinforcementBusy=false;if(load!==loadNumber)get('combat-creature-status').textContent='Kampfstand geändert. Bei Bedarf erneut suchen.';renderReinforcements();lock();}}
 }
 function lockConditionShortcuts(){
  const key=fighterKey(),draftOpen=!!key&&!!fighterDrafts.get(key);
@@ -387,12 +391,12 @@ function lockConditionShortcuts(){
 }
 function lock() {
   for (const control of get('combat-panel').querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!control.closest('.combat-resolution,#combat-selection'))control.disabled = blocked()||control.dataset.statblockDisabled==='true'||control.dataset.combatReadonly==='true';
-  get<HTMLButtonElement>('combat-add-close').disabled=!!pending||reinforcementBooking.busy;
+  get<HTMLButtonElement>('combat-add-close').disabled=!!pendingWork.value||reinforcementBooking.busy;
   get<HTMLButtonElement>('combat-preparation-initiative').disabled=blocked()||reinforcementBusy||view?.combat?.phase!=='preparing';
   selectionPanel?.lock();
   resolution?.setBlocked(!!blocked());
   get('combat-creation').hidden=loadPending||!!loadError;get('combat-status').hidden=loadPending||!!loadError;
-  const contextBlocked=!workspace||!scene||!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+  const contextBlocked=!workspace||!scene||!!pendingWork.value||!!workspace&&hasPendingCommit(workspace.campaign.id);
   get<HTMLButtonElement>('combat-refresh').disabled=contextBlocked;get<HTMLButtonElement>('combat-history-open').disabled=contextBlocked||loadPending;get<HTMLSelectElement>('combat-history').disabled=contextBlocked;
   const retry=get<HTMLButtonElement>('combat-load-retry');retry.hidden=!loadError;retry.disabled=contextBlocked||loadPending;
   const status=get('combat-load-status'),title=knownRecent.find(c=>c.id===requestedCombatId)?.title;status.hidden=!loadPending&&!loadError;status.setAttribute('role',loadError?'alert':'status');status.textContent=loadError?(title?'„'+title+'“':'Begegnung')+' konnte nicht geladen werden: '+loadError+' Erneut laden oder eine andere Begegnung wählen.':loadPending?(title?'„'+title+'“ wird geladen…':'Begegnung wird geladen…'):'';get('combat-panel').setAttribute('aria-busy',String(loadPending));
@@ -466,9 +470,9 @@ function render() {
   resolution?.context(workspace,scene,combat??null);
   get('combat-final-notes').hidden = !terminal; get('combat-final-notes').textContent = combat?.notes ?? '';
   const body = get('combat-rows'); body.replaceChildren();
-  const mobs=combat?combatMobs(combat):[],drawn=new Set<string>(),ownerToken=workspace?.token,ownerGeneration=generation;
+  const mobs=combat?combatMobs(combat):[],drawn=new Set<string>(),ownerToken=workspace?.token,ownerGeneration=editorSession.generation;
   const mobByMember=new Map(mobs.flatMap(mob=>mob.members.map(actor=>[actor.id,mob] as const)));
-  const current=()=>workspace?.token===ownerToken&&generation===ownerGeneration&&view?.combat?.id===combat?.id&&view?.combat?.revision===combat?.revision&&!blocked();
+  const current=()=>workspace?.token===ownerToken&&editorSession.generation===ownerGeneration&&view?.combat?.id===combat?.id&&view?.combat?.revision===combat?.revision&&!blocked();
   const openHealth=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;get<HTMLDetailsElement>('fighter-condition-panel').open=false;const target=get<HTMLInputElement>('fighter-amount');if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'nearest'});}})();};
   const openConditions=(id:string)=>{void(async()=>{if(!current())return;await chooseFighter(id);if(!current()||selected!==id)return;get<HTMLDetailsElement>('fighter-condition-panel').open=true;const target=get('fighter-condition-shortcuts');target.scrollIntoView({block:'nearest'});target.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus({preventScroll:true});})().catch(error=>tell((error as Error).message,true));};
   const order=combat?combatOrder(combat):[],turnIndex=combat?.phase==='running'?order.findIndex(p=>p.id===combat.turnId):-1;
@@ -490,8 +494,8 @@ function render() {
         const initiative=index===0,health=document.createElement('button');health.type='button';health.className='combat-value '+(initiative?'combat-initiative':'combat-health');health.dataset.combatReadonly=String(!editableCombat(combat!));health.textContent=text;
         health.setAttribute('aria-label',p.name+' · '+(initiative?'Initiative '+text+' bearbeiten':text+' HP · '+(p.healthKnown===false?'Werte eintragen':'Schaden oder Heilung')));
         health.onclick=()=>{if(initiative){void initiativePanel?.open(p.id);return;}void(async()=>{
-          const gen=generation,id=combat!.id;await chooseFighter(p.id);
-          if(generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
+          const gen=editorSession.generation,id=combat!.id;await chooseFighter(p.id);
+          if(editorSession.generation!==gen||view?.combat?.id!==id||selected!==p.id)return;
           get<HTMLDetailsElement>('fighter-condition-panel').open=false;const target=get<HTMLInputElement>(initiative?'fighter-initiative':p.healthKnown===false?'fighter-hp':'fighter-amount');
           if(initiative||p.healthKnown===false)get<HTMLDetailsElement>('fighter-values').open=true;
           if(!target.disabled){target.focus({preventScroll:true});target.select();target.scrollIntoView({block:'nearest'});}
@@ -552,13 +556,13 @@ function renderEditor() {
 function draftRevision(d:CombatWorkingDraft|undefined){if(!d||!view?.combat)return undefined;const c=view.combat,basis=d.kind==='fighter'?c.participants.find(p=>p.id===d.targetId):{title:c.title,notes:c.notes},matches=d.kind==='fighter'&&basis?fighterDraftBasisMatches(d.basis,basis as Combatant):JSON.stringify(basis)===JSON.stringify(d.basis);return matches?c.revision:d.revision;}
 async function recoveredCombat(event:CommitResolution){
   if(event.ref.family!=='combat'||workspace?.campaign.id!==event.ref.campaignId)return;
-  const token=workspace.token,gen=generation,result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;areaTargetIds?:string[];resetConcentration?:boolean}|undefined;
+  const token=workspace.token,gen=editorSession.generation,result=event.value as CombatView,meta=event.meta as {token?:string;editKey?:string;editDraft?:FighterDraft;editorDraft?:CombatWorkingDraft;areaTargetIds?:string[];resetConcentration?:boolean}|undefined;
   if(meta?.token===workspace.token&&meta.editorDraft){draftCache.consumed(workspace.campaign.id,meta.editorDraft);if(meta.editorDraft.kind==='initiative')initiativePanel?.accepted(meta.editorDraft);}
   if(meta?.token===token&&meta.resetConcentration&&view?.combat?.id===result.combat?.id)delete get('combat-concentration-modifier').dataset.checkKey;
   const loaded=result.combat&&scene&&result.combat.sceneId===scene.id&&(!view?.combat||view.combat.id===result.combat.id)?await load(result.combat.id):false;
   await refreshProgress();if(afterSaved)await afterSaved();
   const current=view?.combat,targetIds=meta?.token===token?meta.areaTargetIds:undefined;
-  if(loaded&&current&&generation===gen&&workspace?.token===token&&current.id===result.combat?.id&&(targetIds||meta?.token!==token)){
+  if(loaded&&current&&editorSession.generation===gen&&workspace?.token===token&&current.id===result.combat?.id&&(targetIds||meta?.token!==token)){
     // Reopen current canonical members, never restore the receipt's historical HP.
     // After restart only the receipt reference survives, so review all groups.
     revealResultMembers(current,targetIds);
@@ -575,23 +579,23 @@ export function initCombat(status: typeof tell,refresh?:()=>Promise<void>) {
   get('combat-creation').addEventListener('toggle',()=>{if(get<HTMLDetailsElement>('combat-creation').open)void selectionPanel?.read();});
   const groupButton=document.createElement('button');groupButton.type='button';groupButton.id='combat-group-open';groupButton.textContent='Vorbereitete Monstergruppe hinzufügen…';groupButton.onclick=()=>{closeReinforcements();void reinforceWorldGroup().catch(e=>tell(e.message,true));};const moreSources=document.createElement('details'),moreSummary=document.createElement('summary');moreSummary.textContent='Vorbereitete Szenengruppen';moreSources.append(moreSummary,groupButton,sceneGroupTray(()=>{const owner=preparationOwner();return owner&&workspace?{token:workspace.token,sceneId:owner.sceneId,current:owner.current}:null;},async(...args)=>{closeReinforcements();await reinforceWorldGroup(...args);},status));get('combat-add-dialog').append(moreSources);
   const panel=get('combat-panel');panel.addEventListener('dragover',e=>{if(e.dataTransfer?.types.includes(sceneGroupDragType)&&editableCombat(view?.combat??null)&&!blocked()){e.preventDefault();e.dataTransfer.dropEffect='copy';}});panel.addEventListener('drop',e=>{const raw=e.dataTransfer?.getData(sceneGroupDragType);if(!raw||!workspace||!scene||blocked()||!editableCombat(view?.combat??null))return;e.preventDefault();try{const data=JSON.parse(raw);if(data.sceneId!==scene.id||typeof data.groupId!=='string'||!Number.isSafeInteger(data.revision))throw new Error('Gruppe gehört zu einer anderen Szene.');void reinforceWorldGroup(data.groupId,data.revision).catch(error=>tell(error.message,true));}catch(error){tell((error as Error).message,true);}});
-initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftCache,(action,revision)=>execute(action,revision),status);get('combat-initiative-open').onclick=()=>void initiativePanel?.open();hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution,(losses,revision,current)=>execute({kind:'confirm-npc-losses',losses},revision,current),async(id,current)=>{if(openNpcProfile)await openNpcProfile(id,current);});onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
+initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftCache,(action,revision)=>execute(action,revision),status);get('combat-initiative-open').onclick=()=>void initiativePanel?.open();hitPanel=new CombatHitPanel(get('combat-hit-effect'),(action,revision)=>execute(action,revision),async(opening,preset,formula,critical)=>{let result:SceneCheck|null=null;const actor=view?.combat?.participants.find(p=>p.id===opening.attackerId),id=view?.combat?.id,gen=editorSession.generation;if(!actor||!id)return null;await rollSceneFormula({label:preset.label+(critical?' · Kritisch':''),actor:actor.name,formula,formulaKind:'damage',dc:null,sourceCreatureId:actor.sourceId!,sourceActionId:opening.action.id},check=>{if(editorSession.generation===gen&&view?.combat?.id===id)result=check;});return result;});areaPanel=new CombatAreaPanel(get('combat-area-effect'),(action,revision)=>execute(action,revision));get('combat-area-open').onclick=()=>areaPanel?.open();resolution=new CombatResolutionPanel(get('combat-resolution'),openTreasureDistribution,closeStaleTreasureDistribution,(losses,revision,current)=>execute({kind:'confirm-npc-losses',losses},revision,current),async(id,current)=>{if(openNpcProfile)await openNpcProfile(id,current);});onProgressChanged(()=>{void resolution?.refresh();});onProgressChanged(refreshPartyCandidates);onCommitState(lock);onCommitResolved(recoveredCombat);
   for(const id of [...fighterFields,'fighter-group-name','fighter-concentration','fighter-counted'])get(id).addEventListener('input',keepFighterDraft);
-  get('fighter-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat||!selected)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,target=selected,g=generation;await draftCache.discard(token,cam,id,'fighter',target);if(g===generation){await chooseFighter(target);await listDrafts();}})().catch(error=>tell(error.message,true));};
+  get('fighter-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat||!selected)return;const token=workspace.token,cam=workspace.campaign.id,id=view.combat.id,target=selected,g=editorSession.generation;await draftCache.discard(token,cam,id,'fighter',target);if(g===editorSession.generation){await chooseFighter(target);await listDrafts();}})().catch(error=>tell(error.message,true));};
   for(const id of ['combat-edit-title','combat-notes'])get(id).addEventListener('input',keepNotesDraft);
-  get('combat-notes-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat)return;const id=view.combat.id,g=generation;await draftCache.discard(workspace.token,workspace.campaign.id,id,'notes',id);if(g===generation){await loadNotes();await listDrafts();}})().catch(error=>tell(error.message,true));};
+  get('combat-notes-reload').onclick=()=>{void(async()=>{if(!workspace||!view?.combat)return;const id=view.combat.id,g=editorSession.generation;await draftCache.discard(workspace.token,workspace.campaign.id,id,'notes',id);if(g===editorSession.generation){await loadNotes();await listDrafts();}})().catch(error=>tell(error.message,true));};
   get('combat-draft-more').onclick=()=>{void listDrafts(true);};get('combat-draft-refresh').onclick=()=>{void listDrafts();};
-  get('combat-draft-retry').onclick=()=>{void(async()=>{if(!workspace)return;const g=generation;if(await draftCache.retry(workspace.token,workspace.campaign.id)&&g===generation){tell('Entwürfe gesichert; noch nicht übernommen.');await listDrafts();}})();};
+  get('combat-draft-retry').onclick=()=>{void(async()=>{if(!workspace)return;const g=editorSession.generation;if(await draftCache.retry(workspace.token,workspace.campaign.id)&&g===editorSession.generation){tell('Entwürfe gesichert; noch nicht übernommen.');await listDrafts();}})();};
   get('combat-party-form').onsubmit=event=>{event.preventDefault();const p=view?.partyCandidates?.find(p=>p.characterId===value('combat-party-select'));if(p)void execute({kind:'add-party',characterId:p.characterId,expectedMembershipRevision:p.membershipRevision,expectedProgressRevision:p.progressRevision,...(value('combat-party-initiative').trim()?{initiative:Number(value('combat-party-initiative'))}:{})});};
   get('combat-party-select').onchange=()=>{get<HTMLInputElement>('combat-party-initiative').value='';};
   get('combat-resume').onclick=()=>get('combat-panel').scrollIntoView({block:'start'});
   get('combat-scene').onclick=()=>get('running-editor').scrollIntoView({block:'start'});
-  get('combat-refresh').onclick = get('combat-load-retry').onclick = () => { if (!pending) void load(requestedCombatId??view?.combat?.id); };
-  get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pending||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&generation===gen,select:async item=>{await load(item.id);}});})();
+  get('combat-refresh').onclick = get('combat-load-retry').onclick = () => { if (!pendingWork.value) void load(requestedCombatId??view?.combat?.id); };
+  get('combat-history-open').onclick=()=>void(async()=>{if(!workspace||!scene||pendingWork.value||loadPending||hasPendingCommit(workspace.campaign.id))return;const token=workspace.token,campaignId=workspace.campaign.id,sceneId=scene.id,gen=editorSession.generation;if(!await flushCombat()||workspace?.token!==token||scene?.id!==sceneId||editorSession.generation!==gen)return;openMaskHistory({token,campaignId,sceneId,kind:'combat',current:()=>workspace?.token===token&&scene?.id===sceneId&&editorSession.generation===gen,select:async item=>{await load(item.id);}});})();
   get<HTMLSelectElement>('combat-history').onchange = () => void load(value('combat-history'));
   get('combat-preparation-initiative').onclick=()=>{if(blocked()||reinforcementBusy||view?.combat?.phase!=='preparing')return;closeReinforcements();void initiativePanel?.open();};
-  get('combat-add-open').onclick=()=>openReinforcements();get('combat-add-close').onclick=()=>{if(!pending)closeReinforcements();};
-  get('combat-add-dialog').addEventListener('cancel',event=>{event.preventDefault();if(!pending)closeReinforcements();});
+  get('combat-add-open').onclick=()=>openReinforcements();get('combat-add-close').onclick=()=>{if(!pendingWork.value)closeReinforcements();};
+  get('combat-add-dialog').addEventListener('cancel',event=>{event.preventDefault();if(!pendingWork.value)closeReinforcements();});
   get('combat-creature-source').onchange=()=>{reinforcementSourceChosen=true;get<HTMLInputElement>('combat-creature-initiative').value='';renderReinforcements();lock();};
   get('combat-creature-search-form').onsubmit=event=>{event.preventDefault();void searchReinforcements();};
   get('combat-creature-count').oninput=lock;
@@ -643,7 +647,7 @@ initiativePanel=new CombatInitiativePanel(get('combat-initiative-dialog'),draftC
   get('fighter-remove').onclick = () => { if (selected) void execute({ kind: 'remove', participantId: selected }); };
   get('fighter-visibility').onclick=()=>{const p=view?.combat?.participants.find(actor=>actor.id===selected);if(p&&!p.characterId)void execute({kind:'visibility',participantId:p.id,hidden:!p.hiddenFromPlayers});};
   get('combat-notes-form').onsubmit = event => { event.preventDefault(); void execute({ kind: 'notes', title: value('combat-edit-title'), notes: value('combat-notes') },draftRevision(notesDraft())); };
-  get('combat-finish').onclick = () => { void (async () => { try { const gen = generation; if(!workspace||!view?.combat)return;if(!await prepareFinish(view.combat.participants.map(p=>p.characterId).filter((id):id is string=>!!id),view.assessment,{workspace,owner:{kind:'combat',targetId:view.combat.id,revision:view.combat.revision}}))return; if (gen !== generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
+  get('combat-finish').onclick = () => { void (async () => { try { const gen = editorSession.generation; if(!workspace||!view?.combat)return;if(!await prepareFinish(view.combat.participants.map(p=>p.characterId).filter((id):id is string=>!!id),view.assessment,{workspace,owner:{kind:'combat',targetId:view.combat.id,revision:view.combat.revision}}))return; if (gen !== editorSession.generation) return; get<HTMLDialogElement>('combat-finish-dialog').showModal(); get('combat-outcome').focus(); } catch (error) { tell((error as Error).message, true); } })(); };
   get('combat-finish-cancel').onclick = () => get<HTMLDialogElement>('combat-finish-dialog').close();
   get('combat-finish-form').onsubmit = event => { event.preventDefault(); void (async () => { try{const draft=await finishDraftCommit();if (await execute({ kind: 'finish', outcome: value('combat-outcome'), rewards: finishRewards(),finishDraftWriteId:draft.writeId },draft.revision)) {if(draft.consume())get<HTMLDialogElement>('combat-finish-dialog').close(); await refreshProgress(); }}catch(e){tell((e as Error).message,true);} })(); };
 }

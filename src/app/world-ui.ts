@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {syncDungeonLiveContext} from './dungeon-ui';
 import {atlasWorldWrite,settleAtlasWorldWrite} from './campaign-atlas-author';
 import {hexAccessLabel} from './hex-access';
@@ -17,6 +18,12 @@ import type {Preparation} from './preparation-contracts';
 import type {LiveView} from './live-contracts';
 import type {WorldView,SceneWorld,AtlasMap,AtlasCell,Hex,WorldAction,WorldCommand,WorldAck,WorldReconciliation,TravelRequest,TravelPreview,CalendarEvent,FantasyCalendar,WeatherPhenomenon,Weather,Climate,Terrain,MarkerPresentation} from './world-contracts';
 import {hexKey,hexPoint,pointHex,hexDistance,cellAt,authoredCellAt,terrainNames,terrainColors,terrainFactor,climateNames,weatherEffects} from './world-model';
+export const editorSession = new EditorSession();
+const uncertainState = editorSession.command<{ command: WorldCommand; versions: typeof edits; weatherIntent?:WeatherIntent }>();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+const checkingWorldWriteWork = editorSession.operation<Promise<WorldReconciliation|null>>();
+const markerSavingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>el<HTMLInputElement>(id).value;
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 const svg=(tag:string)=>document.createElementNS('http://www.w3.org/2000/svg',tag);
@@ -27,7 +34,7 @@ let partyDrag:ReturnType<typeof installHexPartyDrag>|null=null;
 function suspendMapPointer(){partyDrag?.cancel('Platzierung abgebrochen · Standort unverändert.');mapGestures?.suspend();worldCanvas?.cancel();}
 let mapGestures:ReturnType<typeof installHexMapGestures>|null=null;
 let workspace:WorkspaceGeometry|null=null,world:WorldView|null=null,sources:Preparation|null=null,live:LiveView|null=null,frame:SceneWorld|null=null,mapDraft:AtlasMap|null=null,selected:Hex={q:0,r:0},center:Hex={q:0,r:0},level=0,viewZoom=1;
-let dirtyMap=false,dirtyCell=false,dirtyCalendar=false,dirtyPhenomenon=false,pending:Promise<boolean>|null=null,preview:TravelPreview|null=null,phenomenonDraft:WeatherPhenomenon|null=null;
+let dirtyMap=false, dirtyCell=false, dirtyCalendar=false, dirtyPhenomenon=false, preview:TravelPreview|null=null, phenomenonDraft:WeatherPhenomenon|null=null;
 let tell:(text:string,error?:boolean)=>void,before:()=>Promise<boolean>,after:()=>Promise<void>,enter:()=>Promise<void>,camp:(sceneId:string,kind:'wait'|'rest')=>Promise<void>;
 let routeMode:'edit'|'target'|'route'='edit',routeCursor:Hex={q:0,r:0},routeStops:Hex[]=[];
 let liveTravelOpen=false,liveSurface=false,liveFocusId:string|null=null,liveBoundSceneId:string|null=null;
@@ -38,7 +45,7 @@ function journeyBasisChanged(){const j=frame?.journey;return !!j&&!!frame&&(fram
 function showsJourneyMap(){const j=frame?.journey;return !!j&&mapDraft?.id===j.mapId&&value('world-map-select')===j.mapId;}
 function playbackFrame(){
  const j=frame?.journey;
- if(!workspace||!j||j.status!=='active'||!showsJourneyMap()||frame?.scene.id!==value('world-scene')||document.visibilityState==='hidden'||(worldSurface!=='world'&&worldSurface!=='atlas'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pending||uncertain||checkingWorldWrite||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
+ if(!workspace||!j||j.status!=='active'||!showsJourneyMap()||frame?.scene.id!==value('world-scene')||document.visibilityState==='hidden'||(worldSurface!=='world'&&worldSurface!=='atlas'&&!(liveSurface&&liveTravelOpen))||document.querySelector('dialog[open]')||journeyBasisChanged()||weatherDirty||weatherBusy||pendingWork.value||uncertainState.value||checkingWorldWriteWork.value||worldWrites.size||dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon)return null;
  return{key:workspace.token+':'+j.sceneId+':'+j.mapId+':'+j.id,revision:j.revision,nextIndex:j.nextIndex,seconds:j.segmentSeconds[j.nextIndex-1]!};
 }
 function renderPlayback(){
@@ -60,7 +67,7 @@ function renderTravelHistory(){
  el('travel-history-summary').textContent=(history?.undo?'Letzter Schritt: '+history.undo.label:history?.redo?'Wiederholen: '+history.redo.label:'')+(history?.undo?.retainedShared||history?.redo?.retainedShared?' · Später bestätigte gemeinsame Weltfakten bleiben erhalten.':'');
  for(const direction of ['undo','redo'] as const){
   const item=history?.[direction],control=el<HTMLButtonElement>('travel-'+direction);
-  control.hidden=!item;control.disabled=transportBusy||playback.busy||!!pending||!!uncertain||!!checkingWorldWrite||worldWrites.size>0||!item||item.journeyId!==j?.id||journeyBasisChanged();
+  control.hidden=!item;control.disabled=transportBusy||playback.busy||!!pendingWork.value||!!uncertainState.value||!!checkingWorldWriteWork.value||worldWrites.size>0||!item||item.journeyId!==j?.id||journeyBasisChanged();
   control.textContent=direction==='undo'?'Letzten Reiseschritt zurücknehmen':'Reiseschritt wiederholen';
   control.title=item?.label??'';
  }
@@ -153,7 +160,7 @@ function resetCalendarRules(){
  if(calendarRules)for(const field of calendarRules.querySelectorAll<HTMLInputElement>('input,textarea,button'))field.disabled=false;
 }
 function closeCalendarRules(discard=false){
- if(calendarRulesBusy||pending||uncertain||checkingWorldWrite||worldWrites.size){
+ if(calendarRulesBusy||pendingWork.value||uncertainState.value||checkingWorldWriteWork.value||worldWrites.size){
   calendarStatus('Speicherauftrag zuerst abschließen oder prüfen.');return false;
  }
  if(dirtyCalendar&&!discard){calendarStatus('Kalenderangaben zuerst speichern oder ausdrücklich verwerfen.');return false;}
@@ -206,10 +213,9 @@ async function calendarRulesWork(reconcile:boolean){
  }catch(error){if(current())calendarStatus((error as Error).message+' Eingaben bleiben offen.');}
  finally{if(current()){calendarRulesBusy=false;for(const field of calendarRules!.querySelectorAll<HTMLInputElement>('input,textarea,button'))field.disabled=false;showUncertainWorldWrite();}}
 }
-let uncertain: { command: WorldCommand; versions: typeof edits; weatherIntent?:WeatherIntent } | null = null;
-let checkingWorldWrite: Promise<WorldReconciliation|null> | null = null;
+
 let worldWrites = new Set<Promise<void>>();
-function showUncertainWorldWrite() { el('world-write-recovery').hidden = !uncertain; const check=document.getElementById('calendar-write-check');if(check)check.hidden=!uncertain; }
+function showUncertainWorldWrite() { el('world-write-recovery').hidden = !uncertainState.value; const check=document.getElementById('calendar-write-check');if(check)check.hidden=!uncertainState.value; }
 function adoptConfirmedWorldWrite(command: WorldCommand, ack: WorldAck, versions: typeof edits,weatherIntent?:WeatherIntent) {
   if(command.action.kind==='weather-override'){if(!weatherIntent)throw new Error('Wettereingabe zum Auftrag fehlt.');acceptOwnWeather(weatherIntent,ack.scene);return;}
   world = ack.world;
@@ -224,28 +230,28 @@ function adoptConfirmedWorldWrite(command: WorldCommand, ack: WorldAck, versions
   }
 }
 async function resolveWorldWrite(): Promise<WorldReconciliation|null> {
-  if (checkingWorldWrite) return checkingWorldWrite;
-  if (!uncertain || !workspace) return null;
-  const captured = uncertain, token = workspace.token;
+  if (checkingWorldWriteWork.value) return checkingWorldWriteWork.value;
+  if (!uncertainState.value || !workspace) return null;
+  const captured = uncertainState.value, token = workspace.token;
   const operation = Promise.resolve().then(async () => {
     try {
       const result = unwrap(await window.campaign.reconcileWorld(captured.command, token));
-      if (workspace?.token !== token || uncertain !== captured) return null;
+      if (workspace?.token !== token || uncertainState.value !== captured) return null;
       if (result.outcome === 'applied') adoptConfirmedWorldWrite(captured.command, result.ack, captured.versions,captured.weatherIntent);
       settleAtlasWorldWrite(captured.command);
-      uncertain = null; showUncertainWorldWrite();
+      uncertainState.value = null; showUncertainWorldWrite();
       tell(result.outcome === 'applied' ? 'Weltänderung bestätigt. Spätere Eingaben bleiben offen.' : 'Weltänderung wurde nicht übernommen. Eingabe bleibt offen.');
       return result;
     } catch (error) {
       if (workspace?.token === token) tell((error as Error).message + ' Weltänderung bleibt unklar.', true);
       return null;
-    } finally { if (checkingWorldWrite === operation) checkingWorldWrite = null; }
+    }
   });
-  checkingWorldWrite = operation;
+  checkingWorldWriteWork.value = operation;
   return operation;
 }
-export async function reconcileWorldWrite():Promise<boolean>{return !uncertain&&!checkingWorldWrite||!!await resolveWorldWrite();}
-export function agendaWritePending(eventId:string,token:string){return workspace?.token===token&&uncertain?.command.action.kind==='calendar-event'&&uncertain.command.action.event.id===eventId;}
+export async function reconcileWorldWrite():Promise<boolean>{return !uncertainState.value&&!checkingWorldWriteWork.value||!!await resolveWorldWrite();}
+export function agendaWritePending(eventId:string,token:string){return workspace?.token===token&&uncertainState.value?.command.action.kind==='calendar-event'&&uncertainState.value.command.action.event.id===eventId;}
 export async function recoverAgendaEvent(eventId:string,token:string){
  if(!agendaWritePending(eventId,token))throw new Error('Kein ungeklärter Speicherauftrag für dieses Ereignis.');
  const result=await resolveWorldWrite();if(!result||workspace?.token!==token)throw new Error('Speicherauftrag bleibt ungeklärt.');
@@ -254,7 +260,7 @@ export async function recoverAgendaEvent(eventId:string,token:string){
 
 async function raw(action: WorldAction, stillCurrent:()=>boolean=()=>true,weatherIntent?:WeatherIntent) {
   if (!workspace) throw new Error('Öffne eine Kampagne.');
-  if (uncertain) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
+  if (uncertainState.value) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
   const owner = workspace, captured = structuredClone(action), versions = { ...edits };
   const command: WorldCommand = { commandId: crypto.randomUUID(), campaignId: owner.campaign.id, token: owner.token, action: captured };
   const queue = worldWrites;
@@ -267,11 +273,11 @@ async function raw(action: WorldAction, stillCurrent:()=>boolean=()=>true,weathe
   if (!(await before())) throw new Error('Offene Live-Eingabe zuerst abschließen.');
   if (workspace?.token !== owner.token) throw new Error('Kampagne wurde gewechselt.');
   if(!stillCurrent())throw new Error('Zielauswahl wurde gewechselt.');
-  if (uncertain) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
+  if (uncertainState.value) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
   let result: Result<WorldAck>;
   try { result = await atlasWorldWrite(command); }
   catch (error) {
-    if (workspace?.token === owner.token) { uncertain = { command, versions,weatherIntent }; showUncertainWorldWrite(); }
+    if (workspace?.token === owner.token) { uncertainState.value = { command, versions,weatherIntent }; showUncertainWorldWrite(); }
     throw error;
   }
   const ack = unwrap(result);
@@ -288,8 +294,8 @@ function collectCell(){if(!mapDraft)return;const access=value('hex-access'),requ
 let edits = { map: 0, calendar: 0, phenomenon: 0, marker:0 };
 export async function flushWorld(): Promise<boolean> {
   mapGestures?.finish();
-  if (pending) return pending;
-  if (uncertain) { tell('Weltänderung ist unklar. Auftrag prüfen erhält die offenen Eingaben.', true); return false; }
+  if (pendingWork.value) return pendingWork.value;
+  if (uncertainState.value) { tell('Weltänderung ist unklar. Auftrag prüfen erhält die offenen Eingaben.', true); return false; }
   const token = workspace?.token;
   // Only preceding actions are awaited; this flush must not wait on its own raw writes.
   const preceding = [...worldWrites];
@@ -297,7 +303,7 @@ export async function flushWorld(): Promise<boolean> {
     try {
       await Promise.all(preceding);
       if(!await flushMarker())return false;
-      if (uncertain) { if (workspace?.token === token) tell('Weltänderung ist unklar. Auftrag prüfen erhält die offenen Eingaben.', true); return false; }
+      if (uncertainState.value) { if (workspace?.token === token) tell('Weltänderung ist unklar. Auftrag prüfen erhält die offenen Eingaben.', true); return false; }
       do {
         if (workspace?.token !== token) return false;
         if (dirtyCell) collectCell();
@@ -340,11 +346,9 @@ export async function flushWorld(): Promise<boolean> {
     } catch (error) {
       if (workspace?.token === token) {tell((error as Error).message + ' Eingaben bleiben offen.', true);if(calendarRules?.open)calendarStatus((error as Error).message+' Eingaben bleiben offen.');}
       return false;
-    } finally {
-      if (pending === operation) pending = null;
     }
   });
-  pending = operation;
+  pendingWork.value = operation;
   return operation;
 }
 type TravelOwner={token:string;sceneId:string;mapId:string};
@@ -507,7 +511,8 @@ async function selectWorldMap(){
   renderMapFields();renderMap(true);renderCell();renderPhenomenonOptions();renderJourney();renderRouteDraft();
  }finally{if(current()){picker.value=mapDraft?.id??'';picker.setAttribute('aria-busy','false');}}
 }
-export function activateWorld(w:WorkspaceGeometry){resetCalendarRules();partyDrag?.cancel();worldRead++;travelOpenRequest++;travelSurface?.close();mapSelection++;el('world-map-select').setAttribute('aria-busy','false');playback.stop();playbackJourneyId=null;playback.setSpeed(1);mapGestures?.reset();weatherContext=null;weatherGeneration++;workspace=w;liveTravelOpen=false;liveFocusId=null;liveBoundSceneId=null;setWorldSurface(liveSurface?'live':'world');routeMode='edit';resetRouteDraft();clearTravelPreview();sceneRequest++;pending=null;uncertain=null;checkingWorldWrite=null;worldWrites=new Set();showUncertainWorldWrite();edits={map:0,calendar:0,phenomenon:0,marker:0};markerDraft=null;markerSaving=null;markerSelection++;liveWorld=null;liveRequest++;agendaPending('Keine Gruppe geladen.',false);world=null;sources=null;live=null;frame=null;mapDraft=null;phenomenonDraft=null;dirtyMap=dirtyCell=dirtyCalendar=dirtyPhenomenon=false;preview=null;level=0;viewZoom=1;selected={q:0,r:0};center={q:0,r:0};}
+export function activateWorld(w:WorkspaceGeometry){
+ editorSession.generation++;resetCalendarRules();partyDrag?.cancel();worldRead++;travelOpenRequest++;travelSurface?.close();mapSelection++;el('world-map-select').setAttribute('aria-busy','false');playback.stop();playbackJourneyId=null;playback.setSpeed(1);mapGestures?.reset();weatherContext=null;weatherGeneration++;workspace=w;liveTravelOpen=false;liveFocusId=null;liveBoundSceneId=null;setWorldSurface(liveSurface?'live':'world');routeMode='edit';resetRouteDraft();clearTravelPreview();sceneRequest++;pendingWork.value=null;uncertainState.value=null;checkingWorldWriteWork.value=null;worldWrites=new Set();showUncertainWorldWrite();edits={map:0,calendar:0,phenomenon:0,marker:0};markerDraft=null;markerSavingWork.value=null;markerSelection++;liveWorld=null;liveRequest++;agendaPending('Keine Gruppe geladen.',false);world=null;sources=null;live=null;frame=null;mapDraft=null;phenomenonDraft=null;dirtyMap=dirtyCell=dirtyCalendar=dirtyPhenomenon=false;preview=null;level=0;viewZoom=1;selected={q:0,r:0};center={q:0,r:0};}
 export async function openWorld(){if(!workspace)return;const request=++worldRead,focus=liveSurface&&liveTravelOpen?liveFocusId:null,token=workspace.token,[w,p,l]=await Promise.all([window.campaign.world(token),window.campaign.preparation(token,''),window.campaign.live(token)]);if(workspace?.token!==token||request!==worldRead||focus!==null&&(!liveSurface||!liveTravelOpen||focus!==liveFocusId))return;world=unwrap(w);sources=unwrap(p);live=unwrap(l);const maps=el<HTMLSelectElement>('world-map-select'),old=mapDraft?.id??maps.value;maps.replaceChildren();for(const m of world.maps)option(maps,m.id,m.name);maps.value=world.maps.some(m=>m.id===old)?old:world.maps[0]?.id??'';if(maps.value!==old)resetRouteDraft();mapDraft=world.maps.find(m=>m.id===maps.value)?structuredClone(world.maps.find(m=>m.id===maps.value)!):null;const scenes=el<HTMLSelectElement>('world-scene'),prior=scenes.value;scenes.replaceChildren();for(const s of live.scenes)option(scenes,s.id,s.title||'Gruppe '+s.id.slice(0,6));if(focus!==null&&!live.scenes.some(s=>s.id===focus))throw new Error('Die angefragte Fokusgruppe ist nicht mehr verfügbar.');scenes.value=focus??(live.scenes.some(s=>s.id===prior)?prior:live.focusId??'');if(scenes.value!==prior)resetRouteDraft();renderLocationOptions();loadMarkerEditor();const loaded=await reloadScene();if(workspace?.token!==token||request!==worldRead||focus!==null&&(!liveSurface||!liveTravelOpen||focus!==liveFocusId))return;renderMapFields();renderCalendar();renderPhenomenonOptions();renderMap();renderCell();renderJourney();return loaded;}
 async function reloadScene(){
  const token=workspace?.token,id=value('world-scene'),request=++sceneRequest;
@@ -524,7 +529,7 @@ async function reloadScene(){
 
 function renderMapFields(){const picker=el<HTMLSelectElement>('world-map-select');if(mapDraft){const opt=[...picker.options].find(o=>o.value===mapDraft!.id);if(opt)opt.textContent=mapDraft.name;}el('world-map-workspace').hidden=!mapDraft;if(!mapDraft)return;el<HTMLInputElement>('world-map-name').value=mapDraft.name;el<HTMLInputElement>('world-hex-size').value=String(mapDraft.hexMeters/1000);el<HTMLSelectElement>('world-climate').value=mapDraft.climate;el<HTMLInputElement>('world-seed').value=mapDraft.seed;}
 type MarkerDraft={id:string;revision:number;presentation:MarkerPresentation;dirty:boolean};
-let markerDraft:MarkerDraft|null=null,markerSaving:Promise<boolean>|null=null,markerSelection=0;
+let markerDraft:MarkerDraft|null=null, markerSelection=0;
 function renderLocationOptions(){
  const picker=el<HTMLSelectElement>('world-anchor-location'),old=picker.value,query=value('world-anchor-search').trim().toLocaleLowerCase();
  picker.replaceChildren();option(picker,'','Ort auswählen');
@@ -543,9 +548,9 @@ function loadMarkerEditor(){
 }
 function collectMarker(){if(!markerDraft||el<HTMLFieldSetElement>('world-marker-fields').disabled||value('world-anchor-location')!==markerDraft.id)return;const next:MarkerPresentation={title:value('world-marker-title'),symbol:value('world-marker-symbol'),size:number('world-marker-size'),labelPosition:value('world-marker-label-position') as MarkerPresentation['labelPosition'],curve:number('world-marker-curve')};if(JSON.stringify(next)===JSON.stringify(markerDraft.presentation))return;markerDraft.presentation=next;markerDraft.dirty=true;edits.marker++;renderMap();}
 async function flushMarker():Promise<boolean>{
- if(markerSaving)return markerSaving;
+ if(markerSavingWork.value)return markerSavingWork.value;
  if(!markerDraft?.dirty)return true;
- if(uncertain)return false;
+ if(uncertainState.value)return false;
  const token=workspace?.token,draft=markerDraft;
  const operation=Promise.resolve().then(async()=>{try{
   await Promise.all([...worldWrites]);
@@ -559,11 +564,11 @@ async function flushMarker():Promise<boolean>{
  }catch(error){
   if(workspace?.token===token&&markerDraft===draft){
    let restored=false;
-   if(token&&!uncertain){try{const confirmed=unwrap(await window.campaign.world(token));if(workspace?.token===token&&markerDraft===draft){world=confirmed;loadMarkerEditor();renderMap();restored=true;}}catch{}}
-   if(workspace?.token===token)tell((error as Error).message+(uncertain?' Auftrag prüfen, bevor der Marker weiter geändert wird.':restored?' Bestätigte Darstellung wiederhergestellt; Änderung erneut prüfen.':' Bestätigter Stand konnte nicht gelesen werden. Eingabe bleibt offen.'),true);
+   if(token&&!uncertainState.value){try{const confirmed=unwrap(await window.campaign.world(token));if(workspace?.token===token&&markerDraft===draft){world=confirmed;loadMarkerEditor();renderMap();restored=true;}}catch{}}
+   if(workspace?.token===token)tell((error as Error).message+(uncertainState.value?' Auftrag prüfen, bevor der Marker weiter geändert wird.':restored?' Bestätigte Darstellung wiederhergestellt; Änderung erneut prüfen.':' Bestätigter Stand konnte nicht gelesen werden. Eingabe bleibt offen.'),true);
   }return false;
- }finally{if(markerSaving===operation)markerSaving=null;}});
- markerSaving=operation;return operation;
+ }});
+ markerSavingWork.value=operation;return operation;
 }
 function renderCell(){if(!mapDraft)return;const c=cellAt(mapDraft,selected,level);el('hex-authored-status').textContent=authoredCellAt(mapDraft,selected,level)?'Gestaltetes Gelände':'Noch ungezeichnet · Reisen rechnen hier mit Ebene.';el('hex-selected').textContent='Hex '+hexKey(selected)+' · Maßstab '+(mapDraft.hexMeters*3**level/1000).toFixed(2)+' km';for(const [id,v]of Object.entries({'hex-terrain':c.terrain,'hex-elevation':String(c.elevationM),'hex-climate':c.climate??'','hex-label':c.label,'hex-faction':c.faction,'hex-interrupt':c.interrupt,'hex-access':c.access?.mode??'open','hex-access-requirement':c.access?.requirement??''}))el<HTMLInputElement>(id).value=v;el<HTMLInputElement>('hex-road').checked=c.road;el<HTMLInputElement>('hex-river').checked=c.river;if(routeStops.length||routeMode!=='edit')return;const base=hexPoint(selected,3**level),target=pointHex(base.x,base.y);el<HTMLInputElement>('travel-q').value=String(target.q);el<HTMLInputElement>('travel-r').value=String(target.r);const place=world?.places.find(p=>p.mapId===mapDraft!.id&&!p.trashed&&hexKey(p)===hexKey(target));el<HTMLSelectElement>('world-destination').value=place?.locationId??'';}
 function hexCameraBox():CanvasBox{const p=hexPoint(center);return{x:(p.x-7.8/viewZoom)*100,y:(p.y-6.8/viewZoom)*100,width:1560/viewZoom,height:1360/viewZoom};}
@@ -665,13 +670,13 @@ export function initWorld(status:typeof tell,flushLive:typeof before,reloadLive:
  // Settle only the adopter's local draft before the shared surface changes CTM.
  canvas.addEventListener('wheel',e=>{if(e.deltaY)suspendMapPointer();},{capture:true,passive:true});
  canvas.addEventListener('pointerdown',e=>{if(e.button===1||e.button===0&&e.altKey)suspendMapPointer();},true);
- partyDrag=installHexPartyDrag(canvas,{key:placementKey,begin:()=>{playback.stop();return!playback.busy&&!pending&&!uncertain&&!checkingWorldWrite&&!worldWrites.size&&!dirtyMap&&!dirtyCell&&!transportBusy;},target:(x,y)=>{
+ partyDrag=installHexPartyDrag(canvas,{key:placementKey,begin:()=>{playback.stop();return!playback.busy&&!pendingWork.value&&!uncertainState.value&&!checkingWorldWriteWork.value&&!worldWrites.size&&!dirtyMap&&!dirtyCell&&!transportBusy;},target:(x,y)=>{
   if(!mapDraft||!worldCanvas?.hit(x,y))return null;const box=canvas.getBoundingClientRect();if(x<box.left||x>box.right||y<box.top||y>box.bottom)return null;
   const matrix=canvas.getScreenCTM();if(!matrix)return null;const p=new DOMPoint(x,y).matrixTransform(matrix.inverse()),h=pointHex(p.x/100,p.y/100);if(!authoredCellAt(mapDraft,h,level))return null;
   const local=hexPoint(h,3**level),point=hexPoint(h);return{hex:pointHex(local.x,local.y),x:point.x*100,y:point.y*100};
  },drop:(h,key)=>placePartyAt(h,true,key),status:(text,error)=>{el('travel-placement-status').textContent=text;el('travel-placement-status').dataset.error=String(!!error);}});
  worldCanvas=new PassiveMapCanvas(canvas,{initial:hexCameraBox(),minWidth:520,maxWidth:3120,prepareCamera:suspendMapPointer,locked:()=>!!mapGestures?.active||!!partyDrag?.active,pan:e=>e.button===1||e.button===0&&routeMode==='edit'&&(!el<HTMLInputElement>('hex-paint').checked||e.altKey),changed:box=>{viewZoom=1560/box.width;center=pointHex((box.x+box.width/2)/100,(box.y+box.height/2)/100);canvasBasis=cameraBasis();renderMap();}});
- mapGestures=installHexMapGestures(canvas,{state:()=>workspace&&mapDraft?{owner:workspace.token,map:mapDraft,level,center:{...center},mode:routeMode,paint:el<HTMLInputElement>('hex-paint').checked,terrain:value('hex-brush') as Terrain,radius:Math.max(0,Math.min(5,Math.floor(number('hex-brush-radius'))))}:null,prepare:()=>{if(pending||uncertain||worldWrites.size){tell('Kartenspeicherung zuerst abschließen.',true);return false;}if(dirtyCell)collectCell();return true;},pan:h=>{partyDrag?.cancel('Platzierung abgebrochen · Kartenansicht verschoben.');const delta=hexPoint({q:h.q-center.q,r:h.r-center.r});worldCanvas?.cancel();worldCanvas?.pan(delta.x*100,delta.y*100);},select:h=>{selected=h;routeCursor=h;},render:()=>{renderMap();renderCell();},changed:()=>{dirtyMap=true;edits.map++;},commit:()=>Promise.resolve().then(()=>flushWorld()),tell});
+ mapGestures=installHexMapGestures(canvas,{state:()=>workspace&&mapDraft?{owner:workspace.token,map:mapDraft,level,center:{...center},mode:routeMode,paint:el<HTMLInputElement>('hex-paint').checked,terrain:value('hex-brush') as Terrain,radius:Math.max(0,Math.min(5,Math.floor(number('hex-brush-radius'))))}:null,prepare:()=>{if(pendingWork.value||uncertainState.value||worldWrites.size){tell('Kartenspeicherung zuerst abschließen.',true);return false;}if(dirtyCell)collectCell();return true;},pan:h=>{partyDrag?.cancel('Platzierung abgebrochen · Kartenansicht verschoben.');const delta=hexPoint({q:h.q-center.q,r:h.r-center.r});worldCanvas?.cancel();worldCanvas?.pan(delta.x*100,delta.y*100);},select:h=>{selected=h;routeCursor=h;},render:()=>{renderMap();renderCell();},changed:()=>{dirtyMap=true;edits.map++;},commit:()=>Promise.resolve().then(()=>flushWorld()),tell});
 
  el('world-group-center').onclick=()=>run(async()=>{if(!(await flushWorld()))return;await reloadScene();if(!frame?.position.mapId)return;if(mapDraft?.id!==frame.position.mapId)resetRouteDraft();mapDraft=structuredClone(world!.maps.find(m=>m.id===frame!.position.mapId)!);el<HTMLSelectElement>('world-map-select').value=mapDraft.id;const p=hexPoint(frame.position);center=pointHex(p.x,p.y,3**level);selected=center;routeCursor={...center};canvasBasis='';renderMapFields();renderMap();renderCell();});
  const localHex=()=>{const p=hexPoint(selected,3**level);return pointHex(p.x,p.y);};el('world-anchor-save').onclick=()=>run(async()=>{if(!mapDraft||!value('world-anchor-location'))throw new Error('Karte und Ort auswählen.');const old=world?.places.find(p=>p.locationId===value('world-anchor-location'));await action({kind:'place',mapId:mapDraft.id,locationId:value('world-anchor-location'),expectedRevision:old?.revision??null,hex:localHex()});renderLocationOptions();loadMarkerEditor();});
@@ -749,3 +754,5 @@ export async function previewAtlasWorldTravel(){await makeTravelPreview(false,tr
 export async function startAtlasWorldTravel(){await acceptTravelPreview(true);}
 export function atlasWorldTravelState(){return{preview,frame,token:workspace?.token??null};}
 export async function refreshWorldAfterAtlasTravel(token:string,sceneId:string){if(workspace?.token!==token||liveSurface&&liveTravelOpen&&liveFocusId!==sceneId)return;await openWorld();}
+
+editorSession.observeDraft(()=>({openInput:dirtyMap||dirtyCell||dirtyCalendar||dirtyPhenomenon,retainedDraft:false,unresolvedCommand:!!uncertainState.value}));

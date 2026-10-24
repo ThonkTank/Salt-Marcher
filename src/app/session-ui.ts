@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {SessionDayPanel} from './session-day-ui';
 import {renderEncounterComposition,compositionPreferences,preferenceSelect,type CompositionPreference} from './encounter-composition-ui';
 import {renderSessionOrigin} from './session-origin-ui';
@@ -18,6 +19,9 @@ import type {ManualPlan} from '../features/planner/manual-planner';
 import {xpLevel,xpShare,type ItemInput} from './progression';
 import {type GenerationRequest} from './generation-contracts';
 import type {SessionProfile,VisitDetail,PreparedGroup,SessionView,SessionAction,SessionRun,SessionProposal} from './session-contracts';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const get=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T,value=(id:string)=>get<HTMLInputElement>(id).value,unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
 let dayPanel:SessionDayPanel,dayRequest=0;
 let proposalReview:SessionReview;
@@ -28,7 +32,7 @@ let requiredPick:ReturnType<typeof requiredNpcPicker>;
 let workspace:WorkspaceGeometry|null=null,plan:ManualPlan|null=null,visitId:string|null=null,sources:Preparation|null=null,view:SessionView|null=null,profileDraft:SessionProfile|null=null,visitDraft:VisitDetail|null=null,run:SessionRun|null=null;
 type GroupDraft=Pick<PreparedGroup,'id'|'revision'|'title'|'notes'>;
 const groupDrafts=new Map<string,GroupDraft>();
-let generation=0,loadRequest=0,previewRequest=0,basis='',profileDirty=false,visitDirty=false,timer:ReturnType<typeof setTimeout>|null=null,pending:Promise<boolean>|null=null;
+let loadRequest=0, previewRequest=0, basis='', profileDirty=false, visitDirty=false, timer:ReturnType<typeof setTimeout>|null=null;
 let inputWriting:{token:string;generation:number;planId:string;kind:'profile'|'visit'}|null=null;
 let generating:{token:string;planId:string;request:number}|null=null;
 function generationMessage(text:string,error=false){get('session-generation-feedback').textContent=text;get('session-generation-feedback').classList.toggle('error',error);}
@@ -55,7 +59,7 @@ export function sessionContext(next:WorkspaceGeometry|null,current:ManualPlan|nu
  if(parentChanged){for(const key of Object.keys(compositionPreferences))get<HTMLSelectElement>('session-'+key).value='preset';sessionCopy?.reset();closePreparationPacket();requiredPick.context(next&&current?next.token:null,true);magicPick.context(next&&current?next.token:null);}
  get('session-panel').hidden=!current;get('visit-preparation').hidden=!selected;
  if(key===basis){syncVisitNotes();if(planChanged&&next&&current)return refreshDay();return;}
- basis=key;noteOrganizer?.context(null);generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
+ basis=key;noteOrganizer?.context(null);editorSession.generation++;loadRequest++;closeStoryAward();encounterRequest++;get<HTMLInputElement>('visit-encounter-search').value='';clearEncounterChoices('Mindestens zwei Zeichen eingeben.');
  if(timer)clearTimeout(timer);timer=null;
  profileDirty=false;visitDirty=false;view=null;profileDraft=null;visitDraft=null;
  if(parentChanged){generating=null;get<HTMLButtonElement>('session-generate').disabled=false;generationMessage('');closeProposalEditor();get('session-faction-picks').replaceChildren();groupDrafts.clear();previewRequest++;run=null;renderRun();for(const id of ['session-history','session-table-picks','session-locations','session-notes'])get(id).replaceChildren();}
@@ -65,15 +69,15 @@ export function sessionContext(next:WorkspaceGeometry|null,current:ManualPlan|nu
 }
 /** Refresh confirmed day metadata without rebuilding live profile or scene inputs. */
 async function refreshDay(){
- if(!workspace||!plan)return;const token=workspace.token,id=plan.id,revision=plan.revision,gen=generation,request=++dayRequest;
- const current=()=>workspace?.token===token&&plan?.id===id&&plan.revision===revision&&generation===gen&&request===dayRequest;
- try{const result=unwrap(await window.campaign.session(token,id));if(!current())return;if(result.profile.planId!==id||result.plan&&(result.plan.id!==id||result.plan.revision!==revision))throw new Error('Tagesplan inzwischen geändert. Spielabend-Inhalte aktualisieren.');view=result;if(profileDraft)dayPanel?.render(plan!,result,profileDraft);lock(!!pending);}
+ if(!workspace||!plan)return;const token=workspace.token,id=plan.id,revision=plan.revision,gen=editorSession.generation,request=++dayRequest;
+ const current=()=>workspace?.token===token&&plan?.id===id&&plan.revision===revision&&editorSession.generation===gen&&request===dayRequest;
+ try{const result=unwrap(await window.campaign.session(token,id));if(!current())return;if(result.profile.planId!==id||result.plan&&(result.plan.id!==id||result.plan.revision!==revision))throw new Error('Tagesplan inzwischen geändert. Spielabend-Inhalte aktualisieren.');view=result;if(profileDraft)dayPanel?.render(plan!,result,profileDraft);lock(!!pendingWork.value);}
  catch(error){if(current())tell((error as Error).message,true);}
 }
 async function load(){
  if(!workspace||!plan)return;
- const token=workspace.token,id=plan.id,gen=generation,request=++loadRequest;
- const current=()=>gen===generation&&request===loadRequest;
+ const token=workspace.token,id=plan.id,gen=editorSession.generation,request=++loadRequest;
+ const current=()=>gen===editorSession.generation&&request===loadRequest;
  try{
   const [session,progress]=await Promise.all([window.campaign.session(token,id),window.campaign.progress(token)]);
   if(!current())return;
@@ -95,7 +99,7 @@ async function load(){
 function option(select:HTMLSelectElement,id:string,text:string){const o=document.createElement('option');o.value=id;o.textContent=text;select.append(o);}
 function visitInput(detail:VisitDetail){return JSON.stringify([detail.readAloud,detail.noteIds,detail.reward]);}
 async function acceptSessionResult(action:SessionAction,result:SessionView,gen:number,token:string,ownerPlan:string){
- if(gen!==generation||workspace?.token!==token||plan?.id!==ownerPlan)return;
+ if(gen!==editorSession.generation||workspace?.token!==token||plan?.id!==ownerPlan)return;
  view=result;
  if(action.kind==='replace-plan'){
   profileDirty=visitDirty=false;groupDrafts.clear();profileDraft=structuredClone(result.profile);visitDraft=null;run=null;previewRequest++;renderRun();get('session-history').replaceChildren();
@@ -125,37 +129,37 @@ async function acceptSessionResult(action:SessionAction,result:SessionView,gen:n
   }
  }
  await refreshBase();
- if(gen===generation)render();
+ if(gen===editorSession.generation)render();
  if(workspace?.token===token&&plan?.id===ownerPlan)tell('Spielabend-Inhalte gespeichert.');
 }
 async function execute(action:SessionAction,propagateError=false){
- if(!workspace||pending)return false;
- const owner=workspace,token=owner.token,gen=generation,ownerPlan=action.kind==='profile'?action.profile.planId:action.planId;
+ if(!workspace||pendingWork.value)return false;
+ const owner=workspace,token=owner.token,gen=editorSession.generation,ownerPlan=action.kind==='profile'?action.profile.planId:action.planId;
  const editing:typeof inputWriting=action.kind==='profile'||action.kind==='visit'?{token,generation:gen,planId:ownerPlan,kind:action.kind}:null;inputWriting=editing;
  let committed=false;
- pending=(async()=>{
+ const task=editorSession.run(async()=>{
   try{
-   if(!await flushBase()||gen!==generation||workspace?.token!==token||plan?.id!==ownerPlan)return false;
+   if(!await flushBase()||gen!==editorSession.generation||workspace?.token!==token||plan?.id!==ownerPlan)return false;
    const command={commandId:crypto.randomUUID(),campaignId:owner.campaign.id,token,action};
-   const result=await writeConfirmed('session',command,()=>window.campaign.executeSession(command),()=>gen===generation&&workspace?.token===token&&plan?.id===ownerPlan,{owner:'session',token,generation:gen,planId:ownerPlan,action});
+   const result=await writeConfirmed('session',command,()=>window.campaign.executeSession(command),()=>gen===editorSession.generation&&workspace?.token===token&&plan?.id===ownerPlan,{owner:'session',token,generation:gen,planId:ownerPlan,action});
    committed=true;
-   if(gen!==generation)return false;
+   if(gen!==editorSession.generation)return false;
    await acceptSessionResult(action,result,gen,token,ownerPlan);
    return true;
   }catch(error){
-   if(gen===generation){if(committed)render();tell((committed?'Gespeichert; Ansicht konnte nicht aktualisiert werden: ':'')+(error as Error).message,true);}
+   if(gen===editorSession.generation){if(committed)render();tell((committed?'Gespeichert; Ansicht konnte nicht aktualisiert werden: ':'')+(error as Error).message,true);}
    if(propagateError&&!committed)throw error;
    return committed;
-  }finally{if(inputWriting===editing)inputWriting=null;pending=null;lock(!view);}
- })();
- lock(true);return pending;
+  }finally{pendingWork.clear(task);if(gen===editorSession.generation){if(inputWriting===editing)inputWriting=null;lock(!view);}}
+ });
+ pendingWork.value=task;lock(true);return task;
 }
 const lockedControls=new WeakMap<HTMLInputElement|HTMLSelectElement|HTMLButtonElement,boolean>();
 function lock(on:boolean){
  on=on||!!workspace&&hasPendingCommit(workspace.campaign.id);
  get<HTMLButtonElement>('plan-replace').disabled=on||!workspace||!plan;
  for(const id of ['session-panel','session-day-plan','visit-preparation','plan-replacement-dialog'])for(const c of get(id).querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLButtonElement>('input,select,textarea,button')){
-  const liveInput=inputWriting?.token===workspace?.token&&inputWriting?.generation===generation&&inputWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&(inputWriting.kind==='profile'?(!!c.closest('#session-profile-form')||c.id==='session-scene-count'):!!c.closest('#visit-reward-items'));
+  const liveInput=inputWriting?.token===workspace?.token&&inputWriting?.generation===editorSession.generation&&inputWriting?.planId===plan?.id&&c instanceof HTMLInputElement&&c.type!=='checkbox'&&(inputWriting.kind==='profile'?(!!c.closest('#session-profile-form')||c.id==='session-scene-count'):!!c.closest('#visit-reward-items'));
   if(on&&liveInput)continue;
   if(on){if(!lockedControls.has(c))lockedControls.set(c,c.disabled);c.disabled=true;}
   else if(lockedControls.has(c)){c.disabled=lockedControls.get(c)!;lockedControls.delete(c);}
@@ -174,7 +178,7 @@ function lock(on:boolean){
 export async function flushSession():Promise<boolean>{
  if(proposalEditorOpen()){tell('Speichere oder schließe den geöffneten Vorschlag zuerst.',true);return false;}
  if(timer)clearTimeout(timer);timer=null;
- if(pending){if(!await pending)return false;return flushSession();}
+ if(pendingWork.value){if(!await pendingWork.value)return false;return flushSession();}
  if(workspace&&hasPendingCommit(workspace.campaign.id)){tell('Buchungsantwort fehlt. Zuerst den Status prüfen.',true);return false;}
  if(profileDirty&&profileDraft){if(!await execute({kind:'profile',profile:structuredClone(profileDraft),expectedRevision:profileDraft.revision}))return false;return flushSession();}
  if(visitDirty&&visitDraft&&plan){if(visitDraft.reward&&!value('visit-reward-xp').trim()){tell('Story-XP fehlen. Eine Zahl eintragen, auch 0 ist möglich. Die bisherige Belohnung bleibt gespeichert.',true);return false;}if(visitDraft.reward?.items.some(item=>!Number.isSafeInteger(item.quantity)||item.quantity<1)){tell('Für jeden Beutegegenstand eine positive ganze Menge eintragen oder die Zeile entfernen. Die bisherige Belohnung bleibt gespeichert.',true);return false;}if(!await execute({kind:'visit',planId:plan.id,detail:structuredClone(visitDraft),expectedRevision:visitDraft.revision}))return false;return flushSession();}
@@ -183,7 +187,7 @@ export async function flushSession():Promise<boolean>{
  return true;
 }
 export async function linkVisitNoteThread(token:string,planId:string,targetVisit:string,selection:import('./note-thread-contracts').NoteThreadSelection,stillCurrent:()=>boolean):Promise<boolean>{
- const gen=generation,current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===targetVisit&&generation===gen&&stillCurrent();
+ const gen=editorSession.generation,current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===targetVisit&&editorSession.generation===gen&&stillCurrent();
  if(!current()||!await flushSession()||!current()||!visitDraft)return false;
  const ids=[...new Set([...visitDraft.noteIds,...selection.entries.map(e=>e.id),...(selection.includeRoot?[selection.rootId]:[])])];
  if(JSON.stringify(ids)===JSON.stringify(visitDraft.noteIds))return true;
@@ -194,12 +198,12 @@ function scheduleVisit(){visitDirty=true;scheduleSession('Besuchseingabe offen.'
 function render(){if(!view||!profileDraft)return;get<HTMLInputElement>('session-fraction').value=profileDraft.adventureDayFraction;get<HTMLInputElement>('session-seed').value=profileDraft.seed;get<HTMLInputElement>('session-scene-count').value=profileDraft.encounterCount==null?'':String(profileDraft.encounterCount);const members=get('session-party');members.replaceChildren();for(const c of roster){const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.value=c.characterId;box.checked=profileDraft.party.some(p=>p.id===c.characterId);box.onchange=()=>{if(!profileDraft)return;profileDraft.party=box.checked?[...profileDraft.party,{id:c.characterId,name:c.name,level:c.xp===null?null:xpLevel(c.xp).level,count:1}]:profileDraft.party.filter(p=>p.id!==c.characterId);profileDirty=true;scheduleSession('Planungseingabe offen.');renderParty();};label.className='check-label';label.append(box,document.createTextNode(c.name+(c.active?' · heute aktiv':' · inaktiv')));members.append(label);}renderParty();
  const locations=get('session-locations'),notes=get('session-notes');const chosenLocations=new Set([...locations.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value)),chosenNotes=new Set([...notes.querySelectorAll<HTMLInputElement>('input:checked')].map(c=>c.value));locations.replaceChildren();notes.replaceChildren();for(const row of sources?.locations.filter(l=>!l.trashed)??[])checkbox(locations,row.document.id,row.document.name,chosenLocations.has(row.document.id));for(const row of sources?.notes.filter(n=>!n.trashed)??[])checkbox(notes,row.note.id,row.note.title,chosenNotes.has(row.note.id));
  if(visitDraft){get<HTMLTextAreaElement>('visit-read-aloud').value=visitDraft.readAloud;void searchEncounters();get<HTMLInputElement>('visit-has-reward').checked=!!visitDraft.reward;get('visit-reward-fields').hidden=!visitDraft.reward;get<HTMLInputElement>('visit-reward-xp').value=String(visitDraft.reward?.poolXp??0);renderRewardItems();renderGroups();}
- syncVisitNotes();renderRun();lock(!!pending);
+ syncVisitNotes();renderRun();lock(!!pendingWork.value);
 }
 function syncVisitNotes(){
- const token=workspace?.token,planId=plan?.id,id=visitDraft?.visitId,gen=generation;
+ const token=workspace?.token,planId=plan?.id,id=visitDraft?.visitId,gen=editorSession.generation;
  if(!token||!planId||!id){noteOrganizer?.context(null);return;}
- const current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===id&&generation===gen&&!!plan.scenes.some(s=>s.id===id);
+ const current=()=>workspace?.token===token&&plan?.id===planId&&visitDraft?.visitId===id&&editorSession.generation===gen&&!!plan.scenes.some(s=>s.id===id);
  noteOrganizer?.context({key:JSON.stringify([token,planId,id,gen]),token,notes:sources?.notes??[],current,ids:()=>current()?visitDraft!.noteIds:[],change:(noteId,linked)=>{if(!current())return;const ids=visitDraft!.noteIds,next=linked?[...new Set([...ids,noteId])]:ids.filter(id=>id!==noteId);if(JSON.stringify(ids)===JSON.stringify(next))return;visitDraft!.noteIds=next;scheduleVisit();},edit:async(noteId,current)=>{if(current()&&await flushSession()&&current())await openNote(noteId);}});
 }
 function checkbox(root:HTMLElement,id:string,text:string,checked:boolean){const label=document.createElement('label'),box=document.createElement('input');label.className='check-label';box.type='checkbox';box.value=id;box.checked=checked;label.append(box,document.createTextNode(text));root.append(label);return box;}
@@ -467,11 +471,11 @@ noteOrganizer=new VisitNoteOrganizer(get('visit-note-refs'),{searchDesk:(...a)=>
 proposalReview=new SessionReview(acceptSelectedProposals,sessionReviewBasis);
 initSessionPacket(status,()=>workspace&&plan?{token:workspace.token,planId:plan.id,visitId}:null,async()=>await flushBase()&&await flushSession(),offerVisit);
 sessionCopy=new SessionCopy(status,()=>workspace&&plan&&sources?{workspace,plan,sources}:null,async()=>await flushSession()&&await flushBase(),async (planId,visitId)=>{await refreshBase(visitId,planId);});
-onCommitState(()=>lock(!view||!!pending));onCommitResolved(async event=>{
+onCommitState(()=>lock(!view||!!pendingWork.value));onCommitResolved(async event=>{
  if(event.ref.family!=='session'||event.ref.campaignId!==workspace?.campaign.id)return;
  const meta=event.meta as {owner?:string;token:string;generation:number;planId:string;action:SessionAction}|undefined;
  if(meta?.owner==='session')await acceptSessionResult(meta.action,event.value as SessionView,meta.generation,meta.token,meta.planId);
- else{const token=workspace.token,gen=generation;await refreshBase();if(workspace?.token===token&&generation===gen)await load();}
+ else{const token=workspace.token,gen=editorSession.generation;await refreshBase();if(workspace?.token===token&&editorSession.generation===gen)await load();}
 });
 initProposalEditor();inputChanged=edited;tell=status;requiredPick=requiredNpcPicker('session-required-npcs',tell);magicPick=magicPoolPicker(tell,()=>{get<HTMLInputElement>('session-magic-compensate').checked=true;get<HTMLInputElement>('session-loot-compensate').checked=true;});flushBase=baseFlush;refreshBase=baseRefresh;openNote=navigateNote;
  const report=(fn:()=>Promise<unknown>)=>void fn().catch(e=>tell(e.message,true));
@@ -503,3 +507,5 @@ function storyPreview(){
  try{const result=xpShare(noXp?0:storyAward?.poolXp??0,noXp?0:count);get('story-xp-preview').textContent=noXp?'Keine XP vergeben.':result.share+' XP pro Figur · '+result.total+' XP insgesamt. Beute bleibt zur ausdrücklichen Zuweisung verfügbar.';}
  catch(error){get('story-xp-preview').textContent=(error as Error).message;}
 }
+
+editorSession.onDeactivate(()=>{if(timer)clearTimeout(timer);timer=null;});

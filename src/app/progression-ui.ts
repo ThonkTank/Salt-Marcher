@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import {changeCharacterXp} from './party-xp-model';
 import {beginFinishDraft,resetFinishDraft,deactivateFinishDraft,markFinishDraft,flushFinishDraft} from './finish-draft-ui';
 import type {FinishOwner,RewardItemDraft} from './finish-draft-contracts';
@@ -8,12 +9,15 @@ import type { WorkspaceGeometry, Result } from './contracts';
 import {formatInstant,advanceInstant,type LiveScene,type LiveView} from './live-contracts';
 import type { EncounterAssessment } from './encounter-contracts';
 import { deathSaveControls, xpInput, xpLevel, xpShare, restFrame, gold, ledgerCopper, type CharacterHealth, type ProgressView, type ProgressAck, type ProgressAction, type ProgressCommand, type ItemInput, type ItemCategory, type FinishRewards, type ProgressHistory, type Treasure, type TreasurePage, type LedgerPage, type LedgerItem, type LootBalance } from './progression';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const get = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const value = (id: string) => get<HTMLInputElement>(id).value;
 const unwrap = <T>(r: Result<T>): T => { if (!r.ok) throw new Error(r.error); return r.value; };
 let workspace: WorkspaceGeometry | null = null, live: LiveView | null = null, selected: string | null = null, view: ProgressView | null = null;
 let contextBasis = '';
-let generation = 0, loadNumber = 0, pending: Promise<boolean> | null = null, selectedLedger: string | null = null;
+let loadNumber = 0, selectedLedger: string | null = null;
 let treasures: TreasurePage = {items:[],next:null}, treasure: Treasure | null = null, ledger: LedgerPage = {items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'};
 let lootBalance:LootBalance|null=null,balanceRead=0;
 let selectedTreasure: string | null = null;
@@ -41,7 +45,7 @@ export function progressionContext(next: WorkspaceGeometry | null, data: LiveVie
   const selectionChanged = characterId !== selected;
   const activationChanged = next?.token !== workspace?.token;
   if (selectionChanged || activationChanged) { ledgerDetailRequest++;ledgerRequest++;ledgerFormOwner=null;ledgerDetailLoading=false;ledgerDetailError=''; ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; ledgerDetail=null; selectedLedger=null; ledgerLoaded=false; }
-  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;generation++;pending=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
+  if (next?.token !== workspace?.token) { deactivateFinishDraft();finishRequest++;editorSession.generation++;pendingWork.value=null; view = null;lootBalance=null; selectedLedger = null; selectedTreasure=null; treasures={items:[],next:null};treasure=null;ledger={items:[],problems:[],unavailableCount:0,next:null,totalCopper:'0'}; get('progress-notices').replaceChildren(); }
   workspace = next; live = data; selected = characterId;updateCommitControls();
   get('reward-panel').hidden = !data; get('character-progression').hidden = !data || !selected;
   if(activationChanged||selectionChanged)render();
@@ -49,28 +53,28 @@ export function progressionContext(next: WorkspaceGeometry | null, data: LiveVie
 }
 export async function refreshProgress(deliverNotices=true) {
   if (!workspace) return;
-  const gen = generation, request = ++loadNumber;
-  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
-  catch (error) { if (gen === generation) tell((error as Error).message, true); }
+  const gen = editorSession.generation, request = ++loadNumber;
+  try { const result = unwrap(await window.campaign.progress(workspace.token)); if (gen !== editorSession.generation || request !== loadNumber) return; view = result;publishProgress(); const parties=unwrap(await window.campaign.ledgerParties(workspace.token));if(gen!==editorSession.generation)return;const counterpart=get<HTMLSelectElement>('ledger-linked-counterparty'),old=counterpart.value;counterpart.replaceChildren();option(counterpart,'','Nur Freitext');for(const p of parties)option(counterpart,p.kind+':'+p.id,p.kind+': '+p.name);counterpart.value=old;await Promise.all([loadTreasures(),loadLedger(),loadLootBalance()]); render(); if(deliverNotices)showNotices(); void loadHistory(); }
+  catch (error) { if (gen === editorSession.generation) tell((error as Error).message, true); }
 }
 export async function executePartyProgress(action: ProgressAction, stillCurrent:()=>boolean=()=>true,confirmed?:(result:ProgressAck)=>void){
   if(action.kind!=='ledger')return stillCurrent()&&execute(action,undefined,confirmed);
   // The Party owns its item selection; do not require the hidden Live ledger selection.
-  const token=workspace?.token,gen=generation;
+  const token=workspace?.token,gen=editorSession.generation;
   if(!token||!stillCurrent()||action.operation!=='correct')return false;
   const item=unwrap(await window.campaign.ledgerItem(token,action.entryId));
-  if(!stillCurrent()||workspace?.token!==token||gen!==generation||item.id!==action.entryId||item.revision!==action.expectedRevision)return false;
+  if(!stillCurrent()||workspace?.token!==token||gen!==editorSession.generation||item.id!==action.entryId||item.revision!==action.expectedRevision)return false;
   return execute(action,item,confirmed);
 }
 async function execute(action: ProgressAction, partyItem?:LedgerItem,confirmed?:(result:ProgressAck)=>void): Promise<boolean> {
-  if (!workspace || pending||hasPendingCommit(workspace.campaign.id)) return false;
+  if (!workspace || pendingWork.value||hasPendingCommit(workspace.campaign.id)) return false;
   if ((action.kind==='ledger'||action.kind==='ledger-split'||action.kind==='ledger-merge'||action.kind==='ledger-transfer') && !(action.kind==='ledger'&&action.operation==='correct'&&partyItem?.id===action.entryId&&partyItem.revision===action.expectedRevision) && (!ledgerEditable()||action.entryId!==selectedLedger)) return false;
   loadNumber++; // Pending reads cannot replace the receipt of this confirmed write.
-  const gen = generation, command: ProgressCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token, action:structuredClone(action) };
+  const gen = editorSession.generation, command: ProgressCommand = { commandId: crypto.randomUUID(), campaignId: workspace.campaign.id, token: workspace.token, action:structuredClone(action) };
   const meta={owner:'progress',token:workspace.token,generation:gen,action:command.action,healthDraft:action.kind==='health'?structuredClone(healthDrafts.get(workspace.campaign.id+':'+action.characterId)):undefined};
   const task=Promise.resolve().then(async () => {
     try {
-      const result = await writeConfirmed<ProgressAck>('progress',command,()=>window.campaign.executeProgress(command),()=>workspace?.token===command.token&&gen===generation,meta); if (gen !== generation) return false;
+      const result = await writeConfirmed<ProgressAck>('progress',command,()=>window.campaign.executeProgress(command),()=>workspace?.token===command.token&&gen===editorSession.generation,meta); if (gen !== editorSession.generation) return false;
       confirmed?.(result);
       view = result;if(result.restScene)restSaved?.(result.restScene);publishProgress();tell(action.kind==='party-award'&&result.partyAward?'XP-Abrechnung gespeichert: '+result.partyAward.shareXp+' XP je Empfänger · '+result.partyAward.shareLoad+' Tagesbelastung je beteiligter Figur.':action.kind==='rest'?'Rast gespeichert'+(result.restScene?' · '+formatInstant(result.restScene.clock.instantMs):'')+(result.restWarnings?.length?' · '+result.restWarnings.join(' · '):'')+'.':action.kind==='health'?'HP gespeichert.':'Fortschritt und Beute gespeichert.'); void loadHistory();
       if (['treasure','allocate','manual-item','ledger','ledger-split','ledger-merge','ledger-transfer','narrative-award'].includes(action.kind)) {
@@ -81,15 +85,15 @@ async function execute(action: ProgressAction, partyItem?:LedgerItem,confirmed?:
       }
       return true;
     }
-    catch (error) { if (gen === generation) tell((error as Error).message, true); return false; }
-    finally { if(pending===task)pending = null; if (gen === generation) render(); }
-  });pending=task;lock();return task;
+    catch (error) { if (gen === editorSession.generation) tell((error as Error).message, true); return false; }
+    finally { pendingWork.clear(task); if (gen === editorSession.generation) render(); }
+  });pendingWork.value=task;lock();return task;
 }
-export async function flushProgress() { if(!await flushFinishDraft())return false; if(pending)return await pending;return !workspace||!hasPendingCommit(workspace.campaign.id); }
+export async function flushProgress() { if(!await flushFinishDraft())return false; if(pendingWork.value)return await pendingWork.value;return !workspace||!hasPendingCommit(workspace.campaign.id); }
 function ledgerUnavailable(){return !!selectedLedger&&ledger.problems.some(p=>p.id===selectedLedger);}
 function ledgerEditable(){return ledgerLoaded&&!ledgerDetailLoading&&!ledgerDetailError&&!ledgerUnavailable()&&!!ledgerDetail&&ledgerDetail.id===selectedLedger&&ledgerDetail.characterId===selected;}
 function lock() {
-  const blocked=!!pending||!!workspace&&hasPendingCommit(workspace.campaign.id);
+  const blocked=!!pendingWork.value||!!workspace&&hasPendingCommit(workspace.campaign.id);
   for (const root of ['character-progression','reward-panel']) for (const c of get(root).querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement>('button,input,select,textarea')) if(!c.closest('#ledger-stack-tools'))c.disabled = blocked;
   const itemBlocked=blocked||!ledgerEditable();
   for(const control of get('ledger-form').querySelectorAll<HTMLInputElement|HTMLButtonElement>('button,input,select,textarea'))control.disabled=itemBlocked;
@@ -138,9 +142,9 @@ function render() {
   renderLootBalance();
 }
 async function loadLootBalance(){
- if(!workspace)return;const token=workspace.token,gen=generation,request=++balanceRead;
+ if(!workspace)return;const token=workspace.token,gen=editorSession.generation,request=++balanceRead;
  const result=await window.campaign.lootBalance(token);
- if(gen!==generation||token!==workspace?.token||request!==balanceRead)return;
+ if(gen!==editorSession.generation||token!==workspace?.token||request!==balanceRead)return;
  lootBalance=unwrap(result);
 }
 function renderLootBalance(){
@@ -268,9 +272,9 @@ async function loadHistory(more = false) {
 }
 function item(prefix: string): ItemInput { return { name:value(prefix+'-name'),quantity:Number(value(prefix+'-quantity')),valueGold:value(prefix+'-value'),category:value(prefix+'-category') as ItemCategory }; }
 export async function prepareFinish(participantIds: string[], assessment?: EncounterAssessment,options?:{workspace:WorkspaceGeometry;poolXp?:number;items?:ItemInput[];owner:FinishOwner}) {
-  const request=++finishRequest,gen=generation,owner=options?.workspace??workspace;
+  const request=++finishRequest,gen=editorSession.generation,owner=options?.workspace??workspace;
   if(!owner)return false;
-  const current=()=>request===finishRequest&&gen===generation;
+  const current=()=>request===finishRequest&&gen===editorSession.generation;
   if(!await resetFinishDraft()||!current())return false;
   get<HTMLTextAreaElement>('combat-outcome').value='';
   const result=unwrap(await window.campaign.progress(owner.token));if(!current())return false;
@@ -292,11 +296,11 @@ export function finishRewards(): FinishRewards {
 async function recoveredProgress(event:CommitResolution){
  if(!workspace||event.ref.campaignId!==workspace.campaign.id)return;
  const meta=event.meta as {owner:string;token:string;generation:number;action:ProgressAction;healthDraft?:HealthDraft}|undefined;
- if(meta?.owner==='progress'&&meta.token===workspace.token&&meta.generation===generation&&meta.action.kind==='health'&&meta.healthDraft){
+ if(meta?.owner==='progress'&&meta.token===workspace.token&&meta.generation===editorSession.generation&&meta.action.kind==='health'&&meta.healthDraft){
   const action=meta.action,key=workspace.campaign.id+':'+action.characterId,draft=healthDrafts.get(key),saved=(event.value as ProgressAck).characters.find(c=>c.characterId===action.characterId);
   if(draft&&draft.revision===meta.action.expectedRevision&&saved){if(JSON.stringify(draft)===JSON.stringify(meta.healthDraft))healthDrafts.delete(key);else draft.revision=saved.revision;}
  }
- if(meta?.owner==='progress'&&meta.token===workspace.token&&meta.generation===generation&&(event.value as ProgressAck)?.restScene)restSaved?.((event.value as ProgressAck).restScene!);await refreshProgress(false);publishProgress();
+ if(meta?.owner==='progress'&&meta.token===workspace.token&&meta.generation===editorSession.generation&&(event.value as ProgressAck)?.restScene)restSaved?.((event.value as ProgressAck).restScene!);await refreshProgress(false);publishProgress();
 }
 export function initProgress(status: typeof tell,onRestSaved?:(scene:LiveScene)=>void) {
   tell=status;restSaved=onRestSaved;initCommitControls(()=>workspace,status);onCommitState(lock);onCommitResolved(recoveredProgress);

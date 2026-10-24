@@ -1,14 +1,18 @@
+import {EditorSession} from './editor-session';
 import {atlasFieldValue,setAtlasFieldValue,lengthLabel} from './atlas-units';
 import {atlasDrawingWrite} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
 import type {DrawingView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
 import {VOXEL_METERS as U} from './volume-contracts';
+export const editorSession = new EditorSession();
+const pendingWork = editorSession.operation<Promise<boolean>>();
+
 const el=<T extends HTMLElement>(id:string)=>document.getElementById(id) as T;
 const field=(id:string)=>el<HTMLInputElement>(id),value=(id:string)=>atlasFieldValue(field(id));
 let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promise<boolean>,changed:(w:WorkspaceGeometry)=>Promise<void>,tell:(s:string,error?:boolean)=>void;
 let data:DrawingView|null=null,draft:DungeonPath|null=null,sourceDraft:DungeonPath|null=null,sourceRevision:number|null=null,preview:PathPreview|null=null;
-let generation=0,readRequest=0,editIntent=0,pending:Promise<boolean>|null=null,writing=false;
+let readRequest=0, editIntent=0, writing=false;
 let locations:{id:string;name:string}[]=[];
 const formIds=['path-name','path-notes','path-from','path-to','path-from-pin','path-to-pin','path-from-x','path-from-y','path-from-z','path-from-face','path-to-x','path-to-y','path-to-z','path-to-face','path-waypoints','path-forms','path-widths','path-heights','path-factors','path-medium'];
 type Form=Record<string,string|boolean>;
@@ -18,15 +22,15 @@ function restore(values:Form){for(const[id,v]of Object.entries(values))if(typeof
 function sameForm(a:Form,b:Form){return formIds.every(id=>a[id]===b[id]);}
 function pathDirty(){return !!draft&&!!formBase&&!sameForm(snapshot(),formBase);}
 function invalidatePreview(){editIntent++;preview=null;el<HTMLButtonElement>('path-commit').disabled=true;el('path-preview-status').textContent='Eingaben geändert. Verbindung erneut vorschlagen lassen.';drawPreview();}
-function owner(){return{generation,token:workspace()?.token};}
+function owner(){return{generation:editorSession.generation,token:workspace()?.token};}
 type Owner=ReturnType<typeof owner>;
-function current(o:Owner){return o.generation===generation&&o.token===workspace()?.token;}
+function current(o:Owner){return o.generation===editorSession.generation&&o.token===workspace()?.token;}
 function run(fn:(o:Owner)=>Promise<boolean>){
- if(pending){tell('Laufenden Auftrag abwarten.');return;}const o=owner();
- const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))tell(e.message,true);return false;}).finally(()=>{if(pending===task){pending=null;writing=false;}});
- pending=task;
+ if(pendingWork.value){tell('Laufenden Auftrag abwarten.');return;}const o=owner();
+ const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))tell(e.message,true);return false;}).finally(()=>{if(pendingWork.value===task){pendingWork.clear(task);writing=false;}});
+ pendingWork.value=task;
 }
-function cancelRead(){generation++;readRequest++;pending=null;writing=false;}
+function cancelRead(){editorSession.generation++;readRequest++;pendingWork.value=null;writing=false;}
 function choose(p:DungeonPath,revision:number|null){
  draft=structuredClone(p);sourceDraft=structuredClone(p);sourceRevision=revision;preview=null;editIntent++;drawForm();formBase=snapshot();
 }
@@ -176,7 +180,7 @@ export function initPaths(status:typeof tell,w:typeof workspace,r:typeof selecte
  dialog.addEventListener('input',edit);dialog.addEventListener('change',edit);
  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
  el('path-open').onclick=()=>{
-  if(pending)return;
+  if(pendingWork.value)return;
   const selectedId=selected()?.id;dialog.showModal();el('path-preview-status').textContent='Verbindungen werden geladen …';
   run(async o=>{if(!await before()||!current(o)||!await openPaths()||!current(o))return false;newPath(selectedId);return true;});
  };
@@ -236,10 +240,10 @@ export async function openPaths(){
  locations=prep.value.locations.filter(l=>!l.trashed).map(l=>({id:l.document.id,name:l.document.name}));data=result.value;drawList();return true;
 }
 export function activatePaths(){
- generation++;readRequest++;editIntent++;pending=null;writing=false;data=null;draft=null;sourceDraft=null;sourceRevision=null;formBase=null;preview=null;locations=[];passageDrafts.clear();el<HTMLDialogElement>('path-dialog').close();
+ editorSession.generation++;readRequest++;editIntent++;pendingWork.value=null;writing=false;data=null;draft=null;sourceDraft=null;sourceRevision=null;formBase=null;preview=null;locations=[];passageDrafts.clear();el<HTMLDialogElement>('path-dialog').close();
 }
 export async function flushPaths(){
- const o=owner(),job=pending;if(job&&!await job)return false;if(!current(o))return false;
+ const o=owner(),job=pendingWork.value;if(job&&!await job)return false;if(!current(o))return false;
  if(pathDirty()||preview||passageDrafts.size){tell('Offene Pfad-/Passageneingaben zuerst übernehmen oder verwerfen.',true);return false;}
  return true;
 }

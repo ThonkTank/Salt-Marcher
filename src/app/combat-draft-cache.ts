@@ -1,3 +1,4 @@
+import {EditorSession} from './editor-session';
 import type {Result} from './contracts';
 import type {CombatWorkingDraft,CombatDraftKind} from './combat-draft-contracts';
 const unwrap=<T>(r:Result<T>):T=>{if(!r.ok)throw new Error(r.error);return r.value;};
@@ -10,19 +11,19 @@ export class CombatDraftCache {
  private dirty=new Set<string>();
  private tasks=new Map<string,Promise<boolean>>();
  private sent=new Map<string,CombatWorkingDraft>();
- private epoch=0;
+ readonly editorSession=new EditorSession();
  constructor(private report:(cam:string,message:string)=>void){}
  async load(token:string,cam:string,id:string,kind:CombatDraftKind,target:string){
   const key=combatDraftKey(cam,id,kind,target);
   if(this.saved.has(key))return this.values.get(key)??null;
-  const epoch=this.epoch;
-  try{const d=unwrap(await window.campaign.combatDraft(token,id,kind,target));if(epoch!==this.epoch)return d;if(this.saved.has(key))return this.values.get(key)??null;this.saved.set(key,d?.writeId??null);if(d&&!this.values.has(key))this.values.set(key,d);this.readFailures.delete(key);return this.values.get(key)??null;}
-  catch(error){if(epoch===this.epoch)this.readFailures.add(key);throw error;}
+  const epoch=this.editorSession.generation;
+  try{const d=unwrap(await window.campaign.combatDraft(token,id,kind,target));if(epoch!==this.editorSession.generation)return d;if(this.saved.has(key))return this.values.get(key)??null;this.saved.set(key,d?.writeId??null);if(d&&!this.values.has(key))this.values.set(key,d);this.readFailures.delete(key);return this.values.get(key)??null;}
+  catch(error){if(epoch===this.editorSession.generation)this.readFailures.add(key);throw error;}
  }
  put(token:string,cam:string,d:CombatWorkingDraft):Promise<boolean>{
   const key=combatDraftKey(cam,d.combatId,d.kind,d.targetId);this.values.set(key,d);this.dirty.add(key);
   const existing=this.tasks.get(key);if(existing)return existing;
-  const task=(async()=>{
+  const task=this.editorSession.start(async()=>{
    // Retain at most the in-flight value and the latest edit for this target.
    while(this.dirty.has(key)){
     const current=this.values.get(key)!;
@@ -36,7 +37,7 @@ export class CombatDraftCache {
     this.saved.set(key,current.writeId);if(this.values.get(key)===current)this.dirty.delete(key);if(this.sent.get(key)===current)this.sent.delete(key);
    }
    return true;
-  })();
+  });
   this.tasks.set(key,task);void task.then(okay=>{if(okay&&this.tasks.get(key)===task)this.tasks.delete(key);});return task;
  }
  async flush(cam:string):Promise<boolean>{
@@ -52,7 +53,7 @@ export class CombatDraftCache {
   if(actual)unwrap(await window.campaign.discardCombatDraft(token,id,kind,target,actual.writeId));
   this.values.delete(key);this.saved.delete(key);this.dirty.delete(key);this.tasks.delete(key);this.sent.delete(key);this.readFailures.delete(key);
  }
- release(cam:string){this.epoch++;for(const key of this.saved.keys()){if(JSON.parse(key)[0]===cam&&!this.dirty.has(key)&&!this.tasks.has(key)){this.values.delete(key);this.saved.delete(key);this.readFailures.delete(key);this.sent.delete(key);}}}
+ release(cam:string){this.editorSession.generation++;for(const key of this.saved.keys()){if(JSON.parse(key)[0]===cam&&!this.dirty.has(key)&&!this.tasks.has(key)){this.values.delete(key);this.saved.delete(key);this.readFailures.delete(key);this.sent.delete(key);}}}
  async retry(token:string,cam:string):Promise<boolean>{
   for(const key of [...this.dirty]){
    if(JSON.parse(key)[0]!==cam)continue;await this.tasks.get(key);const d=this.values.get(key);if(!d)continue;
