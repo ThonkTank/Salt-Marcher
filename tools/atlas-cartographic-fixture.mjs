@@ -40,7 +40,7 @@ export function createCartographicFixture(profile,{bridge=false}={}){
   write({kind:'landscape-batch',records:records.map(record=>({record,expectedRevision:null}))});
   if(bridge){
    const anchors=[{x:40,y:0},{x:150,y:0}],route={...routeSpec('road',anchors),sections:['bridge']};
-   write({kind:'landscape-route',record:shape('Dorfbrücke','road',[],{width:10,points:anchors,route}),expectedRevision:null});
+   write({kind:'landscape-route',sourceRevision:store.atlasIdentity(token).revision,record:shape('Dorfbrücke','road',[],{width:10,points:anchors,route}),expectedRevision:null});
    const planned=store.atlasLandscapeObject(token,'Dorfbrücke');
    if(!planned.route.nodes.some(n=>n.structure==='bridge'))throw Error('Reference bridge was not planned');
   }
