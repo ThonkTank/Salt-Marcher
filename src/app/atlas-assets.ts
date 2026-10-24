@@ -131,4 +131,3 @@ export function atlasMarkerImage(): {width: number; height: number; data: Uint8C
   }
   return {width, height, data};
 }
-
