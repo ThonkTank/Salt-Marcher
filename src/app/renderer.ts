@@ -35,7 +35,7 @@ import {openExistingCombat,setCombatNpcNavigation} from './combat';
 import {initTriggers,activateTriggers,flushTriggers} from './trigger-ui';
 import {initExtensions} from './extensions-ui';
 import {initDungeonContent,activateDungeonContent,flushDungeonContent} from './dungeon-content-ui';
-import {initGraph,activateGraph,flushGraph,syncGraphBanner,refreshOpenGraph} from './graph-ui';
+import {initGraph,canLeaveGraphPreview,activateGraph,flushGraph,syncGraphBanner,refreshOpenGraph} from './graph-ui';
 import {initKeys,activateKeys,flushKeys} from './key-ui';
 import {setKeyReferenceStatus,openNoteRoomKey,openRoomKey} from './key-ui';
 import {initPaths,activatePaths,flushPaths} from './path-ui';
@@ -228,9 +228,10 @@ async function reopenView(tab: WorkspaceTab, restored?: number, liveNotesTop?: n
 initPlayerUI(status,()=>workspace,leaveWorkspace);
 async function refreshCampaignShell(){const list=await refreshCampaigns();if(!list)return null;if(workspace&&!list.campaigns.some(c=>c.id===workspace!.campaign.id)){workspace=null;draft=null;confirmedRoom=null;roomLoad++;setWorkspaceAvailable(false);deactivateMusic();deactivatePlayer();activateDayCalculator(null);activatePartyTopbar(null);campaignAtlas?.hide();document.querySelector('main')!.inert=true;}else if(workspace){const current=list.campaigns.find(c=>c.id===workspace!.campaign.id);if(current)workspace.campaign=current;}
  el('campaign-header-name').textContent=workspace?.campaign.name??'Kampagnen';return list;}
-initCampaignManager(status,()=>workspace,leaveWorkspace,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed)hideCampaignScreen();}});
+initCampaignManager(status,()=>workspace,leaveCampaign,async id=>{await refreshCampaignShell();if(id){await activate(id);if(!activationFailed)hideCampaignScreen();}});
 void initTutorial();
 async function flushAll() { return await flushNpcs() && await flushGroups() && await flushTreasury() && await flushTriggers() && await flushDungeonContent() && await flushGraph() && await flushKeys() && await flushPaths() && await flushVolume() && await flushDungeon() && await flushDrawing() && await flushAutonomy() && await flushCity() && await flushMusic() && await flushWorld() && await flushItems() && await flushCatalog() && await flushLive() && await flushPreparation() && await flush(); }
+async function leaveCampaign() { return await leaveWorkspace() && canLeaveGraphPreview(); }
 async function leaveWorkspace() {
   if(campaignAtlas&&!await campaignAtlas.flush())return false;
   await stopWorldPlayback();
@@ -536,7 +537,7 @@ async function drainActivation(): Promise<void> {
   main.inert = true; header.inert = true; nav.inert = true;
   try {
     // Reserve the transition before this asynchronous drain, so a second request joins it.
-    if (!queuedActivation?.entryCommandId&&!(await leaveWorkspace())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
+    if (!queuedActivation?.entryCommandId&&!(await leaveCampaign())) { el<HTMLSelectElement>('campaigns').value = workspace?.campaign.id ?? ''; return; }
     rememberView();
     activating = true; activationFailed = false; deactivateMusic();deactivatePlayer();
     status('Kampagne wird geladen.');
@@ -676,13 +677,13 @@ el('confirm-import').onclick = () => {
   })();
 };
 initCommitControls(()=>workspace,status);
-api.onClose(() => { void (async () => { await stopWorldPlayback();await activationJob; rememberView(); if (await leaveWorkspace()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
+api.onClose(() => { void (async () => { await stopWorldPlayback();await activationJob; rememberView(); if (await leaveCampaign()) api.closeReady(); })().catch(error => status('Schließen wartet auf einen sicheren Arbeitsstand: ' + error.message, true)); });
 for (const id of workspaceTabs) el(id + '-tab').onclick = () => { void (async () => {
   if (await leaveWorkspace()) await reopenView(id);
 })().catch(error => status(error.message, true)); };
 initWorkspaceNavigation();
-initCampaignScreen({currentCampaign:()=>workspace?.campaign.id??null,before:async()=>!workspace||activationFailed||await flushAll(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
-initUpdateUI(async()=>{await activationJob;rememberView();return leaveWorkspace();});
+initCampaignScreen({currentCampaign:()=>workspace?.campaign.id??null,before:async()=>!workspace||activationFailed||await leaveCampaign(),changed:async()=>{await refreshCampaignShell();},enter:async receipt=>{await activate(receipt.campaignId,receipt.commandId);return!activationFailed&&workspace?.campaign.id===receipt.campaignId;}});
+initUpdateUI(async()=>{await activationJob;rememberView();return leaveCampaign();});
 void openCampaignScreen(true).then(()=>api.updateRuntimeReady?.()).catch(error=>status('Start konnte nicht abgeschlossen werden: '+error.message,true));
 setInterval(() => { void (async () => {
   try { const message = unwrap(await api.backupStatus()); el('backup-status').hidden = !message; el('backup-status').textContent = message; }
