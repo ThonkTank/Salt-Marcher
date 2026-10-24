@@ -30,7 +30,7 @@ export class AtlasDeckDrawing {
       coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,getPosition:[o.x-frame.origin.x,o.y-frame.origin.y,(this.surface.focusM-frame.origin.z)*frame.camera.exaggeration],
       getScale:[1,1,frame.camera.exaggeration],getColor:e.color,material:ATLAS_UNLIT_MATERIAL,pickable:false,
       updateTriggers:{getPosition:[frame.origin.x,frame.origin.y,frame.origin.z,frame.camera.exaggeration],getScale:frame.camera.exaggeration},
-      getPolygonOffset:()=>[-1,-1],parameters:{depthWriteEnabled:!!e.solid,depthCompare:'less-equal',cullMode:'none'}});});
+      getPolygonOffset:()=>[-1,-1],parameters:{depthWriteEnabled:!!e.solid,depthCompare:e.billboard?'always':'less-equal',cullMode:'none'}});});
   }
   hit(frame:AtlasMetricFrame,pixel:Point,keys:string[],terrainDistance=Infinity):PaintHit|null{
     const segment=frame.ray(pixel);if(!segment)return null;

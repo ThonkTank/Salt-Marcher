@@ -45,7 +45,9 @@ test('billboard labels stay screen-aligned at high tilt and rotated cameras',t=>
  const drawing=new AtlasDeckDrawing({commands:[command(text)]},{x:0,y:0},new Map(),flat);
  for(const tilt of [0,55,75])for(const rotation of [0,90]){
   const f=atlasMetricFrame({focus:{x:0,y:0},focusHeightM:0,metersPerPixel:.1,tilt,rotation,exaggeration:3},800,600);
-  const positions=drawing.layers(f,'test')[0].props.mesh.attributes.POSITION.value;
+  const layer=drawing.layers(f,'test')[0];
+  assert.equal(layer.props.parameters.depthCompare,'always','billboard glyphs must not be cut by the ground plane');
+  const positions=layer.props.mesh.attributes.POSITION.value;
   const project=i=>f.project({x:positions[i],y:positions[i+1],heightM:positions[i+2]});
   const a=project(0),b=project(3),c=project(6);
   assert(Math.abs(a.y-b.y)<1e-4);assert(Math.abs(a.x-c.x)<1e-4);assert(b.x>a.x&&c.y>a.y);
