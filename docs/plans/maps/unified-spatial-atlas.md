@@ -231,12 +231,23 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   und 2768 ms statt Budgetabbruch. Die synthetische Kachel ist damit berechenbar,
   aber weder schnell genug als Produktnachweis noch unter vollständiger Weltlast
   oder nativ qualifiziert.
+- **M2-Version-2-Pigment:** [Quellenanschluss, 77 Prüfungen und Ressourcenprobe](../../reference/atlas-material-v2-20261024/README.md)
+  integrieren runde, weiche und strukturierte Pinselzüge mit gespeicherter
+  Float32-/Byte-Deckkraftfolge, Land-/Wasserziel und Auftragen/Radieren.
+  Unstetige Kreis-, Textur- und Byte-Grenzen erhalten komponierte Werteintervalle
+  statt einer unzulässigen glatten Fehlerschranke. Die Produktionsquelle stimmt
+  an 43008 Punkten überein; finale Farben bleiben Floatkomposition.
+  Drei Messrunden widerlegen die Tragfähigkeit bloß weiterer adaptiver Verfeinerung:
+  1×1 rund/weich im Median 59/172 ms, strukturiert bereits Budgetabbruch;
+  256×256 scheitert für alle drei Spitzen. Quellenverhalten implementiert,
+  Ressourcen- und Produktgewinn nicht abgenommen.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Den Quellenvertrag um Version-2-Pinselzüge samt Kreis-/Texturgrenzen und
-  gespeicherter Deckkraftfolge vervollständigen. Feld-/Quellenseiten anschließen
-  und die weiterhin hohen Materialkosten
-  unter tatsächlicher Weltlast messen, bevor Kachelcacheversion und produktiver
-  Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
+  Die Quellengrenzen gezielt zerlegen und den kontinuierlichen Pinselkern
+  gesondert integrieren; zuerst gegen dieselbe Version-2-Probe mit unverändertem
+  Qualitäts-/Ressourcenziel prüfen. Textur, Byte-Stufen und Autorenfolge dürfen
+  dabei nicht verloren gehen. Danach Feld-/Quellenseiten anschließen und die
+  Materialkosten unter tatsächlicher Weltlast messen, bevor Kachelcacheversion
+  und produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets
   aktiver Arbeit/Quellenseiten und kampagnenweite Metadaten bleiben offen. Der

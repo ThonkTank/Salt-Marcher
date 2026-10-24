@@ -83,8 +83,10 @@ function classifyCells(geometry,width,height,tick){
  * `tolerance` bounds the area-weighted error of each completed output cell.
  * Trusted triangle classifiers can prove local degrees; unknown triangles are
  * refined largest weighted error first. `uniform` retains the earlier reference.
- * Optional centroidErrorBound(activeLayers, worldTriangle) certifies the mean
- * error of ALL final channels on that triangle (not already area weighted).
+ * Optional centroidErrorBound(activeLayers, worldTriangle, context) certifies
+ * the mean error of ALL final channels on that triangle (not already area
+ * weighted). For discontinuous layers it is mandatory on unknown triangles;
+ * context.evaluateCenter() lazily evaluates and caches the centroid estimate.
  * undefined retains the Lipschitz bound; malformed bounds fail explicitly.
  */
 export function integrateMaterialArea({box,width,height,background,layers,limits={},tolerance=1/255,lipschitz=0,interiorFastPath=true,localClipping=true,adaptiveStrategy='cell-error',centroidErrorBound}) {
@@ -106,7 +108,9 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
     })));
     if(layer.polynomialDegree!==undefined&&(!Number.isInteger(layer.polynomialDegree)||layer.polynomialDegree<0||layer.polynomialDegree>3))throw Error('Invalid material polynomial degree');
     if(layer.polynomialDegreeOnTriangle!==undefined&&typeof layer.polynomialDegreeOnTriangle!=='function')throw Error('Invalid material triangle classifier');
-    if(layer.varying&&layer.polynomialDegree===undefined&&lipschitz===0)throw Error('Varying material needs a final-channel Lipschitz bound');
+    if(layer.discontinuous&&(!layer.varying||typeof layer.discontinuous!=='boolean'))throw Error('Discontinuous material must declare varying:true');
+    if(layer.discontinuous&&!centroidErrorBound)throw Error('Discontinuous material requires a centroid error callback');
+    if(layer.varying&&layer.polynomialDegree===undefined&&lipschitz===0&&!layer.discontinuous)throw Error('Varying material needs a final-channel Lipschitz bound');
     let cells;
     if(interiorFastPath){
       stats.classifierBytes+=width*height;
@@ -176,7 +180,8 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
       // must include the channel state transform, not just a standalone colour.
       const degree=face.active.reduce((sum,index)=>sum+(prepared[index].varying?(prepared[index].polynomialDegree??Infinity):0),0);
       const active=face.active.map(index=>prepared[index]);
-      if(degree>3&&lipschitz===0)throw Error('Composed variable material needs a final-channel Lipschitz bound');
+      const hasDiscontinuous=active.some(layer=>layer.discontinuous);
+      if(degree>3&&lipschitz===0&&!hasDiscontinuous)throw Error('Composed variable material needs a final-channel Lipschitz bound');
       const visit=(points,depth)=>{
           tick();const [a,b,c]=points,weight=triangleArea(a,b,c);
           if(!weight)return;
@@ -211,12 +216,18 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
           }
           const radius=Math.max(...[a,b,c].map(p=>Math.hypot((p[0]-center[0])*dx,(p[1]-center[1])*dy)));
           let meanError=lipschitz*radius;
+          let centerValue;
           if(centroidErrorBound){
             tick();stats.curvatureQueries++;
             worldTriangle??=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
-            const bound=centroidErrorBound(active,worldTriangle);
+            const context={background:[...background],evaluateCenter(){
+              if(centerValue===undefined)centerValue=evaluate(center);
+              return [...centerValue];
+            }};
+            const bound=centroidErrorBound(active,worldTriangle,context);
             if(bound!==undefined&&(!Number.isFinite(bound)||bound<0))throw Error('Invalid centroid error bound');
-            if(bound!==undefined&&bound<meanError){meanError=bound;stats.curvatureBounds++;}
+            if(hasDiscontinuous&&bound===undefined)throw Error('Discontinuous material needs a finite centroid error bound on unknown triangles');
+            if(bound!==undefined&&(hasDiscontinuous||bound<meanError)){meanError=bound;stats.curvatureBounds++;}
           }
           const error=meanError*weight;
           if(adaptiveStrategy==='uniform'&&meanError>tolerance){
@@ -226,7 +237,7 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
             for(const child of [[a,ab,ca],[ab,b,bc],[ca,bc,c],[ab,bc,ca]])visit(child,depth+1);
             return;
           }
-          const value=evaluate(center).map(v=>v*weight);
+          const value=(centerValue??evaluate(center)).map(v=>v*weight);
           for(let k=0;k<channels;k++)pixels[out+k]+=value[k];
           remainingError+=error;
           if(adaptiveStrategy==='cell-error'&&error>0){

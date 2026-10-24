@@ -171,7 +171,7 @@ test('unsupported records fail explicitly instead of disappearing',()=>{
   const soft=cover(polygons);soft.vegetation.preset.edge=2;
   assert.throws(()=>landscapeMaterialLayers({palette,landColor,coverRecords:[soft]}),/Soft-edged/);
   const stroke=pigment(polygons);stroke.paint.fill=false;
-  assert.throws(()=>landscapeMaterialLayers({palette,landColor,colorRecords:[stroke]}),/filled version-2/);
+  assert.throws(()=>landscapeMaterialLayers({palette,landColor,colorRecords:[stroke]}),/Invalid pigment stroke/);
   assert.throws(()=>landscapeMaterialLayers({palette,landColor,baseRecords:[{...record('masked',polygons,{terrain:'plains'}),mask:{}}]}),/masks/);
 });
 
