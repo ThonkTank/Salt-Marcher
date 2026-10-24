@@ -24,7 +24,7 @@ import {contains,bounds,landscapePaintBox,type LandscapeRecord,type LandscapeBox
 import {LandscapeRasterizer,LANDSCAPE_RASTER_PAD,landscapeRasterBounds,landscapeRasterSlice,type LandscapeRaster} from '../landscape-raster';
 import type {AtlasRegionQuery,AtlasRegionSource,AtlasLandscapeLayer,AtlasHitPage,AtlasHit} from '../atlas-region-contracts';
 const overlap=(a:LandscapeBox,b:LandscapeBox)=>a.x<=b.x+b.width&&a.x+a.width>=b.x&&a.y<=b.y+b.height&&a.y+a.height>=b.y;
-const visual=(r:LandscapeRecord):LandscapeRecord=>{const {label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation}=r;return{label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation,values:vegetation?{terrain:vegetation.preset.terrain}:{}};};
+const visual=(r:LandscapeRecord):LandscapeRecord=>{const {prominence,label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation}=r;return{prominence,label,route,id,revision,kind,name,points,polygons,resolution,width,order,style,locationId,assetId,imageWidth,imageHeight,angle,opacity,visible,locked,line,vegetation,values:vegetation?{terrain:vegetation.preset.terrain}:{}};};
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
  invalidation:import("../terrain-presentation").TerrainInvalidation={reset:true,bounds:[]};

@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
 import {createRequire} from 'node:module';
 import {validateShaderModuleUniformLayout} from '@luma.gl/shadertools';
-buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/atlas-route-geometry';export * from './src/app/terrain-route';export * from './src/app/atlas-public-forest-layer';export * from './src/app/atlas-vegetation-layer';export * from './src/app/atlas-cartographic-style';export * from './src/app/atlas-deck-vegetation';export * from './src/app/atlas-metric-camera';export * from './src/app/atlas-scale-policy';export * from './src/app/vegetation';export * from './src/app/vegetation-lod';export * from './src/app/atlas-tile-plan';"},outfile:'.build/atlas-cartographic-scale.cjs',bundle:true,platform:'node',format:'cjs'});
-const {atlasRouteGeometry,routeSpec,AtlasPublicForestLayer,AtlasVegetationLayer,forestSurfaceWeight,cartographicPhase,CARTOGRAPHIC_PERIOD,AtlasDeckVegetation,atlasMetricFrame,vegetationSpec,vegetationOpacity,vegetationCrownScale,mapLineOpacity,atlasTilePlan,atlasPrefetchTiles}=createRequire(import.meta.url)('../.build/atlas-cartographic-scale.cjs');
+buildSync({stdin:{resolveDir:process.cwd(),contents:"export * from './src/app/atlas-route-geometry';export * from './src/app/terrain-route';export * from './src/app/atlas-public-forest-layer';export * from './src/app/atlas-terrain-material-layer';export * from './src/app/atlas-vegetation-layer';export * from './src/app/atlas-cartographic-style';export * from './src/app/atlas-deck-vegetation';export * from './src/app/atlas-metric-camera';export * from './src/app/atlas-scale-policy';export * from './src/app/vegetation';export * from './src/app/vegetation-lod';export * from './src/app/atlas-tile-plan';"},outfile:'.build/atlas-cartographic-scale.cjs',bundle:true,platform:'node',format:'cjs'});
+const {atlasRouteGeometry,routeSpec,AtlasTerrainMaterialLayer,AtlasPublicForestLayer,AtlasVegetationLayer,forestSurfaceWeight,cartographicPhase,CARTOGRAPHIC_PERIOD,AtlasDeckVegetation,atlasMetricFrame,vegetationSpec,vegetationOpacity,vegetationCrownScale,mapLineOpacity,atlasTilePlan,atlasPrefetchTiles}=createRequire(import.meta.url)('../.build/atlas-cartographic-scale.cjs');
 
 test('forest surface replaces automatic crowns continuously while protected objects retain their size',()=>{
  assert.equal(forestSurfaceWeight(2),0);assert.equal(forestSurfaceWeight(8),1);
@@ -64,7 +64,7 @@ test('large preload margins never reduce visible texture detail',()=>{
 // Exercise luma's real block parser: same-line declarations are valid GLSL but
 // are not accepted by this renderer's uniform-layout contract.
 test('custom cartographic uniform blocks satisfy the renderer layout contract',()=>{
- for(const Layer of [AtlasVegetationLayer,AtlasPublicForestLayer]){
+ for(const Layer of [AtlasVegetationLayer,AtlasPublicForestLayer,AtlasTerrainMaterialLayer]){
   const layer=new Layer({id:'uniform-contract',data:[]});layer.context={defaultShaderModules:[]};
   const modules=layer.getShaders().modules.filter(m=>m.name.startsWith('atlas'));
   assert.equal(modules.length,1);

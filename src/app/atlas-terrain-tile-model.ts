@@ -1,3 +1,4 @@
+import {COVER_CHANNEL_NAMES} from './terrain-material';
 import type {AtlasTerrainTile} from './atlas-terrain-tile';
 import type {AtlasMaterialTile} from './atlas-material-tile';
 import type {AtlasDeckSceneObject} from './atlas-deck-scene-model';
@@ -10,10 +11,22 @@ export interface AtlasTerrainTileModel {
   mesh:{attributes:{POSITION:{size:number;value:Float32Array};NORMAL:{size:number;value:Float32Array};TEXCOORD_0:{size:number;value:Float32Array}};indices:{size:number;value:Uint32Array}};
   data:AtlasDeckSceneObject[];
   texture:{data:Uint8Array;width:number;height:number};
+  cover:{data:Uint8Array;width:number;height:number};
+  relief:{data:Uint8Array;width:number;height:number};
   masks:{data:Uint8Array;width:number;height:number};
 }
 const geometryCache=new WeakMap<AtlasTerrainTile['projection']['grid'],Pick<AtlasTerrainTileModel,'object'|'data'|'mesh'|'bounds'>>();
-const masksCache=new WeakMap<Uint8Array,WeakMap<Uint8Array,AtlasTerrainTileModel['masks']>>();
+type TextureData=AtlasTerrainTileModel['texture'];
+interface TextureNode {next:WeakMap<Uint8Array,TextureNode>;texture?:TextureData;}
+const textureCache:TextureNode={next:new WeakMap()};
+function packedTexture(buffers:Uint8Array[],width:number,height:number):TextureData {
+  let node=textureCache;
+  for(const buffer of buffers){let child=node.next.get(buffer);if(!child){child={next:new WeakMap()};node.next.set(buffer,child);}node=child;}
+  if(node.texture?.width===width&&node.texture.height===height)return node.texture;
+  const data=new Uint8Array(width*height*4);
+  for(let i=0;i<width*height;i++)for(let c=0;c<4;c++)data[i*4+c]=buffers[c]?.[i]??255;
+  return node.texture={data,width,height};
+}
 const cached=new WeakMap<AtlasTerrainTile,WeakMap<AtlasMaterialTile,AtlasTerrainTileModel>>();
 /** Immutable source pair; camera and style never rebuild these buffers. */
 export function atlasTerrainTileModel(terrain:AtlasTerrainTile,material:AtlasMaterialTile):AtlasTerrainTileModel {
@@ -43,14 +56,12 @@ export function atlasTerrainTileModel(terrain:AtlasTerrainTile,material:AtlasMat
   geometryCache.set(terrain.projection.grid,geometry);
   }
   const {width,height,channels}=material;
-  let forests=masksCache.get(channels.water);if(!forests){forests=new WeakMap();masksCache.set(channels.water,forests);}
-  let masks=forests.get(channels.forest);
-  if(!masks){
-    const data=new Uint8Array(width*height*4);
-    for(let i=0;i<width*height;i++){data[i*4]=channels.water[i]!;data[i*4+1]=channels.forest[i]!;data[i*4+3]=255;}
-    masks={data,width,height};forests.set(channels.forest,masks);
-  }
-  const result={...geometry,texture:{data:channels.baseColor,width,height},masks};
+  const materialData={
+    masks:packedTexture([channels.water,channels.forest,channels.debris],width,height),
+    cover:packedTexture(COVER_CHANNEL_NAMES.slice(0,4).map(c=>channels[c]),width,height),
+    relief:{data:channels.relief,width,height}
+  };
+  const result={...geometry,texture:{data:channels.baseColor,width,height},...materialData};
   materials.set(material,result);return result;
 }
 

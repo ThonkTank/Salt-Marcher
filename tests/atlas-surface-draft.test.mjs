@@ -1,10 +1,11 @@
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 const {outputFiles}=await build({entryPoints:['src/app/atlas-surface-draft.ts'],bundle:true,write:false,platform:'node',format:'esm'});
 const {AtlasSurfaceDraft}=await import('data:text/javascript;base64,'+Buffer.from(outputFiles[0].text).toString('base64'));
 const view={box:{x:0,y:0,width:64,height:64},frame:{x:0,y:0,width:64,height:64},columns:65,rows:65,focusM:20,tilt:0,rotation:0,exaggeration:1};
-function tile(x=0){const grid={view:{...view,box:{...view.box,x:x*64}},heights:new Float32Array(4225).fill(20),editing:{ground:new Float32Array(4225).fill(20),water:new Float32Array(4225)},seaLevelM:0};const address={lod:-2,x,y:0};return{tile:address,revision:0,fence:'a',terrain:{tile:address,revision:0,fence:'a',projection:{grid}},material:{tile:address,revision:0,fence:'a',width:256,height:256,channels:{baseColor:new Uint8Array(256*256*4).fill(255),water:new Uint8Array(256*256),forest:new Uint8Array(256*256)}}};}
+function tile(x=0){const grid={view:{...view,box:{...view.box,x:x*64}},heights:new Float32Array(4225).fill(20),editing:{ground:new Float32Array(4225).fill(20),water:new Float32Array(4225)},seaLevelM:0};const address={lod:-2,x,y:0};return{tile:address,revision:0,fence:'a',terrain:{tile:address,revision:0,fence:'a',projection:{grid}},material:{tile:address,revision:0,fence:'a',width:256,height:256,channels:{...emptyMaterialChannels(65536),baseColor:new Uint8Array(256*256*4).fill(255),water:new Uint8Array(256*256),forest:new Uint8Array(256*256)}}};}
 const stroke={mode:'raise',radius:8,strength:10,feather:.5,samples:[{x:32,y:32,t:0},{x:32,y:32,t:1000}]};
 test('a second unacknowledged height gesture starts from first local ground without mutating canonical source',()=>{
  const base=tile(),outside=tile(2),first=new AtlasSurfaceDraft([base,outside],view);
@@ -34,4 +35,15 @@ test('a height segment crossing a tile is applied even when both endpoints are o
  const base=tile(),draft=new AtlasSurfaceDraft([base],view);
  assert(draft.height({...stroke,samples:[{x:-20,y:32,t:0},{x:84,y:32,t:1000}]}));
  assert(draft.tiles[0].terrain.projection.grid.heights[32*65+32]>20);
+});
+
+test('incremental height feedback preserves earlier relief and clears semantic cover below water',()=>{
+ const base=tile();base.material.channels.conifer.fill(200);
+ const draft=new AtlasSurfaceDraft([base],view);
+ const left={...stroke,radius:4,samples:[{x:12,y:32,t:0},{x:12,y:32,t:1000}]};draft.height(left);
+ const at=(128*256+38)*4,first=draft.tiles[0].material.channels.relief.slice(at,at+4);
+ assert.notDeepEqual(first,base.material.channels.relief.slice(at,at+4));
+ draft.height({...left,samples:[...left.samples,{x:52,y:32,t:1000},{x:52,y:32,t:2000}]});assert.deepEqual(draft.tiles[0].material.channels.relief.slice(at,at+4),first);
+ const lowered=new AtlasSurfaceDraft([base],view);lowered.height({...stroke,mode:'lower',strength:100});
+ assert.equal(lowered.tiles[0].material.channels.conifer[128*256+128],0);assert.equal(base.material.channels.conifer[128*256+128],200);
 });

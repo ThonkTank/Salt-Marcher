@@ -1,3 +1,4 @@
+import {validateProminence} from '../atlas-prominence';
 import {installSourceCellIndex} from './atlas-source-cell';
 import {validateMapLabelStyle} from '../map-label-style';
 import {terrainTraceMeasure} from '../terrain-timing';
@@ -159,6 +160,8 @@ export function putLandscape(
   )
     throw new Error("Landschaftsdaten prüfen.");
   validateMapLabelStyle(r.label);
+  validateProminence(r.prominence);
+  if(r.prominence!==undefined&&r.kind!=='road'&&r.kind!=='river')throw Error('Kartenprominenz gehört zu Straßen und Flüssen.');
   validateVegetation(r);
   validateRoute(r);
   if(r.vegetationView)throw Error("Darstellungsdaten sind nicht schreibbar.");
@@ -260,6 +263,17 @@ function writeTerrainHeight(db:any,cam:string,r:LandscapeRecord){
   for(const tile of applyHeightArea(records,r))putLandscape(db,cam,tile,tile.revision||null);
 }
 export function executeLandscape(db: any, cam: string, a: LandscapeAction, liveColorRevision:number|null=null,visibilityGrid?:import('../terrain-spatial-model').TerrainGrid,prepared?:import('./terrain-scale').PreparedTerrainStroke) {
+  if(a.kind==='landscape-prominence'){
+    if(Object.keys(a).some(k=>!['kind','id','expectedRevision','prominence'].includes(k))||typeof a.id!=='string'||!Number.isSafeInteger(a.expectedRevision)||a.expectedRevision<0||a.prominence===undefined)throw Error('Prominenzauftrag prüfen.');
+    validateProminence(a.prominence===null?undefined:a.prominence);
+    const row=db.prepare('SELECT payload FROM atlas_landscape WHERE campaign_id=? AND id=? AND revision=?').get(cam,a.id,a.expectedRevision);
+    if(!row)throw Error('Landschaft inzwischen geändert. Neu laden.');
+    const record:LandscapeRecord=JSON.parse(row.payload);
+    if(record.kind!=='road'&&record.kind!=='river')throw Error('Kartenprominenz gehört zu Straßen und Flüssen.');
+    if(record.prominence===(a.prominence??undefined))return;
+    if(a.prominence===null)delete record.prominence;else record.prominence=a.prominence;
+    return putLandscape(db,cam,record,a.expectedRevision);
+  }
   if(a.kind==='landscape-route'){
     if(db.prepare('SELECT revision FROM campaign_atlas WHERE campaign_id=?').get(cam).revision!==a.sourceRevision)throw Error('Gelände inzwischen geändert. Vorschau erneut berechnen.');
     const proposal=routeProposal(db,cam,a.record);

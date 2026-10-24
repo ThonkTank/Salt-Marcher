@@ -1,6 +1,7 @@
+import {terrainChannelStride} from '../terrain-material';
 import {createHash} from 'node:crypto';
 import {atlasMaterialTileQuery,type AtlasMaterialTileRequest,type AtlasMaterialTile} from '../atlas-material-tile';
-import {SURFACE_CHANNEL_NAMES,CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialChannels,type TerrainMaterialRaster} from '../terrain-material';
+import {SURFACE_CHANNEL_NAMES,COVER_CHANNEL_NAMES,CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialChannels,type TerrainMaterialRaster} from '../terrain-material';
 import {DEFAULT_TERRAIN_STYLE} from '../terrain-relief';
 import {landscapeRasterBounds} from '../landscape-raster';
 import type {LandscapeRecord} from '../atlas-landscape';
@@ -9,13 +10,13 @@ import {AtlasCacheScope} from './atlas-cache-scope';
 import {readTerrainSettings} from './terrain-color-raster';
 import type {AtlasRegionReader} from './atlas-region';
 
-const FORMAT='material-tiles-v3-surface-area4';
+const FORMAT='material-tiles-v4-fantasy-cover';
 const digest=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 type Stored={version:string;fingerprint:string;bytes:Uint8Array;waterTopology?:Uint16Array};
-type Inputs={water:string;baseColor:string;forest:string;rock:string;snow:string};
+type Inputs=Record<TerrainMaterialChannel,string>;
 function validStored(value:Stored|undefined,channel:TerrainMaterialChannel,width:number,height:number):value is Stored {
  return !!value&&typeof value.version==='string'&&typeof value.fingerprint==='string'&&value.bytes instanceof Uint8Array&&
-  value.bytes.length===width*height*(channel==='baseColor'?4:1)&&
+  value.bytes.length===width*height*terrainChannelStride(channel)&&
   (channel!=='water'||value.waterTopology instanceof Uint16Array&&value.waterTopology.length===width*height);
 }
 function reply(source:AtlasRegionSource,request:AtlasMaterialTileRequest,width:number,height:number,channels:TerrainMaterialRaster,cache:AtlasMaterialTile['cache']):AtlasMaterialTile {
@@ -48,7 +49,7 @@ export class AtlasMaterialTiles {
   const settings=readTerrainSettings(this.db,source.campaignId).terrainSettings!,style=settings.style??DEFAULT_TERRAIN_STYLE;
   const field=createHash('sha256').update(FORMAT+JSON.stringify(settings.seaLevelM));
   const base=createHash('sha256').update(FORMAT+JSON.stringify(style.land));
-  const forest=createHash('sha256').update(FORMAT),waterBase=createHash('sha256').update(FORMAT);
+  const cover=createHash('sha256').update(FORMAT),forest=createHash('sha256').update(FORMAT),waterBase=createHash('sha256').update(FORMAT);
   // Page narrow keys, then one owned payload at a time. No SQLite iterator is
   // suspended across a worker continuation and no world-sized author list lives in JS.
   const keySql=`SELECT CAST(rowid AS TEXT) source_row FROM atlas_landscape WHERE campaign_id=? AND max_x>=? AND min_x<=? AND max_y>=? AND min_y<=?`;
@@ -69,9 +70,11 @@ export class AtlasMaterialTiles {
     else if(r.paint)base.update(JSON.stringify([shape,r.paint]));
     else if(r.vegetation){
      const p=r.vegetation.preset;
+     cover.update(JSON.stringify([shape,p.id,p.tree,p.edge,p.density,p.undergrowth,p.rocks,r.vegetation.edits]));
      base.update(JSON.stringify([shape,p.edge,p.ground]));
      forest.update(JSON.stringify([shape,p.edge,p.density,r.vegetation.edits]));
     }else if(r.kind==='patch'&&(r.values.terrain||r.mask)&&!r.terrainSettings){
+     cover.update(JSON.stringify([shape,r.values.terrain,r.mask,r.maskManaged,r.propertyOnly]));
      base.update(JSON.stringify([shape,r.values.terrain,r.mask,r.maskManaged,r.propertyOnly]));
      forest.update(JSON.stringify([shape,r.values.terrain==='forest',r.mask,r.maskManaged,r.propertyOnly]));
      waterBase.update(JSON.stringify([shape,r.values.terrain==='water',r.mask,r.maskManaged,r.propertyOnly]));
@@ -82,7 +85,8 @@ export class AtlasMaterialTiles {
    if(rows.length<128)break;
   }
   const terrain=field.digest('hex'),water=digest(JSON.stringify([terrain,waterBase.digest('hex')]));
-  return {water,baseColor:base.digest('hex'),forest:forest.digest('hex'),
+  const coverHash=cover.digest('hex'),coverInputs=Object.fromEntries(COVER_CHANNEL_NAMES.map(c=>[c,coverHash])) as Record<typeof COVER_CHANNEL_NAMES[number],string>;
+  return {...coverInputs,relief:terrain,water,baseColor:base.digest('hex'),forest:forest.digest('hex'),
    rock:digest(JSON.stringify([terrain,!!style.mountains])),snow:digest(JSON.stringify([terrain,!!style.mountains,style.snowlineM??2500]))};
  }
  *read(source:AtlasRegionSource,request:AtlasMaterialTileRequest,reader:AtlasRegionReader):Generator<void,AtlasMaterialTile>{
@@ -109,9 +113,7 @@ export class AtlasMaterialTiles {
    }
    // Ground colour and vegetation depend on water classification, not the exact
    // elevation that produced it. Raising dry land leaves these channels reusable.
-   const waterIdentity=digest(new Uint8Array(waterTopology!.buffer,waterTopology!.byteOffset,waterTopology!.byteLength)),fingerprints=inputs?{water:inputs.water,
-    baseColor:digest(inputs.baseColor+waterIdentity),forest:digest(inputs.forest+waterIdentity),
-    rock:digest(inputs.rock+waterIdentity),snow:digest(inputs.snow+waterIdentity)}:undefined;
+   const waterIdentity=digest(new Uint8Array(waterTopology!.buffer,waterTopology!.byteOffset,waterTopology!.byteLength)),fingerprints=inputs?Object.fromEntries(CHANNEL_NAMES.map(c=>[c,c==='water'?inputs.water:digest(inputs[c]+waterIdentity)])) as Inputs:undefined;
    const missing=new Set<TerrainMaterialChannel>();
    for(const c of selected){
     if(c==='water')continue;

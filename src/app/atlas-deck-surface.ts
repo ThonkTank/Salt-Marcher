@@ -197,7 +197,7 @@ export class AtlasDeckSurface {
     const frame=this.frameValue;
     return this.terrain.map(tile=>new AtlasTerrainMaterialLayer({
       id:`atlas-scene:${tile.object.id}`,data:tile.data,mesh:tile.mesh,baseColor:tile.texture,
-      masks:tile.masks,terrainStyle:this.terrainStyle,heightOrigin:tile.object.origin.heightM,
+      masks:tile.masks,cover:tile.cover,relief:tile.relief,terrainStyle:this.terrainStyle,heightOrigin:tile.object.origin.heightM,
       materialOrigin:[cartographicPhase(tile.object.origin.x),cartographicPhase(tile.object.origin.y)],
       ...this.terrainDisplay,automaticStep:terrainContourStep(frame.camera.metersPerPixel*(this.options.styleScale??1)),pixelRatio:(this.options.pixelRatio??globalThis.devicePixelRatio??1)*(this.options.styleScale??1),
       coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,

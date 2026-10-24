@@ -1,3 +1,4 @@
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -14,7 +15,7 @@ function materialReply(request, tag=1, fence='terrain-materials') {
   const {tile,revision}=request;
   const seed=(tile.lod*37+tile.x*11+tile.y*5+tag*17)&255;
   const baseColor=new Uint8Array(256*256*4);
-  const channels={
+  const channels={...emptyMaterialChannels(256*256),
     baseColor,
     water:new Uint8Array(256*256),
     forest:new Uint8Array(256*256),

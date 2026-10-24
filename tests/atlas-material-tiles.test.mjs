@@ -1,3 +1,4 @@
+import {surfaceChannels} from './helpers/atlas-material-channels.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -36,20 +37,20 @@ test('raw channels persist across restart; lighting, analysis mode, contours and
  assert(!('waterTopology' in light.channels),'internal dependency metadata is not a display channel');
 });
 
-test('snowline rebuilds only snow, pigment only base colour, vegetation density only forest',async t=>{
+test('snowline rebuilds only snow, pigment only base colour, vegetation density only cover channels',async t=>{
  const f=fixture(t);f.put(heightRecord(0,0,4,new Float32Array(4096).fill(2800)));f.style({snowlineM:2500});
  const woods={...emptyRecord('vegetation'),id:'woods',order:1,vegetation:vegetationSpec(),values:{terrain:'forest'},polygons:[polygon(4,4,240,240)]};f.put(woods);
  const first=await f.read();f.style({snowlineM:3000});const snow=await f.read();assertStates(snow,{snow:'built'});assert.notDeepEqual(snow.channels.snow,first.channels.snow);assert.deepEqual(f.calls.at(-1),['snow']);
  const paint={...emptyRecord('patch'),id:'pigment',polygons:[polygon(8,8,32,32)],paint:{version:2,operation:'paint',color:'#ff0000',opacity:1,target:'ground',flow:1,tip:'round',radius:4,seed:7,fill:true}};f.put(paint);
  const painted=await f.read();assertStates(painted,{baseColor:'built'});assert.notDeepEqual(painted.channels.baseColor,snow.channels.baseColor);assert.deepEqual(f.calls.at(-1),['baseColor']);
- f.put({...woods,vegetation:{...woods.vegetation,preset:{...woods.vegetation.preset,density:.1}}});const thin=await f.read();assertStates(thin,{forest:'built'});assert.notDeepEqual(thin.channels.forest,painted.channels.forest);assert.deepEqual(f.calls.at(-1),['forest']);
+ f.put({...woods,vegetation:{...woods.vegetation,preset:{...woods.vegetation.preset,density:.1}}});const thin=await f.read();assertStates(thin,{forest:'built',deciduous:'built',conifer:'built',grass:'built',shrub:'built',debris:'built'});assert.notDeepEqual(thin.channels.forest,painted.channels.forest);assert.deepEqual(f.calls.at(-1),['forest','deciduous','conifer','grass','shrub','debris']);
 });
 
 test('dry height changes preserve ground colour and forest; local parents update while distant tiles reuse; Undo restores',async t=>{
  const f=fixture(t);f.write({kind:'landscape-sea-level',seaLevelM:-10000});f.put(heightRecord(0,0,4,new Float32Array(4096).fill(100)));f.style({snowlineM:120});
  const original=await f.read();await f.read(far);await f.read(parent);
  f.put(heightRecord(0,0,4,new Float32Array(4096).fill(400)));f.reopen();
- const changed=await f.read();assertStates(changed,{water:'built',rock:'built',snow:'built'});assert.deepEqual(changed.channels.baseColor,original.channels.baseColor);assert.deepEqual(changed.channels.forest,original.channels.forest);
+ const changed=await f.read();assertStates(changed,{water:'built',relief:'built',rock:'built',snow:'built'});assert.deepEqual(changed.channels.baseColor,original.channels.baseColor);assert.deepEqual(changed.channels.forest,original.channels.forest);
  assertStates(await f.read(far),{});const coarse=await f.read(parent);assert.equal(coarse.cache.snow,'built');
  f.write({kind:'undo'});const undone=await f.read();assert.deepEqual(undone.channels,original.channels);
 });
@@ -86,13 +87,21 @@ test('material fingerprints preserve adjacent SQLite rowids beyond JavaScript in
 });
 
 
-test('GPU surface requests persist only base colour, water and forest; snowline never schedules a rock/snow raster',async t=>{
+test('GPU surface requests persist colour, water, cover and macro relief; snowline never schedules a rock/snow raster',async t=>{
  const f=fixture(t);f.put(heightRecord(0,0,4,new Float32Array(4096).fill(2800)));
  const first=await f.read(near,{},'surface');assert.equal(first.product,'surface');
- assert.deepEqual(Object.keys(first.channels).sort(),['baseColor','forest','water']);assert.deepEqual(f.calls,[['baseColor','water','forest']]);
+ assert.deepEqual(Object.keys(first.channels).sort(),[...surfaceChannels].sort());assert.deepEqual(f.calls,[surfaceChannels]);
  f.reopen();f.style({snowlineM:3000});const warm=await f.read(near,{},'surface');
  assert.deepEqual(warm.channels,first.channels);assert(Object.values(warm.cache).every(v=>v==='hit'));assert.equal(f.calls.length,1);
  const reference=await f.read();assert(reference.channels.rock.length);assert(reference.channels.snow.length);
  assert.deepEqual(f.calls.at(-1),['rock','snow']);assert.deepEqual(reference.channels.baseColor,first.channels.baseColor);
  assert.throws(()=>atlasMaterialTileQuery({tile:near,revision:0,product:'arbitrary'}),/Materialprodukt/);
+});
+
+test('route prominence refreshes presentation identity while reusing every physical material channel',async t=>{
+ const f=fixture(t);f.put(heightRecord(0,0,4,new Float32Array(4096).fill(100)));
+ const road={...emptyRecord('road'),id:'road',width:8,points:[{x:0,y:100},{x:200,y:100}]};f.put(road);
+ const before=await f.read(),revision=f.store.db.prepare('SELECT revision FROM atlas_landscape WHERE id=?').get('road').revision;
+ f.write({kind:'landscape-prominence',id:'road',expectedRevision:revision,prominence:5});
+ const after=await f.read();assertStates(after,{});assert.deepEqual(after.channels,before.channels);assert.notEqual(after.fence,before.fence);
 });

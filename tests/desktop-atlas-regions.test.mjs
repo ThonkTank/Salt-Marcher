@@ -659,7 +659,7 @@ test('dense world symbols omit empty object tiles while preserving names, hits a
  const q={...query({x:-4e6,y:-4e6,width:8e6,height:8e6}),width:256,height:256,scopeId:null,terrainRaster:false};
  const world=await f.read(q);assert.equal(world.landscape.coverage.mode,'raster');assert.equal(world.landscape.coverage.objects,601);assert.equal(world.landscape.coverage.complete,true);assert.deepEqual(world.landscape.tiles,[]);
  assert(world.landscape.labels.some(l=>l.id==='place:capital'&&l.rank===5));assert.equal(f.reader.candidatesAt(f.source,q,{x:5,y:0},0,'landscape').total,601);
- landscape(f,{...road('minor-0'),revision:1,width:10000});assert((await f.read(q)).landscape.tiles.length>0,'a widened road appears without moving the camera');
+ landscape(f,{...road('minor-0'),revision:1,prominence:5});assert((await f.read(q)).landscape.tiles.length>0,'a promoted road appears without moving the camera');
  landscape(f,{...road('minor-0'),revision:2});assert.deepEqual((await f.read(q)).landscape.tiles,[],'hiding it again does not retain old raster ink');
  const near=await f.read({...q,box:{x:-1000,y:-1000,width:2000,height:2000}});assert(near.landscape.tiles.length>0,'place symbols return at the appropriate scale');
  const ref=id=>({...road(id),kind:'reference',points:[{x:0,y:0}],width:10,imageWidth:10,imageHeight:10,angle:0,visible:true,assetId:id});
@@ -668,4 +668,13 @@ test('dense world symbols omit empty object tiles while preserving names, hits a
  assert((await f.read(q)).landscape.tiles.length>0,'excess image templates retain their outlines');
  const hidden=await f.read({...q,references:false});assert.deepEqual(hidden.landscape.tiles,[]);assert.equal(hidden.landscape.coverage.references,0);
  const ground=await f.read({...q,terrainRaster:true});assert(ground.landscape.tiles.length>0,'Canvas terrain is still produced when requested');
+});
+
+
+test('bounded visual records preserve explicit route prominence and whole authored extent',async t=>{
+ const f=fixture(t,0);landscape(f,{...road('route'),name:'Fernweg',prominence:5,points:[{x:-200000,y:0},{x:200000,y:0}]});
+ const q={...query({x:-1000,y:-1000,width:2000,height:2000}),width:256,height:256,scopeId:null,terrainRaster:false};
+ const view=await f.read(q),record=view.landscape.records.find(r=>r.id==='route');
+ assert.equal(record.prominence,5);assert.deepEqual(record.points,[{x:-200000,y:0},{x:200000,y:0}]);
+ assert(view.landscape.labels.filter(l=>l.id.startsWith('landscape:route')).every(l=>l.rank===5));
 });

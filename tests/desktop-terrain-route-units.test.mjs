@@ -18,7 +18,7 @@ test('route editor converts lengths and exact points while units remain passive 
  let record={...api.emptyRecord('road'),name:'Passstraße',width:8,route:api.routeSpec('road',anchors)},calls=[],writes=[];
  const scene=()=>({records:[structuredClone(record)],revision:3,fence:{}});
  window.campaign={async atlasSpatialScene(token,box,scale,action){calls.push(action);const s=scene();if(action){s.records=[structuredClone(action.record)];s.records[0].route.nodes=s.records[0].route.anchors.map(p=>({...p,z:60,structure:'ground'}));}return{ok:true,value:s};}};
- const host={token:'a',box:()=>({x:-300,y:-100,width:600,height:400}),canvas:document.querySelector('canvas'),panel:document.querySelector('#tools'),point:()=>({x:1,y:2}),hit:()=>null,navigation:()=>false,current:()=>true,preview(){},closed(){},kind:'road',record,write:async action=>{writes.push(action);record=structuredClone(action.record);record.revision=1;return true;}};
+ const host={token:'a',box:()=>({x:-300,y:-100,width:600,height:400}),canvas:document.querySelector('canvas'),panel:document.querySelector('#tools'),point:()=>({x:1,y:2}),hit:()=>null,navigation:()=>false,current:()=>true,preview(){},closed(){},kind:'road',record,write:async action=>{writes.push(action);if(action.kind==='landscape-prominence'){if(action.prominence===null)delete record.prominence;else record.prominence=action.prominence;}else record=structuredClone(action.record);record.revision++;return true;}};
  const field=id=>document.querySelector('#route-'+id),button=name=>document.querySelector(`[data-action="${name}"]`);
  const settle=async()=>{for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));};
  try{
@@ -40,7 +40,17 @@ test('route editor converts lengths and exact points while units remain passive 
   button('save').onclick();await settle();assert.equal(writes.length,1);assert.deepEqual(writes[0].record.route.anchors,preview.route.anchors);assert.equal(writes[0].record.width,preview.width);assert.equal(writes[0].record.route.nodes.length,3);
   button('close').onclick();assert.equal(document.querySelector('#terrain-route-editor'),null);assert.equal(document.querySelectorAll('canvas').length,1);
   api.setAtlasUnits('dnd');await api.openTerrainRoute({...host,record}).ready;assert.equal(field('width').value,'40');assert.equal(field('point-y-0').value,'25');
+  const planned=structuredClone(record.route),beforeProminence=calls.length;
+  field('prominence').value='5';field('prominence').onchange();button('save').onclick();await settle();
+  assert.equal(writes.at(-1).kind,'landscape-prominence');assert.equal(record.prominence,5);assert.deepEqual(record.route,planned);
+  assert.equal(calls.slice(beforeProminence).filter(Boolean).length,0,'prominence does not start a new physical preview');
+  field('prominence').value='';field('prominence').onchange();button('save').onclick();await settle();
+  assert.equal(writes.at(-1).prominence,null);assert.equal(record.prominence,undefined);assert.deepEqual(record.route,planned);
   button('close').onclick();
+  record={...record,points:planned.anchors};delete record.route;
+  await api.openTerrainRoute({...host,record}).ready;await settle();button('save').onclick();await settle();
+  assert.equal(writes.at(-1).kind,'landscape-route','planning an ordinary line must still create its first terrain route');
+  assert(record.route.nodes.length>0);button('close').onclick();
   // Closing while the canonical source is in flight revokes author handlers and late previews.
   let resolveRead,publishes=0;
   window.campaign.atlasSpatialScene=()=>new Promise(resolve=>{resolveRead=resolve;});

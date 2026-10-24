@@ -1,3 +1,5 @@
+import {acquireCartographicTextures} from './atlas-cartographic-texture';
+import type {LayerContext} from '@deck.gl/core';
 import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
 import {CARTOGRAPHIC_GLSL} from './atlas-cartographic-style';
 
@@ -12,6 +14,8 @@ const module={name:'atlasPublicForest',vs:block,fs:block,uniformTypes:{origin:'v
 export class AtlasPublicForestLayer extends SimpleMeshLayer<unknown,{forestOrigin:number[];forestScale:number;forestPixelRatio:number}> {
  static layerName='AtlasPublicForestLayer';
  static defaultProps={...SimpleMeshLayer.defaultProps,forestOrigin:{type:'array',value:[0,0]},forestScale:1,forestPixelRatio:1};
+ initializeState(){super.initializeState();this.setState({ink:acquireCartographicTextures(this.context.device)});}
+ finalizeState(context:LayerContext){(this.state as typeof this.state & {ink?:ReturnType<typeof acquireCartographicTextures>}).ink?.release();super.finalizeState(context);}
  getShaders(){const shaders=super.getShaders();return {...shaders,modules:[...shaders.modules,module],inject:{...shaders.inject,
   'vs:#decl':'out vec2 atlasPublicWorld;',
   'vs:#main-end':'atlasPublicWorld=positions.xy*atlasPublicForest.worldScale+atlasPublicForest.origin;',
@@ -22,6 +26,8 @@ export class AtlasPublicForestLayer extends SimpleMeshLayer<unknown,{forestOrigi
  }};}
  draw(options:Parameters<SimpleMeshLayer['draw']>[0]){
   this.state.model?.shaderInputs.setProps({atlasPublicForest:{origin:this.props.forestOrigin,worldScale:this.props.forestScale,pixelRatio:this.props.forestPixelRatio}});
+  const ink=(this.state as typeof this.state & {ink?:ReturnType<typeof acquireCartographicTextures>}).ink;
+  if(ink)this.state.model?.setBindings({atlasPlantInk:ink.plants,atlasMarkInk:ink.marks});
   super.draw(options);
  }
 }

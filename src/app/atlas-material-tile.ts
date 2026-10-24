@@ -6,7 +6,7 @@ export interface AtlasMaterialTileRequest {tile:AtlasWorldTile;revision:number;p
 export interface AtlasMaterialTile {
  tile:AtlasWorldTile;revision:number;fence:string;width:number;height:number;
  product?:'surface';
- channels:Pick<TerrainMaterialChannels,'baseColor'|'water'|'forest'>&Partial<Pick<TerrainMaterialChannels,'rock'|'snow'>>;
+ channels:Pick<TerrainMaterialChannels,'baseColor'|'water'|'forest'|'relief'|import('./terrain-material').TerrainCoverChannel>&Partial<Pick<TerrainMaterialChannels,'rock'|'snow'>>;
  cache:Partial<Record<TerrainMaterialChannel,'hit'|'built'|'disabled'>>;
 }
 /** Authoring and camera/style inputs cannot cross this display-only read boundary. */

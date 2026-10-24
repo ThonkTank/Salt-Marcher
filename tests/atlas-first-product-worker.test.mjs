@@ -1,3 +1,4 @@
+import {materialChannels} from './helpers/atlas-material-channels.mjs';
 import {createHash} from 'node:crypto';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -147,11 +148,11 @@ test('a material channel with missing water topology forces regeneration and ret
  assert(Object.values(first.cache).every(value=>value==='built'));await f.restart();
  const namespace=projectionKey(f.filename,f.campaign.id),cache=AtlasTileCache.open(f.cacheDirectory,namespace),waterKey=JSON.stringify(['material',terrain.lod,terrain.x,terrain.y,'water']);
  try{
-  const water=cache.get(waterKey,'material-tiles-v3-surface-area4');assert(water?.waterTopology instanceof Uint16Array);
-  delete water.waterTopology;assert.equal(cache.put(waterKey,'material-tiles-v3-surface-area4',water),true,'the malformed single-channel entry is stored with a valid outer checksum');
+  const water=cache.get(waterKey,'material-tiles-v4-fantasy-cover');assert(water?.waterTopology instanceof Uint16Array);
+  delete water.waterTopology;assert.equal(cache.put(waterKey,'material-tiles-v4-fantasy-cover',water),true,'the malformed single-channel entry is stored with a valid outer checksum');
  }finally{cache.close();}
  const repaired=await f.service.materialTile(source,{tile:terrain,revision:source.revision});
- assert.deepEqual(Object.keys(repaired.channels).sort(),['baseColor','forest','rock','snow','water']);
+ assert.deepEqual(Object.keys(repaired.channels).sort(),[...materialChannels].sort());
  assert(repaired.channels.baseColor instanceof Uint8Array&&repaired.channels.baseColor.length===256*256*4);
  for(const channel of ['water','forest','rock','snow'])assert(repaired.channels[channel] instanceof Uint8Array&&repaired.channels[channel].length===256*256);
  assert.equal(repaired.cache.water,'built','the missing water topology forces its source channel to be rebuilt');

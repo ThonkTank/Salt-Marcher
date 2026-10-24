@@ -1,3 +1,4 @@
+import {prominenceOpacity} from './atlas-prominence';
 import type { LandscapeRecord } from "./atlas-landscape";
 export const MAP_LINE_MIN_PIXELS=1.4;
 export const mapLineThreshold=(kind:'road'|'river',minor=false)=>minor?.4:kind==='river'?.12:.18;
@@ -17,12 +18,7 @@ export function mapLineWidth(width: number, mpp: number) {
 }
 export function mapRecordVisible(r: LandscapeRecord, mpp: number) {
   return r.kind === "road" || r.kind === "river"
-    ? mapLineVisible(
-        r.kind,
-        r.width,
-        mpp,
-        r.style === "path" || r.style === "stream",
-      )
+    ? prominenceOpacity(r,mpp)>0
     : r.kind !== "place" || mpp <= 1000;
 }
 export function mapFootprintVisible(
@@ -55,5 +51,5 @@ export function mapLineOpacity(kind:'road'|'river',width:number,mpp:number,minor
  return t*t*(3-2*t);
 }
 export function mapRecordOpacity(record:LandscapeRecord,mpp:number){
- return record.kind==='road'||record.kind==='river'?mapLineOpacity(record.kind,record.width,mpp,record.style==='path'||record.style==='stream'):1;
+ return record.kind==='road'||record.kind==='river'?prominenceOpacity(record,mpp):1;
 }

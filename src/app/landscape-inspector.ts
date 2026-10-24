@@ -1,3 +1,5 @@
+import {prominenceEditor} from './atlas-prominence-editor';
+import {onlyProminenceChanged} from './atlas-prominence';
 import type { LandscapeRoutes } from './landscape-routes';
 import type { LandscapeHost } from './landscape-workbench-types';
 import { mapLabelEditor, readMapLabelEditor } from './map-label-editor';
@@ -36,7 +38,7 @@ interface LandscapeInspectorHost {
 export class LandscapeInspector {
     constructor(private host: LandscapeInspectorHost) { }
     clearSelection() {
-        this.selected = null;
+        this.selected = null;this.original=null;this.prominenceControl=undefined;
         this.selectionRecords.clear();
         this.vegetationInstance = undefined;
         this.doc = null;
@@ -50,6 +52,10 @@ export class LandscapeInspector {
     vegetationInstance: VegetationInstance | undefined;
     selectionRecords = new Map<string, LandscapeRecord>();
     selected: LandscapeRecord | null = null;
+    private original:LandscapeRecord|null=null;
+    private prominenceChangeOnly=false;
+    private prominenceControl:ReturnType<typeof prominenceEditor>|undefined;
+    prominenceAction(){const r=this.selected;if(!this.prominenceChangeOnly||!r||!this.original||!onlyProminenceChanged(this.original,r))return;return {kind:'landscape-prominence' as const,id:r.id,expectedRevision:r.revision,prominence:r.prominence??null};}
     get selectionId() { return this.selected && this.host.inspectorRoot.dataset.selectionId === this.selected.id ? this.selected.id : null; }
     vertex = 0;
     dirty = false;
@@ -95,6 +101,7 @@ export class LandscapeInspector {
             return;
         }
         this.selected = structuredClone(record);
+        this.original=structuredClone(record);
         this.selectionRecords.clear();
         this.doc = null;
         this.docRevision = null;
@@ -130,18 +137,22 @@ export class LandscapeInspector {
     inspector() {
         const root = html("land-selection");
         root.replaceChildren();
+        this.prominenceChangeOnly=false;this.prominenceControl=undefined;
+        root.oninput=root.onchange=e=>{if((e.target as HTMLElement)?.id!=='land-prominence')this.prominenceChangeOnly=false;};
         delete root.dataset.selectionId;
         const r = this.selected;
         if (!r)
             return;
         root.dataset.selectionId = r.id;
+        if(r.kind==='road'||r.kind==='river')this.prominenceControl=prominenceEditor(root,'land-prominence',()=>r,()=>{this.prominenceChangeOnly=!this.dirty||this.prominenceChangeOnly;this.dirty=true;this.host.background=null;this.host.effects.redraw();});
         if (r.route) {
             const title = document.createElement('p');
             title.textContent = (r.name || 'Geplanter Verlauf') + (r.route.conflict ? ' · ' + r.route.conflict : ' · Geländeform verbunden');
             const edit = document.createElement('button');
             edit.textContent = 'Verlauf und Gelände bearbeiten';
             edit.onclick = () => void this.host.routes.openRoute(r).catch(e => this.host.effects.error(e));
-            root.append(title, edit);
+            const save=document.createElement('button');save.textContent='Kartenprominenz speichern';save.onclick=()=>void this.host.finish().catch(e=>this.host.effects.error(e));
+            root.append(title, edit,save);
             return;
         }
         if (r.vegetation) {
@@ -336,6 +347,7 @@ export class LandscapeInspector {
         const width = document.getElementById("land-record-width") as HTMLInputElement | null;
         if (width)
             r.width = Number(atlasFieldValue(width));
+        this.prominenceControl?.refresh();
         if (r.kind === "reference") {
             r.angle =
                 (Number(html<HTMLInputElement>("land-angle").value) * Math.PI) / 180;

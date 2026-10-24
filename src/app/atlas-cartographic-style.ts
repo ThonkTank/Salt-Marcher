@@ -11,33 +11,33 @@ export function forestSurfaceWeight(mpp:number){
 /** Decorative ink only: coverage owns borders and holes. Nested fixed world
  * pitches crossfade instead of stretching texture coordinates during zoom. */
 export const CARTOGRAPHIC_GLSL=`
+uniform sampler2D atlasPlantInk;
+uniform sampler2D atlasMarkInk;
 float atlasForestSurface(float mpp){return smoothstep(${FOREST_DETAIL_MPP.toFixed(1)},${FOREST_SURFACE_MPP.toFixed(1)},mpp);}
-vec3 atlasHash(vec2 p) {
- p=mod(p,4096.0);
- vec3 q=fract(vec3(p.xyx)*0.1031);
- q+=dot(q,q.yzx+33.33);
- return fract((q.xxy+q.yzz)*q.zyx);
+vec4 atlasPattern(sampler2D plate,vec2 world,float mpp){
+ float level=clamp(log2(max(32.0,mpp*12.0)/32.0),0.0,7.0);
+ float pitch=32.0*exp2(floor(level))*8.0;
+ return mix(texture(plate,world/pitch),texture(plate,world/(pitch*2.0)),smoothstep(0.0,1.0,fract(level)));
 }
-float atlasCanopy(vec2 world,float pitch) {
- vec2 p=world/pitch,cell=floor(p),local=fract(p);
- float canopy=0.0,light=0.0;
- for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
-  vec2 n=vec2(float(x),float(y));
-  vec2 key=mod(cell+n,65536.0/pitch);
-  vec3 random=atlasHash(key);
-  vec2 centre=n+0.1+0.8*random.xy;
-  vec2 d=local-centre;
-  float radius=0.32+0.22*random.z;
-  float crown=1.0-smoothstep(radius*0.45,radius,length(d));
-  if(crown>canopy){canopy=crown;light=clamp(-(d.x+d.y)/radius,-1.0,1.0);}
- }
- return canopy*(-0.075+0.12*light);
-}
-float atlasForestInk(vec2 world,float mpp) {
+float atlasPatternFade(float mpp){return 1.0-smoothstep(128.0,512.0,mpp);}
+float atlasForestInk(vec2 world,float mpp){
  if(mpp>=512.0)return 0.0;
- float level=clamp(log2(max(32.0,mpp*12.0)/32.0),0.0,11.0);
- float pitch=32.0*exp2(floor(level));
- float ink=mix(atlasCanopy(world,pitch),atlasCanopy(world,pitch*2.0),smoothstep(0.0,1.0,fract(level)));
- return ink*(1.0-smoothstep(128.0,512.0,mpp));
+ return -0.24*atlasPattern(atlasPlantInk,world,mpp).r*atlasPatternFade(mpp);
+}
+float atlasCoverInk(vec2 world,float mpp,vec4 cover,float forest,float debris){
+ if(mpp>=512.0)return 0.0;
+ vec4 ink=atlasPattern(atlasPlantInk,world,mpp);
+ float generic=forest*(1.0-smoothstep(0.0,0.01,cover.r+cover.g));
+ float trees=dot(ink.rg,cover.rg)+generic*ink.r;
+ float undergrowth=ink.b*cover.b*0.22+ink.a*cover.a*0.5;
+ float stone=atlasPattern(atlasMarkInk,world,mpp).r*debris*0.7;
+ return (trees+undergrowth+stone)*atlasPatternFade(mpp)*atlasForestSurface(mpp);
+}
+float atlasSlopeInk(vec2 world,float mpp,vec2 slope){
+ float sum=abs(slope.x)+abs(slope.y);
+ if(sum<0.015||mpp>=2048.0)return 0.0;
+ float x=atlasPattern(atlasMarkInk,world,mpp).g;
+ float y=atlasPattern(atlasMarkInk,vec2(world.y,-world.x),mpp).g;
+ return mix(x,y,abs(slope.y)/max(sum,0.001))*smoothstep(0.015,0.4,sum)*(1.0-smoothstep(512.0,2048.0,mpp));
 }
 `;

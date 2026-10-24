@@ -14,7 +14,7 @@ export function createCartographicFixture(profile,{bridge=false}={}){
  const shape=(id,kind,polygons,extra={})=>({id,kind,revision:0,name:id,points:[],polygons,resolution:1,width:0,values:{},...extra});
  const height=(x,y)=>{
   const land=180*(1-(x/380000)**2-(y/270000)**2);
-  const ridge=2100*Math.exp(-1*((y+52000+18000*Math.sin(x/45000))/16000)**2-(x/170000)**2);
+  const ridge=3400*Math.exp(-1*((y+52000+18000*Math.sin(x/45000))/16000)**2-(x/170000)**2);
   const pass=1-.82*Math.exp(-1*((x+18000)/14000)**2);
   const island=500*Math.exp(-1*((x-410000)/16000)**2-((y-70000)/26000)**2);
   return Math.max(-120,land+ridge*pass+island)+12*Math.exp(-1*((x+200)/160)**2-((y+180)/180)**2);
@@ -32,6 +32,16 @@ export function createCartographicFixture(profile,{bridge=false}={}){
   local.holes=[rect(-90,-65,210,130).outer,rect(-470,-250,160,110).outer];
   records.push(shape('Dorfwald','vegetation',[local],{values:{terrain:'forest'},vegetation:vegetationSpec('deciduous',31)}));
   records.push(shape('Schmaler Waldsaum','vegetation',[rect(-500,900,1500,12)],{values:{terrain:'forest'},vegetation:{...vegetationSpec('deciduous',9),preset:{...vegetationSpec().preset,edge:0}}}));
+  // The same six authored biomes at region and village scale. Keep their layout
+  // fixed across baseline/candidate runs; the camera must never seed materials.
+  for(const [index,id] of ['deciduous','conifer','meadow','scrub','scree','rocky'].entries()){
+   const spec=vegetationSpec(id,100+index);
+   for(const scale of [1,100]){
+    const x=(-680+index%3*430)*scale,y=(index<3?-480:210)*scale;
+    const p=polygon([[x,y+35*scale],[x+260*scale,y],[x+330*scale,y+90*scale],[x+280*scale,y+210*scale],[x+20*scale,y+180*scale]]);
+    records.push(shape('Vorlage '+id+' '+scale,'vegetation',[p],{resolution:scale,values:{terrain:spec.preset.terrain},vegetation:spec}));
+   }
+  }
   for(const [id,kind,width,points] of [
    ['Talfluss','river',24,[[70,-300000],[130,-70000],[70,-600],[95,0],[150,650],[50000,230000]]],
    ['Passstraße','road',8,[[-18000,-75000],[-12000,-40000],[-400,-300],[0,0],[400,0],[12000,6000]]],
