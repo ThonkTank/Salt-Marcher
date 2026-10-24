@@ -29,10 +29,14 @@ for(const zoom of [1,2]){
   let page=await open();
   async function checkImage(target,name){
    const expected=PNG.sync.read(await readFile(root+`/tests/fixtures/atlas/reference-images/width-${target}.png`));
+   const view=imageManifest.views.find(v=>v.target===target).view;
+   // Ort 2550 is at (0,0). At room-scale views it is offscreen; similar
+   // brown roof pixels are not evidence of a missing place marker.
+   const markerVisible=view.x<=0&&view.x+view.width>=0&&view.y<=0&&view.y+view.height>=0;
    let comparison,lastError;
    for(let attempt=0;attempt<20;attempt++){
     await native.capture(page,name);
-    try{comparison=assertReferenceMapImage(PNG.sync.read(await readFile(output+'/'+name+'.png')),expected);break;}
+    try{comparison=assertReferenceMapImage(PNG.sync.read(await readFile(output+'/'+name+'.png')),expected,{markerVisible});break;}
     catch(error){lastError=error;await page.waitForTimeout(100);}
    }
    assert(comparison,lastError?.message);return comparison;

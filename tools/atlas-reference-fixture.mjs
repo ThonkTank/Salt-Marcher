@@ -46,7 +46,7 @@ export function assertReferenceContents(db,manifest){
 // The 200% run doubles the window dimensions, keeping the CSS layout/world view.
 // Per-channel error tolerates raster/AA differences; palette populations ensure
 // that a small road or marker cannot disappear inside a large background average.
-export function assertReferenceMapImage(actual,expected){
+export function assertReferenceMapImage(actual,expected,{markerVisible=true}={}){
  assert.equal(actual.width/expected.width,actual.height/expected.height,'Reference viewport aspect ratio');
  const scale=actual.width/expected.width;
  const colors={land:[238,229,207],forest:[159,167,129],road:[163,126,81],marker:[91,67,56]};
@@ -64,7 +64,7 @@ export function assertReferenceMapImage(actual,expected){
  }
  const meanChannelError=error/(pixels*3);
  assert(meanChannelError<=12,`Reference map changed: mean RGB error ${meanChannelError}`);
- for(const [key,p] of Object.entries(populations))if(p.expected>=(key==='marker'?4:100)){
+ for(const [key,p] of Object.entries(populations))if((key!=='marker'||markerVisible)&&p.expected>=(key==='marker'?4:100)){
   assert(p.actual>=p.expected*.65,`Visible ${key} missing: ${JSON.stringify(p)}`);
  }
  return {meanChannelError,populations};
