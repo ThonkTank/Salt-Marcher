@@ -14,7 +14,7 @@ args = parser.parse_args()
 root = Path(subprocess.check_output(
     ["git", "-C", args.repository, "rev-parse", "--show-toplevel"], text=True
 ).strip())
-candidates = json.loads((root / "docs/scope-sources.json").read_text())["source_requirements"]
+candidates = json.loads((root / "docs/project/requirements/sources.json").read_text())["source_requirements"]
 if not candidates:
     parser.exit(1, "Keine Originalanforderungen im Quellenregister gefunden.\n")
 requirement = secrets.choice(candidates)

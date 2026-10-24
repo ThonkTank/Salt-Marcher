@@ -1,0 +1,2073 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-10",
+  "purpose": "Source-level scope inventory and coverage references, not a product acceptance or settled target architecture. Feature conflicts and unclosed original inventories are described in docs/SCOPE.md.",
+  "source_repository": "ThonkTank/Salt-Marcher",
+  "source_revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+  "source_main_revision_at_audit": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+  "target_base_commit": "d6cd63b52086c944b632a3225cc69a07fcda9b88",
+  "source_requirements": [
+    {
+      "path": "docs/autonomy/requirements/requirements-actor-autonomy.md",
+      "title": "Actor Autonomy Requirements",
+      "sha256": "95c42de5341aa005de49e0e5aea8c426f8793ea41ac1a96170a76ee0210abf0c",
+      "scope_area": "autonomy",
+      "target_phases": [
+        "SMR-09"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/autonomy/requirements/requirements-actor-autonomy.md"
+    },
+    {
+      "path": "docs/campaign/requirements/requirements-campaign-management.md",
+      "title": "Campaign Management Requirements",
+      "sha256": "cb0b0824596abc8b34a795f225c5222418e403dd14396a9335d16259ff29b554",
+      "scope_area": "campaign",
+      "target_phases": [
+        "SMR-01"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/campaign/requirements/requirements-campaign-management.md"
+    },
+    {
+      "path": "docs/catalog/requirements/requirements-catalog.md",
+      "title": "Catalog Requirements",
+      "sha256": "5037954d3c73d7ba69cc2ed953af58565b0ff62ff3618dd9059894e407219f20",
+      "scope_area": "catalog",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/catalog/requirements/requirements-catalog.md"
+    },
+    {
+      "path": "docs/creatures/requirements/requirements-creatures-catalog.md",
+      "title": "Catalog Tab UI",
+      "sha256": "a22ead71d06d0f0ce11e5fc5cd960c5481cbf9cbf1bfcde92d9800c3280e7c7c",
+      "scope_area": "creatures",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/creatures/requirements/requirements-creatures-catalog.md"
+    },
+    {
+      "path": "docs/creatures/requirements/requirements-creatures-details.md",
+      "title": "Creature Details UI",
+      "sha256": "149fef27b81c088e3b3d17f7fe183b0cfe245f85f05ff17e825e86de6970140e",
+      "scope_area": "creatures",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/creatures/requirements/requirements-creatures-details.md"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-editor.md",
+      "title": "Dungeon Editor Requirements",
+      "sha256": "b596a4a30d75413a96c1d40b862b473ed8f480baa8ec18ed2217431987cba20d",
+      "scope_area": "dungeon",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07",
+        "SMR-10"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-editor.md"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-travel-state.md",
+      "title": "Dungeon Travel State Requirements",
+      "sha256": "d8d0e375947586b606b4ef9d96a295c8478610edc41fff5e8db893f507e095d6",
+      "scope_area": "dungeon",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07",
+        "SMR-10"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-travel-state.md"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon-travel.md",
+      "title": "Dungeon Travel Requirements",
+      "sha256": "d9af361470f7ed5be77ded64c20f51b7b34bf0f92e853ca5b48dda8d10ade287",
+      "scope_area": "dungeon",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07",
+        "SMR-10"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon-travel.md"
+    },
+    {
+      "path": "docs/dungeon/requirements/requirements-dungeon.md",
+      "title": "Dungeon Feature Requirements",
+      "sha256": "60e1e72432c1b9073b162cf9eedb8959dc36ae71cfa0c6ee82d968ed71bb7a0f",
+      "scope_area": "dungeon",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07",
+        "SMR-10"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/dungeon/requirements/requirements-dungeon.md"
+    },
+    {
+      "path": "docs/encounter/requirements/requirements-encounter-generation.md",
+      "title": "Encounter Generation Requirements",
+      "sha256": "b29b35a2daeff9eacfbdc7583ffd4b98021f58f4122872ca2863f2445fe4c2f3",
+      "scope_area": "encounter",
+      "target_phases": [
+        "SMR-01",
+        "SMR-05",
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter-generation.md"
+    },
+    {
+      "path": "docs/encounter/requirements/requirements-encounter-state-tab.md",
+      "title": "Encounter Runtime State UI",
+      "sha256": "12eeaabeca76a044f61478cdb1457e3732cdb29391adc5f08a05f388167fef7b",
+      "scope_area": "encounter",
+      "target_phases": [
+        "SMR-05",
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter-state-tab.md"
+    },
+    {
+      "path": "docs/encounter/requirements/requirements-encounter.md",
+      "title": "Encounter Feature Spec",
+      "sha256": "f570a3627d762744dc43aa97203f828c56b29821894efb0ff11a38ffc339f3fd",
+      "scope_area": "encounter",
+      "target_phases": [
+        "SMR-05",
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encounter/requirements/requirements-encounter.md"
+    },
+    {
+      "path": "docs/encountertable/requirements/requirements-encountertable.md",
+      "title": "Encounter Table Feature Spec",
+      "sha256": "0ef21516df85b203636424cddb51d1abfd9264749a56375dfeab5dd0d552c90e",
+      "scope_area": "encountertable",
+      "target_phases": [
+        "SMR-02",
+        "SMR-05"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/encountertable/requirements/requirements-encountertable.md"
+    },
+    {
+      "path": "docs/hex/requirements/requirements-hex-editor.md",
+      "title": "Hex Editor Requirements",
+      "sha256": "459fca25e3a1fb928d0004df73fe09160bd5918675b542723f7150a9dc5d3be6",
+      "scope_area": "hex",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-editor.md"
+    },
+    {
+      "path": "docs/hex/requirements/requirements-hex-travel-state.md",
+      "title": "Hex Travel Console Requirements",
+      "sha256": "beab5886a3e5ed3c1275483728e3d584a7169b215dc8633bf076aa43aa5d69ed",
+      "scope_area": "hex",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel-state.md"
+    },
+    {
+      "path": "docs/hex/requirements/requirements-hex-travel.md",
+      "title": "Hex Travel Requirements",
+      "sha256": "edc76fa5f5c15a68228cb793dce791828b70c39d483c91c9753f416afbe4ef50",
+      "scope_area": "hex",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex-travel.md"
+    },
+    {
+      "path": "docs/hex/requirements/requirements-hex.md",
+      "title": "Hex Feature Requirements",
+      "sha256": "f37bde3197e6dbc76672f19f0125178ae22cc55ad568a2738b81fd45cc3864bf",
+      "scope_area": "hex",
+      "target_phases": [
+        "SMR-04",
+        "SMR-07"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/hex/requirements/requirements-hex.md"
+    },
+    {
+      "path": "docs/items/requirements/requirements-items-catalog.md",
+      "title": "Items Catalog",
+      "sha256": "9bd819d94a14c6aebd89e2534aededd2cdf02e02164563485c543db4585712dc",
+      "scope_area": "items",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/items/requirements/requirements-items-catalog.md"
+    },
+    {
+      "path": "docs/loot/requirements/requirements-loot.md",
+      "title": "Loot Requirements",
+      "sha256": "f254b3aae184ed8857f25ad749e3fa63ad43d1fa28bacaedd55b1581c080cdf2",
+      "scope_area": "loot",
+      "target_phases": [
+        "SMR-05",
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/loot/requirements/requirements-loot.md"
+    },
+    {
+      "path": "docs/maps/requirements/requirements-maps-canvas.md",
+      "title": "Maps Canvas Requirements",
+      "sha256": "423fe3107b6530e53fccbcd07d3f276493d440440a3e3c40574ad1a6f8d977f4",
+      "scope_area": "maps",
+      "target_phases": [
+        "SMR-04"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/maps/requirements/requirements-maps-canvas.md"
+    },
+    {
+      "path": "docs/party/requirements/requirements-adventuring-day-calculator.md",
+      "title": "Adventuring Day Calculator",
+      "sha256": "ae57654b09149229410eff31e49545d1b0f71316c61c8f267c55f812342edc12",
+      "scope_area": "party",
+      "target_phases": [
+        "SMR-03",
+        "SMR-05"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-adventuring-day-calculator.md"
+    },
+    {
+      "path": "docs/party/requirements/requirements-adventuring-day-dropdown.md",
+      "title": "Adventuring Day Top-Bar UI",
+      "sha256": "b5a97494844645ee7e94999201e6e90c14f20c0640379d6de8af210bf0969a11",
+      "scope_area": "party",
+      "target_phases": [
+        "SMR-03",
+        "SMR-05"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-adventuring-day-dropdown.md"
+    },
+    {
+      "path": "docs/party/requirements/requirements-party-dropdown.md",
+      "title": "Party Dropdown UI — historical record",
+      "sha256": "1be6a23990ec3ae8d7baa862cc3d134d5d482b972e615f5d0d41c8d715b7a85a",
+      "scope_area": "party",
+      "target_phases": [
+        "SMR-03",
+        "SMR-05"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-party-dropdown.md"
+    },
+    {
+      "path": "docs/party/requirements/requirements-party-window.md",
+      "title": "Consolidated Party window",
+      "sha256": "e02994fea23b879f478de2b6656aff88f0b79d048a608785ff61f09829569395",
+      "scope_area": "party",
+      "target_phases": [
+        "SMR-03",
+        "SMR-05"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/party/requirements/requirements-party-window.md"
+    },
+    {
+      "path": "docs/project/requirements/requirements-program-capabilities.md",
+      "title": "SaltMarcher Program Capability Requirements",
+      "sha256": "714051ef2b72a5aa0a791c0b3bf8c6fffaa7e381f3b72d86222190089a1cfd2e",
+      "scope_area": "project",
+      "target_phases": [
+        "SMR-00",
+        "SMR-01",
+        "SMR-02",
+        "SMR-03",
+        "SMR-04",
+        "SMR-05",
+        "SMR-06",
+        "SMR-07",
+        "SMR-08",
+        "SMR-09",
+        "SMR-10",
+        "SMR-11"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-program-capabilities.md"
+    },
+    {
+      "path": "docs/project/requirements/requirements-travel-state-tab.md",
+      "title": "Reise-Szenario UI",
+      "sha256": "af30bc982b1a8c46baba433e2584ead43dc2c0c5131c2103dcc354a94fff1673",
+      "scope_area": "project",
+      "target_phases": [
+        "SMR-00",
+        "SMR-11"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/project/requirements/requirements-travel-state-tab.md"
+    },
+    {
+      "path": "docs/reference/requirements/requirements-reference-graph.md",
+      "title": "Reference Graph Requirements",
+      "sha256": "73f442ea88fb18fed4332022da2621b4eaf452deff927dfff8e66504cd18e398",
+      "scope_area": "reference",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/reference/requirements/requirements-reference-graph.md"
+    },
+    {
+      "path": "docs/scene/requirements/requirements-scene.md",
+      "title": "Runtime Scene Requirements",
+      "sha256": "8894f04cdac47020c8ed37dbf8f3c985ebce45bc7ba19dbe62a577d749b6cc04",
+      "scope_area": "scene",
+      "target_phases": [
+        "SMR-03"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/scene/requirements/requirements-scene.md"
+    },
+    {
+      "path": "docs/session/requirements/requirements-live-session.md",
+      "title": "Live Session Requirements",
+      "sha256": "ef3ca294c2d6e6e03339f78b9b7b848e866cd274379340efa95c9af0a8dd30a6",
+      "scope_area": "session",
+      "target_phases": [
+        "SMR-03"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/session/requirements/requirements-live-session.md"
+    },
+    {
+      "path": "docs/sessiongeneration/requirements/requirements-session-generation.md",
+      "title": "Session Generation Requirements",
+      "sha256": "d2a578a6ba79a4211485a6ea6fd39f8bc87b37c77d104b67f72ca3657e517aa3",
+      "scope_area": "sessiongeneration",
+      "target_phases": [
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/sessiongeneration/requirements/requirements-session-generation.md"
+    },
+    {
+      "path": "docs/sessionplanner/requirements/requirements-session-planner.md",
+      "title": "Session Planner Requirements",
+      "sha256": "073404342557af3846afd206408d24216eca19a7fb49419b305f46e95473da5e",
+      "scope_area": "sessionplanner",
+      "target_phases": [
+        "SMR-06"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/sessionplanner/requirements/requirements-session-planner.md"
+    },
+    {
+      "path": "docs/worldplanner/requirements/requirements-world-planner.md",
+      "title": "World Planner Requirements",
+      "sha256": "185f514ab97da50b427fccecb48c9316649f040f2e0752365c679bf34a71df20",
+      "scope_area": "worldplanner",
+      "target_phases": [
+        "SMR-02"
+      ],
+      "url": "https://github.com/ThonkTank/Salt-Marcher/blob/9de85c1a26f526acbc1af332ac5962e185c0aab2/docs/worldplanner/requirements/requirements-world-planner.md"
+    }
+  ],
+  "additional_primary_sources": [
+    {
+      "path": "docs/project/vision.md",
+      "sha256": "bbaa87fcef80a311225f872c6d0cf710ac8a36d6a3ada64118cd5567a3ed0d43"
+    },
+    {
+      "path": "docs/project/architecture/program-technical-needs.md",
+      "sha256": "351e0fe8fd8dadf611205bfc48bb66c48253c039154dc67f05a47678b3a700bb"
+    }
+  ],
+  "capability_subsections": [
+    {
+      "id": "SRC-F01",
+      "title": "Campaign Lifecycle",
+      "technical_needs": [
+        "TN-02",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "SRC-F02",
+      "title": "Reusable And Campaign-Specific Knowledge",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-04",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-F03",
+      "title": "Roster, Current Party, And Planning Party",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-07"
+      ]
+    },
+    {
+      "id": "SRC-F04",
+      "title": "Minimal Creation And Explicit Deletion",
+      "technical_needs": [
+        "TN-01",
+        "TN-03",
+        "TN-05",
+        "TN-06",
+        "TN-34"
+      ]
+    },
+    {
+      "id": "SRC-P01",
+      "title": "Planning Workspace And Timeline",
+      "technical_needs": [
+        "TN-03",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "SRC-P02",
+      "title": "Assisted Generation",
+      "technical_needs": [
+        "TN-03",
+        "TN-10",
+        "TN-13",
+        "TN-22",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-P03",
+      "title": "Accepted World Content And Treasures",
+      "technical_needs": [
+        "TN-03",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "SRC-P04",
+      "title": "Weather, Music, And Notes",
+      "technical_needs": [
+        "TN-14",
+        "TN-21",
+        "TN-25",
+        "TN-26",
+        "TN-36"
+      ]
+    },
+    {
+      "id": "SRC-L01",
+      "title": "Continuous Scene State And Party Splits",
+      "technical_needs": [
+        "TN-02",
+        "TN-05",
+        "TN-07",
+        "TN-11"
+      ]
+    },
+    {
+      "id": "SRC-L02",
+      "title": "Masks And Prepared Monster Groups",
+      "technical_needs": [
+        "TN-03",
+        "TN-07",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "SRC-L03",
+      "title": "Live Search, Creation, Notes, And Music",
+      "technical_needs": [
+        "TN-21",
+        "TN-26",
+        "TN-28",
+        "TN-36"
+      ]
+    },
+    {
+      "id": "SRC-L04",
+      "title": "Independent Time And Weather",
+      "technical_needs": [
+        "TN-08",
+        "TN-09",
+        "TN-14",
+        "TN-25",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-L05",
+      "title": "Passive Second Display",
+      "technical_needs": [
+        "TN-24",
+        "TN-31"
+      ]
+    },
+    {
+      "id": "SRC-T01",
+      "title": "Places, Subplaces, And Scene Continuity",
+      "technical_needs": [
+        "TN-02",
+        "TN-07",
+        "TN-21",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "SRC-T02",
+      "title": "Travel, Interruptions, And Overrides",
+      "technical_needs": [
+        "TN-09",
+        "TN-12",
+        "TN-14",
+        "TN-15"
+      ]
+    },
+    {
+      "id": "SRC-T03",
+      "title": "Independent Scene Time And World Progression",
+      "technical_needs": [
+        "TN-08",
+        "TN-09",
+        "TN-12",
+        "TN-13",
+        "TN-22",
+        "TN-23"
+      ]
+    },
+    {
+      "id": "SRC-T04",
+      "title": "Hex Maps, Knowledge, And Visibility",
+      "technical_needs": [
+        "TN-20",
+        "TN-24",
+        "TN-25"
+      ]
+    },
+    {
+      "id": "SRC-T05",
+      "title": "Climate, Weather, And Ambience",
+      "technical_needs": [
+        "TN-14",
+        "TN-25",
+        "TN-26",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "SRC-R01",
+      "title": "Encounter Consequences And XP",
+      "technical_needs": [
+        "TN-06",
+        "TN-10",
+        "TN-33",
+        "TN-35"
+      ]
+    },
+    {
+      "id": "SRC-R02",
+      "title": "Rewards And Narrative Notes",
+      "technical_needs": [
+        "TN-02",
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-R03",
+      "title": "Character Loot Ledger",
+      "technical_needs": [
+        "TN-01",
+        "TN-06",
+        "TN-10",
+        "TN-21",
+        "TN-36"
+      ]
+    },
+    {
+      "id": "SRC-R04",
+      "title": "Cumulative Loot Guidance",
+      "technical_needs": [
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-R05",
+      "title": "Corrections And History",
+      "technical_needs": [
+        "TN-04",
+        "TN-06",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "SRC-S01",
+      "title": "Shop Identity And Inventory",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-05",
+        "TN-21"
+      ]
+    },
+    {
+      "id": "SRC-S02",
+      "title": "Trade And Character Ledger",
+      "technical_needs": [
+        "TN-06",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "SRC-S03",
+      "title": "Restock And Randomized Stock",
+      "technical_needs": [
+        "TN-06",
+        "TN-09",
+        "TN-32",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-D01",
+      "title": "Continuous Preservation And Resume",
+      "technical_needs": [
+        "TN-15",
+        "TN-16",
+        "TN-17"
+      ]
+    },
+    {
+      "id": "SRC-D02",
+      "title": "Complete Campaign Portability",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-04",
+        "TN-13",
+        "TN-18",
+        "TN-19",
+        "TN-22",
+        "TN-30",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-D03",
+      "title": "Campaign Deletion",
+      "technical_needs": [
+        "TN-03",
+        "TN-05"
+      ]
+    },
+    {
+      "id": "SRC-Q01",
+      "title": "Offline Desktop Operation And Trust",
+      "technical_needs": [
+        "TN-02",
+        "TN-19",
+        "TN-21",
+        "TN-24",
+        "TN-30",
+        "TN-31"
+      ]
+    },
+    {
+      "id": "SRC-Q02",
+      "title": "Responsiveness, Scale, And Failure Isolation",
+      "technical_needs": [
+        "TN-03",
+        "TN-15",
+        "TN-16",
+        "TN-17",
+        "TN-18",
+        "TN-19",
+        "TN-20",
+        "TN-21",
+        "TN-22",
+        "TN-23",
+        "TN-25",
+        "TN-26",
+        "TN-27",
+        "TN-32"
+      ]
+    },
+    {
+      "id": "SRC-Q03",
+      "title": "Modular Change And Third-Party Extensions",
+      "technical_needs": [
+        "TN-27",
+        "TN-28",
+        "TN-29",
+        "TN-32"
+      ]
+    },
+    {
+      "id": "SRC-Q04",
+      "title": "Rules, Localization, Accessibility, And Displays",
+      "technical_needs": [
+        "TN-24",
+        "TN-31",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-Q05",
+      "title": "Calendar, Encounter Tables, Dice, And PC Data",
+      "technical_needs": [
+        "TN-02",
+        "TN-08",
+        "TN-09",
+        "TN-13",
+        "TN-28",
+        "TN-32",
+        "TN-33",
+        "TN-37"
+      ]
+    },
+    {
+      "id": "SRC-Q06",
+      "title": "In-Game Capability Tutorials",
+      "technical_needs": [
+        "TN-21",
+        "TN-31",
+        "TN-38"
+      ]
+    },
+    {
+      "id": "SRC-C01",
+      "title": "Complete Encounter Outcome",
+      "technical_needs": [
+        "TN-06",
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "SRC-C02",
+      "title": "Authoritative Party With Dependent Running Contexts",
+      "technical_needs": [
+        "TN-07",
+        "TN-11",
+        "TN-15",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "SRC-C03",
+      "title": "Scene Save Before Encounter Synchronization",
+      "technical_needs": [
+        "TN-11",
+        "TN-15",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "SRC-C04",
+      "title": "Explanatory Campaign History",
+      "technical_needs": [
+        "TN-04",
+        "TN-06",
+        "TN-08",
+        "TN-12",
+        "TN-13"
+      ]
+    }
+  ],
+  "capability_acceptance_references": [
+    {
+      "id": "AC-F01",
+      "summary": "name-only Campaign creation",
+      "technical_needs": [
+        "TN-01",
+        "TN-02"
+      ]
+    },
+    {
+      "id": "AC-F02",
+      "summary": "immediate Campaign switch and exact runtime resume",
+      "technical_needs": [
+        "TN-02",
+        "TN-16",
+        "TN-21"
+      ]
+    },
+    {
+      "id": "AC-F03",
+      "summary": "manual Session without Party",
+      "technical_needs": [
+        "TN-02",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-F04",
+      "summary": "Session expected Party cannot change table Party",
+      "technical_needs": [
+        "TN-02",
+        "TN-07"
+      ]
+    },
+    {
+      "id": "AC-F05",
+      "summary": "independent Campaign copy",
+      "technical_needs": [
+        "TN-01",
+        "TN-02"
+      ]
+    },
+    {
+      "id": "AC-F06",
+      "summary": "current definition, frozen completed fact",
+      "technical_needs": [
+        "TN-04",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-F07",
+      "summary": "manual note-first narrative records",
+      "technical_needs": [
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-F08",
+      "summary": "Scene creation default with opt-out",
+      "technical_needs": [
+        "TN-02",
+        "TN-10",
+        "TN-34"
+      ]
+    },
+    {
+      "id": "AC-F09",
+      "summary": "deletion removes current/dependent runtime, preserves history",
+      "technical_needs": [
+        "TN-03",
+        "TN-05",
+        "TN-06"
+      ]
+    },
+    {
+      "id": "AC-F10",
+      "summary": "one Campaign Roster with optional PC facts and no implicit Party membership",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-07"
+      ]
+    },
+    {
+      "id": "AC-P01",
+      "summary": "complete manual preparation",
+      "technical_needs": [
+        "TN-03",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-P02",
+      "summary": "editable ordered timeline",
+      "technical_needs": [
+        "TN-03",
+        "TN-15"
+      ]
+    },
+    {
+      "id": "AC-P03",
+      "summary": "plan replacement preserves placements",
+      "technical_needs": [
+        "TN-03"
+      ]
+    },
+    {
+      "id": "AC-P04",
+      "summary": "impossible generation blocked with explanation",
+      "technical_needs": [
+        "TN-10",
+        "TN-13"
+      ]
+    },
+    {
+      "id": "AC-P05",
+      "summary": "independent generated result changes",
+      "technical_needs": [
+        "TN-03",
+        "TN-22",
+        "TN-27"
+      ]
+    },
+    {
+      "id": "AC-P06",
+      "summary": "placed content exposed without auto-start/award",
+      "technical_needs": [
+        "TN-03",
+        "TN-13"
+      ]
+    },
+    {
+      "id": "AC-P07",
+      "summary": "placed Treasure Items remain editable/movable",
+      "technical_needs": [
+        "TN-01",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "AC-P08",
+      "summary": "weather requires no Session preparation",
+      "technical_needs": [
+        "TN-25",
+        "TN-27"
+      ]
+    },
+    {
+      "id": "AC-P09",
+      "summary": "focused Scene autoplay and manual precedence",
+      "technical_needs": [
+        "TN-14",
+        "TN-26"
+      ]
+    },
+    {
+      "id": "AC-P10",
+      "summary": "live note edit and cross-kind search",
+      "technical_needs": [
+        "TN-15",
+        "TN-21",
+        "TN-31",
+        "TN-36"
+      ]
+    },
+    {
+      "id": "AC-L01",
+      "summary": "empty primary Scene",
+      "technical_needs": [
+        "TN-07"
+      ]
+    },
+    {
+      "id": "AC-L02",
+      "summary": "each active PC in exactly one Scene",
+      "technical_needs": [
+        "TN-02",
+        "TN-07"
+      ]
+    },
+    {
+      "id": "AC-L03",
+      "summary": "split/reunite without implicit deletion",
+      "technical_needs": [
+        "TN-05",
+        "TN-07",
+        "TN-08"
+      ]
+    },
+    {
+      "id": "AC-L04",
+      "summary": "prepared group available without persistent Encounter",
+      "technical_needs": [
+        "TN-03",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-L05",
+      "summary": "coexisting masks/shared participants",
+      "technical_needs": [
+        "TN-07",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-L06",
+      "summary": "move removes participant from masks without block",
+      "technical_needs": [
+        "TN-07",
+        "TN-11"
+      ]
+    },
+    {
+      "id": "AC-L07",
+      "summary": "live search/add/lightweight creation",
+      "technical_needs": [
+        "TN-21",
+        "TN-28",
+        "TN-31"
+      ]
+    },
+    {
+      "id": "AC-L08",
+      "summary": "divergent Scene time without reversal",
+      "technical_needs": [
+        "TN-06",
+        "TN-08",
+        "TN-09"
+      ]
+    },
+    {
+      "id": "AC-L09",
+      "summary": "independent weather and override release",
+      "technical_needs": [
+        "TN-09",
+        "TN-14",
+        "TN-25"
+      ]
+    },
+    {
+      "id": "AC-L10",
+      "summary": "safe passive display",
+      "technical_needs": [
+        "TN-21",
+        "TN-24",
+        "TN-31"
+      ]
+    },
+    {
+      "id": "AC-T01",
+      "summary": "unified complete/partial subgroup travel",
+      "technical_needs": [
+        "TN-02",
+        "TN-07",
+        "TN-21"
+      ]
+    },
+    {
+      "id": "AC-T02",
+      "summary": "position/time advance to checkpoints",
+      "technical_needs": [
+        "TN-09",
+        "TN-12",
+        "TN-15"
+      ]
+    },
+    {
+      "id": "AC-T03",
+      "summary": "interruption without narrative decision",
+      "technical_needs": [
+        "TN-12",
+        "TN-13"
+      ]
+    },
+    {
+      "id": "AC-T04",
+      "summary": "override and causal undo/redo",
+      "technical_needs": [
+        "TN-08",
+        "TN-12",
+        "TN-14"
+      ]
+    },
+    {
+      "id": "AC-T05",
+      "summary": "reuse World behavior and expose conflict",
+      "technical_needs": [
+        "TN-09",
+        "TN-13",
+        "TN-23"
+      ]
+    },
+    {
+      "id": "AC-T06",
+      "summary": "coarse/fine Hex propagation",
+      "technical_needs": [
+        "TN-20",
+        "TN-24",
+        "TN-25"
+      ]
+    },
+    {
+      "id": "AC-T07",
+      "summary": "passive union of knowledge/perception",
+      "technical_needs": [
+        "TN-24"
+      ]
+    },
+    {
+      "id": "AC-T08",
+      "summary": "coherent weather/effects/notification",
+      "technical_needs": [
+        "TN-09",
+        "TN-25"
+      ]
+    },
+    {
+      "id": "AC-T09",
+      "summary": "manual ambience coexists with automation",
+      "technical_needs": [
+        "TN-14",
+        "TN-26"
+      ]
+    },
+    {
+      "id": "AC-R01",
+      "summary": "Encounter outcome, XP, Scene continues",
+      "technical_needs": [
+        "TN-06",
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-R02",
+      "summary": "XP rounding, derived level, correction history",
+      "technical_needs": [
+        "TN-06",
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-R03",
+      "summary": "one deferred XP information message",
+      "technical_needs": [
+        "TN-02",
+        "TN-09",
+        "TN-35"
+      ]
+    },
+    {
+      "id": "AC-R04",
+      "summary": "shared reward distribution, no auto-recipient",
+      "technical_needs": [
+        "TN-10",
+        "TN-13"
+      ]
+    },
+    {
+      "id": "AC-R05",
+      "summary": "manual narrative resolution",
+      "technical_needs": [
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-R06",
+      "summary": "searchable/correctable ledger and stacks",
+      "technical_needs": [
+        "TN-01",
+        "TN-06",
+        "TN-21"
+      ]
+    },
+    {
+      "id": "AC-R07",
+      "summary": "sold/given reminders and provenance",
+      "technical_needs": [
+        "TN-04",
+        "TN-06"
+      ]
+    },
+    {
+      "id": "AC-R08",
+      "summary": "cumulative loot compensation",
+      "technical_needs": [
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-S01",
+      "summary": "Shop ownership and stock identity",
+      "technical_needs": [
+        "TN-01",
+        "TN-02"
+      ]
+    },
+    {
+      "id": "AC-S02",
+      "summary": "owner reassignment or co-trash/restore",
+      "technical_needs": [
+        "TN-03",
+        "TN-05"
+      ]
+    },
+    {
+      "id": "AC-S03",
+      "summary": "Scene Shop availability",
+      "technical_needs": [
+        "TN-02",
+        "TN-21"
+      ]
+    },
+    {
+      "id": "AC-S04",
+      "summary": "atomic purchase without coin deduction",
+      "technical_needs": [
+        "TN-06",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "AC-S05",
+      "summary": "atomic sale and counterparty",
+      "technical_needs": [
+        "TN-06",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "AC-S06",
+      "summary": "manual/fixed/random restock",
+      "technical_needs": [
+        "TN-09",
+        "TN-28",
+        "TN-32"
+      ]
+    },
+    {
+      "id": "AC-S07",
+      "summary": "time rule once and scoped stock",
+      "technical_needs": [
+        "TN-09",
+        "TN-10"
+      ]
+    },
+    {
+      "id": "AC-S08",
+      "summary": "trade/restock history without extra notice",
+      "technical_needs": [
+        "TN-06",
+        "TN-09"
+      ]
+    },
+    {
+      "id": "AC-D01",
+      "summary": "automatic preservation and useful resume",
+      "technical_needs": [
+        "TN-15",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "AC-D02",
+      "summary": "newest safe recovery and disclosure",
+      "technical_needs": [
+        "TN-17"
+      ]
+    },
+    {
+      "id": "AC-D03",
+      "summary": "complete source-independent restore",
+      "technical_needs": [
+        "TN-19",
+        "TN-30",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-D04",
+      "summary": "import creates independent Campaign",
+      "technical_needs": [
+        "TN-01",
+        "TN-02",
+        "TN-19"
+      ]
+    },
+    {
+      "id": "AC-D05",
+      "summary": "explicit shared-definition conflict choice",
+      "technical_needs": [
+        "TN-04",
+        "TN-13",
+        "TN-19"
+      ]
+    },
+    {
+      "id": "AC-D06",
+      "summary": "recoverable then permanent Campaign deletion",
+      "technical_needs": [
+        "TN-03",
+        "TN-05",
+        "TN-17"
+      ]
+    },
+    {
+      "id": "AC-Q01",
+      "summary": "offline core",
+      "technical_needs": [
+        "TN-30"
+      ]
+    },
+    {
+      "id": "AC-Q02",
+      "summary": "cross-platform self-contained Campaign",
+      "technical_needs": [
+        "TN-19",
+        "TN-30"
+      ]
+    },
+    {
+      "id": "AC-Q03",
+      "summary": "responsive live actions and cancellable long work",
+      "technical_needs": [
+        "TN-21",
+        "TN-22",
+        "TN-23"
+      ]
+    },
+    {
+      "id": "AC-Q04",
+      "summary": "supporting failure isolation",
+      "technical_needs": [
+        "TN-26",
+        "TN-27"
+      ]
+    },
+    {
+      "id": "AC-Q05",
+      "summary": "no unaccepted cancelled result",
+      "technical_needs": [
+        "TN-03",
+        "TN-22"
+      ]
+    },
+    {
+      "id": "AC-Q06",
+      "summary": "safe data through released update after cutover, damage, or missing capability",
+      "technical_needs": [
+        "TN-17",
+        "TN-18",
+        "TN-27"
+      ]
+    },
+    {
+      "id": "AC-Q07",
+      "summary": "remove/replace capability and restore data",
+      "technical_needs": [
+        "TN-27",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-Q08",
+      "summary": "extension access after disclosure/consent",
+      "technical_needs": [
+        "TN-29",
+        "TN-30"
+      ]
+    },
+    {
+      "id": "AC-Q09",
+      "summary": "incompatible extension cannot block or bypass safety",
+      "technical_needs": [
+        "TN-27",
+        "TN-29"
+      ]
+    },
+    {
+      "id": "AC-Q10",
+      "summary": "accessible efficient workflows",
+      "technical_needs": [
+        "TN-21",
+        "TN-31"
+      ]
+    },
+    {
+      "id": "AC-Q11",
+      "summary": "Calendar relevance without narrative decision",
+      "technical_needs": [
+        "TN-08",
+        "TN-09",
+        "TN-13"
+      ]
+    },
+    {
+      "id": "AC-Q12",
+      "summary": "Encounter Tables supply weighted candidates",
+      "technical_needs": [
+        "TN-28",
+        "TN-32",
+        "TN-37"
+      ]
+    },
+    {
+      "id": "AC-Q13",
+      "summary": "no general dice roller; internal randomness allowed",
+      "technical_needs": [
+        "TN-32",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-Q14",
+      "summary": "workflow-specific PC statistics",
+      "technical_needs": [
+        "TN-02",
+        "TN-13",
+        "TN-28"
+      ]
+    },
+    {
+      "id": "AC-Q15",
+      "summary": "every capability has an in-game tutorial; install/update starts automatically and the experience is skippable",
+      "technical_needs": [
+        "TN-21",
+        "TN-31",
+        "TN-38"
+      ]
+    },
+    {
+      "id": "AC-C01",
+      "summary": "complete Encounter outcome",
+      "technical_needs": [
+        "TN-06",
+        "TN-10",
+        "TN-33"
+      ]
+    },
+    {
+      "id": "AC-C02",
+      "summary": "authoritative Party with pending dependents",
+      "technical_needs": [
+        "TN-07",
+        "TN-11",
+        "TN-15",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "AC-C03",
+      "summary": "saved Scene with pending Encounter sync",
+      "technical_needs": [
+        "TN-11",
+        "TN-15",
+        "TN-16"
+      ]
+    },
+    {
+      "id": "AC-C04",
+      "summary": "explanatory history and narrow exceptions",
+      "technical_needs": [
+        "TN-04",
+        "TN-06",
+        "TN-12",
+        "TN-13"
+      ]
+    }
+  ],
+  "technical_needs": [
+    {
+      "id": "TN-01",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F02",
+        "SRC-F03",
+        "SRC-F04",
+        "SRC-R03",
+        "SRC-S01",
+        "SRC-D02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-02",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F01",
+        "SRC-F02",
+        "SRC-F03",
+        "SRC-L01",
+        "SRC-T01",
+        "SRC-R02",
+        "SRC-S01",
+        "SRC-D02",
+        "SRC-Q01",
+        "SRC-Q05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-03",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F04",
+        "SRC-P01",
+        "SRC-P02",
+        "SRC-P03",
+        "SRC-L02",
+        "SRC-D03",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-04",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F02",
+        "SRC-R05",
+        "SRC-D02",
+        "SRC-C04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-05",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F04",
+        "SRC-L01",
+        "SRC-S01",
+        "SRC-D03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-06",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F04",
+        "SRC-R01",
+        "SRC-R03",
+        "SRC-R05",
+        "SRC-S02",
+        "SRC-S03",
+        "SRC-C01",
+        "SRC-C04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-07",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F03",
+        "SRC-L01",
+        "SRC-L02",
+        "SRC-T01",
+        "SRC-C02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-08",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-L04",
+        "SRC-T03",
+        "SRC-Q05",
+        "SRC-C04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-09",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-L04",
+        "SRC-T02",
+        "SRC-T03",
+        "SRC-S03",
+        "SRC-Q05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-10",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P02",
+        "SRC-P03",
+        "SRC-R01",
+        "SRC-R02",
+        "SRC-R03",
+        "SRC-R04",
+        "SRC-R05",
+        "SRC-S02",
+        "SRC-C01"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-11",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-L01",
+        "SRC-C02",
+        "SRC-C03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-12",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-T02",
+        "SRC-T03",
+        "SRC-C04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-13",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P02",
+        "SRC-T03",
+        "SRC-D02",
+        "SRC-Q05",
+        "SRC-C04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-14",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P04",
+        "SRC-L04",
+        "SRC-T02",
+        "SRC-T05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-15",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-T02",
+        "SRC-D01",
+        "SRC-Q02",
+        "SRC-C02",
+        "SRC-C03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-16",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F01",
+        "SRC-D01",
+        "SRC-Q02",
+        "SRC-C02",
+        "SRC-C03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-17",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-D01",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-18",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-D02",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-19",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-D02",
+        "SRC-Q01",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-20",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-T04",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-21",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P04",
+        "SRC-L03",
+        "SRC-T01",
+        "SRC-R03",
+        "SRC-S01",
+        "SRC-Q01",
+        "SRC-Q02",
+        "EXT-NNG"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-22",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P02",
+        "SRC-T03",
+        "SRC-D02",
+        "SRC-Q02",
+        "EXT-NNG"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-23",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-T03",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-24",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-L05",
+        "SRC-T04",
+        "SRC-Q01",
+        "SRC-Q04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-25",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-P04",
+        "SRC-L04",
+        "SRC-T04",
+        "SRC-T05",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-26",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-P04",
+        "SRC-L03",
+        "SRC-T05",
+        "SRC-Q02"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-27",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-Q02",
+        "SRC-Q03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-28",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-P01",
+        "SRC-L02",
+        "SRC-L03",
+        "SRC-T01",
+        "SRC-T05",
+        "SRC-Q03",
+        "SRC-Q05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-29",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-Q03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-30",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-D02",
+        "SRC-Q01"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-31",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-L05",
+        "SRC-Q01",
+        "SRC-Q04",
+        "EXT-WCAG"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-32",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-S03",
+        "SRC-Q02",
+        "SRC-Q03",
+        "SRC-Q05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-33",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F02",
+        "SRC-P02",
+        "SRC-L04",
+        "SRC-R01",
+        "SRC-R02",
+        "SRC-R04",
+        "SRC-S03",
+        "SRC-D02",
+        "SRC-Q04",
+        "SRC-Q05",
+        "SRC-C01",
+        "EXT-DND2014"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-34",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-F04"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-35",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-R01"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-36",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-P04",
+        "SRC-L03",
+        "SRC-R03"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-37",
+      "priority": "P0",
+      "source_ids": [
+        "SRC-Q05"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    },
+    {
+      "id": "TN-38",
+      "priority": "P1",
+      "source_ids": [
+        "SRC-Q06"
+      ],
+      "source_path": "docs/project/architecture/program-technical-needs.md"
+    }
+  ],
+  "local_reference_files": [
+    {
+      "path": "ROADMAP-SALTMARCHER-REPLACEMENT.md",
+      "sha256": "2556766843544a04c104b2b0116af79387e6d4b8e70cf7681706a56cc730f93a",
+      "currentPath": "docs/project/requirements/product-scope.md"
+    },
+    {
+      "path": "ROADMAP-SALTMARCHER-PLATFORM-ADR.md",
+      "sha256": "1aba443074cb48b87d5a6b54405a7a8ad5396aac773a59556a246d096040e51c",
+      "currentPath": "docs/project/architecture/platform-decision.md"
+    },
+    {
+      "path": "ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md",
+      "sha256": "b0126883dab2da4b5e0b43b8e7670e5501d4da037aff0fe02968416a23af16d4",
+      "currentPath": "docs/catalog/requirements/catalog-encounters.md"
+    },
+    {
+      "path": "ROADMAP-HEX-ATLAS.md",
+      "sha256": "b08fa2cd5c70e59cf6ad9c1fafa2a8deba82e1d96106e3042ef504028930014b",
+      "currentPath": "docs/atlas/requirements/atlas.md"
+    },
+    {
+      "path": "ROADMAP-CITIES.md",
+      "sha256": "53b5c04f478062d56968c97ba229252326a0a949aedcea5f87d85f0d4fdaa47c",
+      "currentPath": "docs/city/requirements/city.md"
+    },
+    {
+      "path": "ROADMAP-CITIES-IMPLEMENTATION-PLAN.md",
+      "sha256": "1ad91b25976d06b0551fbf4b3c0faf44b902c6334ed0802815957b024dcd08ef",
+      "currentPath": "docs/city/contract/city.md"
+    },
+    {
+      "path": "ROADMAP-PARITY.md",
+      "sha256": "8fec72dab1d657605424967ba1f05754d785b002c2c40b82614f5dee0e2754ee",
+      "currentPath": "docs/dungeon/requirements/drawing.md"
+    },
+    {
+      "path": "ROADMAP-PARITY-TOOLS.md",
+      "sha256": "3591836955c95e08660317d951e873e0cdf2c8a36c42a2d92d81844634e0c3db",
+      "currentPath": "docs/dungeon/requirements/tools.md"
+    },
+    {
+      "path": "ROADMAP-E2E-GATES-CANDIDATE.md",
+      "sha256": "5086cbba81bbd98cde4d00595b0c740a4f5c17144f8293bbe48be294931ae379",
+      "currentPath": "docs/project/verification/end-to-end.md"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "sha256": "eb5680be5550ba3aef9d661f13508166f619f794c8f295b6517e91e99f0837b3",
+      "currentPath": "docs/project/architecture/overview.md"
+    },
+    {
+      "path": "acceptance.json",
+      "sha256": "417049b79c4a39bf08aa20b02c5ef0d9a5d3f5d9cc0bb18564e045851c68be8c"
+    }
+  ],
+  "target_smr_phases": [
+    {
+      "id": "SMR-00",
+      "title": "Portfolio contract and source inventory"
+    },
+    {
+      "id": "SMR-01",
+      "title": "Campaign identity and data lifecycle"
+    },
+    {
+      "id": "SMR-02",
+      "title": "Catalog, reference graph and world planner"
+    },
+    {
+      "id": "SMR-03",
+      "title": "Party, scene and live session"
+    },
+    {
+      "id": "SMR-04",
+      "title": "Shared atlas and maps"
+    },
+    {
+      "id": "SMR-05",
+      "title": "Encounter, combat, loot and rewards"
+    },
+    {
+      "id": "SMR-06",
+      "title": "Session planner and reproducible generation"
+    },
+    {
+      "id": "SMR-07",
+      "title": "Travel, calendar and authoritative time"
+    },
+    {
+      "id": "SMR-08",
+      "title": "Shops, weather and music"
+    },
+    {
+      "id": "SMR-09",
+      "title": "Actor autonomy"
+    },
+    {
+      "id": "SMR-10",
+      "title": "Passive display, extensions and full portability"
+    },
+    {
+      "id": "SMR-11",
+      "title": "Tutorials, accessibility, performance and final review"
+    }
+  ],
+  "target_smr_acceptance_cases": [
+    {
+      "id": "SMR-AC-01",
+      "title": "Sole-product boundary, complete source inventory and evidence-backed target-platform decision"
+    },
+    {
+      "id": "SMR-AC-02",
+      "title": "Campaign A/B/A lifecycle and crash-safe data ownership"
+    },
+    {
+      "id": "SMR-AC-03",
+      "title": "Definitions, references, world content and frozen history"
+    },
+    {
+      "id": "SMR-AC-04",
+      "title": "Party, scene, masks and general history continuity"
+    },
+    {
+      "id": "SMR-AC-05",
+      "title": "Unified hex, city and dungeon atlas"
+    },
+    {
+      "id": "SMR-AC-06",
+      "title": "Encounter, combat, loot and reward atomicity"
+    },
+    {
+      "id": "SMR-AC-07",
+      "title": "Session planning and reproducible generation"
+    },
+    {
+      "id": "SMR-AC-08",
+      "title": "Cross-provider travel with causal undo"
+    },
+    {
+      "id": "SMR-AC-09",
+      "title": "Calendar, per-scene time and exact-once consequences"
+    },
+    {
+      "id": "SMR-AC-10",
+      "title": "Atomic shops and calendar-based restock"
+    },
+    {
+      "id": "SMR-AC-11",
+      "title": "Weather/climate continuity and GM override"
+    },
+    {
+      "id": "SMR-AC-12",
+      "title": "Portable music library/player and manual precedence"
+    },
+    {
+      "id": "SMR-AC-13",
+      "title": "Opt-in explainable actor autonomy"
+    },
+    {
+      "id": "SMR-AC-14",
+      "title": "Fail-closed passive player projection"
+    },
+    {
+      "id": "SMR-AC-15",
+      "title": "Complete campaign export/import and salvage"
+    },
+    {
+      "id": "SMR-AC-16",
+      "title": "Default-deny optional extension capabilities"
+    },
+    {
+      "id": "SMR-AC-17",
+      "title": "Tutorial, localization, keyboard and 200-percent accessibility"
+    },
+    {
+      "id": "SMR-AC-18",
+      "title": "Performance, cancellation, offline and privacy qualification"
+    }
+  ],
+  "reference_inventory_limits": {
+    "dungeondraft_cases": 724,
+    "dungeondraft_required_cases": 677,
+    "wonderdraft_inventory_complete": true,
+    "city_function_inventory_entries": 65,
+    "city_complete_original_inventory_approval": "Not established by this audit. Consult CITY-00/CITY-09 original coverage gates."
+  },
+  "technical_foundation_audit": {
+    "date": "2026-10-11",
+    "target_revision": "116c16af48b6a073216685c8d8e2cc74fada82c3",
+    "source_revision": "9de85c1a26f526acbc1af332ac5962e185c0aab2",
+    "verified_primary_files": 38,
+    "decision_source": "ARCHITECTURE.md",
+    "qualification_source": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
+    "storage_probe_sha256": "0676cd3602b600a2814eedddbe219b4a44927d4bd892775076d149bef52c64da",
+    "meaning": "Technical planning decisions; no new product acceptance. Historical audit hashes remain unchanged."
+  }
+}

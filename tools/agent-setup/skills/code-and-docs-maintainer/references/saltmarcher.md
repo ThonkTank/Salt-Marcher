@@ -7,11 +7,11 @@ Produktkopie. Die Pflege nutzt ihren festen Moduswechsel, keine Zufallsauswahl.
 
 ## Zuständige Quellen nur nach Bedarf
 
-- Einstieg: `docs/INDEX.md`; aktueller Atlasweg: `docs/ATLAS.md`.
-  `docs/PRODUCT.md` erklärt Zweck und Gesamtziel.
-- Soll/Bindungen: zuständiger Teil von `docs/SCOPE.md` und `docs/scope-sources.json`.
+- Einstieg: `docs/INDEX.md`; aktueller Atlasweg: `docs/atlas/guide.md`.
+  `docs/project/requirements/product.md` erklärt Zweck und Gesamtziel.
+- Soll/Bindungen: zuständiger Teil von `docs/project/requirements/scope.md` und `docs/project/requirements/sources.json`.
   Originalrevisionen, Hashes und Anforderungen erhalten.
-- Technik: betroffener Abschnitt von `ARCHITECTURE.md`. Electron/TypeScript/SQLite
+- Technik: betroffener Abschnitt von `docs/project/architecture/overview.md`. Electron/TypeScript/SQLite
   unter `desktop/` und `src/app/`; Obsidian-Anschlüsse bleiben Referenz.
 - Abnahme: passende IDs/Teilbäume von `acceptance.json` gezielt auslesen, niemals
   das große Register pauschal laden. Implementation, automatisierte Evidenz,

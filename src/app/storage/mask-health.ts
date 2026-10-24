@@ -57,10 +57,3 @@ export function removePartyFromMasks(db:any,cam:string,ids:string[],commandId:st
   for(const actor of removed)event(db,cam,actor.characterId,'combat-exit',{commandId,combatId:s.id,title:s.title,participant:actor,reason:'Party-Zuordnung geändert'});
  }
 }
-/** Old databases stored active PC health in the encounter; adopt those facts once. */
-export function migrateMaskHealth(db:any){
- const seen=new Set<string>();for(const row of db.prepare("SELECT * FROM combat WHERE phase IN('preparing','running') ORDER BY ordinal DESC").all()){
-  const s=decode(row),participants=s.participants.filter(p=>{if(!p.characterId)return false;const key=row.campaign_id+':'+p.characterId;if(seen.has(key))return false;seen.add(key);return true;});publishCombatHealth(db,row.campaign_id,{...s,participants});
- }
- for(const row of db.prepare('SELECT id FROM campaign').all())syncOpenMaskHealth(db,row.id);
-}

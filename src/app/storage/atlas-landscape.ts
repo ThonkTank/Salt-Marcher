@@ -12,19 +12,16 @@ import {executeBrush} from "./landscape-brush-edit";
 import { validateLine } from "../landscape-line";
 import { validateColor } from "../landscape-brush";
 import {REGION_REPLY_BYTES} from '../atlas-region-contracts';
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import polygonClipping from "polygon-clipping";
 import type { Polygon } from "../contracts";
 import {
   bounds,
-  hexPolygon,
-  HEX_METERS,
   terrainValue,
   type LandscapeRecord,
   type LandscapeBox,
   type LandscapeAction,
 } from "../atlas-landscape";
-const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 const clip = (polys: Polygon[]) =>
   polys.map((p) =>
     [p.outer, ...p.holes].map((r) =>
@@ -52,119 +49,10 @@ export function installLandscape(db: any) {
  CREATE INDEX IF NOT EXISTS landscape_height_scan ON atlas_landscape(campaign_id,CAST(json_extract(payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(payload,'$.order'),0),min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.height') IS NOT NULL;
  CREATE INDEX IF NOT EXISTS landscape_lake_scan ON atlas_landscape(campaign_id,min_x,max_x,min_y,max_y) WHERE json_valid(payload) AND json_extract(payload,'$.surface')='freshwater';
  CREATE TABLE IF NOT EXISTS atlas_reference_asset(campaign_id TEXT NOT NULL REFERENCES campaign(id),id TEXT NOT NULL,mime TEXT NOT NULL,bytes BLOB NOT NULL,PRIMARY KEY(campaign_id,id)) STRICT;
- CREATE TABLE IF NOT EXISTS atlas_landscape_migration(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id)) STRICT;
  `);
   installSourceCellIndex(db);
-  for (const root of db
-    .prepare(
-      "SELECT * FROM campaign_atlas WHERE campaign_id NOT IN(SELECT campaign_id FROM atlas_landscape_migration)",
-    )
-    .all()) {
-    const row = db
-      .prepare(
-        "SELECT * FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
-      )
-      .get(root.campaign_id, root.map_id);
-    if (!row) continue;
-    const map = JSON.parse(row.payload);
-    const hadCells = map.cells.length > 0;
-    for (const c of map.cells) {
-      const { q, r, level, ...values } = c;
-      putLandscape(
-        db,
-        root.campaign_id,
-        {
-          id: randomUUID(),
-          revision: 0,
-          kind: "patch",
-          name: "Übernommenes Gelände",
-          points: [],
-          polygons: [hexPolygon(q, r, map.hexMeters * (map.metricVersion===2?3:2) ** level)],
-          resolution: map.hexMeters * (map.metricVersion===2?3:2) ** level,
-          width: 0,
-          values,
-        },
-        null,
-      );
-    }
-    for (const place of db
-      .prepare(
-        "SELECT a.*,l.payload FROM atlas_place a JOIN location l ON l.campaign_id=a.campaign_id AND l.id=a.location_id WHERE a.campaign_id=? AND a.map_id=? AND l.trashed=0 AND NOT EXISTS(SELECT 1 FROM city_document c WHERE c.campaign_id=a.campaign_id AND c.location_id=a.location_id)",
-      )
-      .all(root.campaign_id, root.map_id)) {
-      if (
-        db
-          .prepare(
-            "SELECT 1 FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.locationId')=?",
-          )
-          .get(root.campaign_id, place.location_id)
-      )
-        continue;
-      putLandscape(
-        db,
-        root.campaign_id,
-        {
-          id: randomUUID(),
-          revision: 0,
-          kind: "place",
-          name: JSON.parse(place.payload).name,
-          points: [
-            {
-              x: (place.q + place.r / 2) * map.hexMeters,
-              y: ((place.r * Math.sqrt(3)) / 2) * map.hexMeters,
-            },
-          ],
-          polygons: [],
-          resolution: HEX_METERS,
-          width: 0,
-          values: {},
-          locationId: place.location_id,
-        },
-        null,
-      );
-    }
-    if (map.hexMeters !== HEX_METERS)
-      for (const row of db
-        .prepare("SELECT * FROM scene_position WHERE campaign_id=?")
-        .all(root.campaign_id)) {
-        const p = JSON.parse(row.payload);
-        if (p.mapId !== root.map_id || p.outdoor || p.city || p.dungeon)
-          continue;
-        p.outdoor = {
-          x: (p.q + p.r / 2) * map.hexMeters,
-          y: ((p.r * Math.sqrt(3)) / 2) * map.hexMeters,
-        };
-        const payload = JSON.stringify(p);
-        db.prepare(
-          "UPDATE scene_position SET payload=?,checksum=? WHERE campaign_id=? AND scene_id=?",
-        ).run(payload, hash(payload), root.campaign_id, row.scene_id);
-      }
-    // Preserve exact old footprints. A new grid never resamples existing author work.
-    map.cells = [];
-    map.hexMeters = HEX_METERS;
-    map.metricVersion = 2;
-    const payload = JSON.stringify(map);
-    db.prepare(
-      "UPDATE world_record SET payload=?,checksum=? WHERE campaign_id=? AND kind='map' AND id=?",
-    ).run(payload, hash(payload), root.campaign_id, root.map_id);
-    if (hadCells) {
-      db.prepare("DELETE FROM atlas_command WHERE campaign_id=?").run(
-        root.campaign_id,
-      );
-      db.prepare("UPDATE campaign_atlas SET cursor=0 WHERE campaign_id=?").run(
-        root.campaign_id,
-      );
-    }
-    db.prepare("INSERT INTO atlas_landscape_migration VALUES(?)").run(
-      root.campaign_id,
-    );
-  }
-  const legacy=db.pragma('user_version',{simple:true})>=47?[]:db.prepare("SELECT campaign_id,payload FROM atlas_landscape WHERE json_extract(payload,'$.kind')='patch' AND json_extract(payload,'$.values.terrain') IS NOT NULL AND json_extract(payload,'$.maskManaged') IS NOT 1 AND json_extract(payload,'$.surface') IS NOT 'freshwater' ORDER BY CAST(json_extract(payload,'$.resolution') AS REAL) DESC,coalesce(json_extract(payload,'$.order'),0),rowid").all();
-  for(const row of legacy){const r=JSON.parse(row.payload);writeTerrainHeight(db,row.campaign_id,r);r.maskManaged=true;db.prepare('UPDATE atlas_landscape SET payload=? WHERE campaign_id=? AND id=?').run(JSON.stringify(r),row.campaign_id,r.id);}
-  // Polygon-era deltas cannot restore the new canonical raster. Establish a checkpoint.
-  for(const cam of new Set(legacy.map((r:any)=>r.campaign_id))){db.prepare('DELETE FROM atlas_command WHERE campaign_id=?').run(cam);db.prepare('UPDATE campaign_atlas SET cursor=0,revision=revision+1 WHERE campaign_id=?').run(cam);}
-
 }
+
 const attemptedIndexes=new WeakSet<object>();
 /** Rebuildable connection-local index; never exported or captured in author history. */
 function installLandscapeIndex(db: any) {

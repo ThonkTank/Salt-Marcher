@@ -1,8 +1,0 @@
-{
-  "source": "c21fc150b16c15c65fe39b7ce832d219d02c2e06",
-  "version": "0.156.0",
-  "task": "Combine two overlapping maps into the selected second visit of the selected second plan; preserve personal notes and omit closed/irrelevant sources; edit original, read packet and fresh process.",
-  "observed": "Both maps default to old first plan and visit. Packet opens first visit of correct plan. Manual correction completes task without duplicate source IDs or loss of existing visit notes.",
-  "nativeRegularExits": 2,
-  "status": "Baseline and actual Joplin counterpart complete; first native after and173targeted tests passed before final shared integration."
-}

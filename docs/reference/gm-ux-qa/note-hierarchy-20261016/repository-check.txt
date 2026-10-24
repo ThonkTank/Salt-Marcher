@@ -1,5 +1,0 @@
-
-> dungeon-editor@0.158.0 check:repo
-> node tools/check-repository.mjs
-
-Repository check PASS (offline links, JSON, source references and core test registration)

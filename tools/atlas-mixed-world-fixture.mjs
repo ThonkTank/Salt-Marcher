@@ -12,18 +12,15 @@ export function populateMixedWorld(store, campaign, sizes = {}) {
   buildSync({stdin:{resolveDir:process.cwd(),contents:`
     export {storeGroupDraft} from './src/app/storage/room-groups';
     export {bindAtlas} from './src/app/storage/campaign-atlas';
-    export {installLandscape,putLandscape} from './src/app/storage/atlas-landscape';
+    export {putLandscape} from './src/app/storage/atlas-landscape';
     export {hexPolygon} from './src/app/atlas-landscape';
     export {newLocation} from './src/features/location/location-schema';
     export {validateRoom} from './src/app/contracts';
   `},outfile:'.build/atlas-mixed-world-fixture.cjs',bundle:true,platform:'node',format:'cjs'});
-  const {storeGroupDraft,bindAtlas,installLandscape,putLandscape,hexPolygon,newLocation,validateRoom} = require('../.build/atlas-mixed-world-fixture.cjs');
+  const {storeGroupDraft,bindAtlas,putLandscape,hexPolygon,newLocation,validateRoom} = require('../.build/atlas-mixed-world-fixture.cjs');
   const hash = value => createHash('sha256').update(value).digest('hex');
   const timings = {}, timed = (name, fn) => {const start=performance.now();fn();timings[name]=performance.now()-start;};
   const db=store.db, cam=campaign.id;
-  // Complete the normal empty-campaign reopen migration before seeding its
-  // source cells, otherwise the next open would migrate those cells a second time.
-  installLandscape(db);
   const map = JSON.parse(db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map'").get(cam).payload);
   // 500 columns x 200 rows cover the target world without changing its metric.
   // These are biome/property edits on the independently sculpted height field.

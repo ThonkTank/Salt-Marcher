@@ -1,60 +1,60 @@
 # Dokumentationsindex
 
-Gesamtprodukt: [Produktziele](PRODUCT.md), [Umfang](SCOPE.md) und [Lieferfolge](ROADMAP.md). Technische Entscheidungen: [ARCHITECTURE](../ARCHITECTURE.md). Die Fachpläne ergänzen konkrete Abläufe und Datenregeln; aktueller Code ist Istbefund. Abnahmen und direkte Belege: `acceptance.json` und `docs/reference/`.
+Status: Current; offene Ziele sind als solche beschrieben.
+Owner: project
+Last Reviewed: 2026-10-24 (Struktur und Quellen; Fachabnahme separat)
+Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
+Gesamtprodukt: [Produktziele](project/requirements/product.md), [Umfang](project/requirements/scope.md) und [Lieferfolge](project/delivery/roadmap.md). Technische Entscheidungen: [ARCHITECTURE](project/architecture/overview.md). Die Fachpläne ergänzen konkrete Abläufe und Datenregeln; aktueller Code ist Istbefund. Abnahmen und direkte Belege: `acceptance.json`; dort angegebene historische Belege bleiben unter ihren festen Git-Revisionen erreichbar.
 
 | Ich möchte … | Hier beginnen | Danach nur bei Bedarf |
 | --- | --- | --- |
-| den aktuellen Stand verstehen | [Produktstand](PRODUCT.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](../ROADMAP-HEX-ATLAS.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
-| selbstständig am Atlas weiterarbeiten | [Atlasumstieg und offene Aufgaben](plans/maps/unified-spatial-atlas.md#aktueller-arbeitsstand) | Gültige Technik, verbleibende Übernahme und gemeinsame Abnahme |
-| den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](ROADMAP.md#technischer-übergang) und [Fachabhängigkeiten](ROADMAP.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](../ROADMAP-HEX-ATLAS.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
-| die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](../ARCHITECTURE.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](../ARCHITECTURE.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](../ROADMAP-HEX-ATLAS.md#informationsarchitektur-der-oberfläche), [Bedienregeln](../ROADMAP-HEX-ATLAS.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
-| Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](development/atlas-rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](development/atlas-rendering.md#prüfwege-und-offene-qualifikation) |
-| den Nutzerzweck oder die Priorität klären | [Produktziele](PRODUCT.md) und [fachliche Lieferfolge](ROADMAP.md) | [Atlasabläufe und Work → Efficient → Beautiful / KISS](../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel), konkreter Fachplan |
-| eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](../ARCHITECTURE.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
-| eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](../ROADMAP-E2E-GATES-CANDIDATE.md) | [Atlas-Bedienproben](../ROADMAP-HEX-ATLAS.md#spätere-bedienabnahme), [GM-Aufgaben](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md) und `acceptance.json` |
-| Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](development/testing.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
+| den aktuellen Stand verstehen | [Produktstand](project/requirements/product.md#gegenwärtiger-stand-und-offene-entscheidungen) und [Atlasübersicht](atlas/requirements/atlas.md#atlas-auf-einen-blick) | Datierte Fachbelege in `acceptance.json` |
+| selbstständig am Atlas weiterarbeiten | [Atlasumstieg und offene Aufgaben](atlas/architecture/unified-spatial-atlas.md#aktueller-arbeitsstand) | Gültige Technik, verbleibende Übernahme und gemeinsame Abnahme |
+| den nächsten Lieferabschluss umsetzen | [Gemeinsamer technischer Einstieg](project/delivery/roadmap.md#technischer-übergang) und [Fachabhängigkeiten](project/delivery/roadmap.md#fachliche-lieferabhängigkeiten) | [Atlaspakete](atlas/requirements/atlas.md#lieferpakete-und-codeanschlüsse), Fachquelle und passende Tests |
+| die Oberfläche bauen | [Atlas-Besitzer und Prüfweg](project/architecture/overview-2.md#atlasoberfläche-ändern), [gemeinsame Darstellung und Suche](project/architecture/overview-2.md#darstellung-suche-und-spieleranzeige) und Fachplan des gewählten Ablaufs | [Atlasoberfläche](atlas/requirements/atlas.md#informationsarchitektur-der-oberfläche), [Bedienregeln](atlas/requirements/atlas-2.md#gemeinsame-bedienung), Werkzeugkatalog und Objektaktionen |
+| Atlasdarstellung, Auswahl oder Bildausgabe ändern | [Codebesitzer und Schutzregeln](atlas/architecture/rendering.md#wo-ändern-und-prüfen) | [Prüfwege und offene Qualifikation](atlas/architecture/rendering.md#prüfwege-und-offene-qualifikation) |
+| den Nutzerzweck oder die Priorität klären | [Produktziele](project/requirements/product.md) und [fachliche Lieferfolge](project/delivery/roadmap.md) | [Atlasabläufe und Work → Efficient → Beautiful / KISS](atlas/requirements/atlas.md#wie-kommen-wir-zum-ziel), konkreter Fachplan |
+| eine verlorene Buchungsantwort klären | [Bestätigungsbesitzer und modale Rückbindung](project/architecture/overview.md#buchungsantworten-klären) | Fachvertrag des betroffenen Writers |
+| eine Lieferung prüfen | Betroffene Fachabnahme und [gemeinsame E2E-Kriterien](project/verification/end-to-end.md) | [Atlas-Bedienproben](atlas/requirements/atlas-2.md#spätere-bedienabnahme), [GM-Aufgaben](project/verification/gm-workflows.md) und `acceptance.json` |
+| Tests ausführen oder ihren Aufwand beurteilen | [Testvorbereitung, Laufzeiten und Bereinigung](project/verification/testing.md) | Betroffene Fachabnahme und tatsächliche Testdateien im Capability-Katalog |
 
 | Thema | Fachliche Quellen |
 | --- | --- |
-| Gesamtprodukt | [Produktziele](PRODUCT.md), [Lieferfolge](ROADMAP.md), [vollständiger Umfang](SCOPE.md), [Quellenregister](scope-sources.json) |
-| Hex-Atlas und gemeinsame Karte | [Hex-Atlas](../ROADMAP-HEX-ATLAS.md), [Wonderdraft-Vergleich](../WONDERDRAFT-PARITY.md), [gemeinsamer Speicher-/Hostanschluss](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md) |
-| Gemeinsamer räumlicher Atlas und semantischer Zoom | [Atlasumstieg](plans/maps/unified-spatial-atlas.md), [historische Ausgangsbasis und Werkzeugumfang](plans/maps/unified-spatial-atlas.md#funktionsumfang) |
-| Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](plans/maps/atlas-cartography.md) |
-| Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](plans/maps/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](plans/maps/terrain-routes.md) |
-| Höhenlandschaft und kippbarer Atlas | [Relief-Roadmap R0–R7](plans/maps/terrain-relief.md): gezeichnete Gebirge, gekoppelte Küsten, Höhenabfragen und räumliche Ansicht |
-| Bewuchs und Felsen | [Landschaftsvorlagen, automatische Bestände und Einzelkorrekturen](plans/maps/vegetation.md) |
-| Gemeinsame Gebäude und Dungeons | [Raumgruppen, Generierung und Speichergrenze](plans/maps/room-groups.md) |
-| Stadt | [Stadtziele](../ROADMAP-CITIES.md), [technische Anforderungen](../ROADMAP-CITIES-IMPLEMENTATION-PLAN.md), [Referenzgalerie](../ROADMAP-CITIES.md#referenzgalerie) |
-| Dungeon | [Grundrisse und Objekte](../ROADMAP-PARITY.md), [weitere Werkzeuge](../ROADMAP-PARITY-TOOLS.md), [3D/Rooms/Paths/Passages](plans/dungeon/smr04-spatial-coverage.md), [Geometrie und Vorschau](../ROADMAP-E2E01-ATLAS-RUNTIME-PLAN.md#dungeon-geometrie-und-vorschau) |
-| Kampagnen und Planung | [Gesamtumfang](../ROADMAP-SALTMARCHER-REPLACEMENT.md), [Kopie, Import und Export](../ROADMAP-SALTMARCHER-SMR-01-CAMPAIGN-DATA-PLAN.md#copy-complete-import-remap-und-ownerlieferung), [manuelle Sessionplanung](plans/campaign/manual-session-planner.md) |
-| NPC-Dossiers, Tagespläne und Autorenverweise | [Fachbesitzer und Gespräche](plans/campaign/npc-dossiers.md#aktueller-vertrag), [Tagespläne und Ortsbesuche](plans/campaign/npc-dossiers.md#tagespläne-und-geplante-ortsbesuche), [Textverweise und unabhängige Kopien](plans/campaign/authored-text-references.md) |
-| Spielabendmappe und Markdownausgabe | [Quellenstand, Suche und nächste Abnahmen](plans/campaign/session-packet.md) |
-| Party und LiveSession | [Fachvertrag und Kernumsetzung](plans/runtime/smr03-live-scene-contract.md), [Spielabendstart und Wiederaufnahme](plans/runtime/session-opening-and-resume.md) |
-| Kampfentwürfe, Szenenauswahl und Nachbereitung | [Codeeinstiege, Datenregeln und offene Abnahmen](plans/runtime/combat-recovery.md), [spontane Katalogübernahme](plans/runtime/combat-recovery.md#spontane-katalogübernahme-ohne-teilkampf) |
-| Quest-/Gerüchtabschluss und verlorene Antworten | [Narrative Entwürfe, Award und Recovery](plans/runtime/narrative-recovery.md) |
-| Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](plans/runtime/adventuring-day.md) |
-| Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](plans/runtime/player-projection.md) |
-| GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](plans/runtime/rule-references.md), [Autorenverweise und Kopien](plans/campaign/authored-text-references.md) |
-| Beuteoberflächen und Wertvergleich | [UI-Einstiege für Schatz und Charakterbeute](plans/runtime/treasure-distribution.md#codeeinstiege-der-beuteoberflächen), [gemeinsame Ledger-/Lootbilanz](plans/runtime/loot-balance.md) |
-| Handel, Shopbesitzer und Restock | [Preisvorschlag, Buchung und Beleganzeige](plans/runtime/shops-and-restock.md#handel-ändern-und-prüfen), [Besitzer- und Zeitgrenzen](plans/runtime/shops-and-restock.md#vorhandener-ablauf-und-grenzen), [offene Lieferungen](plans/runtime/shops-and-restock.md#nächste-lieferungen) |
-| Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](plans/runtime/actor-autonomy.md) |
-| Katalogsuche, Filter und Inhaltswechsel | [Suchvertrag](plans/runtime/catalog-browsing.md#aktueller-suchvertrag), [SRD-Gegenstandsreferenz](plans/runtime/catalog-browsing.md#srd-gegenstandsreferenz), [Inhaltswechsel und Wiederaufnahme](plans/runtime/catalog-browsing.md#inhaltswechsel-und-wiederaufnahme) |
-| Eigene Gegenstandsdefinitionen bearbeiten und speichern | [Definitionsentwürfe, Validierung und sichere Auswahl](plans/runtime/catalog-browsing.md#eigene-definitionsentwürfe-und-sichere-auswahl), [Codebesitzer und Prüfwege](plans/runtime/catalog-browsing.md#code-und-prüfwege) |
-| Encounter-Vorlagen, Tabellen und Generierung | [Codeeinstiege, Save-/Recoverygrenzen und offene Lieferungen](plans/runtime/encounter-planning.md) |
-| Katalog- und Encounteranforderungen | [Fachanforderungen](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md), [Item-Quellenkorpus](../ROADMAP-SALTMARCHER-CATALOG-ENCOUNTER-PLAN.md#itemquellen-und-provider) |
-| Tutorials und Tastaturkontext | [Aktuelle Lektionen, Kontextschutz und nächste Abnahmen](plans/runtime/tutorial-and-shortcuts.md) |
-| Erweiterungsinstallation und Wiederaufnahme | [Rechte, defekte Vermerke und nächste Unitlieferung](plans/extensions/installation-recovery.md) |
+| Gesamtprodukt | [Produktziele](project/requirements/product.md), [Lieferfolge](project/delivery/roadmap.md), [vollständiger Umfang](project/requirements/scope.md), [Quellenregister](project/requirements/sources.json) |
+| Hex-Atlas und gemeinsame Karte | [Hex-Atlas](atlas/requirements/atlas.md), [Wonderdraft-Vergleich](atlas/verification/reference-comparison.md), [gemeinsamer Speicher-/Hostanschluss](atlas/contract/spatial-runtime.md) |
+| Gemeinsamer räumlicher Atlas und semantischer Zoom | [Atlasumstieg](atlas/architecture/unified-spatial-atlas.md), [historische Ausgangsbasis und Werkzeugumfang](atlas/architecture/unified-spatial-atlas.md#funktionsumfang) |
+| Regionen und Kartenbeschriftung | [Pinselablauf, Maßstab, Hierarchie und Nachweise](atlas/contract/atlas-cartography.md) |
+| Straßen, Flüsse und Landschaftspinsel | [Bedienung, Datenvertrag und offene Referenzabnahmen](atlas/contract/landscape-tools.md), [geländegebundene Trassen, Flussbetten und Schutz](atlas/contract/terrain-routes.md) |
+| Höhenlandschaft und kippbarer Atlas | [Relief-Roadmap R0–R7](atlas/requirements/terrain-relief.md): gezeichnete Gebirge, gekoppelte Küsten, Höhenabfragen und räumliche Ansicht |
+| Bewuchs und Felsen | [Landschaftsvorlagen, automatische Bestände und Einzelkorrekturen](atlas/requirements/vegetation.md) |
+| Gemeinsame Gebäude und Dungeons | [Raumgruppen, Generierung und Speichergrenze](atlas/contract/room-groups.md) |
+| Stadt | [Stadtziele](city/requirements/city.md), [technische Anforderungen](city/contract/city.md), [Referenzgalerie](city/requirements/city.md#referenzgalerie) |
+| Dungeon | [Grundrisse und Objekte](dungeon/requirements/drawing.md), [weitere Werkzeuge](dungeon/requirements/tools.md), [3D/Rooms/Paths/Passages](dungeon/requirements/smr04-spatial-coverage.md), [Geometrie und Vorschau](atlas/contract/spatial-runtime.md#dungeon-geometrie-und-vorschau) |
+| Kampagnen und Planung | [Gesamtumfang](project/requirements/product-scope.md), [Kopie, Import und Export](campaign/contract/archive.md#copy-complete-import-remap-und-ownerlieferung), [manuelle Sessionplanung](campaign/contract/manual-session-planner.md) |
+| NPC-Dossiers, Tagespläne und Autorenverweise | [Fachbesitzer und Gespräche](campaign/contract/npc-dossiers.md#aktueller-vertrag), [Tagespläne und Ortsbesuche](campaign/contract/npc-dossiers.md#tagespläne-und-geplante-ortsbesuche), [Textverweise und unabhängige Kopien](campaign/contract/authored-text-references.md) |
+| Spielabendmappe und Markdownausgabe | [Quellenstand, Suche und nächste Abnahmen](campaign/contract/session-packet.md) |
+| Party und LiveSession | [Fachvertrag und Kernumsetzung](runtime/contract/smr03-live-scene-contract.md), [Spielabendstart und Wiederaufnahme](runtime/contract/session-opening-and-resume.md) |
+| Kampfentwürfe, Szenenauswahl und Nachbereitung | [Codeeinstiege, Datenregeln und offene Abnahmen](runtime/contract/combat-recovery.md), [spontane Katalogübernahme](runtime/contract/combat-recovery.md#spontane-katalogübernahme-ohne-teilkampf) |
+| Quest-/Gerüchtabschluss und verlorene Antworten | [Narrative Entwürfe, Award und Recovery](runtime/contract/narrative-recovery.md) |
+| Adventuring Day und XP-Vorschau | [Aktive Party, Rechengrenzen und nächste Abnahmen](runtime/contract/adventuring-day.md) |
+| Passive Spielerprojektion | [Datenfreigabe, große Karten und nächste Schritte](runtime/contract/player-projection.md) |
+| GM-Referenzsuche und Regeln | [Lesen, Übergabe und nächste Schritte](runtime/contract/rule-references.md), [Autorenverweise und Kopien](campaign/contract/authored-text-references.md) |
+| Beuteoberflächen und Wertvergleich | [UI-Einstiege für Schatz und Charakterbeute](runtime/contract/treasure-distribution.md#codeeinstiege-der-beuteoberflächen), [gemeinsame Ledger-/Lootbilanz](runtime/contract/loot-balance.md) |
+| Handel, Shopbesitzer und Restock | [Preisvorschlag, Buchung und Beleganzeige](runtime/contract/shops-and-restock.md#handel-ändern-und-prüfen), [Besitzer- und Zeitgrenzen](runtime/contract/shops-and-restock.md#vorhandener-ablauf-und-grenzen), [offene Lieferungen](runtime/contract/shops-and-restock.md#nächste-lieferungen) |
+| Actor Autonomy und Jobintegrität | [Aktueller Anschluss und nächste Schritte](runtime/contract/actor-autonomy.md) |
+| Katalogsuche, Filter und Inhaltswechsel | [Suchvertrag](runtime/contract/catalog-browsing.md#aktueller-suchvertrag), [SRD-Gegenstandsreferenz](runtime/contract/catalog-browsing.md#srd-gegenstandsreferenz), [Inhaltswechsel und Wiederaufnahme](runtime/contract/catalog-browsing.md#inhaltswechsel-und-wiederaufnahme) |
+| Eigene Gegenstandsdefinitionen bearbeiten und speichern | [Definitionsentwürfe, Validierung und sichere Auswahl](runtime/contract/catalog-browsing.md#eigene-definitionsentwürfe-und-sichere-auswahl), [Codebesitzer und Prüfwege](runtime/contract/catalog-browsing.md#code-und-prüfwege) |
+| Encounter-Vorlagen, Tabellen und Generierung | [Codeeinstiege, Save-/Recoverygrenzen und offene Lieferungen](runtime/contract/encounter-planning.md) |
+| Katalog- und Encounteranforderungen | [Fachanforderungen](catalog/requirements/catalog-encounters.md), [Item-Quellenkorpus](catalog/requirements/catalog-encounters-4.md#itemquellen-und-provider) |
+| Tutorials und Tastaturkontext | [Aktuelle Lektionen, Kontextschutz und nächste Abnahmen](runtime/contract/tutorial-and-shortcuts.md) |
+| Erweiterungsinstallation und Wiederaufnahme | [Rechte, defekte Vermerke und nächste Unitlieferung](extensions/contract/installation-recovery.md) |
 | Installation und In-App-Updates | [Linux-Pakete, signierte GitHub Releases und Wiederherstellung](project/delivery/github-updates.md) |
-| Plattform und Architektur | [Plattform-ADR](../ROADMAP-SALTMARCHER-PLATFORM-ADR.md), [Prototypen](../ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md), [Architektur](../ARCHITECTURE.md) |
-| Reise und Gruppenzeit | [Laufzustand und Datenregeln](plans/maps/hex-travel.md#vorhandener-ablauf-und-datenregeln), [Checkpoint, Rücknahme und Restart](plans/maps/hex-travel.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) |
-| Agenda, Fantasy-Datum und Fristen | [Kalenderplanung und ausdrücklicher Zeitsprung](plans/runtime/campaign-agenda.md#ausführbarer-anschluss) |
-| Scene-Wetter und GM-Override | [Datenvertrag, lokaler Nachweis und nächste Abnahmen](plans/runtime/weather.md) |
-| Musik, Ambience und Audiofehler | [GM-Stopp](plans/runtime/music-recovery.md#gm-stopp-und-verspätete-antworten), [Schichtfreigabe und Fehlerklärung](plans/runtime/music-recovery.md#audio-schichten-und-fehlerklärung), [Nachweise und offene Prüfungen](plans/runtime/music-recovery.md#nachweise-und-nächste-arbeit) |
-| Verknüpfte Raum- und GM-Notizen | [Direkter Vergleich mit Logseq: Notizen neben dem Raum-Key bearbeiten](reference/gm-ux-qa/key-note-context-20261015/README.md) |
-| Notizorganisation und Raum-Key-Suche | [Direkter Vergleich mit TiddlyWiki: Vorlagen und NSC-Verweise wiederfinden](reference/gm-ux-qa/key-lookup-20261015/README.md) |
-| Raum-Keys bis zum Folgeabend | [Tatsächlicher Obsidian-Vergleich: vorhandenen Plan öffnen und zum Raum zurückkehren](reference/gm-ux-qa/connected-room-prep-20261017/README.md) |
-| Ausgangsnotiz nach Raum- und Planbearbeitung | [Native Nachprüfung und Obsidian-Zusammenführungsvergleich](reference/gm-ux-qa/note-room-plan-return-20261017/README.md) |
-| Doppelte NSC-Notizen | [Originale redigieren und Raum-/Besuchsverweise gemeinsam umstellen](reference/gm-ux-qa/npc-note-merge-20261017/README.md) |
-| Prüfung | [GM-Szenarien](../ROADMAP-GM-PRODUCT-TESTING-PLAN.md), [Campaign-B-Fixture](CONTRIBUTOR-FIXTURE-B.md), [Abnahmeregister](../acceptance.json), [portable Hostbelege](reference/) |
+| Plattform und Architektur | [Plattform-ADR](project/architecture/platform-decision.md), [Prototypen](project/verification/architecture-experiments.md), [Architektur](project/architecture/overview.md) |
+| Reise und Gruppenzeit | [Laufzustand und Datenregeln](atlas/contract/hex-travel.md#vorhandener-ablauf-und-datenregeln), [Checkpoint, Rücknahme und Restart](atlas/contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche) |
+| Agenda, Fantasy-Datum und Fristen | [Kalenderplanung und ausdrücklicher Zeitsprung](runtime/contract/campaign-agenda.md#ausführbarer-anschluss) |
+| Scene-Wetter und GM-Override | [Datenvertrag, lokaler Nachweis und nächste Abnahmen](runtime/contract/weather.md) |
+| Musik, Ambience und Audiofehler | [GM-Stopp](runtime/contract/music-recovery.md#gm-stopp-und-verspätete-antworten), [Schichtfreigabe und Fehlerklärung](runtime/contract/music-recovery.md#audio-schichten-und-fehlerklärung), [Nachweise und offene Prüfungen](runtime/contract/music-recovery.md#nachweise-und-nächste-arbeit) |
+| Prüfung | [GM-Szenarien](project/verification/gm-workflows.md), [Campaign-B-Fixture](project/verification/fixture-b.md), [Abnahmeregister](../acceptance.json), [portable Hostbelege](https://github.com/ThonkTank/Salt-Marcher/blob/16eb0aa8807ac21704abfea5412ac3a22033a23a/docs/reference) |
 
 Attribution: [NOTICE](../NOTICE.md), [SRD](../src/features/catalog/SRD-5.1-ATTRIBUTION.md), [Items](../src/features/catalog/SRD-5.1-ITEMS-ATTRIBUTION.md).

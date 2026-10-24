@@ -1,5 +1,10 @@
 # Third-party notices
 
+Status: Current; offene Ziele sind als solche beschrieben.
+Owner: project
+Last Reviewed: 2026-10-24
+Source of Truth: Dieses Dokument besitzt das benannte Thema; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
+
 ## Atlas MapLibre/deck.gl runtime
 
 The replacement Atlas runtime includes MapLibre GL JS 6.15.0 (BSD-3-Clause),

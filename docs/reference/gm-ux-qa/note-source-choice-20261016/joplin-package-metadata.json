@@ -1,8 +1,0 @@
-{
-  "version": "3.7.1",
-  "repository.url": "git+https://github.com/laurent22/joplin.git",
-  "dist.integrity": "sha512-84ajTZ76WyBbrCYhZqcRNvcyK3jKTONBZJhZMQsUGCMdTpRSCRanh2G5u82zSh7ir4qo2SIEQda3WdLZ7v+HZQ==",
-  "engines": {
-    "node": ">=10.0.0"
-  }
-}

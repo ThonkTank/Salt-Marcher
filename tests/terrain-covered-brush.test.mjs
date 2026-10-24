@@ -29,7 +29,7 @@ test('2500-mile sculpt on 1024 fine tiles reads only its scale, moves detail and
  assert(after.length-before.length<=16);assert.equal(f.store.atlasHeight(f.token,{x:0,y:0}).heightM,z+50);
  for(const x of [-30,8,40])assert(Math.abs(f.store.atlasHeight(f.token,{x,y:0}).heightM-(100+10*Math.cos(x/8)+50))<1e-5);
  f.write({kind:'undo'});assert.deepEqual(f.rows(),before);f.write({kind:'redo'});assert.deepEqual(f.rows().map(r=>[r.id,JSON.parse(r.payload).height]),after.map(r=>[r.id,JSON.parse(r.payload).height]));
- const db=new CampaignStore(f.dir+'/world.sqlite');assert.equal(db.db.pragma('user_version',{simple:true}),54);db.close();
+ const db=new CampaignStore(f.dir+'/world.sqlite');assert.equal(db.db.pragma('user_version',{simple:true}),55);db.close();
 });
 test('successive large and small scale writes remain one gesture and rejected writes preserve its prefix',t=>{
  const f=setup(t),before=f.rows(),group=randomUUID();f.write(stroke('raise'),group);const prefix=f.rows();
@@ -68,10 +68,10 @@ test('prepared patches check tile revisions and roll back atomically',t=>{
  records.at(-1).revision=999;const before=f.rows();
  assert.throws(()=>f.store.executeAtlasCommit({token:f.token,campaignId:f.cam.id,commandId:randomUUID(),action:a},{fence:source.fence,revision:source.revision,stroke:JSON.stringify(a.stroke),records}),/inzwischen/);assert.deepEqual(f.rows(),before);
 });
-test('schema 51 opens with untouched legacy rows/history; future formats are rejected',t=>{
- const f=setup(t);f.write(stroke());const rows=f.rows(),history=f.store.db.prepare('SELECT payload FROM atlas_command').all();f.store.db.pragma('user_version=51');
- const newer=new CampaignStore(f.dir+'/world.sqlite');assert.equal(newer.db.pragma('user_version',{simple:true}),54);assert.deepEqual(newer.db.prepare('SELECT id,revision,payload FROM atlas_landscape ORDER BY id').all(),rows);assert.deepEqual(newer.db.prepare('SELECT payload FROM atlas_command').all(),history);newer.close();
- f.store.db.pragma('user_version=55');assert.throws(()=>new CampaignStore(f.dir+'/world.sqlite'),/neuere Appversion/);
+test('current format preserves terrain rows and history on reopen; future formats are rejected',t=>{
+ const f=setup(t);f.write(stroke());const rows=f.rows(),history=f.store.db.prepare('SELECT payload FROM atlas_command').all();
+ const newer=new CampaignStore(f.dir+'/world.sqlite');assert.equal(newer.db.pragma('user_version',{simple:true}),55);assert.deepEqual(newer.db.prepare('SELECT id,revision,payload FROM atlas_landscape ORDER BY id').all(),rows);assert.deepEqual(newer.db.prepare('SELECT payload FROM atlas_command').all(),history);newer.close();
+ f.store.db.pragma('user_version=56');assert.throws(()=>new CampaignStore(f.dir+'/world.sqlite'),/Testdatenformat/);
 });
 test('archive roundtrip accepts legacy and additive heights at the same address and preserves source history',async t=>{
  const f=setup(t);f.write(stroke('raise',32));const initial=f.store.atlasHeight(f.token,{x:0,y:0}).heightM,filename=f.dir+'/snapshot.sqlite';

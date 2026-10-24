@@ -46,17 +46,27 @@ Paketverzeichnis und Katalog prüfen:
 
 ```sh
 node tools/wonderdraft/inventory.mjs acceptance.json /ABSOLUTER-LAUF/package-inventory.json
-node tools/wonderdraft/validate-inventory.mjs acceptance.json --allow-open
-node tools/wonderdraft/validate-inventory.mjs acceptance.json --require-complete
-node tools/wonderdraft/validate-inventory.mjs acceptance.json --phase HEX-11 --require-complete
+node tools/wonderdraft/validate-inventory.mjs /tmp/saltmarcher-reference-inventory.json --allow-open
+node tools/wonderdraft/validate-inventory.mjs /tmp/saltmarcher-reference-inventory.json --require-complete
+node tools/wonderdraft/validate-inventory.mjs /tmp/saltmarcher-reference-inventory.json --phase HEX-11 --require-complete
 ```
 
 Die erste Prüfung ist ausschließlich ein Pakethinweis. Die zweite prüft Zuordnungen und Bildprovenienz, **keine visuelle Vollständigkeit**. `--allow-open` erlaubt einen Teilstand, ohne das Tor zu schließen. Der Standardaufruf und `--require-complete` bleiben erfolglos, solange das Tor beziehungsweise Inventurlücken offen sind. Sichtbare Optionen schließen keine Wirkungsprobe. Synthetische Originaleingaben, Obsidian-Hostprüfung und physische Eingabe bleiben getrennte Nachweise. Fehlende lokale Belegdateien führen zum Fehler; ein frisch geklonter Katalog ohne den externen QA-Bestand darf keine Direktabnahme vortäuschen.
 
-Für neue Produktlieferungen gelten die [Ergebnisgleichwertigkeit und Atlasprioritäten](../../ROADMAP-HEX-ATLAS.md#wie-kommen-wir-zum-ziel). Der vorhandene Prüfer validiert weiterhin das historische Originalinventar und seine Provenienz; seine numerische HEX-Phasenfolge ist kein aktueller Produkt-Lieferplan. Ein offenes Inventartor bedeutet offene Referenznachweise, keinen allgemeinen Stopp anderer fachlich eindeutiger Lieferungen. Identische Hostgesten werden daraus nicht verlangt.
+Für neue Produktlieferungen gelten die [Ergebnisgleichwertigkeit und Atlasprioritäten](../../docs/atlas/requirements/atlas.md#wie-kommen-wir-zum-ziel). Der vorhandene Prüfer validiert weiterhin das historische Originalinventar und seine Provenienz; seine numerische HEX-Phasenfolge ist kein aktueller Produkt-Lieferplan. Ein offenes Inventartor bedeutet offene Referenznachweise, keinen allgemeinen Stopp anderer fachlich eindeutiger Lieferungen. Identische Hostgesten werden daraus nicht verlangt.
 
 `scopeContractVersion: 1` trennt frühe Inventar-/Startpflichten von späteren Originalwirkungen und Host-/Hardwareprüfungen. `blocking` nennt Fehler im angefragten Umfang, `deferred` später fällige Fragen und `pending` alle offenen Fragen. Vollständigkeit erfordert reviewte Originalbelege einschließlich der 13 Startfälle und neun unveränderten Neuanlagerohkarten; sichtbare Controls allein genügen nicht. Gruppenindizes müssen die zugehörigen UI-Kennungen enthalten; zusätzliche Oberflächenbezüge stehen begründet unter `crossReferenceUi`.
 
 Historische Quellen werden ausschließlich über `evidenceUsageContractVersion: 1` und `evidenceUsages` abgelöst: ursprünglicher Datensatz, Hash, Fehlermeldung, Aussage und begrenzter Ersatzumfang bleiben erhalten. Ersatzframes müssen beim selben Besitzer als `actual_original_runtime` die aktuelle Prozess-/Frameprüfung bestehen; alte Rohkarten benötigen zusätzlich eine unveränderte aktuelle Speicherdatei. `historicalEvidenceIssues` bleibt ohne gültigen Ersatz blockierend. Der Prüfer bestätigt Herkunft und Zuordnung; die inhaltliche Bildpassung und aus Paketpfaden erschlossene `mapped_surface_role` benötigen einen Originalvergleich. `original_gui_screenshot` mit `session.txt` bleibt historisch, bis ergänzende Prozess-/Framebelege vorliegen. Kennungen werden nicht umnummeriert.
 
 Dungeon-Ausgangsprüfung nacheinander mit demselben bestehenden Harness: `bash tools/run-host.sh --hex00-baseline`, danach mit `--restart`; `DUNGEON_PLUGIN_ROOT`, `DUNGEON_SOURCE_VAULT` und `DUNGEON_QA_ROOT` ausdrücklich setzen. Der Fall prüft V4-Raum, Eingang mit Raumkennung, Key-Änderung, Undo/Redo und exaktes Save/Reopen im isolierten Vault.
+
+## Historisches Referenzinventar
+
+Die aktuelle `acceptance.json` enthält Anforderungen und scoped Prüfstände. Das unveränderte vollständige Originalinventar wird bei Bedarf aus dem dort genannten `history.revision` gelesen:
+
+```sh
+git show 16eb0aa8807ac21704abfea5412ac3a22033a23a:acceptance.json > /tmp/saltmarcher-reference-inventory.json
+```
+
+Die Inventarprüfung bewertet weiterhin die vollständigen Originalbelege; ein verkürztes aktuelles Register ersetzt diese Prüfung nicht.

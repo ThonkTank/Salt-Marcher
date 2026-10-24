@@ -1,7 +1,0 @@
-{
-  "control": "actual local Markdown file write/read and heading filter; no editor timing or human usability claim",
-  "groups": 65,
-  "first": "Wald 00",
-  "last": "Wald 64",
-  "roundTripEqual": true
-}

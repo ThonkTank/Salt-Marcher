@@ -321,7 +321,7 @@ test("typed boundary rejects mixed land/color/property operations atomically", (
   );
   assert.deepEqual(f.records(), before);
 });
-test("format 47 upgrade preserves history and records; format 48 archive carries pigment/erasers/properties", async (t) => {
+test("current reopen preserves history and records; archive carries pigment/erasers/properties", async (t) => {
   const f = fixture(t);
   f.write(land());
   f.write(color());
@@ -334,7 +334,6 @@ test("format 47 upgrade preserves history and records; format 48 archive carries
   const before = f.records(),
     image = render(before),
     history = f.store.db.prepare("SELECT * FROM campaign_atlas").all();
-  f.store.db.pragma("user_version=47");
   f.fresh();
   assert.deepEqual(f.records(), before);
   assert.deepEqual(

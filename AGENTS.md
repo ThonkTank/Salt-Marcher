@@ -1,5 +1,15 @@
 # SaltMarcher contributor guide
 
+## Permanent working checkout
+
+- `/home/aaron/Schreibtisch/projects/SaltMarcher` is the only permanent working
+  checkout on this laptop. Work here by default, including implementation,
+  verification and handoff.
+- An additional checkout or worktree is temporary. Before finishing, return its
+  complete task-owned result to the permanent checkout, verify it there, then
+  remove the temporary checkout and its temporary branch. Preserve any unique
+  unfinished work before cleanup; do not leave the newest result elsewhere.
+
 ## Product and architecture
 
 - SaltMarcher continues the former Kampagnenwerkstatt. Start at `docs/INDEX.md`.
@@ -10,10 +20,10 @@
 - Keep renderer privileges restricted to the preload bridge. Main owns native
   capabilities and the canonical storage boundary.
 - Preserve the original requirements and source bindings in
-  `docs/scope-sources.json`. Implemented behavior, automated evidence, native
+  `docs/project/requirements/sources.json`. Implemented behavior, automated evidence, native
   qualification, and owner acceptance remain separate claims.
 - Atlas work follows the current user-approved cleanup and full renderer cutover
-  in `docs/plans/maps/unified-spatial-atlas.md`. The former mandatory M0–M8
+  in `docs/atlas/architecture/unified-spatial-atlas.md`. The former mandatory M0–M8
   sequence and Rust/WASM requirement are superseded. Preserve the complete
   functional scope, restricted renderer privileges and delivery gates. Only test
   setups exist; old internal formats need no compatibility migration. Preserve

@@ -35,7 +35,7 @@ Datenbanken und Nutzerinhalte der früheren SaltMarcher-App werden weder
 überschrieben noch automatisch importiert. Ihre Migration ist eine eigene,
 noch nicht als abgeschlossen bestätigte Fähigkeit. Die Übernahme behauptet
 keine vollständige Funktionsparität oder Produktabnahme. Maßgeblich bleiben
-[Produktziele](../../PRODUCT.md), [Umfang](../../SCOPE.md) und `acceptance.json`.
+[Produktziele](../requirements/product.md), [Umfang](../requirements/scope.md) und `acceptance.json`.
 
 ## Zusammenarbeit und Lieferung
 

@@ -9,7 +9,7 @@ and names `google-noto-fonts-20251201-2.fc44.src.rpm` as their source RPM.
 | `NotoSans-VF.ttf` | `google-noto-sans-vf-fonts-20251201-2.fc44` | `/usr/share/fonts/google-noto-vf/NotoSans[wght].ttf` | `fb53504de62e767a54695416123d68d67f71c9b69722175184ad56e7dd13547b` |
 | `NotoSansSymbols-VF.ttf` | `google-noto-sans-symbols-vf-fonts-20251201-2.fc44` | `/usr/share/fonts/google-noto-vf/NotoSansSymbols[wght].ttf` | `63724daeff6755a45933b9a5e3a3b41df5df8fe925c0f4c991f2f68c08a4182d` |
 
-The full SIL Open Font License 1.1 text is in [`OFL-1.1.txt`](./OFL-1.1.txt).
+The full SIL Open Font License 1.1 text is in [`OFL-1.1.txt`](OFL-1.1.txt).
 Its unmodified text was copied from the locally installed Noto CJK package's
 license file; the Noto Sans and Noto Sans Symbols package records independently
 identify these two binaries as OFL-1.1. Name table record 0 in each exact

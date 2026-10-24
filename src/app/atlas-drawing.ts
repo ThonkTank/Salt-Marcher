@@ -1,3 +1,4 @@
+import {atlasPathPreview} from './atlas-path-draft';
 import { atlasPaint as shape } from './atlas-canvas-scene';
 import { atlasElement as get } from './atlas-dom';
 import type { AtlasRegions } from './atlas-regions';
@@ -345,7 +346,7 @@ export class AtlasDrawing {
                 }
             }
             else if (state.element && state.element.id === this.host.author.selection?.id) {
-                const e = this.pathPreview(state.element);
+                const e = atlasPathPreview(state.element, this.host.author.pathDrag);
                 points = e.points;
                 lines = elementMeasures(e);
             }
@@ -497,18 +498,6 @@ export class AtlasDrawing {
                 y: vertices.reduce((n, p) => n + p.y, 0) / vertices.length,
             }, mpp);
     }
-    pathPreview(original: import('./drawing-contracts').DrawingElement) {
-        const drag = this.host.author.pathDrag;
-        if (!drag || drag.element.id !== original.id)
-            return original;
-        // The snapshot stays read-only; only the edited point needs a new object.
-        const points = drag.element.points.slice();
-        if (drag.insert)
-            points.splice(drag.index + 1, 0, { ...drag.point });
-        else
-            points[drag.index] = { ...drag.point };
-        return { ...original, points };
-    }
     drawInteriorAuthor(root: AtlasPaint, mpp: number) {
         const data = this.host.regions.data;
         if (!data || !this.host.scopeId || !['interior', 'decoration'].includes(this.host.family) ||
@@ -589,7 +578,7 @@ export class AtlasDrawing {
         }
         const selected = atlasDrawingDraft().element;
         if (this.host.author.selection?.kind === 'element' && selected?.id === this.host.author.selection.id && selected.kind === 'path' && selected.scopeId === this.host.scopeId && selected.floorId === this.host.floorId && this.host.regions.geometryCurrent() && get<HTMLSelectElement>('drawing-tool').value === 'select' && !get<HTMLInputElement>('atlas-slice-enabled').checked) {
-            const path = this.pathPreview(selected);
+            const path = atlasPathPreview(selected, this.host.author.pathDrag);
             g.append(shape('polyline', { points: path.points, pointer: false, style: { fill: null, stroke: '#236871', lineWidth: Math.max(mpp * 2, .08) } }));
             const cells = new Set<string>(), cover = this.host.camera.view;
             const grip = (p: Point, index: number, insert: boolean) => { const at = localToAtlas(p, frame), cell = Math.floor(at.x / (mpp * 12)) + ':' + Math.floor(at.y / (mpp * 12)); if (cells.size >= 1500 || cells.has(cell) || at.x < cover.x || at.y < cover.y || at.x > cover.x + cover.width || at.y > cover.y + cover.height)

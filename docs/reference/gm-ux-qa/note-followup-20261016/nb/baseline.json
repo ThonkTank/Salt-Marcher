@@ -1,8 +1,0 @@
-{
-  "nera.md": "# Nera die Quartiermeisterin\n\n#Aufzug #Figur\n\nNera hält den Messingschlüssel zum Lastenaufzug. Sie kennt die Nachtwache.\n\n## Vorlesen\n  Original zum Vorlesen\n\n",
-  "2": "# [ ] Drei Glockenschläge\n\n## Description\n\nVor jeder Übergabe läutet es dreimal. Offen: Wer bezahlt die Nachtwache?\n\n## Tags\n\n#Aufzug\n\n",
-  "3": "# [x] Wiedergefundene Fässer\n\n## Description\n\nDas fehlende Fass ist wieder da. Diese Spur wurde abgeschlossen.\n\n## Tags\n\n#Aufzug\n\n",
-  "4": "# [ ] Das blaue Siegel\n\n## Description\n\nAuf den Zahlungslisten steht ein blaues Siegel. Offen: Wer führt die Küfergilde?\n\n## Tags\n\n#Aufzug\n\n",
-  "aufzug.md": "# Die Aufzug-Verschwörung\n\n#Aufzug\n\nZiel: Die nächtliche Übergabe stoppen. Welche Spur ist noch offen?\n\n## Quellen\n- [[1]]\n- [[2]]\n- [[3]]\n- [[4]]\n\n",
-  "abend-8.md": "# Abend 8 · Die Nachtwache\n\n## Die Nachtwache befragen\n  Den Auftraggeber erfragen.\n\n[[aufzug.md]]\n[[1]]\n[[2]]\n\n"
-}

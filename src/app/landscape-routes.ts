@@ -7,9 +7,7 @@ interface LandscapeRoutesHost {
     readonly tool: Tool;
     readonly hasDraft: (includeRoute?: boolean) => boolean;
     readonly say: (message: string) => void;
-    selected: LandscapeRecord | null;
-    readonly selectionRecords: Map<string, LandscapeRecord>;
-    readonly inspectorRoot: HTMLElement;
+    readonly clearSelection: () => void;
     readonly effects: Pick<LandscapeHost, 'box' | 'current' | 'navigate' | 'navigation' | 'planning' | 'redraw' | 'refresh'>;
     readonly token: string;
     readonly panel: HTMLElement;
@@ -49,9 +47,7 @@ export class LandscapeRoutes {
             return;
         }
         this.close();
-        this.host.selected = null;
-        this.host.selectionRecords.clear();
-        this.host.inspectorRoot.replaceChildren();
+        this.host.clearSelection();
         this.host.effects.planning?.();
         this.routeOpening = true;
         const generation = ++this.routeGeneration;

@@ -1,9 +1,0 @@
-{
-  "body": "vault\nAtlanten\nAtlasdaten\nDungeons\nKampagnen\nOrte\nStädte\nNeuer Tab\nNeuer Tab\nNeue Notiz\nCtrl + N\nNeue Base\nNeuer Canvas\nGehe zu Datei\nCtrl + O\nKampagne\nE2E-01 Atlas Save\nÖffnen\nListe neu laden",
-  "plugins": [
-    "dungeon-editor"
-  ],
-  "enabled": [
-    "dungeon-editor"
-  ]
-}

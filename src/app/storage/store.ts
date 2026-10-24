@@ -1,8 +1,9 @@
+import {installSourceCellIndex} from './atlas-source-cell';
+import DATA_FORMAT from '../data-format.json';
 import {atlasProjectionSource,installAtlasShapeSource} from './atlas-shape-source';
 import {decodeRoom,checkedRoomHistory,decodeRoomDraft,decodePreparationDraft,preparationDraftTable,decodeLocation,readStoredPlan} from './stored-records';
 import {validateDatabase,validateBackupCandidate} from './snapshot-validation';
 import {readSessionRecapDraft,keepSessionRecapDraft} from './session-recap';
-import {installTerrainReconstruction} from './terrain-reconstruction';
 import {profileBounds,terrainProfile} from '../terrain-profile';
 import {installTravelHistory} from './travel-history';
 import {checkedWorldNoteRow} from "./world-note-row";
@@ -66,8 +67,8 @@ import {readDay} from './adventuring-day';
 import {installNpcRecords} from './npc-record';
 import {readNpc,readNpcs,executeNpc,npcDraft,npcDrafts,keepNpcDraft,discardNpcDraft,reconcileNpc} from './npcs';
 import type {NpcCommand,NpcQuery,NpcDraft} from '../npc-contracts';
-import {readWorldSources,installWorldSources} from './world-sources';
-import {assertNpcOutsideOpenCombat,removePartyFromMasks,migrateMaskHealth,syncOpenMaskHealth} from './mask-health';
+import {readWorldSources} from './world-sources';
+import {assertNpcOutsideOpenCombat,removePartyFromMasks,syncOpenMaskHealth} from './mask-health';
 import {installGroups,groupView,preparedGroups,groupDraft,keepGroupDraft,discardGroupDraft} from './groups';
 import {installTreasury,readTreasuryDraft,keepTreasuryDraft,discardTreasuryDraft,treasureHistory} from './treasury';
 import {installSceneDesk,readSceneDesk,searchDesk,deskContent,pinSceneDesk,applySceneCreation,readSceneCreationDraft,keepSceneCreationDraft} from './scene-desk';
@@ -131,7 +132,7 @@ import { worldNoteDocument } from '../../features/world/world-notes';
 import {campaignLocalId} from '../../features/campaign/campaign-contracts';
 
 import { tutorialLessonRevision, checkedTutorialRun, type TutorialRun } from '../tutorial';
-import { installLiveSchema, migrateLiveClock, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
+import { installLiveSchema, ensureLiveOwners, readLive, readLiveScene, readArchives, readArchivedRoster, validateLiveBackup, executeLive, liveStatus } from './live';
 import type { LiveCommand, LiveScene } from '../live-contracts';
 import {installCombatSchema,readCombat,executeCombat} from './combat';
 
@@ -144,7 +145,7 @@ import {installSceneCheckSchema,readSceneChecks,executeSceneCheck} from './scene
 import type {SceneCheckCommand} from '../scene-check-contracts';
 import type {ChaseCommand} from '../chase-contracts';
 import type { CombatCommand } from '../combat-contracts';
-import {installProgressSchema,createProgress,migrateProgress,readProgress,readProgressHistory,readLootBalance,readTreasures,readTreasure,readLedger,readLedgerInventory,readLedgerDetail,executeProgress} from './progression';
+import {installProgressSchema,createProgress,readProgress,readProgressHistory,readLootBalance,readTreasures,readTreasure,readLedger,readLedgerInventory,readLedgerDetail,executeProgress} from './progression';
 import type { ProgressCommand, LedgerQuery, LedgerInventoryQuery } from '../progression';
 import {readChronicle} from './chronicle';
 import { installEncounterSchema, readEncounterPlan, readEncounterPlans, saveEncounterPlan } from './encounters';
@@ -187,23 +188,31 @@ export class CampaignStore {
     mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     const schema = this.db.pragma('user_version', { simple: true });
-    if(schema>=53&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='travel_checkpoint'").get()){this.db.close();throw Error('Reisecheckpoint-Speicher fehlt. Originaldaten bleiben erhalten.');}
-    if(schema>0&&schema<50&&this.db.prepare("SELECT 1 FROM sqlite_master WHERE name='city_unit'").get()&&this.db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get()){this.db.close();throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');}
-    if(schema>=50&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='room_group'").get()){this.db.close();throw Error('Raumgruppenspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if (schema > 54) { this.db.close(); throw new Error('Diese Datenbank benötigt eine neuere Appversion.'); }
-    if(schema>=51&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='scene_opponent_group'").get()){this.db.close();throw Error('Szenengegner-Zuordnung fehlt. Originaldaten bleiben erhalten.');}
-    if(schema>=49&&['atlas_territory','atlas_territory_layer'].some(table=>!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(table))){this.db.close();throw Error('Regionsspeicher fehlt. Originaldaten bleiben erhalten.');}
-    if(schema>=44&&!this.db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='chase_working_draft'").get()){this.db.close();throw new Error('Verfolgungsentwurfsspeicher fehlt. Originaldaten bleiben erhalten.');}
+    if (schema !== 0 && schema !== DATA_FORMAT.schema || schema === 0 && this.db.prepare("SELECT 1 FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' LIMIT 1").get()) {
+      this.db.close();
+      throw new Error('Nicht unterstütztes Testdatenformat. Eine neue Kampagne im aktuellen Format anlegen. Originaldatei bleibt erhalten.');
+    }
+    if (schema === DATA_FORMAT.schema) {
+      for (const table of DATA_FORMAT.tables) {
+        if (!this.db.prepare("SELECT 1 FROM sqlite_schema WHERE type='table' AND name=?").get(table)) {
+          const message:Record<string,string>={travel_checkpoint:'Reisecheckpoint-Speicher fehlt.',room_group:'Raumgruppenspeicher fehlt.',scene_opponent_group:'Szenengegner-Zuordnung fehlt.',atlas_territory:'Regionsspeicher fehlt.',atlas_territory_layer:'Regionsspeicher fehlt.',chase_working_draft:'Verfolgungsentwurfsspeicher fehlt.'};
+          this.db.close(); throw new Error(message[table] ?? 'Kampagnenspeicher ist unvollständig: ' + table);
+        }
+      }
+    }
     this.extensionRegistry=new ExtensionRegistry(this.db);
     const version = this.db.prepare('SELECT sqlite_version() v').get().v as string;
     if (version.localeCompare('3.53.4', undefined, { numeric: true }) < 0) { this.db.close(); throw new Error('SQLite-Wartungsstand zu alt.'); }
     this.db.pragma('foreign_keys=ON'); this.db.pragma('journal_mode=WAL'); this.db.pragma('synchronous=FULL'); this.db.pragma('secure_delete=ON'); this.db.pragma('busy_timeout=5000');
 
 
+    try {
+    this.db.transaction(() => {
+    if (schema === 0) {
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0) STRICT;
+      CREATE TABLE IF NOT EXISTS campaign(id TEXT PRIMARY KEY, name TEXT NOT NULL, selected_id TEXT, cursor INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0) STRICT;
       CREATE TABLE IF NOT EXISTS scope(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
-      CREATE TABLE IF NOT EXISTS room(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scope_id TEXT NOT NULL, number TEXT NOT NULL, name TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;
+      CREATE TABLE IF NOT EXISTS room(campaign_id TEXT NOT NULL, id TEXT NOT NULL, scope_id TEXT NOT NULL, number TEXT NOT NULL, name TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, floor_id TEXT NOT NULL DEFAULT 'ground', PRIMARY KEY(campaign_id,id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;
       CREATE TABLE IF NOT EXISTS history(campaign_id TEXT NOT NULL REFERENCES campaign(id), ordinal INTEGER NOT NULL, room_id TEXT NOT NULL, before_json TEXT NOT NULL, after_json TEXT NOT NULL, guard_revision INTEGER NOT NULL, PRIMARY KEY(campaign_id,ordinal)) STRICT;
       CREATE TABLE IF NOT EXISTS receipt(command_id TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, campaign_id TEXT NOT NULL REFERENCES campaign(id), room_id TEXT NOT NULL, revision INTEGER NOT NULL) STRICT;
       CREATE TABLE IF NOT EXISTS source(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id), bytes BLOB NOT NULL, checksum TEXT NOT NULL) STRICT;
@@ -218,27 +227,11 @@ export class CampaignStore {
     `);
     this.db.exec('CREATE TABLE IF NOT EXISTS drawing_floor(campaign_id TEXT NOT NULL, scope_id TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, source_elevation REAL NOT NULL, PRIMARY KEY(campaign_id,scope_id,id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;');
     this.db.exec('CREATE TABLE IF NOT EXISTS room_draft(campaign_id TEXT NOT NULL, room_id TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,room_id), FOREIGN KEY(campaign_id,room_id) REFERENCES room(campaign_id,id)) STRICT;');
-    if (schema < 3) this.db.transaction(() => {
-      this.db.exec("ALTER TABLE room ADD COLUMN floor_id TEXT NOT NULL DEFAULT 'ground';");
-      for (const row of this.db.prepare('SELECT campaign_id,bytes FROM source').all()) {
-        const source = JSON.parse(row.bytes.toString('utf8'));
-        for (const floor of source.floors) this.db.prepare('INSERT OR IGNORE INTO drawing_floor VALUES(?,?,?,?,?)').run(row.campaign_id, source.id, floor.id, floor.name, floor.elevation);
-        for (const room of source.entities.filter((e: any) => e.kind === 'building')) this.db.prepare('UPDATE room SET floor_id=? WHERE campaign_id=? AND id=?').run(room.floorId, row.campaign_id, room.id);
-      }
-      for (const row of this.db.prepare('SELECT DISTINCT campaign_id,scope_id FROM room WHERE floor_id=\'ground\'').all()) this.db.prepare('INSERT OR IGNORE INTO drawing_floor VALUES(?,?,\'ground\',\'Erdgeschoss\',0)').run(row.campaign_id, row.scope_id);
-      this.db.pragma('user_version=3');
-    }).immediate();
-    this.db.transaction(() => {
       this.db.exec(`CREATE TABLE IF NOT EXISTS location(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, revision INTEGER NOT NULL, trashed INTEGER NOT NULL DEFAULT 0, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;
         CREATE TABLE IF NOT EXISTS location_map(campaign_id TEXT NOT NULL, scope_id TEXT NOT NULL, location_id TEXT NOT NULL, PRIMARY KEY(campaign_id,scope_id), FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id), FOREIGN KEY(campaign_id,location_id) REFERENCES location(campaign_id,id)) STRICT;`);
-      if (schema < 5) this.db.exec('ALTER TABLE campaign ADD COLUMN revision INTEGER NOT NULL DEFAULT 0;');
       installLiveSchema(this.db);
-      if (schema < 6) for (const row of this.db.prepare('SELECT id FROM campaign').all()) ensureLiveOwners(this.db, row.id);
-      if (schema < 7) migrateLiveClock(this.db);
-      if (schema < 8) this.db.exec('INSERT OR IGNORE INTO scene_lifecycle(campaign_id,id,membership_revision,retired) SELECT campaign_id,id,0,0 FROM live_scene;');
       installCombatSchema(this.db);installCombatDraftSchema(this.db);installChaseSchema(this.db);installMaskHistoryIndexes(this.db);installMaskReconciliationSchema(this.db);installRuleReferenceSchema(this.db);installSceneCheckSchema(this.db);
       installProgressSchema(this.db);
-      if (schema < 10) migrateProgress(this.db);
       installEncounterSchema(this.db);
       installGenerationSchema(this.db);installNpcRecords(this.db);
       this.db.exec("CREATE TABLE IF NOT EXISTS preparation_draft(campaign_id TEXT NOT NULL REFERENCES campaign(id), kind TEXT NOT NULL CHECK(kind IN ('note','plan','location')), target_id TEXT NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,kind,target_id)) STRICT;");
@@ -263,10 +256,13 @@ export class CampaignStore {
       installGraph(this.db);
       installTriggers(this.db);
       installContentRuntime(this.db);installNarrative(this.db);installFinishDrafts(this.db);installSceneDesk(this.db);installTreasury(this.db);installGroups(this.db);installWorldRelationPairs(this.db);
-      if(schema<41)migrateMaskHealth(this.db);
-      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);installTerrainReconstruction(this.db);installAtlasShapeSource(this.db);this.db.pragma('user_version=54');
+      installCampaignAtlas(this.db);installAtlasTravel(this.db);installLandscape(this.db);installTerritories(this.db);installRoomGroups(this.db);installTravelHistory(this.db);this.db.pragma('user_version='+DATA_FORMAT.schema);
 
+    }
+    installSourceCellIndex(this.db);
+    installAtlasShapeSource(this.db);
     }).immediate();
+    } catch (error) { this.db.close(); throw error; }
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
   }
   private reconcileAtlasGeometry(token:string){
@@ -1165,11 +1161,9 @@ export class CampaignStore {
   }
   private inspectCampaignDatabase(db:any){
     const schema=db.pragma('user_version',{simple:true});
-    if(schema!==45&&schema!==46&&schema!==47&&schema!==48&&schema!==49&&schema!==50&&schema!==51&&schema!==52&&schema!==53&&schema!==this.db.pragma('user_version',{simple:true}))throw new Error('Dieses Paket gehört zum alten Testformat. Eine Kampagne mit gemeinsamem Atlas verwenden.');
-
-    if(schema<50&&db.prepare("SELECT 1 FROM city_unit WHERE kind='building' LIMIT 1").get())throw Error('Alter Haus-Testbestand: neue Kampagne anlegen. Originaldatei bleibt erhalten.');
+    if(schema!==DATA_FORMAT.schema)throw new Error('Dieses Paket gehört zum alten Testformat oder benötigt eine neuere Appversion. Originaldatei bleibt erhalten.');
     validateDatabase(db);
-    if(db.pragma('user_version',{simple:true})>=50)validateRoomGroups(db);
+    validateRoomGroups(db);
     const rows=db.prepare('SELECT id,name FROM campaign').all();if(rows.length!==1)throw new Error('Paket muss genau eine Kampagne enthalten.');
     const c:Pick<Campaign,'id'|'name'>=rows[0];
     validateCampaignSnapshotSettings(db,c.id);
@@ -1196,11 +1190,7 @@ export class CampaignStore {
       const sha256=snapshotDigest(candidate);
       if(expectedDigest!==undefined&&sha256!==expectedDigest)throw new Error('Geprüfte Paketdatenbank wurde verändert.');
       const c=this.inspectCampaignDatabase(source),original=Buffer.from(JSON.stringify({format:'Campaign provenance',version:1,campaignId:c.id,name:c.name,schema:c.schema,sha256})),plan=sharedPlan(this.db,source,choices);
-      if([33,34,35,36,37,38,39,40,41,42,43].includes(c.schema)){installChaseSchema(source);installWorldSources(source);installNpcRecords(source);installCombatDraftSchema(source);installContentRuntime(source);installNarrative(source);installFinishDrafts(source);installSceneDesk(source);installTreasury(source);installGroups(source);installRuleReferenceSchema(source);installSceneCheckSchema(source);installCombatSchema(source);if(c.schema<41)migrateMaskHealth(source);source.pragma('user_version=44');}
-
-      if(c.schema===45||c.schema===46||c.schema===47){source.transaction(()=>{installLandscape(source);source.pragma('user_version=48');})();}
-      if(source.pragma('user_version',{simple:true})===48)source.transaction(()=>{installTerritories(source);source.pragma('user_version=49');})();
-      installRoomGroups(source);installSessionSchema(source);installTravelHistory(source);installTerrainReconstruction(source);installAtlasShapeSource(source);source.pragma('user_version=54');installSceneCheckSchema(source);archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);validateDatabase(source);
+      archiveSourceChoices(source,plan);const remap=remapSnapshot(source,c.id,name,plan.mapping,plan.history);validateDatabase(source);
       return publishSnapshot(this.db,source,remap,plan,original,c.id,c.name,ticket===undefined?undefined:{commandId:ticket,fingerprint:this.transferFingerprint(name,choices)});
     }finally{try{source?.close();}finally{rmSync(staging,{recursive:true,force:true});}}
   }

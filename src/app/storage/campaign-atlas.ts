@@ -545,12 +545,10 @@ export function executeAtlasWrite(
 /** Atlas invariants also apply to snapshots before they are published. */
 export function validateCampaignAtlases(db: any) {
   validateTerritories(db);
-  const schema = db.pragma("user_version", { simple: true });
-  if (schema < 45) return;
   for (const table of [
     "campaign_atlas",
     "atlas_binding",
-    ...(schema>=46?["atlas_landscape","atlas_reference_asset","atlas_landscape_migration"]:[]),
+    "atlas_landscape", "atlas_reference_asset",
     "atlas_command",
     "atlas_receipt",
     "atlas_import_source",
@@ -564,10 +562,10 @@ export function validateCampaignAtlases(db: any) {
         .get(table)
     )
       throw new Error("Atlasstore unvollständig: " + table);
-  if(schema>=46)for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'").iterate()){
+  for(const row of db.prepare("SELECT payload FROM atlas_landscape WHERE json_extract(payload,'$.line') IS NOT NULL OR json_extract(payload,'$.paint') IS NOT NULL OR json_extract(payload,'$.surface') IS NOT NULL OR json_extract(payload,'$.mask') IS NOT NULL OR json_extract(payload,'$.propertyOnly') IS NOT NULL OR json_extract(payload,'$.height') IS NOT NULL OR json_extract(payload,'$.terrainSettings') IS NOT NULL OR json_extract(payload,'$.vegetation') IS NOT NULL OR json_extract(payload,'$.route') IS NOT NULL OR json_extract(payload,'$.kind')='vegetation'").iterate()){
     const record=JSON.parse(row.payload);validateLine(record);validateColor(record);validateMask(record);validateTerrain(record);validateVegetation(record);validateRoute(record);
   }
-  if(schema>=49){
+  {
     if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.terrainSettings') IS NOT NULL GROUP BY campaign_id HAVING count(*)>1").get())throw Error('Doppelter Meeresspiegel.');
     if(db.prepare("SELECT campaign_id FROM atlas_landscape WHERE json_extract(payload,'$.height') IS NOT NULL GROUP BY campaign_id,json_extract(payload,'$.height.version'),json_extract(payload,'$.height.pixel'),json_extract(payload,'$.height.x'),json_extract(payload,'$.height.y') HAVING count(*)>1").get())throw Error('Doppelte Höhenkachel.');
   }
