@@ -1,6 +1,14 @@
 // Conservative normalized channel ranges for the authored material adapter.
 // Ranges are local to one arrangement face: polygon masks are already exact.
 const singleton = x => [x,x];
+// The integrator creates one context for one triangle's callback pair. Retain
+// only a weak reference and consume the candidate once; children get new keys.
+const intervalEstimates = new WeakMap();
+export function takeMaterialIntervalEstimate(context){
+  const estimate=intervalEstimates.get(context);
+  intervalEstimates.delete(context);
+  return estimate;
+}
 const pad = (lo,hi) => [Math.max(0,lo-16*Number.EPSILON),Math.min(1,hi+16*Number.EPSILON)];
 function map(range,fn){
   const a=fn(range[0]),b=fn(range[1]);
@@ -49,17 +57,22 @@ export function pigmentRange(color,operation,getAlpha){
 }
 export function materialIntervalError(active,triangle,context){
   if(!context)throw Error('Material interval bound requires centroid context');
+  intervalEstimates.delete(context);
   const ranges=context.background.map(singleton);
   for(const layer of active){
     if(!layer.materialRange)throw Error('Unknown material interval operation');
     layer.materialRange(ranges,triangle);
   }
   const center=context.evaluateCenter();
-  let error=0;
+  let error=0,meanError=0;const value=[];
   for(let c=0;c<center.length;c++){
     const [lo,hi]=ranges[c];
     if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo>hi)throw Error('Invalid composed material interval');
     error=Math.max(error,Math.abs(center[c]-lo),Math.abs(center[c]-hi));
+    value.push(lo+(hi-lo)/2);meanError=Math.max(meanError,(hi-lo)/2);
   }
-  return error+64*Number.EPSILON*active.length;
+  const guard=64*Number.EPSILON*active.length;
+  if(Number.isFinite(context.meanErrorTarget)&&context.meanErrorTarget>0)
+    intervalEstimates.set(context,{value,error:meanError+guard});
+  return error+guard;
 }

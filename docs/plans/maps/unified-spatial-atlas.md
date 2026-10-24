@@ -259,13 +259,24 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   Budgetabbruch. Die volle Mischkachel bleibt zu teuer;
   der neue Mittelweg spart dort Verfeinerungen, verursacht aber eigene Laufzeitkosten.
   Prototypgewinn belegt, keine native Weltlast- oder Produktabnahme.
+- **M2-Begrenzte Quellen und ausreichende Schranken:** [132 Prüfungen und getrennte Gegenproben](../../reference/atlas-material-support-20261024/README.md)
+  begrenzen aktive Stempelquellen konservativ und verwenden bereits ausreichende
+  Kanalintervalle, bevor weitere Mittelwertverfahren gerechnet werden. Volle
+  breite Mischkacheln sind damit in drei von drei Runden innerhalb der unveränderten
+  Budgets berechenbar (Median 7,14 s statt Budgetabbruch).
+  Die Produktionsgegenprobe korrigiert die ursprüngliche Annahme: Reguläre
+  `brushFootprint`-Konturen sind schon eng begrenzt; dort spart erst die zweite
+  Maßnahme Laufzeit in der Auswertung: Median 9,96 → 6,87 s für 256×256.
+  Alle Materialkanäle, Land-/Wasserclips,
+  Aussparungen und Malen/Radieren sind nachgeprüft. Native Weltlast bleibt offen.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Die volle Mischprobe aus Bewuchs, Rund-/Weichauftrag und strukturiertem Radierer
-  scheitert weiter am Arbeitsbudget. Als nächsten Ansatz aktive Pinselquellen
-  konservativ auf ihre tatsächlichen Wirkungsbereiche begrenzen und dieselbe
-  Mischprobe erneut messen; außerhalb dieser Bereiche muss die gespeicherte Quelle
-  nachweislich null sein. Keine Budgeterhöhung als Ersatz für diesen Nachweis.
-  Danach tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
+  Jetzt die eingefrorene M0-Welt vollständig nach Quellenarten und noch abgelehnten
+  Masken/Feldfällen inventarisieren. Physisches Wasser und feldabhängige Grundmaterialien
+  über `AtlasRegionReader.materialSteps`/`readTerrainMaterialSteps` beziehungsweise
+  dieselben kanonischen Feldsemantiken anbinden; gezeichnete Wasserpolygone allein
+  sind kein Ersatz. Die Probe muss auch bisher nicht unterstützte Datensätze
+  korrekt behandeln, statt sie aus einer vermeintlichen Weltabnahme auszufiltern.
+  Anschließend tatsächliche Weltlast prüfen, bevor Feld-/Quellenseiten angeschlossen
   und Kachelcacheversion sowie produktiver Materialpfad umgestellt werden. Bildschirmweichheit separat in M4 behandeln;
   physische Höhenfelder und Autorenabsicht erhalten.
   Weitere Objektklassen, Materialstufen, vollständige Weltlast, Bytebudgets

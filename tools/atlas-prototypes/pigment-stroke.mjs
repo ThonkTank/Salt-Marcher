@@ -31,6 +31,24 @@ function adjacent(value,direction){
   raw+=(value>0)===(direction>0)?1n:-1n;
   bits.setBigUint64(0,raw);return bits.getFloat64(0);
 }
+// Outer support for the production floating-point membership predicate. The
+// margin covers center +/- radius and distance arithmetic, including centers
+// whose ULP is larger than the radius. Overflow means no geometric pruning.
+// One record-wide rectangle keeps construction bounded (four vertices), even
+// for 4000 separated stamps; it deliberately retains gaps between strokes.
+function strokeSupport(stamps,radius){
+  if(!stamps.length)return [];
+  const limits={};
+  for(const axis of ['x','y']){
+    const min=Math.min(...stamps.map(p=>p[axis])),max=Math.max(...stamps.map(p=>p[axis]));
+    const guard=32*EPS*Math.max(Math.abs(min),Math.abs(max),radius);
+    const low=adjacent(min-radius-guard,-1),high=adjacent(max+radius+guard,1);
+    if(!Number.isFinite(low)||!Number.isFinite(high)||!(low<high)||!Number.isFinite(high-low))return undefined;
+    limits[axis]=[low,high];
+  }
+  const [x0,x1]=limits.x,[y0,y1]=limits.y;
+  return [[[[x0,y0],[x1,y0],[x1,y1],[x0,y1],[x0,y0]]]];
+}
 function textureCut(points,radius){
   for(const axis of ['x','y']){
     const min=Math.min(...points.map(q=>q[axis])),max=Math.max(...points.map(q=>q[axis]));
@@ -176,5 +194,6 @@ export function pigmentStrokeSource(record) {
     return lo<=hi?{range,mean:[lo,hi]}:undefined;
   }
   return { coverage, alpha, alphaRange, stampCount: stamps.length, smooth, mean,
+    supportGeometry:strokeSupport(stamps,p.radius),
     integrationCut:p.tip==='textured'?triangle=>textureCut(triangle,p.radius):undefined };
 }

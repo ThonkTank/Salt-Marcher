@@ -108,6 +108,9 @@ function classifyCells(geometry,width,height,tick){
  * the mean error of ALL final channels on that triangle (not already area
  * weighted). For discontinuous layers it is mandatory on unknown triangles;
  * context.evaluateCenter() lazily evaluates and caches the centroid estimate.
+ * context.meanErrorTarget exposes the cell tolerance as an optional stopping
+ * target for expensive alternative estimates. Final weighted checking remains
+ * mandatory even if a callback meets this target on one triangle.
  * undefined retains the Lipschitz bound; malformed bounds fail explicitly.
  * triangleEstimate(activeLayers, worldTriangle, context) may additionally
  * provide a certified mean vector and absolute mean error for all channels.
@@ -265,7 +268,7 @@ export function integrateMaterialArea({box,width,height,background,layers,limits
           let context;
           if(centroidErrorBound||triangleEstimate){
             worldTriangle??=[a,b,c].map(p=>({x:box.x+p[0]*dx,y:box.y+p[1]*dy}));
-            context={background:[...background],evaluateCenter(){
+            context={background:[...background],meanErrorTarget:tolerance,evaluateCenter(){
               if(centerValue===undefined)centerValue=evaluate(center);
               return [...centerValue];
             }};

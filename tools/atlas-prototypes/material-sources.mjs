@@ -5,7 +5,7 @@
 import polygonClipping from 'polygon-clipping';
 import {authoredFeatherRegions} from './general-feather.mjs';
 import {pigmentStrokeSource} from './pigment-stroke.mjs';
-import {baseRange,scratchRange,editRange,legacyPartRange,coverRange,pigmentRange,materialIntervalError} from './material-interval.mjs';
+import {baseRange,scratchRange,editRange,legacyPartRange,coverRange,pigmentRange,materialIntervalError,takeMaterialIntervalEstimate} from './material-interval.mjs';
 import {makeSmoothState,baseSmooth,scratchSmooth,editSmooth,legacyPartSmooth,coverSmooth,pigmentSmooth} from './material-smooth.mjs';
 import {makeMeanState,baseMean,scratchMean,editMean,legacyPartMean,coverMean,pigmentMean} from './material-mean.mjs';
 
@@ -17,6 +17,15 @@ const geometry = polygons => (polygons ?? []).map(p => [p.outer, ...(p.holes ?? 
 const clip = (kind, a, b) => !a.length ? [] : !b.length ? (kind === 'difference' ? a : []) : polygonClipping[kind](a, b);
 const isPaint = r => !!r.paint;
 const constantAlpha=value=>({value,gradient:0,hessian:0,error:0,range:[value,value]});
+function restrictStrokeSupport(target,support){
+  if(support===undefined)return target;
+  if(!support.length)return [];
+  const ring=support[0][0],minX=ring[0][0],minY=ring[0][1],maxX=ring[2][0],maxY=ring[2][1];
+  // Normal brushFootprint records are already tightly bounded. Retain their
+  // existing geometry without an unnecessary polygon operation or new edges.
+  if(target.every(p=>p.every(r=>r.every(([x,y])=>x>=minX&&x<=maxX&&y>=minY&&y<=maxY))))return target;
+  return clip('intersection',target,support);
+}
 
 /**
  * Produce layers for integrateMaterialArea. Channel vector:
@@ -29,9 +38,10 @@ const constantAlpha=value=>({value,gradient:0,hessian:0,error:0,range:[value,val
  * order, matching the caller's stream order. Legacy records require the actual
  * production colorParts helper; its original stamp geometry is not regenerated.
  */
-export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorRecords=[], palette, colorParts, waterGeometry=[], seaColor, landColor, edgePolicy='reject'}={}) {
+export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorRecords=[], palette, colorParts, waterGeometry=[], seaColor, landColor, edgePolicy='reject',strokeSupport=true}={}) {
   if (!palette || typeof palette !== 'object') throw Error('Inject production terrainColors as palette');
   if(!['reject','authored-world'].includes(edgePolicy))throw Error('Unknown material edge policy');
+  if(typeof strokeSupport!=='boolean')throw Error('Invalid stroke support policy');
   const water = geometry(waterGeometry);
   seaColor ??= palette.water;
   const land=rgb(landColor),sea=rgb(seaColor),layers = [];
@@ -140,7 +150,11 @@ export function landscapeMaterialLayers({baseRecords=[], coverRecords=[], colorR
       const stroke=p.fill?null:pigmentStrokeSource(r);
       if(!Number.isFinite(alpha)||alpha<0||alpha>1)throw Error('Invalid pigment opacity');
       if(!['paint','erase'].includes(p.operation))throw Error('Unsupported pigment operation');
-      layers.push({geometry:target,varying:!!stroke,discontinuous:!!stroke,integrationCut:stroke?.integrationCut,
+      // Keep authored polygons and the land/water selection as hard clips.
+      // Undefined support is an unresolved bound, not an empty paint source.
+      const visible=strokeSupport&&stroke?restrictStrokeSupport(target,stroke.supportGeometry):target;
+      if(!visible.length)continue;
+      layers.push({geometry:visible,varying:!!stroke,discontinuous:!!stroke,integrationCut:stroke?.integrationCut,
         polynomialDegreeOnTriangle:stroke?triangle=>{const [lo,hi]=stroke.alphaRange(triangle);return lo===hi?0:undefined;}:undefined,
         materialRange:pigmentRange(color,p.operation,(_v,triangle)=>stroke?stroke.alphaRange(triangle):[alpha,alpha]),
         materialSmooth:pigmentSmooth(color,p.operation,(_state,triangle,point)=>stroke?stroke.smooth(triangle,point):constantAlpha(alpha)),
@@ -190,10 +204,13 @@ export function landscapeMaterialLipschitz(coverRecords){
   return coverRecords.reduce((sum,r)=>sum+(r.vegetation.preset.edge>0?1.17/r.vegetation.preset.edge:0),0);
 }
 
-/** Alternative mean estimates: smooth source rounding and correlation-safe
- * analytic area moments. Use the tighter complete channel certificate. */
+/** Reuse a sufficient complete interval certificate before computing smooth
+ * source rounding and correlation-safe analytic area moments. The generic
+ * integrator still chooses the tighter estimate and checks the full cell. */
 export function landscapeMaterialTriangleEstimate(active,triangle,context){
   if(!active.some(layer=>layer.discontinuous))return undefined;
+  const interval=takeMaterialIntervalEstimate(context);
+  if(interval&&interval.error<=context.meanErrorTarget)return interval;
   const a=triangle[0],center={x:a.x+(triangle[1].x-a.x)/3+(triangle[2].x-a.x)/3,y:a.y+(triangle[1].y-a.y)/3+(triangle[2].y-a.y)/3};
   const state=makeSmoothState(context.background);
   let best;
