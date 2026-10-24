@@ -45,7 +45,9 @@ test('billboard labels stay screen-aligned at high tilt and rotated cameras',t=>
  const drawing=new AtlasDeckDrawing({commands:[command(text)]},{x:0,y:0},new Map(),flat);
  for(const tilt of [0,55,75])for(const rotation of [0,90]){
   const f=atlasMetricFrame({focus:{x:0,y:0},focusHeightM:0,metersPerPixel:.1,tilt,rotation,exaggeration:3},800,600);
-  const positions=drawing.layers(f,'test')[0].props.mesh.attributes.POSITION.value;
+  const layer=drawing.layers(f,'test')[0];
+  assert.equal(layer.props.parameters.depthCompare,'always','billboard glyphs must not be cut by the ground plane');
+  const positions=layer.props.mesh.attributes.POSITION.value;
   const project=i=>f.project({x:positions[i],y:positions[i+1],heightM:positions[i+2]});
   const a=project(0),b=project(3),c=project(6);
   assert(Math.abs(a.y-b.y)<1e-4);assert(Math.abs(a.x-c.x)<1e-4);assert(b.x>a.x&&c.y>a.y);
@@ -63,4 +65,20 @@ test('output text textures grow with pixel density without changing their metric
  const text=atlasPaint('text',{x:0,y:0,style:{fontSize:2,fill:'white'}},'Name');
  const render=density=>atlasDrawingGeometry({commands:[command(text)]},{x:0,y:0},new Map(),{...flat,textPixelsPerMeter:density})[0];
  const small=render(24),large=render(48);assert.equal(large.texture.width,small.texture.width*2);assert.equal(large.texture.height,small.texture.height*2);assert.deepEqual(large.billboard.offsets,small.billboard.offsets);
+});
+
+test('public forest ink remains clipped to disclosed geometry and separate from ordinary polygons',()=>{
+ const forest=atlasPaint('polygons',{polygons:[{outer:[{x:0,y:0},{x:20,y:0},{x:20,y:20},{x:0,y:20}],holes:[[{x:8,y:8},{x:12,y:8},{x:12,y:12},{x:8,y:12}]]}],data:{publicForestScale:'48',knownCell:'0,0'}});
+ const plain=atlasPaint('rect',{x:30,y:0,width:20,height:20,data:{knownCell:'1,0'}});
+ const drawing=new AtlasDeckDrawing({commands:[command(forest),command(plain)]},{x:0,y:0},new Map(),flat);
+ const camera=atlasMetricFrame({focus:{x:20,y:10},focusHeightM:0,metersPerPixel:1,rotation:0,tilt:0,exaggeration:1},800,600);
+ const layers=drawing.layers(camera,'player');
+ assert.equal(layers.length,2);
+ assert.equal(layers[0].constructor.layerName,'AtlasPublicForestLayer');
+ assert.equal(layers[0].props.forestScale,48);
+ assert.equal(layers[1].constructor.layerName,'SimpleMeshLayer');
+ assert.equal(drawing.hit(frame,{x:3,y:3},['knownCell']).data.knownCell,'0,0');
+ assert.equal(drawing.hit(frame,{x:10,y:10},['knownCell']),null);
+ assert.equal(drawing.hit(frame,{x:25,y:10},['knownCell']),null);
+ drawing.dispose();
 });

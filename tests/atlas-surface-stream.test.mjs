@@ -9,6 +9,16 @@ function pair(q){
  return {...identity,terrain:{...identity,projection:{heightOnly:true,fence:'fence',revision:q.revision,grid:{view:{columns:65,rows:65},heights:new Float32Array(65*65)}}},
   material:{...identity,width:256,height:256,channels:Object.fromEntries(['baseColor','water','forest','rock','snow'].map(c=>[c,new Uint8Array(256*256*(c==='baseColor'?4:1))]))}};
 }
+test('prefetch follows visible completion and retained products stay within both budgets while panning',async()=>{
+ const stream=new AtlasSurfaceTileStream({maxTiles:8,maxRetainedTiles:16,maxBytes:16*1024*1024});
+ for(let pan=0;pan<12;pan++){
+  const box={x:pan*256,y:0,width:512,height:256},calls=[];let completeAt=-1;
+  await stream.load({...input,box,preload:{x:box.x-4096,y:-4096,width:8192,height:8192}},async q=>{calls.push(q.tile);return pair(q);},frame=>{if(frame.complete){completeAt=calls.length;assert(frame.tiles.every(t=>t.tile.lod===0));}});
+  assert(completeAt>=0);assert(calls.slice(completeAt).every(t=>t.lod>=2));
+  assert(stream.statistics.tiles<=16);assert(stream.statistics.bytes<=16*1024*1024);
+ }
+ stream.dispose();assert.equal(stream.statistics.bytes,0);
+});
 test('a surface publishes and caches height/material together, rejecting mixed sources',async()=>{
  for(const corrupt of [p=>p.terrain.revision++,p=>p.material.tile={...p.tile,x:8},p=>p.material.fence='other',p=>p.terrain.projection.heightOnly=false]){
   const stream=new AtlasSurfaceTileStream(),frames=[];
@@ -51,4 +61,14 @@ test('partial cold parents are visible but only complete coarse coverage is usab
  const firstUsable=frames.find(f=>f.overviewComplete);assert(firstUsable);assert.equal(firstUsable.complete,false);
  assert.equal(firstUsable.tiles.length,4);assert(firstUsable.tiles.every(p=>p.tile.lod===firstUsable.tiles[0].tile.lod));assert(firstUsable.tiles[0].tile.lod>frames.at(-1).tiles[0].tile.lod);
  assert(frames.at(-1).complete&&frames.at(-1).overviewComplete);stream.dispose();
+});
+
+test('optional prefetch failure preserves the fully published viewport without another read',async()=>{
+ const stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024}),frames=[];
+ let complete=false,optionalReads=0;
+ await stream.load({...input,preload:{x:-1024,y:-1024,width:4096,height:4096}},async q=>{
+  if(complete){optionalReads++;throw Error('Main is closing');}return pair(q);
+ },frame=>{frames.push(frame);complete ||= frame.complete;});
+ assert.equal(optionalReads,1);assert(frames.at(-1).complete);assert(frames.at(-1).tiles.length>0);
+ stream.dispose();
 });

@@ -35,6 +35,7 @@ keine vollständige Produktabnahme.
 | Arbeitsbereich und Werkzeugwechsel | `src/app/campaign-atlas-ui.ts` | `tools/test-desktop-atlas-cleanup.mjs` |
 | Kamera, GPU-Lebenszyklus und Weltkoordinaten | `src/app/atlas-deck-surface.ts`, `src/app/atlas-metric-camera.ts` | `tests/atlas-deck-surface.test.mjs`, `tools/test-desktop-atlas-deck.mjs` |
 | Zeichenbefehle und genaue Auswahl | `src/app/atlas-deck-drawing.ts`, `src/app/atlas-drawing-geometry.ts` | `tests/atlas-drawing-geometry.test.mjs`, `tools/test-desktop-dungeon-groundplan.mjs` |
+| Maßstab, Waldzeichnung und stabile Instanzen | `src/app/atlas-cartographic-style.ts`, `src/app/atlas-vegetation-layer.ts` | `tests/atlas-cartographic-scale.test.mjs`, `tools/test-desktop-atlas-multiscale.mjs` |
 | Kacheln und gemeinsame Nachladung | `src/app/atlas-surface-tile-stream.ts`, `src/app/atlas-raster-tile-stream.ts` | `tests/atlas-surface-stream.test.mjs` |
 | Quellenauswertung und Material | `src/app/landscape-raster.ts`, `src/app/atlas-raster-kernel.ts` | `tests/atlas-bounded-material.test.mjs`, `tests/atlas-raster-kernel.test.mjs` |
 | Asynchrone Leseaufträge | `desktop/atlas-region.ts`, `desktop/atlas-region-worker.ts` | `tests/atlas-first-product-worker.test.mjs`, `tests/atlas-presentation-source.test.mjs` |
@@ -57,10 +58,20 @@ ableitbar; beschädigte eigene Bestände werden kontrolliert neu aufgebaut.
 Kameraposition, Fenstergröße und Licht gehören nicht zur Identität gespeicherter
 Autorendaten. Änderungen berücksichtigen Nachbarknoten, Quellenränder und Eltern.
 
-In der Draufsicht werden höchstens 16 Kacheln benötigt. Geneigte Ansichten
-verwenden bis zu 64 Kacheln mit feineren Blättern am Arbeitsbereich und groben
-Kacheln in der Ferne. Eltern und Kinder werden atomar ausgetauscht. Die
-Horizontblende gilt auch im gekachelten Export.
+Der sichtbare Ausschnitt erhält bis zu 32 Detailkacheln, bei Neigung mit feineren
+Blättern am Arbeitsbereich und groben Kacheln in der Ferne. Der Puffer zum
+Vorladen darf diesen Ausschnitt nicht vergröbern: Erst nach dessen vollständiger
+Verfeinerung werden bis zu acht grobe Nachbarkacheln geladen. Sichtbare,
+vorbereitete und zwischengespeicherte Oberflächen teilen sich 64 Kacheln und
+64 MiB. Die Reserve erlaubt den atomaren Eltern-Kind-Austausch. In einer
+1920 × 1080-Draufsicht sind lokal etwa ein bis zwei CSS-Pixel pro Materialtexel
+das Ziel; stark geneigte Fernbereiche dürfen gröber sein. Die Horizontblende
+gilt auch im gekachelten Export.
+
+Die Diagnosedaten `terrainCache` zählen gemeinsam gehaltene CPU-Oberflächendaten;
+`terrainGpu` meldet die von luma registrierten GPU-Puffer und Texturen der
+Anwendung. Letzteres ist keine Messung des gesamten Grafikspeichers oder eine
+zusätzliche 64-MiB-Grenze.
 
 ## Geometrie, Material und Auswahl
 
@@ -74,6 +85,20 @@ Löcher und Inseln dürfen nicht durch eine reine Mittelpunktprobe verschwinden.
 Materialreduktion gewichtet Farbe nach Alpha und erhält Wasser-Teilflächen für
 abhängige Cachekanäle. Beleuchtung und Schneegrenze verändern Darstellung,
 keine gemalten Grundfarben. Die TypeScript-Reduktion arbeitet in begrenzten Blöcken.
+
+Die kartografische Darstellung verwendet den lokalen Maßstab in CSS-Pixeln.
+Ab 8 m/Pixel trägt die Waldmaske eine ruhige Flächenzeichnung; zwischen 2 und
+8 m/Pixel blendet sie zu den vorhandenen Einzelbäumen über. Weltfeste, ineinander
+übergehende Musterstufen vermeiden Texturwandern. Auf Weltmaßstab verschwindet
+das Muster. Die Maske besitzt weiterhin Grenzen, Lichtungen und schmale Säume.
+Instanzdaten und physische Matrizen bleiben beim Zoomen erhalten; die GPU
+berechnet Kronenmaß und Ausblendung. Automatische Kronen wachsen höchstens auf
+das Doppelte, geschützte Objekte bleiben maßhaltig. Fels- und Schneekriterien
+verwenden weiterhin physische Höhen und Hänge. Die zusätzliche Reliefbetonung
+beeinflusst ausschließlich die Beleuchtung. Linien blenden weich aus und halten
+im lesbaren Bereich mindestens 1,4 CSS-Pixel; Beschriftungen haben einen hellen
+Saum. Export und freigegebene Spielerflächen verwenden dieselbe Waldzeichnung,
+ohne private Materialmasken an die Spieleranzeige zu geben.
 
 Auswahl verwendet die sichtbare Geometrie, ihre Objektkennung und Verdeckung.
 Transparente Autorenkonturen können bewusst auswählbar sein. Kontextverlust
@@ -100,6 +125,7 @@ node build.mjs --test
 npm run check
 npm run check:desktop
 npm run build:desktop
+QA_DRAWN=1 node tools/test-desktop-atlas-multiscale.mjs
 node tools/test-desktop-atlas-raster-workbench.mjs
 node tools/test-desktop-atlas-cleanup.mjs
 node tools/test-desktop-world-authoring.mjs

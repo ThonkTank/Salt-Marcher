@@ -1,4 +1,5 @@
 import type {VegetationInstance,VegetationSpec} from './vegetation';
+import {forestSurfaceWeight} from './atlas-cartographic-style';
 
 export function vegetationRandom(seed:number,x:number,y:number,salt=0) {
   let h=(seed^Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(salt,2246822519))>>>0;
@@ -37,7 +38,7 @@ export function vegetationScaleLimit(i:VegetationInstance,spec?:VegetationSpec){
   if(i.asset==='grass'||i.asset==='shrub'||i.asset==='rock'&&(spec.preset.density>0||spec.preset.rocks<=.2))return 2;
   const parts=i.id.split(':'),x=Number(parts[1]),y=Number(parts[2]);
   if(!Number.isFinite(x)||parts[0]!=='row'&&!Number.isFinite(y))return 0;
-  const maximum=vegetationStride(spec.spacing,80);
+  const maximum=vegetationStride(spec.spacing,8);
   let stride=1;
   for(let next=2;next<=maximum;next*=2){
     if(parts[0]==='row'){if(x%next)break;}
@@ -47,14 +48,14 @@ export function vegetationScaleLimit(i:VegetationInstance,spec?:VegetationSpec){
     }
     stride=next;
   }
-  return Math.min(80,Math.max(2,spec.spacing*stride/7));
+  return Math.min(8,Math.max(2,spec.spacing*stride/7));
 }
 export function vegetationOpacity(mpp:number,limit:number){
   if(!limit)return 1;
   const t=Math.max(0,Math.min(1,(mpp-limit*.75)/(limit*.25)));
-  return 1-t*t*(3-2*t);
+  return (1-t*t*(3-2*t))*(1-forestSurfaceWeight(mpp));
 }
 /** Horizontal crown scale only; height and protected dimensions stay physical. */
 export function vegetationCrownScale(size:number,mpp:number,overviewWidth:number){
-  return Math.max(1,mpp*overviewWidth/size);
+  return 1+(Math.min(2,Math.max(1,mpp*overviewWidth/size))-1)*forestSurfaceWeight(mpp);
 }

@@ -40,11 +40,11 @@ function fixture(protectedObject=false){
  const pick=(mpp,x)=>vegetation.hit(atlasMetricFrame({focus:{x:0,y:0},focusHeightM:0,metersPerPixel:mpp,rotation:0,tilt:0,exaggeration:1},100,100),{x:50+x/mpp,y:50},['vegetation-trees']);
  return {vegetation,pick};
 }
-test('picking follows expanded crown pixels during camera-only zoom, then ignores faded trees',()=>{
+test('local crowns retain physical size during camera-only zoom, then ignore faded trees',()=>{
  const {vegetation,pick}=fixture();
  try{
   const before=vegetation.batches.map(b=>b.data);
-  assert.equal(pick(.5,4.2),null);assert.equal(pick(1.5,4.2)?.data.vegetationInstance,'row:1');
+  assert.equal(pick(.5,4.2),null);assert.equal(pick(1.5,4.2),null);assert.equal(pick(1.5,0)?.data.vegetationInstance,'row:1');
   assert.equal(pick(2.1,0),null);
   assert.deepEqual(vegetation.batches.map(b=>b.data),before);
  }finally{vegetation.dispose();}

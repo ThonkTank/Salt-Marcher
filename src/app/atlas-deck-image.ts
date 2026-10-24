@@ -23,10 +23,11 @@ export async function atlasDeckImage(input:{camera:AtlasMetricCamera;scene:Atlas
     if(input.camera.tilt>60){ctx.fillStyle='#c5d7df';ctx.fillRect(0,0,width,height);}
     for(const source of scene.images){const image=new Image();image.src=source;await image.decode();check();images.set(source,image);}
     container.style.width=Math.min(1024,width)+'px';container.style.height=Math.min(1024,height)+'px';
-    surface=await AtlasDeckSurface.create({container,camera:input.camera,model:{objects:[],targets:new Map(),coverage:{complete:true,supportedKinds:[],unsupported:[]},verticalExaggeration:1},externalInput:true,pixelRatio:1});check();
+    const styleScale=Math.max(1,Math.max(width,height)/1024);
+    surface=await AtlasDeckSurface.create({container,camera:input.camera,model:{objects:[],targets:new Map(),coverage:{complete:true,supportedKinds:[],unsupported:[]},verticalExaggeration:1},externalInput:true,pixelRatio:1,styleScale});check();
     surface.setTerrain(input.terrain,input.style,{contours:input.contours,seaLevelM:input.seaLevelM});
     drawing=new AtlasDeckDrawing(scene,input.surface.origin,images,input.surface,input.objects);
-    surface.setDrawing(frame=>[...drawing!.layers(frame,'output'),...vegetation.layers(frame,'output')]);
+    surface.setDrawing(frame=>[...drawing!.layers(frame,'output',styleScale),...vegetation.layers(frame,'output',styleScale)]);
     const total=Math.ceil(width/1024)*Math.ceil(height/1024);let done=0;
     for(let y=0;y<height;y+=1024)for(let x=0;x<width;x+=1024){
       check();const w=Math.min(1024,width-x),h=Math.min(1024,height-y);

@@ -1,5 +1,5 @@
 import {Matrix4,Quaternion,Vector3,Ray,Color} from 'three';
-import {SimpleMeshLayer} from '@deck.gl/mesh-layers';
+import {AtlasVegetationLayer} from './atlas-vegetation-layer';
 import {COORDINATE_SYSTEM} from '@deck.gl/core';
 import {vegetationGeometry} from './vegetation-geometry';
 import {vegetationInstances} from './vegetation-projection';
@@ -30,19 +30,20 @@ export class AtlasDeckVegetation {
       });
     });
   }
-  layers(frame:AtlasMetricFrame,prefix:string){return this.batches.map(b=>new SimpleMeshLayer<Instance>({
-    id:`atlas-vegetation:${prefix}:${b.asset}:${b.part}`,data:b.data.filter(i=>vegetationOpacity(frame.camera.metersPerPixel,i.limit)>=.001),mesh:b.mesh,coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,
+  layers(frame:AtlasMetricFrame,prefix:string,styleScale=1){return this.batches.map(b=>new AtlasVegetationLayer<Instance>({
+    id:`atlas-vegetation:${prefix}:${b.asset}:${b.part}`,data:b.data,mesh:b.mesh,coordinateSystem:COORDINATE_SYSTEM.CARTESIAN,
     getPosition:i=>[i.x-frame.origin.x,i.y-frame.origin.y,(i.z-frame.origin.z)*frame.camera.exaggeration],
-    getTransformMatrix:i=>this.transform(i,b.part,frame).elements,
-    getColor:i=>{const tone=b.part==='crown'&&(i.asset==='oak'||i.asset==='pine')?crownTone(i.id):1;const alpha=255*vegetationOpacity(frame.camera.metersPerPixel,i.limit);return i.conflict?[203,119,71,alpha]:[b.color[0]!*tone,b.color[1]!*tone,b.color[2]!*tone,alpha];},
+    getTransformMatrix:i=>this.transform(i,b.part,{...frame,camera:{...frame.camera,metersPerPixel:0,exaggeration:1}}).elements,
+    getDisplayLimit:i=>i.limit,getPhysicalSize:i=>i.size,metresPerClip:frame.camera.metersPerPixel*styleScale/frame.viewport.focalDistance,exaggeration:frame.camera.exaggeration,crowns:b.part==='crown'&&(b.asset==='oak'||b.asset==='pine'),
+    getColor:i=>{const tone=b.part==='crown'&&(i.asset==='oak'||i.asset==='pine')?crownTone(i.id):1;const alpha=255;return i.conflict?[203,119,71,alpha]:[b.color[0]!*tone,b.color[1]!*tone,b.color[2]!*tone,alpha];},
     material:{ambient:.7,diffuse:.3,shininess:0},pickable:false,
-    updateTriggers:{getPosition:[frame.origin.x,frame.origin.y,frame.origin.z,frame.camera.exaggeration],getTransformMatrix:[frame.camera.exaggeration,frame.camera.metersPerPixel],getColor:frame.camera.metersPerPixel},
+    updateTriggers:{getPosition:[frame.origin.x,frame.origin.y,frame.origin.z,frame.camera.exaggeration],getTransformMatrix:0,getColor:0},
     parameters:{depthWriteEnabled:true,depthCompare:'less-equal',cullMode:'none'}
   }));}
   private transform(i:Instance,part:string,frame:AtlasMetricFrame){
     const rotation=new Quaternion();if(i.asset==='rock')rotation.setFromUnitVectors(new Vector3(0,0,1),new Vector3(i.normal.x,i.normal.y,i.normal.z));
     rotation.multiply(new Quaternion().setFromAxisAngle(new Vector3(0,0,1),-i.angle));
-    const tree=i.asset==='oak'||i.asset==='pine',crown=part==='crown'&&tree&&!i.protected?vegetationCrownScale(i.size,frame.camera.metersPerPixel,8):1;
+    const tree=i.asset==='oak'||i.asset==='pine',crown=part==='crown'&&tree&&!i.protected?vegetationCrownScale(i.size,frame.camera.metersPerPixel,4):1;
     return new Matrix4().makeScale(1,1,frame.camera.exaggeration).multiply(new Matrix4().compose(new Vector3(),rotation,new Vector3(i.size*crown,i.size*crown,i.size)));
   }
   hit(frame:AtlasMetricFrame,pixel:Point,keys:string[],terrainDistance=Infinity){
@@ -53,9 +54,10 @@ export class AtlasDeckVegetation {
     const a=new Vector3(...segment[0]),direction=new Vector3(...segment[1]).sub(a).normalize(),v0=new Vector3(),v1=new Vector3(),v2=new Vector3(),point=new Vector3();
     for(const b of this.batches)for(const i of b.data){
       const category=i.asset==='oak'||i.asset==='pine'?'trees':i.asset==='rock'?'rocks':'undergrowth';
-      if(filter!=='all'&&filter!==category||vegetationOpacity(frame.camera.metersPerPixel,i.limit)<.001)continue;
+      const mpp=frame.camera.metersPerPixel*frame.project({x:i.x,y:i.y,heightM:i.z}).depthM/frame.viewport.focalDistance;
+      if(filter!=='all'&&filter!==category||vegetationOpacity(mpp,i.limit)<.001)continue;
       // Hit uses physical heights, with the same horizontal overview crown as display.
-      const matrix=this.transform(i,b.part,{...frame,camera:{...frame.camera,exaggeration:1}}).setPosition(i.x,i.y,i.z),inverse=matrix.clone().invert();
+      const matrix=this.transform(i,b.part,{...frame,camera:{...frame.camera,metersPerPixel:mpp,exaggeration:1}}).setPosition(i.x,i.y,i.z),inverse=matrix.clone().invert();
       const ray=new Ray(a.clone(),direction.clone()).applyMatrix4(inverse);
       if(ray.distanceSqToPoint(new Vector3(0,0,.5))>4)continue;
       for(let t=0;t<b.indices.length;t+=3){v0.fromArray(b.positions,b.indices[t]!*3);v1.fromArray(b.positions,b.indices[t+1]!*3);v2.fromArray(b.positions,b.indices[t+2]!*3);

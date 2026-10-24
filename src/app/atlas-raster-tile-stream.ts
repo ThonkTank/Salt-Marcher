@@ -1,4 +1,4 @@
-import {atlasTilePlan} from './atlas-tile-plan.js';
+import {atlasTilePlan,atlasPrefetchTiles} from './atlas-tile-plan.js';
 /** Common ownership and publication rules for raster display products. */
 export interface AtlasRasterTileRequest {tile: AtlasWorldTile; revision: number; contours?: number}
 export interface AtlasRasterTile {tile: AtlasWorldTile; revision: number; fence: string}
@@ -13,10 +13,11 @@ const DEFAULT_MAX_BYTES = 32 * 1024 * 1024;
 const DEFAULT_MAX_TILES = 64;
 const TILE_OBJECT_OVERHEAD = 256;
 
-export interface AtlasRasterStreamOptions {readonly maxBytes?: number; readonly maxTiles?: number}
+export interface AtlasRasterStreamOptions {readonly maxBytes?: number; readonly maxTiles?: number;readonly maxRetainedTiles?:number}
 export interface AtlasRasterStreamInput {
   readonly box: LandscapeBox;
   readonly focus?: LandscapeBox;
+  readonly preload?:LandscapeBox;
   /** Per-view ceiling within the stream owner's allocation budget. */
   readonly maxTiles?: number;
   readonly metersPerPixel: number;
@@ -36,6 +37,7 @@ interface CachedTile<T extends AtlasRasterTile> {readonly tile: T; readonly key:
 export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRasterTileRequest> {
   private readonly maxBytes: number;
   private readonly maxTiles: number;
+  private readonly maxRetainedTiles:number;
   private generation = 0;
   private overviewComplete=false;
   private fetchTail:Promise<unknown>=Promise.resolve();
@@ -50,6 +52,8 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
   constructor(private readonly adapter: AtlasRasterTileAdapter<T,R>, options: AtlasRasterStreamOptions = {}) {
     this.maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
     this.maxTiles = options.maxTiles ?? DEFAULT_MAX_TILES;
+    this.maxRetainedTiles=options.maxRetainedTiles??Infinity;
+    if(this.maxRetainedTiles!==Infinity&&(!Number.isSafeInteger(this.maxRetainedTiles)||this.maxRetainedTiles<1))throw Error('Atlas retained tile budget must be positive');
     if (!Number.isSafeInteger(this.maxBytes) || this.maxBytes < 1) throw new Error('Atlas tile stream maxBytes must be a positive safe integer');
     if (!Number.isInteger(this.maxTiles) || this.maxTiles < 1 || this.maxTiles > 256) throw new Error('Atlas tile stream maxTiles must be an integer from 1 to 256');
   }
@@ -174,7 +178,19 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
     this.staged.clear();
     this.enforceBudget(protectedKeys());
     this.emit(generation, true, publish);
+    if(input.preload)for(const tile of atlasPrefetchTiles(plan,input.preload)){
+      if(!this.isCurrent(generation))return;
+      // Preloading may use spare capacity, but cannot evict or coarsen the view.
+      if(this.activeKeys().size>=this.maxRetainedTiles)break;
+      try{await this.getTile(this.adapter.request(tile,input.revision,contours),input.source,fetch,generation,protectedKeys());}
+      // An optional neighbour must not invalidate an already complete view (for
+      // example when Main stops accepting reads during native shutdown). The
+      // adapter still validates every reply before it can enter the cache.
+      catch{break;}
+    }
   }
+
+  get statistics(){return {bytes:this.retainedBytes(),tiles:new Set([...this.cache.values(),...this.visible.values(),...this.staged.values()].map(e=>e.tile)).size,visible:this.visible.size,staged:this.staged.size};}
 
   /** Stop disposable reads without discarding the useful displayed cache. */
   cancel():void {this.controller.abort();this.generation++;this.staged.clear();}
@@ -245,12 +261,12 @@ export class AtlasRasterTileStream<T extends AtlasRasterTile,R extends AtlasRast
   }
 
   private enforceBudget(protectedKeys: Set<string>): void {
-    while (this.retainedBytes() > this.maxBytes) {
+    while (this.retainedBytes() > this.maxBytes || this.statistics.tiles>this.maxRetainedTiles) {
       let evictKey: string | undefined;
       for (const key of this.cache.keys()) {
         if (!protectedKeys.has(key)) {evictKey = key; break;}
       }
-      if (evictKey === undefined) throw new Error(`Atlas tile stream exceeds maxBytes (${this.maxBytes})`);
+      if (evictKey === undefined) throw new Error(this.retainedBytes()>this.maxBytes?`Atlas tile stream exceeds maxBytes (${this.maxBytes})`:`Atlas tile stream exceeds maxRetainedTiles (${this.maxRetainedTiles})`);
       this.cache.delete(evictKey);
     }
   }

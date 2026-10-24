@@ -9,6 +9,23 @@ export interface AtlasTilePlanBox {readonly x: number; readonly y: number; reado
 export interface AtlasTilePlanOptions {readonly maxTiles?: number; readonly focus?: AtlasTilePlanBox}
 export interface AtlasTilePlan {readonly detail: AtlasWorldTile[]; readonly overview: AtlasWorldTile[]}
 
+/** Optional coarse neighbours, selected only after the visible plan is fixed. */
+export function atlasPrefetchTiles(plan:AtlasTilePlan,box:AtlasTilePlanBox,limit=8):AtlasWorldTile[]{
+ if(!plan.detail.length||!Number.isSafeInteger(limit)||limit<=0||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0)return [];
+ const lod=Math.min(MAX_LOD,Math.max(...plan.detail.map(t=>t.lod))+2);
+ const range=tileRange(box,lod);
+ // Prefetch is disposable: never enumerate a huge padded world.
+ if(tileCount(range)>256)return [];
+ const overlaps=(a:AtlasWorldTile,b:AtlasWorldTile)=>{
+  const fine=a.lod<b.lod?a:b,coarse=a.lod<b.lod?b:a,d=2**(coarse.lod-fine.lod);
+  return Math.floor(fine.x/d)===coarse.x&&Math.floor(fine.y/d)===coarse.y;
+ };
+ const size=ATLAS_WORLD_TILE_METERS*2**lod;
+ const tiles=enumerate(range,lod).filter(t=>[t.x*size,t.y*size,(t.x+1)*size,(t.y+1)*size].every(v=>Math.abs(v)<=MAX_CANONICAL_BOUND)&&!plan.detail.some(d=>overlaps(t,d)));
+ tiles.sort((a,b)=>distanceToCenter(a,lod,box.x+box.width/2,box.y+box.height/2)-distanceToCenter(b,lod,box.x+box.width/2,box.y+box.height/2));
+ const result=tiles.slice(0,limit);assertCanonicalTiles(result);return result;
+}
+
 /**
  * Selects a bounded, viewport-dependent pyramid from the stable signed world grid.
  * Tile extents are half-open, so a viewport ending on a tile edge does not fetch

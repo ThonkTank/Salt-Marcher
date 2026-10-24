@@ -1,6 +1,6 @@
 import {crownRadius,crownTone} from './vegetation-shape';
 import {vegetationInstances} from './vegetation-projection';
-import {vegetationOpacity,vegetationScaleLimit} from './vegetation-lod';
+import {vegetationOpacity,vegetationScaleLimit,vegetationCrownScale} from './vegetation-lod';
 import {atlasPaint,type AtlasPaint} from './atlas-paint';
 import type {LandscapeRecord,LandscapeBox} from './atlas-landscape';
 import type {VegetationInstance} from './vegetation';
@@ -15,7 +15,7 @@ export function drawVegetation(root:AtlasPaint,r:LandscapeRecord,box:LandscapeBo
 }
 export function drawVegetationInstance(root:AtlasPaint,i:VegetationInstance,areaId:string,box:LandscapeBox,mpp:number,canopy=false,opacity=1) {
   if(opacity<.001)return;
-  const tree=i.asset==='oak'||i.asset==='pine',radius=Math.max(i.size*(tree?.32:.5),canopy&&!i.protected&&tree?mpp*3:0),
+  const tree=i.asset==='oak'||i.asset==='pine',radius=i.size*(tree?.32:.5)*(canopy&&!i.protected&&tree?vegetationCrownScale(i.size,mpp,4):1),
     x=i.x-box.x,y=i.y-box.y,base=vegetationColors[i.asset],tone=crownTone(i.id),color=tree?'#'+[1,3,5].map(n=>Math.min(255,Math.round(parseInt(base.slice(n,n+2),16)*tone)).toString(16).padStart(2,'0')).join(''):base;
   const category=tree?'trees':i.asset==='rock'?'rocks':'undergrowth';
   const group=atlasPaint('group',{opacity,data:{landscapeId:areaId,vegetationInstance:i.id,['vegetation-'+category]:i.id},title:i.conflict?'Geschütztes Objekt: Konflikt mit Gelände oder Bebauung':i.protected?'Geschütztes Einzelobjekt':i.asset==='rock'?'Felsen':'Bewuchs'});

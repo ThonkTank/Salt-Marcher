@@ -25,7 +25,7 @@ export function playerAtlas(frame:PlayerFrame):{scene:AtlasPaint;box:{x:number;y
     for(const cell of map.cells){
       const p=hexPoint(cell,100);include(p);
       const points=Array.from({length:6},(_,i)=>{const a=(i*60+30)*Math.PI/180;return{x:p.x+57*Math.cos(a),y:p.y+57*Math.sin(a)};});
-      add('polygon',{points,opacity:cell.visible?1:.5,style:{fill:terrainColors[cell.terrain as Terrain]??'#8e9c8b',stroke:'#15232b',lineWidth:1.5}});
+      add('polygon',{points,data:cell.terrain==='forest'?{publicForestScale:String(map.hexMeters/100)}:undefined,opacity:cell.visible?1:.5,style:{fill:terrainColors[cell.terrain as Terrain]??'#8e9c8b',stroke:'#15232b',lineWidth:1.5}});
       if(cell.road)add('path',{path:`M${p.x-38},${p.y+8} Q${p.x},${p.y-12} ${p.x+38},${p.y-8}`,opacity:cell.visible?1:.4,style:{stroke:'#d1b684',lineWidth:5}});
       if(cell.river)add('path',{path:`M${p.x-12},${p.y-45} Q${p.x+25},${p.y} ${p.x-5},${p.y+45}`,opacity:cell.visible?1:.4,style:{stroke:'#559dc7',lineWidth:5}});
       if(cell.label)add('text',{x:p.x,y:p.y+34,style:{textAlign:'center',fontSize:10,fill:'#fff4d4',stroke:'#080c10',lineWidth:.7}},cell.label);

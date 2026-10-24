@@ -94,17 +94,18 @@ Feiner definierte Landschaften haben Vorrang vor gröberen. Einzelkorrekturen
 und Löschvermerke sind dauerhaft; ungeeignete geschützte Objekte werden als
 Konflikt markiert und nicht automatisch entfernt.
 
-Die Kartenansicht zeigt bei mehr als 80 m/Pixel vorwiegend Bodenflächen,
-zwischen 2 und 80 m/Pixel eine ausgedünnte Kronendarstellung und bis
-2 m/Pixel die lokalen Einzelobjekte. Die Übersicht wählt ihre Vertreter
-als verschachtelte Teilmengen weltfester Zellen. Ein gröberer Vertreter ist
-immer ein bereits vorhandener Vertreter der feineren Stufe. Identität,
-Position, Größe und Eignungsprüfung bleiben die der lokalen Kandidaten.
-Automatische Kronen wachsen anhand der aktuellen Kameratiefe auf eine kleine
-Bildschirmgröße; ihre Höhe bleibt maßhaltig. Vor dem nächsten Quellwechsel
-blenden nicht mehr benötigte Kandidaten weich aus. Größen- und
-Sichtbarkeitsänderungen benötigen weder einen Bereichsread noch neue
-Instanzmatrizen. Die CPU-Trefferprüfung verwendet dieselben Regeln.
+Die Kartenansicht zeigt ab 8 m/Pixel vorwiegend die Waldfläche mit einer
+maßstabsabhängigen, weltfesten Kronenzeichnung. Zwischen 2 und 8 m/Pixel blendet
+sie zu den lokalen Einzelobjekten über. Auf Weltmaßstab verschwindet die feine
+Zeichnung. Die Übersicht wählt ihre Vertreter als verschachtelte Teilmengen
+weltfester Zellen. Ein gröberer Vertreter ist immer ein bereits vorhandener
+Vertreter der feineren Stufe. Identität, Position und Eignungsprüfung bleiben
+die der lokalen Kandidaten. Automatische Kronen wachsen anhand der aktuellen
+Kameratiefe höchstens auf das Doppelte; ihre Höhe bleibt maßhaltig. Vor dem
+nächsten Quellwechsel blenden nicht mehr benötigte Kandidaten weich aus.
+Größen- und Sichtbarkeitsänderungen laufen als GPU-Uniforms und benötigen weder
+einen Bereichsread noch neue Instanzmatrizen oder gefilterte Instanzlisten.
+Die CPU-Trefferprüfung verwendet dieselben Regeln.
 Große gepufferte Ausschnitte wählen nötigenfalls eine gröbere Stufe derselben
 Hierarchie, bevor mehr als 24.000 natürliche Kandidaten geprüft würden.
 Unterwuchs entfällt in diesen zusammengefassten Stufen; die Autorenbestände
@@ -136,7 +137,7 @@ Landschaftsebene wegen zu vieler lokaler Kandidaten verschwinden lassen.
 | History, Main/Preload und Kampagnenkopie | `src/app/storage/store.ts`, `desktop/main.ts`, `desktop/preload.ts`, `src/app/storage/campaign-data.ts` |
 | Kartenbild, Geländegrund und Bereichsprojektion | `src/app/vegetation-view.ts`, `src/app/landscape-raster.ts`, `src/app/storage/atlas-landscape-region.ts` |
 | Werkzeuge und gemeinsame Einzelbearbeitung | `src/app/atlas-landscape-ui.ts`, `src/app/vegetation-controls.ts` |
-| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas-spatial-vegetation.ts`, `src/app/vegetation-display.ts`, `src/app/terrain-spatial-view.ts`, `tools/vegetation-prototype/app.ts` |
+| Bewuchs in der gemeinsamen Hauptkamera und isolierte Bildfixture | `src/app/atlas-deck-vegetation.ts`, `src/app/atlas-vegetation-layer.ts`, `src/app/atlas-cartographic-style.ts`, `tools/vegetation-prototype/app.ts` |
 | Abgeleitetes Geländenetz, Bodenbild und schreibfreie Landpinselvorschau der räumlichen Bewuchsansicht | `src/app/spatial-terrain.ts` |
 | Datenregression, Auswahl und echte Desktop-Bedienung | `tests/vegetation.test.mjs`, `tests/vegetation-spatial.test.mjs`, `tools/test-desktop-vegetation.mjs`, `tools/test-desktop-vegetation-qualification.mjs` |
 

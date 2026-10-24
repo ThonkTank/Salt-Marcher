@@ -49,7 +49,7 @@ export class AtlasDeckLabels {
   layer(frame: Frame, labels: readonly AtlasDeckLabel[], selected?: string): TextLayer<AtlasDeckLabelPlacement> {
     return new TextLayer<AtlasDeckLabelPlacement>({id: 'atlas-labels', data: this.place(frame, labels, selected),
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN, fontFamily: ATLAS_FONT_FAMILY,
-      characterSet: 'auto', fontSettings: {sdf: true}, getText: d => d.label.candidate.text,
+      characterSet: 'auto', fontSettings: {sdf: true}, outlineWidth:.12,outlineColor:[247,243,225,220], getText: d => d.label.candidate.text,
       getPosition: d => [d.label.candidate.point.x - frame.origin.x, d.label.candidate.point.y - frame.origin.y,
         (d.label.heightM - frame.origin.z) * frame.camera.exaggeration],
       getPixelOffset: d => [(d.placed.point.x - d.anchor.x) * d.depthFactor, (d.placed.point.y - d.anchor.y) * d.depthFactor],

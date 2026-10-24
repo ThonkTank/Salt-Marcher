@@ -7,7 +7,7 @@ const {AtlasRasterPresentation}=createRequire(import.meta.url)('../.build/atlas-
 function fixture(t){
  const previous=globalThis.window;let release;const calls={refresh:0,redraw:0,errors:[],cancel:0};
  globalThis.window={campaign:{atlasTerrainProjection:()=>new Promise(r=>release=r),atlasCancelRead:async()=>{calls.cancel++;}}};t.after(()=>globalThis.window=previous);
- const ui=Object.assign(Object.create(AtlasRasterPresentation.prototype),{token:'t',revision:7,fence:'first',frame:{x:0,y:0,width:100,height:100},focusHeightM:0,tilt:0,rotation:0,exaggeration:1,failed:false,objectKey:'',objectRead:null,stream:{cancel(){}},host:{workplane:()=>null,redraw(){calls.redraw++;},async refresh(){calls.refresh++;}},pose:()=>({metersPerPixel:1}),repaint(){},fail(e){calls.errors.push(e);}});
+ const ui=Object.assign(Object.create(AtlasRasterPresentation.prototype),{input:{dataset:{terrainQuality:'detail'}},token:'t',revision:7,fence:'first',frame:{x:0,y:0,width:100,height:100},focusHeightM:0,tilt:0,rotation:0,exaggeration:1,failed:false,objectKey:'',objectRead:null,stream:{cancel(){}},host:{workplane:()=>null,redraw(){calls.redraw++;},async refresh(){calls.refresh++;}},pose:()=>({metersPerPixel:1}),repaint(){},fail(e){calls.errors.push(e);}});
  return{ui,calls,release:value=>release(value)};
 }
 test('an object source error refreshes the source once instead of permanently disabling the Atlas',async t=>{
@@ -28,5 +28,5 @@ test('pausing reads retires the object response before a canonical write starts'
 test('a superseded surface read retains the useful frame and waits for the newer owner',async t=>{
  const f=fixture(t);Object.defineProperty(f.ui,'needsTerrainRaster',{value:false});
  Object.assign(f.ui,{active:true,ready:true,generation:0,request:'',host:{...f.ui.host,writing:()=>false},stream:{async load(){throw Error('Kartenausschnitt durch neuere Anfrage ersetzt.');}}});
- await f.ui.load();assert.equal(f.ui.ready,true);assert.equal(f.ui.request,'');assert.deepEqual(f.calls.errors,[]);assert.equal(f.calls.refresh,0);
+ const pending=f.ui.load();assert.equal(f.ui.input.dataset.terrainQuality,'overview','the previous camera cannot qualify the new read');await pending;assert.equal(f.ui.ready,true);assert.equal(f.ui.request,'');assert.deepEqual(f.calls.errors,[]);assert.equal(f.calls.refresh,0);
 });

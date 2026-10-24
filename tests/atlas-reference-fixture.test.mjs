@@ -47,7 +47,20 @@ test('native map oracle accepts its baseline and rejects the formerly passing wa
   assert.equal(createHash('sha256').update(bytes).digest('hex'),view.imageSha256);
  }
  const expected=PNG.sync.read(readFileSync(new URL('./fixtures/atlas/reference-images/width-32768.png',import.meta.url)));
- assertReferenceMapImage(expected,expected);
+ const baseline=assertReferenceMapImage(expected,expected);
+ const shaded={...expected,data:Buffer.from(expected.data)};
+ for(let i=0;i<shaded.data.length;i+=4)if([159,167,129].every((v,c)=>Math.abs(expected.data[i+c]-v)<=4))for(let c=0;c<3;c++)shaded.data[i+c]=Math.round(shaded.data[i+c]*.88);
+ const accepted=assertReferenceMapImage(shaded,expected);
+ assert(accepted.populations.forest.actual>=baseline.populations.forest.expected*.95,'shading retains the frozen forest footprint');
+ const blendedRoad={...expected,data:Buffer.from(expected.data)};
+ for(let i=0;i<blendedRoad.data.length;i+=4)if([163,126,81].every((v,c)=>Math.abs(expected.data[i+c]-v)<=4)){
+  blendedRoad.data.set([160,133,90],i);
+ }
+ assertReferenceMapImage(blendedRoad,expected);
+ // A road replaced by its forest background must fail even when that
+ // background is shaded; the widened brown palette cannot mask its loss.
+ for(let i=0;i<blendedRoad.data.length;i+=4)if([163,126,81].every((v,c)=>Math.abs(expected.data[i+c]-v)<=4))blendedRoad.data.set([140,147,114],i);
+ assert.throws(()=>assertReferenceMapImage(blendedRoad,expected),/Visible road missing/);
  for(const color of [[238,229,207],[159,167,129],[163,126,81],[91,67,56]]){
   const missing={...expected,data:Buffer.from(expected.data)};
   for(let i=0;i<missing.data.length;i+=4)if(color.every((v,c)=>Math.abs(expected.data[i+c]-v)<=4)){

@@ -110,6 +110,7 @@ export function publicAtlasPaint(
         });
       add("polygon", {
         points: points,
+        data:cell.terrain==='forest'?{publicForestScale:'1'}:undefined,
         opacity: cell.visible ? 1 : 0.55,
         style: {
           fill:

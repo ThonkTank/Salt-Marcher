@@ -35,7 +35,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   private surface:AtlasDeckSurface|null=null;
   private Drawing:typeof AtlasDeckDrawing|null=null;
   private creating:Promise<void>|null=null;
-  private stream=new AtlasSurfaceTileStream({maxTiles:64,maxBytes:64*1024*1024});
+  private stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024});
   private tiles:readonly AtlasSurfaceTile[]=[];
   private draft:AtlasSurfaceDraft|null=null;
   private dirty=false;private draftWasDirty=false;private preferDetail=false;
@@ -84,7 +84,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   setActive(active:boolean){
     if(active===this.active)return;
     this.active=active;this.generation++;
-    if(!active){this.pauseReads();this.objects=[];this.pickTiles=null;this.frozen=null;this.gesturing=false;this.objectKey='';this.objectLayer.dispose();this.vegetation?.dispose();this.vegetationRecords=undefined;this.settleFirst(false);this.ready=false;this.stream.dispose();this.stream=new AtlasSurfaceTileStream({maxTiles:64,maxBytes:64*1024*1024});this.surface?.dispose();this.surface=null;this.container?.remove();this.container=null;this.tiles=[];this.draft=null;this.dirty=false;this.preferDetail=false;this.scene=null;this.map?.dispose();this.map=null;this.transient?.dispose();this.transient=null;this.request='';this.revision=-1;this.fence='';this.input.style.background='';delete this.input.dataset.terrainReady;delete this.input.dataset.terrainDraft;return;}
+    if(!active){this.pauseReads();this.objects=[];this.pickTiles=null;this.frozen=null;this.gesturing=false;this.objectKey='';this.objectLayer.dispose();this.vegetation?.dispose();this.vegetationRecords=undefined;this.settleFirst(false);this.ready=false;this.stream.dispose();this.stream=new AtlasSurfaceTileStream({maxTiles:32,maxRetainedTiles:64,maxBytes:64*1024*1024});this.surface?.dispose();this.surface=null;this.container?.remove();this.container=null;this.tiles=[];this.draft=null;this.dirty=false;this.preferDetail=false;this.scene=null;this.map?.dispose();this.map=null;this.transient?.dispose();this.transient=null;this.request='';this.revision=-1;this.fence='';this.input.style.background='';delete this.input.dataset.terrainReady;delete this.input.dataset.terrainDraft;return;}
     this.failed=false;this.container=document.createElement('div');this.container.id='atlas-terrain-spatial';this.container.style.cssText='position:absolute;pointer-events:none;z-index:0';this.input.parentElement!.append(this.container);this.place();
     this.input.style.background='transparent';this.input.style.position='relative';this.input.style.zIndex='1';this.input.dataset.renderer='deck';this.input.dataset.terrainView='raster';this.input.dataset.terrainReady='loading';
     const container=this.container;
@@ -136,12 +136,15 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   reframe(frame:LandscapeBox,_draw=true){if(frame.x!==this.frame.x||frame.y!==this.frame.y||frame.width!==this.frame.width||frame.height!==this.frame.height)this.preferDetail=false;if(!this.gesturing&&(frame.x+frame.width/2!==this.frame.x+this.frame.width/2||frame.y+frame.height/2!==this.frame.y+this.frame.height/2))this.focusHeightM=this.height({x:frame.x+frame.width/2,y:frame.y+frame.height/2});this.frame={...frame};this.place();if(this.surface){this.surface.setCamera(this.pose());if(!this.gesturing&&!this.dirty&&!this.host.writing())void this.load();}}
   private async load(){
     if(this.needsTerrainRaster||!this.active||!this.fence||this.failed||this.gesturing||this.dirty||this.host.writing())return;
-    const pose=this.pose(),box=this.tilt?terrainCoverageBox(this.frame,terrainCoverageLevel(this.tilt)):{x:this.frame.x-this.frame.width/2,y:this.frame.y-this.frame.height/2,width:this.frame.width*2,height:this.frame.height*2};
-    const key=atlasSurfaceRequestKey(this.token,this.revision,this.fence,box,pose.metersPerPixel,this.tilt?64:16,this.tilt?this.frame:undefined);if(key===this.request)return;this.request=key;
+    const pose=this.pose(),box=this.tilt?terrainCoverageBox(this.frame,terrainCoverageLevel(this.tilt)):this.frame;
+    const preload=this.tilt?undefined:{x:this.frame.x-this.frame.width/2,y:this.frame.y-this.frame.height/2,width:this.frame.width*2,height:this.frame.height*2};
+    const key=atlasSurfaceRequestKey(this.token,this.revision,this.fence,box,pose.metersPerPixel,32,this.tilt?this.frame:undefined,preload);if(key===this.request)return;this.request=key;
     const generation=++this.generation;
+    // Retain the useful old image, but its detail flag cannot qualify the new camera.
+    this.input.dataset.terrainQuality='overview';
     try{
       await this.creating;if(generation!==this.generation)return;
-      await this.stream.load({box,maxTiles:this.tilt?64:16,focus:this.tilt?this.frame:undefined,metersPerPixel:pose.metersPerPixel,revision:this.revision,source:this.fence},atlasSurfaceTileFetcher(window.campaign,this.token,'workbench-surface'),frame=>{
+      await this.stream.load({box,preload,maxTiles:32,focus:this.tilt?this.frame:undefined,metersPerPixel:pose.metersPerPixel,revision:this.revision,source:this.fence},atlasSurfaceTileFetcher(window.campaign,this.token,'workbench-surface'),frame=>{
         if(generation!==this.generation||this.gesturing||this.dirty||this.host.writing())return;
         // Keep the useful old image during source reconciliation, never publish
         // an empty frame between a local gesture and its canonical tiles.
@@ -149,8 +152,11 @@ export class AtlasRasterPresentation implements AtlasPresentation {
         if(frame.complete)this.preferDetail=false;
         const previous=new Map(this.tiles.map(t=>[JSON.stringify(t.tile),t]));this.tiles=frame.tiles.map(t=>reuseAtlasSurfaceTile(previous.get(JSON.stringify(t.tile)),t));if(!this.ready){this.focusHeightM=this.height({x:this.frame.x+this.frame.width/2,y:this.frame.y+this.frame.height/2});this.surface?.setCamera(this.pose());}this.input.dataset.terrainQuality=frame.complete?'detail':'overview';this.show();
         if(frame.complete&&this.scene){const scene=this.scene;this.scene=null;this.paint(scene.scene,scene.origin,scene.images);}
+        this.input.dataset.terrainCache=JSON.stringify(this.stream.statistics);
+        this.input.dataset.terrainGpu=JSON.stringify(this.surface?.gpuMemory);
         if(!this.ready&&frame.overviewComplete)void this.surface?.waitForFrame().then(()=>{if(generation===this.generation&&!this.failed){this.ready=true;this.settleFirst(true);this.input.dataset.terrainReady='ready';this.host.redraw();}}).catch(e=>{if(generation===this.generation)this.fail(e);});
       });
+      if(generation===this.generation)this.input.dataset.terrainCache=JSON.stringify(this.stream.statistics);
     }catch(e){
       if(generation!==this.generation)return;
       if(String(e).includes('durch neuere Anfrage ersetzt')){this.request='';return;}
@@ -211,7 +217,7 @@ export class AtlasRasterPresentation implements AtlasPresentation {
   reconcile(revision:number,fence:string){if(this.gesturing)return;this.preferDetail||=this.dirty;this.dirty=false;delete this.input.dataset.terrainDraft;this.revision=revision;this.fence=fence;this.request='';void this.load();}
   setContours(interval:number){this.contours=interval;this.show();}
   setPose(tilt:number,rotation=this.rotation){if(this.gesturing||this.host.hasDraft())return;this.tilt=tilt;this.rotation=rotation;this.toggle.textContent=tilt?'Senkrecht ausrichten':'Atlas kippen';for(const name of ['tilt','rotation'] as const)(this.controls.querySelector('#terrain-'+name) as HTMLInputElement).value=String(this[name]);this.reframe(this.frame);this.host.redraw();}
-  private drawingSurface(){this.objectLayer.update(this.objects,{x:this.frame.x,y:this.frame.y,z:0},1);return{routes:new Map([...(this.vegetationRecords??[]),...(this.host.draft()?.routeRecords??[])].filter(r=>r.route).map(r=>[r.id,r])),objectHeights:this.objectLayer.heights,scopeBases:this.objectLayer.scopeBases,closedObjectIds:this.objectLayer.closedIds,origin:{x:this.frame.x,y:this.frame.y},focusM:0,exaggeration:1,height:(p:Point)=>this.height(p),segment:this.frame.width/64,bounds:this.frame};}
+  private drawingSurface(){this.objectLayer.update(this.objects,{x:this.frame.x,y:this.frame.y,z:0},1);return{displayMpp:this.frame.width/Math.max(1,this.input.clientWidth),routes:new Map([...(this.vegetationRecords??[]),...(this.host.draft()?.routeRecords??[])].filter(r=>r.route).map(r=>[r.id,r])),objectHeights:this.objectLayer.heights,scopeBases:this.objectLayer.scopeBases,closedObjectIds:this.objectLayer.closedIds,origin:{x:this.frame.x,y:this.frame.y},focusM:0,exaggeration:1,height:(p:Point)=>this.height(p),segment:this.frame.width/64,bounds:this.frame};}
   private drawings(){this.surface?.setDrawing(frame=>[...(this.map?.layers(frame,'map')??[]),...(this.vegetation?.layers(frame,'map')??[]),...(this.transient?.layers(frame,'overlay')??[])]);}
   paint(scene:AtlasCanvasScene,origin:Point,images:ReadonlyMap<string,CanvasImageSource>){if(this.scene?.scene===scene)return;this.scene={scene,origin,images};if(!this.Drawing)return;try{const next=new this.Drawing(scene,origin,images,this.drawingSurface(),this.objectLayer.meshes);this.map?.dispose();this.map=next;this.drawings();}catch(e){this.fail(e);}}
   overlay(scene:AtlasCanvasScene,origin:Point){if(!this.Drawing)return;try{const next=new this.Drawing(scene,origin,new Map(),this.drawingSurface());this.transient?.dispose();this.transient=next;this.drawings();}catch(e){this.fail(e);}}

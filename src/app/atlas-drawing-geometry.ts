@@ -20,6 +20,7 @@ export interface AtlasDrawingMesh {
   command?: AtlasPaintCommand;
   target?: Record<string,string>;
   solid?: boolean;
+  publicForestScale?:number;
   billboard?: {anchor:[number,number,number];offsets:Float32Array};
 }
 
@@ -31,7 +32,7 @@ export function atlasDrawingGeometry(source:AtlasCanvasScene,origin:Point,images
     if(c.node.kind!=='text'&&c.ancestry.some(n=>surface.closedObjectIds?.has(n.data.cityUnit??'')))continue;
     const routeOwner=c.ancestry.find(n=>surface.routes?.has(n.data.landscapeId??'')),route=routeOwner&&surface.routes?.get(routeOwner.data.landscapeId!);
     if(route?.route&&c.node.kind!=='text'){
-      if(!routes.has(route.id)){routes.add(route.id);for(const mesh of atlasRouteGeometry(route,surface.height,{...surface.origin,z:surface.focusM},1,surface.segment,false,surface.bounds))meshes.push({...mesh,command:c});}
+      if(!routes.has(route.id)){routes.add(route.id);for(const mesh of atlasRouteGeometry(route,surface.height,{...surface.origin,z:surface.focusM},1,surface.segment,false,surface.bounds,undefined,surface.displayMpp))meshes.push({...mesh,color:[mesh.color[0],mesh.color[1],mesh.color[2],mesh.color[3]*c.alpha],command:c});}
       continue;
     }
     const {node,style:s,matrix:m}=c,g=node.geometry;
@@ -44,7 +45,7 @@ export function atlasDrawingGeometry(source:AtlasCanvasScene,origin:Point,images
     const add=(geometry:BufferGeometry,color:string,alpha:number,texture?:CanvasImageSource,transform=world)=>{
       const draped=drapeAtlasGeometry(geometry,transform,position,surface),p=draped.getAttribute('position'),uv=draped.getAttribute('uv');
       const rgba=atlasSpatialColor(color,alpha),rgb=new Color(rgba.color).convertLinearToSRGB();
-      meshes.push({positions:Float32Array.from(p.array),indices:Uint32Array.from({length:p.count},(_,i)=>i),uv:uv?Float32Array.from(uv.array):undefined,color:[rgb.r*255,rgb.g*255,rgb.b*255,rgba.opacity*255],texture,command:c});
+      meshes.push({positions:Float32Array.from(p.array),indices:Uint32Array.from({length:p.count},(_,i)=>i),uv:uv?Float32Array.from(uv.array):undefined,color:[rgb.r*255,rgb.g*255,rgb.b*255,rgba.opacity*255],texture,command:c,publicForestScale:Number(node.data.publicForestScale)||undefined});
       draped.dispose();
     };
     const quad=(x:number,y:number,w:number,h:number)=>{

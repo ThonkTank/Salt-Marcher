@@ -4,6 +4,7 @@ import type { Point } from "./contracts";
 export interface AtlasSpatialSurface {
   /** Output sampling density for text textures; live scenes use a bounded glyph atlas. */
   textPixelsPerMeter?:number;
+  displayMpp?:number;
   routes?:ReadonlyMap<string,import('./atlas-landscape').LandscapeRecord>;
   objectHeights?:ReadonlyMap<string,number>;
   scopeBases?:ReadonlyMap<string,number>;
