@@ -72,3 +72,41 @@ trennt Vergleichsläufe; `GM_QA_ZOOM=2` wiederholt manuelle Timeline und Verstä
 bei 200 Prozent. Die Gegenprobe gegen falsche Prozesserfolge steht in
 `tests/desktop-editor-transition.test.mjs`. Native Evidenz und menschliche
 Bedienabnahme bleiben getrennt.
+
+
+## Vollständige Atlas-Referenzwelt
+
+`tests/fixtures/atlas/mixed-world.sqlite.gz` bewahrt die fachlichen Inhalte der
+Referenzwelt aus Commit `16eb0aa8807ac21704abfea5412ac3a22033a23a` im aktuellen
+Schema 55. `mixed-world-manifest.json` daneben bindet die ursprüngliche Datei
+per SHA-256 und alle kanonischen Tabellen per Anzahl und Inhaltsprüfsumme.
+IDs, Payloads, Verknüpfungen und History gehören zur Referenz.
+
+Wiederherstellung aus dem lokal vorhandenen Git-Objekt:
+
+```sh
+node tools/create-atlas-mixed-fixture.mjs tests/fixtures/atlas/mixed-world.sqlite.gz
+```
+
+Das Werkzeug akzeptiert ausschließlich diese bekannte Schema-54-Testdatei,
+entfernt deren historische Migrationstabelle und setzt Schema 55. Es ist kein
+Produktimport und erweitert nicht die unterstützten Anwendungsformate. Ein
+Checkout ohne das historische Git-Objekt kann die eingecheckte Testwelt prüfen,
+aber erst nach Beschaffung dieses Commits neu erzeugen.
+
+Die Welt enthält 100.000 Geländequellen, 1.028 Höhenkacheln, 5.000 Ortsmarker,
+1.024 Straßen, 1.024 Vegetationsobjekte, 5.000 Raumgruppen und 4.001 Räume im
+großen Dungeon. Der kleine parametrische Generator `populateMixedWorld` erzeugt
+nur ein Inventar für isolierte Tests; er ersetzt diese vollständige Welt nicht.
+
+`tests/atlas-reference-fixture.test.mjs` prüft Inhaltstreue über Store-Neuöffnung
+und gezielte Verluste. Die nativen Vergleiche in
+`tools/test-desktop-atlas-mixed-workbench.mjs` prüfen fünf Maßstäbe bei 100/200 %,
+sichtbare Kartenausschnitte, Neustart und Bildexport. Ihre Referenzbilder unter
+`tests/fixtures/atlas/reference-images/` stammen vom Baseline-Lauf des genannten
+Commits vor der Bereinigung; sie werden nicht aus dem Prüfling aktualisiert.
+Die Bildmetadaten binden Runtime-Hashes, PNG-Prüfsummen und tatsächliche
+Kameraausschnitte; jeder Zoomschritt muss vor dem nächsten abgeschlossen sein.
+Die Bildprüfung vergleicht einen festen Kartenausschnitt ohne Bedienoberfläche,
+mit begrenzter RGB-Abweichung und Mindestanteilen für Land, Wald, Straße und
+Ortsmarker. Ladebereitschaft und Objektzahlen allein sind kein Bildnachweis.
