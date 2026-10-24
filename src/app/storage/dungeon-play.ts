@@ -86,4 +86,6 @@ export function executeDungeon(db:any,c:DungeonCommand,guard:()=>void,liveWrite:
  }
  db.prepare('INSERT INTO dungeon_receipt VALUES(?,?,?)').run(cam,c.commandId,fp);return dungeonView(db,cam);
  }).immediate();}
-export function validateDungeonPlay(db:any){validateDungeonPaces(db);for(const row of db.prepare('SELECT * FROM dungeon_journey').iterate()){const j=checkedPartial(parsed(row));if(j.id!==row.id||j.request.sceneId!==row.scene_id||j.revision!==row.revision)throw new Error('Dungeonreiseidentität widersprüchlich.');}for(const table of ['dungeon_memory','npc_dungeon_position'])for(const row of db.prepare('SELECT * FROM '+table).iterate())parsed(row);}
+export function validateDungeonPlay(db:any){validateDungeonPaces(db);for(const row of db.prepare('SELECT * FROM dungeon_journey').iterate()){const j=checkedPartial(parsed(row));if(j.id!==row.id||j.request.sceneId!==row.scene_id||j.revision!==row.revision)throw new Error('Dungeonreiseidentität widersprüchlich.');
+ if(j.triggerEventId){const eventRow=db.prepare('SELECT * FROM dungeon_trigger_event WHERE campaign_id=? AND id=?').get(row.campaign_id,j.triggerEventId),event=eventRow?parsed(eventRow):null;if(!event||event.id!==j.triggerEventId||event.sceneId!==row.scene_id||event.journeyId!==j.id)throw Error('Dungeonreise verweist auf einen fehlenden oder fremden Triggerkontext.');}
+ }for(const table of ['dungeon_memory','npc_dungeon_position'])for(const row of db.prepare('SELECT * FROM '+table).iterate())parsed(row);}
