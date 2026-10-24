@@ -288,11 +288,21 @@ zusätzliche parallele Roadmap unter einem neuen Dateinamen.
   benötigt aber weiterhin 4,52 s; auf konstantem Land entsteht kein belegter
   Gewinn. Trassenintervalle bleiben ausdrücklich unbekannt. Prototypfortschritt,
   keine native Produktbeschleunigung; Produktionspfad und Liefergates unverändert.
+- **M2-Physische Trassenintervalle:** [71 unterschiedliche Prüffälle und zwei Kostenvergleiche](../../reference/atlas-material-route-area-20261024/README.md)
+  ersetzen die pauschal unbekannte Planungskorridor-Hülle durch lokale
+  Segment-/Profilintervalle mit Abtrag, Auftrag, Böschungen, Quellenfade und
+  Bauwerken. Flussband, Kreuzung, wasserführender Straßeneinschnitt und volle
+  Flusskachel bestehen jeweils drei von drei Läufen statt Budgetabbrüchen.
+  Die Gegenprobe fand einen weiteren Abhängigkeitsverlust im gewichteten
+  Quotienten; eine zusätzliche Ein-Trassen-Hülle senkt den Einschnitt von
+  9.678 auf 713 ms. Die volle Flusskachel bleibt mit 7,30 s zu langsam, ihre
+  Arbeitszahl sinkt nicht. Kanonische Punktberechnung und Produktpfad bleiben
+  unverändert; keine native Produktbeschleunigung oder vollständige Weltabnahme.
 - **Nächste Arbeit:** M2 bleibt aktiv; kalte Übersicht weiterhin über zwei Sekunden.
-  Zuerst konvergierende Intervalle für physische Trassen und feldabhängige
-  Materialstufen ergänzen; Flussufer, Kreuzungen, Masken sowie Fels/Schnee mit
-  eigenen Gegenproben absichern. Anschließend die vollen physischen Materialkacheln
-  unter tatsächlicher Weltlast messen und die verbleibenden Küstenkosten senken.
+  Die noch fehlenden feldabhängigen Materialstufen, Masken sowie Fels/Schnee
+  ergänzen und mit eigenen Gegenproben absichern. Die jetzt auswertbaren vollen
+  physischen Materialkacheln unter tatsächlicher Weltlast messen; dabei Küsten- und
+  Flusskosten sowie die aktiven Quellen-/Index-/Arbeitsspeicherbudgets prüfen.
   Physisches Wasser und feldabhängige Grundmaterialien
   über `AtlasRegionReader.materialSteps`/`readTerrainMaterialSteps` beziehungsweise
   dieselben kanonischen Feldsemantiken anbinden; gezeichnete Wasserpolygone allein

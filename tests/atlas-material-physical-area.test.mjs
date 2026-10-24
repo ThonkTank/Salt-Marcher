@@ -54,12 +54,27 @@ test('lake holes remain dry and lake level never floods higher ground',()=>{
  const high=field([height(()=>4),lake],box);assert.deepEqual(high.range(box).water,[0,0]);
  close(render(high,box).pixels[14],0,0);
 });
-test('physical route intervals stay explicitly unresolved rather than certifying unmodified ground',()=>{
+test('physical river intervals certify the actual water core above sea level',()=>{
  const box={x:10,y:10,width:2,height:2},points=[{x:0,y:11},{x:30,y:11}],route=routeSpec('river',points);
  route.nodes=points.map(p=>({...p,z:20,structure:'ground'}));
  const f=field([height(()=>30),{id:'river',kind:'river',points,polygons:[],width:4,route}],box);
- assert.equal(f.sample({x:11,y:11}).water,true);assert.deepEqual(f.range(box).water,[0,1]);
- assert.throws(()=>render(f,box,{},1,1/255,{work:3000}),AreaBudgetExceeded);
+ assert.equal(f.sample({x:11,y:11}).water,true);assert.deepEqual(f.range(box).water,[1,1]);
+ const result=render(f,box,{},1,1/255,{work:3000});close(result.pixels[14],1,result.errorBounds[0]);
+});
+test('physical river banks and crossing channels retain analytic water area',()=>{
+ const box={x:20,y:8,width:8,height:8};
+ const river=(id,points)=>{const route=routeSpec('river',points);route.nodes=points.map(p=>({...p,z:20,structure:'ground'}));return {id,kind:'river',points,polygons:[],width:2,route};};
+ const horizontal=river('east',[{x:0,y:12},{x:64,y:12}]),vertical=river('north',[{x:24,y:0},{x:24,y:64}]);
+ for(const [routes,expected]of [[[horizontal],.25],[[horizontal,vertical],7/16]]){
+  const result=render(field([height(()=>30),...routes],box),box);
+  close(result.pixels[14],expected,result.errorBounds[0]);assert.ok(result.errorBounds[0]<=1/255);
+ }
+});
+test('road cuts can expose sea water through the eased shoulder without river presence',()=>{
+ const box={x:20,y:8,width:8,height:8},points=[{x:0,y:12},{x:64,y:12}],route=routeSpec('road',points);
+ route.nodes=points.map(p=>({...p,z:-10,structure:'ground'}));route.limits.cut=20;route.limits.shoulder=1;
+ const f=field([height(()=>10),{id:'cut',kind:'road',points,polygons:[],width:2,route}],box),result=render(f,box);
+ close(result.pixels[14],3/8,result.errorBounds[0]);assert.ok(result.errorBounds[0]<=1/255);
 });
 test('physical targets preserve source composition for legacy strokes, soft cover and v2 erase at coast points',()=>{
  const box={x:31,y:20,width:2,height:2},f=field([height(x=>x-32)],box),whole=polygons(box);

@@ -6,6 +6,7 @@ import {TerrainSampler,settingsRecord,validateTerrain,type TerrainSettings} from
 import type {TerrainStream} from '../../src/app/terrain-field-stream.js';
 import type {Point} from '../../src/app/contracts.js';
 import {createHeightFieldIntervals} from './height-field-interval';
+import {createRouteFieldIntervals} from './route-field-interval';
 
 const DEFAULT_MAX_RECORDS=4096,DEFAULT_MAX_BYTES=64*1024*1024,
   DECODED_HEIGHT_BYTES=4096*Float32Array.BYTES_PER_ELEMENT;
@@ -110,9 +111,8 @@ export function createPhysicalMaterialFieldSnapshot(
   if(records.length+1>maxRecords||sourceBytes+decodedHeightBytes+settingsBytes>maxBytes)throw Error('Materialfeldbudget überschritten.');
   // Deep-copy optional style too: freezing a snapshot must not freeze caller data.
   records.unshift(freezeTree(JSON.parse(settingsJson) as LandscapeRecord));sourceBytes+=settingsBytes;
-  const sampler=new TerrainSampler(records),heights=createHeightFieldIntervals(records),frozenQuery=freezeTree(query),frozenBounds=freezeTree(sourceBounds);
+  const sampler=new TerrainSampler(records),heights=createHeightFieldIntervals(records),routeField=createRouteFieldIntervals(records),frozenQuery=freezeTree(query),frozenBounds=freezeTree(sourceBounds);
   const lakes=records.filter(r=>r.surface==='freshwater').map(record=>({record,box:bounds(record)}));
-  const routes=records.filter(r=>r.route?.nodes.length&&!r.route.conflict).map(record=>({record,box:bounds(record)}));
   const requireInside=(box:LandscapeBox)=>{
     if(![box.x,box.y,box.width,box.height,box.x+box.width,box.y+box.height].every(Number.isFinite)||box.width<0||box.height<0||box.x<query.x||box.y<query.y||box.x+box.width>query.x+query.width||box.y+box.height>query.y+query.height)
       throw Error('Materialfeldabfrage liegt außerhalb des Schnappschusses.');
@@ -121,11 +121,8 @@ export function createPhysicalMaterialFieldSnapshot(
     records:counts,sourceBytes,decodedHeightBytes,chargedBytes:sourceBytes+decodedHeightBytes,maxRecords,maxBytes,seaLevelM:sampler.seaLevelM});
   const range=(box:LandscapeBox)=>{
     requireInside(box);
-    // Route blending still needs its own converging interval evaluator. Preserve
-    // an explicitly unknown range here; never certify base terrain beneath it.
-    const heightM:[number,number]=routes.some(r=>overlaps(r.box,box))?[-Infinity,Infinity]:heights.range(box);
-    let lo=Number(heightM[1]<=seaLevelM),hi=Number(heightM[0]<=seaLevelM);
-    if(routes.some(r=>r.record.kind==='river'&&overlaps(r.box,box)))hi=1;
+    const route=routeField.range(box,heights.range(box)),heightM=route.heightM;
+    let lo=Math.max(route.water[0],Number(heightM[1]<=seaLevelM)),hi=Math.max(route.water[1],Number(heightM[0]<=seaLevelM));
     for(const {record,box:lakeBox}of lakes){
       if(!overlaps(lakeBox,box))continue;
       const coverage=lakeCoverage(record,box),level=record.waterLevelM??seaLevelM+1;
@@ -137,6 +134,7 @@ export function createPhysicalMaterialFieldSnapshot(
   return Object.freeze({diagnostics,range,integrationCut(triangle:readonly Point[]){
     for(const p of triangle)requireInside({x:p.x,y:p.y,width:0,height:0});
     const grid=heights.integrationCut(triangle);if(grid)return grid;
+    const routeGrid=routeField.integrationCut(triangle);if(routeGrid)return routeGrid;
     const x=Math.min(...triangle.map(p=>p.x)),y=Math.min(...triangle.map(p=>p.y));
     const box={x,y,width:Math.max(...triangle.map(p=>p.x))-x,height:Math.max(...triangle.map(p=>p.y))-y};
     let best:{axis:'x'|'y';value:number}|undefined,score=2;
