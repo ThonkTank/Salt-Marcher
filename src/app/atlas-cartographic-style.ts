@@ -12,11 +12,11 @@ export function forestSurfaceWeight(mpp:number){
  * pitches crossfade instead of stretching texture coordinates during zoom. */
 export const CARTOGRAPHIC_GLSL=`
 float atlasForestSurface(float mpp){return smoothstep(${FOREST_DETAIL_MPP.toFixed(1)},${FOREST_SURFACE_MPP.toFixed(1)},mpp);}
-float atlasHash(vec2 p) {
+vec3 atlasHash(vec2 p) {
  p=mod(p,4096.0);
  vec3 q=fract(vec3(p.xyx)*0.1031);
  q+=dot(q,q.yzx+33.33);
- return fract((q.x+q.y)*q.z);
+ return fract((q.xxy+q.yzz)*q.zyx);
 }
 float atlasCanopy(vec2 world,float pitch) {
  vec2 p=world/pitch,cell=floor(p),local=fract(p);
@@ -24,9 +24,10 @@ float atlasCanopy(vec2 world,float pitch) {
  for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){
   vec2 n=vec2(float(x),float(y));
   vec2 key=mod(cell+n,65536.0/pitch);
-  vec2 centre=n+vec2(0.1+0.8*atlasHash(key),0.1+0.8*atlasHash(key+71.0));
+  vec3 random=atlasHash(key);
+  vec2 centre=n+0.1+0.8*random.xy;
   vec2 d=local-centre;
-  float radius=0.32+0.22*atlasHash(key+39.0);
+  float radius=0.32+0.22*random.z;
   float crown=1.0-smoothstep(radius*0.45,radius,length(d));
   if(crown>canopy){canopy=crown;light=clamp(-(d.x+d.y)/radius,-1.0,1.0);}
  }
