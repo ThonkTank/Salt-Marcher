@@ -7,7 +7,7 @@ import {editTreasury} from './treasury';
 import {consumeFinishDraft} from './finish-drafts';
 import {consumeNarrativeDraft,readNarrative,saveNarrative,saveNarrativeAward,validateNarrativeState,narrativeNote} from './narrative';
 import { randomUUID, createHash } from 'node:crypto';
-import { restAfter, applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
+import { restAfter, applyHealthDamage, applyHealthHealing, applyDeathSave, checkedHealth, checkedHealthStatus, lootBalanceSuggestions, xpLevel, xpShare, copper, partitionLedgerPaidPrice, ledgerCopper, ledgerDefinitionId, ledgerStacksMatch, type Progress, type ProgressView, type ProgressAck, type ProgressCommand, type ProgressAction, type ItemInput, type Treasure, type TreasurePage, type LedgerItem, type LedgerQuery, type LedgerPage, type LedgerInventoryQuery, type LedgerInventoryPage, type FinishRewards, type CombatReward } from '../progression';
 import { checkedCombat, type CombatState } from '../combat-contracts';
 import { readLiveScene, readRoster } from './live';
 import {readItemDefinition,recordItemDefinitionVersion} from './item-definitions';
@@ -453,9 +453,7 @@ export function executeProgress(db: any, command: ProgressCommand, guard: () => 
       }else if(a.operation==='damage'||a.operation==='heal'){
         if(!p.health)throw new Error('HP noch offen. Zuerst aktuelle und maximale HP eintragen.');
         if(!Number.isSafeInteger(a.amount)||a.amount<=0||a.amount>1000000)throw new Error('Betrag benötigt eine positive ganze Zahl.');
-        if(a.operation==='damage'){const absorbed=Math.min(p.health.tempHp,a.amount);p.health.tempHp-=absorbed;p.health.hp=Math.max(0,p.health.hp-(a.amount-absorbed));}
-        else p.health.hp=Math.min(p.health.maxHp,p.health.hp+a.amount);
-        if(p.health.hp>0)delete p.health.death;
+        p.health=a.operation==='damage'?applyHealthDamage(p.health,a.amount).health:applyHealthHealing(p.health,a.amount);
       }else if(a.operation==='death'){
         if(!p.health)throw new Error('Todesrettungswürfe benötigen bekannte HP.');p.health=applyDeathSave(p.health,a.result);
       }else throw new Error('Unbekannte HP-Aktion.');

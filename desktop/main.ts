@@ -1,3 +1,4 @@
+import {AtlasWriteActivity} from './atlas-write-activity';
 import {clearCampaignStaging,discardCampaignTickets,finishCampaignErasure} from './campaign-erasure';
 import {atlasGeometryTileBox} from '../src/app/atlas-geometry-tile';
 import {clearCorruptAtlasTileCaches} from '../src/app/storage/atlas-tile-cache';
@@ -121,6 +122,7 @@ else {
       error:error=>console.error('Spieleranzeige konnte nicht aktualisiert werden.',error instanceof Error?error.message:error),
     });
     ipcMain.handle('player:frame',event=>{const window=playerDisplay.window;if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==playerOrigin)return{ok:false,error:'Zugriff verweigert.'};return{ok:true,value:playerDisplay.frame()};});
+    const atlasWriteActivity=new AtlasWriteActivity();
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
@@ -473,17 +475,18 @@ else {
     });
     handle('atlas:mask-region',(token:string,box:import('../src/app/atlas-landscape').LandscapeBox)=>store.atlasMaskRegion(token,box));
     handle('atlas:object',(token:string,id:string)=>store.atlasLandscapeObject(token,id));
-    handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>store.atlasRoomCommit(edit));
+    handle('atlas:room-commit',(edit:import('../src/app/contracts').Edit)=>atlasWriteActivity.run(edit.commandId,()=>store.atlasRoomCommit(edit)));
     handle('atlas:room',(token:string,id:string)=>store.atlasRoom(token,id));
-    handle('atlas:drawing-commit',(command:import('../src/app/drawing-contracts').DrawingCommand)=>store.atlasDrawingCommit(command));
-    handle('atlas:commit',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{
+    handle('atlas:drawing-commit',(command:import('../src/app/drawing-contracts').DrawingCommand)=>atlasWriteActivity.run(command.commandId,()=>store.atlasDrawingCommit(command)));
+    handle('atlas:reconcile-commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>store.reconcileAtlasCommit(c,atlasWriteActivity.has(c.commandId)));
+    handle('atlas:commit',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>atlasWriteActivity.run(c.commandId,async()=>{
       if(c.action?.kind==='graph-accept')return withGraphSourceReadBarrier(()=>store.executeAtlasCommit(c));
       if(c.action?.kind==='landscape-height-stroke'){
         const source=store.terrainStrokeSource(c,atlasRegions.cursor);
         if(source){const prepared=await atlasRegions.prepareTerrainStroke(source,c.action.stroke);return store.executeAtlasCommit(c,prepared);}
       }
       return store.executeAtlasCommit(c);
-    });
+    }));
     handle('campaign:workspace-initial',(token:string)=>store.workspaceInitial(token));
     handle('atlas:region-cancel',(token:string,consumer:'view'|'export'='view')=>{store.roomReadSource(token);if(!['view','export'].includes(consumer))throw new Error('Kartenleser prüfen.');(consumer==='view'?atlasRegions:atlasExportRegions).cancel();});
     handle('atlas:geometry-region',async(token:string,query:import('../src/app/atlas-region-contracts').AtlasRegionQuery,consumer:'view'|'export'='view')=>{
@@ -511,10 +514,10 @@ else {
     handle('atlas:city-site',(token:string,cityId:string,id?:string)=>store.atlasCitySite(token,cityId,id));
     handle('atlas:render-view',(token:string)=>store.atlasRenderView(token));
     handle('atlas:view',(token:string)=>store.campaignAtlas(token));
-    handle('atlas:execute',async(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>{if(c.action?.kind==='graph-accept')return withGraphSourceReadBarrier(()=>store.executeAtlas(c));return store.executeAtlas(c);});
+    handle('atlas:execute',(c:import('../src/app/campaign-atlas-contracts').AtlasCommand)=>atlasWriteActivity.run(c.commandId,async()=>{if(c.action?.kind==='graph-accept')return withGraphSourceReadBarrier(()=>store.executeAtlas(c));return store.executeAtlas(c);}));
     handle('city:list',(token:string)=>store.cities(token));
     handle('city:view',(token:string,id:string)=>store.city(token,id));
-    handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:c.action.kind==='undo'||c.action.kind==='redo'?{kind:c.action.kind}:{kind:'city',command:c}});return store.city(c.token,c.cityId);});
+    handle('city:execute',(c:import('../src/app/city-contracts').CityCommand)=>atlasWriteActivity.run(c.commandId,()=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:c.action.kind==='undo'||c.action.kind==='redo'?{kind:c.action.kind}:{kind:'city',command:c}});return store.city(c.token,c.cityId);}));
     handle('city:export',async(token:string,id:string,format:'svg'|'json')=>{if(!['svg','json'].includes(format))throw new Error('Ausgabeformat unbekannt.');const city=store.city(token,id),destination=await dialog.showSaveDialog(win,{defaultPath:city.header.name+'.'+format,filters:[{name:'Stadtplan',extensions:[format]}]});if(destination.canceled||!destination.filePath)return{cancelled:true};const text=format==='svg'?citySvg(city):JSON.stringify({format:'Kampagnenwerkstatt City',version:1,...city},null,2);await writeFile(destination.filePath,text);return{cancelled:false};});
     handle('world:time-preview',(token:string,request:import('../src/app/time-plan-contracts').TimeRequest)=>store.previewTime(token,request));
     handle('world:agenda',(token:string,query:import('../src/app/agenda-contracts').AgendaQuery)=>store.agenda(token,query));

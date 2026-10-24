@@ -9,6 +9,12 @@ const health=(p:CharacterHealth):CharacterHealth=>({hp:p.hp,maxHp:p.maxHp,tempHp
 const status=(p:{tempHp:number;conditions:string;concentrating:boolean})=>({tempHp:p.tempHp,conditions:p.conditions,concentrating:p.concentrating});
 function decode(row:any):CombatState {if(hash(row.payload)!==row.checksum)throw new Error('Kampfstand beschädigt.');return checkedCombat(JSON.parse(row.payload));}
 function save(db:any,cam:string,s:CombatState){checkedCombat(s);const payload=json(s);db.prepare('UPDATE combat SET revision=?,phase=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(s.revision,s.phase,payload,hash(payload),cam,s.id);}
+/** Removing an NPC must not strand an open mask on an unavailable canonical actor. */
+export function assertNpcOutsideOpenCombat(db:any,cam:string,id:string){
+ for(const row of db.prepare("SELECT * FROM combat WHERE campaign_id=? AND phase IN('preparing','running')").iterate(cam)){
+  if(decode(row).participants.some(p=>p.worldActorId===id))throw new Error('NPC ist noch in einer offenen Begegnung verwendet. Teilnehmer zuerst aus der Begegnung entfernen oder die Begegnung abschließen.');
+ }
+}
 /** A mask edits the character or world actor's one persistent health state. */
 export function publishCombatHealth(db:any,cam:string,state:CombatState,before?:CombatState){
  for(const actor of state.participants){
