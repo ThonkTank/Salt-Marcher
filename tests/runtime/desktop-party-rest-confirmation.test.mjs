@@ -29,23 +29,6 @@ await build({
   bundle: true,
   platform: 'node',
   format: 'cjs',
-  plugins: [
-    {
-      name: 'party-live-boundary',
-      setup(b) {
-        b.onResolve({ filter: /^\.\/live$/ }, (args) =>
-          args.importer.endsWith('/party-topbar-ui.ts')
-            ? { path: 'live', namespace: 'party-test' }
-            : undefined,
-        );
-        b.onLoad({ filter: /.*/, namespace: 'party-test' }, () => ({
-          contents:
-            'export const runPartyProgress=(token,action)=>window.commitPartyProgress(token,action);export const runPartyLive=()=>{throw Error("Unexpected live write")};export const openPartyMove=()=>{throw Error("Unexpected move dialog")};',
-          loader: 'js',
-        }));
-      },
-    },
-  ],
 });
 const require = createRequire(import.meta.url),
   { CampaignStore } = require('../../' + base + '/store.cjs');
@@ -176,7 +159,15 @@ function fixture(t) {
   };
   delete require.cache[require.resolve('../../' + base + '/ui.cjs')];
   const ui = require('../../' + base + '/ui.cjs');
-  ui.initPartyTopbar(() => {});
+  ui.initPartyTopbar(() => {}, {
+    runPartyLive: () => {
+      throw Error('Unexpected Live write');
+    },
+    openPartyMove: () => {
+      throw Error('Unexpected move');
+    },
+    runPartyProgress: (...args) => window.commitPartyProgress(...args),
+  });
   ui.activatePartyTopbar(workspace);
   t.after(() => {
     ui.activatePartyTopbar(null);

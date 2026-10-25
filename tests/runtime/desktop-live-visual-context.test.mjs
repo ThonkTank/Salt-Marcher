@@ -1,3 +1,4 @@
+import { liveInstance } from '../helpers/live.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync } from 'node:fs';
@@ -175,7 +176,7 @@ for (const field of ['character-name', 'running-notes', 'running-read-aloud']) {
       delete require.cache[
         require.resolve('../../.build/planner-player-visual-contract/live-ui.cjs')
       ];
-      ui = require('../../.build/planner-player-visual-contract/live-ui.cjs');
+      ui = liveInstance(require('../../.build/planner-player-visual-contract/live-ui.cjs'), document, window);
       ui.initWorld(
         () => {},
         () => ui.flushLive(),
@@ -330,7 +331,7 @@ for (const field of ['character-name', 'running-notes', 'running-read-aloud'])
       delete require.cache[
         require.resolve('../../.build/planner-player-visual-contract/live-ui.cjs')
       ];
-      ui = require('../../.build/planner-player-visual-contract/live-ui.cjs');
+      ui = liveInstance(require('../../.build/planner-player-visual-contract/live-ui.cjs'), document, window);
       ui.initWorld(
         () => {},
         () => ui.flushLive(),
@@ -646,7 +647,7 @@ for (const { kind, saveFails, changedAfterSave } of [
       delete require.cache[
         require.resolve('../../.build/planner-player-visual-contract/live-ui.cjs')
       ];
-      ui = require('../../.build/planner-player-visual-contract/live-ui.cjs');
+      ui = liveInstance(require('../../.build/planner-player-visual-contract/live-ui.cjs'), document, window);
       const status = (text, error) => messages.push({ text, error });
       ui.initWorld(
         status,
