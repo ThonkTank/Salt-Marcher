@@ -868,8 +868,8 @@ export class LandscapeWorkbench {
   private sayIfIdle(s: string) {
     if (!this.brush.liveFailureMessage && !(this.tool === "measure" && (this.points.length || this.measurement.length)) && !this.hasDraft() && !this.details.selected && html("land-status").textContent!=="Gespeichert") this.say(s);
   }
-  recovered() {
-    this.cancel();
+  recovered(discardDraft=true) {
+    if(discardDraft)this.cancel();
     this.disable(false);
   }
   private disable(value: boolean) {

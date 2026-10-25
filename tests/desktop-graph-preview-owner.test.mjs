@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync,build} from 'esbuild';
+import {attachAtlasAuthorRecovery} from './helpers/atlas-author-recovery.mjs';
 import {parseHTML} from './helpers/dom.mjs';
 const output=`.build/A0.17-${process.pid}`;
 const names=['graph','drawing','key','path','volume','trigger','dungeon-content'];
@@ -18,9 +19,9 @@ const imports=new Map();
 for(const m of rendererSource.matchAll(/import\s*\{([\s\S]*?)\}\s*from\s*['"]([^'"]+)['"]/g))imports.set(m[2],[...new Set([...(imports.get(m[2])??[]),...m[1].split(',').map(n=>n.trim()).filter(n=>!n.startsWith('type ')).map(n=>n.split(/\s+as\s+/)[0])])]);
 const live=new Set(['./campaign-atlas-author','./editor-session','./contracts','./atlas-units','./atlas-render-view']);
 await build({entryPoints:[rendererPath],outfile:output+'/renderer.cjs',bundle:true,platform:'node',format:'cjs',plugins:[{name:'renderer-owner-harness',setup(b){
- b.onLoad({filter:/[\/]renderer\.ts$/},()=>({contents:rendererSource+`\nexport const rendererHarness={async load(w){workspace=geometryOnly(w);await setDraft();},get workspace(){return workspace;},flush,history};`,loader:'ts'}));
+ b.onLoad({filter:/[\/]renderer\.ts$/},()=>({contents:rendererSource+`\nexport const rendererHarness={async load(w){workspace=geometryOnly(w);await setDraft();},get workspace(){return workspace;},get draft(){return draft;},get failedEdit(){return failedEditState.value;},get draftStatus(){return editorSession.status;},get pendingAtlas(){return pendingAtlasWrite(workspace?.token??'');},recoverAtlas:()=>recoverAtlasCommit(workspace.token),atlasUpdated:(w,options)=>campaignAtlas.opts.updated(w,options),flush,history};`,loader:'ts'}));
  b.onResolve({filter:/^\.\//},a=>a.importer===rendererPath&&!live.has(a.path)?{path:a.path,namespace:'idle-renderer'}:undefined);
- b.onLoad({filter:/.*/,namespace:'idle-renderer'},a=>({contents:(imports.get(a.path)??[]).map(name=>name==='workspaceTabs'?`export const workspaceTabs=[];`:name==='createWorkspaceEditors'?`export function createWorkspaceEditors(){return{before:async()=>true,flush:async()=>true,activate:async()=>{},deactivate(){},changed(){}};}`:name==='openCampaignScreen'?`export async function openCampaignScreen(){return true;}`:name==='flushDrawing'?`export async function flushDrawing(){return true;}`:`export function ${name}(){return new Proxy({view:{x:0,y:0,width:24,height:18}},{get:(o,k)=>k==='then'?undefined:k in o?o[k]:()=>undefined});}`).join('\n'),loader:'js'}));
+ b.onLoad({filter:/.*/,namespace:'idle-renderer'},a=>({contents:(imports.get(a.path)??[]).map(name=>name==='CampaignAtlasWorkbench'?`export function CampaignAtlasWorkbench(opts){return new Proxy({opts},{get:(o,k)=>k==='then'?undefined:k in o?o[k]:()=>undefined});}`:name==='workspaceTabs'?`export const workspaceTabs=[];`:name==='createWorkspaceEditors'?`export function createWorkspaceEditors(){return{before:async()=>true,flush:async()=>true,activate:async()=>{},deactivate(){},changed(){}};}`:name==='openCampaignScreen'?`export async function openCampaignScreen(){return true;}`:name==='flushDrawing'?`export async function flushDrawing(){return true;}`:`export function ${name}(){return new Proxy({view:{x:0,y:0,width:24,height:18}},{get:(o,k)=>k==='then'?undefined:k in o?o[k]:()=>undefined});}`).join('\n'),loader:'js'}));
 }}]});
 const require=createRequire(import.meta.url),{CampaignStore}=require('../'+output+'/store.cjs'),tick=()=>new Promise(r=>setImmediate(r));
 async function until(check,label='expected UI state'){for(let i=0;i<120&&!check();i++)await tick();assert.ok(check(),label);}
@@ -39,9 +40,10 @@ function fixture(t,{preview=true}={}){
  const writes=[],messages=[],published=[],invalidations=[];let before=async()=>true,hold=null;const cleanup=[];
  const ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  const write=async(method,c)=>{writes.push({method,command:structuredClone(c)});let result;try{result={ok:true,value:store[method](c)};}catch(e){result={ok:false,error:e.message};writeFileSync(output+'/rejected-'+c.action.kind+'.json',JSON.stringify({method,command:c,error:e.message,stack:e.stack},null,2));}if(hold)await hold(result);return result;};
- window.campaign={};for(const method of ['graph','drawing','drawingMap','drawingElement','dungeon','dungeonAuthoring','preparation','workspaceInitial','workspaceGeometry','atlasRoom','previewPath'])window.campaign[method]=async(...args)=>ok(()=>store[method](...args));
+ window.campaign={};for(const method of ['graph','drawing','drawingMap','drawingElement','dungeon','dungeonAuthoring','preparation','workspaceInitial','workspaceGeometry','atlasRoom','previewPath','reconcile'])window.campaign[method]=async(...args)=>ok(()=>store[method](...args));
  for(const method of ['executeGraph','atlasDrawingCommit','atlasRoomCommit','executeAtlas','executeAtlasCommit'])window.campaign[method]=c=>write(method,c);
  window.campaign.reconcileAtlasCommit=async c=>ok(()=>store.reconcileAtlasCommit(c));
+ attachAtlasAuthorRecovery(window.campaign,store,dir);
  const el=id=>document.getElementById(id),current=()=>w,selected=()=>w.rooms.find(r=>r.id===w.selectedId),drain=()=>before(),publish=async next=>{published.push(next);w=next;},status=(...args)=>messages.push(args);
  document.addEventListener('atlas-invalidated',e=>invalidations.push(e.detail));
  t.after(()=>{for(const clean of cleanup)clean();uis[0].editorSession.deactivate();uis[1].editorSession.deactivate();uis[2].activateKeys();uis[3].activatePaths();uis[4].activateVolume();uis[5].activateTriggers();uis[6].activateDungeonContent();store.close();rmSync(dir,{recursive:true,force:true});Object.assign(globalThis,previous);});
@@ -136,7 +138,7 @@ test('structured unknown first Graph result never enters definitive rejection re
 test('lost first Graph reply retains exact command and preassigned preview ID for read-only receipt resolution',async t=>{
  const x=fixture(t,{preview:false}),ui=await graphUI(x);let readbacks=0;for(const reader of ['workspaceGeometry','graph']){const read=x.window.campaign[reader];x.window.campaign[reader]=async(...args)=>{readbacks++;return read(...args);};}x.setHold(async()=>{throw Error('reply lost after commit');});x.el('graph-from').value='a';x.el('graph-to').value='b';x.el('graph-connect').click();assert.equal(await ui.flushGraph(),false);
  assert.equal(readbacks,0);const sent=x.writes[0].command,pending=x.bundle.author.pendingAtlasWrite(sent.token);assert.equal(sent.target.revision,0);assert.deepEqual(pending.action.command,sent);assert.deepEqual(pending.target,sent.target);assert.equal(pending.action.kind,'graph-preview');assert.equal(x.current().graphPreview,undefined);
- const resolved=await x.bundle.author.recoverAtlasCommit(sent.token);assert.equal(resolved.ok,true);assert.equal(resolved.value.preview.id,sent.target.previewId);assert.equal(x.writes.length,1);
+ const resolved=await x.bundle.author.recoverAtlasCommit(sent.token);assert.equal(resolved.ok,true);assert.equal(resolved.value.outcome,'applied');assert.equal(x.writes.length,1);
 });
 test('Graph select without a preview stays navigation; restore and recreation use distinct preview IDs',async t=>{
  const x=fixture(t,{preview:false}),ui=await graphUI(x),initial=x.current();
@@ -214,7 +216,7 @@ for(const family of ['room','drawing'])test(`${family} lost reply retains both e
  if(family==='room')Object.assign(c,{roomId:r.id,expectedRevision:r.revision,name:'Pending room',polygons:r.polygons,sections:r.sections});else c.action={kind:'room-hide',roomId:r.id,hidden:true};
  x.setHold(async()=>{throw Error('response lost');});const result=await(family==='room'?x.bundle.author.atlasRoomWrite(c):x.bundle.author.atlasDrawingWrite(c));assert.equal(result.ok,false);
  const pending=x.bundle.author.pendingAtlasWrite(w.token),snapshot=structuredClone(c);assert.deepEqual(pending.target,source);assert.deepEqual(family==='room'?pending.action.edit:pending.action.command,snapshot);
- c.target.revision=999;assert.equal(pending.target.revision,snapshot.target.revision);const result2=await x.bundle.author.recoverAtlasCommit(w.token);assert.equal(result2.ok,true);assert.equal(result2.value.preview.id,snapshot.target.previewId);assert.equal(result2.value.preview.revision,snapshot.target.revision+1);assert.equal(x.writes.length,1);
+ c.target.revision=999;assert.equal(pending.target.revision,snapshot.target.revision);const result2=await x.bundle.author.recoverAtlasCommit(w.token);assert.equal(result2.ok,true);assert.equal(result2.value.outcome,'applied');assert.equal(x.store.workspace().graphPreview.id,snapshot.target.previewId);assert.equal(x.store.workspace().graphPreview.revision,snapshot.target.revision+1);assert.equal(x.writes.length,1);
 });
 test('Graph lifecycle banner uses current workspace revision after another preview author edits',async t=>{
  const x=fixture(t),ui=await graphUI(x),w=x.current(),r=x.store.atlasRoom(w.token,'a');
@@ -235,4 +237,71 @@ test('Key next-room control uses the preview target and publishes its local revi
 });
 test('Drawing refresh preserves the source of an unfinished stroke across a preview replacement',async t=>{
  const x=fixture(t);await authorUI(x,'drawing');const ui=x.uis[1];x.el('drawing-tool').value='room-polygon';await ui.atlasDrawingPoint({x:0,y:0});await ui.atlasDrawingPoint({x:5,y:0});await ui.atlasDrawingPoint({x:5,y:5});const draft=ui.atlasDrawingDraft();x.switchPreview();await ui.reloadDrawing();x.el('drawing-finish').click();for(let i=0;i<8;i++)await tick();assert.equal(x.writes.length,0);assert.deepEqual(ui.atlasDrawingDraft().path,draft.path);
+});
+
+test('applied recovery keeps projection failure separate and retries only reads while inputs remain blocked',async t=>{
+ const x=fixture(t,{preview:false}),ui=atlasWriter(x);let cancelled=0,recovered=0,initialReads=0;
+ ui.author.completeRectangleRecovery=()=>{};ui.journey.playback={stop(){},async settled(){}};ui.author.draft=[{x:1,y:2},{x:3,y:4}];ui.cancel=()=>{cancelled++;ui.author.draft=[];};ui.landscape.recovered=discard=>{assert.equal(discard,false);recovered++;};
+ x.setHold(async()=>{throw Error('response lost');});assert.equal(await ui.write({kind:'room-default'},true),null);assert.equal(x.writes.length,1);
+ const read=x.window.campaign.workspaceInitial;x.window.campaign.workspaceInitial=async(...args)=>{initialReads++;return initialReads===1?{ok:false,error:'view failed'}:read(...args);};
+ await ui.recoverWrite();assert.equal(x.bundle.author.pendingAtlasWrite(x.current().token),null);assert.equal(cancelled,0);assert.equal(recovered,0);assert.equal(ui.author.draft.length,2);assert.equal(await ui.flush(),false);assert.equal(await ui.write({kind:'room-default'},true),null);assert.equal(x.writes.length,1);
+ await ui.recoverWrite();assert.equal(initialReads,2);assert.equal(cancelled,0);assert.equal(ui.author.draft.length,2);assert.equal(recovered,1);assert.equal(x.writes.length,1);assert.equal(ui.recoveryProjection,null);
+});
+
+test('Graph selection inside an existing preview bypasses receipt persistence and preserves the owner lock',async t=>{
+ const x=fixture(t),w=x.current();let keeps=0;const keep=x.window.campaign.keepAtlasWriteReference;x.window.campaign.keepAtlasWriteReference=async(...args)=>{keeps++;return keep(...args);};
+ const c={commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,scopeId:'vault',target:target(w),action:{kind:'select',roomId:'a'}};
+ assert.equal((await x.bundle.author.atlasGraphWrite(c)).ok,true);assert.equal(keeps,0);assert.equal(x.bundle.author.pendingAtlasWrite(w.token),null);
+ x.setHold(async()=>{throw Error('lost');});assert.equal((await x.bundle.author.atlasGraphWrite({...c,commandId:randomUUID(),action:{kind:'raster'}})).ok,false);const pending=x.bundle.author.pendingAtlasWrite(w.token);
+ assert.equal((await x.bundle.author.atlasGraphWrite(c)).ok,false);assert.equal(x.bundle.author.pendingAtlasWrite(w.token),pending);assert.equal(keeps,1);
+});
+
+async function lostRendererRoom(t){
+ const x=fixture(t,{preview:false}),ui=await rendererUI(x);x.setHold(async()=>{throw Error('reply lost after room commit');});x.enter('room-name','Confirmed first name');x.el('apply').click();await until(()=>!!ui.failedEdit,x.el('status').textContent);return{x,ui};
+}
+test('actual Atlas recovery callback preserves later Room inputs and failedEdit, then Room reconcile releases only its matching draft',async t=>{
+ const {x,ui}=await lostRendererRoom(t),failed=ui.failedEdit;assert.ok(ui.pendingAtlas);x.enter('room-name','Later unsaved name');x.enter('points','  invalid raw contour\nsecond line  ');const raw=x.el('points').value,before=x.store.db.serialize();
+ assert.equal((await ui.recoverAtlas()).value.outcome,'applied');assert.equal(ui.pendingAtlas,null);await ui.atlasUpdated(x.store.workspace(),{preserveDraft:true});
+ assert.equal(ui.failedEdit,failed);assert.equal(x.el('room-name').value,'Later unsaved name');assert.equal(x.el('points').value,raw);assert.equal(x.writes.length,1);
+ x.el('reconcile').click();await until(()=>!ui.failedEdit,x.el('status').textContent);assert.equal(x.el('room-name').value,'Later unsaved name');assert.equal(x.el('points').value,raw);assert.equal(x.writes.length,1);assert.deepEqual(x.store.db.serialize(),before);assert.equal(x.store.atlasRoom(ui.workspace.token,'a').name,'Confirmed first name');
+});
+test('Room reconcile retains confirmed status across view failure and never repeats the writer',async t=>{
+ const {x,ui}=await lostRendererRoom(t);x.enter('room-name','Later room text');const read=x.window.campaign.reconcile;let reads=0;x.window.campaign.reconcile=async(...args)=>++reads===1?{ok:false,error:'Room projection failed'}:read(...args);
+ x.el('reconcile').click();await until(()=>x.el('status').textContent.includes('Status bleibt ungeklärt'));assert.ok(ui.failedEdit);assert.equal(ui.pendingAtlas,null);assert.equal(x.el('room-name').value,'Later room text');
+ x.el('reconcile').click();await until(()=>!ui.failedEdit);assert.equal(reads,2);assert.equal(x.writes.length,1);assert.equal(x.el('room-name').value,'Later room text');
+});
+test('explicit Room discard clears only the addressed settled draft; later typing during read cancels that discard',async t=>{
+ const {x,ui}=await lostRendererRoom(t),read=x.window.campaign.reconcile;let release,entered=false;const gate=new Promise(r=>release=r);x.window.campaign.reconcile=async(...args)=>{entered=true;await gate;return read(...args);};
+ x.el('discard').click();await until(()=>entered);x.enter('room-name','Typed after discard started');release();for(let i=0;i<12;i++)await tick();assert.ok(ui.failedEdit);assert.equal(x.el('room-name').value,'Typed after discard started');assert.equal(x.writes.length,1);
+ x.window.campaign.reconcile=read;x.el('discard').click();await until(()=>!ui.failedEdit);await until(()=>x.el('room-name').value==='Confirmed first name');assert.equal(x.writes.length,1);assert.equal(ui.pendingAtlas,null);
+});
+test('Room reconcile keeps conflict protection after its receipt is resolved',async t=>{
+ const {x,ui}=await lostRendererRoom(t),r=x.store.atlasRoom(ui.workspace.token,'a');x.enter('room-name','Unpublished conflict text');x.store.atlasRoomCommit({commandId:randomUUID(),token:ui.workspace.token,campaignId:x.campaign.id,roomId:r.id,expectedRevision:r.revision,name:'Another author',polygons:r.polygons,sections:r.sections});
+ x.el('status').textContent='';x.el('reconcile').click();await until(()=>x.el('status').textContent.includes('Entwurf bleibt offen'));assert.ok(ui.failedEdit);assert.equal(x.el('room-name').value,'Unpublished conflict text');assert.equal(ui.pendingAtlas,null);assert.equal(x.writes.length,1);
+});
+
+test('Workbench activation assigns the new owner before journey activation and reserves writes until references finish loading',async t=>{
+ const x=fixture(t,{preview:false}),ui=Object.create(x.bundle.CampaignAtlasWorkbench.prototype),w=x.current();let release,entered=false;const gate=new Promise(r=>release=r),read=x.window.campaign.atlasWriteReferences;
+ x.window.campaign.atlasWriteReferences=async(...args)=>{entered=true;await gate;return read(...args);};
+ Object.assign(ui,{regions:{resetContext(){}},hitVersion:0,hitDialog:{close(){}},root:{dataset:{}},canvas:{setAttribute(){}},author:{resetContext(){}},output:{reset(){}},reference:{close(){}},landscape:{context(){}},drawing:{},camera:{context(){},set(){}},scheduleRender(){},error:e=>x.messages.push([e.message,true]),journey:{activate(){assert.equal(ui.owner,w);}}});
+ const search=document.createElement('div');search.id='atlas-search-results';document.body.append(search);
+ const activation=ui.activate(w);await until(()=>entered);assert.ok(x.bundle.author.pendingAtlasWrite(w.token));assert.equal((await x.bundle.author.writeAtlasCommit({commandId:randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'room-default'}})).ok,false);assert.equal(x.writes.length,0);
+ release();await activation;assert.equal(x.bundle.author.pendingAtlasWrite(w.token),null);assert.equal(x.messages.length,0);
+});
+
+for(const laterInput of [false,true])test(`rectangle Unknown → applied recovery ${laterInput?'retains later room-name input':'completes its unchanged corners and permits the next room'}`,async t=>{
+ const x=fixture(t,{preview:false}),ui=atlasWriter(x),drawing=x.uis[1],w=x.current();drawing.initDrawing(x.status,x.current,x.selected,x.drain,x.publish,()=>{});await drawing.activateDrawing(w);
+ for(const id of ['atlas-room-draw','atlas-draft-cancel']){const button=document.createElement('button');button.id=id;document.body.append(button);}
+ ui.author=ui.createAtlasAuthor();ui.scopeId='vault';ui.floorId='ground';ui.family='interior';ui.output={exportOpen:false};ui.root=document.createElement('section');ui.root.dataset.roomDraw='true';ui.canvas=document.createElement('canvas');ui.camera={ready:true,hitAt:()=>null,stopZoom(){}};ui.frame=()=>({x:0,y:0,angle:0});ui.point=e=>({x:e.clientX,y:e.clientY});ui.regions.geometryCurrent=()=>true;ui.journey.playback={stop(){},async settled(){}};ui.landscape.recovered=discard=>assert.equal(discard,false);
+ ui.cancel=()=>{ui.author.cancelGesture();ui.root.dataset.roomDraw='false';};ui.opts.selectRoom=async id=>{x.store.select(w.token,id);await x.publish(x.store.workspace());};x.el('atlas-room-draw').onclick=()=>{ui.root.dataset.roomDraw='true';};x.el('drawing-tool').value='room-rectangle';x.el('drawing-room-name').value='First saved rectangle';x.el('drawing-append').checked=false;
+ ui.author.draft=[{x:30,y:0},{x:36,y:6}];x.setHold(async()=>{throw Error('lost rectangle response');});await assert.rejects(()=>ui.author.createRoomRectangle(),/ungeklärt/);assert.equal(ui.author.draft.length,2);assert.equal(x.writes.length,1);const firstId=x.store.workspace().selectedId;assert.equal(x.store.atlasRoom(w.token,firstId).name,'First saved rectangle');
+ if(laterInput)x.el('drawing-room-name').value='Later unpublished rectangle name';
+ x.setHold(null);await ui.recoverWrite();if(laterInput){assert.equal(ui.author.draft.length,2);assert.equal(x.el('drawing-room-name').value,'Later unpublished rectangle name');assert.equal(x.writes.length,1);return;}assert.equal(ui.author.draft.length,0);assert.equal(ui.root.dataset.roomDraw,'true');assert.equal(x.writes.length,1);assert.equal(x.el('drawing-tool').value,'room-rectangle');
+ x.el('drawing-room-name').value='Second rectangle';await ui.author.click({button:0,altKey:false,clientX:40,clientY:0});assert.equal(ui.author.draft.length,1);await ui.author.click({button:0,altKey:false,clientX:46,clientY:6});assert.equal(x.writes.length,2);assert.equal(ui.author.draft.length,0);assert.equal(x.store.workspace().rooms.length,4);assert.equal(ui.root.dataset.roomDraw,'true');
+});
+
+test('Atlas preserve callback keeps Room A draft selection after another room B was created, so invalid raw text still blocks flush',async t=>{
+ const x=fixture(t,{preview:false}),ui=await rendererUI(x),source=ui.workspace.selectedId;x.enter('room-name','Unpublished text in A');x.enter('points','  unparseable original contour bytes  ');const raw=x.el('points').value;
+ x.store.executeAtlasCommit({commandId:randomUUID(),token:ui.workspace.token,campaignId:x.campaign.id,action:{kind:'room-default'}});const next=x.store.workspace();assert.notEqual(next.selectedId,source);
+ await ui.atlasUpdated(next,{preserveDraft:true});assert.equal(ui.workspace.selectedId,source);assert.equal(ui.draft.id,source);assert.equal(x.el('room-name').value,'Unpublished text in A');assert.equal(x.el('points').value,raw);assert.equal(ui.draftStatus.openInput,true);assert.equal(await ui.flush(),false);assert.equal(x.writes.length,0);
 });

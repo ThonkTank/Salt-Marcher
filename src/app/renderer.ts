@@ -10,7 +10,7 @@ import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {setLiveAtlasSurface} from './live-hex-surface';
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
-import {atlasRoomWrite,atlasHistoryWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
+import {atlasRoomWrite,atlasHistoryWrite,graphPreviewTarget,graphPreviewMatches,pendingAtlasWrite,recoverAtlasCommit} from './campaign-atlas-author';
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {roomCameraBox} from './room-camera';
@@ -63,6 +63,7 @@ import { initCatalog, openCatalog, openCatalogReference } from './catalog-ui';
 import {suspendChronicle,initChronicle,activateChronicle,openChronicle} from './chronicle-ui';
 export const editorSession = new EditorSession();
 const failedEditState = editorSession.command<Edit>();
+let resolvedRoomEdit:{edit:Edit;outcome:'applied'|'not-applied'}|null=null;
 const pendingWork = editorSession.operation<Promise<boolean>>();
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -206,7 +207,7 @@ initLive(status, async id => {
 },async(id,current=()=>true)=>{if(!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedNote(id,current);},async(id,current=()=>true)=>{if(current())await locationNotebook.open(id,current);},async(planId,visitId,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;showTab('preparation');await openPreparedVisit(planId,visitId,current,'reward');},async(seed,current=()=>true)=>{if(!current()||!(await leaveWorkspace())||!current())return;await campaignAgenda.openMomentDraft({name:seed.title,notes:seed.summary},seed.location??undefined,current);},async(planId,seed,current=()=>true,openPacket=false)=>{if(!current()||!(await leaveWorkspace())||!current())return false;showTab('preparation');const prepared=await prepareNextVisit(planId,seed,current);if(!prepared)return false;if(openPacket&&current())return openPreparationSessionPacket(prepared.visitId);return current();});
 initMusic(status,async()=>{if(!(await leaveWorkspace()))return;showTab('music');await openMusic();});
 initSoundboard(status,async()=>{if(!await leaveWorkspace())return;showTab('music');await openMusic();},async()=>{if(!await leaveWorkspace())return;showTab('live');await openLive();await openLiveSoundboard();});
-campaignAtlas=new CampaignAtlasWorkbench({exit:async()=>{if(await openCampaignScreen())showTab('preparation');},selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async next=>{workspace=geometryOnly(next);await setDraft();renderList(true);updateHistory();await reloadDrawing();},status});
+campaignAtlas=new CampaignAtlasWorkbench({exit:async()=>{if(await openCampaignScreen())showTab('preparation');},selectRoom,roomDraft:()=>draft,flush:leaveWorkspace,updated:async(next,options)=>{const selectedId=options?.preserveDraft&&draft&&workspace?.token===next.token&&workspace.campaign.id===next.campaign.id?workspace.selectedId:next.selectedId;workspace=geometryOnly({...next,selectedId});if(!options?.preserveDraft){await setDraft();await reloadDrawing();}renderList(true);updateHistory();},status});
 setLiveAtlasSurface(campaignAtlas.liveSurface());
 for(const id of ['world','city','dungeon'])el(id+'-tab').hidden=true;
 el('atlas-tab').textContent='Atlas';
@@ -362,7 +363,7 @@ function roomEditable(editable: boolean) {
 async function setDraft() {
   const token=workspace?.token,id=workspace?.selectedId,request=++editorSession.generation,target=graphPreviewTarget(workspace?.graphPreview);roomDraftTarget=target;
   const current=()=>workspace?.token===token&&workspace?.selectedId===id&&request===editorSession.generation&&graphPreviewMatches(target,workspace?.graphPreview,true);
-  confirmedRoom=null;draft=null;roomDraftReadFailed=false;writeBlocked=false;failedEditState.value=null;hasRetainedDraft=false;el('error-actions').hidden=true;
+  confirmedRoom=null;draft=null;resolvedRoomEdit=null;roomDraftReadFailed=false;writeBlocked=false;failedEditState.value=null;hasRetainedDraft=false;el('error-actions').hidden=true;
   el('keys').replaceChildren();el<HTMLInputElement>('room-name').value='';el('empty').textContent='Lege einen Raum an oder übernimm eine Dungeondatei.';
   el('editor').hidden=true;el('empty').hidden=false;roomEditable(false);
   if(!token||!id){roomDraftLoading=false;draw();return;}
@@ -496,19 +497,39 @@ el('points').addEventListener('input', () => { if (roomDraftLoading || roomDraft
 el('points').addEventListener('blur', () => { void flush(); });
 el('apply').onclick = () => { void flush(); };
 el('editor').addEventListener('submit', event => { event.preventDefault(); void flush(); });
+/** Receipt confirmation survives a later projection failure; no retry dispatch. */
+async function resolveRoomReference(edit:Edit,token:string) {
+  if(resolvedRoomEdit?.edit===edit)return resolvedRoomEdit.outcome;
+  const pending=pendingAtlasWrite(token);
+  if(!pending)return null; // A definitive ordinary rejection may already be cleared.
+  if(!('commandId' in pending)||pending.commandId!==edit.commandId||pending.campaignId!==edit.campaignId)throw Error('Ein anderer Atlasauftrag wartet auf Klärung.');
+  const result=await recoverAtlasCommit(token);
+  if(!result?.ok)throw Error(result&&!result.ok?result.error:'Atlasauftrag bleibt ungeklärt.');
+  if(result.value.outcome==='unknown')throw Error('Atlasauftrag bleibt ungeklärt.');
+  if(failedEditState.value!==edit||workspace?.token!==token)throw Error('Raumbesitzer inzwischen geändert.');
+  resolvedRoomEdit={edit,outcome:result.value.outcome};return result.value.outcome;
+}
 el('reconcile').onclick = () => { void (async () => {
   const edit = failedEditState.value, token = workspace?.token;
   if (!edit || !token || !roomContextCurrent(token)) return;
   const owns = () => roomContextCurrent(token) && failedEditState.value === edit&&graphPreviewMatches(edit.target,workspace?.graphPreview);
   try {
+    const outcome=await resolveRoomReference(edit,token);
+    if(!owns())return;
     const response = await api.reconcile(edit, token);
     if (!owns()) return;
     const result = unwrap(response);
+    if(!graphPreviewMatches(edit.target,result.workspace.graphPreview))throw Error('Raumansicht gehört zu einer anderen Vorschau.');
+    if(outcome&&result.outcome!=='conflict'&&result.outcome!==outcome)throw Error('Raumbeleg und Ansicht widersprechen sich.');
     if (result.targetChanged || result.outcome === 'conflict') {
       status(result.outcome === 'applied' ? 'Speicherung bestätigt, aber der aktuelle Raumstand ist verändert oder nicht verlässlich lesbar. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.' : 'Konflikt bestätigt. Entwurf bleibt offen. Übertrage den Text vor dem Verwerfen.', true); return;
     }
+    const savedRoom=result.workspace.rooms.find(room=>room.id===edit.roomId);
+    if(!savedRoom)throw Error('Bestätigter Raum fehlt in der Ansicht.');
     workspace = geometryOnly({ ...result.workspace, selectedId: edit.roomId });
-    if (draft) draft.revision = selected()!.revision;
+    confirmedRoom=savedRoom;roomDraftTarget=graphPreviewTarget(result.workspace.graphPreview);
+    if (draft?.id===edit.roomId) draft.revision = savedRoom.revision;
+    resolvedRoomEdit=null;
     writeBlocked = false; failedEditState.value = null; el('error-actions').hidden = true; updateHistory(); renderList();
     status(result.outcome === 'applied' ? 'Speicherung bestätigt. Weitere Eingaben bleiben offen.' : 'Diese Änderung wurde nicht gespeichert. Eingabe abschließen, um sie erneut zu übernehmen.');
   } catch (error) { if (owns()) status((error as Error).message + ' Status bleibt ungeklärt.', true); }
@@ -516,17 +537,21 @@ el('reconcile').onclick = () => { void (async () => {
 el('discard').onclick = () => { void (async () => {
   const edit = failedEditState.value, token = workspace?.token, roomId = draft?.id;
   if (!edit || !token || !roomContextCurrent(token)) return;
-  const owns = () => roomContextCurrent(token) && failedEditState.value === edit&&graphPreviewMatches(edit.target,workspace?.graphPreview);
+  const input=()=>JSON.stringify([draft,atlasFieldValue(el<HTMLTextAreaElement>('points')),el('points').dataset.changed]),snapshot=input();
+  const owns = () => roomContextCurrent(token) && failedEditState.value === edit&&graphPreviewMatches(edit.target,workspace?.graphPreview)&&input()===snapshot;
   try {
+    await resolveRoomReference(edit,token);
+    if(!owns())return;
     const response = await api.reconcile(edit, token);
     if (!owns()) return;
     const current = unwrap(response).workspace;
+    if(!graphPreviewMatches(edit.target,current.graphPreview))throw Error('Raumansicht gehört zu einer anderen Vorschau.');
     if (roomId) {
       const cleared = await api.keepRoomDraft(token, roomId, null);
       if (!owns()) return;
       unwrap(cleared);
     }
-    workspace = geometryOnly(current); writeBlocked = false; failedEditState.value = null; el('error-actions').hidden = true;
+    resolvedRoomEdit=null;workspace = geometryOnly(current); writeBlocked = false; failedEditState.value = null; el('error-actions').hidden = true;
     await setDraft();
     if (!roomContextCurrent(token)) return;
     renderList(); updateHistory(); status('Aktueller gespeicherter Stand geöffnet. Entwurf verworfen.');

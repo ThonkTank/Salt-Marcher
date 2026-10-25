@@ -1,3 +1,4 @@
+import {atlasAuthorReferenceFixture} from './helpers/atlas-author-recovery.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -10,12 +11,12 @@ const require=createRequire(import.meta.url),file=require.resolve('../.build/dra
 async function fixture(t){
  const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),previous={window:global.window,document:global.document,Event:global.Event,CustomEvent:global.CustomEvent};Object.assign(global,{window,document,Event:window.Event,CustomEvent:window.CustomEvent});t.after(()=>Object.assign(global,previous));
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.getAttribute('data-value')??this.querySelector('option')?.value??'';},set(v){this.setAttribute('data-value',v);}});
- delete require.cache[file];const drawing=require(file),errors=[];let owner={token:'original',campaign:{id:'campaign'},floors:[{id:'ground',scopeId:'local'}],rooms:[]},selected=null,prepare=async()=>true;
+ const references=atlasAuthorReferenceFixture(t);delete require.cache[file];const drawing=require(file),errors=[];let owner={...references.workspace,floors:[{id:'ground',scopeId:'local'}],rooms:[]},selected=null,prepare=async()=>true;
  window.campaign=new Proxy({},{get(){throw Error('Drafts must not write or load data');}});
  drawing.initDrawing((s,error)=>{if(error)errors.push(s);},()=>owner,()=>selected,()=>prepare(),async()=>{},()=>{});
  await drawing.activateDrawing(owner,false);document.querySelector('#floors').value=JSON.stringify(['local','ground']);document.querySelector('#drawing-tool').value='room-cave';document.querySelector('#drawing-brush').value='1';document.querySelector('#drawing-snap').checked=false;
  const ui=Object.assign(atlasFixture(drawing.CampaignAtlasWorkbench),{scopeId:'local',brushQueue:Promise.resolve(),frame:()=>({x:0,y:0,angle:0}),render(){},error:e=>errors.push(e)});
- return{...drawing,ui,document,window,errors,owner:()=>owner,select(room){selected=room;owner.rooms=[room];owner.selectedId=room.id;},hold(){let release;const task=new Promise(r=>release=r);prepare=()=>task;return()=>release(true);},switchOwner:async()=>{owner={...owner,token:'next'};await drawing.activateDrawing(owner,false);}};
+ return{...drawing,ui,document,window,errors,bindReferences:()=>references.bind(window.campaign),owner:()=>owner,select(room){selected=room;owner.rooms=[room];owner.selectedId=room.id;},hold(){let release;const task=new Promise(r=>release=r);prepare=()=>task;return()=>release(true);},switchOwner:async()=>{owner={...owner,token:'next'};await drawing.activateDrawing(owner,false);}};
 }
 const emptyDrawing=()=>({coverage:'selected',elements:[],styles:[],volumes:[],features:[],hiddenRooms:[],hiddenFloors:[]});
 test('a loaded path remains selectable from its exact record when unrelated room extras cannot be read',async t=>{
@@ -64,7 +65,7 @@ const doorRoom={id:'wall-room',scopeId:'local',floorId:'ground',revision:3,name:
 function doorWrites(f){
  const writes=[],view={elements:[],styles:[],features:[],hiddenRooms:[],hiddenFloors:[]};
  f.document.getElementById('drawing-tool').value='door';
- f.window.campaign={atlasDrawingCommit:async c=>{writes.push(c);return{ok:true,value:{workspace:f.owner(),view,atlasRevision:writes.length}};},drawingMap:async()=>({ok:true,value:view})};
+ f.window.campaign={atlasDrawingCommit:async c=>{writes.push(c);return{ok:true,value:{workspace:f.owner(),view,atlasRevision:writes.length}};},drawingMap:async()=>({ok:true,value:view})};f.bindReferences();
  return writes;
 }
 test('two direct door clicks create independent commands and wall anchors without a draft or repeated tool selection',async t=>{
@@ -96,7 +97,7 @@ test('door placement refuses another floor and distant points, and remains usabl
 function rectangleWrites(f){
  const writes=[],view={elements:[],styles:[],features:[],hiddenRooms:[],hiddenFloors:[]};
  f.document.getElementById('drawing-tool').value='room-rectangle';f.document.getElementById('drawing-room-name').value='Torhalle';
- f.window.campaign={atlasDrawingCommit:async c=>{writes.push(c);return{ok:true,value:{workspace:f.owner(),view,atlasRevision:writes.length}};},drawingMap:async()=>({ok:true,value:view})};return writes;
+ f.window.campaign={atlasDrawingCommit:async c=>{writes.push(c);return{ok:true,value:{workspace:f.owner(),view,atlasRevision:writes.length}};},drawingMap:async()=>({ok:true,value:view})};f.bindReferences();return writes;
 }
 test('Atlas rectangle drag uses the point-tool name, grid and single confirmed writer',async t=>{
  const f=await fixture(t),writes=rectangleWrites(f);f.document.getElementById('drawing-snap').checked=true;f.document.getElementById('drawing-grid').value='1.524';

@@ -1,3 +1,4 @@
+import {attachAtlasAuthorRecovery} from './helpers/atlas-author-recovery.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
@@ -22,6 +23,7 @@ async function editor(t,seed,withNotes=false){const x=setup(t);x.workspace=x.sto
  window.campaign={dungeonAuthoring:async()=>ok(()=>x.store.dungeonAuthoring(x.workspace.token)),preparation:async()=>ok(()=>x.store.preparation(x.workspace.token)),executeDrawing:async c=>ok(()=>x.store.executeDrawing(c)),addRoom:async token=>{creates++;if(hold){hold=false;await new Promise(r=>release=r);}return ok(()=>x.store.addRoom(token));}};
  window.campaign.atlasDrawingCommit=async c=>ok(()=>x.store.atlasDrawingCommit(c));
  window.campaign.executeAtlas=async c=>{if(c.action.kind==='room-default'){creates++;if(hold){hold=false;await new Promise(r=>release=r);}}return ok(()=>x.store.executeAtlas(c));};
+ attachAtlasAuthorRecovery(window.campaign,x.store,path.dirname(x.filename));
  if(withNotes){
   window.HTMLElement.prototype.focus=function(){};window.HTMLElement.prototype.scrollIntoView=function(){};window.HTMLElement.prototype.select=function(){};window.HTMLElement.prototype.showModal=function(){this.open=true;};window.HTMLElement.prototype.close=function(){this.open=false;};window.HTMLElement.prototype.reportValidity=()=>true;
   for(const method of ['keyNoteChoices','captureKeyNote','keyNoteCaptureStatus','noteRoomUses'])window.campaign[method]=async(...args)=>ok(()=>x.store[method](...args));
@@ -104,6 +106,7 @@ test('connection feedback distinguishes translated, changed and rejected endpoin
  Object.defineProperty(window.HTMLSelectElement.prototype,'value',{configurable:true,get(){return this.querySelector('option[selected]')?.value??this.querySelector('option')?.value??'';},set(v){for(const o of this.querySelectorAll('option'))o.toggleAttribute('selected',o.value===String(v));}});
  const el=id=>document.getElementById(id),ok=fn=>{try{return{ok:true,value:fn()};}catch(e){return{ok:false,error:e.message};}};
  window.campaign={graph:async(token,scope)=>ok(()=>x.store.graph(token,scope)),executeGraph:async c=>ok(()=>x.store.executeGraph(c))};
+ attachAtlasAuthorRecovery(window.campaign,x.store,path.dirname(x.filename));
  const file=require.resolve('../.build/room-authoring-graph-ui.cjs');delete require.cache[file];const ui=require(file);
  ui.initGraph(()=>{},()=>x.workspace,()=>x.workspace.rooms.find(r=>r.id===x.workspace.selectedId),async()=>true,async w=>{x.workspace=w;},()=>{},async()=>{});
  t.after(()=>{ui.activateGraph();Object.assign(globalThis,prior);});

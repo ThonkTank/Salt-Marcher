@@ -1,3 +1,4 @@
+import {pendingAtlasWrite} from './campaign-atlas-author';
 import {atlasPathPreview} from './atlas-path-draft';
 import { atlasElement as get } from './atlas-dom';
 import type { AtlasSelection as Selection, AtlasFamily as Family, AtlasRoomDrag, AtlasPathDrag } from './atlas-workbench-types';
@@ -88,6 +89,7 @@ export class AtlasAuthor {
     } | null = null;
     pathDrag: AtlasPathDrag | null = null;
     private rectanglePhase: 'idle' | 'writing' | 'selecting' = 'idle';
+    private rectanglePending:{commandId:string;token:string;scope:string|null;floor:string;draft:Point[];snapshot:string;controls:string;append:boolean;outcome?:'not-applied'}|null=null;
     get rectangleCommit() { return this.rectanglePhase !== 'idle'; }
     roomDrag: AtlasRoomDrag | null = null;
     brushId: number | null = null;
@@ -112,6 +114,7 @@ export class AtlasAuthor {
     }
     blocksNavigation() { return this.hasDraft() || this.rectangleCommit; }
     cancelGesture() {
+        this.rectanglePending=null;
         this.brushId = null;
         this.vertexDrag = null;
         this.pathDrag = null;
@@ -267,7 +270,8 @@ export class AtlasAuthor {
                 if (!this.host.scopeId)
                     throw new Error("Zuerst eine Raumgruppe wählen oder anlegen.");
                 const local = atlasDrawingSnapPoint(atlasToLocal(p, this.host.frame(this.host.scopeId)));
-                this.draft.push(local);
+                if(this.rectanglePending?.outcome==='not-applied'&&this.draft===this.rectanglePending.draft&&this.draft.length===2)this.draft[1]=local;
+                else this.draft.push(local);
                 get("atlas-draft-cancel").hidden = false;
                 if (this.draft.length === 2)
                     await this.createRoomRectangle();
@@ -365,8 +369,22 @@ export class AtlasAuthor {
             this.host.error(e);
         }
     }
+    /** Complete only the unchanged rectangle owned by this exact receipt. */
+    completeRectangleRecovery(commandId:string|null,outcome:'applied'|'not-applied') {
+        const p=this.rectanglePending;
+        if(!p||p.commandId!==commandId)return;
+        const current=this.host.owner?.token===p.token&&this.host.scopeId===p.scope&&this.host.floorId===p.floor&&this.draft===p.draft&&JSON.stringify(this.draft)===p.snapshot&&JSON.stringify([get<HTMLInputElement>('drawing-room-name').value,get<HTMLInputElement>('drawing-append').checked,get<HTMLSelectElement>('drawing-tool').value])===p.controls;
+        if(!current){this.rectanglePending=null;return;}
+        if(outcome==='not-applied'){p.outcome=outcome;return;}
+        this.rectanglePending=null;this.draft=[];
+        if(p.append){this.host.root.dataset.roomDraw='false';get<HTMLSelectElement>('drawing-tool').value='select';}
+        else {this.host.root.dataset.roomDraw='true';get<HTMLSelectElement>('drawing-tool').value='room-rectangle';}
+        get('atlas-draft-cancel').hidden=true;
+    }
     async createRoomRectangle() {
         const owner = this.host.owner, scope = this.host.scopeId, floor = this.host.floorId, append = get<HTMLInputElement>("drawing-append").checked;
+        if(owner&&pendingAtlasWrite(owner.token))throw Error('Zuerst Speicherstand klären.');
+        const controls=JSON.stringify([get<HTMLInputElement>('drawing-room-name').value,append,get<HTMLSelectElement>('drawing-tool').value]);
         const current = () => this.host.owner === owner && this.host.scopeId === scope && this.host.floorId === floor;
         const [a, b] = this.draft as [
             Point,
@@ -383,8 +401,11 @@ export class AtlasAuthor {
                 result = await atlasDrawingRectangle(a, b);
             }
             catch (error) {
-                if (current())
-                    this.draft = [a];
+                if (current()) {
+                    const pending=owner&&pendingAtlasWrite(owner.token);
+                    this.draft = pending?[a,b]:[a];
+                    if(pending&&'action' in pending&&pending.action.kind==='drawing')this.rectanglePending={commandId:pending.commandId,token:owner!.token,scope,floor,draft:this.draft,snapshot:JSON.stringify(this.draft),controls,append};
+                }
                 throw error;
             }
             if (result && current()) {

@@ -1,3 +1,4 @@
+import {attachAtlasAuthorRecovery} from './helpers/atlas-author-recovery.mjs';
 import {test} from 'node:test';
 import {parseHTML} from './helpers/dom.mjs';
 import assert from 'node:assert/strict';
@@ -55,9 +56,11 @@ test('a lost author acknowledgement retains the original command and recovers th
  const prior={document:globalThis.document,window:globalThis.window,Event:globalThis.Event,CustomEvent:globalThis.CustomEvent},dom=parseHTML('<html><body></body></html>');Object.assign(globalThis,{document:dom.document,window:dom.window,Event:dom.window.Event,CustomEvent:dom.window.CustomEvent});t.after(()=>Object.assign(globalThis,prior));
  const command={commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action:{kind:'key-batch',rooms:[{id:x.rooms[0].id,expectedRevision:0,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'Nur einmal gespeichert'}}}},original=structuredClone(command),calls=[];
  window.campaign={atlasDrawingCommit:async c=>{calls.push(c);x.store.atlasDrawingCommit(c);throw Error('Antwort verloren');},reconcileAtlasCommit:async c=>{calls.push(c);return{ok:true,value:x.store.reconcileAtlasCommit(c)};}};
+ attachAtlasAuthorRecovery(window.campaign,x.store,path.dirname(x.store.filename));
+ const status=window.campaign.atlasWriteStatus;window.campaign.atlasWriteStatus=async(ref,token)=>{calls.push(structuredClone(ref));return status(ref,token);};
  const answer=await client.atlasDrawingWrite(command);assert.equal(answer.ok,false);const saved=x.store.db.serialize();command.action.patch.gmNotes.text='Darf nicht rückwirkend ändern';
  const blocked=await client.atlasDrawingWrite({...command,commandId:randomUUID()});assert.equal(blocked.ok,false);assert.equal(calls.length,1);assert.deepEqual(client.pendingAtlasWrite(x.w.token).action.command,original);
- const recovered=await client.recoverAtlasCommit(x.w.token);assert.equal(recovered.ok,true);assert.equal(calls.length,2);assert.deepEqual(calls[1].action.command,original);assert.equal(client.pendingAtlasWrite(x.w.token),null);assert.deepEqual(x.store.db.serialize(),saved);
+ const recovered=await client.recoverAtlasCommit(x.w.token);assert.equal(recovered.ok,true);assert.equal(calls.length,2);assert.equal(calls[1].commandId,original.commandId);assert.equal(calls[1].action,undefined);assert.equal(client.pendingAtlasWrite(x.w.token),null);assert.deepEqual(x.store.db.serialize(),saved);
 });
 
 test('editing a room on an archived floor returns its complete saved author row without unarchiving it',t=>{

@@ -1,3 +1,4 @@
+import {newGraphPreviewTarget} from './atlas-write-recovery';
 import {EditorSession} from './editor-session';
 import {atlasGraphWrite,pendingAtlasWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import {initDungeonBudget,drawDungeonBudget,resetDungeonBudget,hasDungeonBudgetDrafts,confirmDungeonBudget} from './dungeon-budget-ui';
@@ -47,7 +48,7 @@ async function command(action:GraphAction){
  if(!source&&(action.kind==='accept'||action.kind==='restore'))throw new Error('Graphvorschau inzwischen gewechselt. Erneut öffnen.');
  const base={commandId:uuid(),token:w.token,campaignId:w.campaign.id,scopeId:targetScope};
  const request:GraphCommand=action.kind==='select'&&!source?{...base,action:structuredClone(action)}:
-  {...base,target:source??{kind:'graph-preview',previewId:uuid(),scopeId:targetScope,revision:0},action:structuredClone(action)};
+  {...base,target:source??newGraphPreviewTarget(targetScope),action:structuredClone(action)};
  writing=true;readVersion++;
  try{
   const ready=await before();

@@ -237,8 +237,9 @@ async function resolveWorldWrite(): Promise<WorldReconciliation|null> {
     try {
       const result = unwrap(await window.campaign.reconcileWorld(captured.command, token));
       if (workspace?.token !== token || uncertainState.value !== captured) return null;
+      await settleAtlasWorldWrite(captured.command);
+      if (workspace?.token !== token || uncertainState.value !== captured) return null;
       if (result.outcome === 'applied') adoptConfirmedWorldWrite(captured.command, result.ack, captured.versions,captured.weatherIntent);
-      settleAtlasWorldWrite(captured.command);
       uncertainState.value = null; showUncertainWorldWrite();
       tell(result.outcome === 'applied' ? 'Weltänderung bestätigt. Spätere Eingaben bleiben offen.' : 'Weltänderung wurde nicht übernommen. Eingabe bleibt offen.');
       return result;
@@ -275,7 +276,7 @@ async function raw(action: WorldAction, stillCurrent:()=>boolean=()=>true,weathe
   if(!stillCurrent())throw new Error('Zielauswahl wurde gewechselt.');
   if (uncertainState.value) throw new Error('Unklare Weltänderung zuerst über Auftrag prüfen klären.');
   let result: Result<WorldAck>;
-  try { result = await atlasWorldWrite(command); }
+  try { result = await atlasWorldWrite(command);if(!result.ok&&result.errorKind==='store-outcome-unknown')throw Error(result.error); }
   catch (error) {
     if (workspace?.token === owner.token) { uncertainState.value = { command, versions,weatherIntent }; showUncertainWorldWrite(); }
     throw error;

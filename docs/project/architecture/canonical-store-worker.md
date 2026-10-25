@@ -45,9 +45,9 @@ beweist eine verlorene Antwort keinen fehlenden Commit. Der Client bleibt nach
 einem Ausfall geschlossen für weitere Aufträge. Vorhandene fachliche Receipts
 erlauben nach Neustart die Klärung, sofern der Besitzer seine ursprüngliche
 Klärungsidentität dauerhaft gesichert hat. Die Atlas-/Reisegrundlage dafür steht
-im folgenden Referenzvertrag. Der vollständige Produktanschluss bleibt offen:
-A0.07/A0.08 schließen die Besitzer an, A0.14 den erreichbaren Abschluss und die
-native Wiederaufnahme. Pending-Statusabfragen behalten laufende Aufträge auch
+im folgenden Referenzvertrag. Der Autorenanschluss ist lokal umgesetzt; der
+Reiseanschluss A0.08 sowie der erreichbare Abschluss und die native Wiederaufnahme
+in A0.14 bleiben offen. Pending-Statusabfragen behalten laufende Aufträge auch
 über asynchrone Receipt-Lesegrenzen hinweg bei.
 
 Main erhält den Fehlertyp `StoreOutcomeUnknownError` und gibt ihn als einfaches
@@ -61,7 +61,7 @@ nach einem bereits bestätigten Commit beim Nachlesen auftreten.
 Der Marker veranlasst selbst weder erneutes Schreiben noch einen Worker-Neustart.
 Autoren- und Reisebesitzer müssen ihn vor einer Umwandlung in eine gewöhnliche
 Fehlermeldung auswerten; Erhalt des exakten Commands, Folgeschreibsperre und
-Receipt-Klärung gehören zu A0.07/A0.08. Der bestehende `writeConfirmed`-Pfad behält
+Receipt-Klärung liegen beim jeweiligen Besitzer. Der bestehende `writeConfirmed`-Pfad behält
 auch bei Fehlern seine Receipt-Referenz bis zu einer belastbaren Statusantwort.
 
 Nach abgeschlossenen Atlas-, Room- und Drawing-Commits schützt
@@ -99,8 +99,23 @@ Quittungen und fehlende/fremde Vorschauen bleiben ungeklärt. Clear prüft Statu
 und exakte Identität. Für eine nachweislich abgelehnte Graphaktion vor Previewanlage
 kann Main zusätzlich seinen begrenzten aktuellen Ablehnungsnachweis verwenden;
 ein weiterer Dispatch entzieht ihn. Nach Hostverlust wird daraus keine behauptete
-Nichtanwendung. Der aufrufende Autorenbesitzer muss bei einem Clearfehler
-gesperrt bleiben; dieser Anschluss gehört zu A0.07/A0.08.
+Nichtanwendung. Der aufrufende Besitzer bleibt bei einem Clearfehler gesperrt.
+
+`campaign-atlas-author.ts` reserviert den Autorenauftrag synchron vor Hashen und
+Sicherung. `restoreAtlasWrites` lädt bei Aktivierung die Referenz, bevor ein neuer
+Auftrag erlaubt ist. `recoverAtlasCommit` liest mit der neuen Berechtigung die
+ursprüngliche Identität und gibt ausschließlich den Status zurück, keinen
+erfundenen Ack oder Quellenstand. Alte Antworten können die neue Sperre nicht
+entfernen. World wartet auf den passenden Referenzabschluss; Graphauswahl bleibt
+Navigation ohne Receipt.
+
+`CampaignAtlasWorkbench.recoverWrite` hält einen bestätigten Status bei
+anschließendem Ansichtsfehler fest; erneutes Klären liest nur die fehlende Ansicht.
+Der Renderer-Callback erhält dabei Raumselektion, spätere Texte und Rohpunkte beim
+ursprünglichen Entwurfsbesitzer. Die Raum-Handler klären zuerst die passende
+Referenz und prüfen danach weiterhin Konflikt und Ziel über den vorhandenen
+Raumleser. Ein bestätigter Rechteckauftrag beendet nur seine unveränderten
+zugeordneten Eingaben. Unabhängige Zeichen- und Landschaftsentwürfe bleiben offen.
 
 `tests/atlas-write-recovery.test.mjs` prüft Erfassung und Dispatchgrenze;
 `tests/desktop-atlas-write-receipt.test.mjs` verwendet tatsächliches Main, Preload
@@ -108,6 +123,9 @@ und Worker einschließlich Neustart, Persistenzfehlern, fehlendem Reisefokus und
 gleichzeitiger Vorbereitung. Die Referenz wird nach Neustart aus dem lokalen
 Speicher gelesen, ohne nachgereichte Command-ID. Der native UI-Anschluss bleibt
 von diesen Hostbelegen getrennt.
+`tests/desktop-atlas-commit-recovery.test.mjs` prüft die Autoren über diese echte
+Hostgrenze; `tests/desktop-graph-preview-owner.test.mjs` prüft die tatsächlichen
+Renderer-Callbacks, Eingabeerhalt und Weiterzeichnen nach der Klärung.
 
 ### Graphvorschau und Autorenbesitzer
 

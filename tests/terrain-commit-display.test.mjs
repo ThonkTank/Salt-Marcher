@@ -1,3 +1,4 @@
+import {atlasAuthorReferenceFixture} from './helpers/atlas-author-recovery.mjs';
 import {atlasFixture,landscapeFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -50,7 +51,8 @@ test('commits advance author identity without relabelling the Atlas or awaiting 
  let writes=0,refreshes=0,finishes=0;
  global.window={campaign:{executeAtlasCommit:async c=>({ok:true,value:{commandId:c.commandId,campaignId:'c',revision:++writes+10,sourceFence:'f'+writes,canUndo:true,canRedo:false}})}};
  t.after(()=>Object.assign(global,old));
- const atlas={revision:10,region:{revision:10,fence:'original'}},owner={token:'token',campaign:{id:'c'}};
+ const references=atlasAuthorReferenceFixture(t);references.bind(global.window.campaign);
+ const atlas={revision:10,workspace:references.workspace,region:{revision:10,fence:'original'}},owner=references.workspace;
  const ui=Object.assign(Object.assign(atlasFixture(CampaignAtlasWorkbench),{projection:atlas}),{
    owner,projection:atlas,svg:{dataset:{}},busy:false,opts:{status(){}},playback:{stop(){}},render(){},
    terrainPresentation:{update:s=>shown.push(s),async finish(){finishes++;},stop(){}},spatial:{gesture(){},pauseReads(){}},

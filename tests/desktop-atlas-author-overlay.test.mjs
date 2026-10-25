@@ -1,3 +1,4 @@
+import {atlasAuthorReferenceFixture} from './helpers/atlas-author-recovery.mjs';
 import {atlasFixture} from './helpers/atlas-workbench.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -95,7 +96,7 @@ test('an object-only interior paints its geometry instead of reducing it to an e
 
 function rectangleGesture(t){
  const f=fixture(t),writes=[],selected=[],captures=[];const previous=global.atlasRectangleWrites;global.atlasRectangleWrites=writes;t.after(()=>global.atlasRectangleWrites=previous);
- for(const id of ['atlas-draft-cancel','drawing-cancel','drawing-append']){const n=f.document.createElement('button');n.id=id;f.document.body.append(n);}
+ for(const id of ['atlas-draft-cancel','drawing-cancel','drawing-append','drawing-room-name']){const n=f.document.createElement('button');n.id=id;f.document.body.append(n);}
  Object.assign(f.ui,{root:{hidden:false,dataset:{roomDraw:'true'}},brushId:null,roomDrag:null,entranceDraft:null,point:e=>({x:e.clientX,y:e.clientY}),render(){},refresh:async()=>selected.push("refreshed"),write:async a=>{writes.push(a);return{result:{id:'created'}};},opts:{selectRoom:async id=>{assert.equal(f.ui.author.hasDraft(),false,"confirmed room selection must pass the workspace flush guard");assert.equal(f.ui.author.rectangleCommit,true,"selection must still suppress the properties pane");assert.equal(f.ui.author.blocksNavigation(),true,"camera stays fixed during follow-up selection");selected.push(id);},status(){}},error:e=>{throw e;}});
  f.document.getElementById('atlas-room-draw').onclick=()=>{f.ui.root.dataset.roomDraw='true';};
  f.ui.reference={active:false};f.ui.camera.stopZoom=()=>{};f.ui.camera.ready=true;f.ui.svg.setPointerCapture=id=>captures.push(id);
@@ -138,7 +139,7 @@ test('cancelled, stale and switched-floor room gestures cannot write into anothe
 
 test('landscape callers receive the original save failure instead of losing the reason in a null acknowledgement',async t=>{
  const f=fixture(t),messages=[],status=f.document.createElement('p'),previousEvent=global.Event;t.after(()=>global.Event=previousEvent);global.Event=f.document.defaultView.Event;status.id='atlas-save-status';f.document.body.append(status);
- f.ui.owner={token:'token',campaign:{id:'campaign'}};f.ui.render=()=>{};f.ui.error=e=>messages.push(e.message);window.campaign={executeAtlasCommit:async()=>({ok:false,error:'Atlas inzwischen geändert. Ausschnitt erneut laden.'})};
+ const references=atlasAuthorReferenceFixture(t);f.ui.owner=references.workspace;f.ui.render=()=>{};f.ui.error=e=>messages.push(e.message);window.campaign={executeAtlasCommit:async()=>({ok:false,error:'Atlas inzwischen geändert. Ausschnitt erneut laden.'})};references.bind(window.campaign);
  await assert.rejects(()=>f.ui.write({kind:'undo'},false,true),/Atlas inzwischen geändert/);assert.equal(f.ui.busy,false);assert.equal(messages.length,1);
  assert.equal(await f.ui.write({kind:'undo'}),null,'other author paths keep their existing nullable failure contract');assert.equal(f.ui.busy,false);
 });
