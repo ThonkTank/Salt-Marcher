@@ -10,7 +10,7 @@ import {RoomDirectoryView} from './room-directory-ui';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
 import {setLiveAtlasSurface} from './live-hex-surface';
 import {CampaignAtlasWorkbench} from './campaign-atlas-ui';
-import {atlasRoomWrite,atlasHistoryWrite} from './campaign-atlas-author';
+import {atlasRoomWrite,atlasHistoryWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import {initCampaignScreen,openCampaignScreen,hideCampaignScreen} from './campaign-screen-ui';
 import {PassiveMapCanvas} from './passive-map-canvas';
 import {roomCameraBox} from './room-camera';
@@ -91,6 +91,7 @@ function rememberView() {
 }
 let draft: Room | null = null;
 let confirmedRoom:Room|null=null;
+let roomDraftTarget:ReturnType<typeof graphPreviewTarget>;
 let timer: ReturnType<typeof setTimeout> | null = null;
 
 let composing = false;
@@ -296,6 +297,7 @@ async function flush(): Promise<boolean> {
   if (composing || pointer) { status('Bitte die laufende Eingabe abschließen.', true); return false; }
   const before = selected(), inputRevision=editorSession.input.version;
   if (!workspace || !draft || !before) return true;
+  if(!graphPreviewMatches(roomDraftTarget,workspace.graphPreview,true)){status('Raumquelle inzwischen geändert. Raum erneut öffnen.',true);return false;}
   try { readPoints(); validateRoom(draft); }
   catch (error) { status(String((error as Error).message) + ' Entwurf bleibt offen.', true); return false; }
   if (same(before, draft)) {
@@ -303,23 +305,24 @@ async function flush(): Promise<boolean> {
     editorSession.input.retained=inputRevision;status('Gespeichert.'); return true;
   }
   const after = structuredClone(draft), token = workspace.token, current=editorSession.capture();
-  const request: Edit = { commandId: crypto.randomUUID(), token, campaignId: workspace.campaign.id, roomId: after.id,
+  const request: Edit = { commandId: crypto.randomUUID(), token, campaignId: workspace.campaign.id, target:graphPreviewTarget(workspace.graphPreview), roomId: after.id,
     expectedRevision: after.revision, name: after.name, polygons: after.polygons, sections: after.sections };
   status('Wird gespeichert…');
   pendingWork.value = editorSession.run(async () => {
     let acknowledged=false;
     try {
-      const next = unwrap(await atlasRoomWrite(request));acknowledged=true;
-      if (!current() || workspace?.token !== token) return false;
-      confirmedRoom=next.room;
-      workspace = geometryOnly({ ...workspace, rooms: workspace.rooms.map(room => room.id === next.room.id ? next.room : room), canUndo: next.canUndo, canRedo: next.canRedo, selectedId: after.id });
+      const next = unwrap(await atlasRoomWrite(request));
+      if (!current() || workspace?.token !== token || !graphPreviewMatches(request.target,workspace.graphPreview,true)) return false;
+      if(!graphPreviewMatches(request.target,next.graphPreview))throw new Error('Raumantwort gehört zu einer anderen Vorschau.');acknowledged=true;
+      roomDraftTarget=graphPreviewTarget(next.graphPreview);confirmedRoom=next.room;
+      workspace = geometryOnly({ ...workspace, graphPreview:next.graphPreview, rooms: workspace.rooms.map(room => room.id === next.room.id ? next.room : room), canUndo: next.canUndo, canRedo: next.canRedo, selectedId: after.id });
       if (draft?.id === after.id) draft.revision = next.room.revision;
       hasRetainedDraft = false;editorSession.input.retained=inputRevision;
       // A confirmed edit updates the scene without moving the user's camera.
       renderList(true); updateHistory(); draw();
       status(draft && !same(after, draft) ? 'Weitere Eingabe offen – noch nicht gespeichert.' : 'Gespeichert.');
       return true;
-    } catch (error) { if(!current()||workspace?.token!==token)return false; if(acknowledged){status('Änderung gespeichert. Ansicht konnte nicht aktualisiert werden: '+(error as Error).message,true);return true;}writeBlocked = true; failedEditState.value = request; el('error-actions').hidden = false; status((error as Error).message + ' Entwurf bleibt offen; Schreiben gesperrt bis zur Aufklärung.', true); return false; }
+    } catch (error) { if(!current()||workspace?.token!==token||!graphPreviewMatches(request.target,workspace.graphPreview))return false; if(acknowledged){status('Änderung gespeichert. Ansicht konnte nicht aktualisiert werden: '+(error as Error).message,true);return true;}writeBlocked = true; failedEditState.value = request; el('error-actions').hidden = false; status((error as Error).message + ' Entwurf bleibt offen; Schreiben gesperrt bis zur Aufklärung.', true); return false; }
   });
   const okay = await pendingWork.value;
   return okay ? flush() : false;
@@ -357,8 +360,8 @@ function roomEditable(editable: boolean) {
   for (const input of el('keys').querySelectorAll<HTMLTextAreaElement>('textarea')) input.disabled = !editable;
 }
 async function setDraft() {
-  const token=workspace?.token,id=workspace?.selectedId,request=++editorSession.generation;
-  const current=()=>workspace?.token===token&&workspace?.selectedId===id&&request===editorSession.generation;
+  const token=workspace?.token,id=workspace?.selectedId,request=++editorSession.generation,target=graphPreviewTarget(workspace?.graphPreview);roomDraftTarget=target;
+  const current=()=>workspace?.token===token&&workspace?.selectedId===id&&request===editorSession.generation&&graphPreviewMatches(target,workspace?.graphPreview,true);
   confirmedRoom=null;draft=null;roomDraftReadFailed=false;writeBlocked=false;failedEditState.value=null;hasRetainedDraft=false;el('error-actions').hidden=true;
   el('keys').replaceChildren();el<HTMLInputElement>('room-name').value='';el('empty').textContent='Lege einen Raum an oder übernimm eine Dungeondatei.';
   el('editor').hidden=true;el('empty').hidden=false;roomEditable(false);
@@ -496,7 +499,7 @@ el('editor').addEventListener('submit', event => { event.preventDefault(); void 
 el('reconcile').onclick = () => { void (async () => {
   const edit = failedEditState.value, token = workspace?.token;
   if (!edit || !token || !roomContextCurrent(token)) return;
-  const owns = () => roomContextCurrent(token) && failedEditState.value === edit;
+  const owns = () => roomContextCurrent(token) && failedEditState.value === edit&&graphPreviewMatches(edit.target,workspace?.graphPreview);
   try {
     const response = await api.reconcile(edit, token);
     if (!owns()) return;
@@ -513,7 +516,7 @@ el('reconcile').onclick = () => { void (async () => {
 el('discard').onclick = () => { void (async () => {
   const edit = failedEditState.value, token = workspace?.token, roomId = draft?.id;
   if (!edit || !token || !roomContextCurrent(token)) return;
-  const owns = () => roomContextCurrent(token) && failedEditState.value === edit;
+  const owns = () => roomContextCurrent(token) && failedEditState.value === edit&&graphPreviewMatches(edit.target,workspace?.graphPreview);
   try {
     const response = await api.reconcile(edit, token);
     if (!owns()) return;
@@ -633,27 +636,30 @@ el('create-form').addEventListener('submit', event => {
   })();
 });
 el('add-room').onclick = () => { void (async () => {
-  const token = workspace?.token;
-  if (!token || !roomContextCurrent(token) || !(await flush()) || !roomContextCurrent(token)) return;
+  const source=workspace,target=graphPreviewTarget(source?.graphPreview),token=source?.token;
+  const current=(exact=false)=>!!token&&roomContextCurrent(token)&&graphPreviewMatches(target,workspace?.graphPreview,exact);
+  if (!source || !current(true) || !(await flush()) || !current(true)) return;
   try {
-    const response = await atlasDefaultRoomWrite(token,workspace!.campaign.id);
-    if (!roomContextCurrent(token)) return;
-    workspace = geometryOnly(unwrap(response)); await reloadDrawing(); await setDraft();
-    if (!roomContextCurrent(token)) return;
+    const response = await atlasDefaultRoomWrite(source.token,source.campaign.id,target);
+    if (!current(true)) return;
+    const next=unwrap(response);if(!graphPreviewMatches(target,next.graphPreview))throw new Error('Raumantwort gehört zu einer anderen Vorschau.');
+    workspace = geometryOnly(next); await reloadDrawing(); if(!current())return; await setDraft();
+    if (!current()) return;
     renderList(true); updateHistory(); status('Raum angelegt und gespeichert.');
-  } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
+  } catch (error) { if (current()) status((error as Error).message, true); }
 })(); };
 async function history(direction: 'undo' | 'redo') {
-  if (!(await flushDrawing())) return;
-  const token = workspace?.token;
-  if (!token || !roomContextCurrent(token) || !(await flush()) || !roomContextCurrent(token)) return;
+  const source=workspace,target=graphPreviewTarget(source?.graphPreview),token=source?.token;
+  const current=(exact=false)=>!!token&&roomContextCurrent(token)&&graphPreviewMatches(target,workspace?.graphPreview,exact);
+  if (!source || !current(true) || !(await flushDrawing()) || !current(true) || !(await flush()) || !current(true)) return;
   try {
-    const response = await atlasHistoryWrite(token,workspace!.campaign.id,direction);
-    if (!roomContextCurrent(token)) return;
-    workspace = geometryOnly(unwrap(response)); await reloadDrawing(); await setDraft();
-    if (!roomContextCurrent(token)) return;
+    const response = await atlasHistoryWrite(source.token,source.campaign.id,direction,target);
+    if (!current(true)) return;
+    const next=unwrap(response);if(!graphPreviewMatches(target,next.graphPreview))throw new Error('Historyantwort gehört zu einer anderen Vorschau.');
+    workspace = geometryOnly(next); await reloadDrawing(); if(!current())return; await setDraft();
+    if (!current()) return;
     renderList(true); updateHistory(); status('Gespeichert.');
-  } catch (error) { if (roomContextCurrent(token)) status((error as Error).message, true); }
+  } catch (error) { if (current()) status((error as Error).message, true); }
 }
 el('undo').onclick = () => { void history('undo'); }; el('redo').onclick = () => { void history('redo'); };
 bindAtlasHistoryShortcut(()=>!!campaignAtlas&&!campaignAtlas.root.hidden,()=>composing,direction=>{void history(direction);});

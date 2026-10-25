@@ -1,6 +1,6 @@
 import {EditorSession} from './editor-session';
 import {atlasFieldValue,setAtlasFieldValue} from './atlas-units';
-import {atlasDrawingWrite} from './campaign-atlas-author';
+import {atlasDrawingWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room,RoomGeometry} from './contracts';
 import type {DrawingView} from './drawing-contracts';
 import type {DungeonVolume,VolumeCell,VolumeAction} from './volume-contracts';
@@ -50,20 +50,22 @@ function currentVolume(){
  if(!derived||derived.room!==r||derived.height!==height)derived={room:r,height,volume:volumeFromRoom(r,height)};
  return derived.volume;
 }
-function owner(){return{generation:editorSession.generation,token:workspace()?.token,roomId};}
+function owner(){return{generation:editorSession.generation,token:workspace()?.token,roomId,target:graphPreviewTarget(workspace()?.graphPreview)};}
 type Owner=ReturnType<typeof owner>;
-function current(o:Owner){return editorSession.generation===o.generation&&workspace()?.token===o.token&&roomId===o.roomId;}
+function current(o:Owner){return editorSession.generation===o.generation&&workspace()?.token===o.token&&roomId===o.roomId&&graphPreviewMatches(o.target,workspace()?.graphPreview);}
 function run(fn:(o:Owner)=>Promise<boolean>){
  if(pendingWork.value)return;const o=owner();
  const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o)){tell(e.message,true);message(e.message,true);}return false;}).finally(()=>{if(pendingWork.value===task){pendingWork.clear(task);writing=false;syncControls();}});
  pendingWork.value=task;syncControls();
 }
 async function command(a:VolumeAction,o:Owner){
- const w=workspace();if(!w||!current(o))return false;
+ const w=workspace();if(!w||!current(o)||!graphPreviewMatches(o.target,w.graphPreview,true))return false;
+ if(!graphPreviewMatches(graphPreviewTarget(data?.graphPreview),w.graphPreview,true))throw new Error('Volumenquelle inzwischen geändert. Neu laden.');
  writing=true;++readRequest;
- const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
- if(!current(o))return false;
+ const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,target:o.target,action:structuredClone(a)});
+ if(!current(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return false;
  if(!result.ok)throw new Error(result.error);
+ if(!graphPreviewMatches(o.target,result.value.workspace.graphPreview))throw new Error('Zeichenantwort gehört zu einer anderen Vorschau.');
  data=result.value.view;acknowledgedRoom=null;
  await changed(result.value.workspace);
  if(!current(o))return false;
@@ -151,7 +153,7 @@ export function initVolume(status:typeof tell,getWorkspace:typeof workspace,getR
  el('volume-open').onclick=()=>{
   if(pendingWork.value)return;const r=selected();if(!r){tell('Zuerst einen Raum wählen.',true);return;}
   roomId=r.id;el('volume-status').textContent='Volumen wird geladen …';el<HTMLDialogElement>('volume-dialog').showModal();
-  run(async o=>{if(!await before()||!current(o))return false;await openVolume();return current(o);});
+  run(async o=>{if(!await before()||!current(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return false;await openVolume();return current(o);});
  };
  el('volume-close').onclick=()=>{close();};
  el('volume-dialog').addEventListener('cancel',e=>{e.preventDefault();close();});

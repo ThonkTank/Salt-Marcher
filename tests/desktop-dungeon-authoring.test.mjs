@@ -7,8 +7,9 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {buildSync} from 'esbuild';
-buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/drawing-model';",resolveDir:process.cwd()},outfile:'.build/dungeon-authoring-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
-const {CampaignStore,newElement}=createRequire(import.meta.url)('../.build/dungeon-authoring-store.cjs');
+const output=path.resolve('.build/A0.16-'+process.pid);
+buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newElement} from './src/app/drawing-model';",resolveDir:process.cwd()},outfile:path.join(output,'dungeon-authoring-store.cjs'),bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});
+const {CampaignStore,newElement}=createRequire(import.meta.url)(path.join(output,'dungeon-authoring-store.cjs'));
 function fixture(t){
  const dir=mkdtempSync(path.join(tmpdir(),'dungeon-author-')),store=new CampaignStore(path.join(dir,'workbench.sqlite'));
  const rooms=['Torhalle','Wachstube','Keller'].map((name,i)=>({id:randomUUID(),scopeId:'local',floorId:i===0?'ground':'upper',number:String(i+1),name,revision:0,polygons:[{outer:[{x:i*12,y:0},{x:i*12+6,y:0},{x:i*12+6,y:6},{x:i*12,y:6}],holes:[]}],sections:[{id:randomUUID(),kind:'markdown',markdown:'  Original '+name+'\r\n'}]}));
@@ -49,8 +50,8 @@ test('author commits and receipt replay avoid the runtime snapshot, retain norma
 });
 
 test('a lost author acknowledgement retains the original command and recovers through the compact receipt path',async t=>{
- const x=fixture(t);buildSync({entryPoints:['src/app/campaign-atlas-author.ts'],outfile:'.build/dungeon-authoring-client.cjs',bundle:true,platform:'node',format:'cjs'});
- const require=createRequire(import.meta.url),file=require.resolve('../.build/dungeon-authoring-client.cjs');delete require.cache[file];const client=require(file);
+ const x=fixture(t);buildSync({entryPoints:['src/app/campaign-atlas-author.ts'],outfile:path.join(output,'dungeon-authoring-client.cjs'),bundle:true,platform:'node',format:'cjs'});
+ const require=createRequire(import.meta.url),file=require.resolve(path.join(output,'dungeon-authoring-client.cjs'));delete require.cache[file];const client=require(file);
  const prior={document:globalThis.document,window:globalThis.window,Event:globalThis.Event,CustomEvent:globalThis.CustomEvent},dom=parseHTML('<html><body></body></html>');Object.assign(globalThis,{document:dom.document,window:dom.window,Event:dom.window.Event,CustomEvent:dom.window.CustomEvent});t.after(()=>Object.assign(globalThis,prior));
  const command={commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,action:{kind:'key-batch',rooms:[{id:x.rooms[0].id,expectedRevision:0,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'Nur einmal gespeichert'}}}},original=structuredClone(command),calls=[];
  window.campaign={atlasDrawingCommit:async c=>{calls.push(c);x.store.atlasDrawingCommit(c);throw Error('Antwort verloren');},reconcileAtlasCommit:async c=>{calls.push(c);return{ok:true,value:x.store.reconcileAtlasCommit(c)};}};

@@ -86,6 +86,7 @@ import type {ExtensionCommand} from '../extension-contracts';
 import {dungeonBudgetView,validateDungeonPlacement} from './dungeon-budget';
 import type {CommitOutcome} from '../commit-receipt';
 import {GraphShadow,graphView,graphLayout,installGraph,validateGraphLayouts} from './graph';
+import {GraphPreviewFiles,checkedGraphLifecycle,graphLifecycleKey} from './graph-preview-lifecycle';
 import {requirePreviewTarget,previewCommandFingerprint} from './graph-preview-commands';
 import type {GraphCommand,GraphView} from '../graph-contracts';
 import type {DrawingView} from '../drawing-contracts';
@@ -180,6 +181,7 @@ export class CampaignStore {
   private committedSources=new CommittedSources();
   private shellFirstRoom=new WeakMap<object,{campaignId:string;stamp:string;id:string|null}>();
   private graphShadow:GraphShadow|null=null;
+  private previewFiles:GraphPreviewFiles|null=null;
   private graphRouting=false;
   private withGraph<T>(fn:()=>T):T {const original=this.db,wasRouting=this.graphRouting;if(!this.graphShadow||this.graphRouting)return fn();this.db=this.graphShadow.db;this.graphRouting=true;try{return fn();}finally{this.db=original;this.graphRouting=wasRouting;}}
 
@@ -267,6 +269,7 @@ export class CampaignStore {
     }).immediate();
     } catch (error) { this.db.close(); throw error; }
     this.db.function('atlas_lower',{deterministic:true},(text:unknown)=>typeof text==='string'?text.normalize('NFC').toLocaleLowerCase('de'):'');
+    try{if(filename!==':memory:'){this.previewFiles=new GraphPreviewFiles(filename);this.graphShadow=this.previewFiles.reopen(this.db);}}catch(error){this.committedSources.close();this.extensionRegistry.dispose();this.db.close();throw error;}
   }
   private reconcileAtlasGeometry(token:string){
     const cam=this.guard(token);
@@ -420,7 +423,8 @@ export class CampaignStore {
     if(c.target&&c.action.kind!=='graph-accept'){
       const shadow=this.graphShadow;
       if(!shadow||shadow.state().id!==c.target.previewId){
-        const row=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+c.campaignId+':'+c.target.previewId),retired=row?JSON.parse(row.value) as import('../graph-contracts').GraphPreviewLifecycle:null;
+        const row=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+c.campaignId+':'+c.target.previewId),retired=row?checkedGraphLifecycle(JSON.parse(row.value)):null;
+        if(retired&&(retired.campaignId!==c.campaignId||retired.previewId!==c.target.previewId||retired.scopeId!==c.target.scopeId||this.previewFiles&&retired.profileId!==this.previewFiles.profileId()))return{outcome:'unknown'};
         if(retired?.commandId===c.commandId&&retired.status==='restored'){if(retired.fingerprint!==previewCommandFingerprint(c))throw Error('Vorschaukennung anders verwendet.');return{outcome:'applied',ack:{campaignId:c.campaignId,commandId:c.commandId,revision:atlasRoot(this.db,c.campaignId).revision,...atlasHistoryState(this.db,c.campaignId)}};}
         return{outcome:'unknown'};
       }
@@ -503,7 +507,7 @@ export class CampaignStore {
   atlasTerritories(token:string,box?:import("../atlas-landscape").LandscapeBox){return readTerritories(this.db,this.guard(token),box);}
   executeAtlas(c:AtlasCommand){
     const result=this.applyAtlas(c);
-    return this.atlasProjection(c,()=>({atlas:this.campaignAtlas(c.token),result}));
+    return this.atlasProjection(c,()=>({atlas:this.campaignAtlas(c.token),result:c.action.kind==='graph-accept'?{workspace:this.workspace(),view:this.graph(c.token,c.action.command.scopeId)}:result}));
   }
   private atlasProjection<T>(c:{campaignId:string;commandId:string},read:()=>T):T {
     // Nested readers are still part of their caller's write transaction. In
@@ -519,7 +523,7 @@ export class CampaignStore {
     if(!shadow)throw Error('Die bezeichnete Graphvorschau ist nicht verfügbar. Auftrag nicht auf eine andere Quelle anwenden.');
     shadow.commands.assertTarget({...c,action:null});return shadow;
   }
-  private validateGraphPreview(){validateGraphLayouts(this.db);dungeonGeometry(this.db,this.graphShadow!.campaignId);}
+  private validateGraphPreview(){this.graphShadow!.assertBasis();validateGraphLayouts(this.db);dungeonGeometry(this.db,this.graphShadow!.campaignId);}
   private applyPreviewAtlas(c:AtlasCommand){
     if(this.db.inTransaction&&!this.graphRouting)throw Error('Vorschauauftrag benötigt seinen eigenen äußersten Transaktionsbesitzer.');
     const shadow=this.requireGraphPreview(c),nested=(v:{token:string;campaignId:string;commandId:string;target?:import('../graph-contracts').GraphPreviewTarget})=>{
@@ -548,10 +552,10 @@ export class CampaignStore {
   private graphLifecycle(c:GraphCommand,status:'accepted'|'restored'){
     const shadow=this.requireGraphPreview(c),target=requirePreviewTarget(c.target);
     const value:import('../graph-contracts').GraphPreviewLifecycle={version:1,campaignId:c.campaignId,previewId:target.previewId,scopeId:target.scopeId,revision:shadow.state().revision,status,commandId:c.commandId,fingerprint:previewCommandFingerprint({...c,action:{kind:status==='accepted'?'graph-accept':'graph-preview',command:c}})};
-    this.db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('graph-preview-lifecycle:'+c.campaignId+':'+target.previewId,json(value));
+    this.db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(graphLifecycleKey(c.campaignId,target.previewId),json({...value,...(this.previewFiles?{profileId:this.previewFiles.profileId()}: {})}));
   }
   private retireGraphPreview(shadow:GraphShadow){
-    this.committedSources.forget(shadow.db);if(this.graphShadow===shadow)this.graphShadow=null;shadow.dispose();
+    this.committedSources.forget(shadow.db);if(this.graphShadow===shadow)this.graphShadow=null;try{if(this.previewFiles)this.previewFiles.retire(this.db,shadow);else shadow.dispose();}finally{shadow.close();}
   }
   private applyGraphAcceptance(c:GraphCommand){
     if(c.action.kind!=='accept')throw Error('Nur bestätigte Graphübernahme.');
@@ -711,7 +715,7 @@ export class CampaignStore {
   extensions(after:string|null){return this.extensionRegistry.list(after);}
   executeExtension(command:ExtensionCommand){return this.extensionRegistry.execute(command);}
   extensionOutcome(command:ExtensionCommand){return this.extensionRegistry.outcome(command);}
-  close() {this.chronicleRead?.close();this.chronicleRead=null; this.extensionRegistry.dispose();this.committedSources.close();this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
+  close() {this.chronicleRead?.close();this.chronicleRead=null; this.extensionRegistry.dispose();this.committedSources.close();if(this.previewFiles)this.graphShadow?.close();else this.graphShadow?.dispose();this.graphShadow=null;this.db.close(); }
   list(): { campaigns: Campaign[]; activeId: string | null } {
     return { campaigns: this.db.prepare('SELECT c.id,c.name,c.revision FROM campaign c JOIN campaign_lifecycle l ON l.campaign_id=c.id WHERE l.trashed=0 ORDER BY c.name,c.id').all(), activeId: this.db.prepare("SELECT value FROM settings WHERE key='active'").get()?.value ?? null };
   }
@@ -1173,7 +1177,7 @@ export class CampaignStore {
     if(!this.graphShadow){
       const retired=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+cam+':'+target.previewId);
       if(retired&&JSON.parse(retired.value).previewId===target.previewId)throw Error('Diese Vorschau wurde bereits abgeschlossen.');
-      this.graphShadow=new GraphShadow(this.db,cam,c.scopeId,target);
+      this.graphShadow=this.previewFiles?this.previewFiles.create(this.db,cam,c.scopeId,target):new GraphShadow(this.db,cam,c.scopeId,target);
     }
     this.applyPreviewAtlas(command);
     return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.graph(c.token,c.scopeId)}));
@@ -1309,7 +1313,11 @@ export class CampaignStore {
     if(!Array.isArray(files)||files.some(name=>typeof name!=='string'||!/^images\/[a-f0-9]{64}\.[a-z0-9]{1,8}$/.test(name)))throw Error('Dateizuordnung der Kampagnenlöschung beschädigt.');
     return files;
   }
-  finishCampaignErasure(id:string){this.db.transaction(()=>{this.db.prepare("UPDATE campaign_erasure SET phase='complete' WHERE id=?").run(id);this.db.prepare('DELETE FROM settings WHERE key=?').run('campaign-erasure-files:'+id);}).immediate();}
+  finishCampaignErasure(id:string){
+    if(!this.pendingCampaignErasures().includes(id))return;
+    if(this.graphShadow?.campaignId===id){this.committedSources.forget(this.graphShadow.db);this.graphShadow.close();this.graphShadow=null;}
+    this.previewFiles?.erase(id);
+    this.db.transaction(()=>{this.db.prepare('DELETE FROM settings WHERE substr(key,1,?)=?').run(('graph-preview-lifecycle:'+id+':').length,'graph-preview-lifecycle:'+id+':');this.db.prepare("UPDATE campaign_erasure SET phase='complete' WHERE id=?").run(id);this.db.prepare('DELETE FROM settings WHERE key=?').run('campaign-erasure-files:'+id);}).immediate();}
   private get audioRoot(){return dirname(this.filename)+'/audio';}
   private updateMusic(campaignId:string){try{this.db.transaction(()=>refreshMusicContext(this.db,this.audioRoot,campaignId))();}catch{/* Music failure does not invalidate the core action. */}}
   audioAssets(query:AudioQuery){return readAudioAssets(this.db,this.audioRoot,query);}

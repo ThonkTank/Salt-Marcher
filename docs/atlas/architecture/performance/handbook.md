@@ -238,8 +238,8 @@ sichtbar als inaktive Alternativen.
 | A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.06-handoff.json`); Besitzerreaktionen A0.07/08 und R0 offen |
 | A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.09-handoff.json`); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
 | A0.15 | review_packages | Implementiert in `5c1e878d`; 155 gezielte Tests und unabhängig 25/25 bestanden; `a0_15_review` lokal akzeptiert; Typanschluss A0.17 und Neustart A0.16 offen |
-| A0.16 | a0_interim_review | Umsetzung nach verifizierter A0.15-Übergabe gestartet: dauerhafte Vorschau, Wiederöffnung, Backup-/Erasuregrenzen und beständige Restorebelege |
-| A0.17 | plan_final_review | Umsetzung nach verifizierter A0.15-Übergabe gestartet: alle Autorenaufrufer, Vorschauwechsel vor/nach Dispatch und Übernahme lokaler Revision |
+| A0.16 | a0_interim_review | Lokal akzeptiert durch `a0_preview_review_r3`: 28/28 finale Restartfälle, unabhängig 18/18; frühere unveränderte Verbundfälle bleiben belegt; gemeinsame Typ-/Produktionsbuilds bestanden; native A0.14/A0.11 offen |
+| A0.17 | plan_final_review | Eingefrorene Übergabe `A0.17-handoff.json`: 101/101 und beide Typchecks bestanden; Autoren-/DOM-Anschluss in unabhängiger Nachprüfung |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -388,7 +388,38 @@ Aktive Previewartefakte und ihre Archivgrenze bleiben A0.16.
 Die echte A0.17-Passagenprobe fand einen fehlenden Ortslookup in der begrenzten
 Shadow-DB. A0.16 ergänzt am Vorschau-Lebenszyklus einen ausschließlich lesenden
 Lookup auf kanonische Ortsexistenz; keine Ortstabellenkopie. Der originale
-DOM-Dispatchfall bleibt bis zur Wiederholungsprüfung offen. Für A0.11 ist nach
+DOM-Dispatchfall besteht in `A0.17-owner-r6.log`. Der anschließende Integrationstest
+belegt eine fehlende `workspace/view`-Antwort nach erfolgreichem `executeAtlas`
+mit `graph-accept` (74/75 in `A0.17-regressions-r1.log`). A0.16 korrigiert die
+bestehende Postcommit-Projektion und prüft Replay sowie Rücklesefehler. Außerdem
+muss eine gebrochene Sidecar-Verknüpfung ausdrücklich abgewiesen werden; sie darf
+nicht als fehlende Vorschau gelten. Die erste Übergabe bleibt erhalten; beide
+Korrekturen sind in der neuen eingefrorenen Übergabe enthalten. Root verifizierte
+sämtliche Quellen-, Abhängigkeits- und Loghashes beider Pakete. Beide gemeinsamen
+Produktionsbuilds bestanden; ihre 918 Eingaben und 88 Desktopdateien stehen in
+`.build/atlas-performance-plan/A0.16-17-build-handoff.json`. Das unabhängige Review
+`a0_preview_review_r2` reproduziert jedoch einen weiteren offenen Persistenzfehler:
+Fehlt `active.json`, bleibt die vorhandene Vorschau-DB unsichtbar und eine zweite
+Vorschau lässt sich anlegen (`A0.16-review-r2-missing-pointer.log`). Dieser Bestand
+muss vor einer Neuanlage als beschädigte Zuordnung erkannt werden. Die reale
+Graph-DOM-Gegenprobe findet außerdem: Eine definitiv abgelehnte erste Raumaktion
+legt bereits eine Vorschau an, deren Kennung die UI nicht übernimmt; die korrigierte
+Eingabe adressiert anschließend eine zweite ID und scheitert erneut
+(`A0.17-review-r2-first-rejected.tap`). A0.17 muss den vorhandenen Besitzer rein
+lesend zurückbinden und den ursprünglichen Eingabefehler sichtbar erhalten.
+Keine automatische Schreibwiederholung. Beide Maßnahmen bleiben in den bestehenden
+Paketen; A0.09 und seine Nachfolger warten auf die Nachprüfung. Der Fachleseweg
+bekommt danach einen direkten Paketlink zum Vorschauvertrag und dessen zentralen
+UI-/DOM-Testeinstieg. Die tatsächlichen neuen
+Autoren-/History-/Antwortverlusttests sind im Capability-Katalog verknüpft.
+R3 bestätigt die beiden Fehlerkorrekturen und den direkten Doku-Leseweg. Ein
+enger Restbefund bleibt im neuen UI-Rücklesepfad: Der strukturierte Resultmarker
+`store-outcome-unknown` löst noch zwei Leser und eine Veröffentlichung aus,
+obwohl er keine definitive Ablehnung ist (`A0.17-review-r3-typed-unknown.tap`).
+Root ergänzt ausschließlich die Ausschlussbedingung und eine DOM-Regression;
+vollständiges Pending und dauerhafte Recovery bleiben A0.07/A0.13. Die 18
+unabhängigen A0.16-Deltafälle bestehen (`A0.16-review-r3-targeted.tap`).
+Für A0.11 ist nach
 unabhängiger Quellenprüfung ein fokussierter nativer Runner im bestehenden Paket
 benannt; seine Umsetzung beginnt erst nach den bisherigen Vorgängergates.
 

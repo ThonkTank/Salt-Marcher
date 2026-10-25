@@ -1,6 +1,6 @@
 import {EditorSession} from './editor-session';
 import {atlasFieldValue,setAtlasFieldValue,lengthLabel} from './atlas-units';
-import {atlasDrawingWrite} from './campaign-atlas-author';
+import {atlasDrawingWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
 import type {DrawingView,DrawingAction} from './drawing-contracts';
 import type {DungeonPath,PathPreview,ConnectionForm,PassageSide,DungeonPassage} from './path-contracts';
@@ -22,9 +22,9 @@ function restore(values:Form){for(const[id,v]of Object.entries(values))if(typeof
 function sameForm(a:Form,b:Form){return formIds.every(id=>a[id]===b[id]);}
 function pathDirty(){return !!draft&&!!formBase&&!sameForm(snapshot(),formBase);}
 function invalidatePreview(){editIntent++;preview=null;el<HTMLButtonElement>('path-commit').disabled=true;el('path-preview-status').textContent='Eingaben geändert. Verbindung erneut vorschlagen lassen.';drawPreview();}
-function owner(){return{generation:editorSession.generation,token:workspace()?.token};}
+function owner(){return{generation:editorSession.generation,token:workspace()?.token,target:graphPreviewTarget(workspace()?.graphPreview)};}
 type Owner=ReturnType<typeof owner>;
-function current(o:Owner){return o.generation===editorSession.generation&&o.token===workspace()?.token;}
+function current(o:Owner){return o.generation===editorSession.generation&&o.token===workspace()?.token&&graphPreviewMatches(o.target,workspace()?.graphPreview);}
 function run(fn:(o:Owner)=>Promise<boolean>){
  if(pendingWork.value){tell('Laufenden Auftrag abwarten.');return;}const o=owner();
  const task=Promise.resolve().then(()=>current(o)?fn(o):false).catch(e=>{if(current(o))tell(e.message,true);return false;}).finally(()=>{if(pendingWork.value===task){pendingWork.clear(task);writing=false;}});
@@ -72,12 +72,14 @@ function acknowledgePassage(a:Extract<DrawingAction,{kind:'passage'}>,submitted?
  }
 }
 async function command(a:DrawingAction,o:Owner,confirmed?:(view:DrawingView)=>void,side?:{key:'outbound'|'inbound';values:SideValues}){
- if(!await before()||!current(o))return false;
+ if(!await before()||!current(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return false;
  const w=workspace();if(!w)return false;
+ if(!graphPreviewMatches(graphPreviewTarget(data?.graphPreview),w.graphPreview,true))throw new Error('Pfadquelle inzwischen geändert. Neu laden.');
  writing=true;++readRequest;
- const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:a});
- if(!current(o))return false;
+ const result=await atlasDrawingWrite({commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,target:o.target,action:structuredClone(a)});
+ if(!current(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return false;
  if(!result.ok)throw new Error(result.error);
+ if(!graphPreviewMatches(o.target,result.value.workspace.graphPreview))throw new Error('Zeichenantwort gehört zu einer anderen Vorschau.');
  ++readRequest;const committedView=result.value.view;data=committedView;
  if(a.kind==='passage')acknowledgePassage(a,side?.values,side?.key);
  await changed(result.value.workspace);

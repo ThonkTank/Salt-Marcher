@@ -4886,7 +4886,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4919,11 +4919,14 @@
         "agent": "/root/a0_interim_review",
         "activeHours": null,
         "preparation": "read-only profile, backup, archive, erasure and persistent receipt handoff prepared",
-        "implementation": "assigned after verified and independently accepted A0.15 handoff",
+        "implementation": "persistent preview and bounded R2 corrections implemented; source/log hashes verified",
         "nativeQualification": "pending A0.14/A0.11",
         "startedAt": "2026-10-25T13:42:54.760084+00:00",
         "inputCommit": "5c1e878d",
-        "boundedCorrection": "A0.17 real Path dispatch reproduces missing location table in Shadow passageStatuses. Add scoped read-only canonical location existence lookup bound/rebound/removed by GraphShadow; no Location/Atlas schema copy."
+        "boundedCorrection": "Canonical passage lookup, Accept projection, broken symlink and missing active-pointer guards verified. Remaining preview contents cannot be silently replaced. Native A0.14/A0.11 remains open.",
+        "handoff": ".build/atlas-performance-plan/A0.16-handoff.json",
+        "review": "a0_preview_review_r3 accepted local A0.16 delta after fresh architecture and testing reviews; original missing-pointer repro now blocked",
+        "verification": "28/28 final restart cases plus prior unchanged compatibility evidence; independent R3 18/18; shared R4 typechecks and production builds passed"
       }
     },
     {
@@ -4976,7 +4979,10 @@
         "implementation": "assigned after verified and independently accepted A0.15 handoff",
         "nativeQualification": "pending A0.14/A0.11",
         "startedAt": "2026-10-25T13:42:54.760084+00:00",
-        "inputCommit": "5c1e878d"
+        "inputCommit": "5c1e878d",
+        "handoff": ".build/atlas-performance-plan/A0.17-handoff.json",
+        "review": "R3 confirms definitive rejection fix; structured store-outcome-unknown must also exclude its new readback",
+        "boundedCorrection": "Root adds only the structured errorKind exclusion to the new first-rejection readback and one existing-file DOM regression asserting zero readers/publish and one dispatch. Scope graph-ui.ts+desktop-graph-preview-owner.test.mjs. Definitive error correction, missing-pointer fix and direct documentation entry are already independently checked; fresh review required for this delta. Full typed Unknown pending/recovery remains A0.07/A0.13, native A0.14."
       }
     }
   ],

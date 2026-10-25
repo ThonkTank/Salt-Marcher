@@ -31,6 +31,7 @@ import {AtlasCanvas} from "./atlas-canvas";
 import {atlasFrame,localToAtlas,atlasToLocal} from "./campaign-atlas-model";
 import {
   writeAtlasCommit,
+  graphPreviewTarget,graphPreviewMatches,
   pendingAtlasWrite,
   recoverAtlasCommit,
 } from "./campaign-atlas-author";
@@ -769,7 +770,8 @@ export class CampaignAtlasWorkbench {
   }
 
   private async write(action: AtlasAction, applyWorkspace = false, propagateError = false, terrain?:import("./terrain-live-stroke").TerrainLiveContext) {
-    const w = this.owner;
+    const w = this.owner,source=this.regions.data?.workspace,target=graphPreviewTarget(source?.graphPreview);
+    const current=(exact=false)=>this.owner===w&&graphPreviewMatches(target,this.regions.data?.workspace.graphPreview,exact);
     if (!w || this.busy || !terrain&&this.raster&&(this.strokeQueue?.pending||this.strokeQueue?.failed)) return null;
     this.raster?.pauseReads();
     this.writing = true;
@@ -780,19 +782,27 @@ export class CampaignAtlasWorkbench {
       if (a.kind === "city" || a.kind === "world" || a.kind === "drawing")
         a.command.commandId = commandId;
       if (a.kind === "room-edit") a.edit.commandId = commandId;
-      const command={commandId,token:w.token,campaignId:w.campaign.id,action:a,...(this.regions.data?.region?{sourceFence:this.regions.data.region.fence}:{})};
+      const previewAction=['drawing','room-edit','room-default','undo','redo'].includes(a.kind);
+      const destination=previewAction?target:undefined;
+      const supplied=a.kind==='drawing'?a.command.target:a.kind==='room-edit'?a.edit.target:undefined;
+      if(supplied&&!graphPreviewMatches(supplied,source?.graphPreview,true))throw new Error('Atlasauftrag gehört zu einer anderen Vorschauquelle.');
+      if(a.kind==='drawing')a.command.target=destination;
+      if(a.kind==='room-edit')a.edit.target=destination;
+      const command={commandId,token:w.token,campaignId:w.campaign.id,target:destination,action:a,...(this.regions.data?.region?{sourceFence:this.regions.data.region.fence}:{})};
       const endCommit=terrainTraceStart("commit.roundtrip",terrain?.expectedRevision);
       const ack=await writeAtlasCommit(terrain?{...command,sourceFence:terrain.sourceFence,terrainStroke:{id:terrain.id,expectedRevision:terrain.expectedRevision}}:command);
       endCommit();
-      if(this.owner!==w)return null;if(!ack.ok)throw new Error(ack.error);
+      if(!current(true))return null;if(!ack.ok)throw new Error(ack.error);
+      if(destination&&!graphPreviewMatches(destination,ack.value.preview))throw new Error('Atlasantwort gehört zu einer anderen Vorschau.');
       get('atlas-save-status').textContent='Gespeichert';get('atlas-save-status').dataset.error='false';this.opts.status('Gespeichert');
       this.journey.invalidatePreview();
+      if(destination&&this.regions.data)this.regions.data.workspace={...this.regions.data.workspace,graphPreview:ack.value.preview};
       this.regions.acceptCommit(ack.value, !!terrain);
       if(terrain){
         return{atlas:this.regions.data!,result:ack.value.result??null,ack:ack.value};
       }
       try{
-        if(applyWorkspace){const initial=await window.campaign.workspaceInitial(w.token);if(!initial.ok)throw new Error(initial.error);await this.opts.updated(initial.value);}
+        if(applyWorkspace){const initial=await window.campaign.workspaceInitial(w.token);if(!current())return null;if(!initial.ok)throw new Error(initial.error);if(!graphPreviewMatches(target,initial.value.graphPreview))return null;await this.opts.updated(initial.value);if(!current())return null;}
         const endRefresh=terrainTraceStart("atlas.refresh",ack.value.revision);
         const loaded=await this.regions.refresh().finally(endRefresh);if(!loaded&&this.owner===w){get('atlas-save-status').textContent='Gespeichert. Kartenansicht erneut laden.';this.opts.status('Gespeichert. Kartenansicht erneut laden.',true);}
         if(a.kind==='city'&&(this.author.selection?.kind==='building'||this.author.selection?.kind==='city-unit'))await openCityReference(a.command.cityId,this.author.selection.id,true,true);
@@ -812,10 +822,12 @@ export class CampaignAtlasWorkbench {
     }
   }
   private async history(kind: "undo" | "redo") {
+    const owner=this.owner,target=graphPreviewTarget(this.regions.data?.workspace.graphPreview);
+    const current=()=>this.owner===owner&&graphPreviewMatches(target,this.regions.data?.workspace.graphPreview,true);
     if(this.landscape.livePainting)return;
     if(this.raster&&this.strokeQueue){try{await this.strokeQueue.finish();if(!await this.regions.refresh())return;this.strokeQueue=null;}catch(e){this.error(e);return;}}
     if(this.landscape.routeHistory(kind))return;
-    if (!(await this.opts.flush())) return;
+    if (!current() || !(await this.opts.flush()) || !current()) return;
     const result = await this.write({ kind }, true);
     if (result && this.cityId) await openCityReference(this.cityId,this.author.selection?.kind==='building'||this.author.selection?.kind==='city-unit'?this.author.selection.id:undefined,true,true);
   }

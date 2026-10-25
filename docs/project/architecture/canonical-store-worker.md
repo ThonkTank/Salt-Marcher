@@ -73,6 +73,8 @@ StoreClient rekonstruiert daraus `StoreOutcomeUnknownError`. Der genaue Auftrag
 bleibt über seine Atlas-Quittung klärbar, die fehlende Ansicht wird separat neu
 gelesen. Der RoomCommit-Leser ruft dafür keinen zweiten Schreibauftrag auf.
 
+### Graphvorschau und Autorenbesitzer
+
 Graphvorschau-Aufträge besitzen eine eigene, begrenzte Transaktionsgrenze in
 `storage/graph-preview-commands.ts`. `GraphPreviewTarget` hält die vor dem Dispatch
 festgelegte `previewId`, `scopeId` und lokale `revision`; die erste Autorenaktion
@@ -103,12 +105,59 @@ schreibt seinen identischen Beleg vor dem Entfernen; spätere Vorschauen übersc
 ihn nicht. Der Preview-Fingerprint wird ausschließlich von
 `previewCommandFingerprint` aus `{campaignId,target,action}` erzeugt.
 
-A0.15 stellt diesen Besitzer- und Retirementvertrag bereit. Dauerhafte Shadowdatei,
-Wiederöffnung und profilgebundene Bereinigung folgen in A0.16; die acht
-UI-Autorenanschlüsse mit explizitem Ziel folgen in A0.17. Ohne verfügbare ursprüngliche
-Vorschau ist ein alter Previewauftrag unbekannt, nicht kanonisch `not-applied`.
-`tests/desktop-graph-preview-commit.test.mjs` prüft die Vorschau- und Acceptgrenzen,
-gruppierte History, Commitfehler und den echten Worker/Main/Preload-Transport.
+`storage/graph-preview-lifecycle.ts` verwaltet neben der kanonischen Datenbank
+höchstens eine aktive Vorschau unter `<database>.graph-previews`. Eine atomar
+veröffentlichte Zuordnung hält Profilkennung, Kampagne, Vorschau-ID, Scope und die
+ursprüngliche Quellbasis fest, bevor die lokale SQLite-Datei entsteht. Profilkennung
+und Zuordnung bleiben außerhalb von Main-Recoverybackups. Pfade werden nur aus dem
+eigenen Datenbankpfad und geprüften IDs abgeleitet; fremde Lifecyclemarker erteilen
+keine Berechtigung, eine Vorschau zu öffnen oder zu löschen.
+
+Ein neuer Store öffnet dieselbe lokale Datenbank samt Phase, Revision, History und
+Receipts. Fehlende oder beschädigte Dateien, widersprüchliche Identität und eine
+unterbrochene Anlage werden ausdrücklich abgewiesen. Es gibt keinen Ersatz durch
+eine leere Vorschau. Die ursprüngliche Basis wird nicht erneuert; bei inzwischen
+geänderter kanonischer Geometrie bleiben lokale Schreibaufträge und Accept gesperrt,
+Restore bleibt möglich. `close()` schließt nur Handles. Nach bestätigtem Accept
+oder Restore kann der nächste Store unterbrochenes Aufräumen wieder aufnehmen;
+Accept benötigt dafür zusätzlich seinen kanonischen Receipt. Ein kleiner
+profilgebundener Retirementbeleg hält nur die exakte Accept-/Restoreidentität,
+keine Commands oder vollständige lokale History. Frühere gewöhnliche
+Previewaufträge sind nach Retirement ohne ihren ursprünglichen Bestand weiterhin
+unbekannt, nicht kanonisch `not-applied`.
+
+Kampagnenarchive und Kopien enthalten nur kanonischen Inhalt und entfernen lokale
+Lifecyclemarker über `pruneCampaignSnapshot`. Ein volles Main-Recoverybackup ist
+keine Sicherung der zusätzlichen offenen Vorschau. Die bestehende
+Kampagnenlöschqueue entfernt ausschließlich die zugehörige lokale Vorschau und
+anschließend ihre Retirementmarker; ein anderer Kampagnenbesitzer bleibt erhalten.
+Ortslinks in lokalen Passagen lesen ihre aktuelle Existenz über einen an die
+Shadowverbindung gebundenen Main-Lookup in `storage/paths.ts`. Dieser Port schreibt
+keine Ortsdaten, wird bei Wiederöffnung erneut gebunden und beim Schließen entfernt.
+
+`tests/desktop-graph-preview-restart.test.mjs` prüft reale Worker-Exits vor/nach
+lokalem Commit, vor/nach Retirementcommit und während der Bereinigung, unveränderte
+Wiederöffnung, Beschädigung, Profil-/Archiv-/Löschgrenzen sowie lokale Ortslinks.
+Die neue Storeaktivierung benötigt keine vom Test zurückgereichte Preview-ID;
+die exakte Commandreferenz zur anschließenden Statusabfrage hält der Test selbst.
+Deren dauerhafter Rendererbesitzer bleibt A0.13/A0.07; native Schließ- und
+Wiederaufnahmequalifikation bleibt A0.14.
+
+Der zentrale UI-Anschluss in `campaign-atlas-author.ts` erfasst mit
+`graphPreviewTarget` die Preview-ID, den Scope und die lokale Revision der Eingabe;
+`graphPreviewMatches` prüft diesen Besitzer vor Dispatch und vor Übernahme einer
+Antwort. Die Autorenwrapper reichen dasselbe Ziel an Graph-, Raum-, Zeichen- und
+Historyaufträge weiter. `graph-ui.ts` besitzt die erste Vorschaukennung und die
+Übernehmen-/Wiederherstellen-Aktionen. Die übrigen Autorenoberflächen verwenden
+ihren jeweiligen geladenen Workspace. `tests/desktop-graph-preview-owner.test.mjs`
+führt ihre tatsächlichen DOM-Dispatcher aus und prüft Vorschauwechsel, verspätete
+Antworten sowie lokale und kanonische Undo/Redo-Ziele. Vollständige Unknown-
+Behandlung und dauerhafte Klärungsreferenzen bleiben A0.07/A0.13.
+`tests/desktop-graph-preview-commit.test.mjs` prüft weiterhin
+die Vorschau- und Acceptgrenzen, gruppierte History, Commitfehler und den echten
+Worker/Main/Preload-Transport.
+
+### Commitnachlese und Schließen
 
 Die Einordnung erfolgt erst nach der äußersten Schreibtransaktion. Insbesondere
 bleibt eine fehlgeschlagene Terraincache-Nachlese innerhalb der Prepared-Transaktion

@@ -145,6 +145,8 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
 ### A0.15 — Graphvorschau-Aufträge und Belege unter einem Transaktionsbesitzer führen
 
+Fachvertrag und Codeeinstiege: [Graphvorschau und Autorenbesitzer](../../../project/architecture/canonical-store-worker.md#graphvorschau-und-autorenbesitzer).
+
 <!-- atlas-dependencies {"requires":["A0.06","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
 - **Eingaben:** A0.09-Zwischenstand `950b79eb`, reproduzierte Room-/Drawing-Shadowfehler vor und nach erfolgreicher Rücklese sowie `GraphShadow` und vorhandene Drawing-/Roomhistory. Kein bloßer Wrapper um zwei getrennte Commits.
@@ -155,6 +157,8 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
 ### A0.16 — Dieselbe Graphvorschau mit Belegen dauerhaft wiederöffnen und sicher abschließen
 
+Fachvertrag und Codeeinstiege: [Graphvorschau und Autorenbesitzer](../../../project/architecture/canonical-store-worker.md#graphvorschau-und-autorenbesitzer).
+
 <!-- atlas-dependencies {"requires":["A0.15","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
 - **Eingaben:** Previewidentität, zusammengesetzter Receipt und Acceptgrenze aus A0.15; bestehender expliziter Schutz offener Vorschauen in `canLeaveGraphPreview`.
@@ -164,6 +168,8 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 - **Zuweisung / Aufwand:** Ein Agent; SQLite-/Hostlebenszyklus, geschätzt 2–5 aktive Stunden plus Reserve. Kleine profilgebundene Zuständigkeit statt allgemeinem Speicherumbau.
 
 ### A0.17 — Autorenaktionen und Undo/Redo ausdrücklich an die Graphvorschau binden
+
+Fachvertrag und Codeeinstiege: [Graphvorschau und Autorenbesitzer](../../../project/architecture/canonical-store-worker.md#graphvorschau-und-autorenbesitzer).
 
 <!-- atlas-dependencies {"requires":["A0.15","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 

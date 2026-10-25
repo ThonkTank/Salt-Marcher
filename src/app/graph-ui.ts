@@ -1,8 +1,8 @@
 import {EditorSession} from './editor-session';
-import {atlasGraphWrite} from './campaign-atlas-author';
+import {atlasGraphWrite,pendingAtlasWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import {initDungeonBudget,drawDungeonBudget,resetDungeonBudget,hasDungeonBudgetDrafts,confirmDungeonBudget} from './dungeon-budget-ui';
 import type {WorkspaceGeometry,Room,Point} from './contracts';
-import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts} from './graph-contracts';
+import type {GraphView,GraphAction,GraphDisplay,GraphContentCounts,GraphCommand} from './graph-contracts';
 import {graphDisplay} from './graph-model';
 export const editorSession = new EditorSession();
 const pendingWork = editorSession.operation<Promise<boolean>>();
@@ -15,8 +15,8 @@ let workspace:()=>WorkspaceGeometry|null,selected:()=>Room|null,before:()=>Promi
 let data:GraphView|null=null, scopeId='', readVersion=0, openVersion=0, writing=false, failed=false;
 let display:GraphDisplay={nodes:[],edges:[],decisions:0,loops:0},picked=new Set<string>(),edgeId:string|null=null,viewBox:{x:number;y:number;width:number;height:number}|null=null,drag:{point:Point;node:string}|null=null;
 const cancelled=Symbol('obsolete graph operation');
-function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id,target:graphPreviewTarget(w?.graphPreview)};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id&&graphPreviewMatches(o.target,w?.graphPreview);}
 function run(fn:()=>Promise<unknown>){
  if(pendingWork.value)return;
  const o=owner();failed=false;
@@ -26,23 +26,58 @@ function run(fn:()=>Promise<unknown>){
 function canLeave(){if(writing||hasDungeonBudgetDrafts()){tell('Laufende Änderung oder offene Budgeteingaben zuerst abschließen.',true);return false;}return true;}
 function closeGraph(){if(!canLeave())return;openVersion++;readVersion++;drag=null;el<HTMLDialogElement>('graph-dialog').close();}
 function roomIds(){const ids=new Set<string>();for(const n of display.nodes.filter(n=>picked.has(n.id)))for(const id of n.roomIds)ids.add(id);const edge=display.edges.find(e=>e.id===edgeId);if(edge){for(const id of edge.roomIds)ids.add(id);for(const n of display.nodes.filter(n=>n.id===edge.from||n.id===edge.to))for(const id of n.roomIds)ids.add(id);}return [...ids];}
+async function rejectedFirstPreview(request:GraphCommand,o:ReturnType<typeof owner>){
+ const version=readVersion,current=()=>owns(o)&&scopeId===request.scopeId&&readVersion===version;
+ // A rejected first mutation can leave its protected owner at revision zero.
+ // Only read that exact owner; an unknown writer outcome uses receipt recovery.
+ const w=await window.campaign.workspaceGeometry(request.token).catch(()=>null);
+ if(!current())throw cancelled;
+ if(!w?.ok||w.value.token!==request.token||w.value.campaign.id!==request.campaignId||!graphPreviewMatches(request.target,w.value.graphPreview,true))return null;
+ const view=await window.campaign.graph(request.token,request.scopeId).catch(()=>null);
+ if(!current())throw cancelled;
+ if(!view?.ok||!graphPreviewMatches(request.target,view.value.preview,true))return null;
+ return{workspace:w.value,view:view.value};
+}
 async function command(action:GraphAction){
  const w=workspace(),o=owner(),targetScope=scopeId,budgetBase=data?.layout??null;
  if(!w)throw cancelled;
- const request={commandId:uuid(),token:w.token,campaignId:w.campaign.id,scopeId:targetScope,action:structuredClone(action)};
+ const lifecycle=['accept','restore','raster'].includes(action.kind);
+ const source=graphPreviewTarget(lifecycle?w.graphPreview:data?data.preview:w.graphPreview);
+ if(!graphPreviewMatches(source,w.graphPreview,true))throw cancelled;
+ if(!source&&(action.kind==='accept'||action.kind==='restore'))throw new Error('Graphvorschau inzwischen gewechselt. Erneut öffnen.');
+ const base={commandId:uuid(),token:w.token,campaignId:w.campaign.id,scopeId:targetScope};
+ const request:GraphCommand=action.kind==='select'&&!source?{...base,action:structuredClone(action)}:
+  {...base,target:source??{kind:'graph-preview',previewId:uuid(),scopeId:targetScope,revision:0},action:structuredClone(action)};
  writing=true;readVersion++;
  try{
   const ready=await before();
-  if(!owns(o))throw cancelled;
+  if(!owns(o)||!graphPreviewMatches(source,workspace()?.graphPreview,true))throw cancelled;
   if(!ready)throw new Error('Offene Eingaben zuerst übernehmen oder verwerfen.');
   const r=await atlasGraphWrite(request);
-  if(!owns(o))throw cancelled;
-  if(!r.ok)throw new Error(r.error);
+  if(!owns(o)||!graphPreviewMatches(source,workspace()?.graphPreview,true))throw cancelled;
+  if(!r.ok){
+   if(!source&&request.target&&!('errorKind' in r&&r.errorKind==='store-outcome-unknown')&&!pendingAtlasWrite(request.token)){
+    const rebound=await rejectedFirstPreview(request,o);
+    if(rebound){
+     o.target=graphPreviewTarget(rebound.workspace.graphPreview);readVersion++;data=rebound.view;
+     await publish(rebound.workspace);
+     if(!owns(o))throw cancelled;
+     syncGraphBanner(rebound.workspace);draw();
+     // Publishing changed the owner captured by run(); retain this rejection
+     // explicitly rather than presenting the readback as a successful action.
+     failed=true;tell(r.error,true);throw cancelled;
+    }
+   }
+   throw new Error(r.error);
+  }
+  const expected=action.kind==='accept'||action.kind==='restore'?undefined:request.target;
+  if(!graphPreviewMatches(expected,r.value.workspace.graphPreview))throw new Error('Graphantwort gehört zu einer anderen Vorschau.');
+  o.target=graphPreviewTarget(r.value.workspace.graphPreview);
   readVersion++;confirmDungeonBudget(r.value.view,budgetBase);data=r.value.view;
   await publish(r.value.workspace);
   if(!owns(o))throw cancelled;
   syncGraphBanner(r.value.workspace);draw();return r.value.view;
- }finally{if(owns(o))writing=false;}
+ }finally{if(o.generation===editorSession.generation&&o.token===workspace()?.token)writing=false;}
 }
 async function refresh(){
  const w=workspace(),o=owner(),targetScope=scopeId,version=++readVersion;
@@ -89,7 +124,7 @@ export function initGraph(status:typeof tell,w:typeof workspace,r:typeof selecte
    el<HTMLDialogElement>('graph-dialog').close();raster();
   });
   const job=pendingWork.value,o=owner();
-  void job?.then(ok=>{if(ok&&owns(o)&&workspace()?.graphPreview?.phase==='raster')el('dungeon-content-open').click();});
+  void job?.then(ok=>{if(ok&&o.generation===editorSession.generation&&o.token===workspace()?.token&&workspace()?.graphPreview?.phase==='raster')el('dungeon-content-open').click();});
  };
  el('graph-close').onclick=closeGraph;
  el('graph-dialog').addEventListener('cancel',event=>{event.preventDefault();closeGraph();});
@@ -150,11 +185,11 @@ export function initGraph(status:typeof tell,w:typeof workspace,r:typeof selecte
  },{passive:false});
 }
 export function activateGraph(){resetDungeonBudget();editorSession.generation++;readVersion++;openVersion++;pendingWork.value=null;writing=false;failed=false;scopeId='';data=null;picked.clear();edgeId=null;drag=null;viewBox=null;el<HTMLDialogElement>('graph-dialog').close();syncGraphBanner(workspace());}
-export async function flushGraph(){const o=owner(),job=pendingWork.value;const ok=job?await job:true;return owns(o)&&ok&&!failed&&!hasDungeonBudgetDrafts();}
+export async function flushGraph(){const o=owner(),job=pendingWork.value;const ok=job?await job:true;return o.generation===editorSession.generation&&o.token===workspace()?.token&&(job?ok:owns(o))&&!failed&&!hasDungeonBudgetDrafts();}
 
 export async function refreshOpenGraph(){if(el<HTMLDialogElement>('graph-dialog').open)await refresh();}
 
-/** The shadow is intentionally temporary; only explicit accept/restore may discard it. */
+/** The preview remains protected until an explicit accept or restore. */
 export function canLeaveGraphPreview(){
  if(!workspace()?.graphPreview)return true;
  tell('Geschützte Graph-/Rastervorschau zuerst übernehmen oder mit „Ursprung vollständig wiederherstellen“ verwerfen. Danach Kampagne wechseln oder schließen.',true);

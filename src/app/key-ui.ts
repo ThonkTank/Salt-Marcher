@@ -6,7 +6,7 @@ import {RoomKeySearchIndex,type KeySearchHit} from './key-search';
 import {KeyNoteContext} from './key-note-context';
 import {KeyPlanContext,type KeyPlanReturn} from './key-plan-context';
 import {atlasDefaultRoomWrite} from "./campaign-atlas-author";
-import {atlasDrawingWrite} from './campaign-atlas-author';
+import {atlasDrawingWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import {initKeyCopy,invalidateKeyCopy,syncKeyCopyControl} from './key-copy-ui';
 import {drawSurfaceKey} from './surface-key-ui';
 import type {WorkspaceGeometry,Workspace,Room} from './contracts';
@@ -44,8 +44,8 @@ function dirty(){return !!draft&&currentSignature()!==baseSignature;}
 function establishBase(force=false){if(timer)clearTimeout(timer);timer=null;baseKeyRevision=draft?records().find(k=>k.id===draft!.id)?.revision??null:null;baseRoomRevision=draft?.kind==='room'?keyRooms().find(r=>r.id===draft!.id)?.revision??null:null;baseSignature=force?'':currentSignature();blocked=false;saveState(force?'dirty':'saved',force?'Eingabe offen – wird automatisch gespeichert.':'Keine offenen Änderungen.');}
 function lockEditor(){for(const c of el('key-dialog').querySelectorAll<HTMLInputElement|HTMLButtonElement|HTMLSelectElement|HTMLTextAreaElement>('input,button,select,textarea'))c.disabled=editorLocked;if(!editorLocked){field('key-number').disabled=draft?.kind!=='room';field('key-zsteps').disabled=draft?.kind!=='level';select('key-level').disabled=!draft||!['room','group'].includes(draft.kind);select('key-group').disabled=draft?.kind!=='room';el<HTMLButtonElement>('key-map').disabled=!geometry?.rooms.some(r=>r.id===roomId);}updateSelectionCount();updateListControls();if(!editorLocked)syncKeyCopyControl();syncTemplateTargets();}
 function reportFailure(error:unknown){blocked=true;saveState('error','Eingabe bleibt offen: '+(error as Error).message);tell((error as Error).message+' Eingabe bleibt erhalten.',true);}
-function owner(){const w=workspace();return{generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return{generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id,target:graphPreviewTarget(w?.graphPreview)};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id&&graphPreviewMatches(o.target,w?.graphPreview);}
 function schedule(){
  if(timer)clearTimeout(timer);timer=null;if(!draft)return;if(composing){saveState('dirty','Texteingabe läuft noch.');return;}
  try{if(!dirty()){saveState('saved','Keine offenen Änderungen.');return;}}catch{}
@@ -56,8 +56,8 @@ function run(fn:()=>Promise<void>,lock=false){
  if(pendingWork.value)return;
  const o=owner();editorLocked=lock;lockEditor();
  const task=Promise.resolve().then(()=>{if(owns(o))return fn();}).catch(e=>{if(owns(o))reportFailure(e);}).finally(()=>{
-  pendingWork.clear(task);if(!owns(o))return;
-  editorLocked=false;lockEditor();if(!blocked)try{if(dirty())schedule();}catch(e){reportFailure(e);}
+  pendingWork.clear(task);if(o.generation!==editorSession.generation||o.token!==workspace()?.token)return;
+  editorLocked=false;lockEditor();if(!owns(o))return;if(!blocked)try{if(dirty())schedule();}catch(e){reportFailure(e);}
  });pendingWork.value=task;
 }
 async function moveEditor(action:()=>Promise<void>|void){const o=owner(),intent=++transition;if(!(await flushKeys())||!owns(o)||intent!==transition)return false;await action();return owns(o)&&intent===transition;}
@@ -66,10 +66,12 @@ function attrText(attrs:KeyContent['attributes']){return Object.entries(attrs).m
 function optionList(id:string,rows:{id:string;name:string}[],value:string|null,label='Kein Eintrag'){const s=select(id);s.replaceChildren();for(const r of [{id:'',name:label},...rows]){const o=document.createElement('option');o.value=r.id;o.textContent=r.name;s.append(o);}s.value=value??'';}
 async function command(action:DrawingAction){
  const w=workspace(),o=owner();if(!w)return null;
- const request={commandId:uuid(),token:w.token,campaignId:w.campaign.id,action:structuredClone(action)};
- const ready=await before();if(!owns(o))return null;if(!ready)throw new Error('Andere offene Eingaben zuerst prüfen.');
+ if(!graphPreviewMatches(graphPreviewTarget(data?.graphPreview),w.graphPreview,true))throw new Error('Keyquelle inzwischen geändert. Neu laden.');
+ const request={commandId:uuid(),token:w.token,campaignId:w.campaign.id,target:graphPreviewTarget(w.graphPreview),action:structuredClone(action)};
+ const ready=await before();if(!owns(o)||!graphPreviewMatches(request.target,workspace()?.graphPreview,true))return null;if(!ready)throw new Error('Andere offene Eingaben zuerst prüfen.');
  readVersion++;
- const r=await atlasDrawingWrite(request);if(!owns(o))return null;if(!r.ok)throw new Error(r.error);
+ const r=await atlasDrawingWrite(request);if(!owns(o)||!graphPreviewMatches(request.target,workspace()?.graphPreview,true))return null;if(!r.ok)throw new Error(r.error);
+ if(!graphPreviewMatches(request.target,r.value.workspace.graphPreview))throw new Error('Zeichenantwort gehört zu einer anderen Vorschau.');
  readVersion++;data=r.value.view;acknowledged=r.value.workspace;advancePreparedBatch(request.action,r.value);
  try{await publish(r.value.workspace);}catch(e){if(owns(o))tell('Key gespeichert; Kartenanzeige konnte nicht aktualisiert werden: '+(e as Error).message,true);}
  if(!owns(o))return null;
@@ -359,9 +361,9 @@ export function initKeys(status:typeof tell,w:typeof workspace,r:typeof selected
  });
  el('key-dialog').addEventListener('cancel',event=>{event.preventDefault();void moveEditor(()=>el<HTMLDialogElement>('key-dialog').close()).catch(reportFailure);});
  el('key-open').onclick=()=>{const o=owner(),room=selected(),intent=++transition;run(async()=>{if(!(await before())||!owns(o)||intent!==transition)return;if(!room)throw new Error('Raum auswählen.');scopeId=room.scopeId;if(!await refresh()||!owns(o)||intent!==transition)return;openRoom(room.id);optionList('key-filter-level',records().filter(r=>r.kind==='level'&&r.scopeId===scopeId),null,'Alle Level');optionList('key-filter-group',records().filter(r=>r.kind==='group'&&r.scopeId===scopeId),null,'Alle Gruppen');showKeyDialog();});};
- el('key-add-room').onclick=()=>{void moveEditor(async()=>{
-  run(async()=>{const o=owner(),w=workspace();if(!w)return;if(!await before())throw new Error('Andere offene Eingaben zuerst prüfen.');if(!owns(o))return;
-   const result=await atlasDefaultRoomWrite(w.token,w.campaign.id);if(!owns(o))return;if(!result.ok)throw new Error(result.error);
+ el('key-add-room').onclick=()=>{const o=owner(),w=workspace();void moveEditor(async()=>{
+  run(async()=>{if(!w||!owns(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return;if(!await before())throw new Error('Andere offene Eingaben zuerst prüfen.');if(!owns(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return;
+   const result=await atlasDefaultRoomWrite(w.token,w.campaign.id,o.target);if(!owns(o)||!graphPreviewMatches(o.target,workspace()?.graphPreview,true))return;if(!result.ok)throw new Error(result.error);if(!graphPreviewMatches(o.target,result.value.graphPreview))throw new Error('Raumantwort gehört zu einer anderen Vorschau.');
    acknowledged=result.value;await publish(result.value);if(!owns(o)||!await refresh()||!owns(o))return;
    const room=result.value.rooms.find(r=>r.id===result.value.selectedId);if(!room)throw new Error('Neuer Raum konnte nicht geöffnet werden.');
    field('key-search').value='';select('key-filter-level').value='';select('key-filter-group').value='';select('key-filter').value='';listPage=0;openRoom(room.id);

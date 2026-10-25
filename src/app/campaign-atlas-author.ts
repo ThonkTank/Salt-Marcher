@@ -1,4 +1,6 @@
 import {EditorSession} from './editor-session';
+import type {GraphPreviewState,GraphPreviewTarget} from './graph-contracts';
+
 import type { Result, Edit, RoomCommit } from "./contracts";
 import type { CityCommand, CityView } from "./city-contracts";
 import type { DrawingCommand, DrawingView } from "./drawing-contracts";
@@ -8,6 +10,13 @@ import type {
   AtlasCommand,
   CampaignAtlas,
 } from "./campaign-atlas-contracts";
+/** Capture the source owned by this input, never a later global preview. */
+export function graphPreviewTarget(state:GraphPreviewState|null|undefined):GraphPreviewTarget|undefined {
+  return state?{kind:'graph-preview',previewId:state.id,scopeId:state.scopeId,revision:state.revision}:undefined;
+}
+export function graphPreviewMatches(target:GraphPreviewTarget|undefined,state:GraphPreviewState|null|undefined,exact=false){
+  return target?!!state&&target.previewId===state.id&&target.scopeId===state.scopeId&&(exact?target.revision===state.revision:state.revision>=target.revision):!state;
+}
 export const editorSession = new EditorSession();
 
 const pending = new Map<string, AtlasCommand>();
@@ -106,11 +115,11 @@ export async function atlasDrawingWrite(
   if(pending.has(c.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try{
     const result=await editorSession.run(()=>window.campaign.atlasDrawingCommit(c));
-    if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:c.token,campaignId:c.campaignId,revision:result.value.atlasRevision}}));}
+    if(result.ok){pending.delete(c.token);document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:c.token,campaignId:c.campaignId,revision:result.value.atlasRevision,preview:result.value.workspace.graphPreview}}));}
     document.dispatchEvent(new Event('atlas-write-state'));
     return result;
   }catch(e){
-    pending.set(c.token,{commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:{kind:'drawing',command:structuredClone(c)}});
+    pending.set(c.token,{commandId:c.commandId,token:c.token,campaignId:c.campaignId,target:structuredClone(c.target),action:{kind:'drawing',command:structuredClone(c)}});
     document.dispatchEvent(new Event('atlas-write-state'));
     return{ok:false,error:'Ausgang des Atlasauftrags unbekannt. Derselbe Auftrag bleibt für Speicherstand klären erhalten. '+(e as Error).message};
   }
@@ -119,10 +128,10 @@ export async function atlasRoomWrite(edit: Edit): Promise<Result<RoomCommit>> {
   if(pending.has(edit.token))return{ok:false,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
   try{
     const result=await editorSession.run(()=>window.campaign.atlasRoomCommit(edit));
-    if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:edit.token,campaignId:edit.campaignId,revision:result.value.atlasRevision}}));
+    if(result.ok)document.dispatchEvent(new CustomEvent('atlas-invalidated',{detail:{token:edit.token,campaignId:edit.campaignId,revision:result.value.atlasRevision,preview:result.value.graphPreview}}));
     return result;
   }catch(e){
-    pending.set(edit.token,{commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit:structuredClone(edit)}});
+    pending.set(edit.token,{commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,target:structuredClone(edit.target),action:{kind:'room-edit',edit:structuredClone(edit)}});
     document.dispatchEvent(new Event('atlas-write-state'));
     return{ok:false,error:'Ausgang des Atlasauftrags unbekannt. Dieselbe Kennung bleibt für Speicherstand klären erhalten. '+(e as Error).message};
   }
@@ -160,12 +169,13 @@ export async function atlasHistoryWrite(
   token: string,
   campaignId: string,
   kind: "undo" | "redo",
+  target?:GraphPreviewTarget,
 ): Promise<Result<import("./contracts").Workspace>> {
   const r = await writeAtlas({
     commandId: crypto.randomUUID(),
     token,
     campaignId,
-    action: { kind },
+    action: { kind },target,
   });
   return r.ok ? { ok: true, value: r.value.atlas.workspace } : r;
 }
@@ -173,7 +183,15 @@ export async function atlasHistoryWrite(
 export async function atlasGraphWrite(
   c: import("./graph-contracts").GraphCommand,
 ) {
-  if (c.action.kind !== "accept") return window.campaign.executeGraph(c);
+  if (c.action.kind !== "accept") {
+    if(pending.has(c.token))return{ok:false as const,error:'Ein Atlasauftrag hat noch keinen bestätigten Ausgang. Zuerst Speicherstand klären.'};
+    try{return await editorSession.run(()=>window.campaign.executeGraph(c));}
+    catch(error){
+      pending.set(c.token,{commandId:c.commandId,token:c.token,campaignId:c.campaignId,target:structuredClone(c.target),action:{kind:'graph-preview',command:structuredClone(c)}});
+      document.dispatchEvent(new Event('atlas-write-state'));
+      return{ok:false as const,error:'Ausgang der Graphaktion unbekannt. Dieselbe Vorschau und Kennung bleiben zur Klärung erhalten. '+String(error)};
+    }
+  }
   const r = await writeAtlas({
     ...c,
     action: { kind: "graph-accept", command: c },
@@ -192,12 +210,13 @@ export async function atlasGraphWrite(
 export async function atlasDefaultRoomWrite(
   token: string,
   campaignId: string,
+  target?:GraphPreviewTarget,
 ): Promise<Result<import("./contracts").Workspace>> {
   const r = await writeAtlas({
     commandId: crypto.randomUUID(),
     token,
     campaignId,
-    action: { kind: "room-default" },
+    action: { kind: "room-default" },target,
   });
   return r.ok ? { ok: true, value: r.value.atlas.workspace } : r;
 }

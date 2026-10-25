@@ -1,5 +1,5 @@
 import {EditorSession} from './editor-session';
-import {atlasDrawingWrite} from './campaign-atlas-author';
+import {atlasDrawingWrite,graphPreviewTarget,graphPreviewMatches} from './campaign-atlas-author';
 import type {WorkspaceGeometry,Room} from './contracts';
 import type {GraphView} from './graph-contracts';
 import type {DrawingElement} from './drawing-contracts';
@@ -19,8 +19,8 @@ const cancelled=Symbol('obsolete content operation');
 const snapshot=():Form=>({values:fields.map(id=>field(id).value),secret:field('content-secret').checked});
 const same=(a:Form,b:Form)=>a.secret===b.secret&&a.values.every((v,i)=>v===b.values[i]);
 const dirty=()=>baseline!==null&&!same(snapshot(),baseline);
-function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id};}
-function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id;}
+function owner(){const w=workspace();return {generation:editorSession.generation,token:w?.token,campaignId:w?.campaign.id,target:graphPreviewTarget(w?.graphPreview)};}
+function owns(o:ReturnType<typeof owner>){const w=workspace();return o.generation===editorSession.generation&&o.token===w?.token&&o.campaignId===w?.campaign.id&&graphPreviewMatches(o.target,w?.graphPreview);}
 function run(fn:()=>Promise<void>){
  if(pendingWork.value)return;
  const o=owner();failed=false;
@@ -92,11 +92,13 @@ function drawList(){
 }
 async function write(value:DrawingElement,expected:number|null,adopt=true){
  const w=workspace(),o=owner(),editor=frame,raw=snapshot();if(!w)throw cancelled;
- const request={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,action:{kind:'element' as const,element:structuredClone(value),expectedRevision:expected}};
+ if(!graphPreviewMatches(graphPreviewTarget(data?.preview),w.graphPreview,true))throw new Error('Inhaltsquelle inzwischen geändert. Neu laden.');
+ const request={commandId:crypto.randomUUID(),token:w.token,campaignId:w.campaign.id,target:graphPreviewTarget(w.graphPreview),action:{kind:'element' as const,element:structuredClone(value),expectedRevision:expected}};
  writing=true;readVersion++;
  try{
-  const ready=await before();if(!owns(o))throw cancelled;if(!ready)throw new Error('Offene Eingaben zuerst übernehmen oder verwerfen.');
-  const r=await atlasDrawingWrite(request);if(!owns(o))throw cancelled;if(!r.ok)throw new Error(r.error);
+  const ready=await before();if(!owns(o)||!graphPreviewMatches(request.target,workspace()?.graphPreview,true))throw cancelled;if(!ready)throw new Error('Offene Eingaben zuerst übernehmen oder verwerfen.');
+  const r=await atlasDrawingWrite(request);if(!owns(o)||!graphPreviewMatches(request.target,workspace()?.graphPreview,true))throw cancelled;if(!r.ok)throw new Error(r.error);
+  if(!graphPreviewMatches(request.target,r.value.workspace.graphPreview))throw new Error('Zeichenantwort gehört zu einer anderen Vorschau.');
   readVersion++;
   if(data)data={...data,geometry:{...data.geometry,rooms:r.value.workspace.rooms,drawing:r.value.view}};
   if(adopt&&editor===frame){
@@ -109,7 +111,7 @@ async function write(value:DrawingElement,expected:number|null,adopt=true){
    await notify();if(!owns(o))throw cancelled;
   }catch(e){if(!owns(o)||e===cancelled)throw cancelled;tell('Dungeon-Inhalt gespeichert; Anzeige konnte nicht vollständig aktualisiert werden: '+(e instanceof Error?e.message:String(e)),true);return;}
   tell('Dungeon-Inhalt und Platzierung gespeichert.');
- }finally{if(owns(o))writing=false;}
+ }finally{if(o.generation===editorSession.generation&&o.token===workspace()?.token)writing=false;}
 }
 async function save(){
  if(!data)return;

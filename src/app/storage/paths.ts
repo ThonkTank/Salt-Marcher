@@ -77,4 +77,15 @@ export function executePathAction(db:any,cam:string,a:PathAction,g:DungeonGeomet
  }else{const record=db.prepare('SELECT * FROM dungeon_path WHERE campaign_id=? AND id=?').get(cam,a.id),p=parsed(record) as DungeonPath;if(record.revision!==a.expectedRevision)throw new Error('Pfad geändert.');if(a.kind==='path-convert'){p.mode='area';owner.apply({table:'dungeon_path',id:p.id},row(cam,p));}else if(p.roomId){owner.hide('room',p.scopeId,p.roomId,a.hidden);for(const passage of readDungeonPassages(db,cam).filter(x=>x.pathId===p.id))owner.apply({table:'dungeon_passage',id:passage.id},passageRow(cam,{...passage,assigned:!a.hidden}));}}
 }
 
-export function passageStatuses(db:any,cam:string,passages=readDungeonPassages(db,cam)){return passages.map(p=>{const status=(s:PassageSide)=>!p.assigned?'ungebunden':s.target.kind==='geometry'?s.target.id===p.otherRoomId||s.target.id===p.roomId?'bereit':'Geometrieziel fehlt':s.target.kind==='passage'?db.prepare("SELECT 1 FROM dungeon_passage WHERE campaign_id=? AND id=? AND json_extract(payload,'$.assigned')=1").get(cam,s.target.id)?'verlinkt':'Passagenziel fehlt':db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,s.target.id)?'Ortslink':'Ortsziel fehlt';return{id:p.id,outbound:status(p.outbound),inbound:status(p.inbound)};});}
+// A graph preview owns geometry, while location existence remains canonical.
+// The binding lives only as long as that preview connection is open.
+const passageLocationLookups=new WeakMap<object,(campaignId:string,id:string)=>boolean>();
+export function bindPassageLocations(db:object,lookup:(campaignId:string,id:string)=>boolean){
+ passageLocationLookups.set(db,lookup);return()=>{passageLocationLookups.delete(db);};
+}
+function passageLocationExists(db:any,cam:string,id:string|null){
+ if(id===null)return false;
+ const lookup=passageLocationLookups.get(db);
+ return lookup?lookup(cam,id):!!db.prepare('SELECT 1 FROM location WHERE campaign_id=? AND id=? AND trashed=0').get(cam,id);
+}
+export function passageStatuses(db:any,cam:string,passages=readDungeonPassages(db,cam)){return passages.map(p=>{const status=(s:PassageSide)=>!p.assigned?'ungebunden':s.target.kind==='geometry'?s.target.id===p.otherRoomId||s.target.id===p.roomId?'bereit':'Geometrieziel fehlt':s.target.kind==='passage'?db.prepare("SELECT 1 FROM dungeon_passage WHERE campaign_id=? AND id=? AND json_extract(payload,'$.assigned')=1").get(cam,s.target.id)?'verlinkt':'Passagenziel fehlt':passageLocationExists(db,cam,s.target.id)?'Ortslink':'Ortsziel fehlt';return{id:p.id,outbound:status(p.outbound),inbound:status(p.inbound)};});}
