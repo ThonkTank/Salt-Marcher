@@ -170,16 +170,14 @@ try {
       await page.mouse.click(b.x + b.width * x, b.y + b.height * y);
     };
     const outputView = async () => {
+      await editableCanvas();
       if (await page.locator('#atlas-secondary').isVisible())
         await page.locator('#atlas-secondary-close').click();
-      await page.evaluate(
-        () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-      );
-      await atlasCanvasReady(page);
+      await editableCanvas();
       await page.locator('#atlas-undo:enabled').waitFor();
       await page.locator('#atlas-output-open').click();
       await page.locator('#atlas-output-back').waitFor();
-      await atlasCanvasReady(page);
+      await editableCanvas();
     };
     const finish = async (name) => {
       await page.locator('#land-finish').click();
