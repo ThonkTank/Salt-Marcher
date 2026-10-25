@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "reviewedCommit": "97b47da21df2d1456a37bdfc306030d5861e8b5c",
+  "reviewManifestSha256": "439d809adfbce551e0fb0ed20f5ad07a6d15d44f6fb4efb782cf6e1446222232",
+  "files": [
+    {
+      "path": "docs/atlas/architecture/performance-roadmap.md",
+      "sha256": "f45f19c0f677a48c880bcc7d8b4fb85c18708394afa795307205a575ada6b53b"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a0-foundation.md",
+      "sha256": "39a9f2780b10c1bc2f33900d43d5cff9cac15f2a79b4c8615677cfd2fd2f2e64"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a1-measurement.md",
+      "sha256": "537e9b4b5c36f0184b03bb21b08ac358b384d2e3cd2cc68009806c2cfda92e6a"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "sha256": "66ae67767f7170347cfdd9483970e087315932b7cbc88d1b4c9f5dfc1b79267e"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "sha256": "9a182d4a2b57f3a4eeb07678b8b4c8fac2b545be8694fee87bb82f47bb86086f"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "sha256": "ad9cff4469fd15c9805a970f65c718dbd2a799eeb39c197a78c980c969440b22"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a5-editing.md",
+      "sha256": "ead3ebe32d561849b8ee32f2c21376c9dbd5d13787347711122dc24a8497bbbc"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a6-loading.md",
+      "sha256": "d1b798fa40a743db9267cbfb23d622ec24c537e34877922415cac4b4ebdbc767"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/a7-qualification.md",
+      "sha256": "e8c1bdb41fc5e22d3bab802500edee4d6969d68e359409f9b17736c75df7a134"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/architecture-audit.md",
+      "sha256": "8412b2046d3967a59f06a5aae5cc5e3789ae726515a4b032e8af56d6b665c137"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/conditional-paths.md",
+      "sha256": "23b01d2e3691a58d875f9d94b689accc917869b8b41f02a1d99d18acf01aab11"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/handbook.md",
+      "sha256": "dd8692c7e4aa078618b6a6e092d9441404bf085bc0059561c04fa1532cecb2b4"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/review-gates.md",
+      "sha256": "997491c583c95d5546fb1aa35c441e0d2dbd14d50d57ba4361e49d4ad3377a02"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/timeline.html",
+      "sha256": "ecf28c30fb3c39dd00fb6826518dddee373c0d88e44b10cbd0901c310fcaab37"
+    },
+    {
+      "path": "docs/atlas/architecture/performance/work-packages.json",
+      "sha256": "e6ad191efe9f47b4f1d6e39659e4fe9c2a8e89c9bac2f33e8de6024562129fac"
+    },
+    {
+      "path": "tools/render-atlas-performance-plan.mjs",
+      "sha256": "6b03b2a6435705d677b5802f45002f9c4572c7664ebf99dd0a793bed40aea130"
+    },
+    {
+      "path": "tools/atlas-performance-plan.test.mjs",
+      "sha256": "0aa83450e04a1d40545422a6900178ee674386cb05bbdc9dc609e2fb3f976a89"
+    }
+  ],
+  "reviews": [
+    {
+      "package": "P0.01",
+      "reviewer": "/root/plan_final_review",
+      "result": "Keine begruendeten offenen Planbefunde",
+      "evidence": "Alle 17 Hashes vor/nach Pruefung gleich; 154 Pakete, 17 ueberlappende konfliktfreie Paare, 7 Tests; Voraussetzungen, Routen und Closure geprueft."
+    },
+    {
+      "package": "P0.02",
+      "reviewer": "/root/review_architecture",
+      "result": "Keine offenen begruendeten Befunde",
+      "evidence": "Alle 17 Hashes vor/nach Pruefung gleich; 7 Tests; Architektur, GPU/Room, Ziele, Datenschutz, Schaetzungen und vollstaendige Skill-Kette geprueft."
+    }
+  ],
+  "qualification": "Planfreigabe; keine Produkt-, Leistungs-, Integrations- oder Nutzerabnahme"
+}

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "planVersion": "working-draft-3",
-  "status": "reviewing",
+  "planVersion": "v1",
+  "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
   "resourceCapacity": {
@@ -19,14 +19,15 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
         "src/app/atlas-canvas.ts",
         "src/app/atlas-raster-presentation.ts",
-        "src/app/atlas-deck-surface.ts"
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-presentation.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -35,7 +36,11 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "startedAt": "2026-10-25T11:46:26Z",
+        "agent": "/root/review_packages",
+        "activeHours": null
+      }
     },
     {
       "id": "A0.02",
@@ -102,7 +107,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -118,7 +123,11 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "startedAt": "2026-10-25T11:46:26Z",
+        "agent": "/root/audit_atlas_boundaries",
+        "activeHours": null
+      }
     },
     {
       "id": "A0.05",
@@ -3587,7 +3596,7 @@
       "lane": "P0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -3599,7 +3608,11 @@
         "profile": "review",
         "waitConfidence": "unknown"
       },
-      "actual": null
+      "actual": {
+        "evidence": "plan-basis-v1.json",
+        "finishedAt": "2026-10-25T11:46:26Z",
+        "activeHours": null
+      }
     },
     {
       "id": "P0.02",
@@ -3609,7 +3622,7 @@
       "lane": "P0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -3621,7 +3634,11 @@
         "profile": "review",
         "waitConfidence": "unknown"
       },
-      "actual": null
+      "actual": {
+        "evidence": "plan-basis-v1.json",
+        "finishedAt": "2026-10-25T11:46:26Z",
+        "activeHours": null
+      }
     },
     {
       "id": "P0.03",
@@ -3634,7 +3651,7 @@
       "lane": "P0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -3648,7 +3665,11 @@
         "profile": "coordination",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "evidence": "plan-basis-v1.json",
+        "finishedAt": "2026-10-25T11:46:26Z",
+        "activeHours": null
+      }
     },
     {
       "id": "R0.01",

@@ -1,6 +1,6 @@
 # Atlas-Performance: Projekthandbuch
 
-Status: Planning; Gesamtauftrag wieder aktiv. Planreviews haben offene Befunde; Produktumsetzung noch nicht begonnen.
+Status: Executing A0; Planbasis v1 unabhängig freigegeben, erste Produktpakete in Arbeit.
 Owner: atlas
 Last Reviewed: 2026-10-25
 Source of Truth: Ausführungsregeln, Steuerungsentscheidungen und Beleggrenzen dieses Vorhabens. Fachumfang und Leistungsziele bleiben in der [Roadmap](../performance-roadmap.md).
@@ -93,8 +93,9 @@ gemeinsamen Checkout. Reine Dokumentation kann unabhängig weitergeführt werden
 
 ## Plan, Soll und Ist
 
-Die erste unabhängig freigegebene Planung wird als **Planbasis v1** mit
-Dateiprüfsummen gesichert. Vorherige Fassungen sind Arbeitsentwürfe. Anpassungen
+Die unabhängig freigegebene **[Planbasis v1](plan-basis-v1.json)** ist mit
+Dateiprüfsummen und Reviewbelegen gesichert; ihr vollständiger Inhalt liegt im
+Git-Commit `97b47da21df2d1456a37bdfc306030d5861e8b5c`. Vorherige Fassungen sind Arbeitsentwürfe. Anpassungen
 erhalten fortlaufende Version und Grund; die Ausgangsbasis wird nicht nachträglich
 an den Iststand angeglichen.
 
@@ -146,21 +147,40 @@ im vorhandenen Capability-Katalog; hier entsteht keine parallele Abnahmedatenban
 | 2026-10-25 | Skill-Abgleich verlangt relativen Schätzterminplan und explizite Abschlussphase | Aufwand/Dauer/Puffer sowie echte Abnahme und Übergabe werden vor Planfreigabe ergänzt |
 | 2026-10-25 | Originalmessungen vor Produktänderungen inventarisiert: 107 Dateien, 29.049.331 Bytes | Lokales Manifest `.build/atlas-performance-plan/original-measurements-manifest.json`, SHA-256 `701fb83d5d91b75032ecdae5d6a9ef3c974df0d48f5b77b2356771c072670445`; dauerhafte Vergleichsablage bleibt A1.01 |
 
-## Offene Planreviewpunkte
+## Abschluss der Planreviews
 
-Stand 2026-10-25: Die zweite unabhängige Reviewrunde hat noch keine Planfreigabe
-erteilt. Auf den aktuellen Auftrag „Lege diese roadmap erstmal im Projekt ab“
-folgte irrtümlich eine Pause. Der erneuerte Gesamtauftrag hebt diese auf; die
-folgenden Befunde werden vor der Ausführung korrigiert und unabhängig nachgeprüft.
+Stand 2026-10-25: Nach Korrektur der folgenden Befunde haben P0.01 und P0.02
+unabhängig keine offenen begründeten Planbefunde gemeldet. Beide prüften denselben
+unveränderten Stand mit 17 Dateiprüfsummen; Zuordnung und Belege stehen in der
+Planbasis. P0.03 ist abgeschlossen. Der irrtümliche Pausenvermerk wurde korrigiert.
 
-- **Parallelität:** Bekannte gemeinsame Schreibbereiche und unveränderte Buildinputs während nativer Prüfungen im Scheduler abbilden. Insbesondere A1.04/A1.07/A1.08 sowie A0.06/A0.10 dürfen nicht wie derzeit überlappen; A0.07 und A0.10 benötigen eine native Ressourcenbindung.
-- **B4-Alternative:** Render- und Compute-Route getrennt terminieren. Der Generator ignoriert bislang `alternativeRequires`; die gezeigte gemeinsame Ausführung ist kein ausführbarer Plan. Aktivierungs- und Rückkehrgates einschließlich A6.08 für Compute explizit führen.
-- **Reihenfolge:** Serielle Kopftexte von A1/A2 an die tatsächlichen Verzweigungen angleichen und Text-/Graphabhängigkeiten konsistent prüfen.
-- **Messnachweis A1.04:** CPU-Submission allein belegt keine sichtbaren Frames. GPU-/Präsentationsrückstand gegenprüfen, auch mit künstlicher Verzögerung; ohne Nachweis bleibt die sichtbare Navigationsabnahme offen.
-- **Postcommit A0.09:** `atlasRoomCommit` und seine nachgelagerte `RoomCommit`-Leseprojektion ausdrücklich aufnehmen. Eine gezielte Probe muss den bereits bestätigten Commit und dieselbe Kennung erhalten, ohne zusätzlichen Historyschritt.
+- **Parallelität:** Gemeinsame Schreibbereiche und unveränderte Buildinputs sind im Scheduler abgebildet. A1.04/A1.07/A1.08 sowie A0.06/A0.10 kollidieren nicht mehr; A0.07 und A0.10 belegen den nativen Host.
+- **B4-Alternative:** Render- und Compute-Route werden getrennt berechnet. Aktivierungs- und Rückkehrgates einschließlich A6.08 für Compute sind explizit.
+- **Reihenfolge:** A1/A2-Kopftexte entsprechen den Verzweigungen. Vier maschinenlesbare Abhängigkeitsfelder pro Paket werden zwischen Markdown und Graph verglichen.
+- **Messnachweis A1.04:** GPU-/Präsentationsrückstand und künstliche Verzögerung sind verpflichtende Gegenproben; CPU-Submission allein gibt keinen sichtbaren Navigations-Pass.
+- **Postcommit A0.09:** `atlasRoomCommit` und seine `RoomCommit`-Leseprojektion sind ausdrücklich mit Receipt, Kennung und unverändertem Historyschritt enthalten.
 
-Die strukturelle Generatorprüfung bestätigt Paketvollständigkeit und erzeugten
-Dateistand, nicht die fachliche Richtigkeit der noch beanstandeten Terminierung.
+Die Liste dokumentiert die behobenen Reviewbefunde. Die strukturelle Prüfung
+bestätigt zusätzlich Paketvollständigkeit und erzeugten Dateistand. Sieben gezielte
+Scheduler-/Routentests und Repository-/Diffprüfungen bestanden. Browserprüfung:
+154 Zeilen, lesbare Zeitachse; B4-Compute aktiviert nur B4.01, B4.07 und B4.05,
+zeigt A6.08 als Eingang und A6.09/A6.10 als Rückkehr. Die übrigen B4-Pakete bleiben
+sichtbar als inaktive Alternativen.
+
+## Laufende Durchführung
+
+| Paket | Verantwortlich | Ist und nächstes Gate |
+| --- | --- | --- |
+| P0.01 / P0.02 | plan_final_review / review_architecture | Unabhängig abgeschlossen, siehe Planbasis; keine Produktabnahme |
+| P0.03 | Koordinator | Planbasis gesichert; Übergang an project-steering |
+| A0.01 | review_packages | Beauftragt: produktive Framebindung; Präsentation/Canvas/Surface und eigene Regressionen |
+| A0.04 | audit_atlas_boundaries | Beauftragt: Verbraucherabbruch; Main/Lesedienst/Ausgabevertrag und eigene Regressionen |
+
+Die beiden ersten Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
+erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
+vorbereitet. Starts/Enden und Status im Paketgraphen; unbekannte aktive Arbeitszeit
+wird nicht aus verstrichener Laufzeit abgeleitet. A0 bleibt offen bis eigenen
+Paketnachweisen, unabhängigen Reviews, Fixes und erforderlicher Integration.
 
 ## Abschlussgrenzen
 

@@ -1,14 +1,14 @@
 # Atlas: Meilensteine für die Architekturentscheidung und Umsetzung
 
-Status: Planned; A0–A7 sind offen. Ablage der Roadmap, keine Umsetzung oder Abnahme.
+Status: Executing A0; Planbasis v1 unabhängig freigegeben. A0–A7 sind noch nicht abgenommen.
 Owner: atlas
 Last Reviewed: 2026-10-25 (Roadmap aus dem Nutzerauftrag; Fachabnahme separat)
 Source of Truth: Dieses Dokument besitzt die Reihenfolge und Entscheidungskriterien der Performance-Arbeit; Code belegt den Iststand, das Abnahmeregister den Prüfstand.
 
 Der Gesamtauftrag wird mit project-preflight → practical-planner →
 project-steering → project-closure fortgesetzt. Die Paketplanung und Timeline
-sind bis zum unabhängigen Planreview Arbeitsentwürfe; offene Reviewpunkte stehen
-im [Projekthandbuch](performance/handbook.md#offene-planreviewpunkte).
+sind als Planbasis v1 unabhängig geprüft; Reviewbelege und Durchführungsstand stehen
+im [Projekthandbuch](performance/handbook.md#abschluss-der-planreviews).
 
 ## Ziel und Reihenfolge
 
