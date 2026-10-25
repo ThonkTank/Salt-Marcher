@@ -26,9 +26,22 @@ SaltMarcher wird seit dem 16. Oktober 2026 auf Basis der bisherigen Kampagnenwer
 Node.js 22 und npm verwenden; diese Version entspricht der PR-CI.
 
 ```bash
-git clone https://github.com/ThonkTank/Salt-Marcher.git
-cd Salt-Marcher
 npm ci
+npm run dev -- --data-dir /tmp/campaign-workbench-smoke
+```
+
+Gezielt prüfen (die gemeinsamen Testartefakte werden automatisch vorbereitet):
+
+```bash
+npm test -- tests/desktop-combat-switch.test.mjs
+npm test -- --list
+npm run check
+npm run check:desktop
+```
+
+Vollständige Qualifikation entspricht dem Candidate-Check:
+
+```bash
 npm run check:repo
 npm run check
 npm run check:desktop
@@ -37,9 +50,11 @@ npm run build
 npm run build:desktop
 ```
 
-`npm run build` bleibt der historische Pluginbuild; `npm run build:desktop` erzeugt den Desktopbuild unter `.build/desktop`.
-`npm test` erneuert die Testvorbereitung und führt die aktive Suite standardmäßig mit bis zu vier Testprozessen (begrenzt durch verfügbare CPUs) aus.
-Die [Testanleitung](docs/project/verification/testing.md) beschreibt Einzeltests, serielle Diagnose und Laufberichte.
+`npm run build` prüft weiterhin den historischen Obsidian-Adapter.
+Der aktive Desktopbuild entsteht mit `npm run build:desktop` unter `.build/desktop`.
+`npm test` führt ohne Dateiauswahl die vollständige aktive Suite mit bis zu vier
+Testprozessen aus. Die [Testanleitung](docs/project/verification/testing.md)
+beschreibt Auswahl, serielle Diagnose und Laufberichte.
 Native GUI-Prüfungen bleiben getrennte Aufrufe.
 Die Tests in `tests/native-reference/` benötigen zusätzlich die ursprünglichen Dungeondraft-Dateien im Nachbarverzeichnis `../dungeon-auswertung/`; mit diesen Quellen separat ausführen: `node --test --test-concurrency=1 "tests/native-reference/*.test.mjs"`.
 
