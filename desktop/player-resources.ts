@@ -92,11 +92,18 @@ export function installPlayerResources(
 ) {
   session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
   session.setPermissionCheckHandler(() => false);
-  session.on('will-download', (event) => event.preventDefault());
+  const denyDownload = (event: Electron.Event) => event.preventDefault();
+  session.on('will-download', denyDownload);
   session.webRequest.onBeforeRequest((details, callback) =>
     callback({
       cancel: !playerRequestAllowed(details.url, details.webContentsId, options.windowId()),
     }),
   );
   session.protocol.handle('campaign', (request) => servePlayerResource(request.url, options));
+  return () => {
+    session.protocol.unhandle('campaign');
+    session.removeListener('will-download', denyDownload);
+    // Retired sessions remain denied, even if a queued request arrives after close.
+    session.webRequest.onBeforeRequest((_details, callback) => callback({ cancel: true }));
+  };
 }

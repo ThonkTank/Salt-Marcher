@@ -5,6 +5,8 @@ Owner: project
 Last Reviewed: 2026-10-24
 Source of Truth: Prozessvertrag; Implementierung in `desktop/store-worker.ts` und `desktop/store-client.ts`.
 
+Hostzusammensetzung und IPC-Besitzer: [Desktop-Host nach Fähigkeiten](desktop-host.md).
+
 ## Zuständigkeit und Transport
 
 Genau ein langlebiger Node-Worker besitzt den produktiven `CampaignStore` und
