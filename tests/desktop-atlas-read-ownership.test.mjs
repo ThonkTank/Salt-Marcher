@@ -214,3 +214,38 @@ test('the controlled editor object projection survives surface tiles and camera 
  f.release(1);const expected=ok(await f.api.atlasTerrainProjection(f.shell.token,query,'export'));
  assert.deepEqual(actual.objects,expected.objects);assert.equal(service.queued.size,0);
 });
+
+const projectionQuery=f=>({product:'height',revision:f.source.revision,fence:f.source.fence,
+ view:{box:region.box,frame:region.box,columns:2,rows:2,focusM:0,tilt:0,rotation:0,exaggeration:1},
+ width:16,height:16,displayMpp:1,contours:0});
+const sourceBarrierCases=[
+ ['projection-view','atlas:terrain-projection','terrain',f=>[projectionQuery(f),'view']],
+ ['projection-export','atlas:terrain-projection','terrain',f=>[projectionQuery(f),'export']],
+ ['source-bootstrap','atlas:terrain-source',null,()=>[]],
+ ['terrain-tile','atlas:terrain-tile','terrainTile',f=>[{...f.tile,product:'height'}]],
+ ['material-tile','atlas:material-tile','materialTile',f=>[{...f.tile,product:'surface'}]],
+ ['geometry-tile','atlas:geometry-tile','geometryTile',f=>[f.tile]],
+ ['region','atlas:geometry-region','read',()=>[region]],
+ ['focus','atlas:focus','focus',()=>['room','room']],
+ ['hit','atlas:region-hit','hit',f=>[region,{x:1,y:1},f.source.fence]],
+ ['candidates','atlas:region-candidates','candidates',f=>[region,{x:1,y:1},f.source.fence]],
+ ['color','atlas:terrain-color','terrainColor',f=>[{box:region.box,routeContext:region.box,width:16,height:16,displayMpp:1,contours:0,revision:f.source.revision}]],
+ ['frame','atlas:terrain-frame','liveTerrain',f=>[{frame:{kind:'top',query:region},source:{revision:f.source.revision,fence:f.source.fence}}]],
+];
+for(const [label,channel,method,args] of sourceBarrierCases)test(`source-await graph barrier prevents ${label} from starting and permits its later normal read`,async t=>{
+ const f=await fixture(t),readSource=f.store.atlasRegionSource.bind(f.store);let releaseSource,sourceCaptured=false,calls=0;
+ const heldSource=new Promise(resolve=>releaseSource=resolve);
+ f.store.atlasRegionSource=(...params)=>{const source=readSource(...params);if(sourceCaptured)return source;sourceCaptured=true;return heldSource.then(()=>source);};
+ if(method)for(const service of f.services){const run=service[method].bind(service);service[method]=(...params)=>{calls++;return run(...params);};}
+ const read=f.invoke(channel,f.shell.token,...args(f));await until(()=>sourceCaptured);
+ let releaseGraph,graphEntered=false;const heldGraph=new Promise(resolve=>releaseGraph=resolve);
+ f.store.executeAtlasCommit=async()=>{graphEntered=true;return heldGraph;};
+ const graph=f.invoke('atlas:commit',{commandId:'held-graph-'+label,action:{kind:'graph-accept'}});await until(()=>graphEntered);
+ f.release(0);f.release(1);releaseSource();
+ const blocked=await read,blockedCalls=calls,starts=f.services.map(s=>s.diagnostics.workerStarts);
+ releaseGraph({});ok(await graph);
+ assert.equal(blocked.ok,false,'a source captured before the barrier must not escape it');assert.match(blocked.error,/Graphwechsel läuft/);
+ assert.equal(blockedCalls,0,'reader method is never entered while the graph owns its source');assert.deepEqual(starts,[0,0]);
+ const normal=ok(await f.invoke(channel,f.shell.token,...args(f)));assert(normal,'same valid read works once the barrier ends');
+ if(method)assert.equal(calls,1,'normal request enters its real reader once');
+});

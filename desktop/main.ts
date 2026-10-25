@@ -467,11 +467,12 @@ else {
       if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Materialkachel inzwischen geändert.');
       return value;
     });
-    handle('atlas:terrain-source',async (token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');const source=(await store.atlasRegionSource(token));return{revision:source.revision,fence:source.fence};});
+    handle('atlas:terrain-source',async (token:string)=>{if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');const source=(await store.atlasRegionSource(token));if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');return{revision:source.revision,fence:source.fence};});
     handle('atlas:terrain-projection',async(token:string,q:import('../src/app/terrain-projection').TerrainProjectionRequest,consumer:'view'|'export'='view',control?:AtlasReadRequest)=>{
       validateAtlasReadRequest(control);
       if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');validateTerrainProjection(q);if(!['view','export'].includes(consumer))throw Error('Kartenleser prüfen.');
       const reader=consumer==='view'?atlasRegions:atlasExportRegions,source=(await store.atlasRegionSource(token,reader.cursor));
+      if(graphSourceReadBarrierDepth)throw Error('Graphwechsel läuft.');
       if(source.revision!==q.revision||q.fence!==undefined&&source.fence!==q.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
       const value=await reader.terrain(source,q,control);if((await store.atlasRegionSource(token)).fence!==source.fence)throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');if(!value.draft&&!value.heightOnly)(await store.rememberTerrainGrid(token,source.fence,value.grid));return value;
     });
