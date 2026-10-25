@@ -1,19 +1,17 @@
-import { readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 import { availableParallelism } from 'node:os';
 
-const args = process.argv.slice(2);
-if (args.length && (args.length !== 1 || args[0] !== '--serial')) {
-  throw new Error('Usage: npm test [-- --serial]');
-}
-const concurrency = args[0] === '--serial' ? 1 : Math.min(4, availableParallelism());
-const files = [
-  '.build/tests.cjs',
-  ...readdirSync('tests').filter(file => file.endsWith('.test.mjs')).sort().map(file => `tests/${file}`),
-  ...['p02-contract', 'p02-concurrency', 'p02-process', 'p03-contract', 'p03-channel',
-    'p03-renderer', 'p03-pixel-oracle', 'p03-evidence'].map(file => `tests/adr-prototypes/${file}.test.mjs`),
-];
+import { selectTests } from './test-selection.mjs';
+
+let selection;
+try { selection = selectTests(process.argv.slice(2)); }
+catch (error) { console.error(error.message); process.exit(1); }
+const { files, serial, list } = selection;
+if (list) { console.log(files.join('\n')); process.exit(0); }
+const concurrency = serial ? 1 : Math.min(4, availableParallelism());
+mkdirSync('.build', { recursive: true });
 const started = performance.now();
 const report = {
   commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
@@ -39,5 +37,5 @@ report.totalMs = performance.now() - started;
 report.testMs = report.totalMs - report.prepareMs;
 Object.assign(report, result);
 writeFileSync('.build/test-run.json', JSON.stringify(report, null, 2) + '\n');
-console.log(`Complete test run: ${(report.totalMs / 1000).toFixed(1)}s including ${(report.prepareMs / 1000).toFixed(1)}s preparation; ${concurrency} test processes.`);
+console.log(`Selected test run: ${(report.totalMs / 1000).toFixed(1)}s including ${(report.prepareMs / 1000).toFixed(1)}s preparation; ${concurrency} test processes.`);
 process.exitCode = result.code;

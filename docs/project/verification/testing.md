@@ -21,10 +21,20 @@ erfüllt das Ziel nicht. Der erforderliche Candidate-Check bleibt vollständig.
 
 ## Einzelne Abläufe prüfen
 
-Nach Änderungen am Quellcode zunächst `node build.mjs --test` ausführen, dann
-beispielsweise `node --test tests/desktop-combat-switch.test.mjs`. Das bleibt
-auch für die benannten `test:desktop-*`-Skripte erforderlich. Jeder vollständige
-Lauf erneuert die Vorbereitung automatisch.
+`npm test -- tests/desktop-combat-switch.test.mjs` bereitet die gemeinsamen
+Testartefakte einmal neu vor und führt anschließend die ausgewählten Dateien aus.
+Mehrere explizite Dateipfade sind erlaubt; doppelte Pfade werden nur einmal geprüft.
+Fehlende Dateien, Verzeichnisse, unbekannte Optionen und leere Pfade werden vor dem
+Build abgewiesen. Auch die benannten Node-Testskripte `test:desktop-*` verwenden
+diese Vorbereitung. Native UI-Skripte bleiben separate Prüfwege.
+
+`npm test -- --list` zeigt die vollständige aktive Auswahl ohne Build oder Tests;
+Dateipfade und `--serial` lassen sich damit kombinieren. `tests/core.test.ts`
+wählt das gesamte vorbereitete Core-Bundle. Die Standardsuite entdeckt aktive
+Node-Tests im Testwurzelverzeichnis und den Fachordnern `workspace`, `atlas`,
+`campaign`, `runtime`, `catalog` und `shared`; ADR-Tests bleiben ausdrücklich
+aufgelistet. Fixtures und native Referenztests werden nicht automatisch entdeckt.
+Für direkte `node --test`-Aufrufe bleibt `node build.mjs --test` erforderlich.
 
 - Die unveränderte Storage-Buildkonfiguration verwendet ein gemeinsam
   vorbereitetes Bundle. Der Helfer schreibt atomare Weiterleitungen in die

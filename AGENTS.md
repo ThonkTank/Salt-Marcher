@@ -1,14 +1,12 @@
 # SaltMarcher contributor guide
 
-## Permanent working checkout
+## Working checkout
 
-- `/home/aaron/Schreibtisch/projects/SaltMarcher` is the only permanent working
-  checkout on this laptop. Work here by default, including implementation,
-  verification and handoff.
-- An additional checkout or worktree is temporary. Before finishing, return its
-  complete task-owned result to the permanent checkout, verify it there, then
-  remove the temporary checkout and its temporary branch. Preserve any unique
-  unfinished work before cleanup; do not leave the newest result elsewhere.
+- Use the current checkout for implementation, verification and handoff. Do not
+  assume a machine-specific repository location.
+- Preserve other contributors' dirty files and unfinished work. Return any
+  task-owned results from temporary worktrees to this checkout before cleanup;
+  never discard unique unfinished work.
 
 ## Product and architecture
 
