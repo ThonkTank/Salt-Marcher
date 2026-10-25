@@ -4810,7 +4810,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4854,7 +4854,13 @@
         "planCommit": "25260921",
         "planReview": "v1.6 independently accepted by a0_interim_review; graph160 and tests7/7 reproduced",
         "nativeQualification": "pending A0.14/A0.11",
-        "contract": "GraphPreviewTarget and GraphPreviewState public shape stable; source/commit tests still in progress"
+        "contract": "explicit GraphPreviewTarget and local transactional receipt; persistent restart A0.16 and author wiring A0.17 remain open",
+        "endedAt": "2026-10-25T13:40:53.390635Z",
+        "commit": "5c1e878d",
+        "handoff": ".build/atlas-performance-plan/A0.15-handoff.json",
+        "verification": "155 targeted tests; independent preview/postcommit repeat25/25; source17/dependency3/log15 hashes verified",
+        "independentReview": "a0_15_review accepted bounded A0.15; no open required findings",
+        "typecheck": "both Exit2 solely graph-ui.ts:38; required A0.17 connection, not a complete typecheck pass"
       }
     },
     {
@@ -4868,7 +4874,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4900,8 +4906,10 @@
         "agent": "/root/a0_interim_review",
         "activeHours": null,
         "preparation": "read-only profile, backup, archive, erasure and persistent receipt handoff prepared",
-        "implementation": "not started; waiting for verified A0.15 handoff",
-        "nativeQualification": "pending A0.14/A0.11"
+        "implementation": "assigned after verified and independently accepted A0.15 handoff",
+        "nativeQualification": "pending A0.14/A0.11",
+        "startedAt": "2026-10-25T13:42:54.760084+00:00",
+        "inputCommit": "5c1e878d"
       }
     },
     {
@@ -4915,7 +4923,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4951,8 +4959,10 @@
         "agent": "/root/plan_final_review",
         "activeHours": null,
         "preparation": "read-only explicit target capture, owner switch and local revision handoff prepared",
-        "implementation": "not started; waiting for verified A0.15 handoff",
-        "nativeQualification": "pending A0.14/A0.11"
+        "implementation": "assigned after verified and independently accepted A0.15 handoff",
+        "nativeQualification": "pending A0.14/A0.11",
+        "startedAt": "2026-10-25T13:42:54.760084+00:00",
+        "inputCommit": "5c1e878d"
       }
     }
   ],

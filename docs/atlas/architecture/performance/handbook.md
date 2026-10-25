@@ -237,9 +237,9 @@ sichtbar als inaktive Alternativen.
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden (Übergabe `.build/atlas-performance-plan/A0.10-handoff.json`); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.06-handoff.json`); Besitzerreaktionen A0.07/08 und R0 offen |
 | A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.09-handoff.json`); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
-| A0.15 | review_packages | Umsetzung gestartet auf freigegebenem Plan `25260921`; ein transaktionaler Previewbesitzer, danach unabhängiges Ergebnisreview |
-| A0.16 | a0_interim_review | Lesend vorbereitet: Profil-/Backup-/Erasuregrenzen und beständige Restorebelege; Implementierung wartet auf A0.15-Übergabe |
-| A0.17 | plan_final_review | Lesend vorbereitet: alle Autorenaufrufer, Vorschauwechsel vor/nach Dispatch und Übernahme lokaler Revision; Implementierung wartet auf A0.15-Übergabe |
+| A0.15 | review_packages | Implementiert in `5c1e878d`; 155 gezielte Tests und unabhängig 25/25 bestanden; `a0_15_review` lokal akzeptiert; Typanschluss A0.17 und Neustart A0.16 offen |
+| A0.16 | a0_interim_review | Umsetzung nach verifizierter A0.15-Übergabe gestartet: dauerhafte Vorschau, Wiederöffnung, Backup-/Erasuregrenzen und beständige Restorebelege |
+| A0.17 | plan_final_review | Umsetzung nach verifizierter A0.15-Übergabe gestartet: alle Autorenaufrufer, Vorschauwechsel vor/nach Dispatch und Übernahme lokaler Revision |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -363,9 +363,20 @@ Atlasreceipt zurückrollt. Die Vorschau enthält dann die Änderung, die Klärun
 aber „nicht angewandt“. Auch ein späterer SQLite-Lesefehler in `reconcileAtlasGeometry` reproduziert
 diesen Splitzustand nach erfolgreichem unmittelbarem Leser. Der enge Readerwrapper
 reicht deshalb nicht. A0.09 bleibt zur Nachprüfung offen; zuerst wird der begrenzte
-Besitzeranschluss A0.15–A0.17 geplant und unabhängig geprüft. A0.13 wartet darauf. Die bisherigen Erfolgstests dieser Vorschau
+Besitzeranschluss A0.15–A0.17 umgesetzt. A0.15 ist lokal unabhängig akzeptiert; A0.16/A0.17 laufen. A0.13 wartet auf die gesamte Nachprüfung. Die bisherigen Erfolgstests dieser Vorschau
 belegen den Fehlerfall nicht. Native Qualifikation und R0 bleiben offen; kein frisch
 gestarteter Renderer ist durch die vorhandenen Hosttests belegt.
+
+A0.15 bündelt Vorschauänderung, Kopplung, gruppierte History und Receipt in einer
+Shadowtransaktion. Kanonische Übernahme und Lifecyclebeleg teilen den äußersten
+Maincommit; Entsorgung folgt danach. Root verifizierte die 17 Dateihashes, drei
+unveränderten Abhängigkeiten und 15 Belegdateien aus
+`.build/atlas-performance-plan/A0.15-handoff.json`. 155 Implementierertests und
+die unabhängig wiederholten 25 Preview-/Postcommitfälle bestanden. Der Reviewer
+`a0_15_review` akzeptiert den begrenzten Besitzeranschluss ohne offenen Befund.
+Beide Typchecks melden ausschließlich den geplanten UI-Anschluss `graph-ui.ts:38`;
+sie gelten bis A0.17 als nicht bestanden. Persistenz, native Wiederaufnahme und
+R0 bleiben offen. Kataloglinks wurden nach tatsächlichem Testinhalt ergänzt.
 
 ## Abschlussgrenzen
 
