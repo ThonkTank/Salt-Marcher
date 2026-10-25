@@ -4810,7 +4810,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4844,7 +4844,14 @@
         "reserveHours": 1,
         "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/review_packages",
+        "startedAt": "2026-10-25T13:18:26.277695+00:00",
+        "activeHours": null,
+        "planCommit": "25260921",
+        "planReview": "v1.6 independently accepted by a0_interim_review; graph160 and tests7/7 reproduced",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     },
     {
       "id": "A0.16",

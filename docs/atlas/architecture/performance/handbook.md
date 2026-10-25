@@ -237,6 +237,8 @@ sichtbar als inaktive Alternativen.
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden (Übergabe `.build/atlas-performance-plan/A0.10-handoff.json`); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.06-handoff.json`); Besitzerreaktionen A0.07/08 und R0 offen |
 | A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.09-handoff.json`); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
+| A0.15 | review_packages | Umsetzung gestartet auf freigegebenem Plan `25260921`; ein transaktionaler Previewbesitzer, danach unabhängiges Ergebnisreview |
+| A0.16 / A0.17 | Noch nicht zugewiesen | Warten auf stabilen A0.15-Vertrag; dauerhafte Wiederöffnung und UI-Bindung können danach parallel folgen |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
