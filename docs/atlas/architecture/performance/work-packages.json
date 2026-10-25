@@ -384,7 +384,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -405,7 +405,13 @@
       "actual": {
         "agent": "/root/plan_final_review",
         "activeHours": null,
-        "nativeQualification": "pending A0.11"
+        "nativeQualification": "pending A0.11",
+        "startedAt": "2026-10-25T12:28:32Z",
+        "finishedAt": "2026-10-25T12:34:58Z",
+        "commit": "c20be8c36bad93e5aec7963d5725a7b13a852c0a",
+        "tests": "110/110 targeted; npm run check and targeted diff check passed",
+        "evidence": ".build/atlas-performance-plan/A0.12-files.sha256",
+        "independentReview": "a0_interim_review running; native A0.11 and full R0 pending"
       }
     },
     {

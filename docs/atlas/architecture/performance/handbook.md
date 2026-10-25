@@ -198,7 +198,7 @@ sichtbar als inaktive Alternativen.
 | A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
 | A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
-| A0.12 | plan_final_review | In Arbeit: freigegebener Canvas-/Raster-Verbundretry, getrennte Besitzer gegenüber A0.06 |
+| A0.12 | plan_final_review | Implementiert in `c20be8c3`; 110/110 Tests und Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.12-files.sha256)); unabhängiges Fixreview und native A0.11-Probe offen |
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | In Arbeit: typisierter unbekannter Schreibausgang über StoreClient, Main und Preload |
 
@@ -277,6 +277,19 @@ Fehlergegenprobe. Die Rückeinfügung rekonstruiert exakt den gespeicherten Vorh
 Root reproduzierte diesen Abgleich. Die Schließzweige sind unverändert.
 Dies ist eine hashbestätigte Rekonstruktion, kein erhaltenes Originalskript.
 Das vollständige R0 bleibt erforderlich.
+
+A0.12 lief von 12:28:32 bis 12:34:58 UTC. Die Vorherregression reproduzierte
+`Canvas.failed=true` nach erfolgreicher Raster-Recovery (Exit 1). Der konkrete
+Präsentationsfehler trägt seinen Besitzer; Raster meldet und klärt GPU-Framefehler,
+während Canvas nur seine Framebestätigung entwertet. Gesunde Canvas-/Bildressourcen
+bleiben erhalten; eigene Canvasfehler behalten ihren Fehlerpfad. Neun neue
+Verbundfälle prüfen Retry, aktuelle Quelle/Kamera, alte Antworten, wiederholten
+Fehler, Deaktivierung, Timeout und unabhängige Canvasfehler. Der gezielte Lauf
+bestand 110/110 Tests und Typecheck (Belege `A0.12-regressions.log/.exit` und
+`A0.12-typecheck.log/.exit` im lokalen Belegordner). Root verifizierte alle vier
+Übergabedateihashes vor Commit. Ein früher falsch positionierter Testtreffer bleibt
+als separater Fehlversuch erhalten. Der unabhängige ursprüngliche Reviewer prüft
+den Fix erneut; die native Verbundprobe bleibt A0.11. Kataloglinks aktualisiert.
 
 ## Abschlussgrenzen
 
