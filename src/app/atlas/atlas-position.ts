@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Durable address codec. Only bounded differences enter floating point geometry. */
 export interface AtlasPosition {

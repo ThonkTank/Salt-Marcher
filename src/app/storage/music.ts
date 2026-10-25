@@ -14,12 +14,12 @@ import type {
   MusicCommand,
   QueueEntry,
   MoodAxis,
-} from '../music-contracts';
-import { audioMimeTypes } from '../music-contracts';
+} from '../runtime/music-contracts';
+import { audioMimeTypes } from '../runtime/music-contracts';
 import { readLiveScene } from './live';
 import { readSceneWorld } from './world';
 import { scenePreparation } from './session';
-import { cellAt, terrainNames } from '../world-model';
+import { cellAt, terrainNames } from '../runtime/world-model';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 const json = (v: unknown) => JSON.stringify(v),

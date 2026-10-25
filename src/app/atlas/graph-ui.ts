@@ -1,4 +1,4 @@
-import { EditorSession } from '../editor-session';
+import { EditorSession } from '../shared/editor-session';
 import { atlasGraphWrite } from './campaign-atlas-author';
 import {
   initDungeonBudget,
@@ -7,7 +7,7 @@ import {
   hasDungeonBudgetDrafts,
   confirmDungeonBudget,
 } from './dungeon-budget-ui';
-import type { WorkspaceGeometry, Room, Point } from '../contracts';
+import type { WorkspaceGeometry, Room, Point } from '../shared/contracts';
 import type { GraphView, GraphAction, GraphDisplay, GraphContentCounts } from './graph-contracts';
 import { graphDisplay } from './graph-model';
 export const editorSession = new EditorSession();

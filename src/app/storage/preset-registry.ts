@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { canonicalJson } from '../generation/canonical-json';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import { mutatePreset, readGeneratorRegistry } from './generation';
-import type { PresetCommand, PresetReceipt } from '../generation-contracts';
+import type { PresetCommand, PresetReceipt } from '../campaign/generation-contracts';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex');
 function context(db: any, id: string | null) {
   if (

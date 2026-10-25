@@ -1,6 +1,6 @@
 import type { LandscapeBox } from './atlas-landscape';
 import type { AtlasPaint } from './atlas-paint';
-import type { Result } from '../contracts';
+import type { Result } from '../shared/contracts';
 
 export interface AtlasExportFrame {
   campaignId: string;

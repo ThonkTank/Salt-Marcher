@@ -1,4 +1,4 @@
-import type { Point, Result } from '../contracts';
+import type { Point, Result } from '../shared/contracts';
 import type { CampaignAtlas } from './campaign-atlas-contracts';
 export interface AtlasEntrance {
   terrain?: import('./terrain-objects').TerrainAnchor;

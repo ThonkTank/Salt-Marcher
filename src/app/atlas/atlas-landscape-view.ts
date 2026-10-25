@@ -15,7 +15,7 @@ import { AtlasPaint, atlasPaint } from './atlas-paint';
 import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
 import { hexPolygon, LANDSCAPE_PLACE_FONT_PX } from './atlas-landscape';
 import { gridMeters, scaleBar, hexTravelLabel } from './atlas-navigation-scale';
-import { terrainColors } from '../world-model';
+import { terrainColors } from '../runtime/world-model';
 export function drawLandscape(
   root: AtlasPaint,
   records: LandscapeRecord[],
@@ -58,7 +58,7 @@ export function drawLandscape(
   const drawColors = () => {
     if (raster || colorsDrawn) return;
     colorsDrawn = true;
-    let water: import('../contracts').Polygon[] = [
+    let water: import('../shared/contracts').Polygon[] = [
       {
         outer: [
           { x: b.x, y: b.y },

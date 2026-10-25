@@ -15,11 +15,11 @@ import { regionValue } from './atlas-region-contracts';
 import { selectElement } from './drawing-ui';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { atlasPartyPoint } from './atlas-runtime-model';
-import { atlasWorldTarget } from '../world-ui';
+import { atlasWorldTarget } from '../runtime/world-ui';
 import type { AtlasCanvas } from './atlas-canvas';
 import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from './campaign-atlas-model';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point, Room } from '../contracts';
+import type { WorkspaceGeometry, Point, Room } from '../shared/contracts';
 import { atlasCityPoint, openCityReference } from './city-ui';
 import {
   atlasDrawingPoint,
@@ -101,7 +101,7 @@ interface AtlasAuthorHost {
   >;
   cityId: string | null;
   readonly doorRoomAt: (point: Point) => Promise<{
-    room: import('../contracts').RoomGeometry;
+    room: import('../shared/contracts').RoomGeometry;
     maxDistance: number;
   }>;
   readonly chooseScope: (id: string) => void;
@@ -188,7 +188,7 @@ export class AtlasAuthor {
     this.selection = null;
     this.measurementHover = null;
   }
-  roomPreview<T extends import('../contracts').RoomGeometry>(original: T): T {
+  roomPreview<T extends import('../shared/contracts').RoomGeometry>(original: T): T {
     const drag = this.vertexDrag;
     if (!drag || drag.room.id !== original.id) return original;
     const polygon = drag.room.polygons[drag.polygon]!,

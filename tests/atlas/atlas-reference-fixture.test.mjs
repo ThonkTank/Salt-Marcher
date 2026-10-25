@@ -79,7 +79,7 @@ test('native map oracle accepts its baseline and rejects the formerly passing wa
   assert.equal(images.sourceCommit, manifest.sourceCommit);
   for (const view of images.views) {
     const bytes = readFileSync(
-      new URL(`./fixtures/atlas/reference-images/width-${view.target}.png`, import.meta.url),
+      new URL(`../fixtures/atlas/reference-images/width-${view.target}.png`, import.meta.url),
     );
     assert.equal(createHash('sha256').update(bytes).digest('hex'), view.imageSha256);
   }

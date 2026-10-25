@@ -21,7 +21,7 @@ import { validateColor } from '../atlas/landscape-brush';
 import { REGION_REPLY_BYTES } from '../atlas/atlas-region-contracts';
 import { randomUUID } from 'node:crypto';
 import polygonClipping from 'polygon-clipping';
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 import {
   bounds,
   terrainValue,

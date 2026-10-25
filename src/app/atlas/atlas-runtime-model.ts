@@ -1,6 +1,6 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { TravelPreview, Hex } from '../world-contracts';
+import type { TravelPreview, Hex } from '../runtime/world-contracts';
 export function atlasWorldRoute(a: AtlasRenderView, preview: TravelPreview | null): Hex[] {
   const scene = a.scene;
   if (

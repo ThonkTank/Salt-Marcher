@@ -15,12 +15,12 @@ manuelles, fixes und gewichtetes Auffüllen. Kaufpreis-/Ledgerregeln stehen im
 
 | Änderung | Codeeinstieg |
 | --- | --- |
-| Preisvorschlag oder Beleganzeige | [items-ui.ts](../../../src/app/items-ui.ts): `salePrice`, `renderShopHistory` |
-| Einzelstück oder Mengenstapel zuordnen | [items-contracts.ts](../../../src/app/items-contracts.ts): `shopStockForItem`, gemeinsam für Vorschlag und Rücknahme |
+| Preisvorschlag oder Beleganzeige | [items-ui.ts](../../../src/app/catalog/items-ui.ts): `salePrice`, `renderShopHistory` |
+| Einzelstück oder Mengenstapel zuordnen | [items-contracts.ts](../../../src/app/catalog/items-contracts.ts): `shopStockForItem`, gemeinsam für Vorschlag und Rücknahme |
 | Handel verbindlich buchen oder Belege lesen | [storage/items.ts](../../../src/app/storage/items.ts): `executeItemShop` mit Ledger, Bestand und Receipt in einer Transaktion; `history` speichert Belegfakten, `readShopHistory` liest sie seitenweise |
 
-Die [Preis-/Teilverkaufsprüfung](../../../tests/desktop-trade-paid-price.test.mjs)
-sichert Rundung, Replay und Fresh; die [Oberflächenprüfung](../../../tests/desktop-shop-switch.test.mjs)
+Die [Preis-/Teilverkaufsprüfung](../../../tests/runtime/desktop-trade-paid-price.test.mjs)
+sichert Rundung, Replay und Fresh; die [Oberflächenprüfung](../../../tests/catalog/desktop-shop-switch.test.mjs)
 prüft Vorschlag und Verlaufsanzeige. Der native Gesamtweg und seine Grenzen stehen unten.
 Für die gemeinsame Belohnungsbewertung gilt der verlinkte Lootfachplan.
 
@@ -161,7 +161,7 @@ Spätere Regeländerungen verändern diese Fakten nicht; alte Einträge bleiben 
 Rekonstruktion lesbar. Vor dem Speichern gilt derselbe Strukturvertrag wie beim
 Lesen. Eine nicht darstellbare nächste Fälligkeit verwirft den gesamten Abschluss
 einschließlich Zeit, anderer Auffüllungen, Verlauf und Receipt. Die
-[Storeprüfung](../../../tests/desktop-shop-restock-boundary.test.mjs) deckt
+[Storeprüfung](../../../tests/runtime/desktop-shop-restock-boundary.test.mjs) deckt
 Mehrzeilenregeln, Korrekturen, Replay, Fresh und vollständigen Rollback ab.
 
 ## Reise, gemeinsame Zeit und unabhängige Kopie
@@ -182,7 +182,7 @@ auf dem letzten Hex mit `nextIndex === route.length` ist gültig; ausdrückliche
 Fortsetzen bestätigt nur die Ankunft, ohne Bewegung, Zeit oder Restock erneut
 zu buchen. Route und Abschnittsdauern waren bereits im Erstformat Pflicht.
 
-Die [Reise-/Restockprüfung](../../../tests/desktop-restock-journey.test.mjs)
+Die [Reise-/Restockprüfung](../../../tests/runtime/desktop-restock-journey.test.mjs)
 verbindet zwei Gruppenuhren, manuelle Korrektur, Regelwechsel, offene Reise,
 Restart, Receiptwiederholung und unabhängige Kopie. Nur neue Perioden wirken;
 Source und Snapshot bleiben unverändert und bestätigte Historie behält ihre
@@ -211,7 +211,7 @@ native Reisebedienung oder vollständige Produktabnahme.
    Native Ownerwarnung, Zeitfehler, verlorene
    Handelsantwort, Tastatur, 200 % und Auffindbarkeit aus Scene abnehmen.
 
-[Storeprüfungen](../../../tests/desktop-shop-owner-time.test.mjs) belegen manuelle/
+[Storeprüfungen](../../../tests/runtime/desktop-shop-owner-time.test.mjs) belegen manuelle/
 fällige/zukünftige Regeln mit fehlendem Owner, Rollback sowie Ownertrash,
 Restore und Neuzuordnung ohne Verlust der Shopidentität. Native Warnung,
 Trashzeitpolitik und native Gesamtqualifikation der Warenlieferungen bleiben offen.
@@ -279,7 +279,7 @@ Einzelstücke bleiben erhalten. Manuelle, Intervall- und Ereignisauslöser nutze
 denselben Ablauf. Neue passende Definitionen werden ohne Regeländerung beim
 nächsten Termin berücksichtigt. Historische Ergebnisse bleiben unverändert.
 
-Die [Storegegenproben](../../../tests/desktop-restock-journey.test.mjs) prüfen
+Die [Storegegenproben](../../../tests/runtime/desktop-restock-journey.test.mjs) prüfen
 gewichtete Lieferungen, gebundene Ereignisrevisionen und dynamische Katalogpools
 mit Replay, Neustart und unabhängiger Kopie. Die Zeitverarbeitung liegt bei
 `restockDue` in [storage/items.ts](../../../src/app/storage/items.ts), die

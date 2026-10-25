@@ -2,7 +2,7 @@ import { effectiveProminence, PROMINENCE_LIMITS } from './atlas-prominence';
 import { MapLabelCollisions, type MapLabelRect as Rect } from './map-label-collisions';
 import type { MapLabelStyle } from './map-label-style';
 import { atlasPaint, type AtlasPaint, type PaintStyle } from './atlas-paint';
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import { contains, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
 import { linePoints } from './landscape-line';
 import { territoryAnchor, territoryBounds, type TerritoryState } from './atlas-territories';

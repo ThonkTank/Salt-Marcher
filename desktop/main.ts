@@ -1,4 +1,7 @@
-import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas/atlas-read-request';
+import {
+  validateAtlasReadRequest,
+  type AtlasReadRequest,
+} from '../src/app/atlas/atlas-read-request';
 import { AtlasWriteActivity } from './atlas-write-activity';
 import {
   clearCampaignStaging,
@@ -20,10 +23,10 @@ import { AtlasRegionService } from './atlas-region';
 import { validateRegion } from '../src/app/atlas/atlas-region-contracts';
 import { RoomDirectoryService } from './room-directory';
 import { readItemReferenceCatalog } from '../src/app/storage/item-reference';
-import type { NpcCommand, NpcQuery, NpcDraft } from '../src/app/npc-contracts';
+import type { NpcCommand, NpcQuery, NpcDraft } from '../src/app/campaign/npc-contracts';
 import { audioResponse } from './audio-response';
 import { extensionPackageLimit } from '../src/app/storage/extensions';
-import { dungeonKeyMarkdown, dungeonKeyDocument } from '../src/app/key-document';
+import { dungeonKeyMarkdown, dungeonKeyDocument } from '../src/app/campaign/key-document';
 import { CommitTracker } from './commit-tracker';
 import { dungeonSvg } from '../src/app/atlas/drawing-model';
 import { PlayerDisplay } from './player-window';
@@ -58,29 +61,32 @@ import type {
   Room,
   WorkingRoomDraft,
   CampaignRename,
-} from '../src/app/contracts';
+} from '../src/app/shared/contracts';
 import type {
   PreparationCommand,
   PreparationSelection,
   PreparationDraft,
   PreparationEdit,
-} from '../src/app/preparation-contracts';
-import type { LiveCommand } from '../src/app/live-contracts';
-import type { CombatCommand } from '../src/app/combat-contracts';
-import type { ProgressCommand } from '../src/app/progression';
+} from '../src/app/campaign/preparation-contracts';
+import type { LiveCommand } from '../src/app/runtime/live-contracts';
+import type { CombatCommand } from '../src/app/runtime/combat-contracts';
+import type { ProgressCommand } from '../src/app/runtime/progression';
 import { exportChronicleFile } from './chronicle-export';
-import type { ChronicleCategory } from '../src/app/chronicle-contracts';
+import type { ChronicleCategory } from '../src/app/runtime/chronicle-contracts';
 import { creatureInfo, searchCreatures, readCreature } from '../src/app/storage/encounters';
 import type { CreatureCatalogQuery } from '../src/features/catalog/creature-catalog';
-import type { EncounterPlanCommand } from '../src/app/encounter-contracts';
+import type { EncounterPlanCommand } from '../src/app/catalog/encounter-contracts';
 import type {
   GenerationCommand,
   GenerationRequest,
   LootRollCommand,
-} from '../src/app/generation-contracts';
-import type { SessionCommand, SessionGenerationRequest } from '../src/app/session-contracts';
-import type { SceneRuleCommand } from '../src/app/rule-reference-contracts';
-import type { SceneCheckCommand } from '../src/app/scene-check-contracts';
+} from '../src/app/campaign/generation-contracts';
+import type {
+  SessionCommand,
+  SessionGenerationRequest,
+} from '../src/app/campaign/session-contracts';
+import type { SceneRuleCommand } from '../src/app/catalog/rule-reference-contracts';
+import type { SceneCheckCommand } from '../src/app/runtime/scene-check-contracts';
 declare const __APP_VERSION__: string;
 
 app.setName('SaltMarcher');
@@ -344,7 +350,7 @@ else {
         async () => await store.campaignInstallationSettings(),
       );
       async function catalogOperation(
-        c: import('../src/app/campaign-contracts').CampaignCatalogCommand,
+        c: import('../src/app/campaign/campaign-contracts').CampaignCatalogCommand,
         outcome = false,
       ) {
         const erasing = c.kind === 'erase';
@@ -380,11 +386,12 @@ else {
       }
       handle(
         'campaign:catalog',
-        (c: import('../src/app/campaign-contracts').CampaignCatalogCommand) => catalogOperation(c),
+        (c: import('../src/app/campaign/campaign-contracts').CampaignCatalogCommand) =>
+          catalogOperation(c),
       );
       handle(
         'campaign:catalog-outcome',
-        (c: import('../src/app/campaign-contracts').CampaignCatalogCommand) =>
+        (c: import('../src/app/campaign/campaign-contracts').CampaignCatalogCommand) =>
           catalogOperation(c, true),
       );
       handle('campaign:catalog-shell', async (id: string) => {
@@ -445,7 +452,7 @@ else {
         'campaign:room-directory',
         async (
           token: string,
-          q: import('../src/app/contracts').RoomDirectoryQuery,
+          q: import('../src/app/shared/contracts').RoomDirectoryQuery,
           consumer: 'atlas' | 'directory' = 'directory',
         ) => {
           if (graphSourceReadBarrierDepth)
@@ -492,12 +499,12 @@ else {
       handle('extensions:list', async (after: string | null) => await store.extensions(after));
       handle(
         'extensions:execute',
-        async (command: import('../src/app/extension-contracts').ExtensionCommand) =>
+        async (command: import('../src/app/workspace/extension-contracts').ExtensionCommand) =>
           await store.executeExtension(command),
       );
       handle(
         'extensions:outcome',
-        async (command: import('../src/app/extension-contracts').ExtensionCommand) =>
+        async (command: import('../src/app/workspace/extension-contracts').ExtensionCommand) =>
           await store.extensionOutcome(command),
       );
 
@@ -547,8 +554,10 @@ else {
       );
       handle(
         'campaign:check-note-thread',
-        async (token: string, s: import('../src/app/note-thread-contracts').NoteThreadSelection) =>
-          await store.checkNoteThread(token, s),
+        async (
+          token: string,
+          s: import('../src/app/campaign/note-thread-contracts').NoteThreadSelection,
+        ) => await store.checkNoteThread(token, s),
       );
       handle(
         'campaign:key-note-choices',
@@ -556,13 +565,13 @@ else {
       );
       handle(
         'campaign:capture-key-note',
-        async (c: import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand) =>
+        async (c: import('../src/app/campaign/key-note-capture-contracts').KeyNoteCaptureCommand) =>
           await store.captureKeyNote(c),
       );
       handle(
         'campaign:key-note-capture-status',
         async (
-          c: import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand,
+          c: import('../src/app/campaign/key-note-capture-contracts').KeyNoteCaptureCommand,
           token: string,
         ) => await store.keyNoteCaptureStatus(c, token),
       );
@@ -653,20 +662,22 @@ else {
         'campaign:location-activities',
         async (
           token: string,
-          q: import('../src/app/location-activity-contracts').LocationActivityQuery,
+          q: import('../src/app/campaign/location-activity-contracts').LocationActivityQuery,
         ) => await store.locationActivities(token, q),
       );
       handle(
         'campaign:location-materials',
         async (
           token: string,
-          q: import('../src/app/location-notebook-contracts').LocationMaterialsQuery,
+          q: import('../src/app/campaign/location-notebook-contracts').LocationMaterialsQuery,
         ) => await store.locationMaterials(token, q),
       );
       handle(
         'campaign:world-links',
-        async (token: string, q: import('../src/app/world-links-contracts').WorldLinksQuery) =>
-          await store.worldLinks(token, q),
+        async (
+          token: string,
+          q: import('../src/app/campaign/world-links-contracts').WorldLinksQuery,
+        ) => await store.worldLinks(token, q),
       );
       handle(
         'campaign:change-preparation-content',
@@ -680,13 +691,13 @@ else {
       handle(
         'campaign:execute-world-relation-pair',
         async (
-          command: import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand,
+          command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairCommand,
         ) => await store.executeWorldRelationPair(command),
       );
       handle(
         'campaign:reconcile-world-relation-pair',
         async (
-          command: import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand,
+          command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairCommand,
           token: string,
         ) => await store.reconcileWorldRelationPair(command, token),
       );
@@ -699,7 +710,7 @@ else {
         'campaign:keep-world-relation-pair-draft',
         async (
           token: string,
-          draft: import('../src/app/world-relation-pair-contracts').WorldRelationPairDraft,
+          draft: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairDraft,
           expected: string | null,
         ) => await store.keepWorldRelationPairDraft(token, draft, expected),
       );
@@ -715,19 +726,19 @@ else {
       handle(
         'campaign:execute-world-relation-pair-history',
         async (
-          command: import('../src/app/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
+          command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
         ) => await store.executeWorldRelationPairHistory(command),
       );
       handle(
         'campaign:reconcile-world-relation-pair-history',
         async (
-          command: import('../src/app/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
+          command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
           token: string,
         ) => await store.reconcileWorldRelationPairHistory(command, token),
       );
       handle(
         'campaign:npc-cast',
-        async (token: string, q: import('../src/app/npc-cast-contracts').NpcCastQuery) =>
+        async (token: string, q: import('../src/app/campaign/npc-cast-contracts').NpcCastQuery) =>
           await store.npcCast(token, q),
       );
       handle(
@@ -735,7 +746,7 @@ else {
         async (
           token: string,
           id: string,
-          q: import('../src/app/npc-places-contracts').NpcBuildingQuery,
+          q: import('../src/app/campaign/npc-places-contracts').NpcBuildingQuery,
         ) => await store.npcBuildingChoices(token, id, q),
       );
       handle(
@@ -792,12 +803,12 @@ else {
       );
       handle(
         'campaign:preset-command',
-        async (command: import('../src/app/generation-contracts').PresetCommand) =>
+        async (command: import('../src/app/campaign/generation-contracts').PresetCommand) =>
           await store.presetCommand(command),
       );
       handle(
         'campaign:preset-outcome',
-        async (command: import('../src/app/generation-contracts').PresetCommand) =>
+        async (command: import('../src/app/campaign/generation-contracts').PresetCommand) =>
           await store.presetOutcome(command),
       );
       handle(
@@ -832,7 +843,7 @@ else {
       );
       handle(
         'catalog:items',
-        (query: import('../src/app/item-reference-contracts').ItemReferenceQuery) =>
+        (query: import('../src/app/catalog/item-reference-contracts').ItemReferenceQuery) =>
           readItemReferenceCatalog(query),
       );
       handle('catalog:info', () => creatureInfo());
@@ -944,7 +955,7 @@ else {
         'campaign:narrative-journal',
         async (
           token: string,
-          query: import('../src/app/narrative-journal-contracts').NarrativeJournalQuery,
+          query: import('../src/app/runtime/narrative-journal-contracts').NarrativeJournalQuery,
         ) => await store.narrativeJournal(token, query),
       );
       handle(
@@ -958,8 +969,10 @@ else {
       );
       handle(
         'campaign:adventuring-day',
-        async (token: string, request: import('../src/app/adventuring-day-contracts').DayRequest) =>
-          await store.adventuringDay(token, request),
+        async (
+          token: string,
+          request: import('../src/app/runtime/adventuring-day-contracts').DayRequest,
+        ) => await store.adventuringDay(token, request),
       );
       handle('campaign:progress', async (token: string) => await store.progress(token));
       handle(
@@ -967,7 +980,7 @@ else {
         async (
           token: string,
           after: string | null,
-          query?: import('../src/app/treasury-contracts').TreasureQuery,
+          query?: import('../src/app/runtime/treasury-contracts').TreasureQuery,
         ) => await store.treasures(token, after, query),
       );
       handle(
@@ -976,13 +989,15 @@ else {
       );
       handle(
         'campaign:ledger',
-        async (token: string, query: import('../src/app/progression').LedgerQuery) =>
+        async (token: string, query: import('../src/app/runtime/progression').LedgerQuery) =>
           await store.ledger(token, query),
       );
       handle(
         'campaign:ledger-inventory',
-        async (token: string, query: import('../src/app/progression').LedgerInventoryQuery) =>
-          await store.ledgerInventory(token, query),
+        async (
+          token: string,
+          query: import('../src/app/runtime/progression').LedgerInventoryQuery,
+        ) => await store.ledgerInventory(token, query),
       );
       handle(
         'campaign:ledger-item',
@@ -1007,7 +1022,7 @@ else {
         acceptingTicket: string | null = null;
       let acceptanceFinished: Promise<void> | null = null;
       const campaignProgress = (
-        p: import('../src/app/campaign-contracts').CampaignTransferProgress,
+        p: import('../src/app/campaign/campaign-contracts').CampaignTransferProgress,
       ) => {
         if (!win.isDestroyed()) win.webContents.send('campaign:transfer-progress', p);
       };
@@ -1203,7 +1218,7 @@ else {
         (
           ticketId: string,
           name: string,
-          choices: Record<string, import('../src/app/campaign-contracts').ConflictChoice>,
+          choices: Record<string, import('../src/app/campaign/campaign-contracts').ConflictChoice>,
         ) =>
           campaignJob(async () => {
             acceptingTicket = ticketId;
@@ -1278,7 +1293,7 @@ else {
       );
       handle(
         'music:assets',
-        async (query: import('../src/app/music-contracts').AudioQuery) =>
+        async (query: import('../src/app/runtime/music-contracts').AudioQuery) =>
           await store.audioAssets(query),
       );
       handle('music:asset', async (id: string) => await store.audioAsset(id));
@@ -1287,13 +1302,13 @@ else {
         'music:subject',
         async (
           token: string,
-          kind: import('../src/app/music-contracts').MusicSubject['kind'],
+          kind: import('../src/app/runtime/music-contracts').MusicSubject['kind'],
           id: string,
         ) => await store.musicSubject(token, kind, id),
       );
       handle(
         'music:execute',
-        async (command: import('../src/app/music-contracts').MusicCommand) =>
+        async (command: import('../src/app/runtime/music-contracts').MusicCommand) =>
           await store.executeMusic(command),
       );
       handle(
@@ -1318,7 +1333,7 @@ else {
             ],
           });
           if (selection.canceled) return { cancelled: true, ids: [] };
-          const medias: import('../src/app/music-contracts').AudioAsset['media'][] = [];
+          const medias: import('../src/app/runtime/music-contracts').AudioAsset['media'][] = [];
           for (const filename of selection.filePaths)
             medias.push(await copyAudio(filename, path.join(dataDir, 'audio'), hooks));
           if (audioCancelled) throw new Error('Audioimport abgebrochen.');
@@ -1393,7 +1408,7 @@ else {
         'campaign:keep-group-draft',
         async (
           token: string,
-          draft: import('../src/app/groups-contracts').GroupDraft,
+          draft: import('../src/app/campaign/groups-contracts').GroupDraft,
           expected: string | null,
         ) => await store.keepGroupDraft(token, draft, expected),
       );
@@ -1410,11 +1425,14 @@ else {
         'graph:view',
         async (token: string, scopeId: string) => await store.graph(token, scopeId),
       );
-      handle('graph:execute', async (c: import('../src/app/atlas/graph-contracts').GraphCommand) => {
-        if (['restore', 'accept'].includes(c.action?.kind))
-          return withGraphSourceReadBarrier(async () => await store.executeGraph(c));
-        return await store.executeGraph(c);
-      });
+      handle(
+        'graph:execute',
+        async (c: import('../src/app/atlas/graph-contracts').GraphCommand) => {
+          if (['restore', 'accept'].includes(c.action?.kind))
+            return withGraphSourceReadBarrier(async () => await store.executeGraph(c));
+          return await store.executeGraph(c);
+        },
+      );
       handle(
         'drawing:path-preview',
         async (token: string, p: import('../src/app/atlas/path-contracts').DungeonPath) =>
@@ -1538,17 +1556,19 @@ else {
       handle('autonomy:view', async (token: string) => await store.autonomy(token));
       handle(
         'autonomy:execute',
-        async (c: import('../src/app/autonomy-contracts').AutonomyCommand) =>
+        async (c: import('../src/app/runtime/autonomy-contracts').AutonomyCommand) =>
           await store.executeAutonomy(c),
       );
       handle(
         'player:view',
-        async (token: string, query?: import('../src/app/player-contracts').PlayerMapQuery) =>
-          await store.playerView(token, query),
+        async (
+          token: string,
+          query?: import('../src/app/runtime/player-contracts').PlayerMapQuery,
+        ) => await store.playerView(token, query),
       );
       handle(
         'player:execute',
-        async (command: import('../src/app/player-contracts').PlayerCommand) =>
+        async (command: import('../src/app/runtime/player-contracts').PlayerCommand) =>
           await store.executePlayer(command),
       );
       handle('player:screens', () =>
@@ -1565,7 +1585,7 @@ else {
         'player:art',
         async (
           token: string,
-          kind: import('../src/app/player-contracts').PlayerAsset['kind'],
+          kind: import('../src/app/runtime/player-contracts').PlayerAsset['kind'],
           subjectId: string | null,
           title: string,
         ) => {
@@ -1606,8 +1626,10 @@ else {
       );
       handle(
         'city:activities',
-        async (token: string, q: import('../src/app/atlas/city-activity-contracts').CityActivityQuery) =>
-          await store.cityActivities(token, q),
+        async (
+          token: string,
+          q: import('../src/app/atlas/city-activity-contracts').CityActivityQuery,
+        ) => await store.cityActivities(token, q),
       );
       handle(
         'city:buildings',
@@ -1616,7 +1638,7 @@ else {
       );
       handle(
         'atlas:travel-preview',
-        async (token: string, p: import('../src/app/contracts').Point) =>
+        async (token: string, p: import('../src/app/shared/contracts').Point) =>
           await store.previewAtlasTravel(token, p),
       );
       handle(
@@ -1781,8 +1803,10 @@ else {
       handle('atlas:overview', async (token: string) => await store.atlasOverview(token));
       handle(
         'atlas:objects',
-        async (token: string, q: import('../src/app/atlas/campaign-atlas-contracts').AtlasObjectQuery) =>
-          await store.atlasObjects(token, q),
+        async (
+          token: string,
+          q: import('../src/app/atlas/campaign-atlas-contracts').AtlasObjectQuery,
+        ) => await store.atlasObjects(token, q),
       );
       handle(
         'atlas:vegetation-scene',
@@ -1807,12 +1831,12 @@ else {
       );
       handle(
         'atlas:terrain-profile',
-        async (token: string, points: import('../src/app/contracts').Point[]) =>
+        async (token: string, points: import('../src/app/shared/contracts').Point[]) =>
           await store.atlasTerrainProfile(token, points),
       );
       handle(
         'atlas:height',
-        async (token: string, point: import('../src/app/contracts').Point) =>
+        async (token: string, point: import('../src/app/shared/contracts').Point) =>
           await store.atlasHeight(token, point),
       );
       handle(
@@ -1961,7 +1985,7 @@ else {
         'atlas:object',
         async (token: string, id: string) => await store.atlasLandscapeObject(token, id),
       );
-      handle('atlas:room-commit', (edit: import('../src/app/contracts').Edit) =>
+      handle('atlas:room-commit', (edit: import('../src/app/shared/contracts').Edit) =>
         atlasWriteActivity.run(edit.commandId, async () => await store.atlasRoomCommit(edit)),
       );
       handle('atlas:room', async (token: string, id: string) => await store.atlasRoom(token, id));
@@ -1978,19 +2002,21 @@ else {
         async (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
           await store.reconcileAtlasCommit(c, atlasWriteActivity.has(c.commandId)),
       );
-      handle('atlas:commit', (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
-        atlasWriteActivity.run(c.commandId, async () => {
-          if (c.action?.kind === 'graph-accept')
-            return withGraphSourceReadBarrier(async () => await store.executeAtlasCommit(c));
-          if (c.action?.kind === 'landscape-height-stroke') {
-            const source = await store.terrainStrokeSource(c, atlasRegions.cursor);
-            if (source) {
-              const prepared = await atlasRegions.prepareTerrainStroke(source, c.action.stroke);
-              return await store.executeAtlasCommit(c, prepared);
+      handle(
+        'atlas:commit',
+        (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
+          atlasWriteActivity.run(c.commandId, async () => {
+            if (c.action?.kind === 'graph-accept')
+              return withGraphSourceReadBarrier(async () => await store.executeAtlasCommit(c));
+            if (c.action?.kind === 'landscape-height-stroke') {
+              const source = await store.terrainStrokeSource(c, atlasRegions.cursor);
+              if (source) {
+                const prepared = await atlasRegions.prepareTerrainStroke(source, c.action.stroke);
+                return await store.executeAtlasCommit(c, prepared);
+              }
             }
-          }
-          return await store.executeAtlasCommit(c);
-        }),
+            return await store.executeAtlasCommit(c);
+          }),
       );
       handle(
         'campaign:workspace-initial',
@@ -2051,7 +2077,7 @@ else {
         async (
           token: string,
           query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
-          point: import('../src/app/contracts').Point,
+          point: import('../src/app/shared/contracts').Point,
           fence: string,
           offset = 0,
           layer: 'geometry' | 'landscape' | 'all' = 'geometry',
@@ -2092,7 +2118,7 @@ else {
         async (
           token: string,
           query: import('../src/app/atlas/atlas-region-contracts').AtlasRegionQuery,
-          point: import('../src/app/contracts').Point,
+          point: import('../src/app/shared/contracts').Point,
           fence: string,
         ) => {
           if (graphSourceReadBarrierDepth) throw new Error('Graphwechsel läuft.');
@@ -2114,12 +2140,14 @@ else {
       );
       handle('atlas:render-view', async (token: string) => await store.atlasRenderView(token));
       handle('atlas:view', async (token: string) => await store.campaignAtlas(token));
-      handle('atlas:execute', (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
-        atlasWriteActivity.run(c.commandId, async () => {
-          if (c.action?.kind === 'graph-accept')
-            return withGraphSourceReadBarrier(async () => await store.executeAtlas(c));
-          return await store.executeAtlas(c);
-        }),
+      handle(
+        'atlas:execute',
+        (c: import('../src/app/atlas/campaign-atlas-contracts').AtlasCommand) =>
+          atlasWriteActivity.run(c.commandId, async () => {
+            if (c.action?.kind === 'graph-accept')
+              return withGraphSourceReadBarrier(async () => await store.executeAtlas(c));
+            return await store.executeAtlas(c);
+          }),
       );
       handle('city:list', async (token: string) => await store.cities(token));
       handle('city:view', async (token: string, id: string) => await store.city(token, id));
@@ -2143,34 +2171,38 @@ else {
       });
       handle(
         'world:time-preview',
-        async (token: string, request: import('../src/app/time-plan-contracts').TimeRequest) =>
-          await store.previewTime(token, request),
+        async (
+          token: string,
+          request: import('../src/app/runtime/time-plan-contracts').TimeRequest,
+        ) => await store.previewTime(token, request),
       );
       handle(
         'world:agenda',
-        async (token: string, query: import('../src/app/agenda-contracts').AgendaQuery) =>
+        async (token: string, query: import('../src/app/runtime/agenda-contracts').AgendaQuery) =>
           await store.agenda(token, query),
       );
       handle('world:view', async (token: string) => await store.world(token));
       handle('world:scene', async (token: string, id: string) => await store.sceneWorld(token, id));
       handle(
         'world:travel-preview',
-        async (token: string, request: import('../src/app/world-contracts').TravelRequest) =>
-          await store.previewTravel(token, request),
+        async (
+          token: string,
+          request: import('../src/app/runtime/world-contracts').TravelRequest,
+        ) => await store.previewTravel(token, request),
       );
       handle(
         'world:reconcile',
-        async (command: import('../src/app/world-contracts').WorldCommand, token: string) =>
+        async (command: import('../src/app/runtime/world-contracts').WorldCommand, token: string) =>
           await store.reconcileWorld(command, token),
       );
       handle(
         'world:execute',
-        async (command: import('../src/app/world-contracts').WorldCommand) =>
+        async (command: import('../src/app/runtime/world-contracts').WorldCommand) =>
           await store.executeWorld(command),
       );
       handle(
         'items:definitions',
-        async (query: import('../src/app/items-contracts').ItemQuery) =>
+        async (query: import('../src/app/catalog/items-contracts').ItemQuery) =>
           await store.itemDefinitions(query),
       );
       handle(
@@ -2194,11 +2226,13 @@ else {
       const commits = new CommitTracker(async (ref, token) => await store.commitStatus(ref, token));
       handle(
         'campaign:commit-status',
-        (ref: import('../src/app/commit-receipt').CommitReference, token: string) =>
+        (ref: import('../src/app/shared/commit-receipt').CommitReference, token: string) =>
           commits.status(ref, token),
       );
-      handle('items:execute', (command: import('../src/app/items-contracts').ItemShopCommand) =>
-        commits.execute('items', command, async () => await store.executeItemShop(command)),
+      handle(
+        'items:execute',
+        (command: import('../src/app/catalog/items-contracts').ItemShopCommand) =>
+          commits.execute('items', command, async () => await store.executeItemShop(command)),
       );
       handle('campaign:execute-progress', (command: ProgressCommand) =>
         commits.execute('progress', command, async () => await store.executeProgress(command)),
@@ -2215,7 +2249,7 @@ else {
           token: string,
           category: ChronicleCategory | 'all',
           search: string,
-          cursor: import('../src/app/chronicle-contracts').ChronicleCursor | null,
+          cursor: import('../src/app/runtime/chronicle-contracts').ChronicleCursor | null,
         ) => await store.chroniclePage(token, category, search, cursor),
       );
       handle(
@@ -2303,7 +2337,7 @@ else {
         async (
           token: string,
           id: string,
-          kind: import('../src/app/combat-draft-contracts').CombatDraftKind,
+          kind: import('../src/app/runtime/combat-draft-contracts').CombatDraftKind,
           target: string,
         ) => await store.combatDraft(token, id, kind, target),
       );
@@ -2316,7 +2350,7 @@ else {
         'campaign:keep-combat-draft',
         async (
           token: string,
-          draft: import('../src/app/combat-draft-contracts').CombatWorkingDraft,
+          draft: import('../src/app/runtime/combat-draft-contracts').CombatWorkingDraft,
           expected: string | null,
         ) => await store.keepCombatDraft(token, draft, expected),
       );
@@ -2325,7 +2359,7 @@ else {
         async (
           token: string,
           id: string,
-          kind: import('../src/app/combat-draft-contracts').CombatDraftKind,
+          kind: import('../src/app/runtime/combat-draft-contracts').CombatDraftKind,
           target: string,
           writeId: string,
         ) => await store.discardCombatDraft(token, id, kind, target, writeId),
@@ -2344,7 +2378,7 @@ else {
         'campaign:keep-chase-draft',
         async (
           token: string,
-          draft: import('../src/app/chase-draft-contracts').ChaseWorkingDraft,
+          draft: import('../src/app/runtime/chase-draft-contracts').ChaseWorkingDraft,
           expected: string | null,
         ) => await store.keepChaseDraft(token, draft, expected),
       );
@@ -2353,7 +2387,7 @@ else {
         async (
           token: string,
           sceneId: string,
-          query: import('../src/app/mask-history-contracts').MaskHistoryQuery,
+          query: import('../src/app/runtime/mask-history-contracts').MaskHistoryQuery,
         ) => await store.maskHistory(token, sceneId, query),
       );
       handle(
@@ -2363,7 +2397,7 @@ else {
       );
       handle(
         'campaign:execute-chase',
-        (command: import('../src/app/chase-contracts').ChaseCommand) =>
+        (command: import('../src/app/runtime/chase-contracts').ChaseCommand) =>
           commits.execute('chase', command, async () => await store.executeChase(command)),
       );
       handle('campaign:execute-combat', (command: CombatCommand) =>

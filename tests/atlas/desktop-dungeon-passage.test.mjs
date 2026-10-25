@@ -221,7 +221,7 @@ test('travel UI keeps broken-link descriptions visible and disables missing or u
       Event: globalThis.Event,
       ResizeObserver: globalThis.ResizeObserver,
     },
-    { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, {
     window,
     document,

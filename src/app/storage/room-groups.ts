@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { CityUnit } from '../atlas/city-contracts';
-import { validateRoom } from '../contracts';
+import { validateRoom } from '../shared/contracts';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import {
   checkGroupRecipe,

@@ -2,7 +2,7 @@ import { validateTerrainAnchor } from '../atlas/terrain-objects';
 import { effectiveLandscape } from '../atlas/atlas-landscape';
 import { atlasPartyPoint } from '../atlas/atlas-runtime-model';
 import { createHash } from 'node:crypto';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { CampaignAtlas } from '../atlas/campaign-atlas-contracts';
 import type {
   AtlasEntrance,
@@ -11,8 +11,8 @@ import type {
   AtlasTravelCommand,
 } from '../atlas/atlas-travel-contracts';
 import { atlasFrame, localToAtlas, atlasToLocal, atlasHexAt } from '../atlas/campaign-atlas-model';
-import { cellAt } from '../world-model';
-import { hexAccessProblem } from '../hex-access';
+import { cellAt } from '../runtime/world-model';
+import { hexAccessProblem } from '../runtime/hex-access';
 import { posed, roadPoints } from '../atlas/city-model';
 import { inside } from '../atlas/drawing-model';
 import { atlasLocalRoute } from '../atlas/atlas-local-route';

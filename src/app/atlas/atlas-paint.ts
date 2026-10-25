@@ -1,5 +1,5 @@
 import type { MapLabelSource } from './atlas-label-source';
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 /** Local drawing data shared by the Canvas screen and raster exports. */
 export type Affine = [number, number, number, number, number, number];
 export type PaintKind =

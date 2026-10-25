@@ -1,7 +1,7 @@
 import type { LandscapeHost, LandscapeTool as Tool } from './landscape-workbench-types';
 import { openTerrainRoute } from './terrain-route-ui';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { type LandscapeRecord } from './atlas-landscape';
 interface LandscapeRoutesHost {
   readonly tool: Tool;

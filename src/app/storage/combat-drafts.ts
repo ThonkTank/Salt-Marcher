@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
-import { checkedCombat, checkedCombatant } from '../combat-contracts';
+import { checkedCombat, checkedCombatant } from '../runtime/combat-contracts';
 import {
   fighterDraftFields,
   type CombatWorkingDraft,
   type CombatDraftKind,
   type CombatDraftPage,
-} from '../combat-draft-contracts';
+} from '../runtime/combat-draft-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const fields = (v: any, keys: string[]) =>
   v &&

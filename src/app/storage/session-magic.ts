@@ -5,12 +5,12 @@ import type {
   SessionMagicGuidance,
   SessionMagicPoolItem,
   SessionGenerationRequest,
-} from '../session-contracts';
-import type { ItemInput } from '../progression';
-import type { RewardGuidanceRules } from '../generation/reward-guidance';
-import { cumulativeMagicGuidance } from '../generation/reward-guidance';
+} from '../campaign/session-contracts';
+import type { ItemInput } from '../runtime/progression';
+import type { RewardGuidanceRules } from '../campaign/generation/reward-guidance';
+import { cumulativeMagicGuidance } from '../campaign/generation/reward-guidance';
 import { readItemDefinition } from './item-definitions';
-import type { ItemDefinition } from '../items-contracts';
+import type { ItemDefinition } from '../catalog/items-contracts';
 export const emptyMagic = () =>
   Object.fromEntries(budgetRarities.map((r) => [r, 0])) as Record<BudgetRarity, number>;
 export function magicRules(rules: RewardGuidanceRules) {

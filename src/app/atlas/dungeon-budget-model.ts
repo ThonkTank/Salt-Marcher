@@ -7,9 +7,9 @@ import type {
   DungeonBudgetValues,
 } from './dungeon-budget-contracts';
 import { budgetRarities, validateBudgetSettings } from './dungeon-budget-contracts';
-import { dailyXp } from '../progression';
-import { decimal, multiply, rational, roundHalfUp } from '../generation/rational';
-import { rewardGuidance, type RewardGuidanceRules } from '../generation/reward-guidance';
+import { dailyXp } from '../runtime/progression';
+import { decimal, multiply, rational, roundHalfUp } from '../campaign/generation/rational';
+import { rewardGuidance, type RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 export const emptyBudgetValues = (): DungeonBudgetValues => ({
   adjustedXp: 0,
   baseXp: 0,

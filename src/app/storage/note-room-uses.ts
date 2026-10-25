@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { checkedKeyRow } from './dungeon-key';
 import { drawingRoomFromRow } from './drawing';
-import { validateRoom } from '../contracts';
-import type { NoteRoomUsesPage } from '../preparation-contracts';
+import { validateRoom } from '../shared/contracts';
+import type { NoteRoomUsesPage } from '../campaign/preparation-contracts';
 
 const registered = new WeakSet<object>();
 function install(db: any) {

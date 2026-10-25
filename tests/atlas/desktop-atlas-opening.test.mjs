@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { transformSync } from 'esbuild';
 
 // Execute the real entry coordinator without booting unrelated renderer panels.
-const renderer = readFileSync('src/app/renderer.ts', 'utf8');
+const renderer = readFileSync('src/app/workspace/renderer.ts', 'utf8');
 const coordinator = sourceFunctions(renderer, ['reopenView']);
 const { code } = transformSync(
   `

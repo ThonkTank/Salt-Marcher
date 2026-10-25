@@ -15,7 +15,7 @@ import {
 import { routeSpec, routeDefaults, nearestRoute, type RouteStructure } from './terrain-route';
 import { newLine, roadStyles } from './landscape-line';
 import type { VegetationScene } from './vegetation';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 interface Host {
   token: string;

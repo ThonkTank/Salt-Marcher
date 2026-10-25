@@ -231,7 +231,7 @@ buildSync({
 });
 test('pace panel retains newer edits after an earlier acknowledgement and discards against the latest read', async (t) => {
   const { parseHTML } = await import('linkedom'),
-    { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
     previous = { window: globalThis.window, document: globalThis.document };
   Object.assign(globalThis, { window, document });
   t.after(() => Object.assign(globalThis, previous));
@@ -301,7 +301,7 @@ for (const field of ['group', 'member', 'exclude'])
       geometry = x.store.drawing(x.w.token),
       live = x.store.live(x.w.token),
       { parseHTML } = await import('linkedom'),
-      { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+      { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
       previous = { window: globalThis.window, document: globalThis.document };
     Object.assign(globalThis, { window, document });
     t.after(() => Object.assign(globalThis, previous));
@@ -377,7 +377,7 @@ buildSync({
 async function panel(t) {
   const x = fixture(t),
     { parseHTML } = await import('linkedom'),
-    { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   const previous = {
     window: globalThis.window,
     document: globalThis.document,
@@ -519,7 +519,7 @@ test('replacing a Dungeon preview immediately notifies the shared Atlas that it 
 });
 
 buildSync({
-  entryPoints: ['src/app/dungeon-travel-console.ts'],
+  entryPoints: ['src/app/runtime/dungeon-travel-console.ts'],
   outfile: '.build/dungeon-console-ui.cjs',
   bundle: true,
   platform: 'node',
@@ -649,7 +649,9 @@ test('a delayed or changed live focus revokes old Dungeon commands and preserves
 });
 
 test('Dungeon route rendering retains its last checkpoint and hides ended or unrelated journeys', () => {
-  const { dungeonTravelRoute } = createRequire(import.meta.url)('../../.build/dungeon-console-ui.cjs'),
+  const { dungeonTravelRoute } = createRequire(import.meta.url)(
+      '../../.build/dungeon-console-ui.cjs',
+    ),
     route = [{ x: 1 }, { x: 2 }, { x: 3 }],
     j = { request: { sceneId: 'scene' }, route, nextIndex: 2, status: 'active' };
   assert.deepEqual(dungeonTravelRoute(j, null, 'scene'), route.slice(1));

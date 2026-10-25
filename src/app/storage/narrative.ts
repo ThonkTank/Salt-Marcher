@@ -5,7 +5,7 @@ import type {
   NarrativeAward,
   NarrativeView,
   NarrativeDraft,
-} from '../narrative-contracts';
+} from '../runtime/narrative-contracts';
 
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const id = (value: unknown) => typeof value === 'string' && !!value && value.length <= 1000;

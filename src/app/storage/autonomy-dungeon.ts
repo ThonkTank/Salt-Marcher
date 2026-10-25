@@ -5,10 +5,14 @@ import { readDungeonVolumes } from './volume';
 import { npcHearsParty, rememberNpcParty, recordDungeonTrace } from './dungeon-senses';
 import { createHash, randomUUID } from 'node:crypto';
 import type { DungeonGeometry, DungeonPose, DungeonTraceRules } from '../atlas/dungeon-contracts';
-import type { AutonomyActor, AutonomyJob, AutonomyDungeonTravel } from '../autonomy-contracts';
+import type {
+  AutonomyActor,
+  AutonomyJob,
+  AutonomyDungeonTravel,
+} from '../runtime/autonomy-contracts';
 import { planDungeon, centerInRoom, trapEntry } from '../atlas/dungeon-model';
 import { inside } from '../atlas/drawing-model';
-import { validateRoom } from '../contracts';
+import { validateRoom } from '../shared/contracts';
 import { validateDrawingElement } from '../atlas/drawing-contracts';
 import { validateDungeonPath, validateDungeonPassage } from '../atlas/path-contracts';
 import { MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from '../atlas/volume-contracts';

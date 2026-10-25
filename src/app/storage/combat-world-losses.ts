@@ -1,5 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { CombatState, CombatLossBasis, CombatLossCandidate } from '../combat-contracts';
+import type {
+  CombatState,
+  CombatLossBasis,
+  CombatLossCandidate,
+} from '../runtime/combat-contracts';
 import { readNpc } from './npcs';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 

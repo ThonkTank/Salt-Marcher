@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 export interface AtlasSpatialSurface {
   /** Output sampling density for text textures; live scenes use a bounded glyph atlas. */

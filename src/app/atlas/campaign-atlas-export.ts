@@ -3,11 +3,11 @@ import { AtlasPaint, atlasPaint } from './atlas-paint';
 import { AtlasCanvasScene } from './atlas-canvas-scene';
 import { drawScale } from './atlas-landscape-view';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { CanvasBox } from '../passive-map-canvas';
-import type { PlayerFrame } from '../player-contracts';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
+import type { PlayerFrame } from '../runtime/player-contracts';
 import { atlasFrame, frameMatrix, atlasHexPoint, localToAtlas } from './campaign-atlas-model';
 import { regionValue } from './atlas-region-contracts';
-import { terrainColors } from '../world-model';
+import { terrainColors } from '../runtime/world-model';
 /** Full current-floor bounds come from the source index, including offscreen rooms. */
 export function dungeonExportBox(
   a: AtlasRenderView,

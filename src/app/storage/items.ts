@@ -1,9 +1,9 @@
-import { shopStockForItem } from '../items-contracts';
-import { checkedDefinition } from '../item-definition-validation';
-import { validateShopShape, validateShopQuantity as qty } from '../shop-validation';
+import { shopStockForItem } from '../catalog/items-contracts';
+import { checkedDefinition } from '../catalog/item-definition-validation';
+import { validateShopShape, validateShopQuantity as qty } from '../runtime/shop-validation';
 import { npcIdsAtLocation } from './npc-world';
 import { drawCatalogRestock } from './catalog-restock';
-import { checkedCalendarEvent } from '../world-model';
+import { checkedCalendarEvent } from '../runtime/world-model';
 import { prepareRestockTables, drawRestockTable } from './shop-restock';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
@@ -13,8 +13,8 @@ import type {
   ShopSummary,
   ItemShopCommand,
   ItemShopAck,
-} from '../items-contracts';
-import { copper, partitionLedgerPaidPrice, type LedgerItem } from '../progression';
+} from '../catalog/items-contracts';
+import { copper, partitionLedgerPaidPrice, type LedgerItem } from '../runtime/progression';
 import { saveLedger, event, readLedgerItem } from './progression';
 import {
   readItemDefinition,
@@ -24,7 +24,7 @@ import {
 } from './item-definitions';
 import { scenePreparation } from './session';
 import { readLiveScene, readCampaignTime } from './live';
-import { formatInstant } from '../live-contracts';
+import { formatInstant } from '../runtime/live-contracts';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded<T>(row: any): T {
@@ -81,7 +81,7 @@ function history(
   cam: string,
   s: Shop,
   description: string,
-  facts: import('../items-contracts').ShopHistoryFacts,
+  facts: import('../catalog/items-contracts').ShopHistoryFacts,
 ) {
   const id = randomUUID(),
     payload = json({ time: new Date().toISOString(), description, facts });
@@ -451,7 +451,7 @@ function deliverySummary(outcomes: { name: string; added: number }[]) {
 function applyRandomRestock(
   db: any,
   shop: Shop,
-  table: import('../items-contracts').ShopRestockTable,
+  table: import('../catalog/items-contracts').ShopRestockTable,
   seed: string,
   count = 1n,
   firstDue?: bigint,

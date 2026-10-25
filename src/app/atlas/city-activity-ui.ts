@@ -1,4 +1,4 @@
-import type { WorkspaceGeometry } from '../contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
 import type { CityActivityPage, CityActivitySite } from './city-activity-contracts';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const e = document.createElement(tag);

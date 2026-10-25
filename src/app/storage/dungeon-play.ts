@@ -16,11 +16,11 @@ import {
   contentState,
   saveContentState,
 } from './content-runtime';
-import type { ProgressCommand } from '../progression';
+import type { ProgressCommand } from '../runtime/progression';
 import { readTriggerEvents, saveTriggerEvent, createTriggerEvents } from './triggers';
-import { refineTriggerRoute } from '../trigger-model';
+import { refineTriggerRoute } from '../runtime/trigger-model';
 import { keyDiscoveries, revealKey } from './dungeon-key';
-import { renderDungeonKey } from '../key-model';
+import { renderDungeonKey } from '../campaign/key-model';
 import { passageLanding } from '../atlas/path-spatial';
 import { poseSpace } from '../atlas/spatial-3d';
 import { startPursuit, continuePursuit, pursuitGuard } from './dungeon-pursuit';
@@ -36,7 +36,7 @@ import {
   saveDungeonTraceRules,
   addDungeonTrace,
 } from './dungeon-senses';
-import type { CombatCommand } from '../combat-contracts';
+import type { CombatCommand } from '../runtime/combat-contracts';
 import { readPreparedGroup } from './session';
 import { npcDungeonPose, placeNpcDungeon } from './npc-dungeon';
 import { createHash, randomUUID } from 'node:crypto';
@@ -50,8 +50,8 @@ import type {
   DungeonView,
   DungeonDisplay,
 } from '../atlas/dungeon-contracts';
-import type { PlayerObserver, PlayerSettings } from '../player-contracts';
-import type { LiveCommand } from '../live-contracts';
+import type { PlayerObserver, PlayerSettings } from '../runtime/player-contracts';
+import type { LiveCommand } from '../runtime/live-contracts';
 import { readLive, readLiveScene } from './live';
 import { position, savePosition } from './world';
 import { drawingRoom, drawingView, activateDungeonFeature } from './drawing';
@@ -74,13 +74,13 @@ CREATE TABLE IF NOT EXISTS dungeon_receipt(campaign_id TEXT NOT NULL REFERENCES 
 export function dungeonMapView(
   db: any,
   cam: string,
-  shape?: import('../contracts').WorkspaceGeometry,
+  shape?: import('../shared/contracts').WorkspaceGeometry,
   drawingOverride?: import('../atlas/drawing-contracts').DrawingView<
-    import('../contracts').RoomGeometry,
+    import('../shared/contracts').RoomGeometry,
     import('../atlas/drawing-contracts').DrawingElementGeometry
   >,
 ): import('../atlas/dungeon-contracts').DungeonView<
-  import('../contracts').RoomGeometry,
+  import('../shared/contracts').RoomGeometry,
   import('../atlas/drawing-contracts').DrawingElementGeometry
 > {
   const drawing = drawingOverride ?? drawingView(db, cam, true),
@@ -775,7 +775,7 @@ export function executeDungeon(
                       expectedPreparedRevision: group.revision,
                       worldActorIds: actors.map((a) => a.id),
                     },
-                  }) as import('../combat-contracts').CombatView;
+                  }) as import('../runtime/combat-contracts').CombatView;
                   state = {
                     ...state,
                     revision: state.revision + 1,

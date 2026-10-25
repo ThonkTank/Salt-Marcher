@@ -1,5 +1,5 @@
 import type { AtlasCanvasScene, PaintHit } from './atlas-canvas-scene';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Presentation boundary shared by the Atlas camera, existing tools and GPU scene.
  * Neither the renderer nor a visual hit may write canonical campaign data. */

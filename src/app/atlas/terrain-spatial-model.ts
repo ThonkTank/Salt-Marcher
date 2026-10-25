@@ -2,7 +2,7 @@ import { terrainHorizon } from './terrain-coverage';
 import { atlasCameraEye, atlasProject, type AtlasCameraPose } from './atlas-camera';
 import { TerrainSampler } from './terrain-height';
 import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { terrainGridLayout, terrainGridCoordinate } from './terrain-grid-layout';
 
 /** Frozen view used by both the visible mesh and canonical brush clipping. */

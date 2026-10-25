@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TerrainPixelReadback, terrainPixelDifference } from '../../tools/terrain-pixel-readback.mjs';
+import {
+  TerrainPixelReadback,
+  terrainPixelDifference,
+} from '../../tools/terrain-pixel-readback.mjs';
 function fakeGL() {
   const gl = {
     PIXEL_PACK_BUFFER: 1,

@@ -18,8 +18,8 @@ import type {
   AutonomyView,
   AutonomyDecision,
   AutonomyDecisionCandidate,
-} from '../autonomy-contracts';
-import { standardNeeds, checkedAutonomyJob } from '../autonomy-contracts';
+} from '../runtime/autonomy-contracts';
+import { standardNeeds, checkedAutonomyJob } from '../runtime/autonomy-contracts';
 import { npcPosition, npcPositionReader, placeNpc, npcRoutes, saveNpcRoute } from './npc-world';
 import { readLive } from './live';
 import { readPreparedGroup, readWorldActor, writeWorldActorHealth } from './session';

@@ -28,7 +28,7 @@ const {
   CampaignAtlasWorkbench,
 } = require('../../.build/atlas-tool-hierarchy.cjs');
 function fixture(t) {
-  const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   const original = { document: global.document, Event: global.Event };
   global.document = document;
   global.Event = window.Event;
@@ -48,7 +48,10 @@ function fixture(t) {
     ['landscape-tool-settings.ts', 'this.brushRoot.innerHTML'],
   ]) {
     const holder = document.createElement('div');
-    holder.innerHTML = sourceAssignedLiteral(readFileSync('src/app/atlas/' + file, 'utf8'), propertyPath);
+    holder.innerHTML = sourceAssignedLiteral(
+      readFileSync('src/app/atlas/' + file, 'utf8'),
+      propertyPath,
+    );
     document.body.append(holder);
   }
   const root = document.createElement('section');

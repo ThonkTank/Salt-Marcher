@@ -10,7 +10,7 @@
     "session": "src/session.ts",
     "commands": "src/commands.ts",
     "persistence": "src/persistence.ts",
-    "renderer": "src/renderer.ts"
+    "renderer": "src/legacy/obsidian/renderer.ts"
   },
   "predecessor": {
     "package": "ADR-P01-H01",

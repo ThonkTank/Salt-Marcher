@@ -19,11 +19,11 @@ import type {
   PlayerFrame,
   PlayerCommand,
   PlayerAction,
-} from '../player-contracts';
-import type { Hex, SceneWorld } from '../world-contracts';
+} from '../runtime/player-contracts';
+import type { Hex, SceneWorld } from '../runtime/world-contracts';
 import { readLive } from './live';
 import { position as scenePosition, readSceneWorld, readWorld } from './world';
-import { authoredCellAt, cellAt, hexDistance, hexPoint, pointHex } from '../world-model';
+import { authoredCellAt, cellAt, hexDistance, hexPoint, pointHex } from '../runtime/world-model';
 const hash = (p: string) => createHash('sha256').update(p).digest('hex');
 export function installPlayerSchema(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS player_record(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;

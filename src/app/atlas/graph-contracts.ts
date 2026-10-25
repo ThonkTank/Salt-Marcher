@@ -1,6 +1,6 @@
 import { validateBudgetSettings } from './dungeon-budget-contracts';
 import type { DungeonBudgetSetting } from './dungeon-budget-contracts';
-import type { Result, Workspace, Point } from '../contracts';
+import type { Result, Workspace, Point } from '../shared/contracts';
 import type { DungeonGeometry } from './dungeon-contracts';
 export interface GraphIntent {
   id: string;

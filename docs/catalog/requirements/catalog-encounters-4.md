@@ -105,7 +105,7 @@ Der E-Abschnitt A–Z 63–70 (Efficient Quiver bis Eyes of the Eagle, Seiten 22
 
 Vollständigkeitsziel: 459 Occurrences (219 Ausrüstung + 239 A–Z + Orb), mit ausdrücklich belegten Merges statt Namensgleichheit; der Potion-of-Healing-Merge ist bereits bekannt. Der tatsächlich gelieferte Korpus und offene Abschnitte stehen ausschließlich im Quellenartefakt und `acceptance.json.saltMarcherCatalogEncounter`. Das vollständige Quellen-/Schema-/Provenienzpaket benötigt Prüfung vor Produktartefakt, Provider und UI.
 
-`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/items-srd51-source.test.mjs` aktiviert den vollständigen PDF-Test. Ohne PDF ist er skipped; Offline-XML ersetzt bei Quellenänderung keinen erneuten echten PDF-Lauf.
+`SRD51_SOURCE_PDF=/pfad/SRD_CC_v5.1.pdf node --test tests/catalog/items-srd51-source.test.mjs` aktiviert den vollständigen PDF-Test. Ohne PDF ist er skipped; Offline-XML ersetzt bei Quellenänderung keinen erneuten echten PDF-Lauf.
 
 ### Ziel und Grenze
 

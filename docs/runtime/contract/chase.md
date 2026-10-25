@@ -62,7 +62,7 @@ bleibt beim ursprünglichen Ziel; sein Reply zeichnet und meldet nur im weiterhi
 passenden Kontext. Aktuelle IPCfehler bleiben sichtbar und Refresh bleibt möglich.
 Anlage nach abgeschlossenem Tracker sendet außerdem keine alte Chase-ID/Basis.
 
-`tests/desktop-chase-authority-dom.test.mjs` enthält elf kontrollierte DOMfälle
+`tests/runtime/desktop-chase-authority-dom.test.mjs` enthält elf kontrollierte DOMfälle
 mit verzögerten/ersetzten IPCantworten. Zusammen mit den betroffenen
 Szenensuche-/Reiseziel-, Codec-, Store-/Transfer- und Draftmigrationprüfungen
 bestanden 35 lokale Prüfungen und Desktop-Typecheck.
@@ -131,7 +131,7 @@ und vollständige native Crossworkflowabnahme bleiben offen.
    nicht nachträglich. Parallele Masken derselben Scene buchen nacheinander je
    sechs Sekunden; fremde Scenes behalten ihre Uhr. Der bestehende Zeitweg
    besitzt weiterhin Kalender, Autonomie, Restock und Dungeonfolgen.
-   `tests/desktop-chase-time.test.mjs` prüft zwei Scenes und drei Masken, Fresh,
+   `tests/runtime/desktop-chase-time.test.mjs` prüft zwei Scenes und drei Masken, Fresh,
    lesende Statusklärung, Replay und atomare Rücknahme bei beschädigter
    Kalenderbasis bzw. fehlgeschlagener Belegablage. Die Anzeige zeigt die Gruppenzeit direkt beim Verfolgungsstand.
    Rundenentwurf, Teilnehmerverwaltung und Abschluss sind getrennt gruppiert;

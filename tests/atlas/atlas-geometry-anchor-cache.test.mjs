@@ -12,7 +12,9 @@ buildSync({
   platform: 'node',
   format: 'cjs',
 });
-const { TerrainProjectionCache } = await import('../../.build/atlas-geometry-anchor-cache-test.cjs');
+const { TerrainProjectionCache } = await import(
+  '../../.build/atlas-geometry-anchor-cache-test.cjs'
+);
 
 test('geometry anchors reuse scalar results and distinguish zero, NaN, and sea levels', () => {
   const cache = new TerrainProjectionCache();

@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
 
 export type RouteStructure = 'ground' | 'bridge' | 'ford' | 'tunnel';

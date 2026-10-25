@@ -14,9 +14,9 @@ import { readGeneratorRegistry } from './generation';
 import { readEncounterPlan, readEncounterPlans } from './encounters';
 import { readTreasure } from './progression';
 import { readItemDefinition } from './item-definitions';
-import { assessEncounter } from '../encounter-contracts';
+import { assessEncounter } from '../catalog/encounter-contracts';
 import { readLive } from './live';
-import type { RewardGuidanceRules } from '../generation/reward-guidance';
+import type { RewardGuidanceRules } from '../campaign/generation/reward-guidance';
 export function dungeonBudgetView(
   source: any,
   cam: string,

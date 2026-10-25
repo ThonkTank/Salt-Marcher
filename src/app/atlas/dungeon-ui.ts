@@ -1,7 +1,14 @@
-import { EditorSession } from '../editor-session';
-import { dungeonTravelReadState, renderDungeonTravelContext } from '../dungeon-travel-console';
-import { canonicalJson } from '../generation/canonical-json';
-import { journeyPlayback, type PlaybackFrame, type JourneySpeed } from '../journey-playback';
+import { EditorSession } from '../shared/editor-session';
+import {
+  dungeonTravelReadState,
+  renderDungeonTravelContext,
+} from '../runtime/dungeon-travel-console';
+import { canonicalJson } from '../campaign/generation/canonical-json';
+import {
+  journeyPlayback,
+  type PlaybackFrame,
+  type JourneySpeed,
+} from '../runtime/journey-playback';
 import {
   renderDungeonPace,
   dungeonPaceDirty,
@@ -9,9 +16,9 @@ import {
   acceptDungeonPace,
   clearDungeonPace,
 } from './dungeon-pace-ui';
-import { drawDungeonContents } from '../dungeon-content-live-ui';
+import { drawDungeonContents } from '../runtime/dungeon-content-live-ui';
 import type { DungeonMovement } from './volume-contracts';
-import type { WorkspaceGeometry } from '../contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
 import type {
   DungeonView,
   DungeonPose,
@@ -22,7 +29,7 @@ import type {
   DungeonCommand,
 } from './dungeon-contracts';
 import { centerInRoom } from './dungeon-model';
-import { trackAt } from '../track-model';
+import { trackAt } from '../runtime/track-model';
 export const editorSession = new EditorSession();
 const jobWork = editorSession.operation<Promise<boolean>>();
 

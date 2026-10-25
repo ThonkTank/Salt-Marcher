@@ -18,7 +18,7 @@ for (const phase of ['graph', 'raster'])
       phase +
       ' preview requires explicit resolution while editor flushing stays available',
     async (t) => {
-      const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+      const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
         old = { window: globalThis.window, document: globalThis.document };
       Object.assign(globalThis, { window, document });
       t.after(() => Object.assign(globalThis, old));

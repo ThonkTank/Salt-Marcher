@@ -12,7 +12,7 @@ import { poseSpace } from '../atlas/spatial-3d';
 import { inside } from '../atlas/drawing-model';
 import { createHash, randomUUID } from 'node:crypto';
 import type { AtlasBinding, AtlasCommand } from '../atlas/campaign-atlas-contracts';
-import type { AtlasMap } from '../world-contracts';
+import type { AtlasMap } from '../runtime/world-contracts';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex'),
   json = JSON.stringify;
 export function installCampaignAtlas(db: any) {

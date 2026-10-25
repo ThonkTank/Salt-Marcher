@@ -13,7 +13,7 @@ import { atlasWorldTileBounds } from './atlas-world-tiles';
 import { LandscapeRasterizer } from './landscape-raster';
 import { pigmentStrokeCoverage } from './landscape-pigment-coverage';
 import { reliefRgb, DEFAULT_TERRAIN_STYLE } from './terrain-relief';
-import { terrainColors } from '../world-model';
+import { terrainColors } from '../runtime/world-model';
 
 /** Display-only draft. Each new gesture starts from the previous local result,
  * including its editing ground; canonical receipt adoption happens separately. */

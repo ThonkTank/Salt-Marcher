@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 import { readRoster, readLiveScene } from './live';
-import { checkedDungeonPace, dungeonPartyPace, type DungeonPaceSettings } from '../dungeon-pace';
+import {
+  checkedDungeonPace,
+  dungeonPartyPace,
+  type DungeonPaceSettings,
+} from '../runtime/dungeon-pace';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installDungeonPace(db: any) {
   db.exec(

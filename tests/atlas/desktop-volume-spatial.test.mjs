@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 for (const [name, entry] of [
   ['path', 'atlas/path-model'],
-  ['trigger', 'trigger-model'],
+  ['trigger', 'runtime/trigger-model'],
 ]) {
   buildSync({
     entryPoints: ['src/app/' + entry + '.ts'],

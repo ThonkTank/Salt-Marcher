@@ -57,7 +57,7 @@ export function selectTests(args, root = process.cwd()) {
         `Invalid test argument: ${JSON.stringify(arg)}. Use --serial, --list or explicit test file paths.`,
       );
     const relative = path.relative(root, path.resolve(root, arg)).split(path.sep).join('/');
-    if (relative === '.build/tests.cjs' || relative === 'tests/core.test.ts') {
+    if (relative === '.build/tests.cjs' || relative === 'tests/shared/core.test.ts') {
       selected.push('.build/tests.cjs');
       continue;
     }

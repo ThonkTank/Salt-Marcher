@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { TriggerField, TriggerAction, TriggerEvent } from '../trigger-contracts';
+import type { TriggerField, TriggerAction, TriggerEvent } from '../runtime/trigger-contracts';
 import type { DungeonGeometry, DungeonJourney, DungeonPose } from '../atlas/dungeon-contracts';
-import { enteredTrigger } from '../trigger-model';
+import { enteredTrigger } from '../runtime/trigger-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   parsed = (r: any) => {
     if (!r || hash(r.payload) !== r.checksum) throw new Error('Triggerfeld / Kontext beschädigt.');

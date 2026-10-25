@@ -1,0 +1,829 @@
+import { BookingDialog } from '../shared/booking-dialog';
+import { captureView } from '../shared/editor-transition';
+import type { WorkspaceGeometry, Result } from '../shared/contracts';
+import type { Treasure, TreasurePage, ProgressView, ProgressAction } from './progression';
+const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
+    const n = document.createElement(tag);
+    if (text !== undefined) n.textContent = text;
+    return n;
+  },
+  button = (text: string, fn: () => void) => {
+    const n = node('button', text);
+    n.type = 'button';
+    n.onclick = fn;
+    return n;
+  },
+  unwrap = <T>(r: Result<T>): T => {
+    if (!r.ok) throw new Error(r.error);
+    return r.value;
+  };
+const gold = (cp: bigint) => String(cp / 100n) + ',' + String(cp % 100n).padStart(2, '0') + ' GP';
+export class TreasureDistribution {
+  private callerCurrent: () => boolean = () => true;
+  private booking = new BookingDialog();
+  private form = node('div');
+  private receipt = node('section');
+  private committed = false;
+  private dialog = node('dialog');
+  private treasureSelect = node('select');
+  private more = button('Weitere Schätze', () => void this.loadMore());
+  private peopleHost = node('div');
+  private search = node('input');
+  private peoplePages = node('div');
+  private grid = node('div');
+  private pages = node('div');
+  private summary = node('p');
+  private status = node('p');
+  private review = node('div');
+  private selected = new Set<string>();
+  private amounts = new Map<string, string>();
+  private book: Treasure | null = null;
+  private people: ProgressView['characters'] = [];
+  private list: TreasurePage = { items: [], next: null };
+  private owner: WorkspaceGeometry | null = null;
+  private generation = 0;
+  private reading = 0;
+  private busy = false;
+  private gridVersion = 0;
+  private peopleVersion = 0;
+  private reviewed: {
+    owner: WorkspaceGeometry;
+    generation: number;
+    book: Treasure;
+    action: Extract<ProgressAction, { kind: 'allocate-batch' }>;
+  } | null = null;
+  private locked = new Map<HTMLInputElement | HTMLButtonElement | HTMLSelectElement, boolean>();
+  private lotPage = 0;
+  private columnPage = 0;
+  private personPage = 0;
+  private sendButton = button('Verteilung bestätigen', () => void this.submit());
+  private check = button('Verteilung prüfen', () => this.showReview());
+  constructor(
+    private tell: (text: string, error?: boolean) => void,
+    private workspace: () => WorkspaceGeometry | null,
+    private flush: () => Promise<boolean>,
+    private send: (action: ProgressAction, failed: (message: string) => void) => Promise<boolean>,
+    private openLoot?: (token: string, id: string) => Promise<void>,
+  ) {
+    this.dialog.id = 'treasure-distribution-dialog';
+    this.dialog.className = 'treasure-distribution-dialog';
+    this.treasureSelect.id = 'distribution-treasure';
+    this.peopleHost.id = 'distribution-people';
+    this.grid.id = 'distribution-grid';
+    this.search.id = 'distribution-person-search';
+    this.search.type = 'search';
+    this.search.placeholder = 'Aktive Figur suchen';
+    this.search.setAttribute('aria-label', 'Aktive Beuteempfänger suchen');
+    this.summary.id = 'distribution-summary';
+    this.summary.setAttribute('aria-live', 'polite');
+    this.status.id = 'distribution-status';
+    this.status.setAttribute('role', 'status');
+    this.review.id = 'distribution-review';
+    this.sendButton.id = 'distribution-confirm';
+    this.check.id = 'distribution-check';
+    const head = node('div');
+    head.className = 'toolbar';
+    head.append(
+      node('h2', 'Beute gemeinsam verteilen'),
+      button('Schließen', () => {
+        if (!this.busy) this.reset();
+      }),
+    );
+    const choice = node('label', 'Schatz ');
+    choice.append(this.treasureSelect);
+    const source = node('div');
+    source.className = 'toolbar';
+    source.append(choice, this.more);
+    const recipients = node('details');
+    recipients.open = true;
+    recipients.append(
+      node('summary', 'Empfänger wählen'),
+      this.search,
+      this.peopleHost,
+      this.peoplePages,
+    );
+    const presets = node('div');
+    presets.className = 'toolbar';
+    const equal = button('Gleichmäßig auf Auswahl', () => this.even());
+    equal.id = 'distribution-even';
+    presets.append(
+      equal,
+      button('Mengen leeren', () => {
+        this.amounts.clear();
+        this.draw();
+      }),
+    );
+    this.receipt.id = 'distribution-receipt';
+    this.receipt.hidden = true;
+    this.review.hidden = true;
+    this.form.append(
+      source,
+      recipients,
+      presets,
+      this.summary,
+      this.pages,
+      this.grid,
+      this.check,
+      this.review,
+      this.status,
+      node(
+        'p',
+        'Verteilt werden ganze Einheiten. Restmengen bleiben im Schatz. Jede Zuweisung übernimmt die Gegenstandsdefinition und die bisherige Herkunft ins persönliche Lootledger. XP, Geldkäufe und Zeit werden hier nicht gebucht.',
+      ),
+    );
+    this.dialog.append(head, this.form, this.receipt);
+    document.body.append(this.dialog);
+    this.treasureSelect.onchange = () => void this.loadBook(this.treasureSelect.value);
+    this.search.oninput = () => {
+      this.personPage = 0;
+      this.drawPeople();
+    };
+    this.dialog.addEventListener('cancel', (e) => {
+      if (this.busy) e.preventDefault();
+      else this.reset();
+    });
+  }
+  reset() {
+    this.booking.reset();
+    this.committed = false;
+    this.form.hidden = false;
+    this.receipt.hidden = true;
+    this.receipt.replaceChildren();
+    this.generation++;
+    this.reading++;
+    this.gridVersion++;
+    this.peopleVersion++;
+    this.lock(false);
+    this.reviewed = null;
+    this.owner = null;
+    this.book = null;
+    this.amounts.clear();
+    this.selected.clear();
+    this.people = [];
+    this.list = { items: [], next: null };
+    this.search.value = '';
+    this.search.hidden = true;
+    this.lotPage = this.columnPage = this.personPage = 0;
+    for (const root of [
+      this.treasureSelect,
+      this.grid,
+      this.pages,
+      this.peopleHost,
+      this.peoplePages,
+      this.review,
+    ])
+      root.replaceChildren();
+    this.treasureSelect.value = '';
+    this.summary.textContent = '';
+    this.status.textContent = '';
+    this.check.disabled = true;
+    this.more.hidden = true;
+    this.more.disabled = true;
+    this.review.hidden = true;
+    this.dialog.close();
+  }
+  closeStale() {
+    if (this.owner && !this.current()) this.reset();
+  }
+  private current(o = this.owner, g = this.generation) {
+    return (
+      !!o &&
+      this.owner === o &&
+      g === this.generation &&
+      this.workspace()?.token === o.token &&
+      this.callerCurrent()
+    );
+  }
+  private report(text: string, error = false) {
+    this.status.textContent = text;
+    this.tell(text, error);
+  }
+  private lock(on: boolean) {
+    this.busy = on;
+    for (const c of this.dialog.querySelectorAll<
+      HTMLInputElement | HTMLButtonElement | HTMLSelectElement
+    >('input,button,select')) {
+      if (on) {
+        if (!this.locked.has(c)) this.locked.set(c, c.disabled);
+        c.disabled = true;
+      } else if (this.locked.has(c)) {
+        c.disabled = this.locked.get(c)!;
+      }
+    }
+    if (!on) this.locked.clear();
+    this.more.disabled = on || !this.list.next;
+    this.check.disabled = on || !this.valid().ok;
+  }
+  async open(id?: string, sceneId?: string, callerCurrent: () => boolean = () => true) {
+    const w = this.workspace(),
+      request = ++this.generation;
+    if (!w || !callerCurrent()) return;
+    let flushed: boolean;
+    try {
+      flushed = await this.flush();
+    } catch (e) {
+      if (request === this.generation) this.report((e as Error).message, true);
+      return;
+    }
+    if (
+      !flushed ||
+      request !== this.generation ||
+      this.workspace()?.token !== w.token ||
+      !callerCurrent()
+    )
+      return;
+    this.reset();
+    this.callerCurrent = callerCurrent;
+    this.owner = w;
+    const g = ++this.generation;
+    this.status.textContent = 'Schatz und aktive Figuren werden gelesen…';
+    this.dialog.showModal();
+    this.lock(true);
+    try {
+      const [treasures, progress] = await Promise.all([
+        window.campaign.treasures(w.token, null),
+        window.campaign.progress(w.token),
+      ]);
+      if (!this.current() || g !== this.generation) return;
+      this.list = unwrap(treasures);
+      this.people = unwrap(progress).characters.filter((p) => p.active);
+      const preferred = this.people.filter((p) => (sceneId ? p.sceneId === sceneId : true));
+      this.selected = new Set(preferred.map((p) => p.characterId));
+      this.search.value = '';
+      this.search.hidden = this.people.length <= 8;
+      this.personPage = 0;
+      this.options(id);
+      this.drawPeople();
+      const target =
+        id ?? this.list.items.find((t) => t.available > 0)?.id ?? this.list.items[0]?.id;
+      if (target) {
+        if (!(await this.loadBook(target))) return;
+      } else {
+        this.grid.replaceChildren();
+        this.summary.textContent =
+          'Keine Schätze vorhanden. Lege einen Fund an oder bestätige eine vorbereitete Belohnung.';
+        this.check.disabled = true;
+      }
+      if (!this.current(w, g)) return;
+      this.status.textContent = '';
+    } catch (e) {
+      if (this.current(w, g)) this.report((e as Error).message, true);
+    } finally {
+      if (this.current(w, g)) this.lock(false);
+    }
+  }
+  private options(selected?: string) {
+    const old = selected ?? this.treasureSelect.value;
+    this.treasureSelect.replaceChildren();
+    for (const t of this.list.items) {
+      const o = node('option', t.title + ' · ' + t.available + ' unverteilte Einheiten');
+      o.value = t.id;
+      this.treasureSelect.append(o);
+    }
+    if (old && !this.list.items.some((t) => t.id === old)) {
+      const o = node('option', 'Ausgewählter Schatz');
+      o.value = old;
+      this.treasureSelect.append(o);
+    }
+    this.treasureSelect.value = old || this.list.items[0]?.id || '';
+    this.more.disabled = this.busy || !this.list.next;
+    this.more.hidden = !this.list.next;
+  }
+  private async loadMore() {
+    const o = this.owner,
+      g = this.generation;
+    if (!o || this.busy || !this.list.next) return;
+    this.lock(true);
+    try {
+      const p = unwrap(await window.campaign.treasures(o.token, this.list.next));
+      if (!this.current(o, g)) return;
+      this.list = {
+        items: [...new Map([...this.list.items, ...p.items].map((t) => [t.id, t])).values()],
+        next: p.next,
+      };
+      this.options();
+    } catch (e) {
+      if (this.current(o, g)) this.report((e as Error).message, true);
+    } finally {
+      if (this.current(o, g)) this.lock(false);
+    }
+  }
+  private async loadBook(id: string): Promise<boolean> {
+    if (this.committed) return false;
+    const o = this.owner,
+      g = this.generation,
+      r = ++this.reading;
+    if (!o || !id) return false;
+    this.treasureSelect.value = this.book?.id ?? '';
+    this.lock(true);
+    this.review.hidden = true;
+    this.reviewed = null;
+    this.status.textContent = 'Schatz wird gelesen…';
+    try {
+      const t = unwrap(await window.campaign.treasure(o.token, id));
+      if (!this.current(o, g) || r !== this.reading) return false;
+      if (t.id !== id) throw new Error('Schatzantwort gehört nicht zur Auswahl.');
+      this.book = t;
+      this.treasureSelect.value = t.id;
+      this.amounts.clear();
+      this.lotPage = this.columnPage = 0;
+      this.draw();
+      this.status.textContent = '';
+      return true;
+    } catch (e) {
+      if (this.current(o, g) && r === this.reading)
+        this.report(
+          (e as Error).message +
+            (this.book
+              ? ' Bisheriger Schatz und Mengen bleiben geöffnet.'
+              : ' Schatz erneut auswählen, um das Laden zu wiederholen.'),
+          true,
+        );
+      return false;
+    } finally {
+      if (this.current(o, g) && r === this.reading) this.lock(false);
+    }
+  }
+  private peopleSelected() {
+    return this.people.filter((p) => this.selected.has(p.characterId));
+  }
+  private lots() {
+    return this.book?.items.filter((i) => i.quantity > i.allocated) ?? [];
+  }
+  private cell(itemId: string, characterId: string) {
+    return JSON.stringify([itemId, characterId]);
+  }
+  private sum(itemId: string) {
+    let total = 0;
+    for (const p of this.peopleSelected()) {
+      const raw = this.amounts.get(this.cell(itemId, p.characterId)) ?? '',
+        n = raw === '' ? 0 : Number(raw);
+      if (!Number.isSafeInteger(n) || n < 0) return NaN;
+      total += n;
+    }
+    return total;
+  }
+  private valid() {
+    if (this.committed) return { ok: false, totals: false, count: 0, quantity: 0, message: '' };
+    let count = 0,
+      quantity = 0;
+    for (const item of this.lots()) {
+      const sum = this.sum(item.id);
+      if (!Number.isSafeInteger(sum) || sum > item.quantity - item.allocated)
+        return {
+          ok: false,
+          totals: false,
+          count,
+          quantity,
+          message: 'Mengen prüfen: nur ganze Einheiten bis zum verfügbaren Bestand.',
+        };
+      for (const p of this.peopleSelected()) {
+        const n = Number(this.amounts.get(this.cell(item.id, p.characterId)) || 0);
+        if (n > 0) {
+          count++;
+          quantity += n;
+          if (!item.currentDefinition || item.currentDefinition.trashed)
+            return {
+              ok: false,
+              totals: false,
+              count,
+              quantity,
+              message: 'Gegenstandsdefinition ist nicht verfügbar.',
+            };
+        }
+      }
+    }
+    return {
+      ok: count > 0 && count <= 1000,
+      totals: true,
+      count,
+      quantity,
+      message:
+        count > 1000
+          ? 'Höchstens 1000 Zuordnungen gemeinsam; verteile einen Teil zuerst.'
+          : count
+            ? ''
+            : 'Mengen eintragen oder gleichmäßig verteilen.',
+    };
+  }
+  private drawPeople() {
+    const o = this.owner,
+      g = this.generation,
+      version = ++this.peopleVersion,
+      act = (fn: () => void) => () => {
+        if (
+          this.current(o, g) &&
+          version === this.peopleVersion &&
+          this.dialog.open &&
+          !this.busy &&
+          !this.committed
+        )
+          fn();
+      };
+    const q = this.search.value.trim().toLocaleLowerCase(),
+      people = this.people.filter((p) => !q || p.name.toLocaleLowerCase().includes(q)),
+      count = Math.max(1, Math.ceil(people.length / 25));
+    this.personPage = Math.min(this.personPage, count - 1);
+    this.peopleHost.replaceChildren();
+    for (const p of people.slice(this.personPage * 25, (this.personPage + 1) * 25)) {
+      const l = node('label');
+      l.className = 'check-label';
+      const box = node('input');
+      box.type = 'checkbox';
+      box.value = p.characterId;
+      box.checked = this.selected.has(p.characterId);
+      box.onchange = act(() => {
+        if (box.checked) this.selected.add(p.characterId);
+        else this.selected.delete(p.characterId);
+        this.columnPage = 0;
+        this.draw();
+        this.drawPeople();
+      });
+      l.append(box, document.createTextNode(p.name));
+      this.peopleHost.append(l);
+    }
+    this.peoplePages.replaceChildren();
+    this.peoplePages.hidden = count <= 1;
+    const prev = button(
+        'Vorige Figuren',
+        act(() => {
+          this.personPage--;
+          this.drawPeople();
+        }),
+      ),
+      next = button(
+        'Weitere Figuren',
+        act(() => {
+          this.personPage++;
+          this.drawPeople();
+        }),
+      );
+    prev.disabled = this.personPage === 0;
+    next.disabled = this.personPage + 1 >= count;
+    this.peoplePages.append(
+      prev,
+      node(
+        'span',
+        this.personPage + 1 + ' / ' + count + ' · ' + this.selected.size + ' Empfänger ausgewählt',
+      ),
+      next,
+    );
+  }
+  private update() {
+    this.reviewed = null;
+    const v = this.valid(),
+      remaining = this.lots().reduce((n, i) => n + i.quantity - i.allocated, 0) - v.quantity;
+    const excluded = this.people.filter(
+      (p) =>
+        !this.selected.has(p.characterId) &&
+        this.lots().some((i) => (this.amounts.get(this.cell(i.id, p.characterId)) ?? '') !== ''),
+    );
+    this.summary.textContent =
+      this.selected.size +
+      ' Empfänger' +
+      (v.totals
+        ? ' · ' +
+          v.count +
+          ' Zuordnungen · ' +
+          v.quantity +
+          ' Einheiten vorbereitet · ' +
+          remaining +
+          ' bleiben im Schatz'
+        : '') +
+      (v.message ? ' · ' + v.message : '') +
+      (excluded.length
+        ? ' · Eingaben für ' +
+          excluded.length +
+          (excluded.length === 1 ? ' abgewählte Figur' : ' abgewählte Figuren') +
+          ' bleiben erhalten und werden nicht verteilt. Erneut auswählen, um sie zu bearbeiten.'
+        : '');
+    this.check.disabled = this.busy || !v.ok;
+    this.review.hidden = true;
+    for (const row of this.grid.querySelectorAll<HTMLElement>('[data-lot-id]')) {
+      const item = this.book?.items.find((i) => i.id === row.dataset.lotId);
+      if (!item) continue;
+      const sum = this.sum(item.id),
+        rest = item.quantity - item.allocated - sum;
+      row.querySelector<HTMLElement>('[data-rest]')!.textContent = Number.isFinite(rest)
+        ? 'Rest: ' + rest
+        : 'Menge ungültig';
+      row.classList.toggle('distribution-invalid', !Number.isSafeInteger(sum) || rest < 0);
+    }
+  }
+  private draw() {
+    const o = this.owner,
+      g = this.generation,
+      book = this.book,
+      version = ++this.gridVersion,
+      act = (fn: () => void) => () => {
+        if (
+          this.current(o, g) &&
+          book === this.book &&
+          version === this.gridVersion &&
+          this.dialog.open &&
+          !this.busy &&
+          !this.committed
+        )
+          fn();
+      };
+    this.grid.replaceChildren();
+    this.pages.replaceChildren();
+    const lots = this.lots(),
+      people = this.peopleSelected(),
+      lotPages = Math.max(1, Math.ceil(lots.length / 25)),
+      columnPages = Math.max(1, Math.ceil(people.length / 8));
+    this.lotPage = Math.min(this.lotPage, lotPages - 1);
+    this.columnPage = Math.min(this.columnPage, columnPages - 1);
+    const pagination = (text: string, page: number, total: number, move: (n: number) => void) => {
+      if (total <= 1) return;
+      const wrap = node('div');
+      wrap.className = 'toolbar';
+      const prev = button(
+          '←',
+          act(() => move(page - 1)),
+        ),
+        next = button(
+          '→',
+          act(() => move(page + 1)),
+        );
+      prev.disabled = page === 0;
+      next.disabled = page + 1 === total;
+      wrap.append(prev, node('span', text + ' ' + (page + 1) + ' / ' + total), next);
+      this.pages.append(wrap);
+    };
+    pagination('Posten', this.lotPage, lotPages, (n) => {
+      this.lotPage = n;
+      this.draw();
+    });
+    pagination('Empfänger', this.columnPage, columnPages, (n) => {
+      this.columnPage = n;
+      this.draw();
+    });
+    const shown = people.slice(this.columnPage * 8, (this.columnPage + 1) * 8),
+      table = node('table'),
+      head = node('tr');
+    head.append(node('th', 'Posten / unverteilte Menge'));
+    for (const p of shown) head.append(node('th', p.name));
+    head.append(node('th', 'Rest / Direktzuweisung'));
+    table.append(head);
+    for (const item of lots.slice(this.lotPage * 25, (this.lotPage + 1) * 25)) {
+      const row = node('tr');
+      row.dataset.lotId = item.id;
+      const name = node('td'),
+        definition = item.currentDefinition;
+      name.append(
+        node('strong', definition?.name ?? item.name),
+        node(
+          'p',
+          String(item.quantity - item.allocated) +
+            ' verfügbar · ' +
+            (definition?.unitCopper === null || !definition
+              ? 'Wert unbekannt'
+              : gold(BigInt(definition.unitCopper)) + ' pro Einheit'),
+        ),
+      );
+      row.append(name);
+      for (const p of shown) {
+        const cell = node('td'),
+          input = node('input');
+        input.type = 'number';
+        input.min = '0';
+        input.max = String(item.quantity - item.allocated);
+        input.step = '1';
+        input.value = this.amounts.get(this.cell(item.id, p.characterId)) ?? '';
+        input.dataset.itemId = item.id;
+        input.dataset.characterId = p.characterId;
+        input.setAttribute('aria-label', (definition?.name ?? item.name) + ' an ' + p.name);
+        input.disabled = !definition || definition.trashed;
+        input.oninput = act(() => {
+          this.amounts.set(this.cell(item.id, p.characterId), input.value);
+          this.update();
+        });
+        cell.append(input);
+        row.append(cell);
+      }
+      const remainder = node('td'),
+        rest = node('p');
+      rest.dataset.rest = '';
+      const target = node('select');
+      target.setAttribute('aria-label', 'Alles zuweisen: ' + item.name);
+      for (const p of people) {
+        const option = node('option', p.name);
+        option.value = p.characterId;
+        target.append(option);
+      }
+      const all = button(
+        'Alles an diese Figur',
+        act(() => {
+          for (const p of people) this.amounts.delete(this.cell(item.id, p.characterId));
+          if (target.value)
+            this.amounts.set(
+              this.cell(item.id, target.value),
+              String(item.quantity - item.allocated),
+            );
+          this.draw();
+        }),
+      );
+      all.disabled = !people.length || !definition || definition.trashed;
+      const direct = node('details');
+      direct.append(node('summary', 'Alles zuweisen…'), target, all);
+      remainder.append(rest, direct);
+      row.append(remainder);
+      table.append(row);
+    }
+    this.grid.append(table);
+    if (!lots.length) this.grid.append(node('p', 'Dieser Schatz hat keine unverteilten Posten.'));
+    this.update();
+  }
+  private even() {
+    const people = this.peopleSelected();
+    if (!people.length) return;
+    const next = new Map(this.amounts);
+    for (const item of this.lots())
+      for (const p of people) next.delete(this.cell(item.id, p.characterId));
+    let count = 0;
+    for (const item of this.lots()) {
+      if (!item.currentDefinition || item.currentDefinition.trashed) continue;
+      const quantity = Math.floor((item.quantity - item.allocated) / people.length);
+      if (!quantity) continue;
+      for (const p of people) {
+        if (count++ >= 1000) {
+          this.report(
+            'Zu viele Zuordnungen. Wähle weniger Empfänger oder verteile einzelne Posten.',
+            true,
+          );
+          return;
+        }
+        next.set(this.cell(item.id, p.characterId), String(quantity));
+      }
+    }
+    this.amounts = next;
+    this.draw();
+  }
+  private showReview() {
+    if (!this.current() || this.busy || !this.valid().ok || !this.book) return;
+    const reviewed = {
+      owner: this.owner!,
+      generation: this.generation,
+      book: this.book,
+      action: this.allocationAction(),
+    };
+    this.reviewed = reviewed;
+    this.sendButton.onclick = () => void this.submit(reviewed);
+    this.review.replaceChildren(node('h3', 'Diese Verteilung bestätigen'));
+    const list = node('ul');
+    for (const p of this.peopleSelected()) {
+      const assignments = this.lots()
+        .map((i) => ({
+          item: i,
+          quantity: Number(this.amounts.get(this.cell(i.id, p.characterId)) || 0),
+        }))
+        .filter((v) => v.quantity > 0);
+      if (!assignments.length) continue;
+      let total = 0n,
+        unknown = false;
+      for (const a of assignments) {
+        const price = a.item.currentDefinition?.unitCopper;
+        if (price === null || price === undefined) unknown = true;
+        else total += BigInt(price) * BigInt(a.quantity);
+      }
+      const li = node('li');
+      li.append(
+        node('strong', p.name + ' · ' + gold(total) + (unknown ? ' + unbekannte Werte' : '')),
+        node(
+          'p',
+          assignments
+            .map((a) => a.quantity + ' × ' + (a.item.currentDefinition?.name ?? a.item.name))
+            .join(', '),
+        ),
+      );
+      list.append(li);
+    }
+    this.review.append(list, this.sendButton);
+    this.review.hidden = false;
+    this.review.scrollIntoView({ block: 'nearest' });
+  }
+  private allocationAction(): Extract<ProgressAction, { kind: 'allocate-batch' }> {
+    const t = this.book!,
+      allocations = [];
+    for (const item of this.lots())
+      for (const p of this.peopleSelected()) {
+        const quantity = Number(this.amounts.get(this.cell(item.id, p.characterId)) || 0);
+        if (quantity > 0)
+          allocations.push({
+            itemId: item.id,
+            expectedDefinitionRevision: item.currentDefinition!.revision,
+            quantity,
+            characterId: p.characterId,
+            expectedMembershipRevision: p.membershipRevision,
+          });
+      }
+    return { kind: 'allocate-batch', treasureId: t.id, expectedRevision: t.revision, allocations };
+  }
+  /** This is the confirmed booking, not a projection of later inventory changes. */
+  private showReceipt(reviewed: NonNullable<typeof this.reviewed>) {
+    this.committed = true;
+    this.reviewed = null;
+    this.form.hidden = true;
+    this.receipt.replaceChildren(node('h3', 'Beute verteilt · ' + reviewed.book.title));
+    for (const person of this.people) {
+      const shares = reviewed.action.allocations.filter(
+        (a) => a.characterId === person.characterId,
+      );
+      if (!shares.length) continue;
+      const row = node('article');
+      row.append(
+        node('h4', person.name),
+        node(
+          'p',
+          shares
+            .map(
+              (a) =>
+                a.quantity +
+                ' × ' +
+                (reviewed.book.items.find((i) => i.id === a.itemId)!.currentDefinition?.name ??
+                  reviewed.book.items.find((i) => i.id === a.itemId)!.name),
+            )
+            .join(', '),
+        ),
+      );
+      if (this.openLoot) {
+        const o = this.owner,
+          g = this.generation;
+        row.append(
+          button(person.name + ' · Beute ansehen', () => {
+            if (!this.current(o, g) || !this.committed || this.busy) return;
+            this.reset();
+            void this.openLoot!(reviewed.owner.token, person.characterId).catch((e) => {
+              if (this.workspace()?.token === reviewed.owner.token)
+                this.tell((e as Error).message, true);
+            });
+          }),
+        );
+      }
+      this.receipt.append(row);
+    }
+    const remaining = reviewed.book.items
+      .map((i) => ({
+        name: i.currentDefinition?.name ?? i.name,
+        quantity:
+          i.quantity -
+          i.allocated -
+          reviewed.action.allocations
+            .filter((a) => a.itemId === i.id)
+            .reduce((sum, a) => sum + a.quantity, 0),
+      }))
+      .filter((i) => i.quantity > 0);
+    this.receipt.append(
+      node(
+        'p',
+        'Im Schatz verbleiben: ' +
+          (remaining.length
+            ? remaining.map((i) => i.quantity + ' × ' + i.name).join(', ')
+            : 'keine unverteilten Posten.'),
+      ),
+      node(
+        'p',
+        'Bestätigte Buchung. Spätere Weitergaben und Korrekturen stehen in der persönlichen Beute.',
+      ),
+    );
+    this.receipt.hidden = false;
+    this.status.textContent = 'Verteilung gespeichert.';
+    this.dialog.scrollTop = 0;
+  }
+  private async submit(reviewed = this.reviewed) {
+    if (
+      !reviewed ||
+      this.committed ||
+      this.busy ||
+      !this.current(reviewed.owner, reviewed.generation) ||
+      !this.dialog.open
+    )
+      return;
+    if (
+      reviewed !== this.reviewed ||
+      reviewed.book !== this.book ||
+      !this.valid().ok ||
+      JSON.stringify(reviewed.action) !== JSON.stringify(this.allocationAction())
+    ) {
+      this.review.hidden = true;
+      this.report('Verteilung geändert. Mengen und Empfänger erneut prüfen.', true);
+      return;
+    }
+    const { owner: o, generation: g, action } = reviewed;
+    await this.booking.run({
+      campaignId: o.campaign.id,
+      current: captureView(
+        () => [this.owner, this.generation, this.dialog.open],
+        () => this.current(o, g),
+      ),
+      send: (failed) => this.send(action, failed),
+      lock: (busy) => this.lock(busy),
+      confirmed: () => this.showReceipt(reviewed),
+      report: (message) => {
+        this.status.textContent = message;
+        this.status.scrollIntoView({ block: 'nearest' });
+      },
+    });
+  }
+}

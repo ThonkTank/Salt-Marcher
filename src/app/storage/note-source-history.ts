@@ -5,8 +5,8 @@ import {
   noteSourceLinks,
   sameNoteContent,
   type NoteSourceRecovery,
-} from '../note-thread-edit';
-import type { Note } from '../preparation-contracts';
+} from '../campaign/note-thread-edit';
+import type { Note } from '../campaign/preparation-contracts';
 const digest = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installNoteSourceHistory(db: any) {
   db.exec(`CREATE TABLE IF NOT EXISTS note_source_history(campaign_id TEXT NOT NULL REFERENCES campaign(id), id TEXT NOT NULL, note_id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, checksum TEXT NOT NULL, PRIMARY KEY(campaign_id,id)) STRICT;

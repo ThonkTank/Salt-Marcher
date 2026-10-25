@@ -1,10 +1,17 @@
-import { EditorSession } from '../editor-session';
+import { EditorSession } from '../shared/editor-session';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { AtlasPaint, atlasPaint } from './atlas-paint';
 import { appendPaint, paintElement, type PaintTarget } from './atlas-paint-svg';
 import { drawingGeometryOnly } from './atlas-render-view';
 import { atlasDrawingWrite } from './campaign-atlas-author';
-import type { WorkspaceGeometry, Room, RoomGeometry, Point, Polygon, Result } from '../contracts';
+import type {
+  WorkspaceGeometry,
+  Room,
+  RoomGeometry,
+  Point,
+  Polygon,
+  Result,
+} from '../shared/contracts';
 import type { DrawingMapView, DrawingElement, DrawingAction, RoomStyle } from './drawing-contracts';
 import { newElement, elementPaint, nearestAnchor, carveRoom } from './drawing-model';
 import { drawingToolControls } from './drawing-tool-controls';

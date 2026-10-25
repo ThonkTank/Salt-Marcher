@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
-import { canonicalJson } from '../generation/canonical-json';
-import type { CampaignCatalogCommand, CampaignCatalogReceipt } from '../campaign-contracts';
-import { validateCampaignCatalogCommand } from '../campaign-catalog-command';
+import { canonicalJson } from '../campaign/generation/canonical-json';
+import type {
+  CampaignCatalogCommand,
+  CampaignCatalogReceipt,
+} from '../campaign/campaign-contracts';
+import { validateCampaignCatalogCommand } from '../campaign/campaign-catalog-command';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installCampaignCatalog(db: any) {
   db.exec(

@@ -158,7 +158,7 @@ const files = [
   'src/app/atlas/campaign-atlas-export.ts',
   'src/app/storage/atlas-knowledge.ts',
   'src/app/storage/player.ts',
-  'src/app/player-contracts.ts',
+  'src/app/runtime/player-contracts.ts',
   '.build/desktop/main.cjs',
   '.build/desktop/ui/renderer.js',
   'tools/test-desktop-terrain-live.mjs',

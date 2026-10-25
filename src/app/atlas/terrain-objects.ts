@@ -1,4 +1,4 @@
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import { atlasFrame, localToAtlas } from './campaign-atlas-model';
 import { posedFootprint } from './city-model';

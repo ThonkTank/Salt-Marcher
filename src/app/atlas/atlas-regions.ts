@@ -8,7 +8,7 @@ import { atlasGeometryOnly } from './atlas-render-view';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import type { AtlasCanvas } from './atlas-canvas';
 import type { AtlasRenderView, AtlasCommitAck } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry } from '../contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
 interface AtlasRegionsHost {
   readonly spatial:
     | Pick<AtlasRasterPresentation, 'needsTerrainRaster' | 'openSurface' | 'pauseReads'>

@@ -1,5 +1,5 @@
 import type { AtlasWorkplane } from './atlas-workplane';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 export type MapLabelKind = 'place' | 'city' | 'building' | 'room' | 'road' | 'river' | 'area';
 export interface MapLabelCandidate {

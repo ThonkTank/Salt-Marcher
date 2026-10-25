@@ -1,4 +1,4 @@
-import type { Room, Polygon } from '../contracts';
+import type { Room, Polygon } from '../shared/contracts';
 export const VOXEL_METERS = 1.524;
 export const MAX_VOLUME_COLUMNS = 100000,
   MAX_VOLUME_CELLS = MAX_VOLUME_COLUMNS * 40;

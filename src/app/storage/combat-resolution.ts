@@ -1,4 +1,4 @@
-import type { CombatResolution } from '../combat-contracts';
+import type { CombatResolution } from '../runtime/combat-contracts';
 import { readCombat } from './combat';
 import { combatNpcLosses } from './combat-world-losses';
 import { readLiveScene } from './live';

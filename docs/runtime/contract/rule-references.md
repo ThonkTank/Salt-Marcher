@@ -58,11 +58,11 @@ Regelrevisionen. Installationsweite Definitionen bleiben eine getrennte Lieferun
 
 ## Nachgewiesenes Verhalten und Grenzen
 
-[Schnellsuche](../../../tests/desktop-quick-reference.test.mjs) prüft mit echtem
+[Schnellsuche](../../../tests/catalog/desktop-quick-reference.test.mjs) prüft mit echtem
 Store und DOM entfernte Treffer, überholte Enter-Anfragen, Quellenänderungen beim
 Speichern, unveränderte Textübergaben und Pins ohne Zeit-/Fortschrittswirkung.
-[Regel-UI](../../../tests/desktop-rule-reference-authority.test.mjs) und
-[Regelspeicher](../../../tests/desktop-rule-reference-store.test.mjs) prüfen
+[Regel-UI](../../../tests/catalog/desktop-rule-reference-authority.test.mjs) und
+[Regelspeicher](../../../tests/catalog/desktop-rule-reference-store.test.mjs) prüfen
 Campaign-/Scenewechsel, Revisionsschutz, erste State-Anlage, Proben, Replay, Fresh
 und unabhängige Kopien. Reads und readonly Snapshotprüfung schreiben keinen State.
 Ungültige Aktionen/Revisionen werden abgewiesen; vorhandene Prosa bleibt erhalten.

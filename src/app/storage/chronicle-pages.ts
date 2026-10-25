@@ -6,7 +6,7 @@ import type {
   ChronicleCursor,
   ChroniclePage,
   ChronicleAfter,
-} from '../chronicle-contracts';
+} from '../runtime/chronicle-contracts';
 // One read-only SQLite transaction fixes both historical facts and their display context.
 export class ChronicleReadSession {
   readonly id = randomUUID();

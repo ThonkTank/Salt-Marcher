@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { AgendaQuery, AgendaPage, AgendaItem } from '../agenda-contracts';
-import { agendaOccurrence, unitMs } from '../agenda-model';
+import type { AgendaQuery, AgendaPage, AgendaItem } from '../runtime/agenda-contracts';
+import { agendaOccurrence, unitMs } from '../runtime/agenda-model';
 import { calendarEvents } from './calendar-events';
 import { readWorldCalendar } from './world';
 import { readLiveScene } from './live';

@@ -1,9 +1,9 @@
 import transcriptAsset from '../../features/catalog/data/items-srd51-transcript.json';
 import manifestAsset from '../../features/catalog/data/items-srd51-source-manifest.json';
 import { createHash } from 'node:crypto';
-import { canonicalJson } from '../generation/canonical-json';
-import type { ItemReferenceRecord } from '../item-reference-contracts';
-import type { ItemDefinition } from '../items-contracts';
+import { canonicalJson } from '../campaign/generation/canonical-json';
+import type { ItemReferenceRecord } from '../catalog/item-reference-contracts';
+import type { ItemDefinition } from '../catalog/items-contracts';
 const transcript = transcriptAsset as {
   complete: boolean;
   records: ItemReferenceRecord[];

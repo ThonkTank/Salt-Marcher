@@ -1,4 +1,4 @@
-import type { Polygon, RoomGeometry } from '../contracts';
+import type { Polygon, RoomGeometry } from '../shared/contracts';
 import { inside, combineRooms } from './drawing-model';
 import type { DungeonVolume, VolumeColumn, VolumeAction, VolumeSpan } from './volume-contracts';
 import { VOXEL_METERS as U, MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from './volume-contracts';

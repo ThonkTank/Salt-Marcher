@@ -1,5 +1,5 @@
-import type { Point } from '../contracts';
-import type { CanvasBox } from '../passive-map-canvas';
+import type { Point } from '../shared/contracts';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
 
 /** World metres: x east, y south, z up. Frame is the footprint at zero tilt.
  * CPU projection, author clipping and GPU adapters share this contract. */

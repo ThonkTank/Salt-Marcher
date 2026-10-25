@@ -7,7 +7,7 @@ import {
   type LandscapeRecord,
   type LandscapeBox,
 } from './atlas-landscape';
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import { validateTerrainStyle, type TerrainStyle } from './terrain-relief';
 import { validateStroke, strokeBox, type MaskStroke } from './land-mask';
 

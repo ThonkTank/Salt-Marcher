@@ -1,4 +1,4 @@
-import type { RoomGeometry, WorkspaceGeometry, Point } from '../contracts';
+import type { RoomGeometry, WorkspaceGeometry, Point } from '../shared/contracts';
 import type { AtlasBinding, AtlasRenderView } from './campaign-atlas-contracts';
 import type { DrawingMapView } from './drawing-contracts';
 import type { CityHeader, CityUnit } from './city-contracts';
@@ -149,35 +149,39 @@ export interface AtlasRegionAPI {
   atlasGeometryTile(
     token: string,
     request: import('./atlas-geometry-tile').AtlasGeometryTileRequest,
-  ): Promise<import('../contracts').Result<import('./atlas-geometry-tile').AtlasGeometryTile>>;
+  ): Promise<
+    import('../shared/contracts').Result<import('./atlas-geometry-tile').AtlasGeometryTile>
+  >;
   atlasCancelRead(
     token: string,
     control: import('./atlas-read-request').AtlasReadRequest,
-  ): Promise<import('../contracts').Result<void>>;
+  ): Promise<import('../shared/contracts').Result<void>>;
   atlasTerrainTile(
     token: string,
     request: import('./atlas-terrain-tile').AtlasTerrainTileRequest,
     control?: import('./atlas-read-request').AtlasReadRequest,
-  ): Promise<import('../contracts').Result<import('./atlas-terrain-tile').AtlasTerrainTile>>;
+  ): Promise<import('../shared/contracts').Result<import('./atlas-terrain-tile').AtlasTerrainTile>>;
   atlasMaterialTile(
     token: string,
     request: import('./atlas-material-tile').AtlasMaterialTileRequest,
     control?: import('./atlas-read-request').AtlasReadRequest,
-  ): Promise<import('../contracts').Result<import('./atlas-material-tile').AtlasMaterialTile>>;
+  ): Promise<
+    import('../shared/contracts').Result<import('./atlas-material-tile').AtlasMaterialTile>
+  >;
   /** Cheap terrain bootstrap; no object index or geometry response is implied. */
   atlasTerrainSource(
     token: string,
-  ): Promise<import('../contracts').Result<{ revision: number; fence: string }>>;
+  ): Promise<import('../shared/contracts').Result<{ revision: number; fence: string }>>;
   atlasRegion(
     token: string,
     query: AtlasRegionQuery,
     consumer?: 'view' | 'export',
-  ): Promise<import('../contracts').Result<AtlasRegionView>>;
+  ): Promise<import('../shared/contracts').Result<AtlasRegionView>>;
   atlasObjectFocus(
     token: string,
     kind: 'room' | 'city' | 'building' | 'element' | 'scope',
     id: string,
-  ): Promise<import('../contracts').Result<AtlasObjectFocus>>;
+  ): Promise<import('../shared/contracts').Result<AtlasObjectFocus>>;
   atlasRegionCandidates(
     token: string,
     query: AtlasRegionQuery,
@@ -186,22 +190,22 @@ export interface AtlasRegionAPI {
     offset?: number,
     layer?: 'geometry' | 'landscape' | 'all',
     visualElementId?: string,
-  ): Promise<import('../contracts').Result<AtlasHitPage>>;
+  ): Promise<import('../shared/contracts').Result<AtlasHitPage>>;
   atlasRegionHit(
     token: string,
     query: AtlasRegionQuery,
     point: Point,
     fence: string,
-  ): Promise<import('../contracts').Result<AtlasObjectFocus | null>>;
+  ): Promise<import('../shared/contracts').Result<AtlasObjectFocus | null>>;
   cancelAtlasRegion(
     token: string,
     consumer?: 'view' | 'export',
-  ): Promise<import('../contracts').Result<void>>;
+  ): Promise<import('../shared/contracts').Result<void>>;
   atlasCitySite(
     token: string,
     cityId: string,
     id?: string,
-  ): Promise<import('../contracts').Result<AtlasCitySite>>;
+  ): Promise<import('../shared/contracts').Result<AtlasCitySite>>;
 }
 export const emptyDrawing = (): DrawingMapView => ({
   elements: [],

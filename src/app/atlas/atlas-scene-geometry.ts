@@ -1,6 +1,6 @@
 import { ShapeUtils, Vector2 } from 'three';
 import type { AtlasRegionView } from './atlas-region-contracts';
-import type { Point, Polygon, RoomGeometry } from '../contracts';
+import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
 import type { TerrainGrid } from './terrain-spatial-model';
 import { gridHeight, validateTerrainView } from './terrain-spatial-model';
 import { terrainGridLayout } from './terrain-grid-layout';

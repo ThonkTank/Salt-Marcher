@@ -2,8 +2,8 @@ import type {
   LocationMaterial,
   LocationMaterialsQuery,
   LocationMaterialsPage,
-} from '../location-notebook-contracts';
-import { calendarDate } from '../world-model';
+} from '../campaign/location-notebook-contracts';
+import { calendarDate } from '../runtime/world-model';
 import { calendarEvents } from './calendar-events';
 import { readWorldCalendar } from './world';
 import { readWorldSources } from './world-sources';

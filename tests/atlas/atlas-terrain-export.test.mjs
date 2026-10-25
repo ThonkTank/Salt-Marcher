@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { createRequire } from 'node:module';
 await build({
-  stdin: { resolveDir: process.cwd(), contents: "export * from './src/app/atlas/atlas-terrain-export';" },
+  stdin: {
+    resolveDir: process.cwd(),
+    contents: "export * from './src/app/atlas/atlas-terrain-export';",
+  },
   outfile: '.build/atlas-terrain-export-test.cjs',
   bundle: true,
   platform: 'node',

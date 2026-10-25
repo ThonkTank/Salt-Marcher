@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/player-terrain';export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/store';",
+      "export * from './src/app/runtime/player-terrain';export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-height';export * from './src/app/storage/store';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-output-test.cjs',

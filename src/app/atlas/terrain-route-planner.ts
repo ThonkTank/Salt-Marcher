@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { contains, type LandscapeRecord } from './atlas-landscape';
 import { TerrainSampler, decodeHeights, heightRecord } from './terrain-height';
 import { nearestRoute, validateRoute, type RouteNode, type RouteStructure } from './terrain-route';

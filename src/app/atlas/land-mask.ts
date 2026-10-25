@@ -1,5 +1,5 @@
 import { bounds, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 export const MASK_EDGE = 256,
   MASK_MAX = 65535,
@@ -411,7 +411,7 @@ export function applyMaskArea(
 }
 
 /** Derived horizontal spans for existing polygon-only fill operations; never persisted as land geometry. */
-export function maskLandSpans(mask: LandMask): import('../contracts').Polygon[] {
+export function maskLandSpans(mask: LandMask): import('../shared/contracts').Polygon[] {
   const values = decodeMask(mask),
     rects: { x: number; y: number; width: number; height: number }[] = [];
   let prior = new Map<string, number>();

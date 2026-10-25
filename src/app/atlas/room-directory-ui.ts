@@ -1,4 +1,4 @@
-import type { RoomDirectoryPage, RoomSummary } from '../contracts';
+import type { RoomDirectoryPage, RoomSummary } from '../shared/contracts';
 /** A list page owns no author content. Cursor invalidation is an explicit retry. */
 export class RoomDirectoryView {
   private request = 0;

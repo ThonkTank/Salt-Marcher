@@ -1,5 +1,5 @@
 import type { AtlasWorkplane } from './atlas-workplane';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 export interface TerrainDraft {
   routeRecords: LandscapeRecord[];

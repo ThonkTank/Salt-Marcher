@@ -13,17 +13,17 @@ Schatz. XP, Käufe und Münzabbuchungen gehören zu anderen Commands.
 
 ## Codeeinstiege der Beuteoberflächen
 
-- **Schatzeditor und Gesamtverteilung:** [`treasury-ui.ts`](../../../src/app/treasury-ui.ts),
+- **Schatzeditor und Gesamtverteilung:** [`treasury-ui.ts`](../../../src/app/runtime/treasury-ui.ts),
   `initTreasury`, erzeugt den Button `treasury-distribute` und bindet
   `TreasureDistribution` aus `treasure-distribution-ui.ts` an den eigenen
   `execute`-Callback des Schatzeditors.
-- **Persönliche Beute im Partyfenster:** [`party-topbar-ui.ts`](../../../src/app/party-topbar-ui.ts),
+- **Persönliche Beute im Partyfenster:** [`party-topbar-ui.ts`](../../../src/app/runtime/party-topbar-ui.ts),
   `initPartyTopbar`, bindet `PartyLootPanel` aus `party-loot-ui.ts` an
   `live.ts:runPartyProgress` → `progression-ui.ts:executePartyProgress`.
   Die Berichtigung nutzt die eigene Figuren-/Postenauswahl des Partyfensters;
   dieser Anschluss liest den Posten vor der Buchung mit ID-/Revisionsprüfung.
-- **Live-Ledger: Stapel und Weitergabe:** [`progression-ui.ts`](../../../src/app/progression-ui.ts)
-  ruft [`drawLedgerStacks`](../../../src/app/ledger-stack-ui.ts) mit seiner
+- **Live-Ledger: Stapel und Weitergabe:** [`progression-ui.ts`](../../../src/app/runtime/progression-ui.ts)
+  ruft [`drawLedgerStacks`](../../../src/app/runtime/ledger-stack-ui.ts) mit seiner
   Ledgerauswahl und seinem `execute`-Callback auf. Dort beginnen Teilen,
   Zusammenführen und Weitergabe bereits erhaltener Beute.
 

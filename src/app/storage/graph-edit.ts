@@ -1,7 +1,7 @@
 import { readTriggerFields, triggerFieldRow } from './triggers';
 import { validateGraphLayout } from '../atlas/graph-contracts';
 import { randomUUID, createHash } from 'node:crypto';
-import type { Room } from '../contracts';
+import type { Room } from '../shared/contracts';
 import type { GraphEdit, GraphLayout } from '../atlas/graph-contracts';
 import type { DrawingElement } from '../atlas/drawing-contracts';
 import { readDungeonVolumes, rebaseRoomVolume, volumeRow, executeVolumeAction } from './volume';

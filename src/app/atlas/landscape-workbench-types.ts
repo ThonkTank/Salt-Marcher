@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
 import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
 import type { HeightStroke } from './terrain-brush';

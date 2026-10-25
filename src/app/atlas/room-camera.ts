@@ -1,4 +1,4 @@
-import type { Room } from '../contracts';
+import type { Room } from '../shared/contracts';
 /** Fit precisely the rooms rendered by the caller, including its current draft. */
 export function roomCameraBox(rooms: Iterable<Pick<Room, 'polygons'>>): string | null {
   let x = Infinity,

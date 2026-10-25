@@ -1,4 +1,4 @@
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 import { AtlasPaint, type PaintStyle } from './atlas-paint';
 export { AtlasPaint, atlasPaint } from './atlas-paint';
 function polygonPath(polygons: Polygon[]) {

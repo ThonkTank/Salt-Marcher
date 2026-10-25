@@ -1,4 +1,4 @@
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import { contains, type LandscapeBox } from './atlas-landscape';
 import {
   brushFootprint,

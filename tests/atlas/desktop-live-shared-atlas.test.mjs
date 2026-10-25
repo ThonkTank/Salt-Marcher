@@ -6,7 +6,7 @@ import { parseHTML } from '../helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:
-      "export {LiveAtlasPortal} from './src/app/live-atlas-portal';export {atlasWorldRoute} from './src/app/atlas/atlas-runtime-model';",
+      "export {LiveAtlasPortal} from './src/app/runtime/live-atlas-portal';export {atlasWorldRoute} from './src/app/atlas/atlas-runtime-model';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/live-shared-atlas-tests.cjs',

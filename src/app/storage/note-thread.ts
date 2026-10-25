@@ -1,15 +1,15 @@
 import { readSourceUnlinks } from './note-source-history';
 import { createHash } from 'node:crypto';
 import { checkedWorldNoteRow } from './world-note-row';
-import { plainReferenceText } from '../text-references';
-import { noteThreadMembers as links } from '../note-thread-edit';
+import { plainReferenceText } from '../campaign/text-references';
+import { noteThreadMembers as links } from '../campaign/note-thread-edit';
 import { readNarrative } from './narrative';
-import type { Note } from '../preparation-contracts';
+import type { Note } from '../campaign/preparation-contracts';
 import type {
   NoteThreadEntry,
   NoteThreadPage,
   NoteThreadSelection,
-} from '../note-thread-contracts';
+} from '../campaign/note-thread-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const identity = (id: unknown) => typeof id === 'string' && !!id && id.length <= 1000;
 function noteRecord(db: any, cam: string, id: string) {

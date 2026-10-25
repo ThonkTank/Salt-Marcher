@@ -23,11 +23,11 @@ import {
 import { atlasFieldValue } from './atlas-units';
 import { regionValue } from './atlas-region-contracts';
 import { atlasDrawingMeasurement } from './drawing-ui';
-import { dungeonTravelRoute } from '../dungeon-travel-console';
+import { dungeonTravelRoute } from '../runtime/dungeon-travel-console';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { appendRoomNumber } from './room-number-label';
 import { atlasPartyPoint, atlasWorldRoute } from './atlas-runtime-model';
-import type { CanvasBox } from '../passive-map-canvas';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
 import type { AtlasCanvas } from './atlas-canvas';
 import { AtlasPaint } from './atlas-canvas-scene';
 import {
@@ -38,7 +38,7 @@ import {
   atlasHexPoint,
 } from './campaign-atlas-model';
 import type { AtlasBinding } from './campaign-atlas-contracts';
-import type { Point, Room } from '../contracts';
+import type { Point, Room } from '../shared/contracts';
 import { roadPoints, cityObjectsPaint } from './city-model';
 import { volumeProjection } from './volume-model';
 import { elementPaint, roomFacePaint } from './drawing-model';
@@ -49,7 +49,7 @@ import type { AtlasRenderView } from './campaign-atlas-contracts';
 import type { AtlasAuthor } from './atlas-author';
 import type { AtlasJourney } from './atlas-journey';
 import type { TerritoryWorkbench } from './atlas-territories-ui';
-import { atlasWorldTravelState } from '../world-ui';
+import { atlasWorldTravelState } from '../runtime/world-ui';
 interface AtlasDrawingHost {
   readonly author: Readonly<
     Pick<
@@ -85,7 +85,7 @@ interface AtlasDrawingHost {
   readonly opts: {
     roomDraft: () => Room | null;
   };
-  readonly roomPreview: <T extends import('../contracts').RoomGeometry>(original: T) => T;
+  readonly roomPreview: <T extends import('../shared/contracts').RoomGeometry>(original: T) => T;
   readonly camera: Pick<AtlasCanvas, 'view' | 'hitAt'>;
 }
 /** Builds map and author paint commands and owns reusable base geometry. */
@@ -772,7 +772,7 @@ export class AtlasDrawing {
     this.drawInteriorRuntime(g, b, floor, mpp, shown);
     root.append(g);
   }
-  authorRoom(room: import('../contracts').RoomGeometry) {
+  authorRoom(room: import('../shared/contracts').RoomGeometry) {
     return (
       !this.host.output.exportOpen &&
       this.host.family === 'interior' &&
@@ -809,7 +809,7 @@ export class AtlasDrawing {
     }
     return copy;
   }
-  drawRoomFace(g: AtlasPaint, room: import('../contracts').RoomGeometry, mpp: number) {
+  drawRoomFace(g: AtlasPaint, room: import('../shared/contracts').RoomGeometry, mpp: number) {
     const path = roomFacePaint(
       room,
       mpp,
@@ -1036,7 +1036,7 @@ export class AtlasDrawing {
     b: AtlasBinding,
     floor: string,
     mpp: number,
-    shown: import('../contracts').RoomGeometry[],
+    shown: import('../shared/contracts').RoomGeometry[],
   ) {
     const data = this.host.regions.data!;
     const runtime = atlasDungeonState(),

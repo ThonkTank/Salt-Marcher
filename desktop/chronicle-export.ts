@@ -1,7 +1,7 @@
 import { open, rename, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import type { ChronicleReadSession } from '../src/app/storage/chronicle-pages';
-import type { ChronicleCategory, ChronicleCursor } from '../src/app/chronicle-contracts';
+import type { ChronicleCategory, ChronicleCursor } from '../src/app/runtime/chronicle-contracts';
 import { chronicleMarkdownHeader, chronicleMarkdownEntries } from '../src/app/storage/chronicle';
 
 export async function exportChronicleFile(

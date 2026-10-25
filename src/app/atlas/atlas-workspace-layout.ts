@@ -1,5 +1,5 @@
 import { initAtlasUnits, atlasUnits, setAtlasUnits } from './atlas-units';
-import { bindAnchoredPopup } from '../anchored-popup';
+import { bindAnchoredPopup } from '../shared/anchored-popup';
 import {
   atlasSections,
   availableAtlasGroups,

@@ -1,8 +1,8 @@
-import { EditorSession } from '../editor-session';
-import type { Result, Edit, RoomCommit } from '../contracts';
+import { EditorSession } from '../shared/editor-session';
+import type { Result, Edit, RoomCommit } from '../shared/contracts';
 import type { CityCommand, CityView } from './city-contracts';
 import type { DrawingCommand, DrawingView } from './drawing-contracts';
-import type { WorldCommand, WorldAck } from '../world-contracts';
+import type { WorldCommand, WorldAck } from '../runtime/world-contracts';
 import type { AtlasAction, AtlasCommand, CampaignAtlas } from './campaign-atlas-contracts';
 export const editorSession = new EditorSession();
 
@@ -126,7 +126,7 @@ export async function atlasCityWrite(c: CityCommand): Promise<Result<CityView>> 
 }
 export async function atlasDrawingWrite(
   c: DrawingCommand,
-): Promise<Result<{ workspace: import('../contracts').Workspace; view: DrawingView }>> {
+): Promise<Result<{ workspace: import('../shared/contracts').Workspace; view: DrawingView }>> {
   if (pending.has(c.token))
     return {
       ok: false,
@@ -229,7 +229,7 @@ export async function atlasHistoryWrite(
   token: string,
   campaignId: string,
   kind: 'undo' | 'redo',
-): Promise<Result<import('../contracts').Workspace>> {
+): Promise<Result<import('../shared/contracts').Workspace>> {
   const r = await writeAtlas({
     commandId: crypto.randomUUID(),
     token,
@@ -249,7 +249,7 @@ export async function atlasGraphWrite(c: import('./graph-contracts').GraphComman
     ? {
         ok: true as const,
         value: r.value.result as {
-          workspace: import('../contracts').Workspace;
+          workspace: import('../shared/contracts').Workspace;
           view: import('./graph-contracts').GraphView;
         },
       }
@@ -259,7 +259,7 @@ export async function atlasGraphWrite(c: import('./graph-contracts').GraphComman
 export async function atlasDefaultRoomWrite(
   token: string,
   campaignId: string,
-): Promise<Result<import('../contracts').Workspace>> {
+): Promise<Result<import('../shared/contracts').Workspace>> {
   const r = await writeAtlas({
     commandId: crypto.randomUUID(),
     token,

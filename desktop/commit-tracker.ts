@@ -5,7 +5,7 @@ import {
   type CommitReference,
   type CommitFamily,
   type CommitOutcome,
-} from '../src/app/commit-receipt';
+} from '../src/app/shared/commit-receipt';
 
 export class CommitTracker {
   private pending = new Map<string, { ref: CommitReference; task: Promise<unknown> }>();

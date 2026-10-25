@@ -141,7 +141,7 @@ test('hex reference follows the actual grid, including historical levels and vis
   assert(!all(root).some((n) => n.text?.includes('Richtzeit')));
 });
 test('unit switching converts real controls, keeps canonical values and draft snapshots exact, and rejects invalid input', async () => {
-  const { document, window } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+  const { document, window } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   const selects = new WeakMap();
   Object.defineProperty(window.HTMLSelectElement.prototype, 'value', {
     configurable: true,

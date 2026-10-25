@@ -1,4 +1,4 @@
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 import { AtlasPaint } from './atlas-paint';
 const ns = 'http://www.w3.org/2000/svg';
 const escapeXML = (value: unknown) =>

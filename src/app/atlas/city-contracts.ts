@@ -1,5 +1,5 @@
 import type { CityActivityAPI as importCityActivityAPI } from './city-activity-contracts';
-import type { Result } from '../contracts';
+import type { Result } from '../shared/contracts';
 export interface CityPoint {
   x: number;
   y: number;
@@ -28,7 +28,7 @@ export interface CityUnit {
   terrain?: import('./terrain-objects').TerrainBuilding;
   groupId?: string;
   groupRecipe?: import('./room-group-generator').GroupRecipe;
-  footprint?: import('../contracts').Polygon[];
+  footprint?: import('../shared/contracts').Polygon[];
   label?: import('./map-label-style').MapLabelStyle;
   id: string;
   kind: 'node' | 'road' | 'district' | 'plaza' | 'water' | 'wall' | 'building';

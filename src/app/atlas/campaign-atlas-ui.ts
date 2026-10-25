@@ -21,18 +21,18 @@ import { AtlasReferenceUI } from './atlas-reference-ui';
 import { travelHexSizes } from './atlas-navigation-scale';
 import { regionValue } from './atlas-region-contracts';
 import { selectElement } from './drawing-ui';
-import { mountDungeonTravelConsole } from '../dungeon-travel-console';
-import { LiveAtlasPortal } from '../live-atlas-portal';
+import { mountDungeonTravelConsole } from '../runtime/dungeon-travel-console';
+import { LiveAtlasPortal } from '../runtime/live-atlas-portal';
 import { LandscapeWorkbench } from './atlas-landscape-ui';
 import { earthView } from './atlas-landscape';
 import { atlasPartyPoint } from './atlas-runtime-model';
-import { openWorld } from '../world-ui';
+import { openWorld } from '../runtime/world-ui';
 import { AtlasCanvas } from './atlas-canvas';
 import { atlasFrame, localToAtlas, atlasToLocal } from './campaign-atlas-model';
 import { writeAtlasCommit, pendingAtlasWrite, recoverAtlasCommit } from './campaign-atlas-author';
 import type { AtlasRenderView, AtlasAction } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point, Room } from '../contracts';
-import { terrainNames } from '../world-model';
+import type { WorkspaceGeometry, Point, Room } from '../shared/contracts';
+import { terrainNames } from '../runtime/world-model';
 import { nearestAnchor } from './drawing-model';
 import { atlasCityState, atlasCityUndoPoint, openCityReference } from './city-ui';
 import {
@@ -1816,7 +1816,7 @@ export class CampaignAtlasWorkbench {
           page(kind, result.value.next!),
         );
     };
-    const rooms = async (cursor?: import('../contracts').RoomDirectoryQuery['cursor']) => {
+    const rooms = async (cursor?: import('../shared/contracts').RoomDirectoryQuery['cursor']) => {
       const result = await window.campaign.roomDirectory(
         token,
         { text, limit: 40, ...(cursor ? { cursor } : {}) },

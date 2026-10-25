@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Shared by the canvas raster, worker preview and export. Materials never write biomes. */
 export interface TerrainStyle {

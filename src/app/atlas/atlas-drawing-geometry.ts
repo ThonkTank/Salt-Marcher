@@ -7,7 +7,7 @@ import { atlasSpatialColor } from './atlas-spatial-color';
 import { atlasWorkplaneHeight } from './atlas-workplane';
 import { routeSegmentRange } from './terrain-route-clip';
 import type { AtlasCanvasScene, AtlasPaintCommand } from './atlas-canvas-scene';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 export interface AtlasDrawingMesh {
   positions: Float32Array;

@@ -8,7 +8,7 @@ import { atlasDrawingGeometry, type AtlasDrawingMesh } from './atlas-drawing-geo
 import type { AtlasCanvasScene, PaintHit } from './atlas-canvas-scene';
 import type { AtlasSpatialSurface } from './atlas-spatial-surface';
 import type { AtlasMetricFrame } from './atlas-metric-camera';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Deck receives the same local buffers used by exact author hit testing. */
 export class AtlasDeckDrawing {

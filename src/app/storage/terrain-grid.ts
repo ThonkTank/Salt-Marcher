@@ -1,5 +1,9 @@
 import { streamTerrainFieldSteps, type TerrainStream } from '../atlas/terrain-field-stream';
-import { validateTerrainView, type TerrainView, type TerrainGrid } from '../atlas/terrain-spatial-model';
+import {
+  validateTerrainView,
+  type TerrainView,
+  type TerrainGrid,
+} from '../atlas/terrain-spatial-model';
 import type { LandscapeRecord } from '../atlas/atlas-landscape';
 import { terrainGridLayout } from '../atlas/terrain-grid-layout';
 import { landscapeSampleFilter } from './landscape-record-stream';

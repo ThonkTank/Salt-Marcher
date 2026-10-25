@@ -1,6 +1,6 @@
 import { treasureAnchor, treasureAnchorLabel } from './treasure-anchors';
-import type { TreasureQuery } from '../treasury-contracts';
-import { changeCharacterXp, partyAwardShares } from '../party-xp-model';
+import type { TreasureQuery } from '../runtime/treasury-contracts';
+import { changeCharacterXp, partyAwardShares } from '../runtime/party-xp-model';
 import { syncOpenMaskHealth } from './mask-health';
 import { editGroup } from './groups';
 import { editTreasury } from './treasury';
@@ -44,8 +44,8 @@ import {
   type LedgerInventoryPage,
   type FinishRewards,
   type CombatReward,
-} from '../progression';
-import { checkedCombat, type CombatState } from '../combat-contracts';
+} from '../runtime/progression';
+import { checkedCombat, type CombatState } from '../runtime/combat-contracts';
 import { readLiveScene, readRoster } from './live';
 import { readItemDefinition, recordItemDefinitionVersion } from './item-definitions';
 const json = (v: unknown) => JSON.stringify(v),

@@ -10,7 +10,9 @@ buildSync({
   platform: 'node',
   format: 'esm',
 });
-const { AtlasMaterialTileStream } = await import('../../.build/atlas-material-tile-stream-test.mjs');
+const { AtlasMaterialTileStream } = await import(
+  '../../.build/atlas-material-tile-stream-test.mjs'
+);
 
 const input = (box = { x: 0, y: 0, width: 512, height: 256 }) => ({
   box,

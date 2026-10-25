@@ -8,10 +8,10 @@ import type { AtlasReferenceUI } from './atlas-reference-ui';
 import type { AtlasRegionQuery } from './atlas-region-contracts';
 import type { LandscapeWorkbench } from './atlas-landscape-ui';
 import { atlasExportScale, dungeonExportBox } from './campaign-atlas-export';
-import type { CanvasBox } from '../passive-map-canvas';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
 import type { AtlasCanvas } from './atlas-canvas';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point } from '../contracts';
+import type { WorkspaceGeometry, Point } from '../shared/contracts';
 interface AtlasOutputHost {
   readonly reference: Pick<AtlasReferenceUI, 'active' | 'close'>;
   readonly flush: () => Promise<boolean>;

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { canonicalJson } from '../generation/canonical-json';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import {
   checkedExtensionCommand,
   extensionRights,
@@ -10,7 +10,7 @@ import {
   type ExtensionCommand,
   type ExtensionPage,
   type ExtensionRight,
-} from '../extension-contracts';
+} from '../workspace/extension-contracts';
 export const extensionPackageLimit = 1048576;
 const prefix = 'extension:installed:',
   receiptPrefix = 'extension:receipt:',

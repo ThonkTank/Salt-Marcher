@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 export interface MapLabelStyle {
   rank?: number;
   hidden?: boolean;

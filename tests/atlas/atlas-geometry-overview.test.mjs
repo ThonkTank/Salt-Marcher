@@ -9,7 +9,9 @@ buildSync({
   platform: 'node',
   format: 'esm',
 });
-const { AtlasGeometryOverviewBuilder } = await import('../../.build/atlas-geometry-overview-test.mjs');
+const { AtlasGeometryOverviewBuilder } = await import(
+  '../../.build/atlas-geometry-overview-test.mjs'
+);
 
 const tile = (x = 0, y = 0, lod = 0) => ({ lod, x, y });
 function mesh(kind, points, id = 'source') {

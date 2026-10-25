@@ -1,5 +1,5 @@
 import type { AtlasRenderView, AtlasBinding } from './campaign-atlas-contracts';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 export interface AtlasFrame {
   x: number;
   y: number;

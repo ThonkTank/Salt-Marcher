@@ -1,6 +1,6 @@
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import type { DrawingMapView } from './drawing-contracts';
-import type { WorkspaceGeometry } from '../contracts';
+import type { WorkspaceGeometry } from '../shared/contracts';
 export function workspaceGeometryOnly(w: WorkspaceGeometry): WorkspaceGeometry {
   return {
     ...w,

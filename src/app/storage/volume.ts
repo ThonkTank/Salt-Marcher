@@ -1,11 +1,16 @@
 import { captureSurfaces, transformSurfaces, rebindSurfaces } from './surfaces';
 import { captureTriggerCells, rebindTriggerCells } from './triggers';
 import { createHash, randomUUID } from 'node:crypto';
-import type { Room } from '../contracts';
+import type { Room } from '../shared/contracts';
 import type { DungeonVolume, VolumeAction } from '../atlas/volume-contracts';
 import { MAX_VOLUME_COLUMNS, MAX_VOLUME_CELLS } from '../atlas/volume-contracts';
 import type { DrawingElement } from '../atlas/drawing-contracts';
-import { volumeFromRoom, editVolume, volumeProjection, volumeComponents } from '../atlas/volume-model';
+import {
+  volumeFromRoom,
+  editVolume,
+  volumeProjection,
+  volumeComponents,
+} from '../atlas/volume-model';
 import { inside, anchored } from '../atlas/drawing-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installVolumeSchema(db: any) {

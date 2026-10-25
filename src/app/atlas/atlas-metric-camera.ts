@@ -1,6 +1,6 @@
 import { Matrix4 } from '@math.gl/core';
 import { Viewport, View } from '@deck.gl/core';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { ATLAS_CAMERA_FOV, atlasCameraEye, atlasPlanePoint } from './atlas-camera';
 
 /** Canonical Atlas camera: x east, y south, height above datum in metres. */

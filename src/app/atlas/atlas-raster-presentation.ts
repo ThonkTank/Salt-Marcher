@@ -13,7 +13,7 @@ import type { AtlasPresentation } from './atlas-presentation';
 import type { AtlasCanvasScene } from './atlas-canvas-scene';
 import type { LandscapeBox, LandscapeRecord } from './atlas-landscape';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { AtlasDeckSurface } from './atlas-deck-surface';
 import type { AtlasDeckDrawing } from './atlas-deck-drawing';
 import {

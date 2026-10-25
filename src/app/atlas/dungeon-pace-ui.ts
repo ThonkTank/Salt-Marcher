@@ -1,5 +1,5 @@
 import type { DungeonView } from './dungeon-contracts';
-import type { DungeonPaceSettings } from '../dungeon-pace';
+import type { DungeonPaceSettings } from '../runtime/dungeon-pace';
 type Context = NonNullable<DungeonView['travelPace']>;
 type Raw = {
   round: string;

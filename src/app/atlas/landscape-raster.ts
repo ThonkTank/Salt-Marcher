@@ -27,8 +27,8 @@ import { maskAt, MASK_SEA_LEVEL } from './land-mask';
 import { lineParts } from './landscape-line';
 import { colorParts, mergePolygons } from './landscape-brush';
 import { bounds, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
-import type { Polygon } from '../contracts';
-import { terrainColors } from '../world-model';
+import type { Polygon } from '../shared/contracts';
+import { terrainColors } from '../runtime/world-model';
 import {
   COVER_CHANNEL_NAMES,
   type TerrainCoverChannel,

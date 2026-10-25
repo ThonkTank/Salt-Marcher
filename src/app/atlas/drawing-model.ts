@@ -2,7 +2,7 @@ import { atlasPaint, rotation } from './atlas-paint';
 import { paintMarkup, polygonMarkupPath as roomPath } from './atlas-paint-svg';
 import { visibility } from '../../compute';
 import clipping, { type MultiPolygon } from 'polygon-clipping';
-import type { Point, Polygon, RoomGeometry } from '../contracts';
+import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
 import type {
   DrawingElement,
   DrawingElementGeometry,

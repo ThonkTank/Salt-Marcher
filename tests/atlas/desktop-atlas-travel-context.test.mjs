@@ -10,7 +10,7 @@ import { parseHTML } from '../helpers/dom.mjs';
 buildSync({
   stdin: {
     contents:
-      "export {CampaignAtlasWorkbench} from './src/app/atlas/campaign-atlas-ui'; export * from './src/app/world-ui';",
+      "export {CampaignAtlasWorkbench} from './src/app/atlas/campaign-atlas-ui'; export * from './src/app/runtime/world-ui';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/atlas-context-ui.cjs',
@@ -93,7 +93,7 @@ function fixture(t) {
     CustomEvent: globalThis.CustomEvent,
   };
   const { window, document } = parseHTML(
-    readFileSync('src/app/index.html', 'utf8') +
+    readFileSync('src/app/workspace/index.html', 'utf8') +
       '<div id="atlas-context-fields"></div><p id="atlas-local-status"></p><p id="atlas-save-status"></p><p id="atlas-hint"></p><button id="atlas-region-retry"></button><div id="atlas-entrance-field"></div><select id="atlas-entrance-choice"></select>' +
       ['start', 'preview', 'refresh', 'place', 'entrance', 'step', 'round', 'play', 'pause', 'end']
         .map((k) => `<button id="atlas-local-${k}"></button>`)

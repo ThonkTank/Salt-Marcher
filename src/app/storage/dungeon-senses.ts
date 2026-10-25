@@ -5,7 +5,7 @@ import {
   trackAt,
   movementModes,
   trackSurfaces,
-} from '../track-model';
+} from '../runtime/track-model';
 import type { DungeonTraceRules } from '../atlas/dungeon-contracts';
 import { readPreparedGroup } from './session';
 import { createHash, randomUUID } from 'node:crypto';

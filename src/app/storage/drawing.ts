@@ -32,9 +32,19 @@ import {
   volumeRow,
 } from './volume';
 import { createHash, randomUUID } from 'node:crypto';
-import { validateRoom, type Room, type Polygon } from '../contracts';
-import type { DrawingCommand, DrawingElement, DrawingView, RoomStyle } from '../atlas/drawing-contracts';
-import { combineRooms, anchored, deformedBoundaryPoints, nearestAnchor } from '../atlas/drawing-model';
+import { validateRoom, type Room, type Polygon } from '../shared/contracts';
+import type {
+  DrawingCommand,
+  DrawingElement,
+  DrawingView,
+  RoomStyle,
+} from '../atlas/drawing-contracts';
+import {
+  combineRooms,
+  anchored,
+  deformedBoundaryPoints,
+  nearestAnchor,
+} from '../atlas/drawing-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   json = (v: any) => JSON.stringify(v);
 export function installDrawingSchema(db: any) {
@@ -135,7 +145,7 @@ export function drawingView(
   cam: string,
   projection: true,
 ): import('../atlas/drawing-contracts').DrawingView<
-  import('../contracts').RoomGeometry,
+  import('../shared/contracts').RoomGeometry,
   import('../atlas/drawing-contracts').DrawingElementGeometry
 >;
 export function drawingView(db: any, cam: string, projection = false): any {

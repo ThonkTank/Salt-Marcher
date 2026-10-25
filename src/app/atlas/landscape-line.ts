@@ -1,4 +1,4 @@
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 
 export const roadStyles = [

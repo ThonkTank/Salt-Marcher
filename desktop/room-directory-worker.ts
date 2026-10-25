@@ -1,7 +1,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import Database from 'better-sqlite3';
 import { roomDirectoryRows } from '../src/app/storage/room-reads';
-import type { RoomDirectoryQuery } from '../src/app/contracts';
+import type { RoomDirectoryQuery } from '../src/app/shared/contracts';
 const { filename, campaignId, query } = workerData as {
   filename: string;
   campaignId: string;

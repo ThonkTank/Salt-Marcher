@@ -6,7 +6,10 @@ import {
   type TerrainMaterialChannel,
   type TerrainMaterialRaster,
 } from '../atlas/terrain-material';
-import { atlasMaterialTileQuery, type AtlasMaterialTileRequest } from '../atlas/atlas-material-tile';
+import {
+  atlasMaterialTileQuery,
+  type AtlasMaterialTileRequest,
+} from '../atlas/atlas-material-tile';
 import type { AtlasRegionSource } from '../atlas/atlas-region-contracts';
 import { readTerrainSettings, type ProjectionStream } from './terrain-color-raster';
 

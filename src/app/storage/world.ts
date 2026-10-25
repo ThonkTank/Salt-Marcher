@@ -13,11 +13,11 @@ import { checkedCalendarEventRow } from './calendar-events';
 import { hexPolygon } from '../atlas/atlas-landscape';
 import { executeLandscape, landscapeRegion, putLandscape } from './atlas-landscape';
 import { atlasLocalJourney } from './atlas-travel';
-import { checkedHexAccess, checkedTravelSupplies, hexAccessProblem } from '../hex-access';
+import { checkedHexAccess, checkedTravelSupplies, hexAccessProblem } from '../runtime/hex-access';
 import { checkedMarkerPresentation, defaultMarkerPresentation } from '../atlas/atlas-marker';
-import { agendaOccurrence } from '../agenda-model';
+import { agendaOccurrence } from '../runtime/agenda-model';
 import { installAtlasMemory, rememberAtlasHex } from './atlas-knowledge';
-import { canonicalJson } from '../generation/canonical-json';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import { createHash, randomUUID } from 'node:crypto';
 import type {
   AtlasMap,
@@ -32,7 +32,7 @@ import type {
   TravelRequest,
   TravelPreview,
   Hex,
-} from '../world-contracts';
+} from '../runtime/world-contracts';
 import {
   calendarDate,
   checkedCalendarEvent,
@@ -47,11 +47,11 @@ import {
   findRoute,
   terrainFactor,
   terrainNames,
-} from '../world-model';
+} from '../runtime/world-model';
 
 import { readLiveScene, readRoster, executeLive } from './live';
-import type { LiveScene } from '../live-contracts';
-import { partyTravelPace } from '../travel-pace';
+import type { LiveScene } from '../runtime/live-contracts';
+import { partyTravelPace } from '../runtime/travel-pace';
 import { restockDue } from './items';
 const json = (v: unknown) => JSON.stringify(v),
   hash = (s: string) => createHash('sha256').update(s).digest('hex');
@@ -866,7 +866,7 @@ function cellLandscape(
   db: any,
   cam: string,
   mapId: string,
-  cell: import('../world-contracts').AtlasCell,
+  cell: import('../runtime/world-contracts').AtlasCell,
 ) {
   return db.prepare(sourceCellLookup).get(cam, mapId, cell.level, cell.q, cell.r);
 }
@@ -874,7 +874,7 @@ function writeCellLandscape(
   db: any,
   cam: string,
   m: AtlasMap,
-  cell: import('../world-contracts').AtlasCell,
+  cell: import('../runtime/world-contracts').AtlasCell,
 ) {
   const { q, r, level } = cell,
     old = cellLandscape(db, cam, m.id, cell),
@@ -976,7 +976,7 @@ export function executeWorld<T = never>(
             .get(cam, m.id),
           old = prior ? JSON.parse(prior.payload) : null;
         const previous = new Map(
-          (old?.cells ?? []).map((c: import('../world-contracts').AtlasCell) => [
+          (old?.cells ?? []).map((c: import('../runtime/world-contracts').AtlasCell) => [
             `${c.level}:${c.q}:${c.r}`,
             c.terrain,
           ]),

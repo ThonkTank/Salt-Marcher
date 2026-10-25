@@ -1,6 +1,6 @@
-import { EditorSession } from '../editor-session';
+import { EditorSession } from '../shared/editor-session';
 import { atlasDrawingWrite } from './campaign-atlas-author';
-import type { WorkspaceGeometry, Room } from '../contracts';
+import type { WorkspaceGeometry, Room } from '../shared/contracts';
 import type { GraphView } from './graph-contracts';
 import type { DrawingElement } from './drawing-contracts';
 import type { DungeonContent } from './dungeon-budget-contracts';

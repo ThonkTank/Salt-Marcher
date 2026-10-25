@@ -15,7 +15,7 @@ nicht anhand von Feldnamen oder `_id`-Endungen über Identitäten.
 Neben den verwendeten Fachtypen liegen `.transfer.json`-Dateien. Beispielsweise
 besitzt [drawing-contracts.transfer.json](../../../src/app/atlas/drawing-contracts.transfer.json)
 die Bedeutung von `DrawingElement.targetFloorId`, während
-[music-contracts.transfer.json](../../../src/app/music-contracts.transfer.json)
+[music-contracts.transfer.json](../../../src/app/runtime/music-contracts.transfer.json)
 Audioverweise auf gemeinsame Definitionen bindet. Eine identische Zeichenfolge
 kann in einem Namen unverändert bleiben und in einem Referenzfeld eine neue
 Kennung erhalten.

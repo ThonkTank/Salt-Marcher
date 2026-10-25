@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { checkedChase, type ChaseState, type ChaseAction } from '../chase-contracts';
-import { checkedChaseDraft, type ChaseWorkingDraft } from '../chase-draft-contracts';
+import { checkedChase, type ChaseState, type ChaseAction } from '../runtime/chase-contracts';
+import { checkedChaseDraft, type ChaseWorkingDraft } from '../runtime/chase-draft-contracts';
 const hash = (v: string) => createHash('sha256').update(v).digest('hex');
 export function installChaseDraftSchema(db: any) {
   db.exec(

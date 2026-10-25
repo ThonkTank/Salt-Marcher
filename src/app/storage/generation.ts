@@ -8,19 +8,19 @@ import {
   canonicalSourceSnapshot,
 } from './world-sources';
 import { createHash, randomUUID } from 'node:crypto';
-import artifact from '../generation/system-preset.json';
-import { checkedGeneratorConfig } from '../generation/config';
-import { canonicalJson } from '../generation/canonical-json';
+import artifact from '../campaign/generation/system-preset.json';
+import { checkedGeneratorConfig } from '../campaign/generation/config';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 import {
   buildSelectionIndex,
   selectEncounter,
   type CompositionCatalog,
-} from '../generation/selector';
+} from '../campaign/generation/selector';
 import {
   assessEncounter,
   validateEncounterPlanInput,
   type EncounterPlan,
-} from '../encounter-contracts';
+} from '../catalog/encounter-contracts';
 import {
   creatureInfo,
   readCreature,
@@ -29,7 +29,7 @@ import {
   readEncounterPlan,
 } from './encounters';
 import { makeTreasure } from './progression';
-import { copper } from '../progression';
+import { copper } from '../runtime/progression';
 import {
   exactWeight,
   encounterWeight,
@@ -45,7 +45,7 @@ import {
   type GenerationCommand,
   type GenerationRequest,
   type GenerationRun,
-} from '../generation-contracts';
+} from '../campaign/generation-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   json = (v: unknown) => JSON.stringify(v),
   systemId = 'generator-system-v5';
@@ -455,7 +455,7 @@ export function previewLoot(
   return lootItems(table, seed);
 }
 function lootItems(table: LootTable, seed: string) {
-  const grouped = new Map<string, import('../progression').ItemInput>();
+  const grouped = new Map<string, import('../runtime/progression').ItemInput>();
   for (let roll = 0; roll < table.rolls; roll++) {
     const entry =
         table.entries[
@@ -1341,7 +1341,7 @@ export function acceptGeneration(
 export function mutatePreset(
   db: any,
   cam: string | null,
-  a: import('../generation-contracts').PresetAction,
+  a: import('../campaign/generation-contracts').PresetAction,
 ) {
   const registry = readGeneratorRegistry(db, cam ?? '');
   if (registry.revision !== a.expectedRegistryRevision)

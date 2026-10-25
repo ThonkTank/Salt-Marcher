@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Clip in pixel-local coordinates. Signed ring areas retain holes and disconnected
  * pieces of a concave ring without recursively refining the material function. */

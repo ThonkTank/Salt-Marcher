@@ -4,10 +4,10 @@ import { readLiveMomentDraft, clearSubmittedMomentDraft } from './live-moment-dr
 import { readSessionBoundary } from './chronicle';
 import { readWorldCalendar } from './world';
 import { readClockEvent } from './calendar-events';
-import { agendaOccurrence } from '../agenda-model';
-import { validInstant, validClockCalendar } from '../time-plan-model';
+import { agendaOccurrence } from '../runtime/agenda-model';
+import { validInstant, validClockCalendar } from '../runtime/time-plan-model';
 import { readVisitOutcome } from './visit-outcomes';
-import { visitOutcomeLabel } from '../visit-outcome-contracts';
+import { visitOutcomeLabel } from '../runtime/visit-outcome-contracts';
 import { randomUUID, createHash } from 'node:crypto';
 import {
   checkedCharacterProfile,
@@ -19,7 +19,7 @@ import {
   type LiveCommand,
   type LiveAck,
   type LiveStatus,
-} from '../live-contracts';
+} from '../runtime/live-contracts';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { manualPlan } from '../../features/planner/manual-planner';
 import { captureVisitDetails, sceneReadAloud, writeSceneReadAloud } from './session';

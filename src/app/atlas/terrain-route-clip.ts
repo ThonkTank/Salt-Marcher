@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { LandscapeBox } from './atlas-landscape';
 /** Segment parameters preserve original dash, taper and curve distances. */
 export function routeSegmentRange(

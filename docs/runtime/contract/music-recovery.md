@@ -41,8 +41,8 @@ diesen Weg auch bei ausgefallener Positionsspeicherung ab.
   Wiedergabestand, Positionen und Receipts. Kontext verwendet die fokussierte
   Scenezeit, ihren Ort und ihre Wetter-/Umweltmerkmale. Fehlende Umweltinputs
   werden erklärt und ersetzen keine bestätigte Automatikauswahl.
-- [music-ui.ts](../../../src/app/music-ui.ts) bindet Antworten und Commands an den Workspace.
-  [LocalAudioPlayer](../../../src/app/music-player.ts) hält zwei Songslots und einzelne Ambience-Elemente.
+- [music-ui.ts](../../../src/app/runtime/music-ui.ts) bindet Antworten und Commands an den Workspace.
+  [LocalAudioPlayer](../../../src/app/runtime/music-player.ts) hält zwei Songslots und einzelne Ambience-Elemente.
   Gespeicherte Auswahl autorisiert nach Aktivierung keine lokale Wiedergabe.
   Die Freigabe für Song beziehungsweise gesamte Ambience folgt direkt daraus, ob
   ihre bestätigte Revision neuer als die letzte Stop-Revision ist. Zwei
@@ -78,7 +78,7 @@ Das Live-Soundboard verwendet denselben Musikstand und Writer für Transport,
 Favoriten, gemeinsame Queueauswahl und Ambience. Seine paginierte Bibliothek
 bleibt installationweit; Favoriten gehören zur Campaign. Suchwechsel entfernen
 alte Treffer sofort, entfernte Controls dürfen keine andere Campaign bedienen.
-Die [Soundboardprüfung](../../../tests/desktop-soundboard-context.test.mjs)
+Die [Soundboardprüfung](../../../tests/runtime/desktop-soundboard-context.test.mjs)
 verbindet den echten Controller mit dem Store; der Audioport ist kontrolliert.
 Das beweist keine hörbare native Ausgabe.
 
@@ -143,9 +143,9 @@ Treffer sowie entfernte, wiederhergestellte und veränderte Mediendateien.
 
 ## Nachweise und nächste Arbeit
 
-[Runtime-Prüfungen](../../../tests/desktop-audio-layer-recovery.test.mjs) prüfen
+[Runtime-Prüfungen](../../../tests/runtime/desktop-audio-layer-recovery.test.mjs) prüfen
 Freigabe, erneute Auswahl, fehlenden stillen Retry und unabhängige Schichten.
-[Store-/UI-Prüfungen](../../../tests/desktop-music-stop.test.mjs) verbinden Assetfehler
+[Store-/UI-Prüfungen](../../../tests/runtime/desktop-music-stop.test.mjs) verbinden Assetfehler
 und Retry mit diesen Wirkungen. Die Coreprüfungen zu Musik-Kontext, -Zustand und
 -Records prüfen Sceneuhren, defektes Wetter, Identität/Revision, Receipts,
 Positionen und Campaignkopien. Kontrollierte Mediaelemente belegen keine nativen

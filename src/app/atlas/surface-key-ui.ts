@@ -1,5 +1,5 @@
 import { volumeOrigin } from './volume-model';
-import type { KeyContent } from '../key-contracts';
+import type { KeyContent } from '../campaign/key-contracts';
 import type { DungeonGeometry } from './dungeon-contracts';
 import {
   isSurfaceFace,

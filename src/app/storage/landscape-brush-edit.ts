@@ -4,7 +4,12 @@ import { applyHeightStroke, TerrainSampler } from '../atlas/terrain-height';
 import { colorSurface } from '../atlas/landscape-color-surface';
 import { isLandMode, strokeBox, maskLandSpans } from '../atlas/land-mask';
 import { randomUUID } from 'node:crypto';
-import { bounds, contains, type LandscapeRecord, type LandscapeAction } from '../atlas/atlas-landscape';
+import {
+  bounds,
+  contains,
+  type LandscapeRecord,
+  type LandscapeAction,
+} from '../atlas/atlas-landscape';
 import {
   intersectPolygons,
   subtractPolygons,
@@ -12,7 +17,7 @@ import {
   validateColor,
   colorParts,
 } from '../atlas/landscape-brush';
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 import { landscapeRegion, putLandscape, landMaskRegion } from './atlas-landscape';
 
 /** Runs inside the existing Atlas transaction/history, never as a renderer-side read/modify/write. */

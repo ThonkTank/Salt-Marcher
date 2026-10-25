@@ -1,12 +1,12 @@
-import { checkedCombat } from '../combat-contracts';
-import { checkedChaseView } from '../chase-contracts';
-import { checkedDefinition } from '../item-definition-validation';
+import { checkedCombat } from '../runtime/combat-contracts';
+import { checkedChaseView } from '../runtime/chase-contracts';
+import { checkedDefinition } from '../catalog/item-definition-validation';
 import { createHash } from 'node:crypto';
 import {
   checkedCommitReference,
   type CommitReference,
   type CommitOutcome,
-} from '../commit-receipt';
+} from '../shared/commit-receipt';
 
 export function readCommitReceipt(db: any, ref: CommitReference): CommitOutcome {
   checkedCommitReference(ref);

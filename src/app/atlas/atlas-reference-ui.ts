@@ -1,4 +1,4 @@
-import type { CanvasBox } from '../passive-map-canvas';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
 import { distanceLabel, fitReference } from './atlas-navigation-scale';
 import { geographicReferences, type GeographicReference } from './atlas-reference-catalog';

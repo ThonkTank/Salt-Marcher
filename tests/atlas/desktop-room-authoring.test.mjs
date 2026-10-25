@@ -9,11 +9,11 @@ import { buildSync } from 'esbuild';
 import { parseHTML } from '../helpers/dom.mjs';
 for (const [name, entry] of [
   ['store', 'storage/store'],
-  ['ui', 'key-ui'],
+  ['ui', 'campaign/key-ui'],
   ['graph-ui', 'atlas/graph-ui'],
   ['camera', 'atlas/room-camera'],
-  ['key-model', 'key-model'],
-  ['key-contracts', 'key-contracts'],
+  ['key-model', 'campaign/key-model'],
+  ['key-contracts', 'campaign/key-contracts'],
 ])
   buildSync({
     entryPoints: ['src/app/' + entry + '.ts'],
@@ -146,7 +146,7 @@ async function editor(t, seed, withNotes = false) {
     Event: globalThis.Event,
     CustomEvent: globalThis.CustomEvent,
   };
-  const { document, window } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+  const { document, window } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, {
     document,
     window,
@@ -635,7 +635,7 @@ test('connection feedback distinguishes translated, changed and rejected endpoin
       Event: globalThis.Event,
       CustomEvent: globalThis.CustomEvent,
     };
-  const { document, window } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+  const { document, window } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, {
     document,
     window,

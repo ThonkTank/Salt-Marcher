@@ -1,6 +1,6 @@
 import { volumeOrigin } from '../atlas/volume-model';
 import { createHash, randomUUID } from 'node:crypto';
-import type { KeyContent } from '../key-contracts';
+import type { KeyContent } from '../campaign/key-contracts';
 import type { DungeonVolume } from '../atlas/volume-contracts';
 import {
   isSurfaceFace,

@@ -1,4 +1,4 @@
-import { publicTerrainGrid } from '../player-terrain';
+import { publicTerrainGrid } from '../runtime/player-terrain';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
 import { gridHeight, type TerrainView } from './terrain-spatial-model';
 import type { AtlasPaint } from './atlas-paint';

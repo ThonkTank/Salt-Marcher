@@ -12,7 +12,8 @@ const root = process.cwd(),
   { _electron } = require('playwright-core');
 require('esbuild').buildSync({
   stdin: {
-    contents: "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';",
+    contents:
+      "export * from './src/app/storage/store';export * from './src/app/atlas/atlas-landscape';",
     resolveDir: root,
   },
   outfile: '.build/landscape-native-store.cjs',

@@ -242,7 +242,7 @@ Der gemeinsame echte Hostlauf muss alle sieben realen Provider prüfen. Die Prov
 
 CE-02-I01 liefert Bereichsdefinitionen, Workspace-State, Providerprojektionen und die gemeinsame read-only Oberfläche. Codecs, Queryadapter und deren DOM-/Fokusgrenzen folgen der [Gesamtgrundlage](../../project/architecture/overview.md). I02 bis I05 ergänzen die tatsächlichen Datenprovider; Encounter-/Combat-/Scene-/Atlasmutationen gehören zu ihren Fachabläufen.
 
-Die heutigen Anschlüsse unter `src/features/catalog/`, `src/ui/view-types.ts`, `src/main.ts` und `tools/host/ce02-catalog.cjs` sind Istcode. Seine Verhaltenstests und Quellenartefakte können nach Prüfung verwendet werden; interne APIs und Hostkopplung müssen nicht erhalten bleiben.
+Die heutigen Anschlüsse unter `src/features/catalog/`, `src/legacy/obsidian/ui/view-types.ts`, `src/legacy/obsidian/main.ts` und `tools/host/ce02-catalog.cjs` sind Istcode. Seine Verhaltenstests und Quellenartefakte können nach Prüfung verwendet werden; interne APIs und Hostkopplung müssen nicht erhalten bleiben.
 
 ### Automatisierte Gates
 

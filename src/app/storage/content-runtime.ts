@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ContentContext, ContentState } from '../content-runtime-contracts';
+import type { ContentContext, ContentState } from '../runtime/content-runtime-contracts';
 import type { DungeonGeometry, DungeonPose } from '../atlas/dungeon-contracts';
 import type { DrawingElement } from '../atlas/drawing-contracts';
 import { dungeonContentAnchor } from '../atlas/dungeon-content-model';

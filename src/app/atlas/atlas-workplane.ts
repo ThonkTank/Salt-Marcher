@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** One metre-based floor reference for drawing, author handles and pointer rays. */
 export interface AtlasWorkplane {

@@ -6,7 +6,10 @@ import {
   type AtlasWorkerValue,
   type AtlasWorkerReply,
 } from './atlas-worker-contract';
-import { validateAtlasReadRequest, type AtlasReadRequest } from '../src/app/atlas/atlas-read-request';
+import {
+  validateAtlasReadRequest,
+  type AtlasReadRequest,
+} from '../src/app/atlas/atlas-read-request';
 import { randomUUID } from 'node:crypto';
 import { eraseProjectionWork } from '../src/app/storage/atlas-projection-index';
 import { terrainTraceStart } from '../src/app/atlas/terrain-timing';

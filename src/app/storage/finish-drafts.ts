@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { FinishOwner, FinishDraft } from '../finish-draft-contracts';
+import type { FinishOwner, FinishDraft } from '../runtime/finish-draft-contracts';
 import { readNarrative } from './narrative';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 export function installFinishDrafts(db: any) {

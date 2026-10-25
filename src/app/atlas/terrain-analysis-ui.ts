@@ -1,5 +1,5 @@
 import { releaseAtlasUnits, atlasFieldValue, setAtlasFieldValue } from './atlas-units';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { TerrainProfile } from './terrain-profile';
 import type { AtlasEntrance } from './atlas-travel-contracts';
 

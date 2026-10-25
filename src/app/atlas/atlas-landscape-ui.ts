@@ -30,7 +30,7 @@ import { automaticGrid, gridMeters, travelHexSizes } from './atlas-navigation-sc
 import { AtlasPaint, atlasPaint } from './atlas-paint';
 import { pendingAtlasWrite } from './campaign-atlas-author';
 import type { AtlasAction } from './campaign-atlas-contracts';
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import {
   contains,
   emptyRecord,
@@ -1014,7 +1014,7 @@ export class LandscapeWorkbench {
       const protection =
           'Feine Geländeformen (' + lengthLabel(read.resolutionM) + ') bewegen sich mit.',
         remedy =
-          'Für ihre Form den Radius verkleinern' + (fixed ? '' : ' oder näher heranzoomen') + '..',
+          'Für ihre Form den Radius verkleinern' + (fixed ? '' : ' oder näher heranzoomen') + '.',
         text = protection + ' ' + remedy;
       if (hint.textContent !== text) hint.textContent = text;
       return [html('land-cursor-height').textContent ?? '', label, protection, remedy];
@@ -1300,7 +1300,7 @@ export class LandscapeWorkbench {
         if (!visibleAssets.has(id)) this.unavailableAssets.delete(id);
       for (const r of this.records)
         if (r.assetId && r.visible !== false && !this.assets.has(r.assetId)) {
-          let result: import('../contracts').Result<string>;
+          let result: import('../shared/contracts').Result<string>;
           try {
             result = await window.campaign.referenceAssetPreview(token, r.assetId, 1024);
           } catch (error) {

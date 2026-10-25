@@ -108,7 +108,7 @@ hier gepinnten Anforderungen geprüft.
 Der Quellenabgleich stammt aus `5b57706b68f131c2d292bed6159cd6d3221f2ef8`. Das Volume-Fundament wurde anschließend über [#151](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/151) auf Shared `dd7311e0ca310cee747cc8368fe87165ff2cfad9` integriert. Room-Identität bei Move/Split/Merge bleibt Bedarf in [#166](https://github.com/ThonkTank/Obsidian-Dungeon-Editor-Phase1/issues/166); generierte Dungeon-Paths, vollständige Passages und die gemeinsame Größen-/Verbraucherqualifikation sind weiter offen. Dieser Quellenabgleich schließt weder #44 noch SMR-04.
 
 Key-Beschreibungen bestimmen Raumgrenzen und Höhen ohne große temporäre Arrays
-oder Argumentlisten. Die [Key-Prüfungen](../../../tests/desktop-key-store.test.mjs)
+oder Argumentlisten. Die [Key-Prüfungen](../../../tests/campaign/desktop-key-store.test.mjs)
 decken 100.000 Volumenspalten mit 200.000 Höhenintervallen, große Konturen,
 Sammeländerungen an 1.001 Räumen mit Undo/Redo sowie den Schutz von privaten Texten
 und gültigen Backups bei beschädigten Key-Daten ab. Die

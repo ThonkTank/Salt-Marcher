@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { LandscapeRecord, LandscapeBox } from './atlas-landscape';
 import { lineParts, linePoints } from './landscape-line';
 import { nearestRoute } from './terrain-route';

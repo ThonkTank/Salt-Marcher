@@ -14,6 +14,6 @@ node build.mjs --test
 node --test --test-name-pattern='Campaign B' .build/tests.cjs
 ```
 
-Erwartet: bytegleiches Materialisieren und zwei bestandene Tests. Der [Fixture-Test](../../../tests/core/campaign-b-fixture.test.ts) prüft acht Dateien samt Manifest, Bytes/Hashes, parsebare Inhalte, Campaign-/Namespace-/Registry-/Owneridentitäten und ihre Digests, die Trennung von Campaign A sowie die Auffindbarkeit beider Kampagnen über die produktive Runtimequelle.
+Erwartet: bytegleiches Materialisieren und zwei bestandene Tests. Der [Fixture-Test](../../../tests/shared/core/campaign-b-fixture.test.ts) prüft acht Dateien samt Manifest, Bytes/Hashes, parsebare Inhalte, Campaign-/Namespace-/Registry-/Owneridentitäten und ihre Digests, die Trennung von Campaign A sowie die Auffindbarkeit beider Kampagnen über die produktive Runtimequelle.
 
 Das ist ein Modell- und Dateinachweis; ein tatsächlicher A→B→A-Hostlauf, Installation und physische Eingabe bleiben separat zu prüfen.

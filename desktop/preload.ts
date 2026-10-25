@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DesktopAPI } from '../src/app/contracts';
+import type { DesktopAPI } from '../src/app/shared/contracts';
 contextBridge.exposeInMainWorld(
   'campaign',
   Object.freeze({
@@ -10,20 +10,24 @@ contextBridge.exposeInMainWorld(
     updateCancel: () => ipcRenderer.invoke('update:cancel'),
     updateInstall: () => ipcRenderer.invoke('update:install'),
     updateRuntimeReady: () => ipcRenderer.invoke('update:runtime-ready'),
-    onUpdate: (callback: (s: import('../src/app/update-contracts').UpdateStatus) => void) => {
+    onUpdate: (
+      callback: (s: import('../src/app/workspace/update-contracts').UpdateStatus) => void,
+    ) => {
       const listener = (
         _event: Electron.IpcRendererEvent,
-        status: import('../src/app/update-contracts').UpdateStatus,
+        status: import('../src/app/workspace/update-contracts').UpdateStatus,
       ) => callback(status);
       ipcRenderer.on('update:status', listener);
       return () => ipcRenderer.removeListener('update:status', listener);
     },
     extensionPreview: () => ipcRenderer.invoke('extensions:preview'),
     extensions: (after: string | null) => ipcRenderer.invoke('extensions:list', after),
-    executeExtension: (command: import('../src/app/extension-contracts').ExtensionCommand) =>
-      ipcRenderer.invoke('extensions:execute', command),
-    extensionOutcome: (command: import('../src/app/extension-contracts').ExtensionCommand) =>
-      ipcRenderer.invoke('extensions:outcome', command),
+    executeExtension: (
+      command: import('../src/app/workspace/extension-contracts').ExtensionCommand,
+    ) => ipcRenderer.invoke('extensions:execute', command),
+    extensionOutcome: (
+      command: import('../src/app/workspace/extension-contracts').ExtensionCommand,
+    ) => ipcRenderer.invoke('extensions:outcome', command),
     campaignOverview: () => ipcRenderer.invoke('campaign:overview'),
     exportCampaign: (token: string) => ipcRenderer.invoke('campaign:export', token),
     prepareCampaignImport: () => ipcRenderer.invoke('campaign:import-preview'),
@@ -31,20 +35,23 @@ contextBridge.exposeInMainWorld(
     acceptCampaignTransfer: (
       ticket: string,
       name: string,
-      choices: Record<string, import('../src/app/campaign-contracts').ConflictChoice>,
+      choices: Record<string, import('../src/app/campaign/campaign-contracts').ConflictChoice>,
     ) => ipcRenderer.invoke('campaign:transfer-accept', ticket, name, choices),
     campaignTransferStatus: (ticket: string) =>
       ipcRenderer.invoke('campaign:transfer-status', ticket),
     cancelCampaignTransfer: (ticket?: string) =>
       ipcRenderer.invoke('campaign:transfer-cancel', ticket),
     onCampaignTransfer: (
-      callback: (p: import('../src/app/campaign-contracts').CampaignTransferProgress) => void,
+      callback: (
+        p: import('../src/app/campaign/campaign-contracts').CampaignTransferProgress,
+      ) => void,
     ) => ipcRenderer.on('campaign:transfer-progress', (_event, p) => callback(p)),
     campaignInstallationSettings: () => ipcRenderer.invoke('campaign:installation-settings'),
-    campaignCatalog: (c: import('../src/app/campaign-contracts').CampaignCatalogCommand) =>
+    campaignCatalog: (c: import('../src/app/campaign/campaign-contracts').CampaignCatalogCommand) =>
       ipcRenderer.invoke('campaign:catalog', c),
-    campaignCatalogOutcome: (c: import('../src/app/campaign-contracts').CampaignCatalogCommand) =>
-      ipcRenderer.invoke('campaign:catalog-outcome', c),
+    campaignCatalogOutcome: (
+      c: import('../src/app/campaign/campaign-contracts').CampaignCatalogCommand,
+    ) => ipcRenderer.invoke('campaign:catalog-outcome', c),
     campaignCatalogWorkspace: (id: string) => ipcRenderer.invoke('campaign:catalog-workspace', id),
     list: () => ipcRenderer.invoke('campaign:list'),
     create: (name: string) => ipcRenderer.invoke('campaign:create', name),
@@ -106,14 +113,15 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:note-thread', token, id, offset, active, history),
     checkNoteThread: (
       token: string,
-      s: import('../src/app/note-thread-contracts').NoteThreadSelection,
+      s: import('../src/app/campaign/note-thread-contracts').NoteThreadSelection,
     ) => ipcRenderer.invoke('campaign:check-note-thread', token, s),
     keyNoteChoices: (token: string, query: string) =>
       ipcRenderer.invoke('campaign:key-note-choices', token, query),
-    captureKeyNote: (c: import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand) =>
-      ipcRenderer.invoke('campaign:capture-key-note', c),
+    captureKeyNote: (
+      c: import('../src/app/campaign/key-note-capture-contracts').KeyNoteCaptureCommand,
+    ) => ipcRenderer.invoke('campaign:capture-key-note', c),
     keyNoteCaptureStatus: (
-      c: import('../src/app/key-note-capture-contracts').KeyNoteCaptureCommand,
+      c: import('../src/app/campaign/key-note-capture-contracts').KeyNoteCaptureCommand,
       token: string,
     ) => ipcRenderer.invoke('campaign:key-note-capture-status', c, token),
     preparedGroups: (token: string, search: string, after: string | null) =>
@@ -123,7 +131,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:group-draft', token, id),
     keepGroupDraft: (
       token: string,
-      draft: import('../src/app/groups-contracts').GroupDraft,
+      draft: import('../src/app/campaign/groups-contracts').GroupDraft,
       expected: string | null,
     ) => ipcRenderer.invoke('campaign:keep-group-draft', token, draft, expected),
     discardGroupDraft: (token: string, id: string, writeId: string) =>
@@ -156,41 +164,45 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:scene-preparation', token, id),
     sceneRules: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:scene-rules', token, id),
-    executeSceneRule: (command: import('../src/app/rule-reference-contracts').SceneRuleCommand) =>
-      ipcRenderer.invoke('campaign:execute-scene-rule', command),
+    executeSceneRule: (
+      command: import('../src/app/catalog/rule-reference-contracts').SceneRuleCommand,
+    ) => ipcRenderer.invoke('campaign:execute-scene-rule', command),
     sceneChecks: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:scene-checks', token, id),
-    executeSceneCheck: (command: import('../src/app/scene-check-contracts').SceneCheckCommand) =>
-      ipcRenderer.invoke('campaign:execute-scene-check', command),
+    executeSceneCheck: (
+      command: import('../src/app/runtime/scene-check-contracts').SceneCheckCommand,
+    ) => ipcRenderer.invoke('campaign:execute-scene-check', command),
     locationActivities: (
       token: string,
-      q: import('../src/app/location-activity-contracts').LocationActivityQuery,
+      q: import('../src/app/campaign/location-activity-contracts').LocationActivityQuery,
     ) => ipcRenderer.invoke('campaign:location-activities', token, q),
     locationMaterials: (
       token: string,
-      q: import('../src/app/location-notebook-contracts').LocationMaterialsQuery,
+      q: import('../src/app/campaign/location-notebook-contracts').LocationMaterialsQuery,
     ) => ipcRenderer.invoke('campaign:location-materials', token, q),
-    worldLinks: (token: string, q: import('../src/app/world-links-contracts').WorldLinksQuery) =>
-      ipcRenderer.invoke('campaign:world-links', token, q),
+    worldLinks: (
+      token: string,
+      q: import('../src/app/campaign/world-links-contracts').WorldLinksQuery,
+    ) => ipcRenderer.invoke('campaign:world-links', token, q),
     changePreparationContent: (
-      command: import('../src/app/preparation-contracts').PreparationCommand,
+      command: import('../src/app/campaign/preparation-contracts').PreparationCommand,
     ) => ipcRenderer.invoke('campaign:change-preparation-content', command),
     reconcilePreparationContent: (
-      command: import('../src/app/preparation-contracts').PreparationCommand,
+      command: import('../src/app/campaign/preparation-contracts').PreparationCommand,
       token: string,
     ) => ipcRenderer.invoke('campaign:reconcile-preparation-content', command, token),
     executeWorldRelationPair: (
-      command: import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand,
+      command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairCommand,
     ) => ipcRenderer.invoke('campaign:execute-world-relation-pair', command),
     reconcileWorldRelationPair: (
-      command: import('../src/app/world-relation-pair-contracts').WorldRelationPairCommand,
+      command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairCommand,
       token: string,
     ) => ipcRenderer.invoke('campaign:reconcile-world-relation-pair', command, token),
     worldRelationPairDraft: (token: string, sourceId: string) =>
       ipcRenderer.invoke('campaign:world-relation-pair-draft', token, sourceId),
     keepWorldRelationPairDraft: (
       token: string,
-      draft: import('../src/app/world-relation-pair-contracts').WorldRelationPairDraft,
+      draft: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairDraft,
       expected: string | null,
     ) => ipcRenderer.invoke('campaign:keep-world-relation-pair-draft', token, draft, expected),
     discardWorldRelationPairDraft: (token: string, sourceId: string, writeId: string) =>
@@ -198,18 +210,18 @@ contextBridge.exposeInMainWorld(
     worldRelationPairHistory: (token: string) =>
       ipcRenderer.invoke('campaign:world-relation-pair-history', token),
     executeWorldRelationPairHistory: (
-      command: import('../src/app/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
+      command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
     ) => ipcRenderer.invoke('campaign:execute-world-relation-pair-history', command),
     reconcileWorldRelationPairHistory: (
-      command: import('../src/app/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
+      command: import('../src/app/campaign/world-relation-pair-contracts').WorldRelationPairHistoryCommand,
       token: string,
     ) => ipcRenderer.invoke('campaign:reconcile-world-relation-pair-history', command, token),
-    npcCast: (token: string, q: import('../src/app/npc-cast-contracts').NpcCastQuery) =>
+    npcCast: (token: string, q: import('../src/app/campaign/npc-cast-contracts').NpcCastQuery) =>
       ipcRenderer.invoke('campaign:npc-cast', token, q),
     npcBuildingChoices: (
       token: string,
       id: string,
-      q: import('../src/app/npc-places-contracts').NpcBuildingQuery,
+      q: import('../src/app/campaign/npc-places-contracts').NpcBuildingQuery,
     ) => ipcRenderer.invoke('campaign:npc-building-choices', token, id, q),
     npcPlaces: (token: string, id: string, offset: number) =>
       ipcRenderer.invoke('campaign:npc-places', token, id, offset),
@@ -246,10 +258,10 @@ contextBridge.exposeInMainWorld(
     generationRuns: (token: string) => ipcRenderer.invoke('campaign:generation-runs', token),
     generationRun: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:generation-run', token, id),
-    rollLoot: (command: import('../src/app/generation-contracts').LootRollCommand) =>
+    rollLoot: (command: import('../src/app/campaign/generation-contracts').LootRollCommand) =>
       ipcRenderer.invoke('campaign:roll-loot', command),
     itemReferenceCatalog: (
-      query: import('../src/app/item-reference-contracts').ItemReferenceQuery,
+      query: import('../src/app/catalog/item-reference-contracts').ItemReferenceQuery,
     ) => ipcRenderer.invoke('catalog:items', query),
     creatureInfo: () => ipcRenderer.invoke('catalog:info'),
     creatures: (query: unknown) => ipcRenderer.invoke('catalog:search', query),
@@ -294,16 +306,16 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:discard-narrative-draft', token, id, writeId),
     narrativeJournal: (
       token: string,
-      query: import('../src/app/narrative-journal-contracts').NarrativeJournalQuery,
+      query: import('../src/app/runtime/narrative-journal-contracts').NarrativeJournalQuery,
     ) => ipcRenderer.invoke('campaign:narrative-journal', token, query),
     narrative: (token: string, id: string) => ipcRenderer.invoke('campaign:narrative', token, id),
     progressHistory: (token: string, characterId: string, after: string | null) =>
       ipcRenderer.invoke('campaign:progress-history', token, characterId, after),
     chroniclePage: (
       token: string,
-      category: import('../src/app/chronicle-contracts').ChronicleCategory | 'all',
+      category: import('../src/app/runtime/chronicle-contracts').ChronicleCategory | 'all',
       search: string,
-      cursor: import('../src/app/chronicle-contracts').ChronicleCursor | null,
+      cursor: import('../src/app/runtime/chronicle-contracts').ChronicleCursor | null,
     ) => ipcRenderer.invoke('campaign:chronicle-page', token, category, search, cursor),
     closeChroniclePage: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:chronicle-close', token, id),
@@ -311,7 +323,7 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:chronicle-export-cancel', id),
     onChronicleExport: (
       callback: (
-        progress: import('../src/app/chronicle-contracts').ChronicleExportProgress,
+        progress: import('../src/app/runtime/chronicle-contracts').ChronicleExportProgress,
       ) => void,
     ) =>
       ipcRenderer.on('campaign:chronicle-export-progress', (_event, progress) =>
@@ -319,48 +331,48 @@ contextBridge.exposeInMainWorld(
       ),
     chronicle: (
       token: string,
-      category: import('../src/app/chronicle-contracts').ChronicleCategory | 'all' = 'all',
+      category: import('../src/app/runtime/chronicle-contracts').ChronicleCategory | 'all' = 'all',
       search = '',
     ) => ipcRenderer.invoke('campaign:chronicle', token, category, search),
     exportChronicle: (
       token: string,
-      category: import('../src/app/chronicle-contracts').ChronicleCategory | 'all',
+      category: import('../src/app/runtime/chronicle-contracts').ChronicleCategory | 'all',
       search: string,
       requestId?: string,
     ) => ipcRenderer.invoke('campaign:chronicle-export', token, category, search, requestId),
     adventuringDay: (
       token: string,
-      request: import('../src/app/adventuring-day-contracts').DayRequest,
+      request: import('../src/app/runtime/adventuring-day-contracts').DayRequest,
     ) => ipcRenderer.invoke('campaign:adventuring-day', token, request),
     progress: (token: string) => ipcRenderer.invoke('campaign:progress', token),
     lootBalance: (token: string) => ipcRenderer.invoke('campaign:loot-balance', token),
     treasures: (
       token: string,
       after: string | null,
-      query?: import('../src/app/treasury-contracts').TreasureQuery,
+      query?: import('../src/app/runtime/treasury-contracts').TreasureQuery,
     ) => ipcRenderer.invoke('campaign:treasures', token, after, query),
     treasure: (token: string, id: string) => ipcRenderer.invoke('campaign:treasure', token, id),
-    ledger: (token: string, query: import('../src/app/progression').LedgerQuery) =>
+    ledger: (token: string, query: import('../src/app/runtime/progression').LedgerQuery) =>
       ipcRenderer.invoke('campaign:ledger', token, query),
     ledgerInventory: (
       token: string,
-      query: import('../src/app/progression').LedgerInventoryQuery,
+      query: import('../src/app/runtime/progression').LedgerInventoryQuery,
     ) => ipcRenderer.invoke('campaign:ledger-inventory', token, query),
     ledgerItem: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:ledger-item', token, id),
     musicFavorites: (token: string, after: string | null) =>
       ipcRenderer.invoke('campaign:music-favorites', token, after),
-    audioAssets: (query: import('../src/app/music-contracts').AudioQuery) =>
+    audioAssets: (query: import('../src/app/runtime/music-contracts').AudioQuery) =>
       ipcRenderer.invoke('music:assets', query),
     audioAsset: (id: string) => ipcRenderer.invoke('music:asset', id),
     pickAudio: (token: string) => ipcRenderer.invoke('music:pick', token),
     music: (token: string) => ipcRenderer.invoke('music:view', token),
     musicSubject: (
       token: string,
-      kind: import('../src/app/music-contracts').MusicSubject['kind'],
+      kind: import('../src/app/runtime/music-contracts').MusicSubject['kind'],
       id: string,
     ) => ipcRenderer.invoke('music:subject', token, kind, id),
-    executeMusic: (command: import('../src/app/music-contracts').MusicCommand) =>
+    executeMusic: (command: import('../src/app/runtime/music-contracts').MusicCommand) =>
       ipcRenderer.invoke('music:execute', command),
     musicPosition: (token: string, id: string, seconds: number) =>
       ipcRenderer.invoke('music:position', token, id, seconds),
@@ -368,14 +380,16 @@ contextBridge.exposeInMainWorld(
     importAudioLibrary: (token: string) => ipcRenderer.invoke('music:import', token),
     cancelAudioTransfer: () => ipcRenderer.invoke('music:cancel'),
     onAudioTransfer: (
-      callback: (p: import('../src/app/music-contracts').AudioTransferProgress) => void,
+      callback: (p: import('../src/app/runtime/music-contracts').AudioTransferProgress) => void,
     ) => ipcRenderer.on('music:progress', (_event, p) => callback(p)),
     dungeonCommandState: (command: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:command-state', command),
     dungeonAuthoring: (token: string) => ipcRenderer.invoke('dungeon:authoring', token),
     dungeon: (token: string) => ipcRenderer.invoke('dungeon:view', token),
-    previewDungeon: (token: string, r: import('../src/app/atlas/dungeon-contracts').DungeonRequest) =>
-      ipcRenderer.invoke('dungeon:preview', token, r),
+    previewDungeon: (
+      token: string,
+      r: import('../src/app/atlas/dungeon-contracts').DungeonRequest,
+    ) => ipcRenderer.invoke('dungeon:preview', token, r),
     executeDungeon: (c: import('../src/app/atlas/dungeon-contracts').DungeonCommand) =>
       ipcRenderer.invoke('dungeon:execute', c),
     graph: (token: string, scopeId: string) => ipcRenderer.invoke('graph:view', token, scopeId),
@@ -418,11 +432,13 @@ contextBridge.exposeInMainWorld(
     autonomyDecision: (token: string, actorId: string) =>
       ipcRenderer.invoke('autonomy:decision', token, actorId),
     autonomy: (token: string) => ipcRenderer.invoke('autonomy:view', token),
-    executeAutonomy: (c: import('../src/app/autonomy-contracts').AutonomyCommand) =>
+    executeAutonomy: (c: import('../src/app/runtime/autonomy-contracts').AutonomyCommand) =>
       ipcRenderer.invoke('autonomy:execute', c),
-    playerView: (token: string, query?: import('../src/app/player-contracts').PlayerMapQuery) =>
-      ipcRenderer.invoke('player:view', token, query),
-    executePlayer: (c: import('../src/app/player-contracts').PlayerCommand) =>
+    playerView: (
+      token: string,
+      query?: import('../src/app/runtime/player-contracts').PlayerMapQuery,
+    ) => ipcRenderer.invoke('player:view', token, query),
+    executePlayer: (c: import('../src/app/runtime/player-contracts').PlayerCommand) =>
       ipcRenderer.invoke('player:execute', c),
     pickPlayerArt: (token: string, kind: string, subjectId: string | null, title: string) =>
       ipcRenderer.invoke('player:art', token, kind, subjectId, title),
@@ -433,19 +449,23 @@ contextBridge.exposeInMainWorld(
       token: string,
       q: import('../src/app/atlas/city-activity-contracts').CityActivityQuery,
     ) => ipcRenderer.invoke('city:activities', token, q),
-    cityBuildings: (token: string, q: import('../src/app/atlas/city-contracts').CityBuildingQuery) =>
-      ipcRenderer.invoke('city:buildings', token, q),
+    cityBuildings: (
+      token: string,
+      q: import('../src/app/atlas/city-contracts').CityBuildingQuery,
+    ) => ipcRenderer.invoke('city:buildings', token, q),
     cities: (token: string) => ipcRenderer.invoke('city:list', token),
     city: (token: string, id: string) => ipcRenderer.invoke('city:view', token, id),
     executeCity: (command: import('../src/app/atlas/city-contracts').CityCommand) =>
       ipcRenderer.invoke('city:execute', command),
     exportCity: (token: string, id: string, format: string) =>
       ipcRenderer.invoke('city:export', token, id, format),
-    previewTime: (token: string, request: import('../src/app/time-plan-contracts').TimeRequest) =>
-      ipcRenderer.invoke('world:time-preview', token, request),
-    agenda: (token: string, query: import('../src/app/agenda-contracts').AgendaQuery) =>
+    previewTime: (
+      token: string,
+      request: import('../src/app/runtime/time-plan-contracts').TimeRequest,
+    ) => ipcRenderer.invoke('world:time-preview', token, request),
+    agenda: (token: string, query: import('../src/app/runtime/agenda-contracts').AgendaQuery) =>
       ipcRenderer.invoke('world:agenda', token, query),
-    previewAtlasTravel: (token: string, p: import('../src/app/contracts').Point) =>
+    previewAtlasTravel: (token: string, p: import('../src/app/shared/contracts').Point) =>
       ipcRenderer.invoke('atlas:travel-preview', token, p),
     executeAtlasTravelCommit: (c) => ipcRenderer.invoke('atlas:travel-commit', c),
     executeAtlasTravel: (c: import('../src/app/atlas/atlas-travel-contracts').AtlasTravelCommand) =>
@@ -482,15 +502,19 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('atlas:execute', c),
     world: (token: string) => ipcRenderer.invoke('world:view', token),
     sceneWorld: (token: string, id: string) => ipcRenderer.invoke('world:scene', token, id),
-    previewTravel: (token: string, request: import('../src/app/world-contracts').TravelRequest) =>
-      ipcRenderer.invoke('world:travel-preview', token, request),
-    reconcileWorld: (command: import('../src/app/world-contracts').WorldCommand, token: string) =>
-      ipcRenderer.invoke('world:reconcile', command, token),
-    executeWorld: (command: import('../src/app/world-contracts').WorldCommand) =>
+    previewTravel: (
+      token: string,
+      request: import('../src/app/runtime/world-contracts').TravelRequest,
+    ) => ipcRenderer.invoke('world:travel-preview', token, request),
+    reconcileWorld: (
+      command: import('../src/app/runtime/world-contracts').WorldCommand,
+      token: string,
+    ) => ipcRenderer.invoke('world:reconcile', command, token),
+    executeWorld: (command: import('../src/app/runtime/world-contracts').WorldCommand) =>
       ipcRenderer.invoke('world:execute', command),
     openItemSource: (token: string, id: string) =>
       ipcRenderer.invoke('campaign:open-item-source', token, id),
-    itemDefinitions: (query: import('../src/app/items-contracts').ItemQuery) =>
+    itemDefinitions: (query: import('../src/app/catalog/items-contracts').ItemQuery) =>
       ipcRenderer.invoke('items:definitions', query),
     itemDefinition: (id: string, revision?: number) =>
       ipcRenderer.invoke('items:definition', id, revision),
@@ -499,10 +523,12 @@ contextBridge.exposeInMainWorld(
     shopHistory: (token: string, id: string, after: string | null) =>
       ipcRenderer.invoke('items:shop-history', token, id, after),
     sceneShops: (token: string, id: string) => ipcRenderer.invoke('items:scene-shops', token, id),
-    executeItemShop: (command: import('../src/app/items-contracts').ItemShopCommand) =>
+    executeItemShop: (command: import('../src/app/catalog/items-contracts').ItemShopCommand) =>
       ipcRenderer.invoke('items:execute', command),
-    commitStatus: (ref: import('../src/app/commit-receipt').CommitReference, token: string) =>
-      ipcRenderer.invoke('campaign:commit-status', ref, token),
+    commitStatus: (
+      ref: import('../src/app/shared/commit-receipt').CommitReference,
+      token: string,
+    ) => ipcRenderer.invoke('campaign:commit-status', ref, token),
     executeProgress: (command: unknown) => ipcRenderer.invoke('campaign:execute-progress', command),
     combatResolution: (token: string, sceneId: string, id: string, after: string | null) =>
       ipcRenderer.invoke('campaign:combat-resolution', token, sceneId, id, after),
@@ -510,17 +536,17 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('campaign:combat', token, sceneId, id),
     keepChaseDraft: (
       token: string,
-      draft: import('../src/app/chase-draft-contracts').ChaseWorkingDraft,
+      draft: import('../src/app/runtime/chase-draft-contracts').ChaseWorkingDraft,
       expected: string | null,
     ) => ipcRenderer.invoke('campaign:keep-chase-draft', token, draft, expected),
     maskHistory: (
       token: string,
       sceneId: string,
-      query: import('../src/app/mask-history-contracts').MaskHistoryQuery,
+      query: import('../src/app/runtime/mask-history-contracts').MaskHistoryQuery,
     ) => ipcRenderer.invoke('campaign:mask-history', token, sceneId, query),
     chase: (token: string, sceneId: string, id?: string) =>
       ipcRenderer.invoke('campaign:chase', token, sceneId, id),
-    executeChase: (command: import('../src/app/chase-contracts').ChaseCommand) =>
+    executeChase: (command: import('../src/app/runtime/chase-contracts').ChaseCommand) =>
       ipcRenderer.invoke('campaign:execute-chase', command),
     combatDraft: (token: string, id: string, kind: unknown, target: string) =>
       ipcRenderer.invoke('campaign:combat-draft', token, id, kind, target),
@@ -545,23 +571,23 @@ contextBridge.exposeInMainWorld(
     keepLiveMomentDraft: (
       token: string,
       id: string,
-      draft: import('../src/app/live-moment-drafts').LiveMomentDraft | null,
-      expected: import('../src/app/live-moment-drafts').LiveMomentDraft | null,
+      draft: import('../src/app/runtime/live-moment-drafts').LiveMomentDraft | null,
+      expected: import('../src/app/runtime/live-moment-drafts').LiveMomentDraft | null,
     ) => ipcRenderer.invoke('campaign:keep-live-moment-draft', token, id, draft, expected),
     keepSessionRecapDraft: (
       token: string,
-      draft: import('../src/app/live-contracts').SessionRecapDraft,
-      expected: import('../src/app/live-contracts').SessionRecapDraft | null,
+      draft: import('../src/app/runtime/live-contracts').SessionRecapDraft,
+      expected: import('../src/app/runtime/live-contracts').SessionRecapDraft | null,
     ) => ipcRenderer.invoke('campaign:keep-session-recap-draft', token, draft, expected),
     executeLive: (command: unknown) => ipcRenderer.invoke('campaign:execute-live', command),
     liveStatus: (command: unknown, token: string) =>
       ipcRenderer.invoke('campaign:live-status', command, token),
     reconcilePreparationPlan: (
-      command: import('../src/app/preparation-contracts').PreparationCommand,
+      command: import('../src/app/campaign/preparation-contracts').PreparationCommand,
       token?: string,
     ) => ipcRenderer.invoke('campaign:reconcile-preparation-plan', command, token),
     changePreparationPlan: (
-      command: import('../src/app/preparation-contracts').PreparationCommand,
+      command: import('../src/app/campaign/preparation-contracts').PreparationCommand,
     ) => ipcRenderer.invoke('campaign:change-preparation-plan', command),
     changePreparation: (command: unknown) =>
       ipcRenderer.invoke('campaign:change-preparation', command),

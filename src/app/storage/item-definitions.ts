@@ -1,10 +1,15 @@
-import { checkedDefinition, nextAuthoredDefinition } from '../item-definition-validation';
+import { checkedDefinition, nextAuthoredDefinition } from '../catalog/item-definition-validation';
 import { budgetRarity } from '../atlas/dungeon-budget-contracts';
 import { srdItemDefinitions, srdItemSourceStatus } from './srd-items';
 import { coinDefinitions } from './coin-definitions';
 import { createHash } from 'node:crypto';
-import type { ItemDefinition, ItemQuery, ItemPage, ItemCatalogFilter } from '../items-contracts';
-import { canonicalJson } from '../generation/canonical-json';
+import type {
+  ItemDefinition,
+  ItemQuery,
+  ItemPage,
+  ItemCatalogFilter,
+} from '../catalog/items-contracts';
+import { canonicalJson } from '../campaign/generation/canonical-json';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function decoded(row: any, id: string, revision: number): ItemDefinition {
   if (!row || hash(row.payload) !== row.checksum)

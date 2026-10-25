@@ -1,7 +1,7 @@
 import { volumeOrigin } from './volume-model';
 import type { DungeonVolume } from './volume-contracts';
 import type { SpatialGeometry, DungeonPose } from './dungeon-contracts';
-import type { KeyContent } from '../key-contracts';
+import type { KeyContent } from '../campaign/key-contracts';
 export type SurfaceSide = 'north' | 'east' | 'south' | 'west' | 'floor' | 'ceiling';
 export interface SurfaceFace {
   x: number;

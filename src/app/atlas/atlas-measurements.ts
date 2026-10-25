@@ -1,7 +1,7 @@
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
 import { lengthLabel, areaLabel } from './atlas-units';
-import type { CanvasBox } from '../passive-map-canvas';
+import type { CanvasBox } from '../runtime/passive-map-canvas';
 export const pathLength = (points: readonly Point[]) =>
   points
     .slice(1)

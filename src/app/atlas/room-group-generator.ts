@@ -1,4 +1,4 @@
-import type { Point, Polygon, Room } from '../contracts';
+import type { Point, Polygon, Room } from '../shared/contracts';
 import type { DrawingElement } from './drawing-contracts';
 import { newElement, combineRooms, inside } from './drawing-model';
 

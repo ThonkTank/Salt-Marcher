@@ -3,7 +3,7 @@ import { terrainLandSpans, terrainSettings, DEFAULT_HEIGHT_M } from './terrain-h
 import { contains, type LandscapeRecord } from './atlas-landscape';
 import { maskLandSpans } from './land-mask';
 import { intersectPolygons, subtractPolygons, unionPolygons } from './landscape-brush';
-import type { Polygon } from '../contracts';
+import type { Polygon } from '../shared/contracts';
 
 /** Snapshot of the surface at authorship; later coast changes cannot reveal paint laid over sea. */
 export function landSurface(records: LandscapeRecord[]): Polygon[] {

@@ -19,7 +19,9 @@ buildSync({
 });
 const require = createRequire(import.meta.url);
 const { buildAtlasGeometryMesh } = require('../../.build/atlas-geometry-mesh-test.cjs');
-const { buildAtlasCanonicalSceneModel } = require('../../.build/atlas-scene-geometry-mesh-test.cjs');
+const {
+  buildAtlasCanonicalSceneModel,
+} = require('../../.build/atlas-scene-geometry-mesh-test.cjs');
 
 function view({ farX = 0, farY = 0 } = {}) {
   const cityFrame = { x: farX, y: farY, angle: 0 };

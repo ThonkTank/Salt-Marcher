@@ -9,7 +9,7 @@ import type {
 import { readLiveScene } from './live';
 import { position } from './world';
 import { dungeonTraces, discoverDungeonTrack, dungeonTraceById } from './dungeon-senses';
-import { trackAt } from '../track-model';
+import { trackAt } from '../runtime/track-model';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex'),
   distance = (a: any, b: any) =>
     a.scopeId !== b.scopeId || a.floorId !== b.floorId

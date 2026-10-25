@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import type { AtlasPaint } from './atlas-paint';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 
 /** Numeric Atlas primitives stay numeric. Only authored SVG symbol literals need parsing. */
 export function atlasSpatialPaths(node: AtlasPaint): {

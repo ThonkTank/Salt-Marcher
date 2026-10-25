@@ -1,5 +1,9 @@
 import { readRouteTerrain } from './terrain-route';
-import { resolveTerrainObjects, terrainObjectPoints, type TerrainObject } from '../atlas/terrain-objects';
+import {
+  resolveTerrainObjects,
+  terrainObjectPoints,
+  type TerrainObject,
+} from '../atlas/terrain-objects';
 import { readTerrainGridSteps } from './terrain-grid';
 import { readTerrainMaterialSteps } from './terrain-material';
 import { terrainHeightBlocks } from './terrain-height-blocks';
@@ -27,7 +31,7 @@ import { generateVegetation, VEGETATION_SURFACE_MPP } from '../atlas/vegetation'
 import { streamTerrainField } from '../atlas/terrain-field-stream';
 import { lineContains } from '../atlas/landscape-line';
 import { PNG } from 'pngjs';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import {
   contains,
   bounds,
@@ -106,7 +110,10 @@ const visual = (r: LandscapeRecord): LandscapeRecord => {
 };
 /** A bounded, disposable landscape layer. Exact edits never consume this projection. */
 export class AtlasLandscapeReader {
-  invalidation: import('../atlas/terrain-presentation').TerrainInvalidation = { reset: true, bounds: [] };
+  invalidation: import('../atlas/terrain-presentation').TerrainInvalidation = {
+    reset: true,
+    bounds: [],
+  };
   private colorHistory = new TerrainChangeHistory();
   readonly projectionCache = new TerrainProjectionCache();
   private statements = new Map<string, any>();
@@ -394,7 +401,10 @@ export class AtlasLandscapeReader {
     if (!this.complete) throw Error('Vollständige Landschaft muss zuerst synchronisiert werden.');
   }
 
-  visibility(source: AtlasRegionSource, view: import('../atlas/terrain-spatial-model').TerrainView) {
+  visibility(
+    source: AtlasRegionSource,
+    view: import('../atlas/terrain-spatial-model').TerrainView,
+  ) {
     const identity = JSON.stringify([
         source.campaignId,
         source.epoch,
@@ -639,7 +649,10 @@ export class AtlasLandscapeReader {
     this.requireFull();
     return readTerrainMaterialSteps(this.db, source, q, this.terrainStream(source), channels);
   }
-  terrain(source: AtlasRegionSource, q: import('../atlas/terrain-projection').TerrainProjectionRequest) {
+  terrain(
+    source: AtlasRegionSource,
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+  ) {
     this.requireFull();
     const projection = readTerrainProjection(
       this.db,

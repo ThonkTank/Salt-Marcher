@@ -1,6 +1,6 @@
 import { atlasPaint } from './atlas-paint';
 import { appendPaint, type PaintTarget } from './atlas-paint-svg';
-import type { RoomGeometry } from '../contracts';
+import type { RoomGeometry } from '../shared/contracts';
 import { centerInRoom } from './dungeon-model';
 /** A passive key to the room list, readable at every camera scale. */
 export function appendRoomNumber(scene: PaintTarget, room: RoomGeometry, unitsPerPixel: number) {

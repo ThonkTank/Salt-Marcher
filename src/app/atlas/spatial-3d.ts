@@ -1,5 +1,5 @@
 import { passageOpening, pathStep, pathLadder, annotatePathRoute } from './path-spatial';
-import type { Point, RoomGeometry } from '../contracts';
+import type { Point, RoomGeometry } from '../shared/contracts';
 import type { SpatialGeometry, DungeonPose, DungeonWaypoint } from './dungeon-contracts';
 import type { DungeonMovement, DungeonVolume, VolumeSpan } from './volume-contracts';
 import { VOXEL_METERS as U } from './volume-contracts';

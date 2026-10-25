@@ -1,5 +1,5 @@
 import { atlasElement as get, setAtlasText as setText } from './atlas-dom';
-import { journeyPlayback } from '../journey-playback';
+import { journeyPlayback } from '../runtime/journey-playback';
 import { atlasPartyPoint } from './atlas-runtime-model';
 import type { AtlasLocalPreview, AtlasTravelAction } from './atlas-travel-contracts';
 import {
@@ -8,10 +8,10 @@ import {
   previewAtlasWorldTravel,
   startAtlasWorldTravel,
   refreshWorldAfterAtlasTravel,
-} from '../world-ui';
+} from '../runtime/world-ui';
 import { atlasFrame, localToAtlas } from './campaign-atlas-model';
 import type { AtlasRenderView } from './campaign-atlas-contracts';
-import type { WorkspaceGeometry, Point } from '../contracts';
+import type { WorkspaceGeometry, Point } from '../shared/contracts';
 import { atlasDungeonState, openDungeon } from './dungeon-ui';
 interface AtlasJourneyHost {
   readonly data: AtlasRenderView | null;

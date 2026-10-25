@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { recordMaskReconciliation } from './mask-reconciliation';
-import { checkedCombat, combatOrder, type CombatState } from '../combat-contracts';
-import { checkedHealth, checkedHealthStatus, type CharacterHealth } from '../progression';
+import { checkedCombat, combatOrder, type CombatState } from '../runtime/combat-contracts';
+import { checkedHealth, checkedHealthStatus, type CharacterHealth } from '../runtime/progression';
 import { readProgressCharacter, saveProgress, event } from './progression';
 import { readWorldActor, writeWorldActorHealth } from './session';
 const json = (v: unknown) => JSON.stringify(v),

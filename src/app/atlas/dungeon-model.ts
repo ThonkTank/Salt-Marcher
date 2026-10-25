@@ -3,10 +3,10 @@ import { volumeProjection } from './volume-model';
 import type { DungeonMovement } from './volume-contracts';
 import clipping, { type MultiPolygon } from 'polygon-clipping';
 import { visibility } from '../../compute';
-import type { Point, Polygon, RoomGeometry } from '../contracts';
+import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
 import type { SpatialGeometry, DungeonPose, DungeonWaypoint } from './dungeon-contracts';
 import { inside, anchored, drawingSegments, combineRooms } from './drawing-model';
-import type { PlayerObserver, PlayerSettings } from '../player-contracts';
+import type { PlayerObserver, PlayerSettings } from '../runtime/player-contracts';
 const lightCache = new WeakMap<SpatialGeometry, Map<string, Polygon[]>>();
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 const cross = (a: Point, b: Point, c: Point) =>

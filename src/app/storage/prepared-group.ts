@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { PreparedGroup } from '../session-contracts';
+import type { PreparedGroup } from '../campaign/session-contracts';
 
 export function checkedPreparedGroupRow(row: any): PreparedGroup {
   if (!row || createHash('sha256').update(row.payload).digest('hex') !== row.checksum)

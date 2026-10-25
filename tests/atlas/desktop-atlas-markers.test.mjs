@@ -17,7 +17,7 @@ buildSync({
   external: ['better-sqlite3'],
 });
 buildSync({
-  entryPoints: ['src/app/world-ui.ts'],
+  entryPoints: ['src/app/runtime/world-ui.ts'],
   outfile: '.build/atlas-markers-ui.cjs',
   bundle: true,
   platform: 'node',
@@ -210,7 +210,7 @@ test('marker sliders preview, coalesce, preserve camera and restore confirmed pr
       Event: globalThis.Event,
       CustomEvent: globalThis.CustomEvent,
     },
-    { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8'));
+    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8'));
   Object.assign(globalThis, {
     window,
     document,

@@ -1,5 +1,5 @@
 import type { AtlasAction, AtlasRenderView } from './campaign-atlas-contracts';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { contains, type LandscapeBox } from './atlas-landscape';
 import { atlasPaint, type AtlasPaint } from './atlas-paint';
 import {

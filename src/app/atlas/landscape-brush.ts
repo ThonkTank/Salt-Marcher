@@ -1,6 +1,6 @@
 import { validateTerrainView, type TerrainView } from './terrain-spatial-model';
 import polygonClipping from 'polygon-clipping';
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import type { LandscapeRecord } from './atlas-landscape';
 import { clipLandscapePolygons, roundBrushPolygons } from './landscape-polygon-clipping';
 export type BrushMode =

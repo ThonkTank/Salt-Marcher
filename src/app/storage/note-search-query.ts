@@ -1,4 +1,4 @@
-import { noteSearchTerms } from '../note-search-terms';
+import { noteSearchTerms } from '../campaign/note-search-terms';
 
 /** Words narrow a note together; explicit quotes retain a contiguous phrase. */
 export function noteSearchQuery(search: string): string {

@@ -5,7 +5,7 @@ import { TerrainLiveStroke } from './terrain-live-stroke';
 import { type HeightStroke } from './terrain-brush';
 import type { LandscapeToolSettings } from './landscape-tool-settings';
 import { pendingAtlasWrite } from './campaign-atlas-author';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import { type LandscapeRecord } from './atlas-landscape';
 interface LandscapeBrushSessionHost {
   readonly effects: Pick<

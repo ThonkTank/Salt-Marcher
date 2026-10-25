@@ -1,11 +1,11 @@
-import type { TriggerField, TriggerAction } from '../trigger-contracts';
+import type { TriggerField, TriggerAction } from '../runtime/trigger-contracts';
 import { validateDungeonContentValue } from './dungeon-budget-contracts';
 import type { DungeonContent } from './dungeon-budget-contracts';
 import type { GraphEdit, GraphCommit, GraphPreviewState } from './graph-contracts';
-import type { KeyAction, KeyContent } from '../key-contracts';
+import type { KeyAction, KeyContent } from '../campaign/key-contracts';
 import type { DungeonPath, DungeonPassage, PathAPI, PathAction } from './path-contracts';
 import type { DungeonVolume, VolumeAction } from './volume-contracts';
-import type { Point, Polygon, Room, RoomGeometry, Result, Workspace } from '../contracts';
+import type { Point, Polygon, Room, RoomGeometry, Result, Workspace } from '../shared/contracts';
 export type DrawingKind =
   | 'wall'
   | 'door'

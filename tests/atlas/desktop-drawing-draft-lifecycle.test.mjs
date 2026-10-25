@@ -19,7 +19,7 @@ buildSync({
 const require = createRequire(import.meta.url),
   file = require.resolve('../../.build/drawing-draft-lifecycle.cjs');
 async function fixture(t) {
-  const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+  const { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
     previous = {
       window: global.window,
       document: global.document,

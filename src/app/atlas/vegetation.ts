@@ -5,7 +5,7 @@ import {
   vegetationGrid,
 } from './vegetation-lod';
 export { vegetationRandom } from './vegetation-lod';
-import type { Point, Polygon } from '../contracts';
+import type { Point, Polygon } from '../shared/contracts';
 import {
   contains,
   segmentDistance,
@@ -13,7 +13,7 @@ import {
   type LandscapeRecord,
   type LandscapeBox,
 } from './atlas-landscape';
-import type { Terrain } from '../world-contracts';
+import type { Terrain } from '../runtime/world-contracts';
 import { TerrainSampler } from './terrain-height';
 import { linePoints } from './landscape-line';
 

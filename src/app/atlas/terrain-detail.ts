@@ -1,5 +1,5 @@
 import type { LandscapeBox } from './atlas-landscape';
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 /** A bounded display refinement, never author data or a replacement visibility grid. */
 export interface TerrainDetail {
   /** Renderer-only availability mask; full projections omit it. */

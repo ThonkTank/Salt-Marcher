@@ -126,8 +126,8 @@ führen Lesen, Bedienung und Markdownausgabe; `desktop/main.ts` den Dateidialog
 und `desktop/session-packet-export.ts` die Veröffentlichung der Datei.
 `session-progress-ui.ts`/`storage/visit-outcomes.ts` führen Besuchsergebnisse.
 Kontrollierte DOM-/SQLiteprüfungen, insbesondere
-`tests/desktop-session-packet-context.test.mjs`, belegen die dort getesteten
-Daten- und Kontextgrenzen. `tests/desktop-session-packet-export.test.mjs` prüft
+`tests/campaign/desktop-session-packet-context.test.mjs`, belegen die dort getesteten
+Daten- und Kontextgrenzen. `tests/campaign/desktop-session-packet-export.test.mjs` prüft
 mit tatsächlichen temporären Dateien und kontrollierten Schreib-/Sync-/Rename-
 Fehlern: ursprüngliche Zielbytes oder fehlendes Ziel erhalten, Quellenwechsel
 während des Schreibens verworfen, Kandidat entfernt und erfolgreicher Export

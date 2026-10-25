@@ -1,5 +1,5 @@
 import type { DungeonMovement } from './volume-contracts';
-import type { Point, Polygon, Room, RoomGeometry, Result } from '../contracts';
+import type { Point, Polygon, Room, RoomGeometry, Result } from '../shared/contracts';
 import type { DrawingView, DrawingElement, DrawingElementGeometry } from './drawing-contracts';
 export type SpatialGeometry = DungeonGeometry<RoomGeometry, DrawingElementGeometry>;
 export interface DungeonPose extends Point {
@@ -34,7 +34,7 @@ export interface DungeonRequest {
   waypoints?: DungeonPose[];
 }
 export interface DungeonPreview {
-  pace?: import('../dungeon-pace').DungeonPace;
+  pace?: import('../runtime/dungeon-pace').DungeonPace;
   paceRevision?: number;
   request: DungeonRequest;
   basis: string;
@@ -141,15 +141,15 @@ export interface DungeonView<
 > extends DungeonGeometry<R, E> {
   activeDungeonName?: string | null;
   travelPace?: {
-    settings: import('../dungeon-pace').DungeonPaceSettings;
-    pace: import('../dungeon-pace').DungeonPace;
+    settings: import('../runtime/dungeon-pace').DungeonPaceSettings;
+    pace: import('../runtime/dungeon-pace').DungeonPace;
     membershipRevision: number;
   };
   keyDiscoveries?: string[];
-  contents?: import('../content-runtime-contracts').ContentContext[];
+  contents?: import('../runtime/content-runtime-contracts').ContentContext[];
   contentRecipients?: { id: string; name: string; membershipRevision: number }[];
-  triggerEvents?: import('../trigger-contracts').TriggerEvent[];
-  keyDescription?: import('../key-contracts').KeyRendered;
+  triggerEvents?: import('../runtime/trigger-contracts').TriggerEvent[];
+  keyDescription?: import('../campaign/key-contracts').KeyRendered;
   keyHeading?: number | null;
   sceneId: string | null;
   sceneTitle: string;
@@ -197,10 +197,10 @@ export type DungeonAction =
   | {
       kind: 'pace-settings';
       sceneId: string;
-      settings: import('../dungeon-pace').DungeonPaceSettings;
+      settings: import('../runtime/dungeon-pace').DungeonPaceSettings;
       expectedMembershipRevision: number;
     }
-  | import('../content-runtime-contracts').ContentRuntimeAction
+  | import('../runtime/content-runtime-contracts').ContentRuntimeAction
   | {
       kind: 'trigger-event';
       sceneId: string;

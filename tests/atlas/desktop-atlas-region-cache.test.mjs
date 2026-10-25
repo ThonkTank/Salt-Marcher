@@ -642,7 +642,7 @@ test('startup removes interrupted work and retires old snapshots, preserving unr
   await f.read();
   const original = readdirSync(f.cacheDir),
     key = projectionKey(f.filename, f.campaign.id);
-  writeFileSync(join(f.cacheDir, key + '..' + 'a'.repeat(64) + '.sqlite'), 'orphan');
+  writeFileSync(join(f.cacheDir, key + '.' + 'a'.repeat(64) + '.sqlite'), 'orphan');
   writeFileSync(join(f.cacheDir, key + '.jsonl'), 'legacy projections');
   const legacyPath = join(f.cacheDir, key + '.legacy.sqlite'),
     legacy = new Database(legacyPath);
@@ -654,7 +654,7 @@ test('startup removes interrupted work and retires old snapshots, preserving unr
   legacy.close();
   const legacyBytes = readFileSync(legacyPath),
     legacyHash = createHash('sha256').update(legacyBytes).digest('hex'),
-    legacyName = key + '..' + legacyHash + '.sqlite';
+    legacyName = key + '.' + legacyHash + '.sqlite';
   renameSync(legacyPath, join(f.cacheDir, legacyName));
   writeFileSync(
     join(f.cacheDir, key + '.json'),

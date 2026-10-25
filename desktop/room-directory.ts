@@ -1,6 +1,6 @@
 import { Worker } from 'node:worker_threads';
 import { join } from 'node:path';
-import type { RoomDirectoryQuery, RoomDirectoryPage } from '../src/app/contracts';
+import type { RoomDirectoryQuery, RoomDirectoryPage } from '../src/app/shared/contracts';
 /** One replaceable read job, including waiting for the predecessor's actual exit. */
 export class RoomDirectoryService {
   private job: { worker: Worker; reject: (e: Error) => void } | null = null;

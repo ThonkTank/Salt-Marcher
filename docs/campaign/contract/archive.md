@@ -71,7 +71,7 @@ aktiven Zeiger noch den Zeitpunkt der letzten Öffnung. Erst ausdrückliches Öf
 oder Fortsetzen aktiviert die Kampagne; der nächste Appstart zeigt erneut die
 Auswahl.
 
-[Store-/DOM-Regressionsfälle](../../../tests/desktop-campaign-catalog.test.mjs) prüfen
+[Store-/DOM-Regressionsfälle](../../../tests/campaign/desktop-campaign-catalog.test.mjs) prüfen
 Befehlsquittungen, unklare Antworten, lokale Auftragsvermerke und Kontextwechsel.
 Die [native Dialogprobe](../../../tools/test-desktop-campaign-trash.mjs) ergänzt zwei
 gleichnamige Kampagnen mit unterschiedlichen Raum-Keys: Namensentwurf abbrechen,
@@ -117,7 +117,7 @@ Gegenstandskopf und Versionszeilen können dieselbe ID besitzen und bleiben dahe
 getrennte Schlüsselräume. Unveränderte Definitionen benötigen keine wiederholte
 lineare Suche in der gesamten Wiederverwendungsliste. Explizite Konfliktwahl,
 historische Aliase, Quellbytes und atomarer Rollback bleiben verbindlich.
-`tests/desktop-campaign-shared-definitions.test.mjs` prüft wiederholten Import,
+`tests/campaign/desktop-campaign-shared-definitions.test.mjs` prüft wiederholten Import,
 alle drei Entscheidungen mit Autorenverweisen über Fresh und einen Fehler nach
 begonnenem Definitionsersatz.
 

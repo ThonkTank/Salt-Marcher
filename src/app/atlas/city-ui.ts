@@ -1,9 +1,9 @@
-import { EditorSession } from '../editor-session';
+import { EditorSession } from '../shared/editor-session';
 import { chooseRoomGroup } from './room-group-ui';
 import { mapLabelEditor, readMapLabelEditor } from './map-label-editor';
 import { atlasFieldValue, setAtlasFieldValue } from './atlas-units';
 import { writeAtlasCommit, atlasCityWrite } from './campaign-atlas-author';
-import type { WorkspaceGeometry, Result } from '../contracts';
+import type { WorkspaceGeometry, Result } from '../shared/contracts';
 import type {
   CityView,
   CityUnit,
@@ -16,7 +16,7 @@ import type {
   CityJob,
   CityPersonMove,
 } from './city-contracts';
-import type { NpcPage } from '../npc-contracts';
+import type { NpcPage } from '../campaign/npc-contracts';
 import { CityActivityBinder } from './city-activity-ui';
 import { chooseCityBuilding, confirmCityLifeMove } from './city-building-picker';
 import { citySvg, generateCity, posed, roadPoints } from './city-model';
@@ -310,7 +310,7 @@ export async function openCityReference(
   }
 }
 export async function prepareCityPersonBinding(
-  assignment: import('../npc-places-contracts').NpcBuildingAssignment,
+  assignment: import('../campaign/npc-places-contracts').NpcBuildingAssignment,
 ) {
   const w = workspace,
     g = editorSession.generation;

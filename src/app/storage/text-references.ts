@@ -1,5 +1,5 @@
-import type { DeskRef, DeskEntry } from '../scene-desk-contracts';
-import { documentReferences } from '../text-references';
+import type { DeskRef, DeskEntry } from '../runtime/scene-desk-contracts';
+import { documentReferences } from '../campaign/text-references';
 import { createHash } from 'node:crypto';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { checkedLocationDocument } from '../../features/location/location-schema';

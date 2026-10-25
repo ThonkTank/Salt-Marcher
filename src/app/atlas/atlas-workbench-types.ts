@@ -1,4 +1,4 @@
-import type { Point } from '../contracts';
+import type { Point } from '../shared/contracts';
 import type { DrawingElement } from './drawing-contracts';
 /** Shared context values; their mutable state belongs to the author controller. */
 export type AtlasSelection =

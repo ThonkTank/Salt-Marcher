@@ -1,4 +1,4 @@
-import type { Result } from '../contracts';
+import type { Result } from '../shared/contracts';
 export interface CityActivityQuery {
   cityId: string;
   sceneId: string | null;
@@ -27,7 +27,7 @@ export interface CityActivityRow {
     activity: string;
     time: string;
     place: 'home' | 'work' | 'other' | 'location';
-    locationTarget?: import('../npc-contracts').NpcPlanLocation | null;
+    locationTarget?: import('../campaign/npc-contracts').NpcPlanLocation | null;
     notes: string;
     target: CityActivitySite | null;
   } | null;

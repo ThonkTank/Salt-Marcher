@@ -91,17 +91,20 @@ export function checkRepository(root, suppliedFiles) {
     }
   }
   json('acceptance.json');
-  if (exists('tests/core.test.ts') && exists('tests/core')) {
+  if (exists('tests/shared/core.test.ts') && exists('tests/shared/core')) {
     const registered = new Set(
       [
-        ...read('tests/core.test.ts').matchAll(
+        ...read('tests/shared/core.test.ts').matchAll(
           /(?:import|export)\s+(?:[^'";]+\s+from\s+)?["']\.\/core\/([^"']+\.test)["']/g,
         ),
       ].map((match) => `${match[1]}.ts`),
     );
     for (const file of files)
-      if (/^tests\/core\/[^/]+\.test\.ts$/.test(file) && !registered.has(path.posix.basename(file)))
-        errors.push(`${file}: core test is not registered in tests/core.test.ts`);
+      if (
+        /^tests\/shared\/core\/[^/]+\.test\.ts$/.test(file) &&
+        !registered.has(path.posix.basename(file))
+      )
+        errors.push(`${file}: core test is not registered in tests/shared/core.test.ts`);
   }
   // ADR matrices may refer to a live local plan or an immutable historical plan.
   for (const file of files) {

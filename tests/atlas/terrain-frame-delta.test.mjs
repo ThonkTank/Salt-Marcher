@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 import { buildSync } from 'esbuild';
 buildSync({
   stdin: {
-    contents: "export * from './src/app/atlas/terrain-frame';export * from './src/app/atlas/terrain-cache';",
+    contents:
+      "export * from './src/app/atlas/terrain-frame';export * from './src/app/atlas/terrain-cache';",
     resolveDir: process.cwd(),
   },
   outfile: '.build/terrain-frame-delta-test.cjs',

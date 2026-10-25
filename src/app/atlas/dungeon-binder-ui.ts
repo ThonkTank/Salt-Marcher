@@ -1,11 +1,15 @@
-import { renderCreatureDetail } from '../creature-detail-ui';
-import { KeyDocumentReader } from '../key-document-ui';
-import { keyDocumentSources, type KeyPassageTarget, type KeyBookmark } from '../key-reading-model';
+import { renderCreatureDetail } from '../catalog/creature-detail-ui';
+import { KeyDocumentReader } from '../campaign/key-document-ui';
+import {
+  keyDocumentSources,
+  type KeyPassageTarget,
+  type KeyBookmark,
+} from '../campaign/key-reading-model';
 import type { DrawingElement } from './drawing-contracts';
-import type { WorkspaceGeometry, Room } from '../contracts';
+import type { WorkspaceGeometry, Room } from '../shared/contracts';
 import { DungeonBinderIndex, unplacedBinderPublicText } from './dungeon-binder-model';
-import type { KeyRendered } from '../key-contracts';
-import { renderDungeonKey } from '../key-model';
+import type { KeyRendered } from '../campaign/key-contracts';
+import { renderDungeonKey } from '../campaign/key-model';
 const node = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string) => {
   const n = document.createElement(tag);
   if (text !== undefined) n.textContent = text;

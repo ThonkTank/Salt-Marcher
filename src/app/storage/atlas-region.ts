@@ -44,8 +44,8 @@ import {
   emptyDrawing,
   validateRegion,
 } from '../atlas/atlas-region-contracts';
-import type { Point, Polygon, RoomGeometry } from '../contracts';
-import { validateRoom } from '../contracts';
+import type { Point, Polygon, RoomGeometry } from '../shared/contracts';
+import { validateRoom } from '../shared/contracts';
 import { posedFootprint, roadPoints } from '../atlas/city-model';
 import { anchored, inside } from '../atlas/drawing-model';
 import { volumeProjection } from '../atlas/volume-model';
@@ -239,7 +239,10 @@ export class AtlasRegionReader {
     this.landscape.projectionCache.tiles.clearRetained();
     return this.landscape;
   }
-  terrain(source: AtlasRegionSource, q: import('../atlas/terrain-projection').TerrainProjectionRequest) {
+  terrain(
+    source: AtlasRegionSource,
+    q: import('../atlas/terrain-projection').TerrainProjectionRequest,
+  ) {
     return this.navigationTerrain().terrain(source, q);
   }
   colorSteps(source: AtlasRegionSource, q: import('../atlas/terrain-color').TerrainColorRequest) {

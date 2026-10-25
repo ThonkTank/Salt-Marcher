@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { readNarrative } from './narrative';
-import type { NarrativeJournal, NarrativeJournalQuery } from '../narrative-journal-contracts';
+import type {
+  NarrativeJournal,
+  NarrativeJournalQuery,
+} from '../runtime/narrative-journal-contracts';
 function payload(row: any) {
   if (createHash('sha256').update(row.payload).digest('hex') !== row.checksum)
     throw new Error('Journalquelle ist beschädigt.');

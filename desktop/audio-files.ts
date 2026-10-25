@@ -7,7 +7,7 @@ import {
   audioMimeTypes,
   type AudioAsset,
   type AudioTransferProgress,
-} from '../src/app/music-contracts';
+} from '../src/app/runtime/music-contracts';
 import {
   audioFile,
   validateAudioLibrary,

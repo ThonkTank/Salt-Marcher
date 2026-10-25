@@ -1,0 +1,153 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildSync } from 'esbuild';
+import { createRequire } from 'node:module';
+import { mkdtempSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { randomUUID } from 'node:crypto';
+import { parseHTML } from '../helpers/dom.mjs';
+buildSync({
+  stdin: {
+    contents:
+      "export {CampaignStore} from './src/app/storage/store';export {dungeonDisplay} from './src/app/storage/dungeon-play';",
+    resolveDir: process.cwd(),
+    sourcefile: 'public-player-entry.ts',
+    loader: 'ts',
+  },
+  outfile: '.build/player-dungeon-projection.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+});
+buildSync({
+  entryPoints: ['src/app/runtime/player-atlas.ts'],
+  outfile: '.build/player-dungeon-render.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+});
+const require = createRequire(import.meta.url),
+  { CampaignStore, dungeonDisplay } = require('../../.build/player-dungeon-projection.cjs'),
+  { playerAtlas } = require('../../.build/player-dungeon-render.cjs');
+test('passive dungeon frame excludes descriptive prose while GM perception and authored contents remain intact', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'player-dungeon-projection-')),
+    store = new CampaignStore(path.join(root, 'store.sqlite')),
+    room = {
+      id: randomUUID(),
+      scopeId: 'local',
+      floorId: 'ground',
+      number: '1',
+      name: 'Sichtbarer Raum',
+      revision: 0,
+      polygons: [
+        {
+          outer: [
+            { x: 0, y: 0 },
+            { x: 3.048, y: 0 },
+            { x: 3.048, y: 3.048 },
+            { x: 0, y: 3.048 },
+          ],
+          holes: [],
+        },
+      ],
+      sections: [{ id: randomUUID(), kind: 'markdown', markdown: '  Autorenprosa\r\n' }],
+    },
+    campaign = store.create('Anzeigekontext', [room]),
+    w = store.activate(campaign.id),
+    command = (action) => ({
+      commandId: randomUUID(),
+      campaignId: campaign.id,
+      token: w.token,
+      action,
+    });
+  t.after(() => {
+    store.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+  store.executeDrawing(
+    command({
+      kind: 'volume-initialize',
+      roomId: room.id,
+      expectedRoomRevision: 0,
+      expectedVolumeRevision: null,
+      heightSteps: 4,
+    }),
+  );
+  const character = store.executeLive(
+      command({ kind: 'create-character', profile: { name: 'Iri' } }),
+    ).character,
+    live = store.live(w.token);
+  store.executeLive(
+    command({
+      kind: 'membership',
+      characterId: character.id,
+      expectedRevision: character.membershipRevision,
+      expectedRosterRevision: live.rosterRevision,
+      active: true,
+      targetSceneId: null,
+      expectedFocusRevision: live.focusRevision,
+    }),
+  );
+  const scene = store.executeLive(
+    command({ kind: 'initialize', expectedRosterRevision: store.live(w.token).rosterRevision }),
+  ).scene;
+  store.executeDungeon(
+    command({
+      kind: 'place',
+      sceneId: scene.id,
+      expectedPositionRevision: 0,
+      pose: { scopeId: 'local', floorId: 'ground', roomId: room.id, x: 1.524, y: 1.524, z: 0 },
+    }),
+  );
+  const reviewed = store.playerView(w.token);
+  store.executePlayer({
+    ...command({
+      kind: 'settings',
+      settings: {
+        blank: false,
+        mode: 'follow',
+        imageId: null,
+        title: '',
+        labels: false,
+        light: 'daylight',
+        displayId: null,
+        fullscreen: false,
+      },
+    }),
+    expectedRevision: reviewed.settings.revision,
+    expectedFocusId: reviewed.focusId,
+    expectedFocusRevision: reviewed.focusRevision,
+    expectedFocusMembershipRevision: reviewed.focusMembershipRevision,
+    expectedFocusLocationId: reviewed.focusLocationId,
+  });
+  const bytes = store.db.serialize(),
+    view = store.playerView(w.token),
+    rich = dungeonDisplay(store.db, campaign.id, scene.id, view.settings, view.observers);
+  assert.equal(view.frame.mode, 'dungeon');
+  assert.equal(typeof rich.description, 'string');
+  assert.ok(rich.description.length > 0);
+  assert.equal(Object.hasOwn(view.frame.dungeon, 'description'), false);
+  assert.equal(Object.hasOwn(view.frame.dungeon, 'clues'), false);
+  assert.deepEqual(view.frame.dungeon.known, rich.known);
+  assert.deepEqual(view.frame.dungeon.visible, rich.visible);
+  assert.deepEqual(store.db.serialize(), bytes);
+});
+test('public drawing scene ignores descriptive prose from older packages', () => {
+  const projection = playerAtlas({
+    mode: 'dungeon',
+    title: '',
+    dungeon: {
+      position: { x: 0, y: 0 },
+      known: [],
+      visible: [],
+      labels: [],
+      markers: [],
+      description: 'Narrative room key',
+      clues: ['A heard narrative clue'],
+    },
+  });
+  assert(projection);
+  assert.doesNotMatch(JSON.stringify(projection), /Narrative|narrative/);
+});

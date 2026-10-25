@@ -1,6 +1,11 @@
 import { readRouteTerrain } from './terrain-route';
-import type { Point, Polygon } from '../contracts';
-import { bounds, contains, type LandscapeBox, type LandscapeRecord } from '../atlas/atlas-landscape';
+import type { Point, Polygon } from '../shared/contracts';
+import {
+  bounds,
+  contains,
+  type LandscapeBox,
+  type LandscapeRecord,
+} from '../atlas/atlas-landscape';
 import { posed, roadPoints } from '../atlas/city-model';
 import {
   generateVegetation,

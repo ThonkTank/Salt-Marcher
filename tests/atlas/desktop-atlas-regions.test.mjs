@@ -1275,7 +1275,7 @@ buildSync({
 test('targeted City editing preserves an unavailable faction reference during an unrelated name edit', async (t) => {
   const { parseHTML } = await import('linkedom'),
     { readFileSync } = await import('node:fs'),
-    { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+    { window, document } = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')),
     before = {
       window: globalThis.window,
       document: globalThis.document,

@@ -36,6 +36,38 @@ unbenötigte Detailoptionen; es verschiebt keine schwer umkehrbaren Entscheidung
 
 ## Gewählte Grundstruktur
 
+### Code nach Zuständigkeit finden
+
+Der aktive Desktopcode liegt unter `desktop/` und `src/app/`. Die App ist nach
+fachlichen Arbeitsbereichen gegliedert; Dateien werden nach ihren Verbrauchern
+und Aufgaben zugeordnet, nicht nach ihrer Größe:
+
+| Verzeichnis unter `src/app/` | Zuständigkeit |
+| --- | --- |
+| `workspace/` | Renderer-Einstieg, Navigation, Tutorial, Updates und Erweiterungsoberfläche |
+| `atlas/` | Karte, Gelände, Bewuchs, Stadt- und Raumgeometrie, räumliche Werkzeuge und Ausgabe |
+| `campaign/` | Kampagnenverwaltung, Vorbereitung, Notizen, Raumtexte, NPCs und Generierung |
+| `runtime/` | Live-Spiel, Party, Kampf, Reise, Kalender, Musik und Spieleranzeige |
+| `catalog/` | Kataloge, Referenzsuche, Gegenstandsdefinitionen und Encounter-Zusammenstellung |
+| `shared/` | Gemeinsame Verträge, Editor-Lebenszyklus und wiederverwendete Bedienelemente |
+| `storage/` | Kanonischer SQLite-Speicher und fachliche Speicheroperationen |
+| `transfer/` | Kopier-/Archivmodelle, Transferprüfung und erzeugte Vertragsbeschreibungen |
+
+Die aktiven Node-Tests spiegeln die sechs Fachbereiche unter `tests/`. Der
+bestehende gebündelte TypeScript-Testbestand liegt unter `tests/shared/core/`;
+sein Einstieg bleibt Bestandteil derselben Standardsuite. `tests/adr-prototypes/`
+hat weiterhin seine ausdrückliche Auswahl. `tests/native-reference/` wird nicht
+von der Standardsuche erfasst. [Gezielte Testläufe](../verification/testing.md)
+bereiten die gemeinsamen Artefakte automatisch vor.
+
+Ausschließlich historische Obsidian-Einstiege und Adapter liegen unter
+`src/legacy/obsidian/`. Der historische Pluginbuild verwendet diesen Einstieg.
+Reine wiederverwendete Fachlogik unter `src/features/` sowie Modell und Berechnung
+bleiben erhalten; sie sind nicht allein wegen ihrer Herkunft Legacy-Adapter.
+Die Desktop-Bundlepfade für Worker, Lazy-Module, Assets und Spieleranzeige bleiben
+unverändert. Diese Gliederung ändert weder IPC-Verträge noch Archive oder Schema.
+
+
 ### Atlas
 
 Der [Atlasplan](../../atlas/architecture/unified-spatial-atlas.md) beschreibt den vollständigen
@@ -239,23 +271,23 @@ Campaignhistorie sind dauerhafte erklärende Fakten, kein Undoersatz.
 
 ### Buchungsantworten klären
 
-Für die in [`CommitFamily`](../../../src/app/commit-receipt.ts) gebundenen Writes führt
+Für die in [`CommitFamily`](../../../src/app/shared/commit-receipt.ts) gebundenen Writes führt
 die Diagnose über drei bestehende Besitzer:
 
 | Frage | Einstieg |
 | --- | --- |
-| Ist derselbe Command noch ungeklärt? | [`commit-confirmation.ts`](../../../src/app/commit-confirmation.ts): `writeConfirmed` sichert die Referenz vor dem Senden; `hasPendingCommit` sperrt weitere Buchungen. `checkPendingCommit` bedient den vorhandenen Statusknopf. |
+| Ist derselbe Command noch ungeklärt? | [`commit-confirmation.ts`](../../../src/app/shared/commit-confirmation.ts): `writeConfirmed` sichert die Referenz vor dem Senden; `hasPendingCommit` sperrt weitere Buchungen. `checkPendingCommit` bedient den vorhandenen Statusknopf. |
 | Läuft der Aufruf noch oder existiert schon ein Receipt? | [`CommitTracker`](../../../desktop/commit-tracker.ts), angeschlossen in [`desktop/main.ts`](../../../desktop/main.ts) an `campaign:commit-status`: ergänzt den gespeicherten Status um laufende Aufrufe. Ein fehlender DB-Beleg allein bedeutet währenddessen noch nicht „nicht gebucht“. |
 | Gehört der gespeicherte Beleg zu diesem Auftrag? | [`CampaignStore.commitStatus`](../../../src/app/storage/store.ts) prüft den Aktivierungskontext; [`storage/commit-receipt.ts`](../../../src/app/storage/commit-receipt.ts) prüft Campaign, Fingerprint, Prüfsumme und Fachbezug. |
 
 `checkPendingCommit` meldet einen bestätigten Beleg über `onCommitResolved` an
-den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](../../../src/app/combat.ts).
+den Fachbesitzer, beim Kampf `recoveredCombat` aus [`combat.ts`](../../../src/app/runtime/combat.ts).
 
 #### Modale Buchungen
 
-[`BookingDialog`](../../../src/app/booking-dialog.ts) verbindet Beuteverteilung und
+[`BookingDialog`](../../../src/app/shared/booking-dialog.ts) verbindet Beuteverteilung und
 Kampfverstärkung mit der bestehenden `writeConfirmed`-/Receiptgrenze.
-[`CombatAreaPanel`](../../../src/app/combat-area-ui.ts) führt seinen eigenen `busy`-Zustand.
+[`CombatAreaPanel`](../../../src/app/runtime/combat-area-ui.ts) führt seinen eigenen `busy`-Zustand.
 Für beide Anschlüsse gilt:
 
 - Ein laufender Aufruf sperrt Schließen und Escape; pro Öffnung läuft nur ein Write.
@@ -270,13 +302,13 @@ Neue Öffnung oder Ownerwechsel entwerten alte Antworten; deren Fehler und
 `finally` dürfen keine neuere Ansicht entsperren. Der Dialog besitzt keine zweite
 Buchungswahrheit. Fachpläne ergänzen nur Eingabe-/Zielbindung und die Anzeige
 nach der Klärung, etwa [Flächenschaden](../../runtime/contract/combat-recovery.md#flächenschaden-eine-gebundene-entscheidung).
-Gezielte Gegenproben: [Öffnung und Replyverlust](../../../tests/desktop-editor-transition.test.mjs),
-[Schadensdialog](../../../tests/desktop-combat-area.test.mjs),
-[gemeinsame Bestätigung](../../../tests/desktop-chase-switch.test.mjs).
+Gezielte Gegenproben: [Öffnung und Replyverlust](../../../tests/shared/desktop-editor-transition.test.mjs),
+[Schadensdialog](../../../tests/runtime/desktop-combat-area.test.mjs),
+[gemeinsame Bestätigung](../../../tests/runtime/desktop-chase-switch.test.mjs).
 
 ### Gemeinsame Editor- und Dialogübergänge
 
-[`editor-transition.ts`](../../../src/app/editor-transition.ts) bindet asynchrone Antworten
+[`editor-transition.ts`](../../../src/app/shared/editor-transition.ts) bindet asynchrone Antworten
 an die ursprüngliche Aktivierung/Ansicht. `acknowledgeFields` übernimmt die
 bestätigte Basis und erhält ausschließlich ausdrücklich benannte editierbare
 Skalarfelder, die seit dem Senden verändert wurden. Planname/Besuchstexte und
@@ -284,7 +316,7 @@ Rückblick/Übergabe verwenden diesen Weg; Identität, Revision und Reihenfolge
 bleiben Teil des Fachvertrags. Rohentwurfsspeicher und Konfliktentscheidung
 bleiben bei ihren bestehenden Besitzern.
 
-[Gegenproben](../../../tests/desktop-editor-transition.test.mjs) prüfen spätere Eingaben
+[Gegenproben](../../../tests/shared/desktop-editor-transition.test.mjs) prüfen spätere Eingaben
 und neue Öffnungen; für modale Writes gilt der [Buchungsvertrag](overview.md#modale-buchungen).
 
 ## Runtime und gemeinsame Weltfolgen

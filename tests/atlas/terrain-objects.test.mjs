@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
     contents:
-      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-objects';export * from './src/app/atlas/atlas-object-geometry';export * from './src/app/atlas/terrain-profile';export * from './src/app/atlas/terrain-height';export * from './src/app/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",
+      "export * from './src/app/atlas/terrain-spatial-model';export * from './src/app/atlas/terrain-objects';export * from './src/app/atlas/atlas-object-geometry';export * from './src/app/atlas/terrain-profile';export * from './src/app/atlas/terrain-height';export * from './src/app/runtime/world-model';export * from './src/app/storage/store';export * from './src/app/storage/atlas-region';",
     resolveDir: process.cwd(),
   },
   bundle: true,

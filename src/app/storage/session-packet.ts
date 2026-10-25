@@ -1,14 +1,14 @@
-import { restLabel } from '../session-day';
+import { restLabel } from '../runtime/session-day';
 import { readNarrative } from './narrative';
 import { readSessionProgress } from './visit-outcomes';
-import { visitOutcomeLabel } from '../visit-outcome-contracts';
+import { visitOutcomeLabel } from '../runtime/visit-outcome-contracts';
 import { createHash } from 'node:crypto';
 import { readSession } from './session';
 import { checkedLocationDocument } from '../../features/location/location-schema';
 import { worldNoteDocument } from '../../features/world/world-notes';
 import { SRD_5_1_NOTICE } from '../../features/catalog/creature-catalog';
-import { assessEncounter, encounterEntryLabel } from '../encounter-contracts';
-import type { SessionPacket, SessionPacketBlock } from '../session-packet-contracts';
+import { assessEncounter, encounterEntryLabel } from '../catalog/encounter-contracts';
+import type { SessionPacket, SessionPacketBlock } from '../campaign/session-packet-contracts';
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 function payload(row: any) {
   if (hash(row.payload) !== row.checksum) throw new Error('Eine Mappenquelle ist beschädigt.');

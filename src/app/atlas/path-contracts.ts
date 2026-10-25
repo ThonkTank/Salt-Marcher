@@ -1,4 +1,4 @@
-import type { Result } from '../contracts';
+import type { Result } from '../shared/contracts';
 import type { DungeonVolume } from './volume-contracts';
 export type ConnectionForm = 'corridor' | 'stairs' | 'ramp' | 'ladder' | 'shaft';
 export type BoundaryFace = 'north' | 'east' | 'south' | 'west' | 'up' | 'down';

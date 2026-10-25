@@ -21,7 +21,10 @@ buildSync({
   external: ['better-sqlite3'],
 });
 const require = createRequire(import.meta.url),
-  { generateRoomGroup, GROUP_PROFILES } = require('../../.build/room-groups/room-group-generator.cjs'),
+  {
+    generateRoomGroup,
+    GROUP_PROFILES,
+  } = require('../../.build/room-groups/room-group-generator.cjs'),
   { CampaignStore } = require('../../.build/room-groups/storage/store.cjs'),
   { inside, anchored } = require('../../.build/room-groups/drawing-model.cjs');
 const { planDungeon } = require('../../.build/room-groups/dungeon-model.cjs'),

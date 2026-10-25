@@ -126,10 +126,10 @@ auf. Bei unlesbarem Journal bleiben die Originale erhalten und der Start stoppt.
 
 ## Prüfwege und Grenzen
 
-- `node --test tests/desktop-updates.test.mjs tests/desktop-update-ui.test.mjs`: Versions-/Signatur-/Archivprüfung,
+- `node --test tests/workspace/desktop-updates.test.mjs tests/workspace/desktop-update-ui.test.mjs`: Versions-/Signatur-/Archivprüfung,
   Releaseauswahl, Netzwerkfehler, getrennte Aktionen, Locks, Sicherung und
   Fehler sowie echte Prozessabbrüche an den Aktivierungsgrenzen.
-- `node --test tests/desktop-preset-settings.test.mjs`: Ein ungespeichertes
+- `node --test tests/campaign/desktop-preset-settings.test.mjs`: Ein ungespeichertes
   Generator-Preset oder ungeklärter Auftrag verhindert den Übergang zu Updates.
   Saubere Einstellungen werden vor dem Öffnen von Updates geschlossen.
 - `npm run package:desktop -- .build/update-native-base` und

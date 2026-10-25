@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { canonicalJson } from '../generation/canonical-json';
-import type { SceneWorld, TravelHistoryView } from '../world-contracts';
+import { canonicalJson } from '../campaign/generation/canonical-json';
+import type { SceneWorld, TravelHistoryView } from '../runtime/world-contracts';
 
 type Row = Record<string, string | number | null>;
 interface Effect {

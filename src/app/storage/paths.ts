@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import type { Room } from '../contracts';
+import type { Room } from '../shared/contracts';
 import type { DrawingElement } from '../atlas/drawing-contracts';
 import type { DungeonGeometry } from '../atlas/dungeon-contracts';
 import type {
