@@ -167,6 +167,15 @@ erforderliche Plan-/Dokubefunde. Sie hat den aktuellen Leseweg, alle 155 Pakete,
 Abhängigkeiten und die generierte Timeline geprüft. Der Implementierungsbefund
 bleibt bis Verbundfix, nativer Probe und Ergebnisreview offen.
 
+Version v1.4 konkretisiert nach der lesenden A0.06/A0.09-Vorbereitung den
+Postcommit-Transport im vorhandenen Worker-Catch sowie die echte Transaktionsgrenze
+bei Terrain-Nachlese. Der vorhandene City-Workerwrapper wird mit derselben
+begrenzten Korrektur abgesichert; es entsteht kein allgemeiner Storeumbau.
+A0.06 führt hierfür einen wiederverwendbaren tatsächlichen Main-/Preload-Testaufbau
+ein. Ergänzte Schreibbereiche stehen im Graphen. Die unabhängige Prüfung durch
+`a0_interim_review` bestätigt v1.4 anhand des tatsächlichen Worker-/Storepfads
+ohne offene erforderliche Planbefunde; die A0.06-Abhängigkeit bleibt verbindlich.
+
 ## Abschluss der Planreviews
 
 Stand 2026-10-25: Nach Korrektur der folgenden Befunde haben P0.01 und P0.02
@@ -198,7 +207,7 @@ sichtbar als inaktive Alternativen.
 | A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
 | A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
-| A0.12 | plan_final_review | Implementiert in `c20be8c3`; 110/110 Tests und Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.12-files.sha256)); unabhängiges Fixreview und native A0.11-Probe offen |
+| A0.12 | plan_final_review | Erstfix `c20be8c3` lokal grün; unabhängiges Review verlangt Terrain-Quellenkorrektur (aktuelle Revision darf alte Tiles nicht autorisieren); Nacharbeit läuft, A0.11 offen |
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | In Arbeit: typisierter unbekannter Schreibausgang über StoreClient, Main und Preload |
 
@@ -290,6 +299,17 @@ bestand 110/110 Tests und Typecheck (Belege `A0.12-regressions.log/.exit` und
 Übergabedateihashes vor Commit. Ein früher falsch positionierter Testtreffer bleibt
 als separater Fehlversuch erhalten. Der unabhängige ursprüngliche Reviewer prüft
 den Fix erneut; die native Verbundprobe bleibt A0.11. Kataloglinks aktualisiert.
+
+Das unabhängige A0.12-Fixreview reproduzierte nach 96 selbst ausgeführten
+Canvas-/Retrytests einen Restbefund: Im Terrainmodus wechselte während GPU-Fehler
+und Retry die Quellenrevision von 1 auf 2; trotz angehaltener aktueller Tileantwort
+wurden die alten Revision-1-Tiles wieder für Autorenstart freigegeben. Der bisherige
+Quellenwechseltest verwendete den Perceptionmodus ohne Tileladen. A0.12 ist deshalb
+wieder in Bearbeitung: aktuelle Quelle, aktuelle Kacheln und passender abgeschlossener
+Frame müssen gemeinsam die Freigabe bestimmen. Derselbe Implementierer ergänzt
+Produktionsfix und Terrain-Verbundtest; ursprüngliche Belege bleiben erhalten.
+Dies korrigiert eine unzureichend belegte Anforderung des bestehenden Pakets,
+verkleinert weder dessen Prüfung noch die Meilensteinziele.
 
 ## Abschlussgrenzen
 

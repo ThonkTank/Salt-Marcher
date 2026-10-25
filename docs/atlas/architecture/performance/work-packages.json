@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "planVersion": "v1.3",
+  "planVersion": "v1.4",
   "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
@@ -229,7 +229,11 @@
         "desktop/main.ts",
         "desktop/preload.ts",
         "desktop/store-client.ts",
-        "src/app/contracts.ts"
+        "src/app/contracts.ts",
+        "docs/project/architecture/canonical-store-worker.md",
+        "tests/desktop-store-outcome-boundary.test.mjs",
+        "tests/helpers/desktop-main-host.mjs",
+        "tests/desktop-atlas-read-ownership.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -318,7 +322,11 @@
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
-        "src/app/storage/store.ts"
+        "src/app/storage/store.ts",
+        "src/app/storage/atlas-commit-projection.ts",
+        "desktop/store-worker.ts",
+        "tests/desktop-atlas-postcommit-projection.test.mjs",
+        "docs/project/architecture/canonical-store-worker.md"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -384,7 +392,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "complete",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -411,7 +419,13 @@
         "commit": "c20be8c36bad93e5aec7963d5725a7b13a852c0a",
         "tests": "110/110 targeted; npm run check and targeted diff check passed",
         "evidence": ".build/atlas-performance-plan/A0.12-files.sha256",
-        "independentReview": "a0_interim_review running; native A0.11 and full R0 pending"
+        "independentReview": "required rework: terrain source changes during retry must not authorize old tiles",
+        "rework": {
+          "agent": "/root/plan_final_review",
+          "finding": "current revision2 while retained tiles revision1 and current read pending permits author input",
+          "status": "in_progress",
+          "nativeQualification": "pending A0.11"
+        }
       }
     },
     {
