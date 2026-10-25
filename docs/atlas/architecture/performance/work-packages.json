@@ -280,7 +280,14 @@
         "tests/desktop-graph-preview-owner.test.mjs",
         "tests/desktop-room-authoring.test.mjs",
         "tests/desktop-marker-selection.test.mjs",
-        "tests/helpers/atlas-author-recovery.mjs"
+        "tests/desktop-dungeon-authoring.test.mjs",
+        "tests/desktop-atlas-regions.test.mjs",
+        "tests/helpers/atlas-author-recovery.mjs",
+        "src/app/atlas-landscape-ui.ts",
+        "src/app/renderer.ts",
+        "tests/desktop-atlas-author-overlay.test.mjs",
+        "tests/desktop-drawing-draft-lifecycle.test.mjs",
+        "tests/terrain-commit-display.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
