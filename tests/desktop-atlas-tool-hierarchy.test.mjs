@@ -1,3 +1,4 @@
+import { sourceAssignedLiteral } from './helpers/source.mjs';
 import { atlasFixture } from './helpers/atlas-workbench.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,12 +43,12 @@ function fixture(t) {
     },
   });
   // Use the domain-owned form markup so a new native tool cannot disappear from the hierarchy unnoticed.
-  for (const [file, pattern] of [
-    ['atlas-landscape-ui.ts', /this\.panel\.innerHTML = `([^`]+)`/],
-    ['landscape-tool-settings.ts', /this\.brushRoot\.innerHTML=`([^`]+)`/],
+  for (const [file, propertyPath] of [
+    ['atlas-landscape-ui.ts', 'this.panel.innerHTML'],
+    ['landscape-tool-settings.ts', 'this.brushRoot.innerHTML'],
   ]) {
     const holder = document.createElement('div');
-    holder.innerHTML = readFileSync('src/app/' + file, 'utf8').match(pattern)[1];
+    holder.innerHTML = sourceAssignedLiteral(readFileSync('src/app/' + file, 'utf8'), propertyPath);
     document.body.append(holder);
   }
   const root = document.createElement('section');
