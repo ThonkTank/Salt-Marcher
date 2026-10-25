@@ -11,6 +11,10 @@ Der aktuelle Auftrag verlangt die vollständige Skill-Kette project-preflight �
 practical-planner → project-steering → project-closure. Bereits abgestimmte Ziele
 werden übernommen. Die frühere Interpretation der bloßen Ablage als Pausenauftrag
 war falsch und ist aufgehoben; pausierte Projekt-Automationen bleiben unverändert.
+Nach jeder Kontextzusammenfassung wird der aktuell relevante Skill erneut gelesen.
+Die regelmäßigen Reviewagenten verwenden zusätzlich `architecture-review` und
+`documentation-review`, jeweils lesend und mit konkretem Prüfbereich. Erforderliche
+Korrekturen übernimmt anschließend die bestehende Steuerung.
 
 Der Nutzer beauftragt Paketzerlegung, Architekturprüfung mit nötigen Fixes,
 abhängigkeitsbasierte Balken-Timeline, unabhängige Planreviews bis keine offenen
@@ -146,6 +150,11 @@ im vorhandenen Capability-Katalog; hier entsteht keine parallele Abnahmedatenban
 | 2026-10-25 | Ablage wurde irrtümlich als Pause interpretiert; Nutzer beauftragt ausdrücklich die vollständige Skill-Kette | Gesamtziel aktiv; Ziele übernommen, offene Planbefunde werden geschlossen |
 | 2026-10-25 | Skill-Abgleich verlangt relativen Schätzterminplan und explizite Abschlussphase | Aufwand/Dauer/Puffer sowie echte Abnahme und Übergabe werden vor Planfreigabe ergänzt |
 | 2026-10-25 | Originalmessungen vor Produktänderungen inventarisiert: 107 Dateien, 29.049.331 Bytes | Lokales Manifest `.build/atlas-performance-plan/original-measurements-manifest.json`, SHA-256 `701fb83d5d91b75032ecdae5d6a9ef3c974df0d48f5b77b2356771c072670445`; dauerhafte Vergleichsablage bleibt A1.01 |
+| 2026-10-25 | v1.1 konkretisiert Schreibschnittstellen: A0.01 benötigt den Präsentationsvertrag; A0.04 Consumertransport bis Preload/Tile-Fetcher/Export | Getrennte Besitzer bleiben erhalten; Planbasis v1 unverändert in Git, aktuelle Ressourcen im Graph |
+| 2026-10-25 | A0.04: reines Umrouten auf den Editorleser kollidiert mit dessen einzelner Terrain-Wartespur | Feste begrenzte Surface-/Geometry-Spuren und kooperative Unterbrechung als notwendige Abbruchkorrektur untersuchen; keine neuen Worker, keine Wiederholung echter Fehler/Schreibaufträge; im A0-Review gezielt prüfen |
+| 2026-10-25 | Unabhängige Annahmenprüfung von review_architecture bestätigt A0.04-Erweiterung innerhalb des Pakets | Vor Abschluss: Identität/Cancelgeneration erhalten, echter mehrschrittiger Tilejob trotz Kamera/Geometrie vollständig korrekt, keine Wiederbelebung nach Fehler/Cancel/Ersetzung, endlicher Fortschritt und konstante Worker-/Queuegrenzen nachweisen |
+| 2026-10-25 | v1.2: Nutzer ergänzt Architecture-/Documentation-Review-Skills für die regelmäßigen Prüfer und erneutes Skilllesen nach Kontextzusammenfassungen | In bestehende Rn.01/Rn.02 eingebunden; keine neue Berichtsserie oder Verkleinerung des Auftrags |
+| 2026-10-25 | A0.10 findet fehlenden Atlas-Deactivate-Hook in der Workspace-Registry; vorhandenes `hide()` beendet Präsentation und Nachladung bereits | Zusätzliche Schreibbereiche `workspace-editors.ts`, `renderer.ts` und Registry-Test freigegeben; exklusive native Gegenprobe erforderlich |
 
 ## Abschluss der Planreviews
 
@@ -173,14 +182,54 @@ sichtbar als inaktive Alternativen.
 | --- | --- | --- |
 | P0.01 / P0.02 | plan_final_review / review_architecture | Unabhängig abgeschlossen, siehe Planbasis; keine Produktabnahme |
 | P0.03 | Koordinator | Planbasis gesichert; Übergang an project-steering |
-| A0.01 | review_packages | Beauftragt: produktive Framebindung; Präsentation/Canvas/Surface und eigene Regressionen |
-| A0.04 | audit_atlas_boundaries | Beauftragt: Verbraucherabbruch; Main/Lesedienst/Ausgabevertrag und eigene Regressionen |
+| A0.01 | review_packages | Implementiert in `3779e6ecb23c6e4286497e6214fff0c7a9d3e617`; 93/93 gezielte Tests und Typecheck bestanden; native Qualifikation folgt in A0.11 |
+| A0.02 | review_packages | Implementiert in `5a864b384`; 91/91 Tests und Typecheck bestanden; native Qualifikation und R0 offen |
+| A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden; native Qualifikation und R0 offen |
+| A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden; native Qualifikation offen |
+| A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden; native Qualifikation und R0 offen |
+| A0.10 | review_packages | In Arbeit: erwarteter Appstopp; exklusives natives Buildfenster, andere Produktwriter ruhen |
 
-Die beiden ersten Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
+Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
 vorbereitet. Starts/Enden und Status im Paketgraphen; unbekannte aktive Arbeitszeit
 wird nicht aus verstrichener Laufzeit abgeleitet. A0 bleibt offen bis eigenen
 Paketnachweisen, unabhängigen Reviews, Fixes und erforderlicher Integration.
+
+A0.01 lief von 11:46:54 bis 11:58:38 UTC am 25.10.2026. Diese 11:44 Minuten sind
+beobachtete Laufzeit einschließlich Prüfungen, keine gemessene aktive Arbeitszeit.
+Produktionsnahe Regressionen verwenden echte Canvas-/Raster-/Surface-Besitzer
+mit kontrollierten Rendercallbacks. Reproduzierbarer Aufruf:
+`node --test --test-concurrency=1 tests/atlas-deck-surface.test.mjs tests/atlas-deck-geometry-overview.test.mjs tests/atlas-presentation-source.test.mjs tests/desktop-atlas-canvas.test.mjs`.
+Zusätzlich `npm run check` bestanden. Kataloglinks für die beiden betroffenen
+Darstellungs-/Höhenabläufe seriell ergänzt und als geprüft markiert; dies ist
+keine vollständige native Abnahme dieser Abläufe. R0 prüft Ergebnis und Annahmen
+unabhängig nach allen A0-Paketen.
+
+A0.02 beendet Öffnungswaiter bei Fehler und Deaktivierung; Retry erzeugt einen
+neuen Versuch mit aktueller Quelle. Zehn neue Tests führen den tatsächlichen
+Raster-/Surface-Besitzer aus. Ein laufendes `Surface.create` kann weiterhin erst
+nach Abschluss oder Timeout entsorgt werden; verspätete Ressourcen erhalten keine
+Freigabe. Belege: `.build/atlas-performance-plan/A0.02-tests.tap` und
+`A0.02-check.log`. Native Prüfung bleibt offen.
+
+A0.03 führt exakte Alphawerte des Bildassets im normalen Zeichnungspfad mit.
+Der Cache benötigt ein Byte pro Pixel, die temporäre Readbackfläche höchstens
+1024² Pixel ohne zusätzliche Skalierung. Transformation, Neigung, transparente
+Löcher und Freigabe sind lokal geprüft. Belege: `A0.03-*-tests.log`,
+`A0.03-typecheck-final.log/.exit` und `A0.03-files.sha256` im selben Belegordner.
+Der frühere fehlgeschlagene Typecheck bleibt als eigener Versuch erhalten.
+
+A0.05 prüft die Graphbarriere nach Quellen-Await auch für Terrain-Projektion und
+Quellenbootstrap. Zwölf produktive Host-Lesepfade werden mit angehaltener
+Quellenantwort geprüft: vor der Korrektur scheiterten drei Fälle, danach bestanden
+30/30 Tests einschließlich A0.04. Root hat die zwei Übergabedateihashes und alle
+drei erfolgreichen Prüfausgänge gegen `A0.05-handoff.json` geprüft. Electron ist
+in diesen Tests ersetzt; der SQLite-Leseworker ist echt. Native Abnahme bleibt offen.
+
+Die betroffenen Retry-, Alpha- und Graphwechselabläufe sind seriell im gemeinsamen
+Capability-Katalog mit den tatsächlichen Testdateien und Prüfdatum verknüpft.
+Eine unabhängige lesende Zwischenprüfung von A0.01–A0.05 auf Commit `6235ca15`
+läuft parallel zu A0.10; sie ersetzt nicht R0 auf dem vollständigen A0-Stand.
 
 ## Abschlussgrenzen
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "planVersion": "v1",
+  "planVersion": "v1.2",
   "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
@@ -19,7 +19,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -27,7 +27,11 @@
         "src/app/atlas-canvas.ts",
         "src/app/atlas-raster-presentation.ts",
         "src/app/atlas-deck-surface.ts",
-        "src/app/atlas-presentation.ts"
+        "src/app/atlas-presentation.ts",
+        "tests/atlas-deck-surface.test.mjs",
+        "tests/atlas-presentation-source.test.mjs",
+        "tests/desktop-atlas-canvas.test.mjs",
+        "tests/atlas-deck-geometry-overview.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -37,8 +41,12 @@
         "waitConfidence": "planning-assumption"
       },
       "actual": {
-        "startedAt": "2026-10-25T11:46:26Z",
         "agent": "/root/review_packages",
+        "startedAt": "2026-10-25T11:46:54Z",
+        "finishedAt": "2026-10-25T11:58:38Z",
+        "commit": "3779e6ecb23c6e4286497e6214fff0c7a9d3e617",
+        "tests": "93/93 targeted tests; npm run check passed",
+        "nativeQualification": "pending A0.11",
         "activeHours": null
       }
     },
@@ -53,12 +61,13 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
-        "src/app/atlas-raster-presentation.ts"
+        "src/app/atlas-raster-presentation.ts",
+        "tests/atlas-presentation-retry.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -67,7 +76,17 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/review_packages",
+        "activeHours": null,
+        "startedAt": "2026-10-25T11:59:59Z",
+        "finishedAt": "2026-10-25T12:07:04Z",
+        "commit": "5a864b384aa93a5644622afd76fdd4e4c135d5d2",
+        "tests": "91/91 targeted tests; npm run check passed",
+        "evidence": ".build/atlas-performance-plan/A0.02-tests.tap",
+        "nativeQualification": "pending A0.11",
+        "independentReview": "pending R0"
+      }
     },
     {
       "id": "A0.03",
@@ -79,14 +98,16 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
         "src/app/atlas-drawing-geometry.ts",
         "src/app/atlas-deck-drawing.ts",
-        "src/app/atlas-canvas.ts"
+        "src/app/atlas-canvas.ts",
+        "src/app/atlas-image-alpha.ts",
+        "tests/atlas-drawing-geometry.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -95,7 +116,17 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/plan_final_review",
+        "activeHours": null,
+        "startedAt": "2026-10-25T12:00:24Z",
+        "finishedAt": "2026-10-25T12:07:15Z",
+        "commit": "cdbdd3ff29f6a51dd4bfbfaf25293a85c186550f",
+        "tests": "11/11 drawing and 77/77 canvas tests; final npm run check passed",
+        "evidence": ".build/atlas-performance-plan/A0.03-files.sha256",
+        "nativeQualification": "pending A0.11",
+        "independentReview": "pending R0"
+      }
     },
     {
       "id": "A0.04",
@@ -107,14 +138,21 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
         "desktop/main.ts",
         "desktop/atlas-region.ts",
-        "src/app/atlas-output.ts"
+        "src/app/atlas-output.ts",
+        "desktop/preload.ts",
+        "src/app/atlas-region-contracts.ts",
+        "src/app/atlas-surface-tile-stream.ts",
+        "src/app/atlas-terrain-export.ts",
+        "tests/desktop-atlas-read-ownership.test.mjs",
+        "tests/atlas-surface-stream.test.mjs",
+        "tests/atlas-terrain-export.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -124,8 +162,13 @@
         "waitConfidence": "planning-assumption"
       },
       "actual": {
-        "startedAt": "2026-10-25T11:46:26Z",
         "agent": "/root/audit_atlas_boundaries",
+        "startedAt": "2026-10-25T11:47:14Z",
+        "finishedAt": "2026-10-25T12:03:19.952515Z",
+        "commit": "1e2c629601d2cf2b96584e9f83ae4e1acbcd071c",
+        "evidence": ".build/atlas-performance-plan/A0.04-handoff.json",
+        "tests": "97/97; npm run check and check:desktop passed",
+        "nativeQualification": "pending A0.11",
         "activeHours": null
       }
     },
@@ -140,12 +183,13 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
-        "desktop/main.ts"
+        "desktop/main.ts",
+        "tests/desktop-atlas-read-ownership.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -154,7 +198,17 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/audit_atlas_boundaries",
+        "activeHours": null,
+        "startedAt": "2026-10-25T12:04:57Z",
+        "finishedAt": "2026-10-25T12:08:48.620871Z",
+        "commit": "6235ca1526efd0c8f884923d9201efce4305fda4",
+        "tests": "30/30; npm run check and check:desktop passed",
+        "evidence": ".build/atlas-performance-plan/A0.05-handoff.json",
+        "nativeQualification": "pending A0.11",
+        "independentReview": "pending R0"
+      }
     },
     {
       "id": "A0.06",
@@ -283,7 +337,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [
         "native-host"
       ],
@@ -292,7 +346,10 @@
       "writeScopes": [
         "src/app/atlas-raster-presentation.ts",
         "desktop/atlas-region.ts",
-        "desktop/main.ts"
+        "desktop/main.ts",
+        "src/app/workspace-editors.ts",
+        "src/app/renderer.ts",
+        "tests/workspace-editor-registry.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": true,
@@ -301,7 +358,11 @@
         "profile": "native",
         "waitConfidence": "unknown"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/review_packages",
+        "activeHours": null,
+        "nativeQualification": "exclusive build window; pending"
+      }
     },
     {
       "id": "A0.11",

@@ -1,6 +1,6 @@
 # A0: Architekturgrundlage absichern – Arbeitspakete
 
-Status: Planned; alle Pakete offen.
+Status: Executing; A0.01–A0.05 lokal implementiert, native Qualifikation und unabhängige Meilensteinprüfung offen.
 Owner: atlas
 Last Reviewed: 2026-10-25 (Zerlegung nach unabhängiger Architekturprüfung)
 Source of Truth: Paketumfang für A0; Begründung in der [Architekturprüfung](architecture-audit.md), gemeinsame Regeln in der [Roadmap](../performance-roadmap.md).
@@ -51,6 +51,7 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 - **Voraussetzung:** Architekturprüfung.
 - **Auftrag und Ergebnis:** Besitzer und Abbruchgrenzen der Terrain-/Material-/Geometrieanfragen explizit machen. Exportabbruch darf ausschließlich seine Aufträge beenden; Editor-Nachladung und andere gültige Verbraucher laufen weiter. Bestehende Request-Identitäten nutzen, keinen unbeschränkten Workerpool einführen.
 - **Prüfung / fertig:** Gleichzeitig laufende Editor-Tile und Exportanfrage, dann Exportabbruch: nur Export abgebrochen, Editor erhält gültiges Produkt und bleibt bedienbar. Quellensperre und Appstopp dürfen weiterhin alle betroffenen Aufträge beenden. Tests über echte Hosthandler und Lesedienst, nicht nur Fake-Cancel.
+- **Präzisierung v1.1:** Die Consumerzuordnung darf Tilejobs nicht durch die gemeinsame Terrain-Wartespur verlieren. Feste begrenzte Surface-/Geometry-Spuren erhalten Quelle, Token, Fence, Query und Cancelgeneration bei kooperativer Fortsetzung. Ein echter mehrschrittiger Tilejob mit eingeschobener Kamera-/Geometriearbeit muss nach endlicher Interferenz vollständig wie die ununterbrochene Berechnung enden. Keine Wiederaufnahme nach Cancel, Ersetzung, Quellenwechsel oder echtem Workerfehler; keine zusätzlichen Worker oder unbeschränkten Nachfolger. Exportabbruch mit gleichzeitiger Editor-Höhe, Material, Geometrie und Fortsetzung prüfen. Unabhängige Annahmenprüfung bestätigt diese begrenzte Erweiterung; Implementierungsabnahme bleibt offen.
 
 ### A0.05 — Graphbarriere nach Quellen-Await erneut prüfen
 

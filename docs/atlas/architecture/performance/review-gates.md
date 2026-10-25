@@ -12,6 +12,18 @@ werden vor ihrer Ausführung mit IDs, Umfang, Tests und Abhängigkeiten ergänzt
 danach beide betroffenen Reviewaufträge erneut ausführen. Nicht erfolgte oder
 abgebrochene Reviews gelten nicht als bestandene Reviews.
 
+Jeder Agent der regelmäßigen Meilensteinreviews verwendet zusätzlich die Skills
+`architecture-review` und `documentation-review` in ihrer aktuellen Fassung.
+Beide sind lesende Prüfaufträge: konkreten Bereich und Entwicklungsfrage benennen,
+Codebesitzer/Datenfluss/Verträge beziehungsweise den tatsächlichen Doku-Leseweg
+verfolgen. Kein Gesamturteil aus Stichproben. Das Urteil lautet akzeptabel,
+Korrektur nötig oder nicht ausreichend geprüft; jeder Mangel nennt Fundstelle,
+Arbeitserschwernis, begründete Korrektur und Prüfkriterium. Rn.01 vertieft die
+Code-/Architekturprüfung, Rn.02 den Wissenszugang und die Planannahmen. Beide nutzen
+beide Skills; Ergebnisse und Fixaufträge gehen in die vorhandene Steuerung, ohne
+zusätzliche Berichtsserie. Nach jeder Kontextzusammenfassung den aktuell relevanten
+Skill erneut lesen, statt sich allein auf die Zusammenfassung zu verlassen.
+
 Für jedes Paket gelten Eingaben, Aufwand und Übergabe aus dem
 [gemeinsamen Paketvertrag](handbook.md#gemeinsamer-paketvertrag). Die `.01`-Reviews
 brauchen die Fachkompetenz der tatsächlich geänderten Code-/Prüfbesitzer, die
