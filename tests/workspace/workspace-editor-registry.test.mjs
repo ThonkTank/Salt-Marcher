@@ -79,7 +79,11 @@ function fixture() {
     return name.startsWith('activate') || name.startsWith('deactivate') ? undefined : true;
   };
   const host = {
-    live: { editorSession: session(), activateLive: (...args) => globalThis.editorBoundaryTest("activateLive", args), flushLive: (...args) => globalThis.editorBoundaryTest("flushLive", args) },
+    live: {
+      editorSession: session(),
+      activateLive: (...args) => globalThis.editorBoundaryTest('activateLive', args),
+      flushLive: (...args) => globalThis.editorBoundaryTest('flushLive', args),
+    },
     preparation: {
       editorSession: session(),
       activatePreparation: (...args) => globalThis.editorBoundaryTest('activatePreparation', args),
