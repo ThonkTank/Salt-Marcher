@@ -3,11 +3,16 @@ import type {DungeonBudgetSetting} from './dungeon-budget-contracts';
 import type {Result,Workspace,Point} from './contracts';import type {DungeonGeometry} from './dungeon-contracts';
 export interface GraphIntent {id:string;fromRoomId:string|null;toRoomId:string|null;fromGroupId:string|null;toGroupId:string|null;form:'corridor'|'stairs'|'ramp'|'ladder'|'shaft';name:string;problem:string}
 export interface GraphLayout {stored?:boolean;budgets?:DungeonBudgetSetting[];id:string;revision:number;scopeId:string;positions:{roomId:string;x:number;y:number}[];intents:GraphIntent[]}
-export interface GraphPreviewState {scopeId:string;phase:'graph'|'raster';protected:true}
+/** Captured before dispatch, including the first graph action (revision 0).
+ * Missing target means canonical for Atlas commands, never current preview. */
+export interface GraphPreviewTarget {kind:'graph-preview';previewId:string;scopeId:string;revision:number}
+export interface GraphPreviewState {id:string;revision:number;scopeId:string;phase:'graph'|'raster';protected:true}
 export interface GraphView {geometry:DungeonGeometry;layout:GraphLayout;preview:GraphPreviewState|null;budget?:import('./dungeon-budget-contracts').DungeonBudgetView}
 export type GraphEdit={kind:'graph-move';roomIds:string[];dxSteps:number;dySteps:number}|{kind:'graph-create';scopeId:string;floorId:string;name:string;point:Point;widthSteps:number;depthSteps:number;heightSteps:number}|{kind:'graph-duplicate';roomIds:string[];dxSteps:number;dySteps:number}|{kind:'graph-hide';roomIds:string[]}|{kind:'graph-layout';layout:GraphLayout;expectedRevision:number|null};
 export type GraphAction=GraphEdit|{kind:'connect';intent:GraphIntent}|{kind:'resolve';intentId:string;fromRoomId:string;toRoomId:string}|{kind:'accept'}|{kind:'restore'}|{kind:'raster'}|{kind:'reroute'}|{kind:'select';roomId:string};
-export interface GraphCommand {commandId:string;token:string;campaignId:string;scopeId:string;action:GraphAction}
+export type GraphCommand = {commandId:string;token:string;campaignId:string;scopeId:string} & ({target:GraphPreviewTarget;action:GraphAction}|{target?:undefined;action:Extract<GraphAction,{kind:'select'}>});
+/** Profile-local lifecycle marker. No filesystem paths or portable campaign data. */
+export interface GraphPreviewLifecycle {version:1;campaignId:string;previewId:string;scopeId:string;revision:number;status:'accepted'|'restored';commandId:string;fingerprint:string}
 export interface GraphAPI {graph(token:string,scopeId:string):Promise<Result<GraphView>>;executeGraph(command:GraphCommand):Promise<Result<{workspace:Workspace;view:GraphView}>>}
 export interface GraphContentCounts {danger:number;encounters:number;treasure:number;rewards:number;curiosities:number;puzzles:number;secrets:number}
 export interface GraphNode {id:string;name:string;roomIds:string[];point:Point;kind:'room'|'group'|'external';counts:GraphContentCounts;levelIds:string[];internalSeconds?:number;internalDecisions?:number;internalLoops?:number;internalConnections?:{kind:string;seconds:number;forward:boolean;backward:boolean;secret:boolean}[]}

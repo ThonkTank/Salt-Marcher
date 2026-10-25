@@ -173,12 +173,12 @@ interface Delta {
   guard: string;
 }
 const initialized = new WeakSet<object>();
-function captureSetup(db: any) {
+function captureSetup(db: any, tables:readonly string[]=tracked) {
   if (initialized.has(db)) return;
   db.exec(
     "CREATE TEMP TABLE atlas_capture(campaign_id TEXT); CREATE TEMP TABLE atlas_delta(table_name TEXT,key_json TEXT,before_json TEXT,after_json TEXT);",
   );
-  for (const table of tracked) {
+  for (const table of tables) {
     const cols = db.prepare("PRAGMA table_info(" + table + ")").all();
     if (!cols.length) continue;
     const pk = cols
@@ -426,11 +426,11 @@ function checkPositions(db: any, cam: string) {
 }
 const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'territory-layer':true,'territory-put':true,'territory-remove':true,'territory-stroke':true,'territory-vertex':true,
-  'drawing-import':true,'room-default':true,'graph-accept':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
+  'drawing-import':true,'room-default':true,'graph-accept':true,'graph-preview':true,world:true,city:true,drawing:true,'room-edit':true,bind:true,
   'group-room-split':true,'group-scale':true,'group-generate':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-prominence':true,'landscape-route':true,'landscape-vegetation-edit':true,'landscape-terrain-style':true,'landscape-height-stroke':true,'landscape-sea-level':true,'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
-export const atlasCommandFingerprint=(c:AtlasCommand)=>fp(c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action);
+export const atlasCommandFingerprint=(c:AtlasCommand)=>fp(c.target?{target:c.target,action:c.action}:c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action);
 /** No replay or projection reads: the transaction receipt alone establishes application. */
 export function hasAtlasReceipt(db:any,c:AtlasCommand):boolean{
  if(!c||typeof c.commandId!=='string'||!c.commandId||!c.action||!Object.hasOwn(atlasActionKinds,c.action.kind))throw new Error('Unbekannten oder unvollständigen Atlasauftrag nicht geprüft.');
@@ -613,3 +613,8 @@ export function validateCampaignAtlases(db: any) {
     if (hash(r.source) !== r.checksum)
       throw new Error("Dungeonimport-Original beschädigt.");
 }
+
+// The bounded graph owner shares row capture/restore mechanics, not Atlas
+// schema, transactions, canonical receipts or world-position validation.
+export {captureSetup as prepareSpatialCapture,currentRow as capturedSpatialRow,restore as restoreSpatialRow};
+export type {Delta as SpatialDelta};

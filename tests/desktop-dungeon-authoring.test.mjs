@@ -31,7 +31,7 @@ test('archived floors and rooms keep their keys available once and remain exclud
  assert.deepEqual(x.store.db.serialize(),before);
 });
 test('protected graph geometry is the authoring source while persisted geometry remains untouched',t=>{
- const x=fixture(t),command=action=>x.store.executeGraph({commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,scopeId:'local',action});
+ const x=fixture(t),previewId=randomUUID(),command=action=>{const state=x.store.workspace().graphPreview;return x.store.executeGraph({commandId:randomUUID(),token:x.w.token,campaignId:x.campaign.id,scopeId:'local',target:{kind:'graph-preview',previewId,scopeId:'local',revision:state?.revision??0},action});};
  const original=x.store.dungeonAuthoring(x.w.token);command({kind:'graph-move',roomIds:[x.rooms[0].id],dxSteps:2,dySteps:0});
  const preview=x.store.dungeonAuthoring(x.w.token);assert.equal(preview.drawing.graphPreview.protected,true);assert.notDeepEqual(preview.rooms.find(r=>r.id===x.rooms[0].id).polygons,original.rooms.find(r=>r.id===x.rooms[0].id).polygons);assert.deepEqual(preview.rooms.find(r=>r.id===x.rooms[0].id).sections,original.rooms.find(r=>r.id===x.rooms[0].id).sections);
  command({kind:'restore'});assert.deepEqual(x.store.dungeonAuthoring(x.w.token),original);

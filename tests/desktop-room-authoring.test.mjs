@@ -80,7 +80,7 @@ test('ordinary new rooms retain free contours through undo, redo and fresh open 
 });
 test('connecting existing contours previews complete rooms and a route without changing confirmed truth',t=>{
  const a=room('a',0,0),b=room('b',12.192,0),x=setup(t,[a,b]),token=x.workspace.token;
- const run=action=>x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action});
+ const run=action=>{const state=x.store.workspaceShell().graphPreview;return x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',target:{kind:'graph-preview',previewId:state?.id??randomUUID(),scopeId:'vault',revision:state?.revision??0},action});};
  const connect=()=>run({kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'b',fromGroupId:null,toGroupId:null,form:'corridor',name:'Fährkeller-Verbindung',problem:''}});
  let result=connect();assert.equal(result.view.layout.intents.length,0);assert.equal(result.view.geometry.drawing.paths.length,1);
  assert.ok(['a','b'].every(id=>result.view.geometry.drawing.volumes.some(v=>v.roomId===id)));
@@ -94,7 +94,7 @@ test('connecting existing contours previews complete rooms and a route without c
 });
 test('a rejected self connection leaves no partially initialized room in its preview',t=>{
  const a=room('a',0,0),x=setup(t,[a]),token=x.workspace.token;
- const result=x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',action:{kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'a',fromGroupId:null,toGroupId:null,form:'corridor',name:'Rejected',problem:''}}});
+ const result=x.store.executeGraph({commandId:randomUUID(),token,campaignId:x.campaign.id,scopeId:'vault',target:{kind:'graph-preview',previewId:randomUUID(),scopeId:'vault',revision:0},action:{kind:'connect',intent:{id:randomUUID(),fromRoomId:'a',toRoomId:'a',fromGroupId:null,toGroupId:null,form:'corridor',name:'Rejected',problem:''}}});
  assert.ok(result.view.layout.intents[0].problem);assert.equal(result.view.geometry.drawing.volumes.length,0);assert.deepEqual(result.workspace.rooms,[a]);
 });
 test('connection feedback distinguishes translated, changed and rejected endpoints beside the action',async t=>{

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import Database from 'better-sqlite3';
 import {desktopMainHost} from './helpers/desktop-main-host.mjs';
@@ -94,11 +94,34 @@ test('executeCity special worker path preserves a committed city change when its
 test('the extracted RoomCommit reader retains the active graph preview source',async t=>{
  const host=await desktopMainHost(t),campaign=ok(await host.api.create('Graph source')),shell=ok(await host.api.activateShell(campaign.id)),owner={campaignId:campaign.id,token:shell.token};
  const r=await room(host,owner);
- ok(await host.api.executeGraph({...command(owner),scopeId:r.scopeId,action:{kind:'graph-move',roomIds:[r.id],dxSteps:2,dySteps:0}}));
+ ok(await host.api.executeGraph({...command(owner),scopeId:r.scopeId,target:{kind:'graph-preview',previewId:randomUUID(),scopeId:r.scopeId,revision:0},action:{kind:'graph-move',roomIds:[r.id],dxSteps:2,dySteps:0}}));
  const preview=ok(await host.api.atlasRoom(owner.token,r.id));assert.notDeepEqual(preview.polygons,r.polygons);
- const edit={...owner,commandId:randomUUID(),roomId:r.id,expectedRevision:preview.revision,name:'Preview title',polygons:preview.polygons,sections:preview.sections};
+ const state=ok(await host.api.dungeonAuthoring(owner.token)).drawing.graphPreview,target={kind:'graph-preview',previewId:state.id,scopeId:state.scopeId,revision:state.revision};
+ const edit={...owner,target,commandId:randomUUID(),roomId:r.id,expectedRevision:preview.revision,name:'Preview title',polygons:preview.polygons,sections:preview.sections};
  const reply=ok(await host.api.atlasRoomCommit(edit));assert.equal(reply.room.name,edit.name);assert.deepEqual(reply.room.polygons,preview.polygons);
  assert.deepEqual(ok(await host.api.atlasRoom(owner.token,r.id)),reply.room);oneDispatch(host,'atlasRoomCommit',edit);
+});
+
+function shadowSnapshot(filename){const db=new Database(filename,{readonly:true});try{return createHash('sha256').update(db.serialize()).digest('hex');}finally{db.close();}}
+for(const [target,reader] of [['atlasRoomCommit','readRoomCommit'],['atlasDrawingCommit','workspace']])test(`graph preview ${target}: failed shadow reply rolls back its single owner without losing the preview`,async t=>{
+ const {host,fault,owner}=await fixture(t,{target,reader,shadowReceipt:true}),r=await room(host,owner);
+ ok(await host.api.executeGraph({...command(owner),scopeId:r.scopeId,target:{kind:'graph-preview',previewId:randomUUID(),scopeId:r.scopeId,revision:0},action:{kind:'graph-move',roomIds:[r.id],dxSteps:2,dySteps:0}}));
+ const preview=ok(await host.api.atlasRoom(owner.token,r.id)),author=ok(await host.api.dungeonAuthoring(owner.token));
+ assert.notDeepEqual(preview.polygons,r.polygons);
+ const shadow=events(fault).find(e=>e.shadow).shadow,beforeShadow=shadowSnapshot(shadow),before=state(host,owner);
+ const previewState=author.drawing.graphPreview,previewTarget={kind:'graph-preview',previewId:previewState.id,scopeId:previewState.scopeId,revision:previewState.revision};
+ const c=target==='atlasRoomCommit'
+  ?{...owner,target:previewTarget,commandId:randomUUID(),roomId:r.id,expectedRevision:preview.revision,name:'Must roll back',polygons:preview.polygons,sections:preview.sections}
+  :{...owner,target:previewTarget,commandId:randomUUID(),action:{kind:'key-batch',rooms:[{id:r.id,expectedRevision:preview.revision,keyRevision:null}],patch:{gmNotes:{mode:'replace',text:'Must roll back'}}}};
+ const atlas={...owner,target:previewTarget,commandId:c.commandId,action:target==='atlasRoomCommit'?{kind:'room-edit',edit:c}:{kind:'drawing',command:c}};
+ const reply=await host.api[target](c);assert.equal(reply.ok,false);assert.equal(reply.errorKind,undefined);assert.match(reply.error,/projection read failure/);
+ assert.deepEqual(shadowSnapshot(shadow),beforeShadow,'shadow data, history, revision and receipt must roll back together');
+ assert.deepEqual(state(host,owner),before,'canonical Atlas owner must remain untouched');
+ assert.deepEqual(ok(await host.api.atlasRoom(owner.token,r.id)),preview,'retain the previous graph move');
+ assert.deepEqual(ok(await host.api.dungeonAuthoring(owner.token)),author);
+ for(let i=0;i<2;i++)assert.equal(ok(await host.api.reconcileAtlasCommit(atlas)).outcome,'not-applied');
+ assert.deepEqual(shadowSnapshot(shadow),beforeShadow);assert.deepEqual(state(host,owner),before);oneDispatch(host,target,c);
+ const injected=events(fault).filter(e=>e.reader===reader);assert.equal(injected.length,1);assert.equal(injected[0].receipt,true);assert.equal(injected[0].inTransaction,true,'read failure must precede the outer shadow commit');
 });
 
 const heightAction=()=>({kind:'landscape-height-stroke',stroke:{mode:'raise',radius:32,strength:100,feather:0,samples:[{x:0,y:0,t:0},{x:0,y:0,t:100}]}});

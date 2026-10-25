@@ -85,7 +85,8 @@ import {ExtensionRegistry} from './extensions';
 import type {ExtensionCommand} from '../extension-contracts';
 import {dungeonBudgetView,validateDungeonPlacement} from './dungeon-budget';
 import type {CommitOutcome} from '../commit-receipt';
-import {GraphShadow,graphView,graphLayout,installGraph} from './graph';
+import {GraphShadow,graphView,graphLayout,installGraph,validateGraphLayouts} from './graph';
+import {requirePreviewTarget,previewCommandFingerprint} from './graph-preview-commands';
 import type {GraphCommand,GraphView} from '../graph-contracts';
 import type {DrawingView} from '../drawing-contracts';
 import type {PathPreview} from '../path-contracts';
@@ -180,7 +181,7 @@ export class CampaignStore {
   private shellFirstRoom=new WeakMap<object,{campaignId:string;stamp:string;id:string|null}>();
   private graphShadow:GraphShadow|null=null;
   private graphRouting=false;
-  private withGraph<T>(fn:()=>T):T {const original=this.db;if(!this.graphShadow)return fn();this.db=this.graphShadow.db;this.graphRouting=true;try{return fn();}finally{this.db=original;this.graphRouting=false;}}
+  private withGraph<T>(fn:()=>T):T {const original=this.db,wasRouting=this.graphRouting;if(!this.graphShadow||this.graphRouting)return fn();this.db=this.graphShadow.db;this.graphRouting=true;try{return fn();}finally{this.db=original;this.graphRouting=wasRouting;}}
 
   private extensionRegistry:ExtensionRegistry;
   private backupEpoch=0;
@@ -286,7 +287,7 @@ export class CampaignStore {
     }
   }
   private coupleAtlasWall(c:AtlasCommand,before:Room,elements:import('../drawing-contracts').DrawingElement[]){
-    const binding=atlasBindings(this.db,c.campaignId).find(b=>b.kind==='dungeon'&&b.ownerId===before.scopeId);if(!binding)return;
+    if(!this.graphRouting&&!atlasBindings(this.db,c.campaignId).some(b=>b.kind==='dungeon'&&b.ownerId===before.scopeId))return;
     const after=this.workspace().rooms.find(r=>r.id===before.id);if(!after)return;
     const pairs:{before:import('../contracts').Point;after:import('../contracts').Point}[]=[];
     before.polygons.forEach((p,pi)=>{const n=after.polygons[pi];if(p.outer.length===n?.outer.length)p.outer.forEach((v,i)=>{const next=n.outer[i]!;if(v.x!==next.x||v.y!==next.y)pairs.push({before:v,after:next});});});if(!pairs.length)return;
@@ -353,7 +354,7 @@ export class CampaignStore {
     const cam=this.guard(token);
     return this.db.transaction(()=>{
       const root=atlasRoot(this.db,cam), b=this.db.prepare("SELECT min(min_x) x,max(max_x) xmax,min(min_y) y,max(max_y) ymax FROM atlas_landscape WHERE campaign_id=? AND json_extract(payload,'$.terrainSettings') IS NULL").get(cam);
-      return {campaignId:cam,token,revision:root.revision,...atlasHistoryState(this.db,cam),
+      return {campaignId:cam,token,revision:root.revision,...(this.graphShadow?this.graphShadow.commands.history:atlasHistoryState(this.db,cam)),
         counts:{rooms:this.db.prepare("SELECT count(*) n FROM room r WHERE campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.id AND h.kind='room' AND h.hidden=1) AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=r.campaign_id AND h.id=r.floor_id AND h.scope_id=r.scope_id AND h.kind='floor' AND h.hidden=1)").get(cam).n,cities:this.db.prepare('SELECT count(*) n FROM city_document WHERE campaign_id=?').get(cam).n,landscape:this.db.prepare('SELECT count(*) n FROM atlas_landscape WHERE campaign_id=?').get(cam).n},
         landscapeBounds:b.x===null?null:{x:b.x,y:b.y,width:b.xmax-b.x,height:b.ymax-b.y}};
     })();
@@ -390,11 +391,11 @@ export class CampaignStore {
     return decodeRoom(row);
   }
   atlasRoomCommit(edit:Edit):import('../contracts').RoomCommit {
-    this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit}});
+    this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,target:edit.target,action:{kind:'room-edit',edit}});
     return this.atlasProjection(edit,()=>({...this.readRoomCommit(edit),atlasRevision:atlasRoot(this.db,edit.campaignId).revision}));
   }
   atlasDrawingCommit(command:DrawingCommand){
-    this.applyAtlas({commandId:command.commandId,token:command.token,campaignId:command.campaignId,action:{kind:'drawing',command}});
+    this.applyAtlas({commandId:command.commandId,token:command.token,campaignId:command.campaignId,target:command.target,action:{kind:'drawing',command}});
     // The Atlas receipt already checked replay; read back the same complete author inventory.
     return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.dungeonAuthoring(command.token).drawing,atlasRevision:atlasRoot(this.db,command.campaignId).revision}));
   }
@@ -409,13 +410,22 @@ export class CampaignStore {
     const value=terrainTraceMeasure("author.transaction-history",()=>prepared?this.db.transaction(()=>this.applyAtlas(c,prepared))():this.applyAtlas(c)) as {id?:string}|undefined;
     return this.atlasProjection(c,()=>{
       const root=atlasRoot(this.db,c.campaignId);
-      return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
+      return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...this.atlasCommandHistory(c)};
     });
   }
   reconcileAtlasCommit(c:AtlasCommand,pending=false):import('../campaign-atlas-contracts').AtlasCommitOutcome {
     this.guard(c.token,c.campaignId);
     // Main must exclude in-flight async terrain preparation before absence is definitive.
     if(pending)return{outcome:'unknown'};
+    if(c.target&&c.action.kind!=='graph-accept'){
+      const shadow=this.graphShadow;
+      if(!shadow||shadow.state().id!==c.target.previewId){
+        const row=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+c.campaignId+':'+c.target.previewId),retired=row?JSON.parse(row.value) as import('../graph-contracts').GraphPreviewLifecycle:null;
+        if(retired?.commandId===c.commandId&&retired.status==='restored'){if(retired.fingerprint!==previewCommandFingerprint(c))throw Error('Vorschaukennung anders verwendet.');return{outcome:'applied',ack:{campaignId:c.campaignId,commandId:c.commandId,revision:atlasRoot(this.db,c.campaignId).revision,...atlasHistoryState(this.db,c.campaignId)}};}
+        return{outcome:'unknown'};
+      }
+      return shadow.db.transaction(()=>{if(!shadow.commands.receipt(c))return{outcome:'not-applied' as const};return{outcome:'applied' as const,ack:{campaignId:c.campaignId,commandId:c.commandId,revision:atlasRoot(this.db,c.campaignId).revision,...this.atlasCommandHistory(c)}};})();
+    }
     return this.db.transaction(()=>{
       if(!hasAtlasReceipt(this.db,c))return{outcome:'not-applied' as const};
       const root=atlasRoot(this.db,c.campaignId);
@@ -438,7 +448,7 @@ export class CampaignStore {
     const related=(site.unit?.nodeIds??[]).map(n=>readCitySite(this.db,cam,cityId,n).unit);
     const faction=site.unit?.factionId?this.db.prepare('SELECT id,payload,checksum FROM world_note WHERE campaign_id=? AND id=?').get(cam,site.unit.factionId):null;
     const factions=faction&&hash(faction.payload)===faction.checksum?[{id:faction.id,name:JSON.parse(faction.payload).title}]:[];
-    return{...site,related,factions,...atlasHistoryState(this.db,cam)};
+    return{...site,related,factions,...(this.graphShadow?this.graphShadow.commands.history:atlasHistoryState(this.db,cam))};
   })();}
   workspaceInitial(token:string):WorkspaceGeometry {
     if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.workspaceInitial(token));
@@ -468,7 +478,7 @@ export class CampaignStore {
        }
       }
       const result:AtlasRegionView={campaignId:cam,revision:root.revision,workspace,geometry,terrain,perception,scopes:region.scopes,cities:region.cities,bindings,region:{...coverage,frames},
-       entrances:atlasDisplayEntrances(this.db,cam,bindings.filter(b=>b.kind==='dungeon').map(b=>b.ownerId),entranceId),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,scene,...atlasHistoryState(this.db,cam)};
+       entrances:atlasDisplayEntrances(this.db,cam,bindings.filter(b=>b.kind==='dungeon').map(b=>b.ownerId),entranceId),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,scene,...(this.graphShadow?this.graphShadow.commands.history:atlasHistoryState(this.db,cam))};
       if(Buffer.byteLength(JSON.stringify(result))>REGION_ACTIVE_BYTES)throw new Error('Laufender Atlas-Kontext überschreitet das aktive Darstellungsbudget. Exakte Fachansicht verwenden.');
       return result;
     })();
@@ -478,7 +488,7 @@ export class CampaignStore {
       const root=atlasRoot(this.db,cam),workspace=this.workspaceGeometry(token),drawing=this.graphShadow?this.withGraph(()=>drawingView(this.db,cam,true)):undefined,geometry=dungeonMapView(this.db,cam,workspace,drawing);
       geometry.rooms=workspace.rooms;
       const perception=geometry.position&&geometry.sceneId?dungeonDisplay(this.db,cam,geometry.sceneId,playerSettings(this.db,cam),playerObservers(this.db,cam).list,geometry):null;
-      return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain:JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace,scene:geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null,...atlasHistoryState(this.db,cam)};
+      return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain:JSON.parse(this.db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,root.map_id).payload),bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace,scene:geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null,...(this.graphShadow?this.graphShadow.commands.history:atlasHistoryState(this.db,cam))};
     })();
   }
   campaignAtlas(token:string):CampaignAtlas{
@@ -487,7 +497,7 @@ export class CampaignStore {
       if(!terrain)throw new Error('Kampagnenatlas fehlt.');
       const geometry=this.dungeon(token),scene=geometry.sceneId?this.sceneWorld(token,geometry.sceneId):null;
       const perception=geometry.position&&geometry.sceneId?dungeonDisplay(this.db,cam,geometry.sceneId,playerSettings(this.db,cam),playerObservers(this.db,cam).list):null;
-      return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace:this.workspace(),scene,...atlasHistoryState(this.db,cam)};
+      return{scopes:this.db.prepare('SELECT id,name FROM scope WHERE campaign_id=?').all(cam),perception,entrances:atlasEntrances(this.db,cam),localJourney:geometry.sceneId?atlasLocalJourney(this.db,cam,geometry.sceneId):null,campaignId:cam,revision:root.revision,terrain,bindings:atlasBindings(this.db,cam),cities:this.cities(token).cities.map(h=>this.city(token,h.id)),geometry,workspace:this.workspace(),scene,...(this.graphShadow?this.graphShadow.commands.history:atlasHistoryState(this.db,cam))};
     })();
   }
   atlasTerritories(token:string,box?:import("../atlas-landscape").LandscapeBox){return readTerritories(this.db,this.guard(token),box);}
@@ -500,8 +510,66 @@ export class CampaignStore {
     // particular, a prepared terrain stroke must roll back if its cache read fails.
     return this.db.inTransaction?read():projectCommittedAtlas(c,read);
   }
+  private atlasCommandHistory(c:AtlasCommand){
+    if(c.target&&c.action.kind!=='graph-accept'){const shadow=this.requireGraphPreview(c);return{...shadow.commands.history,preview:shadow.state()};}
+    return atlasHistoryState(this.db,c.campaignId);
+  }
+  private requireGraphPreview(c:{campaignId:string;commandId:string;target?:import('../graph-contracts').GraphPreviewTarget}){
+    requirePreviewTarget(c.target);const shadow=this.graphShadow;
+    if(!shadow)throw Error('Die bezeichnete Graphvorschau ist nicht verfügbar. Auftrag nicht auf eine andere Quelle anwenden.');
+    shadow.commands.assertTarget({...c,action:null});return shadow;
+  }
+  private validateGraphPreview(){validateGraphLayouts(this.db);dungeonGeometry(this.db,this.graphShadow!.campaignId);}
+  private applyPreviewAtlas(c:AtlasCommand){
+    if(this.db.inTransaction&&!this.graphRouting)throw Error('Vorschauauftrag benötigt seinen eigenen äußersten Transaktionsbesitzer.');
+    const shadow=this.requireGraphPreview(c),nested=(v:{token:string;campaignId:string;commandId:string;target?:import('../graph-contracts').GraphPreviewTarget})=>{
+      if(v.token!==c.token||v.campaignId!==c.campaignId||v.commandId!==c.commandId||json(v.target)!==json(c.target))throw Error('Vorschauauftrag gehört zu einem anderen Kontext.');
+    };
+    if(shadow.commands.receipt(c))return;
+    if(c.sourceFence!==undefined&&c.sourceFence!==this.atlasRegionSource(c.token).fence)throw Error('Vorschau inzwischen geändert. Ausschnitt erneut laden.');
+    if(c.action.kind==='drawing'&&c.action.command.action.kind==='element')validateDungeonPlacement(this.db,c.campaignId,c.action.command.action.element,shadow.scopeId);
+    return this.withGraph(()=>shadow.commands.execute(c,()=>{
+      const a=c.action;
+      if(a.kind==='undo'||a.kind==='redo')return;
+      if(a.kind==='room-default')return this.addRoom(c.token,true);
+      if(a.kind==='room-edit'){
+        nested(a.edit);const before=this.atlasRoom(c.token,a.edit.roomId),elements=this.drawing(c.token).elements;
+        const result=this.edit(a.edit);this.coupleAtlasWall(c,before,elements);return result;
+      }
+      if(a.kind==='drawing'){
+        nested(a.command);const action=a.command.action;
+        const before=action.kind==='shape'?this.atlasRoom(c.token,action.roomId):null,elements=before?this.drawing(c.token).elements:[];
+        const result=this.executeDrawing(a.command);if(before)this.coupleAtlasWall(c,before,elements);return result;
+      }
+      if(a.kind==='graph-preview'){nested(a.command);return this.applyGraphPreview(a.command);}
+      throw Error('Dieser Auftrag gehört nicht zum lokalen Vorschauinhalt.');
+    },()=>this.validateGraphPreview()));
+  }
+  private graphLifecycle(c:GraphCommand,status:'accepted'|'restored'){
+    const shadow=this.requireGraphPreview(c),target=requirePreviewTarget(c.target);
+    const value:import('../graph-contracts').GraphPreviewLifecycle={version:1,campaignId:c.campaignId,previewId:target.previewId,scopeId:target.scopeId,revision:shadow.state().revision,status,commandId:c.commandId,fingerprint:previewCommandFingerprint({...c,action:{kind:status==='accepted'?'graph-accept':'graph-preview',command:c}})};
+    this.db.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run('graph-preview-lifecycle:'+c.campaignId+':'+target.previewId,json(value));
+  }
+  private retireGraphPreview(shadow:GraphShadow){
+    this.committedSources.forget(shadow.db);if(this.graphShadow===shadow)this.graphShadow=null;shadow.dispose();
+  }
+  private applyGraphAcceptance(c:GraphCommand){
+    if(c.action.kind!=='accept')throw Error('Nur bestätigte Graphübernahme.');
+    if(c.scopeId!==c.target?.scopeId)throw Error('Vorschauziel und Dungeonzeichnung widersprechen sich.');
+    const shadow=this.requireGraphPreview(c);
+    if(c.target!.revision!==shadow.state().revision||shadow.phase!=='raster')throw Error('Aktuelle Rastervorschau prüfen und anschließend übernehmen.');
+    const changes=shadow.changes(),selected=shadow.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(c.campaignId)?.selected_id;
+    if(changes.length)executeDrawing(this.db,{commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:{kind:'graph-commit',changes}},()=>{this.guard(c.token,c.campaignId);});
+    if(selected)this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(selected,c.campaignId);
+    this.graphLifecycle(c,'accepted');
+  }
   private applyAtlas(c:AtlasCommand,prepared?:import('./terrain-scale').PreparedTerrainStroke){
     this.guard(c.token,c.campaignId);
+    if(c.target&&c.action.kind!=='graph-accept')return this.applyPreviewAtlas(c);
+    if(c.action.kind==='graph-preview')throw Error('Explizites Vorschauziel fehlt.');
+    if(this.graphShadow&&!c.target&&['drawing','room-edit','room-default','undo','redo'].includes(c.action.kind))throw Error('Offene Graphvorschau benötigt ein explizites Auftragsziel.');
+    if(c.action.kind==='graph-accept'&&this.db.inTransaction)throw Error('Graphübernahme benötigt die äußerste Atlastransaktion.');
+    const acceptedShadow=c.action.kind==='graph-accept'&&this.graphShadow?.state().id===c.target?.previewId?this.graphShadow:null;
     if(c.sourceFence!==undefined&&(typeof c.sourceFence!=='string'||!this.db.prepare('SELECT 1 FROM atlas_receipt WHERE command_id=?').get(c.commandId)&&this.atlasRegionSource(c.token).fence!==c.sourceFence))throw new Error('Atlas inzwischen geändert. Ausschnitt vor dem Zeichnen erneut laden.');
     if(prepared&&(c.action.kind!=='landscape-height-stroke'||prepared.stroke!==JSON.stringify(c.action.stroke)||prepared.fence!==this.atlasRegionSource(c.token).fence||prepared.revision!==atlasRoot(this.db,c.campaignId).revision))throw Error('Gelände inzwischen geändert. Ausschnitt erneut laden.');
     let landscapeEnvironment=false;
@@ -551,7 +619,7 @@ export class CampaignStore {
         this.db.prepare('INSERT INTO atlas_import_source VALUES(?,?,?,?)').run(cam,c.commandId,a.source,hash(a.source));
         return{roomId:a.rooms.length?id(a.rooms[0]!.id):null};
       }
-      if(a.kind==='graph-accept'){nested(a.command);if(a.command.action.kind!=='accept')throw new Error('Nur bestätigte Graphübernahme.');return this.executeGraph(a.command);}
+      if(a.kind==='graph-accept'){nested(a.command);if(json(c.target)!==json(a.command.target))throw Error('Vorschauziel widersprüchlich.');return this.applyGraphAcceptance(a.command);}
       if(a.kind==='world'){nested(a.command);if(a.command.action.kind==='map'&&a.command.action.map.id!==atlasRoot(this.db,cam).map_id)throw new Error('Jede Kampagne besitzt genau einen Atlas. Inhalte in die bestehende Welt einfügen.');return this.executeWorld(a.command);}
       if(a.kind==='drawing'){nested(a.command);const action=a.command.action,before=action.kind==='shape'?this.workspace().rooms.find(r=>r.id===action.roomId):null,elements=before?this.drawing(c.token).elements:[];const result=this.executeDrawing(a.command);if(before)this.coupleAtlasWall(c,before,elements);return result;}
       if(a.kind==='room-edit'){nested(a.edit);const before=this.atlasRoom(c.token,a.edit.roomId),elements=before?this.drawing(c.token).elements:[];const result=this.edit(a.edit);if(before)this.coupleAtlasWall(c,before,elements);return result;}
@@ -635,6 +703,7 @@ export class CampaignStore {
         else this.db.prepare('UPDATE atlas_local_journey SET payload=?,checksum=? WHERE rowid=?').run(payload,hash(payload),row.rowid);
       }
     },!landscapeOnly);
+    if(acceptedShadow)this.atlasProjection(c,()=>this.retireGraphPreview(acceptedShadow));
     if(terrainBefore)this.atlasProjection(c,()=>this.terrainAuthorCache.advance(terrainBefore,this.atlasRegionSource(c.token).fence,terrainChange));
     return result;
   }
@@ -739,7 +808,7 @@ export class CampaignStore {
       }
       return{graphPreview:this.graphShadow?.state(),campaign:{id:campaign.id,name:campaign.name,revision:campaign.revision},token,selectedId:first?.id??null,
         canUndo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor),
-        canRedo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor+1)};
+        canRedo:!!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId,campaign.cursor+1),...(this.graphRouting?this.graphShadow!.commands.history:{})};
     })();
   }
   workspaceGeometry(token:string):WorkspaceGeometry {
@@ -768,7 +837,7 @@ export class CampaignStore {
       const floors = this.db.prepare(`SELECT f.id,f.scope_id AS scopeId,f.name,f.source_elevation AS sourceElevation FROM drawing_floor f WHERE f.campaign_id=? AND NOT EXISTS(SELECT 1 FROM drawing_hidden h WHERE h.campaign_id=f.campaign_id AND h.id=f.id AND h.scope_id=f.scope_id AND h.kind='floor' AND h.hidden=1) ORDER BY source_elevation,id`).all(active.campaignId);
       return { graphPreview:this.graphShadow?.state(),campaign: { id: campaign.id, name: campaign.name, revision: campaign.revision }, token: active.token, rooms, problems, floors, selectedId: rooms.some(r => r.id === campaign.selected_id) ? campaign.selected_id : rooms[0]?.id ?? null,
         canUndo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaign.id, campaign.cursor),
-        canRedo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaign.id, campaign.cursor + 1) };
+        canRedo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaign.id, campaign.cursor + 1),...(this.graphRouting?this.graphShadow!.commands.history:{}) };
     })();
   }
   select(token: string, id: string) {
@@ -793,13 +862,13 @@ export class CampaignStore {
       for(const b of occupied)if(y<b.maxY+grid&&y+height>b.minY-grid&&x<b.maxX+grid&&x+width>b.minX-grid)x=Math.ceil((b.maxX+grid)/grid-1e-8)*grid;
       const room: Room = { id: randomUUID(), scopeId, floorId, name: 'Neuer Raum', number: String(n), revision: 0, polygons: [{ outer: [{ x, y }, { x:x+width, y }, { x:x+width, y:y+height }, { x, y:y+height }], holes: [] }], sections: [{ id: randomUUID(), kind: 'markdown', markdown: '' }] };
       validateRoom(room);
-      if(atlasBindings(this.db,campaignId).some(b=>b.ownerId===scopeId&&b.parent==='building')){this.insertRoom(campaignId,room);this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id,campaignId);}
+      if(!this.graphRouting&&atlasBindings(this.db,campaignId).some(b=>b.ownerId===scopeId&&b.parent==='building')){this.insertRoom(campaignId,room);this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(room.id,campaignId);}
       else this.executeDrawing({commandId:randomUUID(),token,campaignId,action:{kind:'create-room',scopeId,floorId,name:room.name,polygons:room.polygons}});
     }).immediate();
     return this.workspace();
   }
   edit(edit: Edit): RoomCommit {
-    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.edit(edit));
+    if(!this.graphRouting&&(this.graphShadow||edit.target))return this.atlasRoomCommit(edit);
     validateRoom(edit);
     if (typeof edit.commandId !== 'string' || !edit.commandId || !Number.isSafeInteger(edit.expectedRevision)) throw new Error('Ungültiger Änderungsauftrag.');
     const fingerprint = commandFingerprint(edit);
@@ -827,7 +896,7 @@ export class CampaignStore {
       const campaignId = this.guard(edit.token, edit.campaignId), cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
       return { room: decodeRoom(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId)), token: edit.token,
         canUndo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId, cursor),
-        canRedo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId, cursor + 1) };
+        canRedo: !!this.db.prepare('SELECT 1 FROM history WHERE campaign_id=? AND ordinal=?').get(campaignId, cursor + 1),...(this.graphRouting?{...this.graphShadow!.commands.history,graphPreview:this.graphShadow!.state()}:{}) };
     })();
   }
   private writeRoom(campaignId: string, room: Room) {
@@ -835,7 +904,7 @@ export class CampaignStore {
     this.db.prepare('UPDATE room SET name=?,revision=?,payload=?,checksum=? WHERE campaign_id=? AND id=?').run(room.name, room.revision, payload, hash(payload), campaignId, room.id);
   }
   history(token: string, direction: 'undo' | 'redo'): Workspace {
-    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.history(token,direction));
+    if(this.graphShadow&&!this.graphRouting)throw Error('Vorschauhistory benötigt einen Atlasauftrag mit explizitem Ziel.');
     if (direction !== 'undo' && direction !== 'redo') throw new Error('Ungültige Historyaktion.');
     this.db.transaction(() => {
       const campaignId = this.guard(token), cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
@@ -1082,14 +1151,37 @@ export class CampaignStore {
   executeDungeon(c:DungeonCommand){if(this.graphShadow)throw new Error('Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen. Dungeon-Leiten nutzt die bestätigte Geometrie.');return executeDungeon(this.db,c,()=>{this.guard(c.token,c.campaignId);},command=>this.executeLive(command),command=>this.executeCombat(command),command=>this.executeProgress(command));}
   previewPath(token:string,p:DungeonPath):PathPreview{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.previewPath(token,p));const cam=this.guard(token);return previewDungeonPath(this.db,cam,p,dungeonGeometry(this.db,cam));}
   drawing(token:string):DrawingView{if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.drawing(token));return{...drawingView(this.db,this.guard(token)),graphPreview:this.graphShadow?.state()};}
-  executeDrawing(c:DrawingCommand):{workspace:Workspace;view:DrawingView}{if(c.action.kind==='graph-commit')throw new Error('Graphübernahme ist nur über die geschützte Vorschau möglich.');if(this.graphShadow&&!this.graphRouting){if(c.action.kind==='element')validateDungeonPlacement(this.db,c.campaignId,c.action.element,this.graphShadow.scopeId);return this.withGraph(()=>this.executeDrawing(c));}executeDrawing(this.db,c,()=>{this.guard(c.token,c.campaignId);});return{workspace:this.workspace(),view:{...drawingView(this.db,c.campaignId),graphPreview:this.graphShadow?.state()}};}
+  executeDrawing(c:DrawingCommand):{workspace:Workspace;view:DrawingView}{if(c.action.kind==='graph-commit')throw new Error('Graphübernahme ist nur über die geschützte Vorschau möglich.');if(!this.graphRouting&&(this.graphShadow||c.target))return this.atlasDrawingCommit(c);executeDrawing(this.db,c,()=>{this.guard(c.token,c.campaignId);});return{workspace:this.workspace(),view:{...drawingView(this.db,c.campaignId),graphPreview:this.graphShadow?.state()}};}
   activateFeature(token:string,id:string,sceneId:string,expected:number,action:'activate'|'reset'|'correct',charges:number|null,commandId:string){if(this.graphShadow)throw new Error('Graphvorschau zuerst übernehmen oder Ursprung wiederherstellen.');const cam=this.guard(token);activateDungeonFeature(this.db,cam,id,sceneId,expected,action,charges,commandId);return drawingView(this.db,cam);}
   graph(token:string,scopeId:string):GraphView{const cam=this.guard(token);if(this.graphShadow&&(this.graphShadow.campaignId!==cam||this.graphShadow.scopeId!==scopeId))throw new Error('Zuerst die offene Graphvorschau übernehmen oder wiederherstellen.');const view=graphView(this.graphShadow?.db??this.db,cam,scopeId,this.graphShadow?.state()??null);return{...view,budget:dungeonBudgetView(this.db,cam,scopeId,view)};}
-  executeGraph(c:GraphCommand):{workspace:Workspace;view:GraphView}{const cam=this.guard(c.token,c.campaignId);if(this.graphShadow&&(this.graphShadow.campaignId!==cam||this.graphShadow.scopeId!==c.scopeId))throw new Error('Eine Dungeonvorschau gleichzeitig bearbeiten.');const a=c.action;
-    if(a.kind==='select'){this.select(c.token,a.roomId);return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
-    if(a.kind==='restore'){if(this.graphShadow)this.committedSources.forget(this.graphShadow.db);this.graphShadow?.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
-    if(a.kind==='accept'){const shadow=this.graphShadow;if(!shadow||shadow.phase!=='raster')throw new Error('Zur Rastervorschau wechseln, dort korrigieren und anschließend übernehmen.');const changes=shadow.changes(),selected=shadow.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id;this.db.transaction(()=>{if(changes.length)executeDrawing(this.db,{commandId:c.commandId,token:c.token,campaignId:cam,action:{kind:'graph-commit',changes}},()=>{this.guard(c.token,cam);});if(selected&&selected!==this.db.prepare('SELECT selected_id FROM campaign WHERE id=?').get(cam)?.selected_id)this.db.prepare('UPDATE campaign SET selected_id=? WHERE id=?').run(selected,cam);}).immediate();this.committedSources.forget(shadow.db);shadow.dispose();this.graphShadow=null;return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};}
-    if(!this.graphShadow)this.graphShadow=new GraphShadow(this.db,cam,c.scopeId);const shadow=this.graphShadow;
+  executeGraph(c:GraphCommand):{workspace:Workspace;view:GraphView}{
+    const cam=this.guard(c.token,c.campaignId),a=c.action;
+    if(a.kind==='select'){
+      if(this.graphShadow)this.requireGraphPreview(c);else if(c.target)throw Error('Die bezeichnete Vorschau ist nicht verfügbar.');
+      this.select(c.token,a.roomId);return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};
+    }
+    const target=requirePreviewTarget(c.target);
+    if(target.scopeId!==c.scopeId)throw Error('Vorschauziel und Dungeonzeichnung widersprechen sich.');
+    const command:AtlasCommand={commandId:c.commandId,token:c.token,campaignId:cam,target,action:{kind:a.kind==='accept'?'graph-accept':'graph-preview',command:c}};
+    if(a.kind==='accept'){this.applyAtlas(command);return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.graph(c.token,c.scopeId)}));}
+    if(a.kind==='restore'){
+      const prior=this.reconcileAtlasCommit(command);if(prior.outcome==='applied')return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.graph(c.token,c.scopeId)}));
+      const shadow=this.requireGraphPreview(c);if(target.revision!==shadow.state().revision)throw Error('Aktuelle Vorschau vor dem Wiederherstellen laden.');
+      this.db.transaction(()=>this.graphLifecycle(c,'restored')).immediate();
+      return this.atlasProjection(command,()=>{this.retireGraphPreview(shadow);return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};});
+    }
+    if(!this.graphShadow){
+      const retired=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+cam+':'+target.previewId);
+      if(retired&&JSON.parse(retired.value).previewId===target.previewId)throw Error('Diese Vorschau wurde bereits abgeschlossen.');
+      this.graphShadow=new GraphShadow(this.db,cam,c.scopeId,target);
+    }
+    this.applyPreviewAtlas(command);
+    return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.graph(c.token,c.scopeId)}));
+  }
+  private applyGraphPreview(c:GraphCommand){
+    const cam=c.campaignId,a=c.action,shadow=this.requireGraphPreview(c);
+    if(c.scopeId!==shadow.scopeId)throw Error('Vorschauziel und Dungeonzeichnung widersprechen sich.');
+    if(a.kind==='accept'||a.kind==='restore'||a.kind==='select')throw Error('Vorschaulifecycle ist kein Geometrieauftrag.');
     const draw=(action:DrawingCommand['action'])=>this.withGraph(()=>{executeDrawing(this.db,{commandId:randomUUID(),token:c.token,campaignId:cam,action},()=>{this.guard(c.token,cam);});});
     const saveLayout=(layout:import('../graph-contracts').GraphLayout)=>{const current=shadow.db.prepare('SELECT revision FROM dungeon_graph_layout WHERE campaign_id=? AND id=?').get(cam,c.scopeId);draw({kind:'graph-layout',layout,expectedRevision:current?.revision??null});};
     const connect=(intent:import('../graph-contracts').GraphIntent)=>{let layout=graphLayout(shadow.db,cam,c.scopeId);const at=layout.intents.findIndex(i=>i.id===intent.id);if(at>=0)layout.intents[at]=intent;else layout.intents.push(intent);if(!intent.fromRoomId||!intent.toRoomId){intent.problem='Gruppenverbindung ist Planungsabsicht. Beide konkreten Endräume wählen.';saveLayout(layout);return;}const fromId=intent.fromRoomId,toId=intent.toRoomId;try{shadow.db.transaction(()=>{
@@ -1099,7 +1191,6 @@ export class CampaignStore {
       for(const room of ends)if(!g.drawing.volumes?.some(v=>v.roomId===room!.id))draw({kind:'volume-initialize',roomId:room!.id,expectedRoomRevision:room!.revision,expectedVolumeRevision:null,heightSteps:2});
       g=dungeonGeometry(shadow.db,cam);const old=g.drawing.paths?.find(p=>p.id===intent.id),path:DungeonPath=old?{...old,from:old.from.roomId===fromId?old.from:{roomId:fromId,volumeId:null,pinned:false,local:null},to:old.to.roomId===toId?old.to:{roomId:toId,volumeId:null,pinned:false,local:null}}:{id:intent.id,revision:0,scopeId:c.scopeId,name:intent.name,notes:'',from:{roomId:fromId,volumeId:null,pinned:false,local:null},to:{roomId:toId,volumeId:null,pinned:false,local:null},waypoints:[],segments:[{form:intent.form,widthSteps:1,heightSteps:2,factor:1}],medium:'air',mode:'path',roomId:null,volumeId:null,fromPassageId:randomUUID(),toPassageId:randomUUID(),basis:'',route:[]};const preview=previewDungeonPath(shadow.db,cam,path,g);draw({kind:'path-publish',preview,expectedRevision:old?.revision??null});layout=graphLayout(shadow.db,cam,c.scopeId);layout.intents=layout.intents.filter(i=>i.id!==intent.id);saveLayout(layout);}).immediate();}catch(e){intent.problem=(e as Error).message;saveLayout(layout);}}
     if(a.kind==='raster')shadow.phase='raster';else if(a.kind==='connect')connect(structuredClone(a.intent));else if(a.kind==='resolve'){const intent=graphLayout(shadow.db,cam,c.scopeId).intents.find(i=>i.id===a.intentId);if(!intent)throw new Error('Verbindungsplanung fehlt.');connect({...intent,fromRoomId:a.fromRoomId,toRoomId:a.toRoomId});}else if(a.kind==='reroute'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}else{draw(a);if(a.kind==='graph-move'||a.kind==='graph-duplicate'){for(const path of drawingView(shadow.db,cam).paths??[]){if(path.mode==='area'||path.status==='ready')continue;connect({id:path.id,fromRoomId:path.from.roomId,toRoomId:path.to.roomId,fromGroupId:null,toGroupId:null,form:path.segments[0]!.form,name:path.name,problem:''});}}}
-    return{workspace:this.workspace(),view:this.graph(c.token,c.scopeId)};
   }
   autonomyDecision(token:string,actorId:string){return autonomyDecision(this.db,this.guard(token),actorId);}
   autonomy(token:string){return autonomyView(this.db,this.guard(token));}

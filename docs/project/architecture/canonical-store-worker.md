@@ -73,6 +73,43 @@ StoreClient rekonstruiert daraus `StoreOutcomeUnknownError`. Der genaue Auftrag
 bleibt über seine Atlas-Quittung klärbar, die fehlende Ansicht wird separat neu
 gelesen. Der RoomCommit-Leser ruft dafür keinen zweiten Schreibauftrag auf.
 
+Graphvorschau-Aufträge besitzen eine eigene, begrenzte Transaktionsgrenze in
+`storage/graph-preview-commands.ts`. `GraphPreviewTarget` hält die vor dem Dispatch
+festgelegte `previewId`, `scopeId` und lokale `revision`; die erste Autorenaktion
+trägt eine neue ID mit Revision 0. Reine Graphauswahl ohne Vorschau erzeugt keine
+Vorschau. Aktive Vorschauauswahl und Autorenaktionen adressieren ihren konkreten
+Besitzer. Atlas/Edit/Drawing ohne Ziel bezeichnen kanonische Daten; bei einer
+offenen Vorschau werden betroffene Autorenaktionen ohne ausdrückliches Ziel
+abgewiesen. Ein veraltetes Ziel fällt niemals auf den kanonischen Writer zurück.
+
+Die Shadow-Transaktion umfasst Fachänderung, gemeinsame Wände und Anker, lokale
+Validierung, einen gruppierten Historyschritt und `preview_receipt`. Undo/Redo
+sind ausdrücklich adressierte Atlasaufträge desselben Besitzers. Workspace und
+RoomCommit liefern `graphPreview`, kompakte Acks `preview`; `atlasRevision` und
+`AtlasCommitAck.revision` bleiben die kanonische Revision. Der Regionsfence bindet
+zusätzlich ID und lokale Revision. `reconcileAtlasCommit` liest Previewreceipts
+über das ursprüngliche Ziel; Graphaufträge verwenden dafür
+`{kind:'graph-preview',command}` mit demselben äußeren Ziel. Nachlesefehler nach
+Shadowcommit verwenden denselben typisierten Unknown-Transport wie Atlascommits.
+
+Nur `{kind:'graph-accept',command}` übernimmt in die kanonische Maintransaktion;
+auch direktes `executeGraph(accept)` verwendet diesen Weg. Hüllen-, Positions- und
+Reiseprüfung, kanonische History, Atlasreceipt und Lifecyclemarker gehören zu
+diesem Commit. Fehler erhalten die vollständige Vorschau. Erst danach entsorgt
+`retireGraphPreview` die Shadowquelle. Die profilgebundene Markierung
+`graph-preview-lifecycle:<campaignId>:<previewId>` enthält Version, IDs, lokale
+Revision, Status, Command-ID und Fingerprint, keine Dateipfade. Explizites Restore
+schreibt seinen identischen Beleg vor dem Entfernen; spätere Vorschauen überschreiben
+ihn nicht. Der Preview-Fingerprint wird ausschließlich von
+`previewCommandFingerprint` aus `{campaignId,target,action}` erzeugt.
+
+A0.15 stellt diesen Besitzer- und Retirementvertrag bereit. Dauerhafte Shadowdatei,
+Wiederöffnung und profilgebundene Bereinigung folgen in A0.16; die acht
+UI-Autorenanschlüsse mit explizitem Ziel folgen in A0.17. Ohne verfügbare ursprüngliche
+Vorschau ist ein alter Previewauftrag unbekannt, nicht kanonisch `not-applied`.
+`tests/desktop-graph-preview-commit.test.mjs` prüft die Vorschau- und Acceptgrenzen,
+gruppierte History, Commitfehler und den echten Worker/Main/Preload-Transport.
+
 Die Einordnung erfolgt erst nach der äußersten Schreibtransaktion. Insbesondere
 bleibt eine fehlgeschlagene Terraincache-Nachlese innerhalb der Prepared-Transaktion
 ein normaler Fehler mit Rollback; außerhalb davon ist die bereits gespeicherte

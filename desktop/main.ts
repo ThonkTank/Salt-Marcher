@@ -372,7 +372,7 @@ else {
     handle('campaign:discard-group-draft',async (token:string,id:string,writeId:string)=>(await store.discardGroupDraft(token,id,writeId)));
     handle('campaign:prepared-group',async (token:string,id:string)=>(await store.preparedGroup(token,id)));
     handle('graph:view',async (token:string,scopeId:string)=>(await store.graph(token,scopeId)));
-    handle('graph:execute',async(c:import('../src/app/graph-contracts').GraphCommand)=>{if(['restore','accept'].includes(c.action?.kind))return withGraphSourceReadBarrier(async ()=>(await store.executeGraph(c)));return (await store.executeGraph(c));});
+    handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>atlasWriteActivity.run(c.commandId,async()=>{if(['restore','accept'].includes(c.action?.kind))return withGraphSourceReadBarrier(async ()=>(await store.executeGraph(c)));return (await store.executeGraph(c));}));
     handle('drawing:path-preview',async (token:string,p:import('../src/app/path-contracts').DungeonPath)=>(await store.previewPath(token,p)));
     handle('drawing:map',async (token:string,roomId?:string,elementId?:string)=>(await store.drawingMap(token,roomId,elementId)));
     handle('drawing:element',async (token:string,id:string)=>(await store.drawingElement(token,id)));

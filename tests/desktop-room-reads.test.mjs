@@ -62,7 +62,7 @@ test('drawing projections omit all keys, archived room prose and element notes; 
  assert(JSON.stringify(f.store.drawing(w.token)).includes('KEY-PRIVATE'));assert(JSON.stringify(f.store.atlasRenderView(w.token)).includes('KEY-PRIVATE')===false);
 });
 test('protected graph geometry and exact details come from the same shadow, source bytes unchanged until acceptance',t=>{
- const f=fixture(t),w=f.store.activateShell(f.cam.id),source=f.store.atlasRoom(w.token,'room-00001'),command=action=>({commandId:randomUUID(),token:w.token,campaignId:f.cam.id,scopeId:'local',action});
+ const f=fixture(t),w=f.store.activateShell(f.cam.id),source=f.store.atlasRoom(w.token,'room-00001'),previewId=randomUUID(),command=action=>({commandId:randomUUID(),token:w.token,campaignId:f.cam.id,scopeId:'local',target:{kind:'graph-preview',previewId,scopeId:'local',revision:f.store.workspace().graphPreview?.revision??0},action});
  f.store.executeGraph(command({kind:'raster'}));
  const shape=f.store.workspaceGeometry(w.token);assert(shape.graphPreview);assert(!('sections' in shape.rooms[0]));assert.equal(f.store.atlasRoom(w.token,source.id).sections[0].markdown,source.sections[0].markdown);
  const read=f.store.roomReadSource(w.token);assert(read.filename.includes('preview.sqlite'));assert.equal(f.store.atlasRenderView(w.token).workspace.graphPreview.protected,true);

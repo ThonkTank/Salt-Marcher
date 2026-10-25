@@ -51,6 +51,7 @@ export type AtlasAction =
       y: number;
     }
   | { kind: "room-default" }
+  | { kind: "graph-preview"; command: import("./graph-contracts").GraphCommand }
   | { kind: "graph-accept"; command: import("./graph-contracts").GraphCommand }
   | { kind: "world"; command: WorldCommand }
   | { kind: "city"; command: CityCommand }
@@ -81,6 +82,7 @@ export type AtlasAction =
     }
   | { kind: "undo" | "redo" };
 export interface AtlasCommand {
+  target?:import('./graph-contracts').GraphPreviewTarget;
   /** Consecutive committed terrain increments share one undo entry. Each increment has its own receipt. */
   terrainStroke?:{id:string;expectedRevision:number};
   sourceFence?:string;
@@ -105,6 +107,8 @@ export interface AtlasObjectPage {
   next: AtlasObjectQuery['cursor'] | null;
 }
 export interface AtlasCommitAck {
+  /** revision remains canonical; preview.revision belongs only to this preview. */
+  preview?:import('./graph-contracts').GraphPreviewState;
   campaignId: string; commandId: string; revision: number; result?:{id:string};
   sourceFence?:string;
   canUndo: boolean; canRedo: boolean;
