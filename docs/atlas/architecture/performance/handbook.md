@@ -188,6 +188,20 @@ Korrektur von UI-Schreibbesitz, Schedulerprüfungen und veralteten Statusaussage
 Graph-/Timelinecheck mit 157 Paketen und alle sieben Plantests wurden unabhängig
 erneut grün ausgeführt. A0.13 wartet auf die korrigierte A0.09-Implementierung.
 
+Version v1.6 ergänzt nach konkret reproduziertem A0.09-Reviewbefund drei begrenzte
+Pakete: A0.15 führt Vorschauänderung und Receipt unter einem transaktionalen
+Besitzer; A0.16 erhält genau diesen Bestand samt Identität bei Neustart; A0.17
+bindet Autorenaktionen und Undo/Redo ausdrücklich an die Vorschau. A0.16/A0.17
+dürfen nach stabilem A0.15-Vertrag an getrennten Codebesitzern parallel laufen. Erst danach
+endet die A0.09-Nachprüfung; A0.13 und alle Folgegates bleiben davon abhängig.
+Der Graph enthält nun 160 Pakete. Die zusätzliche Speicherung umfasst die vorhandene
+begrenzte Graphvorschau, keine vollständige Kampagnenkopie. Abnahmegrenzen und
+Schreibzuständigkeiten stehen in A0. `a0_interim_review` akzeptiert v1.6 nach
+Präzisierung des Unknown-Besitzes direkter Graphaktionen einschließlich erster
+Vorschauerzeugung und lesend klärbarem Restore-Retirement. Der Reviewer führte
+Graph-/Timelinecheck mit 160 Paketen und alle sieben Plantests selbst erneut grün
+aus. Der Plananschluss ist freigegeben; Implementierungs- und Nativegates bleiben offen.
+
 ## Abschluss der Planreviews
 
 Stand 2026-10-25: Nach Korrektur der folgenden Befunde haben P0.01 und P0.02
@@ -343,8 +357,10 @@ gegen die Übergabe. Der erste Testversuch hatte zwei falsche Fixturepfade und i
 separat erhalten. Das unabhängige Zwischenreview fand eine noch fehlerhafte Graphpreview-Grenze:
 Nach Shadow-DB-Raumcommit kann dessen Nachlese scheitern, während nur der Haupt-DB-
 Atlasreceipt zurückrollt. Die Vorschau enthält dann die Änderung, die Klärung meldet
-aber „nicht angewandt“. A0.09 ist zur gezielten Nacharbeit beim selben Implementierer
-wieder geöffnet; A0.13 wartet darauf. Die bisherigen Erfolgstests dieser Vorschau
+aber „nicht angewandt“. Auch ein späterer SQLite-Lesefehler in `reconcileAtlasGeometry` reproduziert
+diesen Splitzustand nach erfolgreichem unmittelbarem Leser. Der enge Readerwrapper
+reicht deshalb nicht. A0.09 bleibt zur Nachprüfung offen; zuerst wird der begrenzte
+Besitzeranschluss A0.15–A0.17 geplant und unabhängig geprüft. A0.13 wartet darauf. Die bisherigen Erfolgstests dieser Vorschau
 belegen den Fehlerfall nicht. Native Qualifikation und R0 bleiben offen; kein frisch
 gestarteter Renderer ist durch die vorhandenen Hosttests belegt.
 

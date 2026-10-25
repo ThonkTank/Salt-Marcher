@@ -69,7 +69,7 @@ eines unqualifizierten Stands; nötige Lieferarbeit bekommt einen eigenen Auftra
 
 ### R0.01 — Ergebnis von A0 unabhängig prüfen
 
-<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","A0.11","A0.12","A0.13","A0.14"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","A0.11","A0.12","A0.13","A0.14","A0.15","A0.16","A0.17"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
 - **Voraussetzung:** Alle aktivierten Pakete von A0 abgeschlossen; tatsächliche Diffs, Tests und Artefakte verfügbar.
 - **Auftrag und Ergebnis:** Nicht beteiligter Agent prüft Codekorrektheit, Regressionen, Sicherheits-/Datengrenzen und jeden Abnahmepunkt des Meilensteins. Geeignete gezielte Prüfungen selbst reproduzieren; keine bloße Übernahme der Implementiererzusammenfassung.
@@ -77,7 +77,7 @@ eines unqualifizierten Stands; nötige Lieferarbeit bekommt einen eigenen Auftra
 
 ### R0.02 — Annahmen und Plan–Soll–Ist nach A0 unabhängig prüfen
 
-<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","A0.11","A0.12","A0.13","A0.14"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","A0.11","A0.12","A0.13","A0.14","A0.15","A0.16","A0.17"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
 - **Voraussetzung:** Dieselben A0-Ergebnisse und bisheriger Plan-/Istverlauf; unabhängig von R0.01 ausführbar.
 - **Auftrag und Ergebnis:** Zweiter unabhängiger Agent prüft, ob Architektur-, Leistungs-, Qualitäts- und Aufwandannahmen den tatsächlichen Ergebnissen standhalten. Soll zum aktuellen Freigabepunkt gegen Ist und beobachteten Verbrauch vergleichen; notwendige Umplanung mit Ursache benennen.

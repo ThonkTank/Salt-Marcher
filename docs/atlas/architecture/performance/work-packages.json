@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "planVersion": "v1.5",
+  "planVersion": "v1.6",
   "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
@@ -273,7 +273,8 @@
       "writeScopes": [
         "src/app/campaign-atlas-author.ts",
         "src/app/atlas-author.ts",
-        "src/app/campaign-atlas-ui.ts"
+        "src/app/campaign-atlas-ui.ts",
+        "src/app/graph-ui.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -319,7 +320,10 @@
       "document": "docs/atlas/architecture/performance/a0-foundation.md",
       "requires": [
         "A0.06",
-        "P0.03"
+        "P0.03",
+        "A0.17",
+        "A0.15",
+        "A0.16"
       ],
       "lane": "A0",
       "conditional": false,
@@ -356,8 +360,8 @@
         "independentReview": "required rework: graph preview shadow edit can persist while main Atlas receipt rolls back",
         "rework": {
           "agent": "/root/review_packages",
-          "status": "in_progress",
-          "finding": "readRoomCommit failure after shadow edit commits leaves changed preview but reconciliation not-applied",
+          "status": "implementation held for reviewed v1.6 owner correction A0.15-A0.17",
+          "finding": "Room/Drawing shadow changes survive main rollback after immediate or later geometry reads; two independent commits cannot supply one receipt boundary",
           "nativeQualification": "pending A0.11"
         }
       }
@@ -474,7 +478,10 @@
         "P0.03",
         "A0.12",
         "A0.13",
-        "A0.14"
+        "A0.14",
+        "A0.15",
+        "A0.16",
+        "A0.17"
       ],
       "lane": "A0",
       "conditional": false,
@@ -3845,7 +3852,10 @@
         "A0.11",
         "A0.12",
         "A0.13",
-        "A0.14"
+        "A0.14",
+        "A0.15",
+        "A0.16",
+        "A0.17"
       ],
       "lane": "R0",
       "conditional": false,
@@ -3884,7 +3894,10 @@
         "A0.11",
         "A0.12",
         "A0.13",
-        "A0.14"
+        "A0.14",
+        "A0.15",
+        "A0.16",
+        "A0.17"
       ],
       "lane": "R0",
       "conditional": false,
@@ -4783,6 +4796,139 @@
       "estimate": {
         "profile": "native",
         "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.15",
+      "title": "Graphvorschau-Aufträge und Belege unter einem Transaktionsbesitzer führen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/graph.ts",
+        "src/app/storage/graph-preview-commands.ts",
+        "src/app/storage/store.ts",
+        "src/app/graph-contracts.ts",
+        "src/app/campaign-atlas-contracts.ts",
+        "src/app/contracts.ts",
+        "src/app/drawing-contracts.ts",
+        "src/app/storage/campaign-atlas.ts",
+        "tests/desktop-graph-preview-commit.test.mjs",
+        "tests/desktop-atlas-postcommit-projection.test.mjs",
+        "tests/helpers/atlas-projection-fault.mjs",
+        "tests/desktop-dungeon-authoring.test.mjs",
+        "docs/project/architecture/canonical-store-worker.md",
+        "desktop/main.ts",
+        "src/app/storage/atlas-commit-projection.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption",
+        "activeHours": [
+          3,
+          6
+        ],
+        "reserveHours": 1,
+        "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.16",
+      "title": "Dieselbe Graphvorschau mit Belegen dauerhaft wiederöffnen und sicher abschließen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.15",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/graph.ts",
+        "src/app/storage/graph-preview-lifecycle.ts",
+        "src/app/storage/store.ts",
+        "src/app/storage/campaign-data.ts",
+        "desktop/campaign-erasure.ts",
+        "tests/desktop-graph-preview-restart.test.mjs",
+        "tests/desktop-dungeon-authoring.test.mjs",
+        "docs/project/architecture/canonical-store-worker.md",
+        "desktop/store-operations.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption",
+        "activeHours": [
+          2,
+          5
+        ],
+        "reserveHours": 1,
+        "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.17",
+      "title": "Autorenaktionen und Undo/Redo ausdrücklich an die Graphvorschau binden",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.15",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/campaign-atlas-author.ts",
+        "src/app/campaign-atlas-ui.ts",
+        "src/app/renderer.ts",
+        "src/app/graph-ui.ts",
+        "src/app/drawing-ui.ts",
+        "src/app/key-ui.ts",
+        "src/app/path-ui.ts",
+        "src/app/volume-ui.ts",
+        "src/app/trigger-ui.ts",
+        "src/app/dungeon-content-ui.ts",
+        "tests/desktop-graph-preview-owner.test.mjs",
+        "tests/desktop-review-retention-dom.test.mjs",
+        "tests/desktop-atlas-commit-recovery.test.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption",
+        "activeHours": [
+          2,
+          4
+        ],
+        "reserveHours": 1,
+        "basis": "Begrenzte Korrektur des belegten Graphpreview-Speicherbesitzes; keine Kampagnenvollkopie."
       },
       "actual": null
     }

@@ -49,4 +49,10 @@ Ausnahmen von den Abnahmekriterien.
 
 Der zunächst vermutete zusätzliche Fehlerpfad über gewöhnliche Fehler in
 `playerDisplay.sync()` wurde verworfen: Der Besitzer fängt diese bereits selbst.
-A0.09 behandelt ausschließlich den belegten Postcommit-Lesepfad im Store.
+A0.09 behandelt den belegten Postcommit-Lesepfad im Store. Sein Zwischenreview
+reproduzierte zusätzlich für Room und Drawing eine getrennte Shadow-/Main-
+Commitgrenze: Nachlese oder spätere Geometrieprüfung rollt Main zurück, obwohl die
+Vorschau bereits geändert ist; die Atlasklärung meldet falsch „nicht angewandt“.
+A0.15–A0.17 korrigieren diesen konkreten Besitzer- und Lebenszyklusanschluss.
+Eine Transaktion um zwei unabhängige SQLite-Verbindungen ist kein Atomizitätsbeleg.
+Der Abschluss von A0.09 und der Restartpfad A0.13/A0.14 bleiben davon abhängig.

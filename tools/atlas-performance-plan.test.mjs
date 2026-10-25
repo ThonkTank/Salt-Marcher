@@ -43,6 +43,11 @@ test('real graph prevents reviewed A0 and A1 collisions',()=>{
   assert(rows.get('A0.14').start>=rows.get(id).end,'restart qualification needs both owners');
  }
  assert(rows.get('A0.11').start>=rows.get('A0.14').end,'combined qualification needs verified restart');
+ for(const id of ['A0.16','A0.17']){
+  assert(rows.get(id).start>=rows.get('A0.15').end,'preview consumers need the stable owner contract');
+  assert(rows.get('A0.09').start>=rows.get(id).end,'projection requalification needs both preview integrations');
+ }
+ assert(overlaps(rows.get('A0.16'),rows.get('A0.17')),'separate preview persistence and UI owners can work in parallel');
  assert(overlaps(rows.get('A2.03'),rows.get('A2.05')),'separate candidate owners should remain parallel');
 });
 
