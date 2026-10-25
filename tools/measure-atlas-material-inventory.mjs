@@ -12,7 +12,7 @@ const frozen = resolve(root, '.build/atlas-rebuild-m0-frames/source.sqlite');
 const fixture = resolve(root, 'tests/fixtures/atlas/mixed-world.sqlite.gz');
 const fixtureCopy = resolve(root, '.build/atlas-material-inventory/mixed-world.sqlite');
 const expected = '19d4edc88b50d8074578a5c40c870a50331fec1c78a7a8b4f4feee5d463fdb12';
-const sha = bytes => createHash('sha256').update(bytes).digest('hex');
+const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const fixtureBytes = readFileSync(fixture);
 const fixtureHash = sha(gunzipSync(fixtureBytes));
 let source = frozen;
@@ -20,14 +20,16 @@ if (!existsSync(frozen) || sha(readFileSync(frozen)) !== expected) {
   if (fixtureHash !== expected) throw new Error('Canonical fixture hash mismatch: ' + fixtureHash);
   mkdirSync(dirname(fixtureCopy), { recursive: true });
   if (existsSync(fixtureCopy)) {
-    if (sha(readFileSync(fixtureCopy)) !== expected) throw new Error('Existing isolated fixture copy has unexpected bytes: ' + fixtureCopy);
+    if (sha(readFileSync(fixtureCopy)) !== expected)
+      throw new Error('Existing isolated fixture copy has unexpected bytes: ' + fixtureCopy);
   } else {
     writeFileSync(fixtureCopy, gunzipSync(fixtureBytes), { flag: 'wx' });
   }
   source = fixtureCopy;
 }
 const sourceHashBeforeRead = sha(readFileSync(source));
-if (sourceHashBeforeRead !== expected || fixtureHash !== expected) throw new Error('Frozen source or canonical fixture hash mismatch.');
+if (sourceHashBeforeRead !== expected || fixtureHash !== expected)
+  throw new Error('Frozen source or canonical fixture hash mismatch.');
 
 const python = String.raw`
 import json, math, sqlite3, sys, collections
@@ -112,19 +114,53 @@ for name in ('propertyOnlyMetadata','heightField','routeField','colorOverlay','v
 for name in ('mask','maskManaged','terrainSettings','paintVisibility','visible:true','visible:false','locked:true','locked:false','line','place'): flags.setdefault(name,0)
 print(json.dumps({'campaigns':campaigns,'totalRecords':len(rows),'sourceKinds':dict(sorted(classes.items())),'semanticRoles':dict(sorted(roles.items())),'recordKinds':dict(sorted(kindcounts.items())),'examples':dict(examples),'fieldCounts':dict(sorted(fields.items())),'flags':dict(sorted(flags.items())),'heightVersions':dict(sorted(heights.items())),'heightPixelSizes':dict(sorted(pixels.items())),'paintVersions':dict(sorted(paints.items())),'paintTips':dict(sorted(tips.items())),'settingsCount':len(settings),'settingKeys':[r['key'] for r in settings],'geometry':{'recordsWithGeometry':geom_count,'extents':None if not math.isfinite(ext[0]) else {'minX':ext[0],'minY':ext[1],'maxX':ext[2],'maxY':ext[3]}},'unsupportedByCurrentSourceAdapter':{k:v for k,v in unsupported.items() if k!='nonMaterialLineAndPlaceRoles'},'supplementalCounts':{'nonMaterialLineAndPlaceRoles':sum(roles[k] for k in ('lineInfrastructure','place')),'landscapeTerrainSettingsFlags':flags['terrainSettings'],'storedSettingsRows':len(settings)},'integrity':{'malformedJsonCount':len(malformed_json),'malformedGeometryCount':len(malformed_geometry),'nonfiniteCoordinateOrExtentCount':len(nonfinite),'examples':{'malformedJson':malformed_json[:5],'malformedGeometry':malformed_geometry[:5],'nonfinite':nonfinite[:5]},'sourceCountSum':sum(classes.values()),'sourceCountEquality':sum(classes.values())==len(rows),'semanticRoleCountSum':sum(roles.values()),'semanticRoleCountEquality':sum(roles.values())==len(rows)},'settingsExamples':[{'key':r['key'],'valueLength':len(r['value'])} for r in settings[:5]]},allow_nan=False))
 `;
-const run = spawnSync('python3', ['-c', python, source], { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+const run = spawnSync('python3', ['-c', python, source], {
+  encoding: 'utf8',
+  maxBuffer: 10 * 1024 * 1024,
+});
 if (run.status !== 0) throw new Error(run.stderr || 'python exited ' + run.status);
 const sourceHashAfterRead = sha(readFileSync(source));
-if (sourceHashAfterRead !== sourceHashBeforeRead || sourceHashAfterRead !== expected) throw new Error('Frozen source changed during the read-only inventory run.');
+if (sourceHashAfterRead !== sourceHashBeforeRead || sourceHashAfterRead !== expected)
+  throw new Error('Frozen source changed during the read-only inventory run.');
 const inventory = JSON.parse(run.stdout);
 inventory.generatedAt = new Date().toISOString();
-inventory.source = { path: source.slice(root.length + 1), sha256: sourceHashAfterRead, sha256BeforeRead: sourceHashBeforeRead, sha256AfterRead: sourceHashAfterRead, fixturePath: fixture.slice(root.length + 1), fixtureCompressedSha256: sha(fixtureBytes), fixtureDatabaseSha256: fixtureHash };
-inventory.tool = { path: 'tools/measure-atlas-material-inventory.mjs', sha256: sha(readFileSync(fileURLToPath(import.meta.url))) };
-inventory.integrity.roleCountEquality = inventory.integrity.semanticRoleCountEquality && inventory.integrity.semanticRoleCountSum === inventory.totalRecords;
-if (inventory.integrity.malformedJsonCount || inventory.integrity.malformedGeometryCount || inventory.integrity.nonfiniteCoordinateOrExtentCount || !inventory.integrity.sourceCountEquality || !inventory.integrity.roleCountEquality) throw new Error('Inventory integrity failure: ' + JSON.stringify(inventory.integrity));
+inventory.source = {
+  path: source.slice(root.length + 1),
+  sha256: sourceHashAfterRead,
+  sha256BeforeRead: sourceHashBeforeRead,
+  sha256AfterRead: sourceHashAfterRead,
+  fixturePath: fixture.slice(root.length + 1),
+  fixtureCompressedSha256: sha(fixtureBytes),
+  fixtureDatabaseSha256: fixtureHash,
+};
+inventory.tool = {
+  path: 'tools/measure-atlas-material-inventory.mjs',
+  sha256: sha(readFileSync(fileURLToPath(import.meta.url))),
+};
+inventory.integrity.roleCountEquality =
+  inventory.integrity.semanticRoleCountEquality &&
+  inventory.integrity.semanticRoleCountSum === inventory.totalRecords;
+if (
+  inventory.integrity.malformedJsonCount ||
+  inventory.integrity.malformedGeometryCount ||
+  inventory.integrity.nonfiniteCoordinateOrExtentCount ||
+  !inventory.integrity.sourceCountEquality ||
+  !inventory.integrity.roleCountEquality
+)
+  throw new Error('Inventory integrity failure: ' + JSON.stringify(inventory.integrity));
 const outDir = resolve(root, '.build/atlas-material-inventory');
 mkdirSync(outDir, { recursive: true });
-const out = resolve(outDir, 'result-' + new Date().toISOString().replaceAll(':', '').replaceAll('.', '-') + '.json');
+const out = resolve(
+  outDir,
+  'result-' + new Date().toISOString().replaceAll(':', '').replaceAll('.', '-') + '.json',
+);
 writeFileSync(out, JSON.stringify(inventory, null, 2) + '\n');
 console.log(out);
-console.log(JSON.stringify({totalRecords:inventory.totalRecords,sourceKinds:inventory.sourceKinds,semanticRoles:inventory.semanticRoles,integrity:inventory.integrity}));
+console.log(
+  JSON.stringify({
+    totalRecords: inventory.totalRecords,
+    sourceKinds: inventory.sourceKinds,
+    semanticRoles: inventory.semanticRoles,
+    integrity: inventory.integrity,
+  }),
+);

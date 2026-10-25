@@ -1,55 +1,474 @@
-import {currentProcessGroup} from './process-group.mjs';
-import {createRequire} from 'node:module';
-import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
-import {spawn} from 'node:child_process';
-import {randomUUID,createHash} from 'node:crypto';
+import { currentProcessGroup } from './process-group.mjs';
+import { createRequire } from 'node:module';
+import { mkdtemp, readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-const source=process.cwd(),before=process.argv.includes('--before'),layoutBefore=process.argv.includes('--layout-before'),phase=before?'before':layoutBefore?'layout-before':'after',mode=process.argv.includes('--combat')?'combat':process.argv.includes('--chase')?'chase':'scene',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/player-scene-privacy-evidence');
-const group=await currentProcessGroup();await mkdir(output,{recursive:true});
-const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({stdin:{contents:"export {CampaignStore} from './src/app/storage/store';export {newLocation} from './src/features/location/location-schema';",resolveDir:source,sourcefile:'player-native-visual.ts',loader:'ts'},outfile:'.build/desktop/player-scene-privacy-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore,newLocation}=require(source+'/.build/desktop/player-scene-privacy-store.cjs');
-const profile=await mkdtemp('/tmp/gm-player-scene-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file),campaign=store.create('Getrennte Spieler- und GM-Texte'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
-const character=store.executeLive(command({kind:'create-character',profile:{name:'Ada'}})).character;
-const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:1})).scene;
-store.executeLive(command({kind:'membership',characterId:character.id,expectedRevision:0,expectedRosterRevision:1,active:true,targetSceneId:scene.id,expectedFocusRevision:0}));
-const gmTitle='Hinterhalt: Der freundliche Wirt ist ein Vampir',gmNotes='GM-GEHEIM: Schlüssel unter der Falltür',publicText='  Am Tor wartet ein freundlicher Wirt.\n\n  Er winkt euch zu.  ';
-let locationId=null;
-if(!before){locationId=randomUUID();store.changePreparation({...command(null),change:{kind:'location',expectedRevision:null,document:newLocation(locationId,'Interner Vampirort','poi',[randomUUID(),randomUUID()])}});const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aTfcAAAAASUVORK5CYII=','base64'),sha256=createHash('sha256').update(bytes).digest('hex');await mkdir(profile+'/player-images');await writeFile(profile+'/player-images/'+sha256+'.png',bytes);store.registerPlayerAsset(w.token,{id:randomUUID(),kind:'location',subjectId:locationId,title:'',sha256,extension:'.png',bytes:bytes.length});}
-store.executeLive(command({kind:'scene-content',sceneId:scene.id,expectedRevision:0,title:gmTitle,readAloud:publicText,notes:gmNotes,locationId}));
-let mask=null;if(mode==='combat'){mask=store.executeCombat({...command({kind:'create',sceneId:scene.id,title:gmTitle,includeParty:true,expectedMembershipRevision:1}),combatId:null,expectedRevision:null}).combat;mask=store.executeCombat({...command({kind:'start'}),combatId:mask.id,expectedRevision:mask.revision}).combat;}else if(mode==='chase'){mask=store.executeChase({...command({kind:'create',title:gmTitle,goal:gmNotes}),sceneId:scene.id,chaseId:null,expectedRevision:null}).chase;mask=store.executeChase({...command({kind:'participants',participants:[{id:randomUUID(),characterId:character.id,name:'Ada',side:'quarry',distance:18,speed:9,exhaustion:0,notes:gmNotes}]}),sceneId:scene.id,chaseId:mask.id,expectedRevision:mask.revision}).chase;}
-const originalMask=mask?store.db.prepare('SELECT payload,checksum FROM '+mode+' WHERE id=?').get(mask.id):null;
-const original=store.db.prepare('SELECT * FROM live_scene WHERE id=?').get(scene.id);store.close();
-const busPath=profile+'/qa-bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,busPath,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});for(let i=0;i<100;i++){if(await stat(busPath).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
-let app,pid,closed=false;const errors=[],launches=[],results={};
-async function launch(){closed=false;app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:[source+'/.build/desktop/main.cjs','--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+busPath},timeout:20000});pid=app.process().pid;assert((await readFile(`/proc/${pid}/cmdline`,'utf8')).includes(profile));assert.equal((await readFile(`/proc/${pid}/cgroup`,'utf8')).trim().split('::')[1],group);launches.push({pid,cgroup:group});const page=await app.firstWindow();page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true',null,{timeout:20000});if(await page.locator('#tutorial-dialog').isVisible())await page.locator('#tutorial-skip').click();await page.locator('.campaign-card').filter({hasText:campaign.name}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();await page.waitForFunction(()=>document.body.classList.contains('has-workspace')&&!document.querySelector('main').inert);if(await page.locator('#atlas-navigation').isVisible())await page.locator('#atlas-navigation').click();if(!await page.locator('#live-tab').isVisible())await page.locator('#workspace-nav-summary').click();await page.locator('#live-tab').click();if(await page.locator('#live-continue').isVisible())await page.locator('#live-continue').click();await page.locator('#combat-panel').waitFor({state:'visible'});return page;}
-async function close(){assert.deepEqual(errors,[]);const exit=new Promise(r=>app.process().once('exit',(code,signal)=>r({code,signal})));await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});closed=true;}
-async function display(page){await page.locator('#player-open-controls').click();await page.locator('#player-dialog').waitFor({state:'visible'});return page;}
-async function publicPage(){const started=performance.now();for(let n=0;n<400;n++){const p=app.windows().find(p=>p.url().includes('player-display.html'));if(p){(results.windowWaits??=[]).push(Math.round(performance.now()-started));return p;}await new Promise(r=>setTimeout(r,50));}results.windowsAtTimeout=await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().map(w=>({id:w.id,title:w.getTitle(),url:w.webContents.getURL(),loading:w.webContents.isLoading()})));throw Error('Player window missing after 20 seconds');}
-async function receipt(player){await player.waitForFunction(mode=>document.querySelector('#player-stage').classList.contains('player-'+mode),before?mode:'image');return{dom:await player.locator('#player-stage').textContent(),frame:await player.evaluate(async()=>window.playerDisplay.frame())};}
-async function layout(page){
- const metrics=()=>page.evaluate(()=>{const d=document.querySelector('#player-dialog'),p=document.querySelector('#player-preview'),root=document.querySelector('.player-controls');return{viewport:innerWidth,dialog:{client:d.clientWidth,scroll:d.scrollWidth},controls:{client:root.clientWidth,scroll:root.scrollWidth},preview:{client:p.clientWidth,scroll:p.scrollWidth},checkboxWidth:document.querySelector('#player-fullscreen').getBoundingClientRect().width};});
- const all={normal:await metrics()};
- await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.setZoomFactor(2));
- await page.waitForFunction(()=>innerWidth<750);all.zoom200=await metrics();await page.evaluate(async()=>{document.querySelector('#player-preview').scrollIntoView({block:'center',behavior:'instant'});await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));});
- all.zoom200.previewPosition=await page.locator('#player-preview').evaluate(p=>({top:p.getBoundingClientRect().top,bottom:p.getBoundingClientRect().bottom,viewport:innerHeight}));if(!layoutBefore)assert(all.zoom200.previewPosition.top>=0&&all.zoom200.previewPosition.bottom<=all.zoom200.previewPosition.viewport,'Preview can be scrolled into view at 200%');
- const capture=await app.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher'),image=await w.webContents.capturePage();return{size:image.getSize(),png:image.toPNG().toString('base64')};});
- all.zoom200.captureSize=capture.size;await writeFile(path.join(output,'preview-'+mode+'-'+phase+'-200.png'),Buffer.from(capture.png,'base64'));
- await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').webContents.setZoomFactor(1));await page.waitForFunction(()=>innerWidth>750);
- if(!layoutBefore&&!before)for(const [name,m]of Object.entries(all)){for(const area of ['dialog','controls','preview'])assert(m[area].scroll<=m[area].client+1,mode+' '+name+' '+area+' must fit without horizontal scrolling: '+JSON.stringify(m));assert(m.checkboxWidth<30,'Checkbox must stay compact');}
- return all;
+const source = process.cwd(),
+  before = process.argv.includes('--before'),
+  layoutBefore = process.argv.includes('--layout-before'),
+  phase = before ? 'before' : layoutBefore ? 'layout-before' : 'after',
+  mode = process.argv.includes('--combat')
+    ? 'combat'
+    : process.argv.includes('--chase')
+      ? 'chase'
+      : 'scene',
+  output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/player-scene-privacy-evidence');
+const group = await currentProcessGroup();
+await mkdir(output, { recursive: true });
+const require = createRequire(source + '/package.json'),
+  { _electron } = require('playwright-core');
+require('esbuild').buildSync({
+  stdin: {
+    contents:
+      "export {CampaignStore} from './src/app/storage/store';export {newLocation} from './src/features/location/location-schema';",
+    resolveDir: source,
+    sourcefile: 'player-native-visual.ts',
+    loader: 'ts',
+  },
+  outfile: '.build/desktop/player-scene-privacy-store.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+});
+const { CampaignStore, newLocation } = require(
+  source + '/.build/desktop/player-scene-privacy-store.cjs',
+);
+const profile = await mkdtemp('/tmp/gm-player-scene-'),
+  file = profile + '/workbench.sqlite',
+  store = new CampaignStore(file),
+  campaign = store.create('Getrennte Spieler- und GM-Texte'),
+  w = store.activate(campaign.id),
+  command = (action) => ({
+    commandId: randomUUID(),
+    token: w.token,
+    campaignId: campaign.id,
+    action,
+  });
+const character = store.executeLive(
+  command({ kind: 'create-character', profile: { name: 'Ada' } }),
+).character;
+const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 1 })).scene;
+store.executeLive(
+  command({
+    kind: 'membership',
+    characterId: character.id,
+    expectedRevision: 0,
+    expectedRosterRevision: 1,
+    active: true,
+    targetSceneId: scene.id,
+    expectedFocusRevision: 0,
+  }),
+);
+const gmTitle = 'Hinterhalt: Der freundliche Wirt ist ein Vampir',
+  gmNotes = 'GM-GEHEIM: Schlüssel unter der Falltür',
+  publicText = '  Am Tor wartet ein freundlicher Wirt.\n\n  Er winkt euch zu.  ';
+let locationId = null;
+if (!before) {
+  locationId = randomUUID();
+  store.changePreparation({
+    ...command(null),
+    change: {
+      kind: 'location',
+      expectedRevision: null,
+      document: newLocation(locationId, 'Interner Vampirort', 'poi', [randomUUID(), randomUUID()]),
+    },
+  });
+  const bytes = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aTfcAAAAASUVORK5CYII=',
+      'base64',
+    ),
+    sha256 = createHash('sha256').update(bytes).digest('hex');
+  await mkdir(profile + '/player-images');
+  await writeFile(profile + '/player-images/' + sha256 + '.png', bytes);
+  store.registerPlayerAsset(w.token, {
+    id: randomUUID(),
+    kind: 'location',
+    subjectId: locationId,
+    title: '',
+    sha256,
+    extension: '.png',
+    bytes: bytes.length,
+  });
 }
-try{
- let page=await launch();await display(page);assert.equal(await page.locator('#player-title').inputValue(),'');await page.locator('#player-fullscreen').uncheck();await page.locator(before&&mode==='scene'?'#player-show-scene':'#player-show-follow').click();let player=await publicPage();results.emptyPublicTitle=await receipt(player);results.playerApi=await player.evaluate(()=>({campaignAvailable:typeof window.campaign!=='undefined',keys:Object.keys(window.playerDisplay).sort()}));assert.deepEqual(results.playerApi,{campaignAvailable:false,keys:['frame','onFrame']});
- await player.screenshot({path:path.join(output,'player-'+mode+'-'+phase+'.png')});await page.screenshot({path:path.join(output,'preview-'+mode+'-'+phase+'.png')});
- assert.equal(results.emptyPublicTitle.dom.includes(gmTitle),before);assert(!results.emptyPublicTitle.dom.includes(gmNotes));if(!before)results.layout=await layout(page);
- if(!before){assert.equal(results.emptyPublicTitle.frame.value.frame.title,'');assert.equal(results.emptyPublicTitle.frame.value.frame.mode,'image');assert(!results.emptyPublicTitle.dom.includes(publicText.trim()));assert(!results.emptyPublicTitle.dom.includes('Ada'));assert.equal(await page.locator('#player-show-scene').count(),0);assert.equal(await player.locator('h1').count(),0);
-  await page.locator('#player-close-controls').click();await display(page);if(!await page.locator('#player-title').isVisible())await page.locator('#player-title').locator('xpath=ancestor::details').locator('summary').click();await page.locator('#player-title').fill('Am Stadttor');await page.locator(before&&mode==='scene'?'#player-show-scene':'#player-show-follow').click();await player.bringToFront();await player.waitForFunction(()=>document.querySelector('#player-stage h1')?.textContent==='Am Stadttor');results.explicitTitle=await receipt(player);assert(!results.explicitTitle.dom.includes(gmTitle));
-  await page.locator('#player-blank').click();await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-blank'));assert.equal(await player.locator('#player-stage').textContent(),'');results.blank=true;
-  await page.locator('#player-close-controls').click();await display(page);await page.locator('#player-title').fill('');await page.locator(before&&mode==='scene'?'#player-show-scene':'#player-show-follow').click();await receipt(player);
- }
- await close();
- if(!before){page=await launch();player=await publicPage();results.afterRestart=await receipt(player);assert.equal(results.afterRestart.frame.value.frame.title,'');assert.equal(results.afterRestart.frame.value.frame.mode,'image');assert(!results.afterRestart.dom.includes(publicText.trim()));assert(!results.afterRestart.dom.includes('Ada'));assert(!results.afterRestart.dom.includes(gmTitle));await close();}
- const fresh=new CampaignStore(file);try{fresh.activate(campaign.id);assert.deepEqual(fresh.db.prepare('SELECT * FROM live_scene WHERE id=?').get(scene.id),original);if(mask)assert.deepEqual(fresh.db.prepare('SELECT payload,checksum FROM '+mode+' WHERE id=?').get(mask.id),originalMask);results.sourceUnchanged=true;}finally{fresh.close();}
- await writeFile(path.join(output,'privacy-'+mode+'-'+phase+'.json'),JSON.stringify({results,launches,normalClose:true},null,2));console.log(JSON.stringify({results,normalClose:true}));
-}catch(e){if(app&&!closed){await writeFile(path.join(output,'failure.json'),JSON.stringify({error:e.stack,results,pid,player:await app.windows().find(p=>p.url().includes('player-display.html'))?.evaluate(async()=>({frame:await window.playerDisplay.frame(),html:document.querySelector('#player-stage')?.outerHTML})),gm:await(await app.firstWindow()).evaluate(()=>({title:document.querySelector('#player-title')?.value,status:document.querySelector('#status')?.textContent}))},null,2));try{await(await app.firstWindow()).screenshot({path:path.join(output,'failure.png')});}catch{}}throw e;
-}finally{if(app&&!closed){await Promise.race([app.close().catch(()=>{}),new Promise(r=>setTimeout(r,3000))]);if((await readFile(`/proc/${pid}/cmdline`,'utf8').catch(()=>'' )).includes(profile))process.kill(pid,'SIGKILL');}proxy.kill();}
+store.executeLive(
+  command({
+    kind: 'scene-content',
+    sceneId: scene.id,
+    expectedRevision: 0,
+    title: gmTitle,
+    readAloud: publicText,
+    notes: gmNotes,
+    locationId,
+  }),
+);
+let mask = null;
+if (mode === 'combat') {
+  mask = store.executeCombat({
+    ...command({
+      kind: 'create',
+      sceneId: scene.id,
+      title: gmTitle,
+      includeParty: true,
+      expectedMembershipRevision: 1,
+    }),
+    combatId: null,
+    expectedRevision: null,
+  }).combat;
+  mask = store.executeCombat({
+    ...command({ kind: 'start' }),
+    combatId: mask.id,
+    expectedRevision: mask.revision,
+  }).combat;
+} else if (mode === 'chase') {
+  mask = store.executeChase({
+    ...command({ kind: 'create', title: gmTitle, goal: gmNotes }),
+    sceneId: scene.id,
+    chaseId: null,
+    expectedRevision: null,
+  }).chase;
+  mask = store.executeChase({
+    ...command({
+      kind: 'participants',
+      participants: [
+        {
+          id: randomUUID(),
+          characterId: character.id,
+          name: 'Ada',
+          side: 'quarry',
+          distance: 18,
+          speed: 9,
+          exhaustion: 0,
+          notes: gmNotes,
+        },
+      ],
+    }),
+    sceneId: scene.id,
+    chaseId: mask.id,
+    expectedRevision: mask.revision,
+  }).chase;
+}
+const originalMask = mask
+  ? store.db.prepare('SELECT payload,checksum FROM ' + mode + ' WHERE id=?').get(mask.id)
+  : null;
+const original = store.db.prepare('SELECT * FROM live_scene WHERE id=?').get(scene.id);
+store.close();
+const busPath = profile + '/qa-bus',
+  proxy = spawn(
+    'xdg-dbus-proxy',
+    [
+      process.env.DBUS_SESSION_BUS_ADDRESS,
+      busPath,
+      '--filter',
+      '--talk=org.freedesktop.portal.Desktop',
+      '--talk=org.freedesktop.Notifications',
+    ],
+    { stdio: 'ignore' },
+  );
+for (let i = 0; i < 100; i++) {
+  if (
+    await stat(busPath)
+      .then(() => true)
+      .catch(() => false)
+  )
+    break;
+  await new Promise((r) => setTimeout(r, 20));
+}
+let app,
+  pid,
+  closed = false;
+const errors = [],
+  launches = [],
+  results = {};
+async function launch() {
+  closed = false;
+  app = await _electron.launch({
+    executablePath: source + '/node_modules/electron/dist/electron',
+    args: [source + '/.build/desktop/main.cjs', '--data-dir', profile],
+    env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: 'unix:path=' + busPath },
+    timeout: 20000,
+  });
+  pid = app.process().pid;
+  assert((await readFile(`/proc/${pid}/cmdline`, 'utf8')).includes(profile));
+  assert.equal((await readFile(`/proc/${pid}/cgroup`, 'utf8')).trim().split('::')[1], group);
+  launches.push({ pid, cgroup: group });
+  const page = await app.firstWindow();
+  page.on('pageerror', (e) => errors.push(e.stack));
+  await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true', null, {
+    timeout: 20000,
+  });
+  if (await page.locator('#tutorial-dialog').isVisible())
+    await page.locator('#tutorial-skip').click();
+  await page
+    .locator('.campaign-card')
+    .filter({ hasText: campaign.name })
+    .getByRole('button', { name: /^(Fortsetzen|Öffnen)$/ })
+    .click();
+  await page.waitForFunction(
+    () =>
+      document.body.classList.contains('has-workspace') && !document.querySelector('main').inert,
+  );
+  if (await page.locator('#atlas-navigation').isVisible())
+    await page.locator('#atlas-navigation').click();
+  if (!(await page.locator('#live-tab').isVisible()))
+    await page.locator('#workspace-nav-summary').click();
+  await page.locator('#live-tab').click();
+  if (await page.locator('#live-continue').isVisible())
+    await page.locator('#live-continue').click();
+  await page.locator('#combat-panel').waitFor({ state: 'visible' });
+  return page;
+}
+async function close() {
+  assert.deepEqual(errors, []);
+  const exit = new Promise((r) =>
+    app.process().once('exit', (code, signal) => r({ code, signal })),
+  );
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .find((w) => w.getTitle() === 'SaltMarcher')
+      .close(),
+  );
+  assert.deepEqual(await exit, { code: 0, signal: null });
+  closed = true;
+}
+async function display(page) {
+  await page.locator('#player-open-controls').click();
+  await page.locator('#player-dialog').waitFor({ state: 'visible' });
+  return page;
+}
+async function publicPage() {
+  const started = performance.now();
+  for (let n = 0; n < 400; n++) {
+    const p = app.windows().find((p) => p.url().includes('player-display.html'));
+    if (p) {
+      (results.windowWaits ??= []).push(Math.round(performance.now() - started));
+      return p;
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  results.windowsAtTimeout = await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows().map((w) => ({
+      id: w.id,
+      title: w.getTitle(),
+      url: w.webContents.getURL(),
+      loading: w.webContents.isLoading(),
+    })),
+  );
+  throw Error('Player window missing after 20 seconds');
+}
+async function receipt(player) {
+  await player.waitForFunction(
+    (mode) => document.querySelector('#player-stage').classList.contains('player-' + mode),
+    before ? mode : 'image',
+  );
+  return {
+    dom: await player.locator('#player-stage').textContent(),
+    frame: await player.evaluate(async () => window.playerDisplay.frame()),
+  };
+}
+async function layout(page) {
+  const metrics = () =>
+    page.evaluate(() => {
+      const d = document.querySelector('#player-dialog'),
+        p = document.querySelector('#player-preview'),
+        root = document.querySelector('.player-controls');
+      return {
+        viewport: innerWidth,
+        dialog: { client: d.clientWidth, scroll: d.scrollWidth },
+        controls: { client: root.clientWidth, scroll: root.scrollWidth },
+        preview: { client: p.clientWidth, scroll: p.scrollWidth },
+        checkboxWidth: document.querySelector('#player-fullscreen').getBoundingClientRect().width,
+      };
+    });
+  const all = { normal: await metrics() };
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .find((w) => w.getTitle() === 'SaltMarcher')
+      .webContents.setZoomFactor(2),
+  );
+  await page.waitForFunction(() => innerWidth < 750);
+  all.zoom200 = await metrics();
+  await page.evaluate(async () => {
+    document
+      .querySelector('#player-preview')
+      .scrollIntoView({ block: 'center', behavior: 'instant' });
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  });
+  all.zoom200.previewPosition = await page.locator('#player-preview').evaluate((p) => ({
+    top: p.getBoundingClientRect().top,
+    bottom: p.getBoundingClientRect().bottom,
+    viewport: innerHeight,
+  }));
+  if (!layoutBefore)
+    assert(
+      all.zoom200.previewPosition.top >= 0 &&
+        all.zoom200.previewPosition.bottom <= all.zoom200.previewPosition.viewport,
+      'Preview can be scrolled into view at 200%',
+    );
+  const capture = await app.evaluate(async ({ BrowserWindow }) => {
+    const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'SaltMarcher'),
+      image = await w.webContents.capturePage();
+    return { size: image.getSize(), png: image.toPNG().toString('base64') };
+  });
+  all.zoom200.captureSize = capture.size;
+  await writeFile(
+    path.join(output, 'preview-' + mode + '-' + phase + '-200.png'),
+    Buffer.from(capture.png, 'base64'),
+  );
+  await app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .find((w) => w.getTitle() === 'SaltMarcher')
+      .webContents.setZoomFactor(1),
+  );
+  await page.waitForFunction(() => innerWidth > 750);
+  if (!layoutBefore && !before)
+    for (const [name, m] of Object.entries(all)) {
+      for (const area of ['dialog', 'controls', 'preview'])
+        assert(
+          m[area].scroll <= m[area].client + 1,
+          mode +
+            ' ' +
+            name +
+            ' ' +
+            area +
+            ' must fit without horizontal scrolling: ' +
+            JSON.stringify(m),
+        );
+      assert(m.checkboxWidth < 30, 'Checkbox must stay compact');
+    }
+  return all;
+}
+try {
+  let page = await launch();
+  await display(page);
+  assert.equal(await page.locator('#player-title').inputValue(), '');
+  await page.locator('#player-fullscreen').uncheck();
+  await page
+    .locator(before && mode === 'scene' ? '#player-show-scene' : '#player-show-follow')
+    .click();
+  let player = await publicPage();
+  results.emptyPublicTitle = await receipt(player);
+  results.playerApi = await player.evaluate(() => ({
+    campaignAvailable: typeof window.campaign !== 'undefined',
+    keys: Object.keys(window.playerDisplay).sort(),
+  }));
+  assert.deepEqual(results.playerApi, { campaignAvailable: false, keys: ['frame', 'onFrame'] });
+  await player.screenshot({ path: path.join(output, 'player-' + mode + '-' + phase + '.png') });
+  await page.screenshot({ path: path.join(output, 'preview-' + mode + '-' + phase + '.png') });
+  assert.equal(results.emptyPublicTitle.dom.includes(gmTitle), before);
+  assert(!results.emptyPublicTitle.dom.includes(gmNotes));
+  if (!before) results.layout = await layout(page);
+  if (!before) {
+    assert.equal(results.emptyPublicTitle.frame.value.frame.title, '');
+    assert.equal(results.emptyPublicTitle.frame.value.frame.mode, 'image');
+    assert(!results.emptyPublicTitle.dom.includes(publicText.trim()));
+    assert(!results.emptyPublicTitle.dom.includes('Ada'));
+    assert.equal(await page.locator('#player-show-scene').count(), 0);
+    assert.equal(await player.locator('h1').count(), 0);
+    await page.locator('#player-close-controls').click();
+    await display(page);
+    if (!(await page.locator('#player-title').isVisible()))
+      await page
+        .locator('#player-title')
+        .locator('xpath=ancestor::details')
+        .locator('summary')
+        .click();
+    await page.locator('#player-title').fill('Am Stadttor');
+    await page
+      .locator(before && mode === 'scene' ? '#player-show-scene' : '#player-show-follow')
+      .click();
+    await player.bringToFront();
+    await player.waitForFunction(
+      () => document.querySelector('#player-stage h1')?.textContent === 'Am Stadttor',
+    );
+    results.explicitTitle = await receipt(player);
+    assert(!results.explicitTitle.dom.includes(gmTitle));
+    await page.locator('#player-blank').click();
+    await player.waitForFunction(() =>
+      document.querySelector('#player-stage').classList.contains('player-blank'),
+    );
+    assert.equal(await player.locator('#player-stage').textContent(), '');
+    results.blank = true;
+    await page.locator('#player-close-controls').click();
+    await display(page);
+    await page.locator('#player-title').fill('');
+    await page
+      .locator(before && mode === 'scene' ? '#player-show-scene' : '#player-show-follow')
+      .click();
+    await receipt(player);
+  }
+  await close();
+  if (!before) {
+    page = await launch();
+    player = await publicPage();
+    results.afterRestart = await receipt(player);
+    assert.equal(results.afterRestart.frame.value.frame.title, '');
+    assert.equal(results.afterRestart.frame.value.frame.mode, 'image');
+    assert(!results.afterRestart.dom.includes(publicText.trim()));
+    assert(!results.afterRestart.dom.includes('Ada'));
+    assert(!results.afterRestart.dom.includes(gmTitle));
+    await close();
+  }
+  const fresh = new CampaignStore(file);
+  try {
+    fresh.activate(campaign.id);
+    assert.deepEqual(
+      fresh.db.prepare('SELECT * FROM live_scene WHERE id=?').get(scene.id),
+      original,
+    );
+    if (mask)
+      assert.deepEqual(
+        fresh.db.prepare('SELECT payload,checksum FROM ' + mode + ' WHERE id=?').get(mask.id),
+        originalMask,
+      );
+    results.sourceUnchanged = true;
+  } finally {
+    fresh.close();
+  }
+  await writeFile(
+    path.join(output, 'privacy-' + mode + '-' + phase + '.json'),
+    JSON.stringify({ results, launches, normalClose: true }, null, 2),
+  );
+  console.log(JSON.stringify({ results, normalClose: true }));
+} catch (e) {
+  if (app && !closed) {
+    await writeFile(
+      path.join(output, 'failure.json'),
+      JSON.stringify(
+        {
+          error: e.stack,
+          results,
+          pid,
+          player: await app
+            .windows()
+            .find((p) => p.url().includes('player-display.html'))
+            ?.evaluate(async () => ({
+              frame: await window.playerDisplay.frame(),
+              html: document.querySelector('#player-stage')?.outerHTML,
+            })),
+          gm: await (
+            await app.firstWindow()
+          ).evaluate(() => ({
+            title: document.querySelector('#player-title')?.value,
+            status: document.querySelector('#status')?.textContent,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    try {
+      await (await app.firstWindow()).screenshot({ path: path.join(output, 'failure.png') });
+    } catch {}
+  }
+  throw e;
+} finally {
+  if (app && !closed) {
+    await Promise.race([app.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+    if ((await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).includes(profile))
+      process.kill(pid, 'SIGKILL');
+  }
+  proxy.kill();
+}

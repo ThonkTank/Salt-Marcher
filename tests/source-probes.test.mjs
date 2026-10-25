@@ -16,10 +16,24 @@ test('function probes survive formatting without including adjacent side effects
 });
 test('import probes match module and binding rather than quotes or spacing', async () => {
   const source = `import {other, chooseTextReference} from './text-reference-ui';const text='chooseTextReference';`;
-  for (const code of [source, await format(source, { parser: 'typescript', singleQuote: false, printWidth: 25 })]) {
-    const aliased = aliasSourceImport(code, './text-reference-ui', 'chooseTextReference', 'realChooseTextReference');
+  for (const code of [
+    source,
+    await format(source, { parser: 'typescript', singleQuote: false, printWidth: 25 }),
+  ]) {
+    const aliased = aliasSourceImport(
+      code,
+      './text-reference-ui',
+      'chooseTextReference',
+      'realChooseTextReference',
+    );
     assert.match(aliased, /chooseTextReference as realChooseTextReference/);
-    assert.match(aliased, /const text =?\s*['"]chooseTextReference['"]|const text=['"]chooseTextReference['"]/);
-    assert.throws(() => aliasSourceImport(code, './wrong', 'chooseTextReference', 'real'), /Expected one import/);
+    assert.match(
+      aliased,
+      /const text =?\s*['"]chooseTextReference['"]|const text=['"]chooseTextReference['"]/,
+    );
+    assert.throws(
+      () => aliasSourceImport(code, './wrong', 'chooseTextReference', 'real'),
+      /Expected one import/,
+    );
   }
 });

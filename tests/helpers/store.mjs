@@ -5,7 +5,8 @@ import { after } from 'node:test';
 
 const seeds = new Map();
 after(() => {
-  for (const source of seeds.values()) rmSync(path.dirname(source), { recursive: true, force: true });
+  for (const source of seeds.values())
+    rmSync(path.dirname(source), { recursive: true, force: true });
 });
 
 // UI fixtures need an initialized empty database, not a repeat of every schema

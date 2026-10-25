@@ -8,7 +8,8 @@ export function parseHTML(...args) {
   const window = parse(...args);
   const { document, MutationObserver } = window;
   const original = document.getElementById.bind(document);
-  const ids = new Map(), indexed = new WeakMap();
+  const ids = new Map(),
+    indexed = new WeakMap();
   function update(element) {
     const previous = indexed.get(element);
     if (previous !== undefined) {
@@ -41,9 +42,12 @@ export function parseHTML(...args) {
   for (const element of document.querySelectorAll('[id]')) update(element);
   const observer = new MutationObserver(changes);
   observer.observe(document, {
-    subtree: true, childList: true, attributes: true, attributeFilter: ['id'],
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['id'],
   });
-  document.getElementById = id => {
+  document.getElementById = (id) => {
     changes(observer.takeRecords());
     if (typeof id !== 'string' || !id) return original(id);
     const group = ids.get(id);
