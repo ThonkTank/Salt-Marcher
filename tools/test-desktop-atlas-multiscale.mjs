@@ -22,8 +22,15 @@ try{
   await page.locator('#atlas-view').click();await page.locator('#land-grid').uncheck();await page.keyboard.press('Escape');
   if(process.env.QA_DRAWN==='1')await setTerrainContours(page,'0');
   if(process.env.QA_EXACT_SCALE==='1'){
-   const current=await page.locator('#campaign-map').evaluate(c=>JSON.parse(c.dataset.atlasView).width/c.clientWidth),rect=await page.locator('#campaign-map').boundingBox();
-   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.wheel(0,Math.log(mpp/current)/.002);
+   // Chromium scales wheel deltas with page zoom. Correct from the observed
+   // camera until its CSS-pixel scale settles, rather than assuming one event.
+   const rect=await page.locator('#campaign-map').boundingBox();
+   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);
+   for(let attempt=0;attempt<10;attempt++){
+    const current=await page.locator('#campaign-map').evaluate(c=>JSON.parse(c.dataset.atlasView).width/c.clientWidth);
+    if(Math.abs(current/mpp-1)<.01)break;
+    await page.mouse.wheel(0,Math.log(mpp/current)/.002);await page.waitForTimeout(400);
+   }
    await page.waitForFunction(mpp=>{const c=document.querySelector('#campaign-map');return Math.abs(JSON.parse(c.dataset.atlasView).width/c.clientWidth/mpp-1)<.01;},mpp);
    await page.waitForFunction(()=>document.querySelector('#campaign-map').dataset.terrainQuality==='detail',null,{timeout:120000});
   }
@@ -85,6 +92,7 @@ try{
    exports.push({zoom,sizes:images.map(p=>Math.max(p.width,p.height)),meanDifference});
   }
   await native.close();
+  await writeFile(output+'/progress.json',JSON.stringify({views,exports,navigation,sweeps,launches:native.launches},null,2));
  }
  await native.finish({fixture,views,exports,navigation,sweeps,scope:'Fixed canonical landscape; identical cameras across builds. Visual review is recorded separately.'});
-}catch(error){if(page)await writeFile(output+'/failure-state.json',JSON.stringify(await page.evaluate(()=>({text:document.body.innerText,dataset:{...document.querySelector('#campaign-map')?.dataset},titles:[...document.querySelectorAll('[title]')].map(n=>[n.id,n.title])})).catch(()=>null),null,2));await native.fail(error);throw error;}finally{await native.dispose();}
+}catch(error){await writeFile(output+'/partial.json',JSON.stringify({views,exports,navigation,sweeps},null,2));if(page)await writeFile(output+'/failure-state.json',JSON.stringify(await page.evaluate(()=>({text:document.body.innerText,dataset:{...document.querySelector('#campaign-map')?.dataset},titles:[...document.querySelectorAll('[title]')].map(n=>[n.id,n.title])})).catch(()=>null),null,2));await native.fail(error);throw error;}finally{await native.dispose();}
