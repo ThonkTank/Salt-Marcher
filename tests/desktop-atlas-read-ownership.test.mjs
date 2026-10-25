@@ -44,7 +44,7 @@ async function fixture(t,{sliced=false}={}){
   protocol:{registerSchemesAsPrivileged(){},handle(){}},session:{fromPartition:()=>session}};
  store.on=()=>{};
  class Reader extends AtlasRegionService {constructor(){const index=services.length,cache=path.join(dir,'reader-'+index);mkdirSync(cache);writeFileSync(path.join(cache,'hold'),'');if(sliced)writeFileSync(path.join(cache,'slice-clock'),'');super(pauseWorker,1024*1024,cache);this.testCache=cache;services.push(this);}}
- const mocks={'electron':electron,'./store-client':{StoreClient:class {constructor(){return store;}}},'./atlas-region':{AtlasRegionService:Reader},
+ const mocks={'electron':electron,'./store-client':{StoreClient:class {constructor(){return store;}},StoreOutcomeUnknownError:class extends Error{}},'./atlas-region':{AtlasRegionService:Reader},
   './update-runtime':{openUpdateRuntime:async()=>({root:null,transaction:null,close:async()=>{}})},'./update-service':{UpdateService:class {async init(){}}}};
  t.after(async()=>{await Promise.all(services.map(s=>s.close()));store.close();rmSync(dir,{recursive:true,force:true});assert.deepEqual(errors,[]);});
  const context={require:name=>mocks[name]??require(name),__dirname:root,process:{...process,argv:['node','main','--data-dir',dir]},

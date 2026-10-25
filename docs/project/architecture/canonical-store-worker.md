@@ -2,7 +2,7 @@
 
 Status: Current; technische Nachweise und Produktabnahme bleiben getrennt.
 Owner: project
-Last Reviewed: 2026-10-24
+Last Reviewed: 2026-10-25
 Source of Truth: Prozessvertrag; Implementierung in `desktop/store-worker.ts` und `desktop/store-client.ts`.
 
 ## Zuständigkeit und Transport
@@ -46,6 +46,27 @@ einem Ausfall geschlossen für weitere Aufträge; nach einem geordneten App-Neus
 klären die vorhandenen fachlichen Receipts den Ausgang. Auch Pending-Statusabfragen
 behalten laufende Aufträge über asynchrone Receipt-Lesegrenzen hinweg bei.
 
+Main erhält den Fehlertyp `StoreOutcomeUnknownError` und gibt ihn als einfaches
+`Result`-DTO `{ok:false,error,errorKind:'store-outcome-unknown'}` über die einzelne
+Preload-Funktion weiter. Die Zuordnung erfolgt anhand der tatsächlichen Klasse,
+nicht anhand von Name oder Meldungstext. Erfolg und reguläre Validierungsfehler
+behalten ihren bisherigen Vertrag. Ein fehlender `errorKind` ist **kein allgemeiner
+Beweis, dass nicht gespeichert wurde**: Auch ein fachlicher Methodenfehler kann
+nach einem bereits bestätigten Commit beim Nachlesen auftreten.
+
+Der Marker veranlasst selbst weder erneutes Schreiben noch einen Worker-Neustart.
+Autoren- und Reisebesitzer müssen ihn vor einer Umwandlung in eine gewöhnliche
+Fehlermeldung auswerten; Erhalt des exakten Commands, Folgeschreibsperre und
+Receipt-Klärung gehören zu A0.07/A0.08. Der bestehende `writeConfirmed`-Pfad behält
+auch bei Fehlern seine Receipt-Referenz bis zu einer belastbaren Statusantwort.
+
+Anschluss für A0.09: `store-worker.ts` meldet im Catch um die Store-Methode derzeit
+`kind:'error'`. Ein dort gezielt erkennbarer Postcommit-Projektionsfehler muss über
+`kind:'unknown'` an denselben klärbaren Kanal angeschlossen werden; StoreClient
+rekonstruiert daraus bereits `StoreOutcomeUnknownError`. Das erfordert einen
+Beleg für den betroffenen Postcommit-Pfad und darf normale Validierungsablehnungen
+nicht pauschal umklassifizieren. A0.06 ändert diese Store-Methodenlogik nicht.
+
 Beim Schließen oder Update sperrt Main neue Produktaufträge und wartet auf bereits
 angenommene Abläufe. Der Client sperrt danach seine Aufnahme. Der Worker wartet
 auf Aufträge und Snapshot-Freigabe, schließt SQLite und bestätigt dies. Erst das
@@ -63,6 +84,11 @@ deren Quellenabfrage erst während der Sperre aus dem Store zurückkommt.
 
 - `tests/desktop-store-worker.test.mjs`: echte Worker, Binärdaten, Doppelzustellung,
   Abbruch vor/nach Commit, Receipt-Auflösung, Pending-Rennen, Backup-Epoche und Exit.
+- `tests/desktop-store-outcome-boundary.test.mjs`: echter StoreClient → Main-Handler
+  → Preload bei Workerabbruch vor/nach Commit, unübertragbarer Antwort, Ablehnung
+  und Erfolg; wiederholte Receipt-Reads erzeugen keinen zusätzlichen Schreibauftrag.
+  `tests/helpers/desktop-main-host.mjs` bietet diesen Aufbau auch für die nachfolgenden
+  Autoren-/Reisetests; nur Electron-Shell und Update-Start sind ersetzt.
 - `tests/desktop-review-data-retention.test.mjs`: Ticketentzug ohne vorzeitiges Löschen aktiver Stagingdateien.
 - `tests/desktop-player-visual-host.test.mjs`: verspätete Antworten und Fensterwechsel.
 - `tests/desktop-backup-worker.test.mjs`: unabhängige Snapshotprüfung und Veröffentlichung.

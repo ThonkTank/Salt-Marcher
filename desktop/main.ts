@@ -34,7 +34,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { StoreClient } from './store-client';
+import { StoreClient, StoreOutcomeUnknownError } from './store-client';
 import { inspectDungeon } from '../src/app/import-dungeon';
 import type { Edit, DungeonImportPreview, Result, Room, WorkingRoomDraft, CampaignRename } from '../src/app/contracts';
 import type { PreparationCommand, PreparationSelection, PreparationDraft, PreparationEdit } from '../src/app/preparation-contracts';
@@ -127,7 +127,7 @@ else {
         if(stopping&&!name.startsWith('update:'))return {ok:false,error:'SaltMarcher wird für das Update oder Schließen angehalten.'};
         const task=Promise.resolve().then(async()=>{if(campaignErasing)throw Error('Kampagnenlöschung läuft. Danach erneut versuchen.');const value=await operation(...args);if(name.includes(':execute')||['atlas:travel-commit','atlas:commit','atlas:room-commit','atlas:drawing-commit','campaign:activate','campaign:activate-shell','campaign:catalog-shell','campaign:catalog','campaign:catalog-workspace','campaign:transfer-accept','player:window','player:art'].includes(name))await playerDisplay.sync();return value;});if(!name.startsWith('update:'))activeOperations.add(task);
         try { return { ok: true, value:await task }; }
-        catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.' }; }
+        catch (error) { return { ok: false, error: error instanceof Error ? error.message : 'Vorgang fehlgeschlagen.', ...(error instanceof StoreOutcomeUnknownError ? {errorKind:'store-outcome-unknown' as const} : {}) }; }
         finally{activeOperations.delete(task);}
       });
     }

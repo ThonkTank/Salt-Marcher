@@ -71,7 +71,8 @@ export interface Edit {
 export interface RoomCommit { atlasRevision?:number; room: Room; token: string; canUndo: boolean; canRedo: boolean }
 export interface WorkingRoomDraft { room: Room; points: string; pointsChanged: boolean; failedEdit: Edit | null }
 export interface DungeonImportPreview { ticket: string; name: string; roomCount: number; sourceHash: string; warnings: string[] }
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
+/** A missing transport marker does not prove that a write was unapplied. */
+export type Result<T> = { ok: true; value: T } | { ok: false; error: string; errorKind?: 'store-outcome-unknown' };
 export interface DesktopAPI extends UpdateAPI,importAtlasAPI,importAtlasTravelAPI,ItemReferenceAPI,NoteThreadAPI,KeyNoteCaptureAPI,LocationNotebookAPI, WorldLinksAPI,TimePlanAPI,importAgendaAPI, NarrativeJournalAPI,SessionPacketAPI,MaskHistoryAPI,NpcAPI,ExtensionAPI,GraphAPI, DungeonAPI,DrawingAPI, AutonomyAPI, PlayerAPI, CityAPI, PreparationAPI, LiveAPI, CombatAPI, ProgressAPI, EncounterAPI, GenerationAPI, SessionAPI, ItemsAPI, WorldAPI, MusicAPI, CampaignManagementAPI, ChronicleAPI, ChaseAPI, RuleReferenceAPI, SceneCheckAPI {
   commitStatus(ref:CommitReference,token:string):Promise<Result<CommitOutcome>>;
   list(): Promise<Result<{ campaigns: Campaign[]; activeId: string | null }>>;
