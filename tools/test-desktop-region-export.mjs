@@ -116,13 +116,21 @@ try {
       );
       await atlasCanvasReady(page);
     };
-    const choose = async (name) => {
-      if (await page.locator('#atlas-secondary').isVisible())
-        await page.locator('#atlas-secondary-close').click();
+    const editableCanvas = async () => {
+      // Layout changes publish their camera and terrain requests on the next frame.
       await page.evaluate(
         () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
       );
       await atlasCanvasReady(page);
+      await page.waitForFunction(
+        () => document.querySelector('#campaign-map')?.dataset.terrainReady === 'ready',
+      );
+    };
+    const choose = async (name) => {
+      await editableCanvas();
+      if (await page.locator('#atlas-secondary').isVisible())
+        await page.locator('#atlas-secondary-close').click();
+      await editableCanvas();
       const item = record(name),
         list = page.locator('#land-object');
       if (
@@ -316,15 +324,7 @@ try {
     await choose('Klosterweg');
     if (await page.locator('#atlas-secondary').isVisible())
       await page.locator('#atlas-secondary-close').click();
-    // Closing the details pane resizes the canvas. Let ResizeObserver publish
-    // the new view before waiting for geometry and terrain to accept a drag.
-    await page.evaluate(
-      () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
-    );
-    await atlasCanvasReady(page);
-    await page.waitForFunction(
-      () => document.querySelector('#campaign-map')?.dataset.terrainReady === 'ready',
-    );
+    await editableCanvas();
     await page.waitForFunction(() => document.querySelector('#land-name')?.value === 'Klosterweg');
     const { x, y, target } = await atlasCanvasPoint(page, originalRoad.points[1], false);
     assert.equal(target, 'campaign-map');
@@ -383,7 +383,7 @@ try {
       await choose('Klosterweg');
       if (await page.locator('#atlas-secondary').isVisible())
         await page.locator('#atlas-secondary-close').click();
-      await atlasCanvasReady(page);
+      await editableCanvas();
       const road = record('Klosterweg'),
         target = name
           ? record(name).points[0]
