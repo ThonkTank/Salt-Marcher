@@ -5,14 +5,20 @@ import type { ChronicleCategory, ChronicleCursor } from '../src/app/chronicle-co
 import { chronicleMarkdownHeader, chronicleMarkdownEntries } from '../src/app/storage/chronicle';
 
 export async function exportChronicleFile(
-  snapshot: {read:(...args:Parameters<ChronicleReadSession['read']>)=>ReturnType<ChronicleReadSession['read']>|Promise<ReturnType<ChronicleReadSession['read']>>},
+  snapshot: {
+    read: (
+      ...args: Parameters<ChronicleReadSession['read']>
+    ) =>
+      | ReturnType<ChronicleReadSession['read']>
+      | Promise<ReturnType<ChronicleReadSession['read']>>;
+  },
   category: ChronicleCategory | 'all',
   search: string,
   destination: string,
   hooks: {
     check: () => void;
-    progress: (written: number) => void
-  }
+    progress: (written: number) => void;
+  },
 ) {
   const candidate = destination + '.chronicle-' + randomUUID() + '.tmp';
   let file: Awaited<ReturnType<typeof open>> | null = null,
@@ -34,17 +40,19 @@ export async function exportChronicleFile(
         first = false;
       }
       if (page.entries.length) {
-        await file.writeFile((written ? '\n\n' : '') + chronicleMarkdownEntries(page.entries), 'utf8');
+        await file.writeFile(
+          (written ? '\n\n' : '') + chronicleMarkdownEntries(page.entries),
+          'utf8',
+        );
         written += page.entries.length;
       }
 
       cursor = page.next;
       hooks.progress(written);
-      await new Promise<void>(resolve => setImmediate(resolve));
+      await new Promise<void>((resolve) => setImmediate(resolve));
     } while (cursor);
 
-    if (!written)
-      await file.writeFile('_Keine passenden Einträge._', 'utf8');
+    if (!written) await file.writeFile('_Keine passenden Einträge._', 'utf8');
 
     await file.writeFile('\n', 'utf8');
     hooks.check();
@@ -56,8 +64,7 @@ export async function exportChronicleFile(
     await rename(candidate, destination);
     return written;
   } finally {
-    if (file)
-      await file.close();
+    if (file) await file.close();
 
     await rm(candidate, { force: true });
   }

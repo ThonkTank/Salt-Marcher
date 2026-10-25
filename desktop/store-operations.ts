@@ -1,9 +1,9 @@
-import type {CampaignStore} from '../src/app/storage/store';
-import type {PreparedCampaign} from './campaign-accept';
-import type {CampaignManifest} from './campaign-files';
-import type {ConflictChoice} from '../src/app/campaign-contracts';
-import type {ChronicleReadSession} from '../src/app/storage/chronicle-pages';
-import type {SessionPacket} from '../src/app/session-packet-contracts';
+import type { CampaignStore } from '../src/app/storage/store';
+import type { PreparedCampaign } from './campaign-accept';
+import type { CampaignManifest } from './campaign-files';
+import type { ConflictChoice } from '../src/app/campaign-contracts';
+import type { ChronicleReadSession } from '../src/app/storage/chronicle-pages';
+import type { SessionPacket } from '../src/app/session-packet-contracts';
 
 /** Host-only allowlist. This is never exposed as a renderer IPC channel. */
 export const storeMethods = [
@@ -253,29 +253,80 @@ export const storeMethods = [
   'worldRelationPairDraft',
   'worldRelationPairHistory',
 ] as const satisfies readonly (keyof CampaignStore)[];
-export type StoreMethod=typeof storeMethods[number];
-export interface FileAuthority {fence?:{id:string;revision:number}|null;cancel:SharedArrayBuffer}
-export interface StoreSpecialOperations {
- executeCity(command:import('../src/app/city-contracts').CityCommand):ReturnType<CampaignStore['city']>;
- finishCampaignErasureFiles(id:string):Promise<void>;
- backup(filename:string):Promise<void>;
- chronicleExportSnapshot(token:string):{id:string};
- chronicleSnapshotRead(id:string,...args:Parameters<ChronicleReadSession['read']>):ReturnType<ChronicleReadSession['read']>;
- chronicleSnapshotClose(id:string):void;
- campaignFileDigest(filename:string,authority:FileAuthority):Promise<string>;
- exportCampaignFile(destination:string,manifest:CampaignManifest,entries:{name:string;filename:string}[],authority:FileAuthority):Promise<void>;
- extractCampaignFile(filename:string,base:string,authority:FileAuthority):Promise<{dir:string;manifest:CampaignManifest}>;
- acceptPreparedCampaignFile(ticket:PreparedCampaign,name:string,choices:Record<string,ConflictChoice>,authority:FileAuthority):ReturnType<CampaignStore['acceptCampaignSnapshot']>|Promise<ReturnType<CampaignStore['acceptCampaignSnapshot']>>;
- exportSessionPacketFile(destination:string,packet:SessionPacket,token:string,id:string,basis:string):Promise<void>;
+export type StoreMethod = (typeof storeMethods)[number];
+export interface FileAuthority {
+  fence?: { id: string; revision: number } | null;
+  cancel: SharedArrayBuffer;
 }
-export const specialMethods=['executeCity','finishCampaignErasureFiles','backup','chronicleExportSnapshot','chronicleSnapshotRead','chronicleSnapshotClose','campaignFileDigest','exportCampaignFile','extractCampaignFile','acceptPreparedCampaignFile','exportSessionPacketFile'] as const satisfies readonly (keyof StoreSpecialOperations)[];
-export type StoreOperations=Pick<CampaignStore,StoreMethod>&StoreSpecialOperations;
-export type StoreOperation=keyof StoreOperations;
-export type StoreArguments<K extends StoreOperation>=Parameters<StoreOperations[K]>;
-export type StoreResult<K extends StoreOperation>=Awaited<ReturnType<StoreOperations[K]>>;
-export type AsyncStoreOperations={[K in StoreOperation]:(...args:StoreArguments<K>)=>Promise<StoreResult<K>>};
-export const isStoreOperation=(name:string):name is StoreOperation=>(storeMethods as readonly string[]).includes(name)||(specialMethods as readonly string[]).includes(name);
+export interface StoreSpecialOperations {
+  executeCity(
+    command: import('../src/app/city-contracts').CityCommand,
+  ): ReturnType<CampaignStore['city']>;
+  finishCampaignErasureFiles(id: string): Promise<void>;
+  backup(filename: string): Promise<void>;
+  chronicleExportSnapshot(token: string): { id: string };
+  chronicleSnapshotRead(
+    id: string,
+    ...args: Parameters<ChronicleReadSession['read']>
+  ): ReturnType<ChronicleReadSession['read']>;
+  chronicleSnapshotClose(id: string): void;
+  campaignFileDigest(filename: string, authority: FileAuthority): Promise<string>;
+  exportCampaignFile(
+    destination: string,
+    manifest: CampaignManifest,
+    entries: { name: string; filename: string }[],
+    authority: FileAuthority,
+  ): Promise<void>;
+  extractCampaignFile(
+    filename: string,
+    base: string,
+    authority: FileAuthority,
+  ): Promise<{ dir: string; manifest: CampaignManifest }>;
+  acceptPreparedCampaignFile(
+    ticket: PreparedCampaign,
+    name: string,
+    choices: Record<string, ConflictChoice>,
+    authority: FileAuthority,
+  ):
+    | ReturnType<CampaignStore['acceptCampaignSnapshot']>
+    | Promise<ReturnType<CampaignStore['acceptCampaignSnapshot']>>;
+  exportSessionPacketFile(
+    destination: string,
+    packet: SessionPacket,
+    token: string,
+    id: string,
+    basis: string,
+  ): Promise<void>;
+}
+export const specialMethods = [
+  'executeCity',
+  'finishCampaignErasureFiles',
+  'backup',
+  'chronicleExportSnapshot',
+  'chronicleSnapshotRead',
+  'chronicleSnapshotClose',
+  'campaignFileDigest',
+  'exportCampaignFile',
+  'extractCampaignFile',
+  'acceptPreparedCampaignFile',
+  'exportSessionPacketFile',
+] as const satisfies readonly (keyof StoreSpecialOperations)[];
+export type StoreOperations = Pick<CampaignStore, StoreMethod> & StoreSpecialOperations;
+export type StoreOperation = keyof StoreOperations;
+export type StoreArguments<K extends StoreOperation> = Parameters<StoreOperations[K]>;
+export type StoreResult<K extends StoreOperation> = Awaited<ReturnType<StoreOperations[K]>>;
+export type AsyncStoreOperations = {
+  [K in StoreOperation]: (...args: StoreArguments<K>) => Promise<StoreResult<K>>;
+};
+export const isStoreOperation = (name: string): name is StoreOperation =>
+  (storeMethods as readonly string[]).includes(name) ||
+  (specialMethods as readonly string[]).includes(name);
 
 // Adding an operation requires a dispatch registration as well as its type.
-const specialRegistrationComplete:Exclude<keyof StoreSpecialOperations,typeof specialMethods[number]> extends never?true:never=true;
+const specialRegistrationComplete: Exclude<
+  keyof StoreSpecialOperations,
+  (typeof specialMethods)[number]
+> extends never
+  ? true
+  : never = true;
 void specialRegistrationComplete;
