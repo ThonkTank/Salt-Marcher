@@ -120,3 +120,47 @@ Kameraausschnitte; jeder Zoomschritt muss vor dem nächsten abgeschlossen sein.
 Die Bildprüfung vergleicht einen festen Kartenausschnitt ohne Bedienoberfläche,
 mit begrenzter RGB-Abweichung und Mindestanteilen für Land, Wald, Straße und
 Ortsmarker. Ladebereitschaft und Objektzahlen allein sind kein Bildnachweis.
+
+## Kleiner nativer Basissatz
+
+Nach `npm run build:desktop` führt `node tools/test-desktop-baseline.mjs` drei
+Proben seriell auf dem aktiven Display aus. Node.js 22, Electron, Python 3,
+`xdg-dbus-proxy` und ein Sitzungsbus müssen verfügbar sein. `QA_EVIDENCE_DIR`
+setzt den Ergebnisordner (Vorgabe `.build/native-baseline`); der Runner startet
+jede Probe über `tools/ui-session.py` mit eigenem Profil und Prozessbesitz.
+
+| Probe | Erhaltene fachliche Aussagen |
+| --- | --- |
+| `tools/test-desktop-room-reads.mjs` | 4.000 Räume, vollständige Suchseiten, gezielte private Textreads, langer Raum-Identifier, Text speichern, ungültigen Rohentwurf nach Auswahlwechsel wiederfinden, frisch öffnen, beschädigte Raumbytes erhalten und anderen Raum öffnen |
+| `tools/test-desktop-region-export.mjs` | Land/Orte/Fluss/Straße zeichnen, Eigenschaften und Pfadänderungen rücknehmen/wiederholen, messen ohne Mutation, PNG mit Land/Ufern/Fluss und Beschriftung über Kachelgrenzen, frischer Prozess bei 100/200 % |
+| `tools/test-desktop-player-focus.mjs --cue --handout` | Bereichs- und Szenenwechsel, verspätete Freigabe abweisen, nach Neustart leer bleiben, abgewiesenen Write klären, richtige Gruppe ausdrücklich freigeben, GM-Texte und Handout-Dateiname nicht veröffentlichen |
+
+Der Runner entfernt vor dem ersten Start alle alten Erfolgsdateien dieses
+Basissatzes. `failure.json` nennt die gescheiterte Probe und bereits beendete
+Proben; die Kindprobe nennt den erreichten Schritt, Fehler und verfügbaren
+Oberflächenzustand. Erfolgsdateien entstehen erst nach regulärem Close und
+verschwundenen PIDs. Auch Fehler im Spielerfenster verhindern den Erfolg.
+Profile bleiben zur Diagnose erhalten. Screenshots allein sind kein Pass.
+
+Die Regionprobe scheiterte auf `766a3f8e5` an einem exakten RGB-Vergleich:
+3.299.480 Pixel im 2048×1801-Export hatten `(237,228,206)` statt der unbeleuchteten
+Landfarbe `(238,229,207)`. Der GPU-Materialpfad beleuchtet die Landfarbe vor der
+8-Bit-Ausgabe. Die Probe erlaubt nun höchstens einen Schritt je Farbkanal und
+verlangt weiterhin deckende Pixel, mehr als 10 % Land, mehr als 500 Uferpixel
+und mehr als 30 Flusspixel. Fläche, Fluss, Beschriftung und Schreibfreiheit
+bleiben getrennte Assertions. Das war eine veraltete Pixelannahme, kein Nachweis
+fehlenden Landes. Die 250 ms Pinselkontakt sind eine definierte Eingabedauer
+für Stärke in Metern/Sekunde, keine Bereitschaftspause.
+
+Der Basissatz ersetzt weder die große Mischwelt noch sämtliche optionalen
+Raum-/Stadtprüfungen, Paket-/Installationsprüfung oder menschliche Produktabnahme.
+
+Offener Befund aus Abschnitt 1: `tools/test-desktop-room-reads.mjs --regions`
+erreicht nach der Navigationskorrektur Suchtreffer, gezieltes Haus-Edit samt
+Detailread-Fehlerklärung sowie Verschieben und Undo. Beim Herauszoomen auf die
+dichte Stadt scheitert weiterhin `Actual native screen paints the dense geometry
+image`: Im nativen Screenshot bleibt die Stadtfläche leer. Das Fixture enthält
+5.000 direkt eingesetzte Stadtobjekte; die nähere Ansicht zeigt deren Dächer.
+Ob zusätzlich fehlende Raumgruppen im älteren Fixture beitragen, ist noch nicht
+abschließend geklärt. Dieser Bild-/Fixturebefund bleibt offen, die Assertion
+wurde nicht gelockert und der optionale Lauf wird nicht als bestanden gewertet.

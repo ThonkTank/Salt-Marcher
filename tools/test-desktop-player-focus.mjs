@@ -1,7 +1,6 @@
-import { currentProcessGroup } from './process-group.mjs';
+import { createNativeSession } from './native-session.mjs';
 import { createRequire } from 'node:module';
-import { mkdtemp, readFile, writeFile, mkdir, stat } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
@@ -9,224 +8,159 @@ const source = process.cwd(),
   cue = process.argv.includes('--cue'),
   phase = (cue ? 'cue-' : '') + 'after',
   output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/player-focus-evidence');
-const group = await currentProcessGroup();
 await mkdir(output, { recursive: true });
-const require = createRequire(source + '/package.json'),
-  { _electron } = require('playwright-core');
-require('esbuild').buildSync({
-  entryPoints: ['src/app/storage/store.ts'],
-  outfile: '.build/desktop/player-focus-store.cjs',
-  bundle: true,
-  platform: 'node',
-  format: 'cjs',
-  external: ['better-sqlite3'],
+const require = createRequire(source + '/package.json');
+const native = await createNativeSession({
+  root: source,
+  output,
+  name: 'player-focus',
+  resultName: 'focus-' + phase + '.json',
 });
-const { CampaignStore } = require(source + '/.build/desktop/player-focus-store.cjs');
-const profile = await mkdtemp('/tmp/gm-player-focus-'),
-  file = profile + '/workbench.sqlite',
-  store = new CampaignStore(
-    file,
-    JSON.parse(await readFile(source + '/package.json', 'utf8')).version,
-  ),
-  campaign = store.create('Getrennte Gruppenfreigabe'),
-  w = store.activate(campaign.id),
-  command = (action) => ({
-    commandId: randomUUID(),
-    token: w.token,
-    campaignId: campaign.id,
-    action,
+try {
+  require('esbuild').buildSync({
+    entryPoints: ['src/app/storage/store.ts'],
+    outfile: '.build/desktop/player-focus-store.cjs',
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    external: ['better-sqlite3'],
   });
-const one = store.executeLive(
-    command({ kind: 'create-character', profile: { name: 'Ada' } }),
-  ).character,
-  two = store.executeLive(
-    command({ kind: 'create-character', profile: { name: 'Borin' } }),
-  ).character;
-const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 2 })).scene;
-store.executeLive(
-  command({
-    kind: 'membership',
-    characterId: one.id,
-    expectedRevision: 0,
-    expectedRosterRevision: 2,
-    active: true,
-    targetSceneId: scene.id,
-    expectedFocusRevision: 0,
-  }),
-);
-store.executeLive(
-  command({
-    kind: 'membership',
-    characterId: two.id,
-    expectedRevision: 0,
-    expectedRosterRevision: 3,
-    active: true,
-    targetSceneId: scene.id,
-    expectedFocusRevision: 0,
-  }),
-);
-const split = store.executeLive(
-    command({
-      kind: 'move',
-      sceneId: scene.id,
-      expectedRosterRevision: 4,
-      expectedFocusRevision: 0,
-      expectedClockRevision: 0,
-      expectedSceneMembershipRevision: 2,
-      memberIds: [two.id],
-      target: { kind: 'new', title: 'Nachhut', expectedContentRevision: 0 },
-    }),
-  ),
-  secondary = split.session.createdScene.id;
-for (const [id, title, text] of [
-  [scene.id, 'Vorhut', 'Die Vorhut sieht das offene Tor.'],
-  [secondary, 'Nachhut', 'Die Nachhut entdeckt die geheime Falltür.'],
-])
+  const { CampaignStore } = require(source + '/.build/desktop/player-focus-store.cjs');
+
+  const profile = native.profile,
+    file = profile + '/workbench.sqlite',
+    store = new CampaignStore(
+      file,
+      JSON.parse(await readFile(source + '/package.json', 'utf8')).version,
+    ),
+    campaign = store.create('Getrennte Gruppenfreigabe'),
+    w = store.activate(campaign.id),
+    command = (action) => ({
+      commandId: randomUUID(),
+      token: w.token,
+      campaignId: campaign.id,
+      action,
+    });
+  const one = store.executeLive(
+      command({ kind: 'create-character', profile: { name: 'Ada' } }),
+    ).character,
+    two = store.executeLive(
+      command({ kind: 'create-character', profile: { name: 'Borin' } }),
+    ).character;
+  const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 2 })).scene;
   store.executeLive(
     command({
-      kind: 'scene-content',
-      sceneId: id,
+      kind: 'membership',
+      characterId: one.id,
       expectedRevision: 0,
-      title,
-      readAloud: text,
-      notes: 'GM-Schlüssel im Brunnen',
-      locationId: null,
+      expectedRosterRevision: 2,
+      active: true,
+      targetSceneId: scene.id,
+      expectedFocusRevision: 0,
     }),
   );
-const map = store.world(w.token).maps[0];
-for (const [sceneId, q] of [
-  [scene.id, 0],
-  [secondary, 10],
-])
-  store.executeWorld(
+  store.executeLive(
     command({
-      kind: 'place-scene',
-      sceneId,
-      position: { mapId: map.id, q, r: 0, locationId: null, dungeon: null },
-      expectedSceneRevision: store.sceneWorld(w.token, sceneId).scene.revision,
-      expectedPositionRevision: store.sceneWorld(w.token, sceneId).position.revision,
+      kind: 'membership',
+      characterId: two.id,
+      expectedRevision: 0,
+      expectedRosterRevision: 3,
+      active: true,
+      targetSceneId: scene.id,
+      expectedFocusRevision: 0,
     }),
   );
-const sceneRows = store.db.prepare('SELECT * FROM live_scene ORDER BY id').all();
-store.playerWindowOpen(w.token, true);
-store.tutorial('skipped');
-store.close();
-const busPath = profile + '/qa-bus',
-  proxy = spawn(
-    'xdg-dbus-proxy',
-    [
-      process.env.DBUS_SESSION_BUS_ADDRESS,
-      busPath,
-      '--filter',
-      '--talk=org.freedesktop.portal.Desktop',
-      '--talk=org.freedesktop.Notifications',
-    ],
-    { stdio: 'ignore' },
-  );
-for (let i = 0; i < 100; i++) {
-  if (
-    await stat(busPath)
-      .then(() => true)
-      .catch(() => false)
-  )
-    break;
-  await new Promise((r) => setTimeout(r, 20));
-}
-let app,
-  pid,
-  closed = false;
-const errors = [],
-  launches = [],
-  results = {};
-async function launch() {
-  console.log('phase: launch');
-  closed = false;
-  app = await _electron.launch({
-    executablePath: source + '/node_modules/electron/dist/electron',
-    args: ['--num-raster-threads=2', source + '/.build/desktop/main.cjs', '--data-dir', profile],
-    env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: 'unix:path=' + busPath },
-    timeout: 20000,
-  });
-  console.log('phase: driver ready');
-  pid = app.process().pid;
-  assert((await readFile(`/proc/${pid}/cmdline`, 'utf8')).includes(profile));
-  assert.equal((await readFile(`/proc/${pid}/cgroup`, 'utf8')).trim().split('::')[1], group);
-  launches.push({ pid, cgroup: group });
-  await app.firstWindow();
-  let page;
-  for (let i = 0; i < 100 && !page; i++) {
-    page = app.windows().find((p) => p.url() === 'campaign://app/index.html');
-    if (!page) await new Promise((r) => setTimeout(r, 50));
-  }
-  assert(page, 'Expected the GM window');
-  await page.bringToFront();
-  page.on('pageerror', (e) => errors.push(e.stack));
-  await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true', null, {
-    timeout: 20000,
-  });
-  if (await page.locator('#tutorial-dialog').isVisible()) {
-    await page.locator('#tutorial-skip').click({ noWaitAfter: true });
-    await page.locator('#tutorial-dialog').waitFor({ state: 'hidden' });
-  }
-  if (
-    await page
-      .locator('.campaign-card')
-      .filter({ hasText: 'Getrennte Gruppenfreigabe' })
-      .isVisible()
-  )
-    await page
-      .locator('.campaign-card')
-      .filter({ hasText: 'Getrennte Gruppenfreigabe' })
-      .getByRole('button', { name: /^(Fortsetzen|Öffnen)$/ })
-      .click();
-  await page.waitForFunction(
-    (id) =>
-      document.querySelector('#campaigns').value === id &&
-      !document.querySelector('header').inert &&
-      !document.querySelector('main').inert,
-    campaign.id,
-    { timeout: 20000 },
-  );
-  if (!(await page.locator('#live-tab').isVisible()))
-    await page.locator('#atlas-navigation').click();
-  await page.locator('#live-tab').click();
-  if (await page.locator('#live-continue').isVisible())
-    await page.locator('#live-continue').click();
-  await page.locator('#scene-focus').waitFor({ state: 'visible' });
-  return page;
-}
-async function close() {
-  console.log('phase: close');
-  assert.deepEqual(errors, []);
-  const exit = new Promise((r) =>
-    app.process().once('exit', (code, signal) => r({ code, signal })),
-  );
-  let timer;
-  const finish = async () => {
-    await app.evaluate(({ BrowserWindow }) =>
-      BrowserWindow.getAllWindows()
-        .find((w) => w.getTitle() === 'SaltMarcher')
-        .close(),
-    );
-    assert.deepEqual(await exit, { code: 0, signal: null });
-    await app.close();
-    closed = true;
-  };
-  try {
-    await Promise.race([
-      finish(),
-      new Promise((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Normal application close was not confirmed within 15 seconds.')),
-          15000,
-        );
+  const split = store.executeLive(
+      command({
+        kind: 'move',
+        sceneId: scene.id,
+        expectedRosterRevision: 4,
+        expectedFocusRevision: 0,
+        expectedClockRevision: 0,
+        expectedSceneMembershipRevision: 2,
+        memberIds: [two.id],
+        target: { kind: 'new', title: 'Nachhut', expectedContentRevision: 0 },
       }),
-    ]);
-  } finally {
-    clearTimeout(timer);
+    ),
+    secondary = split.session.createdScene.id;
+  for (const [id, title, text] of [
+    [scene.id, 'Vorhut', 'Die Vorhut sieht das offene Tor.'],
+    [secondary, 'Nachhut', 'Die Nachhut entdeckt die geheime Falltür.'],
+  ])
+    store.executeLive(
+      command({
+        kind: 'scene-content',
+        sceneId: id,
+        expectedRevision: 0,
+        title,
+        readAloud: text,
+        notes: 'GM-Schlüssel im Brunnen',
+        locationId: null,
+      }),
+    );
+  const map = store.world(w.token).maps[0];
+  for (const [sceneId, q] of [
+    [scene.id, 0],
+    [secondary, 10],
+  ])
+    store.executeWorld(
+      command({
+        kind: 'place-scene',
+        sceneId,
+        position: { mapId: map.id, q, r: 0, locationId: null, dungeon: null },
+        expectedSceneRevision: store.sceneWorld(w.token, sceneId).scene.revision,
+        expectedPositionRevision: store.sceneWorld(w.token, sceneId).position.revision,
+      }),
+    );
+  const sceneRows = store.db.prepare('SELECT * FROM live_scene ORDER BY id').all();
+  store.playerWindowOpen(w.token, true);
+  store.tutorial('skipped');
+  store.close();
+  let app;
+  const results = {};
+  async function launch() {
+    native.mark('open campaign and live area');
+    const page = await native.launch();
+    app = native.app;
+    if (await page.locator('#tutorial-dialog').isVisible()) {
+      await page.locator('#tutorial-skip').click({ noWaitAfter: true });
+      await page.locator('#tutorial-dialog').waitFor({ state: 'hidden' });
+    }
+    if (
+      await page
+        .locator('.campaign-card')
+        .filter({ hasText: 'Getrennte Gruppenfreigabe' })
+        .isVisible()
+    )
+      await page
+        .locator('.campaign-card')
+        .filter({ hasText: 'Getrennte Gruppenfreigabe' })
+        .getByRole('button', { name: /^(Fortsetzen|Öffnen)$/ })
+        .click();
+    await page.waitForFunction(
+      (id) =>
+        document.querySelector('#campaigns').value === id &&
+        !document.querySelector('header').inert &&
+        !document.querySelector('main').inert,
+      campaign.id,
+      { timeout: 20000 },
+    );
+    if (!(await page.locator('#live-tab').isVisible()))
+      await page.locator('#atlas-navigation').click();
+    await page.locator('#live-tab').click();
+    if (await page.locator('#live-continue').isVisible())
+      await page.locator('#live-continue').click();
+    await page.locator('#scene-focus').waitFor({ state: 'visible' });
+    if (cue || process.argv.includes('--handout')) {
+      const cues = page.locator('details').filter({ has: page.locator('#running-player-follow') });
+      if (!(await cues.evaluate((node) => node.open)))
+        await cues.locator(':scope > summary').click();
+    }
+    return page;
   }
-}
-try {
+  async function close() {
+    await native.close();
+  }
   let page = await launch(),
     player =
       app.windows().find((p) => p.url().includes('player-display.html')) ??
@@ -253,7 +187,7 @@ try {
       return original(event, ...args);
     });
   });
-  console.log('phase: hold publication');
+  native.mark('hold publication across scene switch');
   if (cue) await page.locator('#running-player-follow').click({ noWaitAfter: true });
   else {
     await page.locator('#player-open-controls').click();
@@ -291,6 +225,7 @@ try {
     document.querySelector('#player-stage').classList.contains('player-blank'),
   );
   results.restartStayedBlank = true;
+  native.mark('explicit publication and rejected write recovery');
   if (cue) {
     await page.locator('#running-player-follow').click({ noWaitAfter: true });
     await player.waitForFunction(() =>
@@ -396,14 +331,11 @@ try {
   } finally {
     fresh.close();
   }
-  await writeFile(
-    path.join(output, 'focus-' + phase + '.json'),
-    JSON.stringify({ results, launches, normalClose: true }, null, 2),
-  );
+  await native.finish({ results });
   console.log(
     JSON.stringify({
       normalClose: true,
-      launchCount: launches.length,
+      launchCount: native.launches.length,
       restartStayedBlank: results.restartStayedBlank,
       reviewedGroup: results.target,
       confirmedMode: results.explicitNewGroup?.value?.frame.mode,
@@ -411,32 +343,8 @@ try {
     }),
   );
 } catch (e) {
-  if (app && !closed) {
-    await writeFile(
-      path.join(output, 'failure.json'),
-      JSON.stringify({ error: e.stack, results, errors, pid }, null, 2),
-    );
-    try {
-      const page = app.windows().find((p) => p.url() === 'campaign://app/index.html');
-      results.failureView = await page?.evaluate(() => ({
-        status: document.getElementById('status')?.textContent,
-        headerInert: document.querySelector('header')?.inert,
-        mainInert: document.querySelector('main')?.inert,
-        campaign: document.getElementById('campaigns')?.value,
-        dialogs: [...document.querySelectorAll('dialog[open]')].map((d) => d.id),
-      }));
-      await writeFile(
-        path.join(output, 'failure.json'),
-        JSON.stringify({ error: e.stack, results, errors, pid }, null, 2),
-      );
-    } catch {}
-  }
+  await native.fail(e);
   throw e;
 } finally {
-  if (app && !closed) {
-    await Promise.race([app.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
-    if ((await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).includes(profile))
-      process.kill(pid, 'SIGKILL');
-  }
-  proxy.kill();
+  await native.dispose();
 }

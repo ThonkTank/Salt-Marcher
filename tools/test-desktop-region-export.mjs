@@ -8,15 +8,6 @@ const root = process.cwd(),
   require = createRequire(root + '/package.json'),
   Database = require('better-sqlite3'),
   { PNG } = require('pngjs');
-require('esbuild').buildSync({
-  entryPoints: ['src/app/storage/store.ts'],
-  outfile: '.build/region-export-native-store.cjs',
-  bundle: true,
-  platform: 'node',
-  format: 'cjs',
-  external: ['better-sqlite3'],
-});
-const { CampaignStore } = require(root + '/.build/region-export-native-store.cjs');
 const output =
   process.env.QA_EVIDENCE_DIR ?? (await mkdtemp(root + '/.build/region-export-native-'));
 await mkdir(output, { recursive: true });
@@ -34,6 +25,15 @@ async function close() {
   app = null;
 }
 try {
+  require('esbuild').buildSync({
+    entryPoints: ['src/app/storage/store.ts'],
+    outfile: '.build/region-export-native-store.cjs',
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    external: ['better-sqlite3'],
+  });
+  const { CampaignStore } = require(root + '/.build/region-export-native-store.cjs');
   for (const scale of [1, 2]) {
     native = await createNativeSession({
       root,
@@ -75,6 +75,7 @@ try {
       await page.locator('#atlas-units').selectOption('metric');
       await atlasCanvasReady(page);
     }
+    native.mark('launch and open campaign');
     await launch();
     db = new Database(profile + '/workbench.sqlite', { readonly: true });
     const records = () =>
@@ -177,6 +178,7 @@ try {
       await until(() => !!record(name));
       await page.waitForFunction(() => !document.querySelector('#land-finish').disabled);
     };
+    native.mark('author land');
     // Author a real land body before placing destinations or drawing inland water.
     await tool('height');
     const landView = JSON.parse(
@@ -192,6 +194,7 @@ try {
     const landBox = await page.locator('#campaign-map').boundingBox();
     await page.mouse.move(landBox.x + landBox.width * 0.5, landBox.y + landBox.height * 0.5);
     await page.mouse.down();
+    // Deliberate brush contact duration (strength is metres/second), not a readiness wait.
     await page.waitForTimeout(250);
     await page.mouse.up();
     await until(() => records().some((r) => r.height));
@@ -203,6 +206,7 @@ try {
     await atlasCanvasReady(page);
     await native.capture(page, '01-land');
     console.log('Land ready', scale);
+    native.mark('property brush and history');
     // Paint travel elevation without modifying land form, pigment or campaign time.
     const beforeProperties = facts(),
       propertyBox = await page.locator('#campaign-map').boundingBox();
@@ -427,6 +431,7 @@ try {
     );
     const bytes = await readFile(profile + '/region.png');
     await writeFile(output + '/region-' + scale + '.png', bytes);
+    native.mark('verify exported pixels');
     const png = PNG.sync.read(bytes),
       dark = (x1, y1, x2, y2) => {
         let count = 0;
@@ -454,7 +459,11 @@ try {
     for (let y = 0; y < height; y++)
       for (let x = 0; x < width; x++) {
         const i = (y * width + x) * 4,
-          land = png.data[i] === 238 && png.data[i + 1] === 229 && png.data[i + 2] === 207,
+          // GPU relief lighting/8-bit conversion can shift flat land by one channel unit.
+          // Keep the authored-land area and river-bank thresholds unchanged.
+          land =
+            [238, 229, 207].every((v, c) => Math.abs(png.data[i + c] - v) <= 1) &&
+            png.data[i + 3] === 255,
           near = Math.abs(x - rx) < 48 && Math.abs(y - ry) < 48;
         if (land) landPixels++;
         if (near && land) riverBankPixels++;
@@ -487,6 +496,7 @@ try {
     assert(acrossY > 20, 'Nebelkloster anchored below the seam must print above it');
     assert.equal(facts(), beforeExport);
     await writeFile(output + '/region-' + scale + '.png', bytes);
+    native.mark('fresh reopen');
     const saved = records(),
       savedFacts = facts();
     db.close();
@@ -534,6 +544,10 @@ try {
   await writeFile(output + '/result.json', JSON.stringify({ launches, results }, null, 2));
   console.log(JSON.stringify({ launches, results }));
 } catch (error) {
+  await writeFile(
+    output + '/failure.json',
+    JSON.stringify({ scale: results.length + 1, completed: results, error: error.stack }, null, 2),
+  );
   await native?.fail(error);
   throw error;
 } finally {

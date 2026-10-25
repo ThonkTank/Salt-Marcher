@@ -91,7 +91,23 @@ export async function createNativeSession({
     proxy = null,
     proxyError = null;
   const bus = path.join(profile, 'bus');
-  const evidence = () => ({ source, dirty, profile, artifacts: build, launches, errors });
+  let step = 'fixture setup';
+  const steps = [];
+  function mark(name) {
+    step = name;
+    steps.push({ step, at: new Date().toISOString() });
+    console.log(`[${name}]`);
+  }
+  const evidence = () => ({
+    source,
+    dirty,
+    profile,
+    artifacts: build,
+    launches,
+    errors,
+    step,
+    steps,
+  });
   async function startBus() {
     if (proxy) return;
     assert(process.env.DBUS_SESSION_BUS_ADDRESS, 'Native session bus missing');
@@ -139,9 +155,16 @@ export async function createNativeSession({
       'Native profile ownership missing',
     );
     assert.equal((await readFile('/proc/' + pid + '/cgroup', 'utf8')).trim().split('::')[1], group);
+    const watched = new WeakSet();
+    const watch = (page) => {
+      if (watched.has(page)) return;
+      watched.add(page);
+      page.on('pageerror', (error) => errors.push(error.stack));
+    };
+    app.on('window', watch);
     const page = await app.firstWindow();
+    for (const window of app.windows()) watch(window);
     page.setDefaultTimeout(15000);
-    page.on('pageerror', (error) => errors.push(error.stack));
     await page.waitForURL(/\/index\.html$/);
     await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true');
     entry.platform = {
@@ -231,10 +254,24 @@ export async function createNativeSession({
     );
   }
   async function fail(error) {
+    console.error(`Native failure at ${step}: ${error.message ?? error}`);
     await rm(path.join(output, resultName), { force: true });
+    let view = null;
+    if (app) {
+      try {
+        view = await (
+          await app.firstWindow()
+        ).evaluate(() => ({
+          status: document.querySelector('#status')?.textContent,
+          atlasStatus: document.querySelector('#atlas-save-status')?.textContent,
+          atlas: { ...document.querySelector('#campaign-atlas')?.dataset },
+          canvas: { ...document.querySelector('#campaign-map')?.dataset },
+        }));
+      } catch {}
+    }
     await writeFile(
       path.join(output, 'failure.json'),
-      JSON.stringify({ ...evidence(), error: error.stack ?? String(error) }, null, 2),
+      JSON.stringify({ ...evidence(), view, error: error.stack ?? String(error) }, null, 2),
     );
     if (app)
       try {
@@ -277,6 +314,7 @@ export async function createNativeSession({
       return app;
     },
     launch,
+    mark,
     close,
     capture,
     finish,
