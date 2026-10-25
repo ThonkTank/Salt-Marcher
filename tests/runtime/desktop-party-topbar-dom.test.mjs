@@ -149,7 +149,19 @@ async function refreshedXpFixture(t, withScene = false) {
       return reply;
     },
   };
-  ui.initPartyTopbar(() => {});
+  const writes = [];
+  ui.initPartyTopbar(() => {}, {
+    runPartyLive: async () => {
+      throw Error('Unexpected Live write');
+    },
+    openPartyMove: async () => {
+      throw Error('Unexpected move');
+    },
+    runPartyProgress: async (token, action) => {
+      writes.push({ token, action });
+      throw Error('Buchungsstatus ungeklärt.');
+    },
+  });
   ui.activatePartyTopbar({ token: 'owner' });
   t.after(() => {
     ui.activatePartyTopbar(null);
@@ -162,6 +174,7 @@ async function refreshedXpFixture(t, withScene = false) {
   get('xp-amount').oninput();
   get('xp-reason').value = '  Korrektur behalten  ';
   return {
+    writes,
     get,
     character,
     progress,
@@ -253,7 +266,20 @@ test('compact XP actions preview each operation and retain the draft when the li
   await tick();
   assert.equal(x.get('xp-editor').hidden, false);
   assert.equal(x.get('xp-amount').value, '250');
-  assert.match(x.get('xp-status').textContent, /Buchungsstatus|Speicherfehler/);
+  assert.match(x.get('xp-status').textContent, /Buchungsstatus/);
+  assert.deepEqual(x.writes, [
+    {
+      token: 'owner',
+      action: {
+        kind: 'xp',
+        characterId: 'ada',
+        expectedRevision: 1,
+        mode: 'subtract',
+        amount: 250,
+        reason: '  Korrektur behalten  ',
+      },
+    },
+  ]);
   x.get('xp-add').onfocus();
   assert.match(x.get('xp-preview').textContent, /\+ 250 XP.*Danach 540 XP/);
   x.get('xp-form').querySelector('button[type=submit]').onfocus();
