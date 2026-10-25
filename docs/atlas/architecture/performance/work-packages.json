@@ -492,15 +492,23 @@
       ],
       "activationRequires": [],
       "returnGates": [],
-      "writeScopes": [],
-      "writesBuildInputs": false,
+      "writeScopes": [
+        "tools/test-desktop-atlas-foundation.mjs"
+      ],
+      "writesBuildInputs": true,
       "nativeBuild": true,
       "alternativeRequires": [],
       "estimate": {
         "profile": "native",
         "waitConfidence": "unknown"
       },
-      "actual": null
+      "actual": {
+        "activeHours": null,
+        "preparation": "a0_15_review independently inspected native harnesses; existing probes miss first-create retry, failed GPU recovery+retry/current source, workbench frame gating, decoded-image alpha and editor-read/export-cancel concurrency",
+        "implementation": "not started; all predecessor gates still required",
+        "nativeQualification": "not started; exclusive frozen build required",
+        "planReview": "a0_15_review confirms bounded native runner and pipeline/workbench distinction; preparation finding closed, execution still pending"
+      }
     },
     {
       "id": "A1.01",
@@ -4832,7 +4840,10 @@
         "tests/desktop-room-authoring.test.mjs",
         "docs/project/architecture/canonical-store-worker.md",
         "desktop/main.ts",
-        "src/app/storage/atlas-commit-projection.ts"
+        "src/app/storage/atlas-commit-projection.ts",
+        "src/app/graph-contracts.transfer.json",
+        "src/app/transfer/contracts.json",
+        "tests/desktop-transfer-contracts.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4860,7 +4871,8 @@
         "handoff": ".build/atlas-performance-plan/A0.15-handoff.json",
         "verification": "155 targeted tests; independent preview/postcommit repeat25/25; source17/dependency3/log15 hashes verified",
         "independentReview": "a0_15_review accepted bounded A0.15; no open required findings",
-        "typecheck": "both Exit2 solely graph-ui.ts:38; required A0.17 connection, not a complete typecheck pass"
+        "typecheck": "both Exit2 solely graph-ui.ts:38; required A0.17 connection, not a complete typecheck pass",
+        "transferFollowup": "Root missing-role correction: three local preview identity declarations; generated145 models/603 shapes; check:repo and transfer11/11 passed after fresh test assets. a0_15_review accepts semantic/code/evidence review; active-preview export remains A0.16."
       }
     },
     {
@@ -4887,7 +4899,8 @@
         "tests/desktop-graph-preview-restart.test.mjs",
         "tests/desktop-dungeon-authoring.test.mjs",
         "docs/project/architecture/canonical-store-worker.md",
-        "desktop/store-operations.ts"
+        "desktop/store-operations.ts",
+        "src/app/storage/paths.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4909,7 +4922,8 @@
         "implementation": "assigned after verified and independently accepted A0.15 handoff",
         "nativeQualification": "pending A0.14/A0.11",
         "startedAt": "2026-10-25T13:42:54.760084+00:00",
-        "inputCommit": "5c1e878d"
+        "inputCommit": "5c1e878d",
+        "boundedCorrection": "A0.17 real Path dispatch reproduces missing location table in Shadow passageStatuses. Add scoped read-only canonical location existence lookup bound/rebound/removed by GraphShadow; no Location/Atlas schema copy."
       }
     },
     {

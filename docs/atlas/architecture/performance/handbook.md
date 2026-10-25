@@ -377,6 +377,20 @@ die unabhängig wiederholten 25 Preview-/Postcommitfälle bestanden. Der Reviewe
 Beide Typchecks melden ausschließlich den geplanten UI-Anschluss `graph-ui.ts:38`;
 sie gelten bis A0.17 als nicht bestanden. Persistenz, native Wiederaufnahme und
 R0 bleiben offen. Kataloglinks wurden nach tatsächlichem Testinhalt ergänzt.
+Die anschließende Repositoryprüfung verlangte drei Transferrollen für neue lokale
+Vorschaukennungen. Deklarationen und generierte Verträge wurden ergänzt;
+`check:repo` und 11 Transferfälle bestanden. Der neue Fall prüft Snapshot, unabhängige
+Kopie, frisches Öffnen und verweigerten kanonischen Fallback eines fehlenden
+Previewziels. `a0_15_review` akzeptiert diesen begrenzten Nachweis. Der erste Lauf
+benutzte noch den alten gemeinsamen Store-Testbuild und ist als Fehlversuch erhalten.
+Aktive Previewartefakte und ihre Archivgrenze bleiben A0.16.
+
+Die echte A0.17-Passagenprobe fand einen fehlenden Ortslookup in der begrenzten
+Shadow-DB. A0.16 ergänzt am Vorschau-Lebenszyklus einen ausschließlich lesenden
+Lookup auf kanonische Ortsexistenz; keine Ortstabellenkopie. Der originale
+DOM-Dispatchfall bleibt bis zur Wiederholungsprüfung offen. Für A0.11 ist nach
+unabhängiger Quellenprüfung ein fokussierter nativer Runner im bestehenden Paket
+benannt; seine Umsetzung beginnt erst nach den bisherigen Vorgängergates.
 
 ## Abschlussgrenzen
 
