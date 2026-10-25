@@ -215,14 +215,14 @@ sichtbar als inaktive Alternativen.
 | P0.01 / P0.02 | plan_final_review / review_architecture | Unabhängig abgeschlossen, siehe Planbasis; keine Produktabnahme |
 | P0.03 | Koordinator | Planbasis gesichert; Übergang an project-steering |
 | A0.01 | review_packages | Implementiert in `3779e6ecb23c6e4286497e6214fff0c7a9d3e617`; 93/93 gezielte Tests und Typecheck bestanden; native Qualifikation folgt in A0.11 |
-| A0.02 | review_packages | Implementiert in `5a864b384`; 91/91 Tests und Typecheck bestanden ([Testbeleg](../../../../.build/atlas-performance-plan/A0.02-tests.tap)); native Qualifikation und R0 offen |
-| A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
-| A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
-| A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
+| A0.02 | review_packages | Implementiert in `5a864b384`; 91/91 Tests und Typecheck bestanden (Testbeleg `.build/atlas-performance-plan/A0.02-tests.tap`); native Qualifikation und R0 offen |
+| A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden (Dateibindung `.build/atlas-performance-plan/A0.03-files.sha256`); native Qualifikation und R0 offen |
+| A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden (Übergabe `.build/atlas-performance-plan/A0.04-handoff.json`); native Qualifikation und R0 offen |
+| A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden (Übergabe `.build/atlas-performance-plan/A0.05-handoff.json`); native Qualifikation und R0 offen |
 | A0.12 | plan_final_review | Nacharbeit in `4859dadee`; 115/115 Tests und Typecheck bestanden; unabhängige Nachprüfung lokal akzeptabel; A0.11/R0 offen |
-| A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
-| A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.06-handoff.json)); Besitzerreaktionen A0.07/08 und R0 offen |
-| A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.09-handoff.json)); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
+| A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden (Übergabe `.build/atlas-performance-plan/A0.10-handoff.json`); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
+| A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.06-handoff.json`); Besitzerreaktionen A0.07/08 und R0 offen |
+| A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden (Übergabe `.build/atlas-performance-plan/A0.09-handoff.json`); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -230,7 +230,7 @@ vorbereitet. Starts/Enden und Status im Paketgraphen; unbekannte aktive Arbeitsz
 wird nicht aus verstrichener Laufzeit abgeleitet. A0 bleibt offen bis eigenen
 Paketnachweisen, unabhängigen Reviews, Fixes und erforderlicher Integration.
 
-Die verlinkten `.build`-Belege sind lokale Arbeitsartefakte; dauerhafte
+Die genannten `.build`-Belege sind lokale Arbeitsartefakte; dauerhafte
 Qualifikationsbelege folgen mit den Liefergates. Für A0.01 liegt kein separater
 persistierter TAP-Lauf vor; der nachstehende Aufruf und die zugehörige Revision
 sind die Reproduktionsgrundlage für R0, keine native Abnahme.
@@ -276,12 +276,12 @@ Atlas-Deactivate-Hook in der gemeinsamen Editorregistrierung. Die vorhandene
 `hide()`-Methode wird jetzt erst nach erfolgreichem Abschluss der Schreibsicherung
 aufgerufen; abgelehnte oder noch ausstehende Schreibbestätigungen werden geschützt.
 Der native Vorherlauf reproduzierte beide Stoppfehler. Der
-[native Nachherbeleg](../../../../.build/atlas-performance-plan/A0.10-native-r2/result.json)
+native Nachherbeleg `.build/atlas-performance-plan/A0.10-native-r2/result.json`
 enthält getrennt Material-/Geometrieschließen und echte injizierte Material-/
 Geometriefehler: vier normale Exits (Code 0), je acht erfasste PIDs danach abwesend.
 Die Fehlergegenproben blieben sichtbar, die Schließfälle ohne falschen Ladefehler.
 Root prüfte 917 Buildinput- und 88 Runtimehashes aus der
-[Identität](../../../../.build/atlas-performance-plan/A0.10-native-r2/identity.json)
+Identität `.build/atlas-performance-plan/A0.10-native-r2/identity.json`
 gegen den unveränderten Stand vor dem Commit sowie alle vier Prozessnachweise.
 107 ursprüngliche Messdateien blieben unverändert. Fehlgeschlagene Harnessversuche
 sind separat erhalten und geben keine Freigabe. Die native Probe hält IPC-Antworten
@@ -308,7 +308,7 @@ Die Nacharbeit verlangt aktuelle Höhen-/Materialkacheln und ihren abgeschlossen
 GPU-Frame gemeinsam; Quellenwechsel widerrufen die Freigabe, alte Antworten bleiben
 unwirksam. Kamera/Navigation bleiben erhalten, aktuelle Lesefehler sichtbar.
 Vorherregression Exit 1, danach 115/115 gezielte Tests und Typecheck Exit 0;
-Root verifizierte beide Dateihashes gegen [Übergabe](../../../../.build/atlas-performance-plan/A0.12-rework-handoff.json)
+Root verifizierte beide Dateihashes gegen Übergabe `.build/atlas-performance-plan/A0.12-rework-handoff.json`
 und Commit. `a0_interim_review` führte die vier Suites selbst mit 115/115 erneut aus
 und akzeptiert den lokalen Fix ohne offene Befunde im Terrain-Retrybereich.
 Kontrollierte GPU-/DOM-Ersatzplattform ist keine native Qualifikation; A0.11/R0 bleiben offen.
