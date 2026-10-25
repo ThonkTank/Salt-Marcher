@@ -21,6 +21,10 @@ in die Git-Historie, nicht in den aktuellen Arbeitsplan.
 
 ## Aktueller Arbeitsstand
 
+Die [Performance-Roadmap A0–A7](performance-roadmap.md) legt den nächsten
+Architekturvergleich, die Reihenfolge der Umsetzung und die Messziele fest.
+Alle Meilensteine sind offen; die Roadmap ist keine Umsetzungs- oder Abnahmebehauptung.
+
 Der gemeinsame metrische deck.gl-Pfad zeichnet Weltgeometrie, Gebäude, Räume
 und Ausgabe. Canvas bleibt für Bedienüberlagerungen zuständig. Kamera und
 Eingabesteuerung benötigen keine zusätzliche Rendererschicht.

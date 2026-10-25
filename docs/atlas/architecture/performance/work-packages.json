@@ -1,0 +1,4771 @@
+{
+  "schemaVersion": 2,
+  "planVersion": "working-draft-3",
+  "status": "reviewing",
+  "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
+  "capacity": 3,
+  "resourceCapacity": {
+    "native-host": 1
+  },
+  "conditionalPolicy": "B-Wege nur nach dokumentiertem Befund; separat relativ zur Aktivierung dargestellt, nicht zum Standardweg addiert.",
+  "packages": [
+    {
+      "id": "A0.01",
+      "title": "Auswahl und neue Autorenaktionen an den richtigen Frame binden",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-canvas.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.02",
+      "title": "Erststartfehler und Retry abschließen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.01",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.03",
+      "title": "Alpha-Treffer für normale Bildassets herstellen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-drawing-geometry.ts",
+        "src/app/atlas-deck-drawing.ts",
+        "src/app/atlas-canvas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.04",
+      "title": "Exportabbruch von Editorleseaufträgen isolieren",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "desktop/main.ts",
+        "desktop/atlas-region.ts",
+        "src/app/atlas-output.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.05",
+      "title": "Graphbarriere nach Quellen-Await erneut prüfen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.04",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "desktop/main.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.06",
+      "title": "Unbekannten Schreibausgang über die Hostgrenze erhalten",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.05",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "desktop/main.ts",
+        "desktop/preload.ts",
+        "desktop/store-client.ts",
+        "src/app/contracts.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.07",
+      "title": "Atlas-, Raum- und Zeichenaufträge bis zur Klärung behalten",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/campaign-atlas-author.ts",
+        "src/app/atlas-author.ts",
+        "src/app/campaign-atlas-ui.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.08",
+      "title": "Unbekannten Reiseauftrag bis zur Klärung behalten",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-journey.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.09",
+      "title": "Commitbestätigung von nachfolgender Leseprojektion trennen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/store.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.10",
+      "title": "Erwarteten Appstopp ohne Ladefehler abschließen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.02",
+        "A0.04",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "desktop/atlas-region.ts",
+        "desktop/main.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.11",
+      "title": "Grundlage mit Produktionsregressionen qualifizieren",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.01",
+        "A0.02",
+        "A0.03",
+        "A0.04",
+        "A0.05",
+        "A0.06",
+        "A0.07",
+        "A0.08",
+        "A0.09",
+        "A0.10",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.01",
+      "title": "Ausgangsbelege dauerhaft sichern",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.02",
+      "title": "Szenarien und Ergebnisformat festlegen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.01",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.03",
+      "title": "Nativen Messprozess reproduzierbar betreiben",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.02",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/native.mjs",
+        "tools/native-session.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.04",
+      "title": "Geladene Navigation messen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.03",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.05",
+      "title": "Kaltes Öffnen und Navigation mit Nachladung messen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.04",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/",
+        "tools/test-desktop-atlas-cache-reopen.mjs",
+        "tools/test-desktop-atlas-early-terrain.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.06",
+      "title": "Sichtbare Pinselreaktion messen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.03",
+        "A1.02",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/terrain-pixel-readback.mjs",
+        "tools/test-desktop-atlas-brush-ux.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.07",
+      "title": "Renderressourcen und Neuanlagen instrumentieren",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.03",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-terrain-material-layer.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.08",
+      "title": "Materialkosten entlang einer Anfrage aufteilen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.03",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts",
+        "src/app/storage/terrain-material.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.09",
+      "title": "Geladene Navigationsbasis aufnehmen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.04",
+        "A1.07",
+        "A1.12",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.10",
+      "title": "Pinsel-, Kaltstart- und Nachladebasis aufnehmen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.05",
+        "A1.06",
+        "A1.08",
+        "A1.09",
+        "R0.03",
+        "A1.12"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.11",
+      "title": "Vergleichsbasis freigeben",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A1.09",
+        "A1.10",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A1.12",
+      "title": "Fehlerfreien Abschluss der Messwerkzeuge bestätigen",
+      "document": "docs/atlas/architecture/performance/a1-measurement.md",
+      "requires": [
+        "A0.10",
+        "A1.01",
+        "A1.03",
+        "R0.03"
+      ],
+      "lane": "A1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.01",
+      "title": "Gemeinsame Vergleichsszenen bereitstellen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A1.11",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/fixtures/",
+        "tools/atlas-reference-fixture.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.02",
+      "title": "Gemeinsamen Prototypenanschluss bauen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.01",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/contract/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.03",
+      "title": "deck.gl-Geometrie im Prototyp bündeln",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.02",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/deck/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.04",
+      "title": "deck.gl-Ressourcen im Prototyp behalten",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.03",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/deck/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.05",
+      "title": "Three.js-Kamera und feste Geometrie darstellen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.02",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.06",
+      "title": "Three.js-Terrainoberfläche übernehmen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.05",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.07",
+      "title": "Three.js-Materialdarstellung vervollständigen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.06",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.08",
+      "title": "Three.js-Bewuchs übernehmen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.07",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.09",
+      "title": "Three.js-Texte und transparente Zeichnung ergänzen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.08",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.10",
+      "title": "Three.js-Änderungsfolge und Trefferprobe anbinden",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.09",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/three/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.11",
+      "title": "Kandidaten mit identischer Qualität messen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.04",
+        "A2.10",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A2.12",
+      "title": "Rendererentscheidung und Übergabe treffen",
+      "document": "docs/atlas/architecture/performance/a2-renderer-choice.md",
+      "requires": [
+        "A2.11",
+        "R1.03"
+      ],
+      "lane": "A2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.01",
+      "title": "Szenen-, Änderungs- und Kameravertrag anschließen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A2.12",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.02",
+      "title": "Stabile Geometriekennungen und Ursprünge einführen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.01",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.03",
+      "title": "Geometriepuffer mit eindeutiger Lebensdauer halten",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.02",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.04",
+      "title": "Terrain- und Texturressourcen in den Vertrag überführen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.03",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.05",
+      "title": "Opake Zeichnungen dauerhaft bündeln",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.04",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.06",
+      "title": "Transparente und speziell geordnete Inhalte sicher bündeln",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.05",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.07",
+      "title": "Szenenänderungen auf betroffene Ressourcen begrenzen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.06",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.08",
+      "title": "Änderungen innerhalb eines Bildtakts gemeinsam veröffentlichen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.07",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.09",
+      "title": "Auswahl auf die gehaltene Darstellung abbilden",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.08",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.10",
+      "title": "Den gewählten Pfad an den nativen Atlas anschließen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.09",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.11",
+      "title": "Kontextverlust und Ressourcenabschluss absichern",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.10",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-presentation.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-deck-drawing.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A3.12",
+      "title": "Dauerhafte Darstellung nativ nachweisen",
+      "document": "docs/atlas/architecture/performance/a3-persistent-rendering.md",
+      "requires": [
+        "A3.11",
+        "R2.03"
+      ],
+      "lane": "A3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.01",
+      "title": "Geometrie in stabile räumliche Blöcke einteilen",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A3.12",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.02",
+      "title": "Unsichtbare Blöcke vor der Zeichenarbeit aussortieren",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.01",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.03",
+      "title": "Ressourcenbudgets und Verdrängung schließen",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.02",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.04",
+      "title": "Beschriftungen in gemeinsamen Texturressourcen halten",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.03",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.05",
+      "title": "Wiederholte Symbole und Bilder bündeln",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.04",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.06",
+      "title": "Große Koordinaten und Maßstabswechsel stabilisieren",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.05",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.07",
+      "title": "Kachelabdeckung und gemischte Revisionen absichern",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.06",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-world-tiles.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.08",
+      "title": "Langstreckennavigation und Speicherfreigabe messen",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.07",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A4.09",
+      "title": "Vollständige geladene Navigationsmatrix qualifizieren",
+      "document": "docs/atlas/architecture/performance/a4-world-scaling.md",
+      "requires": [
+        "A4.08",
+        "R3.03"
+      ],
+      "lane": "A4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.01",
+      "title": "Entwurf und bestätigte Szene getrennt führen",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A4.09",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.02",
+      "title": "Farbvorschau inkrementell darstellen",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.01",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.03",
+      "title": "Höhenvorschau einschließlich Relief aktualisieren",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.02",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.04",
+      "title": "Glättungsvorschau auf demselben Pfad führen",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.03",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.05",
+      "title": "Bestätigung ohne Flackern und Neuaufbau übernehmen",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.04",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.06",
+      "title": "Undo, Abbruch und ungeklärte Bestätigung erhalten",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.05",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.07",
+      "title": "Objektbewegung und Auswahl während Entwürfen erhalten",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.06",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/landscape-brush-session.ts",
+        "src/app/terrain-stroke-queue.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.08",
+      "title": "Pinselreaktion in vollständigen Serien qualifizieren",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.07",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A5.09",
+      "title": "Zusammenhängenden Bearbeitungsablauf abnehmen",
+      "document": "docs/atlas/architecture/performance/a5-editing.md",
+      "requires": [
+        "A5.08",
+        "R4.03"
+      ],
+      "lane": "A5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.01",
+      "title": "Verbleibenden Materialengpass bestimmen",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A5.09",
+        "A1.08",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.02",
+      "title": "Überlappende Quelldatenzugriffe innerhalb eines Auftrags wiederverwenden",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.03",
+      "title": "Wiederholte Feld- und Randberechnung vermeiden",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "A6.02",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.04",
+      "title": "Arbeitsblockgröße und Unterbrechung gemeinsam abstimmen",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "A6.03",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.05",
+      "title": "Sichtbare Anfragen priorisieren und überholte Arbeit beenden",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "A6.04",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.06",
+      "title": "Cachetreffer und Invalidierung gezielt korrigieren",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "A6.05",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.07",
+      "title": "Doppelte Produktarbeit an der Anfragegrenze beseitigen",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.01",
+        "A6.06",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.08",
+      "title": "Bedarf für zusätzliche Rechenverfahren entscheiden",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.02",
+        "A6.03",
+        "A6.04",
+        "A6.05",
+        "A6.06",
+        "A6.07",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.09",
+      "title": "Kaltstart und Nachladung vergleichbar nachmessen",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.08",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A6.10",
+      "title": "Ladegewinn gegen Bedienung und Speicher prüfen",
+      "document": "docs/atlas/architecture/performance/a6-loading.md",
+      "requires": [
+        "A6.09",
+        "R5.03"
+      ],
+      "lane": "A6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.01",
+      "title": "Fachumfang auf tatsächliche Prüfabläufe abbilden",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A6.10",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.02",
+      "title": "Landschaft, Gewässer und Trassen nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.01",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.03",
+      "title": "Bewuchs und Einzelkorrekturen nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.02",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.04",
+      "title": "Kartografie, Assets und Navigation nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.03",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.05",
+      "title": "Stadt und Gebäude nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.04",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.06",
+      "title": "Raumformen und Geometriebearbeitung nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.05",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.21",
+      "title": "Geschosse, Raumgruppen und Keys nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.06",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.22",
+      "title": "Wände, Türen, Portale und Treppen nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.21",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.23",
+      "title": "Einrichtung, Licht, Text und Bibliotheksobjekte nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.22",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.07",
+      "title": "Räumliche Zusatzwerkzeuge und Reise prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.23",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.08",
+      "title": "Speicherung, Neustart und Archivtransfer prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.07",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.09",
+      "title": "Eingefrorene Ausgabeszene an den Renderer anschließen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.08",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.10",
+      "title": "Gekachelte Bildausgabe anschließen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.09",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.11",
+      "title": "Bildausgabe nativ vergleichen und Weiterarbeit prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.10",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.12",
+      "title": "Öffentliche Darstellung und Datengrenze anschließen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.11",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.13",
+      "title": "Spielerfenster und Freigabeänderungen nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.12",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.14",
+      "title": "Schließen während einer Terrainanfrage erneut prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.13",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.15",
+      "title": "GPU-, Größen- und Kontextwechsel nativ prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.14",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.16",
+      "title": "Standard umstellen und ersetzten Code entfernen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.02",
+        "A7.03",
+        "A7.04",
+        "A7.05",
+        "A7.06",
+        "A7.21",
+        "A7.22",
+        "A7.23",
+        "A7.07",
+        "A7.08",
+        "A7.09",
+        "A7.10",
+        "A7.11",
+        "A7.12",
+        "A7.13",
+        "A7.14",
+        "A7.15",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.17",
+      "title": "Finale Leistungs- und Ressourcenqualifikation ausführen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.16",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "matrix",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.18",
+      "title": "Exakten Integrationskandidaten qualifizieren",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.17",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "ci",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.19",
+      "title": "Integrationsstand und Lieferpflicht prüfen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.18",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-output.ts",
+        "src/app/player-atlas.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A7.20",
+      "title": "Abnahmestände und offene Grenzen abschließend abgleichen",
+      "document": "docs/atlas/architecture/performance/a7-qualification.md",
+      "requires": [
+        "A7.19",
+        "R6.03"
+      ],
+      "lane": "A7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B1.01",
+      "title": "Direkten Pfad für opake Geometrie prototypisieren",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B1",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [
+        "A2.02"
+      ],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgl/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B1.02",
+      "title": "Terrain und vorhandene Materialfunktionen anschließen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B1.01"
+      ],
+      "lane": "B1",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgl/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B1.03",
+      "title": "Geordnete Inhalte und lokale Änderung ergänzen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B1.02"
+      ],
+      "lane": "B1",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgl/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B1.04",
+      "title": "Gemeinsamen Vergleich wiederholen und entscheiden",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B1.03"
+      ],
+      "lane": "B1",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [
+        "A2.11",
+        "A2.12",
+        "A3.12"
+      ],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B2.01",
+      "title": "Transfer- und Besitzvertrag für eine Szene erproben",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B2",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B2.02",
+      "title": "Zeichenschleife und Ressourcen im Worker betreiben",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B2.01"
+      ],
+      "lane": "B2",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B2.03",
+      "title": "Eingaben, Treffer und Ausgabe synchronisieren",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B2.02"
+      ],
+      "lane": "B2",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-deck-surface.ts",
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B2.04",
+      "title": "Bedienreaktion und sichtbares Ergebnis vergleichen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B2.03"
+      ],
+      "lane": "B2",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [
+        "A3.12",
+        "A5.09"
+      ],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B3.01",
+      "title": "Einen zusätzlichen begrenzten Leserechenplatz erproben",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B3",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [
+        "A6.08"
+      ],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B3.02",
+      "title": "Parallelität im echten Lade-/Bearbeitungsablauf bewerten",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B3.01"
+      ],
+      "lane": "B3",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [
+        "A6.09",
+        "A6.10"
+      ],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B3.03",
+      "title": "Genau einen verbleibenden Rechenkern in WASM prototypisieren",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B3.02"
+      ],
+      "lane": "B3",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null,
+      "variant": "wasm"
+    },
+    {
+      "id": "B3.04",
+      "title": "WASM im realen Produktauftrag vergleichen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B3.03"
+      ],
+      "lane": "B3",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [
+        "A6.09",
+        "A6.10"
+      ],
+      "writeScopes": [
+        "src/app/storage/terrain-material.ts",
+        "desktop/atlas-region-worker.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null,
+      "variant": "wasm"
+    },
+    {
+      "id": "B4.01",
+      "title": "Unterstützung und realen Engpass prüfen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.02",
+      "title": "Geometrie und Kamera als WebGPU-Prototyp darstellen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.01"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "variant": "render",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgpu/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.03",
+      "title": "Terrainmaterialien in WebGPU darstellen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.02"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "variant": "render",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgpu/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.04",
+      "title": "Texte, Transparenz und Änderungen ergänzen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.06"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "variant": "render",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgpu/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.05",
+      "title": "WebGPU gegen den besten bisherigen Kandidaten vergleichen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.04"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "alternativeRequires": [
+        "B4.07"
+      ],
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.06",
+      "title": "Instanzvegetation in WebGPU darstellen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.03"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "variant": "render",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgpu/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B4.07",
+      "title": "Einen Materialkernel mit GPU Compute vergleichen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B4.01"
+      ],
+      "lane": "B4",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "variant": "compute",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [
+        "A6.08"
+      ],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/webgpu/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B5.01",
+      "title": "Geeignete Inhalte und Qualitätsgrenzen festlegen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B5",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B5.02",
+      "title": "Begrenzte ableitbare Rasterkacheln erzeugen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B5.01"
+      ],
+      "lane": "B5",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B5.03",
+      "title": "Bearbeitung und Auswahl ohne Doppelbilder erhalten",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B5.02"
+      ],
+      "lane": "B5",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-raster-presentation.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B5.04",
+      "title": "Gesamtnutzen einschließlich Neuerzeugung vergleichen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B5.03"
+      ],
+      "lane": "B5",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [
+        "A3.12",
+        "A4.09",
+        "A5.09"
+      ],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B6.01",
+      "title": "Verbleibende Grenze und vollständigen Migrationsumfang bestimmen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [],
+      "lane": "B6",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "B6.02",
+      "title": "Eng begrenzten Machbarkeitsvergleich durchführen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B6.01"
+      ],
+      "lane": "B6",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "tools/atlas-benchmark/comparison/native/"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "B6.03",
+      "title": "Neue Umstiegsentscheidung mit Aufwand und Risiken vorlegen",
+      "document": "docs/atlas/architecture/performance/conditional-paths.md",
+      "requires": [
+        "B6.02"
+      ],
+      "lane": "B6",
+      "conditional": true,
+      "slots": 1,
+      "status": "conditional",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "analysis",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "P0.01",
+      "title": "Paketumfang und Abhängigkeiten unabhängig reviewen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [],
+      "lane": "P0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "P0.02",
+      "title": "Architektur, Messung und Steuerung unabhängig reviewen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [],
+      "lane": "P0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "P0.03",
+      "title": "Befunde einarbeiten und Planbasis freigeben",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "P0.01",
+        "P0.02"
+      ],
+      "lane": "P0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R0.01",
+      "title": "Ergebnis von A0 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A0.01",
+        "A0.02",
+        "A0.03",
+        "A0.04",
+        "A0.05",
+        "A0.06",
+        "A0.07",
+        "A0.08",
+        "A0.09",
+        "A0.10",
+        "A0.11"
+      ],
+      "lane": "R0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R0.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A0 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A0.01",
+        "A0.02",
+        "A0.03",
+        "A0.04",
+        "A0.05",
+        "A0.06",
+        "A0.07",
+        "A0.08",
+        "A0.09",
+        "A0.10",
+        "A0.11"
+      ],
+      "lane": "R0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R0.03",
+      "title": "Fixes, Neuplanung und Übergang nach A0 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R0.01",
+        "R0.02"
+      ],
+      "lane": "R0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R1.01",
+      "title": "Ergebnis von A1 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A1.01",
+        "A1.02",
+        "A1.03",
+        "A1.04",
+        "A1.05",
+        "A1.06",
+        "A1.07",
+        "A1.08",
+        "A1.09",
+        "A1.10",
+        "A1.11",
+        "A1.12"
+      ],
+      "lane": "R1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R1.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A1 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A1.01",
+        "A1.02",
+        "A1.03",
+        "A1.04",
+        "A1.05",
+        "A1.06",
+        "A1.07",
+        "A1.08",
+        "A1.09",
+        "A1.10",
+        "A1.11",
+        "A1.12"
+      ],
+      "lane": "R1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R1.03",
+      "title": "Fixes, Neuplanung und Übergang nach A1 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R1.01",
+        "R1.02"
+      ],
+      "lane": "R1",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R2.01",
+      "title": "Ergebnis von A2 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A2.01",
+        "A2.02",
+        "A2.03",
+        "A2.04",
+        "A2.05",
+        "A2.06",
+        "A2.07",
+        "A2.08",
+        "A2.09",
+        "A2.10",
+        "A2.11",
+        "A2.12"
+      ],
+      "lane": "R2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R2.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A2 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A2.01",
+        "A2.02",
+        "A2.03",
+        "A2.04",
+        "A2.05",
+        "A2.06",
+        "A2.07",
+        "A2.08",
+        "A2.09",
+        "A2.10",
+        "A2.11",
+        "A2.12"
+      ],
+      "lane": "R2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R2.03",
+      "title": "Fixes, Neuplanung und Übergang nach A2 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R2.01",
+        "R2.02"
+      ],
+      "lane": "R2",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R3.01",
+      "title": "Ergebnis von A3 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A3.01",
+        "A3.02",
+        "A3.03",
+        "A3.04",
+        "A3.05",
+        "A3.06",
+        "A3.07",
+        "A3.08",
+        "A3.09",
+        "A3.10",
+        "A3.11",
+        "A3.12"
+      ],
+      "lane": "R3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R3.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A3 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A3.01",
+        "A3.02",
+        "A3.03",
+        "A3.04",
+        "A3.05",
+        "A3.06",
+        "A3.07",
+        "A3.08",
+        "A3.09",
+        "A3.10",
+        "A3.11",
+        "A3.12"
+      ],
+      "lane": "R3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R3.03",
+      "title": "Fixes, Neuplanung und Übergang nach A3 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R3.01",
+        "R3.02"
+      ],
+      "lane": "R3",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R4.01",
+      "title": "Ergebnis von A4 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A4.01",
+        "A4.02",
+        "A4.03",
+        "A4.04",
+        "A4.05",
+        "A4.06",
+        "A4.07",
+        "A4.08",
+        "A4.09"
+      ],
+      "lane": "R4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R4.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A4 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A4.01",
+        "A4.02",
+        "A4.03",
+        "A4.04",
+        "A4.05",
+        "A4.06",
+        "A4.07",
+        "A4.08",
+        "A4.09"
+      ],
+      "lane": "R4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R4.03",
+      "title": "Fixes, Neuplanung und Übergang nach A4 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R4.01",
+        "R4.02"
+      ],
+      "lane": "R4",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R5.01",
+      "title": "Ergebnis von A5 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A5.01",
+        "A5.02",
+        "A5.03",
+        "A5.04",
+        "A5.05",
+        "A5.06",
+        "A5.07",
+        "A5.08",
+        "A5.09"
+      ],
+      "lane": "R5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R5.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A5 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A5.01",
+        "A5.02",
+        "A5.03",
+        "A5.04",
+        "A5.05",
+        "A5.06",
+        "A5.07",
+        "A5.08",
+        "A5.09"
+      ],
+      "lane": "R5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R5.03",
+      "title": "Fixes, Neuplanung und Übergang nach A5 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R5.01",
+        "R5.02"
+      ],
+      "lane": "R5",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R6.01",
+      "title": "Ergebnis von A6 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A6.01",
+        "A6.02",
+        "A6.03",
+        "A6.04",
+        "A6.05",
+        "A6.06",
+        "A6.07",
+        "A6.08",
+        "A6.09",
+        "A6.10"
+      ],
+      "lane": "R6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R6.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A6 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A6.01",
+        "A6.02",
+        "A6.03",
+        "A6.04",
+        "A6.05",
+        "A6.06",
+        "A6.07",
+        "A6.08",
+        "A6.09",
+        "A6.10"
+      ],
+      "lane": "R6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R6.03",
+      "title": "Fixes, Neuplanung und Übergang nach A6 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R6.01",
+        "R6.02"
+      ],
+      "lane": "R6",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "R7.01",
+      "title": "Ergebnis von A7 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A7.01",
+        "A7.02",
+        "A7.03",
+        "A7.04",
+        "A7.05",
+        "A7.06",
+        "A7.21",
+        "A7.22",
+        "A7.23",
+        "A7.07",
+        "A7.08",
+        "A7.09",
+        "A7.10",
+        "A7.11",
+        "A7.12",
+        "A7.13",
+        "A7.14",
+        "A7.15",
+        "A7.16",
+        "A7.17",
+        "A7.18",
+        "A7.19",
+        "A7.20"
+      ],
+      "lane": "R7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R7.02",
+      "title": "Annahmen und Plan–Soll–Ist nach A7 unabhängig prüfen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "A7.01",
+        "A7.02",
+        "A7.03",
+        "A7.04",
+        "A7.05",
+        "A7.06",
+        "A7.21",
+        "A7.22",
+        "A7.23",
+        "A7.07",
+        "A7.08",
+        "A7.09",
+        "A7.10",
+        "A7.11",
+        "A7.12",
+        "A7.13",
+        "A7.14",
+        "A7.15",
+        "A7.16",
+        "A7.17",
+        "A7.18",
+        "A7.19",
+        "A7.20"
+      ],
+      "lane": "R7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "review",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "R7.03",
+      "title": "Fixes, Neuplanung und Übergang nach A7 steuern",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R7.01",
+        "R7.02"
+      ],
+      "lane": "R7",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "C0.01",
+      "title": "Gesamtergebnis vorlegen und Nutzerabnahme einholen",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "R7.03"
+      ],
+      "alternativeRequires": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "lane": "C0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "estimate": {
+        "profile": "acceptance",
+        "waitConfidence": "unknown"
+      },
+      "actual": null
+    },
+    {
+      "id": "C0.02",
+      "title": "Bedienung, Belege und Restzuständigkeiten übergeben",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "C0.01"
+      ],
+      "alternativeRequires": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "lane": "C0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "C0.03",
+      "title": "Ursachen und Lernerfahrungen sichern und Arbeit beenden",
+      "document": "docs/atlas/architecture/performance/review-gates.md",
+      "requires": [
+        "C0.02"
+      ],
+      "alternativeRequires": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "lane": "C0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "writeScopes": [
+        "docs/atlas/architecture/performance/"
+      ],
+      "writesBuildInputs": false,
+      "nativeBuild": false,
+      "estimate": {
+        "profile": "coordination",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    }
+  ],
+  "resourcePolicy": "Gemeinsame Schreibpfade sind exklusiv. Native Prüfungen sperren den Host und parallel geänderte Buildinputs für den gesamten Paketlauf; Teilparallelität erfordert getrennte Pakete.",
+  "conditionalRoutes": {
+    "B1": [
+      {
+        "id": "default",
+        "variant": null,
+        "activationAnyOf": [
+          "A2.12",
+          "A3.12",
+          "A4.09",
+          "A5.08",
+          "A6.08"
+        ],
+        "activationRequires": [
+          "A2.02"
+        ],
+        "returnGates": [
+          "A2.11",
+          "A2.12",
+          "A3.12"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      }
+    ],
+    "B2": [
+      {
+        "id": "default",
+        "variant": null,
+        "activationAnyOf": [
+          "A2.12",
+          "A3.12",
+          "A4.09",
+          "A5.08",
+          "A6.08"
+        ],
+        "activationRequires": [],
+        "returnGates": [
+          "A3.12",
+          "A5.09"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      }
+    ],
+    "B3": [
+      {
+        "id": "parallel",
+        "variant": "parallel",
+        "activationAnyOf": [
+          "A6.08"
+        ],
+        "activationRequires": [
+          "A6.08"
+        ],
+        "returnGates": [
+          "A6.09",
+          "A6.10"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      },
+      {
+        "id": "wasm",
+        "variant": "wasm",
+        "activationAnyOf": [
+          "A6.08"
+        ],
+        "activationRequires": [
+          "A6.08"
+        ],
+        "returnGates": [
+          "A6.09",
+          "A6.10"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      }
+    ],
+    "B4": [
+      {
+        "id": "render",
+        "variant": "render",
+        "activationAnyOf": [
+          "A2.12",
+          "A3.12",
+          "A4.09",
+          "A5.08",
+          "A6.08"
+        ],
+        "activationRequires": [],
+        "returnGates": [
+          "A2.11",
+          "A2.12",
+          "A3.12"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      },
+      {
+        "id": "compute",
+        "variant": "compute",
+        "activationAnyOf": [
+          "A6.08"
+        ],
+        "activationRequires": [
+          "A6.08"
+        ],
+        "returnGates": [
+          "A6.09",
+          "A6.10"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      }
+    ],
+    "B5": [
+      {
+        "id": "default",
+        "variant": null,
+        "activationAnyOf": [
+          "A2.12",
+          "A3.12",
+          "A4.09",
+          "A5.08",
+          "A6.08"
+        ],
+        "activationRequires": [],
+        "returnGates": [
+          "A3.12",
+          "A4.09",
+          "A5.09"
+        ],
+        "decisionGate": "Rückkehr erst nach bestandenem Vergleich; betroffene Meilensteinreviews erneut ausführen"
+      }
+    ],
+    "B6": [
+      {
+        "id": "default",
+        "variant": null,
+        "activationAnyOf": [
+          "A2.12",
+          "A3.12",
+          "A4.09",
+          "A5.08",
+          "A6.08"
+        ],
+        "activationRequires": [],
+        "returnGates": [],
+        "decisionGate": "Erneute Nutzerentscheidung über Gesamtumbau"
+      }
+    ]
+  },
+  "estimatePolicy": "Profile sind unbeobachtete Erstschätzungen. Zeitachse nutzt aktive Obergrenze + Warteannahme + Reserve; native/CI-Wartezeiten sind unsicher, keine Obergrenzenversprechen. Nach A0 und A2 sowie jedem Gate gegen Ist neu schätzen. Menschliche Abnahme hat keine geschätzte Wartefrist.",
+  "estimateProfiles": {
+    "implementation": {
+      "activeHours": [
+        1,
+        3
+      ],
+      "waitHours": [
+        0,
+        0.5
+      ],
+      "reserveHours": 0.5,
+      "basis": "Fokussierter Codebesitzer mit gezielten Type-/Unitchecks; keine vollständige Produktqualifikation."
+    },
+    "analysis": {
+      "activeHours": [
+        0.5,
+        2
+      ],
+      "waitHours": [
+        0,
+        0
+      ],
+      "reserveHours": 0.5,
+      "basis": "Vorhandene Belege prüfen und einen begrenzten Vertrag oder Befund dokumentieren."
+    },
+    "native": {
+      "activeHours": [
+        1,
+        3
+      ],
+      "waitHours": [
+        0.5,
+        4
+      ],
+      "reserveHours": 1,
+      "basis": "Begrenzte Umsetzung/Prüfvorbereitung und native Kontrollproben; Lauf-/Neustartwartezeit nur Planannahme, bei Messmatrix eigene Schätzung."
+    },
+    "matrix": {
+      "activeHours": [
+        1,
+        2
+      ],
+      "waitHours": [
+        2,
+        12
+      ],
+      "reserveHours": 2,
+      "basis": "Vorbereitete Reihen seriell ausführen, Checkpoints und Rohdaten kontrollieren; lange Terrainladezeiten machen die Warteannahme unsicher."
+    },
+    "review": {
+      "activeHours": [
+        1,
+        3
+      ],
+      "waitHours": [
+        0,
+        1
+      ],
+      "reserveHours": 0.5,
+      "basis": "Ein unabhängiger Reviewauftrag mit gezielten Reproduktionen; gefundene Fixes sind neue Pakete und nicht Teil dieser Reserve."
+    },
+    "ci": {
+      "activeHours": [
+        1,
+        3
+      ],
+      "waitHours": [
+        1,
+        8
+      ],
+      "reserveHours": 2,
+      "basis": "Exakten Kandidaten vorbereiten und reale CI abwarten; Warteschlange und Reparaturen sind nicht garantiert begrenzt."
+    },
+    "coordination": {
+      "activeHours": [
+        0.5,
+        1.5
+      ],
+      "waitHours": [
+        0,
+        0
+      ],
+      "reserveHours": 0.5,
+      "basis": "Abgeschlossene Belege abgleichen und Übergang steuern; neue Reparaturarbeit erhält eigene Pakete."
+    },
+    "acceptance": {
+      "activeHours": [
+        0.5,
+        1.5
+      ],
+      "waitHours": null,
+      "reserveHours": 0.5,
+      "basis": "Abnahmevorlage bereitstellen; Antwort des Auftraggebers bleibt zeitlich unbekannt und ist keine automatische Freigabe."
+    }
+  }
+}
