@@ -42,8 +42,13 @@ von Schreibaufträgen und keinen automatischen Ersatz eines ausgefallenen Worker
 
 Ein Transport-/Workerfehler meldet **Speicherbestätigung ungeklärt**. Insbesondere
 beweist eine verlorene Antwort keinen fehlenden Commit. Der Client bleibt nach
-einem Ausfall geschlossen für weitere Aufträge; nach einem geordneten App-Neustart
-klären die vorhandenen fachlichen Receipts den Ausgang. Auch Pending-Statusabfragen
+einem Ausfall geschlossen für weitere Aufträge. Vorhandene fachliche Receipts
+erlauben nach Neustart die Klärung, sofern der Besitzer seine ursprüngliche
+Klärungsidentität dauerhaft gesichert hat. Für Atlas/Reise fehlt dieser vollständige
+Produktanschluss derzeit: A0.13 ergänzt die dauerhafte Referenz und reine Statusleser,
+A0.07/A0.08 schließen die Besitzer an, A0.14 den erreichbaren Abschluss und die
+native Wiederaufnahme. Die bestehenden Hosttests halten den Command selbst und
+belegen noch keine Wiederaufnahme durch einen frischen Renderer. Auch Pending-Statusabfragen
 behalten laufende Aufträge über asynchrone Receipt-Lesegrenzen hinweg bei.
 
 Main erhält den Fehlertyp `StoreOutcomeUnknownError` und gibt ihn als einfaches

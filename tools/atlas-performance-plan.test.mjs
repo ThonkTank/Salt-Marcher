@@ -32,8 +32,17 @@ test('native host, agent capacity and dependencies constrain actual intervals',(
 
 test('real graph prevents reviewed A0 and A1 collisions',()=>{
  const rows=byId(schedule(graph.packages.filter(n=>!n.conditional),graph));
- for(const [a,b] of [['A1.04','A1.07'],['A1.04','A1.08'],['A0.06','A0.10'],['A0.07','A0.08'],['A0.07','A0.09']])assert(!overlaps(rows.get(a),rows.get(b)),`${a} overlaps ${b}`);
- for(const id of ['A0.07','A0.10'])assert(rows.get(id).nativeBuild && rows.get(id).resources.includes('native-host'));
+ for(const [a,b] of [['A1.04','A1.07'],['A1.04','A1.08'],['A0.06','A0.10'],['A0.09','A0.13'],['A0.07','A0.08']])assert(!overlaps(rows.get(a),rows.get(b)),`${a} overlaps ${b}`);
+ for(const id of ['A0.10','A0.11','A0.14']){
+  const native=rows.get(id);assert(native.nativeBuild && native.resources.includes('native-host'));
+  for(const writer of rows.values())if(writer.id!==id && writer.writesBuildInputs)assert(!overlaps(native,writer),`${id} overlaps build writer ${writer.id}`);
+ }
+ for(const id of ['A0.07','A0.08']){
+  assert(!rows.get(id).nativeBuild);
+  assert(rows.get(id).start>=rows.get('A0.13').end,'owner integration needs durable receipt contract');
+  assert(rows.get('A0.14').start>=rows.get(id).end,'restart qualification needs both owners');
+ }
+ assert(rows.get('A0.11').start>=rows.get('A0.14').end,'combined qualification needs verified restart');
  assert(overlaps(rows.get('A2.03'),rows.get('A2.05')),'separate candidate owners should remain parallel');
 });
 

@@ -16,7 +16,8 @@ Für jedes Paket gelten Zuständigkeit, Eingaben, Aufwand und Übergabe aus dem
 die konkreten Befunde und Codeanschlüsse der Architekturprüfung. Fachkompetenz:
 A0.01–A0.03 TypeScript/GPU-Präsentation und Treffergeometrie, A0.04–A0.06
 Electron-IPC und Workerlebenszyklus, A0.07/A0.08 Autoren-/Reise-Recovery,
-A0.09 SQLite-Transaktionen und Receipts, A0.10/A0.11 native Fehlerproben, A0.12 Canvas-/GPU-Lebenszyklus.
+A0.09 SQLite-Transaktionen und Receipts, A0.10/A0.11/A0.14 native Fehlerproben, A0.12 Canvas-/GPU-Lebenszyklus,
+A0.13 Receiptidentität und begrenzte persistente Klärungsreferenzen.
 Schnittstellen sind Frameberechtigung, Besitzerabbruch und typisierte
 Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
@@ -71,19 +72,19 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
 ### A0.07 — Atlas-, Raum- und Zeichenaufträge bis zur Klärung behalten
 
-<!-- atlas-dependencies {"requires":["A0.06","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.06","P0.03","A0.13"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
-- **Voraussetzung:** A0.06.
+- **Voraussetzung:** A0.06 und A0.13.
 - **Auftrag und Ergebnis:** Strukturierte unbekannte Ergebnisse in `writeAtlas`, `writeAtlasCommit`, Raum- und Zeichnungswriter wie verlorene Antworten behandeln: exakten Command behalten, Folgeschreiben sperren, dieselbe Command-ID zur Receipt-Klärung verwenden. Wrapper für City/World, History und Graphannahme auf denselben Vertrag prüfen.
-- **Prüfung / fertig:** Tatsächlicher Main-Result → Autorenbesitzer → Recoverypfad bewahrt Kennung und sperrt weitere Änderungen. Receipt vorhanden, definitiv nicht gespeichert und weiterhin unbekannt separat prüfen; kein doppelter Commit. Native Status-/Recoveryprobe ergänzen.
+- **Prüfung / fertig:** Tatsächlicher Main-Result → Autorenbesitzer → Recoverypfad bewahrt Kennung und sperrt weitere Änderungen. Receipt vorhanden, definitiv nicht gespeichert und weiterhin unbekannt separat prüfen; kein doppelter Commit. Vor Dispatch die A0.13-Referenz sichern, bei Aktivierung aus der gesicherten Referenz wieder sperren und mit frischer Aktivierungsberechtigung ausschließlich lesend klären. Native Status-/Recoveryprobe folgt in A0.14; fehlgeschlagene Referenzsicherung darf keinen Dispatch erlauben.
 
 ### A0.08 — Unbekannten Reiseauftrag bis zur Klärung behalten
 
-<!-- atlas-dependencies {"requires":["A0.06","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.06","P0.03","A0.13"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
-- **Voraussetzung:** A0.06; eigener Besitzer gegenüber A0.07.
+- **Voraussetzung:** A0.06 und A0.13; Reisebesitzer in `atlas-journey.ts` und Reise-Recoveryhandler in `campaign-atlas-ui.ts`. Wegen der gemeinsamen UI-Datei mit A0.07 nacheinander bearbeiten.
 - **Auftrag und Ergebnis:** `acknowledged`/Pending-Zustand im Reisebesitzer an den tatsächlichen Ausgang binden. Ein empfangenes unbekanntes Result ist keine definitive Bestätigung. Reise bleibt gesperrt, bis derselbe Auftrag geklärt ist.
-- **Prüfung / fertig:** Antwortverlust nach möglicher Zeit-/Positionsbuchung führt zur Recovery mit identischer Kennung; Klärung erzeugt keinen zweiten Zeitschritt. Definitive Ablehnung bleibt normal korrigierbar. Bestehende Reise-Recoverytests am tatsächlichen Hostresult ergänzen.
+- **Prüfung / fertig:** Antwortverlust nach möglicher Zeit-/Positionsbuchung führt zur Recovery mit identischer Kennung; Klärung erzeugt keinen zweiten Zeitschritt. Definitive Ablehnung bleibt normal korrigierbar. Bestehende Reise-Recoverytests am tatsächlichen Hostresult ergänzen. Vor Dispatch die A0.13-Referenz sichern und nach neuem Renderer wiederherstellen. Der Recoverybutton benutzt den lesenden A0.13-Statuspfad; fehlender Receipt darf die Reise nicht erstmals ausführen. Fokus-/Kampagnenwechsel und fortbestehendes Unknown prüfen; native Wiederaufnahme in A0.14.
 
 ### A0.09 — Commitbestätigung von nachfolgender Leseprojektion trennen
 
@@ -105,9 +106,9 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
 ### A0.11 — Grundlage mit Produktionsregressionen qualifizieren
 
-<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","P0.03","A0.12"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","P0.03","A0.12","A0.13","A0.14"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
-- **Voraussetzung:** A0.01–A0.10 und Fixpaket A0.12 abgeschlossen.
+- **Voraussetzung:** A0.01–A0.10 und Fixpakete A0.12–A0.14 abgeschlossen.
 - **Auftrag und Ergebnis:** Gezielte neue Tests gemeinsam ausführen, native Start/Retry-/Auswahl-/Speicherklärungs-/Exportabbruch-/Schließproben auf demselben Build prüfen. Die Architekturbeurteilung anhand der Fixes aktualisieren.
 - **Prüfung / fertig:** Jeder konkrete Befund aus der Architekturprüfung besitzt einen reproduzierbaren Produktionsnachweis; keine Fremdänderung überschrieben. Danach unabhängige Reviews und Annahmenprüfung gemäß Ausführungsregeln. A1 startet erst ohne offenen erforderlichen A0-Befund.
 
@@ -119,3 +120,22 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 - **Auftrag und Ergebnis:** Den vorhandenen Retry über die betroffenen Canvas-/Präsentationsbesitzer vollständig abschließen. Aktuelle Quelle und Kamera nach erfolgreicher Wiederherstellung neu veröffentlichen; Auswahl/Autorenstart erst mit passendem neuem Frame freigeben. Fehleranzeige und Ressourcen konsistent zurücksetzen, ohne alte Szene oder alte Callbacks zu autorisieren. Echte Canvas-/Bildfehler dürfen durch den Kamera-Retry nicht verdeckt werden. Zuständigkeiten bleiben im bestehenden Lebenszyklus.
 - **Prüfung / fertig:** Produktionsnaher Verbundtest mit echtem Canvas und Raster: initial erfolgreich zeichnen, GPU-Fehler bei ausstehendem Batch, sichtbaren Kamera-Retry auslösen, neuen passenden Frame abschließen. Danach Fehlerpanel beendet, aktuelle Karte sichtbar und Auswahl/Autorenstart möglich; alte Frame-/Fehlerantworten bleiben unwirksam. Erneuter Fehler und Deaktivieren während Retry bleiben sicher. Keine reine Rasterprobe als Ersatz. Native Wiederholungsprobe in A0.11.
 - **Zuweisung / Aufwand:** TypeScript-/GPU-Lebenszyklusbesitzer; ein begrenzter Agentenlauf, Profil `implementation` gemäß Paketgraph. Schreibbereiche Canvas, Raster, Präsentationsvertrag und zugehörige Regressionen. Während A0.10-Nativfenster nur Vorbereitung; Ressourcenregel verhindert konkurrierende Buildänderungen.
+
+### A0.13 — Neustartfeste Atlas- und Reisebelege ohne Schreibwiederholung klären
+
+<!-- atlas-dependencies {"requires":["A0.06","A0.09","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+
+- **Voraussetzung:** A0.06/A0.09; unabhängiger Befund zum fehlenden Produktpfad nach terminalem Workerabbruch. Bestehende Atlas-/Travelreceipts bleiben maßgeblich.
+- **Auftrag und Ergebnis:** Eine kompakte kampagnengebundene Klärungsreferenz vor Dispatch dauerhaft sichern und nach vollständigem Verlust des Rendererzustands wieder lesen können. Exakten laufenden Command, ursprüngliche Receiptidentität und neue Aktivierungsberechtigung trennen. Kein pauschales Speichern großer Terrainpayloads in `localStorage`; keine Mutation verschachtelter Commands beim Tokenwechsel. Persistenzfehler verhindern ungesicherten Dispatch. Begrenzten gemeinsamen Vertrag/Helper bereitstellen; A0.07/A0.08 schließen ihre Besitzer daran an.
+- **Statuspfad:** Atlas- und Reisebelege ausschließlich lesend über Store/Worker/Main/Preload prüfen: angewandt, nicht angewandt oder noch ungeklärt. Noch aktive Schreib-/Vorbereitungsaufträge bleiben ungeklärt; Abwesenheit während laufender Arbeit ist keine Nichtanwendung. Frischer Token autorisiert die aktuelle Kampagne separat; Fingerprint und Kennung identifizieren den ursprünglichen Auftrag. Reiseprüfung darf weder Writer ausführen noch aktuelle Fokus-/Reiseprojektion voraussetzen.
+- **Prüfung / fertig:** Echte Host-/Worker-/Preload-Tests für vorhanden/fehlend/laufend/unlesbar, fremde Kampagne, abweichenden Fingerprint und neue Aktivierungsberechtigung. Verschachtelte ursprüngliche Tokens bleiben Teil der unveränderten Identität. Persistenz-/Reloadtests ohne vom Test nachgereichte Kennung; beschädigte Referenz und Speicherfehler sperren sicher. Wiederholte Abfragen verändern weder Writerdispatchzahl noch Uhr, Position, Revision oder History. Keine neue automatische Wiederholung oder generische Ausweitung sämtlicher Buchungsfamilien.
+- **Zuweisung / Aufwand:** Ein Agent mit TypeScript/Electron/SQLite-Kompetenz; Profil `implementation`. Gemeinsame Referenz-/Persistenzschnittstelle, vorhandene Receiptleser und genau deren Brücken. Tatsächliche zusätzliche Pfade vor Schreiben im Graphen konkretisieren; keine parallelen Änderungen an A0.09-Storebesitzern.
+
+### A0.14 — Gesicherte ungeklärte Aufträge schließen und nach Neustart wiederaufnehmen
+
+<!-- atlas-dependencies {"requires":["A0.07","A0.08","A0.10","A0.12","A0.13","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+
+- **Voraussetzung:** A0.07/A0.08/A0.10/A0.12/A0.13 lokal umgesetzt. Exklusives natives Buildfenster.
+- **Auftrag und Ergebnis:** Den ausdrücklich angeforderten Abschluss nach nachgewiesener Sicherung ungeklärter Atlas-/Reiseidentitäten ermöglichen. Unbekannt bleibt unbekannt; nur sicher wiederaufnehmbare Aufträge erlauben den Übergang. Andere offene oder nicht gesicherte Entwürfe bleiben geschützt und dürfen weder verworfen noch als gespeichert ausgegeben werden. Vorhandene Flush-/Close-Reihenfolge und Main-Besitz des tatsächlichen Prozessendes erhalten.
+- **Prüfung / fertig:** Echter Autoren-/Reisebesitzer → Hostfehler vor beziehungsweise nach Commit → explizites Schließen → tatsächlicher Prozessausstieg → frischer Renderer und neue Aktivierung → lesende Klärung allein aus gespeicherter Referenz. Keine Kennung aus Testvariablen an die neue UI zurückreichen. Angenommen, nicht angewandt, weiter ungeklärt, beschädigte Referenz und fremde Kampagne getrennt prüfen. Nach wiederholter Klärung keine zweite Buchung, kein nachgeholter Reiseauftrag, keine zusätzliche Zeit-/Positionsänderung. Bei zusätzlichen ungesicherten Eingaben muss Schließen verweigert bleiben; bei sicherer Wiederaufnahme zeigt die UI den offenen Ausgang ehrlich. Neue Builds/Prozesse und Native-Pendinggrenzen dokumentieren.
+- **Zuweisung / Aufwand:** Ein Agent mit Editor-/Host-Lebenszyklus und nativer QA; Profil `native`. Dies übernimmt die native A0.07/A0.08-Status-/Recoveryprobe ohne paralleles Nativfenster. A0.11 prüft anschließend den gesamten A0-Stand und darf unveränderte gültige Einzelbelege übernehmen, fehlende Verbundfälle sind auszuführen.

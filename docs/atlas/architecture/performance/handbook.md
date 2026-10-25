@@ -176,6 +176,18 @@ ein. Ergänzte Schreibbereiche stehen im Graphen. Die unabhängige Prüfung durc
 `a0_interim_review` bestätigt v1.4 anhand des tatsächlichen Worker-/Storepfads
 ohne offene erforderliche Planbefunde; die A0.06-Abhängigkeit bleibt verbindlich.
 
+Version v1.5 schließt den unabhängig bestätigten fehlenden Neustartpfad:
+A0.13 liefert kompakte dauerhafte Klärungsreferenzen und reine Atlas-/Reise-
+Receiptleser; A0.07/A0.08 hängen ihre Besitzer daran an. A0.14 prüft anschließend
+expliziten Abschluss und Wiederaufnahme nativ, ohne ungeklärte Aufträge als
+bestätigt oder andere Entwürfe als verzichtbar zu behandeln. Die bisher in A0.07
+enthaltene native Probe liegt nun in A0.14; Ziel und Nachweis bleiben verbindlich.
+A0.13 folgt A0.09 wegen gemeinsamer Storebesitzer. A0.11 und R0 hängen von beiden
+Ergänzungen ab; der Graph enthält 157 Pakete. Die unabhängige Nachprüfung durch `a0_interim_review` akzeptiert v1.5 nach
+Korrektur von UI-Schreibbesitz, Schedulerprüfungen und veralteten Statusaussagen.
+Graph-/Timelinecheck mit 157 Paketen und alle sieben Plantests wurden unabhängig
+erneut grün ausgeführt. A0.13 wartet auf die korrigierte A0.09-Implementierung.
+
 ## Abschluss der Planreviews
 
 Stand 2026-10-25: Nach Korrektur der folgenden Befunde haben P0.01 und P0.02
@@ -183,7 +195,7 @@ unabhängig keine offenen begründeten Planbefunde gemeldet. Beide prüften dens
 unveränderten Stand mit 17 Dateiprüfsummen; Zuordnung und Belege stehen in der
 Planbasis. P0.03 ist abgeschlossen. Der irrtümliche Pausenvermerk wurde korrigiert.
 
-- **Parallelität:** Gemeinsame Schreibbereiche und unveränderte Buildinputs sind im Scheduler abgebildet. A1.04/A1.07/A1.08 sowie A0.06/A0.10 kollidieren nicht mehr; A0.07 und A0.10 belegen den nativen Host.
+- **Parallelität:** Gemeinsame Schreibbereiche und unveränderte Buildinputs sind im Scheduler abgebildet. A1.04/A1.07/A1.08 sowie A0.06/A0.10 kollidieren nicht mehr. In der ursprünglichen Planbasis belegten A0.07 und A0.10 den nativen Host; seit v1.5 liegt die native Neustartprobe aus A0.07 in A0.14. A0.07/A0.08 folgen auf A0.13 und bearbeiten wegen des gemeinsamen Recoveryhandlers in `campaign-atlas-ui.ts` ihre Änderungen nacheinander. A0.10/A0.11/A0.14 sperren weiterhin sämtliche Buildschreiber während nativer Läufe.
 - **B4-Alternative:** Render- und Compute-Route werden getrennt berechnet. Aktivierungs- und Rückkehrgates einschließlich A6.08 für Compute sind explizit.
 - **Reihenfolge:** A1/A2-Kopftexte entsprechen den Verzweigungen. Vier maschinenlesbare Abhängigkeitsfelder pro Paket werden zwischen Markdown und Graph verglichen.
 - **Messnachweis A1.04:** GPU-/Präsentationsrückstand und künstliche Verzögerung sind verpflichtende Gegenproben; CPU-Submission allein gibt keinen sichtbaren Navigations-Pass.
@@ -207,10 +219,10 @@ sichtbar als inaktive Alternativen.
 | A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
 | A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
-| A0.12 | plan_final_review | Erstfix `c20be8c3` lokal grün; unabhängiges Review verlangt Terrain-Quellenkorrektur (aktuelle Revision darf alte Tiles nicht autorisieren); Nacharbeit läuft, A0.11 offen |
+| A0.12 | plan_final_review | Nacharbeit in `4859dadee`; 115/115 Tests und Typecheck bestanden; unabhängige Nachprüfung lokal akzeptabel; A0.11/R0 offen |
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
 | A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.06-handoff.json)); Besitzerreaktionen A0.07/08 und R0 offen |
-| A0.09 | review_packages | In Arbeit: Postcommit-Leseprojektionen und echter Worker-Unknown-Kanal gemäß geprüftem v1.4 |
+| A0.09 | review_packages | Implementiert in `950b79eb`; 81/81 Tests und beide Typechecks bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.09-handoff.json)); unabhängiges Zwischenreview verlangt Graphpreview-Nacharbeit; A0.11/R0 offen |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -288,29 +300,18 @@ Root reproduzierte diesen Abgleich. Die Schließzweige sind unverändert.
 Dies ist eine hashbestätigte Rekonstruktion, kein erhaltenes Originalskript.
 Das vollständige R0 bleibt erforderlich.
 
-A0.12 lief von 12:28:32 bis 12:34:58 UTC. Die Vorherregression reproduzierte
-`Canvas.failed=true` nach erfolgreicher Raster-Recovery (Exit 1). Der konkrete
-Präsentationsfehler trägt seinen Besitzer; Raster meldet und klärt GPU-Framefehler,
-während Canvas nur seine Framebestätigung entwertet. Gesunde Canvas-/Bildressourcen
-bleiben erhalten; eigene Canvasfehler behalten ihren Fehlerpfad. Neun neue
-Verbundfälle prüfen Retry, aktuelle Quelle/Kamera, alte Antworten, wiederholten
-Fehler, Deaktivierung, Timeout und unabhängige Canvasfehler. Der gezielte Lauf
-bestand 110/110 Tests und Typecheck (Belege `A0.12-regressions.log/.exit` und
-`A0.12-typecheck.log/.exit` im lokalen Belegordner). Root verifizierte alle vier
-Übergabedateihashes vor Commit. Ein früher falsch positionierter Testtreffer bleibt
-als separater Fehlversuch erhalten. Der unabhängige ursprüngliche Reviewer prüft
-den Fix erneut; die native Verbundprobe bleibt A0.11. Kataloglinks aktualisiert.
-
-Das unabhängige A0.12-Fixreview reproduzierte nach 96 selbst ausgeführten
-Canvas-/Retrytests einen Restbefund: Im Terrainmodus wechselte während GPU-Fehler
-und Retry die Quellenrevision von 1 auf 2; trotz angehaltener aktueller Tileantwort
-wurden die alten Revision-1-Tiles wieder für Autorenstart freigegeben. Der bisherige
-Quellenwechseltest verwendete den Perceptionmodus ohne Tileladen. A0.12 ist deshalb
-wieder in Bearbeitung: aktuelle Quelle, aktuelle Kacheln und passender abgeschlossener
-Frame müssen gemeinsam die Freigabe bestimmen. Derselbe Implementierer ergänzt
-Produktionsfix und Terrain-Verbundtest; ursprüngliche Belege bleiben erhalten.
-Dies korrigiert eine unzureichend belegte Anforderung des bestehenden Pakets,
-verkleinert weder dessen Prüfung noch die Meilensteinziele.
+A0.12 ist in `4859dadee` lokal korrigiert. Der Erstfix `c20be8c3` trennte
+besitzereigene Präsentationsfehler von echten Canvasfehlern, reichte aber im
+Terrainmodus nicht: Ein GPU-Retry konnte alte Revision-1-Tiles freigeben, während
+Revision 2 noch lud. Der unabhängige Reviewer reproduzierte diesen Restbefund.
+Die Nacharbeit verlangt aktuelle Höhen-/Materialkacheln und ihren abgeschlossenen
+GPU-Frame gemeinsam; Quellenwechsel widerrufen die Freigabe, alte Antworten bleiben
+unwirksam. Kamera/Navigation bleiben erhalten, aktuelle Lesefehler sichtbar.
+Vorherregression Exit 1, danach 115/115 gezielte Tests und Typecheck Exit 0;
+Root verifizierte beide Dateihashes gegen [Übergabe](../../../../.build/atlas-performance-plan/A0.12-rework-handoff.json)
+und Commit. `a0_interim_review` führte die vier Suites selbst mit 115/115 erneut aus
+und akzeptiert den lokalen Fix ohne offene Befunde im Terrain-Retrybereich.
+Kontrollierte GPU-/DOM-Ersatzplattform ist keine native Qualifikation; A0.11/R0 bleiben offen.
 
 A0.06 lief von 12:28:20 bis 12:40:30 UTC. Main erhält die tatsächliche
 `StoreOutcomeUnknownError`-Klasse als expliziten Result-Marker; Erfolg und reguläre
@@ -324,14 +325,28 @@ die unveränderten Prüfungen wurden mit getrennten Logs wiederholt. Atlas-/Reis
 Besitzerreaktionen sind damit noch nicht bewiesen. Entsprechend wurden nur der
 Transport-/Receiptablauf und die geprüfte Item-Belegklärung im Katalog verknüpft.
 
-Vor Zuweisung von A0.07/A0.08 prüft ein unabhängiger Agent eine konkrete offene
-Annahme: Nach terminalem Store-Workerabbruch verlangt der Host Neustart, während
-Atlas-Pendingmap und Reise-Pendingfeld bislang im Speicher liegen. Zu prüfen ist,
-ob die tatsächliche Wiederaktivierung die Kennung bereits anderweitig erhält oder
-ob ein begrenzter Anschluss für Belegklärung nach Neustart fehlt. Ebenso wird der
-bestehende Reise-Recoveryaufruf (erneuter Writer mit derselben Kennung) gegen den
-geforderten Klärungsvertrag geprüft. A0.09 und A0.12 laufen unabhängig weiter;
-dieser Prüfauftrag ist noch kein bestätigter neuer Produktbefund.
+Die unabhängige Prüfung bestätigte drei Neustartlücken: Atlas-/Reisekennungen
+liegen nur im Renderer, Reise-Recovery ruft bei fehlendem Receipt den Writer erneut
+auf, und Pending verhindert den benötigten Abschluss. Plananschluss v1.5 ergänzt
+dafür A0.13/A0.14; Inhalt und Abhängigkeiten stehen oben und in A0. Die unabhängige
+Planprüfung bestätigte nach Korrekturen aktuelle Schedulerprüfungen und expliziten
+Schreibbesitz am gemeinsamen UI-Recoveryhandler.
+
+A0.09 lief von 12:42:49 bis 12:49:47 UTC. Postcommit-Projektionsfehler werden im
+Worker typisiert in den Unknown-Kanal übersetzt. RoomCommit liest ohne zweiten
+Edit; Graphvorschau bleibt erhalten. Die Terraincache-Nachlese innerhalb einer
+äußeren Prepared-Transaktion bleibt ein definitiver Rollback, außerhalb davon
+bleibt der gespeicherte Auftrag über seinen Receipt klärbar. Elf neue Produktions-
+regressionen bestanden im Lauf mit 81 Tests; beide Typechecks bestanden. Root
+verifizierte sechs Quelldateien, den verwendeten Hosthelper und fünf Belegdateien
+gegen die Übergabe. Der erste Testversuch hatte zwei falsche Fixturepfade und ist
+separat erhalten. Das unabhängige Zwischenreview fand eine noch fehlerhafte Graphpreview-Grenze:
+Nach Shadow-DB-Raumcommit kann dessen Nachlese scheitern, während nur der Haupt-DB-
+Atlasreceipt zurückrollt. Die Vorschau enthält dann die Änderung, die Klärung meldet
+aber „nicht angewandt“. A0.09 ist zur gezielten Nacharbeit beim selben Implementierer
+wieder geöffnet; A0.13 wartet darauf. Die bisherigen Erfolgstests dieser Vorschau
+belegen den Fehlerfall nicht. Native Qualifikation und R0 bleiben offen; kein frisch
+gestarteter Renderer ist durch die vorhandenen Hosttests belegt.
 
 ## Abschlussgrenzen
 

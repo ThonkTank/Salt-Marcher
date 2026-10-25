@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "planVersion": "v1.4",
+  "planVersion": "v1.5",
   "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
@@ -260,38 +260,8 @@
       "document": "docs/atlas/architecture/performance/a0-foundation.md",
       "requires": [
         "A0.06",
-        "P0.03"
-      ],
-      "lane": "A0",
-      "conditional": false,
-      "slots": 1,
-      "status": "planned",
-      "resources": [
-        "native-host"
-      ],
-      "activationRequires": [],
-      "returnGates": [],
-      "writeScopes": [
-        "src/app/campaign-atlas-author.ts",
-        "src/app/atlas-author.ts",
-        "src/app/campaign-atlas-ui.ts"
-      ],
-      "writesBuildInputs": true,
-      "nativeBuild": true,
-      "alternativeRequires": [],
-      "estimate": {
-        "profile": "native",
-        "waitConfidence": "unknown"
-      },
-      "actual": null
-    },
-    {
-      "id": "A0.08",
-      "title": "Unbekannten Reiseauftrag bis zur Klärung behalten",
-      "document": "docs/atlas/architecture/performance/a0-foundation.md",
-      "requires": [
-        "A0.06",
-        "P0.03"
+        "P0.03",
+        "A0.13"
       ],
       "lane": "A0",
       "conditional": false,
@@ -301,7 +271,38 @@
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
-        "src/app/atlas-journey.ts"
+        "src/app/campaign-atlas-author.ts",
+        "src/app/atlas-author.ts",
+        "src/app/campaign-atlas-ui.ts"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.08",
+      "title": "Unbekannten Reiseauftrag bis zur Klärung behalten",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "P0.03",
+        "A0.13"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-journey.ts",
+        "src/app/campaign-atlas-ui.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -332,7 +333,8 @@
         "src/app/storage/atlas-commit-projection.ts",
         "desktop/store-worker.ts",
         "tests/desktop-atlas-postcommit-projection.test.mjs",
-        "docs/project/architecture/canonical-store-worker.md"
+        "docs/project/architecture/canonical-store-worker.md",
+        "tests/helpers/atlas-projection-fault.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -345,7 +347,19 @@
         "agent": "/root/review_packages",
         "activeHours": null,
         "nativeQualification": "pending A0.11",
-        "planReview": "v1.4 accepted independently by a0_interim_review"
+        "planReview": "v1.4 accepted independently by a0_interim_review",
+        "startedAt": "2026-10-25T12:42:49Z",
+        "finishedAt": "2026-10-25T12:49:47.707Z",
+        "commit": "950b79eb5914b7e32d91120eb90771d2896388c6",
+        "tests": "81/81 (11 new); npm run check and check:desktop passed",
+        "evidence": ".build/atlas-performance-plan/A0.09-handoff.json",
+        "independentReview": "required rework: graph preview shadow edit can persist while main Atlas receipt rolls back",
+        "rework": {
+          "agent": "/root/review_packages",
+          "status": "in_progress",
+          "finding": "readRoomCommit failure after shadow edit commits leaves changed preview but reconciliation not-applied",
+          "nativeQualification": "pending A0.11"
+        }
       }
     },
     {
@@ -403,7 +417,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -430,12 +444,15 @@
         "commit": "c20be8c36bad93e5aec7963d5725a7b13a852c0a",
         "tests": "110/110 targeted; npm run check and targeted diff check passed",
         "evidence": ".build/atlas-performance-plan/A0.12-files.sha256",
-        "independentReview": "required rework: terrain source changes during retry must not authorize old tiles",
+        "independentReview": "A0.12 rework accepted locally by a0_interim_review; independently reran 115/115; native A0.11 and R0 pending",
         "rework": {
           "agent": "/root/plan_final_review",
           "finding": "current revision2 while retained tiles revision1 and current read pending permits author input",
-          "status": "in_progress",
-          "nativeQualification": "pending A0.11"
+          "status": "complete",
+          "nativeQualification": "pending A0.11",
+          "commit": "4859dadee502ce4f8e6ab6bbf1d3ad81d3ad1910",
+          "tests": "115/115 targeted; npm run check passed",
+          "evidence": ".build/atlas-performance-plan/A0.12-rework-handoff.json"
         }
       }
     },
@@ -455,7 +472,9 @@
         "A0.09",
         "A0.10",
         "P0.03",
-        "A0.12"
+        "A0.12",
+        "A0.13",
+        "A0.14"
       ],
       "lane": "A0",
       "conditional": false,
@@ -3824,7 +3843,9 @@
         "A0.09",
         "A0.10",
         "A0.11",
-        "A0.12"
+        "A0.12",
+        "A0.13",
+        "A0.14"
       ],
       "lane": "R0",
       "conditional": false,
@@ -3861,7 +3882,9 @@
         "A0.09",
         "A0.10",
         "A0.11",
-        "A0.12"
+        "A0.12",
+        "A0.13",
+        "A0.14"
       ],
       "lane": "R0",
       "conditional": false,
@@ -4681,6 +4704,85 @@
       "estimate": {
         "profile": "coordination",
         "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.13",
+      "title": "Neustartfeste Atlas- und Reisebelege ohne Schreibwiederholung klären",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.06",
+        "A0.09",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-write-receipt.ts",
+        "src/app/atlas-write-recovery.ts",
+        "src/app/campaign-atlas-contracts.ts",
+        "src/app/atlas-travel-contracts.ts",
+        "src/app/storage/campaign-atlas.ts",
+        "src/app/storage/atlas-travel.ts",
+        "src/app/storage/store.ts",
+        "desktop/main.ts",
+        "desktop/preload.ts",
+        "desktop/store-operations.ts",
+        "desktop/atlas-write-activity.ts",
+        "tests/desktop-atlas-write-receipt.test.mjs",
+        "tests/atlas-write-recovery.test.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
+      "id": "A0.14",
+      "title": "Gesicherte ungeklärte Aufträge schließen und nach Neustart wiederaufnehmen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.07",
+        "A0.08",
+        "A0.10",
+        "A0.12",
+        "A0.13",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [
+        "native-host"
+      ],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/campaign-atlas-ui.ts",
+        "src/app/workspace-editors.ts",
+        "src/app/renderer.ts",
+        "desktop/main.ts",
+        "tests/workspace-editor-registry.test.mjs",
+        "tests/desktop-atlas-commit-recovery.test.mjs",
+        "tools/test-desktop-atlas-recovery-restart.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": true,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "native",
+        "waitConfidence": "unknown"
       },
       "actual": null
     }
