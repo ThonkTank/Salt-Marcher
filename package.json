@@ -79,8 +79,8 @@
     "test:desktop-note-room-uses-ui": "npm run build:desktop && node tools/test-desktop-note-room-uses.mjs",
     "test:desktop-key-lookup-ui": "npm run build:desktop && node tools/test-desktop-key-lookup.mjs",
     "dev": "npm run start:desktop --",
-    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\"",
-    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\""
+    "format": "prettier --write \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\"",
+    "format:check": "prettier --check \"src/app/**/*.{ts,css}\" \"desktop/**/*.ts\" \"tests/{workspace,atlas,campaign,runtime,catalog,shared}/**/*.test.mjs\" \"tests/helpers/**/*.{mjs,ts}\" \"tools/{build-desktop,build-transfer-contracts,check-repository,check-module-boundaries,run-tests,test-selection,package-desktop,release-desktop,verify-release-source,native-session,atlas-*,test-desktop-*,measure-*,run-autonomy-scale}.{mjs,ts}\""
   },
   "dependencies": {
     "@deck.gl/core": "9.4.0",
