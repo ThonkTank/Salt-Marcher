@@ -1,3 +1,4 @@
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
@@ -19,7 +20,7 @@ function fixture(t){
  }};
  const priorWindow=globalThis.window,priorCapture=globalThis.captureTerrainImage,priorTiles=globalThis.exportTiles;
  const identity={tile:{lod:0,x:0,y:0},revision:7,fence:'source-7'};
- globalThis.exportTiles=[{terrain:{...identity,projection:{grid:{view:{box:{x:0,y:0,width:1024,height:1024},columns:2,rows:2},heights:new Float32Array(4),seaLevelM:0}}},material:{...identity,width:1,height:1,channels:{baseColor:new Uint8Array([1,2,3,255]),water:new Uint8Array([0]),forest:new Uint8Array([0])}}}];
+ globalThis.exportTiles=[{terrain:{...identity,projection:{grid:{view:{box:{x:0,y:0,width:1024,height:1024},columns:2,rows:2},heights:new Float32Array(4),seaLevelM:0}}},material:{...identity,width:1,height:1,channels:{...emptyMaterialChannels(1),baseColor:new Uint8Array([1,2,3,255]),water:new Uint8Array([0]),forest:new Uint8Array([0])}}}];
  const projection={revision:7,fence:'source-7'};let captures=0;
  globalThis.window={campaign:{async atlasTerrainProjection(){return {ok:true,value:projection};}}};
  globalThis.captureTerrainImage=async args=>{captures++;return args.scene;};

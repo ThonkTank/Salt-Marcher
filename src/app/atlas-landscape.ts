@@ -35,6 +35,8 @@ export type LandscapeField =
   | "interrupt"
   | "access";
 export interface LandscapeRecord {
+  /** Display importance; absent means automatic. Physical dimensions are unchanged. */
+  prominence?:number;
   label?:import("./map-label-style").MapLabelStyle;
   id: string;
   revision: number;
@@ -70,6 +72,7 @@ export interface LandscapeRecord {
   locked?: boolean;
 }
 export type LandscapeAction =
+  | {kind:'landscape-prominence';id:string;expectedRevision:number;prominence:number|null}
   | {kind:'landscape-route';record:LandscapeRecord;expectedRevision:number|null;sourceRevision:number}
 
   | {kind:'landscape-vegetation-edit';polygons:Polygon[];mode:'clear'|'thin'|'dense'|'erase'}

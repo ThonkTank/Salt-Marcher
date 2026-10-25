@@ -1,3 +1,4 @@
+import {acquireCartographicTextures} from './atlas-cartographic-texture';
 import {SimpleMeshLayer,type SimpleMeshLayerProps} from '@deck.gl/mesh-layers';
 import type {UpdateParameters,LayerContext} from '@deck.gl/core';
 import {Buffer,type Texture} from '@luma.gl/core';
@@ -14,6 +15,8 @@ type MaterialProps={
   contours:number;automaticStep:number;seaLevelM:number;pixelRatio:number;
   materialOrigin:readonly number[];
   masks:{data:Uint8Array;width:number;height:number};
+  cover:{data:Uint8Array;width:number;height:number};
+  relief:{data:Uint8Array;width:number;height:number};
   baseColor:{data:Uint8Array;width:number;height:number};
 };
 const block=`layout(std140) uniform atlasMaterialUniforms {
@@ -27,26 +30,28 @@ const block=`layout(std140) uniform atlasMaterialUniforms {
   float seaLevel;
   float pixelRatio;
   float heightMode;
+  float drawn;
   vec3 ink;
   vec2 materialOrigin;
 } atlasMaterial;`;
 const materialModule={name:'atlasMaterial',vs:block,fs:block,
-  uniformTypes:{heightOrigin:'f32',snowline:'f32',mountains:'f32',strength:'f32',lightRadians:'f32',contours:'f32',automaticStep:'f32',seaLevel:'f32',pixelRatio:'f32',heightMode:'f32',ink:'vec3<f32>',materialOrigin:'vec2<f32>'}} as const;
+  uniformTypes:{heightOrigin:'f32',snowline:'f32',mountains:'f32',strength:'f32',lightRadians:'f32',contours:'f32',automaticStep:'f32',seaLevel:'f32',pixelRatio:'f32',heightMode:'f32',drawn:'f32',ink:'vec3<f32>',materialOrigin:'vec2<f32>'}} as const;
 
 /** Material effects are display work. Updating the light or snowline changes
  * uniforms, not persisted colours or geometry. Normals remain physical metres. */
 export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown,MaterialProps> {
   static layerName='AtlasTerrainMaterialLayer';
-  static defaultProps={...SimpleMeshLayer.defaultProps,terrainStyle:{type:'object',value:null},heightOrigin:0,contours:0,automaticStep:1,seaLevelM:0,pixelRatio:1,masks:{type:'object',value:null},baseColor:{type:'object',value:null}};
+  static defaultProps={...SimpleMeshLayer.defaultProps,terrainStyle:{type:'object',value:null},heightOrigin:0,contours:0,automaticStep:1,seaLevelM:0,pixelRatio:1,masks:{type:'object',value:null},baseColor:{type:'object',value:null},cover:{type:'object',value:null},relief:{type:'object',value:null}};
   private get maskTexture():Texture|undefined{return (this.state as typeof this.state & {atlasMaskTexture?:Texture}).atlasMaskTexture;}
   private get baseTexture():Texture|undefined{return (this.state as typeof this.state & {atlasBaseTexture?:Texture}).atlasBaseTexture;}
+  private get extras(){return this.state as typeof this.state & {atlasCoverTexture?:Texture;atlasReliefTexture?:Texture;ink?:ReturnType<typeof acquireCartographicTextures>};}
   getShaders(){
     const shaders=super.getShaders();
     return {...shaders,modules:[...shaders.modules,materialModule],inject:{
       ...shaders.inject,
       'vs:#decl':'out float atlasHeight; out vec3 atlasPhysicalNormal; out vec2 atlasWorld;',
       'vs:#main-end':'atlasHeight=positions.z+atlasMaterial.heightOrigin; atlasPhysicalNormal=normals; atlasWorld=positions.xy+atlasMaterial.materialOrigin;',
-      'fs:#decl':`in float atlasHeight; in vec3 atlasPhysicalNormal; in vec2 atlasWorld; uniform sampler2D atlasMasks;
+      'fs:#decl':`in float atlasHeight; in vec3 atlasPhysicalNormal; in vec2 atlasWorld; uniform sampler2D atlasMasks; uniform sampler2D atlasCover; uniform sampler2D atlasRelief;
         ${CARTOGRAPHIC_GLSL}
         float atlasContour(float step,float gradient,float halfWidth){
           if(floor(atlasHeight/step+.5)*step<=atlasMaterial.seaLevel)return 0.0;
@@ -60,7 +65,9 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown,MaterialP
             atlasContour(step*5.0,gradient,${CONTOUR_INK.majorWidth.toFixed(1)})*${CONTOUR_INK.majorAlpha});
         }`,
       'fs:DECKGL_FILTER_COLOR':`
-        vec2 masks=texture(atlasMasks,geometry.uv).rg;
+        vec3 masks=texture(atlasMasks,geometry.uv).rgb;
+        vec4 cover=texture(atlasCover,geometry.uv);
+        vec4 relief=texture(atlasRelief,geometry.uv);
         vec3 physicalNormal=normalize(atlasPhysicalNormal);
         float slope=length(physicalNormal.xy)/max(abs(physicalNormal.z),0.00001);
         float land=1.0-masks.r;
@@ -71,17 +78,22 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown,MaterialP
           *(1.0-0.8*smoothstep(1.0,2.5,slope))*atlasMaterial.mountains*land;
         color.rgb=mix(color.rgb,vec3(144.0,139.0,129.0)/255.0,rock);
         color.rgb=mix(color.rgb,vec3(246.0,248.0,244.0)/255.0,snow);
-        if(atlasMaterial.heightMode<0.5){
-          float surface=atlasForestSurface(mpp);
-          float canopy=forest>0.001&&surface>0.0?atlasForestInk(atlasWorld,mpp):0.0;
-          color.rgb*=1.0+forest*(canopy*surface-0.055*surface)*(1.0-snow);
-          float stroke=(atlasWorld.x+atlasWorld.y*0.5)/16.0;
-          float grain=sin(stroke*6.2831853)*(1.0-smoothstep(0.15,0.45,fwidth(stroke)));
-          color.rgb*=1.0+0.035*grain*rock*(1.0-snow);
+        if(atlasMaterial.drawn>0.5){
+          float ink=atlasCoverInk(atlasWorld,mpp,cover,forest,masks.b);
+          color.rgb=mix(color.rgb,atlasMaterial.ink,ink*0.3*land*(1.0-snow));
           float edge=1.0-smoothstep(0.0,max(fwidth(masks.r)*atlasMaterial.pixelRatio,0.05),abs(masks.r-0.5));
-          color.rgb=mix(color.rgb,color.rgb*0.8,edge*0.35);
+          color.rgb=mix(color.rgb,atlasMaterial.ink,edge*0.16);
+          vec3 macro=normalize(relief.rgb*2.0-1.0);
+          vec2 direction=-macro.xy/max(abs(macro.z),0.01);
+          float hatching=atlasSlopeInk(atlasWorld,mpp,direction);
+          float ridges=relief.a*(1.0-smoothstep(512.0,2048.0,mpp));
+          color.rgb=mix(color.rgb,atlasMaterial.ink,land*atlasMaterial.mountains*(hatching*0.28+ridges*0.24)*(1.0-snow*0.8));
         }
         vec2 gradient=-physicalNormal.xy/max(abs(physicalNormal.z),0.00001);
+        if(atlasMaterial.drawn>0.5){
+          vec3 macro=normalize(relief.rgb*2.0-1.0);
+          gradient=mix(gradient,-macro.xy/max(abs(macro.z),0.01),smoothstep(2.0,16.0,mpp)*0.65);
+        }
         // Exaggerate broad relief lighting, never physical slopes or materials.
         gradient*=clamp(sqrt(max(mpp,1.0)/4.0),1.0,8.0);
         float light=1.0+atlasMaterial.strength*0.55*((-gradient.x*sin(atlasMaterial.lightRadians)
@@ -131,6 +143,9 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown,MaterialP
         if(end>start)(this.state as typeof this.state & {atlasGeometry:GPUGeometry}).atlasGeometry.attributes[name!]!.write(next.subarray(start,end),start*4);
       }
     }
+    if(!this.extras.ink)this.setState({ink:acquireCartographicTextures(this.context.device)});
+    this.updateTexture('atlasCoverTexture',this.props.cover,params.oldProps.cover,this.extras.atlasCoverTexture);
+    this.updateTexture('atlasReliefTexture',this.props.relief,params.oldProps.relief,this.extras.atlasReliefTexture);
     this.updateTexture('atlasBaseTexture',this.props.baseColor,params.oldProps.baseColor,this.baseTexture);
     this.updateTexture('atlasMaskTexture',this.props.masks,params.oldProps.masks,this.maskTexture);
   }
@@ -148,11 +163,13 @@ export class AtlasTerrainMaterialLayer extends SimpleMeshLayer<unknown,MaterialP
       snowline:style.snowlineM??2500,mountains:style.mountains&&style.mode!=='height'?1:0,
       strength:style.strength,lightRadians:style.lightDegrees*Math.PI/180,
       contours:this.props.contours,automaticStep:this.props.automaticStep,seaLevel:this.props.seaLevelM,pixelRatio:this.props.pixelRatio,
-      heightMode:style.mode==='height'?1:0,ink:reliefRgb(style.ink).map(v=>v/255),materialOrigin:this.props.materialOrigin}});
+      heightMode:style.mode==='height'?1:0,drawn:style.mode==='drawn'?1:0,ink:reliefRgb(style.ink).map(v=>v/255),materialOrigin:this.props.materialOrigin}});
     if(this.baseTexture)this.state.model?.shaderInputs.setProps({simpleMesh:{sampler:this.baseTexture,hasTexture:true}});
     if(this.maskTexture)this.state.model?.setBindings({atlasMasks:this.maskTexture});
+    const extra=this.extras;
+    if(extra.atlasCoverTexture&&extra.atlasReliefTexture&&extra.ink)this.state.model?.setBindings({atlasCover:extra.atlasCoverTexture,atlasRelief:extra.atlasReliefTexture,atlasPlantInk:extra.ink.plants,atlasMarkInk:extra.ink.marks});
     super.draw(options);
   }
-  finalizeState(context:LayerContext){this.maskTexture?.destroy();this.baseTexture?.destroy();super.finalizeState(context);}
+  finalizeState(context:LayerContext){this.extras.ink?.release();this.extras.atlasCoverTexture?.destroy();this.extras.atlasReliefTexture?.destroy();this.maskTexture?.destroy();this.baseTexture?.destroy();super.finalizeState(context);}
 }
 export type AtlasTerrainMaterialLayerProps=SimpleMeshLayerProps<unknown>&MaterialProps;

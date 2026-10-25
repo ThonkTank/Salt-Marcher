@@ -1,3 +1,4 @@
+import {MACRO_RELIEF_RADIUS,MACRO_RIDGE_GAIN} from './terrain-material';
 import {reduceAtlasMaterialRows} from './atlas-raster-kernel';
 import {polygonCoverageRows} from './raster-polygon-coverage';
 import {coverFeatherSamplerSteps,coverDisplayPolygons,coverViewParts} from './landscape-cover-feather';
@@ -14,7 +15,7 @@ import {colorParts,mergePolygons} from "./landscape-brush";
 import {bounds,type LandscapeBox,type LandscapeRecord} from './atlas-landscape';
 import type { Polygon } from './contracts';
 import { terrainColors } from './world-model';
-import {CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialRaster} from './terrain-material';
+import {COVER_CHANNEL_NAMES,type TerrainCoverChannel,CHANNEL_NAMES,type TerrainMaterialChannel,type TerrainMaterialRaster} from './terrain-material';
 
 // Read a halo as well as the visible tile: a tile edge is never a coastline.
 export const LANDSCAPE_RASTER_PAD = 16;
@@ -40,6 +41,7 @@ export class LandscapeRasterizer {
   /** Optional semantic forest coverage, independent of colour/alpha. Populated by finish(). */
   readonly forest?: Uint8Array;
   private readonly forestSamples?: Uint8Array;
+  private readonly coverSamples:Partial<Record<TerrainCoverChannel,Uint8Array>>={};
   private readonly samples: Uint8Array;
   private readonly water: Uint8Array;
   private readonly w: number;
@@ -62,7 +64,7 @@ export class LandscapeRasterizer {
   private finished=false;
   readonly sampleBox:LandscapeBox;
   private readonly scale:number;
-  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width,forest=false,private readonly rasterOptions:{samples?:2|4;areaCoverage?:boolean;worldFeather?:boolean}={}) {
+  constructor(readonly box: LandscapeBox, readonly width: number, readonly height: number,readonly contours=0,readonly displayMpp=box.width/width,forest=false,private readonly rasterOptions:{samples?:2|4;areaCoverage?:boolean;worldFeather?:boolean;cover?:boolean}={}) {
     if(!box||![box.x,box.y,box.width,box.height].every(Number.isFinite)||box.width<=0||box.height<=0||
        !Number.isSafeInteger(width)||!Number.isSafeInteger(height)||width<1||height<1||width>1024||height>1024)
       throw new Error('Landschaftsübersicht prüfen.');
@@ -72,6 +74,7 @@ export class LandscapeRasterizer {
     this.samples=new Uint8Array(this.w*this.h*4);
     this.water=new Uint8Array(this.w*this.h).fill(1);
     this.pixels=new Uint8Array(width*height*4);
+    if(rasterOptions.cover)for(const c of COVER_CHANNEL_NAMES)this.coverSamples[c]=new Uint8Array(this.w*this.h);
     if(forest){this.forest=new Uint8Array(width*height);this.forestSamples=new Uint8Array(this.w*this.h);}
   }
   sampleLattice():TerrainLattice {
@@ -109,9 +112,25 @@ export class LandscapeRasterizer {
         });
       }
     }
+    const coverEntries=COVER_CHANNEL_NAMES.filter(c=>this.coverSamples[c]).map(c=>({active:c===(preset.tree==='pine'?'conifer':'deciduous')||c===(preset.id==='meadow'?'grass':'shrub')||c==='debris',samples:this.coverSamples[c]!,value:c===(preset.tree==='pine'?'conifer':'deciduous')?preset.density:c===(preset.id==='meadow'?'grass':'shrub')?preset.undergrowth:c==='debris'?preset.rocks:0}));
+    // Edits apply to every candidate family, exactly as the individual generator.
+    const corrected=coverEntries.map(entry=>{
+      const values=record.vegetation!.edits.length?new Float32Array(this.w*this.h).fill(entry.value):undefined;
+      return {...entry,values};
+    });
+    for(const edit of record.vegetation.edits){
+      const parts=coverViewParts(edit.polygons,this.sampleBox,0),polygons=parts.disjoint?parts.polygons:mergePolygons(parts.polygons);
+      for(const p of polygons)yield* this.polygonSteps(p,[],0,undefined,undefined,checkpoint,undefined,(i,coverage)=>{
+        for(const entry of corrected)if(entry.values&&entry.active){
+          const old=entry.values[i]!,next=edit.mode==='clear'?0:edit.mode==='thin'?old*.3:Math.min(1,old+.5);
+          entry.values[i]=old+(next-old)*coverage;
+        }
+      });
+    }
     const forest=this.forestSamples,coverage=forest?(i:number,fade:number)=>{
       const value=Math.min(1,(density?.[i]??preset.density)/.8)*255;
       forest[i]=Math.round(forest[i]!*(1-fade)+value*fade);
+      for(const entry of corrected)entry.samples[i]=Math.round(entry.samples[i]!*(1-fade)+(entry.values?.[i]??entry.value)*255*fade);
     }:undefined;
     for(const polygon of polygons)yield* this.polygonSteps(polygon,rgb,.78,'ground',undefined,checkpoint,fade,coverage);
   }
@@ -129,7 +148,7 @@ export class LandscapeRasterizer {
     const color=terrainColors[record.values.terrain];if(!color)throw new Error('Geländefarbe fehlt.');
     const rgb=[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
     for(const polygon of record.polygons){
-      const coverage=this.forestSamples?((i:number,coverage:number)=>{const value=record.values.terrain==='forest'?255:0;this.forestSamples![i]=Math.round(this.forestSamples![i]!*(1-coverage)+value*coverage);}):undefined;
+      const coverage=this.forestSamples?((i:number,coverage:number)=>{const value=record.values.terrain==='forest'?255:0;this.forestSamples![i]=Math.round(this.forestSamples![i]!*(1-coverage)+value*coverage);for(const c of COVER_CHANNEL_NAMES){const data=this.coverSamples[c];if(data)data[i]=Math.round(data[i]!*(1-coverage));}}):undefined;
       for(const _ of this.polygonSteps(polygon,rgb,1,undefined,record.maskManaged?undefined:record.values.terrain==='water',function*(){},undefined,coverage)){}
     }
   }
@@ -408,23 +427,40 @@ export class LandscapeRasterizer {
     if(names.has('baseColor'))channels.baseColor=new Uint8Array(this.width*this.height*4);
     if(names.has('water')){channels.water=new Uint8Array(this.width*this.height);channels.waterTopology=new Uint16Array(this.width*this.height);}
     if(names.has('forest'))channels.forest=new Uint8Array(this.width*this.height);
+    if(names.has('relief'))channels.relief=new Uint8Array(this.width*this.height*4);
+    for(const c of COVER_CHANNEL_NAMES)if(names.has(c))channels[c]=new Uint8Array(this.width*this.height);
     if(names.has('rock'))channels.rock=new Uint8Array(this.width*this.height);
     if(names.has('snow'))channels.snow=new Uint8Array(this.width*this.height);
     const z=this.elevations,forest=this.forestSamples,lattice=this.sampleLattice(),step=2*this.scale,stride=step*this.w;
     const materialEnabled=this.terrainStyle.mountains===true;
     const materialRequested=names.has('rock')||names.has('snow');
     const snowline=this.terrainStyle.snowlineM??2500;
+    if(channels.relief&&z){
+      const radius=MACRO_RELIEF_RADIUS*this.scale,vertical=radius*this.w,dx=radius*lattice.dx,dy=radius*lattice.dy;
+      for(let y=0;y<this.height;y++){
+        for(let x=0;x<this.width;x++){
+          const i=(y+LANDSCAPE_RASTER_PAD)*this.scale*this.w+(x+LANDSCAPE_RASTER_PAD)*this.scale+Math.floor(this.scale/2)*(this.w+1);
+          const sx=(z[i+radius]!-z[i-radius]!)/(2*dx),sy=(z[i+vertical]!-z[i-vertical]!)/(2*dy),n=Math.hypot(sx,sy,1);
+          const ridge=Math.max(0,(4*z[i]!-z[i-radius]!-z[i+radius]!-z[i-vertical]!-z[i+vertical]!)/(dx+dy));
+          const at=(y*this.width+x)*4;
+          channels.relief[at]=Math.round((1-sx/n)*127.5);channels.relief[at+1]=Math.round((1-sy/n)*127.5);channels.relief[at+2]=Math.round((1+1/n)*127.5);channels.relief[at+3]=Math.round(Math.min(1,ridge*MACRO_RIDGE_GAIN)*255);
+        }
+        if(y%16===15)yield* checkpoint();
+      }
+    }
     if(this.rasterOptions.areaCoverage&&!materialRequested){
       for(let y=0;y<this.height;y+=16){
-        reduceAtlasMaterialRows({samples:this.samples,water:this.water,forest:this.forestSamples,stride:this.w,
+        reduceAtlasMaterialRows({samples:this.samples,water:this.water,forest:this.forestSamples,covers:this.coverSamples,stride:this.w,
           left:LANDSCAPE_RASTER_PAD*this.scale,top:(y+LANDSCAPE_RASTER_PAD)*this.scale,width:this.width,
           rows:Math.min(16,this.height-y),scale:this.scale},channels,y);
         yield* checkpoint();
       }
       this.materialCaptured=true;return channels;
     }
+    const covers=COVER_CHANNEL_NAMES.filter(c=>channels[c]),coverSums=new Float64Array(covers.length);
     for(let y=0;y<this.height;y++){
       for(let x=0;x<this.width;x++){
+        coverSums.fill(0);
         const out=y*this.width+x,top=(y+LANDSCAPE_RASTER_PAD)*this.scale*this.w+(x+LANDSCAPE_RASTER_PAD)*this.scale;
         const count=this.scale*this.scale;
         let waterSum=0,forestSum=0,rockSum=0,snowSum=0,alphaSum=0,topology=0;
@@ -434,6 +470,7 @@ export class LandscapeRasterizer {
           const i=top+Math.floor(sample/this.scale)*this.w+sample%this.scale,isWater=!!this.water[i],at=i*4,alpha=this.samples[at+3]!;
           if(isWater){waterSum+=255;topology|=1<<sample;}
           if(forest&&!isWater)forestSum+=forest[i]!;
+          if(!isWater)for(let c=0;c<covers.length;c++)coverSums[c]=coverSums[c]!+(this.coverSamples[covers[c]!]?.[i]??0);
           if(!isWater&&materialEnabled&&materialRequested&&z){
             const sx=(z[i+step]!-z[i-step]!)/(2*lattice.dx*step);
             const sy=(z[i+stride]!-z[i-stride]!)/(2*lattice.dy*step);
@@ -446,6 +483,7 @@ export class LandscapeRasterizer {
             for(let c=0;c<3;c++)sums[c]=(sums[c]??0)+this.samples[at+c]!*alpha;
           }
         }
+        for(let c=0;c<covers.length;c++)channels[covers[c]!]![out]=Math.round(coverSums[c]!/count);
         if(channels.water)channels.water[out]=Math.round(waterSum/count);
         if(channels.waterTopology)channels.waterTopology[out]=topology;
         if(channels.forest)channels.forest[out]=Math.round(forestSum/count);

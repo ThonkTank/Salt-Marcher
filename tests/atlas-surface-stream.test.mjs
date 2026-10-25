@@ -1,3 +1,4 @@
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -7,7 +8,7 @@ const input={box:{x:0,y:0,width:256,height:256},metersPerPixel:1,revision:2,sour
 function pair(q){
  const identity={tile:q.tile,revision:q.revision,fence:'fence'};
  return {...identity,terrain:{...identity,projection:{heightOnly:true,fence:'fence',revision:q.revision,grid:{view:{columns:65,rows:65},heights:new Float32Array(65*65)}}},
-  material:{...identity,width:256,height:256,channels:Object.fromEntries(['baseColor','water','forest','rock','snow'].map(c=>[c,new Uint8Array(256*256*(c==='baseColor'?4:1))]))}};
+  material:{...identity,width:256,height:256,channels:emptyMaterialChannels(256*256)}};
 }
 test('prefetch follows visible completion and retained products stay within both budgets while panning',async()=>{
  const stream=new AtlasSurfaceTileStream({maxTiles:8,maxRetainedTiles:16,maxBytes:16*1024*1024});

@@ -1,9 +1,10 @@
+import {emptyMaterialChannels} from './helpers/atlas-material-channels.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {build} from 'esbuild';
 const {outputFiles}=await build({stdin:{contents:`export * from './src/app/atlas-surface-reuse';export * from './src/app/atlas-terrain-tile-model';`,resolveDir:process.cwd()},bundle:true,write:false,platform:'node',format:'esm'});
 const {reuseAtlasSurfaceTile,atlasTerrainTileModel}=await import('data:text/javascript;base64,'+Buffer.from(outputFiles[0].text).toString('base64'));
-function pair(){const tile={lod:0,x:0,y:0},view={box:{x:0,y:0,width:256,height:256},frame:{x:0,y:0,width:256,height:256},columns:65,rows:65,focusM:0,tilt:0,rotation:0,exaggeration:1};return{tile,revision:1,fence:'old',terrain:{tile,revision:1,fence:'old',projection:{grid:{view,seaLevelM:0,heights:new Float32Array(65*65),editing:{ground:new Float32Array(65*65),water:new Float32Array(65*65)}}}},material:{tile,revision:1,fence:'old',width:256,height:256,channels:{baseColor:new Uint8Array(256*256*4).fill(255),water:new Uint8Array(256*256),forest:new Uint8Array(256*256)}}};}
+function pair(){const tile={lod:0,x:0,y:0},view={box:{x:0,y:0,width:256,height:256},frame:{x:0,y:0,width:256,height:256},columns:65,rows:65,focusM:0,tilt:0,rotation:0,exaggeration:1};return{tile,revision:1,fence:'old',terrain:{tile,revision:1,fence:'old',projection:{grid:{view,seaLevelM:0,heights:new Float32Array(65*65),editing:{ground:new Float32Array(65*65),water:new Float32Array(65*65)}}}},material:{tile,revision:1,fence:'old',width:256,height:256,channels:{...emptyMaterialChannels(65536),baseColor:new Uint8Array(256*256*4).fill(255),water:new Uint8Array(256*256),forest:new Uint8Array(256*256)}}};}
 function next(previous){const n=structuredClone(previous);for(const x of [n,n.terrain,n.material]){x.revision=2;x.fence='new';}return n;}
 test('new receipts retain unchanged geometry/mask buffers while adopting the new source identity',()=>{
  const before=pair(),oldModel=atlasTerrainTileModel(before.terrain,before.material),incoming=next(before);incoming.material.channels.baseColor[512]=80;

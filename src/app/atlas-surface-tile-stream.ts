@@ -1,3 +1,4 @@
+import {terrainChannelStride} from './terrain-material';
 import {AtlasRasterTileStream,type AtlasRasterStreamOptions} from './atlas-raster-tile-stream';
 import type {AtlasTerrainTile,AtlasTerrainTileRequest} from './atlas-terrain-tile';
 import type {AtlasMaterialTile} from './atlas-material-tile';
@@ -24,7 +25,7 @@ function validateSurfaceTile(reply:AtlasSurfaceTile,request:AtlasTerrainTileRequ
   const p=reply?.terrain?.projection,m=reply?.material;
   if(!matches(reply)||!matches(reply.terrain)||!matches(m)||!p?.heightOnly||p.fence!==source||p.revision!==request.revision||
     p.grid?.view.columns!==65||p.grid.view.rows!==65||!(p.grid.heights instanceof Float32Array)||p.grid.heights.length!==65*65||
-    m.width!==256||m.height!==256||SURFACE_CHANNEL_NAMES.some(c=>!(m.channels[c] instanceof Uint8Array)||m.channels[c].length!==256*256*(c==='baseColor'?4:1)))
+    m.width!==256||m.height!==256||SURFACE_CHANNEL_NAMES.some(c=>!(m.channels[c] instanceof Uint8Array)||m.channels[c].length!==256*256*terrainChannelStride(c)))
     throw Error('Höhe und Material müssen vollständige Kacheln derselben Quelle bilden.');
 }
 

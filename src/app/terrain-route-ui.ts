@@ -1,3 +1,4 @@
+import {prominenceEditor} from './atlas-prominence-editor';
 import {atlasUnits,setAtlasUnits,atlasFieldValue,setAtlasFieldValue,lengthLabel} from './atlas-units';
 import {emptyRecord,type LandscapeRecord,type LandscapeBox,type LandscapeAction} from './atlas-landscape';
 import {routeSpec,routeDefaults,nearestRoute,type RouteStructure} from './terrain-route';
@@ -53,7 +54,9 @@ export function openTerrainRoute(host:Host){
   let record=structuredClone(host.record??emptyRecord(host.kind)),saved=host.record?structuredClone(host.record):undefined;
   record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);
   let source:VegetationScene|undefined,proposal:LandscapeRecord|undefined,generation=0,closed=false,saving=false,dirty=false,timer:ReturnType<typeof setTimeout>|undefined;
-  let selected=-1,insert=false;
+  let selected=-1,insert=false,physicalDirty=!host.record?.route;
+  const prominenceRoot=document.createElement('div');field('width').closest('label')!.after(prominenceRoot);
+  const prominence=prominenceEditor(prominenceRoot,'route-prominence',()=>record,()=>{dirty=true;if(proposal)proposal.prominence=record.prominence;button('save').disabled=physicalDirty?!proposal:!saved;});
   const fitBox=()=>{
     const points=record.route!.anchors;if(points.length<2)return;
     const minX=Math.min(...points.map(p=>p.x)),minY=Math.min(...points.map(p=>p.y)),maxX=Math.max(...points.map(p=>p.x)),maxY=Math.max(...points.map(p=>p.y));
@@ -62,6 +65,8 @@ export function openTerrainRoute(host:Host){
   };
   const limits=['corridor','cut','fill','shoulder','grade','depth','clearance'] as const;
   const setFields=()=>{
+    record.line??=newLine(host.kind);
+    prominence.refresh();
     field<HTMLInputElement>('name').value=record.name;
     setAtlasFieldValue(field<HTMLInputElement>('width'),record.width);
     field<HTMLInputElement>('protected').checked=record.route!.protected;
@@ -78,6 +83,7 @@ export function openTerrainRoute(host:Host){
     record.line!.color=field<HTMLInputElement>('color').value;
     if(host.kind==='road')record.line!.style=field<HTMLSelectElement>('style').value as NonNullable<LandscapeRecord['line']>['style'];
     else record.line!.fadeIn=field<HTMLInputElement>('fade').checked;
+    prominence.refresh();
   };
   function showPoints(){
     const list=field('points');list.replaceChildren();
@@ -96,7 +102,7 @@ export function openTerrainRoute(host:Host){
   }
   let previewRecords:LandscapeRecord[]|undefined;
   function drawHandles(){host.preview(previewRecords,record.route!.anchors);}
-  function invalidate(){
+  function invalidate(){physicalDirty=true;
     if(saving)return;dirty=true;proposal=undefined;previewRecords=undefined;button('save').disabled=true;generation++;clearTimeout(timer);
     drawHandles();showProfile({...record,route:{...record.route!,nodes:[]}});status.textContent='Entwurf geändert. Vorschau wird berechnet …';
     if(record.route!.anchors.length>=2)timer=setTimeout(()=>void preview(),250);
@@ -129,6 +135,7 @@ export function openTerrainRoute(host:Host){
       const result=await window.campaign.atlasSpatialScene(host.token,box,box.width/Math.max(1,canvas.clientWidth),{kind:'landscape-route',record:structuredClone(record)},source.fence);
       if(closed||epoch!==generation)return;if(!result.ok)throw Error(result.error);
       proposal=result.value.records.find(r=>r.id===record.id);if(!proposal?.route)throw Error('Verlauf fehlt in der Vorschau.');
+      proposal.prominence=record.prominence;
       // City road copies only constrain the planner; their authored geometry is already in the Atlas.
       previewRecords=result.value.records.filter(r=>!r.id.startsWith('city-road:'));drawHandles();showProfile(proposal);
       button('save').disabled=false;
@@ -203,16 +210,16 @@ export function openTerrainRoute(host:Host){
   button('fit').onclick=fitBox;
   button('preview').onclick=()=>void preview();
   button('save').onclick=()=>void(async()=>{
-    if(!proposal||!source||saving)return;saving=true;button('save').disabled=true;
+    if((!proposal&&(physicalDirty||!saved))||!source||saving)return;saving=true;button('save').disabled=true;
     try{
-      const result=await host.write({kind:'landscape-route',record:proposal,expectedRevision:saved?.revision??null,sourceRevision:source.revision});
+      const result=await host.write(!physicalDirty&&saved?{kind:'landscape-prominence',id:saved.id,expectedRevision:saved.revision,prominence:record.prominence??null}:{kind:'landscape-route',record:proposal!,expectedRevision:saved?.revision??null,sourceRevision:source.revision});
       if(!result)throw Error('Änderung nicht bestätigt. Entwurf bleibt erhalten.');
-      await host.changed?.();dirty=false;await load();saved=source!.records.find(r=>r.id===record.id);
+      await host.changed?.();dirty=false;physicalDirty=false;await load();saved=source!.records.find(r=>r.id===record.id);
       if(saved)record=structuredClone(saved);proposal=undefined;setFields();status.textContent='Verlauf und Geländeform gespeichert.';
       button('delete').hidden=false;
     }catch(e){error(e);button('save').disabled=false;}finally{saving=false;}
   })();
-  const reset=()=>{generation++;clearTimeout(timer);record=structuredClone(saved??emptyRecord(host.kind));record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);proposal=undefined;dirty=false;selected=-1;button('save').disabled=true;setFields();previewRecords=undefined;drawHandles();showProfile(record);status.textContent='Entwurf verworfen.';};
+  const reset=()=>{generation++;clearTimeout(timer);record=structuredClone(saved??emptyRecord(host.kind));record.route??=routeSpec(host.kind,record.points);record.line??=newLine(host.kind);proposal=undefined;dirty=false;physicalDirty=!saved?.route;selected=-1;button('save').disabled=true;setFields();previewRecords=undefined;drawHandles();showProfile(record);status.textContent='Entwurf verworfen.';};
   button('cancel').onclick=reset;
   for(const action of ['undo','redo'] as const)button(action).onclick=()=>void(async()=>{if(dirty||saving){status.textContent='Zuerst Entwurf übernehmen oder verwerfen.';return;}saving=true;try{await host.write({kind:action});await host.changed?.();await load();saved=source?.records.find(r=>r.id===record.id);reset();}catch(e){error(e);}finally{saving=false;}})();
   button('delete').onclick=()=>void(async()=>{if(!saved||saving)return;saving=true;try{await host.write({kind:'landscape-remove',id:saved.id,expectedRevision:saved.revision});await host.changed?.();dirty=false;close();}catch(e){error(e);}finally{saving=false;}})();

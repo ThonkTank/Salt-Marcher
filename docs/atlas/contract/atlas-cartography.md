@@ -30,6 +30,34 @@ Auftragen nimmt berührte Fläche von Nachbarn mit derselben Oberregion. Unterre
 
 Bei ausgewählten Straßen, Flüssen, Orten und Stadtelementen enthält der Bereich **Beschriftung** Bedeutung, Ausblenden, Position und Drehung. Leere Werte verwenden die automatische Platzierung. Bei Stadtelementen beziehen sich Positionen auf die Stadtkoordinaten, bei Landschaftsobjekten auf Weltkoordinaten. Namen bleiben am vorhandenen Objekt gebunden.
 
+## Kartenprominenz
+
+Die Nutzerentscheidung vom 25.10.2026 verlangt eine handgezeichnete Fantasykarte
+von Welt bis Dorf, mit terraingebundener Gebirgszeichnung und automatischer
+sowie manuell einstellbarer Linienprominenz. Die [Darstellung](../architecture/rendering.md)
+besitzt die Material- und Maßstabsregeln.
+
+Bei Straßen und Flüssen steht **Kartenprominenz** im Auswahlbereich und im
+Geländeplaner: Automatisch oder 0 Detail, 1 Ort, 2 Umgebung, 3 Region,
+4 Kontinent, 5 Welt. Automatisch verwendet die gesamte gespeicherte Ausdehnung
+und die physische Breite, niemals nur das sichtbare Teilstück. Breiten ab
+5/20/100 m ergeben Stufen 2/3/4, sonst 1; Ausdehnungen ab
+100/1.000/10.000/100.000/1.000.000 m ergeben 1–5. Das Maximum wird auf 4
+begrenzt; Pfade und Bäche erhalten eine Stufe weniger, mindestens 0.
+Manuelle Werte gelten direkt.
+
+Die Sichtbarkeitsgrenzen sind 2/12/100/1.000/10.000 m pro CSS-Pixel,
+für Welt ohne Grenze. Im letzten Viertel blendet die Linie weich aus.
+Der Name übernimmt diese Bedeutung, soweit keine eigene Beschriftungsbedeutung
+gesetzt ist; ausdrücklich ausgeblendete Namen bleiben verborgen.
+
+`LandscapeRecord.prominence` ist optional; fehlend bedeutet Automatisch.
+`landscape-prominence` schreibt nur diesen Wert unter Revisionsprüfung.
+Eine reine Prominenzänderung plant weder die Trasse noch ihr Gelände neu.
+Gemischte Geometrieentwürfe behalten den vorhandenen vollständigen Speicherweg.
+Undo/Redo, Neustart und Kampagnenkopie erhalten den Wert. Physische Breite,
+Auswahlgeometrie und Reisesemantik ändern sich dadurch nicht.
+
 ## Darstellung und Speicher
 
 `atlas-scale-policy.ts` bestimmt die Mindestbreite sichtbarer Wege/Flüsse und ihre lesbare Bildschirmbreite. Unabhängige Gebäudegrundrisse erhalten eigene Detailstufen. Alte Stadtdokumente erzeugen keine Ortsmarker, Namen oder Papierflächen; benannte Gebiete bleiben unabhängig von den darunterliegenden Objekten. Die Autorengeometrie und genaue Objektabfragen werden durch diese Darstellung nicht verändert.

@@ -888,7 +888,7 @@ export class LandscapeWorkbench {
     if(a.kind==='landscape-put'||a.kind==='landscape-place')validateVegetation(a.record);
     else if(a.kind==='landscape-batch')for(const {record} of a.records)validateVegetation(record);
     const token = this.token,
-      keep = this.tool === 'select' && a.kind === 'landscape-put' &&
+      keep = a.kind==='landscape-prominence'?a.id:this.tool === 'select' && a.kind === 'landscape-put' &&
         (a.record.kind === 'road' || a.record.kind === 'river')
         ? a.record.id
         : null;
@@ -966,6 +966,8 @@ export class LandscapeWorkbench {
       });
     }
     if (this.details.selected) {
+      const prominence=this.details.prominenceAction();
+      if(prominence&&this.details.selectionRecords.size<=1)return this.commit(prominence);
       this.details.readInspector();
       if (this.details.selectionRecords.size > 1)
         return this.commit({

@@ -1,8 +1,8 @@
+import {effectiveProminence,PROMINENCE_LIMITS} from './atlas-prominence';
 import {
   MapLabelCollisions,
   type MapLabelRect as Rect,
 } from "./map-label-collisions";
-import { mapLineThreshold } from "./atlas-scale-policy";
 import type { MapLabelStyle } from "./map-label-style";
 import { atlasPaint, type AtlasPaint, type PaintStyle } from "./atlas-paint";
 import type { Point, Polygon } from "./contracts";
@@ -200,6 +200,7 @@ export function landscapeLabels(
   box?: LandscapeBox,
 ): MapLabelCandidate[] {
   let labels: MapLabelCandidate[] = [];
+  const lineLimit=PROMINENCE_LIMITS[r.label?.rank??effectiveProminence(r)];
   if (r.kind === "place" && r.points[0] && r.name)
     labels = [
       {
@@ -217,16 +218,11 @@ export function landscapeLabels(
       r.name,
       r.kind,
       linePoints(r),
-      r.width >= 100 ? 4 : r.width >= 20 ? 3 : r.width >= 5 ? 2 : 1,
+      effectiveProminence(r),
       box,
     ).map((c) => ({
       ...c,
-      maxMpp:
-        r.width /
-        mapLineThreshold(
-          r.kind === "river" ? "river" : "road",
-          r.style === "path" || r.style === "stream",
-        ),
+      maxMpp: Number.isFinite(lineLimit) ? lineLimit : undefined,
     }));
   if (r.kind === "patch" && r.surface === "freshwater" && r.name) {
     const c = labelFromPolygon("water:" + r.id, r.name, "area", r.polygons, 3);

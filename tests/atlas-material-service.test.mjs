@@ -1,3 +1,4 @@
+import {materialChannels} from './helpers/atlas-material-channels.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {buildSync} from 'esbuild';
@@ -23,7 +24,7 @@ test('real worker returns five independent material channels, reuses them after 
  store.executeAtlasCommit({campaignId:campaign.id,token,commandId:randomUUID(),action:{kind:'landscape-put',expectedRevision:null,record:heightRecord(0,0,16,Float32Array.from({length:4096},(_,i)=>40+25*Math.sin(i%64/8)))}});
  const tile={lod:0,x:0,y:0},source=store.atlasRegionSource(token,service.cursor),request={tile,revision:source.revision};
  const first=await service.materialTile(source,request);
- assert.deepEqual(Object.keys(first.channels).sort(),['baseColor','forest','rock','snow','water']);
+ assert.deepEqual(Object.keys(first.channels).sort(),[...materialChannels].sort());
  assert.equal(first.width,256);assert.equal(first.height,256);assert.equal(first.fence,source.fence);assert.deepEqual(first.tile,tile);
  for(const name of ['baseColor','water','forest','rock','snow']){
   const channel=first.channels[name];assert(channel instanceof Uint8Array,`${name} is an independent byte channel`);

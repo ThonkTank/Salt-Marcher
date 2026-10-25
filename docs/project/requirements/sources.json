@@ -2069,5 +2069,15 @@
     "qualification_source": "ROADMAP-SALTMARCHER-ADR-PROTOTYPES.md",
     "storage_probe_sha256": "0676cd3602b600a2814eedddbe219b4a44927d4bd892775076d149bef52c64da",
     "meaning": "Technical planning decisions; no new product acceptance. Historical audit hashes remain unchanged."
+  },
+  "atlas_cartographic_decision_2026_10_25": {
+    "source": "Direct user decision in the Atlas terrain planning task, followed by Implement the proposed plan.",
+    "style": "Hand-drawn fantasy map from world to village; terrain-bound mountain drawing.",
+    "prominence": "Manual prominence and automatic evaluation.",
+    "contracts": [
+      "docs/atlas/architecture/rendering.md",
+      "docs/atlas/contract/atlas-cartography.md#kartenprominenz"
+    ],
+    "acceptance": "Implementation, automated evidence, native measurements and owner acceptance remain separate; original source bindings are unchanged."
   }
 }
