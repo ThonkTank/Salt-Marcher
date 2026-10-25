@@ -221,7 +221,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -245,7 +245,13 @@
       "actual": {
         "agent": "/root/audit_atlas_boundaries",
         "activeHours": null,
-        "nativeQualification": "pending A0.11"
+        "nativeQualification": "pending A0.11",
+        "startedAt": "2026-10-25T12:28:20Z",
+        "finishedAt": "2026-10-25T12:40:30.590105+00:00",
+        "commit": "da8f63cb8297e89dbb8bf2e38765ab83fc43598b",
+        "tests": "76/76 (7 new); npm run check and check:desktop passed",
+        "evidence": ".build/atlas-performance-plan/A0.06-handoff.json",
+        "independentReview": "pending R0"
       }
     },
     {
@@ -317,7 +323,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -335,7 +341,12 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/review_packages",
+        "activeHours": null,
+        "nativeQualification": "pending A0.11",
+        "planReview": "v1.4 accepted independently by a0_interim_review"
+      }
     },
     {
       "id": "A0.10",

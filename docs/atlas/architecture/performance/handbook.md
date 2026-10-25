@@ -209,7 +209,8 @@ sichtbar als inaktive Alternativen.
 | A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
 | A0.12 | plan_final_review | Erstfix `c20be8c3` lokal grün; unabhängiges Review verlangt Terrain-Quellenkorrektur (aktuelle Revision darf alte Tiles nicht autorisieren); Nacharbeit läuft, A0.11 offen |
 | A0.10 | review_packages | Implementiert in `0494bf17`; 79/79 Tests und vier native Fälle bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.10-handoff.json)); unabhängiges Zwischenreview akzeptabel; gemeinsame A0.11-Qualifikation und R0 offen |
-| A0.06 | audit_atlas_boundaries | In Arbeit: typisierter unbekannter Schreibausgang über StoreClient, Main und Preload |
+| A0.06 | audit_atlas_boundaries | Implementiert in `da8f63cb`; 76/76 Tests und beide Typechecks bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.06-handoff.json)); Besitzerreaktionen A0.07/08 und R0 offen |
+| A0.09 | review_packages | In Arbeit: Postcommit-Leseprojektionen und echter Worker-Unknown-Kanal gemäß geprüftem v1.4 |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
 erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
@@ -310,6 +311,27 @@ Frame müssen gemeinsam die Freigabe bestimmen. Derselbe Implementierer ergänzt
 Produktionsfix und Terrain-Verbundtest; ursprüngliche Belege bleiben erhalten.
 Dies korrigiert eine unzureichend belegte Anforderung des bestehenden Pakets,
 verkleinert weder dessen Prüfung noch die Meilensteinziele.
+
+A0.06 lief von 12:28:20 bis 12:40:30 UTC. Main erhält die tatsächliche
+`StoreOutcomeUnknownError`-Klasse als expliziten Result-Marker; Erfolg und reguläre
+Ablehnungen bleiben unverändert. Sieben neue Tests führen echte Worker, StoreClient,
+Main und Preload aus, einschließlich verlorenem Ergebnis vor/nach Commit und
+unübertragbarer Antwort. Ein bestehender Item-Buchungsbesitzer klärt seine erhaltene
+Referenz nach explizitem Hostneustart ohne zweite Buchung. Die Gesamtprüfung bestand
+76/76 Tests und beide Typechecks. Root verifizierte sechs Quelldateien, sechs
+Belegdateihashes und alle drei Exitcodes vor Commit. Vorläufige Logpfade kollidierten;
+die unveränderten Prüfungen wurden mit getrennten Logs wiederholt. Atlas-/Reise-
+Besitzerreaktionen sind damit noch nicht bewiesen. Entsprechend wurden nur der
+Transport-/Receiptablauf und die geprüfte Item-Belegklärung im Katalog verknüpft.
+
+Vor Zuweisung von A0.07/A0.08 prüft ein unabhängiger Agent eine konkrete offene
+Annahme: Nach terminalem Store-Workerabbruch verlangt der Host Neustart, während
+Atlas-Pendingmap und Reise-Pendingfeld bislang im Speicher liegen. Zu prüfen ist,
+ob die tatsächliche Wiederaktivierung die Kennung bereits anderweitig erhält oder
+ob ein begrenzter Anschluss für Belegklärung nach Neustart fehlt. Ebenso wird der
+bestehende Reise-Recoveryaufruf (erneuter Writer mit derselben Kennung) gegen den
+geforderten Klärungsvertrag geprüft. A0.09 und A0.12 laufen unabhängig weiter;
+dieser Prüfauftrag ist noch kein bestätigter neuer Produktbefund.
 
 ## Abschlussgrenzen
 
