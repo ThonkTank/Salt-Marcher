@@ -1,5 +1,6 @@
 import {validateTransferSnapshot} from '../transfer/registry';
 import {installSourceCellIndex} from './atlas-source-cell';
+import {projectCommittedAtlas} from './atlas-commit-projection';
 import DATA_FORMAT from '../data-format.json';
 import {atlasProjectionSource,installAtlasShapeSource} from './atlas-shape-source';
 import {decodeRoom,checkedRoomHistory,decodeRoomDraft,decodePreparationDraft,preparationDraftTable,decodeLocation,readStoredPlan} from './stored-records';
@@ -390,12 +391,12 @@ export class CampaignStore {
   }
   atlasRoomCommit(edit:Edit):import('../contracts').RoomCommit {
     this.applyAtlas({commandId:edit.commandId,token:edit.token,campaignId:edit.campaignId,action:{kind:'room-edit',edit}});
-    return{...this.edit(edit),atlasRevision:atlasRoot(this.db,edit.campaignId).revision};
+    return this.atlasProjection(edit,()=>({...this.readRoomCommit(edit),atlasRevision:atlasRoot(this.db,edit.campaignId).revision}));
   }
   atlasDrawingCommit(command:DrawingCommand){
     this.applyAtlas({commandId:command.commandId,token:command.token,campaignId:command.campaignId,action:{kind:'drawing',command}});
     // The Atlas receipt already checked replay; read back the same complete author inventory.
-    return {workspace:this.workspace(),view:this.dungeonAuthoring(command.token).drawing,atlasRevision:atlasRoot(this.db,command.campaignId).revision};
+    return this.atlasProjection(command,()=>({workspace:this.workspace(),view:this.dungeonAuthoring(command.token).drawing,atlasRevision:atlasRoot(this.db,command.campaignId).revision}));
   }
   terrainStrokeSource(c:AtlasCommand,cursor?:import('../atlas-region-contracts').AtlasRegionCursor){
     this.guard(c.token,c.campaignId);
@@ -406,8 +407,10 @@ export class CampaignStore {
   }
   executeAtlasCommit(c:AtlasCommand,prepared?:import('./terrain-scale').PreparedTerrainStroke):import('../campaign-atlas-contracts').AtlasCommitAck {
     const value=terrainTraceMeasure("author.transaction-history",()=>prepared?this.db.transaction(()=>this.applyAtlas(c,prepared))():this.applyAtlas(c)) as {id?:string}|undefined;
-    const root=atlasRoot(this.db,c.campaignId);
-    return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
+    return this.atlasProjection(c,()=>{
+      const root=atlasRoot(this.db,c.campaignId);
+      return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...atlasHistoryState(this.db,c.campaignId)};
+    });
   }
   reconcileAtlasCommit(c:AtlasCommand,pending=false):import('../campaign-atlas-contracts').AtlasCommitOutcome {
     this.guard(c.token,c.campaignId);
@@ -490,7 +493,12 @@ export class CampaignStore {
   atlasTerritories(token:string,box?:import("../atlas-landscape").LandscapeBox){return readTerritories(this.db,this.guard(token),box);}
   executeAtlas(c:AtlasCommand){
     const result=this.applyAtlas(c);
-    return {atlas:this.campaignAtlas(c.token),result};
+    return this.atlasProjection(c,()=>({atlas:this.campaignAtlas(c.token),result}));
+  }
+  private atlasProjection<T>(c:{campaignId:string;commandId:string},read:()=>T):T {
+    // Nested readers are still part of their caller's write transaction. In
+    // particular, a prepared terrain stroke must roll back if its cache read fails.
+    return this.db.inTransaction?read():projectCommittedAtlas(c,read);
   }
   private applyAtlas(c:AtlasCommand,prepared?:import('./terrain-scale').PreparedTerrainStroke){
     this.guard(c.token,c.campaignId);
@@ -627,7 +635,7 @@ export class CampaignStore {
         else this.db.prepare('UPDATE atlas_local_journey SET payload=?,checksum=? WHERE rowid=?').run(payload,hash(payload),row.rowid);
       }
     },!landscapeOnly);
-    if(terrainBefore)this.terrainAuthorCache.advance(terrainBefore,this.atlasRegionSource(c.token).fence,terrainChange);
+    if(terrainBefore)this.atlasProjection(c,()=>this.terrainAuthorCache.advance(terrainBefore,this.atlasRegionSource(c.token).fence,terrainChange));
     return result;
   }
   extensionPreview(bytes:Buffer){return this.extensionRegistry.preview(bytes);}
@@ -811,6 +819,10 @@ export class CampaignStore {
       this.db.prepare('INSERT INTO receipt VALUES(?,?,?,?,?)').run(edit.commandId, fingerprint, campaignId, before.id, after.revision);
       this.db.prepare('DELETE FROM room_draft WHERE campaign_id=? AND room_id=?').run(campaignId, before.id);
     }).immediate();
+    return this.readRoomCommit(edit);
+  }
+  private readRoomCommit(edit:Edit):RoomCommit {
+    if(this.graphShadow&&!this.graphRouting)return this.withGraph(()=>this.readRoomCommit(edit));
     return this.db.transaction(() => {
       const campaignId = this.guard(edit.token, edit.campaignId), cursor = this.db.prepare('SELECT cursor FROM campaign WHERE id=?').get(campaignId).cursor;
       return { room: decodeRoom(this.db.prepare('SELECT * FROM room WHERE campaign_id=? AND id=?').get(campaignId, edit.roomId)), token: edit.token,

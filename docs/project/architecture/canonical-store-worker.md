@@ -60,12 +60,22 @@ Fehlermeldung auswerten; Erhalt des exakten Commands, Folgeschreibsperre und
 Receipt-Klärung gehören zu A0.07/A0.08. Der bestehende `writeConfirmed`-Pfad behält
 auch bei Fehlern seine Receipt-Referenz bis zu einer belastbaren Statusantwort.
 
-Anschluss für A0.09: `store-worker.ts` meldet im Catch um die Store-Methode derzeit
-`kind:'error'`. Ein dort gezielt erkennbarer Postcommit-Projektionsfehler muss über
-`kind:'unknown'` an denselben klärbaren Kanal angeschlossen werden; StoreClient
-rekonstruiert daraus bereits `StoreOutcomeUnknownError`. Das erfordert einen
-Beleg für den betroffenen Postcommit-Pfad und darf normale Validierungsablehnungen
-nicht pauschal umklassifizieren. A0.06 ändert diese Store-Methodenlogik nicht.
+Nach abgeschlossenen Atlas-, Room- und Drawing-Commits schützt
+`atlas-commit-projection.ts` den nachfolgenden Ansichtsaufbau. Auch der
+`executeCity`-Sonderweg im Worker verwendet diese Grenze. Ein tatsächlicher
+`AtlasCommitProjectionError` wird im Worker als `kind:'unknown'` transportiert;
+StoreClient rekonstruiert daraus `StoreOutcomeUnknownError`. Der genaue Auftrag
+bleibt über seine Atlas-Quittung klärbar, die fehlende Ansicht wird separat neu
+gelesen. Der RoomCommit-Leser ruft dafür keinen zweiten Schreibauftrag auf.
+
+Die Einordnung erfolgt erst nach der äußersten Schreibtransaktion. Insbesondere
+bleibt eine fehlgeschlagene Terraincache-Nachlese innerhalb der Prepared-Transaktion
+ein normaler Fehler mit Rollback; außerhalb davon ist die bereits gespeicherte
+Quittung klärbar. Vorcommit-Validierungsfehler behalten ebenfalls ihre gewöhnliche
+Ablehnung. Die Produktionsregressionen in
+`tests/desktop-atlas-postcommit-projection.test.mjs` injizieren tatsächliche
+Nachlesefehler und verfolgen sie durch Store, Worker, Main und Preload bis zur
+Receipt-Klärung, ohne den Writer erneut aufzurufen.
 
 Beim Schließen oder Update sperrt Main neue Produktaufträge und wartet auf bereits
 angenommene Abläufe. Der Client sperrt danach seine Aufnahme. Der Worker wartet

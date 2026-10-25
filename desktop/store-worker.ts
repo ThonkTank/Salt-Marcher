@@ -1,6 +1,7 @@
 import {parentPort,workerData} from 'node:worker_threads';
 import {dirname} from 'node:path';
 import {CampaignStore} from '../src/app/storage/store';
+import {AtlasCommitProjectionError,projectCommittedAtlas} from '../src/app/storage/atlas-commit-projection';
 import type {ChronicleReadSession} from '../src/app/storage/chronicle-pages';
 import {BackupValidationService} from './backup-validation';
 import {finishCampaignErasure} from './campaign-erasure';
@@ -22,7 +23,7 @@ function hooks(authority:FileAuthority):CampaignFileHooks {
 }
 function snapshot(id:string){const value=snapshots.get(id);if(!value)throw Error('Chronik-Lesestand nicht mehr verfügbar.');return value;}
 const special:StoreSpecialOperations={
- executeCity:c=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:c.action.kind==='undo'||c.action.kind==='redo'?{kind:c.action.kind}:{kind:'city',command:c}});return store.city(c.token,c.cityId);},
+ executeCity:c=>{store.executeAtlasCommit({commandId:c.commandId,token:c.token,campaignId:c.campaignId,action:c.action.kind==='undo'||c.action.kind==='redo'?{kind:c.action.kind}:{kind:'city',command:c}});return projectCommittedAtlas(c,()=>store.city(c.token,c.cityId));},
  finishCampaignErasureFiles:id=>finishCampaignErasure(store,dirname(store.filename),id),
  backup:filename=>store.backup(filename,candidate=>validation.validate(candidate)),
  chronicleExportSnapshot:token=>{const value=store.chronicleExportSnapshot(token);snapshots.set(value.id,value);return{id:value.id};},
@@ -56,7 +57,7 @@ port.on('message',(message:{kind:string;id:number;method:string;value:StoreWire}
    if(!isStoreOperation(message.method))throw Error('Store-Operation nicht freigegeben.');
    const args=decodeStoreValue(message.value);if(!Array.isArray(args))throw Error('Ungültiger Store-Auftrag.');
    value=await operations[message.method]!(...args);
-  }catch(error){port.postMessage({kind:'error',id:message.id,error:error instanceof Error?error.message:String(error)});return;}
+  }catch(error){port.postMessage({kind:error instanceof AtlasCommitProjectionError?'unknown':'error',id:message.id,error:error instanceof Error?error.message:String(error)});return;}
   try{port.postMessage({kind:'result',id:message.id,value:encodeStoreValue(value)});}
   catch(error){port.postMessage({kind:'unknown',id:message.id,error:String(error)});}
  }).finally(()=>active.delete(task));
