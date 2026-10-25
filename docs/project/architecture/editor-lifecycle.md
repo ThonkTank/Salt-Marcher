@@ -89,3 +89,25 @@ enthalten geprüfte Runtime-Hashes; Links im Capability-Katalog sind Navigations
 und kein zusätzlicher Abnahmebeleg. Main-Eventloop-Verzögerung und sichtbare
 Eingabereaktion werden separat gemessen. Weder der Sitzungskern noch eine
 Radiusänderung belegen das weiterhin offene 100-ms-Ziel für einen Terrainpinselzug.
+
+## Vorbereitungsinstanz
+
+`createPreparation` erzeugt einen eigenen `EditorSession`, Entwürfe, laufende
+Reads und Schreibslots. Der Renderer übergibt die eigenen DOM-Wurzeln, den
+Preload-Anschluss, Entwurfsspeicher und benannte Raum-/Notizbuchnavigation;
+`createWorkspaceEditors` erhält diese Instanz statt eines Modul-Singletons.
+Die bisherige Sicherungs- und Aktivierungsreihenfolge bleibt erhalten.
+
+`PreparationNoteDirectory` besitzt das vollständige Notizverzeichnis und die
+Suchanfragen. Gefilterte Treffer verdrängen die aktuell bearbeitete Notiz nicht.
+Planungsübergaben bleiben an die ausdrücklich gewählte Plan-/Visit-Identität
+gebunden; die bestehende Sessionplanung kann als Untereditor übergeben werden.
+`createEditorSurface` bindet Controls an ihre Oberfläche und behält ihre Identität
+beim vorübergehenden Ausleihen an Kontextdialoge. Die Notizkomposition hört auf
+diese Controls statt auf das gesamte Dokument. Abmeldung verwendet weiterhin
+`EditorSession` und bricht keine angenommenen Writes ab.
+
+Die Vorbereitungsregression erzeugt zwei Instanzen mit gleichen Control-IDs,
+verbietet globale ID-Abfragen beim Initialisieren der zweiten und prüft getrennte
+Rohtexte, abgemeldete Reads und erneutes Öffnen. Die vorhandenen Prüfungen für
+Notizquellen, ungeklärte Commands, Planungsübergaben und CRLF-Text bleiben erhalten.

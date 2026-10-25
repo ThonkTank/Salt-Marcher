@@ -19,7 +19,7 @@ import * as world from '../runtime/world-ui';
 import * as items from '../catalog/items-ui';
 import * as catalog from '../catalog/catalog-ui';
 import * as live from '../runtime/live';
-import * as preparation from '../campaign/preparation';
+import type { PreparationEditor } from '../campaign/preparation';
 import { editorSession as finishSession } from '../runtime/finish-draft-ui';
 import { editorSession as combatSession } from '../runtime/combat';
 import { editorSession as chaseSession } from '../runtime/chase-ui';
@@ -30,6 +30,7 @@ import { editorSession as planningSession } from '../campaign/session-ui';
 import { editorSession as generationSession } from '../campaign/generation-ui';
 
 type Host = {
+  preparation: PreparationEditor;
   atlas: {
     session: EditorSession;
     activate: (w: WorkspaceGeometry) => void;
@@ -177,10 +178,12 @@ export function createWorkspaceEditors(host: Host) {
     },
     {
       id: 'preparation',
-      session: preparation.editorSession,
-      activate: { order: 29, run: (w) => preparation.activatePreparation(w, false) },
+      session: host.preparation.editorSession,
+      activate: { order: 29, run: (w) => host.preparation.activatePreparation(w, false) },
       flush: (r) =>
-        r === 'checkpoint' ? preparation.flushPreparation() : preparation.leavePreparation(),
+        r === 'checkpoint'
+          ? host.preparation.flushPreparation()
+          : host.preparation.leavePreparation(),
     },
     {
       id: 'room',

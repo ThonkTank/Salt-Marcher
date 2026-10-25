@@ -22,22 +22,7 @@ import {
 import { bindAtlasHistoryShortcut } from './workspace-shortcuts';
 import { chooseNpcPlace } from '../campaign/npc-places-ui';
 import { openGenerationSource } from '../campaign/generation-ui';
-import {
-  createNarrativeAtLocation,
-  ensurePreparation,
-  flushPreparation,
-  initPreparation,
-  openPreparedLocation,
-  openPreparedNote,
-  openPreparedPlan,
-  openPreparedVisit,
-  preparationHasDrafts,
-  prepareNextVisit,
-  prepareNoteLocation,
-  setLocationNotebookNavigation,
-  setNoteRoomNavigation,
-  showDayPreparation,
-} from '../campaign/preparation';
+import { createPreparation } from '../campaign/preparation';
 import { LocationNotebook } from '../campaign/location-notebook-ui';
 import { WorldLinksWorkbench } from '../campaign/world-links-ui';
 import { CampaignAgenda } from '../runtime/agenda-ui';
@@ -213,7 +198,43 @@ const roomEditor = createRoomEditor(
   },
   editorSession,
 );
+const preparationEditor = createPreparation({
+  roots: ['preparation', 'world-dialog', 'location-dialog', 'note-excerpt-dialog'].map(el),
+  dialogHost: el('preparation'),
+  api: window.campaign,
+  storage: window.localStorage,
+  navigation: {
+    locationNotebook: (id) => locationNotebook.open(id),
+    roomKey: (id, current, restore, source) =>
+      openNoteRoomKey(
+        id,
+        current,
+        () => {
+          if (current()) {
+            showTab('preparation');
+            restore();
+          }
+        },
+        source,
+      ),
+  },
+});
+const {
+  createNarrativeAtLocation,
+  ensurePreparation,
+  flushPreparation,
+  initPreparation,
+  openPreparedLocation,
+  openPreparedNote,
+  openPreparedPlan,
+  openPreparedVisit,
+  preparationHasDrafts,
+  prepareNextVisit,
+  prepareNoteLocation,
+  showDayPreparation,
+} = preparationEditor;
 const editors = createWorkspaceEditors({
+  preparation: preparationEditor,
   atlas: {
     session: atlasEditorSession,
     activate: (w) => campaignAtlas?.activate(w),
@@ -451,7 +472,6 @@ const locationNotebook = new LocationNotebook(
     }
   },
 );
-setLocationNotebookNavigation((id) => locationNotebook.open(id));
 const locationNotebookButton = document.createElement('button');
 locationNotebookButton.type = 'button';
 locationNotebookButton.id = 'location-notebook-open';
@@ -769,19 +789,7 @@ initKeys(
     showKeyWorkspace: () => showTab('atlas'),
   },
 );
-setNoteRoomNavigation((id, current, restore, source) =>
-  openNoteRoomKey(
-    id,
-    current,
-    () => {
-      if (current()) {
-        showTab('preparation');
-        restore();
-      }
-    },
-    source,
-  ),
-);
+
 initPaths(
   status,
   () => workspace,

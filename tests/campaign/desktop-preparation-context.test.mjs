@@ -1,3 +1,4 @@
+import { preparationInstance } from '../helpers/preparation.mjs';
 import { fixtureStore } from '../helpers/store.mjs';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -679,7 +680,7 @@ async function fixture(t, inspect = false, kind = 'npc') {
   };
   const file = require.resolve('../../' + base + '/ui.cjs');
   delete require.cache[file];
-  const ui = require(file);
+  const ui = preparationInstance(require(file), document, window);
   ui.initPreparation(
     (text, error) => messages.push({ text, error }),
     async () => {},
@@ -3876,12 +3877,12 @@ test('a room return restores its source knowledge view after visiting a linked p
     },
   });
   let returned, current, source;
-  x.ui.setNoteRoomNavigation(async (id, valid, restore, origin) => {
+  x.ui.navigation.roomKey = async (id, valid, restore, origin) => {
     current = valid;
     returned = restore;
     source = origin;
     return true;
-  });
+  };
   await x.activate();
   await x.ui.openPreparedNote(x.ids.borin);
   await until(() => x.el('note-room-uses-list').querySelector('button'));
@@ -4114,10 +4115,10 @@ test('room navigation from a relationship target identifies the displayed note i
     },
   });
   let source;
-  x.ui.setNoteRoomNavigation(async (id, current, restore, origin) => {
+  x.ui.navigation.roomKey = async (id, current, restore, origin) => {
     source = origin;
     return true;
-  });
+  };
   [...x.el('note-relations').querySelectorAll('button')]
     .find((b) => b.textContent === 'Quelle: Ada')
     .click();
@@ -4208,4 +4209,78 @@ test('a retired draft read cannot unlock preparation while the next session is s
     releaseNew();
     await settle();
   }
+});
+
+test('two preparation instances own separate controls, reads and drafts without a workspace shell', async (t) => {
+  const x = await fixture(t);
+  const document = x.el('preparation').ownerDocument;
+  const ids = ['preparation', 'world-dialog', 'location-dialog', 'note-excerpt-dialog'];
+  const roots = ids.map((id) => x.el(id).cloneNode(true));
+  // These are the only mounted controls of the second editor, with deliberately
+  // identical IDs. A document-wide lookup would modify the first editor.
+  const host = document.createElement('section');
+  host.append(...roots);
+  document.body.append(host);
+  const at = (id) => host.querySelector('#' + id);
+  let release;
+  const api = {
+    ...x.window.campaign,
+    preparation: () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  };
+  const other = x.ui.createPreparation({
+    roots,
+    dialogHost: host,
+    api,
+    storage: x.window.localStorage,
+    navigation: { locationNotebook: async () => {}, roomKey: async () => false },
+    planning: {
+      initSession() {},
+      sessionContext: async () => {},
+      sessionVisitReadAlouds: () => null,
+      flushSession: async () => true,
+      clearSessionTimeline() {},
+      linkVisitNoteThread: async () => false,
+    },
+  });
+  const globalLookup = document.getElementById;
+  document.getElementById = () => {
+    throw Error('Workspace-wide lookup is forbidden for an independent instance');
+  };
+  try {
+    other.initPreparation(
+      () => {},
+      async () => {},
+    );
+  } finally {
+    document.getElementById = globalLookup;
+  }
+  const opening = other.activatePreparation(x.workspace);
+  await until(() => !!release);
+  await x.activate();
+  await x.ui.openPreparedNote(x.ids.borin);
+  x.el('note-gm').value = '  First instance draft\r\n';
+  x.el('note-gm').dispatchEvent(new x.window.Event('input'));
+  other.deactivate();
+  release({ ok: true, value: x.store.preparation(x.workspace.token) });
+  await opening;
+  assert.equal(at('note-title').value, '');
+  assert.equal(x.el('note-gm').value, '  First instance draft\r\n');
+  assert.equal(x.ui.editorSession.status.attached, true);
+  assert.equal(other.editorSession.status.attached, false);
+  api.preparation = async (...args) => ({ ok: true, value: x.store.preparation(...args) });
+  await other.activatePreparation(x.workspace);
+  await other.openPreparedNote(x.ids.ada);
+  assert.equal(at('note-title').value, 'Ada');
+  assert.equal(x.el('note-title').value, 'Borin');
+  assert.equal(await x.ui.flushPreparation(), true);
+  assert.equal(
+    x.store.preparation(x.workspace.token).notes.find((r) => r.note.id === x.ids.borin).note
+      .gmNotes,
+    '  First instance draft\r\n',
+  );
+  other.deactivate();
+  host.remove();
 });
