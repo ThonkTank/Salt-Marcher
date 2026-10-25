@@ -1,4 +1,4 @@
-import type {EditorSession} from './editor-session';
+import type { EditorSession } from './editor-session';
 
 export type EditorTransition = 'checkpoint' | 'navigation' | 'campaign' | 'close';
 export type EditorBoundary = boolean | 'complete';
@@ -17,16 +17,20 @@ export class EditorRegistry<Context, Id extends string> {
   private inputRevision = 0;
   private contextRevision = 0;
   constructor(private readonly entries: readonly EditorRegistration<Context, Id>[]) {
-    if (new Set(entries.map(e => e.id)).size !== entries.length) throw new Error('Duplicate editor registration');
+    if (new Set(entries.map((e) => e.id)).size !== entries.length)
+      throw new Error('Duplicate editor registration');
   }
   async activate(context: Context) {
     this.contextRevision++;
-    for (const entry of [...this.entries].sort((a,b) => (a.activate?.order ?? Infinity) - (b.activate?.order ?? Infinity))) {
+    for (const entry of [...this.entries].sort(
+      (a, b) => (a.activate?.order ?? Infinity) - (b.activate?.order ?? Infinity),
+    )) {
       await entry.activate?.run(context);
     }
   }
   async flush(reason: EditorTransition, only?: readonly Id[]): Promise<boolean> {
-    if (only?.some(id => !this.entries.some(entry => entry.id === id))) throw new Error('Unregistered editor');
+    if (only?.some((id) => !this.entries.some((entry) => entry.id === id)))
+      throw new Error('Unregistered editor');
     const context = this.contextRevision;
     for (;;) {
       const input = this.inputRevision;
@@ -45,7 +49,9 @@ export class EditorRegistry<Context, Id extends string> {
       if (input === this.inputRevision) return true;
     }
   }
-  changed() { this.inputRevision++; }
+  changed() {
+    this.inputRevision++;
+  }
   /** Silence native output while reading the new context. Keep the drained
    * source session attached until that read succeeds, so failed loads can retry. */
   suspend() {
@@ -58,5 +64,9 @@ export class EditorRegistry<Context, Id extends string> {
       entry.deactivate?.();
     }
   }
-  get status() { return this.entries.flatMap(entry => entry.session ? [{id:entry.id,...entry.session.status}] : []); }
+  get status() {
+    return this.entries.flatMap((entry) =>
+      entry.session ? [{ id: entry.id, ...entry.session.status }] : [],
+    );
+  }
 }

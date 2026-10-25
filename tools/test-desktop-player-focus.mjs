@@ -1,53 +1,442 @@
-import {currentProcessGroup} from './process-group.mjs';
-import {createRequire} from 'node:module';
-import {mkdtemp,readFile,writeFile,mkdir,stat} from 'node:fs/promises';
-import {spawn} from 'node:child_process';
-import {randomUUID} from 'node:crypto';
+import { currentProcessGroup } from './process-group.mjs';
+import { createRequire } from 'node:module';
+import { mkdtemp, readFile, writeFile, mkdir, stat } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-const source=process.cwd(),cue=process.argv.includes('--cue'),phase=(cue?'cue-':'')+'after',output=process.env.QA_EVIDENCE_DIR??path.join(source,'.build/player-focus-evidence');
-const group=await currentProcessGroup();await mkdir(output,{recursive:true});
-const require=createRequire(source+'/package.json'),{_electron}=require('playwright-core');require('esbuild').buildSync({entryPoints:['src/app/storage/store.ts'],outfile:'.build/desktop/player-focus-store.cjs',bundle:true,platform:'node',format:'cjs',external:['better-sqlite3']});const {CampaignStore}=require(source+'/.build/desktop/player-focus-store.cjs');
-const profile=await mkdtemp('/tmp/gm-player-focus-'),file=profile+'/workbench.sqlite',store=new CampaignStore(file,JSON.parse(await readFile(source+'/package.json','utf8')).version),campaign=store.create('Getrennte Gruppenfreigabe'),w=store.activate(campaign.id),command=action=>({commandId:randomUUID(),token:w.token,campaignId:campaign.id,action});
-const one=store.executeLive(command({kind:'create-character',profile:{name:'Ada'}})).character,two=store.executeLive(command({kind:'create-character',profile:{name:'Borin'}})).character;
-const scene=store.executeLive(command({kind:'initialize',expectedRosterRevision:2})).scene;
-store.executeLive(command({kind:'membership',characterId:one.id,expectedRevision:0,expectedRosterRevision:2,active:true,targetSceneId:scene.id,expectedFocusRevision:0}));
-store.executeLive(command({kind:'membership',characterId:two.id,expectedRevision:0,expectedRosterRevision:3,active:true,targetSceneId:scene.id,expectedFocusRevision:0}));
-const split=store.executeLive(command({kind:'move',sceneId:scene.id,expectedRosterRevision:4,expectedFocusRevision:0,expectedClockRevision:0,expectedSceneMembershipRevision:2,memberIds:[two.id],target:{kind:'new',title:'Nachhut',expectedContentRevision:0}})),secondary=split.session.createdScene.id;
-for(const [id,title,text] of [[scene.id,'Vorhut','Die Vorhut sieht das offene Tor.'],[secondary,'Nachhut','Die Nachhut entdeckt die geheime Falltür.']])store.executeLive(command({kind:'scene-content',sceneId:id,expectedRevision:0,title,readAloud:text,notes:'GM-Schlüssel im Brunnen',locationId:null}));
-const map=store.world(w.token).maps[0];
-for(const [sceneId,q]of [[scene.id,0],[secondary,10]])store.executeWorld(command({kind:'place-scene',sceneId,position:{mapId:map.id,q,r:0,locationId:null,dungeon:null},expectedSceneRevision:store.sceneWorld(w.token,sceneId).scene.revision,expectedPositionRevision:store.sceneWorld(w.token,sceneId).position.revision}));
-const sceneRows=store.db.prepare('SELECT * FROM live_scene ORDER BY id').all();store.playerWindowOpen(w.token,true);store.tutorial('skipped');store.close();
-const busPath=profile+'/qa-bus',proxy=spawn('xdg-dbus-proxy',[process.env.DBUS_SESSION_BUS_ADDRESS,busPath,'--filter','--talk=org.freedesktop.portal.Desktop','--talk=org.freedesktop.Notifications'],{stdio:'ignore'});for(let i=0;i<100;i++){if(await stat(busPath).then(()=>true).catch(()=>false))break;await new Promise(r=>setTimeout(r,20));}
-let app,pid,closed=false;const errors=[],launches=[],results={};
-async function launch(){console.log('phase: launch');closed=false;app=await _electron.launch({executablePath:source+'/node_modules/electron/dist/electron',args:['--num-raster-threads=2',source+'/.build/desktop/main.cjs','--data-dir',profile],env:{...process.env,DBUS_SESSION_BUS_ADDRESS:'unix:path='+busPath},timeout:20000});console.log('phase: driver ready');pid=app.process().pid;assert((await readFile(`/proc/${pid}/cmdline`,'utf8')).includes(profile));assert.equal((await readFile(`/proc/${pid}/cgroup`,'utf8')).trim().split('::')[1],group);launches.push({pid,cgroup:group});await app.firstWindow();let page;for(let i=0;i<100&&!page;i++){page=app.windows().find(p=>p.url()==='campaign://app/index.html');if(!page)await new Promise(r=>setTimeout(r,50));}assert(page,'Expected the GM window');await page.bringToFront();page.on('pageerror',e=>errors.push(e.stack));await page.waitForFunction(()=>document.body.dataset.tutorialReady==='true',null,{timeout:20000});if(await page.locator('#tutorial-dialog').isVisible()){await page.locator('#tutorial-skip').click({noWaitAfter:true});await page.locator('#tutorial-dialog').waitFor({state:'hidden'});}if(await page.locator('.campaign-card').filter({hasText:'Getrennte Gruppenfreigabe'}).isVisible())await page.locator('.campaign-card').filter({hasText:'Getrennte Gruppenfreigabe'}).getByRole('button',{name:/^(Fortsetzen|Öffnen)$/}).click();await page.waitForFunction(id=>document.querySelector('#campaigns').value===id&&!document.querySelector('header').inert&&!document.querySelector('main').inert,campaign.id,{timeout:20000});if(!await page.locator('#live-tab').isVisible())await page.locator('#atlas-navigation').click();await page.locator('#live-tab').click();if(await page.locator('#live-continue').isVisible())await page.locator('#live-continue').click();await page.locator('#scene-focus').waitFor({state:'visible'});return page;}
-async function close(){
- console.log('phase: close');assert.deepEqual(errors,[]);
- const exit=new Promise(r=>app.process().once('exit',(code,signal)=>r({code,signal})));let timer;
- const finish=async()=>{await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.getTitle()==='SaltMarcher').close());assert.deepEqual(await exit,{code:0,signal:null});await app.close();closed=true;};
- try{await Promise.race([finish(),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Normal application close was not confirmed within 15 seconds.')),15000);})]);}finally{clearTimeout(timer);}
+const source = process.cwd(),
+  cue = process.argv.includes('--cue'),
+  phase = (cue ? 'cue-' : '') + 'after',
+  output = process.env.QA_EVIDENCE_DIR ?? path.join(source, '.build/player-focus-evidence');
+const group = await currentProcessGroup();
+await mkdir(output, { recursive: true });
+const require = createRequire(source + '/package.json'),
+  { _electron } = require('playwright-core');
+require('esbuild').buildSync({
+  entryPoints: ['src/app/storage/store.ts'],
+  outfile: '.build/desktop/player-focus-store.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  external: ['better-sqlite3'],
+});
+const { CampaignStore } = require(source + '/.build/desktop/player-focus-store.cjs');
+const profile = await mkdtemp('/tmp/gm-player-focus-'),
+  file = profile + '/workbench.sqlite',
+  store = new CampaignStore(
+    file,
+    JSON.parse(await readFile(source + '/package.json', 'utf8')).version,
+  ),
+  campaign = store.create('Getrennte Gruppenfreigabe'),
+  w = store.activate(campaign.id),
+  command = (action) => ({
+    commandId: randomUUID(),
+    token: w.token,
+    campaignId: campaign.id,
+    action,
+  });
+const one = store.executeLive(
+    command({ kind: 'create-character', profile: { name: 'Ada' } }),
+  ).character,
+  two = store.executeLive(
+    command({ kind: 'create-character', profile: { name: 'Borin' } }),
+  ).character;
+const scene = store.executeLive(command({ kind: 'initialize', expectedRosterRevision: 2 })).scene;
+store.executeLive(
+  command({
+    kind: 'membership',
+    characterId: one.id,
+    expectedRevision: 0,
+    expectedRosterRevision: 2,
+    active: true,
+    targetSceneId: scene.id,
+    expectedFocusRevision: 0,
+  }),
+);
+store.executeLive(
+  command({
+    kind: 'membership',
+    characterId: two.id,
+    expectedRevision: 0,
+    expectedRosterRevision: 3,
+    active: true,
+    targetSceneId: scene.id,
+    expectedFocusRevision: 0,
+  }),
+);
+const split = store.executeLive(
+    command({
+      kind: 'move',
+      sceneId: scene.id,
+      expectedRosterRevision: 4,
+      expectedFocusRevision: 0,
+      expectedClockRevision: 0,
+      expectedSceneMembershipRevision: 2,
+      memberIds: [two.id],
+      target: { kind: 'new', title: 'Nachhut', expectedContentRevision: 0 },
+    }),
+  ),
+  secondary = split.session.createdScene.id;
+for (const [id, title, text] of [
+  [scene.id, 'Vorhut', 'Die Vorhut sieht das offene Tor.'],
+  [secondary, 'Nachhut', 'Die Nachhut entdeckt die geheime Falltür.'],
+])
+  store.executeLive(
+    command({
+      kind: 'scene-content',
+      sceneId: id,
+      expectedRevision: 0,
+      title,
+      readAloud: text,
+      notes: 'GM-Schlüssel im Brunnen',
+      locationId: null,
+    }),
+  );
+const map = store.world(w.token).maps[0];
+for (const [sceneId, q] of [
+  [scene.id, 0],
+  [secondary, 10],
+])
+  store.executeWorld(
+    command({
+      kind: 'place-scene',
+      sceneId,
+      position: { mapId: map.id, q, r: 0, locationId: null, dungeon: null },
+      expectedSceneRevision: store.sceneWorld(w.token, sceneId).scene.revision,
+      expectedPositionRevision: store.sceneWorld(w.token, sceneId).position.revision,
+    }),
+  );
+const sceneRows = store.db.prepare('SELECT * FROM live_scene ORDER BY id').all();
+store.playerWindowOpen(w.token, true);
+store.tutorial('skipped');
+store.close();
+const busPath = profile + '/qa-bus',
+  proxy = spawn(
+    'xdg-dbus-proxy',
+    [
+      process.env.DBUS_SESSION_BUS_ADDRESS,
+      busPath,
+      '--filter',
+      '--talk=org.freedesktop.portal.Desktop',
+      '--talk=org.freedesktop.Notifications',
+    ],
+    { stdio: 'ignore' },
+  );
+for (let i = 0; i < 100; i++) {
+  if (
+    await stat(busPath)
+      .then(() => true)
+      .catch(() => false)
+  )
+    break;
+  await new Promise((r) => setTimeout(r, 20));
 }
-try{
- let page=await launch(),player=app.windows().find(p=>p.url().includes('player-display.html'))??await app.waitForEvent('window',{predicate:p=>p.url().includes('player-display.html')});
- await app.evaluate(({ipcMain})=>{const original=ipcMain._invokeHandlers.get('player:execute');globalThis.__qaPlayerFocus={held:false};ipcMain.removeHandler('player:execute');ipcMain.handle('player:execute',async(event,...args)=>{const state=globalThis.__qaPlayerFocus;if(!state.held&&args[0].action.kind==='settings'){state.held=true;state.command=args[0];return new Promise(resolve=>{state.release=async()=>{state.response=await original(event,...args);resolve(state.response);return state.response;};});}return original(event,...args);});});
- console.log('phase: hold publication');if(cue)await page.locator('#running-player-follow').click({noWaitAfter:true});else{await page.locator('#player-open-controls').click();await page.locator('#player-dialog').waitFor({state:'visible'});await page.locator('#player-fullscreen').uncheck();await page.locator('#player-show-follow').click({noWaitAfter:true});}
- for(let i=0;i<100&&!await app.evaluate(()=>globalThis.__qaPlayerFocus.held);i++)await new Promise(r=>setTimeout(r,10));assert(await app.evaluate(()=>globalThis.__qaPlayerFocus.held));
- if(!cue)await page.locator('#player-close-controls').click();await page.locator('#scene-focus').selectOption(secondary);await page.waitForFunction(()=>document.querySelector('#running-title').value==='Nachhut');
- results.response=await app.evaluate(()=>globalThis.__qaPlayerFocus.release());await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-blank'));
- results.frame=await player.evaluate(()=>window.playerDisplay.frame());results.dom=await player.locator('#player-stage').textContent();results.command=await app.evaluate(()=>globalThis.__qaPlayerFocus.command);
- const frameCapture=await app.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.getTitle()==='Spieleranzeige');return(await w.webContents.capturePage()).toPNG().toString('base64');});await writeFile(path.join(output,'focus-'+phase+'.png'),Buffer.from(frameCapture,'base64'));assert.equal(results.response.ok,false);assert.doesNotMatch(results.dom,/geheime Falltür|GM-Schlüssel/);
- await close();
-  page=await launch();player=app.windows().find(p=>p.url().includes('player-display.html'));
-  await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-blank'));results.restartStayedBlank=true;
-  if(cue){await page.locator('#running-player-follow').click({noWaitAfter:true});await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-map'));results.directNewGroup=await player.evaluate(()=>window.playerDisplay.frame());assert.equal(results.directNewGroup.value.frame.mode,'map');assert.equal(results.directNewGroup.value.frame.map.position.q,10);await page.locator('#running-player-blank').click();await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-blank'));}
-  await page.locator('#player-open-controls').click();await page.locator('#player-dialog').waitFor({state:'visible'});results.target=await page.locator('#player-target').innerText();assert.match(results.target,/Nachhut.*Borin/);assert(!results.target.includes('Ada'));
-  const setup=page.locator('details').filter({has:page.locator('#player-title')});if(!await setup.evaluate(n=>n.open))await setup.locator('summary').click();await page.locator('#player-title').fill('  Nachhut ausdrücklich  ');await page.locator('#player-fullscreen').uncheck();
-  await app.evaluate(({ipcMain})=>{const original=ipcMain._invokeHandlers.get('player:execute');let fail=true;ipcMain.removeHandler('player:execute');ipcMain.handle('player:execute',(event,...args)=>{if(fail&&args[0].action.kind==='settings'){fail=false;return{ok:false,error:'QA: Freigabe momentan nicht verfügbar. Bitte erneut prüfen.'};}return original(event,...args);});});
-  await page.locator('#player-show-follow').click({noWaitAfter:true});await page.locator('#player-feedback:not([hidden])').waitFor();assert.equal(await page.locator('#player-title').inputValue(),'  Nachhut ausdrücklich  ');results.localError=await page.locator('#player-feedback').innerText();assert.equal(await player.locator('#player-stage').textContent(),'');
-  await page.locator('#player-refresh').click();await page.locator('#player-feedback').waitFor({state:'hidden'});assert.equal(await page.locator('#player-title').inputValue(),'  Nachhut ausdrücklich  ');await page.locator('#player-show-follow').click({noWaitAfter:true});await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-map'));await player.waitForFunction(()=>document.querySelector('.player-atlas')?.dataset.ready==='true');results.gpuReady=true;results.explicitNewGroup=await player.evaluate(()=>window.playerDisplay.frame());assert.equal(results.explicitNewGroup.value.frame.title,'  Nachhut ausdrücklich  ');assert.equal(results.explicitNewGroup.value.frame.mode,'map');assert.equal(results.explicitNewGroup.value.frame.map.position.q,10);assert.doesNotMatch(JSON.stringify(results.explicitNewGroup),/geheime Falltür|GM-Schlüssel/);
-  if(process.argv.includes('--handout')){const {PNG}=require('pngjs'),png=new PNG({width:80,height:50});for(let i=0;i<png.data.length;i+=4){png.data[i]=40;png.data[i+1]=110;png.data[i+2]=150;png.data[i+3]=255;}const filename=profile+'/GM_SECRET_VAMPIR.png';await writeFile(filename,PNG.sync.write(png));await app.evaluate(({dialog},filename)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[filename]});},filename);await page.locator('#player-close-controls').click();await page.locator('#running-player-handout').click();await player.waitForFunction(()=>document.querySelector('#player-stage img')?.naturalWidth>0);results.handout={frame:await player.evaluate(()=>window.playerDisplay.frame()),size:await player.locator('#player-stage img').evaluate(i=>({width:i.naturalWidth,height:i.naturalHeight}))};assert.equal(results.handout.frame.value.frame.mode,'image');assert.deepEqual(results.handout.size,{width:80,height:50});assert(!JSON.stringify(results.handout.frame).includes('GM_SECRET'));await page.locator('#running-player-blank').click();await player.waitForFunction(()=>document.querySelector('#player-stage').classList.contains('player-blank'));}
+let app,
+  pid,
+  closed = false;
+const errors = [],
+  launches = [],
+  results = {};
+async function launch() {
+  console.log('phase: launch');
+  closed = false;
+  app = await _electron.launch({
+    executablePath: source + '/node_modules/electron/dist/electron',
+    args: ['--num-raster-threads=2', source + '/.build/desktop/main.cjs', '--data-dir', profile],
+    env: { ...process.env, DBUS_SESSION_BUS_ADDRESS: 'unix:path=' + busPath },
+    timeout: 20000,
+  });
+  console.log('phase: driver ready');
+  pid = app.process().pid;
+  assert((await readFile(`/proc/${pid}/cmdline`, 'utf8')).includes(profile));
+  assert.equal((await readFile(`/proc/${pid}/cgroup`, 'utf8')).trim().split('::')[1], group);
+  launches.push({ pid, cgroup: group });
+  await app.firstWindow();
+  let page;
+  for (let i = 0; i < 100 && !page; i++) {
+    page = app.windows().find((p) => p.url() === 'campaign://app/index.html');
+    if (!page) await new Promise((r) => setTimeout(r, 50));
+  }
+  assert(page, 'Expected the GM window');
+  await page.bringToFront();
+  page.on('pageerror', (e) => errors.push(e.stack));
+  await page.waitForFunction(() => document.body.dataset.tutorialReady === 'true', null, {
+    timeout: 20000,
+  });
+  if (await page.locator('#tutorial-dialog').isVisible()) {
+    await page.locator('#tutorial-skip').click({ noWaitAfter: true });
+    await page.locator('#tutorial-dialog').waitFor({ state: 'hidden' });
+  }
+  if (
+    await page
+      .locator('.campaign-card')
+      .filter({ hasText: 'Getrennte Gruppenfreigabe' })
+      .isVisible()
+  )
+    await page
+      .locator('.campaign-card')
+      .filter({ hasText: 'Getrennte Gruppenfreigabe' })
+      .getByRole('button', { name: /^(Fortsetzen|Öffnen)$/ })
+      .click();
+  await page.waitForFunction(
+    (id) =>
+      document.querySelector('#campaigns').value === id &&
+      !document.querySelector('header').inert &&
+      !document.querySelector('main').inert,
+    campaign.id,
+    { timeout: 20000 },
+  );
+  if (!(await page.locator('#live-tab').isVisible()))
+    await page.locator('#atlas-navigation').click();
+  await page.locator('#live-tab').click();
+  if (await page.locator('#live-continue').isVisible())
+    await page.locator('#live-continue').click();
+  await page.locator('#scene-focus').waitFor({ state: 'visible' });
+  return page;
+}
+async function close() {
+  console.log('phase: close');
+  assert.deepEqual(errors, []);
+  const exit = new Promise((r) =>
+    app.process().once('exit', (code, signal) => r({ code, signal })),
+  );
+  let timer;
+  const finish = async () => {
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()
+        .find((w) => w.getTitle() === 'SaltMarcher')
+        .close(),
+    );
+    assert.deepEqual(await exit, { code: 0, signal: null });
+    await app.close();
+    closed = true;
+  };
+  try {
+    await Promise.race([
+      finish(),
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('Normal application close was not confirmed within 15 seconds.')),
+          15000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+try {
+  let page = await launch(),
+    player =
+      app.windows().find((p) => p.url().includes('player-display.html')) ??
+      (await app.waitForEvent('window', {
+        predicate: (p) => p.url().includes('player-display.html'),
+      }));
+  await app.evaluate(({ ipcMain }) => {
+    const original = ipcMain._invokeHandlers.get('player:execute');
+    globalThis.__qaPlayerFocus = { held: false };
+    ipcMain.removeHandler('player:execute');
+    ipcMain.handle('player:execute', async (event, ...args) => {
+      const state = globalThis.__qaPlayerFocus;
+      if (!state.held && args[0].action.kind === 'settings') {
+        state.held = true;
+        state.command = args[0];
+        return new Promise((resolve) => {
+          state.release = async () => {
+            state.response = await original(event, ...args);
+            resolve(state.response);
+            return state.response;
+          };
+        });
+      }
+      return original(event, ...args);
+    });
+  });
+  console.log('phase: hold publication');
+  if (cue) await page.locator('#running-player-follow').click({ noWaitAfter: true });
+  else {
+    await page.locator('#player-open-controls').click();
+    await page.locator('#player-dialog').waitFor({ state: 'visible' });
+    await page.locator('#player-fullscreen').uncheck();
+    await page.locator('#player-show-follow').click({ noWaitAfter: true });
+  }
+  for (let i = 0; i < 100 && !(await app.evaluate(() => globalThis.__qaPlayerFocus.held)); i++)
+    await new Promise((r) => setTimeout(r, 10));
+  assert(await app.evaluate(() => globalThis.__qaPlayerFocus.held));
+  if (!cue) await page.locator('#player-close-controls').click();
+  await page.locator('#scene-focus').selectOption(secondary);
+  await page.waitForFunction(() => document.querySelector('#running-title').value === 'Nachhut');
+  results.response = await app.evaluate(() => globalThis.__qaPlayerFocus.release());
+  await player.waitForFunction(() =>
+    document.querySelector('#player-stage').classList.contains('player-blank'),
+  );
+  results.frame = await player.evaluate(() => window.playerDisplay.frame());
+  results.dom = await player.locator('#player-stage').textContent();
+  results.command = await app.evaluate(() => globalThis.__qaPlayerFocus.command);
+  const frameCapture = await app.evaluate(async ({ BrowserWindow }) => {
+    const w = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'Spieleranzeige');
+    return (await w.webContents.capturePage()).toPNG().toString('base64');
+  });
+  await writeFile(
+    path.join(output, 'focus-' + phase + '.png'),
+    Buffer.from(frameCapture, 'base64'),
+  );
+  assert.equal(results.response.ok, false);
+  assert.doesNotMatch(results.dom, /geheime Falltür|GM-Schlüssel/);
   await close();
- const fresh=new CampaignStore(file);try{const next=fresh.activate(campaign.id),v=fresh.playerView(next.token);results.persisted={blank:v.settings.blank,boundSceneId:v.settings.boundSceneId,focusId:v.focusId};assert.equal(v.focusId,secondary);assert.equal(v.settings.blank,process.argv.includes('--handout'));assert.deepEqual(fresh.db.prepare('SELECT * FROM live_scene ORDER BY id').all(),sceneRows);results.scenesUnchanged=true;}finally{fresh.close();}
- await writeFile(path.join(output,'focus-'+phase+'.json'),JSON.stringify({results,launches,normalClose:true},null,2));console.log(JSON.stringify({normalClose:true,launchCount:launches.length,restartStayedBlank:results.restartStayedBlank,reviewedGroup:results.target,confirmedMode:results.explicitNewGroup?.value?.frame.mode,handoutSize:results.handout?.size??null}));
-}catch(e){if(app&&!closed){await writeFile(path.join(output,'failure.json'),JSON.stringify({error:e.stack,results,errors,pid},null,2));try{const page=app.windows().find(p=>p.url()==='campaign://app/index.html');results.failureView=await page?.evaluate(()=>({status:document.getElementById('status')?.textContent,headerInert:document.querySelector('header')?.inert,mainInert:document.querySelector('main')?.inert,campaign:document.getElementById('campaigns')?.value,dialogs:[...document.querySelectorAll('dialog[open]')].map(d=>d.id)}));await writeFile(path.join(output,'failure.json'),JSON.stringify({error:e.stack,results,errors,pid},null,2));}catch{}}throw e;
-}finally{if(app&&!closed){await Promise.race([app.close().catch(()=>{}),new Promise(r=>setTimeout(r,3000))]);if((await readFile(`/proc/${pid}/cmdline`,'utf8').catch(()=>'' )).includes(profile))process.kill(pid,'SIGKILL');}proxy.kill();}
+  page = await launch();
+  player = app.windows().find((p) => p.url().includes('player-display.html'));
+  await player.waitForFunction(() =>
+    document.querySelector('#player-stage').classList.contains('player-blank'),
+  );
+  results.restartStayedBlank = true;
+  if (cue) {
+    await page.locator('#running-player-follow').click({ noWaitAfter: true });
+    await player.waitForFunction(() =>
+      document.querySelector('#player-stage').classList.contains('player-map'),
+    );
+    results.directNewGroup = await player.evaluate(() => window.playerDisplay.frame());
+    assert.equal(results.directNewGroup.value.frame.mode, 'map');
+    assert.equal(results.directNewGroup.value.frame.map.position.q, 10);
+    await page.locator('#running-player-blank').click();
+    await player.waitForFunction(() =>
+      document.querySelector('#player-stage').classList.contains('player-blank'),
+    );
+  }
+  await page.locator('#player-open-controls').click();
+  await page.locator('#player-dialog').waitFor({ state: 'visible' });
+  results.target = await page.locator('#player-target').innerText();
+  assert.match(results.target, /Nachhut.*Borin/);
+  assert(!results.target.includes('Ada'));
+  const setup = page.locator('details').filter({ has: page.locator('#player-title') });
+  if (!(await setup.evaluate((n) => n.open))) await setup.locator('summary').click();
+  await page.locator('#player-title').fill('  Nachhut ausdrücklich  ');
+  await page.locator('#player-fullscreen').uncheck();
+  await app.evaluate(({ ipcMain }) => {
+    const original = ipcMain._invokeHandlers.get('player:execute');
+    let fail = true;
+    ipcMain.removeHandler('player:execute');
+    ipcMain.handle('player:execute', (event, ...args) => {
+      if (fail && args[0].action.kind === 'settings') {
+        fail = false;
+        return { ok: false, error: 'QA: Freigabe momentan nicht verfügbar. Bitte erneut prüfen.' };
+      }
+      return original(event, ...args);
+    });
+  });
+  await page.locator('#player-show-follow').click({ noWaitAfter: true });
+  await page.locator('#player-feedback:not([hidden])').waitFor();
+  assert.equal(await page.locator('#player-title').inputValue(), '  Nachhut ausdrücklich  ');
+  results.localError = await page.locator('#player-feedback').innerText();
+  assert.equal(await player.locator('#player-stage').textContent(), '');
+  await page.locator('#player-refresh').click();
+  await page.locator('#player-feedback').waitFor({ state: 'hidden' });
+  assert.equal(await page.locator('#player-title').inputValue(), '  Nachhut ausdrücklich  ');
+  await page.locator('#player-show-follow').click({ noWaitAfter: true });
+  await player.waitForFunction(() =>
+    document.querySelector('#player-stage').classList.contains('player-map'),
+  );
+  await player.waitForFunction(
+    () => document.querySelector('.player-atlas')?.dataset.ready === 'true',
+  );
+  results.gpuReady = true;
+  results.explicitNewGroup = await player.evaluate(() => window.playerDisplay.frame());
+  assert.equal(results.explicitNewGroup.value.frame.title, '  Nachhut ausdrücklich  ');
+  assert.equal(results.explicitNewGroup.value.frame.mode, 'map');
+  assert.equal(results.explicitNewGroup.value.frame.map.position.q, 10);
+  assert.doesNotMatch(JSON.stringify(results.explicitNewGroup), /geheime Falltür|GM-Schlüssel/);
+  if (process.argv.includes('--handout')) {
+    const { PNG } = require('pngjs'),
+      png = new PNG({ width: 80, height: 50 });
+    for (let i = 0; i < png.data.length; i += 4) {
+      png.data[i] = 40;
+      png.data[i + 1] = 110;
+      png.data[i + 2] = 150;
+      png.data[i + 3] = 255;
+    }
+    const filename = profile + '/GM_SECRET_VAMPIR.png';
+    await writeFile(filename, PNG.sync.write(png));
+    await app.evaluate(({ dialog }, filename) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [filename] });
+    }, filename);
+    await page.locator('#player-close-controls').click();
+    await page.locator('#running-player-handout').click();
+    await player.waitForFunction(
+      () => document.querySelector('#player-stage img')?.naturalWidth > 0,
+    );
+    results.handout = {
+      frame: await player.evaluate(() => window.playerDisplay.frame()),
+      size: await player
+        .locator('#player-stage img')
+        .evaluate((i) => ({ width: i.naturalWidth, height: i.naturalHeight })),
+    };
+    assert.equal(results.handout.frame.value.frame.mode, 'image');
+    assert.deepEqual(results.handout.size, { width: 80, height: 50 });
+    assert(!JSON.stringify(results.handout.frame).includes('GM_SECRET'));
+    await page.locator('#running-player-blank').click();
+    await player.waitForFunction(() =>
+      document.querySelector('#player-stage').classList.contains('player-blank'),
+    );
+  }
+  await close();
+  const fresh = new CampaignStore(file);
+  try {
+    const next = fresh.activate(campaign.id),
+      v = fresh.playerView(next.token);
+    results.persisted = {
+      blank: v.settings.blank,
+      boundSceneId: v.settings.boundSceneId,
+      focusId: v.focusId,
+    };
+    assert.equal(v.focusId, secondary);
+    assert.equal(v.settings.blank, process.argv.includes('--handout'));
+    assert.deepEqual(fresh.db.prepare('SELECT * FROM live_scene ORDER BY id').all(), sceneRows);
+    results.scenesUnchanged = true;
+  } finally {
+    fresh.close();
+  }
+  await writeFile(
+    path.join(output, 'focus-' + phase + '.json'),
+    JSON.stringify({ results, launches, normalClose: true }, null, 2),
+  );
+  console.log(
+    JSON.stringify({
+      normalClose: true,
+      launchCount: launches.length,
+      restartStayedBlank: results.restartStayedBlank,
+      reviewedGroup: results.target,
+      confirmedMode: results.explicitNewGroup?.value?.frame.mode,
+      handoutSize: results.handout?.size ?? null,
+    }),
+  );
+} catch (e) {
+  if (app && !closed) {
+    await writeFile(
+      path.join(output, 'failure.json'),
+      JSON.stringify({ error: e.stack, results, errors, pid }, null, 2),
+    );
+    try {
+      const page = app.windows().find((p) => p.url() === 'campaign://app/index.html');
+      results.failureView = await page?.evaluate(() => ({
+        status: document.getElementById('status')?.textContent,
+        headerInert: document.querySelector('header')?.inert,
+        mainInert: document.querySelector('main')?.inert,
+        campaign: document.getElementById('campaigns')?.value,
+        dialogs: [...document.querySelectorAll('dialog[open]')].map((d) => d.id),
+      }));
+      await writeFile(
+        path.join(output, 'failure.json'),
+        JSON.stringify({ error: e.stack, results, errors, pid }, null, 2),
+      );
+    } catch {}
+  }
+  throw e;
+} finally {
+  if (app && !closed) {
+    await Promise.race([app.close().catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+    if ((await readFile(`/proc/${pid}/cmdline`, 'utf8').catch(() => '')).includes(profile))
+      process.kill(pid, 'SIGKILL');
+  }
+  proxy.kill();
+}

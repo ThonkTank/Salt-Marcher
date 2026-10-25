@@ -1,8 +1,8 @@
-import type { ItemInput, ProgressGuard } from "./progression";
+import type { ItemInput, ProgressGuard } from './progression';
 export interface NarrativeState {
   noteId: string;
   revision: number;
-  status: "open" | "closed";
+  status: 'open' | 'closed';
   locationId?: string | null;
   contributors: string[];
   poolXp: number;
@@ -27,22 +27,22 @@ export interface NarrativeDraft {
   noteId: string;
   writeId: string;
   revision: number;
-  status: "open" | "closed";
+  status: 'open' | 'closed';
   locationId: string | null;
   contributors: string[];
   poolXp: string;
-  items: (Omit<ItemInput, "quantity"> & { quantity: string })[];
+  items: (Omit<ItemInput, 'quantity'> & { quantity: string })[];
 }
 export type NarrativeAction =
   | {
-      kind: "narrative-state";
+      kind: 'narrative-state';
       state: NarrativeState;
       expectedRevision: number;
       expectedNoteRevision: number;
       draftWriteId?: string;
     }
   | {
-      kind: "narrative-award";
+      kind: 'narrative-award';
       noteId: string;
       expectedRevision: number;
       expectedNoteRevision: number;
@@ -52,7 +52,7 @@ export type NarrativeAction =
       recipients: ProgressGuard[];
       items: ItemInput[];
       outcome: string;
-      finishDraftWriteId?:string;
+      finishDraftWriteId?: string;
       draftWriteId?: string;
     };
 export interface NarrativeView {

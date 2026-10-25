@@ -1,7 +1,7 @@
-import * as THREE from "three";
-import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
-import type { AtlasPaint } from "./atlas-paint";
-import type { Point } from "./contracts";
+import * as THREE from 'three';
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
+import type { AtlasPaint } from './atlas-paint';
+import type { Point } from './contracts';
 
 /** Numeric Atlas primitives stay numeric. Only authored SVG symbol literals need parsing. */
 export function atlasSpatialPaths(node: AtlasPaint): {
@@ -11,8 +11,7 @@ export function atlasSpatialPaths(node: AtlasPaint): {
   const g = node.geometry,
     shapes: THREE.Shape[] = [],
     lines: THREE.Vector2[][] = [];
-  const vectors = (points: Point[]) =>
-    points.map((p) => new THREE.Vector2(p.x, p.y));
+  const vectors = (points: Point[]) => points.map((p) => new THREE.Vector2(p.x, p.y));
   const ring = (points: Point[], closed = true) => {
     const path = vectors(points);
     if (path.length < 2) return;
@@ -23,7 +22,7 @@ export function atlasSpatialPaths(node: AtlasPaint): {
   const x = g.x ?? 0,
     y = g.y ?? 0;
   switch (node.kind) {
-    case "polygons":
+    case 'polygons':
       for (const polygon of g.polygons ?? []) {
         const start = shapes.length;
         ring(polygon.outer);
@@ -38,11 +37,11 @@ export function atlasSpatialPaths(node: AtlasPaint): {
         }
       }
       break;
-    case "polygon":
-    case "polyline":
-      ring(g.points ?? [], node.kind === "polygon");
+    case 'polygon':
+    case 'polyline':
+      ring(g.points ?? [], node.kind === 'polygon');
       break;
-    case "line":
+    case 'line':
       ring(
         [
           { x, y },
@@ -51,7 +50,7 @@ export function atlasSpatialPaths(node: AtlasPaint): {
         false,
       );
       break;
-    case "rect": {
+    case 'rect': {
       const w = g.width ?? 0,
         h = g.height ?? 0,
         r = Math.min(Math.abs(w) / 2, Math.abs(h) / 2, g.radiusX ?? 0);
@@ -78,16 +77,10 @@ export function atlasSpatialPaths(node: AtlasPaint): {
       }
       break;
     }
-    case "circle":
-    case "ellipse": {
-      const rx = Math.max(
-          0,
-          node.kind === "circle" ? (g.radius ?? 0) : (g.radiusX ?? 0),
-        ),
-        ry = Math.max(
-          0,
-          node.kind === "circle" ? (g.radius ?? 0) : (g.radiusY ?? 0),
-        );
+    case 'circle':
+    case 'ellipse': {
+      const rx = Math.max(0, node.kind === 'circle' ? (g.radius ?? 0) : (g.radiusX ?? 0)),
+        ry = Math.max(0, node.kind === 'circle' ? (g.radius ?? 0) : (g.radiusY ?? 0));
       ring(
         Array.from({ length: 48 }, (_, i) => ({
           x: x + rx * Math.cos((i * Math.PI) / 24),
@@ -96,14 +89,14 @@ export function atlasSpatialPaths(node: AtlasPaint): {
       );
       break;
     }
-    case "path": {
+    case 'path': {
       // Escape the literal as data; never interpret embedded markup or URLs.
-      const literal = (g.path ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/</g, "&lt;");
+      const literal = (g.path ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
       for (const path of new SVGLoader().parse(
-        `<svg xmlns="http://www.w3.org/2000/svg"><path d="${literal}" fill-rule="${node.style.fillRule ?? "nonzero"}"/></svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg"><path d="${literal}" fill-rule="${node.style.fillRule ?? 'nonzero'}"/></svg>`,
       ).paths) {
         shapes.push(...SVGLoader.createShapes(path));
         for (const sub of path.subPaths) lines.push(sub.getPoints(16));
@@ -114,24 +107,41 @@ export function atlasSpatialPaths(node: AtlasPaint): {
   return { shapes, lines };
 }
 
-type StrokeWindow=(a:THREE.Vector2,b:THREE.Vector2)=>[number,number]|undefined;
+type StrokeWindow = (a: THREE.Vector2, b: THREE.Vector2) => [number, number] | undefined;
 /** Clip before expanding a world-length line into screen-sized dashes. Keep
  * original travelled distances, so zoom/crop does not restart the dash phase. */
-function clippedStrokePaths(points:THREE.Vector2[],window:StrokeWindow){
-  const paths:{points:THREE.Vector2[];distance:number}[]=[];
-  let part:THREE.Vector2[]=[],distance=0,start=0;
-  const flush=()=>{if(part.length>1)paths.push({points:part,distance:start});part=[];};
-  for(let i=1;i<points.length;i++){
-    const a=points[i-1]!,b=points[i]!,length=a.distanceTo(b);if(!length)continue;
-    const range=window(a,b);
-    if(!range){flush();distance+=length;continue;}
-    const [lo,hi]=range;
-    if(lo>0)flush();
-    if(!part.length){start=distance+lo*length;part.push(a.clone().lerp(b,lo));}
-    part.push(a.clone().lerp(b,hi));
-    if(hi<1)flush();distance+=length;
+function clippedStrokePaths(points: THREE.Vector2[], window: StrokeWindow) {
+  const paths: { points: THREE.Vector2[]; distance: number }[] = [];
+  let part: THREE.Vector2[] = [],
+    distance = 0,
+    start = 0;
+  const flush = () => {
+    if (part.length > 1) paths.push({ points: part, distance: start });
+    part = [];
+  };
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1]!,
+      b = points[i]!,
+      length = a.distanceTo(b);
+    if (!length) continue;
+    const range = window(a, b);
+    if (!range) {
+      flush();
+      distance += length;
+      continue;
+    }
+    const [lo, hi] = range;
+    if (lo > 0) flush();
+    if (!part.length) {
+      start = distance + lo * length;
+      part.push(a.clone().lerp(b, lo));
+    }
+    part.push(a.clone().lerp(b, hi));
+    if (hi < 1) flush();
+    distance += length;
   }
-  flush();return paths;
+  flush();
+  return paths;
 }
 
 /** Split dashes in local coordinates, preserving phase across every segment. */
@@ -139,9 +149,12 @@ export function atlasStrokeParts(
   points: THREE.Vector2[],
   dash: number[] = [],
   offset = 0,
-  window?:StrokeWindow,
-):THREE.Vector2[][] {
-  if(window)return clippedStrokePaths(points,window).flatMap(path=>atlasStrokeParts(path.points,dash,offset+path.distance));
+  window?: StrokeWindow,
+): THREE.Vector2[][] {
+  if (window)
+    return clippedStrokePaths(points, window).flatMap((path) =>
+      atlasStrokeParts(path.points, dash, offset + path.distance),
+    );
   let pattern = dash.filter((n) => Number.isFinite(n) && n >= 0);
   if (pattern.length % 2) pattern = [...pattern, ...pattern];
   const period = pattern.reduce((a, b) => a + b, 0);

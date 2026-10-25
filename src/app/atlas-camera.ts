@@ -1,5 +1,5 @@
-import type { Point } from "./contracts";
-import type { CanvasBox } from "./passive-map-canvas";
+import type { Point } from './contracts';
+import type { CanvasBox } from './passive-map-canvas';
 
 /** World metres: x east, y south, z up. Frame is the footprint at zero tilt.
  * CPU projection, author clipping and GPU adapters share this contract. */
@@ -9,7 +9,7 @@ export interface AtlasCameraPose {
   tilt: number;
   rotation: number;
   exaggeration: number;
-  projection?: "perspective";
+  projection?: 'perspective';
 }
 export const ATLAS_CAMERA_FOV = 36.86989764584402;
 const halfFovTan = Math.tan((ATLAS_CAMERA_FOV * Math.PI) / 360);
@@ -44,9 +44,8 @@ export function atlasProject(pose: AtlasCameraPose, p: Point, heightM: number) {
     dz = (heightM - pose.focusM) * pose.exaggeration;
   const horizontal = dx * b.cos - dy * b.sin,
     down = (dx * b.sin + dy * b.cos) * b.tiltCos - dz * b.tiltSin;
-  const depth =
-    b.distance - (dx * b.sin + dy * b.cos) * b.tiltSin - dz * b.tiltCos;
-  const scale = pose.projection === "perspective" ? depth / b.distance : 1;
+  const depth = b.distance - (dx * b.sin + dy * b.cos) * b.tiltSin - dz * b.tiltCos;
+  const scale = pose.projection === 'perspective' ? depth / b.distance : 1;
   return {
     x: 0.5 + horizontal / (pose.frame.width * scale),
     y: 0.5 + down / (pose.frame.height * scale),
@@ -70,19 +69,11 @@ export function atlasPlanePoint(
     y: -b.sin * sx + b.cos * b.tiltCos * sy,
     z: -b.tiltSin * sy,
   };
-  if (pose.projection !== "perspective") {
+  if (pose.projection !== 'perspective') {
     const advance = (z - plane.z) / b.tiltCos;
     return {
-      x:
-        pose.frame.x +
-        pose.frame.width / 2 +
-        plane.x +
-        b.sin * b.tiltSin * advance,
-      y:
-        pose.frame.y +
-        pose.frame.height / 2 +
-        plane.y +
-        b.cos * b.tiltSin * advance,
+      x: pose.frame.x + pose.frame.width / 2 + plane.x + b.sin * b.tiltSin * advance,
+      y: pose.frame.y + pose.frame.height / 2 + plane.y + b.cos * b.tiltSin * advance,
     };
   }
   const dz = plane.z - eye.z;

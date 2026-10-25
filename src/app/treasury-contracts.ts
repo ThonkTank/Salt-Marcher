@@ -1,6 +1,6 @@
-import type { Result } from "./contracts";
-import type { ItemInput } from "./progression";
-export type TreasuryRow = Omit<ItemInput, "quantity"> & {
+import type { Result } from './contracts';
+import type { ItemInput } from './progression';
+export type TreasuryRow = Omit<ItemInput, 'quantity'> & {
   quantity: string;
   lotId?: string | null;
 };
@@ -22,13 +22,24 @@ export interface TreasuryDraft {
   reason: string;
   items: TreasuryRow[];
 }
-export type TreasureAnchor={kind:'unplaced'}|{kind:'scene'|'location';id:string};
-export interface TreasureQuery {search:string;anchor:'all'|'inbox'|'scene'|'location';anchorId?:string;remainingOnly?:boolean}
+export type TreasureAnchor = { kind: 'unplaced' } | { kind: 'scene' | 'location'; id: string };
+export interface TreasureQuery {
+  search: string;
+  anchor: 'all' | 'inbox' | 'scene' | 'location';
+  anchorId?: string;
+  remainingOnly?: boolean;
+}
 export type TreasuryAction =
-  |{kind:'treasure-anchor';treasureId:string;expectedRevision:number;anchor:TreasureAnchor;reason:string}
-  | { kind: "treasure-create"; title: string; locationId: string | null }
   | {
-      kind: "treasure-edit";
+      kind: 'treasure-anchor';
+      treasureId: string;
+      expectedRevision: number;
+      anchor: TreasureAnchor;
+      reason: string;
+    }
+  | { kind: 'treasure-create'; title: string; locationId: string | null }
+  | {
+      kind: 'treasure-edit';
       treasureId: string;
       expectedRevision: number;
       title: string;
@@ -38,7 +49,7 @@ export type TreasuryAction =
       draftWriteId?: string;
     }
   | {
-      kind: "treasure-move";
+      kind: 'treasure-move';
       treasureId: string;
       expectedRevision: number;
       itemId: string;
@@ -49,20 +60,13 @@ export type TreasuryAction =
       reason: string;
     };
 export interface TreasuryAPI {
-  treasuryDraft(
-    token: string,
-    id: string,
-  ): Promise<Result<TreasuryDraft | null>>;
+  treasuryDraft(token: string, id: string): Promise<Result<TreasuryDraft | null>>;
   keepTreasuryDraft(
     token: string,
     draft: TreasuryDraft,
     expected: string | null,
   ): Promise<Result<void>>;
-  discardTreasuryDraft(
-    token: string,
-    id: string,
-    writeId: string,
-  ): Promise<Result<void>>;
+  discardTreasuryDraft(token: string, id: string, writeId: string): Promise<Result<void>>;
   treasureHistory(
     token: string,
     id: string,

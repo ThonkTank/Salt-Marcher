@@ -1,35 +1,305 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';import {createRequire} from 'node:module';import {buildSync} from 'esbuild';import {parseHTML} from './helpers/dom.mjs';
-buildSync({stdin:{contents:"export * from './src/app/chase-ui';export {initCommitControls,updateCommitControls} from './src/app/commit-confirmation';",resolveDir:process.cwd(),sourcefile:'chase-authority-entry.ts'},outfile:'.build/chase-authority-ui.cjs',bundle:true,platform:'node',format:'cjs'});
-const require=createRequire(import.meta.url),tick=()=>new Promise(r=>setImmediate(r));
-async function until(fn){const deadline=performance.now()+5000;while(!fn()&&performance.now()<deadline)await new Promise(resolve=>setTimeout(resolve,5));assert.ok(fn(),'expected chase UI state');}
-function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return{promise,resolve,reject};}
-function view(id,sceneId,revision=1){return{chase:{id,revision,sceneId,title:'Chase '+id,status:'running',round:0,goal:'Ziel '+id,complication:'',outcome:'',participants:[{id:'person-'+id,name:'Figur '+id,side:'pursuer',distance:0,speed:9,exhaustion:0,notes:''}]},recent:[]};}
-function setup(t){const {window,document}=parseHTML(readFileSync('src/app/index.html','utf8')),old={window:globalThis.window,document:globalThis.document},requests=[],commands=[],messages=[];Object.assign(globalThis,{window,document});const storage=new Map();window.localStorage={getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key)};window.campaign={keepChaseDraft:async()=>({ok:true,value:undefined}),discardChaseDraft:async()=>({ok:true,value:undefined}),chase:(token,sceneId,id)=>{const d=deferred();requests.push({...d,token,sceneId,id});return d.promise;},executeChase:c=>{const d=deferred();commands.push({...d,command:c});return d.promise;}};const filename=require.resolve('../.build/chase-authority-ui.cjs');delete require.cache[filename];const ui=require(filename);ui.initChase((text,error)=>messages.push({text,error}));const w={token:'same-token',campaign:{id:'campaign-1'}};let active=w;ui.initCommitControls(()=>active,(text,error)=>messages.push({text,error}));const context=async(sceneId,workspace=w,characters=[])=>{active=workspace;ui.chaseContext(workspace,{id:sceneId},characters);await tick();};t.after(()=>Object.assign(globalThis,old));return{window,document,requests,commands,messages,ui,context,w,get:id=>document.getElementById(id)};}
-test('late scene A read cannot replace scene B or route B round edits to A',async t=>{const x=setup(t);await x.context('scene-a');await x.context('scene-b');x.requests[1].resolve({ok:true,value:view('B','scene-b')});await until(()=>x.get('chase-status').textContent.includes('Chase B'));x.requests[0].resolve({ok:true,value:view('A','scene-a')});await tick();x.get('chase-round').click();await until(()=>x.commands.length>0);assert.equal(x.commands[0].command.chaseId,'B');assert.equal(x.commands[0].command.action.changes[0].participantId,'person-B');x.commands[0].resolve({ok:true,value:view('B','scene-b',2)});await tick();});
-test('late A command response cannot draw or announce success in B',async t=>{const x=setup(t);await x.context('scene-a');x.requests[0].resolve({ok:true,value:view('A','scene-a')});await until(()=>x.get('chase-status').textContent.includes('Chase A'));x.get('chase-round').click();await until(()=>x.commands.length>0);assert.equal(x.commands[0].command.chaseId,'A');await x.context('scene-b');x.requests[1].resolve({ok:true,value:view('B','scene-b')});await until(()=>x.get('chase-status').textContent.includes('Chase B'));x.commands[0].resolve({ok:true,value:view('A','scene-a',2)});await tick();assert.ok(x.get('chase-status').textContent.includes('Chase B'));assert.ok(!x.messages.some(m=>m.text==='Verfolgung gespeichert.'));});
-test('pending chase reads block another refresh and writes until the current view is ready',async t=>{const x=setup(t);await x.context('scene-a');assert.equal(x.get('chase-refresh').disabled,true);assert.equal(x.requests.length,1);x.get('chase-round').click();assert.equal(x.commands.length,0);x.requests[0].resolve({ok:true,value:view('A','scene-a')});await until(()=>x.get('chase-status').textContent.includes('Chase A'));x.get('chase-refresh').click();await tick();assert.equal(x.get('chase-round').disabled,true);x.requests[1].resolve({ok:true,value:view('A','scene-a',2)});await until(()=>!x.get('chase-round').disabled);x.get('chase-round').click();await until(()=>x.commands.length>0);assert.equal(x.commands[0].command.expectedRevision,2);x.commands[0].resolve({ok:true,value:view('A','scene-a',3)});await tick();});
-test('late previous-campaign errors cannot become errors in the new campaign',async t=>{const x=setup(t);await x.context('scene-a');await x.context('scene-b',{token:'new-token',campaign:{id:'campaign-2'}});x.requests[1].resolve({ok:true,value:view('B','scene-b')});await until(()=>x.get('chase-status').textContent.includes('Chase B'));x.requests[0].resolve({ok:false,error:'Old campaign error'});await tick();assert.ok(!x.messages.some(m=>m.text.includes('Old campaign error')));});
-
-test('A to B to A still rejects the read from the first A activation',async t=>{const x=setup(t);await x.context('scene-a');await x.context('scene-b');await x.context('scene-a');x.requests[2].resolve({ok:true,value:view('A','scene-a',3)});await until(()=>x.get('chase-status').textContent.includes('Chase A'));x.requests[0].resolve({ok:true,value:view('A','scene-a',1)});x.requests[1].resolve({ok:true,value:view('B','scene-b')});await tick();x.get('chase-round').click();await until(()=>x.commands.length>0);assert.equal(x.commands[0].command.expectedRevision,3);x.commands[0].resolve({ok:true,value:view('A','scene-a',4)});await tick();});
-test('current IPC failure is reported and a later refresh remains usable',async t=>{const x=setup(t);await x.context('scene-a');x.requests[0].reject(new Error('Own IPC failure'));await until(()=>x.messages.some(m=>m.text==='Own IPC failure')&&!x.get('chase-refresh').disabled);x.get('chase-refresh').click();await until(()=>x.requests.length===2);x.requests[1].resolve({ok:true,value:view('A','scene-a')});await until(()=>x.get('chase-status').textContent.includes('Chase A'));});
-
-test('starting a new chase after finishing addresses a new mask rather than the finished one',async t=>{const x=setup(t);await x.context('scene-a');const finished=view('A','scene-a',3);finished.chase.status='finished';finished.chase.outcome='Escaped';x.requests[0].resolve({ok:true,value:finished});await until(()=>x.get('chase-status').textContent.includes('Chase A'));x.get('chase-title').value='Neue Verfolgung';x.get('chase-goal').value='Neues Ziel';x.get('chase-title').oninput();x.get('chase-start').click();await until(()=>x.commands.length>0);assert.equal(x.commands[0].command.chaseId,null);assert.equal(x.commands[0].command.expectedRevision,null);assert.equal(x.commands[0].command.sceneId,'scene-a');x.commands[0].resolve({ok:true,value:view('New','scene-a')});await tick();});
-test('a wrong-scene payload cannot become an editable chase view',async t=>{const x=setup(t);await x.context('scene-a');x.requests[0].resolve({ok:true,value:view('Wrong','other-scene')});await until(()=>x.messages.some(m=>m.text.includes('anderen Verfolgung')));assert.equal(x.get('chase-work').hidden,true);assert.deepEqual(x.commands,[]);});
-
-test('commit control updates preserve unconfirmed chase field input',async t=>{const x=setup(t);await x.context('scene-a');x.requests[0].resolve({ok:true,value:view('A','scene-a')});await until(()=>x.get('chase-status').textContent.includes('Chase A'));const input=x.document.querySelector('[data-distance]');input.value='13';x.ui.updateCommitControls();assert.equal(x.document.querySelector('[data-distance]').value,'13');});
-
-test('same-scene updates retain input and group import keeps character ownership',async t=>{
- const x=setup(t),characters=[{id:'hero-1',active:true,sceneId:'scene-a',membershipRevision:1,profile:{name:'Heldin',speedFeet:30}}];
- await x.context('scene-a',x.w,characters);x.requests[0].resolve({ok:true,value:view('A','scene-a')});await until(()=>x.get('chase-status').textContent.includes('Chase A'));
- x.document.querySelector('[data-distance]').value='13';await x.context('scene-a',x.w,characters);assert.equal(x.document.querySelector('[data-distance]').value,'13');
- Object.defineProperty(x.get('chase-side'),'value',{value:'quarry',writable:true});x.get('chase-party').click();await until(()=>x.commands.length===1);
- const c=x.commands[0].command;assert.equal(c.sceneId,'scene-a');assert.equal(c.chaseId,'A');assert.equal(c.action.kind,'participants');assert.equal(c.action.participants[0].characterId,'hero-1');assert.equal(c.action.participants[0].name,'Heldin');assert.equal(c.action.participants[0].speed,9);
- x.commands[0].resolve({ok:true,value:view('A','scene-a',2)});await tick();
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { buildSync } from 'esbuild';
+import { parseHTML } from './helpers/dom.mjs';
+buildSync({
+  stdin: {
+    contents:
+      "export * from './src/app/chase-ui';export {initCommitControls,updateCommitControls} from './src/app/commit-confirmation';",
+    resolveDir: process.cwd(),
+    sourcefile: 'chase-authority-entry.ts',
+  },
+  outfile: '.build/chase-authority-ui.cjs',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+});
+const require = createRequire(import.meta.url),
+  tick = () => new Promise((r) => setImmediate(r));
+async function until(fn) {
+  const deadline = performance.now() + 5000;
+  while (!fn() && performance.now() < deadline)
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.ok(fn(), 'expected chase UI state');
+}
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((a, b) => {
+    resolve = a;
+    reject = b;
+  });
+  return { promise, resolve, reject };
+}
+function view(id, sceneId, revision = 1) {
+  return {
+    chase: {
+      id,
+      revision,
+      sceneId,
+      title: 'Chase ' + id,
+      status: 'running',
+      round: 0,
+      goal: 'Ziel ' + id,
+      complication: '',
+      outcome: '',
+      participants: [
+        {
+          id: 'person-' + id,
+          name: 'Figur ' + id,
+          side: 'pursuer',
+          distance: 0,
+          speed: 9,
+          exhaustion: 0,
+          notes: '',
+        },
+      ],
+    },
+    recent: [],
+  };
+}
+function setup(t) {
+  const { window, document } = parseHTML(readFileSync('src/app/index.html', 'utf8')),
+    old = { window: globalThis.window, document: globalThis.document },
+    requests = [],
+    commands = [],
+    messages = [];
+  Object.assign(globalThis, { window, document });
+  const storage = new Map();
+  window.localStorage = {
+    getItem: (key) => storage.get(key) ?? null,
+    setItem: (key, value) => storage.set(key, String(value)),
+    removeItem: (key) => storage.delete(key),
+  };
+  window.campaign = {
+    keepChaseDraft: async () => ({ ok: true, value: undefined }),
+    discardChaseDraft: async () => ({ ok: true, value: undefined }),
+    chase: (token, sceneId, id) => {
+      const d = deferred();
+      requests.push({ ...d, token, sceneId, id });
+      return d.promise;
+    },
+    executeChase: (c) => {
+      const d = deferred();
+      commands.push({ ...d, command: c });
+      return d.promise;
+    },
+  };
+  const filename = require.resolve('../.build/chase-authority-ui.cjs');
+  delete require.cache[filename];
+  const ui = require(filename);
+  ui.initChase((text, error) => messages.push({ text, error }));
+  const w = { token: 'same-token', campaign: { id: 'campaign-1' } };
+  let active = w;
+  ui.initCommitControls(
+    () => active,
+    (text, error) => messages.push({ text, error }),
+  );
+  const context = async (sceneId, workspace = w, characters = []) => {
+    active = workspace;
+    ui.chaseContext(workspace, { id: sceneId }, characters);
+    await tick();
+  };
+  t.after(() => Object.assign(globalThis, old));
+  return {
+    window,
+    document,
+    requests,
+    commands,
+    messages,
+    ui,
+    context,
+    w,
+    get: (id) => document.getElementById(id),
+  };
+}
+test('late scene A read cannot replace scene B or route B round edits to A', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  await x.context('scene-b');
+  x.requests[1].resolve({ ok: true, value: view('B', 'scene-b') });
+  await until(() => x.get('chase-status').textContent.includes('Chase B'));
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a') });
+  await tick();
+  x.get('chase-round').click();
+  await until(() => x.commands.length > 0);
+  assert.equal(x.commands[0].command.chaseId, 'B');
+  assert.equal(x.commands[0].command.action.changes[0].participantId, 'person-B');
+  x.commands[0].resolve({ ok: true, value: view('B', 'scene-b', 2) });
+  await tick();
+});
+test('late A command response cannot draw or announce success in B', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a') });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  x.get('chase-round').click();
+  await until(() => x.commands.length > 0);
+  assert.equal(x.commands[0].command.chaseId, 'A');
+  await x.context('scene-b');
+  x.requests[1].resolve({ ok: true, value: view('B', 'scene-b') });
+  await until(() => x.get('chase-status').textContent.includes('Chase B'));
+  x.commands[0].resolve({ ok: true, value: view('A', 'scene-a', 2) });
+  await tick();
+  assert.ok(x.get('chase-status').textContent.includes('Chase B'));
+  assert.ok(!x.messages.some((m) => m.text === 'Verfolgung gespeichert.'));
+});
+test('pending chase reads block another refresh and writes until the current view is ready', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  assert.equal(x.get('chase-refresh').disabled, true);
+  assert.equal(x.requests.length, 1);
+  x.get('chase-round').click();
+  assert.equal(x.commands.length, 0);
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a') });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  x.get('chase-refresh').click();
+  await tick();
+  assert.equal(x.get('chase-round').disabled, true);
+  x.requests[1].resolve({ ok: true, value: view('A', 'scene-a', 2) });
+  await until(() => !x.get('chase-round').disabled);
+  x.get('chase-round').click();
+  await until(() => x.commands.length > 0);
+  assert.equal(x.commands[0].command.expectedRevision, 2);
+  x.commands[0].resolve({ ok: true, value: view('A', 'scene-a', 3) });
+  await tick();
+});
+test('late previous-campaign errors cannot become errors in the new campaign', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  await x.context('scene-b', { token: 'new-token', campaign: { id: 'campaign-2' } });
+  x.requests[1].resolve({ ok: true, value: view('B', 'scene-b') });
+  await until(() => x.get('chase-status').textContent.includes('Chase B'));
+  x.requests[0].resolve({ ok: false, error: 'Old campaign error' });
+  await tick();
+  assert.ok(!x.messages.some((m) => m.text.includes('Old campaign error')));
 });
 
-test('refresh retains an explicitly selected completed chase',async t=>{
- const x=setup(t);await x.context('scene-a');const finished=view('Finished','scene-a',3);finished.chase.status='finished';finished.chase.outcome='Escaped';x.requests[0].resolve({ok:true,value:finished});await until(()=>x.get('chase-status').textContent.includes('Finished'));x.get('chase-refresh').click();await tick();assert.equal(x.requests[1].id,'Finished');x.requests[1].resolve({ok:true,value:finished});await tick();assert.ok(x.get('chase-status').textContent.includes('Escaped'));
+test('A to B to A still rejects the read from the first A activation', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  await x.context('scene-b');
+  await x.context('scene-a');
+  x.requests[2].resolve({ ok: true, value: view('A', 'scene-a', 3) });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a', 1) });
+  x.requests[1].resolve({ ok: true, value: view('B', 'scene-b') });
+  await tick();
+  x.get('chase-round').click();
+  await until(() => x.commands.length > 0);
+  assert.equal(x.commands[0].command.expectedRevision, 3);
+  x.commands[0].resolve({ ok: true, value: view('A', 'scene-a', 4) });
+  await tick();
+});
+test('current IPC failure is reported and a later refresh remains usable', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  x.requests[0].reject(new Error('Own IPC failure'));
+  await until(
+    () => x.messages.some((m) => m.text === 'Own IPC failure') && !x.get('chase-refresh').disabled,
+  );
+  x.get('chase-refresh').click();
+  await until(() => x.requests.length === 2);
+  x.requests[1].resolve({ ok: true, value: view('A', 'scene-a') });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
 });
 
-test('an archived chase is labeled and all its work controls stay read-only',async t=>{const x=setup(t);await x.context('scene-a');const retired=view('A','scene-a',3);retired.chase.status='retired';x.requests[0].resolve({ok:true,value:retired});await until(()=>x.get('chase-status').textContent.includes('archiviert'));for(const control of x.get('chase-work').querySelectorAll('input,button,textarea,select'))if(control.id==='chase-retained-text')assert(control.hasAttribute('readonly'));else if(!control.hidden)assert.equal(control.disabled,true);assert.equal(x.commands.length,0);});
+test('starting a new chase after finishing addresses a new mask rather than the finished one', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  const finished = view('A', 'scene-a', 3);
+  finished.chase.status = 'finished';
+  finished.chase.outcome = 'Escaped';
+  x.requests[0].resolve({ ok: true, value: finished });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  x.get('chase-title').value = 'Neue Verfolgung';
+  x.get('chase-goal').value = 'Neues Ziel';
+  x.get('chase-title').oninput();
+  x.get('chase-start').click();
+  await until(() => x.commands.length > 0);
+  assert.equal(x.commands[0].command.chaseId, null);
+  assert.equal(x.commands[0].command.expectedRevision, null);
+  assert.equal(x.commands[0].command.sceneId, 'scene-a');
+  x.commands[0].resolve({ ok: true, value: view('New', 'scene-a') });
+  await tick();
+});
+test('a wrong-scene payload cannot become an editable chase view', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  x.requests[0].resolve({ ok: true, value: view('Wrong', 'other-scene') });
+  await until(() => x.messages.some((m) => m.text.includes('anderen Verfolgung')));
+  assert.equal(x.get('chase-work').hidden, true);
+  assert.deepEqual(x.commands, []);
+});
+
+test('commit control updates preserve unconfirmed chase field input', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a') });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  const input = x.document.querySelector('[data-distance]');
+  input.value = '13';
+  x.ui.updateCommitControls();
+  assert.equal(x.document.querySelector('[data-distance]').value, '13');
+});
+
+test('same-scene updates retain input and group import keeps character ownership', async (t) => {
+  const x = setup(t),
+    characters = [
+      {
+        id: 'hero-1',
+        active: true,
+        sceneId: 'scene-a',
+        membershipRevision: 1,
+        profile: { name: 'Heldin', speedFeet: 30 },
+      },
+    ];
+  await x.context('scene-a', x.w, characters);
+  x.requests[0].resolve({ ok: true, value: view('A', 'scene-a') });
+  await until(() => x.get('chase-status').textContent.includes('Chase A'));
+  x.document.querySelector('[data-distance]').value = '13';
+  await x.context('scene-a', x.w, characters);
+  assert.equal(x.document.querySelector('[data-distance]').value, '13');
+  Object.defineProperty(x.get('chase-side'), 'value', { value: 'quarry', writable: true });
+  x.get('chase-party').click();
+  await until(() => x.commands.length === 1);
+  const c = x.commands[0].command;
+  assert.equal(c.sceneId, 'scene-a');
+  assert.equal(c.chaseId, 'A');
+  assert.equal(c.action.kind, 'participants');
+  assert.equal(c.action.participants[0].characterId, 'hero-1');
+  assert.equal(c.action.participants[0].name, 'Heldin');
+  assert.equal(c.action.participants[0].speed, 9);
+  x.commands[0].resolve({ ok: true, value: view('A', 'scene-a', 2) });
+  await tick();
+});
+
+test('refresh retains an explicitly selected completed chase', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  const finished = view('Finished', 'scene-a', 3);
+  finished.chase.status = 'finished';
+  finished.chase.outcome = 'Escaped';
+  x.requests[0].resolve({ ok: true, value: finished });
+  await until(() => x.get('chase-status').textContent.includes('Finished'));
+  x.get('chase-refresh').click();
+  await tick();
+  assert.equal(x.requests[1].id, 'Finished');
+  x.requests[1].resolve({ ok: true, value: finished });
+  await tick();
+  assert.ok(x.get('chase-status').textContent.includes('Escaped'));
+});
+
+test('an archived chase is labeled and all its work controls stay read-only', async (t) => {
+  const x = setup(t);
+  await x.context('scene-a');
+  const retired = view('A', 'scene-a', 3);
+  retired.chase.status = 'retired';
+  x.requests[0].resolve({ ok: true, value: retired });
+  await until(() => x.get('chase-status').textContent.includes('archiviert'));
+  for (const control of x.get('chase-work').querySelectorAll('input,button,textarea,select'))
+    if (control.id === 'chase-retained-text') assert(control.hasAttribute('readonly'));
+    else if (!control.hidden) assert.equal(control.disabled, true);
+  assert.equal(x.commands.length, 0);
+});

@@ -14,7 +14,9 @@ export async function audioResponse(
     return new Response(null, { status: 405, headers });
   }
 
-  let start = 0, end = size - 1, partial = false;
+  let start = 0,
+    end = size - 1,
+    partial = false;
   const range = request.headers.get('range');
   if (range) {
     const match = /^bytes=(\d*)-(\d*)$/.exec(range);
@@ -26,11 +28,12 @@ export async function audioResponse(
         const suffix = Number(match[2]);
         start = Math.max(0, size - suffix);
       }
-      partial = Number.isSafeInteger(start)
-        && Number.isSafeInteger(end)
-        && start >= 0
-        && start < size
-        && end >= start;
+      partial =
+        Number.isSafeInteger(start) &&
+        Number.isSafeInteger(end) &&
+        start >= 0 &&
+        start < size &&
+        end >= start;
     }
     if (!partial) {
       headers.set('Content-Range', 'bytes */' + size);

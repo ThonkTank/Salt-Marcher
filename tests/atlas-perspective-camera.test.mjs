@@ -1,7 +1,7 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
-import { buildSync } from "esbuild";
-import { createRequire } from "node:module";
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildSync } from 'esbuild';
+import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 buildSync({
   stdin: {
@@ -9,10 +9,10 @@ buildSync({
       "export {terrainHorizon} from './src/app/terrain-coverage';export * from './src/app/atlas-camera';export {zoomBox} from './src/app/atlas-navigation-scale';export * from './src/app/terrain-spatial-model';export * as THREE from 'three';",
     resolveDir: process.cwd(),
   },
-  outfile: ".build/atlas-perspective-camera-test.cjs",
+  outfile: '.build/atlas-perspective-camera-test.cjs',
   bundle: true,
-  platform: "node",
-  format: "cjs",
+  platform: 'node',
+  format: 'cjs',
 });
 const {
   zoomBox,
@@ -29,10 +29,10 @@ const {
   AtlasSpatialLabels,
   THREE,
   ATLAS_CAMERA_FOV,
-} = require("../.build/atlas-perspective-camera-test.cjs");
+} = require('../.build/atlas-perspective-camera-test.cjs');
 function pose(offset = 0, width = 400) {
   return {
-    projection: "perspective",
+    projection: 'perspective',
     frame: {
       x: offset - width / 2,
       y: -offset - width * 0.4,
@@ -53,9 +53,8 @@ function pose(offset = 0, width = 400) {
     exaggeration: 1,
   };
 }
-const close = (a, b, tolerance = 1e-7) =>
-  assert(Math.abs(a - b) <= tolerance, `${a} != ${b}`);
-test("perspective projection round trips work planes at every pose and far, fine coordinates", () => {
+const close = (a, b, tolerance = 1e-7) => assert(Math.abs(a - b) <= tolerance, `${a} != ${b}`);
+test('perspective projection round trips work planes at every pose and far, fine coordinates', () => {
   for (const offset of [0, -1e10, 1e10])
     for (const width of [0.1, 400, 4e7])
       for (const tilt of [0, 45, 75])
@@ -72,34 +71,24 @@ test("perspective projection round trips work planes at every pose and far, fine
             close(
               result.x,
               screen.x,
-              Math.max(
-                1e-7,
-                ((Math.abs(offset) * Number.EPSILON) / width) * 12,
-              ),
+              Math.max(1e-7, ((Math.abs(offset) * Number.EPSILON) / width) * 12),
             );
             close(
               result.y,
               screen.y,
-              Math.max(
-                1e-7,
-                ((Math.abs(offset) * Number.EPSILON) / width) * 12,
-              ),
+              Math.max(1e-7, ((Math.abs(offset) * Number.EPSILON) / width) * 12),
             );
           }
         }
   const v = { ...pose(), tilt: 75 };
-  assert.equal(
-    atlasPlanePoint(v, { x: 0.5, y: 0 }),
-    null,
-    "sky is not an editable plane",
-  );
+  assert.equal(atlasPlanePoint(v, { x: 0.5, y: 0 }), null, 'sky is not an editable plane');
 });
-test("legacy orthographic brush snapshots stay valid; malformed projection is rejected", () => {
+test('legacy orthographic brush snapshots stay valid; malformed projection is rejected', () => {
   const v = pose();
   delete v.projection;
   validateTerrainView(v);
-  validateTerrainView({ ...v, projection: "perspective", tilt: 75 });
-  assert.throws(() => validateTerrainView({ ...v, projection: "spherical" }));
+  validateTerrainView({ ...v, projection: 'perspective', tilt: 75 });
+  assert.throws(() => validateTerrainView({ ...v, projection: 'spherical' }));
   assert.throws(() => validateTerrainView({ ...v, tilt: 76 }));
   const p = { x: 20, y: -30 },
     screen = atlasProject(v, p, 60),
@@ -108,7 +97,7 @@ test("legacy orthographic brush snapshots stay valid; malformed projection is re
   close(roundTrip.y, p.y);
 });
 
-test("zoom stays anchored on elevated terrain using the corresponding work-plane ray", () => {
+test('zoom stays anchored on elevated terrain using the corresponding work-plane ray', () => {
   for (const tilt of [0, 45, 75])
     for (const rotation of [0, 90, 160])
       for (const factor of [0.4, 1.8]) {

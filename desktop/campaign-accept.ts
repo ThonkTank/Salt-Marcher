@@ -6,7 +6,12 @@ import { pipeline } from 'node:stream/promises';
 import path from 'node:path';
 import type { CampaignStore } from '../src/app/storage/store';
 import type { ConflictChoice } from '../src/app/campaign-contracts';
-import { checkCampaignContents, campaignMediaPath, type CampaignManifest, type CampaignFileHooks } from './campaign-files';
+import {
+  checkCampaignContents,
+  campaignMediaPath,
+  type CampaignManifest,
+  type CampaignFileHooks,
+} from './campaign-files';
 import type { ArchiveFile } from './zip-files';
 
 export interface PreparedCampaign {
@@ -17,11 +22,13 @@ export interface PreparedCampaign {
   problems?: string[];
   acceptanceId?: string;
 }
-type Store = Pick<CampaignStore, 'campaignPreview' | 'acceptCampaignSnapshot' | 'campaignMediaReferenced'>;
+type Store = Pick<
+  CampaignStore,
+  'campaignPreview' | 'acceptCampaignSnapshot' | 'campaignMediaReferenced'
+>;
 
 function check(h: CampaignFileHooks) {
-  if (h.cancelled())
-    throw new Error('Import abgebrochen.');
+  if (h.cancelled()) throw new Error('Import abgebrochen.');
   h.fence();
 }
 function currentBasis(store: Store, filename: string, ticket: PreparedCampaign) {
@@ -59,7 +66,7 @@ async function stageMedia(source: string, target: string, file: ArchiveFile, h: 
       } catch (e) {
         done(e instanceof Error ? e : new Error('Medienvorbereitung fehlgeschlagen.'));
       }
-    }
+    },
   });
   await pipeline(createReadStream(source), checked, createWriteStream(target, { flags: 'wx' }));
   check(h);
@@ -67,7 +74,14 @@ async function stageMedia(source: string, target: string, file: ArchiveFile, h: 
 }
 
 /** The desktop's prepared-file acceptance path, independent of Electron's dialog plumbing. */
-export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampaign, dataDir: string, name: string, choices: Record<string, ConflictChoice>, h: CampaignFileHooks) {
+export async function acceptPreparedCampaign(
+  store: Store,
+  ticket: PreparedCampaign,
+  dataDir: string,
+  name: string,
+  choices: Record<string, ConflictChoice>,
+  h: CampaignFileHooks,
+) {
   if (!ticket.problems || ticket.problems.length)
     throw new Error(ticket.problems?.join('\n') || 'Importvorschau nicht vollständig geprüft.');
   check(h);
@@ -82,7 +96,9 @@ export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampa
     ino: number;
   }[] = [];
   try {
-    const media = ticket.manifest.files.filter(f => f.name.startsWith('audio/') || f.name.startsWith('images/'));
+    const media = ticket.manifest.files.filter(
+      (f) => f.name.startsWith('audio/') || f.name.startsWith('images/'),
+    );
     for (const file of media) {
       check(h);
       const name = path.basename(file.name),
@@ -104,8 +120,7 @@ export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampa
         const s = statSync(destination);
         introduced.push({ name: file.name, filename: destination, dev: s.dev, ino: s.ino });
       } catch (e) {
-        if ((e as NodeJS.ErrnoException).code !== 'EEXIST')
-          throw e;
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
         await verifyMedia(destination, file, h);
       }
       rmSync(candidate); // Keep at most one temporary media copy, including when reusing existing files.
@@ -114,8 +129,11 @@ export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampa
     check(h);
     currentBasis(store, filename, ticket);
     const campaign = store.acceptCampaignSnapshot(
-      filename, name, choices, ticket.acceptanceId,
-      ticket.manifest.files.find(f => f.name === 'campaign.sqlite')!.sha256,
+      filename,
+      name,
+      choices,
+      ticket.acceptanceId,
+      ticket.manifest.files.find((f) => f.name === 'campaign.sqlite')!.sha256,
     );
     committed = true;
     return campaign;
@@ -124,11 +142,9 @@ export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampa
       if (!committed)
         for (const file of introduced) {
           // Preserve shared or independently replaced bytes; only remove this job's unused file.
-          if (store.campaignMediaReferenced(file.name))
-            continue;
+          if (store.campaignMediaReferenced(file.name)) continue;
           const s = statSync(file.filename, { throwIfNoEntry: false });
-          if (s && s.dev === file.dev && s.ino === file.ino)
-            rmSync(file.filename);
+          if (s && s.dev === file.dev && s.ino === file.ino) rmSync(file.filename);
         }
     } finally {
       let cleanupError;
@@ -136,13 +152,14 @@ export async function acceptPreparedCampaign(store: Store, ticket: PreparedCampa
         try {
           rmSync(dir, { recursive: true, force: true });
         } catch (e) {
-          if (!committed)
-            cleanupError ??= e;
+          if (!committed) cleanupError ??= e;
           else
-            console.error('Kampagne übernommen; temporäre Medienbereinigung steht aus.', e instanceof Error ? e.message : e);
+            console.error(
+              'Kampagne übernommen; temporäre Medienbereinigung steht aus.',
+              e instanceof Error ? e.message : e,
+            );
         }
-      if (cleanupError)
-        throw cleanupError;
+      if (cleanupError) throw cleanupError;
     }
   }
 }

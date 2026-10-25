@@ -1,39 +1,39 @@
-import type { ItemInput, ItemCategory } from "./progression";
+import type { ItemInput, ItemCategory } from './progression';
 export function rewardItemsEditor(
   root: HTMLElement,
-  items: (Omit<ItemInput, "quantity"> & { quantity: string | number })[],
+  items: (Omit<ItemInput, 'quantity'> & { quantity: string | number })[],
   changed: () => void,
   raw = false,
   catalogOnly = false,
 ) {
   root.replaceChildren();
   for (const [itemIndex, item] of items.entries()) {
-    const row = document.createElement("fieldset"),
-      legend = document.createElement("legend");
+    const row = document.createElement('fieldset'),
+      legend = document.createElement('legend');
     row.className = 'reward-item-row';
-    legend.textContent = "Gegenstand " + (itemIndex + 1);
-    const name = document.createElement("input"),
-      quantity = document.createElement("input"),
-      value = document.createElement("input"),
-      category = document.createElement("select"),
-      remove = document.createElement("button");
+    legend.textContent = 'Gegenstand ' + (itemIndex + 1);
+    const name = document.createElement('input'),
+      quantity = document.createElement('input'),
+      value = document.createElement('input'),
+      category = document.createElement('select'),
+      remove = document.createElement('button');
     name.value = item.name;
-    name.setAttribute("aria-label", "Gegenstand");
-    quantity.type = raw ? "text" : "number";
-    quantity.inputMode = "numeric";
-    quantity.min = "1";
+    name.setAttribute('aria-label', 'Gegenstand');
+    quantity.type = raw ? 'text' : 'number';
+    quantity.inputMode = 'numeric';
+    quantity.min = '1';
     quantity.value = String(item.quantity);
-    quantity.setAttribute("aria-label", "Menge");
+    quantity.setAttribute('aria-label', 'Menge');
     value.value = item.valueGold;
-    value.setAttribute("aria-label", "Wert pro Stück in Gold");
+    value.setAttribute('aria-label', 'Wert pro Stück in Gold');
     for (const [id, label] of [
-      ["coins", "Münzen"],
-      ["equipment", "Ausrüstung"],
-      ["trade-goods", "Handelsgut"],
-      ["magic", "Magischer Gegenstand"],
-      ["other", "Sonstiges"],
+      ['coins', 'Münzen'],
+      ['equipment', 'Ausrüstung'],
+      ['trade-goods', 'Handelsgut'],
+      ['magic', 'Magischer Gegenstand'],
+      ['other', 'Sonstiges'],
     ]) {
-      const o = document.createElement("option");
+      const o = document.createElement('option');
       o.value = id!;
       o.textContent = label!;
       category.append(o);
@@ -58,8 +58,8 @@ export function rewardItemsEditor(
       delete item.reference;
       changed();
     };
-    remove.type = "button";
-    remove.textContent = "Gegenstand entfernen";
+    remove.type = 'button';
+    remove.textContent = 'Gegenstand entfernen';
     remove.onclick = () => {
       items.splice(itemIndex, 1);
       rewardItemsEditor(root, items, changed, raw);
@@ -76,24 +76,34 @@ export function rewardItemsEditor(
       legend.textContent = item.name;
       const facts = document.createElement('p');
       facts.className = 'reward-item-facts';
-      facts.textContent = [...category.options].find(o => o.value === item.category)?.textContent + ' · ' + item.valueGold + ' Gold pro Stück';
+      facts.textContent =
+        [...category.options].find((o) => o.value === item.category)?.textContent +
+        ' · ' +
+        item.valueGold +
+        ' Gold pro Stück';
       row.append(legend, facts, field('Menge', quantity), remove);
     } else {
-      row.append(legend, field('Gegenstand', name), field('Kategorie', category),
-        field('Menge', quantity), field('Gold pro Stück', value), remove);
+      row.append(
+        legend,
+        field('Gegenstand', name),
+        field('Kategorie', category),
+        field('Menge', quantity),
+        field('Gold pro Stück', value),
+        remove,
+      );
     }
     root.append(row);
   }
   if (catalogOnly) return;
-  const add = document.createElement("button");
-  add.type = "button";
-  add.textContent = "Weiteren Gegenstand hinzufügen";
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.textContent = 'Weiteren Gegenstand hinzufügen';
   add.onclick = () => {
     items.push({
-      name: "",
-      category: "equipment",
-      quantity: raw ? "1" : 1,
-      valueGold: "0",
+      name: '',
+      category: 'equipment',
+      quantity: raw ? '1' : 1,
+      valueGold: '0',
     });
     rewardItemsEditor(root, items, changed, raw);
     changed();

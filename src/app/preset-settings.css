@@ -1,7 +1,121 @@
 /* Installation-owned generator editor; only its body scrolls. */
-#preset-manager[open]{display:flex;flex-direction:column;width:min(74rem,calc(100% - 2rem));height:min(90vh,68rem);max-height:calc(100vh - 2rem);overflow:hidden;padding:1rem;border-radius:0}
-#preset-manager>.toolbar{position:static;flex:none;padding:0 0 .6rem}#preset-manager .preset-scroll{overflow:auto;min-height:0;flex:1;padding:.3rem .5rem .8rem}#preset-manager>.preset-actions{position:static;flex:none;margin:0;border-top:1px solid var(--line);padding:.7rem 0 0}#preset-manager #preset-matrix{max-height:40vh}#preset-manager .preset-matrix-row{grid-template-columns:48px repeat(34,15px)}#preset-manager .preset-matrix-row button{width:15px;height:15px;font-size:9px}#preset-manager>.preset-feedback{flex:none;border-top:1px solid var(--line);padding:.5rem 0;max-height:25vh;overflow:auto}#preset-status{min-height:1.5em;margin:0}#preset-manager>.preset-actions{flex-wrap:wrap;border-top:0;padding-top:0}#preset-weight-track{position:relative;margin:1.5rem 1rem;height:2rem;border:1px solid var(--line);touch-action:none}#preset-weight-track button{position:absolute;top:-.25rem;transform:translateX(-50%);height:2.5rem;min-width:1.8rem;padding:0;font-size:.7rem;touch-action:none;border-radius:0}#preset-conflict{border:1px solid var(--line);padding:.5rem}#preset-discard{max-width:28rem}#preset-manager :is(input,select,textarea){min-width:0;max-width:100%}
-@media(max-width:950px){#preset-manager .preset-rule-columns{grid-template-columns:1fr}#preset-manager .preset-weight-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#preset-manager[open] {
+  display: flex;
+  flex-direction: column;
+  width: min(74rem, calc(100% - 2rem));
+  height: min(90vh, 68rem);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  padding: 1rem;
+  border-radius: 0;
+}
+#preset-manager > .toolbar {
+  position: static;
+  flex: none;
+  padding: 0 0 0.6rem;
+}
+#preset-manager .preset-scroll {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+  padding: 0.3rem 0.5rem 0.8rem;
+}
+#preset-manager > .preset-actions {
+  position: static;
+  flex: none;
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding: 0.7rem 0 0;
+}
+#preset-manager #preset-matrix {
+  max-height: 40vh;
+}
+#preset-manager .preset-matrix-row {
+  grid-template-columns: 48px repeat(34, 15px);
+}
+#preset-manager .preset-matrix-row button {
+  width: 15px;
+  height: 15px;
+  font-size: 9px;
+}
+#preset-manager > .preset-feedback {
+  flex: none;
+  border-top: 1px solid var(--line);
+  padding: 0.5rem 0;
+  max-height: 25vh;
+  overflow: auto;
+}
+#preset-status {
+  min-height: 1.5em;
+  margin: 0;
+}
+#preset-manager > .preset-actions {
+  flex-wrap: wrap;
+  border-top: 0;
+  padding-top: 0;
+}
+#preset-weight-track {
+  position: relative;
+  margin: 1.5rem 1rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+#preset-weight-track button {
+  position: absolute;
+  top: -0.25rem;
+  transform: translateX(-50%);
+  height: 2.5rem;
+  min-width: 1.8rem;
+  padding: 0;
+  font-size: 0.7rem;
+  touch-action: none;
+  border-radius: 0;
+}
+#preset-conflict {
+  border: 1px solid var(--line);
+  padding: 0.5rem;
+}
+#preset-discard {
+  max-width: 28rem;
+}
+#preset-manager :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+@media (max-width: 950px) {
+  #preset-manager .preset-rule-columns {
+    grid-template-columns: 1fr;
+  }
+  #preset-manager .preset-weight-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
-#preset-manager .preset-selection-fields{display:grid;grid-template-columns:1fr 1fr;gap:1rem}#preset-manager .preset-combat-default{margin:1rem 0}#preset-manager .preset-combat-default input{width:8rem}#preset-manager .preset-advanced{border-top:1px solid var(--line);padding:.7rem 0}#preset-manager .preset-advanced>summary{font-weight:600;cursor:pointer}#preset-manager .preset-advanced[open]>summary{margin-bottom:1rem}
-@media(max-width:650px){#preset-manager .preset-selection-fields{grid-template-columns:1fr}}
+#preset-manager .preset-selection-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+#preset-manager .preset-combat-default {
+  margin: 1rem 0;
+}
+#preset-manager .preset-combat-default input {
+  width: 8rem;
+}
+#preset-manager .preset-advanced {
+  border-top: 1px solid var(--line);
+  padding: 0.7rem 0;
+}
+#preset-manager .preset-advanced > summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+#preset-manager .preset-advanced[open] > summary {
+  margin-bottom: 1rem;
+}
+@media (max-width: 650px) {
+  #preset-manager .preset-selection-fields {
+    grid-template-columns: 1fr;
+  }
+}

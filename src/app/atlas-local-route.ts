@@ -1,5 +1,5 @@
-import type { Point } from "./contracts";
-import { inside } from "./city-model";
+import type { Point } from './contracts';
+import { inside } from './city-model';
 const cross = (a: Point, b: Point, c: Point) =>
   (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 function blocks(a: Point, b: Point, polygon: Point[]) {
@@ -7,10 +7,7 @@ function blocks(a: Point, b: Point, polygon: Point[]) {
   for (let i = 0; i < polygon.length; i++) {
     const c = polygon[i]!,
       d = polygon[(i + 1) % polygon.length]!;
-    if (
-      cross(a, b, c) * cross(a, b, d) < -1e-10 &&
-      cross(c, d, a) * cross(c, d, b) < -1e-10
-    )
+    if (cross(a, b, c) * cross(a, b, d) < -1e-10 && cross(c, d, a) * cross(c, d, b) < -1e-10)
       return true;
   }
   return inside({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, polygon);
@@ -24,7 +21,7 @@ export function atlasLocalRoute(
 ): Point[] {
   if (obstacles.some((poly) => inside(start, poly) || inside(end, poly)))
     throw new Error(
-      "Start oder Ziel liegt in einem Gebäude, Wasser oder einer Mauer. Einen verbundenen Eingang verwenden.",
+      'Start oder Ziel liegt in einem Gebäude, Wasser oder einer Mauer. Einen verbundenen Eingang verwenden.',
     );
   const clear = (a: Point, b: Point) => {
     if (obstacles.some((poly) => blocks(a, b, poly))) return false;
@@ -46,7 +43,7 @@ export function atlasLocalRoute(
       x: origin.x + x * step,
       y: origin.y + y * step,
     }),
-    key = (x: number, y: number) => x + "," + y;
+    key = (x: number, y: number) => x + ',' + y;
   type Node = { x: number; y: number; cost: number; score: number };
   const heap: Node[] = [];
   const push = (v: Node) => {
@@ -76,7 +73,7 @@ export function atlasLocalRoute(
     }
     return out;
   };
-  const best = new Map<string, number>([["0,0", 0]]),
+  const best = new Map<string, number>([['0,0', 0]]),
     parents = new Map<string, string>();
   push({
     x: 0,
@@ -95,7 +92,7 @@ export function atlasLocalRoute(
       let at = k;
       while (parents.has(at)) {
         at = parents.get(at)!;
-        const [x, y] = at.split(",").map(Number);
+        const [x, y] = at.split(',').map(Number);
         result.push(point(x!, y!));
       }
       return result.reverse();
@@ -120,6 +117,6 @@ export function atlasLocalRoute(
       }
   }
   throw new Error(
-    "Kein begehbarer lokaler Weg gefunden. Gebäude/Wasser meiden oder einen näheren Zwischenpunkt wählen.",
+    'Kein begehbarer lokaler Weg gefunden. Gebäude/Wasser meiden oder einen näheren Zwischenpunkt wählen.',
   );
 }

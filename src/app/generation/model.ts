@@ -1,15 +1,9 @@
 // Adapted from the existing SaltMarcher pure generator module.
-export const maximumGeneratorCandidateCount = 250_000
+export const maximumGeneratorCandidateCount = 250_000;
 
-export const generatorRoles = [
-  'minion',
-  'support',
-  'standard',
-  'elite',
-  'boss'
-] as const
-export type GeneratorRole = (typeof generatorRoles)[number]
-export type GeneratorRoleCell = 'none' | GeneratorRole
+export const generatorRoles = ['minion', 'support', 'standard', 'elite', 'boss'] as const;
+export type GeneratorRole = (typeof generatorRoles)[number];
+export type GeneratorRoleCell = 'none' | GeneratorRole;
 
 export const generatorChallengeRatings = [
   '0',
@@ -45,69 +39,61 @@ export const generatorChallengeRatings = [
   '27',
   '28',
   '29',
-  '30'
-] as const
+  '30',
+] as const;
 
-export type GeneratorRoleMatrix = GeneratorRoleCell[][]
+export type GeneratorRoleMatrix = GeneratorRoleCell[][];
 
-export { canonicalJson as canonicalGeneratorConfigJson } from './canonical-json'
+export { canonicalJson as canonicalGeneratorConfigJson } from './canonical-json';
 
 type CompositionComplexityInput = Readonly<{
-  roleMatrix: GeneratorRoleMatrix
-  roleQuantities: Readonly<
-    Record<GeneratorRole, Readonly<{ min: number; max: number }>>
-  >
-  roleCombinations: readonly (readonly GeneratorRole[])[]
-  crBlocks: Readonly<{ min: number; max: number }>
-}>
+  roleMatrix: GeneratorRoleMatrix;
+  roleQuantities: Readonly<Record<GeneratorRole, Readonly<{ min: number; max: number }>>>;
+  roleCombinations: readonly (readonly GeneratorRole[])[];
+  crBlocks: Readonly<{ min: number; max: number }>;
+}>;
 
 export function roleAt(
   matrix: GeneratorRoleMatrix,
   partyLevel: number,
-  challengeRatingIndex: number
+  challengeRatingIndex: number,
 ): GeneratorRoleCell {
-  return matrix[partyLevel - 1]?.[challengeRatingIndex] ?? 'none'
+  return matrix[partyLevel - 1]?.[challengeRatingIndex] ?? 'none';
 }
 
 export function updateRoleCell(
   matrix: GeneratorRoleMatrix,
   partyLevel: number,
   challengeRatingIndex: number,
-  role: GeneratorRoleCell
+  role: GeneratorRoleCell,
 ): GeneratorRoleMatrix {
   return matrix.map((row, level) =>
     level === partyLevel - 1
       ? row.map((cell, cr) => (cr === challengeRatingIndex ? role : cell))
-      : row
-  )
+      : row,
+  );
 }
 
-export function maximumCompositionComplexity(
-  config: CompositionComplexityInput
-): { partyLevel: number; count: number } {
-  let maximum = { partyLevel: 1, count: 0 }
+export function maximumCompositionComplexity(config: CompositionComplexityInput): {
+  partyLevel: number;
+  count: number;
+} {
+  let maximum = { partyLevel: 1, count: 0 };
   for (const [level, row] of config.roleMatrix.entries()) {
     const variants = Object.fromEntries(
       generatorRoles.map((role) => [
         role,
         row.filter((cell) => cell === role).length *
-          (config.roleQuantities[role].max -
-            config.roleQuantities[role].min +
-            1)
-      ])
-    ) as Record<GeneratorRole, number>
+          (config.roleQuantities[role].max - config.roleQuantities[role].min + 1),
+      ]),
+    ) as Record<GeneratorRole, number>;
     const count = config.roleCombinations
-      .filter(
-        (roles) =>
-          roles.length >= config.crBlocks.min &&
-          roles.length <= config.crBlocks.max
-      )
+      .filter((roles) => roles.length >= config.crBlocks.min && roles.length <= config.crBlocks.max)
       .reduce(
-        (sum, roles) =>
-          sum + roles.reduce((product, role) => product * variants[role], 1),
-        0
-      )
-    if (count > maximum.count) maximum = { partyLevel: level + 1, count }
+        (sum, roles) => sum + roles.reduce((product, role) => product * variants[role], 1),
+        0,
+      );
+    if (count > maximum.count) maximum = { partyLevel: level + 1, count };
   }
-  return maximum
+  return maximum;
 }

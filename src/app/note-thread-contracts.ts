@@ -1,13 +1,13 @@
 import type { NoteSourceRecovery } from './note-thread-edit';
-import type { Note } from "./preparation-contracts";
-import type { Result } from "./contracts";
+import type { Note } from './preparation-contracts';
+import type { Result } from './contracts';
 export interface NoteThreadEntry {
   id: string;
   title: string;
-  kind: Note["kind"] | null;
+  kind: Note['kind'] | null;
   revision: number | null;
   labels: string[];
-  status: "open" | "closed" | "untracked" | "unknown";
+  status: 'open' | 'closed' | 'untracked' | 'unknown';
   unavailable: boolean;
   trashed?: boolean;
   preview: string;
@@ -35,8 +35,5 @@ export interface NoteThreadAPI {
     active: boolean,
     history?: boolean,
   ): Promise<Result<NoteThreadPage>>;
-  checkNoteThread(
-    token: string,
-    selection: NoteThreadSelection,
-  ): Promise<Result<void>>;
+  checkNoteThread(token: string, selection: NoteThreadSelection): Promise<Result<void>>;
 }

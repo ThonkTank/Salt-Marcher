@@ -49,6 +49,9 @@ jobs:
       - name: Test read-only heartbeat review cadence
         run: python3 tools/agent-setup/test_heartbeat_review.py
 
+      - name: Check active source formatting
+        run: npm run format:check
+
       - name: Type-check
         run: npm run check
 

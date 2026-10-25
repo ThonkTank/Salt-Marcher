@@ -1,28 +1,54 @@
-import {SimpleMeshLayer,type SimpleMeshLayerProps} from '@deck.gl/mesh-layers';
-import {FOREST_DETAIL_MPP,FOREST_SURFACE_MPP} from './atlas-cartographic-style';
+import { SimpleMeshLayer, type SimpleMeshLayerProps } from '@deck.gl/mesh-layers';
+import { FOREST_DETAIL_MPP, FOREST_SURFACE_MPP } from './atlas-cartographic-style';
 
-const block=`layout(std140) uniform atlasVegetationUniforms {
+const block = `layout(std140) uniform atlasVegetationUniforms {
  float metresPerClip;
  float exaggeration;
  float crowns;
 } atlasVegetation;`;
-const module={name:'atlasVegetation',vs:block,fs:block,uniformTypes:{metresPerClip:'f32',exaggeration:'f32',crowns:'f32'}} as const;
-type Props<T>={getDisplayLimit:(value:T)=>number;getPhysicalSize:(value:T)=>number;metresPerClip:number;exaggeration:number;crowns:boolean};
+const module = {
+  name: 'atlasVegetation',
+  vs: block,
+  fs: block,
+  uniformTypes: { metresPerClip: 'f32', exaggeration: 'f32', crowns: 'f32' },
+} as const;
+type Props<T> = {
+  getDisplayLimit: (value: T) => number;
+  getPhysicalSize: (value: T) => number;
+  metresPerClip: number;
+  exaggeration: number;
+  crowns: boolean;
+};
 
 /** Stable instance buffers; camera scale and height exaggeration are uniforms.
  * Clip distance supplies the local pixel scale, including cropped exports. */
-export class AtlasVegetationLayer<T> extends SimpleMeshLayer<T,Props<T>> {
- static layerName='AtlasVegetationLayer';
- static defaultProps={...SimpleMeshLayer.defaultProps,getDisplayLimit:{type:'accessor',value:0},getPhysicalSize:{type:'accessor',value:1},metresPerClip:1,exaggeration:1,crowns:false};
- initializeState(){
-  super.initializeState();
-  this.getAttributeManager()!.addInstanced({instanceDisplayLimit:{size:1,accessor:'getDisplayLimit'},instancePhysicalSize:{size:1,accessor:'getPhysicalSize'}});
- }
- getShaders(){
-  const shaders=super.getShaders();
-  return {...shaders,modules:[...shaders.modules,module],inject:{...shaders.inject,
-   'vs:#decl':'in float instanceDisplayLimit; in float instancePhysicalSize; out float atlasPlantAlpha;',
-   'vs:DECKGL_FILTER_SIZE':`
+export class AtlasVegetationLayer<T> extends SimpleMeshLayer<T, Props<T>> {
+  static layerName = 'AtlasVegetationLayer';
+  static defaultProps = {
+    ...SimpleMeshLayer.defaultProps,
+    getDisplayLimit: { type: 'accessor', value: 0 },
+    getPhysicalSize: { type: 'accessor', value: 1 },
+    metresPerClip: 1,
+    exaggeration: 1,
+    crowns: false,
+  };
+  initializeState() {
+    super.initializeState();
+    this.getAttributeManager()!.addInstanced({
+      instanceDisplayLimit: { size: 1, accessor: 'getDisplayLimit' },
+      instancePhysicalSize: { size: 1, accessor: 'getPhysicalSize' },
+    });
+  }
+  getShaders() {
+    const shaders = super.getShaders();
+    return {
+      ...shaders,
+      modules: [...shaders.modules, module],
+      inject: {
+        ...shaders.inject,
+        'vs:#decl':
+          'in float instanceDisplayLimit; in float instancePhysicalSize; out float atlasPlantAlpha;',
+        'vs:DECKGL_FILTER_SIZE': `
     vec4 anchor=project.viewProjectionMatrix*vec4(geometry.worldPosition,1.0);
     float mpp=max(0.0,anchor.w*atlasVegetation.metresPerClip);
     float limit=instanceDisplayLimit;
@@ -32,13 +58,20 @@ export class AtlasVegetationLayer<T> extends SimpleMeshLayer<T,Props<T>> {
     size.xy*=crown;
     size.z*=atlasVegetation.exaggeration;
    `,
-   'fs:#decl':'in float atlasPlantAlpha;',
-   'fs:DECKGL_FILTER_COLOR':'if(atlasPlantAlpha<0.001)discard; color.a*=atlasPlantAlpha;'
-  }};
- }
- draw(options:Parameters<SimpleMeshLayer['draw']>[0]){
-  this.state.model?.shaderInputs.setProps({atlasVegetation:{metresPerClip:this.props.metresPerClip,exaggeration:this.props.exaggeration,crowns:this.props.crowns?1:0}});
-  super.draw(options);
- }
+        'fs:#decl': 'in float atlasPlantAlpha;',
+        'fs:DECKGL_FILTER_COLOR': 'if(atlasPlantAlpha<0.001)discard; color.a*=atlasPlantAlpha;',
+      },
+    };
+  }
+  draw(options: Parameters<SimpleMeshLayer['draw']>[0]) {
+    this.state.model?.shaderInputs.setProps({
+      atlasVegetation: {
+        metresPerClip: this.props.metresPerClip,
+        exaggeration: this.props.exaggeration,
+        crowns: this.props.crowns ? 1 : 0,
+      },
+    });
+    super.draw(options);
+  }
 }
-export type AtlasVegetationLayerProps<T>=SimpleMeshLayerProps<T>&Props<T>;
+export type AtlasVegetationLayerProps<T> = SimpleMeshLayerProps<T> & Props<T>;

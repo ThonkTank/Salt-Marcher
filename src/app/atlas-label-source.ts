@@ -1,14 +1,7 @@
-import type {AtlasWorkplane} from './atlas-workplane';
-import type { Point } from "./contracts";
+import type { AtlasWorkplane } from './atlas-workplane';
+import type { Point } from './contracts';
 
-export type MapLabelKind =
-  | "place"
-  | "city"
-  | "building"
-  | "room"
-  | "road"
-  | "river"
-  | "area";
+export type MapLabelKind = 'place' | 'city' | 'building' | 'room' | 'road' | 'river' | 'area';
 export interface MapLabelCandidate {
   id: string;
   objectId?: string;

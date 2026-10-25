@@ -1,23 +1,19 @@
 // Adapted from the existing SaltMarcher pure generator module.
-declare const entropyStreamBrand: unique symbol
+declare const entropyStreamBrand: unique symbol;
 
 export type EntropyStream = string & {
-  readonly [entropyStreamBrand]: true
-}
+  readonly [entropyStreamBrand]: true;
+};
 
 export function encounterCandidateStream(
   seed: number,
   encounterNumber: number,
-  candidateId: string
+  candidateId: string,
 ): EntropyStream {
-  return encode(seed, `encounter:${encounterNumber}:${candidateId}`)
+  return encode(seed, `encounter:${encounterNumber}:${candidateId}`);
 }
 
-function encode(
-  seed: number,
-  label: string,
-  ordinal?: string | number
-): EntropyStream {
-  const suffix = ordinal === undefined ? '' : `|${ordinal}`
-  return `${seed}|${label}${suffix}` as EntropyStream
+function encode(seed: number, label: string, ordinal?: string | number): EntropyStream {
+  const suffix = ordinal === undefined ? '' : `|${ordinal}`;
+  return `${seed}|${label}${suffix}` as EntropyStream;
 }
