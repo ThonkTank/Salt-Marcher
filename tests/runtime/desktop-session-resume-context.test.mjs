@@ -1,3 +1,4 @@
+import { liveInstance } from '../helpers/live.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,7 +11,11 @@ const require = createRequire(import.meta.url),
 const hooks = `\nconst originalStart=startLiveSession;export const __resumeProbe={initHandoff:initHandoffVisitDialog,readSessionResumePrep,renderSessionResume,openSessionResume,packetSource(){resumed=true;return livePacketSource();},setState(w,v,p){context=w;data=v;sources=p;sceneDraft=structuredClone(v.scene);sessionChronicle={entries:[]};tell=(text,error)=>globalThis.__resumeMessages.push({text,error});},history(entries){sessionChronicle={entries};},ports(p){if(p.visit)openMomentVisit=p.visit;if(p.start===false)startLiveSession=originalStart;if(p.execute)execute=p.execute;if(p.start)startLiveSession=p.start;if(p.flush)flushLive=p.flush;if(p.packet)openLivePacket=p.packet;},draft(){return sceneDraft;}};`;
 buildSync({
   stdin: {
-    contents: source + hooks,
+    contents: source.replace(
+      '  return {\n    editorSession,',
+      hooks.replace('export const __resumeProbe', 'const __resumeProbe') +
+        '\n  return { __resumeProbe, editorSession,',
+    ),
     sourcefile: 'live-resume-probe.ts',
     loader: 'ts',
     resolveDir: path.resolve('src/app/runtime'),
@@ -75,7 +80,7 @@ function fixture(t) {
     if (!document.getElementById(id)) {
       const node = document.createElement(tag);
       node.id = id;
-      document.body.append(node);
+      document.getElementById('live').append(node);
     }
   dialog.open = true;
   dialog.close = () => {
@@ -93,7 +98,12 @@ function fixture(t) {
     return o;
   };
   delete require.cache[require.resolve('../../.build/planner-resume-probe.cjs')];
-  const ui = require('../../.build/planner-resume-probe.cjs').__resumeProbe;
+  window.campaign = {};
+  const ui = liveInstance(
+    require('../../.build/planner-resume-probe.cjs'),
+    document,
+    window,
+  ).__resumeProbe;
   ui.initHandoff();
   const handoffDialog = document.getElementById('handoff-visit-dialog');
   handoffDialog.close = () => {
@@ -168,7 +178,7 @@ function fixture(t) {
       calls.push('packet');
     },
   });
-  window.campaign = {
+  Object.assign(window.campaign, {
     progress: async () => ok({ characters: [] }),
     scenePreparation: async () => ok({ nextVisit: null }),
     sceneWorld: async () => ok({ notices: [], date: 'Tag 1', scene: { locationId: null } }),
@@ -183,7 +193,7 @@ function fixture(t) {
       });
     },
     sessionPacket: async () => ok(packet),
-  };
+  });
   const row = {
       sceneId: 'scene',
       sceneTitle: 'Vorhut',

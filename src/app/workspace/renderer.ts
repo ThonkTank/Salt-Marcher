@@ -88,24 +88,7 @@ import {
   prepareShopLocation,
 } from '../catalog/items-ui';
 import { type Result, type WorkspaceGeometry } from '../shared/contracts';
-import {
-  addLiveCreature,
-  addLiveNpc,
-  flushLive,
-  initLive,
-  openLive,
-  openLiveCharacterLoot,
-  openLiveSoundboard,
-  openPlannedVisitReview,
-  openTimeNavigator,
-  openTravelRest,
-  prepareLiveEncounter,
-  refreshScenePreparation,
-  setGroupNavigation,
-  setNpcNavigation,
-  setTreasureNavigation,
-  useLiveReferenceReadAloud,
-} from '../runtime/live';
+import { createLive } from '../runtime/live';
 import { initTutorial } from './tutorial';
 import { initCatalog, openCatalog, openCatalogReference } from '../catalog/catalog-ui';
 import {
@@ -233,7 +216,67 @@ const {
   prepareNoteLocation,
   showDayPreparation,
 } = preparationEditor;
+const liveEditor = createLive({
+  roots: [
+    'live',
+    'character-dialog',
+    'adoption-dialog',
+    'move-dialog',
+    'live-health-dialog',
+    'archive-dialog',
+  ].map(el),
+  dialogHost: el('live'),
+  api: window.campaign,
+  confirm: (message) => window.confirm(message),
+  height: () => window.innerHeight,
+  navigation: {
+    treasure: async (id) => {
+      if (!(await leaveWorkspace())) return;
+      showTab('treasury');
+      await openTreasury(id);
+    },
+    group: async (id, current = () => true) => {
+      if (!(await leaveWorkspace()) || !current()) return;
+      showTab('groups');
+      await openGroups(id);
+      if (current()) await openNpcs(false);
+    },
+    npc: async (id, contact, current) => {
+      if (!(await leaveWorkspace()) || !current()) return;
+      showTab('groups');
+      await openGroups();
+      if (current()) await openNpcProfile(id, contact, current);
+    },
+    npcAutonomy: async (id, current) => {
+      if (!(await leaveWorkspace()) || !current()) return;
+      showTab('autonomy');
+      await openAutonomy(id);
+    },
+    npcPlaces: (...args) => navigateNpcPlaces(...args),
+    partyAward: () => {
+      const popover = el('party-popover');
+      if (!popover.matches(':popover-open')) popover.showPopover();
+      el('party-award-open').click();
+    },
+  },
+});
+const {
+  addLiveCreature,
+  addLiveNpc,
+  flushLive,
+  initLive,
+  openLive,
+  openLiveCharacterLoot,
+  openLiveSoundboard,
+  openPlannedVisitReview,
+  openTimeNavigator,
+  openTravelRest,
+  prepareLiveEncounter,
+  refreshScenePreparation,
+  useLiveReferenceReadAloud,
+} = liveEditor;
 const editors = createWorkspaceEditors({
+  live: liveEditor,
   preparation: preparationEditor,
   atlas: {
     session: atlasEditorSession,
@@ -347,17 +390,13 @@ initPreparation(
     );
   },
 );
-setTreasureNavigation(async (id) => {
-  if (!(await leaveWorkspace())) return;
-  showTab('treasury');
-  await openTreasury(id);
-});
+
 initDayCalculator(
   status,
   () => el<HTMLButtonElement>('party-shortcut').click(),
   () => el<HTMLButtonElement>('catalog-tab').click(),
 );
-initPartyTopbar(() => el<HTMLButtonElement>('live-tab').click());
+initPartyTopbar(() => el<HTMLButtonElement>('live-tab').click(), liveEditor);
 initNarrativeJournal(
   status,
   leaveWorkspace,
@@ -619,20 +658,7 @@ setCombatNpcNavigation(async (id, current) => {
   showTab('groups');
   await openNpcProfile(id, undefined, current);
 });
-setNpcNavigation(
-  async (id, contact, current) => {
-    if (!(await leaveWorkspace()) || !current()) return;
-    showTab('groups');
-    await openGroups();
-    if (current()) await openNpcProfile(id, contact, current);
-  },
-  async (id, current) => {
-    if (!(await leaveWorkspace()) || !current()) return;
-    showTab('autonomy');
-    await openAutonomy(id);
-  },
-  navigateNpcPlaces,
-);
+
 initGroups(
   status,
   refreshScenePreparation,
@@ -650,12 +676,7 @@ initGroups(
     await openNpcProfile(id, undefined, current);
   },
 );
-setGroupNavigation(async (id, current = () => true) => {
-  if (!(await leaveWorkspace()) || !current()) return;
-  showTab('groups');
-  await openGroups(id);
-  if (current()) await openNpcs(false);
-});
+
 initTreasury(
   status,
   async () => {

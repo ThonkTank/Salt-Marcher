@@ -1,0 +1,27 @@
+export function liveInstance(module, document, window) {
+  return {
+    ...module,
+    ...module.createLive({
+      roots: [
+        'live',
+        'character-dialog',
+        'adoption-dialog',
+        'move-dialog',
+        'live-health-dialog',
+        'archive-dialog',
+        'live-session-resume-dialog',
+      ]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean),
+      dialogHost: document.getElementById('live'),
+      api: window.campaign,
+      confirm: (message) => window.confirm(message),
+      height: () => window.innerHeight,
+      navigation: {
+        partyAward: () => {
+          document.getElementById('party-award-open')?.click();
+        },
+      },
+    }),
+  };
+}

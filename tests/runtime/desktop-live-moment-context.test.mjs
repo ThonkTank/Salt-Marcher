@@ -1,3 +1,4 @@
+import { liveInstance } from '../helpers/live.mjs';
 import { fixtureStore } from '../helpers/store.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -217,7 +218,7 @@ async function setup(t, resume = true, initialize = true, recapRaw, browserTexta
   ])
     window.campaign[method] = async (...args) => wrap(() => store[method](...args));
   delete require.cache[require.resolve('../../' + base + '/ui.cjs')];
-  x.ui = require('../../' + base + '/ui.cjs');
+  x.ui = liveInstance(require('../../' + base + '/ui.cjs'), document, window);
   x.ui.initSessionPacket(
     (text, error) => x.messages.push({ text, error }),
     () => null,

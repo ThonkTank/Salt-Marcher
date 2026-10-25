@@ -628,3 +628,14 @@ export function initSessionPacket(
       });
   };
 }
+
+/** Named Live handoffs keep packet controls with their existing owner. */
+export function selectLivePacketVisit(visitId: string) {
+  [...el('session-packet-visits').querySelectorAll<HTMLButtonElement>('button')]
+    .find((button) => button.dataset.visitId === visitId)
+    ?.click();
+}
+export function showLivePacketParty() {
+  el('live-party-panel').hidden = false;
+  el('session-packet-party-toggle').setAttribute('aria-pressed', 'true');
+}

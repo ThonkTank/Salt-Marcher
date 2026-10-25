@@ -18,7 +18,7 @@ import * as music from '../runtime/music-ui';
 import * as world from '../runtime/world-ui';
 import * as items from '../catalog/items-ui';
 import * as catalog from '../catalog/catalog-ui';
-import * as live from '../runtime/live';
+import type { LiveEditor } from '../runtime/live';
 import type { PreparationEditor } from '../campaign/preparation';
 import { editorSession as finishSession } from '../runtime/finish-draft-ui';
 import { editorSession as combatSession } from '../runtime/combat';
@@ -31,6 +31,7 @@ import { editorSession as generationSession } from '../campaign/generation-ui';
 
 type Host = {
   preparation: PreparationEditor;
+  live: LiveEditor;
   atlas: {
     session: EditorSession;
     activate: (w: WorkspaceGeometry) => void;
@@ -172,9 +173,9 @@ export function createWorkspaceEditors(host: Host) {
     },
     {
       id: 'live',
-      session: live.editorSession,
-      activate: { order: 1, run: live.activateLive },
-      flush: live.flushLive,
+      session: host.live.editorSession,
+      activate: { order: 1, run: host.live.activateLive },
+      flush: host.live.flushLive,
     },
     {
       id: 'preparation',

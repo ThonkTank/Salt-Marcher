@@ -111,3 +111,21 @@ Die Vorbereitungsregression erzeugt zwei Instanzen mit gleichen Control-IDs,
 verbietet globale ID-Abfragen beim Initialisieren der zweiten und prüft getrennte
 Rohtexte, abgemeldete Reads und erneutes Öffnen. Die vorhandenen Prüfungen für
 Notizquellen, ungeklärte Commands, Planungsübergaben und CRLF-Text bleiben erhalten.
+
+## Live-Instanz
+
+`createLive` besitzt Szenen-/Figurenentwürfe, Rückblick, Moment, Leseaufträge und
+Command-Recovery pro Instanz. Der Renderer übergibt DOM-Wurzeln, Preload und
+benannte Navigation und verbindet dieselbe Instanz mit Workspace und Party.
+Die Party erhält ihre drei Schreib-/Verschiebeaktionen ausdrücklich; sie
+importiert keinen globalen Live-Writer mehr. Mappenübergaben laufen über benannte
+Funktionen des Mappenbesitzers statt über dessen Button-Suche.
+
+`LiveTimeControls` besitzt literale Zeitfelder je Szene und Kalender-Vorschauen.
+Ein Read gehört zur `EditorSession`; Abmeldung und neue Generationen verwerfen
+seine Veröffentlichung, ohne die nächste Anfrage freizugeben. Zeitbuchungen,
+Flush und Receipts bleiben im Live-Writer. Der isolierte Test
+`tests/runtime/desktop-live-time-controls.test.mjs` prüft zwei Oberflächen mit
+gleichen IDs, Szenenwechsel, Rohtexte und alte Antworten nach Wiederöffnung.
+Die Live-/Wiederaufnahme- und Partytests verwenden die erzeugte Instanz bzw.
+explizite Writer-Ports; bestehende Recovery- und Textregressionen bleiben erhalten.

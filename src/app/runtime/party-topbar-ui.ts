@@ -30,7 +30,18 @@ import {
   type ProgressView,
   type ProgressAction,
 } from './progression';
-import { runPartyLive, runPartyProgress, openPartyMove } from './live';
+import type { LiveEditor } from './live';
+type PartyCommands = Pick<LiveEditor, 'runPartyLive' | 'runPartyProgress' | 'openPartyMove'>;
+let liveCommands: PartyCommands | undefined;
+const commands = () => {
+  if (!liveCommands) throw new Error('Party-Writer ist nicht verbunden.');
+  return liveCommands;
+};
+const runPartyLive: PartyCommands['runPartyLive'] = (...args) => commands().runPartyLive(...args);
+const runPartyProgress: PartyCommands['runPartyProgress'] = (...args) =>
+  commands().runPartyProgress(...args);
+const openPartyMove: PartyCommands['openPartyMove'] = (...args) =>
+  commands().openPartyMove(...args);
 import { onProgressChanged } from './progression-ui';
 
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -766,7 +777,8 @@ export function activatePartyTopbar(next: WorkspaceGeometry | null) {
   el('party-active').replaceChildren();
   el('party-roster').replaceChildren();
 }
-export function initPartyTopbar(navigate: () => void) {
+export function initPartyTopbar(navigate: () => void, writer?: PartyCommands) {
+  liveCommands = writer;
   openLive = navigate;
   initPartyAwards(
     () => workspace,
