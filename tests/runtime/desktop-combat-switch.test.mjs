@@ -1,3 +1,4 @@
+import { combatInstance } from '../helpers/combat.mjs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -147,7 +148,7 @@ async function fixture(options = true) {
     return response(() => store.executeCombat(c));
   };
   delete require.cache[require.resolve('../../.build/combat-switch-ui.cjs')];
-  const ui = require('../../.build/combat-switch-ui.cjs');
+  const ui = combatInstance(require('../../.build/combat-switch-ui.cjs'), document, window);
   ui.initCommitControls(
     () => w,
     (text) => messages.push(text),
@@ -1113,3 +1114,75 @@ for (const recovery of [false, true, 'missing-context'])
       }
     },
   );
+
+test('two combat instances isolate duplicate controls and revoke old reads without releasing a newer read', async (t) => {
+  const x = await fixture();
+  t.after(() => x.cleanup());
+  const document = globalThis.document,
+    window = globalThis.window;
+  const template = parseHTML(readFileSync('src/app/workspace/index.html', 'utf8')).document;
+  const container = document.createElement('section');
+  const roots = ['combat-panel', 'combat-finish-dialog', 'combat-initiative-dialog'].map((id) =>
+    template.getElementById(id),
+  );
+  roots.forEach((root) => container.append(root));
+  document.body.append(container);
+  const el = (id) => container.querySelector('#' + id);
+  for (const select of container.querySelectorAll('select'))
+    Object.defineProperty(select, 'value', { value: '', writable: true });
+  const reads = [];
+  const api = {
+    ...window.campaign,
+    combat: (token, sceneId, id) =>
+      new Promise((resolve) =>
+        reads.push(() => resolve({ ok: true, value: x.store.combat(token, sceneId, id) })),
+      ),
+  };
+  const second = x.ui.createCombat({
+    roots,
+    api,
+    matchMedia: () => ({ matches: false }),
+    requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
+    navigation: { scene: () => {}, available: () => {} },
+  });
+  const get = document.getElementById;
+  document.getElementById = () => {
+    throw Error('Global ID lookup crosses instance ownership');
+  };
+  try {
+    second.initCombat(() => {});
+  } finally {
+    document.getElementById = get;
+  }
+  const scene = x.store.live(x.w.token).scene;
+  second.combatContext(x.w, scene);
+  assert.equal(second.editorSession.reading, 1);
+  second.deactivate();
+  assert.equal(second.editorSession.reading, 0);
+  second.combatContext(x.w, scene);
+  const opening = second.openExistingCombat(x.a.id);
+  await until(() => reads.length === 3);
+  reads[0]();
+  reads[1]();
+  await tick();
+  assert.equal(second.editorSession.reading, 1);
+  assert.notEqual(el('combat-title').textContent, 'Keller');
+  reads[2]();
+  await opening;
+  assert.equal(el('combat-title').textContent, 'Torwache');
+  assert.equal(x.el('combat-title').textContent, 'Keller');
+  assert.equal(second.editorSession.reading, 0);
+  el('combat-notes').value = '  Zweite Instanz\r\n';
+  el('combat-notes').dispatchEvent(new window.Event('input'));
+  x.input('combat-notes', '  Erste Instanz\r\n');
+  await second.flushCombat();
+  await x.ui.flushCombat();
+  assert.equal(el('combat-notes').value, '  Zweite Instanz\r\n');
+  assert.equal(x.el('combat-notes').value, '  Erste Instanz\r\n');
+  second.deactivate();
+  const writes = x.writes.length;
+  el('combat-next').onclick();
+  await tick();
+  assert.equal(x.writes.length, writes, 'detached controls cannot submit another command');
+  container.remove();
+});

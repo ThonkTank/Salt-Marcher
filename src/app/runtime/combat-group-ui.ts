@@ -38,6 +38,7 @@ export function sceneGroupTray(
   context: () => { token: string; sceneId: string; current: () => boolean } | null,
   choose: (id: string, revision: number, current: () => boolean) => Promise<void>,
   tell: (text: string, error?: boolean) => void,
+  api: Pick<Window['campaign'], 'scenePreparation'> = window.campaign,
 ) {
   const details = node('details'),
     rows = node('div'),
@@ -55,9 +56,7 @@ export function sceneGroupTray(
     const current = () => n === request && owner.current() && details.open;
     rows.textContent = 'Gruppen werden gelesen…';
     try {
-      const preparation = unwrap(
-        await window.campaign.scenePreparation(owner.token, owner.sceneId),
-      );
+      const preparation = unwrap(await api.scenePreparation(owner.token, owner.sceneId));
       if (!current()) return;
       rows.replaceChildren();
       for (const group of preparation.groups) {
@@ -105,6 +104,13 @@ export type GroupReinforcement = {
 };
 /** Read/choose only. Canonical membership and combat writes stay at the existing command boundary. */
 export class CombatGroupPicker {
+  constructor(
+    private api: Pick<
+      Window['campaign'],
+      'scenePreparation' | 'groupView' | 'combat'
+    > = window.campaign,
+    private dialogHost: HTMLElement = document.body,
+  ) {}
   private close: (() => void) | null = null;
   reset() {
     this.close?.();
@@ -169,7 +175,7 @@ export class CombatGroupPicker {
       status,
       actions,
     );
-    document.body.append(dialog);
+    this.dialogHost.append(dialog);
     return new Promise((resolve) => {
       let closed = false,
         request = 0,
@@ -270,7 +276,7 @@ export class CombatGroupPicker {
         lock();
         try {
           if (initial) {
-            const preparation = unwrap(await window.campaign.scenePreparation(token, scene.id));
+            const preparation = unwrap(await this.api.scenePreparation(token, scene.id));
             if (!valid() || n !== request) return;
             groups.replaceChildren();
             for (const g of preparation.groups) {
@@ -303,8 +309,8 @@ export class CombatGroupPicker {
             );
           if (!targets.value) throw new Error('Zuerst eine Begegnung vorbereiten.');
           const [g, c] = await Promise.all([
-            window.campaign.groupView(token, groups.value),
-            window.campaign.combat(token, scene.id, targets.value),
+            this.api.groupView(token, groups.value),
+            this.api.combat(token, scene.id, targets.value),
           ]);
           if (!valid() || n !== request) return;
           group = unwrap(g);

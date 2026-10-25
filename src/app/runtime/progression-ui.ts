@@ -115,6 +115,9 @@ const healthDrafts = new Map<string, HealthDraft>();
 const progressListeners = new Set<() => void>();
 export function onProgressChanged(listener: () => void) {
   progressListeners.add(listener);
+  return () => {
+    progressListeners.delete(listener);
+  };
 }
 export function progressCharacters() {
   return view?.characters ?? [];

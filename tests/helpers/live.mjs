@@ -1,7 +1,9 @@
+import { combatInstance } from './combat.mjs';
 export function liveInstance(module, document, window) {
   return {
     ...module,
     ...module.createLive({
+      combat: combatInstance(module, document, window),
       roots: [
         'live',
         'character-dialog',

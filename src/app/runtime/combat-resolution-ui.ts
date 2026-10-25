@@ -41,6 +41,7 @@ export class CombatResolutionPanel {
       current: () => boolean,
     ) => Promise<boolean>,
     private openNpc?: (id: string, current: () => boolean) => Promise<void>,
+    private api: Pick<Window['campaign'], 'combatResolution'> = window.campaign,
   ) {
     root.className = 'combat-resolution';
     const title = node('h3', 'Nachbereitung'),
@@ -120,7 +121,7 @@ export class CombatResolutionPanel {
     }
     try {
       const result = unwrap(
-        await window.campaign.combatResolution(
+        await this.api.combatResolution(
           owner.token,
           owner.sceneId,
           owner.combatId,

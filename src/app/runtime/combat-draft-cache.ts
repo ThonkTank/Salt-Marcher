@@ -16,13 +16,16 @@ export class CombatDraftCache {
   private tasks = new Map<string, Promise<boolean>>();
   private sent = new Map<string, CombatWorkingDraft>();
   readonly editorSession = new EditorSession();
-  constructor(private report: (cam: string, message: string) => void) {}
+  constructor(
+    private report: (cam: string, message: string) => void,
+    private api: Pick<Window['campaign'], 'combatDraft' | 'keepCombatDraft' | 'discardCombatDraft'>,
+  ) {}
   async load(token: string, cam: string, id: string, kind: CombatDraftKind, target: string) {
     const key = combatDraftKey(cam, id, kind, target);
     if (this.saved.has(key)) return this.values.get(key) ?? null;
     const epoch = this.editorSession.generation;
     try {
-      const d = unwrap(await window.campaign.combatDraft(token, id, kind, target));
+      const d = unwrap(await this.api.combatDraft(token, id, kind, target));
       if (epoch !== this.editorSession.generation) return d;
       if (this.saved.has(key)) return this.values.get(key) ?? null;
       this.saved.set(key, d?.writeId ?? null);
@@ -53,16 +56,11 @@ export class CombatDraftCache {
         }
         this.sent.set(key, current);
         try {
-          unwrap(await window.campaign.keepCombatDraft(token, current, this.saved.get(key)!));
+          unwrap(await this.api.keepCombatDraft(token, current, this.saved.get(key)!));
         } catch (error) {
           try {
             const actual = unwrap(
-              await window.campaign.combatDraft(
-                token,
-                current.combatId,
-                current.kind,
-                current.targetId,
-              ),
+              await this.api.combatDraft(token, current.combatId, current.kind, current.targetId),
             );
             if (!actual || JSON.stringify(actual) !== JSON.stringify(current)) throw error;
           } catch {
@@ -106,12 +104,11 @@ export class CombatDraftCache {
   async discard(token: string, cam: string, id: string, kind: CombatDraftKind, target: string) {
     const key = combatDraftKey(cam, id, kind, target);
     await this.tasks.get(key);
-    const actual = unwrap(await window.campaign.combatDraft(token, id, kind, target)),
+    const actual = unwrap(await this.api.combatDraft(token, id, kind, target)),
       shown = this.values.get(key);
     if (actual && actual.writeId !== shown?.writeId && actual.writeId !== this.saved.get(key))
       throw new Error('Ein neuerer Entwurf liegt vor. Zuerst ansehen.');
-    if (actual)
-      unwrap(await window.campaign.discardCombatDraft(token, id, kind, target, actual.writeId));
+    if (actual) unwrap(await this.api.discardCombatDraft(token, id, kind, target, actual.writeId));
     this.values.delete(key);
     this.saved.delete(key);
     this.dirty.delete(key);
@@ -137,9 +134,7 @@ export class CombatDraftCache {
       const d = this.values.get(key);
       if (!d) continue;
       try {
-        const actual = unwrap(
-            await window.campaign.combatDraft(token, d.combatId, d.kind, d.targetId),
-          ),
+        const actual = unwrap(await this.api.combatDraft(token, d.combatId, d.kind, d.targetId)),
           sent = this.sent.get(key);
         if (
           actual?.writeId !== this.saved.get(key) &&

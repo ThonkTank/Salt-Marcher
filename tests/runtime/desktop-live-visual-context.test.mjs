@@ -26,7 +26,7 @@ buildSync({
 buildSync({
   stdin: {
     contents:
-      "export * from './live'; export { initWorld, activateWorld } from './world-ui';export {initPlayerUI,deactivatePlayer} from './player-ui';",
+      "export * from './live';export {createCombat} from './combat'; export { initWorld, activateWorld } from './world-ui';export {initPlayerUI,deactivatePlayer} from './player-ui';",
     resolveDir: path.resolve('src/app/runtime'),
     sourcefile: 'live-world-dom.ts',
   },

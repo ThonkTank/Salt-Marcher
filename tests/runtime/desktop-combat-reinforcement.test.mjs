@@ -1,3 +1,4 @@
+import { combatInstance } from '../helpers/combat.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, copyFileSync, readFileSync, rmSync } from 'node:fs';
@@ -228,7 +229,7 @@ async function uiFixture(t) {
   window.campaign.creatures = (q) =>
     new Promise((resolve, reject) => queries.push({ q, resolve, reject }));
   delete require.cache[require.resolve('../../.build/reinforcement/ui.cjs')];
-  const ui = require('../../.build/reinforcement/ui.cjs');
+  const ui = combatInstance(require('../../.build/reinforcement/ui.cjs'), document, window);
   ui.initCombat((...args) => messages.push(args));
   ui.combatContext(x.w, x.scene);
   const el = (id) => document.getElementById(id);

@@ -56,7 +56,7 @@ import {
 } from '../campaign/groups-ui';
 import { refreshProgress } from '../runtime/progression-ui';
 import { initTreasury, openTreasury } from '../runtime/treasury-ui';
-import { openExistingCombat, setCombatNpcNavigation } from '../runtime/combat';
+import { createCombat } from '../runtime/combat';
 import { initTriggers } from '../runtime/trigger-ui';
 import { initExtensions } from './extensions-ui';
 import { initDungeonContent } from '../atlas/dungeon-content-ui';
@@ -216,7 +216,27 @@ const {
   prepareNoteLocation,
   showDayPreparation,
 } = preparationEditor;
+const combatEditor = createCombat({
+  roots: ['combat-panel', 'combat-finish-dialog', 'combat-initiative-dialog'].map(el),
+  api: window.campaign,
+  matchMedia: (query) => window.matchMedia(query),
+  requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
+  navigation: {
+    scene: () => el('running-editor').scrollIntoView({ block: 'start' }),
+    available: (available) => {
+      el('combat-resume').hidden = !available;
+    },
+    npc: async (id, current) => {
+      if (!current() || !(await leaveWorkspace()) || !current()) return;
+      showTab('groups');
+      await openNpcProfile(id, undefined, current);
+    },
+  },
+});
+const { openExistingCombat } = combatEditor;
+el('combat-resume').onclick = () => combatEditor.revealCombat();
 const liveEditor = createLive({
+  combat: combatEditor,
   roots: [
     'live',
     'character-dialog',
@@ -276,6 +296,7 @@ const {
   useLiveReferenceReadAloud,
 } = liveEditor;
 const editors = createWorkspaceEditors({
+  combat: combatEditor,
   live: liveEditor,
   preparation: preparationEditor,
   atlas: {
@@ -652,11 +673,6 @@ initNpcs(status, refreshScenePreparation, async (id) => {
   showTab('live');
   await openLive();
   await addLiveNpc(id);
-});
-setCombatNpcNavigation(async (id, current) => {
-  if (!current() || !(await leaveWorkspace()) || !current()) return;
-  showTab('groups');
-  await openNpcProfile(id, undefined, current);
 });
 
 initGroups(

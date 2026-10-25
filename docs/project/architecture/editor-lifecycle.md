@@ -129,3 +129,22 @@ Flush und Receipts bleiben im Live-Writer. Der isolierte Test
 gleichen IDs, Szenenwechsel, Rohtexte und alte Antworten nach Wiederöffnung.
 Die Live-/Wiederaufnahme- und Partytests verwenden die erzeugte Instanz bzw.
 explizite Writer-Ports; bestehende Recovery- und Textregressionen bleiben erhalten.
+
+## Kampfinstanz
+
+`createCombat` besitzt Auswahl, Würfel-/Schadenszustand, Verstärkung, Entwürfe,
+Leseaufträge und Command-Slot je Oberfläche. Renderer und Live erhalten dieselbe
+Instanz; Szene, NPC und die Verfügbarkeit des Rücksprungs sind benannte
+Host-Übergaben. Der Initiative-Dialog gehört ausdrücklich zur Kampfoberfläche.
+
+Der vorhandene `CombatDraftCache` und die Auswahl-/Nachbereitungs-/Gruppenpanels
+bekommen den API-Anschluss ihres Besitzers. Die reinen Würfelhilfen liegen in
+`combat-roll-state.ts`. Abmeldung löst Commit-/Progress-Abonnements, widerruft
+Reads und schließt die abhängigen Panel-Kontexte. Wiederanmeldung bindet sie neu
+und lädt die aktuelle Auswahl. Angenommene Writes bleiben in der bisherigen
+Operation-/Receipt-Mechanik; der Cache verwirft keine offenen Rohwerte.
+
+`tests/runtime/desktop-combat-switch.test.mjs` initialisiert zwei echte Instanzen
+mit gleichen IDs ohne globale ID-Abfragen, prüft getrennte Rohwerte und eine
+alte Antwort während eines neuen Reads. Die bestehenden Wechsel-, Recovery-,
+Verstärkungs-, Initiative-, Konzentrations- und Abschlussprüfungen bleiben erhalten.

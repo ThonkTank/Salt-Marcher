@@ -47,6 +47,7 @@ export class CombatSelectionPanel {
       current: () => boolean,
     ) => Promise<boolean>,
     private blocked: () => boolean,
+    private api: Pick<Window['campaign'], 'sceneEncounterSelection'> = window.campaign,
   ) {
     root.id = 'combat-selection';
     this.rows.id = 'combat-selection-groups';
@@ -125,7 +126,7 @@ export class CombatSelectionPanel {
     this.lock();
     const current = () => request === this.request && owner.current();
     try {
-      const response = await window.campaign.sceneEncounterSelection(
+      const response = await this.api.sceneEncounterSelection(
         owner.workspace.token,
         owner.scene.id,
       );
