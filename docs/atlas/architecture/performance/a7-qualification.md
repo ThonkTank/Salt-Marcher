@@ -99,7 +99,7 @@ die Abschlussphase erhalten die vollständigen Belege und offenen Grenzen.
 
 - **Voraussetzung:** A7.23.
 - **Auftrag und Ergebnis:** Bereits vorhandene Volumen, Graph-/Passagenbezüge, Schnitte/Dächer, Triggerflächen und Binder-/Raumsuche auf dem neuen Renderer prüfen. Anschließend Reisevorschau, Partymarker und Eingang über Welt → Ort → Raum → zurück verwenden.
-- **Prüfung / fertig:** Gleiche Zielkennungen und Fachwirkung wie vor dem Umbau; keine implizite Änderung der Weltzeit durch bloße Navigation. Einstiege: `tools/test-desktop-travel-target.mjs`, `tools/test-desktop-travel-checkpoints.mjs`; Fachumfang `docs/dungeon/requirements/smr04-spatial-coverage.md`.
+- **Prüfung / fertig:** Gleiche Zielkennungen und Fachwirkung wie vor dem Umbau; keine implizite Änderung der Weltzeit durch bloße Navigation. Aktueller Einstieg: `tools/test-desktop-travel-checkpoints.mjs` an der sichtbaren Live-/Atlasfläche; Fachumfang `docs/dungeon/requirements/smr04-spatial-coverage.md`. Die historische Zielprobe `tools/test-desktop-travel-target.mjs` bedient den verborgenen Welttab und qualifiziert diesen Ablauf nicht. Fehlende Welt-/Ort-/Raumübergänge an der aktuellen Oberfläche ergänzen; siehe [aktueller Reiseprüfweg](../../contract/hex-travel-3.md#checkpoint-und-wiederaufnahme-auf-der-aktuellen-atlasfläche).
 
 ### A7.08 — Speicherung, Neustart und Archivtransfer prüfen
 
