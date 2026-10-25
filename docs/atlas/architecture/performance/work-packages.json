@@ -4827,6 +4827,9 @@
         "tests/desktop-atlas-postcommit-projection.test.mjs",
         "tests/helpers/atlas-projection-fault.mjs",
         "tests/desktop-dungeon-authoring.test.mjs",
+        "tests/desktop-room-reads.test.mjs",
+        "tests/desktop-atlas-regions.test.mjs",
+        "tests/desktop-room-authoring.test.mjs",
         "docs/project/architecture/canonical-store-worker.md",
         "desktop/main.ts",
         "src/app/storage/atlas-commit-projection.ts"
