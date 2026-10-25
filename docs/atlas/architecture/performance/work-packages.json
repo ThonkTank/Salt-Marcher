@@ -266,7 +266,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "completed",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -304,8 +304,16 @@
         "inputCommit": "27438057f92652388e2f0c6f5a9c63c5f1ce2cc2",
         "activeHours": null,
         "prerequisites": "A0.06 and A0.13 locally verified, including source hashes and production builds",
-        "implementation": "assigned durable reference integration for Atlas/Room/Drawing/Graph/World owners; travel follows serially in A0.08",
-        "nativeQualification": "pending A0.14/A0.11"
+        "implementation": "durable author owner, pure receipt recovery, preserved Room/Drawing/Landscape inputs, matched rectangle completion, awaited World settlement",
+        "nativeQualification": "pending A0.14/A0.11",
+        "completedAt": "2026-10-25T15:29:20.582004+00:00",
+        "implementationCommit": "1016c1f41a44df10898195bdd6c8419903c27d13",
+        "handoff": ".build/atlas-performance-plan/A0.07-handoff.json",
+        "handoffSha256": "3a4ca872b9e3d2563c4e4d83e3582a64086a6c12571f6823f88097edd7513b69",
+        "rootControl": ".build/atlas-performance-plan/A0.07-root-control.json",
+        "rootControlSha256": "8cd4d3bffccfb38e67c9833077b2ceb049d44d5b659d37567d08c9adf325fde7",
+        "localEvidence": "262 passing broad-run cases; two fixture failures resolved in 101/101 consumer run; final delta 12/12; both typechecks and production builds passed; overlapping runs not summed",
+        "milestoneReview": "pending R0"
       }
     },
     {
@@ -320,7 +328,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -336,7 +344,17 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/a0_travel_recovery",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "startedAt": "2026-10-25T15:29:20.582004+00:00",
+        "inputCommit": "1016c1f41a44df10898195bdd6c8419903c27d13",
+        "activeHours": null,
+        "prerequisites": "A0.06/A0.13 locally verified; shared UI released after A0.07 Root control and production builds",
+        "implementation": "assigned durable travel references, serial activation and pure status recovery without time/position replay",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     },
     {
       "id": "A0.09",

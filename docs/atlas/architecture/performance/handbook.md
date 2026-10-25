@@ -394,9 +394,27 @@ Transferprüfung sind grün; `A0.13-root-control.json` bindet Logs und Buildarte
 Diese Belege liegen in `.build/atlas-performance-plan/` und ersetzen keine native
 oder integrierte Abnahme.
 
-A0.07 ist an `a0_author_recovery` vergeben (gpt-6.1-sol, high): Referenzsicherung,
-Pending und Wiederaufnahme der Atlas-, Raum-, Zeichen-, World- und Graphautoren.
-Danach folgt A0.08 für Reisen auf derselben UI-Datei, A0.14 mit echter
+A0.07 ist mit `1016c1f4` lokal abgeschlossen: Referenzsicherung, Pending und
+Wiederaufnahme der Atlas-, Raum-, Zeichen-, World- und Graphautoren. Root hat
+17 Quellen-/Testdateien, 19 Logs, sieben Capability-Einträge und die unveränderten
+14 A0.13-Eingaben geprüft. Der breitere Lauf hatte 262 bestandene Fälle und zwei
+fehlende DOM-Fixtures; beide sind im anschließenden 101/101-Verbraucherlauf behoben.
+Das letzte begrenzte Delta besteht 12/12 Fälle. Diese überlappenden Läufe werden
+nicht addiert. Beide Typprüfungen und Produktionsbuilds sind grün.
+`A0.07-handoff.json` und `A0.07-root-control.json` in
+`.build/atlas-performance-plan/` binden Quellen, Logs und 90 Buildartefakte.
+Alle 107 ursprünglichen Messdateien sind unverändert.
+
+Die Root-Gegenprobe zeigte, dass bloßer Texterhalt nicht genügt: Nach dem Anlegen
+von Raum B konnte die lokale Auswahl den noch offenen Text von Raum A aus der
+Flushprüfung entfernen. Der Recovery-Callback erhält nun auch dessen Besitzer;
+der tatsächliche Renderer-Test prüft rohe Eingaben und verweigerten Wechsel.
+Bestätigte Rechtecke beenden nur unveränderte zugeordnete Eingaben, damit der
+nächste Raum gezeichnet werden kann. Statusklärung wiederholt keinen Writer;
+fehlgeschlagene Ansichtsleser bleiben separat wiederholbar.
+
+A0.08 ist an `a0_travel_recovery` vergeben (gpt-6.1-sol, high): dauerhafte
+Reiseidentität und rein lesende Wiederaufnahme auf derselben UI-Datei. Danach folgt A0.14 mit echter
 nativer Wiederaufnahme und A0.11 mit der gemeinsamen Fehlerprobe. Keine dieser
 Grenzen ist durch die lokalen Vorschauprüfungen ersetzt. R0 und A1 bleiben offen.
 
