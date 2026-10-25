@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "planVersion": "v1.2",
+  "planVersion": "v1.3",
   "status": "executing-A0",
   "unit": "Relative Planstunden ab Beginn des Planreviews; obere Erstschätzung mit Reserve, keine Kalenderzusage",
   "capacity": 3,
@@ -365,6 +365,38 @@
       }
     },
     {
+      "id": "A0.12",
+      "title": "Canvas und Grafikfläche gemeinsam nach einem GPU-Fehler wiederherstellen",
+      "document": "docs/atlas/architecture/performance/a0-foundation.md",
+      "requires": [
+        "A0.01",
+        "A0.02",
+        "P0.03"
+      ],
+      "lane": "A0",
+      "conditional": false,
+      "slots": 1,
+      "status": "planned",
+      "resources": [],
+      "activationRequires": [],
+      "returnGates": [],
+      "writeScopes": [
+        "src/app/atlas-canvas.ts",
+        "src/app/atlas-raster-presentation.ts",
+        "src/app/atlas-presentation.ts",
+        "tests/atlas-presentation-retry.test.mjs",
+        "tests/desktop-atlas-canvas.test.mjs"
+      ],
+      "writesBuildInputs": true,
+      "nativeBuild": false,
+      "alternativeRequires": [],
+      "estimate": {
+        "profile": "implementation",
+        "waitConfidence": "planning-assumption"
+      },
+      "actual": null
+    },
+    {
       "id": "A0.11",
       "title": "Grundlage mit Produktionsregressionen qualifizieren",
       "document": "docs/atlas/architecture/performance/a0-foundation.md",
@@ -379,7 +411,8 @@
         "A0.08",
         "A0.09",
         "A0.10",
-        "P0.03"
+        "P0.03",
+        "A0.12"
       ],
       "lane": "A0",
       "conditional": false,
@@ -3747,7 +3780,8 @@
         "A0.08",
         "A0.09",
         "A0.10",
-        "A0.11"
+        "A0.11",
+        "A0.12"
       ],
       "lane": "R0",
       "conditional": false,
@@ -3783,7 +3817,8 @@
         "A0.08",
         "A0.09",
         "A0.10",
-        "A0.11"
+        "A0.11",
+        "A0.12"
       ],
       "lane": "R0",
       "conditional": false,

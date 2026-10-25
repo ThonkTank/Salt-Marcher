@@ -156,6 +156,17 @@ im vorhandenen Capability-Katalog; hier entsteht keine parallele Abnahmedatenban
 | 2026-10-25 | v1.2: Nutzer ergänzt Architecture-/Documentation-Review-Skills für die regelmäßigen Prüfer und erneutes Skilllesen nach Kontextzusammenfassungen | In bestehende Rn.01/Rn.02 eingebunden; keine neue Berichtsserie oder Verkleinerung des Auftrags |
 | 2026-10-25 | A0.10 findet fehlenden Atlas-Deactivate-Hook in der Workspace-Registry; vorhandenes `hide()` beendet Präsentation und Nachladung bereits | Zusätzliche Schreibbereiche `workspace-editors.ts`, `renderer.ts` und Registry-Test freigegeben; exklusive native Gegenprobe erforderlich |
 
+Version v1.3 ergänzt nach unabhängiger Zwischenprüfung das erforderliche Fixpaket
+A0.12: Ein GPU-Fehler während eines ausstehenden Canvas-Batches hinterlässt den
+Canvas im Fehlerzustand, obwohl der Raster-Retry wieder bereit ist. Der bisherige
+isolierte Retrytest deckt den Besitzerverbund nicht ab. A0.11 und beide R0-Reviews
+warten zusätzlich auf den Verbundfix. Die ursprüngliche Planbasis bleibt erhalten;
+der aktuelle Graph enthält 155 Pakete. Umfang und Ziele A1–A7 bleiben unverändert.
+Die unabhängige Prüfung durch `a0_interim_review` bestätigt v1.3 ohne offene
+erforderliche Plan-/Dokubefunde. Sie hat den aktuellen Leseweg, alle 155 Pakete,
+Abhängigkeiten und die generierte Timeline geprüft. Der Implementierungsbefund
+bleibt bis Verbundfix, nativer Probe und Ergebnisreview offen.
+
 ## Abschluss der Planreviews
 
 Stand 2026-10-25: Nach Korrektur der folgenden Befunde haben P0.01 und P0.02
@@ -169,7 +180,7 @@ Planbasis. P0.03 ist abgeschlossen. Der irrtümliche Pausenvermerk wurde korrigi
 - **Messnachweis A1.04:** GPU-/Präsentationsrückstand und künstliche Verzögerung sind verpflichtende Gegenproben; CPU-Submission allein gibt keinen sichtbaren Navigations-Pass.
 - **Postcommit A0.09:** `atlasRoomCommit` und seine `RoomCommit`-Leseprojektion sind ausdrücklich mit Receipt, Kennung und unverändertem Historyschritt enthalten.
 
-Die Liste dokumentiert die behobenen Reviewbefunde. Die strukturelle Prüfung
+Die Liste dokumentiert die behobenen Planreviewbefunde. Die strukturelle Prüfung
 bestätigt zusätzlich Paketvollständigkeit und erzeugten Dateistand. Sieben gezielte
 Scheduler-/Routentests und Repository-/Diffprüfungen bestanden. Browserprüfung:
 154 Zeilen, lesbare Zeitachse; B4-Compute aktiviert nur B4.01, B4.07 und B4.05,
@@ -183,10 +194,11 @@ sichtbar als inaktive Alternativen.
 | P0.01 / P0.02 | plan_final_review / review_architecture | Unabhängig abgeschlossen, siehe Planbasis; keine Produktabnahme |
 | P0.03 | Koordinator | Planbasis gesichert; Übergang an project-steering |
 | A0.01 | review_packages | Implementiert in `3779e6ecb23c6e4286497e6214fff0c7a9d3e617`; 93/93 gezielte Tests und Typecheck bestanden; native Qualifikation folgt in A0.11 |
-| A0.02 | review_packages | Implementiert in `5a864b384`; 91/91 Tests und Typecheck bestanden; native Qualifikation und R0 offen |
-| A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden; native Qualifikation und R0 offen |
-| A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden; native Qualifikation offen |
-| A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden; native Qualifikation und R0 offen |
+| A0.02 | review_packages | Implementiert in `5a864b384`; 91/91 Tests und Typecheck bestanden ([Testbeleg](../../../../.build/atlas-performance-plan/A0.02-tests.tap)); native Qualifikation und R0 offen |
+| A0.03 | plan_final_review | Implementiert in `cdbdd3ff2`; 11/11 Zeichnungs- und 77/77 Canvastests, finaler Typecheck bestanden ([Dateibindung](../../../../.build/atlas-performance-plan/A0.03-files.sha256)); native Qualifikation und R0 offen |
+| A0.04 | audit_atlas_boundaries | Implementiert in `1e2c629601d2cf2b96584e9f83ae4e1acbcd071c`; 97/97 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.04-handoff.json)); native Qualifikation und R0 offen |
+| A0.05 | audit_atlas_boundaries | Implementiert in `6235ca15`; 30/30 Tests, Type-/Desktopcheck bestanden ([Übergabe](../../../../.build/atlas-performance-plan/A0.05-handoff.json)); native Qualifikation und R0 offen |
+| A0.12 | Noch nicht zugewiesen | Geplant: Canvas-/Raster-Verbundretry; Planergänzung unabhängig freigegeben, Umsetzung nach exklusivem A0.10-Fenster |
 | A0.10 | review_packages | In Arbeit: erwarteter Appstopp; exklusives natives Buildfenster, andere Produktwriter ruhen |
 
 Die parallelen Pakete bearbeiten getrennte Besitzer. Native Läufe beginnen
@@ -194,6 +206,11 @@ erst bei gesperrten Buildinputs. Testassets einmal mit `node build.mjs --test`
 vorbereitet. Starts/Enden und Status im Paketgraphen; unbekannte aktive Arbeitszeit
 wird nicht aus verstrichener Laufzeit abgeleitet. A0 bleibt offen bis eigenen
 Paketnachweisen, unabhängigen Reviews, Fixes und erforderlicher Integration.
+
+Die verlinkten `.build`-Belege sind lokale Arbeitsartefakte; dauerhafte
+Qualifikationsbelege folgen mit den Liefergates. Für A0.01 liegt kein separater
+persistierter TAP-Lauf vor; der nachstehende Aufruf und die zugehörige Revision
+sind die Reproduktionsgrundlage für R0, keine native Abnahme.
 
 A0.01 lief von 11:46:54 bis 11:58:38 UTC am 25.10.2026. Diese 11:44 Minuten sind
 beobachtete Laufzeit einschließlich Prüfungen, keine gemessene aktive Arbeitszeit.

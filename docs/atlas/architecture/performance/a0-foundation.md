@@ -16,7 +16,7 @@ Für jedes Paket gelten Zuständigkeit, Eingaben, Aufwand und Übergabe aus dem
 die konkreten Befunde und Codeanschlüsse der Architekturprüfung. Fachkompetenz:
 A0.01–A0.03 TypeScript/GPU-Präsentation und Treffergeometrie, A0.04–A0.06
 Electron-IPC und Workerlebenszyklus, A0.07/A0.08 Autoren-/Reise-Recovery,
-A0.09 SQLite-Transaktionen und Receipts, A0.10/A0.11 native Fehlerproben.
+A0.09 SQLite-Transaktionen und Receipts, A0.10/A0.11 native Fehlerproben, A0.12 Canvas-/GPU-Lebenszyklus.
 Schnittstellen sind Frameberechtigung, Besitzerabbruch und typisierte
 Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
@@ -103,8 +103,17 @@ Schreibausgänge; der gemeinsame geprüfte Build geht über R0 an die A1-Basis.
 
 ### A0.11 — Grundlage mit Produktionsregressionen qualifizieren
 
-<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+<!-- atlas-dependencies {"requires":["A0.01","A0.02","A0.03","A0.04","A0.05","A0.06","A0.07","A0.08","A0.09","A0.10","P0.03","A0.12"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
 
-- **Voraussetzung:** A0.01–A0.10 abgeschlossen.
+- **Voraussetzung:** A0.01–A0.10 und Fixpaket A0.12 abgeschlossen.
 - **Auftrag und Ergebnis:** Gezielte neue Tests gemeinsam ausführen, native Start/Retry-/Auswahl-/Speicherklärungs-/Exportabbruch-/Schließproben auf demselben Build prüfen. Die Architekturbeurteilung anhand der Fixes aktualisieren.
 - **Prüfung / fertig:** Jeder konkrete Befund aus der Architekturprüfung besitzt einen reproduzierbaren Produktionsnachweis; keine Fremdänderung überschrieben. Danach unabhängige Reviews und Annahmenprüfung gemäß Ausführungsregeln. A1 startet erst ohne offenen erforderlichen A0-Befund.
+
+### A0.12 — Canvas und Grafikfläche gemeinsam nach einem GPU-Fehler wiederherstellen
+
+<!-- atlas-dependencies {"requires":["A0.01","A0.02","P0.03"],"alternativeRequires":[],"activationRequires":[],"returnGates":[]} -->
+
+- **Voraussetzung:** A0.01/A0.02; unabhängiger Zwischenbefund auf `6235ca15`: GPU-Fehler während ausstehendem Canvas-Batch setzt `AtlasCanvas.failed`, der Raster-Retry setzt diesen Besitzer nicht zurück.
+- **Auftrag und Ergebnis:** Den vorhandenen Retry über die betroffenen Canvas-/Präsentationsbesitzer vollständig abschließen. Aktuelle Quelle und Kamera nach erfolgreicher Wiederherstellung neu veröffentlichen; Auswahl/Autorenstart erst mit passendem neuem Frame freigeben. Fehleranzeige und Ressourcen konsistent zurücksetzen, ohne alte Szene oder alte Callbacks zu autorisieren. Echte Canvas-/Bildfehler dürfen durch den Kamera-Retry nicht verdeckt werden. Zuständigkeiten bleiben im bestehenden Lebenszyklus.
+- **Prüfung / fertig:** Produktionsnaher Verbundtest mit echtem Canvas und Raster: initial erfolgreich zeichnen, GPU-Fehler bei ausstehendem Batch, sichtbaren Kamera-Retry auslösen, neuen passenden Frame abschließen. Danach Fehlerpanel beendet, aktuelle Karte sichtbar und Auswahl/Autorenstart möglich; alte Frame-/Fehlerantworten bleiben unwirksam. Erneuter Fehler und Deaktivieren während Retry bleiben sicher. Keine reine Rasterprobe als Ersatz. Native Wiederholungsprobe in A0.11.
+- **Zuweisung / Aufwand:** TypeScript-/GPU-Lebenszyklusbesitzer; ein begrenzter Agentenlauf, Profil `implementation` gemäß Paketgraph. Schreibbereiche Canvas, Raster, Präsentationsvertrag und zugehörige Regressionen. Während A0.10-Nativfenster nur Vorbereitung; Ressourcenregel verhindert konkurrierende Buildänderungen.
