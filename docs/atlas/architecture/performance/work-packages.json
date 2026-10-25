@@ -266,13 +266,14 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "planned",
+      "status": "in_progress",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
       "writeScopes": [
         "src/app/campaign-atlas-author.ts",
         "src/app/atlas-author.ts",
+        "src/app/world-ui.ts",
         "src/app/campaign-atlas-ui.ts",
         "src/app/graph-ui.ts",
         "tests/desktop-atlas-commit-recovery.test.mjs",
@@ -286,7 +287,17 @@
         "profile": "implementation",
         "waitConfidence": "planning-assumption"
       },
-      "actual": null
+      "actual": {
+        "agent": "/root/a0_author_recovery",
+        "model": "gpt-6.1-sol",
+        "reasoningEffort": "high",
+        "startedAt": "2026-10-25T14:55:57.326116+00:00",
+        "inputCommit": "27438057f92652388e2f0c6f5a9c63c5f1ce2cc2",
+        "activeHours": null,
+        "prerequisites": "A0.06 and A0.13 locally verified, including source hashes and production builds",
+        "implementation": "assigned durable reference integration for Atlas/Room/Drawing/Graph/World owners; travel follows serially in A0.08",
+        "nativeQualification": "pending A0.14/A0.11"
+      }
     },
     {
       "id": "A0.08",
@@ -4747,7 +4758,7 @@
       "lane": "A0",
       "conditional": false,
       "slots": 1,
-      "status": "in_progress",
+      "status": "complete",
       "resources": [],
       "activationRequires": [],
       "returnGates": [],
@@ -4781,9 +4792,15 @@
         "inputCommit": "0d6f54ed",
         "activeHours": null,
         "prerequisites": "A0.06/A0.09 and bounded A0.15-17 correction locally accepted; R4 final sources/build hashes verified",
-        "implementation": "assigned compact durable references and read-only Atlas/Graph/Travel status bridge; owner wiring follows A0.07/A0.08",
+        "implementation": "bounded durable Atlas/Preview/Travel references and read-only status bridge implemented; authors follow A0.07/A0.08",
         "scopeAddition": "graph-preview-commands.ts shares existing preview fingerprint input with compact reference helper; desktop/atlas-write-references.ts owns bounded atomic/fsync local reference files; no new writer or canonical archive format",
-        "nativeQualification": "pending A0.14/A0.11"
+        "nativeQualification": "pending A0.14/A0.11",
+        "completedAt": "2026-10-25T14:55:57.326116+00:00",
+        "productCommit": "27438057f92652388e2f0c6f5a9c63c5f1ce2cc2",
+        "verification": "37 freeze tests; 60 prior regressions; both final typechecks and Root production builds passed; Root verified 14 source, 14 input and 20 log hashes",
+        "handoff": ".build/atlas-performance-plan/A0.13-handoff.json",
+        "rootControl": ".build/atlas-performance-plan/A0.13-root-control.json",
+        "review": "Root package control accepted; independent milestone reviews remain R0"
       }
     },
     {

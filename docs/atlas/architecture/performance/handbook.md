@@ -383,9 +383,20 @@ Paket-/Fachquellen-/UI-Testleseweg und die tatsächlichen Capability-Testlinks s
 gepflegt. Transferrollen für lokale Previewidentitäten sind mit `26446391`
 und 11 Transferfällen belegt; aktive Vorschauen bleiben außerhalb von Archiven.
 
-A0.13 ist nach Freigabe von `0d6f54ed` an `a0_receipt_reference` vergeben und
-liefert dauerhafte Klärungsreferenzen und reine Statusleser.
-Danach folgen A0.07/A0.08 mit vollständigen Besitzerreaktionen, A0.14 mit echter
+A0.13 ist mit `27438057` lokal abgeschlossen: kompakte dauerhafte Referenzen,
+reine Statusleser und eine passende Freigabe eindeutig abgelehnter Graphaufträge.
+Der Fachvertrag steht in [Dauerhafte Atlas- und Reisereferenzen](../../../project/architecture/canonical-store-worker.md#dauerhafte-atlas--und-reisereferenzen).
+Root hat die 14 Quellen-, 14 Eingabe- und 20 Loghashes der Übergabe
+`A0.13-handoff.json` geprüft. Der letzte Stand besteht 37 gezielte Fälle und beide
+Typprüfungen; die 60 bestehenden Regressionen liegen vor dem letzten
+Activity-Delta, das im 37er-Lauf gedeckt ist. Beide Produktionsbuilds und die
+Transferprüfung sind grün; `A0.13-root-control.json` bindet Logs und Buildartefakte.
+Diese Belege liegen in `.build/atlas-performance-plan/` und ersetzen keine native
+oder integrierte Abnahme.
+
+A0.07 ist an `a0_author_recovery` vergeben (gpt-6.1-sol, high): Referenzsicherung,
+Pending und Wiederaufnahme der Atlas-, Raum-, Zeichen-, World- und Graphautoren.
+Danach folgt A0.08 für Reisen auf derselben UI-Datei, A0.14 mit echter
 nativer Wiederaufnahme und A0.11 mit der gemeinsamen Fehlerprobe. Keine dieser
 Grenzen ist durch die lokalen Vorschauprüfungen ersetzt. R0 und A1 bleiben offen.
 
