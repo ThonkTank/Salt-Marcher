@@ -1,24 +1,227 @@
-import {validateGraphLayout} from '../graph-contracts';
-import Database from 'better-sqlite3';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';import {createHash} from 'node:crypto';import type {GraphLayout,GraphPreviewState,GraphView} from '../graph-contracts';import {dungeonGeometry} from './dungeon-play';
-export const graphTables=['drawing_floor','room','drawing_hidden','drawing_profile','drawing_element','dungeon_volume','dungeon_path','dungeon_passage','dungeon_key_content','dungeon_graph_layout','dungeon_trigger_field'];
-export function installGraph(db:any){db.exec(`CREATE TABLE IF NOT EXISTS dungeon_graph_layout(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scope_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;`);}
-function checkedGraphRow(r:any):GraphLayout{
- if(!r||createHash('sha256').update(r.payload).digest('hex')!==r.checksum)throw new Error('Graphpositionen beschädigt.');
- const layout=JSON.parse(r.payload);validateGraphLayout(layout);
- if(layout.id!==r.id||layout.scopeId!==r.scope_id||layout.revision!==r.revision)throw new Error('Graphidentität widersprüchlich.');
- return layout;
+import { validateGraphLayout } from '../graph-contracts';
+import Database from 'better-sqlite3';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createHash } from 'node:crypto';
+import type { GraphLayout, GraphPreviewState, GraphView } from '../graph-contracts';
+import { dungeonGeometry } from './dungeon-play';
+export const graphTables = [
+  'drawing_floor',
+  'room',
+  'drawing_hidden',
+  'drawing_profile',
+  'drawing_element',
+  'dungeon_volume',
+  'dungeon_path',
+  'dungeon_passage',
+  'dungeon_key_content',
+  'dungeon_graph_layout',
+  'dungeon_trigger_field',
+];
+export function installGraph(db: any) {
+  db.exec(
+    `CREATE TABLE IF NOT EXISTS dungeon_graph_layout(campaign_id TEXT NOT NULL,id TEXT NOT NULL,scope_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,id),FOREIGN KEY(campaign_id,scope_id) REFERENCES scope(campaign_id,id)) STRICT;`,
+  );
 }
-export function graphLayout(db:any,cam:string,scopeId:string):GraphLayout{
- const row=db.prepare('SELECT * FROM dungeon_graph_layout WHERE campaign_id=? AND scope_id=?').get(cam,scopeId);
- return row?{...checkedGraphRow(row),stored:true}:{stored:false,id:scopeId,revision:0,scopeId,positions:[],intents:[]};
+function checkedGraphRow(r: any): GraphLayout {
+  if (!r || createHash('sha256').update(r.payload).digest('hex') !== r.checksum)
+    throw new Error('Graphpositionen beschädigt.');
+  const layout = JSON.parse(r.payload);
+  validateGraphLayout(layout);
+  if (layout.id !== r.id || layout.scopeId !== r.scope_id || layout.revision !== r.revision)
+    throw new Error('Graphidentität widersprüchlich.');
+  return layout;
 }
-export function validateGraphLayouts(db:any){for(const row of db.prepare('SELECT * FROM dungeon_graph_layout').iterate())checkedGraphRow(row);}
-export function validateGraphHistoryRow(row:any){checkedGraphRow(row);}
-export function graphView(db:any,cam:string,scopeId:string,preview:GraphPreviewState|null=null):GraphView{return{geometry:dungeonGeometry(db,cam),layout:graphLayout(db,cam,scopeId),preview};}
-const quote=(s:string)=>'"'+s.replaceAll('"','""')+'"';function scopeRows(db:any,cam:string,scopeId:string,table:string){return db.prepare('SELECT * FROM '+quote(table)+' WHERE campaign_id=? AND scope_id=? ORDER BY id'+(table==='drawing_hidden'?',kind':'')).iterate(cam,scopeId);}
-function stamp(db:any,cam:string,scopeId:string){const hash=createHash('sha256');for(const table of graphTables){hash.update(table);for(const row of scopeRows(db,cam,scopeId,table))hash.update(JSON.stringify(row));}return hash.digest('hex');}
-export class GraphShadow {readonly db:InstanceType<typeof Database>;readonly dir:string;readonly basis:string;phase:'graph'|'raster'='graph';constructor(readonly source:any,readonly campaignId:string,readonly scopeId:string){if(!source.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(campaignId,scopeId))throw new Error('Dungeonzeichnung fehlt.');this.dir=mkdtempSync(join(tmpdir(),'campaign-graph-preview-'));this.db=new Database(join(this.dir,'preview.sqlite'));this.db.pragma('foreign_keys=OFF');this.db.pragma('journal_mode=MEMORY');this.db.pragma('cache_size=-8192');this.db.pragma('temp_store=FILE');try{const tables=['campaign','campaign_lifecycle','scope','settings',...graphTables,'history','receipt','drawing_history','drawing_revision','dungeon_feature_state','dungeon_feature_receipt','room_draft'];for(const table of tables){const schema=source.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?").get(table);if(!schema)throw new Error('Graphgrundlage fehlt: '+table);this.db.exec(schema.sql);}this.db.transaction(()=>{const insert=(table:string,row:any)=>{const columns=Object.keys(row);this.db.prepare('INSERT INTO '+quote(table)+'('+columns.map(quote).join(',')+') VALUES('+columns.map(()=>'?').join(',')+')').run(...columns.map(c=>row[c]));};const campaign=source.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);insert('campaign',{...campaign,cursor:0});insert('campaign_lifecycle',source.prepare('SELECT * FROM campaign_lifecycle WHERE campaign_id=?').get(campaignId));insert('scope',source.prepare('SELECT * FROM scope WHERE campaign_id=? AND id=?').get(campaignId,scopeId));insert('settings',{key:'active',value:campaignId});insert('settings',{key:'default-scope:'+campaignId,value:scopeId});let bytes=0;for(const table of graphTables)for(const row of scopeRows(source,campaignId,scopeId,table)){bytes+=row.payload?.length??256;if(bytes>64*1024*1024)throw new Error('Graphvorschau für diesen Dungeon auf höchstens 64 MiB Autoreninhalt begrenzen.');insert(table,row);}for(const row of source.prepare('SELECT s.* FROM dungeon_feature_state s JOIN drawing_element e ON s.campaign_id=e.campaign_id AND s.id=e.id WHERE s.campaign_id=? AND e.scope_id=?').iterate(campaignId,scopeId))insert('dungeon_feature_state',row);}).immediate();this.db.pragma('foreign_keys=ON');this.basis=stamp(source,campaignId,scopeId);}catch(e){this.db.close();rmSync(this.dir,{recursive:true,force:true});throw e;}}
- state():GraphPreviewState{return{scopeId:this.scopeId,phase:this.phase,protected:true};}
- changes(){if(stamp(this.source,this.campaignId,this.scopeId)!==this.basis)throw new Error('Dungeonquelle wurde während der Graphvorschau geändert. Vorschau bleibt erhalten; Ursprung wiederherstellen und neu anordnen.');const changes:{key:{table:string;id:string;scopeId?:string;kind?:string};before:any;after:any}[]=[];for(const table of graphTables){const key=(r:any)=>({table,id:r.id,...(table==='drawing_floor'||table==='drawing_hidden'?{scopeId:this.scopeId}:{}),...(table==='drawing_hidden'?{kind:r.kind}:{})}),get=(db:any,r:any)=>db.prepare('SELECT * FROM '+quote(table)+' WHERE campaign_id=? AND id=?'+(table==='drawing_floor'||table==='drawing_hidden'?' AND scope_id=?':'')+(table==='drawing_hidden'?' AND kind=?':'')).get(this.campaignId,r.id,...(table==='drawing_floor'||table==='drawing_hidden'?[this.scopeId]:[]),...(table==='drawing_hidden'?[r.kind]:[]))??null;for(const row of scopeRows(this.source,this.campaignId,this.scopeId,table)){const after=get(this.db,row);if(JSON.stringify(row)!==JSON.stringify(after))changes.push({key:key(row),before:row,after});}for(const row of scopeRows(this.db,this.campaignId,this.scopeId,table))if(!get(this.source,row))changes.push({key:key(row),before:null,after:row});}return changes;}
- dispose(){this.db.close();rmSync(this.dir,{recursive:true,force:true});}
+export function graphLayout(db: any, cam: string, scopeId: string): GraphLayout {
+  const row = db
+    .prepare('SELECT * FROM dungeon_graph_layout WHERE campaign_id=? AND scope_id=?')
+    .get(cam, scopeId);
+  return row
+    ? { ...checkedGraphRow(row), stored: true }
+    : { stored: false, id: scopeId, revision: 0, scopeId, positions: [], intents: [] };
+}
+export function validateGraphLayouts(db: any) {
+  for (const row of db.prepare('SELECT * FROM dungeon_graph_layout').iterate())
+    checkedGraphRow(row);
+}
+export function validateGraphHistoryRow(row: any) {
+  checkedGraphRow(row);
+}
+export function graphView(
+  db: any,
+  cam: string,
+  scopeId: string,
+  preview: GraphPreviewState | null = null,
+): GraphView {
+  return { geometry: dungeonGeometry(db, cam), layout: graphLayout(db, cam, scopeId), preview };
+}
+const quote = (s: string) => '"' + s.replaceAll('"', '""') + '"';
+function scopeRows(db: any, cam: string, scopeId: string, table: string) {
+  return db
+    .prepare(
+      'SELECT * FROM ' +
+        quote(table) +
+        ' WHERE campaign_id=? AND scope_id=? ORDER BY id' +
+        (table === 'drawing_hidden' ? ',kind' : ''),
+    )
+    .iterate(cam, scopeId);
+}
+function stamp(db: any, cam: string, scopeId: string) {
+  const hash = createHash('sha256');
+  for (const table of graphTables) {
+    hash.update(table);
+    for (const row of scopeRows(db, cam, scopeId, table)) hash.update(JSON.stringify(row));
+  }
+  return hash.digest('hex');
+}
+export class GraphShadow {
+  readonly db: InstanceType<typeof Database>;
+  readonly dir: string;
+  readonly basis: string;
+  phase: 'graph' | 'raster' = 'graph';
+  constructor(
+    readonly source: any,
+    readonly campaignId: string,
+    readonly scopeId: string,
+  ) {
+    if (
+      !source.prepare('SELECT 1 FROM scope WHERE campaign_id=? AND id=?').get(campaignId, scopeId)
+    )
+      throw new Error('Dungeonzeichnung fehlt.');
+    this.dir = mkdtempSync(join(tmpdir(), 'campaign-graph-preview-'));
+    this.db = new Database(join(this.dir, 'preview.sqlite'));
+    this.db.pragma('foreign_keys=OFF');
+    this.db.pragma('journal_mode=MEMORY');
+    this.db.pragma('cache_size=-8192');
+    this.db.pragma('temp_store=FILE');
+    try {
+      const tables = [
+        'campaign',
+        'campaign_lifecycle',
+        'scope',
+        'settings',
+        ...graphTables,
+        'history',
+        'receipt',
+        'drawing_history',
+        'drawing_revision',
+        'dungeon_feature_state',
+        'dungeon_feature_receipt',
+        'room_draft',
+      ];
+      for (const table of tables) {
+        const schema = source
+          .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name=?")
+          .get(table);
+        if (!schema) throw new Error('Graphgrundlage fehlt: ' + table);
+        this.db.exec(schema.sql);
+      }
+      this.db
+        .transaction(() => {
+          const insert = (table: string, row: any) => {
+            const columns = Object.keys(row);
+            this.db
+              .prepare(
+                'INSERT INTO ' +
+                  quote(table) +
+                  '(' +
+                  columns.map(quote).join(',') +
+                  ') VALUES(' +
+                  columns.map(() => '?').join(',') +
+                  ')',
+              )
+              .run(...columns.map((c) => row[c]));
+          };
+          const campaign = source.prepare('SELECT * FROM campaign WHERE id=?').get(campaignId);
+          insert('campaign', { ...campaign, cursor: 0 });
+          insert(
+            'campaign_lifecycle',
+            source.prepare('SELECT * FROM campaign_lifecycle WHERE campaign_id=?').get(campaignId),
+          );
+          insert(
+            'scope',
+            source
+              .prepare('SELECT * FROM scope WHERE campaign_id=? AND id=?')
+              .get(campaignId, scopeId),
+          );
+          insert('settings', { key: 'active', value: campaignId });
+          insert('settings', { key: 'default-scope:' + campaignId, value: scopeId });
+          let bytes = 0;
+          for (const table of graphTables)
+            for (const row of scopeRows(source, campaignId, scopeId, table)) {
+              bytes += row.payload?.length ?? 256;
+              if (bytes > 64 * 1024 * 1024)
+                throw new Error(
+                  'Graphvorschau für diesen Dungeon auf höchstens 64 MiB Autoreninhalt begrenzen.',
+                );
+              insert(table, row);
+            }
+          for (const row of source
+            .prepare(
+              'SELECT s.* FROM dungeon_feature_state s JOIN drawing_element e ON s.campaign_id=e.campaign_id AND s.id=e.id WHERE s.campaign_id=? AND e.scope_id=?',
+            )
+            .iterate(campaignId, scopeId))
+            insert('dungeon_feature_state', row);
+        })
+        .immediate();
+      this.db.pragma('foreign_keys=ON');
+      this.basis = stamp(source, campaignId, scopeId);
+    } catch (e) {
+      this.db.close();
+      rmSync(this.dir, { recursive: true, force: true });
+      throw e;
+    }
+  }
+  state(): GraphPreviewState {
+    return { scopeId: this.scopeId, phase: this.phase, protected: true };
+  }
+  changes() {
+    if (stamp(this.source, this.campaignId, this.scopeId) !== this.basis)
+      throw new Error(
+        'Dungeonquelle wurde während der Graphvorschau geändert. Vorschau bleibt erhalten; Ursprung wiederherstellen und neu anordnen.',
+      );
+    const changes: {
+      key: { table: string; id: string; scopeId?: string; kind?: string };
+      before: any;
+      after: any;
+    }[] = [];
+    for (const table of graphTables) {
+      const key = (r: any) => ({
+          table,
+          id: r.id,
+          ...(table === 'drawing_floor' || table === 'drawing_hidden'
+            ? { scopeId: this.scopeId }
+            : {}),
+          ...(table === 'drawing_hidden' ? { kind: r.kind } : {}),
+        }),
+        get = (db: any, r: any) =>
+          db
+            .prepare(
+              'SELECT * FROM ' +
+                quote(table) +
+                ' WHERE campaign_id=? AND id=?' +
+                (table === 'drawing_floor' || table === 'drawing_hidden' ? ' AND scope_id=?' : '') +
+                (table === 'drawing_hidden' ? ' AND kind=?' : ''),
+            )
+            .get(
+              this.campaignId,
+              r.id,
+              ...(table === 'drawing_floor' || table === 'drawing_hidden' ? [this.scopeId] : []),
+              ...(table === 'drawing_hidden' ? [r.kind] : []),
+            ) ?? null;
+      for (const row of scopeRows(this.source, this.campaignId, this.scopeId, table)) {
+        const after = get(this.db, row);
+        if (JSON.stringify(row) !== JSON.stringify(after))
+          changes.push({ key: key(row), before: row, after });
+      }
+      for (const row of scopeRows(this.db, this.campaignId, this.scopeId, table))
+        if (!get(this.source, row)) changes.push({ key: key(row), before: null, after: row });
+    }
+    return changes;
+  }
+  dispose() {
+    this.db.close();
+    rmSync(this.dir, { recursive: true, force: true });
+  }
 }

@@ -1,16 +1,25 @@
 /** Logical display scale, independent of device pixels and output tiling. */
-export const FOREST_DETAIL_MPP=2;
-export const FOREST_SURFACE_MPP=8;
-export const CARTOGRAPHIC_PERIOD=65536;
-export function cartographicPhase(value:number){return ((value+CARTOGRAPHIC_PERIOD/2)%CARTOGRAPHIC_PERIOD+CARTOGRAPHIC_PERIOD)%CARTOGRAPHIC_PERIOD-CARTOGRAPHIC_PERIOD/2;}
-export function forestSurfaceWeight(mpp:number){
- const t=Math.max(0,Math.min(1,(mpp-FOREST_DETAIL_MPP)/(FOREST_SURFACE_MPP-FOREST_DETAIL_MPP)));
- return t*t*(3-2*t);
+export const FOREST_DETAIL_MPP = 2;
+export const FOREST_SURFACE_MPP = 8;
+export const CARTOGRAPHIC_PERIOD = 65536;
+export function cartographicPhase(value: number) {
+  return (
+    ((((value + CARTOGRAPHIC_PERIOD / 2) % CARTOGRAPHIC_PERIOD) + CARTOGRAPHIC_PERIOD) %
+      CARTOGRAPHIC_PERIOD) -
+    CARTOGRAPHIC_PERIOD / 2
+  );
+}
+export function forestSurfaceWeight(mpp: number) {
+  const t = Math.max(
+    0,
+    Math.min(1, (mpp - FOREST_DETAIL_MPP) / (FOREST_SURFACE_MPP - FOREST_DETAIL_MPP)),
+  );
+  return t * t * (3 - 2 * t);
 }
 
 /** Decorative ink only: coverage owns borders and holes. Nested fixed world
  * pitches crossfade instead of stretching texture coordinates during zoom. */
-export const CARTOGRAPHIC_GLSL=`
+export const CARTOGRAPHIC_GLSL = `
 uniform sampler2D atlasPlantInk;
 uniform sampler2D atlasMarkInk;
 float atlasForestSurface(float mpp){return smoothstep(${FOREST_DETAIL_MPP.toFixed(1)},${FOREST_SURFACE_MPP.toFixed(1)},mpp);}

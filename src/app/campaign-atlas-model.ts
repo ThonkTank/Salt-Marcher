@@ -1,5 +1,5 @@
-import type { AtlasRenderView, AtlasBinding } from "./campaign-atlas-contracts";
-import type { Point } from "./contracts";
+import type { AtlasRenderView, AtlasBinding } from './campaign-atlas-contracts';
+import type { Point } from './contracts';
 export interface AtlasFrame {
   x: number;
   y: number;
@@ -13,18 +13,18 @@ export const atlasToLocal = (p: Point, f: AtlasFrame): Point => ({
   x: (p.x - f.x) * Math.cos(f.angle) + (p.y - f.y) * Math.sin(f.angle),
   y: -(p.x - f.x) * Math.sin(f.angle) + (p.y - f.y) * Math.cos(f.angle),
 });
-export function atlasFrame(atlas: Pick<AtlasRenderView,"cities"|"bindings">, b: AtlasBinding): AtlasFrame {
-  const frames=(atlas as import('./atlas-region-contracts').AtlasRegionView).region?.frames;const resolved=frames&&Object.hasOwn(frames,b.id)?frames[b.id]:null;if(resolved)return {...resolved};
-  if (b.parent === "world") return { x: b.x, y: b.y, angle: b.angle };
-  const city = atlas.cities.find((c) =>
-      c.units.some((u) => u.id === b.parentId),
-    ),
+export function atlasFrame(
+  atlas: Pick<AtlasRenderView, 'cities' | 'bindings'>,
+  b: AtlasBinding,
+): AtlasFrame {
+  const frames = (atlas as import('./atlas-region-contracts').AtlasRegionView).region?.frames;
+  const resolved = frames && Object.hasOwn(frames, b.id) ? frames[b.id] : null;
+  if (resolved) return { ...resolved };
+  if (b.parent === 'world') return { x: b.x, y: b.y, angle: b.angle };
+  const city = atlas.cities.find((c) => c.units.some((u) => u.id === b.parentId)),
     unit = city?.units.find((u) => u.id === b.parentId),
-    parent = atlas.bindings.find(
-      (p) => p.kind === "city" && p.ownerId === city?.header.id,
-    );
-  if (!unit?.position || !parent)
-    throw new Error("Gebäude ist noch nicht im Atlas verortet.");
+    parent = atlas.bindings.find((p) => p.kind === 'city' && p.ownerId === city?.header.id);
+  if (!unit?.position || !parent) throw new Error('Gebäude ist noch nicht im Atlas verortet.');
   const base = atlasFrame(atlas, parent),
     at = localToAtlas(unit.position, base),
     pose = { ...at, angle: base.angle + (unit.angle ?? 0) },
@@ -51,4 +51,11 @@ export function atlasHexAt(p: Point, size: number) {
   return { q: x, r: z };
 }
 
-export const frameMatrix=(f:AtlasFrame):import("./atlas-paint").Affine=>[Math.cos(f.angle),Math.sin(f.angle),-Math.sin(f.angle),Math.cos(f.angle),f.x,f.y];
+export const frameMatrix = (f: AtlasFrame): import('./atlas-paint').Affine => [
+  Math.cos(f.angle),
+  Math.sin(f.angle),
+  -Math.sin(f.angle),
+  Math.cos(f.angle),
+  f.x,
+  f.y,
+];

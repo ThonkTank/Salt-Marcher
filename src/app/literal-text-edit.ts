@@ -9,9 +9,14 @@ export function preserveLiteralEdit(before: string, input: string): string {
   if (old === next) return before;
   let start = 0;
   while (start < old.length && start < next.length && old[start] === next[start]) start++;
-  let end = old.length, nextEnd = next.length;
-  while (end > start && nextEnd > start && old[end - 1] === next[nextEnd - 1]) { end--; nextEnd--; }
-  const from = rawTextOffset(before, start), to = rawTextOffset(before, end);
+  let end = old.length,
+    nextEnd = next.length;
+  while (end > start && nextEnd > start && old[end - 1] === next[nextEnd - 1]) {
+    end--;
+    nextEnd--;
+  }
+  const from = rawTextOffset(before, start),
+    to = rawTextOffset(before, end);
   let middle = next.slice(start, nextEnd);
   if (middle.includes('\n')) {
     let ending = before.match(/\r\n|\r|\n/)?.[0] ?? '\n';

@@ -1,31 +1,15 @@
-import {effectiveProminence,PROMINENCE_LIMITS} from './atlas-prominence';
-import {
-  MapLabelCollisions,
-  type MapLabelRect as Rect,
-} from "./map-label-collisions";
-import type { MapLabelStyle } from "./map-label-style";
-import { atlasPaint, type AtlasPaint, type PaintStyle } from "./atlas-paint";
-import type { Point, Polygon } from "./contracts";
-import {
-  contains,
-  type LandscapeBox,
-  type LandscapeRecord,
-} from "./atlas-landscape";
-import { linePoints } from "./landscape-line";
-import {
-  territoryAnchor,
-  territoryBounds,
-  type TerritoryState,
-} from "./atlas-territories";
-export type { MapLabelKind, MapLabelCandidate } from "./atlas-label-source";
-import type {
-  MapLabelKind,
-  MapLabelCandidate,
-  MapLabelSource,
-} from "./atlas-label-source";
+import { effectiveProminence, PROMINENCE_LIMITS } from './atlas-prominence';
+import { MapLabelCollisions, type MapLabelRect as Rect } from './map-label-collisions';
+import type { MapLabelStyle } from './map-label-style';
+import { atlasPaint, type AtlasPaint, type PaintStyle } from './atlas-paint';
+import type { Point, Polygon } from './contracts';
+import { contains, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import { linePoints } from './landscape-line';
+import { territoryAnchor, territoryBounds, type TerritoryState } from './atlas-territories';
+export type { MapLabelKind, MapLabelCandidate } from './atlas-label-source';
+import type { MapLabelKind, MapLabelCandidate, MapLabelSource } from './atlas-label-source';
 export const labelScaleLimits = [2, 12, 100, 1000, 10000, Infinity];
-const footprintVisible = (width: number, mpp: number) =>
-  width / mpp >= 2;
+const footprintVisible = (width: number, mpp: number) => width / mpp >= 2;
 export function labelFromPolygon(
   id: string,
   text: string,
@@ -44,8 +28,8 @@ export function labelFromPolygon(
         ? center
         : territoryAnchor(polygons);
   if (!p) return null;
-  const span = (axis: "x" | "y", v: number) => {
-    const cross = axis === "x" ? "y" : "x",
+  const span = (axis: 'x' | 'y', v: number) => {
+    const cross = axis === 'x' ? 'y' : 'x',
       hits: number[] = [];
     for (const poly of polygons)
       for (const ring of [poly.outer, ...poly.holes])
@@ -53,35 +37,25 @@ export function labelFromPolygon(
           const a = ring[i]!,
             q = ring[(i + 1) % ring.length]!;
           if (a[cross] > v === q[cross] > v) continue;
-          hits.push(
-            a[axis] +
-              ((v - a[cross]) / (q[cross] - a[cross])) * (q[axis] - a[axis]),
-          );
+          hits.push(a[axis] + ((v - a[cross]) / (q[cross] - a[cross])) * (q[axis] - a[axis]));
         }
     hits.sort((a, b) => a - b);
     const index = hits.findIndex((x) => x > p[axis]);
     return index > 0
-      ? Math.max(
-          0,
-          2 * Math.min(p[axis] - hits[index - 1]!, hits[index]! - p[axis]),
-        )
+      ? Math.max(0, 2 * Math.min(p[axis] - hits[index - 1]!, hits[index]! - p[axis]))
       : 0;
   };
-  const vertical = span("y", p.x),
-    horizontal = span("x", p.y),
+  const vertical = span('y', p.x),
+    horizontal = span('x', p.y),
     height = Math.min(vertical * 0.6, horizontal / 5),
     available =
-      Math.min(
-        horizontal,
-        span("x", p.y - height / 2),
-        span("x", p.y + height / 2),
-      ) * 0.9;
+      Math.min(horizontal, span('x', p.y - height / 2), span('x', p.y + height / 2)) * 0.9;
   return { id, text, kind, point: p, rank, available, height };
 }
 export function lineLabels(
   id: string,
   text: string,
-  kind: "road" | "river",
+  kind: 'road' | 'river',
   points: Point[],
   rank = 2,
   box?: LandscapeBox,
@@ -118,10 +92,7 @@ export function lineLabels(
       }
       const from = { x: a.x + lo * dx, y: a.y + lo * dy },
         to = { x: a.x + hi * dx, y: a.y + hi * dy };
-      if (
-        run.length &&
-        Math.hypot(run.at(-1)!.x - from.x, run.at(-1)!.y - from.y) > 1e-7
-      ) {
+      if (run.length && Math.hypot(run.at(-1)!.x - from.x, run.at(-1)!.y - from.y) > 1e-7) {
         runs.push(run);
         run = [];
       }
@@ -131,7 +102,7 @@ export function lineLabels(
     if (run.length > 1) runs.push(run);
     return runs
       .flatMap((run, i) =>
-        lineLabels(id + ":run" + i, text, kind, run, rank).map((c) => ({
+        lineLabels(id + ':run' + i, text, kind, run, rank).map((c) => ({
           ...c,
           objectId: id,
         })),
@@ -151,7 +122,7 @@ export function lineLabels(
       if (angle > Math.PI / 2) angle -= Math.PI;
       if (angle < -Math.PI / 2) angle += Math.PI;
       out.push({
-        id: id + ":" + start,
+        id: id + ':' + start,
         objectId: id,
         text,
         kind,
@@ -174,10 +145,7 @@ export function lineLabels(
   }
   emit(points.length - 1);
   return out
-    .sort(
-      (a, b) =>
-        (b.available ?? 0) - (a.available ?? 0) || a.id.localeCompare(b.id),
-    )
+    .sort((a, b) => (b.available ?? 0) - (a.available ?? 0) || a.id.localeCompare(b.id))
     .slice(0, 12);
 }
 export function styledLabels(
@@ -189,32 +157,27 @@ export function styledLabels(
   return selected.map((c) => ({
     ...c,
     ...(style?.rank === undefined ? {} : { rank: style.rank }),
-    ...(style?.point
-      ? { point: style.point, available: undefined, height: undefined }
-      : {}),
+    ...(style?.point ? { point: style.point, available: undefined, height: undefined } : {}),
     ...(style?.angle === undefined ? {} : { angle: style.angle }),
   }));
 }
-export function landscapeLabels(
-  r: LandscapeRecord,
-  box?: LandscapeBox,
-): MapLabelCandidate[] {
+export function landscapeLabels(r: LandscapeRecord, box?: LandscapeBox): MapLabelCandidate[] {
   let labels: MapLabelCandidate[] = [];
-  const lineLimit=PROMINENCE_LIMITS[r.label?.rank??effectiveProminence(r)];
-  if (r.kind === "place" && r.points[0] && r.name)
+  const lineLimit = PROMINENCE_LIMITS[r.label?.rank ?? effectiveProminence(r)];
+  if (r.kind === 'place' && r.points[0] && r.name)
     labels = [
       {
-        id: "place:" + r.id,
+        id: 'place:' + r.id,
         text: r.name,
-        kind: "place",
+        kind: 'place',
         point: r.points[0],
         rank: 2,
         locationId: r.locationId,
       },
     ];
-  if (r.kind === "road" || r.kind === "river")
+  if (r.kind === 'road' || r.kind === 'river')
     labels = lineLabels(
-      "landscape:" + r.id,
+      'landscape:' + r.id,
       r.name,
       r.kind,
       linePoints(r),
@@ -224,8 +187,8 @@ export function landscapeLabels(
       ...c,
       maxMpp: Number.isFinite(lineLimit) ? lineLimit : undefined,
     }));
-  if (r.kind === "patch" && r.surface === "freshwater" && r.name) {
-    const c = labelFromPolygon("water:" + r.id, r.name, "area", r.polygons, 3);
+  if (r.kind === 'patch' && r.surface === 'freshwater' && r.name) {
+    const c = labelFromPolygon('water:' + r.id, r.name, 'area', r.polygons, 3);
     if (c) labels = [c];
   }
   return styledLabels(labels, r.label);
@@ -241,7 +204,7 @@ export function boundedLabels(
     if (!c.text || !Number.isFinite(c.point.x + c.point.y)) continue;
     const x = Math.floor(((c.point.x - box.x) / box.width) * 16),
       y = Math.floor(((c.point.y - box.y) / box.height) * 16),
-      key = x + "," + y;
+      key = x + ',' + y;
     if (x < -1 || x > 16 || y < -1 || y > 16) continue;
     const list = buckets.get(key) ?? [];
     list.push(c);
@@ -266,9 +229,9 @@ export function territoryLabels(state: TerritoryState): MapLabelCandidate[] {
   return state.territories.flatMap((t) => {
     if (!state.layers.find((l) => l.id === t.layerId)?.visible) return [];
     const c = labelFromPolygon(
-      "territory:" + t.id,
+      'territory:' + t.id,
       t.name,
-      "area",
+      'area',
       t.polygons,
       t.rank,
       t.labelPoint,
@@ -291,18 +254,16 @@ export function drawTerritories(
         const b = territoryBounds(t.polygons);
         if (!footprintVisible(Math.max(b.width, b.height), mpp)) continue;
         root.append(
-          atlasPaint("polygons", {
+          atlasPaint('polygons', {
             polygons: t.polygons.map((p) => ({
               outer: p.outer.map((v) => ({ x: v.x - box.x, y: v.y - box.y })),
-              holes: p.holes.map((h) =>
-                h.map((v) => ({ x: v.x - box.x, y: v.y - box.y })),
-              ),
+              holes: p.holes.map((h) => h.map((v) => ({ x: v.x - box.x, y: v.y - box.y }))),
             })),
             pointer: false,
             style: {
               fill: t.color,
               fillOpacity: t.opacity,
-              fillRule: "evenodd",
+              fillRule: 'evenodd',
             },
             data: { territory: t.id },
           }),
@@ -313,12 +274,12 @@ export function drawTerritories(
             for (let i = 0; i < ring.length; i++) {
               const a = ring[i]!,
                 b = ring[(i + 1) % ring.length]!,
-                ends = [a.x + "," + a.y, b.x + "," + b.y].sort(),
-                key = layer.id + ":" + ends.join(":");
+                ends = [a.x + ',' + a.y, b.x + ',' + b.y].sort(),
+                key = layer.id + ':' + ends.join(':');
               if (edges.has(key)) continue;
               edges.add(key);
               root.append(
-                atlasPaint("line", {
+                atlasPaint('line', {
                   x: a.x - box.x,
                   y: a.y - box.y,
                   x2: b.x - box.x,
@@ -327,8 +288,8 @@ export function drawTerritories(
                   style: {
                     stroke: t.color,
                     lineWidth: mpp * (t.rank >= 4 ? 1.8 : 1.1),
-                    lineDash: t.border === "dashed" ? [5 * mpp, 3 * mpp] : [],
-                    lineCap: "round",
+                    lineDash: t.border === 'dashed' ? [5 * mpp, 3 * mpp] : [],
+                    lineCap: 'round',
                   },
                 }),
               );
@@ -392,26 +353,20 @@ export class MapLabelLayout {
         (b.available ?? 0) - (a.available ?? 0) ||
         a.id.localeCompare(b.id),
     )) {
-      if (
-        (c.locationId && locations.has(c.locationId)) ||
-        (c.objectId && objects.has(c.objectId))
-      )
+      if ((c.locationId && locations.has(c.locationId)) || (c.objectId && objects.has(c.objectId)))
         continue;
       const projected = project?.(c);
       if (project && !projected) continue;
       const localMpp = projected?.mpp ?? mpp,
         available =
-          projected?.available ??
-          (c.available === undefined ? undefined : c.available / localMpp),
+          projected?.available ?? (c.available === undefined ? undefined : c.available / localMpp),
         availableHeight =
-          projected?.height ??
-          (c.height === undefined ? undefined : c.height / localMpp);
+          projected?.height ?? (c.height === undefined ? undefined : c.height / localMpp);
       const was = this.previous.has(c.id),
         isSelected = important(c),
         font = mapLabelFont(c),
         scaleLimit = Math.min(labelScaleLimits[c.rank]!, c.maxMpp ?? Infinity);
-      if (!isSelected && localMpp > scaleLimit * (projected || was ? 1.15 : 1))
-        continue;
+      if (!isSelected && localMpp > scaleLimit * (projected || was ? 1.15 : 1)) continue;
       const width = measure(c.text, font) + 8,
         height = font + 6;
       if (
@@ -420,14 +375,9 @@ export class MapLabelLayout {
         available < width * (projected || was ? 0.9 : 1.1)
       )
         continue;
-      if (
-        !isSelected &&
-        availableHeight !== undefined &&
-        availableHeight < height
-      )
-        continue;
+      if (!isSelected && availableHeight !== undefined && availableHeight < height) continue;
       const options =
-        c.kind === "place" || c.kind === "city"
+        c.kind === 'place' || c.kind === 'city'
           ? [
               [0, -14],
               [0, 18],
@@ -441,12 +391,8 @@ export class MapLabelLayout {
           ...options.map((_, i) => i).filter((i) => i !== first),
         ];
       const angle = projected?.angle ?? c.angle ?? 0,
-        w =
-          Math.abs(Math.cos(angle)) * width +
-          Math.abs(Math.sin(angle)) * height,
-        h =
-          Math.abs(Math.sin(angle)) * width +
-          Math.abs(Math.cos(angle)) * height;
+        w = Math.abs(Math.cos(angle)) * width + Math.abs(Math.sin(angle)) * height,
+        h = Math.abs(Math.sin(angle)) * width + Math.abs(Math.cos(angle)) * height;
       for (const index of order) {
         const [dx, dy] = options[index]!,
           px = projected ? projected.point.x + dx! : c.point.x + dx! * mpp,
@@ -456,12 +402,7 @@ export class MapLabelLayout {
         r.y = (projected ? py : (py - box.y) / mpp) - h / 2;
         r.w = w;
         r.h = h;
-        if (
-          r.x < 2 ||
-          r.y < 2 ||
-          r.x + w > box.width / mpp - 2 ||
-          r.y + h > box.height / mpp - 2
-        )
+        if (r.x < 2 || r.y < 2 || r.x + w > box.width / mpp - 2 || r.y + h > box.height / mpp - 2)
           continue;
         if (occupied.overlaps(r)) continue;
         if (visible && !visible(c)) continue;
@@ -476,12 +417,9 @@ export class MapLabelLayout {
         const scaleOpacity =
           projected && !isSelected
             ? ease((1.15 - localMpp / scaleLimit) / 0.3) *
-              (available === undefined
-                ? 1
-                : ease((available / width - 0.9) / 0.2))
+              (available === undefined ? 1 : ease((available / width - 0.9) / 0.2))
             : 1;
-        const opacity =
-          (animate ? Math.min(1, (now - started) / 160) : 1) * scaleOpacity;
+        const opacity = (animate ? Math.min(1, (now - started) / 160) : 1) * scaleOpacity;
         this.animating ||= animate && now - started < 160;
         placed.push({
           candidate: c,
@@ -498,8 +436,7 @@ export class MapLabelLayout {
       }
     }
     this.previous = next;
-    for (const id of this.appeared.keys())
-      if (!next.has(id)) this.appeared.delete(id);
+    for (const id of this.appeared.keys()) if (!next.has(id)) this.appeared.delete(id);
     return placed;
   }
 }
@@ -507,9 +444,7 @@ let context: CanvasRenderingContext2D | null | undefined;
 export function measureMapText(text: string, font: number) {
   if (context === undefined)
     context =
-      typeof document === "undefined"
-        ? null
-        : document.createElement("canvas").getContext("2d");
+      typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
   if (context) {
     context.font = `${font}px sans-serif`;
     return context.measureText(text).width;
@@ -517,20 +452,16 @@ export function measureMapText(text: string, font: number) {
   return Array.from(text).length * font * 0.62;
 }
 export const mapLabelFont = (c: MapLabelCandidate) =>
-  c.kind === "area" ? 14 + c.rank : 12 + (c.rank >= 4 ? 2 : 0);
-export function mapLabelStyle(
-  kind: MapLabelKind,
-  font: number,
-  mpp = 1,
-): PaintStyle {
+  c.kind === 'area' ? 14 + c.rank : 12 + (c.rank >= 4 ? 2 : 0);
+export function mapLabelStyle(kind: MapLabelKind, font: number, mpp = 1): PaintStyle {
   return {
     fontSize: font * mpp,
-    textAlign: "center",
-    textBaseline: "middle",
-    fill: kind === "river" ? "#285f80" : "#293c38",
-    stroke: "#f8f3e5",
+    textAlign: 'center',
+    textBaseline: 'middle',
+    fill: kind === 'river' ? '#285f80' : '#293c38',
+    stroke: '#f8f3e5',
     lineWidth: 3 * mpp,
-    lineJoin: "round",
+    lineJoin: 'round',
   };
 }
 export function paintMapLabels(
@@ -547,7 +478,7 @@ export function paintMapLabels(
       sin = Math.sin(angle);
     root.append(
       atlasPaint(
-        "text",
+        'text',
         {
           x: 0,
           y: 0,

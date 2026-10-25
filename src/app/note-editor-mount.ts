@@ -2,29 +2,26 @@
 // Nested hosts restore in reverse order. Retiring an outer host first retires
 // its borrowers, so an old dialog cannot strand the author controls elsewhere.
 const ids = [
-  "preparation-problems",
-  "note-editor",
-  "preparation-apply",
-  "preparation-reconcile",
-  "preparation-refresh",
+  'preparation-problems',
+  'note-editor',
+  'preparation-apply',
+  'preparation-reconcile',
+  'preparation-refresh',
 ];
 const leases: { retire: () => void; restore: () => void }[] = [];
-export function mountNoteEditor(
-  host: HTMLElement,
-  retire: () => void,
-): () => void {
+export function mountNoteEditor(host: HTMLElement, retire: () => void): () => void {
   const nodes = ids.map((id) => {
     const n = document.getElementById(id);
-    if (!n) throw Error("Gemeinsamer Notizeditor ist nicht verfügbar.");
+    if (!n) throw Error('Gemeinsamer Notizeditor ist nicht verfügbar.');
     return n;
   });
   const mounts = nodes.map((node) => {
-    const anchor = document.createComment("note-editor-home");
+    const anchor = document.createComment('note-editor-home');
     node.before(anchor);
     host.append(node);
     return { node, anchor };
   });
-  const back = document.getElementById("note-back"),
+  const back = document.getElementById('note-back'),
     backHidden = back?.hidden ?? false;
   if (back) back.hidden = true;
   const lease = {
@@ -48,7 +45,8 @@ export function mountNoteEditor(
 
 /** Read-only trash originals expose Restore instead of an editable title. */
 export function focusNoteEditor() {
-  document.getElementById("note-editor")
-    ?.querySelector<HTMLElement>("#note-title:enabled, #note-restore:not([hidden])")
+  document
+    .getElementById('note-editor')
+    ?.querySelector<HTMLElement>('#note-title:enabled, #note-restore:not([hidden])')
     ?.focus();
 }

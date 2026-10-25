@@ -1,161 +1,1284 @@
-import {createHash,randomUUID} from 'node:crypto';
-import {existsSync,statSync} from 'node:fs';
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
-import type {AudioAsset,AudioQuery,AudioPage,AudioRegistry,MusicState,MusicContext,MusicSceneSettings,MusicSubject,MusicView,MusicCommand,QueueEntry,MoodAxis} from '../music-contracts';
-import {audioMimeTypes} from '../music-contracts';
-import {readLiveScene} from './live';
-import {readSceneWorld} from './world';
-import {scenePreparation} from './session';
-import {cellAt,terrainNames} from '../world-model';
-import {worldNoteDocument} from '../../features/world/world-notes';
-import {checkedLocationDocument} from '../../features/location/location-schema';
-const json=(v:unknown)=>JSON.stringify(v),hash=(s:string)=>createHash('sha256').update(s).digest('hex');
-function decoded<T>(row:any):T{if(!row||hash(row.payload)!==row.checksum)throw new Error('Musikdaten fehlen oder sind beschädigt.');const v=JSON.parse(row.payload);if(v.revision!==undefined&&v.revision!==row.revision)throw new Error('Musikrevision widersprüchlich.');return v;}
-export function installMusicSchema(db:any){db.exec(`CREATE TABLE IF NOT EXISTS audio_asset(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,kind TEXT NOT NULL,trashed INTEGER NOT NULL,search_text TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
+import type {
+  AudioAsset,
+  AudioQuery,
+  AudioPage,
+  AudioRegistry,
+  MusicState,
+  MusicContext,
+  MusicSceneSettings,
+  MusicSubject,
+  MusicView,
+  MusicCommand,
+  QueueEntry,
+  MoodAxis,
+} from '../music-contracts';
+import { audioMimeTypes } from '../music-contracts';
+import { readLiveScene } from './live';
+import { readSceneWorld } from './world';
+import { scenePreparation } from './session';
+import { cellAt, terrainNames } from '../world-model';
+import { worldNoteDocument } from '../../features/world/world-notes';
+import { checkedLocationDocument } from '../../features/location/location-schema';
+const json = (v: unknown) => JSON.stringify(v),
+  hash = (s: string) => createHash('sha256').update(s).digest('hex');
+function decoded<T>(row: any): T {
+  if (!row || hash(row.payload) !== row.checksum)
+    throw new Error('Musikdaten fehlen oder sind beschädigt.');
+  const v = JSON.parse(row.payload);
+  if (v.revision !== undefined && v.revision !== row.revision)
+    throw new Error('Musikrevision widersprüchlich.');
+  return v;
+}
+export function installMusicSchema(db: any) {
+  db.exec(`CREATE TABLE IF NOT EXISTS audio_asset(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,kind TEXT NOT NULL,trashed INTEGER NOT NULL,search_text TEXT NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS audio_registry(id TEXT PRIMARY KEY,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS music_state(campaign_id TEXT PRIMARY KEY REFERENCES campaign(id),revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;
  CREATE TABLE IF NOT EXISTS scene_music(campaign_id TEXT NOT NULL,scene_id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,scene_id),FOREIGN KEY(campaign_id,scene_id) REFERENCES live_scene(campaign_id,id)) STRICT;
  CREATE TABLE IF NOT EXISTS music_subject(campaign_id TEXT NOT NULL REFERENCES campaign(id),kind TEXT NOT NULL,id TEXT NOT NULL,revision INTEGER NOT NULL,payload TEXT NOT NULL,checksum TEXT NOT NULL,PRIMARY KEY(campaign_id,kind,id)) STRICT;
  CREATE TABLE IF NOT EXISTS music_position(campaign_id TEXT NOT NULL REFERENCES campaign(id),playback_id TEXT NOT NULL,seconds REAL NOT NULL,PRIMARY KEY(campaign_id,playback_id)) STRICT;
- CREATE TABLE IF NOT EXISTS music_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,scene_id TEXT,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);}
-export function audioFile(root:string,asset:AudioAsset){if(!/^[a-f0-9]{64}$/.test(asset.media.sha256)||!/^\.[a-z0-9]{1,8}$/.test(asset.media.extension))throw new Error('Mediendatei hat keine gültige Bibliotheksidentität.');return path.join(root,asset.media.sha256+asset.media.extension);}
-function checkedAudioRow(row:any):AudioAsset{
- const a=decoded<AudioAsset>(row);validateAsset(a);
- if(a.id!==row.id||!Number.isSafeInteger(a.revision)||a.revision<1||a.revision!==row.revision||a.kind!==row.kind||Number(a.trashed)!==row.trashed)throw new Error('Audioidentität oder Bibliotheksstatus widersprüchlich.');
- return a;
+ CREATE TABLE IF NOT EXISTS music_receipt(command_id TEXT PRIMARY KEY,campaign_id TEXT NOT NULL REFERENCES campaign(id),fingerprint TEXT NOT NULL,scene_id TEXT,payload TEXT NOT NULL,checksum TEXT NOT NULL) STRICT;`);
 }
-function audioFromRow(root:string,row:any):AudioAsset{const a=checkedAudioRow(row);let available=false;try{const file=statSync(audioFile(root,a));available=file.isFile()&&file.size===a.media.bytes;}catch{}return{...a,available};}
-export function readAudioAsset(db:any,root:string,id:string):AudioAsset{return audioFromRow(root,db.prepare('SELECT * FROM audio_asset WHERE id=?').get(id));}
-export function readAudioAssets(db:any,root:string,q:AudioQuery):AudioPage{if(typeof q.search!=='string'||q.search.length>1000||!['','song','ambience'].includes(q.kind)||q.after!==null&&!/^[1-9][0-9]*$/.test(q.after))throw new Error('Audiosuche ungültig.');const rows=db.prepare("SELECT rowid AS cursor,* FROM audio_asset WHERE (? OR trashed=0) AND (?='' OR kind=?) AND (?='' OR instr(lower(search_text),lower(?))>0) AND (? IS NULL OR rowid>?) ORDER BY rowid LIMIT 51").all(q.includeTrashed?1:0,q.kind,q.kind,q.search,q.search.toLocaleLowerCase(),q.after,q.after),problems:string[]=[],items:AudioAsset[]=[];for(const r of rows.slice(0,50))try{items.push(audioFromRow(root,r));}catch(error){problems.push(r.id+': '+(error as Error).message);}return{items,next:rows.length>50?String(rows[49].cursor):null,problems};}
-function validateAudioRegistry(r:AudioRegistry,revision:number){
- if(!r||typeof r!=='object'||!Number.isSafeInteger(r.revision)||r.revision<0||r.revision!==revision||!Number.isSafeInteger(r.catalogRevision)||r.catalogRevision<0||!Array.isArray(r.axes)||r.axes.length>30)throw new Error('Musikregister ist ungültig.');
- validateAxes(r.axes);
+export function audioFile(root: string, asset: AudioAsset) {
+  if (
+    !/^[a-f0-9]{64}$/.test(asset.media.sha256) ||
+    !/^\.[a-z0-9]{1,8}$/.test(asset.media.extension)
+  )
+    throw new Error('Mediendatei hat keine gültige Bibliotheksidentität.');
+  return path.join(root, asset.media.sha256 + asset.media.extension);
 }
-export function checkedAudioRegistry(row:any):AudioRegistry{const r=decoded<AudioRegistry>(row);if(row.id!=='main')throw new Error('Musikregisteridentität ist widersprüchlich.');validateAudioRegistry(r,row.revision);return r;}
-export function readAudioRegistry(db:any):AudioRegistry{const r=db.prepare("SELECT * FROM audio_registry WHERE id='main'").get();return r?checkedAudioRegistry(r):{revision:0,catalogRevision:0,axes:[]};}
-function saveRegistry(db:any,r:AudioRegistry){validateAudioRegistry(r,r.revision);const payload=json(r);db.prepare("INSERT INTO audio_registry VALUES('main',?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum").run(r.revision,payload,hash(payload));}
-function touchCatalog(db:any){const r=readAudioRegistry(db);r.catalogRevision++;saveRegistry(db,r);}
-const tags=(v:string[])=>{if(!Array.isArray(v)||v.length>100||v.some(t=>typeof t!=='string'||t.length>1000))throw new Error('Audiotags ungültig.');return[...new Set(v.map(t=>t.trim()).filter(Boolean))];};
-const norm=(v:string)=>v.trim().toLocaleLowerCase();
-function numeric(n:number,min=0,max=100){if(!Number.isFinite(n)||n<min||n>max)throw new Error('Musikwert außerhalb des Bereichs.');}
-function moods(v:Record<string,number>){if(!v||typeof v!=='object'||Array.isArray(v))throw new Error('Stimmungswerte ungültig.');for(const value of Object.values(v))numeric(value);}
-function validateAsset(a:AudioAsset){
- if(!a||typeof a.id!=='string'||!a.id||typeof a.name!=='string'||!a.name.trim()||a.name.length>1000||!['song','ambience'].includes(a.kind)||typeof a.notes!=='string'||a.notes.length>100000||typeof a.trashed!=='boolean'||a.problem!==null&&(typeof a.problem!=='string'||a.problem.length>10000))throw new Error('Audiodatei benötigt Namen und gültige Beschreibung.');
- numeric(a.intensity);moods(a.moods);tags(a.moodTags);tags(a.vibes);tags(a.genres);
- if(!a.media||!Number.isSafeInteger(a.media.bytes)||a.media.bytes<0||typeof a.media.originalName!=='string'||!a.media.originalName||!audioMimeTypes[a.media.extension]||a.media.mime!==audioMimeTypes[a.media.extension])throw new Error('Ungültige Mediengröße, Dateiendung oder Typ.');
- audioFile('',a);
+function checkedAudioRow(row: any): AudioAsset {
+  const a = decoded<AudioAsset>(row);
+  validateAsset(a);
+  if (
+    a.id !== row.id ||
+    !Number.isSafeInteger(a.revision) ||
+    a.revision < 1 ||
+    a.revision !== row.revision ||
+    a.kind !== row.kind ||
+    Number(a.trashed) !== row.trashed
+  )
+    throw new Error('Audioidentität oder Bibliotheksstatus widersprüchlich.');
+  return a;
 }
-function validateAxes(axes:MoodAxis[]){
- if(!Array.isArray(axes)||new Set(axes.map(x=>x?.id)).size!==axes.length||axes.some(x=>!x||typeof x.id!=='string'||!x.id||typeof x.name!=='string'||!x.name.trim()||x.name.length>1000||typeof x.lowLabel!=='string'||x.lowLabel.length>1000||typeof x.highLabel!=='string'||x.highLabel.length>1000))throw new Error('Stimmungsachsen ungültig oder doppelt.');
+function audioFromRow(root: string, row: any): AudioAsset {
+  const a = checkedAudioRow(row);
+  let available = false;
+  try {
+    const file = statSync(audioFile(root, a));
+    available = file.isFile() && file.size === a.media.bytes;
+  } catch {}
+  return { ...a, available };
 }
-export function validateAudioLibrary(library:ReturnType<typeof audioLibrarySnapshot>){
- if(!library||library.format!=='Kampagnenwerkstatt Musikbibliothek'||library.version!==1||!Array.isArray(library.assets))throw new Error('Musikpaket hat ein unbekanntes Format.');
- validateAxes(library.axes);
- const ids=new Set<string>();
- for(const a of library.assets){validateAsset(a);if(ids.has(a.id))throw new Error('Doppelte Audioidentität im Musikpaket.');ids.add(a.id);}
+export function readAudioAsset(db: any, root: string, id: string): AudioAsset {
+  return audioFromRow(root, db.prepare('SELECT * FROM audio_asset WHERE id=?').get(id));
 }
-function saveAsset(db:any,a:AudioAsset){validateAsset(a);a.moodTags=tags(a.moodTags);a.vibes=tags(a.vibes);a.genres=tags(a.genres);const data={...a};delete(data as Partial<AudioAsset>).available;const payload=json(data),search=[a.name,...a.moodTags,...a.vibes,...a.genres,a.notes].join(' ').toLocaleLowerCase();db.prepare('INSERT INTO audio_asset VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,kind=excluded.kind,trashed=excluded.trashed,search_text=excluded.search_text,payload=excluded.payload,checksum=excluded.checksum').run(a.id,a.revision,a.kind,a.trashed?1:0,search,payload,hash(payload));}
-export function ingestAudio(db:any,root:string,media:AudioAsset['media']){const match=db.prepare("SELECT id FROM audio_asset WHERE json_extract(payload,'$.media.sha256')=? AND json_extract(payload,'$.media.originalName')=? AND trashed=0 ORDER BY rowid LIMIT 1").get(media.sha256,media.originalName);if(match)return readAudioAsset(db,root,match.id);const a:AudioAsset={id:randomUUID(),revision:1,name:path.basename(media.originalName,media.extension),kind:'song',media,moods:{},moodTags:[],intensity:50,vibes:[],genres:[],notes:'',trashed:false,problem:null,available:true};saveAsset(db,a);touchCatalog(db);return a;}
-function defaultState():MusicState{return{favoriteAssets:[],revision:0,autoplay:false,autoAmbience:false,current:null,queue:[],history:[],status:'stopped',loop:'none',manualHold:'none',volume:.7,ambienceVolume:.3,fadeSeconds:2,forcedAmbience:[],mutedAmbience:[],automaticAmbience:[],contextSignature:'',lastError:null};}
-function validateMusicState(db:any,s:MusicState,revision:number){
- if(!s||typeof s!=='object'||!Number.isSafeInteger(s.revision)||s.revision<1||s.revision!==revision||typeof s.autoplay!=='boolean'||typeof s.autoAmbience!=='boolean')throw new Error('Musikplayerstand ist ungültig.');
- if(!['playing','paused','stopped'].includes(s.status)||!['none','track','queue'].includes(s.loop)||!['none','stop','track','queue'].includes(s.manualHold))throw new Error('Musikplayerstatus ist ungültig.');
- numeric(s.volume,0,1);numeric(s.ambienceVolume,0,1);numeric(s.fadeSeconds,0,20);
- const id=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<=1000;
- const list=(value:unknown,unique:boolean)=>Array.isArray(value)&&value.every(id)&&(!unique||new Set(value).size===value.length);
- if(!Array.isArray(s.queue)||new Set(s.queue.map(entry=>entry?.id)).size!==s.queue.length||s.queue.some(entry=>!entry||!id(entry.id)||!id(entry.assetId)||!['manual','auto'].includes(entry.mode)))throw new Error('Musikqueue ist ungültig.');
- if(!list(s.history,false)||s.history.length>100||!list(s.forcedAmbience,true)||!list(s.mutedAmbience,true)||s.automaticAmbience!==undefined&&(!list(s.automaticAmbience,true)||s.automaticAmbience.length>12))throw new Error('Musikreferenzen sind ungültig.');
- if(s.favoriteAssets!==undefined&&!list(s.favoriteAssets,true))throw new Error('Soundboard-Favoriten sind ungültig.');
- for(const assetId of s.favoriteAssets??[]){const kind=db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;if(kind!=='song'&&kind!=='ambience')throw new Error('Soundboard-Favorit verweist auf eine fehlende Audiodatei.');}
- if(s.forcedAmbience.some(assetId=>s.mutedAmbience.includes(assetId)))throw new Error('Umgebungsstatus ist widersprüchlich.');
- if(s.current!==null&&(!s.current||!id(s.current.assetId)||!id(s.current.playbackId)||!['manual','auto'].includes(s.current.mode)||!Number.isFinite(s.current.positionSeconds)||s.current.positionSeconds<0||s.current.positionSeconds>100000000))throw new Error('Aktueller Musiktitel ist ungültig.');
- if(s.status==='playing'&&!s.current)throw new Error('Musikwiedergabe hat keinen aktuellen Titel.');
- if(typeof s.contextSignature!=='string'||s.contextSignature!==''&&!/^[a-f0-9]{64}$/.test(s.contextSignature)||s.lastError!==null&&typeof s.lastError!=='string')throw new Error('Musikkontext ist ungültig.');
- const kinds=new Map<string,string>();
- const requireKind=(assetId:string,kind:'song'|'ambience')=>{let actual=kinds.get(assetId);if(!actual){actual=db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;kinds.set(assetId,actual??'');}if(actual!==kind)throw new Error(kind==='song'?'Musiktitel verweist nicht auf einen Song.':'Umgebung verweist nicht auf Ambience.');};
- for(const assetId of [...s.history,...s.queue.map(entry=>entry.assetId),...(s.current?[s.current.assetId]:[])])requireKind(assetId,'song');
- for(const assetId of [...s.forcedAmbience,...s.mutedAmbience,...(s.automaticAmbience??[])])requireKind(assetId,'ambience');
+export function readAudioAssets(db: any, root: string, q: AudioQuery): AudioPage {
+  if (
+    typeof q.search !== 'string' ||
+    q.search.length > 1000 ||
+    !['', 'song', 'ambience'].includes(q.kind) ||
+    (q.after !== null && !/^[1-9][0-9]*$/.test(q.after))
+  )
+    throw new Error('Audiosuche ungültig.');
+  const rows = db
+      .prepare(
+        "SELECT rowid AS cursor,* FROM audio_asset WHERE (? OR trashed=0) AND (?='' OR kind=?) AND (?='' OR instr(lower(search_text),lower(?))>0) AND (? IS NULL OR rowid>?) ORDER BY rowid LIMIT 51",
+      )
+      .all(
+        q.includeTrashed ? 1 : 0,
+        q.kind,
+        q.kind,
+        q.search,
+        q.search.toLocaleLowerCase(),
+        q.after,
+        q.after,
+      ),
+    problems: string[] = [],
+    items: AudioAsset[] = [];
+  for (const r of rows.slice(0, 50))
+    try {
+      items.push(audioFromRow(root, r));
+    } catch (error) {
+      problems.push(r.id + ': ' + (error as Error).message);
+    }
+  return { items, next: rows.length > 50 ? String(rows[49].cursor) : null, problems };
 }
-function checkedMusicState(db:any,cam:string,row:any):MusicState{const s=decoded<MusicState>(row);if(row.campaign_id!==cam)throw new Error('Musikkampagne ist widersprüchlich.');validateMusicState(db,s,row.revision);return s;}
-function state(db:any,cam:string):MusicState{const row=db.prepare('SELECT * FROM music_state WHERE campaign_id=?').get(cam);return row?checkedMusicState(db,cam,row):defaultState();}
-export function musicStateAssetCount(db:any,cam:string){const s=state(db,cam);return new Set([s.current?.assetId,...s.queue.map(entry=>entry.assetId),...s.forcedAmbience,...s.mutedAmbience,...(s.automaticAmbience??[]),...s.history,...(s.favoriteAssets??[])].filter((id):id is string=>!!id)).size;}
-function saveState(db:any,cam:string,s:MusicState){s.revision++;const data=structuredClone(s);if(data.current)data.current.positionSeconds=0;validateMusicState(db,data,s.revision);const payload=json(data);db.prepare('INSERT INTO music_state VALUES(?,?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,s.revision,payload,hash(payload));}
-function normalizedTags(value:unknown){if(!Array.isArray(value))throw new Error('Musiktags ungültig.');const next=tags(value as string[]);if(json(next)!==json(value))throw new Error('Musiktags sind nicht normalisiert.');}
-function validateSceneSettings(s:MusicSceneSettings,id:string,revision:number){if(!s||typeof s!=='object'||s.sceneId!==id||!Number.isSafeInteger(s.revision)||s.revision<1||s.revision!==revision)throw new Error('Szenenmusikidentität ist widersprüchlich.');moods(s.moods);numeric(s.intensity);normalizedTags(s.vibes);normalizedTags(s.genres);}
-function checkedSceneSettings(db:any,cam:string,id:string,row:any):MusicSceneSettings{const s=decoded<MusicSceneSettings>(row);if(row.campaign_id!==cam||row.scene_id!==id)throw new Error('Szenenmusikidentität ist widersprüchlich.');validateSceneSettings(s,id,row.revision);readLiveScene(db,cam,id);return s;}
-function sceneSettings(db:any,cam:string,id:string):MusicSceneSettings{const r=db.prepare('SELECT * FROM scene_music WHERE campaign_id=? AND scene_id=?').get(cam,id);return r?checkedSceneSettings(db,cam,id,r):{sceneId:id,revision:0,moods:{},intensity:50,vibes:[],genres:[]};}
-function subjectName(db:any,cam:string,kind:MusicSubject['kind'],id:string){if(!['location','note','creature'].includes(kind)||typeof id!=='string'||!id||id.length>1000)throw new Error('Musikquelle ist ungültig.');if(kind==='creature')return id;const row=db.prepare(`SELECT * FROM ${kind==='location'?'location':'world_note'} WHERE campaign_id=? AND id=?`).get(cam,id);if(!row||hash(row.payload)!==row.checksum)throw new Error('Musikquelle fehlt oder ist beschädigt.');return kind==='location'?checkedLocationDocument(JSON.parse(row.payload)).name:worldNoteDocument(JSON.parse(row.payload)).title;}
-function validateMusicSubject(s:MusicSubject,kind:MusicSubject['kind'],id:string,revision:number){if(!s||typeof s!=='object'||s.kind!==kind||s.id!==id||!Number.isSafeInteger(s.revision)||s.revision<1||s.revision!==revision||typeof s.name!=='string'||!s.name.trim()||!['add','replace'].includes(s.vibeMode)||!['add','replace'].includes(s.genreMode))throw new Error('Musikquellenidentität ist widersprüchlich.');normalizedTags(s.vibes);normalizedTags(s.genres);}
-function checkedMusicSubject(row:any,cam:string,kind:MusicSubject['kind'],id:string):MusicSubject{const s=decoded<MusicSubject>(row);if(row.campaign_id!==cam||row.kind!==kind||row.id!==id)throw new Error('Musikquellenidentität ist widersprüchlich.');validateMusicSubject(s,kind,id,row.revision);return s;}
-export function readMusicSubject(db:any,cam:string,kind:MusicSubject['kind'],id:string):MusicSubject{const name=subjectName(db,cam,kind,id),r=db.prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?').get(cam,kind,id);return r?{...checkedMusicSubject(r,cam,kind,id),name}:{id,kind,name,revision:0,vibes:[],genres:[],vibeMode:'add',genreMode:'add'};}
-function checkedMusicReceipt(db:any,row:any){const receipt=decoded<{applied:boolean}>(row);if(typeof row.command_id!=='string'||!row.command_id||row.command_id.length>1000||typeof row.campaign_id!=='string'||!row.campaign_id||!db.prepare('SELECT 1 FROM campaign WHERE id=?').get(row.campaign_id)||typeof row.fingerprint!=='string'||!/^[a-f0-9]{64}$/.test(row.fingerprint)||!receipt||typeof receipt!=='object'||Array.isArray(receipt)||receipt.applied!==true)throw new Error('Musikbestätigung ist ungültig.');if(row.scene_id!==null&&(typeof row.scene_id!=='string'||!db.prepare('SELECT 1 FROM live_scene WHERE campaign_id=? AND id=?').get(row.campaign_id,row.scene_id)))throw new Error('Musikbestätigung verweist auf eine fehlende Scene.');return receipt;}
-function context(db:any,cam:string,s:MusicState):MusicContext{const focus=db.prepare('SELECT focus_id FROM live_state WHERE campaign_id=?').get(cam),registry=readAudioRegistry(db),result:MusicContext={sceneId:focus?.focus_id??null,name:'Manuelle Wiedergabe',moods:{},intensity:50,vibes:[],genres:[],environment:[],signature:'',problems:[]};if(focus){const scene=readLiveScene(db,cam,focus.focus_id),settings=sceneSettings(db,cam,scene.id);result.name=scene.title||'Aktuelle Gruppe';result.moods=Object.fromEntries(registry.axes.map(axis=>[axis.id,settings.moods[axis.id]??50]));result.intensity=settings.intensity;const append=(subject:MusicSubject)=>{result.vibes=subject.vibeMode==='replace'?[...subject.vibes]:[...new Set([...result.vibes,...subject.vibes])];result.genres=subject.genreMode==='replace'?[...subject.genres]:[...new Set([...result.genres,...subject.genres])];};if(scene.locationId)append(readMusicSubject(db,cam,'location',scene.locationId));if(s.autoplay||s.autoAmbience){try{const world=readSceneWorld(db,cam,scene.id),mapRow=world.position.mapId?db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?").get(cam,world.position.mapId):null;if(mapRow){const cell=cellAt(JSON.parse(mapRow.payload),world.position);result.environment.push(terrainNames[cell.terrain]);if(cell.river)result.environment.push('Fluss');}if(world.weather)result.environment.push(world.weather.label,...world.weather.effects.ambience);const calendarRow=db.prepare("SELECT payload FROM world_record WHERE campaign_id=? AND kind='calendar' AND id='main'").get(cam),daySeconds=calendarRow?JSON.parse(calendarRow.payload).daySeconds:86400,fraction=Number(BigInt(scene.clock.instantMs)%(BigInt(daySeconds)*1000n))/(daySeconds*1000);result.environment.push(fraction<.25||fraction>.75?'Nacht':'Tag');const groups=scenePreparation(db,cam,scene.id).groups;const ids=new Set<string>();for(const actor of groups.flatMap(g=>g.actors).filter(a=>!a.unavailable)){ids.add(actor.id);append(readMusicSubject(db,cam,'creature',actor.creatureId));const note=db.prepare('SELECT payload FROM world_note WHERE campaign_id=? AND id=?').get(cam,actor.id);if(note)for(const relation of JSON.parse(note.payload).relations??[])ids.add(relation.targetId);}const adoption=db.prepare('SELECT plan_id,visit_id FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1').get(cam,scene.id);if(adoption){const d=db.prepare('SELECT payload FROM session_visit WHERE campaign_id=? AND plan_id=? AND id=?').get(cam,adoption.plan_id,adoption.visit_id);if(d)for(const id of JSON.parse(d.payload).noteIds??[])ids.add(id);}for(const id of ids){const note=db.prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?').get(cam,id);if(note&&!note.trashed)append(readMusicSubject(db,cam,'note',id));}const fight=db.prepare("SELECT payload FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY rowid DESC LIMIT 1").get(cam,scene.id);if(fight){result.environment.push('Kampf');for(const id of new Set<string>((JSON.parse(fight.payload).participants as {sourceId?:string}[]).map(p=>p.sourceId).filter((id):id is string=>!!id)))append(readMusicSubject(db,cam,'creature',id));}}catch(error){result.problems.push('Umgebung: '+(error as Error).message);}}result.vibes=[...new Set([...result.vibes,...settings.vibes,...result.environment])];result.genres=[...new Set([...result.genres,...settings.genres])];}result.signature=hash(json([result.sceneId,result.moods,result.intensity,result.vibes,result.genres,result.environment,registry.catalogRevision]));return result;}
-function score(a:AudioAsset,c:MusicContext){let distance=Math.abs(a.intensity-c.intensity)/100;for(const [id,n]of Object.entries(c.moods))distance+=Math.abs((a.moods[id]??50)-n)/100;const vibeSet=new Set(c.vibes.map(norm)),genreSet=new Set(c.genres.map(norm)),matches=a.vibes.filter(t=>vibeSet.has(norm(t))).length,genres=a.genres.filter(t=>genreSet.has(norm(t))).length;return distance-Math.min(3,matches)*.75-Math.min(2,genres)*.8;}
-function candidates(db:any,root:string,c:MusicContext){const matches:{asset:AudioAsset;score:number}[]=[];for(const row of db.prepare("SELECT * FROM audio_asset WHERE kind='song' AND trashed=0").iterate()){try{const a=audioFromRow(root,row);if(!a.available||a.problem||c.genres.length&&a.genres.length&&!a.genres.some(g=>c.genres.some(w=>norm(w)===norm(g))))continue;matches.push({asset:a,score:score(a,c)});}catch{}}matches.sort((a,b)=>a.score-b.score||a.asset.name.localeCompare(b.asset.name)||a.asset.id.localeCompare(b.asset.id));return matches.slice(0,20).map(x=>x.asset.id);}
-function automaticAmbience(db:any,root:string,c:MusicContext){const env=new Set(c.environment.map(norm)),ids:string[]=[];for(const row of db.prepare("SELECT * FROM audio_asset WHERE kind='ambience' AND trashed=0").iterate()){try{const a=audioFromRow(root,row);if(a.available&&!a.problem&&[...a.vibes,...a.moodTags].some(t=>env.has(norm(t))))ids.push(a.id);}catch{}}return ids.slice(0,12);}
-function start(s:MusicState,id:string,mode:'manual'|'auto',recordHistory=true){
- // Back consumes history; it must not add the title being left to that same history.
- if(recordHistory&&s.current)s.history=[...s.history,s.current.assetId].slice(-100);
- s.current={assetId:id,playbackId:randomUUID(),positionSeconds:0,mode};s.status='playing';s.lastError=null;
+function validateAudioRegistry(r: AudioRegistry, revision: number) {
+  if (
+    !r ||
+    typeof r !== 'object' ||
+    !Number.isSafeInteger(r.revision) ||
+    r.revision < 0 ||
+    r.revision !== revision ||
+    !Number.isSafeInteger(r.catalogRevision) ||
+    r.catalogRevision < 0 ||
+    !Array.isArray(r.axes) ||
+    r.axes.length > 30
+  )
+    throw new Error('Musikregister ist ungültig.');
+  validateAxes(r.axes);
 }
-function next(s:MusicState){const entry=s.queue.shift();if(entry){start(s,entry.assetId,entry.mode);s.manualHold=entry.mode==='manual'?'queue':'none';}else{if(s.current)s.history=[...s.history,s.current.assetId].slice(-100);s.current=null;s.status='stopped';if(s.manualHold!=='stop')s.manualHold='none';}}
+export function checkedAudioRegistry(row: any): AudioRegistry {
+  const r = decoded<AudioRegistry>(row);
+  if (row.id !== 'main') throw new Error('Musikregisteridentität ist widersprüchlich.');
+  validateAudioRegistry(r, row.revision);
+  return r;
+}
+export function readAudioRegistry(db: any): AudioRegistry {
+  const r = db.prepare("SELECT * FROM audio_registry WHERE id='main'").get();
+  return r ? checkedAudioRegistry(r) : { revision: 0, catalogRevision: 0, axes: [] };
+}
+function saveRegistry(db: any, r: AudioRegistry) {
+  validateAudioRegistry(r, r.revision);
+  const payload = json(r);
+  db.prepare(
+    "INSERT INTO audio_registry VALUES('main',?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum",
+  ).run(r.revision, payload, hash(payload));
+}
+function touchCatalog(db: any) {
+  const r = readAudioRegistry(db);
+  r.catalogRevision++;
+  saveRegistry(db, r);
+}
+const tags = (v: string[]) => {
+  if (
+    !Array.isArray(v) ||
+    v.length > 100 ||
+    v.some((t) => typeof t !== 'string' || t.length > 1000)
+  )
+    throw new Error('Audiotags ungültig.');
+  return [...new Set(v.map((t) => t.trim()).filter(Boolean))];
+};
+const norm = (v: string) => v.trim().toLocaleLowerCase();
+function numeric(n: number, min = 0, max = 100) {
+  if (!Number.isFinite(n) || n < min || n > max)
+    throw new Error('Musikwert außerhalb des Bereichs.');
+}
+function moods(v: Record<string, number>) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('Stimmungswerte ungültig.');
+  for (const value of Object.values(v)) numeric(value);
+}
+function validateAsset(a: AudioAsset) {
+  if (
+    !a ||
+    typeof a.id !== 'string' ||
+    !a.id ||
+    typeof a.name !== 'string' ||
+    !a.name.trim() ||
+    a.name.length > 1000 ||
+    !['song', 'ambience'].includes(a.kind) ||
+    typeof a.notes !== 'string' ||
+    a.notes.length > 100000 ||
+    typeof a.trashed !== 'boolean' ||
+    (a.problem !== null && (typeof a.problem !== 'string' || a.problem.length > 10000))
+  )
+    throw new Error('Audiodatei benötigt Namen und gültige Beschreibung.');
+  numeric(a.intensity);
+  moods(a.moods);
+  tags(a.moodTags);
+  tags(a.vibes);
+  tags(a.genres);
+  if (
+    !a.media ||
+    !Number.isSafeInteger(a.media.bytes) ||
+    a.media.bytes < 0 ||
+    typeof a.media.originalName !== 'string' ||
+    !a.media.originalName ||
+    !audioMimeTypes[a.media.extension] ||
+    a.media.mime !== audioMimeTypes[a.media.extension]
+  )
+    throw new Error('Ungültige Mediengröße, Dateiendung oder Typ.');
+  audioFile('', a);
+}
+function validateAxes(axes: MoodAxis[]) {
+  if (
+    !Array.isArray(axes) ||
+    new Set(axes.map((x) => x?.id)).size !== axes.length ||
+    axes.some(
+      (x) =>
+        !x ||
+        typeof x.id !== 'string' ||
+        !x.id ||
+        typeof x.name !== 'string' ||
+        !x.name.trim() ||
+        x.name.length > 1000 ||
+        typeof x.lowLabel !== 'string' ||
+        x.lowLabel.length > 1000 ||
+        typeof x.highLabel !== 'string' ||
+        x.highLabel.length > 1000,
+    )
+  )
+    throw new Error('Stimmungsachsen ungültig oder doppelt.');
+}
+export function validateAudioLibrary(library: ReturnType<typeof audioLibrarySnapshot>) {
+  if (
+    !library ||
+    library.format !== 'Kampagnenwerkstatt Musikbibliothek' ||
+    library.version !== 1 ||
+    !Array.isArray(library.assets)
+  )
+    throw new Error('Musikpaket hat ein unbekanntes Format.');
+  validateAxes(library.axes);
+  const ids = new Set<string>();
+  for (const a of library.assets) {
+    validateAsset(a);
+    if (ids.has(a.id)) throw new Error('Doppelte Audioidentität im Musikpaket.');
+    ids.add(a.id);
+  }
+}
+function saveAsset(db: any, a: AudioAsset) {
+  validateAsset(a);
+  a.moodTags = tags(a.moodTags);
+  a.vibes = tags(a.vibes);
+  a.genres = tags(a.genres);
+  const data = { ...a };
+  delete (data as Partial<AudioAsset>).available;
+  const payload = json(data),
+    search = [a.name, ...a.moodTags, ...a.vibes, ...a.genres, a.notes]
+      .join(' ')
+      .toLocaleLowerCase();
+  db.prepare(
+    'INSERT INTO audio_asset VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET revision=excluded.revision,kind=excluded.kind,trashed=excluded.trashed,search_text=excluded.search_text,payload=excluded.payload,checksum=excluded.checksum',
+  ).run(a.id, a.revision, a.kind, a.trashed ? 1 : 0, search, payload, hash(payload));
+}
+export function ingestAudio(db: any, root: string, media: AudioAsset['media']) {
+  const match = db
+    .prepare(
+      "SELECT id FROM audio_asset WHERE json_extract(payload,'$.media.sha256')=? AND json_extract(payload,'$.media.originalName')=? AND trashed=0 ORDER BY rowid LIMIT 1",
+    )
+    .get(media.sha256, media.originalName);
+  if (match) return readAudioAsset(db, root, match.id);
+  const a: AudioAsset = {
+    id: randomUUID(),
+    revision: 1,
+    name: path.basename(media.originalName, media.extension),
+    kind: 'song',
+    media,
+    moods: {},
+    moodTags: [],
+    intensity: 50,
+    vibes: [],
+    genres: [],
+    notes: '',
+    trashed: false,
+    problem: null,
+    available: true,
+  };
+  saveAsset(db, a);
+  touchCatalog(db);
+  return a;
+}
+function defaultState(): MusicState {
+  return {
+    favoriteAssets: [],
+    revision: 0,
+    autoplay: false,
+    autoAmbience: false,
+    current: null,
+    queue: [],
+    history: [],
+    status: 'stopped',
+    loop: 'none',
+    manualHold: 'none',
+    volume: 0.7,
+    ambienceVolume: 0.3,
+    fadeSeconds: 2,
+    forcedAmbience: [],
+    mutedAmbience: [],
+    automaticAmbience: [],
+    contextSignature: '',
+    lastError: null,
+  };
+}
+function validateMusicState(db: any, s: MusicState, revision: number) {
+  if (
+    !s ||
+    typeof s !== 'object' ||
+    !Number.isSafeInteger(s.revision) ||
+    s.revision < 1 ||
+    s.revision !== revision ||
+    typeof s.autoplay !== 'boolean' ||
+    typeof s.autoAmbience !== 'boolean'
+  )
+    throw new Error('Musikplayerstand ist ungültig.');
+  if (
+    !['playing', 'paused', 'stopped'].includes(s.status) ||
+    !['none', 'track', 'queue'].includes(s.loop) ||
+    !['none', 'stop', 'track', 'queue'].includes(s.manualHold)
+  )
+    throw new Error('Musikplayerstatus ist ungültig.');
+  numeric(s.volume, 0, 1);
+  numeric(s.ambienceVolume, 0, 1);
+  numeric(s.fadeSeconds, 0, 20);
+  const id = (value: unknown) =>
+    typeof value === 'string' && value.length > 0 && value.length <= 1000;
+  const list = (value: unknown, unique: boolean) =>
+    Array.isArray(value) && value.every(id) && (!unique || new Set(value).size === value.length);
+  if (
+    !Array.isArray(s.queue) ||
+    new Set(s.queue.map((entry) => entry?.id)).size !== s.queue.length ||
+    s.queue.some(
+      (entry) =>
+        !entry || !id(entry.id) || !id(entry.assetId) || !['manual', 'auto'].includes(entry.mode),
+    )
+  )
+    throw new Error('Musikqueue ist ungültig.');
+  if (
+    !list(s.history, false) ||
+    s.history.length > 100 ||
+    !list(s.forcedAmbience, true) ||
+    !list(s.mutedAmbience, true) ||
+    (s.automaticAmbience !== undefined &&
+      (!list(s.automaticAmbience, true) || s.automaticAmbience.length > 12))
+  )
+    throw new Error('Musikreferenzen sind ungültig.');
+  if (s.favoriteAssets !== undefined && !list(s.favoriteAssets, true))
+    throw new Error('Soundboard-Favoriten sind ungültig.');
+  for (const assetId of s.favoriteAssets ?? []) {
+    const kind = db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;
+    if (kind !== 'song' && kind !== 'ambience')
+      throw new Error('Soundboard-Favorit verweist auf eine fehlende Audiodatei.');
+  }
+  if (s.forcedAmbience.some((assetId) => s.mutedAmbience.includes(assetId)))
+    throw new Error('Umgebungsstatus ist widersprüchlich.');
+  if (
+    s.current !== null &&
+    (!s.current ||
+      !id(s.current.assetId) ||
+      !id(s.current.playbackId) ||
+      !['manual', 'auto'].includes(s.current.mode) ||
+      !Number.isFinite(s.current.positionSeconds) ||
+      s.current.positionSeconds < 0 ||
+      s.current.positionSeconds > 100000000)
+  )
+    throw new Error('Aktueller Musiktitel ist ungültig.');
+  if (s.status === 'playing' && !s.current)
+    throw new Error('Musikwiedergabe hat keinen aktuellen Titel.');
+  if (
+    typeof s.contextSignature !== 'string' ||
+    (s.contextSignature !== '' && !/^[a-f0-9]{64}$/.test(s.contextSignature)) ||
+    (s.lastError !== null && typeof s.lastError !== 'string')
+  )
+    throw new Error('Musikkontext ist ungültig.');
+  const kinds = new Map<string, string>();
+  const requireKind = (assetId: string, kind: 'song' | 'ambience') => {
+    let actual = kinds.get(assetId);
+    if (!actual) {
+      actual = db.prepare('SELECT kind FROM audio_asset WHERE id=?').get(assetId)?.kind;
+      kinds.set(assetId, actual ?? '');
+    }
+    if (actual !== kind)
+      throw new Error(
+        kind === 'song'
+          ? 'Musiktitel verweist nicht auf einen Song.'
+          : 'Umgebung verweist nicht auf Ambience.',
+      );
+  };
+  for (const assetId of [
+    ...s.history,
+    ...s.queue.map((entry) => entry.assetId),
+    ...(s.current ? [s.current.assetId] : []),
+  ])
+    requireKind(assetId, 'song');
+  for (const assetId of [...s.forcedAmbience, ...s.mutedAmbience, ...(s.automaticAmbience ?? [])])
+    requireKind(assetId, 'ambience');
+}
+function checkedMusicState(db: any, cam: string, row: any): MusicState {
+  const s = decoded<MusicState>(row);
+  if (row.campaign_id !== cam) throw new Error('Musikkampagne ist widersprüchlich.');
+  validateMusicState(db, s, row.revision);
+  return s;
+}
+function state(db: any, cam: string): MusicState {
+  const row = db.prepare('SELECT * FROM music_state WHERE campaign_id=?').get(cam);
+  return row ? checkedMusicState(db, cam, row) : defaultState();
+}
+export function musicStateAssetCount(db: any, cam: string) {
+  const s = state(db, cam);
+  return new Set(
+    [
+      s.current?.assetId,
+      ...s.queue.map((entry) => entry.assetId),
+      ...s.forcedAmbience,
+      ...s.mutedAmbience,
+      ...(s.automaticAmbience ?? []),
+      ...s.history,
+      ...(s.favoriteAssets ?? []),
+    ].filter((id): id is string => !!id),
+  ).size;
+}
+function saveState(db: any, cam: string, s: MusicState) {
+  s.revision++;
+  const data = structuredClone(s);
+  if (data.current) data.current.positionSeconds = 0;
+  validateMusicState(db, data, s.revision);
+  const payload = json(data);
+  db.prepare(
+    'INSERT INTO music_state VALUES(?,?,?,?) ON CONFLICT(campaign_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
+  ).run(cam, s.revision, payload, hash(payload));
+}
+function normalizedTags(value: unknown) {
+  if (!Array.isArray(value)) throw new Error('Musiktags ungültig.');
+  const next = tags(value as string[]);
+  if (json(next) !== json(value)) throw new Error('Musiktags sind nicht normalisiert.');
+}
+function validateSceneSettings(s: MusicSceneSettings, id: string, revision: number) {
+  if (
+    !s ||
+    typeof s !== 'object' ||
+    s.sceneId !== id ||
+    !Number.isSafeInteger(s.revision) ||
+    s.revision < 1 ||
+    s.revision !== revision
+  )
+    throw new Error('Szenenmusikidentität ist widersprüchlich.');
+  moods(s.moods);
+  numeric(s.intensity);
+  normalizedTags(s.vibes);
+  normalizedTags(s.genres);
+}
+function checkedSceneSettings(db: any, cam: string, id: string, row: any): MusicSceneSettings {
+  const s = decoded<MusicSceneSettings>(row);
+  if (row.campaign_id !== cam || row.scene_id !== id)
+    throw new Error('Szenenmusikidentität ist widersprüchlich.');
+  validateSceneSettings(s, id, row.revision);
+  readLiveScene(db, cam, id);
+  return s;
+}
+function sceneSettings(db: any, cam: string, id: string): MusicSceneSettings {
+  const r = db.prepare('SELECT * FROM scene_music WHERE campaign_id=? AND scene_id=?').get(cam, id);
+  return r
+    ? checkedSceneSettings(db, cam, id, r)
+    : { sceneId: id, revision: 0, moods: {}, intensity: 50, vibes: [], genres: [] };
+}
+function subjectName(db: any, cam: string, kind: MusicSubject['kind'], id: string) {
+  if (
+    !['location', 'note', 'creature'].includes(kind) ||
+    typeof id !== 'string' ||
+    !id ||
+    id.length > 1000
+  )
+    throw new Error('Musikquelle ist ungültig.');
+  if (kind === 'creature') return id;
+  const row = db
+    .prepare(
+      `SELECT * FROM ${kind === 'location' ? 'location' : 'world_note'} WHERE campaign_id=? AND id=?`,
+    )
+    .get(cam, id);
+  if (!row || hash(row.payload) !== row.checksum)
+    throw new Error('Musikquelle fehlt oder ist beschädigt.');
+  return kind === 'location'
+    ? checkedLocationDocument(JSON.parse(row.payload)).name
+    : worldNoteDocument(JSON.parse(row.payload)).title;
+}
+function validateMusicSubject(
+  s: MusicSubject,
+  kind: MusicSubject['kind'],
+  id: string,
+  revision: number,
+) {
+  if (
+    !s ||
+    typeof s !== 'object' ||
+    s.kind !== kind ||
+    s.id !== id ||
+    !Number.isSafeInteger(s.revision) ||
+    s.revision < 1 ||
+    s.revision !== revision ||
+    typeof s.name !== 'string' ||
+    !s.name.trim() ||
+    !['add', 'replace'].includes(s.vibeMode) ||
+    !['add', 'replace'].includes(s.genreMode)
+  )
+    throw new Error('Musikquellenidentität ist widersprüchlich.');
+  normalizedTags(s.vibes);
+  normalizedTags(s.genres);
+}
+function checkedMusicSubject(
+  row: any,
+  cam: string,
+  kind: MusicSubject['kind'],
+  id: string,
+): MusicSubject {
+  const s = decoded<MusicSubject>(row);
+  if (row.campaign_id !== cam || row.kind !== kind || row.id !== id)
+    throw new Error('Musikquellenidentität ist widersprüchlich.');
+  validateMusicSubject(s, kind, id, row.revision);
+  return s;
+}
+export function readMusicSubject(
+  db: any,
+  cam: string,
+  kind: MusicSubject['kind'],
+  id: string,
+): MusicSubject {
+  const name = subjectName(db, cam, kind, id),
+    r = db
+      .prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?')
+      .get(cam, kind, id);
+  return r
+    ? { ...checkedMusicSubject(r, cam, kind, id), name }
+    : { id, kind, name, revision: 0, vibes: [], genres: [], vibeMode: 'add', genreMode: 'add' };
+}
+function checkedMusicReceipt(db: any, row: any) {
+  const receipt = decoded<{ applied: boolean }>(row);
+  if (
+    typeof row.command_id !== 'string' ||
+    !row.command_id ||
+    row.command_id.length > 1000 ||
+    typeof row.campaign_id !== 'string' ||
+    !row.campaign_id ||
+    !db.prepare('SELECT 1 FROM campaign WHERE id=?').get(row.campaign_id) ||
+    typeof row.fingerprint !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(row.fingerprint) ||
+    !receipt ||
+    typeof receipt !== 'object' ||
+    Array.isArray(receipt) ||
+    receipt.applied !== true
+  )
+    throw new Error('Musikbestätigung ist ungültig.');
+  if (
+    row.scene_id !== null &&
+    (typeof row.scene_id !== 'string' ||
+      !db
+        .prepare('SELECT 1 FROM live_scene WHERE campaign_id=? AND id=?')
+        .get(row.campaign_id, row.scene_id))
+  )
+    throw new Error('Musikbestätigung verweist auf eine fehlende Scene.');
+  return receipt;
+}
+function context(db: any, cam: string, s: MusicState): MusicContext {
+  const focus = db.prepare('SELECT focus_id FROM live_state WHERE campaign_id=?').get(cam),
+    registry = readAudioRegistry(db),
+    result: MusicContext = {
+      sceneId: focus?.focus_id ?? null,
+      name: 'Manuelle Wiedergabe',
+      moods: {},
+      intensity: 50,
+      vibes: [],
+      genres: [],
+      environment: [],
+      signature: '',
+      problems: [],
+    };
+  if (focus) {
+    const scene = readLiveScene(db, cam, focus.focus_id),
+      settings = sceneSettings(db, cam, scene.id);
+    result.name = scene.title || 'Aktuelle Gruppe';
+    result.moods = Object.fromEntries(
+      registry.axes.map((axis) => [axis.id, settings.moods[axis.id] ?? 50]),
+    );
+    result.intensity = settings.intensity;
+    const append = (subject: MusicSubject) => {
+      result.vibes =
+        subject.vibeMode === 'replace'
+          ? [...subject.vibes]
+          : [...new Set([...result.vibes, ...subject.vibes])];
+      result.genres =
+        subject.genreMode === 'replace'
+          ? [...subject.genres]
+          : [...new Set([...result.genres, ...subject.genres])];
+    };
+    if (scene.locationId) append(readMusicSubject(db, cam, 'location', scene.locationId));
+    if (s.autoplay || s.autoAmbience) {
+      try {
+        const world = readSceneWorld(db, cam, scene.id),
+          mapRow = world.position.mapId
+            ? db
+                .prepare(
+                  "SELECT payload FROM world_record WHERE campaign_id=? AND kind='map' AND id=?",
+                )
+                .get(cam, world.position.mapId)
+            : null;
+        if (mapRow) {
+          const cell = cellAt(JSON.parse(mapRow.payload), world.position);
+          result.environment.push(terrainNames[cell.terrain]);
+          if (cell.river) result.environment.push('Fluss');
+        }
+        if (world.weather)
+          result.environment.push(world.weather.label, ...world.weather.effects.ambience);
+        const calendarRow = db
+            .prepare(
+              "SELECT payload FROM world_record WHERE campaign_id=? AND kind='calendar' AND id='main'",
+            )
+            .get(cam),
+          daySeconds = calendarRow ? JSON.parse(calendarRow.payload).daySeconds : 86400,
+          fraction =
+            Number(BigInt(scene.clock.instantMs) % (BigInt(daySeconds) * 1000n)) /
+            (daySeconds * 1000);
+        result.environment.push(fraction < 0.25 || fraction > 0.75 ? 'Nacht' : 'Tag');
+        const groups = scenePreparation(db, cam, scene.id).groups;
+        const ids = new Set<string>();
+        for (const actor of groups.flatMap((g) => g.actors).filter((a) => !a.unavailable)) {
+          ids.add(actor.id);
+          append(readMusicSubject(db, cam, 'creature', actor.creatureId));
+          const note = db
+            .prepare('SELECT payload FROM world_note WHERE campaign_id=? AND id=?')
+            .get(cam, actor.id);
+          if (note)
+            for (const relation of JSON.parse(note.payload).relations ?? [])
+              ids.add(relation.targetId);
+        }
+        const adoption = db
+          .prepare(
+            'SELECT plan_id,visit_id FROM scene_adoption WHERE campaign_id=? AND scene_id=? ORDER BY ordinal DESC LIMIT 1',
+          )
+          .get(cam, scene.id);
+        if (adoption) {
+          const d = db
+            .prepare('SELECT payload FROM session_visit WHERE campaign_id=? AND plan_id=? AND id=?')
+            .get(cam, adoption.plan_id, adoption.visit_id);
+          if (d) for (const id of JSON.parse(d.payload).noteIds ?? []) ids.add(id);
+        }
+        for (const id of ids) {
+          const note = db
+            .prepare('SELECT trashed FROM world_note WHERE campaign_id=? AND id=?')
+            .get(cam, id);
+          if (note && !note.trashed) append(readMusicSubject(db, cam, 'note', id));
+        }
+        const fight = db
+          .prepare(
+            "SELECT payload FROM combat WHERE campaign_id=? AND scene_id=? AND phase='running' ORDER BY rowid DESC LIMIT 1",
+          )
+          .get(cam, scene.id);
+        if (fight) {
+          result.environment.push('Kampf');
+          for (const id of new Set<string>(
+            (JSON.parse(fight.payload).participants as { sourceId?: string }[])
+              .map((p) => p.sourceId)
+              .filter((id): id is string => !!id),
+          ))
+            append(readMusicSubject(db, cam, 'creature', id));
+        }
+      } catch (error) {
+        result.problems.push('Umgebung: ' + (error as Error).message);
+      }
+    }
+    result.vibes = [...new Set([...result.vibes, ...settings.vibes, ...result.environment])];
+    result.genres = [...new Set([...result.genres, ...settings.genres])];
+  }
+  result.signature = hash(
+    json([
+      result.sceneId,
+      result.moods,
+      result.intensity,
+      result.vibes,
+      result.genres,
+      result.environment,
+      registry.catalogRevision,
+    ]),
+  );
+  return result;
+}
+function score(a: AudioAsset, c: MusicContext) {
+  let distance = Math.abs(a.intensity - c.intensity) / 100;
+  for (const [id, n] of Object.entries(c.moods))
+    distance += Math.abs((a.moods[id] ?? 50) - n) / 100;
+  const vibeSet = new Set(c.vibes.map(norm)),
+    genreSet = new Set(c.genres.map(norm)),
+    matches = a.vibes.filter((t) => vibeSet.has(norm(t))).length,
+    genres = a.genres.filter((t) => genreSet.has(norm(t))).length;
+  return distance - Math.min(3, matches) * 0.75 - Math.min(2, genres) * 0.8;
+}
+function candidates(db: any, root: string, c: MusicContext) {
+  const matches: { asset: AudioAsset; score: number }[] = [];
+  for (const row of db
+    .prepare("SELECT * FROM audio_asset WHERE kind='song' AND trashed=0")
+    .iterate()) {
+    try {
+      const a = audioFromRow(root, row);
+      if (
+        !a.available ||
+        a.problem ||
+        (c.genres.length &&
+          a.genres.length &&
+          !a.genres.some((g) => c.genres.some((w) => norm(w) === norm(g))))
+      )
+        continue;
+      matches.push({ asset: a, score: score(a, c) });
+    } catch {}
+  }
+  matches.sort(
+    (a, b) =>
+      a.score - b.score ||
+      a.asset.name.localeCompare(b.asset.name) ||
+      a.asset.id.localeCompare(b.asset.id),
+  );
+  return matches.slice(0, 20).map((x) => x.asset.id);
+}
+function automaticAmbience(db: any, root: string, c: MusicContext) {
+  const env = new Set(c.environment.map(norm)),
+    ids: string[] = [];
+  for (const row of db
+    .prepare("SELECT * FROM audio_asset WHERE kind='ambience' AND trashed=0")
+    .iterate()) {
+    try {
+      const a = audioFromRow(root, row);
+      if (a.available && !a.problem && [...a.vibes, ...a.moodTags].some((t) => env.has(norm(t))))
+        ids.push(a.id);
+    } catch {}
+  }
+  return ids.slice(0, 12);
+}
+function start(s: MusicState, id: string, mode: 'manual' | 'auto', recordHistory = true) {
+  // Back consumes history; it must not add the title being left to that same history.
+  if (recordHistory && s.current) s.history = [...s.history, s.current.assetId].slice(-100);
+  s.current = { assetId: id, playbackId: randomUUID(), positionSeconds: 0, mode };
+  s.status = 'playing';
+  s.lastError = null;
+}
+function next(s: MusicState) {
+  const entry = s.queue.shift();
+  if (entry) {
+    start(s, entry.assetId, entry.mode);
+    s.manualHold = entry.mode === 'manual' ? 'queue' : 'none';
+  } else {
+    if (s.current) s.history = [...s.history, s.current.assetId].slice(-100);
+    s.current = null;
+    s.status = 'stopped';
+    if (s.manualHold !== 'stop') s.manualHold = 'none';
+  }
+}
 // An incomplete environment is visible to the reader, but cannot replace the last confirmed automatic selection.
-export function refreshMusicContext(db:any,root:string,cam:string){const s=state(db,cam);if(!s.autoplay&&!s.autoAmbience)return;const c=context(db,cam,s);if(c.problems.length)return;const ambient=s.autoAmbience?automaticAmbience(db,root,c):[];if(c.signature===s.contextSignature&&json(ambient)===json(s.automaticAmbience??[]))return;s.contextSignature=c.signature;s.automaticAmbience=ambient;if(s.autoplay){const ids=candidates(db,root,c),manual=s.queue.filter(e=>e.mode==='manual');s.queue=[...manual,...ids.filter(id=>id!==s.current?.assetId).map(assetId=>({id:randomUUID(),assetId,mode:'auto' as const}))];if(s.manualHold==='none'){if(s.current?.mode==='auto'&&s.status==='playing'){const current=readAudioAsset(db,root,s.current.assetId),best=ids[0]?readAudioAsset(db,root,ids[0]):null;if(!current.available||current.trashed||current.problem||best&&score(current,c)>score(best,c)+.35||!best){next(s);}}else if(!s.current&&s.status!=='paused')next(s);}}saveState(db,cam,s);}
-function layers(db:any,root:string,s:MusicState,c:MusicContext){if(s.manualHold==='stop')return[];const selected=new Map<string,boolean>();if(s.autoAmbience)for(const id of c.problems.length?s.automaticAmbience??[]:automaticAmbience(db,root,c))selected.set(id,false);for(const id of s.forcedAmbience)selected.set(id,true);for(const id of s.mutedAmbience)selected.delete(id);const ids=[...selected].slice(0,12);return ids.map(([assetId,manual])=>({assetId,manual,gain:ids.length?s.ambienceVolume/Math.sqrt(ids.length):0})).filter(l=>{try{const a=readAudioAsset(db,root,l.assetId);return a.available&&!a.trashed&&!a.problem;}catch{return false;}});}
-export function readMusic(db:any,root:string,cam:string):MusicView{const s=state(db,cam),c=context(db,cam,s),ambient=layers(db,root,s,c),ids=new Set([...s.queue.map(e=>e.assetId),...ambient.map(l=>l.assetId),...s.mutedAmbience,...(s.current?[s.current.assetId]:[])]),assets:AudioAsset[]=[],problems=[...c.problems];for(const id of ids)try{const asset=readAudioAsset(db,root,id);assets.push(asset);if(!asset.available)problems.push(id+': Mediendatei fehlt oder wurde verändert.');}catch(error){problems.push(id+': '+(error as Error).message);}if(s.current)s.current.positionSeconds=db.prepare('SELECT seconds FROM music_position WHERE campaign_id=? AND playback_id=?').get(cam,s.current.playbackId)?.seconds??0;return{registry:readAudioRegistry(db),state:s,context:c,sceneSettings:c.sceneId?sceneSettings(db,cam,c.sceneId):null,assets,layers:ambient,problems};}
-export function readMusicFavorites(db:any,root:string,cam:string,after:string|null){
- if(after!==null&&(typeof after!=='string'||!after||after.length>1000))throw new Error('Favoritenposition prüfen.');
- const ids=state(db,cam).favoriteAssets??[],start=after?ids.indexOf(after)+1:0;if(after&&start===0)throw new Error('Favoriten wurden geändert. Neu laden.');
- const page=ids.slice(start,start+40),items:AudioAsset[]=[],problems:string[]=[];for(const id of page)try{items.push(readAudioAsset(db,root,id));}catch(e){problems.push(id+': '+(e as Error).message);}
- return{items,next:start+page.length<ids.length?page.at(-1)!:null,problems};
+export function refreshMusicContext(db: any, root: string, cam: string) {
+  const s = state(db, cam);
+  if (!s.autoplay && !s.autoAmbience) return;
+  const c = context(db, cam, s);
+  if (c.problems.length) return;
+  const ambient = s.autoAmbience ? automaticAmbience(db, root, c) : [];
+  if (c.signature === s.contextSignature && json(ambient) === json(s.automaticAmbience ?? []))
+    return;
+  s.contextSignature = c.signature;
+  s.automaticAmbience = ambient;
+  if (s.autoplay) {
+    const ids = candidates(db, root, c),
+      manual = s.queue.filter((e) => e.mode === 'manual');
+    s.queue = [
+      ...manual,
+      ...ids
+        .filter((id) => id !== s.current?.assetId)
+        .map((assetId) => ({ id: randomUUID(), assetId, mode: 'auto' as const })),
+    ];
+    if (s.manualHold === 'none') {
+      if (s.current?.mode === 'auto' && s.status === 'playing') {
+        const current = readAudioAsset(db, root, s.current.assetId),
+          best = ids[0] ? readAudioAsset(db, root, ids[0]) : null;
+        if (
+          !current.available ||
+          current.trashed ||
+          current.problem ||
+          (best && score(current, c) > score(best, c) + 0.35) ||
+          !best
+        ) {
+          next(s);
+        }
+      } else if (!s.current && s.status !== 'paused') next(s);
+    }
+  }
+  saveState(db, cam, s);
 }
-export function saveMusicPosition(db:any,cam:string,playbackId:string,seconds:number){numeric(seconds,0,100000000);const s=state(db,cam);if(s.current?.playbackId!==playbackId)return;db.prepare('INSERT INTO music_position VALUES(?,?,?) ON CONFLICT(campaign_id,playback_id) DO UPDATE SET seconds=excluded.seconds').run(cam,playbackId,seconds);}
-export function executeMusic(db:any,root:string,c:MusicCommand,guard:()=>void):MusicView{return db.transaction(()=>{guard();if(!c.commandId)throw new Error('Musikänderungskennung fehlt.');const cam=c.campaignId,fp=hash(json({campaignId:cam,action:c.action})),prior=db.prepare('SELECT * FROM music_receipt WHERE command_id=?').get(c.commandId);if(prior){if(prior.campaign_id!==cam||prior.fingerprint!==fp)throw new Error('Musikänderungskennung anders verwendet.');checkedMusicReceipt(db,prior);return readMusic(db,root,cam);}const a=c.action,s=state(db,cam);
- // Stop is an absolute GM instruction applied to the current writer state, not a snapshot replacement.
- if(a.kind==='transport'&&a.operation==='stop'){
-  if(!Number.isSafeInteger(a.expectedRevision)||a.expectedRevision<0||a.expectedRevision>s.revision)throw new Error('Player geändert. Bitte aktualisieren.');
- }else if('expectedRevision' in a&&['favorite','settings','select','transport','queue-add','queue-remove','queue-move','ambience','seek'].includes(a.kind)&&s.revision!==a.expectedRevision)throw new Error('Player geändert. Bitte aktualisieren.');
- let changed=false;
- if(a.kind==='asset'){const old=readAudioAsset(db,root,a.asset.id);if(old.revision!==a.expectedRevision||json(old.media)!==json(a.asset.media))throw new Error('Audiodatei geändert. Medienbytes bleiben unverändert.');saveAsset(db,{...a.asset,revision:old.revision+1});touchCatalog(db);}
- else if(a.kind==='clone'){const old=readAudioAsset(db,root,a.id);if(old.revision!==a.expectedRevision)throw new Error('Audiodatei geändert.');const id=a.copyId===undefined?randomUUID():a.copyId;if(typeof id!=='string'||!id||id.length>1000||db.prepare('SELECT 1 FROM audio_asset WHERE id=?').get(id))throw new Error('Kopierziel ist ungültig oder bereits vorhanden.');saveAsset(db,{...old,id,revision:1,name:old.name+' – Kopie'});touchCatalog(db);}
- else if(a.kind==='retry-asset'){const old=readAudioAsset(db,root,a.id);saveAsset(db,{...old,revision:old.revision+1,problem:null});touchCatalog(db);}
- else if(a.kind==='registry'){const r=readAudioRegistry(db);if(r.revision!==a.expectedRevision||!Array.isArray(a.axes)||a.axes.length>30)throw new Error('Stimmungsachsen geändert oder ungültig.');validateAxes(a.axes);saveRegistry(db,{...r,revision:r.revision+1,catalogRevision:r.catalogRevision+1,axes:a.axes});}
- else if(a.kind==='scene-settings'){const old=sceneSettings(db,cam,a.settings.sceneId);readLiveScene(db,cam,a.settings.sceneId);if(old.revision!==a.expectedRevision)throw new Error('Szenenmusik geändert.');const next={...a.settings,revision:old.revision+1,vibes:tags(a.settings.vibes),genres:tags(a.settings.genres)};validateSceneSettings(next,next.sceneId,next.revision);const payload=json(next);db.prepare('INSERT INTO scene_music VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,scene_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,next.sceneId,next.revision,payload,hash(payload));}
- else if(a.kind==='subject'){const sub=a.subject,old=db.prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?').get(cam,sub.kind,sub.id);readMusicSubject(db,cam,sub.kind,sub.id);if((old?.revision??null)!==a.expectedRevision||!['location','note','creature'].includes(sub.kind))throw new Error('Musikquelle geändert.');const next={...sub,revision:(a.expectedRevision??0)+1,vibes:tags(sub.vibes),genres:tags(sub.genres)};validateMusicSubject(next,next.kind,next.id,next.revision);const payload=json(next);db.prepare('INSERT INTO music_subject VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,kind,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum').run(cam,sub.kind,sub.id,next.revision,payload,hash(payload));s.contextSignature='';changed=true;}
- else if(a.kind==='settings'){numeric(a.volume,0,1);numeric(a.ambienceVolume,0,1);numeric(a.fadeSeconds,0,20);if(!['none','track','queue'].includes(a.loop))throw new Error('Loopmodus ungültig.');s.autoplay=a.autoplay;s.autoAmbience=a.autoAmbience;s.volume=a.volume;s.ambienceVolume=a.ambienceVolume;s.fadeSeconds=a.fadeSeconds;s.loop=a.loop;if(a.loop!=='none'&&s.current){s.manualHold=a.loop==='track'?'track':'queue';if(a.loop==='queue')for(const entry of s.queue)entry.mode='manual';}s.contextSignature='';if(!s.autoplay)s.queue=s.queue.filter(e=>e.mode==='manual');if(!s.autoAmbience)s.automaticAmbience=[];changed=true;}
- else if(a.kind==='favorite'){if(typeof a.favorite!=='boolean'||typeof a.assetId!=='string'||!a.assetId)throw new Error('Soundboard-Favorit prüfen.');if(a.favorite){const asset=readAudioAsset(db,root,a.assetId);if(asset.trashed)throw new Error('Audiodatei liegt im Papierkorb.');s.favoriteAssets=[...new Set([...(s.favoriteAssets??[]),a.assetId])];}else s.favoriteAssets=(s.favoriteAssets??[]).filter(id=>id!==a.assetId);changed=true;}
- else if(a.kind==='select'){const asset=readAudioAsset(db,root,a.assetId);if(!asset.available||asset.trashed||asset.kind!=='song')throw new Error('Verfügbare Musikdatei auswählen.');start(s,a.assetId,'manual');s.manualHold='track';changed=true;}
- else if(a.kind==='queue-add'){if(!a.assetIds.length||a.assetIds.length>200)throw new Error('Wähle 1 bis 200 Musikdateien.');const entries:QueueEntry[]=a.assetIds.map(assetId=>{const asset=readAudioAsset(db,root,assetId);if(asset.trashed||!asset.available||asset.kind!=='song')throw new Error('Queue benötigt verfügbare Musikdateien.');return{id:randomUUID(),assetId,mode:'manual'};});s.queue=[...s.queue.filter(e=>e.mode==='manual'),...entries,...s.queue.filter(e=>e.mode==='auto')];changed=true;}
- else if(a.kind==='queue-remove'){s.queue=s.queue.filter(e=>e.id!==a.id);changed=true;}
- else if(a.kind==='queue-move'){const index=s.queue.findIndex(e=>e.id===a.id),to=index+a.direction;if(index<0||to<0||to>=s.queue.length)throw new Error('Queueeintrag nicht verschiebbar.');const [entry]=s.queue.splice(index,1);entry!.mode='manual';s.queue.splice(to,0,entry!);changed=true;}
- else if(a.kind==='transport'){if(a.operation==='play'){if(s.current){s.status='playing';if(s.manualHold==='stop')s.manualHold=s.current.mode==='manual'?'track':'none';}else{next(s);if(!s.current&&s.autoplay){s.contextSignature='';s.manualHold='none';}}}else if(a.operation==='pause'){s.status='paused';if(s.current)s.manualHold=s.current.mode==='manual'?'track':s.manualHold;}else if(a.operation==='stop'){s.status='stopped';s.manualHold='stop';if(s.current)saveMusicPosition(db,cam,s.current.playbackId,0);}else if(a.operation==='skip'){next(s);if(s.current)s.manualHold=s.current.mode==='manual'?'queue':'track';else s.manualHold='none';}else if(a.operation==='back'){const id=s.history.pop();if(id){const asset=readAudioAsset(db,root,id);if(asset.available&&!asset.trashed){start(s,id,'manual',false);s.manualHold='track';}}}else if(a.operation==='release'){s.manualHold='none';s.contextSignature='';s.current=null;s.status='stopped';s.forcedAmbience=[];s.mutedAmbience=[];}else if(a.operation==='ended'){const current=s.current;if(!current||current.playbackId!==a.playbackId)return readMusic(db,root,cam);if(s.loop==='track'){start(s,current.assetId,current.mode);}else{if(s.loop==='queue'&&s.current)s.queue.push({id:randomUUID(),assetId:s.current.assetId,mode:s.current.mode});s.manualHold='none';next(s);if(!s.current&&s.autoplay)s.contextSignature='';}}else throw new Error('Playeraktion unbekannt.');changed=true;}
- else if(a.kind==='ambience'){if(a.operation==='release-all'){s.forcedAmbience=[];s.mutedAmbience=[];}else{const asset=readAudioAsset(db,root,a.assetId);if(asset.kind!=='ambience'||asset.trashed)throw new Error('Umgebungsdatei auswählen.');if(a.operation==='add'){if(s.manualHold==='stop')s.manualHold='track';s.forcedAmbience=[...new Set([...s.forcedAmbience,a.assetId])];s.mutedAmbience=s.mutedAmbience.filter(id=>id!==a.assetId);}else if(a.operation==='remove')s.forcedAmbience=s.forcedAmbience.filter(id=>id!==a.assetId);else if(a.operation==='mute'){s.mutedAmbience=[...new Set([...s.mutedAmbience,a.assetId])];s.forcedAmbience=s.forcedAmbience.filter(id=>id!==a.assetId);}else if(a.operation==='unmute'){if(s.manualHold==='stop')s.manualHold='track';s.mutedAmbience=s.mutedAmbience.filter(id=>id!==a.assetId);}}changed=true;}
- else if(a.kind==='seek'){if(s.current?.playbackId!==a.playbackId)throw new Error('Titel inzwischen gewechselt.');numeric(a.seconds,0,100000000);saveMusicPosition(db,cam,a.playbackId,a.seconds);}
- else if(a.kind==='failure'){
-  const currentSong=s.status==='playing'&&s.current?.playbackId===a.playbackId&&s.current.assetId===a.assetId;
-  const currentLayer=a.playbackId==='ambience-'+a.assetId&&layers(db,root,s,context(db,cam,s)).some(l=>l.assetId===a.assetId);
-  if(!currentSong&&!currentLayer)return readMusic(db,root,cam);
-  const asset=readAudioAsset(db,root,a.assetId);saveAsset(db,{...asset,revision:asset.revision+1,problem:a.message.slice(0,2000)});touchCatalog(db);if(s.current?.playbackId===a.playbackId){s.lastError=asset.name+': '+a.message;if(s.current.mode==='auto'&&s.autoplay){s.queue=s.queue.filter(e=>e.assetId!==asset.id);s.manualHold='none';next(s);s.contextSignature='';}else s.status='paused';changed=true;}}
- else throw new Error('Musikaktion unbekannt.');if(changed)saveState(db,cam,s);refreshMusicContext(db,root,cam);const receipt=json({applied:true});db.prepare('INSERT INTO music_receipt VALUES(?,?,?,?,?,?)').run(c.commandId,cam,fp,null,receipt,hash(receipt));return readMusic(db,root,cam);
- }).immediate();}
-export function audioLibrarySnapshot(db:any,root:string):{format:string;version:number;axes:MoodAxis[];assets:AudioAsset[]}{return{format:'Kampagnenwerkstatt Musikbibliothek',version:1,axes:readAudioRegistry(db).axes,assets:Array.from(db.prepare('SELECT * FROM audio_asset ORDER BY rowid').iterate(),(r:any)=>audioFromRow(root,r))};}
-export function mergeAudioLibrary(db:any,root:string,library:ReturnType<typeof audioLibrarySnapshot>){return db.transaction(()=>{validateAudioLibrary(library);const r=readAudioRegistry(db),axisIds=new Map<string,string>();for(const axis of library.axes){const old=r.axes.find(a=>a.id===axis.id);if(!old){r.axes.push(axis);axisIds.set(axis.id,axis.id);}else if(json(old)===json(axis))axisIds.set(axis.id,axis.id);else{const next={...axis,id:randomUUID()};r.axes.push(next);axisIds.set(axis.id,next.id);}}const ids:string[]=[];for(const a of library.assets){if(!existsSync(audioFile(root,a)))throw new Error('Musikpaket enthält nicht alle referenzierten Medien.');const old=db.prepare('SELECT * FROM audio_asset WHERE id=?').get(a.id);if(old){const previous=decoded<AudioAsset>(old),fields=(x:AudioAsset)=>json([x.name,x.kind,x.media,x.moods,x.moodTags,x.intensity,x.vibes,x.genres,x.notes,x.trashed]);if(fields(previous)===fields(a)){ids.push(old.id);continue;}}const next={...a,id:old?randomUUID():a.id,revision:1,problem:null,available:true,moods:Object.fromEntries(Object.entries(a.moods).map(([id,v])=>[axisIds.get(id)??id,v]))};saveAsset(db,next);ids.push(next.id);}r.revision++;r.catalogRevision++;saveRegistry(db,r);return ids;}).immediate();}
-export function audioMediaFiles(db:any){
- const media=new Map<string,{name:string;sha256:string;bytes:number}>();
- for(const row of db.prepare('SELECT * FROM audio_asset').iterate()){
-  const a=checkedAudioRow(row);
-  const name='audio/'+a.media.sha256+a.media.extension,previous=media.get(name);
-  if(previous&&previous.bytes!==a.media.bytes)throw new Error('Gemeinsame Mediengröße widersprüchlich: '+name);
-  media.set(name,{name,sha256:a.media.sha256,bytes:a.media.bytes});
- }
- return [...media.values()];
+function layers(db: any, root: string, s: MusicState, c: MusicContext) {
+  if (s.manualHold === 'stop') return [];
+  const selected = new Map<string, boolean>();
+  if (s.autoAmbience)
+    for (const id of c.problems.length
+      ? (s.automaticAmbience ?? [])
+      : automaticAmbience(db, root, c))
+      selected.set(id, false);
+  for (const id of s.forcedAmbience) selected.set(id, true);
+  for (const id of s.mutedAmbience) selected.delete(id);
+  const ids = [...selected].slice(0, 12);
+  return ids
+    .map(([assetId, manual]) => ({
+      assetId,
+      manual,
+      gain: ids.length ? s.ambienceVolume / Math.sqrt(ids.length) : 0,
+    }))
+    .filter((l) => {
+      try {
+        const a = readAudioAsset(db, root, l.assetId);
+        return a.available && !a.trashed && !a.problem;
+      } catch {
+        return false;
+      }
+    });
 }
-export function validateMusicBackup(db:any){
- audioMediaFiles(db);
- for(const r of db.prepare('SELECT * FROM music_state').iterate())checkedMusicState(db,r.campaign_id,r);
- for(const r of db.prepare('SELECT * FROM scene_music').iterate())checkedSceneSettings(db,r.campaign_id,r.scene_id,r);
- for(const r of db.prepare('SELECT * FROM music_subject').iterate()){subjectName(db,r.campaign_id,r.kind,r.id);checkedMusicSubject(r,r.campaign_id,r.kind,r.id);}
- for(const r of db.prepare('SELECT * FROM music_receipt').iterate())checkedMusicReceipt(db,r);
- for(const r of db.prepare('SELECT * FROM music_position').iterate())if(typeof r.campaign_id!=='string'||!db.prepare('SELECT 1 FROM campaign WHERE id=?').get(r.campaign_id)||typeof r.playback_id!=='string'||!r.playback_id||r.playback_id.length>1000||!Number.isFinite(r.seconds)||r.seconds<0||r.seconds>100000000)throw new Error('Musikwiedergabeposition ist ungültig.');
- for(const r of db.prepare('SELECT * FROM audio_registry').iterate())checkedAudioRegistry(r);
+export function readMusic(db: any, root: string, cam: string): MusicView {
+  const s = state(db, cam),
+    c = context(db, cam, s),
+    ambient = layers(db, root, s, c),
+    ids = new Set([
+      ...s.queue.map((e) => e.assetId),
+      ...ambient.map((l) => l.assetId),
+      ...s.mutedAmbience,
+      ...(s.current ? [s.current.assetId] : []),
+    ]),
+    assets: AudioAsset[] = [],
+    problems = [...c.problems];
+  for (const id of ids)
+    try {
+      const asset = readAudioAsset(db, root, id);
+      assets.push(asset);
+      if (!asset.available) problems.push(id + ': Mediendatei fehlt oder wurde verändert.');
+    } catch (error) {
+      problems.push(id + ': ' + (error as Error).message);
+    }
+  if (s.current)
+    s.current.positionSeconds =
+      db
+        .prepare('SELECT seconds FROM music_position WHERE campaign_id=? AND playback_id=?')
+        .get(cam, s.current.playbackId)?.seconds ?? 0;
+  return {
+    registry: readAudioRegistry(db),
+    state: s,
+    context: c,
+    sceneSettings: c.sceneId ? sceneSettings(db, cam, c.sceneId) : null,
+    assets,
+    layers: ambient,
+    problems,
+  };
+}
+export function readMusicFavorites(db: any, root: string, cam: string, after: string | null) {
+  if (after !== null && (typeof after !== 'string' || !after || after.length > 1000))
+    throw new Error('Favoritenposition prüfen.');
+  const ids = state(db, cam).favoriteAssets ?? [],
+    start = after ? ids.indexOf(after) + 1 : 0;
+  if (after && start === 0) throw new Error('Favoriten wurden geändert. Neu laden.');
+  const page = ids.slice(start, start + 40),
+    items: AudioAsset[] = [],
+    problems: string[] = [];
+  for (const id of page)
+    try {
+      items.push(readAudioAsset(db, root, id));
+    } catch (e) {
+      problems.push(id + ': ' + (e as Error).message);
+    }
+  return { items, next: start + page.length < ids.length ? page.at(-1)! : null, problems };
+}
+export function saveMusicPosition(db: any, cam: string, playbackId: string, seconds: number) {
+  numeric(seconds, 0, 100000000);
+  const s = state(db, cam);
+  if (s.current?.playbackId !== playbackId) return;
+  db.prepare(
+    'INSERT INTO music_position VALUES(?,?,?) ON CONFLICT(campaign_id,playback_id) DO UPDATE SET seconds=excluded.seconds',
+  ).run(cam, playbackId, seconds);
+}
+export function executeMusic(db: any, root: string, c: MusicCommand, guard: () => void): MusicView {
+  return db
+    .transaction(() => {
+      guard();
+      if (!c.commandId) throw new Error('Musikänderungskennung fehlt.');
+      const cam = c.campaignId,
+        fp = hash(json({ campaignId: cam, action: c.action })),
+        prior = db.prepare('SELECT * FROM music_receipt WHERE command_id=?').get(c.commandId);
+      if (prior) {
+        if (prior.campaign_id !== cam || prior.fingerprint !== fp)
+          throw new Error('Musikänderungskennung anders verwendet.');
+        checkedMusicReceipt(db, prior);
+        return readMusic(db, root, cam);
+      }
+      const a = c.action,
+        s = state(db, cam);
+      // Stop is an absolute GM instruction applied to the current writer state, not a snapshot replacement.
+      if (a.kind === 'transport' && a.operation === 'stop') {
+        if (
+          !Number.isSafeInteger(a.expectedRevision) ||
+          a.expectedRevision < 0 ||
+          a.expectedRevision > s.revision
+        )
+          throw new Error('Player geändert. Bitte aktualisieren.');
+      } else if (
+        'expectedRevision' in a &&
+        [
+          'favorite',
+          'settings',
+          'select',
+          'transport',
+          'queue-add',
+          'queue-remove',
+          'queue-move',
+          'ambience',
+          'seek',
+        ].includes(a.kind) &&
+        s.revision !== a.expectedRevision
+      )
+        throw new Error('Player geändert. Bitte aktualisieren.');
+      let changed = false;
+      if (a.kind === 'asset') {
+        const old = readAudioAsset(db, root, a.asset.id);
+        if (old.revision !== a.expectedRevision || json(old.media) !== json(a.asset.media))
+          throw new Error('Audiodatei geändert. Medienbytes bleiben unverändert.');
+        saveAsset(db, { ...a.asset, revision: old.revision + 1 });
+        touchCatalog(db);
+      } else if (a.kind === 'clone') {
+        const old = readAudioAsset(db, root, a.id);
+        if (old.revision !== a.expectedRevision) throw new Error('Audiodatei geändert.');
+        const id = a.copyId === undefined ? randomUUID() : a.copyId;
+        if (
+          typeof id !== 'string' ||
+          !id ||
+          id.length > 1000 ||
+          db.prepare('SELECT 1 FROM audio_asset WHERE id=?').get(id)
+        )
+          throw new Error('Kopierziel ist ungültig oder bereits vorhanden.');
+        saveAsset(db, { ...old, id, revision: 1, name: old.name + ' – Kopie' });
+        touchCatalog(db);
+      } else if (a.kind === 'retry-asset') {
+        const old = readAudioAsset(db, root, a.id);
+        saveAsset(db, { ...old, revision: old.revision + 1, problem: null });
+        touchCatalog(db);
+      } else if (a.kind === 'registry') {
+        const r = readAudioRegistry(db);
+        if (r.revision !== a.expectedRevision || !Array.isArray(a.axes) || a.axes.length > 30)
+          throw new Error('Stimmungsachsen geändert oder ungültig.');
+        validateAxes(a.axes);
+        saveRegistry(db, {
+          ...r,
+          revision: r.revision + 1,
+          catalogRevision: r.catalogRevision + 1,
+          axes: a.axes,
+        });
+      } else if (a.kind === 'scene-settings') {
+        const old = sceneSettings(db, cam, a.settings.sceneId);
+        readLiveScene(db, cam, a.settings.sceneId);
+        if (old.revision !== a.expectedRevision) throw new Error('Szenenmusik geändert.');
+        const next = {
+          ...a.settings,
+          revision: old.revision + 1,
+          vibes: tags(a.settings.vibes),
+          genres: tags(a.settings.genres),
+        };
+        validateSceneSettings(next, next.sceneId, next.revision);
+        const payload = json(next);
+        db.prepare(
+          'INSERT INTO scene_music VALUES(?,?,?,?,?) ON CONFLICT(campaign_id,scene_id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
+        ).run(cam, next.sceneId, next.revision, payload, hash(payload));
+      } else if (a.kind === 'subject') {
+        const sub = a.subject,
+          old = db
+            .prepare('SELECT * FROM music_subject WHERE campaign_id=? AND kind=? AND id=?')
+            .get(cam, sub.kind, sub.id);
+        readMusicSubject(db, cam, sub.kind, sub.id);
+        if (
+          (old?.revision ?? null) !== a.expectedRevision ||
+          !['location', 'note', 'creature'].includes(sub.kind)
+        )
+          throw new Error('Musikquelle geändert.');
+        const next = {
+          ...sub,
+          revision: (a.expectedRevision ?? 0) + 1,
+          vibes: tags(sub.vibes),
+          genres: tags(sub.genres),
+        };
+        validateMusicSubject(next, next.kind, next.id, next.revision);
+        const payload = json(next);
+        db.prepare(
+          'INSERT INTO music_subject VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,kind,id) DO UPDATE SET revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
+        ).run(cam, sub.kind, sub.id, next.revision, payload, hash(payload));
+        s.contextSignature = '';
+        changed = true;
+      } else if (a.kind === 'settings') {
+        numeric(a.volume, 0, 1);
+        numeric(a.ambienceVolume, 0, 1);
+        numeric(a.fadeSeconds, 0, 20);
+        if (!['none', 'track', 'queue'].includes(a.loop)) throw new Error('Loopmodus ungültig.');
+        s.autoplay = a.autoplay;
+        s.autoAmbience = a.autoAmbience;
+        s.volume = a.volume;
+        s.ambienceVolume = a.ambienceVolume;
+        s.fadeSeconds = a.fadeSeconds;
+        s.loop = a.loop;
+        if (a.loop !== 'none' && s.current) {
+          s.manualHold = a.loop === 'track' ? 'track' : 'queue';
+          if (a.loop === 'queue') for (const entry of s.queue) entry.mode = 'manual';
+        }
+        s.contextSignature = '';
+        if (!s.autoplay) s.queue = s.queue.filter((e) => e.mode === 'manual');
+        if (!s.autoAmbience) s.automaticAmbience = [];
+        changed = true;
+      } else if (a.kind === 'favorite') {
+        if (typeof a.favorite !== 'boolean' || typeof a.assetId !== 'string' || !a.assetId)
+          throw new Error('Soundboard-Favorit prüfen.');
+        if (a.favorite) {
+          const asset = readAudioAsset(db, root, a.assetId);
+          if (asset.trashed) throw new Error('Audiodatei liegt im Papierkorb.');
+          s.favoriteAssets = [...new Set([...(s.favoriteAssets ?? []), a.assetId])];
+        } else s.favoriteAssets = (s.favoriteAssets ?? []).filter((id) => id !== a.assetId);
+        changed = true;
+      } else if (a.kind === 'select') {
+        const asset = readAudioAsset(db, root, a.assetId);
+        if (!asset.available || asset.trashed || asset.kind !== 'song')
+          throw new Error('Verfügbare Musikdatei auswählen.');
+        start(s, a.assetId, 'manual');
+        s.manualHold = 'track';
+        changed = true;
+      } else if (a.kind === 'queue-add') {
+        if (!a.assetIds.length || a.assetIds.length > 200)
+          throw new Error('Wähle 1 bis 200 Musikdateien.');
+        const entries: QueueEntry[] = a.assetIds.map((assetId) => {
+          const asset = readAudioAsset(db, root, assetId);
+          if (asset.trashed || !asset.available || asset.kind !== 'song')
+            throw new Error('Queue benötigt verfügbare Musikdateien.');
+          return { id: randomUUID(), assetId, mode: 'manual' };
+        });
+        s.queue = [
+          ...s.queue.filter((e) => e.mode === 'manual'),
+          ...entries,
+          ...s.queue.filter((e) => e.mode === 'auto'),
+        ];
+        changed = true;
+      } else if (a.kind === 'queue-remove') {
+        s.queue = s.queue.filter((e) => e.id !== a.id);
+        changed = true;
+      } else if (a.kind === 'queue-move') {
+        const index = s.queue.findIndex((e) => e.id === a.id),
+          to = index + a.direction;
+        if (index < 0 || to < 0 || to >= s.queue.length)
+          throw new Error('Queueeintrag nicht verschiebbar.');
+        const [entry] = s.queue.splice(index, 1);
+        entry!.mode = 'manual';
+        s.queue.splice(to, 0, entry!);
+        changed = true;
+      } else if (a.kind === 'transport') {
+        if (a.operation === 'play') {
+          if (s.current) {
+            s.status = 'playing';
+            if (s.manualHold === 'stop')
+              s.manualHold = s.current.mode === 'manual' ? 'track' : 'none';
+          } else {
+            next(s);
+            if (!s.current && s.autoplay) {
+              s.contextSignature = '';
+              s.manualHold = 'none';
+            }
+          }
+        } else if (a.operation === 'pause') {
+          s.status = 'paused';
+          if (s.current) s.manualHold = s.current.mode === 'manual' ? 'track' : s.manualHold;
+        } else if (a.operation === 'stop') {
+          s.status = 'stopped';
+          s.manualHold = 'stop';
+          if (s.current) saveMusicPosition(db, cam, s.current.playbackId, 0);
+        } else if (a.operation === 'skip') {
+          next(s);
+          if (s.current) s.manualHold = s.current.mode === 'manual' ? 'queue' : 'track';
+          else s.manualHold = 'none';
+        } else if (a.operation === 'back') {
+          const id = s.history.pop();
+          if (id) {
+            const asset = readAudioAsset(db, root, id);
+            if (asset.available && !asset.trashed) {
+              start(s, id, 'manual', false);
+              s.manualHold = 'track';
+            }
+          }
+        } else if (a.operation === 'release') {
+          s.manualHold = 'none';
+          s.contextSignature = '';
+          s.current = null;
+          s.status = 'stopped';
+          s.forcedAmbience = [];
+          s.mutedAmbience = [];
+        } else if (a.operation === 'ended') {
+          const current = s.current;
+          if (!current || current.playbackId !== a.playbackId) return readMusic(db, root, cam);
+          if (s.loop === 'track') {
+            start(s, current.assetId, current.mode);
+          } else {
+            if (s.loop === 'queue' && s.current)
+              s.queue.push({ id: randomUUID(), assetId: s.current.assetId, mode: s.current.mode });
+            s.manualHold = 'none';
+            next(s);
+            if (!s.current && s.autoplay) s.contextSignature = '';
+          }
+        } else throw new Error('Playeraktion unbekannt.');
+        changed = true;
+      } else if (a.kind === 'ambience') {
+        if (a.operation === 'release-all') {
+          s.forcedAmbience = [];
+          s.mutedAmbience = [];
+        } else {
+          const asset = readAudioAsset(db, root, a.assetId);
+          if (asset.kind !== 'ambience' || asset.trashed)
+            throw new Error('Umgebungsdatei auswählen.');
+          if (a.operation === 'add') {
+            if (s.manualHold === 'stop') s.manualHold = 'track';
+            s.forcedAmbience = [...new Set([...s.forcedAmbience, a.assetId])];
+            s.mutedAmbience = s.mutedAmbience.filter((id) => id !== a.assetId);
+          } else if (a.operation === 'remove')
+            s.forcedAmbience = s.forcedAmbience.filter((id) => id !== a.assetId);
+          else if (a.operation === 'mute') {
+            s.mutedAmbience = [...new Set([...s.mutedAmbience, a.assetId])];
+            s.forcedAmbience = s.forcedAmbience.filter((id) => id !== a.assetId);
+          } else if (a.operation === 'unmute') {
+            if (s.manualHold === 'stop') s.manualHold = 'track';
+            s.mutedAmbience = s.mutedAmbience.filter((id) => id !== a.assetId);
+          }
+        }
+        changed = true;
+      } else if (a.kind === 'seek') {
+        if (s.current?.playbackId !== a.playbackId) throw new Error('Titel inzwischen gewechselt.');
+        numeric(a.seconds, 0, 100000000);
+        saveMusicPosition(db, cam, a.playbackId, a.seconds);
+      } else if (a.kind === 'failure') {
+        const currentSong =
+          s.status === 'playing' &&
+          s.current?.playbackId === a.playbackId &&
+          s.current.assetId === a.assetId;
+        const currentLayer =
+          a.playbackId === 'ambience-' + a.assetId &&
+          layers(db, root, s, context(db, cam, s)).some((l) => l.assetId === a.assetId);
+        if (!currentSong && !currentLayer) return readMusic(db, root, cam);
+        const asset = readAudioAsset(db, root, a.assetId);
+        saveAsset(db, {
+          ...asset,
+          revision: asset.revision + 1,
+          problem: a.message.slice(0, 2000),
+        });
+        touchCatalog(db);
+        if (s.current?.playbackId === a.playbackId) {
+          s.lastError = asset.name + ': ' + a.message;
+          if (s.current.mode === 'auto' && s.autoplay) {
+            s.queue = s.queue.filter((e) => e.assetId !== asset.id);
+            s.manualHold = 'none';
+            next(s);
+            s.contextSignature = '';
+          } else s.status = 'paused';
+          changed = true;
+        }
+      } else throw new Error('Musikaktion unbekannt.');
+      if (changed) saveState(db, cam, s);
+      refreshMusicContext(db, root, cam);
+      const receipt = json({ applied: true });
+      db.prepare('INSERT INTO music_receipt VALUES(?,?,?,?,?,?)').run(
+        c.commandId,
+        cam,
+        fp,
+        null,
+        receipt,
+        hash(receipt),
+      );
+      return readMusic(db, root, cam);
+    })
+    .immediate();
+}
+export function audioLibrarySnapshot(
+  db: any,
+  root: string,
+): { format: string; version: number; axes: MoodAxis[]; assets: AudioAsset[] } {
+  return {
+    format: 'Kampagnenwerkstatt Musikbibliothek',
+    version: 1,
+    axes: readAudioRegistry(db).axes,
+    assets: Array.from(db.prepare('SELECT * FROM audio_asset ORDER BY rowid').iterate(), (r: any) =>
+      audioFromRow(root, r),
+    ),
+  };
+}
+export function mergeAudioLibrary(
+  db: any,
+  root: string,
+  library: ReturnType<typeof audioLibrarySnapshot>,
+) {
+  return db
+    .transaction(() => {
+      validateAudioLibrary(library);
+      const r = readAudioRegistry(db),
+        axisIds = new Map<string, string>();
+      for (const axis of library.axes) {
+        const old = r.axes.find((a) => a.id === axis.id);
+        if (!old) {
+          r.axes.push(axis);
+          axisIds.set(axis.id, axis.id);
+        } else if (json(old) === json(axis)) axisIds.set(axis.id, axis.id);
+        else {
+          const next = { ...axis, id: randomUUID() };
+          r.axes.push(next);
+          axisIds.set(axis.id, next.id);
+        }
+      }
+      const ids: string[] = [];
+      for (const a of library.assets) {
+        if (!existsSync(audioFile(root, a)))
+          throw new Error('Musikpaket enthält nicht alle referenzierten Medien.');
+        const old = db.prepare('SELECT * FROM audio_asset WHERE id=?').get(a.id);
+        if (old) {
+          const previous = decoded<AudioAsset>(old),
+            fields = (x: AudioAsset) =>
+              json([
+                x.name,
+                x.kind,
+                x.media,
+                x.moods,
+                x.moodTags,
+                x.intensity,
+                x.vibes,
+                x.genres,
+                x.notes,
+                x.trashed,
+              ]);
+          if (fields(previous) === fields(a)) {
+            ids.push(old.id);
+            continue;
+          }
+        }
+        const next = {
+          ...a,
+          id: old ? randomUUID() : a.id,
+          revision: 1,
+          problem: null,
+          available: true,
+          moods: Object.fromEntries(
+            Object.entries(a.moods).map(([id, v]) => [axisIds.get(id) ?? id, v]),
+          ),
+        };
+        saveAsset(db, next);
+        ids.push(next.id);
+      }
+      r.revision++;
+      r.catalogRevision++;
+      saveRegistry(db, r);
+      return ids;
+    })
+    .immediate();
+}
+export function audioMediaFiles(db: any) {
+  const media = new Map<string, { name: string; sha256: string; bytes: number }>();
+  for (const row of db.prepare('SELECT * FROM audio_asset').iterate()) {
+    const a = checkedAudioRow(row);
+    const name = 'audio/' + a.media.sha256 + a.media.extension,
+      previous = media.get(name);
+    if (previous && previous.bytes !== a.media.bytes)
+      throw new Error('Gemeinsame Mediengröße widersprüchlich: ' + name);
+    media.set(name, { name, sha256: a.media.sha256, bytes: a.media.bytes });
+  }
+  return [...media.values()];
+}
+export function validateMusicBackup(db: any) {
+  audioMediaFiles(db);
+  for (const r of db.prepare('SELECT * FROM music_state').iterate())
+    checkedMusicState(db, r.campaign_id, r);
+  for (const r of db.prepare('SELECT * FROM scene_music').iterate())
+    checkedSceneSettings(db, r.campaign_id, r.scene_id, r);
+  for (const r of db.prepare('SELECT * FROM music_subject').iterate()) {
+    subjectName(db, r.campaign_id, r.kind, r.id);
+    checkedMusicSubject(r, r.campaign_id, r.kind, r.id);
+  }
+  for (const r of db.prepare('SELECT * FROM music_receipt').iterate()) checkedMusicReceipt(db, r);
+  for (const r of db.prepare('SELECT * FROM music_position').iterate())
+    if (
+      typeof r.campaign_id !== 'string' ||
+      !db.prepare('SELECT 1 FROM campaign WHERE id=?').get(r.campaign_id) ||
+      typeof r.playback_id !== 'string' ||
+      !r.playback_id ||
+      r.playback_id.length > 1000 ||
+      !Number.isFinite(r.seconds) ||
+      r.seconds < 0 ||
+      r.seconds > 100000000
+    )
+      throw new Error('Musikwiedergabeposition ist ungültig.');
+  for (const r of db.prepare('SELECT * FROM audio_registry').iterate()) checkedAudioRegistry(r);
 }

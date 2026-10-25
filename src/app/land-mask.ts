@@ -1,14 +1,10 @@
-import {
-  bounds,
-  type LandscapeBox,
-  type LandscapeRecord,
-} from "./atlas-landscape";
-import type { Point } from "./contracts";
+import { bounds, type LandscapeBox, type LandscapeRecord } from './atlas-landscape';
+import type { Point } from './contracts';
 
 export const MASK_EDGE = 256,
   MASK_MAX = 65535,
   MASK_SEA_LEVEL = 32768;
-export type LandMode = "land" | "land-erase" | "raise" | "lower";
+export type LandMode = 'land' | 'land-erase' | 'raise' | 'lower';
 export interface MaskSample extends Point {
   t: number;
 }
@@ -28,7 +24,7 @@ export interface MaskStroke {
   samples: MaskSample[];
 }
 export const isLandMode = (mode: string): mode is LandMode =>
-  ["land", "land-erase", "raise", "lower"].includes(mode);
+  ['land', 'land-erase', 'raise', 'lower'].includes(mode);
 const decoded = new WeakMap<LandMask, Uint16Array>();
 export function decodeMask(mask: LandMask): Uint16Array {
   const hit = decoded.get(mask);
@@ -40,27 +36,27 @@ export function decodeMask(mask: LandMask): Uint16Array {
     !Number.isInteger(Math.log2(mask.pixel)) ||
     !Number.isSafeInteger(mask.x / (MASK_EDGE * mask.pixel)) ||
     !Number.isSafeInteger(mask.y / (MASK_EDGE * mask.pixel)) ||
-    typeof mask.data !== "string" ||
+    typeof mask.data !== 'string' ||
     mask.data.length > 350000
   )
-    throw Error("Landmaske prüfen.");
+    throw Error('Landmaske prüfen.');
   const raw = atob(mask.data);
-  if (raw.length % 4) throw Error("Landmaske prüfen.");
+  if (raw.length % 4) throw Error('Landmaske prüfen.');
   const values = new Uint16Array(MASK_EDGE * MASK_EDGE);
   let at = 0;
   for (let i = 0; i < raw.length; i += 4) {
     const count = raw.charCodeAt(i) | (raw.charCodeAt(i + 1) << 8),
       value = raw.charCodeAt(i + 2) | (raw.charCodeAt(i + 3) << 8);
-    if (!count || at + count > values.length) throw Error("Landmaske prüfen.");
+    if (!count || at + count > values.length) throw Error('Landmaske prüfen.');
     values.fill(value, at, at + count);
     at += count;
   }
-  if (at !== values.length) throw Error("Landmaske prüfen.");
+  if (at !== values.length) throw Error('Landmaske prüfen.');
   decoded.set(mask, values);
   return values;
 }
 export function encodeMask(values: Uint16Array): string {
-  let raw = "";
+  let raw = '';
   for (let i = 0; i < values.length; ) {
     const value = values[i]!,
       start = i;
@@ -83,14 +79,14 @@ export function validateMask(record: LandscapeRecord) {
     const b = bounds(record),
       m = record.mask;
     if (
-      record.kind !== "patch" ||
+      record.kind !== 'patch' ||
       record.resolution !== m.pixel ||
       b.x !== m.x ||
       b.y !== m.y ||
       b.width !== MASK_EDGE * m.pixel ||
       b.height !== MASK_EDGE * m.pixel
     )
-      throw Error("Landmaskenbereich prüfen.");
+      throw Error('Landmaskenbereich prüfen.');
   }
 }
 export function validateStroke(s: MaskStroke) {
@@ -108,21 +104,16 @@ export function validateStroke(s: MaskStroke) {
     !s.samples.length ||
     s.samples.length > 20000
   )
-    throw Error("Landpinsel prüfen.");
-  if (s.samples[0]!.t !== 0) throw Error("Pinselzeit prüfen.");
+    throw Error('Landpinsel prüfen.');
+  if (s.samples[0]!.t !== 0) throw Error('Pinselzeit prüfen.');
   let last = -1;
   for (const p of s.samples) {
-    if (
-      ![p.x, p.y, p.t].every(Number.isFinite) ||
-      p.t < last ||
-      p.t < 0 ||
-      p.t > 300000
-    )
-      throw Error("Pinselzeit prüfen.");
+    if (![p.x, p.y, p.t].every(Number.isFinite) || p.t < last || p.t < 0 || p.t > 300000)
+      throw Error('Pinselzeit prüfen.');
     last = p.t;
   }
 }
-export function strokeBox(s: Pick<MaskStroke, "radius" | "samples">): LandscapeBox {
+export function strokeBox(s: Pick<MaskStroke, 'radius' | 'samples'>): LandscapeBox {
   let x = Infinity,
     y = Infinity,
     right = -Infinity,
@@ -138,7 +129,7 @@ export function strokeBox(s: Pick<MaskStroke, "radius" | "samples">): LandscapeB
     right <= x ||
     bottom <= y
   )
-    throw Error("Pinselbereich nicht präzise darstellbar.");
+    throw Error('Pinselbereich nicht präzise darstellbar.');
   return { x, y, width: right - x, height: bottom - y };
 }
 function noise(x: number, y: number, seed: number) {
@@ -191,17 +182,14 @@ function dabs(s: MaskStroke) {
   return out;
 }
 const overlaps = (a: LandscapeBox, b: LandscapeBox) =>
-  a.x < b.x + b.width &&
-  a.x + a.width > b.x &&
-  a.y < b.y + b.height &&
-  a.y + a.height > b.y;
+  a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 function tileRecord(x: number, y: number, pixel: number): LandscapeRecord {
   const edge = MASK_EDGE * pixel;
   return {
     id: `land-mask:${Math.log2(pixel)}:${x / edge}:${y / edge}`,
     revision: 0,
-    kind: "patch",
-    name: "Land-/Wassermaske",
+    kind: 'patch',
+    name: 'Land-/Wassermaske',
     points: [],
     polygons: [
       {
@@ -217,7 +205,7 @@ function tileRecord(x: number, y: number, pixel: number): LandscapeRecord {
     resolution: pixel,
     width: 0,
     values: {},
-    mask: { version: 1, x, y, pixel, data: "" },
+    mask: { version: 1, x, y, pixel, data: '' },
   };
 }
 /** Existing finer tiles stay authoritative and receive each coarse edit as well. */
@@ -232,31 +220,17 @@ function editTiles(
     tiles = new Map<string, LandscapeRecord>(),
     edge = pixel * MASK_EDGE;
   for (const area of areas) {
-    const nx =
-        Math.ceil((area.x + area.width) / edge) - Math.floor(area.x / edge),
+    const nx = Math.ceil((area.x + area.width) / edge) - Math.floor(area.x / edge),
       ny = Math.ceil((area.y + area.height) / edge) - Math.floor(area.y / edge);
-    if (nx * ny > 256)
-      throw Error("Pinselzug zu groß. In kürzeren Zügen bearbeiten.");
-    for (
-      let y = Math.floor(area.y / edge);
-      y < Math.ceil((area.y + area.height) / edge);
-      y++
-    )
-      for (
-        let x = Math.floor(area.x / edge);
-        x < Math.ceil((area.x + area.width) / edge);
-        x++
-      ) {
+    if (nx * ny > 256) throw Error('Pinselzug zu groß. In kürzeren Zügen bearbeiten.');
+    for (let y = Math.floor(area.y / edge); y < Math.ceil((area.y + area.height) / edge); y++)
+      for (let x = Math.floor(area.x / edge); x < Math.ceil((area.x + area.width) / edge); x++) {
         const r =
           masks.find(
-            (a) =>
-              a.mask!.x === x * edge &&
-              a.mask!.y === y * edge &&
-              a.mask!.pixel === pixel,
+            (a) => a.mask!.x === x * edge && a.mask!.y === y * edge && a.mask!.pixel === pixel,
           ) ?? tileRecord(x * edge, y * edge, pixel);
         tiles.set(r.id, r);
-        if (tiles.size > 256)
-          throw Error("Pinselzug zu groß. In kürzeren Zügen bearbeiten.");
+        if (tiles.size > 256) throw Error('Pinselzug zu groß. In kürzeren Zügen bearbeiten.');
       }
   }
   for (const r of masks)
@@ -266,15 +240,12 @@ function editTiles(
       areas.some((a) => overlaps(bounds(r), a))
     )
       tiles.set(r.id, r);
-  if (tiles.size > 256)
-    throw Error("Pinselzug zu groß. In kürzeren Zügen bearbeiten.");
+  if (tiles.size > 256) throw Error('Pinselzug zu groß. In kürzeren Zügen bearbeiten.');
   const result: LandscapeRecord[] = [];
   for (const r of tiles.values()) {
     const m = r.mask!,
       old = masks.find((a) => a.id === r.id),
-      values = old
-        ? decodeMask(old.mask!).slice()
-        : new Uint16Array(MASK_EDGE * MASK_EDGE);
+      values = old ? decodeMask(old.mask!).slice() : new Uint16Array(MASK_EDGE * MASK_EDGE);
     if (!old) {
       const parents = masks
         .filter((a) => a.mask!.pixel > pixel && overlaps(bounds(a), bounds(r)))
@@ -297,25 +268,18 @@ function editTiles(
   }
   return result;
 }
-export function applyMaskStroke(
-  records: LandscapeRecord[],
-  s: MaskStroke,
-): LandscapeRecord[] {
+export function applyMaskStroke(records: LandscapeRecord[], s: MaskStroke): LandscapeRecord[] {
   validateStroke(s);
   const pixel = 2 ** Math.floor(Math.log2(s.radius / 64)),
     box = strokeBox(s),
-    timed = s.mode === "raise" || s.mode === "lower",
+    timed = s.mode === 'raise' || s.mode === 'lower',
     dots = timed ? dabs(s) : [];
   const areas: LandscapeBox[] = [];
   for (let i = 0; i < s.samples.length; i++) {
     const a = s.samples[Math.max(0, i - 1)]!,
       b = s.samples[i]!,
-      steps = Math.max(
-        1,
-        Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / (pixel * 128)),
-      );
-    if (steps > 2048)
-      throw Error("Pinselzug zu groß. In kürzeren Zügen bearbeiten.");
+      steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / (pixel * 128)));
+    if (steps > 2048) throw Error('Pinselzug zu groß. In kürzeren Zügen bearbeiten.');
     for (let j = 0; j <= steps; j++) {
       const x = a.x + ((b.x - a.x) * j) / steps,
         y = a.y + ((b.y - a.y) * j) / steps;
@@ -337,15 +301,9 @@ export function applyMaskStroke(
       const visit = (b: LandscapeBox, fn: (i: number, p: Point) => void) => {
         if (!overlaps(b, { x: m.x, y: m.y, width: edge, height: edge })) return;
         const x0 = Math.max(0, Math.floor((b.x - m.x) / m.pixel)),
-          x1 = Math.min(
-            MASK_EDGE - 1,
-            Math.floor((b.x + b.width - m.x) / m.pixel),
-          ),
+          x1 = Math.min(MASK_EDGE - 1, Math.floor((b.x + b.width - m.x) / m.pixel)),
           y0 = Math.max(0, Math.floor((b.y - m.y) / m.pixel)),
-          y1 = Math.min(
-            MASK_EDGE - 1,
-            Math.floor((b.y + b.height - m.y) / m.pixel),
-          );
+          y1 = Math.min(MASK_EDGE - 1, Math.floor((b.y + b.height - m.y) / m.pixel));
         for (let y = y0; y <= y1; y++)
           for (let x = x0; x <= x1; x++)
             fn(y * MASK_EDGE + x, {
@@ -371,18 +329,12 @@ export function applyMaskStroke(
                 0,
                 Math.min(
                   MASK_MAX,
-                  accum![i]! +
-                    (s.mode === "raise" ? 1 : -1) *
-                      MASK_MAX *
-                      d.dt *
-                      (1 - r2) ** 2 *
-                      n,
+                  accum![i]! + (s.mode === 'raise' ? 1 : -1) * MASK_MAX * d.dt * (1 - r2) ** 2 * n,
                 ),
               );
             },
           );
-        for (let i = 0; i < values.length; i++)
-          values[i] = Math.round(accum![i]!);
+        for (let i = 0; i < values.length; i++) values[i] = Math.round(accum![i]!);
       } else
         for (let j = 0; j < s.samples.length; j++) {
           const a = s.samples[Math.max(0, j - 1)]!,
@@ -398,15 +350,9 @@ export function applyMaskStroke(
               height: Math.abs(dy) + 2 * s.radius,
             },
             (i, p) => {
-              const t = Math.max(
-                0,
-                Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (l || 1)),
-              );
-              if (
-                (p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2 <=
-                s.radius ** 2
-              )
-                values[i] = s.mode === "land" ? MASK_MAX : 0;
+              const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (l || 1)));
+              if ((p.x - a.x - t * dx) ** 2 + (p.y - a.y - t * dy) ** 2 <= s.radius ** 2)
+                values[i] = s.mode === 'land' ? MASK_MAX : 0;
             },
           );
         }
@@ -418,7 +364,7 @@ export function applyMaskStroke(
 export function applyMaskArea(
   records: LandscapeRecord[],
   r: LandscapeRecord,
-  water = r.values.terrain === "water",
+  water = r.values.terrain === 'water',
 ) {
   const b = bounds(r),
     pixel = 2 ** Math.floor(Math.log2(Math.max(b.width, b.height, 1) / 128));
@@ -457,11 +403,7 @@ export function applyMaskArea(
           const from = Math.max(0, Math.ceil(crossings[i]! - 0.5)),
             to = Math.min(MASK_EDGE - 1, Math.floor(crossings[i + 1]! - 0.5));
           if (to >= from)
-            values.fill(
-              water ? 0 : MASK_MAX,
-              y * MASK_EDGE + from,
-              y * MASK_EDGE + to + 1,
-            );
+            values.fill(water ? 0 : MASK_MAX, y * MASK_EDGE + from, y * MASK_EDGE + to + 1);
         }
       }
     }
@@ -469,7 +411,7 @@ export function applyMaskArea(
 }
 
 /** Derived horizontal spans for existing polygon-only fill operations; never persisted as land geometry. */
-export function maskLandSpans(mask: LandMask): import("./contracts").Polygon[] {
+export function maskLandSpans(mask: LandMask): import('./contracts').Polygon[] {
   const values = decodeMask(mask),
     rects: { x: number; y: number; width: number; height: number }[] = [];
   let prior = new Map<string, number>();

@@ -27,9 +27,12 @@ export class AtlasGeometryRaster {
   private width: number;
   private height: number;
 
-  constructor(private query: AtlasRegionQuery, private checkpoint: () => void) {
+  constructor(
+    private query: AtlasRegionQuery,
+    private checkpoint: () => void,
+  ) {
     this.width = Math.min(512, query.width);
-    this.height = Math.max(1, Math.min(512, Math.round(this.width * query.height / query.width)));
+    this.height = Math.max(1, Math.min(512, Math.round((this.width * query.height) / query.width)));
   }
 
   append(shape: Shape, frame: Frame, kind: string, roof?: string) {
@@ -47,38 +50,67 @@ export class AtlasGeometryRaster {
 
   private paint({ shape: s, frame: f, kind, roof }: Item) {
     this.checkpoint();
-    const q = this.query, mpp = q.box.width / q.width;
-    const polygons = s.polygons?.map(p => ({
-      outer: p.outer.map(p => at(p, f)),
-      holes: p.holes.map(r => r.map(p => at(p, f))),
+    const q = this.query,
+      mpp = q.box.width / q.width;
+    const polygons = s.polygons?.map((p) => ({
+      outer: p.outer.map((p) => at(p, f)),
+      holes: p.holes.map((r) => r.map((p) => at(p, f))),
     }));
-    if (kind === 'unit' && s.value.kind === 'building' &&
-        !mapFootprintVisible(polygons?.flatMap(p => p.outer) ?? [], mpp)) return;
-    if (kind === 'unit' && s.value.kind === 'road' &&
-        !mapLineVisible('road', s.stroke ?? 6, mpp)) return;
-    const color = kind === 'unit'
-      ? (s.value.kind === 'water' ? '#8eafb9' : s.value.kind === 'building' ? roof! : '#d9c6a4')
-      : kind === 'room' ? (s.style?.fill ?? '#e2dac4') : (s.value.color ?? '#685b50');
+    if (
+      kind === 'unit' &&
+      s.value.kind === 'building' &&
+      !mapFootprintVisible(polygons?.flatMap((p) => p.outer) ?? [], mpp)
+    )
+      return;
+    if (kind === 'unit' && s.value.kind === 'road' && !mapLineVisible('road', s.stroke ?? 6, mpp))
+      return;
+    const color =
+      kind === 'unit'
+        ? s.value.kind === 'water'
+          ? '#8eafb9'
+          : s.value.kind === 'building'
+            ? roof!
+            : '#d9c6a4'
+        : kind === 'room'
+          ? (s.style?.fill ?? '#e2dac4')
+          : (s.value.color ?? '#685b50');
     if (polygons) {
       this.image!.paintPolygons(polygons, color);
       const pixel = q.box.width / this.width;
       for (const polygon of polygons) {
         const extent = territoryBounds([polygon]);
         if (extent.width < pixel || extent.height < pixel) {
-          this.image!.paintLine([{ x: extent.x + extent.width / 2, y: extent.y + extent.height / 2 }], pixel, color);
+          this.image!.paintLine(
+            [{ x: extent.x + extent.width / 2, y: extent.y + extent.height / 2 }],
+            pixel,
+            color,
+          );
         }
       }
     } else if (s.points) {
-      this.image!.paintLine(s.points.map(p => at(p, f)), mapLineWidth(s.stroke ?? mpp * 2, mpp), color);
+      this.image!.paintLine(
+        s.points.map((p) => at(p, f)),
+        mapLineWidth(s.stroke ?? mpp * 2, mpp),
+        color,
+      );
     }
   }
 
   finish() {
     this.activate();
     this.checkpoint();
-    const data = PNG.sync.write({
-      width: this.width, height: this.height, data: Buffer.from(this.image!.finish()),
-    } as PNG).toString('base64');
-    return { box: { ...this.query.box }, width: this.width, height: this.height, data: 'data:image/png;base64,' + data };
+    const data = PNG.sync
+      .write({
+        width: this.width,
+        height: this.height,
+        data: Buffer.from(this.image!.finish()),
+      } as PNG)
+      .toString('base64');
+    return {
+      box: { ...this.query.box },
+      width: this.width,
+      height: this.height,
+      data: 'data:image/png;base64,' + data,
+    };
   }
 }

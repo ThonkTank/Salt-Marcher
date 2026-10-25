@@ -1,16 +1,12 @@
-import type { Result } from "./contracts";
-import type {
-  Note,
-  PreparationDraft,
-  PreparationCommand,
-} from "./preparation-contracts";
-import type { LocationDocument } from "../features/location/location-schema";
-import type { Creature } from "../features/catalog/creature-catalog";
-import type { ItemDefinition } from "./items-contracts";
-import type { EncounterPlan } from "./encounter-contracts";
+import type { Result } from './contracts';
+import type { Note, PreparationDraft, PreparationCommand } from './preparation-contracts';
+import type { LocationDocument } from '../features/location/location-schema';
+import type { Creature } from '../features/catalog/creature-catalog';
+import type { ItemDefinition } from './items-contracts';
+import type { EncounterPlan } from './encounter-contracts';
 export type DeskRef = {
-  sectionId?:string;
-  kind: "note" | "location" | "creature" | "item" | "encounter";
+  sectionId?: string;
+  kind: 'note' | 'location' | 'creature' | 'item' | 'encounter';
   id: string;
 };
 export interface DeskEntry {
@@ -19,10 +15,10 @@ export interface DeskEntry {
   label: string;
   unavailable?: boolean;
   revision?: number;
-  preview?: import("./preparation-contracts").NoteSearchPreview | { label: string; text: string };
+  preview?: import('./preparation-contracts').NoteSearchPreview | { label: string; text: string };
 }
 export interface DeskContent extends DeskEntry {
-  links?: {label:string;entry:DeskEntry}[];
+  links?: { label: string; entry: DeskEntry }[];
   revision: number;
   referenceNotice?: string;
   note?: Note;
@@ -37,18 +33,33 @@ export interface SceneDesk {
   pins: DeskEntry[];
   place: DeskEntry | null;
 }
-export interface SceneCreationInput {kind:'npc'|'faction'|'quest'|'rumor'|'location';name:string;notes:string;pin:boolean;contributors:boolean}
-export interface SceneCreationDraft {writeId:string;input:SceneCreationInput;command:PreparationCommand|null}
+export interface SceneCreationInput {
+  kind: 'npc' | 'faction' | 'quest' | 'rumor' | 'location';
+  name: string;
+  notes: string;
+  pin: boolean;
+  contributors: boolean;
+}
+export interface SceneCreationDraft {
+  writeId: string;
+  input: SceneCreationInput;
+  command: PreparationCommand | null;
+}
 export interface SceneDeskAPI {
-  sceneCreationDraft(token:string,sceneId:string):Promise<Result<SceneCreationDraft|null>>;
-  keepSceneCreationDraft(token:string,sceneId:string,draft:SceneCreationDraft|null,expected:string|null):Promise<Result<void>>;
+  sceneCreationDraft(token: string, sceneId: string): Promise<Result<SceneCreationDraft | null>>;
+  keepSceneCreationDraft(
+    token: string,
+    sceneId: string,
+    draft: SceneCreationDraft | null,
+    expected: string | null,
+  ): Promise<Result<void>>;
   sceneDesk(token: string, sceneId: string): Promise<Result<SceneDesk>>;
   searchDesk(
     token: string,
-    kind: "world" | "note" | "rule" | "item" | "creature" | "encounter" | "reference",
+    kind: 'world' | 'note' | 'rule' | 'item' | 'creature' | 'encounter' | 'reference',
     search: string,
     offset: number,
-  ): Promise<Result<{ entries: DeskEntry[]; next: number | null;notice?:string }>>;
+  ): Promise<Result<{ entries: DeskEntry[]; next: number | null; notice?: string }>>;
   deskContent(token: string, ref: DeskRef): Promise<Result<DeskContent>>;
   pinSceneDesk(
     token: string,

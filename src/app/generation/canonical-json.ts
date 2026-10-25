@@ -6,14 +6,13 @@
  */
 export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== 'object') {
-    const serialized = JSON.stringify(value)
-    return serialized === undefined ? 'null' : serialized
+    const serialized = JSON.stringify(value);
+    return serialized === undefined ? 'null' : serialized;
   }
-  if (Array.isArray(value))
-    return `[${value.map((entry) => canonicalJson(entry)).join(',')}]`
+  if (Array.isArray(value)) return `[${value.map((entry) => canonicalJson(entry)).join(',')}]`;
   return `{${Object.entries(value as Record<string, unknown>)
     .filter(([, entry]) => entry !== undefined)
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, entry]) => `${JSON.stringify(key)}:${canonicalJson(entry)}`)
-    .join(',')}}`
+    .join(',')}}`;
 }

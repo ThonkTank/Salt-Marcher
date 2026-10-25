@@ -1,37 +1,27 @@
-import { createHash, randomUUID } from "node:crypto";
-import type {
-  CombatState,
-  CombatLossBasis,
-  CombatLossCandidate,
-} from "../combat-contracts";
-import { readNpc } from "./npcs";
-const hash = (s: string) => createHash("sha256").update(s).digest("hex");
+import { createHash, randomUUID } from 'node:crypto';
+import type { CombatState, CombatLossBasis, CombatLossCandidate } from '../combat-contracts';
+import { readNpc } from './npcs';
+const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 
 /** Health belongs to runtime; durable defeat is a separate, explicit GM fact. */
-export function combatNpcLosses(
-  db: any,
-  cam: string,
-  combat: CombatState,
-): CombatLossCandidate[] {
+export function combatNpcLosses(db: any, cam: string, combat: CombatState): CombatLossCandidate[] {
   const rows: CombatLossCandidate[] = [];
   for (const p of combat.participants) {
     if (!p.worldActorId) continue;
-    const confirmed = combat.worldLosses?.some(
-        (l) => l.actorId === p.worldActorId,
-      ),
+    const confirmed = combat.worldLosses?.some((l) => l.actorId === p.worldActorId),
       note = db
         .prepare(
           "SELECT trashed,json_extract(payload,'$.kind') kind FROM world_note WHERE campaign_id=? AND id=?",
         )
         .get(cam, p.worldActorId);
-    if (!note || note.kind !== "npc") {
+    if (!note || note.kind !== 'npc') {
       if (confirmed)
         rows.push({
           participantId: p.id,
           actorId: p.worldActorId,
           name: p.name,
           combatHp: p.hp,
-          status: "confirmed",
+          status: 'confirmed',
           basis: null,
         });
       continue;
@@ -42,7 +32,7 @@ export function combatNpcLosses(
         actorId: p.worldActorId,
         name: p.name,
         combatHp: p.hp,
-        status: confirmed ? "confirmed" : "unavailable",
+        status: confirmed ? 'confirmed' : 'unavailable',
         basis: null,
       });
       continue;
@@ -64,12 +54,12 @@ export function combatNpcLosses(
       name: npc.name,
       combatHp: p.hp,
       status: confirmed
-        ? "confirmed"
-        : npc.record.lifecycle === "defeated"
-          ? "defeated"
+        ? 'confirmed'
+        : npc.record.lifecycle === 'defeated'
+          ? 'defeated'
           : basis
-            ? "available"
-            : "unavailable",
+            ? 'available'
+            : 'unavailable',
       basis,
     });
   }
@@ -82,17 +72,15 @@ export function confirmCombatNpcLosses(
   combat: CombatState,
   losses: CombatLossBasis[],
 ) {
-  if (combat.phase !== "finished")
-    throw new Error(
-      "NPC-Verluste erst nach dem bestätigten Kampfabschluss übernehmen.",
-    );
+  if (combat.phase !== 'finished')
+    throw new Error('NPC-Verluste erst nach dem bestätigten Kampfabschluss übernehmen.');
   if (
     !Array.isArray(losses) ||
     !losses.length ||
     losses.length > 1000 ||
     new Set(losses.map((l) => l?.actorId)).size !== losses.length
   )
-    throw new Error("Wähle eindeutige NPC-Verluste.");
+    throw new Error('Wähle eindeutige NPC-Verluste.');
   const candidates = combatNpcLosses(db, cam, combat),
     records = losses.map((b) => {
       const candidate = candidates.find(
@@ -100,20 +88,14 @@ export function confirmCombatNpcLosses(
       );
       if (
         !candidate ||
-        candidate.status !== "available" ||
+        candidate.status !== 'available' ||
         !candidate.basis ||
         (
-          [
-            "participantId",
-            "actorId",
-            "noteRevision",
-            "recordRevision",
-            "actorRevision",
-          ] as const
+          ['participantId', 'actorId', 'noteRevision', 'recordRevision', 'actorRevision'] as const
         ).some((k) => candidate.basis![k] !== b[k])
       )
         throw new Error(
-          "NPC-Verlustauswahl inzwischen geändert oder bereits bestätigt. Nachbereitung aktualisieren.",
+          'NPC-Verlustauswahl inzwischen geändert oder bereits bestätigt. Nachbereitung aktualisieren.',
         );
       return readNpc(db, cam, b.actorId);
     });
@@ -122,12 +104,12 @@ export function confirmCombatNpcLosses(
     after = records.map((n) => ({
       ...n.record,
       revision: n.record.revision + 1,
-      lifecycle: "defeated" as const,
+      lifecycle: 'defeated' as const,
     }));
   for (const r of after) {
     const payload = JSON.stringify(r);
     db.prepare(
-      "INSERT INTO npc_record VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET faction_id=excluded.faction_id,revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum",
+      'INSERT INTO npc_record VALUES(?,?,?,?,?,?) ON CONFLICT(campaign_id,id) DO UPDATE SET faction_id=excluded.faction_id,revision=excluded.revision,payload=excluded.payload,checksum=excluded.checksum',
     ).run(cam, r.id, r.factionId, r.revision, payload, hash(payload));
   }
   combat.worldLosses = [
@@ -139,13 +121,13 @@ export function confirmCombatNpcLosses(
     })),
   ];
   const body = JSON.stringify({
-    kind: "npc-losses",
-    text: "Kampfverluste bestätigt: " + records.map((n) => n.name).join(", "),
+    kind: 'npc-losses',
+    text: 'Kampfverluste bestätigt: ' + records.map((n) => n.name).join(', '),
     combatId: combat.id,
     recordedAt: new Date().toISOString(),
     facts: { before, after },
   });
-  db.prepare("INSERT INTO world_history VALUES(?,?,?,?,?)").run(
+  db.prepare('INSERT INTO world_history VALUES(?,?,?,?,?)').run(
     cam,
     randomUUID(),
     combat.sceneId,

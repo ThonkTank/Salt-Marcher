@@ -1,13 +1,13 @@
-import * as THREE from "three";
-import type { Point } from "./contracts";
+import * as THREE from 'three';
+import type { Point } from './contracts';
 
 export interface AtlasSpatialSurface {
   /** Output sampling density for text textures; live scenes use a bounded glyph atlas. */
-  textPixelsPerMeter?:number;
-  displayMpp?:number;
-  routes?:ReadonlyMap<string,import('./atlas-landscape').LandscapeRecord>;
-  objectHeights?:ReadonlyMap<string,number>;
-  scopeBases?:ReadonlyMap<string,number>;
+  textPixelsPerMeter?: number;
+  displayMpp?: number;
+  routes?: ReadonlyMap<string, import('./atlas-landscape').LandscapeRecord>;
+  objectHeights?: ReadonlyMap<string, number>;
+  scopeBases?: ReadonlyMap<string, number>;
   origin: Point;
   focusM: number;
   exaggeration: number;
@@ -15,7 +15,7 @@ export interface AtlasSpatialSurface {
   /** Maximum world edge length for draped vector triangles. */
   segment: number;
   /** Loaded terrain coverage, including the camera margin. */
-  bounds?:import("./atlas-landscape").LandscapeBox;
+  bounds?: import('./atlas-landscape').LandscapeBox;
 }
 
 /** Refine local vector triangles against the shared terrain without changing source geometry.
@@ -27,8 +27,8 @@ export function drapeAtlasGeometry(
   surface: AtlasSpatialSurface,
 ) {
   const raw = input.index ? input.toNonIndexed() : input,
-    vertices = raw.getAttribute("position"),
-    uv = raw.getAttribute("uv");
+    vertices = raw.getAttribute('position'),
+    uv = raw.getAttribute('uv');
   const output: number[] = [],
     texcoords: number[] = [];
   type Vertex = { p: Point; u: number; v: number };
@@ -71,12 +71,11 @@ export function drapeAtlasGeometry(
       texcoords.push(v.u, v.v);
     }
   };
-  for (let i = 0; i < vertices.count; i += 3)
-    triangle(at(i), at(i + 1), at(i + 2), 0);
+  for (let i = 0; i < vertices.count; i += 3) triangle(at(i), at(i + 1), at(i + 2), 0);
   if (raw !== input) raw.dispose();
   input.dispose();
   const result = new THREE.BufferGeometry();
-  result.setAttribute("position", new THREE.Float32BufferAttribute(output, 3));
-  result.setAttribute("uv", new THREE.Float32BufferAttribute(texcoords, 2));
+  result.setAttribute('position', new THREE.Float32BufferAttribute(output, 3));
+  result.setAttribute('uv', new THREE.Float32BufferAttribute(texcoords, 2));
   return result;
 }
