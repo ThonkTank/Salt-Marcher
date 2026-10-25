@@ -274,7 +274,10 @@
         "src/app/campaign-atlas-author.ts",
         "src/app/atlas-author.ts",
         "src/app/campaign-atlas-ui.ts",
-        "src/app/graph-ui.ts"
+        "src/app/graph-ui.ts",
+        "tests/desktop-atlas-commit-recovery.test.mjs",
+        "tests/desktop-graph-preview-owner.test.mjs",
+        "tests/desktop-room-authoring.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -303,7 +306,8 @@
       "returnGates": [],
       "writeScopes": [
         "src/app/atlas-journey.ts",
-        "src/app/campaign-atlas-ui.ts"
+        "src/app/campaign-atlas-ui.ts",
+        "tests/desktop-atlas-travel-context.test.mjs"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4761,7 +4765,8 @@
         "desktop/atlas-write-activity.ts",
         "tests/desktop-atlas-write-receipt.test.mjs",
         "tests/atlas-write-recovery.test.mjs",
-        "src/app/storage/graph-preview-commands.ts"
+        "src/app/storage/graph-preview-commands.ts",
+        "desktop/atlas-write-references.ts"
       ],
       "writesBuildInputs": true,
       "nativeBuild": false,
@@ -4777,7 +4782,7 @@
         "activeHours": null,
         "prerequisites": "A0.06/A0.09 and bounded A0.15-17 correction locally accepted; R4 final sources/build hashes verified",
         "implementation": "assigned compact durable references and read-only Atlas/Graph/Travel status bridge; owner wiring follows A0.07/A0.08",
-        "scopeAddition": "graph-preview-commands.ts shares existing preview fingerprint input with compact reference helper; no new writer or canonical archive format",
+        "scopeAddition": "graph-preview-commands.ts shares existing preview fingerprint input with compact reference helper; desktop/atlas-write-references.ts owns bounded atomic/fsync local reference files; no new writer or canonical archive format",
         "nativeQualification": "pending A0.14/A0.11"
       }
     },
