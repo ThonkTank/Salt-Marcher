@@ -1,10 +1,11 @@
+import {atlasWriteFingerprintInput} from '../atlas-write-receipt';
 import {createHash} from 'node:crypto';
 import type {GraphPreviewTarget,GraphPreviewState} from '../graph-contracts';
 import {prepareSpatialCapture,capturedSpatialRow,restoreSpatialRow,type SpatialDelta} from './campaign-atlas';
 
 export interface PreviewCommand {commandId:string;campaignId:string;target?:GraphPreviewTarget;action:unknown}
 const json=JSON.stringify,hash=(v:unknown)=>createHash('sha256').update(json(v)).digest('hex');
-export const previewCommandFingerprint=(c:PreviewCommand)=>hash({campaignId:c.campaignId,target:c.target,action:c.action});
+export const previewCommandFingerprint=(c:PreviewCommand)=>createHash('sha256').update(atlasWriteFingerprintInput('preview',c)).digest('hex');
 export function requirePreviewTarget(target:GraphPreviewTarget|undefined):GraphPreviewTarget {
   if(!target||target.kind!=='graph-preview'||typeof target.previewId!=='string'||!/^[a-zA-Z0-9-]{1,100}$/.test(target.previewId)||typeof target.scopeId!=='string'||!target.scopeId||!Number.isSafeInteger(target.revision)||target.revision<0)throw Error('Explizites Vorschauziel fehlt oder ist ungültig.');
   return target;

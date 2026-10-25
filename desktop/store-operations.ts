@@ -90,6 +90,8 @@ export const storeMethods = [
   'encounterPlan',
   'encounterPlans',
   'encounterTables',
+  'authorizeAtlasWriteReference',
+  'atlasWriteStatus',
   'executeAtlas',
   'executeAtlasCommit',
   'executeAtlasTravel',

@@ -1,3 +1,5 @@
+import {AtlasWriteReferences} from './atlas-write-references';
+import {checkedAtlasWriteReference,graphReceiptCommand,atlasReceiptFamily,atlasWriteFingerprintInput,sameAtlasWriteReference,type AtlasWriteReference,type AtlasWriteStatus} from '../src/app/atlas-write-receipt';
 import {validateAtlasReadRequest,type AtlasReadRequest} from '../src/app/atlas-read-request';
 import {AtlasWriteActivity} from './atlas-write-activity';
 import {clearCampaignStaging,discardCampaignTickets,cancelCampaignTicket} from './campaign-erasure';
@@ -120,7 +122,26 @@ else {
       error:error=>console.error('Spieleranzeige konnte nicht aktualisiert werden.',error instanceof Error?error.message:error),
     });
     ipcMain.handle('player:frame',async event=>{const window=playerDisplay.window;if(!window||event.sender!==window.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==playerOrigin)return{ok:false,error:'Zugriff verweigert.'};return{ok:true,value:await playerDisplay.frame()};});
-    const atlasWriteActivity=new AtlasWriteActivity();
+    const atlasWriteReferences=new AtlasWriteReferences(path.join(dataDir,'atlas-write-references'));
+    // Only a witnessed ordinary Graph reject may release an absent first preview.
+    // This evidence is deliberately session-local; a lost host result remains unknown.
+    const rejectedGraphWrites=new Map<string,AtlasWriteReference>();
+    const atlasWriteActivity=new AtlasWriteActivity(commandId=>{for(const [campaignId,ref] of rejectedGraphWrites)if(ref.commandId===commandId)rejectedGraphWrites.delete(campaignId);});
+    async function atlasWriteStatus(value:AtlasWriteReference,token:string):Promise<AtlasWriteStatus>{
+      const ref=checkedAtlasWriteReference(value),epoch=atlasWriteActivity.epoch;
+      const result=await store.atlasWriteStatus(ref,token,atlasWriteActivity.has(ref.commandId));
+      // A writer can enter while the worker response is in transit.
+      return result.outcome==='not-applied'&&(atlasWriteActivity.has(ref.commandId)||epoch!==atlasWriteActivity.epoch)?{outcome:'unknown'}:result;
+    }
+    handle('atlas:write-reference-keep',async(ref:AtlasWriteReference,token:string)=>{const checked=checkedAtlasWriteReference(ref);await store.authorizeAtlasWriteReference(checked.campaignId,token);atlasWriteReferences.keep(checked);if(checked.family!=='travel')rejectedGraphWrites.delete(checked.campaignId);});
+    handle('atlas:write-references',async(campaignId:string,token:string)=>{await store.authorizeAtlasWriteReference(campaignId,token);return atlasWriteReferences.list(campaignId);});
+    handle('atlas:write-status',atlasWriteStatus);
+    handle('atlas:write-reference-clear',async(ref:AtlasWriteReference,token:string)=>{
+      const result=await atlasWriteStatus(ref,token);
+      const rejected=rejectedGraphWrites.get(ref.campaignId);
+      if(atlasWriteActivity.has(ref.commandId)||result.outcome==='unknown'&&(!rejected||!sameAtlasWriteReference(ref,rejected)))throw Error('Atlasauftrag bleibt ungeklärt.');
+      atlasWriteReferences.clear(ref);if(ref.family!=='travel')rejectedGraphWrites.delete(ref.campaignId);
+    });
     function handle<T>(name: string, operation: (...args: any[]) => T | Promise<T>) {
       ipcMain.handle(name, async (event, ...args): Promise<Result<T>> => {
         if (event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame || event.senderFrame.url !== origin) return { ok: false, error: 'Zugriff verweigert.' };
@@ -372,7 +393,20 @@ else {
     handle('campaign:discard-group-draft',async (token:string,id:string,writeId:string)=>(await store.discardGroupDraft(token,id,writeId)));
     handle('campaign:prepared-group',async (token:string,id:string)=>(await store.preparedGroup(token,id)));
     handle('graph:view',async (token:string,scopeId:string)=>(await store.graph(token,scopeId)));
-    handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>atlasWriteActivity.run(c.commandId,async()=>{if(['restore','accept'].includes(c.action?.kind))return withGraphSourceReadBarrier(async ()=>(await store.executeGraph(c)));return (await store.executeGraph(c));}));
+    handle('graph:execute',(c:import('../src/app/graph-contracts').GraphCommand)=>atlasWriteActivity.run(c.commandId,async()=>{
+      if(c.action?.kind!=='select')rejectedGraphWrites.delete(c.campaignId);
+      try{if(['restore','accept'].includes(c.action?.kind))return await withGraphSourceReadBarrier(()=>store.executeGraph(c));return await store.executeGraph(c);}
+      catch(error){
+        // Graph commit projections already use the typed Unknown boundary. Never
+        // infer rejection from renderer text or from an absent preview alone.
+        if(!(error instanceof StoreOutcomeUnknownError)&&c.action?.kind!=='select')try{
+          const command=graphReceiptCommand(c),family=atlasReceiptFamily(command);
+          const ref=checkedAtlasWriteReference({version:1,family,campaignId:c.campaignId,commandId:c.commandId,target:c.target,fingerprint:createHash('sha256').update(atlasWriteFingerprintInput(family,command)).digest('hex')});
+          if(atlasWriteReferences.matches(ref))rejectedGraphWrites.set(ref.campaignId,ref);
+        }catch{/* Unreadable persistence is never authority to clear it. */}
+        throw error;
+      }
+    }));
     handle('drawing:path-preview',async (token:string,p:import('../src/app/path-contracts').DungeonPath)=>(await store.previewPath(token,p)));
     handle('drawing:map',async (token:string,roomId?:string,elementId?:string)=>(await store.drawingMap(token,roomId,elementId)));
     handle('drawing:element',async (token:string,id:string)=>(await store.drawingElement(token,id)));
@@ -391,8 +425,8 @@ else {
     handle('city:activities',async (token:string,q:import('../src/app/city-activity-contracts').CityActivityQuery)=>(await store.cityActivities(token,q)));
     handle('city:buildings',async (token:string,q:import('../src/app/city-contracts').CityBuildingQuery)=>(await store.cityBuildings(token,q)));
     handle('atlas:travel-preview',async (token:string,p:import('../src/app/contracts').Point)=>(await store.previewAtlasTravel(token,p)));
-    handle('atlas:travel-commit',async (c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>(await store.executeAtlasTravelCommit(c)));
-    handle('atlas:travel',async (c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>(await store.executeAtlasTravel(c)));
+    handle('atlas:travel-commit',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>atlasWriteActivity.run(c.commandId,()=>store.executeAtlasTravelCommit(c)));
+    handle('atlas:travel',(c:import('../src/app/atlas-travel-contracts').AtlasTravelCommand)=>atlasWriteActivity.run(c.commandId,()=>store.executeAtlasTravel(c)));
     handle('atlas:find',async (token:string,text:string)=>(await store.landscapeFind(token,text)));
     const referencePreviewCache=new Map<string,string>();let referencePreviewBytes=0;
     handle('atlas:reference-preview',async (token:string,id:string,size:number)=>{

@@ -1,3 +1,4 @@
+import {atlasWriteFingerprintInput} from '../atlas-write-receipt';
 import {ensureAtlasShapeSource} from './atlas-shape-source';
 import {advanceTerrainEnvironment} from './terrain-environment';
 import {validateTerritories} from './atlas-territories';
@@ -430,7 +431,7 @@ const atlasActionKinds: Record<AtlasCommand['action']['kind'], true> = {
   'group-room-split':true,'group-scale':true,'group-generate':true,'city-create':true,'dungeon-create':true,entrance:true,'room-create':true,undo:true,redo:true,
   'landscape-prominence':true,'landscape-route':true,'landscape-vegetation-edit':true,'landscape-terrain-style':true,'landscape-height-stroke':true,'landscape-sea-level':true,'landscape-land-stroke':true,'landscape-color-stroke':true,'landscape-brush':true,'landscape-batch':true,'landscape-put':true,'landscape-reset':true,'landscape-remove':true,'landscape-place':true,
 };
-export const atlasCommandFingerprint=(c:AtlasCommand)=>fp(c.target?{target:c.target,action:c.action}:c.terrainStroke?{action:c.action,terrainStroke:c.terrainStroke}:c.action);
+export const atlasCommandFingerprint=(c:AtlasCommand)=>hash(atlasWriteFingerprintInput('atlas',c));
 /** No replay or projection reads: the transaction receipt alone establishes application. */
 export function hasAtlasReceipt(db:any,c:AtlasCommand):boolean{
  if(!c||typeof c.commandId!=='string'||!c.commandId||!c.action||!Object.hasOwn(atlasActionKinds,c.action.kind))throw new Error('Unbekannten oder unvollständigen Atlasauftrag nicht geprüft.');

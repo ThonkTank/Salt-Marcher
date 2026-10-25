@@ -1,3 +1,4 @@
+import type {AtlasWriteRecoveryAPI as importAtlasWriteRecoveryAPI} from './atlas-write-receipt';
 import type {AtlasRegionAPI as importAtlasRegionAPI} from './atlas-region-contracts';
 import type {DrawingElement,DrawingElementGeometry} from './drawing-contracts';
 import type {
@@ -115,7 +116,7 @@ export interface AtlasCommitAck {
 }
 export type AtlasCommitOutcome = {outcome:'applied';ack:AtlasCommitAck}|{outcome:'not-applied'}|{outcome:'unknown'};
 export type AtlasRenderView = Omit<CampaignAtlas<RoomGeometry,DrawingElementGeometry,import("./atlas-region-contracts").CityGeometry>,'scene'|'terrain'> & {terrain:Omit<AtlasMap,'cells'|'landscape'>;scene:Pick<SceneWorld,'scene'|'position'|'journey'>|null;region?:Omit<import("./atlas-region-contracts").AtlasRegionGeometry,'rooms'|'floors'|'drawing'|'cities'|'bindings'|'scopes'>};
-export interface AtlasAPI extends importAtlasRegionAPI {
+export interface AtlasAPI extends importAtlasRegionAPI, importAtlasWriteRecoveryAPI {
   atlasTerritories(token:string,box?:import("./atlas-landscape").LandscapeBox):Promise<Result<import("./atlas-territories").TerritoryState>>;
   atlasDrawingCommit(command:DrawingCommand):Promise<Result<{workspace:import('./contracts').Workspace;view:import('./drawing-contracts').DrawingView;atlasRevision:number}>>;
   atlasRoomCommit(edit:Edit):Promise<Result<import('./contracts').RoomCommit>>;

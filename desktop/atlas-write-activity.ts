@@ -1,8 +1,12 @@
 /** A missing receipt is inconclusive while asynchronous preparation can still commit. */
 export class AtlasWriteActivity {
+  constructor(private readonly started:(commandId:string)=>void=()=>{}){}
+  epoch=0;
   private active = new Map<string, number>();
   has(commandId: string) { return this.active.has(commandId); }
   async run<T>(commandId: string, operation: () => T | Promise<T>): Promise<T> {
+    this.epoch++;
+    this.started(commandId);
     this.active.set(commandId, (this.active.get(commandId) ?? 0) + 1);
     try { return await operation(); }
     finally {

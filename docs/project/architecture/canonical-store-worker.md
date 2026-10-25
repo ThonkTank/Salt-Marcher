@@ -44,12 +44,11 @@ Ein Transport-/Workerfehler meldet **Speicherbestätigung ungeklärt**. Insbeson
 beweist eine verlorene Antwort keinen fehlenden Commit. Der Client bleibt nach
 einem Ausfall geschlossen für weitere Aufträge. Vorhandene fachliche Receipts
 erlauben nach Neustart die Klärung, sofern der Besitzer seine ursprüngliche
-Klärungsidentität dauerhaft gesichert hat. Für Atlas/Reise fehlt dieser vollständige
-Produktanschluss derzeit: A0.13 ergänzt die dauerhafte Referenz und reine Statusleser,
+Klärungsidentität dauerhaft gesichert hat. Die Atlas-/Reisegrundlage dafür steht
+im folgenden Referenzvertrag. Der vollständige Produktanschluss bleibt offen:
 A0.07/A0.08 schließen die Besitzer an, A0.14 den erreichbaren Abschluss und die
-native Wiederaufnahme. Die bestehenden Hosttests halten den Command selbst und
-belegen noch keine Wiederaufnahme durch einen frischen Renderer. Auch Pending-Statusabfragen
-behalten laufende Aufträge über asynchrone Receipt-Lesegrenzen hinweg bei.
+native Wiederaufnahme. Pending-Statusabfragen behalten laufende Aufträge auch
+über asynchrone Receipt-Lesegrenzen hinweg bei.
 
 Main erhält den Fehlertyp `StoreOutcomeUnknownError` und gibt ihn als einfaches
 `Result`-DTO `{ok:false,error,errorKind:'store-outcome-unknown'}` über die einzelne
@@ -72,6 +71,43 @@ Nach abgeschlossenen Atlas-, Room- und Drawing-Commits schützt
 StoreClient rekonstruiert daraus `StoreOutcomeUnknownError`. Der genaue Auftrag
 bleibt über seine Atlas-Quittung klärbar, die fehlende Ansicht wird separat neu
 gelesen. Der RoomCommit-Leser ruft dafür keinen zweiten Schreibauftrag auf.
+
+### Dauerhafte Atlas- und Reisereferenzen
+
+`atlas-write-receipt.ts` definiert die ursprüngliche Receiptidentität ohne
+Aktivierungstoken oder Autorenpayload: Kampagne, Command-ID, Fingerprint, Familie
+und gegebenenfalls Previewziel. Die drei Writerfamilien teilen ihre jeweilige
+Fingerprint-Eingabe mit diesem Vertrag. Verschachtelte ursprüngliche Tokens
+bleiben Teil des Hashes; eine neue Aktivierung berechtigt nur die Statusabfrage.
+`atlas-write-recovery.ts` kopiert den Command vor dem ersten Await und sichert
+die Referenz vor Dispatch. Ein Sicherungsfehler verhindert den Schreibaufruf.
+Graphauswahl besitzt keinen Receipt und verwendet diesen Helper nicht.
+
+Main hält mit `desktop/atlas-write-references.ts` zwei lokale Slots je Kampagne
+(Atlas einschließlich Vorschau und Reise) unter `atlas-write-references` im
+Datenverzeichnis. Atomare Veröffentlichung und fsync sichern den kleinen Vermerk;
+belegte Slots erlauben weder Überschreiben noch erneuten Dispatch. Beschädigte
+Dateien und abgebrochene Veröffentlichung sperren ausdrücklich. Diese lokalen
+Referenzen gehören nicht zum Kampagnenarchiv.
+
+Die einzelnen Preload-Methoden `keepAtlasWriteReference`, `atlasWriteReferences`,
+`atlasWriteStatus` und `clearAtlasWriteReference` erhalten stets einen separaten
+aktuellen Token. Der Storestatus liest ausschließlich die adressierte Quittung:
+`applied`, `not-applied` oder `unknown`, ohne Ansicht oder Reisefokus aufzubauen.
+Laufende Vorbereitung, ein während der Abfrage gestarteter Writer, unlesbare
+Quittungen und fehlende/fremde Vorschauen bleiben ungeklärt. Clear prüft Status
+und exakte Identität. Für eine nachweislich abgelehnte Graphaktion vor Previewanlage
+kann Main zusätzlich seinen begrenzten aktuellen Ablehnungsnachweis verwenden;
+ein weiterer Dispatch entzieht ihn. Nach Hostverlust wird daraus keine behauptete
+Nichtanwendung. Der aufrufende Autorenbesitzer muss bei einem Clearfehler
+gesperrt bleiben; dieser Anschluss gehört zu A0.07/A0.08.
+
+`tests/atlas-write-recovery.test.mjs` prüft Erfassung und Dispatchgrenze;
+`tests/desktop-atlas-write-receipt.test.mjs` verwendet tatsächliches Main, Preload
+und Worker einschließlich Neustart, Persistenzfehlern, fehlendem Reisefokus und
+gleichzeitiger Vorbereitung. Die Referenz wird nach Neustart aus dem lokalen
+Speicher gelesen, ohne nachgereichte Command-ID. Der native UI-Anschluss bleibt
+von diesen Hostbelegen getrennt.
 
 ### Graphvorschau und Autorenbesitzer
 
@@ -102,8 +138,8 @@ diesem Commit. Fehler erhalten die vollständige Vorschau. Erst danach entsorgt
 `graph-preview-lifecycle:<campaignId>:<previewId>` enthält Version, IDs, lokale
 Revision, Status, Command-ID und Fingerprint, keine Dateipfade. Explizites Restore
 schreibt seinen identischen Beleg vor dem Entfernen; spätere Vorschauen überschreiben
-ihn nicht. Der Preview-Fingerprint wird ausschließlich von
-`previewCommandFingerprint` aus `{campaignId,target,action}` erzeugt.
+ihn nicht. `previewCommandFingerprint` verwendet dieselbe Eingabe
+`{campaignId,target,action}` wie der dauerhafte Referenzvertrag.
 
 `storage/graph-preview-lifecycle.ts` verwaltet neben der kanonischen Datenbank
 höchstens eine aktive Vorschau unter `<database>.graph-previews`. Eine atomar
@@ -140,7 +176,7 @@ lokalem Commit, vor/nach Retirementcommit und während der Bereinigung, unverän
 Wiederöffnung, Beschädigung, Profil-/Archiv-/Löschgrenzen sowie lokale Ortslinks.
 Die neue Storeaktivierung benötigt keine vom Test zurückgereichte Preview-ID;
 die exakte Commandreferenz zur anschließenden Statusabfrage hält der Test selbst.
-Deren dauerhafter Rendererbesitzer bleibt A0.13/A0.07; native Schließ- und
+Deren dauerhafter Rendererbesitzer bleibt A0.07; native Schließ- und
 Wiederaufnahmequalifikation bleibt A0.14.
 
 Der zentrale UI-Anschluss in `campaign-atlas-author.ts` erfasst mit
@@ -152,7 +188,7 @@ Historyaufträge weiter. `graph-ui.ts` besitzt die erste Vorschaukennung und die
 ihren jeweiligen geladenen Workspace. `tests/desktop-graph-preview-owner.test.mjs`
 führt ihre tatsächlichen DOM-Dispatcher aus und prüft Vorschauwechsel, verspätete
 Antworten sowie lokale und kanonische Undo/Redo-Ziele. Vollständige Unknown-
-Behandlung und dauerhafte Klärungsreferenzen bleiben A0.07/A0.13.
+Behandlung und Wiederaufnahme im Autorenbesitzer bleiben A0.07.
 `tests/desktop-graph-preview-commit.test.mjs` prüft weiterhin
 die Vorschau- und Acceptgrenzen, gruppierte History, Commitfehler und den echten
 Worker/Main/Preload-Transport.

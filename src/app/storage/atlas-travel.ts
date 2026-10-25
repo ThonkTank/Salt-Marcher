@@ -1,3 +1,4 @@
+import {atlasWriteFingerprintInput} from '../atlas-write-receipt';
 import {validateTerrainAnchor} from '../terrain-objects';
 import {effectiveLandscape} from '../atlas-landscape';
 import { atlasPartyPoint } from "../atlas-runtime-model";
@@ -284,7 +285,7 @@ export function executeAtlasTravel(
         !a.scene.scene.members.length
       )
         throw new Error("Fokusgruppe geändert oder leer.");
-      const fingerprint = hash(c.action),
+      const fingerprint = createHash('sha256').update(atlasWriteFingerprintInput('travel',c)).digest('hex'),
         prior = db
           .prepare("SELECT * FROM atlas_travel_receipt WHERE command_id=?")
           .get(c.commandId);

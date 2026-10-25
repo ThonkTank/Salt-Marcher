@@ -1,3 +1,4 @@
+import {checkedAtlasWriteReference,type AtlasWriteReference,type AtlasWriteStatus} from '../atlas-write-receipt';
 import {validateTransferSnapshot} from '../transfer/registry';
 import {installSourceCellIndex} from './atlas-source-cell';
 import {projectCommittedAtlas} from './atlas-commit-projection';
@@ -415,6 +416,29 @@ export class CampaignStore {
       const root=atlasRoot(this.db,c.campaignId);
       return {campaignId:c.campaignId,commandId:c.commandId,revision:root.revision,...(c.terrainStroke?{sourceFence:this.atlasRegionSource(c.token).fence}:{}),...(typeof value?.id==='string'?{result:{id:value.id}}:{}),...this.atlasCommandHistory(c)};
     });
+  }
+  authorizeAtlasWriteReference(campaignId:string,token:string):void {if(typeof campaignId!=='string'||!campaignId||campaignId.length>1000)throw Error('Kampagnenkennung prüfen.');this.guard(token,campaignId);}
+  /** Receipt-only read: no writer, focus projection, history repair or fallback owner. */
+  atlasWriteStatus(value:AtlasWriteReference,token:string,pending=false):AtlasWriteStatus {
+    const ref=checkedAtlasWriteReference(value);this.guard(token,ref.campaignId);
+    if(pending)return{outcome:'unknown'};
+    try{
+      if(ref.family==='preview'){
+        const target=ref.target!,shadow=this.graphShadow;
+        if(!shadow||shadow.state().id!==target.previewId){
+          const row=this.db.prepare('SELECT value FROM settings WHERE key=?').get('graph-preview-lifecycle:'+ref.campaignId+':'+target.previewId);
+          const retired=row?checkedGraphLifecycle(JSON.parse(row.value)):null;
+          if(retired&&retired.campaignId===ref.campaignId&&retired.previewId===target.previewId&&retired.scopeId===target.scopeId&&retired.commandId===ref.commandId&&retired.fingerprint===ref.fingerprint&&retired.status==='restored'&&(!this.previewFiles||retired.profileId===this.previewFiles.profileId()))return{outcome:'applied'};
+          return{outcome:'unknown'};
+        }
+        if(shadow.campaignId!==ref.campaignId||shadow.scopeId!==target.scopeId)return{outcome:'unknown'};
+        const row=shadow.db.prepare('SELECT fingerprint FROM preview_receipt WHERE command_id=?').get(ref.commandId);
+        return{outcome:!row?'not-applied':row.fingerprint===ref.fingerprint?'applied':'unknown'};
+      }
+      const table=ref.family==='travel'?'atlas_travel_receipt':'atlas_receipt';
+      const row=this.db.prepare('SELECT campaign_id,fingerprint FROM '+table+' WHERE command_id=?').get(ref.commandId);
+      return{outcome:!row?'not-applied':row.campaign_id===ref.campaignId&&row.fingerprint===ref.fingerprint?'applied':'unknown'};
+    }catch{return{outcome:'unknown'};}
   }
   reconcileAtlasCommit(c:AtlasCommand,pending=false):import('../campaign-atlas-contracts').AtlasCommitOutcome {
     this.guard(c.token,c.campaignId);
